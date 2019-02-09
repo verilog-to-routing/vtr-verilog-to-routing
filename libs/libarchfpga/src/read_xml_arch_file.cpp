@@ -159,6 +159,8 @@ static bool attribute_to_bool(const pugi::xml_node node,
                 const pugiutil::loc_data& loc_data);
 int find_switch_by_name(const t_arch& arch, std::string switch_name);
 
+e_side string_to_side(std::string side_str);
+
 /*
  *
  *
@@ -3191,6 +3193,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 	pugi::xml_node Node;
 
 	/* Count the children and check they are direct connections */
+    expect_only_children(Parent, {"direct"}, loc_data);
 	*NumDirects = count_children(Parent, "direct", loc_data);
 
 	/* Alloc direct list */
@@ -3204,6 +3207,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 	/* Load the directs. */
 	Node = get_first_child(Parent, "direct", loc_data);
 	for (i = 0; i < *NumDirects; ++i) {
+        expect_only_attributes(Node, {"name", "from_pin", "to_pin", "x_offset", "y_offset", "z_offset", "switch_name", "from_side", "to_side"}, loc_data);
 
 		direct_name = get_attribute(Node, "name", loc_data).value();
 		/* Check for direct name collisions */
@@ -3232,6 +3236,11 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 		(*Directs)[i].x_offset = get_attribute(Node, "x_offset", loc_data).as_int(0);
 		(*Directs)[i].y_offset = get_attribute(Node, "y_offset", loc_data).as_int(0);
 		(*Directs)[i].z_offset = get_attribute(Node, "z_offset", loc_data).as_int(0);
+
+        std::string from_side_str = get_attribute(Node, "from_side", loc_data, OPTIONAL).value();
+        (*Directs)[i].from_side = string_to_side(from_side_str);
+        std::string to_side_str = get_attribute(Node, "to_side", loc_data, OPTIONAL).value();
+        (*Directs)[i].to_side = string_to_side(to_side_str);
 
         //Set the optional switch type
         switch_name = get_attribute(Node, "switch_name", loc_data, OPTIONAL).as_string(nullptr);
@@ -3780,4 +3789,23 @@ int find_switch_by_name(const t_arch& arch, std::string switch_name) {
     }
 
     return OPEN;
+}
+
+e_side string_to_side(std::string side_str) {
+    e_side side = NUM_SIDES;
+    if (side_str.empty()) {
+        side = NUM_SIDES;
+    } else if (side_str == "left") {
+        side = LEFT;
+    } else if (side_str == "right") {
+        side = RIGHT;
+    } else if (side_str == "top") {
+        side = TOP;
+    } else if (side_str == "bottom") {
+        side = BOTTOM;
+    } else {
+        archfpga_throw(__FILE__, __LINE__,
+                "Invalid side specification");
+    }
+    return side;
 }

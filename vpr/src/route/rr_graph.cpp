@@ -98,6 +98,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(
 
 static void build_bidir_rr_opins(const int i, const int j, const e_side side,
         const t_rr_node_indices& L_rr_node_indices,
+        const std::vector<t_rr_node>& rr_nodes,
         const t_pin_to_track_lookup& opin_to_track_map, const std::vector<vtr::Matrix<int>>&Fc_out,
         t_rr_edge_info_set& created_rr_edges,
         const t_chan_details& chan_details_x,
@@ -113,13 +114,17 @@ static void build_unidir_rr_opins(
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
         t_rr_edge_info_set& created_rr_edges,
-        bool * Fc_clipped, const t_rr_node_indices& L_rr_node_indices,
+        bool * Fc_clipped,
+        const t_rr_node_indices& L_rr_node_indices,
+        const std::vector<t_rr_node>& rr_nodes,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types);
 
 static int get_opin_direct_connecions(
         int x, int y, e_side side, int opin,
-        int from_rr_node, t_rr_edge_info_set& rr_edges_to_create, const t_rr_node_indices& L_rr_node_indices,
+        int from_rr_node, t_rr_edge_info_set& rr_edges_to_create,
+        const t_rr_node_indices& L_rr_node_indices,
+        const std::vector<t_rr_node>& rr_nodes,
         const t_direct_inf *directs, const int num_directs,
         const t_clb_to_clb_directs *clb_to_clb_directs);
 
@@ -234,6 +239,11 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
         const int max_chan_width, const e_fc_type fc_type,
         const enum e_directionality directionality,
         bool *Fc_clipped);
+
+static int pick_best_direct_connect_target_rr_node(
+        const std::vector<t_rr_node>& rr_nodes,
+        int from_rr,
+        const std::vector<int>& candidate_rr_nodes);
 
 static void build_rr_graph(
         const t_graph_type graph_type, const int L_num_types,
@@ -1184,7 +1194,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         for (size_t j = 0; j < grid.height(); ++j) {
             for (e_side side : SIDES) {
                 if (BI_DIRECTIONAL == directionality) {
-                    build_bidir_rr_opins(i, j, side, L_rr_node_indices,
+                    build_bidir_rr_opins(i, j, side, L_rr_node_indices, L_rr_node,
                             opin_to_track_map, Fc_out, rr_edges_to_create, chan_details_x, chan_details_y,
                             grid,
                             directs, num_directs, clb_to_clb_directs, num_seg_types);
@@ -1193,7 +1203,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
                     bool clipped;
                     build_unidir_rr_opins(i, j, side, grid, Fc_out, max_chan_width,
                             chan_details_x, chan_details_y, Fc_xofs, Fc_yofs,
-                            rr_edges_to_create, &clipped, L_rr_node_indices,
+                            rr_edges_to_create, &clipped, L_rr_node_indices, L_rr_node,
                             directs, num_directs, clb_to_clb_directs, num_seg_types);
                     if (clipped) {
                         *Fc_clipped = true;
@@ -1253,6 +1263,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 
 static void build_bidir_rr_opins(const int i, const int j, const e_side side,
         const t_rr_node_indices& L_rr_node_indices,
+        const std::vector<t_rr_node>& rr_nodes,
         const t_pin_to_track_lookup& opin_to_track_map, const std::vector<vtr::Matrix<int>>&Fc_out,
         t_rr_edge_info_set& rr_edges_to_create,
         const t_chan_details& chan_details_x,
@@ -1304,7 +1315,7 @@ static void build_bidir_rr_opins(const int i, const int j, const e_side side,
 
         /* Add in direct connections */
         get_opin_direct_connecions(i, j, side, pin_index,
-                node_index, rr_edges_to_create, L_rr_node_indices,
+                node_index, rr_edges_to_create, L_rr_node_indices, rr_nodes,
                 directs, num_directs, clb_to_clb_directs);
     }
 }
@@ -2414,7 +2425,9 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
         t_rr_edge_info_set& rr_edges_to_create,
-        bool * Fc_clipped, const t_rr_node_indices& L_rr_node_indices,
+        bool * Fc_clipped,
+        const t_rr_node_indices& L_rr_node_indices,
+        const std::vector<t_rr_node>& rr_nodes,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types) {
 
@@ -2503,7 +2516,7 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
         }
 
         /* Add in direct connections */
-        get_opin_direct_connecions(i, j, side, pin_index, opin_node_index, rr_edges_to_create, L_rr_node_indices,
+        get_opin_direct_connecions(i, j, side, pin_index, opin_node_index, rr_edges_to_create, L_rr_node_indices, rr_nodes,
                 directs, num_directs, clb_to_clb_directs);
     }
 }
@@ -2635,6 +2648,7 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
         int from_rr_node,
         t_rr_edge_info_set& rr_edges_to_create,
         const t_rr_node_indices& L_rr_node_indices,
+        const std::vector<t_rr_node>& rr_nodes,
         const t_direct_inf *directs, const int num_directs,
         const t_clb_to_clb_directs *clb_to_clb_directs) {
 
@@ -2658,6 +2672,8 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
     for (i = 0; i < num_directs; i++) {
         /* Find matching direct clb-to-clb connections with the same type as current grid location */
         if (clb_to_clb_directs[i].from_clb_type == curr_type) { //We are at a valid starting point
+
+            if (directs[i].from_side != NUM_SIDES && directs[i].from_side != side) continue;
 
             //Offset must be in range
             if (x + directs[i].x_offset < int(device_ctx.grid.width() - 1) &&
@@ -2698,14 +2714,26 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
                         }
 
                         /* Add new ipin edge to list of edges */
-                        auto inodes = get_rr_node_indices(L_rr_node_indices, x + directs[i].x_offset, y + directs[i].y_offset,
-                                IPIN, ipin);
+                        std::vector<int> inodes;
+
+                        if (directs[i].to_side != NUM_SIDES) {
+                            //Explicit side specified, only create if pin exists on that side
+                            int inode = get_rr_node_index(L_rr_node_indices, x + directs[i].x_offset, y + directs[i].y_offset,
+                                    IPIN, ipin, directs[i].to_side);
+                            if (inode != OPEN) {
+                                inodes.push_back(inode);
+                            }
+                        } else {
+                            //No side specified, get all candidates
+                            inodes = get_rr_node_indices(L_rr_node_indices, x + directs[i].x_offset, y + directs[i].y_offset,
+                                    IPIN, ipin);
+                        }
 
                         if (inodes.size() > 0) {
                             //There may be multiple physical pins corresponding to the logical
                             //target ipin. We only need to connect to one of them (since the physical pins
                             //are logically equivalent).
-                            int inode = inodes[0];
+                            int inode = pick_best_direct_connect_target_rr_node(rr_nodes, from_rr_node, inodes);
 
                             rr_edges_to_create.emplace_back(from_rr_node, inode, clb_to_clb_directs[i].switch_index);
                             ++num_pins;
@@ -2818,3 +2846,57 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_type_ptr type, con
     return perturb_opins;
 }
 
+static int pick_best_direct_connect_target_rr_node(
+        const std::vector<t_rr_node>& rr_nodes,
+        int from_rr,
+        const std::vector<int>& candidate_rr_nodes) {
+    //With physically equivalent pins there may be multiple candidate rr nodes (which are equivalent)
+    //to connect the direct edge to.
+    //As a result it does not matter (from a correctness standpoint) which is picked.
+    //
+    //However intuitively we would expect (e.g. when visualizing the drawn RR graph) that the 'closest'
+    //candidate would be picked (i.e. to minimize the drawn edge length).
+    //
+    //This function attempts to pick the 'best/closest' of the candidates.
+
+    VTR_ASSERT(rr_nodes[from_rr].type() == OPIN);
+    e_side from_side = rr_nodes[from_rr].side();
+
+    float best_dist = std::numeric_limits<float>::infinity();
+    int best_rr = OPEN;
+    
+    for (int to_rr : candidate_rr_nodes) {
+        VTR_ASSERT(rr_nodes[to_rr].type() == IPIN);
+        float to_dist = std::abs(rr_nodes[from_rr].xlow() - rr_nodes[to_rr].xlow())
+                        + std::abs(rr_nodes[from_rr].ylow() - rr_nodes[to_rr].ylow());
+
+        e_side to_side = rr_nodes[to_rr].side();
+
+        //Include a partial unit of distance based on side alignment to ensure
+        //we preferr facing sides
+        if (   (from_side == RIGHT && to_side == LEFT)
+            || (from_side == LEFT && to_side == RIGHT)
+            || (from_side == TOP && to_side == BOTTOM)
+            || (from_side == BOTTOM && to_side == TOP)) {
+            //Facing sides
+            to_dist += 0.25;
+        } else if (   ((from_side == RIGHT || from_side == LEFT) && (to_side == TOP || to_side == BOTTOM))
+                   || ((from_side == TOP || from_side == BOTTOM) && (to_side == RIGHT || to_side == LEFT))) {
+            //Perpendicular sides
+            to_dist += 0.5;
+
+        } else {
+            //Opposite sides
+            to_dist += 0.75;
+        }
+
+        if (to_dist < best_dist) {
+            best_dist = to_dist;
+            best_rr = to_rr;
+        }
+    }
+
+    VTR_ASSERT(best_rr != OPEN);
+
+    return best_rr;
+}
