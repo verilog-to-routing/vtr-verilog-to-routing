@@ -2652,13 +2652,9 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
         const t_direct_inf *directs, const int num_directs,
         const t_clb_to_clb_directs *clb_to_clb_directs) {
 
-    t_type_ptr curr_type, target_type;
-    int i, ipin;
-    int max_index, min_index, offset, swap;
-
     auto& device_ctx = g_vpr_ctx.device();
 
-    curr_type = device_ctx.grid[x][y].type;
+    t_type_ptr curr_type = device_ctx.grid[x][y].type;
 
     int num_pins = 0;
 
@@ -2668,8 +2664,12 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
         return num_pins; //No source pin on this side
     }
 
+    //Capacity location determined by pin number relative to pins per capacity instance
+    int z = opin / (curr_type->num_pins / curr_type->capacity);
+    VTR_ASSERT(z >= 0 && z < curr_type->capacity);
+
     /* Iterate through all direct connections */
-    for (i = 0; i < num_directs; i++) {
+    for (int i = 0; i < num_directs; i++) {
         /* Find matching direct clb-to-clb connections with the same type as current grid location */
         if (clb_to_clb_directs[i].from_clb_type == curr_type) { //We are at a valid starting point
 
@@ -2682,10 +2682,14 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
                     y + directs[i].y_offset > 0) {
 
                 //Only add connections if the target clb type matches the type in the direct specification
-                target_type = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].type;
-                if (clb_to_clb_directs[i].to_clb_type == target_type) {
+                t_type_ptr target_type = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].type;
+                if (clb_to_clb_directs[i].to_clb_type == target_type &&
+                    z + directs[i].z_offset < int(target_type->capacity) &&
+                    z + directs[i].z_offset >= 0) {
 
                     /* Compute index of opin with regards to given pins */
+                    int max_index = OPEN, min_index = OPEN;
+                    bool swap = false;
                     if (clb_to_clb_directs[i].from_clb_pin_start_index > clb_to_clb_directs[i].from_clb_pin_end_index) {
                         swap = true;
                         max_index = clb_to_clb_directs[i].from_clb_pin_start_index;
@@ -2695,23 +2699,33 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
                         min_index = clb_to_clb_directs[i].from_clb_pin_start_index;
                         max_index = clb_to_clb_directs[i].from_clb_pin_end_index;
                     }
-                    if (max_index >= opin && min_index <= opin) {
-                        offset = opin - min_index;
+                    int logical_opin = opin % (curr_type->num_pins / curr_type->capacity);
+
+                    if (max_index >= logical_opin && min_index <= logical_opin) {
+                        int offset = logical_opin - min_index;
                         /* This opin is specified to connect directly to an ipin, now compute which ipin to connect to */
-                        ipin = OPEN;
+                        int logical_ipin = OPEN;
                         if (clb_to_clb_directs[i].to_clb_pin_start_index > clb_to_clb_directs[i].to_clb_pin_end_index) {
                             if (swap) {
-                                ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
+                                logical_ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
                             } else {
-                                ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
+                                logical_ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
                             }
                         } else {
                             if (swap) {
-                                ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
+                                logical_ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
                             } else {
-                                ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
+                                logical_ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
                             }
                         }
+
+                        VTR_ASSERT(logical_ipin < (target_type->num_pins / target_type->capacity));
+
+                        //If this block has capacity > 1 then the pins of z position > 0 are offset
+                        //by the number of pins per capacity instance
+                        int ipin = logical_ipin + (target_type->num_pins / target_type->capacity) * (z + directs[i].z_offset);
+
+                        //if (ipin > target_type->num_pins) continue; //Invalid z-offset
 
                         /* Add new ipin edge to list of edges */
                         std::vector<int> inodes;
@@ -2732,7 +2746,8 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
                         if (inodes.size() > 0) {
                             //There may be multiple physical pins corresponding to the logical
                             //target ipin. We only need to connect to one of them (since the physical pins
-                            //are logically equivalent).
+                            //are logically equivalent). This also ensures the graphics look reasonable and map
+                            //back fairly directly to the architecture file in the case of pin equivalence
                             int inode = pick_best_direct_connect_target_rr_node(rr_nodes, from_rr_node, inodes);
 
                             rr_edges_to_create.emplace_back(from_rr_node, inode, clb_to_clb_directs[i].switch_index);
