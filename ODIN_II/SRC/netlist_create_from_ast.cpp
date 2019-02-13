@@ -4341,6 +4341,8 @@ void create_case_control_signals(ast_node_t *case_list_of_items, ast_node_t *com
 
 			/* copy that output pin to be put into the default */
 			add_input_pin_to_node(case_node, default_expression->pins[0], i);
+
+			free_signal_list(default_expression);
 		}
 		else
 		{
@@ -4388,7 +4390,6 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 	return_list = create_mux_statements(case_statement, case_node, case_list_of_items->num_children, instance_name_prefix);
 	vtr::free(case_statement);
 
-	vtr::free(case_statement);
 	return return_list;
 }
 
