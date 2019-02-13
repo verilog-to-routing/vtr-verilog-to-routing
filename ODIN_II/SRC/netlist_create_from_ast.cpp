@@ -3436,8 +3436,6 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 
 				ff_node->has_initial_value = 1;
 				ff_node->initial_value = ((char *)(local_symbol_table_sc->data[sc_spot]))[0];
-				vtr::free(ref_string);
-
 			}
 			else{
 
@@ -3447,6 +3445,8 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 				ff_node->has_initial_value = net->has_initial_value;
 				ff_node->initial_value = net->initial_value;
 			}
+			/* free the reference string */
+			vtr::free(ref_string);
 
 
 			/* allocate the pins needed */
