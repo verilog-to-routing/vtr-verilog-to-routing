@@ -4243,6 +4243,7 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 
 	/* now with all the lists sorted, we do the matching and proper propagation */
 	return_list = create_mux_statements(if_statements, if_node, 2, instance_name_prefix);
+	vtr::free(if_statements);
 
 	return return_list;
 }
@@ -4382,6 +4383,7 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 
 	/* now with all the lists sorted, we do the matching and proper propogation */
 	return_list = create_mux_statements(case_statement, case_node, case_list_of_items->num_children, instance_name_prefix);
+	vtr::free(case_statement);
 
 	return return_list;
 }
