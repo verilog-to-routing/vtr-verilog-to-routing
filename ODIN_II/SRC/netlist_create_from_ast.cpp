@@ -4527,6 +4527,7 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 		free_signal_list(statement_lists[i]);
 	}
 	free_signal_list(combined_lists);
+	vtr::free(per_case_statement_idx);
 
 	return return_list;
 }
