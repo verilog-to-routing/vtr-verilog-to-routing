@@ -4672,6 +4672,8 @@ int find_smallest_non_numerical(ast_node_t *node, signal_list_t **input_list, in
 		}
 	}
 
+	vtr::free(tested);
+
 	return smallest_idx;
 }
 
