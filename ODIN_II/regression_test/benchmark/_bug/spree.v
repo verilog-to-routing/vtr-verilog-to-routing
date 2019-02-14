@@ -1768,8 +1768,8 @@ assign a_readdataout = a_readdataout_temp;
   .data2(constone),
   .out1(a_readdataout_temp),
   .out2(dummy_out),
-  .addr1(c_reg),
-  .addr2(a_reg));
+  .addr1(c_reg[4:0]),
+  .addr2(a_reg[4:0]));
 		
 		
 		
@@ -1831,8 +1831,8 @@ dual_port_ram regfile2_replace(
   .data2(constone),
   .out1(b_readdataout_temp),
   .out2(dummywire),
-  .addr1(c_reg),
-  .addr2(b_reg));
+  .addr1(c_reg[4:0]),
+  .addr2(b_reg[4:0]));
 		
 
 wire useless_inputs;
@@ -2043,7 +2043,7 @@ register_1bit sync_pcs_up( reg_d, clk, resetn,reg_en, out_of_sync);
 
 wire wren1;
 assign wren1 = 1'b0;
-wire [31:0] next_pc_wire;
+wire [15:0] next_pc_wire;
 assign next_pc_wire = next_pc [13:0];
 
 dual_port_ram imem_replace(
@@ -2055,7 +2055,7 @@ dual_port_ram imem_replace(
   .out1(instr),
   .out2(dummyout2),
   .addr1(next_pc_wire),
-  .addr2(boot_iaddr));
+  .addr2(boot_iaddr[15:0]));
 
 wire [31:0]dummyout2;
 wire [31:0] dummyin1;
@@ -2236,7 +2236,7 @@ assign will_be_wren1 = d_write&(dnot_address);
 wire [31:0] dont_care;
 
 
-wire [31:0] memaddr_wrd;
+wire [15:0] memaddr_wrd;
 
 
 assign memaddr_wrd = d_address[`DM_ADDRESSWIDTH:2];
@@ -2249,7 +2249,7 @@ dual_port_ram dmem_replace(
   .out1(d_readdatain),
 .out2 (dont_care),
   .addr1(memaddr_wrd),
-  .addr2(boot_daddr));
+  .addr2(boot_daddr[15:0]));
 // 1 cycle stall state machine
 
 wire en_and_not_d_write;
