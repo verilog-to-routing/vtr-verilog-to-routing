@@ -1205,9 +1205,6 @@ data_mem data_mem (
 	.stalled(ctrl_data_mem_stalled),
 	.d_writedata(nop7_q),
 	.d_address(addersub_result),
-	.boot_daddr(boot_daddr),
-	.boot_ddata(boot_ddata),
-	.boot_dwe(boot_dwe),
 	.op(ctrl_data_mem_op),
 	.d_loadresult(data_mem_d_loadresult));
 
@@ -1755,21 +1752,15 @@ assign a_readdataout = a_readdataout_temp;
 		//Reg file duplicated to avoid contention between 2 read
 		//and 1 write
 		*/
-		wire [31:0] dummy_out;
-		wire [31:0] constone;
-		assign constone = 32'b11111111111111111111111111111111;
 		wire wren1;
 		assign wren1 = (c_we & (|c_reg));
-	dual_port_ram regfile1_replace (
+    single_port_ram regfile1_replace (
   .clk (clk),
-  .we1(wren1),
-  .we2(1'b0),
-  .data1(c_writedatain),
-  .data2(constone),
-  .out1(a_readdataout_temp),
-  .out2(dummy_out),
-  .addr1(c_reg[4:0]),
-  .addr2(a_reg[4:0]));
+  .we(wren1),
+  .data(c_writedatain),
+  .out(a_readdataout_temp),
+  .addr(c_reg[4:0])
+  );
 		
 		
 		
@@ -1822,21 +1813,16 @@ assign a_readdataout = a_readdataout_temp;
 		reg_file2.intended_device_family = "Stratix";
 */
 
-wire [31:0] dummywire;
-dual_port_ram regfile2_replace(
+single_port_ram regfile2_replace(
   .clk (clk),
-  .we1(wren1),
-  .we2(1'b0),
-  .data1(c_writedatain),
-  .data2(constone),
-  .out1(b_readdataout_temp),
-  .out2(dummywire),
-  .addr1(c_reg[4:0]),
-  .addr2(b_reg[4:0]));
-		
+  .we(wren1),
+  .data(c_writedatain),
+  .out(b_readdataout_temp),
+  .addr(c_reg[4:0])
+);		
 
 wire useless_inputs;
-assign useless_inputs = resetn & b_en & a_en;
+assign useless_inputs = resetn & b_en & a_en & ( | a_reg ) & ( | b_reg );
 endmodule
 
 /****************************************************************************
@@ -2080,7 +2066,8 @@ assign offset=instr[15:0];
 assign instr_index=instr[25:0];
 assign func=instr[5:0];
 
-
+wire NoUSE;
+assign NoUse = ( |boot_iaddr );
 
 endmodule
 
@@ -2172,17 +2159,12 @@ end
 module data_mem( clk, resetn, stalled,
                 d_writedata,
                 d_address,
-                boot_daddr, boot_ddata, boot_dwe, 
                 op,
                 d_loadresult);
 
 input clk;
 input resetn;
 output stalled;
-
-input [31:0] boot_daddr;
-input [31:0] boot_ddata;
-input boot_dwe;
 
 input [`D_ADDRESSWIDTH-1:0] d_address;
 input [3:0] op;
@@ -2233,23 +2215,18 @@ wire  dnot_address;
 assign dnot_address = ~d_address[31];
 wire will_be_wren1;
 assign will_be_wren1 = d_write&(dnot_address);
-wire [31:0] dont_care;
-
 
 wire [15:0] memaddr_wrd;
 
 
 assign memaddr_wrd = d_address[`DM_ADDRESSWIDTH:2];
-dual_port_ram dmem_replace(
+single_port_ram dmem_replace(
   .clk (clk),
-  .we1(will_be_wren1),
-  .we2(boot_dwe),
-  .data1(d_writedatamem),
-  .data2(boot_ddata),
-  .out1(d_readdatain),
-.out2 (dont_care),
-  .addr1(memaddr_wrd),
-  .addr2(boot_daddr[15:0]));
+  .we(will_be_wren1),
+  .data(d_writedatamem),
+  .out(d_readdatain),
+  .addr(memaddr_wrd)
+  );
 // 1 cycle stall state machine
 
 wire en_and_not_d_write;
