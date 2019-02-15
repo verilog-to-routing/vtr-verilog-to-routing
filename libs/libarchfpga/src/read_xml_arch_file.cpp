@@ -138,7 +138,7 @@ static void ProcessClockNetworks(
         const t_arch_switch_inf *switches,
         const int num_switches,
         pugiutil::loc_data& loc_data);
-static void ProcessClockSwitches(
+static void ProcessClockSwitchPoints(
         pugi::xml_node parent,
         t_clock_network_arch& clock_network,
         const t_arch_switch_inf *switches,
@@ -3391,7 +3391,7 @@ static void ProcessClockNetworks(
             clock_network.repeat.x = repeatx;
             clock_network.repeat.y = repeaty;
 
-            ProcessClockSwitches(curr_type, clock_network, switches, num_switches, loc_data);
+            ProcessClockSwitchPoints(curr_type, clock_network, switches, num_switches, loc_data);
         }
 
         // Parse rib
@@ -3414,7 +3414,7 @@ static void ProcessClockNetworks(
             clock_network.repeat.x = repeatx;
             clock_network.repeat.y = repeaty;
 
-            ProcessClockSwitches(curr_type, clock_network, switches, num_switches, loc_data);
+            ProcessClockSwitchPoints(curr_type, clock_network, switches, num_switches, loc_data);
         }
 
         // Currently their is only support for ribs and spines
@@ -3430,7 +3430,7 @@ static void ProcessClockNetworks(
     }
 }
 
-static void ProcessClockSwitches(
+static void ProcessClockSwitchPoints(
         pugi::xml_node parent,
         t_clock_network_arch& clock_network,
         const t_arch_switch_inf *switches,
