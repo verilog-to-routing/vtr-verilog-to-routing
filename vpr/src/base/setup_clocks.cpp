@@ -24,6 +24,10 @@ void setup_clock_networks(const t_arch& Arch, std::vector<t_segment_inf>& segmen
     setup_clock_connections(Arch);
 }
 
+/**
+Parses the clock architecture information and modifies the architecture segment
+information.
+*/
 void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf) {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
