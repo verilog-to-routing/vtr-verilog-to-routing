@@ -122,7 +122,7 @@ void setup_clock_connections(const t_arch& Arch) {
     vars.set_var_value("H", grid.height());
 
     for(auto clock_connection_arch : clock_connections_arch) {
-        if(clock_connection_arch.from == "routing") {
+        if(clock_connection_arch.from == "ROUTING") {
             clock_connections_device.emplace_back(new RoutingToClockConnection);
             RoutingToClockConnection* routing_to_clock =
                 dynamic_cast<RoutingToClockConnection*>(clock_connections_device.back().get());
@@ -130,6 +130,7 @@ void setup_clock_connections(const t_arch& Arch) {
             //TODO: Add error check to check that clock name and tap name exist and that only
             //      two names are returned by the below function
             auto names = vtr::split(clock_connection_arch.to, ".");
+            VTR_ASSERT_MSG(names.size() == 2, "Invalid clock name.\n");
             routing_to_clock->set_clock_name_to_connect_to(names[0]);
             routing_to_clock->set_clock_switch_point_name(names[1]);
 
@@ -139,7 +140,7 @@ void setup_clock_connections(const t_arch& Arch) {
             routing_to_clock->set_switch(clock_connection_arch.arch_switch_idx);
             routing_to_clock->set_fc_val(clock_connection_arch.fc);
 
-        } else if (clock_connection_arch.to == "clock") {
+        } else if (clock_connection_arch.to == "CLOCK") {
             clock_connections_device.emplace_back(new ClockToPinsConnection);
             ClockToPinsConnection* clock_to_pins =
                 dynamic_cast<ClockToPinsConnection*>(clock_connections_device.back().get());
@@ -147,6 +148,7 @@ void setup_clock_connections(const t_arch& Arch) {
             //TODO: Add error check to check that clock name and tap name exist and that only
             //      two names are returned by the below function
             auto names = vtr::split(clock_connection_arch.from, ".");
+            VTR_ASSERT_MSG(names.size() == 2, "Invalid clock name.\n");
             clock_to_pins->set_clock_name_to_connect_from(names[0]);
             clock_to_pins->set_clock_switch_point_name(names[1]);
 
@@ -161,6 +163,7 @@ void setup_clock_connections(const t_arch& Arch) {
             //      two names are returned by the below function
             auto to_names = vtr::split(clock_connection_arch.to, ".");
             auto from_names = vtr::split(clock_connection_arch.from, ".");
+            VTR_ASSERT_MSG(to_names.size() == 2, "Invalid clock name.\n");
             clock_to_clock->set_to_clock_name(to_names[0]);
             clock_to_clock->set_to_clock_switch_point_name(to_names[1]);
             clock_to_clock->set_from_clock_name(from_names[0]);
