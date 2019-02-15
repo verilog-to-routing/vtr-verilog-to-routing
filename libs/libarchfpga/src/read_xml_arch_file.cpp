@@ -144,7 +144,7 @@ static void ProcessClockSwitchPoints(
         const t_arch_switch_inf *switches,
         const int num_switches,
         pugiutil::loc_data& loc_data);
-static void ProcessClockConnections(
+static void ProcessClockRouting(
         pugi::xml_node parent,
         std::vector<t_clock_connection_arch>& clock_connections,
         const t_arch_switch_inf *switches,
@@ -289,7 +289,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
                     arch->Switches,
                     arch->num_switches,
                     loc_data);
-            ProcessClockConnections(
+            ProcessClockRouting(
                     Next,
                     arch->clock_connections_arch,
                     arch->Switches,
@@ -3508,7 +3508,7 @@ static void ProcessClockSwitchPoints(
     }
 }
 
-static void ProcessClockConnections(
+static void ProcessClockRouting(
         pugi::xml_node parent,
         std::vector<t_clock_connection_arch>& clock_connections,
         const t_arch_switch_inf *switches,
