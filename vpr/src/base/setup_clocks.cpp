@@ -40,8 +40,7 @@ void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& s
     for(auto clock_network_arch : clock_networks_arch) {
         switch(clock_network_arch.type) {
             case e_clock_type::SPINE: {
-                clock_networks_device.emplace_back(new ClockSpine());
-                ClockSpine* spine = dynamic_cast<ClockSpine*>(clock_networks_device.back().get());
+                std::unique_ptr<ClockSpine> spine = std::make_unique<ClockSpine>();
 
                 spine->set_clock_name(clock_network_arch.name);
                 spine->set_num_instance(clock_network_arch.num_inst);
@@ -65,10 +64,11 @@ void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& s
                 spine->set_tap_name(clock_network_arch.tap.name);
 
                 spine->create_segments(segment_inf);
+
+                clock_networks_device.push_back(std::move(spine));
                 break;
             } case e_clock_type::RIB: {
-                clock_networks_device.emplace_back(new ClockRib());
-                ClockRib* rib = dynamic_cast<ClockRib*>(clock_networks_device.back().get());
+                std::unique_ptr<ClockRib> rib = std::make_unique<ClockRib>();
 
                 rib->set_clock_name(clock_network_arch.name);
                 rib->set_num_instance(clock_network_arch.num_inst);
@@ -92,6 +92,7 @@ void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& s
                 rib->set_tap_name(clock_network_arch.tap.name);
 
                 rib->create_segments(segment_inf);
+                clock_networks_device.push_back(std::move(rib));
                 break;
             } case e_clock_type::H_TREE: {
                 vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "HTrees not yet supported.\n");
