@@ -77,13 +77,13 @@ void write_rr_channel(fstream &fp) {
             "\" x_max=\"" << device_ctx.chan_width.x_max <<
             "\" y_max=\"" << device_ctx.chan_width.y_max << "\"/>" << endl;
 
-    int* list = device_ctx.chan_width.x_list;
+    auto& list = device_ctx.chan_width.x_list;
     for (size_t i = 0; i < device_ctx.grid.height() - 1; i++) {
         fp << "\t\t<x_list index =\"" << i << "\" info=\"" << list[i] << "\"/>" << endl;
     }
-    list = device_ctx.chan_width.y_list;
+    auto& list2 = device_ctx.chan_width.y_list;
     for (size_t i = 0; i < device_ctx.grid.width() - 1; i++) {
-        fp << "\t\t<y_list index =\"" << i << "\" info=\"" << list[i] << "\"/>" << endl;
+        fp << "\t\t<y_list index =\"" << i << "\" info=\"" << list2[i] << "\"/>" << endl;
     }
     fp << "\t</channels>" << endl;
 }

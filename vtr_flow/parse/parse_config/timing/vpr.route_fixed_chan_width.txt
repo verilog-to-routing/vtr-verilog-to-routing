@@ -10,4 +10,4 @@ setup_WNS;vpr.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
 hold_TNS;vpr.out;Hold Total Negative Slack \(hTNS\): (.*) ns
 hold_WNS;vpr.out;Hold Worst Negative Slack \(hWNS\): (.*) ns
 
-crit_path_route_time;vpr.out;^\s*Routing took (.*) seconds
+crit_path_route_time;vpr.out;^#*\s*Routing took (.*) seconds

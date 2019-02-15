@@ -1259,10 +1259,10 @@ void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_fr
 /**
 * Create lookup table that returns a pointer to the pb given [index to block][pin_id].
 */
-vtr::vector_map<ClusterBlockId, t_pb **> alloc_and_load_pin_id_to_pb_mapping() {
+vtr::vector<ClusterBlockId, t_pb **> alloc_and_load_pin_id_to_pb_mapping() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping(cluster_ctx.clb_nlist.blocks().size());
+	vtr::vector<ClusterBlockId, t_pb **> pin_id_to_pb_mapping(cluster_ctx.clb_nlist.blocks().size());
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		pin_id_to_pb_mapping[blk_id] = new t_pb*[cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins];
 		for (int j = 0; j < cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins; j++) {
@@ -1312,7 +1312,7 @@ static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapp
 /*
 * free pin_index_to_pb_mapping lookup table
 */
-void free_pin_id_to_pb_mapping(vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
+void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		delete[] pin_id_to_pb_mapping[blk_id];
@@ -1736,6 +1736,11 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 	char source_string[MAX_STRING_LEN+1];
 	char * find_format = nullptr;
 	int ichar, match_count;
+
+    if (vtr::split(src_string).size() > 1) {
+        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
+                  "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
+    }
 
 	// parse out the pb_type and port name, possibly pin_indices
 	find_format = strstr(src_string,"[");

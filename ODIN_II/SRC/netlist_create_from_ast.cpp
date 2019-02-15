@@ -1712,7 +1712,8 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 				if((module_items->children[i]->children[0]) && (module_items->children[i]->children[0]->type == BLOCKING_STATEMENT))
 				{
 					if((module_items->children[i]->children[0]->children[0]) && (module_items->children[i]->children[0]->children[0]->type == IDENTIFIERS))
-					{ temp_string = make_full_ref_name(NULL, NULL, NULL, module_items->children[i]->children[0]->children[0]->types.identifier, -1);
+					{ 
+						temp_string = make_full_ref_name(NULL, NULL, NULL, module_items->children[i]->children[0]->children[0]->types.identifier, -1);
 						/* look for that element */
 						sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
 						if( sc_spot == -1 )
@@ -1736,7 +1737,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_input = FALSE;
 
 						}
-
+						vtr::free(temp_string);
 					}
 				}
 			}
@@ -2944,7 +2945,10 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 		add_pin_to_signal_list(return_sig_list, new_pin);
 	}
 
-	vtr::free(pin_lists);
+    if (pin_lists != NULL) {
+        vtr::free(pin_lists->strings);
+        vtr::free(pin_lists);
+    }
 	return return_sig_list;
 }
 
@@ -3010,7 +3014,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
 							"Invalid addressing mode for implicit memory %s.\n", right_memory->name);
 
-		if(right->children[2] != NULL)
+		if(right->num_children > 2 && right->children[2] != NULL)
 		{
 			convert_multi_to_single_dimentional_array(right);
 		}
@@ -3111,7 +3115,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		}
 		else
 		{
-			if(left->children[2] != NULL)
+			if(left->num_children > 2 && left->children[2] != NULL)
 			{
 				convert_multi_to_single_dimentional_array(left);
 			}
@@ -3234,6 +3238,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			}
 			else
 			{
+				free_signal_list(return_list);
 				return_list = in_1;
 			}
 		}
@@ -3431,8 +3436,6 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 
 				ff_node->has_initial_value = 1;
 				ff_node->initial_value = ((char *)(local_symbol_table_sc->data[sc_spot]))[0];
-				vtr::free(ref_string);
-
 			}
 			else{
 
@@ -3442,6 +3445,8 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 				ff_node->has_initial_value = net->has_initial_value;
 				ff_node->initial_value = net->initial_value;
 			}
+			/* free the reference string */
+			vtr::free(ref_string);
 
 
 			/* allocate the pins needed */
@@ -4120,6 +4125,7 @@ signal_list_t *create_if_question_mux_expressions(ast_node_t *if_ast, nnode_t *i
 
 	/* now with all the lists sorted, we do the matching and proper propogation */
 	return_list = create_mux_expressions(if_expressions, if_node, 2, instance_name_prefix);
+	vtr::free(if_expressions);
 
 	return return_list;
 }
@@ -4238,6 +4244,7 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 
 	/* now with all the lists sorted, we do the matching and proper propagation */
 	return_list = create_mux_statements(if_statements, if_node, 2, instance_name_prefix);
+	vtr::free(if_statements);
 
 	return return_list;
 }
@@ -4334,12 +4341,16 @@ void create_case_control_signals(ast_node_t *case_list_of_items, ast_node_t *com
 
 			/* copy that output pin to be put into the default */
 			add_input_pin_to_node(case_node, default_expression->pins[0], i);
+
+			free_signal_list(default_expression);
 		}
 		else
 		{
 			oassert(FALSE);
 		}
 	}
+
+	free_signal_list(other_expressions_pin_list);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -4377,6 +4388,7 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 
 	/* now with all the lists sorted, we do the matching and proper propogation */
 	return_list = create_mux_statements(case_statement, case_node, case_list_of_items->num_children, instance_name_prefix);
+	vtr::free(case_statement);
 
 	return return_list;
 }
@@ -4520,6 +4532,7 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 		free_signal_list(statement_lists[i]);
 	}
 	free_signal_list(combined_lists);
+	vtr::free(per_case_statement_idx);
 
 	return return_list;
 }
@@ -4658,6 +4671,8 @@ int find_smallest_non_numerical(ast_node_t *node, signal_list_t **input_list, in
 			}
 		}
 	}
+
+	vtr::free(tested);
 
 	return smallest_idx;
 }

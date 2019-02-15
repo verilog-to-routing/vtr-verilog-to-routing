@@ -55,7 +55,7 @@ There are 4 main regression tests:
 
 * `vtr_reg_basic`: ~3 minutes serial
 
-    **Goal:** Quickly check basic VTR flow correctness
+    **Goal:** Fast functionality check
 
     **Feature Coverage:** Low
 
@@ -63,11 +63,15 @@ There are 4 main regression tests:
 
     **Architectures:** A few simple architectures
 
-    Not suitable for evaluating QoR or performance.
+    This regression test is *not* suitable for evaluating QoR or performance.
+    It's primary purpose is to make sure the various tools do not crash/fail in the basic VTR flow.
+
+    QoR checks in this regression test are primarily 'canary' checks to catch gross degredations in QoR.
+    Ocassionally, code changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
 
 * `vtr_reg_strong`: ~30 minutes serial, ~15 minutes with `-j4`
 
-    **Goal:** Exercise most of VTR's features, moderately fast.
+    **Goal:** Broad functionaly check
 
     **Feature Coverage:** High
 
@@ -75,7 +79,11 @@ There are 4 main regression tests:
 
     **Architectures:** A variety of architectures, including special architectures to exercise specific features
 
-    Not suitable for evaluating QoR or performance.
+    This regression test is *not* suitable for evaluating QoR or performance.
+    It's primary purpose is try and achieve high functionality coverage.
+
+    QoR checks in this regression test are primarily 'canary' checks to catch gross degredations in QoR.
+    Ocassionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
 
 * `vtr_reg_nightly`: ~15 hours with `-j2`
 
@@ -90,6 +98,9 @@ There are 4 main regression tests:
     * Titan 'other' benchmarks (smaller than Titan23)
    
     **Architectures:** A wider variety of architectures
+
+   QoR checks in this regression are aimed at evaluating quality and run-time of the VTR flow.
+   As a result any QoR failures are a concern and should be investigated and understood.
    
 * `vtr_reg_weekly`: ~30 hours with `-j2`
 
@@ -103,6 +114,9 @@ There are 4 main regression tests:
     * Titan23 benchmarks
    
     **Architectures:** A wide variety of architectures
+
+   QoR checks in this regression are aimed at evaluating quality and run-time of the VTR flow.
+   As a result any QoR failures are a concern and should be investigated and understood.
 
 These can be run with `run_reg_test.pl`:
 ```shell

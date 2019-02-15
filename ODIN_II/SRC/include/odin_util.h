@@ -44,7 +44,7 @@ int get_pin_number  (char *name);
 short get_bit(char in);
 char *search_replace(char *src, const char *sKey, const char *rKey, int flag);
 bool validate_string_regex(const char *str, const char *pattern);
-char *find_substring(char *src,const char *sKey,int flag);
+std::string find_substring(char *src,const char *sKey,int flag);
 
 
 void print_time(double time);

@@ -90,6 +90,12 @@ struct t_options {
     argparse::ArgValue<int> inner_loop_recompute_divider;
     argparse::ArgValue<float> place_exp_first;
     argparse::ArgValue<float> place_exp_last;
+    argparse::ArgValue<float> place_delay_offset;
+    argparse::ArgValue<int> place_delay_ramp_delta_threshold;
+    argparse::ArgValue<float> place_delay_ramp_slope;
+    argparse::ArgValue<float> place_tsu_rel_margin;
+    argparse::ArgValue<float> place_tsu_abs_margin;
+    argparse::ArgValue<std::string> post_place_timing_report_file;
 
     /* Router Options */
     argparse::ArgValue<int> max_router_iterations;

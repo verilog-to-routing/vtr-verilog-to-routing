@@ -1174,6 +1174,8 @@ struct t_direct_inf {
 	int y_offset;
 	int z_offset;
 	int switch_type;
+    e_side from_side;
+    e_side to_side;
 	int line;
 };
 

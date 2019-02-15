@@ -254,8 +254,6 @@ ClusteredNetlist read_netlist(const char *net_file,
         }
     }
 
-    VTR_LOG("t_pb_route: total_num_pb_pins=%zu num_allocated=%zu sizeof=%zu num_used=%zu\n", num_pb_pins, num_pb_route_alloc, sizeof(t_pb_route), num_pb_route_used);
-
     return clb_nlist;
 }
 
@@ -955,7 +953,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 		}
 	}
 
-	vtr::vector_map<ClusterNetId,int> count(ext_ncount);
+	vtr::vector<ClusterNetId,int> count(ext_ncount);
 
 	/* complete load of external nets so that each net points back to the blocks,
      * and blocks point back to net pins */

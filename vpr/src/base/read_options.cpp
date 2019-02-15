@@ -965,7 +965,9 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceChanWidth, "--place_chan_width")
-            .help("Sets the assumed channel width during placement")
+            .help("Sets the assumed channel width during placement. "
+                  "If --place_chan_width is unspecified, but --route_chan_width is specified the "
+                  "--route_chan_width value will be used (otherwise the default value is used).")
             .default_value("100")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -1001,6 +1003,41 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("8.0")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_timing_grp.add_argument(args.place_delay_offset, "--place_delay_offset")
+            .help("A constant offset (in seconds) applied to the placer's delay model."
+                   " Negative values disable the placer delay ramp.")
+            .default_value("0.0")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.place_delay_ramp_delta_threshold, "--place_delay_ramp_delta_threshold")
+            .help("The delta distance beyond which --place_delay_ramp is applied. Negative values disable delay ramp."
+                   " Negative values disable the placer delay ramp.")
+            .default_value("-1")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.place_delay_ramp_slope, "--place_delay_ramp_slope")
+            .help("The slope of the ramp (in seconds per grid tile) which is applied to the placer delay model for delta distance beyond --place_delay_ramp_delta_threshold")
+            .default_value("0.0e-9")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.place_tsu_rel_margin, "--place_tsu_rel_margin")
+            .help("Specifies the scaling factor for cell setup times used by the placer."
+                  " This effectively controls whether the placer should try to achieve extra margin on setup paths."
+                  " For example a value of 1.1 corresponds to requesting 10%% setup margin."  )
+            .default_value("1.0")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.place_tsu_abs_margin, "--place_tsu_abs_margin")
+            .help("Specifies an absolute offest added to cell setup times used by the placer."
+                  " This effectively controls whether the placer should try to achieve extra margin on setup paths."
+                  " For example a value of 500e-12 corresponds to requesting an extra 500ps of setup margin."  )
+            .default_value("0.0")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.post_place_timing_report_file, "--post_place_timing_report")
+            .help("Name of the post-placement timing report file (not generated if unspecfied)")
+            .default_value("")
+            .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& route_grp = parser.add_argument_group("routing options");
 
@@ -1352,6 +1389,11 @@ static void set_conditional_defaults(t_options& args) {
         } else {
             args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
         }
+    }
+
+    //Place chan width follows Route chan width if unspecified
+    if (args.PlaceChanWidth.provenance() != Provenance::SPECIFIED && args.RouteChanWidth.provenance() == Provenance::SPECIFIED) {
+        args.PlaceChanWidth.set(args.RouteChanWidth.value(), Provenance::INFERRED);
     }
 
     //Do we calculate timing info during placement?

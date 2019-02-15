@@ -60,15 +60,15 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform placement
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch); //Loads a previous placement
 
 RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the routing stage
-RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay); //Perform routing at a fixed channel width)
-RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay); //Perform routing to find the minimum channel width
-RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay); //Loads a previous routing
+RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay); //Perform routing at a fixed channel width)
+RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay); //Perform routing to find the minimum channel width
+RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay); //Loads a previous routing
 
-bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, bool implementation_legal); //Perform or skips the analysis stage
-void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch); //Perform post-implementation analysis
+bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status); //Perform or skips the analysis stage
+void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status); //Perform post-implementation analysis
 
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch); //Create the device (grid + rr graph)
 void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch); //Create the device grid
-
 void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width); //Create routing graph at specified channel width
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);
@@ -115,7 +115,7 @@ void vpr_check_setup(
         const t_timing_inf Timing, const t_chan_width_dist Chans);
 /* Show current setup */
 void vpr_show_setup(const t_vpr_setup& vpr_setup);
-void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info);
+void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info, const RouteStatus& route_status);
 
 /* Output file names management */
 void vpr_alloc_and_load_output_file_names(const char* default_name);

@@ -33,7 +33,7 @@
 
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
-#include "vtr_vector_map.h"
+#include "vtr_vector.h"
 #include "vtr_util.h"
 #include "vtr_flat_map.h"
 
@@ -846,6 +846,14 @@ struct t_placer_opts {
 	int seed;
 	float td_place_exp_last;
 	e_stage_action doPlacement;
+
+    float delay_offset;
+    int delay_ramp_delta_threshold;
+    float delay_ramp_slope;
+    float tsu_rel_margin;
+    float tsu_abs_margin;
+
+    std::string post_place_timing_report_file;
 };
 
 /* All the parameters controlling the router's operation are in this        *
@@ -1251,13 +1259,13 @@ struct t_power_opts {
 
 /* Channel width data */
 struct t_chan_width {
-	int max;
-	int x_max;
-	int y_max;
-	int x_min;
-	int y_min;
-	int *x_list;
-	int *y_list;
+	int max = 0;
+	int x_max = 0;
+	int y_max = 0;
+	int x_min = 0;
+	int y_min = 0;
+    std::vector<int> x_list;
+	std::vector<int> y_list;
 };
 
 /* Type to store our list of token to enum pairings */
@@ -1303,17 +1311,17 @@ class RouteStatus {
             , chan_width_(chan_width_val) {}
 
         //Was routing successful?
-        operator bool() { return success(); }
-        bool success() { return success_; }
+        operator bool() const { return success(); }
+        bool success() const { return success_; }
 
         //What was the channel width?
-        int chan_width() { return chan_width_; }
+        int chan_width() const { return chan_width_; }
 
     private:
         bool success_ = false;
         int chan_width_ = -1;
 };
 
-typedef vtr::vector_map<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
+typedef vtr::vector<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 #endif

@@ -114,6 +114,7 @@ void vpr_print_title() {
     VTR_LOG("Compiled: %s\n", vtr::BUILD_TIMESTAMP);
     VTR_LOG("Compiler: %s\n", vtr::COMPILER);
     VTR_LOG("University of Toronto\n");
+    VTR_LOG("verilogtorouting.org\n");
     VTR_LOG("vtr-users@googlegroups.com\n");
     VTR_LOG("This is free open source code under MIT license.\n");
     VTR_LOG("\n");
@@ -142,7 +143,21 @@ void vpr_init(const int argc, const char **argv,
         t_vpr_setup *vpr_setup,
         t_arch *arch) {
 
-    vtr::set_log_file("vpr_stdout.log");
+    {
+        //Allow the default vpr log file to be overwritten
+        const char* env_value = std::getenv("VPR_LOG_FILE");
+        if (env_value != nullptr) {
+            if (std::strlen(env_value) > 0) {
+                vtr::set_log_file(env_value); //Use specified log file
+            } else {
+                //Empty log file name -> no log file
+                vtr::set_log_file(nullptr);
+            }
+        } else {
+            //Unset, use default log name
+            vtr::set_log_file("vpr_stdout.log");
+        }
+    }
 
     /* Print title message */
     vpr_print_title();
@@ -320,9 +335,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
-    vpr_create_device_grid(vpr_setup, arch);
-
-    vpr_setup_clock_networks(vpr_setup, arch);
+    vpr_create_device(vpr_setup, arch);
 
     vpr_init_graphics(vpr_setup, arch);
 
@@ -340,7 +353,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     }
 
     { //Analysis
-        vpr_analysis_flow(vpr_setup, arch, route_status.success());
+        vpr_analysis_flow(vpr_setup, arch, route_status);
     }
 
     vpr_close_graphics(vpr_setup);
@@ -348,10 +361,23 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     return route_status.success();
 }
 
+
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    vtr::ScopedStartFinishTimer timer("Create Device");
+    vpr_create_device_grid(vpr_setup, arch);
+
+    vpr_setup_clock_networks(vpr_setup, arch);
+
+    if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
+        vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width);
+    }
+}
+
 /*
  * Allocs globals: chan_width_x, chan_width_y, device_ctx.grid
  * Depends on num_clbs, pins_per_clb */
 void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
+    vtr::ScopedStartFinishTimer timer("Build Device Grid");
 	/* Read in netlist file for placement and routing */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -413,13 +439,6 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         VTR_LOG("\n");
     }
 
-    /*
-     * Channel setup
-     */
-    device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = 0;
-    device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
-    device_ctx.chan_width.x_list = (int *) vtr::malloc(device_ctx.grid.height() * sizeof (int));
-    device_ctx.chan_width.y_list = (int *) vtr::malloc(device_ctx.grid.width() * sizeof (int));
 }
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
@@ -552,6 +571,7 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    VTR_LOG("\n");
     const auto& placer_opts = vpr_setup.PlacerOpts;
     if (placer_opts.doPlacement == STAGE_SKIP) {
         //pass
@@ -579,8 +599,9 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     try_place(vpr_setup.PlacerOpts,
               vpr_setup.AnnealSched,
-              arch.Chans,
               vpr_setup.RouterOpts,
+              vpr_setup.AnalysisOpts,
+              arch.Chans,
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
 #ifdef ENABLE_CLASSIC_VPR_STA
@@ -607,6 +628,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& /*arch*/) {
 }
 
 RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    VTR_LOG("\n");
 
     RouteStatus route_status;
 
@@ -621,7 +643,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
         //Initialize the delay calculator
         vtr::t_chunk net_delay_ch;
-        vtr::vector_map<ClusterNetId, float *> net_delay = alloc_net_delay(&net_delay_ch);
+        vtr::vector<ClusterNetId, float *> net_delay = alloc_net_delay(&net_delay_ch);
 
         std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
         std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
@@ -695,7 +717,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
     return route_status;
 }
 
-RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay) {
+RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay) {
     vtr::ScopedStartFinishTimer timer("Routing");
 
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width || fixed_channel_width <= 0) {
@@ -724,17 +746,18 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fi
     return RouteStatus(status, fixed_channel_width);
 }
 
-RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay) {
+RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay) {
     vtr::ScopedStartFinishTimer timer("Routing");
 
     auto& router_opts = vpr_setup.RouterOpts;
     int min_W = binary_search_place_and_route(vpr_setup.PlacerOpts,
+                                              vpr_setup.AnnealSched,
+                                              router_opts,
+                                              vpr_setup.AnalysisOpts,
                                               vpr_setup.FileNameOpts,
                                               &arch,
                                               router_opts.verify_binary_search,
                                               router_opts.min_channel_width_hint,
-                                              vpr_setup.AnnealSched,
-                                              router_opts,
                                               &vpr_setup.RoutingArch,
                                               vpr_setup.Segments,
                                               net_delay,
@@ -747,7 +770,7 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::sha
     return RouteStatus(status, min_W);
 }
 
-RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay) {
+RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay) {
     vtr::ScopedStartFinishTimer timer("Load Routing");
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
         VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
@@ -772,12 +795,12 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fix
 }
 
 
-void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width) {
+void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width_fac) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto det_routing_arch = &vpr_setup.RoutingArch;
     auto& router_opts = vpr_setup.RouterOpts;
 
-    init_chan(chan_width, arch.Chans);
+    t_chan_width chan_width = init_chan(chan_width_fac, arch.Chans);
 
     t_graph_type graph_type;
     if (router_opts.route_type == GLOBAL) {
@@ -796,7 +819,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
             device_ctx.num_block_types,
             device_ctx.block_types,
             device_ctx.grid,
-			&device_ctx.chan_width,
+			chan_width,
 			device_ctx.num_arch_switches,
             det_routing_arch,
             vpr_setup.Segments,
@@ -809,7 +832,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 			&warnings);
 
     //Initialize drawing, now that we have an RR graph
-    init_draw_coords(chan_width);
+    init_draw_coords(chan_width_fac);
 
 }
 
@@ -927,10 +950,8 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 void free_device(const t_det_routing_arch& routing_arch) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    vtr::free(device_ctx.chan_width.x_list);
-    vtr::free(device_ctx.chan_width.y_list);
-
-    device_ctx.chan_width.x_list = device_ctx.chan_width.y_list = nullptr;
+    device_ctx.chan_width.x_list.clear();
+    device_ctx.chan_width.y_list.clear();
     device_ctx.chan_width.max = device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
 
     for (int iswitch : {routing_arch.delayless_switch, routing_arch.global_route_switch}) {
@@ -1038,30 +1059,30 @@ void vpr_show_setup(const t_vpr_setup& vpr_setup) {
     ShowSetup(vpr_setup);
 }
 
-bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, bool implementation_legal) {
+bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status) {
     auto& analysis_opts = vpr_setup.AnalysisOpts;
 
     if (analysis_opts.doAnalysis == STAGE_SKIP) return true; //Skipped
 
-    if (analysis_opts.doAnalysis == STAGE_AUTO && !implementation_legal) return false; //Not run
+    if (analysis_opts.doAnalysis == STAGE_AUTO && !route_status.success()) return false; //Not run
 
     VTR_ASSERT_MSG(analysis_opts.doAnalysis == STAGE_DO
-                   || (analysis_opts.doAnalysis == STAGE_AUTO && implementation_legal),
+                   || (analysis_opts.doAnalysis == STAGE_AUTO && route_status.success()),
                    "Analysis should run only if forced, or implementation legal");
 
-    if (!implementation_legal) {
+    if (!route_status.success()) {
         VTR_LOG("\n");
         VTR_LOG("*****************************************************************************************\n");
         VTR_LOG_WARN( "The following analysis results are for an illegal circuit implementation\n");
         VTR_LOG("*****************************************************************************************\n");
     }
 
-    vpr_analysis(vpr_setup, Arch);
+    vpr_analysis(vpr_setup, Arch, route_status);
 
     return true;
 }
 
-void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
+void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -1072,7 +1093,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     }
 
 
-	vtr::vector_map<ClusterNetId, float *> net_delay;
+	vtr::vector<ClusterNetId, float *> net_delay;
     vtr::t_chunk net_delay_ch;
 #ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks = nullptr;
@@ -1130,7 +1151,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
         //Do power analysis
         if (vpr_setup.PowerOpts.do_power) {
 
-            vpr_power_estimation(vpr_setup, Arch, *timing_info);
+            vpr_power_estimation(vpr_setup, Arch, *timing_info, route_status);
         }
 
         //Clean-up the net delays
@@ -1145,7 +1166,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
 /* This function performs power estimation, and must be called
  * after packing, placement AND routing. Currently, this
  * will not work when running a partial flow (ex. only routing). */
-void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info) {
+void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info, const RouteStatus& route_status) {
 	/* Ensure we are only using 1 clock */
 	if(timing_info.critical_paths().size() != 1) {
         VPR_THROW(VPR_ERROR_POWER, "Power analysis only supported on single-clock circuits");
@@ -1156,6 +1177,11 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
     /* Get the critical path of this clock */
     power_ctx.solution_inf.T_crit = timing_info.least_slack_critical_path().delay();
     VTR_ASSERT(power_ctx.solution_inf.T_crit > 0.);
+
+
+    /* Get the channel width */
+    power_ctx.solution_inf.channel_width = route_status.chan_width();
+    VTR_ASSERT(power_ctx.solution_inf.channel_width > 0.);
 
     VTR_LOG("\n\nPower Estimation:\n");
     VTR_LOG("-----------------\n");

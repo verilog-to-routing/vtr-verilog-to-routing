@@ -680,16 +680,14 @@ FILE *format_verilog_file(FILE *source)
 {
 	FILE *destination = tmpfile();
 	char searchString [4][7]= {"input","output","reg","wire"};
-	char *line;
-	char *line_to_free;
+	char templine[MaxLine] = { 0 };
+	char *line = templine;
 	char ch;
 	unsigned i;
 	char temp[10];
 	int j;
 	static const char *pattern = "\\binput\\b|\\boutput\\b|\\breg\\b|\\bwire\\b";
 	i = 0;
-	line = (char *) calloc (MaxLine, sizeof(char));
-	line_to_free = line;
 	while( (ch = getc(source) ) != ';')
 	{
 		line[i++] = ch;
@@ -707,17 +705,22 @@ FILE *format_verilog_file(FILE *source)
 	}
 	line[i++] = ch;
 	line[i] = '\0';
-	line = find_substring(line,"module",2);
+	std::string sub_line = find_substring(line,"module",2);
+	sprintf(line,"%s",sub_line.c_str());
 	line = search_replace(line,"\n","",2);
 
 	if (! validate_string_regex(line, pattern))
 	{
+		free(line);
 	 	rewind(source);
 		return source;
 	}
 	for (i = 0; i < 4; i++)
 	{
-		line = search_replace(line,searchString[i],"",2);
+		char *line_cpy = vtr::strdup(line);
+		free(line);
+		line = search_replace(line_cpy,searchString[i],"",2);
+		vtr::free(line_cpy);
 	}
 	i = 0;
 	while (i < strnlen(line, MaxLine))
@@ -739,10 +742,10 @@ FILE *format_verilog_file(FILE *source)
 			i++;
 	}
 	fputs(line, destination);
+	vtr::free(line);
 	rewind(source);
 	destination = format_verilog_variable(source,destination);
 	rewind(destination);
-	free(line_to_free);
 	return destination;
 }
 

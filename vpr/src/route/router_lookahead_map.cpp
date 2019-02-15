@@ -25,6 +25,7 @@ See Section 3.2.4 in Oleg Petelin's MASc thesis (2016) for more discussion.
 #include "vtr_math.h"
 #include "vtr_log.h"
 #include "vtr_assert.h"
+#include "vtr_time.h"
 #include "router_lookahead_map.h"
 
 using namespace std;
@@ -255,15 +256,11 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 /* Computes the lookahead map to be used by the router. If a map was computed prior to this, a new one will not be computed again.
    The rr graph must have been built before calling this function. */
 void compute_router_lookahead(int num_segments){
-	if (!f_cost_map.empty()){
-		/* if lookahead map has already been computed, do not compute it again */
-		VTR_LOG("Router lookahead map already allocated. Will not compute router lookahead map again.\n");
-		return;
-	}
+    vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
+
+    f_cost_map.clear();
 
 	auto& device_ctx = g_vpr_ctx.device();
-
-	clock_t start_time = clock();
 
 	/* free previous delay map and allocate new one */
 	free_cost_map();
@@ -302,10 +299,6 @@ void compute_router_lookahead(int num_segments){
 	}
 
     if (false) print_cost_map();
-
-	clock_t end_time = clock();
-
-	VTR_LOG("Computing router lookahead map took %f seconds.\n", ((float)end_time - start_time)/CLOCKS_PER_SEC);
 }
 
 /* returns index of a node from which to start routing */

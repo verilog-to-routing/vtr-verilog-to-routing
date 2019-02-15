@@ -2,7 +2,7 @@
 #define SIMULATION_BUFFER_H
 
 #include <atomic>
-
+#include <thread>
 /**
  * Odin use -1 internally, so we need to go back on forth
  * TODO: change the default odin value to match both the Blif value and this buffer
@@ -26,17 +26,22 @@ class AtomicBuffer
 private:
 	BitFields bits[BUFFER_SIZE/4];
 	std::atomic<bool> lock;
-	uint32_t cycle;
+	int32_t cycle;
 	
-	void lock_it()
+
+    void lock_it()
 	{
-		while(lock){}
-		this->lock = true;
+        std::atomic_thread_fence(std::memory_order_acquire);
+        while(lock.exchange(true, std::memory_order_relaxed))
+        {
+            std::this_thread::yield();
+        }
 	}
-	
+
 	void unlock_it()
 	{
-		this->lock = false;
+        lock.exchange(false, std::memory_order_relaxed);
+        std::atomic_thread_fence(std::memory_order_relaxed);
 	}
 	
 	///////////////////////////
@@ -48,9 +53,9 @@ private:
 	
 	uint8_t get_bits(uint8_t index)
 	{
-		index = index%BUFFER_SIZE;
-	    uint8_t address = index/4;
-	    uint8_t bit_index = index%4;
+		uint8_t modindex = index%(BUFFER_SIZE);
+	    uint8_t address = modindex/4;
+	    uint8_t bit_index = modindex%4;
 	    switch(bit_index)
 	    {
 	    	case 0:	return (this->bits[address].i0);
@@ -63,9 +68,9 @@ private:
 	
 	void set_bits(uint8_t index, uint8_t value)
 	{
-		index = index%BUFFER_SIZE;
-	    uint8_t address = index/4;
-	    uint8_t bit_index = index%4;
+		uint8_t modindex = index%(BUFFER_SIZE);
+	    uint8_t address = modindex/4;
+	    uint8_t bit_index = modindex%4;
 	    
 	    value = value&0x3;
 	    
@@ -83,7 +88,7 @@ public:
     AtomicBuffer(data_t value_in)
     {
         this->lock = false;
-        this->update_cycle(-1);
+        this->cycle = -1;
         this->init_all_values(value_in);
     }
 
@@ -111,6 +116,7 @@ public:
 
     void lock_free_update_cycle( int64_t cycle_in)
     {
+        //if (cycle_in > this->cycle)
         this->cycle = cycle_in;
     }
 
@@ -121,8 +127,11 @@ public:
 
     void lock_free_update_value( data_t value_in, int64_t cycle_in)
     {
-        set_bits( cycle_in,value_in);
-        lock_free_update_cycle( cycle_in);
+        if (cycle_in > this->cycle)
+        {
+            set_bits( cycle_in,value_in);
+            lock_free_update_cycle( cycle_in);
+        }
     }
 
     void lock_free_copy_foward_one_cycle( int64_t cycle_in)

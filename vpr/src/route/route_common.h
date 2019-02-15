@@ -2,6 +2,7 @@
 #pragma once
 #include <vector>
 #include "clustered_netlist.h"
+#include "vtr_vector.h"
 
 
 struct t_heap_prev {
@@ -44,7 +45,7 @@ struct t_heap {
 
 /******* Subroutines in route_common used only by other router modules ******/
 
-vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor);
+vtr::vector<ClusterNetId, t_bb> load_route_bb(int bb_factor);
 
 t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor);
 
