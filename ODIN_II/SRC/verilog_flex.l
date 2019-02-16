@@ -175,11 +175,12 @@ char* standardize_number(const char* input);
 <INITIAL>"~^"				{ MP; return voXNOR;}
 <INITIAL>"~&"				{ MP; return voNAND;}
 <INITIAL>"~|"				{ MP; return voNOR;}
+<INITIAL>"+:"				{ MP; return vPLUS_COLON;}
+<INITIAL>"-:"				{ MP; return vMINUS_COLON;}
 
 	/*	unsupported Operators	*/
 <INITIAL>"&&&"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"+:"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"-:"				{ MP; return vNOT_SUPPORT;}
+
 
 
 	/*	operands	*/
