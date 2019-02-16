@@ -782,6 +782,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				break;
 			}
 			case RANGE_REF:
+			case RANGE_PART_REF:
 			case NUMBERS:
 			{
 				return_sig_list = create_pins(node, NULL, instance_name_prefix);

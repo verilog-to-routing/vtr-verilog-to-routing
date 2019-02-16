@@ -835,6 +835,26 @@ ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expressio
 	return new_node;
 }
 
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newRangePartSelect)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newRangePartSelect(char *id, ast_node_t *expression1, ast_node_t *expression2, char direction, int line_number)
+{
+	/* allocate or check if there's a node for this */
+	ast_node_t *symbol_node = newSymbolNode(id, line_number);
+
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(RANGE_PART_REF, line_number, current_parse_file);
+
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 3, symbol_node, expression1, expression2);
+
+	get_range_part_select(new_node, direction);
+
+	return new_node;
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: newBinaryOperation)
  *-------------------------------------------------------------------------------------------*/

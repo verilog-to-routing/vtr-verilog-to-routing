@@ -399,6 +399,31 @@ int get_range(ast_node_t* first_node)
 }
 
 /*---------------------------------------------------------------------------------------------
+ * (function: get_range_part_select)
+ * 	Check the node range is legal. Will return the range if it's legal.
+ *  Node should have three children. Second and Third children's type should be NUMBERS.
+ *  Direction parameter differentiates between ascending/descending part selector (1 for
+ *  ascending and -1 for descending selection).
+ *-------------------------------------------------------------------------------------------*/
+int get_range_part_select(ast_node_t *first_node, char direction)
+{
+	/* look at the first item to see if it has a range */
+	if (first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS && first_node->children[2] != NULL && first_node->children[2]->type == NUMBERS)
+	{
+		/* TODO: added range checks according to standard:
+		 * Part-selects that are partially out of range shall,
+		 * when read, return x for the bits that are out of range and shall,
+		 * when written, only affect the bits that are in range.
+		 */
+		long long int *pwidth = &first_node->children[2]->types.number.value;
+		*pwidth = *pwidth * direction;
+
+		return abs(*pwidth);
+	}
+	return -1; // indicates no range
+}
+
+/*---------------------------------------------------------------------------------------------
  * (function: make_concat_into_list_of_strings)
  * 	0th idx will be the MSbit
  *-------------------------------------------------------------------------------------------*/
@@ -486,6 +511,21 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 				concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
 				concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] =
 					get_name_of_pin_at_bit(concat_top->children[i], ((rnode[1]->types.number.value - rnode[2]->types.number.value))-j, instance_name_prefix);
+			}
+		}
+		else if (concat_top->children[i]->type == RANGE_PART_REF)
+		{
+			rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, concat_top->children[i]->children[1]);
+			rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, concat_top->children[i]->children[2]);
+			oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
+			int width = abs(rnode[2]->types.number.value);
+			int msb = rnode[2]->types.number.value < 0 ? rnode[1]->types.number.value : rnode[1]->types.number.value + width;
+			for (j = 0; j < width; j++)
+			{
+				concat_top->types.concat.num_bit_strings ++;
+				concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
+				concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] =
+					get_name_of_pin_at_bit(concat_top->children[i], msb - j, instance_name_prefix);
 			}
 		}
 		else if (concat_top->children[i]->type == NUMBERS)
@@ -601,6 +641,16 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		oassert(rnode[1]->types.number.value >= rnode[2]->types.number.value+bit);
 
 		return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[2]->types.number.value+bit);
+	}
+	else if (var_node->type == RANGE_PART_REF)
+	{
+		rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[1]);
+		rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[2]);
+		oassert(var_node->children[0]->type == IDENTIFIERS);
+		oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
+		oassert((rnode[1]->types.number.value >= rnode[2]->types.number.value+bit) && bit >= 0);
+
+		return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[1]->types.number.value+bit);
 	}
 	else if ((var_node->type == IDENTIFIERS) && (bit == -1))
 	{
@@ -754,6 +804,26 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		{
 			oassert(rnode[0]->type == NUMBERS);
 			return_string = get_name_of_pins_number(rnode[0], rnode[2]->types.number.value, width);
+		}
+	}
+	else if (var_node->type == RANGE_PART_REF)
+	{
+		rnode[0] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[0]);
+		rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[1]);
+		rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[2]);
+		oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
+		width = abs(rnode[2]->types.number.value);
+		int lsb = rnode[2]->types.number.value < 0 ? rnode[1]->types.number.value - width + 1 : rnode[1]->types.number.value;
+		if (rnode[0]->type == IDENTIFIERS)
+		{
+			return_string = (char**)vtr::malloc(sizeof(char*)*width);
+			for (i = 0; i < width; i++)
+				return_string[i] = make_full_ref_name(NULL, NULL, NULL, rnode[0]->types.identifier, lsb + i);
+		}
+		else
+		{
+			oassert(rnode[0]->type == NUMBERS);
+			return_string = get_name_of_pins_number(rnode[0], lsb + width, width);
 		}
 	}
 	else if (var_node->type == IDENTIFIERS)
