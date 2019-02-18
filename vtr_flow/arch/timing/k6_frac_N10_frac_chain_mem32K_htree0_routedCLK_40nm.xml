@@ -1512,7 +1512,7 @@
         <clock_network name="spine1" num_inst="2">
             <!-- Full Device: Center Spine -->
             <spine metal_layer="global_spine" x="W/2" starty="0" endy="H" repeatx="W" repeaty="H">
-                <switch_point type="drive" name="drive" yoffset="H/2" buffer="drive_buff"/>
+                <switch_point type="drive" name="drive" yoffset="H/2" switch_name="drive_buff"/>
                 <switch_point type="tap" name="tap" yoffset="0" yincr="1"/>
             </spine>
         </clock_network>
@@ -1520,7 +1520,7 @@
         <clock_network name="rib1" num_inst="2">
         <!-- Full Device: Each Grid Row -->
             <rib metal_layer="global_rib" y="0" startx="0" endx="W" repeatx="W" repeaty="1">
-                <switch_point type="drive" name="drive" xoffset="W/2" buffer="drive_buff"/>
+                <switch_point type="drive" name="drive" xoffset="W/2" switch_name="drive_buff"/>
                 <switch_point type="tap" name="tap" xoffset="0" xincr="1"/>
             </rib>
         </clock_network>

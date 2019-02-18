@@ -3367,7 +3367,6 @@ static void ProcessClockNetworks(
         std::string name (get_attribute(curr_network, "name", loc_data).value());
         clock_network.name = name;
         clock_network.num_inst = get_attribute(curr_network, "num_inst", loc_data).as_int(0);
-
         bool is_supported_clock_type = false;
         pugi::xml_node curr_type;
 
@@ -3460,16 +3459,16 @@ static void ProcessClockSwitchPoints(
             }
 
 			// get switch index
-            const char* buffer = get_attribute(curr_switch, "buffer", loc_data).value();
+            const char* switch_name = get_attribute(curr_switch, "switch_name", loc_data).value();
             int switch_idx;
             for (switch_idx = 0; switch_idx < num_switches; switch_idx++) {
-                if (0 == strcmp(buffer, switches[switch_idx].name)) {
+                if (0 == strcmp(switch_name, switches[switch_idx].name)) {
 					break; // switch_idx has been found
 				}
 			}
 			if (switch_idx >= num_switches) {
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_switch),
-						"'%s' is not a valid switch name.\n", buffer);
+						"'%s' is not a valid switch name.\n", switch_name);
 			}
 
             drive.name = name;
