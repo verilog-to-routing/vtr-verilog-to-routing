@@ -1920,9 +1920,18 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefi
 			char *full_name;
 			char *alias_name;
 
-			name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
-			full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, -1);
-			vtr::free(name_of_hb_input);
+			/* this will crash because of an oassert. we keep it but we work around the problem here */
+			if (hb_instance_var_node->type == RANGE_REF)
+			{
+				full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, NULL, -1);
+			}
+			else
+			{
+				name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
+				full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, -1);
+				vtr::free(name_of_hb_input);
+			}
+			
 			alias_name = make_full_ref_name(instance_name_prefix,
 					hb_instance->children[0]->types.identifier,
 					hb_instance->children[1]->children[0]->types.identifier,
@@ -1954,9 +1963,17 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefi
 				else
 				{
 					oassert(j == 0);
-					name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
-					full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, -1);
-					vtr::free(name_of_hb_input);
+					/* this will crash because of an oassert. we keep it but we work around the problem here */
+					if (hb_instance_var_node->type == RANGE_REF)
+					{
+						full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, NULL, -1);
+					}
+					else
+					{
+						name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
+						full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, -1);
+						vtr::free(name_of_hb_input);
+					}
 
 					alias_name = make_full_ref_name(instance_name_prefix,
 							hb_instance->children[0]->types.identifier,
@@ -2097,9 +2114,17 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_p
 				else
 				{
 					oassert(j == 0);
-					name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
-					full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, -1);
-					vtr::free(name_of_hb_input);
+					/* this will crash because of an oassert. we keep it but we work around the problem here */
+					if (hb_instance_var_node->type == RANGE_REF)
+					{
+						full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, NULL, -1);
+					}
+					else
+					{
+						name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
+						full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, -1);
+						vtr::free(name_of_hb_input);
+					}
 
 					alias_name = make_full_ref_name(instance_name_prefix,
 							hb_instance->children[0]->types.identifier,

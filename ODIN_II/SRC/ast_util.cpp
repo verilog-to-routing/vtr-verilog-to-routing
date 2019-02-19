@@ -591,12 +591,15 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, (int)var_node->children[1]->types.number.value);
 	}
 	else if (var_node->type == RANGE_REF)
-	{
+	{		
+		oassert(bit >= 0);
+
 		rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[1]);
 		rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[2]);
 		oassert(var_node->children[0]->type == IDENTIFIERS);
-		oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
-		oassert((rnode[1]->types.number.value >= rnode[2]->types.number.value+bit) && bit >= 0);
+		oassert(rnode[1]->type == NUMBERS);
+		oassert(rnode[2]->type == NUMBERS);
+		oassert(rnode[1]->types.number.value >= rnode[2]->types.number.value+bit);
 
 		return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[2]->types.number.value+bit);
 	}
