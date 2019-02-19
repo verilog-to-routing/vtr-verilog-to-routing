@@ -135,11 +135,7 @@ items:
 	;
 
 define:
-<<<<<<< HEAD
 	vDEFINE vSYMBOL_ID vINTEGRAL				             {$$ = NULL; newConstant($2, newNumberNode($3, LONG, UNSIGNED, yylineno), yylineno);}
-=======
-	vDEFINE vSYMBOL_ID vINTEGRAL							 {$$ = NULL; newConstant($2, newNumberNode($3, LONG_LONG, UNSIGNED, yylineno), yylineno);}
->>>>>>> implementad specparam keyword
   | vDEFINE vSYMBOL_ID vUNSIGNED_DECIMAL				   {$$ = NULL; newConstant($2, newNumberNode($3, DEC, UNSIGNED, yylineno), yylineno);}
   | vDEFINE vSYMBOL_ID vUNSIGNED_OCTAL					 {$$ = NULL; newConstant($2, newNumberNode($3, OCT, UNSIGNED, yylineno), yylineno);}
   | vDEFINE vSYMBOL_ID vUNSIGNED_HEXADECIMAL			 {$$ = NULL; newConstant($2, newNumberNode($3, HEX, UNSIGNED, yylineno), yylineno);}
@@ -515,7 +511,6 @@ expression:
 	;
 
 primary:
-<<<<<<< HEAD
   vINTEGRAL				                  {$$ = newNumberNode($1, LONG, UNSIGNED, yylineno);}
   | vUNSIGNED_DECIMAL				        {$$ = newNumberNode($1, DEC, UNSIGNED, yylineno);}
   | vUNSIGNED_OCTAL				          {$$ = newNumberNode($1, OCT, UNSIGNED, yylineno);}
@@ -525,17 +520,6 @@ primary:
   | vSIGNED_OCTAL				          {$$ = newNumberNode($1, OCT, SIGNED, yylineno);}
   | vSIGNED_HEXADECIMAL			      {$$ = newNumberNode($1, HEX, SIGNED, yylineno);}
   | vSIGNED_BINARY				        {$$ = newNumberNode($1, BIN, SIGNED, yylineno);}
-=======
-  vINTEGRAL								  {$$ = newNumberNode($1, LONG_LONG, UNSIGNED, yylineno);}
-  | vUNSIGNED_DECIMAL						{$$ = newNumberNode($1, DEC, UNSIGNED, yylineno);}
-  | vUNSIGNED_OCTAL						  {$$ = newNumberNode($1, OCT, UNSIGNED, yylineno);}
-  | vUNSIGNED_HEXADECIMAL				  {$$ = newNumberNode($1, HEX, UNSIGNED, yylineno);}
-  | vUNSIGNED_BINARY						{$$ = newNumberNode($1, BIN, UNSIGNED, yylineno);}
-  | vSIGNED_DECIMAL						{$$ = newNumberNode($1, DEC, SIGNED, yylineno);}
-  | vSIGNED_OCTAL						  {$$ = newNumberNode($1, OCT, SIGNED, yylineno);}
-  | vSIGNED_HEXADECIMAL				  {$$ = newNumberNode($1, HEX, SIGNED, yylineno);}
-  | vSIGNED_BINARY						{$$ = newNumberNode($1, BIN, SIGNED, yylineno);}
->>>>>>> implementad specparam keyword
 	| vSYMBOL_ID											{$$ = newSymbolNode($1, yylineno);}
 	| vSYMBOL_ID '[' expression ']'							{$$ = newArrayRef($1, $3, yylineno);}
 	| vSYMBOL_ID '[' expression ']' '[' expression ']'		{$$ = newArrayRef2D($1, $3, $6, yylineno);}
