@@ -1,5 +1,5 @@
-#ifndef CLOCK_NETWORK_TYPES_H
-#define CLOCK_NETWORK_TYPES_H
+#ifndef CLOCK_NETWORK_BUILDERS_H
+#define CLOCK_NETWORK_BUILDERS_H
 
 #include <string>
 #include <vector>

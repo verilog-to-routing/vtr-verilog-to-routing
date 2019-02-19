@@ -1,5 +1,4 @@
 #include "rr_graph_clock.h"
-#include "clock_network_types.h"
 
 #include "globals.h"
 #include "rr_graph.h"

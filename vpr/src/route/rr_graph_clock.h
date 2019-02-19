@@ -10,8 +10,8 @@
 
 #include "clock_fwd.h"
 
-#include "clock_network_types.h"
-#include "clock_connection_types.h"
+#include "clock_network_builders.h"
+#include "clock_connection_builders.h"
 
 class ClockNetwork;
 class ClockConnection;

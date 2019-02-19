@@ -17,8 +17,8 @@
 #include "power.h"
 #include "power_components.h"
 #include "device_grid.h"
-#include "clock_network_types.h"
-#include "clock_connection_types.h"
+#include "clock_network_builders.h"
+#include "clock_connection_builders.h"
 #include "route_traceback.h"
 
 
