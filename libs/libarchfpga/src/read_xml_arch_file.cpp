@@ -282,6 +282,11 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
         /* Process Clock Networks */
         Next = get_single_child(architecture, "clocknetworks", loc_data, OPTIONAL);
         if (Next) {
+
+            std::vector<std::string> expected_children =
+                {"metal_layers", "clock_network", "clock_routing"};
+            expect_only_children(Next, expected_children, loc_data);
+
             ProcessClockMetalLayers(Next, arch->clock_metal_layers, loc_data);
             ProcessClockNetworks(
                     Next,
@@ -3327,11 +3332,17 @@ static void ProcessClockMetalLayers(
         std::unordered_map<std::string, t_metal_layer>& metal_layers,
         pugiutil::loc_data& loc_data)
 {
+    std::vector<std::string> expected_attributes = {"name", "Rmetal", "Cmetal"};
+    std::vector<std::string> expected_children = {"metal_layer"};
+
     pugi::xml_node metal_layers_parent = get_single_child(parent, "metal_layers", loc_data);
     int num_metal_layers = count_children(metal_layers_parent, "metal_layer", loc_data);
 
     pugi::xml_node curr_layer = get_first_child(metal_layers_parent, "metal_layer", loc_data);
     for(int i = 0; i < num_metal_layers; i++) {
+
+        expect_only_children(metal_layers_parent, expected_children, loc_data);
+        expect_only_attributes(curr_layer, expected_attributes, loc_data);
 
         // Get metal layer values: name, r_metal, and c_metal
         std::string name (get_attribute(curr_layer, "name", loc_data).value());
@@ -3359,9 +3370,18 @@ static void ProcessClockNetworks(
         const int num_switches,
         pugiutil::loc_data& loc_data)
 {
+    std::vector<std::string> expected_spine_attributes =
+        {"name", "num_inst", "metal_layer", "starty", "endy", "x", "repeatx", "repeaty"};
+    std::vector<std::string> expected_rib_attributes =
+        {"name", "num_inst", "metal_layer", "startx", "endx", "y", "repeatx", "repeaty"};
+    std::vector<std::string> expected_children = {"rib", "spine"};
+
     int num_clock_networks = count_children(parent, "clock_network", loc_data);
     pugi::xml_node curr_network = get_first_child(parent, "clock_network", loc_data);
     for(int i = 0; i < num_clock_networks; i++) {
+
+        expect_only_children(curr_network, expected_children, loc_data);
+
         t_clock_network_arch clock_network;
 
         std::string name (get_attribute(curr_network, "name", loc_data).value());
@@ -3373,6 +3393,9 @@ static void ProcessClockNetworks(
         // Parse spine
         curr_type = get_single_child(curr_network, "spine", loc_data, OPTIONAL);
         if(curr_type) {
+
+            expect_only_attributes(curr_network, expected_spine_attributes, loc_data);
+
             is_supported_clock_type = true;
             clock_network.type = e_clock_type::SPINE;
 
@@ -3396,6 +3419,9 @@ static void ProcessClockNetworks(
         // Parse rib
         curr_type = get_single_child(curr_network, "rib", loc_data, OPTIONAL);
         if(curr_type) {
+
+            expect_only_attributes(curr_network, expected_spine_attributes, loc_data);
+
             is_supported_clock_type = true;
             clock_network.type = e_clock_type::RIB;
 
@@ -3436,6 +3462,17 @@ static void ProcessClockSwitchPoints(
         const int num_switches,
         pugiutil::loc_data& loc_data)
 {
+    std::vector<std::string> expected_spine_drive_attributes =
+        {"name", "type", "yoffset", "switch_name"};
+    std::vector<std::string> expected_rib_drive_attributes =
+        {"name", "type", "xoffset", "switch_name"};
+    std::vector<std::string> expected_spine_tap_attributes =
+        {"name", "type", "yoffset", "yincr"};
+    std::vector<std::string> expected_rib_tap_attributes =
+        {"name", "type", "xoffset", "xincr"};
+    std::vector<std::string> expected_children =
+        {"switch_point"};
+
     int num_clock_switches = count_children(parent, "switch_point", loc_data);
     pugi::xml_node curr_switch = get_first_child(parent, "switch_point", loc_data);
 
@@ -3445,6 +3482,9 @@ static void ProcessClockSwitchPoints(
 
     //TODO: ensure switch name is unique for every switch of this clock network
     for (int i = 0; i < num_clock_switches; i++) {
+
+        expect_only_children(curr_switch, expected_children, loc_data);
+
         std::string switch_type (get_attribute(curr_switch, "type", loc_data).value());
         if(switch_type == "drive") {
             t_clock_drive drive;
@@ -3452,9 +3492,11 @@ static void ProcessClockSwitchPoints(
             std::string name (get_attribute(curr_switch, "name", loc_data).value());
             const char* offset;
             if (clock_network.type == e_clock_type::SPINE) {
+                expect_only_attributes(curr_switch, expected_spine_drive_attributes, loc_data);
                 offset = get_attribute(curr_switch, "yoffset", loc_data).value();
             } else {
                 VTR_ASSERT(clock_network.type == e_clock_type::RIB);
+                expect_only_attributes(curr_switch, expected_rib_drive_attributes, loc_data);
                 offset = get_attribute(curr_switch, "xoffset", loc_data).value();
             }
 
@@ -3483,10 +3525,12 @@ static void ProcessClockSwitchPoints(
             const char* offset;
             const char* increment;
             if (clock_network.type == e_clock_type::SPINE) {
+                expect_only_attributes(curr_switch, expected_spine_tap_attributes, loc_data);
                 offset = get_attribute(curr_switch, "yoffset", loc_data).value();
                 increment = get_attribute(curr_switch, "yincr", loc_data).value();
             } else {
                 VTR_ASSERT(clock_network.type == e_clock_type::RIB);
+                expect_only_attributes(curr_switch, expected_rib_tap_attributes, loc_data);
                 offset = get_attribute(curr_switch, "xoffset", loc_data).value();
                 increment = get_attribute(curr_switch, "xincr", loc_data).value();
             }
@@ -3514,12 +3558,18 @@ static void ProcessClockRouting(
         const int num_switches,
         pugiutil::loc_data& loc_data)
 {
+    std::vector<std::string> expected_attributes =
+        {"from", "to", "switch", "fc_val", "locationx", "locationy"};
+
     pugi::xml_node clock_routing_parent = get_single_child(parent, "clock_routing", loc_data);
     int num_routing_connections = count_children(clock_routing_parent, "tap", loc_data);
 
     pugi::xml_node curr_connection =
         get_first_child(clock_routing_parent, "tap", loc_data);
     for(int i = 0; i < num_routing_connections; i++) {
+
+        expect_only_attributes(curr_connection, expected_attributes, loc_data);
+
         t_clock_connection_arch clock_connection;
 
         const char* from = get_attribute(curr_connection, "from", loc_data).value();
