@@ -671,33 +671,25 @@ static bool calculate_delay(int source_node, int sink_node,
     auto router_lookahead = make_router_lookahead(router_opts.lookahead_type);
     t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, *router_lookahead, modified_rr_node_inf, router_stats);
 
-    if (cheapest == nullptr) {
-        return false;
+    bool found_path = (cheapest != nullptr);
+    if (found_path) {
+        VTR_ASSERT(cheapest->index == sink_node);
+
+        t_rt_node* rt_node_of_sink = update_route_tree(cheapest, nullptr);
+        free_heap_data(cheapest);
+
+        //find delay
+        *net_delay = rt_node_of_sink->Tdel;
+
+        VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(), "SOURCE should never be congested");
+        free_route_tree(rt_root);
     }
-    VTR_ASSERT(cheapest->index == sink_node);
 
-    std::set<int> used_rr_nodes;
-    t_rt_node* rt_node_of_sink = update_route_tree(cheapest, nullptr);
-    free_heap_data(cheapest);
+    //Reset for the next router call
     empty_heap();
-
-    //Reset path costs for the next router call
     reset_path_costs(modified_rr_node_inf);
 
-    // finished all sinks
-
-    //find delay
-    *net_delay = rt_node_of_sink->Tdel;
-
-    if (*net_delay == 0) { // should be SOURCE->OPIN->IPIN->SINK
-        VTR_ASSERT(device_ctx.rr_nodes[rt_node_of_sink->parent_node->parent_node->inode].type() == OPIN);
-    }
-
-    VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(), "SOURCE should never be congested");
-
-    // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
-    free_route_tree(rt_root);
-    return (true);
+    return found_path;
 }
 
 static void adjust_delta_delays(t_placer_opts placer_opts) {
