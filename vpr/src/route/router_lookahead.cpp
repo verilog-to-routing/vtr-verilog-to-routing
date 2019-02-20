@@ -81,6 +81,10 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
     }
 }
 
+float NoOpLookahead::get_expected_cost(int /*current_node*/, int /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
+    return 0.;
+}
+
 
 /* Used below to ensure that fractions are rounded up, but floating   *
  * point values very close to an integer are rounded to that integer.       */
