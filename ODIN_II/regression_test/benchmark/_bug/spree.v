@@ -23,7 +23,7 @@
 `define D_ADDRESSWIDTH 32
 `define DM_DATAWIDTH 32
 `define DM_BYTEENAWIDTH 4
-`define DM_ADDRESSWIDTH 16
+`define DM_ADDRESSWIDTH 10
 `define DM_SIZE 16384
 
 
@@ -1971,8 +1971,8 @@ register_1bit sync_pcs_up( reg_d, clk, resetn,reg_en, out_of_sync);
 
 wire wren1;
 assign wren1 = 1'b0;
-wire [15:0] next_pc_wire;
-assign next_pc_wire = next_pc [13:0];
+wire [9:0] next_pc_wire;
+assign next_pc_wire = next_pc [9:0];
 
 wire [31:0]dummyout2;
 
@@ -1985,7 +1985,7 @@ dual_port_ram imem_replace(
 	.out1(instr),
 	.out2(dummyout2),
 	.addr1(next_pc_wire),
-	.addr2(boot_iaddr[15:0])
+	.addr2(boot_iaddr[9:0])
 );
 
 wire [31:0] dummyin1;
@@ -2142,7 +2142,7 @@ assign dnot_address = ~d_address[31];
 wire will_be_wren1;
 assign will_be_wren1 = d_write&(dnot_address);
 
-wire [15:0] memaddr_wrd;
+wire [9:0] memaddr_wrd;
 
 
 assign memaddr_wrd = d_address[`DM_ADDRESSWIDTH:2];
