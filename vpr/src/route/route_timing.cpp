@@ -164,7 +164,7 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats);
     
-static void timing_driven_find_all_shortest_paths_from_heap(
+static std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         std::vector<int>& modified_rr_node_inf,
@@ -1254,6 +1254,7 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
                                       router_stats);
 
         free_heap_data(cheapest);
+        cheapest = nullptr;
     }
 
     if (cheapest == nullptr) { /* Impossible routing.  No path for net. */
@@ -1265,12 +1266,14 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
 }
 
 //Find shortest paths from specified route tree to all nodes in the RR graph
-void timing_driven_find_all_shortest_paths_from_route_tree(
+std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
         t_rt_node* rt_root,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats) {
+
+    f_router_debug = true;
      
     //Add the route tree to the heap with no specific target node
     int target_node = OPEN;
@@ -1278,7 +1281,11 @@ void timing_driven_find_all_shortest_paths_from_route_tree(
     add_route_tree_to_heap(rt_root, target_node, cost_params, *router_lookahead, router_stats);
     heap_::build_heap(); // via sifting down everything
 
-    timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box, modified_rr_node_inf, router_stats);
+    auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box, modified_rr_node_inf, router_stats);
+
+    f_router_debug = false;
+
+    return res;
 }
 
 //Find shortest paths from current heap to all nodes in the RR graph
@@ -1288,12 +1295,15 @@ void timing_driven_find_all_shortest_paths_from_route_tree(
 //
 //Note that to re-use code used for the regular A*-based router we use a
 //no-operation lookahead which always returns zero.
-static void timing_driven_find_all_shortest_paths_from_heap(
+static std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats) {
     auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP);
+
+    auto& device_ctx = g_vpr_ctx.device();
+    std::vector<t_heap> cheapest_paths(device_ctx.rr_nodes.size());
 
     VTR_ASSERT_SAFE(heap_::is_valid());
 
@@ -1325,8 +1335,17 @@ static void timing_driven_find_all_shortest_paths_from_heap(
                                       modified_rr_node_inf,
                                       router_stats);
 
+        if (cheapest_paths[inode].index == OPEN || cheapest_paths[inode].cost >= cheapest->cost) {
+            VTR_LOGV_DEBUG(f_router_debug, "  Better cost to node %d: %g (was %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
+            cheapest_paths[inode] = *cheapest;
+        } else {
+            VTR_LOGV_DEBUG(f_router_debug, "  Worse cost to node %d: %g (better %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
+        }
+
         free_heap_data(cheapest);
     }
+
+    return cheapest_paths;
 }
 
 static void timing_driven_expand_cheapest(t_heap* cheapest,

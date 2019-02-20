@@ -96,6 +96,8 @@ static t_rt_node* setup_routing_resources_no_net(int source_node);
 
 static void adjust_delta_delays(t_placer_opts placer_opts);
 
+static std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts);
+
 /******* Globally Accessible Functions **********/
 
 void compute_delay_lookup_tables(
@@ -358,6 +360,7 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
             }
         }
     }
+
 }
 
 static void compute_delta_delays(t_router_opts router_opts, size_t longest_length) {
@@ -719,4 +722,89 @@ static void adjust_delta_delays(t_placer_opts placer_opts) {
             }
         }
     }
+}
+
+//Returns the shortest path delay from src_node to all RR nodes in the RR graph
+std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    std::vector<float> path_delays_to(device_ctx.rr_nodes.size(), std::numeric_limits<float>::quiet_NaN());
+
+    t_rt_node* rt_root = setup_routing_resources_no_net(src_rr_node);
+
+    t_bb bounding_box;
+    bounding_box.xmin = 0;
+    bounding_box.xmax = device_ctx.grid.width() + 1;
+    bounding_box.ymin = 0;
+    bounding_box.ymax = device_ctx.grid.height() + 1;
+
+    t_conn_cost_params cost_params;
+    cost_params.criticality = 1.;
+    cost_params.astar_fac = router_opts.astar_fac;
+    cost_params.bend_cost = router_opts.bend_cost;
+
+    std::vector<int> modified_rr_node_inf;
+    RouterStats router_stats;
+
+    init_heap(device_ctx.grid);
+
+    std::vector<t_heap> shortest_paths = timing_driven_find_all_shortest_paths_from_route_tree(rt_root,
+                                                                                                cost_params,
+                                                                                                bounding_box,
+                                                                                                modified_rr_node_inf,
+                                                                                                router_stats);
+
+    free_route_tree(rt_root);
+
+    VTR_ASSERT(shortest_paths.size() == device_ctx.rr_nodes.size());
+    for (int sink_rr_node = 0; sink_rr_node < (int) device_ctx.rr_nodes.size(); ++sink_rr_node) {
+
+        if (sink_rr_node == src_rr_node) {
+            path_delays_to[sink_rr_node] = 0.;
+        } else {
+            if (shortest_paths[sink_rr_node].index == OPEN) continue;
+
+            VTR_ASSERT(shortest_paths[sink_rr_node].index == sink_rr_node);
+            
+            //Build the routing tree to get the delay
+            rt_root = setup_routing_resources_no_net(src_rr_node);
+            t_rt_node* rt_node_of_sink = update_route_tree(&shortest_paths[sink_rr_node], nullptr);
+
+            VTR_ASSERT(rt_node_of_sink->inode == sink_rr_node);
+
+            path_delays_to[sink_rr_node] = rt_node_of_sink->Tdel;
+
+            free_route_tree(rt_root);
+        }
+    }
+    reset_path_costs(modified_rr_node_inf);
+    empty_heap();
+
+#if 0
+    //Sanity check
+    for (int sink_rr_node = 0; sink_rr_node < (int) device_ctx.rr_nodes.size(); ++sink_rr_node) {
+
+        float astar_delay = std::numeric_limits<float>::quiet_NaN();
+        if (sink_rr_node == src_rr_node) { 
+            astar_delay = 0.;
+        } else {
+            calculate_delay(src_rr_node, sink_rr_node, router_opts, &astar_delay);
+        }
+
+        //Sanity check
+        float dijkstra_delay = path_delays_to[sink_rr_node];
+
+        float ratio = dijkstra_delay / astar_delay;
+        if (astar_delay == 0. && dijkstra_delay == 0.) {
+            ratio = 1.;
+        }
+
+        VTR_LOG("Delay from %d -> %d: all_shortest_paths %g direct %g ratio %g\n",
+                src_rr_node, sink_rr_node,
+                dijkstra_delay, astar_delay,
+                ratio);
+    }
+#endif
+
+    return path_delays_to;
 }

@@ -13,6 +13,8 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(e_router_lookahead router
         return std::make_unique<ClassicLookahead>();
     } else if (router_lookahead_type == e_router_lookahead::MAP) {
         return std::make_unique<MapLookahead>();
+    } else if (router_lookahead_type == e_router_lookahead::NO_OP) {
+        return std::make_unique<NoOpLookahead>();
     }
 
     VPR_THROW(VPR_ERROR_ROUTE, "Unrecognized router lookahead type");
