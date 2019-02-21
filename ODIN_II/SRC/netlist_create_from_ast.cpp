@@ -1971,7 +1971,7 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefi
 					else
 					{
 						name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
-						full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, -1);
+						full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, j);
 						vtr::free(name_of_hb_input);
 					}
 
