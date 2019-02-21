@@ -1273,8 +1273,6 @@ std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats) {
 
-    f_router_debug = true;
-     
     //Add the route tree to the heap with no specific target node
     int target_node = OPEN;
     auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP);
@@ -1282,8 +1280,6 @@ std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
     heap_::build_heap(); // via sifting down everything
 
     auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box, modified_rr_node_inf, router_stats);
-
-    f_router_debug = false;
 
     return res;
 }
