@@ -36,7 +36,7 @@ ast_node_t* for_preprocessor(ast_node_t* node)
     if(!node)
         return nullptr;
     /* If this is a for node, something has gone wrong */
-    oassert(!is_for_node(node))
+    oassert(!is_for_node(node));
     
     /* If this node has for loops as children, replace them */
     bool for_loops = false;
@@ -100,20 +100,20 @@ ast_node_t* resolve_for(ast_node_t* node)
     ast_node_t* value = 0;
     if(resolve_pre_condition(pre, &value))
     {
-        error_message(PARSE_ERROR, pre->line_number, pre->file_number, "Unsupported pre-condition node in for loop");
+        error_message(PARSE_ERROR, pre->line_number, pre->file_number, "%s", "Unsupported pre-condition node in for loop");
     }
 
     int error_code = 0;
     condition_function cond_func = resolve_condition(cond, pre->children[0], &error_code);
     if(error_code)
     {
-        error_message(PARSE_ERROR, cond->line_number, cond->file_number, "Unsupported condition node in for loop");
+        error_message(PARSE_ERROR, cond->line_number, cond->file_number, "%s", "Unsupported condition node in for loop");
     }
 
     post_condition_function post_func = resolve_post_condition(post, pre->children[0], &error_code);
     if(error_code)
     {
-        error_message(PARSE_ERROR, post->line_number, post->file_number, "Unsupported post-condition node in for loop");
+        error_message(PARSE_ERROR, post->line_number, post->file_number, "%s", "Unsupported post-condition node in for loop");
     }
     bool dup_body = cond_func(value->types.number.value);
     while(dup_body)
@@ -121,7 +121,7 @@ ast_node_t* resolve_for(ast_node_t* node)
         ast_node_t* new_body = dup_and_fill_body(body, pre->children[0], &value, &error_code);
         if(error_code)
         {
-            error_message(PARSE_ERROR, pre->line_number, pre->file_number, "Unsupported pre-condition node in for loop");
+            error_message(PARSE_ERROR, pre->line_number, pre->file_number, "%s", "Unsupported pre-condition node in for loop");
         }
         value->types.number.value = post_func(value->types.number.value);
         body_parent = body_parent ? newList_entry(body_parent, new_body) : newList(BLOCK, new_body);

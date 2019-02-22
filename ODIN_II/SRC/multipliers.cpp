@@ -206,7 +206,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 		if (multiplicand_width == 1)
 		{
 			// this is undealt with
-			error_message(1,-1,-1,"Cannot create soft multiplier with multiplicand width of 1.\n");
+			error_message(PARSE_ERROR,-1,-1, "%s", "Cannot create soft multiplier with multiplicand width of 1.\n");
 		}
 		else if (i == 0)
 		{

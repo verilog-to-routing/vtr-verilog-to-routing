@@ -426,13 +426,13 @@ void join_nets(nnet_t *join_to_net, nnet_t* other_net)
 	if (join_to_net == other_net)
 	{
 		if ((join_to_net->driver_pin) && (join_to_net->driver_pin->node != NULL) && join_to_net->driver_pin->node->related_ast_node != NULL)
-			error_message(NETLIST_ERROR, join_to_net->driver_pin->node->related_ast_node->line_number, join_to_net->driver_pin->node->related_ast_node->file_number, "This is a combinational loop\n");
+			error_message(NETLIST_ERROR, join_to_net->driver_pin->node->related_ast_node->line_number, join_to_net->driver_pin->node->related_ast_node->file_number, "%s", "This is a combinational loop\n");
 		else
-			error_message(NETLIST_ERROR, -1, -1, "This is a combinational loop\n");
+			error_message(NETLIST_ERROR, -1, -1, "%s", "This is a combinational loop\n");
 		if ((join_to_net->fanout_pins[0] != NULL ) && (join_to_net->fanout_pins[0]->node != NULL) && join_to_net->fanout_pins[0]->node->related_ast_node != NULL)
-			error_message(NETLIST_ERROR, join_to_net->fanout_pins[0]->node->related_ast_node->line_number, join_to_net->fanout_pins[0]->node->related_ast_node->file_number, "This is a combinational loop with more info\n");
+			error_message(NETLIST_ERROR, join_to_net->fanout_pins[0]->node->related_ast_node->line_number, join_to_net->fanout_pins[0]->node->related_ast_node->file_number, "%s", "This is a combinational loop with more info\n");
 		else
-			error_message(NETLIST_ERROR, -1, -1, "Same error - This is a combinational loop\n");
+			error_message(NETLIST_ERROR, -1, -1, "%s", "Same error - This is a combinational loop\n");
 	}
 
 	/* copy the driver over to the new_net */
@@ -927,7 +927,7 @@ void free_netlist(netlist_t *to_free)
 /*---------------------------------------------------------------------------------------------
  * (function:  add_node_to_netlist)
  *-------------------------------------------------------------------------------------------*/
-void add_node_to_netlist(netlist_t *netlist, nnode_t *node, short special_node)
+void add_node_to_netlist(netlist_t *netlist, nnode_t *node, operation_list special_node)
 {
 	long sc_spot;
 

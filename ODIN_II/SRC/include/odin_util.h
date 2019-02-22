@@ -58,15 +58,9 @@ void trim_string(char* string, const char *chars);
 bool only_one_is_true(std::vector<bool> tested);
 int odin_sprintf (char *s, const char *format, ...);
 
-
-#endif
-
-#ifndef ERRORS_H
-#define ERRORS_H
-
-void error_message(short error_type, int line_number, int file, const char *message, ...);
-void warning_message(short error_type, int line_number, int file, const char *message, ...);
 void passed_verify_i_o_availabilty(struct nnode_t_t *node, int expected_input_size, int expected_output_size, const char *current_src, int line_src);
 
 
 #endif
+
+

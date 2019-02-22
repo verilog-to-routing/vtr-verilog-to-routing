@@ -65,8 +65,8 @@ typedef unsigned int *pset;
 
 #define ALLOC(type, num)	((type *) malloc(sizeof(type) * (num)))
 
-#define set_remove(set, e)      (set[WHICH_WORD(e)] &= ~ (1 << WHICH_BIT(e)))
-#define set_insert(set, e)      (set[WHICH_WORD(e)] |= 1 << WHICH_BIT(e))
+#define set_remove(set, e)      (set[WHICH_WORD(e)] &= ~ (0x1ULL << WHICH_BIT(e)))
+#define set_insert(set, e)      (set[WHICH_WORD(e)] |= 0x1ULL << WHICH_BIT(e))
 #define set_new(size)		set_clear(ALLOC(unsigned int, set_size(size)), size)
 #define set_size(size)          ((size) <= BPI ? 2 : (WHICH_WORD((size)-1) + 1))
 

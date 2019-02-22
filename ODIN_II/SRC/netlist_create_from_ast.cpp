@@ -298,17 +298,20 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 
 		}
 
-		if(parameter_count > parameter_num && parameter_count > 0)
+		if(parameter_count && parameter_count != parameter_num)
 		{
-			error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
-					"There are less parameters (%d) in %s than there are specified in the module instantiation (%d)!",
-					parameter_num, module_name, parameter_count);
-		}
-		else if(parameter_count < parameter_num && parameter_count > 0)
-		{
-			warning_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
-					"There are more parameters (>%d) in %s than there are specified in the module instantiation (%d)!",
-					parameter_count, module_name, parameter_num);
+			if(parameter_count > parameter_num)
+			{
+				error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
+						"There are more parameters (%d) in %s than there are specified in the module instantiation (%d)!",
+						parameter_count, module_name, parameter_num);
+			}
+			else if(parameter_count < parameter_num)
+			{
+				warning_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
+						"There are less parameters (%d) in %s than there are specified in the module instantiation (%d)!",
+						parameter_count, module_name, parameter_num);
+			}
 		}
 	}
 }
@@ -461,7 +464,7 @@ ast_node_t *find_top_module()
 		}
 		else if ((ast_modules[i]->types.module.is_instantiated == FALSE) && (found_top != -1))
 		{
-			error_message(NETLIST_ERROR, ast_modules[i]->line_number, ast_modules[i]->file_number,
+			error_message(NETLIST_ERROR, ast_modules[i]->line_number, ast_modules[i]->file_number, "%s",
 					"Two top level modules - Odin II cannot deal with these types of designs\n");
 		}
 	}
@@ -469,7 +472,7 @@ ast_node_t *find_top_module()
 	/* check atleast one module is top ... and only one */
 	if (found_top == -1)
 	{
-		error_message(NETLIST_ERROR, -1, -1, "Could not find a top level module\n");
+		error_message(NETLIST_ERROR, -1, -1, "%s", "Could not find a top level module\n");
 	}
 
 	return ast_modules[found_top];
@@ -857,7 +860,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 		switch(node->type)
 		{
 			case FILE_ITEMS:
-				error_message(NETLIST_ERROR, node->line_number, node->file_number,
+				error_message(NETLIST_ERROR, node->line_number, node->file_number,"%s",
 						"FILE_ITEMS are not supported by Odin.\n");
 				break;
 			case CONCATENATE:
@@ -1122,7 +1125,7 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	}
 	else
 	{
-		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Module is empty\n");
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Module is empty\n");
 	}
 
 	/* create the constant nets */
@@ -1161,7 +1164,7 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	sc_spot = sc_add_string(output_nets_sc, zero_string);
 	if (output_nets_sc->data[sc_spot] != NULL)
 	{
-		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Error in Odin\n");
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Error in Odin\n");
 	}
 	/* store the data which is an idx here */
 	output_nets_sc->data[sc_spot] = (void*)verilog_netlist->zero_net;
@@ -1175,7 +1178,7 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	sc_spot = sc_add_string(output_nets_sc, one_string);
 	if (output_nets_sc->data[sc_spot] != NULL)
 	{
-		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Error in Odin\n");
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Error in Odin\n");
 	}
 	/* store the data which is an idx here */
 	output_nets_sc->data[sc_spot] = (void*)verilog_netlist->one_net;
@@ -1189,7 +1192,7 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	sc_spot = sc_add_string(output_nets_sc, pad_string);
 	if (output_nets_sc->data[sc_spot] != NULL)
 	{
-		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Error in Odin\n");
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Error in Odin\n");
 	}
 	/* store the data which is an idx here */
 	output_nets_sc->data[sc_spot] = (void*)verilog_netlist->pad_net;
@@ -1306,7 +1309,7 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 						else
 						{
 							/* Implicit memory */
-							error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+							error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 									"Memory not handled ... yet in create_top_output_nodes!\n");
 						}
 					}
@@ -1316,7 +1319,7 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 	}
 	else
 	{
-		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Empty module\n");
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Empty module\n");
 	}
 }
 
@@ -1652,7 +1655,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 								)
 						)
 						{
-							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number,
+							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, "%s",
 									"Input defined as wire or reg means it is a driver in this module.  Not possible\n");
 						}
 						/* MORE ERRORS ... could check for same declaration name ... */
@@ -1745,7 +1748,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 	}
 	else
 	{
-		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Empty module\n");
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Empty module\n");
 	}
 }
 
@@ -1802,7 +1805,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
 								)
 						)
 						{
-							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number,
+							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, "%s",
 									"Input defined as wire or reg means it is a driver in this module.  Not possible\n");
 						}
 						/* MORE ERRORS ... could check for same declaration name ... */
@@ -1862,7 +1865,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
 	}
 	else
 	{
-		error_message(NETLIST_ERROR, function_items->line_number, function_items->file_number, "Empty module\n");
+		error_message(NETLIST_ERROR, function_items->line_number, function_items->file_number, "%s", "Empty module\n");
 	}
 }
 /*--------------------------------------------------------------------------
@@ -2892,6 +2895,8 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 	nnet_t *new_in_net;
 	char_list_t *pin_lists = NULL;
 
+	oassert((!name || !var_declare) 
+		&& "Invalid state or internal error");
 	if (name == NULL)
 	{
 		/* get all the pins */
@@ -2904,10 +2909,6 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 		pin_lists->strings = (char**)vtr::malloc(sizeof(char*));
 		pin_lists->strings[0] = name;
 		pin_lists->num_strings = 1;
-	}
-	else
-	{
-		error_message(0,0,-1,"Invalid state or internal error");
 	}
 
 	for (i = 0; pin_lists && i < pin_lists->num_strings; i++)
@@ -3135,7 +3136,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		if (type_of_circuit != RISING_EDGE_SENSITIVITY)
 		{
 			out_list = NULL;
-			error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
+			error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, "%s",
 				"Assignment to implicit memories is only supported within sequential circuits.\n");
 		}
 		else
@@ -3446,9 +3447,10 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			/* create the unique name for this gate */
 			//ff_node->name = node_name(ff_node, instance_name_prefix);
 			/* Name the flipflop based on the name of its output pin */
-			char *ff_name = (char *)vtr::malloc(sizeof(char) * (strlen(pin->name) + strlen("_FF_NODE") + 1));
+			char *ff_name = (char *)vtr::malloc(sizeof(char) * (strlen(pin->name) + strlen(operation_list_STR[ff_node->type]) + 2));
 			strcpy(ff_name, pin->name);
-			strcat(ff_name, "_FF_NODE");
+			strcat(ff_name, "_");
+			strcat(ff_name, operation_list_STR[ff_node->type]);
 			ff_node->name = ff_name;
 
 			/* Copy over the initial value information from the net */
@@ -3673,7 +3675,7 @@ int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *
 		}
 
 		if (global_args.all_warnings && output_list->num_strings < input_list->count)
-			warning_message(NETLIST_ERROR, node->line_number, node->file_number,
+			warning_message(NETLIST_ERROR, node->line_number, node->file_number, "%s",
 					"Alias: More driver pins than nets to drive: sometimes using decimal numbers causes this problem\n");
 
 		return output_list->num_strings;
@@ -3879,8 +3881,8 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 			break;
 		case SL: // <<
 			/* Shifts doesn't matter about port size, but second input needs to be a number */
-			output_port_width = input_lists[0]->count + ((1<<input_lists[1]->count)-1);
-			input_port_width = input_lists[0]->count + ((1<<input_lists[1]->count)-1);
+			output_port_width = input_lists[0]->count + ((0x1ULL<<input_lists[1]->count)-1);
+			input_port_width = input_lists[0]->count + ((0x1ULL<<input_lists[1]->count)-1);
 			break;
 		case LOGICAL_NOT: // !
 		case LOGICAL_OR: // ||
@@ -3925,13 +3927,13 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 			break;
 		}
 		case DIVIDE: // /
-			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "Divide operation not supported by Odin\n");
+			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "%s", "Divide operation not supported by Odin\n");
 			break;
 		case MODULO: // %
-			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "Modulo operation not supported by Odin\n");
+			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "%s", "Modulo operation not supported by Odin\n");
 			break;
 		default:
-			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "Operation not supported by Odin\n");
+			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "%s", "Operation not supported by Odin\n");
 			break;
 	}
 
@@ -3945,7 +3947,7 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 			/* Need to check that 2nd operand is constant */
 			ast_node_t *second = resolve_node(NULL, FALSE, instance_name_prefix, op->children[1]);
 			if (second->type != NUMBERS)
-				error_message(NETLIST_ERROR, op->line_number, op->file_number, "Odin only supports constant shifts at present\n");
+				error_message(NETLIST_ERROR, op->line_number, op->file_number, "%s", "Odin only supports constant shifts at present\n");
 			oassert(second->type == NUMBERS);
 
 			/* for shift left or right, it's actually a one port operation. The 2nd port is constant */
@@ -4060,7 +4062,7 @@ signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instan
 
 			if(	(edge_type != child_sensitivity)
 			&& ((edge_type == ASYNCHRONOUS_SENSITIVITY) || (child_sensitivity == ASYNCHRONOUS_SENSITIVITY)) )
-				error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number,
+				error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number, "%s",
 					"Sensitivity list switches between edge sensitive to asynchronous.  You can't define something like always @(posedge clock or a).\n");
 			
 			switch(edge_type)
@@ -4086,7 +4088,7 @@ signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instan
 
 	/* update the analysis type of this block of statements */
 	if(edge_type == UNDEFINED_SENSITIVITY)
-		error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number, "Sensitivity list error...looks empty?\n");
+		error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number, "%s", "Sensitivity list error...looks empty?\n");
 
 	else if(edge_type == ASYNCHRONOUS_SENSITIVITY)
 	{
@@ -4144,7 +4146,7 @@ signal_list_t *create_if_question_mux_expressions(ast_node_t *if_ast, nnode_t *i
 		}
 		else
 		{
-			error_message(NETLIST_ERROR, if_ast->line_number, if_ast->file_number, "No such thing as a a = b ? z;\n");
+			error_message(NETLIST_ERROR, if_ast->line_number, if_ast->file_number, "%s", "No such thing as a a = b ? z;\n");
 		}
 	}
 
@@ -4670,7 +4672,7 @@ int find_smallest_non_numerical(ast_node_t *node, signal_list_t **input_list, in
 
 		if (smallest_idx == -1)
 		{
-			error_message(NETLIST_ERROR, node->line_number, node->file_number, "all numbers in padding non numericals\n");
+			error_message(NETLIST_ERROR, node->line_number, node->file_number, "%s", "all numbers in padding non numericals\n");
 		}
 		else
 		{
@@ -4714,7 +4716,7 @@ void pad_with_zeros(ast_node_t* node, signal_list_t *list, int pad_size, char * 
 		for (i = list->count; i < pad_size; i++)
 		{
 			if (global_args.all_warnings)
-				warning_message(NETLIST_ERROR, node->line_number, node->file_number,
+				warning_message(NETLIST_ERROR, node->line_number, node->file_number, "%s",
 						"Padding an input port with 0 for operation (likely compare)\n");
 			add_pin_to_signal_list(list, get_zero_pin(verilog_netlist));
 		}
@@ -4722,7 +4724,7 @@ void pad_with_zeros(ast_node_t* node, signal_list_t *list, int pad_size, char * 
 	else if (pad_size < list->count)
 	{
 		if (global_args.all_warnings)
-			warning_message(NETLIST_ERROR, node->line_number, node->file_number,
+			warning_message(NETLIST_ERROR, node->line_number, node->file_number, "%s",
 					"More driver pins than nets to drive.  This means that for this operation you are losing some of the most significant bits\n");
 	}
 }
@@ -4735,7 +4737,7 @@ void pad_with_zeros(ast_node_t* node, signal_list_t *list, int pad_size, char * 
 signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name_prefix, t_model* hb_model)
 {
 	if (!hb_model || !is_ast_dp_ram(block))
-		error_message(NETLIST_ERROR, block->line_number, block->file_number, "Error in creating dual port ram\n");
+		error_message(NETLIST_ERROR, block->line_number, block->file_number, "%s", "Error in creating dual port ram\n");
 
 	block->type = RAM;
 
@@ -4910,7 +4912,7 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_name_prefix, t_model* hb_model)
 {
 	if (!hb_model || !is_ast_sp_ram(block))
-		error_message(NETLIST_ERROR, block->line_number, block->file_number, "Error in creating single port ram\n");
+		error_message(NETLIST_ERROR, block->line_number, block->file_number, "%s", "Error in creating single port ram\n");
 
 	// EDDIE: Uses new enum in ids: RAM (opposed to MEMORY from operation_t previously)
 	block->type = RAM;
@@ -5100,7 +5102,7 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 	char *identifier = block->children[0]->types.identifier;
 
 	if (!is_ast_sp_ram(block))
-		error_message(NETLIST_ERROR, block->line_number, block->file_number, "Error in creating soft single port ram\n");
+		error_message(NETLIST_ERROR, block->line_number, block->file_number, "%s", "Error in creating soft single port ram\n");
 
 	block->type = RAM;
 
@@ -5251,7 +5253,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 	char *instance_name = block->children[1]->children[0]->types.identifier;
 
 	if (!is_ast_dp_ram(block))
-		error_message(NETLIST_ERROR, block->line_number, block->file_number, "Error in creating soft dual port ram\n");
+		error_message(NETLIST_ERROR, block->line_number, block->file_number, "%s", "Error in creating soft dual port ram\n");
 
 	block->type = RAM;
 

@@ -90,7 +90,7 @@ typedef struct {
 
 
 netlist_t * blif_netlist;
-short static skip_reading_bit_map=FALSE;
+bool static skip_reading_bit_map=false;
 bool insert_global_clock;
 
 
@@ -101,8 +101,8 @@ void rb_create_top_output_nodes(FILE *file);
 int read_tokens (char *buffer, hard_block_models *models, FILE *file, hashtable_t *output_nets_hash);
 static void dum_parse (char *buffer, FILE *file);
 void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash);
-short assign_node_type_from_node_name(char * output_name);// function will decide the node->type of the given node
-short read_bit_map_find_unknown_gate(int input_count, nnode_t * node, FILE *file);
+operation_list assign_node_type_from_node_name(char * output_name);// function will decide the node->type of the given node
+operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t * node, FILE *file);
 void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash);
 void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t *output_nets_hash);
 void hook_up_nets(hashtable_t *output_nets_hash);
@@ -146,7 +146,7 @@ netlist_t *read_blif()
 	FILE *file = vtr::fopen (configuration.list_of_file_names[current_parse_file].c_str(), "r");
 	if (file == NULL)
 	{
-		error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
+		error_message(ARG_ERROR, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
 	}
 	int num_lines = count_blif_lines(file);
 
@@ -190,7 +190,7 @@ netlist_t *read_blif()
 /*---------------------------------------------------------------------------------------------
  * (function: read_tokens)
  *
- * Parses the given line from the blif file. Returns TRUE if there are more lines
+ * Parses the given line from the blif file. Returns true if there are more lines
  * to read.
  *-------------------------------------------------------------------------------------------*/
 int read_tokens (char *buffer, hard_block_models *models, FILE *file, hashtable_t *output_nets_hash)
@@ -207,7 +207,7 @@ int read_tokens (char *buffer, hard_block_models *models, FILE *file, hashtable_
 		}
 		else
 		{
-			skip_reading_bit_map= FALSE;
+			skip_reading_bit_map= false;
 			if (strcmp (token, ".inputs") == 0)
 			{
 				add_top_input_nodes(file, output_nets_hash);// create the top input nodes
@@ -233,7 +233,7 @@ int read_tokens (char *buffer, hard_block_models *models, FILE *file, hashtable_
 				// Marks the end of the main module of the blif
 				// Call function to hook up the nets
 				hook_up_nets(output_nets_hash);
-				return FALSE;
+				return false;
 			}
 			else if (strcmp(token,".model")==0)
 			{
@@ -242,7 +242,7 @@ int read_tokens (char *buffer, hard_block_models *models, FILE *file, hashtable_
 			}
 		}
 	}
-	return TRUE;
+	return true;
 }
 
 
@@ -251,70 +251,39 @@ int read_tokens (char *buffer, hard_block_models *models, FILE *file, hashtable_
      This function tries to assign the node->type by looking at the name
      Else return GENERIC
 *-------------------------------------------------------------------------------------------*/
-short assign_node_type_from_node_name(char * output_name)
+operation_list assign_node_type_from_node_name(char * output_name)
 {
 	//variable to extract the type
+	operation_list result = GENERIC;
+
 	int start, end;
 	int length_string = strlen(output_name);
 	for(start = length_string-1; (start >= 0) && (output_name[start] != '^'); start--);
 	for(end   = length_string-1; (end   >= 0) && (output_name[end]   != '~'); end--  );
 
-	if((start >= end) || (end == 0)) return GENERIC;
-
-	// Stores the extracted string
-	char *extracted_string = (char*)vtr::malloc(sizeof(char)*((end-start+2)));
-	int i, j;
-	for(i = start + 1, j = 0; i < end; i++, j++)
+	if((start < end) && (end > 0))
 	{
-		extracted_string[j] = output_name[i];
+		// Stores the extracted string
+		char *extracted_string = (char*)vtr::calloc(end-start+2, sizeof(char));
+		int i, j;
+		for(i = start + 1, j = 0; i < end; i++, j++)
+		{
+			extracted_string[j] = output_name[i];
+		}
+
+		extracted_string[j]='\0';
+		for(i=0; i<operation_list_END; i++)
+		{
+			if(!strcmp(extracted_string,operation_list_STR[i]))
+			{
+				result = static_cast<operation_list>(i);
+				break;
+			}
+		}
+
+		vtr::free(extracted_string);
 	}
-
-	extracted_string[j]='\0';
-
-	if      (!strcmp(extracted_string,"GT"))             return GT;
-	else if (!strcmp(extracted_string,"LT"))             return LT;
-	else if (!strcmp(extracted_string,"ADDER_FUNC"))     return ADDER_FUNC;
-	else if (!strcmp(extracted_string,"CARRY_FUNC"))     return CARRY_FUNC;
-	else if (!strcmp(extracted_string,"BITWISE_NOT"))    return BITWISE_NOT;
-	else if (!strcmp(extracted_string,"LOGICAL_AND"))    return LOGICAL_AND;
-	else if (!strcmp(extracted_string,"LOGICAL_OR"))     return LOGICAL_OR;
-	else if (!strcmp(extracted_string,"LOGICAL_XOR"))    return LOGICAL_XOR;
-	else if (!strcmp(extracted_string,"LOGICAL_XNOR"))   return LOGICAL_XNOR;
-	else if (!strcmp(extracted_string,"LOGICAL_NAND"))   return LOGICAL_NAND;
-	else if (!strcmp(extracted_string,"LOGICAL_NOR"))    return LOGICAL_NOR;
-	else if (!strcmp(extracted_string,"LOGICAL_EQUAL"))  return LOGICAL_EQUAL;
-	else if (!strcmp(extracted_string,"NOT_EQUAL"))      return NOT_EQUAL;
-	else if (!strcmp(extracted_string,"LOGICAL_NOT"))    return LOGICAL_NOT;
-	else if (!strcmp(extracted_string,"MUX_2"))          return MUX_2;
-	else if (!strcmp(extracted_string,"FF_NODE"))        return FF_NODE;
-	else if (!strcmp(extracted_string,"MULTIPLY"))       return MULTIPLY;
-	else if (!strcmp(extracted_string,"HARD_IP"))        return HARD_IP;
-	else if (!strcmp(extracted_string,"INPUT_NODE"))     return INPUT_NODE;
-	else if (!strcmp(extracted_string,"OUTPUT_NODE"))    return OUTPUT_NODE;
-	else if (!strcmp(extracted_string,"PAD_NODE"))       return PAD_NODE;
-	else if (!strcmp(extracted_string,"CLOCK_NODE"))     return CLOCK_NODE;
-	else if (!strcmp(extracted_string,"GND_NODE"))       return GND_NODE;
-	else if (!strcmp(extracted_string,"VCC_NODE"))       return VCC_NODE;
-	else if (!strcmp(extracted_string,"BITWISE_AND"))    return BITWISE_AND;
-	else if (!strcmp(extracted_string,"BITWISE_NAND"))   return BITWISE_NAND;
-	else if (!strcmp(extracted_string,"BITWISE_NOR"))    return BITWISE_NOR;
-	else if (!strcmp(extracted_string,"BITWISE_XNOR"))   return BITWISE_XNOR;
-	else if (!strcmp(extracted_string,"BITWISE_XOR"))    return BITWISE_XOR;
-	else if (!strcmp(extracted_string,"BITWISE_OR"))     return BITWISE_OR;
-	else if (!strcmp(extracted_string,"BUF_NODE"))       return BUF_NODE;
-	else if (!strcmp(extracted_string,"MULTI_PORT_MUX")) return MULTI_PORT_MUX;
-	else if (!strcmp(extracted_string,"SL"))             return SL;
-	else if (!strcmp(extracted_string,"SR"))             return SR;
-	else if (!strcmp(extracted_string,"ASR"))            return ASR;
-	else if (!strcmp(extracted_string,"CASE_EQUAL"))     return CASE_EQUAL;
-	else if (!strcmp(extracted_string,"CASE_NOT_EQUAL")) return CASE_NOT_EQUAL;
-	else if (!strcmp(extracted_string,"DIVIDE"))         return DIVIDE;
-	else if (!strcmp(extracted_string,"MODULO"))         return MODULO;
-	else if (!strcmp(extracted_string,"GTE"))            return GTE;
-	else if (!strcmp(extracted_string,"LTE"))            return LTE;
-	else if (!strcmp(extracted_string,"ADD"))            return ADD;
-	else if (!strcmp(extracted_string,"MINUS"))          return MINUS;
-	else                                                 return GENERIC;
+	return result;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -384,7 +353,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	int initial_value = atoi(names[4]);
 	if(initial_value == 0 || initial_value == 1){
 		new_node->initial_value = initial_value;
-		new_node->has_initial_value = TRUE;
+		new_node->has_initial_value = true;
 	}
 
 	/* allocate the output pin (there is always one output pin) */
@@ -692,7 +661,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 			|| !strcmp(names[input_count-1],"unconn")
 	)
 	{
-		skip_reading_bit_map = TRUE;
+		skip_reading_bit_map = true;
 	}
 	else
 	{
@@ -702,13 +671,13 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		if(node_type != GENERIC)
 		{
 			new_node->type = node_type;
-			skip_reading_bit_map = TRUE;
+			skip_reading_bit_map = true;
 		}
 		/* Check for GENERIC type , change the node by reading the bit map */
 		else if(node_type == GENERIC)
 		{
 			new_node->type = (operation_list)read_bit_map_find_unknown_gate(input_count-1, new_node, file);
-			skip_reading_bit_map = TRUE;
+			skip_reading_bit_map = true;
 		}
 
 		/* allocate the input pin (= input_count-1)*/
@@ -801,7 +770,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
    * function: read_bit_map_find_unknown_gate
      read the bit map for simulation
 *-------------------------------------------------------------------------------------------*/
-short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
+operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 {
 	fpos_t pos;
 	int last_line = file_line_number;
@@ -1513,7 +1482,7 @@ int verify_hard_block_ports_against_model(hard_block_ports *ports, hard_block_mo
 			if (!idx)
 			{
 				//printf("Model port not specified in ports. %s\n", name);
-				return FALSE;
+				return false;
 			}
 
 			// Make sure they match in size.
@@ -1522,7 +1491,7 @@ int verify_hard_block_ports_against_model(hard_block_ports *ports, hard_block_mo
 			if (size != instance_size)
 			{
 				//printf("Port sizes differ. %s\n", name);
-				return FALSE;
+				return false;
 			}
 		}
 	}
@@ -1540,11 +1509,11 @@ int verify_hard_block_ports_against_model(hard_block_ports *ports, hard_block_mo
 		if (!in_idx && !out_idx)
 		{
 			//printf("Port does not appear in the model. %s\n", name);
-			return FALSE;
+			return false;
 		}
 	}
 
-	return TRUE;
+	return true;
 }
 
 /*

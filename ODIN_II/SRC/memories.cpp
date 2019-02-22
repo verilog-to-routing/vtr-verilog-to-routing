@@ -61,7 +61,7 @@ void filter_memories_by_soft_logic_cutoff();
 long long get_sp_ram_depth(nnode_t *node)
 {
 	sp_ram_signals *signals = get_sp_ram_signals(node);
-	long long depth = (1 << signals->addr->count);
+	long long depth = (0x1ULL << signals->addr->count);
 	free_sp_ram_signals(signals);
 	return depth;
 }
@@ -70,7 +70,7 @@ long long get_dp_ram_depth(nnode_t *node)
 {
 	dp_ram_signals *signals = get_dp_ram_signals(node);
 	oassert(signals->addr1->count == signals->addr2->count);
-	long long depth = (1 << signals->addr1->count);
+	long long depth = (0x1ULL << signals->addr1->count);
 	free_dp_ram_signals(signals);
 	return depth;
 }
@@ -1719,7 +1719,9 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 {
 	int num_inputs = input_list->count;
 	// Number of outputs is 2^num_inputs
-	int num_outputs = 1 << num_inputs;
+	int num_outputs = 0x1ULL << num_inputs;
+
+	oassert(MEMORY_DEPTH_LIMIT > num_outputs);
 
 	// Create NOT gates for all inputs and put the outputs in their own signal list.
 	signal_list_t *not_gates = init_signal_list();
@@ -1764,7 +1766,7 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 		for (j = 0; j < num_inputs; j++)
 		{
 			// Look at the jth bit of i. If it's 0, take the negated signal.
-			int value = (i & (1 << j)) >> j;
+			int value = (i & (0x1ULL << j)) >> j;
 			npin_t *pin = value ? input_list->pins[j] : not_gates->pins[j];
 
 			// Use the original not pins on the first iteration and the original input pins on the last.

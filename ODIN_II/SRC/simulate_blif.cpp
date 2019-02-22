@@ -295,7 +295,7 @@ void simulate_netlist(netlist_t *netlist)
 		if (verify_output_vectors(output_vector_file, sim_data->num_vectors))
 			printf("Vector file \"%s\" matches output\n", output_vector_file);
 		else
-			error_message(SIMULATION_ERROR, 0, -1, "Vector files differ.");
+			error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Vector files differ.");
 		printf("\n");
 	}
 
@@ -397,7 +397,7 @@ void simulate_netlist(netlist_t *netlist)
 		if (verify_output_vectors(output_vector_file, sim_data->num_vectors))
 			printf("Vector file \"%s\" matches output\n", output_vector_file);
 		else
-			error_message(SIMULATION_ERROR, 0, -1, "Vector files differ.");
+			error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Vector files differ.");
 		printf("\n");
 	}
 
@@ -437,37 +437,37 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	odin_sprintf(out_vec_file,"%s/%s",((char *)global_args.sim_directory),OUTPUT_VECTOR_FILE_NAME);
 	sim_data->out = fopen(out_vec_file, "w");
 	if (!sim_data->out)
-		error_message(SIMULATION_ERROR, 0, -1, "Could not create output vector file.");
+		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create output vector file.");
 
 	// Open the input vector file.
 	char in_vec_file[128] = { 0 };
 	odin_sprintf(in_vec_file,"%s/%s",((char *)global_args.sim_directory),INPUT_VECTOR_FILE_NAME);
 	sim_data->in_out = fopen(in_vec_file, "w+");
 	if (!sim_data->in_out)
-		error_message(SIMULATION_ERROR, 0, -1, "Could not create input vector file.");
+		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create input vector file.");
 
 	// Open the activity output file.
 	char act_file[128] = { 0 };
 	odin_sprintf(act_file,"%s/%s",((char *)global_args.sim_directory),OUTPUT_ACTIVITY_FILE_NAME);
 	sim_data->act_out = fopen(act_file, "w");
 	if (!sim_data->act_out)
-		error_message(SIMULATION_ERROR, 0, -1, "Could not create activity output file.");
+		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create activity output file.");
 
 	// Open the modelsim vector file.
 	char test_file[128] = { 0 };
 	odin_sprintf(test_file,"%s/%s",((char *)global_args.sim_directory),MODEL_SIM_FILE_NAME);
 	sim_data->modelsim_out = fopen(test_file, "w");
 	if (!sim_data->modelsim_out)
-		error_message(SIMULATION_ERROR, 0, -1, "Could not create modelsim output file.");
+		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create modelsim output file.");
 
 	// Create and verify the lines.
 	sim_data->input_lines = create_lines(netlist, INPUT);
 	if (!verify_lines(sim_data->input_lines))
-		error_message(SIMULATION_ERROR, 0, -1, "Input lines could not be assigned.");
+		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Input lines could not be assigned.");
 
 	sim_data->output_lines = create_lines(netlist, OUTPUT);
 	if (!verify_lines(sim_data->output_lines))
-		error_message(SIMULATION_ERROR, 0, -1, "Output lines could not be assigned.");
+		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Output lines could not be assigned.");
 
 	sim_data->in = NULL;
 	sim_data->input_vector_file = NULL;
@@ -526,7 +526,7 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	if (!sim_data->num_vectors)
 	{
 		terminate_simulation(sim_data);
-		error_message(SIMULATION_ERROR, 0, -1, "No vectors to simulate.");
+		error_message(SIMULATION_ERROR, 0, -1, "%s", "No vectors to simulate.");
 	}
 
 	return sim_data;
@@ -673,7 +673,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 				{
 					//buffer = NULL;
 					if (!get_next_vector(sim_data->in, buffer))
-						error_message(SIMULATION_ERROR, 0, -1, "Could not read next vector.");
+						error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not read next vector.");
 					
 					v = parse_test_vector(buffer);
 					//printf("Here\n");
@@ -697,7 +697,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 				sim_data->stages = simulate_first_cycle(sim_data->netlist, from_cycle, sim_data->output_lines);
 				// Make sure the output lines are still OK after adding custom lines.
 				if (!verify_lines(sim_data->output_lines))
-					error_message(SIMULATION_ERROR, 0, -1,
+					error_message(SIMULATION_ERROR, 0, -1,"%s\n", 
 							"Problem detected with the output lines after the first cycle.");
 				
 				//maria
@@ -846,7 +846,7 @@ int single_step(sim_data_t *sim_data, int cycle)
 		char buffer[BUFFER_MAX_SIZE];
 
 		if (!get_next_vector(sim_data->in, buffer))
-			error_message(SIMULATION_ERROR, 0, -1, "Could not read next vector.");
+			error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not read next vector.");
 
 		v = parse_test_vector(buffer);
 	}
@@ -872,7 +872,7 @@ int single_step(sim_data_t *sim_data, int cycle)
 
 		// Make sure the output lines are still OK after adding custom lines.
 		if (!verify_lines(sim_data->output_lines))
-			error_message(SIMULATION_ERROR, 0, -1,
+			error_message(SIMULATION_ERROR, 0, -1,"%s\n", 
 					"Problem detected with the output lines after the first cycle.");
 	}
 	else
@@ -1680,7 +1680,7 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 
 	//if (nodes_assigned == FALSE)
 	//{
-	//	error_message(SIMULATION_ERROR,1475,-1,"Some nodes are not assigned for simulation!");
+	//	error_message(SIMULATION_ERROR,1475,-1, "%s", "Some nodes are not assigned for simulation!");
 	//}
 	thread_distribution->thread_nodes = circuit_borders;
 	thread_distribution->number_of_threads = num_threads;
@@ -2327,7 +2327,7 @@ nnode_t **get_children_of_nodepin(nnode_t *node, int *num_children, int output_p
 	int output_pin_number = node->num_output_pins;
 	if(output_pin < 0 || output_pin > output_pin_number)
 	{
-		error_message(SIMULATION_ERROR, -1, -1, "Requested pin not available");
+		error_message(SIMULATION_ERROR, -1, -1, "%s", "Requested pin not available");
 		return children;
 	}
 
@@ -2585,7 +2585,7 @@ static void compute_hard_ip_node(nnode_t *node, int cycle)
 		char *filename = (char *)vtr::malloc(sizeof(char)*strlen(node->name));
 
 		if (!strchr(node->name, '.'))
-			error_message(SIMULATION_ERROR, 0, -1,
+			error_message(SIMULATION_ERROR, 0, -1, "%s\n", 
 					"Couldn't extract the name of a shared library for hard-block simulation");
 
 		snprintf(filename, sizeof(char)*strlen(node->name), "%s.so", strchr(node->name, '.')+1);
@@ -3151,7 +3151,7 @@ static void compute_dual_port_memory(nnode_t *node, int cycle)
  */
 static void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 {
-	long max_address = 1 << addr_width;
+	unsigned long long max_address = 0x1ULL << addr_width;
 	node->memory_data = std::vector<std::vector<signed char>>(max_address, std::vector<signed char>(data_width, init_value(node)));
 	if(global_args.read_mif_input)
 	{
@@ -3328,9 +3328,9 @@ static void assign_memory_from_mif_file(nnode_t *node, FILE *mif, char *filename
 							error_message(SIMULATION_ERROR, -1, -1, "%s: MIF DEPTH parameter unspecified.", filename);
 						
 						long mif_depth = std::strtol(item_in->second.c_str(),NULL,10);
-						if (mif_depth != (1 << address_width))
+						if (mif_depth != (0x1ULL << address_width))
 							error_message(SIMULATION_ERROR, -1, -1,
-									"%s: MIF depth mismatch: must be %d but %d was given", filename, (1 << address_width), mif_depth);
+									"%s: MIF depth mismatch: must be %d but %d was given", filename, (0x1ULL << address_width), mif_depth);
 
 
 						// Parse the radix specifications and make sure they're OK.
@@ -3524,7 +3524,7 @@ static int verify_test_vector_headers(FILE *in, lines_t *l)
 	char read_buffer [BUFFER_MAX_SIZE];
 	rewind(in);
 	if (!get_next_vector(in, read_buffer))
-		error_message(SIMULATION_ERROR, 0, -1, "Failed to read vector headers.");
+		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Failed to read vector headers.");
 
 	// Parse the header, checking each entity against the corresponding line.
 	char buffer [BUFFER_MAX_SIZE];
@@ -3536,7 +3536,7 @@ static int verify_test_vector_headers(FILE *in, lines_t *l)
 
 		if (next == EOF)
 		{
-			warning_message(SIMULATION_ERROR, 0, -1, "Hit end of file.");
+			warning_message(SIMULATION_ERROR, 0, -1, "%s", "Hit end of file.");
 			return FALSE;
 		}
 		else if (next == ' ' || next == '\t' || next == '\n')
@@ -3638,7 +3638,7 @@ static char *generate_vector_header(lines_t *l)
 		{
 			// "+ 2" for null and newline/space.
 			if ((strlen(header) + strlen(l->lines[j]->name) + 2) > BUFFER_MAX_SIZE)
-				error_message(SIMULATION_ERROR, 0, -1, "Buffer overflow anticipated while generating vector header.");
+				error_message(SIMULATION_ERROR, 0, -1, "%s", "Buffer overflow anticipated while generating vector header.");
 
 			strcat(header,l->lines[j]->name);
 			strcat(header," ");
@@ -3690,7 +3690,7 @@ static int compare_test_vectors(test_vector *v1, test_vector *v2)
 	int equivalent = TRUE;
 	if (v1->count != v2->count)
 	{
-		warning_message(SIMULATION_ERROR, 0, -1, "Vector lengths differ.");
+		warning_message(SIMULATION_ERROR, 0, -1, "%s", "Vector lengths differ.");
 		return FALSE;
 	}
 
@@ -4095,7 +4095,7 @@ static int verify_output_vectors(char* output_vector_file, int num_vectors)
 		odin_sprintf(out_vec_file,"%s/%s",((char *)global_args.sim_directory),OUTPUT_VECTOR_FILE_NAME);
 		FILE *current_out  = fopen(out_vec_file, "r");
 		if (!current_out)
-			error_message(SIMULATION_ERROR, 0, -1, "Could not open output vector file.");
+			error_message(SIMULATION_ERROR, 0, -1, "Could not open output vector file: %s", out_vec_file);
 
 		int cycle;
 		char buffer1[BUFFER_MAX_SIZE];

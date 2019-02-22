@@ -589,6 +589,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			if(strnlen(line, MaxLine) <= 0)
 			{
 				/* There is nothing to print */
+				fprintf(preproc_producer, "\n");
 			}
 			else if( fprintf(preproc_producer, "%s\n", line) < 0)//fputs(line, preproc_producer)
 			{

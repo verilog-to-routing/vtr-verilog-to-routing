@@ -73,16 +73,16 @@ void update_tree_tag(ast_node_t *node, int cases, int tagged);
 		size_t i;
 		high_level_id = -1;
 
-		short type = 0;
-		if(strcmp(global_args.high_level_block,"if")==0){
+		ids type = NO_ID;
+		if(!strcmp(global_args.high_level_block,"if")){
 			type = IF;
-		}else if(strcmp(global_args.high_level_block,"always")==0){
+		}else if(!strcmp(global_args.high_level_block,"always")){
 			type = ALWAYS;
-		}else if(strcmp(global_args.high_level_block,"module")==0){
+		}else if(!strcmp(global_args.high_level_block,"module")){
 			type = MODULE;
 		}
 
-		if(type != 0){
+		if(type != NO_ID){
 			for (i = 0; i < num_modules ; i++)
 				update_tree_tag(ast_modules[i],type, -1);
 		}
@@ -386,7 +386,7 @@ int get_range(ast_node_t* first_node)
 		if(first_node->children[1]->types.number.value < first_node->children[2]->types.number.value)
 		{
 			// Reversing the indicies doesn't produce correct code. We need to actually handle these correctly.
-			error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "Odin doesn't support arrays declared [m:n] where m is less than n.");
+			error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
 
 			// swap them around
 			temp_value = first_node->children[1]->types.number.value;
@@ -493,7 +493,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 		{
 			if(concat_top->children[i]->types.number.base == DEC)
 			{
-				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Concatenation can't include decimal numbers due to conflict on bits\n");
+				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "%s", "Concatenation can't include decimal numbers due to conflict on bits\n");
 			}
 
 			// Changed to reverse to fix concatenation bug.
@@ -515,7 +515,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 			}
 		}
 		else {
-			error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Unsupported operation within a concatenation.\n");
+			error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "%s", "Unsupported operation within a concatenation.\n");
 		}
 	}
 }
@@ -1227,7 +1227,7 @@ ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_lis
                 if(operand_0 < 0)
                 {
                     for(long long shift = 0; shift<operand_1; shift++){
-                        mask |= 1 << ((sizeof(long long)*8) - (shift+1));
+                        mask |= 0x1ULL << ((sizeof(long long)*8) - (shift+1));
                     }
                 }
                 result |= mask;
@@ -1281,7 +1281,8 @@ ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_lis
 
 			case CASE_EQUAL:
 				if(length_0 != length_1){
-					warning_message(NETLIST_ERROR, -1, -1, "the binary string to compare do not have the same length, comparison is done only on smallest of the two bit_range");
+					warning_message(NETLIST_ERROR, -1, -1, "%s\n",
+						"the binary string to compare do not have the same length, comparison is done only on smallest of the two bit_range");
 				}
 				if(length_0 < length_1){
 					length = length_0;
@@ -1300,7 +1301,8 @@ ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_lis
 
 			case CASE_NOT_EQUAL:
 				if(length_0 != length_1){
-					warning_message(NETLIST_ERROR, -1, -1, "the binary string to compare do not have the same length, comparison is done only on smallest of the two bit_range");
+					warning_message(NETLIST_ERROR, -1, -1, "%s\n",
+						"the binary string to compare do not have the same length, comparison is done only on smallest of the two bit_range");
 				}
 				if(length_0 < length_1){
 					length = length_0;
@@ -1394,7 +1396,7 @@ int get_range2D(ast_node_t* first_node)
 		if(first_node->children[1]->types.number.value < first_node->children[2]->types.number.value)
 		{
 			// Reversing the indicies doesn't produce correct code. We need to actually handle these correctly.
-			error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "Odin doesn't support arrays declared [m:n] where m is less than n.");
+			error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
 
 			// swap them around
 			temp_value = first_node->children[1]->types.number.value;
@@ -1405,7 +1407,7 @@ int get_range2D(ast_node_t* first_node)
 		if(first_node->children[3]->types.number.value < first_node->children[4]->types.number.value)
 		{
 			// Reversing the indicies doesn't produce correct code. We need to actually handle these correctly.
-			error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "Odin doesn't support arrays declared [m:n] where m is less than n.");
+			error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
 
 			// swap them around
 			temp_value = first_node->children[3]->types.number.value;

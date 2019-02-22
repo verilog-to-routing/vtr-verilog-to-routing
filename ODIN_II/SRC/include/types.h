@@ -23,10 +23,12 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 #include "string_cache.h"
 #include "odin_util.h"
+#include "odin_error.h"
 #include "read_xml_arch_file.h"
 #include "simulate_blif.h"
 #include "argparse_value.hpp"
 #include "AtomicBuffer.hpp"
+#include "config_t.h"
 #include <mutex>
 #include <atomic>
 
@@ -44,7 +46,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #define ODIN_STD_BITWIDTH (sizeof(long long)*8)
 
-typedef struct config_t_t config_t;
 typedef struct global_args_t_t global_args_t;
 /* new struct for the global arguments of verify_blif function */
 typedef struct global_args_read_blif_t_t global_args_read_blif_t;
@@ -66,19 +67,6 @@ typedef struct chain_information_t_t chain_information_t;
 // to define type of adder in cmd line
 typedef struct adder_def_t_t adder_def_t;
 
-/* for parsing and AST creation errors */
-#define PARSE_ERROR -3
-/* for netlist creation oerrors */
-#define NETLIST_ERROR -4
-/* for blif read errors */
-#define BLIF_ERROR -5
-/* for errors in netlist (clustered after tvpack) errors */
-#define NETLIST_FILE_ERROR -6
-/* for errors in activation estimateion creation */
-#define ACTIVATION_ERROR -7
-/* for errors in the netlist simulation */
-#define SIMULATION_ERROR -8
-
 /* unique numbers to mark the nodes as we DFS traverse the netlist */
 #define PARTIAL_MAP_TRAVERSE_VALUE 10
 #define OUTPUT_TRAVERSE_VALUE 12
@@ -94,52 +82,8 @@ typedef struct adder_def_t_t adder_def_t;
 #define LEVELIZE 12
 #define ACTIVATION 13
 
-// causes an interrupt in GDB
-#define verbose_assert(condition) std::cerr << "ASSERT FAILED: " << #condition << " \n\t@ " << __LINE__ << "::" << __FILE__ << std::endl;
-#define oassert(condition) { if(!(condition)){ verbose_assert(condition); std::abort();} }
-
 #define verify_i_o_availabilty(node, expected_input_size, expected_output_size) passed_verify_i_o_availabilty(node, expected_input_size, expected_output_size, __FILE__, __LINE__)
 
-/* This is the data structure that holds config file details */
-struct config_t_t
-{
-	std::vector<std::string> list_of_file_names;
-
-	std::string output_type; // string name of the type of output file
-
-	std::string debug_output_path; // path for where to output the debug outputs
-	short output_ast_graphs; // switch that outputs ast graphs per node for use with GRaphViz tools
-	short output_netlist_graphs; // switch that outputs netlist graphs per node for use with GraphViz tools
-	short print_parse_tokens; // switch that controls whether or not each token is printed during parsing
-	short output_preproc_source; // switch that outputs the pre-processed source
-	int min_hard_multiplier; // threshold from hard to soft logic
-	int mult_padding; // setting how multipliers are padded to fit fixed size
-	// Flag for fixed or variable hard mult (1 or 0)
-	int fixed_hard_multiplier;
-	// Flag for splitting hard multipliers If fixed_hard_multiplier is set, this must be 1.
-	int split_hard_multiplier;
-	// 1 to split memory width down to a size of 1. 0 to split to arch width.
-	char split_memory_width;
-	// Set to a positive integer to split memory depth to that address width. 0 to split to arch width.
-	int split_memory_depth;
-
-	//add by Sen
-	// Threshold from hard to soft logic(extra bits)
-	int min_hard_adder;
-	int add_padding; // setting how multipliers are padded to fit fixed size
-	// Flag for fixed or variable hard mult (1 or 0)
-	int fixed_hard_adder;
-	// Flag for splitting hard multipliers If fixed_hard_multiplier is set, this must be 1.
-	int split_hard_adder;
-	//  Threshold from hard to soft logic
-	int min_threshold_adder;
-
-	// If the memory is smaller than both of these, it will be converted to soft logic.
-	int soft_logic_memory_depth_threshold;
-	int soft_logic_memory_width_threshold;
-
-	char *arch_file; // Name of the FPGA architecture file
-};
 
 typedef enum {
 	NO_SIMULATION = 0,
@@ -212,19 +156,34 @@ struct global_args_t_t
 #ifndef AST_TYPES_H
 #define AST_TYPES_H
 
+/**
+ * defined in enum_str.cpp
+ */
+extern const char *ZERO_GND_ZERO;
+extern const char *ONE_VCC_CNS;
+extern const char *SINGLE_PORT_RAM_string;
+extern const char *DUAL_PORT_RAM_string;
+
+extern const char *signedness_STR[];
+extern const char *edge_type_e_STR[];
+extern const char *operation_list_STR[];
+extern const char *ids_STR [];
+
 typedef enum
 {
 	DEC = 10,
 	HEX = 16,
 	OCT = 8,
 	BIN = 2,
-	LONG_LONG = 0
+	LONG_LONG = 0,
+	bases_END
 } bases;
 
 typedef enum
 {
 	SIGNED,
-	UNSIGNED
+	UNSIGNED,
+	signedness_END
 } signedness;
 
 typedef enum
@@ -234,7 +193,8 @@ typedef enum
 	ACTIVE_HIGH_SENSITIVITY,
 	ACTIVE_LOW_SENSITIVITY,
 	ASYNCHRONOUS_SENSITIVITY,
-	UNDEFINED_SENSITIVITY
+	UNDEFINED_SENSITIVITY,
+	edge_type_e_END
 } edge_type_e;
 
 typedef enum
@@ -288,7 +248,8 @@ typedef enum
 	PAD_NODE,
 	HARD_IP,
 	GENERIC, /*added for the unknown node type */
-	FULLADDER
+	FULLADDER,
+	operation_list_END
 } operation_list;
 
 typedef enum
@@ -368,7 +329,8 @@ typedef enum
 	HARD_BLOCK_CONNECT_LIST,
 	HARD_BLOCK_CONNECT,
 	// EDDIE: new enum value for ids to replace MEMORY from operation_t
-	RAM
+	RAM,
+	ids_END
 } ids;
 
 struct typ_t
@@ -439,6 +401,7 @@ struct ast_node_t_t
 
 	int line_number = -1;
 	int file_number = -1;
+	int related_module_id = -1;
 
 	short shared_node;
 	void *hb_port;

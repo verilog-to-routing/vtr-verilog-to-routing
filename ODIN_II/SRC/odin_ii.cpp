@@ -538,7 +538,7 @@ void get_options(int argc, char** argv) {
 		!global_args.verilog_files.value().empty()	//have a verilog input list
 	})){
 		parser.print_usage();
-		error_message(-1,0,-1,"Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
+		error_message(ARG_ERROR,0,-1, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
 	}
 
 	//adjust thread count

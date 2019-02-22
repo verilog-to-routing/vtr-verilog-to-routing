@@ -123,7 +123,7 @@ void parse_to_ast()
 		yyin = fopen(configuration.list_of_file_names[current_parse_file].c_str(), "r");
 		if (yyin == NULL)
 		{
-			error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
+			error_message(ARG_ERROR, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
 		}
 
 		/*Testing preprocessor - Paddy O'Brien*/
@@ -492,10 +492,10 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				    }
 
 			    if(range_temp_min > range_temp_max)
-				    error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support arrays declared [m:n] where m is less than n.");
+				    error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
 			    //ODIN doesn't support negative number in index now.
 			    if(range_temp_min < 0 || range_temp_max < 0)
-				    warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support negative number in index.");
+				    warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support negative number in index.");
 
                 }
 
@@ -675,10 +675,10 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				        }
 
 			        if(range_temp_min > range_temp_max)
-				        error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support arrays declared [m:n] where m is less than n.");
+				        error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
 			        //ODIN doesn't support negative number in index now.
 			        if(range_temp_min < 0 || range_temp_max < 0)
-				        warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support negative number in index.");
+				        warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support negative number in index.");
                 }
 
 
@@ -883,7 +883,7 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 	}
 	else
 	{
-	error_message(NETLIST_ERROR, line_number, current_parse_file, "Operation not supported by Odin\n");
+	error_message(NETLIST_ERROR, line_number, current_parse_file, "%s", "Operation not supported by Odin\n");
         }
 	/* see if this binary expression can have some constant folding */
 	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
@@ -1161,7 +1161,7 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
 
 	if (expression->type != NUMBERS)
 	{
-		error_message(PARSE_ERROR, line_number, current_parse_file, "Parameter value must be of type NUMBERS!\n");
+		error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "Parameter value must be of type NUMBERS!\n");
 	}
 
 	/* allocate child nodes to this node */
@@ -2084,11 +2084,11 @@ long calculate_operation(ast_node_t *node){
 		if(result >= 0){
 			return (long)result;
 		}else{
-			error_message(PARSE_ERROR, node->line_number, current_parse_file,"Negative numbers are used in the range in ODIN II!");
+			error_message(PARSE_ERROR, node->line_number, current_parse_file, "%s", "Negative numbers are used in the range in ODIN II!");
 			return 0;
 		}
 	}else{
-		error_message(PARSE_ERROR, node->line_number, current_parse_file,"could not resolve parameter in range");
+		error_message(PARSE_ERROR, node->line_number, current_parse_file, "%s", "could not resolve parameter in range");
 		return 0;
 	}
 }

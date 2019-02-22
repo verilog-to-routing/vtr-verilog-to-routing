@@ -31,7 +31,7 @@ extern vtr::t_linked_vptr *memory_port_size_list;
 extern t_model *single_port_rams;
 extern t_model *dual_port_rams;
 
-#define MEMORY_DEPTH_LIMIT (1 << 25)
+#define MEMORY_DEPTH_LIMIT (0x1ULL << 25)
 
 typedef struct s_memory
 {
