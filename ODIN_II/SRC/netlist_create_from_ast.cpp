@@ -801,15 +801,6 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 							"ODIN doesn't handle blocking statements in Sequential blocks\n");*/
 
 				return_sig_list = assignment_alias(node, instance_name_prefix);
-
-				/* relocate these frees if possible!!!! */
-				int j;
-				for (j = 0; j < return_sig_list->count; j++) {
-					nnode_t *temp_node = return_sig_list->pins[j]->node;
-					if (temp_node->type != MEMORY) {
-						free_nnode(temp_node);
-					}
-				}
 				skip_children = TRUE;
 				break;
 			}
@@ -3275,6 +3266,15 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			{
 				free_signal_list(return_list);
 				return_list = in_1;
+
+				/* free unused nnodes for related BLOCKING_STATEMENT nodes */
+				int i;
+				for (i = 0; i < output_size; i++) {
+					nnode_t *temp_node = in_1->pins[i]->node;
+					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
+						free_nnode(temp_node);
+					}
+				}
 			}
 		}
 
