@@ -946,6 +946,7 @@ void free_route_structs() {
 	if(heap != nullptr) {
         //Free the individiaul heap elements (calls destructors)
         for (int i = 1; i < num_heap_allocated; i++) {
+            VTR_LOG("Freeing %p\n", heap[i]);
             vtr::chunk_delete(heap[i], &heap_ch);
         }
 
