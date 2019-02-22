@@ -606,6 +606,8 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 
 		remap_pin_to_new_node(node->output_pins[i], new_logic_cells, 0);
 	}
+
+	free_nnode(node);
 }
 
 /*--------------------------------------------------------------------------
@@ -917,7 +919,6 @@ void instantiate_GT(nnode_t *node, operation_list type, short mark, netlist_t *n
 	if (xor_gate!= NULL)
 	{
 		instantiate_bitwise_logic(xor_gate, BITWISE_XOR, mark, netlist);
-		vtr::free(xor_gate);
 	}
 	
 	vtr::free(gt_cells);

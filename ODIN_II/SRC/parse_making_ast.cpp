@@ -517,12 +517,14 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			            if ((sc_spot = sc_lookup_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 			            {
 				            symbol_list->children[i]->types.variable.is_input = TRUE;
+							free_whole_tree(symbol_list->children[i]->children[0]);
 				            symbol_list->children[i]->children[0] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
 				            found_match = TRUE;
 			            }
 			            if ((found_match == FALSE) && ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1))
 			            {
 				            symbol_list->children[i]->types.variable.is_output = TRUE;
+							free_whole_tree(symbol_list->children[i]->children[0]);
 				            symbol_list->children[i]->children[0] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
 				            found_match = TRUE;
 			            }
@@ -701,6 +703,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				        if ((sc_spot = sc_lookup_string(functions_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 				        {
 					        symbol_list->children[i]->types.variable.is_input = TRUE;
+							free_whole_tree(symbol_list->children[i]->children[0]);
 					        symbol_list->children[i]->children[0] = (ast_node_t*)functions_inputs_sc->data[sc_spot];
 					        found_match = TRUE;
 				        }
@@ -708,6 +711,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				        if ((found_match == FALSE) && ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1))
 				        {
                             symbol_list->children[i]->types.variable.is_output = TRUE;
+							free_whole_tree(symbol_list->children[i]->children[0]);
 					        symbol_list->children[i]->children[0] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
 					        found_match = TRUE;
 				        }
