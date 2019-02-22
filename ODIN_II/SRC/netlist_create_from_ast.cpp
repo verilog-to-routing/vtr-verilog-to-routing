@@ -2370,12 +2370,12 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				}
 
 				/* CMM - Check if this pin should be driven by the top level VCC or GND drivers	*/
-				if (strstr(full_name, "ONE_VCC_CNS") != NULL)
+				if (strstr(full_name, ONE_VCC_CNS))
 				{
 					join_nets(verilog_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->one_net;
 				}
-				else if (strstr(full_name, "ZERO_GND_ZERO") != NULL)
+				else if (strstr(full_name, ZERO_GND_ZERO))
 				{
 					join_nets(verilog_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->zero_net;
@@ -2699,12 +2699,12 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
                 else{
 
 				    /* CMM - Check if this pin should be driven by the top level VCC or GND drivers	*/
-				    if (strstr(full_name, "ONE_VCC_CNS") != NULL)
+				    if (strstr(full_name, ONE_VCC_CNS))
 				    {
 					    join_nets(verilog_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					    input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->one_net;
 				    }
-				    else if (strstr(full_name, "ZERO_GND_ZERO") != NULL)
+				    else if (strstr(full_name, ZERO_GND_ZERO))
 				    {
 					    join_nets(verilog_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					    input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->zero_net;
@@ -2917,13 +2917,13 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 		new_pin->name = pin_lists->strings[i];
 
 		/* check if the instantiation pin exists. */
-		if (strstr(pin_lists->strings[i], "ONE_VCC_CNS") != NULL)
+		if (strstr(pin_lists->strings[i], ONE_VCC_CNS))
 		{
 			add_fanout_pin_to_net(verilog_netlist->one_net, new_pin);
 			sc_spot = sc_add_string(input_nets_sc, pin_lists->strings[i]);
 			input_nets_sc->data[sc_spot] = (void*)verilog_netlist->one_net;
 		}
-		else if (strstr(pin_lists->strings[i], "ZERO_GND_ZERO") != NULL)
+		else if (strstr(pin_lists->strings[i], ZERO_GND_ZERO))
 		{
 			add_fanout_pin_to_net(verilog_netlist->zero_net, new_pin);
 			sc_spot = sc_add_string(input_nets_sc, pin_lists->strings[i]);
@@ -3447,11 +3447,9 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			/* create the unique name for this gate */
 			//ff_node->name = node_name(ff_node, instance_name_prefix);
 			/* Name the flipflop based on the name of its output pin */
-			char *ff_name = (char *)vtr::malloc(sizeof(char) * (strlen(pin->name) + strlen(operation_list_STR[ff_node->type]) + 2));
-			strcpy(ff_name, pin->name);
-			strcat(ff_name, "_");
-			strcat(ff_name, operation_list_STR[ff_node->type]);
-			ff_node->name = ff_name;
+			const char *ff_base_name = node_name_based_on_op(ff_node);
+			ff_node->name = (char *)vtr::malloc(sizeof(char) * (strlen(pin->name) + strlen(ff_base_name) + 2));
+			odin_sprintf(ff_node->name, "%s_%s", pin->name, ff_base_name);
 
 			/* Copy over the initial value information from the net */
 			ref_string = (char *)vtr::calloc(strlen(pin->name)+100,sizeof(char));
@@ -4682,19 +4680,14 @@ int find_smallest_non_numerical(ast_node_t *node, signal_list_t **input_list, in
 			/* check if the smallest is not a number */
 			for (i = 0; i < input_list[smallest_idx]->count; i++)
 			{
-				if (input_list[smallest_idx]->pins[i]->name == NULL)
-				{
-					/* Not a number so this is the smallest */
-					found_non_numerical = TRUE;
+				found_non_numerical = !(
+					input_list[smallest_idx]->pins[i]->name 
+					&& (	strstr(input_list[smallest_idx]->pins[i]->name, ONE_VCC_CNS)
+						||	strstr(input_list[smallest_idx]->pins[i]->name, ZERO_GND_ZERO))
+				);
+				/* Not a number so this is the smallest */
+				if (found_non_numerical)
 					break;
-				}
-				if (!((strstr(input_list[smallest_idx]->pins[i]->name, "ONE_VCC_CNS") != NULL)
-						|| strstr(input_list[smallest_idx]->pins[i]->name, "ZERO_GND_ZERO") != NULL))
-				{
-					/* Not a number so this is the smallest */
-					found_non_numerical = TRUE;
-					break;
-				}
 			}
 		}
 	}

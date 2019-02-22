@@ -5,9 +5,10 @@
 #define MAX_BUF 256
 
 const char *node_name_based_on_op(nnode_t *node);
+const char *name_based_on_op(operation_list op);
 
 char *make_signal_name(char *signal_name, int bit);
-char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit);
+char *make_full_ref_name(const char *previous, const char *module_name, const char *module_instance_name, const char *signal_name, long bit);
 
 char *twos_complement(char *str);
 int is_string_of_radix(char *string, int radix);

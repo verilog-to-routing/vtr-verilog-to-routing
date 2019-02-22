@@ -35,18 +35,18 @@ extern t_model *dual_port_rams;
 
 typedef struct s_memory
 {
-	int size_d1;
-	int size_d2;
-	int size_addr1;
-	int size_addr2;
-	int size_out1;
-	int size_out2;
+	size_t size_d1;
+	size_t size_d2;
+	size_t size_addr1;
+	size_t size_addr2;
+	size_t size_out1;
+	size_t size_out2;
 	struct s_memory *next;
 } t_memory;
 
 typedef struct s_memory_port_sizes
 {
-	int size;
+	size_t size;
 	char *name;
 } t_memory_port_sizes;
 
@@ -70,8 +70,8 @@ typedef struct {
 	npin_t *clk;
 } dp_ram_signals;
 
-int get_sp_ram_split_depth();
-int get_dp_ram_split_depth();
+size_t get_sp_ram_split_depth();
+size_t get_dp_ram_split_depth();
 
 sp_ram_signals *get_sp_ram_signals(nnode_t *node);
 void free_sp_ram_signals(sp_ram_signals *signalsvar);
@@ -88,12 +88,12 @@ char is_ast_dp_ram(ast_node_t *node);
 void init_memory_distribution();
 void check_memories_and_report_distribution();
 
-int get_memory_port_size(const char *name);
+size_t get_memory_port_size(const char *name);
 
-long long get_sp_ram_depth(nnode_t *node);
-long long get_dp_ram_depth(nnode_t *node);
-int get_sp_ram_width(nnode_t *node);
-int get_dp_ram_width(nnode_t *node);
+size_t get_sp_ram_depth(nnode_t *node);
+size_t get_dp_ram_depth(nnode_t *node);
+size_t get_sp_ram_width(nnode_t *node);
+size_t get_dp_ram_width(nnode_t *node);
 
 void split_sp_memory_depth(nnode_t *node, int split_size);
 void split_dp_memory_depth(nnode_t *node, int split_size);

@@ -204,9 +204,9 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 {
 
 	/* Some initialization */
-	one_string = vtr::strdup("ONE_VCC_CNS");
-	zero_string = vtr::strdup("ZERO_GND_ZERO");
-	pad_string = vtr::strdup("ZERO_PAD_ZERO");
+	one_string = vtr::strdup(ONE_VCC_CNS);
+	zero_string = vtr::strdup(ZERO_GND_ZERO);
+	pad_string = vtr::strdup(ZERO_PAD_ZERO);
 
 	// CREATE OUTPUT DIRECTORY
 	#ifdef WIN32

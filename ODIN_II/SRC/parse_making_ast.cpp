@@ -1245,8 +1245,8 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	if
 	(
 		   sc_lookup_string(hard_block_names, module_ref_name) != -1
-		|| !strcmp(module_ref_name, "single_port_ram")
-		|| !strcmp(module_ref_name, "dual_port_ram")
+		|| !strcmp(module_ref_name, SINGLE_PORT_RAM_string)
+		|| !strcmp(module_ref_name, DUAL_PORT_RAM_string)
 	)
 	{
 		return newHardBlockInstance(module_ref_name, module_named_instance->children[i], line_number);
@@ -1301,8 +1301,8 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
 	if
 	(
 		   sc_lookup_string(hard_block_names, function_ref_name) != -1
-		|| !strcmp(function_ref_name, "single_port_ram")
-		|| !strcmp(function_ref_name, "dual_port_ram")
+		|| !strcmp(function_ref_name, SINGLE_PORT_RAM_string)
+		|| !strcmp(function_ref_name, DUAL_PORT_RAM_string)
 	)
 	{
 		return newHardBlockInstance(function_ref_name, function_named_instance, line_number);
@@ -1775,306 +1775,57 @@ void graphVizOutputAst(std::string path, ast_node_t *top)
  *-------------------------------------------------------------------------------------------*/
 void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *from, int from_num)
 {
-	size_t i;
-	int my_label = unique_label_count;
+	if(!node)
+		return;
 
 	/* increase the unique count for other nodes since ours is recorded */
-	unique_label_count++;
+	int my_label = unique_label_count++;
 
-	if (node == NULL)
+	fprintf(fp, "\t%d [label=\"", my_label);
+	fprintf(fp, "%s", ids_STR[node->type]);
+	switch(node->type)
 	{
-		/* print out the node and label details */
-	}
-	else
-	{
-		switch(node->type)
+		case VAR_DECLARE:
 		{
-			case FILE_ITEMS:
-				fprintf(fp, "\t%d [label=\"FILE_ITEMS\"];\n", my_label);
-				break;
-			case MODULE:
-				fprintf(fp, "\t%d [label=\"MODULE\"];\n", my_label);
-				break;
-			case MODULE_ITEMS:
-				fprintf(fp, "\t%d [label=\"MODULE_ITEMS\"];\n", my_label);
-				break;
-			case VAR_DECLARE:
-				{
-					std::stringstream temp;
-					if(node->types.variable.is_input)		temp << " INPUT";
-					if(node->types.variable.is_output)		temp << " OUTPUT";
-					if(node->types.variable.is_inout)		temp << " INOUT";
-					if(node->types.variable.is_port)		temp << " PORT";
-					if(node->types.variable.is_parameter)	temp << " PARAMETER";
-					if(node->types.variable.is_wire)		temp << " WIRE";
-					if(node->types.variable.is_reg)			temp << " REG";
+			std::stringstream temp;
+			if(node->types.variable.is_input)		temp << " INPUT";
+			if(node->types.variable.is_output)		temp << " OUTPUT";
+			if(node->types.variable.is_inout)		temp << " INOUT";
+			if(node->types.variable.is_port)		temp << " PORT";
+			if(node->types.variable.is_parameter)	temp << " PARAMETER";
+			if(node->types.variable.is_wire)		temp << " WIRE";
+			if(node->types.variable.is_reg)			temp << " REG";
 
-					fprintf(fp, "\t%d [label=\"VAR_DECLARE %s\"];\n", my_label, temp.str().c_str());
-				}
-				break;
-			case VAR_DECLARE_LIST:
-				fprintf(fp, "\t%d [label=\"VAR_DECLARE_LIST\"];\n", my_label);
-				break;
-			case ASSIGN:
-				fprintf(fp, "\t%d [label=\"ASSIGN\"];\n", my_label);
-				break;
-			case GATE:
-				fprintf(fp, "\t%d [label=\"GATE\"];\n", my_label);
-				break;
-			case GATE_INSTANCE:
-				fprintf(fp, "\t%d [label=\"GATE_INSTANCE\"];\n", my_label);
-				break;
-			case ONE_GATE_INSTANCE:
-				fprintf(fp, "\t%d [label=\"ONE_GATE_INSTANCE\"];\n", my_label);
-				break;
-			case MODULE_CONNECT_LIST:
-				fprintf(fp, "\t%d [label=\"MODULE_CONNECT_LIST\"];\n", my_label);
-				break;
-			case MODULE_CONNECT:
-				fprintf(fp, "\t%d [label=\"MODULE_CONNECT\"];\n", my_label);
-				break;
-			case MODULE_PARAMETER_LIST:
-				fprintf(fp, "\t%d [label=\"MODULE_PARAMETER_LIST\"];\n", my_label);
-				break;
-			case MODULE_PARAMETER:
-				fprintf(fp, "\t%d [label=\"MODULE_PARAMETER\"];\n", my_label);
-				break;
-			case MODULE_NAMED_INSTANCE:
-				fprintf(fp, "\t%d [label=\"MODULE_NAMED_INSTANCE\"];\n", my_label);
-				break;
-			case MODULE_INSTANCE:
-				fprintf(fp, "\t%d [label=\"MODULE_INSTANCE\"];\n", my_label);
-				break;
-			case HARD_BLOCK:
-				fprintf(fp, "\t%d [label=\"HARD_BLOCK\"];\n", my_label);
-				break;
-			case HARD_BLOCK_NAMED_INSTANCE:
-				fprintf(fp, "\t%d [label=\"HARD_BLOCK_NAMED_INSTANCE\"];\n", my_label);
-				break;
-			case HARD_BLOCK_CONNECT:
-				fprintf(fp, "\t%d [label=\"HARD_BLOCK_CONNECT\"];\n", my_label);
-				break;
-			case HARD_BLOCK_CONNECT_LIST:
-				fprintf(fp, "\t%d [label=\"HARD_BLOCK_CONNECT_LIST\"];\n", my_label);
-				break;
-			case BLOCK:
-				fprintf(fp, "\t%d [label=\"BLOCK\"];\n", my_label);
-				break;
-			case NON_BLOCKING_STATEMENT:
-				fprintf(fp, "\t%d [label=\"NON_BLOCKING_STATEMENT\"];\n", my_label);
-				break;
-			case BLOCKING_STATEMENT:
-				fprintf(fp, "\t%d [label=\"BLOCKING_STATEMENT\"];\n", my_label);
-				break;
-			case CASE:
-				fprintf(fp, "\t%d [label=\"CASE\"];\n", my_label);
-				break;
-			case CASE_LIST:
-				fprintf(fp, "\t%d [label=\"CASE_LIST\"];\n", my_label);
-				break;
-			case CASE_ITEM:
-				fprintf(fp, "\t%d [label=\"CASE_ITEM\"];\n", my_label);
-				break;
-			case CASE_DEFAULT:
-				fprintf(fp, "\t%d [label=\"CASE_DEFAULT\"];\n", my_label);
-				break;
-			case ALWAYS:
-				fprintf(fp, "\t%d [label=\"ALWAYS\"];\n", my_label);
-				break;
-			case DELAY_CONTROL:
-				fprintf(fp, "\t%d [label=\"DELAY_CONTROL\"];\n", my_label);
-				break;
-			case POSEDGE:
-				fprintf(fp, "\t%d [label=\"POSEDGE\"];\n", my_label);
-				break;
-			case NEGEDGE:
-				fprintf(fp, "\t%d [label=\"NEGEDGE\"];\n", my_label);
-				break;
-			case WHILE:
-				fprintf(fp, "\t%d [label=\"WHILE\"];\n", my_label);
-				break;
-			case FOR:
-				fprintf(fp, "\t%d [label=\"FOR\"];\n", my_label);
-				break;
-			case IF:
-				fprintf(fp, "\t%d [label=\"IF\"];\n", my_label);
-				break;
-			case IF_Q:
-				fprintf(fp, "\t%d [label=\"IF_Q\"];\n", my_label);
-				break;
-			case BINARY_OPERATION:
-				switch (node->types.operation.op)
-				{
-					case ADD:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION ADD\"];\n", my_label);
-						break;
-					case MINUS:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION MINUS\"];\n", my_label);
-						break;
-					case BITWISE_NOT:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_NOT\"];\n", my_label);
-						break;
-					case BITWISE_AND:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_AND\"];\n", my_label);
-						break;
-					case BITWISE_OR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_OR\"];\n", my_label);
-						break;
-					case BITWISE_NAND:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_NAND\"];\n", my_label);
-						break;
-					case BITWISE_NOR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_NOR\"];\n", my_label);
-						break;
-					case BITWISE_XNOR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_XNOR\"];\n", my_label);
-						break;
-					case BITWISE_XOR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_XOR\"];\n", my_label);
-						break;
-					case LOGICAL_NOT:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION LOGICAL_NOT\"];\n", my_label);
-						break;
-					case LOGICAL_OR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION LOGICAL_OR\"];\n", my_label);
-						break;
-					case LOGICAL_AND:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION LOGICAL_AND\"];\n", my_label);
-						break;
-					case MULTIPLY:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION MULTIPLY\"];\n", my_label);
-						break;
-					case DIVIDE:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION DIVIDE\"];\n", my_label);
-						break;
-					case MODULO:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION MODULO\"];\n", my_label);
-						break;
-					case LT:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION LT\"];\n", my_label);
-						break;
-					case GT:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION GT\"];\n", my_label);
-						break;
-					case LOGICAL_EQUAL:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION LOGICAL_EQUAL\"];\n", my_label);
-						break;
-					case NOT_EQUAL:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION NOT_EQUAL\"];\n", my_label);
-						break;
-					case LTE:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION LTE\"];\n", my_label);
-						break;
-					case GTE:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION GTE\"];\n", my_label);
-						break;
-					case SR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION SR\"];\n", my_label);
-						break;
-					case ASR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION ASR\"];\n", my_label);
-						break;
-					case SL:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION SL\"];\n", my_label);
-						break;
-					case CASE_EQUAL:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION CASE_EQUAL\"];\n", my_label);
-						break;
-					case CASE_NOT_EQUAL:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION\"];\n", my_label);
-						break;
-					default:
-						break;
-				}
-				break;
-			case UNARY_OPERATION:
-				switch (node->types.operation.op)
-				{
-					case ADD:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION ADD\"];\n", my_label);
-						break;
-					case MINUS:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION MINUS\"];\n", my_label);
-						break;
-					case BITWISE_NOT:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_NOT\"];\n", my_label);
-						break;
-					case BITWISE_AND:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_AND\"];\n", my_label);
-						break;
-					case BITWISE_OR:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_OR\"];\n", my_label);
-						break;
-					case BITWISE_NAND:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_NAND\"];\n", my_label);
-						break;
-					case BITWISE_NOR:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_NOR\"];\n", my_label);
-						break;
-					case BITWISE_XNOR:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_XNOR\"];\n", my_label);
-						break;
-					case BITWISE_XOR:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_XOR\"];\n", my_label);
-						break;
-					case LOGICAL_NOT:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION LOGICAL_NOT\"];\n", my_label);
-						break;
-					default:
-						break;
-				}
-				break;
-			case ARRAY_REF:
-				fprintf(fp, "\t%d [label=\"ARRAY_REF\"];\n", my_label);
-				break;
-			case RANGE_REF:
-				fprintf(fp, "\t%d [label=\"RANGE_REF\"];\n", my_label);
-				break;
-			case CONCATENATE:
-				fprintf(fp, "\t%d [label=\"CONCATENATE\"];\n", my_label);
-				break;
-			case IDENTIFIERS:
-				fprintf(fp, "\t%d [label=\"IDENTIFIERS:%s\"];\n", my_label, node->types.identifier);
-				break;
-			case NUMBERS:
-				switch (node->types.number.base)
-				{
-					case(DEC):
-						fprintf(fp, "\t%d [label=\"NUMBERS DEC:%s\"];\n", my_label, node->types.number.number);
-						break;
-					case(HEX):
-						fprintf(fp, "\t%d [label=\"NUMBERS HEX:%s\"];\n", my_label, node->types.number.number);
-						break;
-					case(OCT):
-						fprintf(fp, "\t%d [label=\"NUMBERS OCT:%s\"];\n", my_label, node->types.number.number);
-						break;
-					case(BIN):
-						fprintf(fp, "\t%d [label=\"NUMBERS BIN:%s\"];\n", my_label, node->types.number.number);
-						break;
-					case(LONG_LONG):
-						fprintf(fp, "\t%d [label=\"NUMBERS LONG_LONG:%lld\"];\n", my_label, node->types.number.value);
-						break;
-                    default:
-                        oassert(FALSE);
-                        break;
-				}
-				break;
-			default:
-				oassert(FALSE);
+			fprintf(fp, ": %s",  temp.str().c_str());
+			break;
 		}
-	}
+		case NUMBERS:
+			fprintf(fp, ": %s",  node->types.number.binary_string );
+			break;
 
-	if (node != NULL)
+		case UNARY_OPERATION: //fallthrough
+		case BINARY_OPERATION:
+			fprintf(fp, ": %s", name_based_on_op(node->types.operation.op));
+			break;
+
+		case IDENTIFIERS:
+			fprintf(fp, ": %s", node->types.identifier);
+			break;
+		
+		default:
+			break;
+	}
+	fprintf(fp, "\"];\n");		
+	
+	/* print out the connection with the previous node */
+	if (from != NULL)
+		fprintf(fp, "\t%d -> %d;\n", from_num, my_label);
+
+	for (size_t i = 0; i < node->num_children; i++)
 	{
-		/* print out the connection with the previous node */
-		if (from != NULL)
-			fprintf(fp, "\t%d -> %d;\n", from_num, my_label);
-
-		for (i = 0; i < node->num_children; i++)
-		{
-			graphVizOutputAst_traverse_node(fp, node->children[i], node, my_label);
-		}
+		graphVizOutputAst_traverse_node(fp, node->children[i], node, my_label);
 	}
+
 }
 
 long calculate_operation(ast_node_t *node){

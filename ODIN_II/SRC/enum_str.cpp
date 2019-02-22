@@ -18,129 +18,84 @@ const char *edge_type_e_STR[] =
 	"UNDEFINED_SENSITIVITY"
 };
 
-#ifndef ODIN_SHORT_STRING
+const char *_ZERO_GND_ZERO[] = 
+{
+	"ZERO_GND_ZERO","ZGZ"
+};
 
-    const char *ZERO_GND_ZERO = "ZERO_GND_ZERO";
-    const char *ONE_VCC_CNS = "ONE_VCC_CNS";
-    const char *SINGLE_PORT_RAM_string = "single_port_ram";
-    const char *DUAL_PORT_RAM_string = "dual_port_ram";
+const char *_ONE_VCC_CNS[] = 
+{
+	"ONE_VCC_CNS","OVC",
+};
 
-    const char *operation_list_STR[] = 
-    {
-        "NO_OP",
-        "MULTI_PORT_MUX", // port 1 = control, port 2+ = mux options
-        "FF_NODE",
-        "BUF_NODE",
-        "INPUT_NODE",
-        "OUTPUT_NODE",
-        "GND_NODE",
-        "VCC_NODE",
-        "CLOCK_NODE",
-        "ADD", // +
-        "MINUS", // -
-        "BITWISE_NOT", // ~
-        "BITWISE_AND", // &
-        "BITWISE_OR", // |
-        "BITWISE_NAND", // ~&
-        "BITWISE_NOR", // ~|
-        "BITWISE_XNOR", // ~^
-        "BITWISE_XOR", // ^
-        "LOGICAL_NOT", // !
-        "LOGICAL_OR", // ||
-        "LOGICAL_AND", // &&
-        "LOGICAL_NAND", // No Symbol
-        "LOGICAL_NOR", // No Symbol
-        "LOGICAL_XNOR", // No symbol
-        "LOGICAL_XOR", // No Symbol
-        "MULTIPLY", // *
-        "DIVIDE", // /
-        "MODULO", // %
-        "OP_POW", // **
-        "LT", // <
-        "GT", // >
-        "LOGICAL_EQUAL", // ==
-        "NOT_EQUAL", // !=
-        "LTE", // <=
-        "GTE", // >=
-        "SR", // >>
-        "ASR", // >>>
-        "SL", // <<
-        "CASE_EQUAL", // ===
-        "CASE_NOT_EQUAL", // !==
-        "ADDER_FUNC",
-        "CARRY_FUNC",
-        "MUX_2",
-        "BLIF_FUNCTION",
-        "NETLIST_FUNCTION",
-        "MEMORY",
-        "PAD_NODE",
-        "HARD_IP",
-        "GENERIC", /*added for the unknown node type */
-        "FULLADDER"
-    };
+const char *_ZERO_PAD_ZERO[] = 
+{
+	"ZERO_PAD_ZERO","ZPZ"
+};
 
-#else
+const char *_SINGLE_PORT_RAM_string[] = 
+{
+	"single_port_ram","SPR"
+};
 
-    const char *ZERO_GND_ZERO = "ZGZ";
-    const char *ONE_VCC_CNS = "OVC";
-    const char *SINGLE_PORT_RAM_string = "SPR";
-    const char *DUAL_PORT_RAM_string = "DPR";
+const char *_DUAL_PORT_RAM_string[] = 
+{
+	"dual_port_ram","DPR"
+};
 
-    const char *operation_list_STR[] = 
-    {
-        "NO_OP",
-        "MULTI_PORT_MUX", // port 1 = control, port 2+ = mux options
-        "FF_NODE",
-        "BUF_NODE",
-        "INPUT_NODE",
-        "OUTPUT_NODE",
-        "GND_NODE",
-        "VCC_NODE",
-        "CLOCK_NODE",
-        "ADD", // +
-        "MINUS", // -
-        "BITWISE_NOT", // ~
-        "BITWISE_AND", // &
-        "BITWISE_OR", // |
-        "BITWISE_NAND", // ~&
-        "BITWISE_NOR", // ~|
-        "BITWISE_XNOR", // ~^
-        "BITWISE_XOR", // ^
-        "LOGICAL_NOT", // !
-        "LOGICAL_OR", // ||
-        "LOGICAL_AND", // &&
-        "LOGICAL_NAND", // No Symbol
-        "LOGICAL_NOR", // No Symbol
-        "LOGICAL_XNOR", // No symbol
-        "LOGICAL_XOR", // No Symbol
-        "MULTIPLY", // *
-        "DIVIDE", // /
-        "MODULO", // %
-        "OP_POW", // **
-        "LT", // <
-        "GT", // >
-        "LOGICAL_EQUAL", // ==
-        "NOT_EQUAL", // !=
-        "LTE", // <=
-        "GTE", // >=
-        "SR", // >>
-        "ASR", // >>>
-        "SL", // <<
-        "CASE_EQUAL", // ===
-        "CASE_NOT_EQUAL", // !==
-        "ADDER_FUNC",
-        "CARRY_FUNC",
-        "MUX_2",
-        "BLIF_FUNCTION",
-        "NETLIST_FUNCTION",
-        "MEMORY",
-        "PAD_NODE",
-        "HARD_IP",
-        "GENERIC", /*added for the unknown node type */
-        "FULLADDER"
-    };
-
-#endif
+const char *operation_list_STR[][2] = 
+{
+	{"NO_OP",           "nOP"},
+	{"MULTI_PORT_MUX",  "nMUX"}, // port 1 = control, port 2+ = mux options
+	{"FF_NODE",         "FF"},
+	{"BUF_NODE",        "BUF"},
+	{"INPUT_NODE",      "IN"},
+	{"OUTPUT_NODE",     "OUT"},
+	{"GND_NODE",        "GND"},
+	{"VCC_NODE",        "VCC"},
+	{"CLOCK_NODE",      "CLK"},
+	{"ADD",             "ADD"}, // +
+	{"MINUS",           "MIN"}, // -
+	{"BITWISE_NOT",     "bNOT"}, // ~
+	{"BITWISE_AND",     "bAND"}, // &
+	{"BITWISE_OR",      "bOR"}, // |
+	{"BITWISE_NAND",    "bNAND"}, // ~&
+	{"BITWISE_NOR",     "bNOR"}, // ~|
+	{"BITWISE_XNOR",    "bXNOR"}, // ~^
+	{"BITWISE_XOR",     "bXOR"}, // ^
+	{"LOGICAL_NOT",     "lNOT"}, // !
+	{"LOGICAL_OR",      "lOR"}, // ||
+	{"LOGICAL_AND",     "lAND"}, // &&
+	{"LOGICAL_NAND",    "lNAND"}, // No Symbol
+	{"LOGICAL_NOR",     "lNOR"}, // No Symbol
+	{"LOGICAL_XNOR",    "lXNOR"}, // No symbol
+	{"LOGICAL_XOR",     "lXOR"}, // No Symbol
+	{"MULTIPLY",        "MUL"}, // *
+	{"DIVIDE",          "DIV"}, // /
+	{"MODULO",          "MOD"}, // %
+	{"OP_POW",          "POW"}, // **
+	{"LT",              "LT"}, // <
+	{"GT",              "GT"}, // >
+	{"LOGICAL_EQUAL",   "lEQ"}, // ==
+	{"NOT_EQUAL",       "lNEQ"}, // !=
+	{"LTE",             "LTE"}, // <=
+	{"GTE",             "GTE"}, // >=
+	{"SR",              "SR"}, // >>
+	{"ASR",             "ASR"}, // >>>
+	{"SL",              "SL"}, // <<
+	{"CASE_EQUAL",      "cEQ"}, // ===
+	{"CASE_NOT_EQUAL",  "cNEQ"}, // !==
+	{"ADDER_FUNC",      "ADDER"},
+	{"CARRY_FUNC",      "CARRY"},
+	{"MUX_2",           "MUX_2"},
+	{"BLIF_FUNCTION",   "BLIFf"},
+	{"NETLIST_FUNCTION","NETf"},
+	{"MEMORY",          "MEM"},
+	{"PAD_NODE",        "PAD"},
+	{"HARD_IP",         "HARD"},
+	{"GENERIC",         "GEN"}, /*added for the unknown node type */
+	{"FULLADDER",       "FlADD"}
+};
 
 const char *ids_STR []= 
 {
@@ -221,3 +176,19 @@ const char *ids_STR []=
 	// EDDIE: new enum value for ids to replace MEMORY from operation_t
 	"RAM"
 };
+
+#define ODIN_LONG_STRING 0
+#define ODIN_SHORT_STRING 1
+
+#ifdef DEBUG_ODIN
+	#define ODIN_STRING_TYPE ODIN_SHORT_STRING
+#else
+	#define ODIN_STRING_TYPE ODIN_LONG_STRING
+#endif
+
+const char *ZERO_GND_ZERO = _ZERO_GND_ZERO[ODIN_STRING_TYPE];
+const char *ONE_VCC_CNS = _ONE_VCC_CNS[ODIN_STRING_TYPE];
+const char *ZERO_PAD_ZERO = _ZERO_PAD_ZERO[ODIN_STRING_TYPE];
+
+const char *SINGLE_PORT_RAM_string = _SINGLE_PORT_RAM_string[ODIN_STRING_TYPE];
+const char *DUAL_PORT_RAM_string = _DUAL_PORT_RAM_string[ODIN_STRING_TYPE];

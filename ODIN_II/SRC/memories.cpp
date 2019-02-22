@@ -58,41 +58,41 @@ int get_sp_ram_split_width();
 int get_dp_ram_split_width();
 void filter_memories_by_soft_logic_cutoff();
 
-long long get_sp_ram_depth(nnode_t *node)
+size_t get_sp_ram_depth(nnode_t *node)
 {
 	sp_ram_signals *signals = get_sp_ram_signals(node);
-	long long depth = (0x1ULL << signals->addr->count);
+	size_t depth = (0x1ULL << signals->addr->count);
 	free_sp_ram_signals(signals);
 	return depth;
 }
 
-long long get_dp_ram_depth(nnode_t *node)
+size_t get_dp_ram_depth(nnode_t *node)
 {
 	dp_ram_signals *signals = get_dp_ram_signals(node);
 	oassert(signals->addr1->count == signals->addr2->count);
-	long long depth = (0x1ULL << signals->addr1->count);
+	size_t depth = (0x1ULL << signals->addr1->count);
 	free_dp_ram_signals(signals);
 	return depth;
 }
 
-int get_sp_ram_width(nnode_t *node)
+size_t get_sp_ram_width(nnode_t *node)
 {
 	sp_ram_signals *signals = get_sp_ram_signals(node);
-	int width = signals->data->count;
+	size_t width = signals->data->count;
 	free_sp_ram_signals(signals);
 	return width;
 }
 
-int get_dp_ram_width(nnode_t *node)
+size_t get_dp_ram_width(nnode_t *node)
 {
 	dp_ram_signals *signals = get_dp_ram_signals(node);
 	oassert(signals->data1->count == signals->data2->count);
-	int width = signals->data1->count;
+	size_t width = signals->data1->count;
 	free_dp_ram_signals(signals);
 	return width;
 }
 
-int get_memory_port_size(const char *name)
+size_t get_memory_port_size(const char *name)
 {
 	t_linked_vptr *mpl;
 
@@ -271,18 +271,18 @@ void check_memories_and_report_distribution()
 	printf("============================\n");
 
 
-	long long total_memory_bits = 0;
+	size_t total_memory_bits = 0;
 	int total_memory_block_counter = 0;
-	long long memory_max_width = 0;
-	long long memory_max_depth = 0;
+	size_t memory_max_width = 0;
+	size_t memory_max_depth = 0;
 
 	t_linked_vptr *temp = sp_memory_list;
 	while (temp != NULL)
 	{
 		nnode_t *node = (nnode_t *)temp->data_vptr;
 
-		long long width = get_sp_ram_width(node);
-		long long depth = get_sp_ram_depth(node);
+		size_t width = get_sp_ram_width(node);
+		size_t depth = get_sp_ram_depth(node);
 
 		if (depth > MEMORY_DEPTH_LIMIT)
 			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %lld exceeds ODIN depth bound of %lld.", node->name, depth, MEMORY_DEPTH_LIMIT);
@@ -308,9 +308,8 @@ void check_memories_and_report_distribution()
 	{
 		nnode_t *node = (nnode_t *)temp->data_vptr;
 
-		long long width = get_dp_ram_width(node);
-		long long depth = get_dp_ram_depth(node);
-
+		size_t width = get_dp_ram_width(node);
+		size_t depth = get_dp_ram_depth(node);
 		if (depth > MEMORY_DEPTH_LIMIT)
 			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %lld exceeds ODIN depth bound of %lld.", node->name, depth, MEMORY_DEPTH_LIMIT);
 
@@ -909,10 +908,10 @@ void split_dp_memory_width(nnode_t *node, int target_size)
  * Determines the single port ram split depth based on the configuration
  * variables and architecture.
  */
-int get_sp_ram_split_depth()
+size_t get_sp_ram_split_depth()
 {
 	t_model_ports *hb_ports= get_model_port(single_port_rams->inputs, "addr");
-	int split_size;
+	size_t split_size;
 	if (configuration.split_memory_depth == -1) /* MIN */
 		split_size = hb_ports->min_size;
 	else if (configuration.split_memory_depth == -2) /* MIN */
@@ -931,10 +930,10 @@ int get_sp_ram_split_depth()
  * Determines the dual port ram split depth based on the configuration
  * variables and architecture.
  */
-int get_dp_ram_split_depth()
+size_t get_dp_ram_split_depth()
 {
 	t_model_ports *hb_ports= get_model_port(dual_port_rams->inputs, "addr1");
-	int split_depth;
+	size_t split_depth;
 	if (configuration.split_memory_depth == -1) /* MIN */
 		split_depth = hb_ports->min_size;
 	else if (configuration.split_memory_depth == -2) /* MIN */
@@ -1005,8 +1004,8 @@ void filter_memories_by_soft_logic_cutoff()
 			oassert(node->type == MEMORY);
 			temp = delete_in_vptr_list(temp);
 
-			int depth = get_sp_ram_depth(node);
-			int width = get_sp_ram_width(node);
+			size_t depth = get_sp_ram_depth(node);
+			size_t width = get_sp_ram_width(node);
 			if (depth > configuration.soft_logic_memory_depth_threshold || width > configuration.soft_logic_memory_width_threshold)
 				sp_memory_list = insert_in_vptr_list(sp_memory_list, node);
 
@@ -1024,8 +1023,8 @@ void filter_memories_by_soft_logic_cutoff()
 			oassert(node->type == MEMORY);
 			temp = delete_in_vptr_list(temp);
 
-			int depth = get_dp_ram_depth(node);
-			int width = get_dp_ram_width(node);
+			size_t depth = get_dp_ram_depth(node);
+			size_t width = get_dp_ram_width(node);
 			if (depth > configuration.soft_logic_memory_depth_threshold || width > configuration.soft_logic_memory_width_threshold)
 				dp_memory_list = insert_in_vptr_list(dp_memory_list, node);
 		}
@@ -1284,20 +1283,13 @@ char is_dp_ram(nnode_t *node)
 
 char is_ast_sp_ram(ast_node_t *node)
 {
-	char *identifier = node->children[0]->types.identifier;
-	if (!strcmp(identifier, "single_port_ram"))
-		return TRUE;
-	else
-		return FALSE;
+	return (!strcmp(node->children[0]->types.identifier, SINGLE_PORT_RAM_string));
 }
 
 char is_ast_dp_ram(ast_node_t *node)
 {
 	char *identifier = node->children[0]->types.identifier;
-	if (!strcmp(identifier, "dual_port_ram"))
-		return TRUE;
-	else
-		return FALSE;
+	return (!strcmp(node->children[0]->types.identifier, DUAL_PORT_RAM_string));
 }
 
 sp_ram_signals *get_sp_ram_signals(nnode_t *node)

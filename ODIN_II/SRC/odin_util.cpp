@@ -44,9 +44,18 @@ OTHER DEALINGS IN THE SOFTWARE.
  * (function: node_name_based_on_op)
  * 	Get the string version of a node
  *-------------------------------------------------------------------------------------------*/
+const char *name_based_on_op(operation_list op)
+{
+	return operation_list_STR[op][ODIN_STRING_TYPE];
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: node_name_based_on_op)
+ * 	Get the string version of a node
+ *-------------------------------------------------------------------------------------------*/
 const char *node_name_based_on_op(nnode_t *node)
 {
-	return operation_list_STR[node->type];
+	return name_based_on_op(node->type);
 }
 
 /*--------------------------------------------------------------------------
@@ -70,7 +79,7 @@ char *make_signal_name(char *signal_name, int bit)
 // {previous_string}.module_name+instance_name^signal_name
 // {previous_string}.module_name+instance_name^signal_name~bit
  *-------------------------------------------------------------------------------------------*/
-char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit)
+char *make_full_ref_name(const char *previous, const char *module_name, const char *module_instance_name, const char *signal_name, long bit)
 {
 
 	std::stringstream return_string;

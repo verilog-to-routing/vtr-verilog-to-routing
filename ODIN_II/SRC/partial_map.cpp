@@ -266,8 +266,8 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			char *identifier = ast_node->children[0]->types.identifier;
 			if (find_hard_block(identifier))
 			{
-				int depth = is_sp_ram(node)? get_sp_ram_depth(node) : get_dp_ram_depth(node);
-				int width = is_sp_ram(node)? get_sp_ram_width(node) : get_dp_ram_width(node);
+				size_t depth = is_sp_ram(node)? get_sp_ram_depth(node) : get_dp_ram_depth(node);
+				size_t width = is_sp_ram(node)? get_sp_ram_width(node) : get_dp_ram_width(node);
 
 				// If the memory satisfies the threshold for the use of a hard logic block, use one.
 				if (depth > configuration.soft_logic_memory_depth_threshold || width > configuration.soft_logic_memory_width_threshold)

@@ -74,8 +74,8 @@ void cache_hard_block_names()
 void register_hard_blocks()
 {
 	cache_hard_block_names();
-	single_port_rams = find_hard_block("single_port_ram");
-	dual_port_rams   = find_hard_block("dual_port_ram");
+	single_port_rams = find_hard_block(SINGLE_PORT_RAM_string);
+	dual_port_rams   = find_hard_block(DUAL_PORT_RAM_string);
 
 	if (single_port_rams)
 	{
@@ -335,8 +335,8 @@ hard_block_port_size(t_model *hb, char *pname)
 	 *  depending on the instance of the hard block. May want to extend
 	 *  this list of blocks in the future.
 	 */
-	if ((strcmp(hb->name, "single_port_ram") == 0) ||
-		(strcmp(hb->name, "dual_port_ram") == 0))
+	if ((strcmp(hb->name, SINGLE_PORT_RAM_string) == 0) ||
+		(strcmp(hb->name, DUAL_PORT_RAM_string) == 0))
 	{
 		return -1;
 	}

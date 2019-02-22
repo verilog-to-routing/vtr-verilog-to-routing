@@ -639,29 +639,24 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		if (bit == -1)
 			bit = 0;
 
-		if(bit < var_node->types.number.binary_size)
+		/* strings are msb is 0th index in string, reverse access */
+		if (bit < var_node->types.number.binary_size)
 		{
-			if (var_node->types.number.binary_string[var_node->types.number.binary_size-bit-1] == '1')
+			char c = var_node->types.number.binary_string[var_node->types.number.binary_size-bit-1];
+			switch(c)
 			{
-				return_string = (char*)vtr::malloc(sizeof(char)*11+1); // ONE_VCC_CNS
-				odin_sprintf(return_string, "ONE_VCC_CNS");
-			}
-			else if (var_node->types.number.binary_string[var_node->types.number.binary_size-bit-1] == '0')
-			{
-				return_string = (char*)vtr::malloc(sizeof(char)*13+1); // ZERO_GND_ZERO
-				odin_sprintf(return_string, "ZERO_GND_ZERO");
-			}
-			else
-			{
-				return_string = NULL;
-				oassert(FALSE);
+			case '1': return_string = vtr::strdup(ONE_VCC_CNS); break;
+			case '0': return_string = vtr::strdup(ZERO_GND_ZERO); break;
+			case 'x': return_string = vtr::strdup(ZERO_GND_ZERO); break;
+			default: 
+				error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.number.binary_string);
+				break;
 			}
 		}
+		// if the index is too big for the number pad with zero
+
 		else
-		{
-			return_string = (char*)vtr::malloc(sizeof(char)*13+1); // ZERO_GND_ZERO
-			odin_sprintf(return_string, "ZERO_GND_ZERO");
-		}
+			return_string = vtr::strdup(ZERO_GND_ZERO);
 	}
 	else if (var_node->type == CONCATENATE)
 	{
@@ -708,15 +703,15 @@ char **get_name_of_pins_number(ast_node_t *var_node, int /*start*/, int width)
 			char c = var_node->types.number.binary_string[j];
 			switch(c)
 			{
-			case '1': return_string[i] = vtr::strdup("ONE_VCC_CNS"); break;
-			case '0': return_string[i] = vtr::strdup("ZERO_GND_ZERO"); break;
-			case 'x': return_string[i] = vtr::strdup("ZERO_GND_ZERO"); break;
+			case '1': return_string[i] = vtr::strdup(ONE_VCC_CNS); break;
+			case '0': return_string[i] = vtr::strdup(ZERO_GND_ZERO); break;
+			case 'x': return_string[i] = vtr::strdup(ZERO_GND_ZERO); break;
 			default: error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.number.binary_string);
 			}
 		}
 		else
 			// if the index is too big for the number pad with zero
-			return_string[i] = vtr::strdup("ZERO_GND_ZERO");
+			return_string[i] = vtr::strdup(ZERO_GND_ZERO);
 	}
 	return return_string;
 }

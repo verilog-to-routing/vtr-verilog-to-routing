@@ -47,10 +47,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 size_t file_line_number;
 int line_count;
 
-const char *BLIF_ONE_STRING    = "ONE_VCC_CNS";
-const char *BLIF_ZERO_STRING   = "ZERO_GND_ZERO";
-const char *BLIF_PAD_STRING    = "ZERO_PAD_ZERO";
-
 // Stores pin names of the form port[pin]
 typedef struct {
 	int count;
@@ -274,7 +270,8 @@ operation_list assign_node_type_from_node_name(char * output_name)
 		extracted_string[j]='\0';
 		for(i=0; i<operation_list_END; i++)
 		{
-			if(!strcmp(extracted_string,operation_list_STR[i]))
+			if(!strcmp(extracted_string,operation_list_STR[i][ODIN_LONG_STRING])
+			|| !strcmp(extracted_string,operation_list_STR[i][ODIN_SHORT_STRING]))
 			{
 				result = static_cast<operation_list>(i);
 				break;
@@ -1184,28 +1181,22 @@ void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *ou
 	add_driver_pin_to_net(blif_netlist->pad_net, new_pin);
 
 	/* CREATE the driver for the ZERO */
-	BLIF_ZERO_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, zero_string, -1);
+	blif_netlist->zero_net->name = make_full_ref_name(instance_name_prefix, NULL, NULL, zero_string, -1);
 	blif_netlist->gnd_node->name = vtr::strdup(GND_NAME);
 
 	output_nets_hash->add(output_nets_hash, (void *)blif_netlist->gnd_node->name, strlen(blif_netlist->gnd_node->name)*sizeof(char), blif_netlist->zero_net);
 
-	blif_netlist->zero_net->name = vtr::strdup(BLIF_ZERO_STRING);
-
 	/* CREATE the driver for the ONE and store twice */
-	BLIF_ONE_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, one_string, -1);
+	blif_netlist->one_net->name = make_full_ref_name(instance_name_prefix, NULL, NULL, one_string, -1);
 	blif_netlist->vcc_node->name = vtr::strdup(VCC_NAME);
 
 	output_nets_hash->add(output_nets_hash, (void *)blif_netlist->vcc_node->name, strlen(blif_netlist->vcc_node->name)*sizeof(char), blif_netlist->one_net);
 
-	blif_netlist->one_net->name = vtr::strdup(BLIF_ONE_STRING);
-
 	/* CREATE the driver for the PAD */
-	BLIF_PAD_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, pad_string, -1);
+	blif_netlist->pad_net->name = make_full_ref_name(instance_name_prefix, NULL, NULL, pad_string, -1);
 	blif_netlist->pad_node->name = vtr::strdup(HBPAD_NAME);
 
 	output_nets_hash->add(output_nets_hash, (void *)blif_netlist->pad_node->name, strlen(blif_netlist->pad_node->name)*sizeof(char), blif_netlist->pad_net);
-
-	blif_netlist->pad_net->name = vtr::strdup(BLIF_PAD_STRING);
 }
 
 /*---------------------------------------------------------------------------------------------

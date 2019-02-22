@@ -44,6 +44,18 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef TYPES_H
 #define TYPES_H
 
+/**
+ * to use short vs long string for output
+ */
+#define ODIN_LONG_STRING 0
+#define ODIN_SHORT_STRING 1
+
+#ifdef DEBUG_ODIN
+	#define ODIN_STRING_TYPE ODIN_SHORT_STRING
+#else
+	#define ODIN_STRING_TYPE ODIN_LONG_STRING
+#endif
+
 #define ODIN_STD_BITWIDTH (sizeof(long long)*8)
 
 typedef struct global_args_t_t global_args_t;
@@ -161,12 +173,14 @@ struct global_args_t_t
  */
 extern const char *ZERO_GND_ZERO;
 extern const char *ONE_VCC_CNS;
+extern const char *ZERO_PAD_ZERO;
+
 extern const char *SINGLE_PORT_RAM_string;
 extern const char *DUAL_PORT_RAM_string;
 
 extern const char *signedness_STR[];
 extern const char *edge_type_e_STR[];
-extern const char *operation_list_STR[];
+extern const char *operation_list_STR[][2];
 extern const char *ids_STR [];
 
 typedef enum

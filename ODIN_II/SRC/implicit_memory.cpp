@@ -122,7 +122,7 @@ implicit_memory *create_implicit_memory_block(int data_width, long long memory_d
 	node->related_ast_node = (ast_node_t *)vtr::calloc(1, sizeof(ast_node_t));
 	node->related_ast_node->children = (ast_node_t **)vtr::calloc(1,sizeof(ast_node_t *));
 	node->related_ast_node->children[0] = (ast_node_t *)vtr::calloc(1, sizeof(ast_node_t));
-	node->related_ast_node->children[0]->types.identifier = vtr::strdup("dual_port_ram");
+	node->related_ast_node->children[0]->types.identifier = vtr::strdup(DUAL_PORT_RAM_string);
 
 	char *full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, -1);
 
@@ -337,7 +337,10 @@ void finalize_implicit_memory(implicit_memory *memory)
 	if (hb_model)
 	{
 		hb_model->used = 1;
-		dp_memory_list = insert_in_vptr_list(!strcmp(hard_block_identifier, "single_port_ram")?sp_memory_list:dp_memory_list, node);
+		if (!strcmp(hard_block_identifier, SINGLE_PORT_RAM_string))
+			sp_memory_list = insert_in_vptr_list(sp_memory_list, node);
+		else
+			dp_memory_list = insert_in_vptr_list(dp_memory_list, node);
 	}
 }
 
@@ -371,5 +374,5 @@ void collapse_implicit_memory_to_single_port_ram(implicit_memory *memory)
 	}
 
 	ast_node_t *ast_node = node->related_ast_node;
-	ast_node->children[0]->types.identifier = vtr::strdup("single_port_ram");
+	ast_node->children[0]->types.identifier = vtr::strdup(SINGLE_PORT_RAM_string);
 }

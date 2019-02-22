@@ -55,9 +55,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define OUTPUT_ACTIVITY_FILE_NAME "output_activity"
 #define MODEL_SIM_FILE_NAME "test.do"
 
-#define SINGLE_PORT_MEMORY_NAME "single_port_ram"
-#define DUAL_PORT_MEMORY_NAME "dual_port_ram"
-
 #define DEFAULT_CLOCK_NAME "GLOBAL_SIM_BASE_CLK"
 
 typedef struct {
