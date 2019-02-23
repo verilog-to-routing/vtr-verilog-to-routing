@@ -42,8 +42,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "arch_util.h"
 
 #include "soft_logic_def_parser.h"
-#include "globals.h"
-#include "types.h"
+#include "odin_globals.h"
+#include "odin_types.h"
 #include "netlist_utils.h"
 #include "arch_types.h"
 #include "parse_making_ast.h"
@@ -71,7 +71,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #define DEFAULT_OUTPUT "temp"
 
-size_t current_parse_file;
+int current_parse_file;
 t_arch Arch;
 global_args_t global_args;
 t_type_descriptor* type_descriptors;
@@ -242,7 +242,7 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 		} 
 		catch(vtr::VtrError& vtr_error) 
 		{
-			printf("Odin Failed to load architecture file: %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_ARCH);
+			printf("Odin Failed to load architecture file: %s with exit code%ld\n", vtr_error.what(), ERROR_PARSE_ARCH);
 			exit(ERROR_PARSE_ARCH);
 		}
 	}
@@ -253,7 +253,7 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 		ODIN_ERROR_CODE error_code = synthesize_verilog();
 		if(error_code)
 		{
-			printf("Odin Failed to parse Verilog with exit status: %d\n", error_code);
+			printf("Odin Failed to parse Verilog with exit status: %ld\n", error_code);
 			exit(error_code);
 		}
 	}
@@ -283,7 +283,7 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 		} 
 		catch(vtr::VtrError& vtr_error) 
 		{
-			printf("Odin Failed to load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
+			printf("Odin Failed to load blif file: %s with exit code:%ld \n", vtr_error.what(), ERROR_PARSE_BLIF);
 			exit(ERROR_PARSE_BLIF);
 		}
 	}
@@ -297,7 +297,7 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 	}
 
 	printf("--------------------------------------------------------------------\n");
-	printf("Odin ran with exit status: %d\n", SUCCESS);
+	printf("Odin ran with exit status: %ld\n", SUCCESS);
 	return odin_netlist;
 }
 

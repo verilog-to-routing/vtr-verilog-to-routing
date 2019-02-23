@@ -25,8 +25,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include <stdio.h>
 #include <string.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 #include "verilog_bison.h"
 #include "vtr_util.h"
 #include <string>
@@ -34,7 +34,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "string.h"
 
 /* the define below helps with watching the parser go token by token */
-#define MP {if (to_view_parse) {printf("%d %s\n", yylineno, yytext);}}
+#define MP {if (to_view_parse) {printf("%ld %s\n", yylineno, yytext);}}
 char* standardize_number(const char* input);
 
 %}
@@ -225,7 +225,7 @@ char* standardize_number(const char* input);
 <INITIAL>"//"[^\n]*					{ MP; continue;}
 
 
-<*>.|\n		{ printf("Missing verilog.l rule: Default rule invoked in state %d: \"%s\"\n", YY_START, yytext);printf("Line %d: %s\n", yylineno, yytext); }
+<*>.|\n		{ printf("Missing verilog.l rule: Default rule invoked in state %ld: \"%s\"\n", YY_START, yytext);printf("Line %ld: %s\n", yylineno, yytext); }
 
 %%
 

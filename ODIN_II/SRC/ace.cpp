@@ -46,7 +46,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define LOGBPI  5
 
 #define fail(why) {\
-		(void) fprintf(stderr, "Fatal error: file %s, line %d\n%s\n",\
+		(void) fprintf(stderr, "Fatal error: file %s, line %ld\n%s\n",\
 				__FILE__, __LINE__, why);\
 				(void) fflush(stdout);\
 				abort();\
@@ -65,8 +65,8 @@ typedef unsigned int *pset;
 
 #define ALLOC(type, num)	((type *) malloc(sizeof(type) * (num)))
 
-#define set_remove(set, e)      (set[WHICH_WORD(e)] &= ~ (0x1ULL << WHICH_BIT(e)))
-#define set_insert(set, e)      (set[WHICH_WORD(e)] |= 0x1ULL << WHICH_BIT(e))
+#define set_remove(set, e)      (set[WHICH_WORD(e)] &= ~ (0x1 << WHICH_BIT(e)))
+#define set_insert(set, e)      (set[WHICH_WORD(e)] |= 0x1 << WHICH_BIT(e))
 #define set_new(size)		set_clear(ALLOC(unsigned int, set_size(size)), size)
 #define set_size(size)          ((size) <= BPI ? 2 : (WHICH_WORD((size)-1) + 1))
 
@@ -109,13 +109,13 @@ void alloc_and_init_ace_structs(netlist_t *net) {
     /*
     printf ( "alloc_and_init_activity_info\n");
     printf ( "----------------------------\n");
-    printf ("PIs in network: %d\n",  net->num_top_input_nodes);
-    printf ("POs in network: %d\n",  net->num_top_output_nodes);
+    printf ("PIs in network: %ld\n",  net->num_top_input_nodes);
+    printf ("POs in network: %ld\n",  net->num_top_output_nodes);
 
-    printf ("Nodes in network: %d\n",  net->num_internal_nodes);
-    printf ("FF Nodes in network: %d\n",  net->num_ff_nodes);
-    printf ("Forward Level Nodes in network: %d\n",  net->num_forward_levels);
-    printf ("Backward Level Nodes in network: %d\n",  net->num_backward_levels);
+    printf ("Nodes in network: %ld\n",  net->num_internal_nodes);
+    printf ("FF Nodes in network: %ld\n",  net->num_ff_nodes);
+    printf ("Forward Level Nodes in network: %ld\n",  net->num_forward_levels);
+    printf ("Backward Level Nodes in network: %ld\n",  net->num_backward_levels);
     */
 
     // GND Node
@@ -398,7 +398,7 @@ void output_ace_info (netlist_t *net, FILE *act_out ) {
 void output_ace_info_node ( char *name, ace_obj_info_t *info, FILE *act_out ) {
 
     /*
-    printf ( "%s %f %f %f DEBUG: ONES: %3d TOGGLES: %d\n",
+    printf ( "%s %f %f %f DEBUG: ONES: %3d TOGGLES: %ld\n",
              name,
              info->static_prob,
              info->switch_prob ,

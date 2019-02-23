@@ -20,24 +20,57 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#ifndef HARD_BLOCKS_H
-#define HARD_BLOCKS_H
-
+#include "Hashtable.hpp"
 #include "odin_types.h"
+#include "vtr_memory.h"
 
-extern STRING_CACHE *hard_block_names;
+void Hashtable::destroy_free_items()
+{
+	for(auto kv: my_map)
+		vtr::free(kv.second);
+}
 
-extern void register_hard_blocks();
-extern void deregister_hard_blocks();
-extern t_model* find_hard_block(const char *name);
-extern void define_hard_block(nnode_t *node, FILE *out);
-extern void output_hard_blocks(FILE *out);
-extern int hard_block_port_size(t_model *hb, char *pname);
-extern enum PORTS hard_block_port_direction(t_model *hb, char *pname);
-extern void instantiate_hard_block(nnode_t *node, short mark, netlist_t *netlist);
-t_model_ports *get_model_port(t_model_ports *ports, const char *name);
+void Hashtable::add(std::string key, void *item)
+{
+	auto v = this->my_map.find(key);
+	//what if key already exists ??
+	if(v == this->my_map.end())
+	{
+		this->my_map.insert({key,item});
+	}
+	else
+	{
+		this->my_map.insert({key,item});
+	}
+}
 
+void* Hashtable::remove(std::string key)
+{
+	void *value = NULL;
+	auto v = this->my_map.find(key);
+	if(v != this->my_map.end())
+	{
+		value = this->my_map[key];
+		this->my_map.erase(key);
+	}
+	return value;
+}
 
-#endif
+void* Hashtable::get(std::string key)
+{
+	void *value = NULL;
+	auto v = this->my_map.find(key);
+	if(v != this->my_map.end())
+		value = this->my_map[key];
+	
+	return value;
+}
 
+bool Hashtable::is_empty ()
+{
+	return (my_map.size() == 0);
+}

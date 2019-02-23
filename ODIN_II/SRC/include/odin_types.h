@@ -56,7 +56,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 	#define ODIN_STRING_TYPE ODIN_LONG_STRING
 #endif
 
-#define ODIN_STD_BITWIDTH (sizeof(long long)*8)
+#define ODIN_STD_BITWIDTH (sizeof(long)*8)
 
 typedef struct global_args_t_t global_args_t;
 /* new struct for the global arguments of verify_blif function */
@@ -95,7 +95,6 @@ typedef struct adder_def_t_t adder_def_t;
 #define ACTIVATION 13
 
 #define verify_i_o_availabilty(node, expected_input_size, expected_output_size) passed_verify_i_o_availabilty(node, expected_input_size, expected_output_size, __FILE__, __LINE__)
-
 
 typedef enum {
 	NO_SIMULATION = 0,
@@ -189,7 +188,7 @@ typedef enum
 	HEX = 16,
 	OCT = 8,
 	BIN = 2,
-	LONG_LONG = 0,
+	LONG = 0,
 	bases_END
 } bases;
 
@@ -359,7 +358,7 @@ struct typ_t
 		int binary_size;
 		char *binary_string;
 		char *number;
-		long long value;
+		long value;
 		short is_full; //'bx means all of the wire get 'x'(dont care)
 	} number;
 	struct
@@ -377,7 +376,7 @@ struct typ_t
 		short is_reg;
 		short is_integer;
 		short is_initialized; // should the variable be initialized with some value?
-		long long initial_value;
+		long initial_value;
 	} variable;
 	struct
 	{
@@ -404,14 +403,14 @@ struct typ_t
 
 struct ast_node_t_t
 {
-	size_t unique_count;
+	long unique_count;
 	int far_tag;
 	int high_number;
 	ids type;
 	typ types;
 
 	ast_node_t **children;
-	size_t num_children;
+	long num_children;
 
 	int line_number = -1;
 	int file_number = -1;
@@ -474,7 +473,7 @@ struct nnode_t_t
 	netlist_t* internal_netlist; // this is a point of having a subgraph in a node
 
 	std::vector<std::vector<signed char>> memory_data;
-	std::map<int,std::map<long long,std::vector<signed char>>> memory_directory;
+	std::map<int,std::map<long,std::vector<signed char>>> memory_directory;
 	std::mutex memory_mtx;
 	//(int cycle, int num_input_pins, npin_t *inputs, int num_output_pins, npin_t *outputs);
 	void (*simulate_block_cycle)(int, int, int*, int, int*);
@@ -568,7 +567,7 @@ struct nnet_t_t
 struct signal_list_t_t
 {
 	npin_t **pins;
-	int count;
+	long count;
 
 	char is_memory;
 	char is_adder;

@@ -27,7 +27,7 @@ static void print_file_name(int file)
 static void print_line_number(int line_number)
 {
 	if (line_number >= 0)
-		fprintf(stderr," (Line number: %d)", line_number+1);
+		fprintf(stderr," (Line number: %ld)", line_number+1);
 }
 
 static void print_culprit_line(int line_number, int file)

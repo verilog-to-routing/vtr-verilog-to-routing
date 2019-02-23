@@ -27,8 +27,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <assert.h>
 #include <math.h>
 #include <sstream>
-#include "globals.h"
-#include "types.h"
+#include "odin_globals.h"
+#include "odin_types.h"
 #include "ast_util.h"
 #include "parse_making_ast.h"
 #include "string_cache.h"
@@ -64,7 +64,7 @@ int size_function_instantiations;
 ast_node_t **function_instantiations_instance_by_module;
 int size_function_instantiations_by_module;
 
-size_t num_modules;
+long num_modules;
 ast_node_t **ast_modules;
 
 int num_functions;
@@ -180,7 +180,7 @@ BASIC PARSING FUNCTIONS
 void cleanup_hard_blocks()
 {
 	int i;
-	size_t j;
+	long j;
 	ast_node_t *block_node, *instance_node, *connect_list_node;
 
 	for (i = 0; i < size_block_instantiations; i++)
@@ -236,7 +236,7 @@ void init_parser()
  *-------------------------------------------------------------------------------------------*/
 void cleanup_parser()
 {
-	size_t i;
+	long i;
 
 	/* frees all the defines for module string caches (used for parameters) */
 	if (num_modules > 0)
@@ -279,7 +279,7 @@ void clean_up_parser_for_file()
  *-------------------------------------------------------------------------------------------*/
 void next_parsed_verilog_file(ast_node_t *file_items_list)
 {
-	size_t i;
+	long i;
 	/* optimization entry point */
 	printf("Optimizing module by AST based optimizations\n");
 	cleanup_hard_blocks();
@@ -407,7 +407,7 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 }
 ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list)
 {
-	size_t i;
+	long i;
 	long sc_spot;
 	long range_temp_max = 0;
 	long range_temp_min = 0;
@@ -551,7 +551,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					            && (symbol_list->children[i]->children[5]->types.number.base == BIN)
 					            && (symbol_list->children[i]->children[5]->types.number.size != binary_range))
 				            {
-					            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %d don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
+					            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %ld don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
 				            }
 				            else
 				            {
@@ -738,7 +738,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						        && (symbol_list->children[i]->children[5]->types.number.base == BIN)
 						        && (symbol_list->children[i]->children[5]->types.number.size != binary_range))
 					        {
-						        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %d don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
+						        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %ld don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
 					        }
 					        else
 					        {
@@ -866,11 +866,11 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 		int len = expression2->types.number.value;
 		if( expression1->type == NUMBERS ){
 			int len1 = expression1->types.number.value;
-			long long powRes = pow(len1, len);
-			new_node = create_tree_node_long_long_number(powRes,128, line_number, current_parse_file);
+			long powRes = pow(len1, len);
+			new_node = create_tree_node_long_number(powRes,ODIN_STD_BITWIDTH, line_number, current_parse_file);
 		} else {
 			if (len == 0){
-				new_node = create_tree_node_long_long_number(1, 128, line_number, current_parse_file);
+				new_node = create_tree_node_long_number(1, ODIN_STD_BITWIDTH, line_number, current_parse_file);
 			} else {
 				new_node = expression1;
 				for(int i=1; i < len; ++i){
@@ -1066,7 +1066,7 @@ ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int 
 	allocate_children_to_node(new_node, 2, compare_expression, statement);
 
 	/* This needs to be removed once support is added */
-	printf("While statement is NOT supported: line %d\n", line_number);
+	printf("While statement is NOT supported: line %ld\n", line_number);
 	oassert(0);
 
 	return new_node;
@@ -1205,7 +1205,7 @@ ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t
     aux_name = (char *)vtr::calloc(char_qntd,sizeof(char));
     unique_name = (char *)vtr::calloc(char_qntd,sizeof(char));
     strcpy(unique_name,"function_instance_");
-    odin_sprintf(aux_name,"%d",size_function_instantiations_by_module);
+    odin_sprintf(aux_name,"%ld",size_function_instantiations_by_module);
     strcat(unique_name,aux_name);
 
     ast_node_t *symbol_node = newSymbolNode(unique_name, line_number);
@@ -1242,7 +1242,7 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
  *-----------------------------------------------------------------------*/
 ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number)
 {
-	size_t i;
+	long i;
 	/* create a node for this array reference */
 	ast_node_t* new_master_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
 	for(i = 0; i < module_named_instance->num_children; i++){
@@ -1367,7 +1367,7 @@ ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, a
 
 ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, int line_number)
 {
-    size_t i;
+    long i;
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(GATE_INSTANCE, line_number, current_parse_file);
 
@@ -1449,9 +1449,9 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ 
 {
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 
-    ast_node_t *number_node_with_value_31 = create_tree_node_long_long_number(31, 128, line_number,current_parse_file);
+    ast_node_t *number_node_with_value_31 = create_tree_node_long_number(31, ODIN_STD_BITWIDTH, line_number,current_parse_file);
 
-    ast_node_t *number_node_with_value_0 = create_tree_node_long_long_number(0, 128, line_number,current_parse_file);
+    ast_node_t *number_node_with_value_0 = create_tree_node_long_number(0, ODIN_STD_BITWIDTH, line_number,current_parse_file);
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(VAR_DECLARE, line_number, current_parse_file);
@@ -1468,7 +1468,7 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ 
 ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number)
 {
 	int i;
-	size_t j, k;
+	long j, k;
 	long sc_spot;
 	ast_node_t *symbol_node = newSymbolNode(module_name, line_number);
 
@@ -1524,7 +1524,7 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number) //function and module declaration work the same way (Lucas Cambuim)
 {
 
-	size_t i,j;
+	long i,j;
 	long sc_spot;
 	char *function_name;
 	char *label;
@@ -1662,7 +1662,7 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 	ast_node_t *ref_node;
 	char *module_instance_name = (char*)vtr::calloc(1024,sizeof(char));
 	module_instance_name = NULL;
-	size_t i;
+	long i;
 	int j;
 	//long sc_spot;
 	if(val)
@@ -1732,7 +1732,7 @@ void newConstant(char *id, ast_node_t *number_node, int line_number)
 	/* def_reduct */
 	if ((sc_spot = sc_add_string(defines_for_file_sc, id)) == -1)
 	{
-		error_message(PARSE_ERROR, current_parse_file, line_number, "define with same name (%s) on line %d\n", id, ((ast_node_t*)(defines_for_file_sc->data[sc_spot]))->line_number);
+		error_message(PARSE_ERROR, current_parse_file, line_number, "define with same name (%s) on line %ld\n", id, ((ast_node_t*)(defines_for_file_sc->data[sc_spot]))->line_number);
 	}
 	/* store the data */
 	defines_for_file_sc->data[sc_spot] = (void*)number_node;
@@ -1785,7 +1785,7 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 	/* increase the unique count for other nodes since ours is recorded */
 	int my_label = unique_label_count++;
 
-	fprintf(fp, "\t%d [label=\"", my_label);
+	fprintf(fp, "\t%ld [label=\"", my_label);
 	fprintf(fp, "%s", ids_STR[node->type]);
 	switch(node->type)
 	{
@@ -1823,9 +1823,9 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 	
 	/* print out the connection with the previous node */
 	if (from != NULL)
-		fprintf(fp, "\t%d -> %d;\n", from_num, my_label);
+		fprintf(fp, "\t%ld -> %ld;\n", from_num, my_label);
 
-	for (size_t i = 0; i < node->num_children; i++)
+	for (long i = 0; i < node->num_children; i++)
 	{
 		graphVizOutputAst_traverse_node(fp, node->children[i], node, my_label);
 	}
@@ -1835,7 +1835,7 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 long calculate_operation(ast_node_t *node){
 	node = resolve_node(defines_for_module_sc[num_modules], TRUE, NULL, node);
 	if(node_is_constant(node)){
-		long long result = node->types.number.value;
+		long result = node->types.number.value;
 		if(result >= 0){
 			return (long)result;
 		}else{

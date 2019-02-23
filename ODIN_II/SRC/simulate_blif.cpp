@@ -285,7 +285,7 @@ void simulate_netlist(netlist_t *netlist)
 
 
 	fflush(sim_data->out);
-	fprintf(sim_data->modelsim_out, "run %d\n", sim_data->num_vectors*100);
+	fprintf(sim_data->modelsim_out, "run %ld\n", sim_data->num_vectors*100);
 
 	printf("\n");
 	// If a second output vector file was given via the -T option, verify that it matches.
@@ -387,7 +387,7 @@ void simulate_netlist(netlist_t *netlist)
 	}
 
 	fflush(sim_data->out);
-	fprintf(sim_data->modelsim_out, "run %d\n", sim_data->num_vectors*100);
+	fprintf(sim_data->modelsim_out, "run %ld\n", sim_data->num_vectors*100);
 
 	printf("\n");
 	// If a second output vector file was given via the -T option, verify that it matches.
@@ -419,7 +419,7 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	used_time = std::numeric_limits<double>::max();
 	number_of_workers = std::max(1, global_args.parralelized_simulation.value());
 	//if(global_args.parralelized_simulation.value() >1 )
-	//	warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with maximum of %d threads", global_args.parralelized_simulation.value());
+	//	warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with maximum of %ld threads", global_args.parralelized_simulation.value());
 		
 
 	found_best_time = false;
@@ -488,7 +488,7 @@ sim_data_t *init_simulation(netlist_t *netlist)
 		if (!verify_test_vector_headers(sim_data->in, sim_data->input_lines))
 			error_message(SIMULATION_ERROR, 0, -1, "Invalid vector header format in %s.", sim_data->input_vector_file);
 
-		printf("Simulating %d existing vectors from \"%s\".\n", sim_data->num_vectors, sim_data->input_vector_file); fflush(stdout);
+		printf("Simulating %ld existing vectors from \"%s\".\n", sim_data->num_vectors, sim_data->input_vector_file); fflush(stdout);
 	}
 	// or be randomly generated. Passed via the -g option. it also serve as a fallback when we have an empty input
 	else
@@ -505,7 +505,7 @@ sim_data_t *init_simulation(netlist_t *netlist)
 		{
 			sim_data->num_vectors = global_args.sim_num_test_vectors;
 		}
-		printf("Simulating %d new vectors.\n", sim_data->num_vectors); 
+		printf("Simulating %ld new vectors.\n", sim_data->num_vectors); 
 		fflush(stdout);
 
 		srand(global_args.sim_random_seed);
@@ -682,7 +682,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 				{
 					v = generate_random_test_vector(i, sim_data);
 				}
-				//printf("v=%d \n",v->values[0][0]);
+				//printf("v=%ld \n",v->values[0][0]);
 				add_test_vector_to_lines(v, sim_data->input_lines, i);
 				write_cycle_to_file(sim_data->input_lines, sim_data->in_out, i);
 				write_cycle_to_modelsim_file(sim_data->netlist, sim_data->input_lines, sim_data->modelsim_out, i);
@@ -777,7 +777,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 						threads_end = to_cycle;
 						pthread_mutex_unlock(&output_mp);
 						restart = TRUE;
-						//printf("threads start %d threads end %d",threads_start,threads_end);	
+						//printf("threads start %ld threads end %ld",threads_start,threads_end);	
 					}
 					else
 						done= TRUE;			
@@ -1400,11 +1400,11 @@ static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_no
 
 		// Index the node.
 		stage_nodes.insert(node);
-		//printf("NodeID %d %s typeof %d at stage %d\n",node->unique_id,node->name,node->type,stage);
+		//printf("NodeID %ld %s typeof %ld at stage %ld\n",node->unique_id,node->name,node->type,stage);
 		// Index its children.
 		for (int j = 0; j < num_children; j++)
 		{
-			//printf("  ChildID %d %s typeof %d \n ",children[j]->unique_id,children[j]->name,children[j]->type);
+			//printf("  ChildID %ld %s typeof %ld \n ",children[j]->unique_id,children[j]->name,children[j]->type);
 			stage_children.insert(children[j]);
 		}
 
@@ -1510,7 +1510,7 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 		while (threadcost< threadworkcost)
 		{
 			nnode_t* node = s->stages[current_stage][node_in_stage];
-			//printf("NodeID %d assigned to Thread %d\n",node->unique_id,t);
+			//printf("NodeID %ld assigned to Thread %ld\n",node->unique_id,t);
 			if (nodes_inserted[node->unique_id]==0)
 			{
 				nodes_sub = (nnode_t **)vtr::realloc(nodes_sub,sizeof(nnode_t*) * (number_of_nodes+1) );
@@ -1567,7 +1567,7 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 								memory_family = (nnode_t **)vtr::realloc(memory_family,sizeof(nnode_t*) * (num_memory_family+1) );
 								memory_family[num_memory_family++] = parents[parent];
 								
-								//printf("NodeP %d -1\n",parents[parent]->unique_id);								
+								//printf("NodeP %ld -1\n",parents[parent]->unique_id);								
 								if (parents[parent]->type == HARD_IP || parents[parent]->type == MEMORY) //its a memory node add it to the queue
 								{
 									memory_nodes = (nnode_t **)vtr::realloc(memory_nodes,sizeof(nnode_t*) * (num_memory_nodes+1) );
@@ -1604,7 +1604,7 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 							}
 						}
 						mem_index++;
-						//printf("mem_index %d num_memory_family %d  num_memory_nodes%d \n",mem_index,num_memory_family,num_memory_nodes);
+						//printf("mem_index %ld num_memory_family %ld  num_memory_nodes%ld \n",mem_index,num_memory_family,num_memory_nodes);
 					}
 					printf("Memory node found \n");
 					mem_index = 0;
@@ -1623,15 +1623,15 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 						if (memnode->type == GND_NODE || memnode->type == VCC_NODE || memnode->type == INPUT_NODE )
 							threadcost+=lessnodeoverhead;
 						//}
-						//printf("NodeP %d 1\n",memnode->unique_id);
-						//printf("Asgnd %d out of %d \n",nodes_assigned,all_nodes);
+						//printf("NodeP %ld 1\n",memnode->unique_id);
+						//printf("Asgnd %ld out of %ld \n",nodes_assigned,all_nodes);
 					}
 					//vtr::free(memory_nodes);
 					//printf(" Node added \n");
 				}
 				*/
 			}
-			//printf("Next node %d  %d/%d \n",node->unique_id,nodes_assigned,all_nodes);
+			//printf("Next node %ld  %ld/%ld \n",node->unique_id,nodes_assigned,all_nodes);
 			
 			if (node_in_stage == s->counts[current_stage]-1) //change stage
 			{
@@ -1669,7 +1669,7 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
  
 		if (inserted !=1)
 		{
-			error_message(SIMULATION_ERROR,1475,-1,"Node %d is not assigned for simulation!",node_id);
+			error_message(SIMULATION_ERROR,1475,-1,"Node %ld is not assigned for simulation!",node_id);
 
 		}
  
@@ -2064,7 +2064,7 @@ static bool compute_and_store_value(nnode_t *node, int cycle)
 
 	//computation_time = wall_time() - computation_time;
 
-	//printf("Node %s typeof %d spent %lf\n",node->name,type,computation_time);
+	//printf("Node %s typeof %ld spent %lf\n",node->name,type,computation_time);
 	return true;
 }
 
@@ -2990,10 +2990,10 @@ static void compute_memory_node(nnode_t *node, int cycle)
 /**
  * compute the address 
  */
-static long long compute_address(signal_list_t *input_address, int cycle)
+static long compute_address(signal_list_t *input_address, int cycle)
 {
-	long long address = 0;
-	for (size_t i = 0; i < input_address->count && address >= 0; i++)
+	long address = 0;
+	for (long i = 0; i < input_address->count && address >= 0; i++)
 	{
 		// If any address pins are x's, write x's we return -1.
 		signed char value = get_pin_value(input_address->pins[i],cycle);
@@ -3009,7 +3009,7 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 {
 
 	node->memory_mtx.lock();
-	long long address = compute_address(input_address, cycle);
+	long address = compute_address(input_address, cycle);
 	
 	 //make a single trigger out of write_enable pin and if it was a positive edge
 	 
@@ -3018,13 +3018,13 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 
 	std::vector<signed char> new_values(data_out->count);
 	
-	for (size_t i = 0; i < data_out->count; i++)
+	for (long i = 0; i < data_out->count; i++)
 		new_values[i] = -1;
 	if(address_is_valid)
 	{
 		if (write) //write to dicionary
 		{
-			for (size_t i = 0; i < data_out->count; i++)
+			for (long i = 0; i < data_out->count; i++)
 			{
 				new_values[i]= get_pin_value(data_in->pins[i],cycle-1);
 			}
@@ -3036,13 +3036,13 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 			}
 			node->memory_directory[cycle][address]= new_values;
 
-			//printf("Write dfrom node %d at cycle%d \n",node->unique_id,cycle);
+			//printf("Write dfrom node %ld at cycle%ld \n",node->unique_id,cycle);
 		}			
 		if (!write) //read from the dictionary if does'n exist read from memory
 		{
 			//printf("read\n");
 			bool found = FALSE;
-			std::map<int,std::map<long long,std::vector<signed char>>>::iterator it;
+			std::map<int,std::map<long,std::vector<signed char>>>::iterator it;
 			for ( it = node->memory_directory.begin(); it != node->memory_directory.end(); it++ )
 			{
 				int recorded_cycle = it->first;
@@ -3067,7 +3067,7 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 	//if(new_values.empty())
 
 
-	for (size_t i = 0; i < data_out->count; i++)
+	for (long i = 0; i < data_out->count; i++)
 	{
 		update_pin_value(data_out->pins[i], new_values[i], cycle);
 	}
@@ -3084,14 +3084,14 @@ static void write_back_memory_nodes(nnode_t **nodes, int num_nodes)
  		nnode_t* node = nodes[num];
  		if (!node->memory_directory.empty())
  		{
-			std::map<int,std::map<long long,std::vector<signed char>>>::iterator it;
+			std::map<int,std::map<long,std::vector<signed char>>>::iterator it;
 			for ( it = node->memory_directory.begin(); it != node->memory_directory.end(); it++ )
 			{
 				int recorded_cycle = it->first;
-				std::map<long long,std::vector<signed char>>::iterator cit;
+				std::map<long,std::vector<signed char>>::iterator cit;
 				for ( cit = node->memory_directory[recorded_cycle].begin(); cit != node->memory_directory[recorded_cycle].end(); cit++ )
 				{
-					long long address = cit->first;
+					long address = cit->first;
 					std::vector<signed char> new_values = cit->second;
 					node->memory_data[address] = new_values;
 				}
@@ -3151,7 +3151,7 @@ static void compute_dual_port_memory(nnode_t *node, int cycle)
  */
 static void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 {
-	unsigned long long max_address = 0x1ULL << addr_width;
+	long max_address = get_memory_depth_from_address_size(addr_width);
 	node->memory_data = std::vector<std::vector<signed char>>(max_address, std::vector<signed char>(data_width, init_value(node)));
 	if(global_args.read_mif_input)
 	{
@@ -3159,7 +3159,7 @@ static void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 		FILE *mif = fopen(filename, "r");
 		if (!mif)
 		{
-			printf("MIF %s (%dx%d) not found. \n", filename, data_width, addr_width);
+			printf("MIF %s (%ldx%ld) not found. \n", filename, data_width, addr_width);
 		}
 		else
 		{
@@ -3268,13 +3268,13 @@ static void assign_memory_from_mif_file(nnode_t *node, FILE *mif, char *filename
 					{
 						// Make sure the address and value are valid strings of the specified radix.
 						if (!is_string_of_radix(address_string, addr_radix))
-							error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is not a base %d string.", filename, address_string, addr_radix);
+							error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is not a base %ld string.", filename, address_string, addr_radix);
 
 						if (!is_string_of_radix(data_string, data_radix))
-							error_message(SIMULATION_ERROR, line_number, -1, "%s: data string %s is not a base %d string.", filename, data_string, data_radix);
+							error_message(SIMULATION_ERROR, line_number, -1, "%s: data string %s is not a base %ld string.", filename, data_string, data_radix);
 
 						char *binary_data = convert_string_of_radix_to_bit_string(data_string, data_radix, width);
-						long long address = convert_string_of_radix_to_long_long(address_string, addr_radix);
+						long address = convert_string_of_radix_to_long(address_string, addr_radix);
 
 						if (address > address_width)
 							error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is out of range.", filename, address_string);
@@ -3319,7 +3319,7 @@ static void assign_memory_from_mif_file(nnode_t *node, FILE *mif, char *filename
 
 						long mif_width = std::strtol(item_in->second.c_str(),NULL,10);
 						if (mif_width != width)
-							error_message(SIMULATION_ERROR, -1, -1, "%s: MIF width mismatch: must be %d but %d was given", filename, width, mif_width);
+							error_message(SIMULATION_ERROR, -1, -1, "%s: MIF width mismatch: must be %ld but %ld was given", filename, width, mif_width);
 
 
 						// Verify the depth parameter.
@@ -3328,9 +3328,10 @@ static void assign_memory_from_mif_file(nnode_t *node, FILE *mif, char *filename
 							error_message(SIMULATION_ERROR, -1, -1, "%s: MIF DEPTH parameter unspecified.", filename);
 						
 						long mif_depth = std::strtol(item_in->second.c_str(),NULL,10);
-						if (mif_depth != (0x1ULL << address_width))
+						long expected_depth = get_memory_depth_from_address_size(address_width);
+						if (mif_depth != expected_depth)
 							error_message(SIMULATION_ERROR, -1, -1,
-									"%s: MIF depth mismatch: must be %d but %d was given", filename, (0x1ULL << address_width), mif_depth);
+									"%s: MIF depth mismatch: must be %ld but %ld was given", filename, expected_depth, mif_depth);
 
 
 						// Parse the radix specifications and make sure they're OK.
@@ -3585,7 +3586,7 @@ static int verify_lines (lines_t *l)
 		{
 			if (!l->lines[i]->pins[j])
 			{
-				warning_message(SIMULATION_ERROR, 0, -1, "A line %d:(%s) has a NULL pin. ", j, l->lines[i]->name);
+				warning_message(SIMULATION_ERROR, 0, -1, "A line %ld:(%s) has a NULL pin. ", j, l->lines[i]->name);
 				return FALSE;
 			}
 		}
@@ -3660,9 +3661,9 @@ static char *generate_vector_header(lines_t *l)
 static void add_test_vector_to_lines(test_vector *v, lines_t *l, int cycle)
 {
 	if (l->count < v->count)
-		error_message(SIMULATION_ERROR, 0, -1, "Fewer lines (%d) than values (%d).", l->count, v->count);
+		error_message(SIMULATION_ERROR, 0, -1, "Fewer lines (%ld) than values (%ld).", l->count, v->count);
 	if (l->count > v->count)
-		error_message(SIMULATION_ERROR, 0, -1, "More lines (%d) than values (%d).", l->count, v->count);
+		error_message(SIMULATION_ERROR, 0, -1, "More lines (%ld) than values (%ld).", l->count, v->count);
 
 	int i;
 	for (i = 0; i < v->count; i++)
@@ -3943,7 +3944,7 @@ static void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 				signed char value = get_line_pin_value(line, j, cycle);
 				
 				if (value > 1){
-					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %d read from line %s.", value, line->name);
+					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %ld read from line %s.", value, line->name);
 				}else if(value < 0){
 					buffer << "x";
 				}else{
@@ -3969,7 +3970,7 @@ static void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 				signed char value = get_line_pin_value(line,j,cycle);
 
 				if (value > 1)
-					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %d read from line %s.", value, line->name);
+					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %ld read from line %s.", value, line->name);
 
 				hex_digit += value << j % 4;
 
@@ -4034,9 +4035,9 @@ static void write_vector_to_modelsim_file(lines_t *l, FILE *modelsim_out, int cy
 				int value = get_line_pin_value(l->lines[i],j,cycle);
 
 				if (value < 0)  fprintf(modelsim_out, "%s", "x");
-				else 		fprintf(modelsim_out, "%d", value);
+				else 		fprintf(modelsim_out, "%ld", value);
 			}
-			fprintf(modelsim_out, " %d\n", cycle/2 * 100);
+			fprintf(modelsim_out, " %ld\n", cycle/2 * 100);
 		}
 		else
 		{
@@ -4055,7 +4056,7 @@ static void write_vector_to_modelsim_file(lines_t *l, FILE *modelsim_out, int cy
 					value = 0;
 				}
 			}
-			fprintf(modelsim_out, " %d\n", cycle/2 * 100);
+			fprintf(modelsim_out, " %ld\n", cycle/2 * 100);
 		}
 
 	}
@@ -4112,7 +4113,7 @@ static int verify_output_vectors(char* output_vector_file, int num_vectors)
 			else if (!get_next_vector(current_out, buffer2))
 			{
 				error = TRUE;
-				warning_message(SIMULATION_ERROR, 0, -1,"Simulation produced fewer than %d vectors. \n", num_vectors);
+				warning_message(SIMULATION_ERROR, 0, -1,"Simulation produced fewer than %ld vectors. \n", num_vectors);
 				break;
 			}
 			// The headers differ.
@@ -4142,7 +4143,7 @@ static int verify_output_vectors(char* output_vector_file, int num_vectors)
 					trim_string(buffer1, "\n\t");
 					trim_string(buffer2, "\n\t");
 					error = TRUE;
-					warning_message(SIMULATION_ERROR, 0, -1, "Vector %d mismatch:\n"
+					warning_message(SIMULATION_ERROR, 0, -1, "Vector %ld mismatch:\n"
 							"\t%s in %s\n"
 							"\t%s in %s\n",
 							cycle, buffer2, OUTPUT_VECTOR_FILE_NAME, buffer1, output_vector_file
@@ -4152,7 +4153,7 @@ static int verify_output_vectors(char* output_vector_file, int num_vectors)
 				{
 					trim_string(buffer1, "\n\t");
 					trim_string(buffer2, "\n\t");
-					warning_message(SIMULATION_ERROR, 0, -1, "Vector %d equivalent but output vector has bits set when expecting don't care :\n"
+					warning_message(SIMULATION_ERROR, 0, -1, "Vector %ld equivalent but output vector has bits set when expecting don't care :\n"
 							"\t%s in %s\n"
 							"\t%s in %s\n",
 							cycle, buffer2, OUTPUT_VECTOR_FILE_NAME, buffer1, output_vector_file
@@ -4168,7 +4169,7 @@ static int verify_output_vectors(char* output_vector_file, int num_vectors)
 		if (!error && get_next_vector(existing_out, buffer1))
 		{
 			error = TRUE;
-			warning_message(SIMULATION_ERROR, 0, -1,"%s contains more than %d vectors.\n", output_vector_file, num_vectors);
+			warning_message(SIMULATION_ERROR, 0, -1,"%s contains more than %ld vectors.\n", output_vector_file, num_vectors);
 		}
 
 		fclose(existing_out);
@@ -4480,15 +4481,15 @@ static void print_netlist_stats(stages_t *stages, int /*num_vectors*/)
 	if(configuration.list_of_file_names.size() == 0)
 		printf("%s:\n", (char*)global_args.blif_file);
 	else
-		for(std::size_t i=0; i < configuration.list_of_file_names.size(); i++)
+		for(long i=0; i < configuration.list_of_file_names.size(); i++)
 			printf("%s:\n", configuration.list_of_file_names[i].c_str());
 
-	printf("  Nodes:           %d\n",    stages->num_nodes);
-	printf("  Connections:     %d\n",    stages->num_connections);
-	printf("  Threads:         %d\n",   number_of_workers);
+	printf("  Nodes:           %ld\n",    stages->num_nodes);
+	printf("  Connections:     %ld\n",    stages->num_connections);
+	printf("  Threads:         %ld\n",   number_of_workers);
 	printf("  Degree:          %3.2f\n", stages->num_connections/(float)stages->num_nodes);
-	printf("  Stages:          %d\n",    stages->count);
-	printf("  Nodes/thread:    %d(%4.2f%%)\n", (stages->num_nodes/number_of_workers), 100.0/(double)number_of_workers);
+	printf("  Stages:          %ld\n",    stages->count);
+	printf("  Nodes/thread:    %ld(%4.2f%%)\n", (stages->num_nodes/number_of_workers), 100.0/(double)number_of_workers);
 	printf("\n");
 
 }
@@ -4506,7 +4507,7 @@ static void print_simulation_stats(stages_t *stages, int /*num_vectors*/, double
 	print_time(total_time);
 	printf("\n");
 	printf("Coverage:          "
-			"%d (%4.1f%%)\n", covered_nodes, (covered_nodes/(double)stages->num_nodes) * 100);
+			"%ld (%4.1f%%)\n", covered_nodes, (covered_nodes/(double)stages->num_nodes) * 100);
 }
 
 /*
@@ -4547,7 +4548,7 @@ static void print_ancestry(nnode_t *bottom_node, int n)
 			printf(  "  ------------\n");
 			printf(  "  CHILDREN    \n");
 			printf(  "  ------------\n");
-			printf(  "  O: %d\n", node->num_output_pins);fflush(stdout);
+			printf(  "  O: %ld\n", node->num_output_pins);fflush(stdout);
 			for (i = 0; i < node->num_output_pins; i++)
 			{
 				npin_t *pin = node->output_pins[i];
@@ -4571,7 +4572,7 @@ static void print_ancestry(nnode_t *bottom_node, int n)
 								}
 								else
 								{
-									printf("  Null node %d\n", ++count);fflush(stdout);
+									printf("  Null node %ld\n", ++count);fflush(stdout);
 								}
 							}
 							else
@@ -4638,7 +4639,7 @@ static nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 			depth++;
 			index.insert(node->unique_id);
 			char *name = get_pin_name(node->name);
-			printf("  %s (%ld) %d %d\n", name, node->unique_id, node->num_input_pins, node->num_output_pins);
+			printf("  %s (%ld) %ld %ld\n", name, node->unique_id, node->num_input_pins, node->num_output_pins);
 			vtr::free(name);
 
 			int i;
@@ -4661,13 +4662,13 @@ static nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 					is_undriven = TRUE;
 				}
 				char *name2 = get_pin_name(node2->name);
-				printf("\t(%s) %s (%ld) %d %d %s \n", pin->mapping, name2, node2->unique_id, node2->num_input_pins, node2->num_output_pins, is_undriven?"*":"");
+				printf("\t(%s) %s (%ld) %ld %ld %s \n", pin->mapping, name2, node2->unique_id, node2->num_input_pins, node2->num_output_pins, is_undriven?"*":"");
 				vtr::free(name2);
 			}
 			printf("  ------------\n");
 		}
 		else {
-			printf("  CYCLE DETECTED AFTER %d NODES.\n", depth);
+			printf("  CYCLE DETECTED AFTER %ld NODES.\n", depth);
 			printf("  ------------\n");
 			break;
 		}
@@ -4681,7 +4682,7 @@ static nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 		}
 		else if (max_depth && depth >=max_depth)
 		{
-			printf("  TRACE TRUNCATED AT %d NODES.\n", max_depth);
+			printf("  TRACE TRUNCATED AT %ld NODES.\n", max_depth);
 			printf("  ------------\n");
 			break;
 		}

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "verilog_preprocessor.h"
-#include "types.h"
+#include "odin_types.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
 #include "odin_util.h"
@@ -142,7 +142,7 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 	{
 		if (0 == strcmp(def_iterator->symbol, symbol))
 		{
-			fprintf(stderr, "Warning: The constant %s defined on line %d in %s was previously defined on line %d in %s\n",
+			fprintf(stderr, "Warning: The constant %s defined on line %ld in %s was previously defined on line %ld in %s\n",
 				symbol, line, defined_in->path, def_iterator->line, def_iterator->defined_in->path);
 
 			if (value == NULL || (value[0] == '/' && value[1] == '/'))
@@ -301,7 +301,7 @@ FILE* veri_preproc(FILE *source)
 {
 	extern global_args_t global_args;
 	extern config_t configuration;
-	extern size_t current_parse_file;
+	extern int current_parse_file;
 	FILE *preproc_producer = NULL;
 
 	/* Was going to use filename to prevent duplication but the global var isn't used in the case of a config value */
@@ -398,7 +398,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 
 	while (NULL != fgets(line, MaxLine, source))
 	{
-		//fprintf(stderr, "%s:%d\t%s", current_include->path,line_number, line);
+		//fprintf(stderr, "%s:%ld\t%s", current_include->path,line_number, line);
 		char proc_line[MaxLine] ;
 		char symbol[MaxLine] ;
 		char *p_proc_line = proc_line ;
@@ -434,7 +434,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 		vtr::strncpy( p_proc_line, last_pch, MaxLine) ;
 		vtr::strncpy( line, proc_line, MaxLine) ;
 
-		//fprintf(stderr, "%s:%d\t%s\n", current_include->path,line_number, line);
+		//fprintf(stderr, "%s:%ld\t%s\n", current_include->path,line_number, line);
 
 		/* Preprocessor directives have a backtick on the first column. */
 		if (line[0] == '`')
@@ -452,7 +452,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				/* If we failed to open the included file handle the error */
 				if (!included_file)
 				{
-					fprintf(stderr, "Warning: Unable to open file %s included on line %d of %s\n",
+					fprintf(stderr, "Warning: Unable to open file %s included on line %ld of %s\n",
 						token, line_number, current_include->path);
 					perror("included_file : fopen");
 					/*return erro or exit ? */

@@ -24,8 +24,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 
 #include "netlist_utils.h"
 #include "node_creation_library.h"
@@ -266,8 +266,8 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			char *identifier = ast_node->children[0]->types.identifier;
 			if (find_hard_block(identifier))
 			{
-				size_t depth = is_sp_ram(node)? get_sp_ram_depth(node) : get_dp_ram_depth(node);
-				size_t width = is_sp_ram(node)? get_sp_ram_width(node) : get_dp_ram_width(node);
+				long depth = is_sp_ram(node)? get_sp_ram_depth(node) : get_dp_ram_depth(node);
+				long width = is_sp_ram(node)? get_sp_ram_width(node) : get_dp_ram_width(node);
 
 				// If the memory satisfies the threshold for the use of a hard logic block, use one.
 				if (depth > configuration.soft_logic_memory_depth_threshold || width > configuration.soft_logic_memory_width_threshold)
@@ -276,7 +276,7 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 				}
 				else
 				{
-					printf("\tInferring soft logic ram: %dx%d\n", width, depth);
+					printf("\tInferring soft logic ram: %zux%zu\n", width, depth);
 					instantiate_soft_logic_ram(node, traverse_number, netlist);
 				}
 			}

@@ -34,15 +34,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include <queue>
 #include "sim_block.h"
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 
 #include "netlist_utils.h"
 #include "odin_util.h"
 
 #include "multipliers.h"
 #include "hard_blocks.h"
-#include "types.h"
+#include "odin_types.h"
 #include "memories.h"
 #include "ace.h"
 

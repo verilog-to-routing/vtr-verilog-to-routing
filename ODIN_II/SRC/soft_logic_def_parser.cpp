@@ -21,7 +21,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 #include "soft_logic_def_parser.h"
-#include "types.h"
+#include "odin_types.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -150,10 +150,10 @@ void read_soft_def_file(t_model *hard_adder_models)
 		{
 			/* something went wrong! empty everything and throw a warning */
 			soft_def_map = std::map<std::string,soft_sub_structure*>();
-			printf("ERROR line::%d\n",line_number);
+			printf("ERROR line::%ld\n",line_number);
 		}
 		else
-			printf("DONE read %d lines\n",line_number);
+			printf("DONE read %ld lines\n",line_number);
   	}
 }
 

@@ -30,7 +30,7 @@ static inline void _verbose_assert(bool condition, const char *condition_str, co
 {
 	if(!condition)
 	{
-		fprintf(stderr, "ASSERT FAILED: %s\n\t@[%s]%s::%d \n",condition_str, odin_file_name,odin_function_name, odin_line_number);
+		fprintf(stderr, "ASSERT FAILED: %s\n\t@[%s]%s::%ld \n",condition_str, odin_file_name,odin_function_name, odin_line_number);
 		fflush(stderr);
 		std::abort();
 	}

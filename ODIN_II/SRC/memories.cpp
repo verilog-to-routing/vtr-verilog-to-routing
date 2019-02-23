@@ -23,7 +23,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include <string.h>
 #include <math.h>
-#include "globals.h"
+#include "odin_globals.h"
 
 #include "netlist_utils.h"
 #include "node_creation_library.h"
@@ -58,41 +58,41 @@ int get_sp_ram_split_width();
 int get_dp_ram_split_width();
 void filter_memories_by_soft_logic_cutoff();
 
-size_t get_sp_ram_depth(nnode_t *node)
+long get_sp_ram_depth(nnode_t *node)
 {
 	sp_ram_signals *signals = get_sp_ram_signals(node);
-	size_t depth = (0x1ULL << signals->addr->count);
+	long depth = get_memory_depth_from_address_size(signals->addr->count);
 	free_sp_ram_signals(signals);
 	return depth;
 }
 
-size_t get_dp_ram_depth(nnode_t *node)
+long get_dp_ram_depth(nnode_t *node)
 {
 	dp_ram_signals *signals = get_dp_ram_signals(node);
 	oassert(signals->addr1->count == signals->addr2->count);
-	size_t depth = (0x1ULL << signals->addr1->count);
+	long depth = get_memory_depth_from_address_size(signals->addr1->count);
 	free_dp_ram_signals(signals);
 	return depth;
 }
 
-size_t get_sp_ram_width(nnode_t *node)
+long get_sp_ram_width(nnode_t *node)
 {
 	sp_ram_signals *signals = get_sp_ram_signals(node);
-	size_t width = signals->data->count;
+	long width = signals->data->count;
 	free_sp_ram_signals(signals);
 	return width;
 }
 
-size_t get_dp_ram_width(nnode_t *node)
+long get_dp_ram_width(nnode_t *node)
 {
 	dp_ram_signals *signals = get_dp_ram_signals(node);
 	oassert(signals->data1->count == signals->data2->count);
-	size_t width = signals->data1->count;
+	long width = signals->data1->count;
 	free_dp_ram_signals(signals);
 	return width;
 }
 
-size_t get_memory_port_size(const char *name)
+long get_memory_port_size(const char *name)
 {
 	t_linked_vptr *mpl;
 
@@ -271,23 +271,23 @@ void check_memories_and_report_distribution()
 	printf("============================\n");
 
 
-	size_t total_memory_bits = 0;
+	long total_memory_bits = 0;
 	int total_memory_block_counter = 0;
-	size_t memory_max_width = 0;
-	size_t memory_max_depth = 0;
+	long memory_max_width = 0;
+	long memory_max_depth = 0;
 
 	t_linked_vptr *temp = sp_memory_list;
 	while (temp != NULL)
 	{
 		nnode_t *node = (nnode_t *)temp->data_vptr;
 
-		size_t width = get_sp_ram_width(node);
-		size_t depth = get_sp_ram_depth(node);
+		long width = get_sp_ram_width(node);
+		long depth = get_sp_ram_depth(node);
 
-		if (depth > MEMORY_DEPTH_LIMIT)
-			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %lld exceeds ODIN depth bound of %lld.", node->name, depth, MEMORY_DEPTH_LIMIT);
+		if (depth > get_memory_depth_from_address_size(HARD_RAM_ADDR_LIMIT))
+			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%ld.", node->name, depth, HARD_RAM_ADDR_LIMIT);
 
-		printf("SPRAM: %lld width %lld depth\n", width, depth);
+		printf("SPRAM: %zu width %zu depth\n", width, depth);
 
 		total_memory_bits += width * depth;
 
@@ -308,12 +308,12 @@ void check_memories_and_report_distribution()
 	{
 		nnode_t *node = (nnode_t *)temp->data_vptr;
 
-		size_t width = get_dp_ram_width(node);
-		size_t depth = get_dp_ram_depth(node);
-		if (depth > MEMORY_DEPTH_LIMIT)
-			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %lld exceeds ODIN depth bound of %lld.", node->name, depth, MEMORY_DEPTH_LIMIT);
+		long width = get_dp_ram_width(node);
+		long depth = get_dp_ram_depth(node);
+		if (depth > get_memory_depth_from_address_size(HARD_RAM_ADDR_LIMIT))
+			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%ld.", node->name, depth, HARD_RAM_ADDR_LIMIT);
 
-		printf("DPRAM: %lld width %lld depth\n", width, depth);
+		printf("DPRAM: %zu width %zu depth\n", width, depth);
 		total_memory_bits += width * depth;
 
 		total_memory_block_counter++;
@@ -327,10 +327,10 @@ void check_memories_and_report_distribution()
 		temp = temp->next;
 	}
 
-	printf("\nTotal Logical Memory Blocks = %d \n", total_memory_block_counter);
-	printf("Total Logical Memory bits = %lld \n", total_memory_bits);
-	printf("Max Memory Width = %lld \n", memory_max_width);
-	printf("Max Memory Depth = %lld \n", memory_max_depth);
+	printf("\nTotal Logical Memory Blocks = %ld \n", total_memory_block_counter);
+	printf("Total Logical Memory bits = %zu \n", total_memory_bits);
+	printf("Max Memory Width = %zu \n", memory_max_width);
+	printf("Max Memory Depth = %zu \n", memory_max_depth);
 	printf("\n");
 
 	return;
@@ -652,7 +652,7 @@ void split_sp_memory_width(nnode_t *node, int target_size)
 		for (i = 0; i < num_memories; i++)
 		{
 			nnode_t *new_node = allocate_nnode();
-			new_node->name = append_string(node->name, "-%d",i);
+			new_node->name = append_string(node->name, "-%ld",i);
 			sp_memory_list = insert_in_vptr_list(sp_memory_list, new_node);
 
 			/* Copy properties from the original node */
@@ -777,7 +777,7 @@ void split_dp_memory_width(nnode_t *node, int target_size)
 		for (i = 0; i < num_memories; i++)
 		{
 			nnode_t *new_node = allocate_nnode();
-			new_node->name = append_string(node->name, "-%d",i);
+			new_node->name = append_string(node->name, "-%ld",i);
 			dp_memory_list = insert_in_vptr_list(dp_memory_list, new_node);
 
 			/* Copy properties from the original node */
@@ -908,10 +908,10 @@ void split_dp_memory_width(nnode_t *node, int target_size)
  * Determines the single port ram split depth based on the configuration
  * variables and architecture.
  */
-size_t get_sp_ram_split_depth()
+long get_sp_ram_split_depth()
 {
 	t_model_ports *hb_ports= get_model_port(single_port_rams->inputs, "addr");
-	size_t split_size;
+	long split_size;
 	if (configuration.split_memory_depth == -1) /* MIN */
 		split_size = hb_ports->min_size;
 	else if (configuration.split_memory_depth == -2) /* MIN */
@@ -930,10 +930,10 @@ size_t get_sp_ram_split_depth()
  * Determines the dual port ram split depth based on the configuration
  * variables and architecture.
  */
-size_t get_dp_ram_split_depth()
+long get_dp_ram_split_depth()
 {
 	t_model_ports *hb_ports= get_model_port(dual_port_rams->inputs, "addr1");
-	size_t split_depth;
+	long split_depth;
 	if (configuration.split_memory_depth == -1) /* MIN */
 		split_depth = hb_ports->min_size;
 	else if (configuration.split_memory_depth == -2) /* MIN */
@@ -1004,8 +1004,8 @@ void filter_memories_by_soft_logic_cutoff()
 			oassert(node->type == MEMORY);
 			temp = delete_in_vptr_list(temp);
 
-			size_t depth = get_sp_ram_depth(node);
-			size_t width = get_sp_ram_width(node);
+			long depth = get_sp_ram_depth(node);
+			long width = get_sp_ram_width(node);
 			if (depth > configuration.soft_logic_memory_depth_threshold || width > configuration.soft_logic_memory_width_threshold)
 				sp_memory_list = insert_in_vptr_list(sp_memory_list, node);
 
@@ -1023,8 +1023,8 @@ void filter_memories_by_soft_logic_cutoff()
 			oassert(node->type == MEMORY);
 			temp = delete_in_vptr_list(temp);
 
-			size_t depth = get_dp_ram_depth(node);
-			size_t width = get_dp_ram_width(node);
+			long depth = get_dp_ram_depth(node);
+			long width = get_dp_ram_width(node);
 			if (depth > configuration.soft_logic_memory_depth_threshold || width > configuration.soft_logic_memory_width_threshold)
 				dp_memory_list = insert_in_vptr_list(dp_memory_list, node);
 		}
@@ -1218,7 +1218,7 @@ void pad_memory_output_port(nnode_t *node, netlist_t * /*netlist*/, t_model *mod
 			// Add new pins to the higher order spots.
 			npin_t *new_pin = allocate_npin();
 			// Pad outputs with a unique and descriptive name to avoid collisions.
-			new_pin->name = append_string("", "unconnected_memory_output~%d", pad_pin_number++);
+			new_pin->name = append_string("", "unconnected_memory_output~%ld", pad_pin_number++);
 			new_pin->mapping = vtr::strdup(port_name);
 			add_output_pin_to_node(node, new_pin, i);
 		}
@@ -1288,7 +1288,6 @@ char is_ast_sp_ram(ast_node_t *node)
 
 char is_ast_dp_ram(ast_node_t *node)
 {
-	char *identifier = node->children[0]->types.identifier;
 	return (!strcmp(node->children[0]->types.identifier, DUAL_PORT_RAM_string));
 }
 
@@ -1451,12 +1450,11 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 	signal_list_t *decoder = create_decoder(node, mark, signals->addr);
 
 	// The total number of memory addresses. (2^address_bits)
-	int num_addr = decoder->count;
+	long num_addr = decoder->count;
 
 	nnode_t **and_gates = (nnode_t **)vtr::malloc(sizeof(nnode_t *) * num_addr);
 
-	int i;
-	for (i = 0; i < num_addr; i++)
+	for (long i = 0; i < num_addr; i++)
 	{
 		npin_t *address_pin = decoder->pins[i];
 		/* Check that the input pin is driven */
@@ -1478,7 +1476,7 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 	}
 
 
-	for (i = 0; i < signals->data->count; i++)
+	for (long i = 0; i < signals->data->count; i++)
 	{
 		npin_t *data_pin = signals->data->pins[i];
 
@@ -1709,16 +1707,16 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
  */
 signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_list)
 {
-	int num_inputs = input_list->count;
-	// Number of outputs is 2^num_inputs
-	int num_outputs = 0x1ULL << num_inputs;
+	long num_inputs = input_list->count;
+	if ( num_inputs > SOFT_RAM_ADDR_LIMIT)
+		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Memory %s of depth 2^%ld exceeds ODIN bound of 2^%ld.\nMust use an FPGA architecture that contains embedded hard block memories", node->name, num_inputs, SOFT_RAM_ADDR_LIMIT);
 
-	oassert(MEMORY_DEPTH_LIMIT > num_outputs);
+	// Number of outputs is 2^num_inputs
+	long num_outputs = get_memory_depth_from_address_size(num_inputs);
 
 	// Create NOT gates for all inputs and put the outputs in their own signal list.
 	signal_list_t *not_gates = init_signal_list();
-	int i;
-	for (i = 0; i < num_inputs; i++)
+	for (long i = 0; i < num_inputs; i++)
 	{
 		if(input_list->pins[i]->net->driver_pin == NULL
 		&& input_list->pins[i]->net != verilog_netlist->zero_net
@@ -1749,16 +1747,18 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 
 	// Create AND gates and assign signals.
 	signal_list_t *return_list = init_signal_list();
-	for (i = 0; i < num_outputs; i++)
+	for (long i = 0; i < num_outputs; i++)
 	{
 		// Each output is connected to an and gate which is driven by a single permutation of the inputs.
 		nnode_t *and_g = make_1port_logic_gate(LOGICAL_AND, num_inputs, node, mark);
 
-		int j;
-		for (j = 0; j < num_inputs; j++)
+		for (long j = 0; j < num_inputs; j++)
 		{
 			// Look at the jth bit of i. If it's 0, take the negated signal.
-			int value = (i & (0x1ULL << j)) >> j;
+			long value = get_memory_depth_from_address_size(j);
+			value &= i;
+			value >>= j;
+
 			npin_t *pin = value ? input_list->pins[j] : not_gates->pins[j];
 
 			// Use the original not pins on the first iteration and the original input pins on the last.

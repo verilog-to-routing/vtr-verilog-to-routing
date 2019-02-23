@@ -24,7 +24,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define ADDERS_H
 
 #include "read_xml_arch_file.h"
-#include "types.h"
+#include "odin_types.h"
 #include <vector>
 
 typedef struct s_adder

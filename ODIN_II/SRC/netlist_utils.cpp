@@ -24,8 +24,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 
 #include "netlist_utils.h"
 #include "node_creation_library.h"
@@ -133,7 +133,7 @@ void allocate_more_input_pins(nnode_t *node, int width)
 
 	if (width <= 0)
 	{
-		warning_message(NETLIST_ERROR, -1, -1, "tried adding output pins for with <= 0 %s\n", node->name);
+		error_message(NETLIST_ERROR, -1, -1, "tried adding input pins for width %ld <= 0 %s\n", width, node->name);
 		return;
 	}
 
@@ -155,7 +155,7 @@ void allocate_more_output_pins(nnode_t *node, int width)
 
 	if (width <= 0)
 	{
-		warning_message(NETLIST_ERROR, -1, -1, "tried adding output pins for with <= 0 %s\n", node->name);
+		error_message(NETLIST_ERROR, -1, -1, "tried adding output pins for width %ld <= 0 %s\n", width, node->name);
 		return;
 	}
 
@@ -1116,27 +1116,27 @@ void function_to_print_node_and_its_pin(npin_t * temp_pin)
 	printf("\n-------Printing the related net driver pin info---------\n");
 	node=temp_pin->node;
 
-  	printf(" unique_id: %ld   name: %s type: %d\n",node->unique_id,node->name,node->type);
-  	printf(" num_input_pins: %d  num_input_port_sizes: %d",node->num_input_pins,node->num_input_port_sizes);
+  	printf(" unique_id: %ld   name: %s type: %ld\n",node->unique_id,node->name,node->type);
+  	printf(" num_input_pins: %ld  num_input_port_sizes: %ld",node->num_input_pins,node->num_input_port_sizes);
   	for(i=0;i<node->num_input_port_sizes;i++)
   	{
-	printf("input_port_sizes %d : %d\n",i,node->input_port_sizes[i]);
+	printf("input_port_sizes %ld : %ld\n",i,node->input_port_sizes[i]);
   	}
  	 for(i=0;i<node->num_input_pins;i++)
   	{
 	pin=node->input_pins[i];
-	printf("input_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("input_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
   	}
-  	printf(" num_output_pins: %d  num_output_port_sizes: %d",node->num_output_pins,node->num_output_port_sizes);
+  	printf(" num_output_pins: %ld  num_output_port_sizes: %ld",node->num_output_pins,node->num_output_port_sizes);
  	 for(i=0;i<node->num_output_port_sizes;i++)
   	{
-	printf("output_port_sizes %d : %d\n",i,node->output_port_sizes[i]);
+	printf("output_port_sizes %ld : %ld\n",i,node->output_port_sizes[i]);
   	}
   	for(i=0;i<node->num_output_pins;i++)
   	{
 	pin=node->output_pins[i];
-	printf("output_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("output_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
  	}
 
@@ -1154,37 +1154,37 @@ void print_netlist_for_checking (netlist_t *netlist, char *name)
   node=netlist->gnd_node;
   net=netlist->zero_net;
   printf("--------gnd_node-------\n");
-  printf(" unique_id: %ld   name: %s type: %d\n",node->unique_id,node->name,node->type);
-  printf(" num_input_pins: %d  num_input_port_sizes: %d",node->num_input_pins,node->num_input_port_sizes);
+  printf(" unique_id: %ld   name: %s type: %ld\n",node->unique_id,node->name,node->type);
+  printf(" num_input_pins: %ld  num_input_port_sizes: %ld",node->num_input_pins,node->num_input_port_sizes);
   for(i=0;i<node->num_input_port_sizes;i++)
   {
-	printf("input_port_sizes %d : %d\n",i,node->input_port_sizes[i]);
+	printf("input_port_sizes %ld : %ld\n",i,node->input_port_sizes[i]);
   }
   for(i=0;i<node->num_input_pins;i++)
   {
 	pin=node->input_pins[i];
-	printf("input_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("input_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
 
   }
-  printf(" num_output_pins: %d  num_output_port_sizes: %d",node->num_output_pins,node->num_output_port_sizes);
+  printf(" num_output_pins: %ld  num_output_port_sizes: %ld",node->num_output_pins,node->num_output_port_sizes);
   for(i=0;i<node->num_output_port_sizes;i++)
   {
-	printf("output_port_sizes %d : %d\n",i,node->output_port_sizes[i]);
+	printf("output_port_sizes %ld : %ld\n",i,node->output_port_sizes[i]);
   }
   for(i=0;i<node->num_output_pins;i++)
   {
 	pin=node->output_pins[i];
-	printf("output_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("output_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node : %s",pin->net->name,pin->node->name);
   }
 
   printf("\n----------zero net----------\n");
-  printf("unique_id : %ld name: %s combined: %d \n",net->unique_id,net->name,net->combined);
-  printf("driver_pin name : %s num_fanout_pins: %d\n",net->driver_pin->name,net->num_fanout_pins);
+  printf("unique_id : %ld name: %s combined: %ld \n",net->unique_id,net->name,net->combined);
+  printf("driver_pin name : %s num_fanout_pins: %ld\n",net->driver_pin->name,net->num_fanout_pins);
   for(i=0;i<net->num_fanout_pins;i++)
   {
-    printf("fanout_pins %d : %s",i,net->fanout_pins[i]->name);
+    printf("fanout_pins %ld : %s",i,net->fanout_pins[i]->name);
   }
 
 
@@ -1192,102 +1192,102 @@ void print_netlist_for_checking (netlist_t *netlist, char *name)
   node=netlist->vcc_node;
   net=netlist->one_net;
   printf("\n--------vcc_node-------\n");
-  printf(" unique_id: %ld   name: %s type: %d\n",node->unique_id,node->name,node->type);
-  printf(" num_input_pins: %d  num_input_port_sizes: %d",node->num_input_pins,node->num_input_port_sizes);
+  printf(" unique_id: %ld   name: %s type: %ld\n",node->unique_id,node->name,node->type);
+  printf(" num_input_pins: %ld  num_input_port_sizes: %ld",node->num_input_pins,node->num_input_port_sizes);
   for(i=0;i<node->num_input_port_sizes;i++)
   {
-	printf("input_port_sizes %d : %d\n",i,node->input_port_sizes[i]);
+	printf("input_port_sizes %ld : %ld\n",i,node->input_port_sizes[i]);
   }
   for(i=0;i<node->num_input_pins;i++)
   {
 	pin=node->input_pins[i];
-	printf("input_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("input_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
   }
-  printf(" num_output_pins: %d  num_output_port_sizes: %d",node->num_output_pins,node->num_output_port_sizes);
+  printf(" num_output_pins: %ld  num_output_port_sizes: %ld",node->num_output_pins,node->num_output_port_sizes);
   for(i=0;i<node->num_output_port_sizes;i++)
   {
-	printf("output_port_sizes %d : %d\n",i,node->output_port_sizes[i]);
+	printf("output_port_sizes %ld : %ld\n",i,node->output_port_sizes[i]);
   }
   for(i=0;i<node->num_output_pins;i++)
   {
 	pin=node->output_pins[i];
-	printf("output_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("output_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
   }
 
   printf("\n----------one net----------\n");
-  printf("unique_id : %ld name: %s combined: %d \n",net->unique_id,net->name,net->combined);
-  printf("driver_pin name : %s num_fanout_pins: %d\n",net->driver_pin->name,net->num_fanout_pins);
+  printf("unique_id : %ld name: %s combined: %ld \n",net->unique_id,net->name,net->combined);
+  printf("driver_pin name : %s num_fanout_pins: %ld\n",net->driver_pin->name,net->num_fanout_pins);
   for(i=0;i<net->num_fanout_pins;i++)
   {
-    printf("fanout_pins %d : %s",i,net->fanout_pins[i]->name);
+    printf("fanout_pins %ld : %s",i,net->fanout_pins[i]->name);
   }
 
   /* pad_node */
   node=netlist->pad_node;
   net=netlist->pad_net;
   printf("\n--------pad_node-------\n");
-  printf(" unique_id: %ld   name: %s type: %d\n",node->unique_id,node->name,node->type);
-  printf(" num_input_pins: %d  num_input_port_sizes: %d",node->num_input_pins,node->num_input_port_sizes);
+  printf(" unique_id: %ld   name: %s type: %ld\n",node->unique_id,node->name,node->type);
+  printf(" num_input_pins: %ld  num_input_port_sizes: %ld",node->num_input_pins,node->num_input_port_sizes);
   for(i=0;i<node->num_input_port_sizes;i++)
   {
-	printf("input_port_sizes %d : %d\n",i,node->input_port_sizes[i]);
+	printf("input_port_sizes %ld : %ld\n",i,node->input_port_sizes[i]);
   }
   for(i=0;i<node->num_input_pins;i++)
   {
 	pin=node->input_pins[i];
-	printf("input_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("input_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
   }
-  printf(" num_output_pins: %d  num_output_port_sizes: %d",node->num_output_pins,node->num_output_port_sizes);
+  printf(" num_output_pins: %ld  num_output_port_sizes: %ld",node->num_output_pins,node->num_output_port_sizes);
   for(i=0;i<node->num_output_port_sizes;i++)
   {
-	printf("output_port_sizes %d : %d\n",i,node->output_port_sizes[i]);
+	printf("output_port_sizes %ld : %ld\n",i,node->output_port_sizes[i]);
   }
   for(i=0;i<node->num_output_pins;i++)
   {
 	pin=node->output_pins[i];
-	printf("output_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("output_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
   }
 
   printf("\n----------pad net----------\n");
-  printf("unique_id : %ld name: %s combined: %d \n",net->unique_id,net->name,net->combined);
-  printf("driver_pin name : %s num_fanout_pins: %d\n",net->driver_pin->name,net->num_fanout_pins);
+  printf("unique_id : %ld name: %s combined: %ld \n",net->unique_id,net->name,net->combined);
+  printf("driver_pin name : %s num_fanout_pins: %ld\n",net->driver_pin->name,net->num_fanout_pins);
   for(i=0;i<net->num_fanout_pins;i++)
   {
-    printf("fanout_pins %d : %s",i,net->fanout_pins[i]->name);
+    printf("fanout_pins %ld : %s",i,net->fanout_pins[i]->name);
   }
 
   /* top input nodes */
   printf("\n--------------Printing the top input nodes--------------------------- \n");
-  printf("num_top_input_nodes: %d",netlist->num_top_input_nodes);
+  printf("num_top_input_nodes: %ld",netlist->num_top_input_nodes);
   for(j=0;j<netlist->num_top_input_nodes;j++)
   {
   	node=netlist->top_input_nodes[j];
-	printf("\ttop input nodes : %d\n",j);
-  	printf(" unique_id: %ld   name: %s type: %d\n",node->unique_id,node->name,node->type);
-  	printf(" num_input_pins: %d  num_input_port_sizes: %d",node->num_input_pins,node->num_input_port_sizes);
+	printf("\ttop input nodes : %ld\n",j);
+  	printf(" unique_id: %ld   name: %s type: %ld\n",node->unique_id,node->name,node->type);
+  	printf(" num_input_pins: %ld  num_input_port_sizes: %ld",node->num_input_pins,node->num_input_port_sizes);
   	for(i=0;i<node->num_input_port_sizes;i++)
   	{
-	printf("input_port_sizes %d : %d\n",i,node->input_port_sizes[i]);
+	printf("input_port_sizes %ld : %ld\n",i,node->input_port_sizes[i]);
   	}
  	 for(i=0;i<node->num_input_pins;i++)
   	{
 	pin=node->input_pins[i];
-	printf("input_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("input_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
   	}
-  	printf(" num_output_pins: %d  num_output_port_sizes: %d",node->num_output_pins,node->num_output_port_sizes);
+  	printf(" num_output_pins: %ld  num_output_port_sizes: %ld",node->num_output_pins,node->num_output_port_sizes);
  	 for(i=0;i<node->num_output_port_sizes;i++)
   	{
-	printf("output_port_sizes %d : %d\n",i,node->output_port_sizes[i]);
+	printf("output_port_sizes %ld : %ld\n",i,node->output_port_sizes[i]);
   	}
   	for(i=0;i<node->num_output_pins;i++)
   	{
 	pin=node->output_pins[i];
-	printf("output_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("output_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
  	}
 }
@@ -1295,41 +1295,41 @@ void print_netlist_for_checking (netlist_t *netlist, char *name)
 
   /* top output nodes */
   printf("\n--------------Printing the top output nodes--------------------------- \n");
-  printf("num_top_output_nodes: %d",netlist->num_top_output_nodes);
+  printf("num_top_output_nodes: %ld",netlist->num_top_output_nodes);
   for(j=0;j<netlist->num_top_output_nodes;j++)
   {
   	node=netlist->top_output_nodes[j];
-	printf("\ttop output nodes : %d\n",j);
-  	printf(" unique_id: %ld   name: %s type: %d\n",node->unique_id,node->name,node->type);
-  	printf(" num_input_pins: %d  num_input_port_sizes: %d",node->num_input_pins,node->num_input_port_sizes);
+	printf("\ttop output nodes : %ld\n",j);
+  	printf(" unique_id: %ld   name: %s type: %ld\n",node->unique_id,node->name,node->type);
+  	printf(" num_input_pins: %ld  num_input_port_sizes: %ld",node->num_input_pins,node->num_input_port_sizes);
   	for(i=0;i<node->num_input_port_sizes;i++)
   	{
-	printf("input_port_sizes %d : %d\n",i,node->input_port_sizes[i]);
+	printf("input_port_sizes %ld : %ld\n",i,node->input_port_sizes[i]);
   	}
  	 for(i=0;i<node->num_input_pins;i++)
   	{
 	pin=node->input_pins[i];
-	printf("input_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("input_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
 		net=pin->net;
 		printf("\n\t-------printing the related net info-----\n");
-		printf("unique_id : %ld name: %s combined: %d \n",net->unique_id,net->name,net->combined);
-  printf("driver_pin name : %s num_fanout_pins: %d\n",net->driver_pin->name,net->num_fanout_pins);
+		printf("unique_id : %ld name: %s combined: %ld \n",net->unique_id,net->name,net->combined);
+  printf("driver_pin name : %s num_fanout_pins: %ld\n",net->driver_pin->name,net->num_fanout_pins);
   		for(k=0;k<net->num_fanout_pins;k++)
   		{
-    		printf("fanout_pins %d : %s",k,net->fanout_pins[k]->name);
+    		printf("fanout_pins %ld : %s",k,net->fanout_pins[k]->name);
   		}
 		 function_to_print_node_and_its_pin(net->driver_pin);
   	}
-  	printf(" num_output_pins: %d  num_output_port_sizes: %d",node->num_output_pins,node->num_output_port_sizes);
+  	printf(" num_output_pins: %ld  num_output_port_sizes: %ld",node->num_output_pins,node->num_output_port_sizes);
  	 for(i=0;i<node->num_output_port_sizes;i++)
   	{
-	printf("output_port_sizes %d : %d\n",i,node->output_port_sizes[i]);
+	printf("output_port_sizes %ld : %ld\n",i,node->output_port_sizes[i]);
   	}
   	for(i=0;i<node->num_output_pins;i++)
   	{
 	pin=node->output_pins[i];
-	printf("output_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("output_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
  	}
 
@@ -1338,64 +1338,64 @@ void print_netlist_for_checking (netlist_t *netlist, char *name)
 
   /* internal nodes */
   printf("\n--------------Printing the internal nodes--------------------------- \n");
-  printf("num_internal_nodes: %d",netlist->num_internal_nodes);
+  printf("num_internal_nodes: %ld",netlist->num_internal_nodes);
   for(j=0;j<netlist->num_internal_nodes;j++)
   {
   	node=netlist->internal_nodes[j];
-	printf("\tinternal nodes : %d\n",j);
-  	printf(" unique_id: %ld   name: %s type: %d\n",node->unique_id,node->name,node->type);
-  	printf(" num_input_pins: %d  num_input_port_sizes: %d",node->num_input_pins,node->num_input_port_sizes);
+	printf("\tinternal nodes : %ld\n",j);
+  	printf(" unique_id: %ld   name: %s type: %ld\n",node->unique_id,node->name,node->type);
+  	printf(" num_input_pins: %ld  num_input_port_sizes: %ld",node->num_input_pins,node->num_input_port_sizes);
   	for(i=0;i<node->num_input_port_sizes;i++)
   	{
-	printf("input_port_sizes %d : %d\n",i,node->input_port_sizes[i]);
+	printf("input_port_sizes %ld : %ld\n",i,node->input_port_sizes[i]);
   	}
  	 for(i=0;i<node->num_input_pins;i++)
   	{
 	pin=node->input_pins[i];
-	printf("input_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("input_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
   	}
-  	printf(" num_output_pins: %d  num_output_port_sizes: %d",node->num_output_pins,node->num_output_port_sizes);
+  	printf(" num_output_pins: %ld  num_output_port_sizes: %ld",node->num_output_pins,node->num_output_port_sizes);
  	 for(i=0;i<node->num_output_port_sizes;i++)
   	{
-	printf("output_port_sizes %d : %d\n",i,node->output_port_sizes[i]);
+	printf("output_port_sizes %ld : %ld\n",i,node->output_port_sizes[i]);
   	}
   	for(i=0;i<node->num_output_pins;i++)
   	{
 	pin=node->output_pins[i];
-	printf("output_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("output_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
  	}
 }
 
   /* ff nodes */
   printf("\n--------------Printing the ff nodes--------------------------- \n");
-  printf("num_ff_nodes: %d",netlist->num_ff_nodes);
+  printf("num_ff_nodes: %ld",netlist->num_ff_nodes);
   for(j=0;j<netlist->num_ff_nodes;j++)
   {
   	node=netlist->ff_nodes[j];
-	printf("\tff nodes : %d\n",j);
-  	printf(" unique_id: %ld   name: %s type: %d\n",node->unique_id,node->name,node->type);
-  	printf(" num_input_pins: %d  num_input_port_sizes: %d",node->num_input_pins,node->num_input_port_sizes);
+	printf("\tff nodes : %ld\n",j);
+  	printf(" unique_id: %ld   name: %s type: %ld\n",node->unique_id,node->name,node->type);
+  	printf(" num_input_pins: %ld  num_input_port_sizes: %ld",node->num_input_pins,node->num_input_port_sizes);
   	for(i=0;i<node->num_input_port_sizes;i++)
   	{
-	printf("input_port_sizes %d : %d\n",i,node->input_port_sizes[i]);
+	printf("input_port_sizes %ld : %ld\n",i,node->input_port_sizes[i]);
   	}
  	 for(i=0;i<node->num_input_pins;i++)
   	{
 	pin=node->input_pins[i];
-	printf("input_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("input_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s",pin->net->name,pin->node->name);
   	}
-  	printf(" num_output_pins: %d  num_output_port_sizes: %d",node->num_output_pins,node->num_output_port_sizes);
+  	printf(" num_output_pins: %ld  num_output_port_sizes: %ld",node->num_output_pins,node->num_output_port_sizes);
  	 for(i=0;i<node->num_output_port_sizes;i++)
   	{
-	printf("output_port_sizes %d : %d\n",i,node->output_port_sizes[i]);
+	printf("output_port_sizes %ld : %ld\n",i,node->output_port_sizes[i]);
   	}
   	for(i=0;i<node->num_output_pins;i++)
   	{
 	pin=node->output_pins[i];
-	printf("output_pins %d : unique_id : %ld type :%d \n \tname :%s pin_net_idx :%d \n\tpin_node_idx:%d mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
+	printf("output_pins %ld : unique_id : %ld type :%ld \n \tname :%s pin_net_idx :%ld \n\tpin_node_idx:%ld mapping:%s\n",i,pin->unique_id,pin->type,pin->name,pin->pin_net_idx,pin->pin_node_idx,pin->mapping);
 	printf("\t related net : %s related node: %s\n",pin->net->name,pin->node->name);
  	}
 }

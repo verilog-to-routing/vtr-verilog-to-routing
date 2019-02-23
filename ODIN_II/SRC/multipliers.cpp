@@ -24,13 +24,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "types.h"
+#include "odin_types.h"
 #include "node_creation_library.h"
 #include "multipliers.h"
 #include "netlist_utils.h"
 #include "partial_map.h"
 #include "read_xml_arch_file.h"
-#include "globals.h"
+#include "odin_globals.h"
 
 #include "adders.h"
 
@@ -305,12 +305,12 @@ void report_mult_distribution()
 			if (mults[i * hard_multipliers->inputs->size + j] != 0)
 			{
 				num_total += mults[i * hard_multipliers->inputs->size + j];
-				printf("%d X %d => %d\n", i, j, mults[i * hard_multipliers->inputs->size + j]);
+				printf("%ld X %ld => %ld\n", i, j, mults[i * hard_multipliers->inputs->size + j]);
 			}
 		}
 	}
 	printf("\n");
-	printf("\nTotal # of multipliers = %d\n", num_total);
+	printf("\nTotal # of multipliers = %ld\n", num_total);
 	return;
 }
 
@@ -395,9 +395,9 @@ void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t * /*netlis
 
 	/* wide input first :) */
 	if (node->input_port_sizes[0] > node->input_port_sizes[1])
-		sanity = odin_sprintf(new_name, "%s_%d_%d_%d", node->name, node->input_port_sizes[0], node->input_port_sizes[1], node->output_port_sizes[0]);
+		sanity = odin_sprintf(new_name, "%s_%ld_%ld_%ld", node->name, node->input_port_sizes[0], node->input_port_sizes[1], node->output_port_sizes[0]);
 	else
-		sanity = odin_sprintf(new_name, "%s_%d_%d_%d", node->name, node->input_port_sizes[1], node->input_port_sizes[0], node->output_port_sizes[0]);
+		sanity = odin_sprintf(new_name, "%s_%ld_%ld_%ld", node->name, node->input_port_sizes[1], node->input_port_sizes[0], node->output_port_sizes[0]);
 
 	if (len <= sanity) /* buffer not large enough */
 		oassert(FALSE);
@@ -411,7 +411,7 @@ void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t * /*netlis
 		}
 		len = strlen(node->name) + 6; /* 6 chars for pin idx */
 		new_name = (char*)vtr::malloc(len);
-		odin_sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
+		odin_sprintf(new_name, "%s[%ld]", node->name, node->output_pins[i]->pin_node_idx);
 		node->output_pins[i]->name = new_name;
 	}
 	vtr::free(node->name);
@@ -457,7 +457,7 @@ void add_the_blackbox_for_mults(FILE *out)
 		if (configuration.fixed_hard_multiplier != 0)
 			count = fprintf(out, ".model multiply\n");
 		else
-			count = fprintf(out, ".model mult_%d_%d_%d\n", muls->size_a, muls->size_b, muls->size_out);
+			count = fprintf(out, ".model mult_%ld_%ld_%ld\n", muls->size_a, muls->size_b, muls->size_out);
 
 		/* add the inputs */
 		count = count + fprintf(out, ".inputs");
@@ -466,11 +466,11 @@ void add_the_blackbox_for_mults(FILE *out)
 		{
 			if (i < muls->size_a)
 			{
-				count = count + odin_sprintf(buffer, " %s[%d]", pa, i);
+				count = count + odin_sprintf(buffer, " %s[%ld]", pa, i);
 			}
 			else
 			{
-				count = count + odin_sprintf(buffer, " %s[%d]", pb, i - muls->size_a);
+				count = count + odin_sprintf(buffer, " %s[%ld]", pb, i - muls->size_a);
 			}
 
 			if (count > 78)
@@ -484,7 +484,7 @@ void add_the_blackbox_for_mults(FILE *out)
 		count = fprintf(out, ".outputs");
 		for (i = 0; i < muls->size_out; i++)
 		{
-			count = count + odin_sprintf(buffer, " %s[%d]", po, i);
+			count = count + odin_sprintf(buffer, " %s[%ld]", po, i);
 			if (count > 78)
 			{
 				fprintf(out, " \\\n%s", buffer);
@@ -527,14 +527,14 @@ void define_mult_function(nnode_t *node, FILE *out)
 	{
 		if (node->input_port_sizes[0] > node->input_port_sizes[1])
 		{
-			count += fprintf(out, " mult_%d_%d_%d", node->input_port_sizes[0],
+			count += fprintf(out, " mult_%ld_%ld_%ld", node->input_port_sizes[0],
 				node->input_port_sizes[1], node->output_port_sizes[0]);
 
 			flip = FALSE;
 		}
 		else
 		{
-			count += fprintf(out, " mult_%d_%d_%d", node->input_port_sizes[1],
+			count += fprintf(out, " mult_%ld_%ld_%ld", node->input_port_sizes[1],
 				node->input_port_sizes[0], node->output_port_sizes[0]);
 
 			flip = TRUE;
@@ -550,9 +550,9 @@ void define_mult_function(nnode_t *node, FILE *out)
 						:node->input_pins[i                          ]->net->driver_pin;
 
 			if (!driver_pin->name)
-				j = odin_sprintf(buffer, " %s[%d]=%s", hard_multipliers->inputs->next->name, i, driver_pin->node->name);
+				j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->next->name, i, driver_pin->node->name);
 			else
-				j = odin_sprintf(buffer, " %s[%d]=%s", hard_multipliers->inputs->next->name, i, driver_pin->name);
+				j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->next->name, i, driver_pin->name);
 		}
 		else
 		{
@@ -565,9 +565,9 @@ void define_mult_function(nnode_t *node, FILE *out)
 						:i - node->input_port_sizes[0];
 
 			if (!driver_pin->name)
-				j = odin_sprintf(buffer, " %s[%d]=%s", hard_multipliers->inputs->name, index, driver_pin->node->name);
+				j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->name, index, driver_pin->node->name);
 			else
-				j = odin_sprintf(buffer, " %s[%d]=%s", hard_multipliers->inputs->name, index, driver_pin->name);
+				j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->name, index, driver_pin->name);
 		}
 
 		if (count + j > 79)
@@ -581,7 +581,7 @@ void define_mult_function(nnode_t *node, FILE *out)
 
 	for (i = 0; i < node->num_output_pins; i++)
 	{
-		j = odin_sprintf(buffer, " %s[%d]=%s", hard_multipliers->outputs->name, i, node->output_pins[i]->name);
+		j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->outputs->name, i, node->output_pins[i]->name);
 		if (count + j > 79)
 		{
 			fprintf(out, "\\\n");
@@ -1059,7 +1059,7 @@ void pad_multiplier(nnode_t *node, netlist_t *netlist)
 			// Add new pins to the higher order spots.
 			npin_t *new_pin = allocate_npin();
 			// Pad outputs with a unique and descriptive name to avoid collisions.
-			new_pin->name = append_string("", "unconnected_multiplier_output~%d", pad_pin_number++);
+			new_pin->name = append_string("", "unconnected_multiplier_output~%ld", pad_pin_number++);
 			add_output_pin_to_node(node, new_pin, i + sizeout);
 		}
 		node->output_port_sizes[0] = sizeout + diffout;

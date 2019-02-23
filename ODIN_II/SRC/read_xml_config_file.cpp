@@ -24,8 +24,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 #include "read_xml_config_file.h"
 #include "read_xml_util.h"
 #include "pugixml.hpp"

@@ -1,6 +1,4 @@
-#include "types.h"
-
-#define ODIN_SHORT_STRING
+#include "odin_types.h"
 
 const char *signedness_STR[] =
 {
@@ -42,6 +40,13 @@ const char *_DUAL_PORT_RAM_string[] =
 {
 	"dual_port_ram","DPR"
 };
+
+const char *ZERO_GND_ZERO = _ZERO_GND_ZERO[ODIN_STRING_TYPE];
+const char *ONE_VCC_CNS = _ONE_VCC_CNS[ODIN_STRING_TYPE];
+const char *ZERO_PAD_ZERO = _ZERO_PAD_ZERO[ODIN_STRING_TYPE];
+
+const char *SINGLE_PORT_RAM_string = _SINGLE_PORT_RAM_string[ODIN_STRING_TYPE];
+const char *DUAL_PORT_RAM_string = _DUAL_PORT_RAM_string[ODIN_STRING_TYPE];
 
 const char *operation_list_STR[][2] = 
 {
@@ -176,19 +181,3 @@ const char *ids_STR []=
 	// EDDIE: new enum value for ids to replace MEMORY from operation_t
 	"RAM"
 };
-
-#define ODIN_LONG_STRING 0
-#define ODIN_SHORT_STRING 1
-
-#ifdef DEBUG_ODIN
-	#define ODIN_STRING_TYPE ODIN_SHORT_STRING
-#else
-	#define ODIN_STRING_TYPE ODIN_LONG_STRING
-#endif
-
-const char *ZERO_GND_ZERO = _ZERO_GND_ZERO[ODIN_STRING_TYPE];
-const char *ONE_VCC_CNS = _ONE_VCC_CNS[ODIN_STRING_TYPE];
-const char *ZERO_PAD_ZERO = _ZERO_PAD_ZERO[ODIN_STRING_TYPE];
-
-const char *SINGLE_PORT_RAM_string = _SINGLE_PORT_RAM_string[ODIN_STRING_TYPE];
-const char *DUAL_PORT_RAM_string = _DUAL_PORT_RAM_string[ODIN_STRING_TYPE];

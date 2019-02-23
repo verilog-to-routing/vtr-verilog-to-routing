@@ -31,22 +31,31 @@ extern vtr::t_linked_vptr *memory_port_size_list;
 extern t_model *single_port_rams;
 extern t_model *dual_port_rams;
 
-#define MEMORY_DEPTH_LIMIT (0x1ULL << 25)
+#define HARD_RAM_ADDR_LIMIT 33
+#define SOFT_RAM_ADDR_LIMIT 10
+
+inline static long get_memory_depth_from_address_size(long addr_size)
+{
+	oassert( addr_size <= 62
+		&& "Odin use 64 bit signed integer internaly, you requested a number of pin larger than odin's limit");
+
+	return (0x1L << addr_size);
+}
 
 typedef struct s_memory
 {
-	size_t size_d1;
-	size_t size_d2;
-	size_t size_addr1;
-	size_t size_addr2;
-	size_t size_out1;
-	size_t size_out2;
+	long size_d1;
+	long size_d2;
+	long size_addr1;
+	long size_addr2;
+	long size_out1;
+	long size_out2;
 	struct s_memory *next;
 } t_memory;
 
 typedef struct s_memory_port_sizes
 {
-	size_t size;
+	long size;
 	char *name;
 } t_memory_port_sizes;
 
@@ -70,8 +79,8 @@ typedef struct {
 	npin_t *clk;
 } dp_ram_signals;
 
-size_t get_sp_ram_split_depth();
-size_t get_dp_ram_split_depth();
+long get_sp_ram_split_depth();
+long get_dp_ram_split_depth();
 
 sp_ram_signals *get_sp_ram_signals(nnode_t *node);
 void free_sp_ram_signals(sp_ram_signals *signalsvar);
@@ -88,12 +97,12 @@ char is_ast_dp_ram(ast_node_t *node);
 void init_memory_distribution();
 void check_memories_and_report_distribution();
 
-size_t get_memory_port_size(const char *name);
+long get_memory_port_size(const char *name);
 
-size_t get_sp_ram_depth(nnode_t *node);
-size_t get_dp_ram_depth(nnode_t *node);
-size_t get_sp_ram_width(nnode_t *node);
-size_t get_dp_ram_width(nnode_t *node);
+long get_sp_ram_depth(nnode_t *node);
+long get_dp_ram_depth(nnode_t *node);
+long get_sp_ram_width(nnode_t *node);
+long get_dp_ram_width(nnode_t *node);
 
 void split_sp_memory_depth(nnode_t *node, int split_size);
 void split_dp_memory_depth(nnode_t *node, int split_size);
