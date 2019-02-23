@@ -27,6 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <cmath>
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include "odin_util.h"
 #include <string>
 #include <sstream>
 #include <chrono>
@@ -3000,7 +3001,7 @@ static long compute_address(signal_list_t *input_address, int cycle)
 		if (value != 1 && value != 0)
 			address = -1;
 		else
-			address += (value << i);
+			address += shift_left_value_with_overflow_check(value, i);
 	}
 	return address;
 }
@@ -3151,7 +3152,7 @@ static void compute_dual_port_memory(nnode_t *node, int cycle)
  */
 static void instantiate_memory(nnode_t *node, long data_width, long addr_width)
 {
-	long max_address = get_memory_depth_from_address_size(addr_width);
+	long max_address = shift_left_value_with_overflow_check(0x1, addr_width);
 	node->memory_data = std::vector<std::vector<signed char>>(max_address, std::vector<signed char>(data_width, init_value(node)));
 	if(global_args.read_mif_input)
 	{
@@ -3328,7 +3329,7 @@ static void assign_memory_from_mif_file(nnode_t *node, FILE *mif, char *filename
 							error_message(SIMULATION_ERROR, -1, -1, "%s: MIF DEPTH parameter unspecified.", filename);
 						
 						long mif_depth = std::strtol(item_in->second.c_str(),NULL,10);
-						long expected_depth = get_memory_depth_from_address_size(address_width);
+						long expected_depth = shift_left_value_with_overflow_check(0x1, address_width);
 						if (mif_depth != expected_depth)
 							error_message(SIMULATION_ERROR, -1, -1,
 									"%s: MIF depth mismatch: must be %ld but %ld was given", filename, expected_depth, mif_depth);

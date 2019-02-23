@@ -108,13 +108,13 @@ implicit_memory *create_implicit_memory_block(int data_width, long memory_depth,
 
 	//find closest power of 2 fr memory depth.
 	long addr_width = 1;
-	while (get_memory_depth_from_address_size(addr_width) < memory_depth)
+	while (shift_left_value_with_overflow_check(0x1, addr_width) < memory_depth)
 		addr_width++;
 
 	//verify if it is a power of two (only one bit set)
-	if(memory_depth - get_memory_depth_from_address_size(addr_width) != 0)
+	if(memory_depth - shift_left_value_with_overflow_check(0x1, addr_width) != 0)
 	{
-		warning_message(NETLIST_ERROR, -1, -1, "Rounding memory <%s> of size <%ld> to closest power of two: %ld.", name, memory_depth, get_memory_depth_from_address_size(addr_width));
+		warning_message(NETLIST_ERROR, -1, -1, "Rounding memory <%s> of size <%ld> to closest power of two: %ld.", name, memory_depth, shift_left_value_with_overflow_check(0x1, addr_width));
 	}
 
 	nnode_t *node = allocate_nnode();

@@ -3876,8 +3876,8 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 			break;
 		case SL: // <<
 			/* Shifts doesn't matter about port size, but second input needs to be a number */
-			output_port_width = input_lists[0]->count + (get_memory_depth_from_address_size(input_lists[1]->count)-1);
-			input_port_width = input_lists[0]->count + (get_memory_depth_from_address_size(input_lists[1]->count)-1);
+			output_port_width = input_lists[0]->count + (shift_left_value_with_overflow_check(0x1, input_lists[1]->count)-1);
+			input_port_width = output_port_width;
 			break;
 		case LOGICAL_NOT: // !
 		case LOGICAL_OR: // ||

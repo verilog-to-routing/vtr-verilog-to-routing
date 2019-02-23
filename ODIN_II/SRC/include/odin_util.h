@@ -4,6 +4,8 @@
 
 #define MAX_BUF 256
 
+long shift_left_value_with_overflow_check(long input_value, long shift_by);
+
 const char *node_name_based_on_op(nnode_t *node);
 const char *name_based_on_op(operation_list op);
 

@@ -1203,7 +1203,7 @@ ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_lis
 				break;
 
 			case SL:
-				result = operand_0 << operand_1;
+				result = shift_left_value_with_overflow_check(operand_0, operand_1);
 				success = TRUE;
 				break;
 
@@ -1219,7 +1219,7 @@ ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_lis
                 if(operand_0 < 0)
                 {
                     for(long shift = 0; shift<operand_1; shift++){
-                        mask |= 0x1L << (ODIN_STD_BITWIDTH - (shift+1));
+                        mask |= shift_left_value_with_overflow_check(0x1L, (ODIN_STD_BITWIDTH - (shift+1)));
                     }
                 }
                 result |= mask;

@@ -34,14 +34,6 @@ extern t_model *dual_port_rams;
 #define HARD_RAM_ADDR_LIMIT 33
 #define SOFT_RAM_ADDR_LIMIT 10
 
-inline static long get_memory_depth_from_address_size(long addr_size)
-{
-	oassert( addr_size <= 62
-		&& "Odin use 64 bit signed integer internaly, you requested a number of pin larger than odin's limit");
-
-	return (0x1L << addr_size);
-}
-
 typedef struct s_memory
 {
 	long size_d1;

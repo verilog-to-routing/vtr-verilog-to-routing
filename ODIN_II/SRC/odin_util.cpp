@@ -39,6 +39,19 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 #include <regex>
 #include <stdbool.h>
+/*---------------------------------------------------------------------------------------------
+ * (function: node_name_based_on_op)
+ * 	Get the string version of a node
+ *-------------------------------------------------------------------------------------------*/
+long shift_left_value_with_overflow_check(long input_value, long shift_by)
+{
+	if(shift_by < 0)
+		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that is negative [%ld]\n",shift_by);
+	else if(shift_by >= ODIN_STD_BITWIDTH-1 )
+		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that will overflow the maximum size of %d [%ld]\n", shift_by, ODIN_STD_BITWIDTH-1);
+
+	return input_value << shift_by;
+}
 
 /*---------------------------------------------------------------------------------------------
  * (function: node_name_based_on_op)

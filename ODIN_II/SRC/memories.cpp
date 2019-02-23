@@ -24,6 +24,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <math.h>
 #include "odin_globals.h"
+#include "odin_util.h"
 
 #include "netlist_utils.h"
 #include "node_creation_library.h"
@@ -61,7 +62,7 @@ void filter_memories_by_soft_logic_cutoff();
 long get_sp_ram_depth(nnode_t *node)
 {
 	sp_ram_signals *signals = get_sp_ram_signals(node);
-	long depth = get_memory_depth_from_address_size(signals->addr->count);
+	long depth = shift_left_value_with_overflow_check(0x1, signals->addr->count);
 	free_sp_ram_signals(signals);
 	return depth;
 }
@@ -70,7 +71,7 @@ long get_dp_ram_depth(nnode_t *node)
 {
 	dp_ram_signals *signals = get_dp_ram_signals(node);
 	oassert(signals->addr1->count == signals->addr2->count);
-	long depth = get_memory_depth_from_address_size(signals->addr1->count);
+	long depth = shift_left_value_with_overflow_check(0x1, signals->addr1->count);
 	free_dp_ram_signals(signals);
 	return depth;
 }
@@ -284,7 +285,7 @@ void check_memories_and_report_distribution()
 		long width = get_sp_ram_width(node);
 		long depth = get_sp_ram_depth(node);
 
-		if (depth > get_memory_depth_from_address_size(HARD_RAM_ADDR_LIMIT))
+		if (depth > shift_left_value_with_overflow_check(0x1, HARD_RAM_ADDR_LIMIT))
 			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%ld.", node->name, depth, HARD_RAM_ADDR_LIMIT);
 
 		printf("SPRAM: %zu width %zu depth\n", width, depth);
@@ -310,7 +311,7 @@ void check_memories_and_report_distribution()
 
 		long width = get_dp_ram_width(node);
 		long depth = get_dp_ram_depth(node);
-		if (depth > get_memory_depth_from_address_size(HARD_RAM_ADDR_LIMIT))
+		if (depth > shift_left_value_with_overflow_check(0x1, HARD_RAM_ADDR_LIMIT))
 			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%ld.", node->name, depth, HARD_RAM_ADDR_LIMIT);
 
 		printf("DPRAM: %zu width %zu depth\n", width, depth);
@@ -1712,7 +1713,7 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Memory %s of depth 2^%ld exceeds ODIN bound of 2^%ld.\nMust use an FPGA architecture that contains embedded hard block memories", node->name, num_inputs, SOFT_RAM_ADDR_LIMIT);
 
 	// Number of outputs is 2^num_inputs
-	long num_outputs = get_memory_depth_from_address_size(num_inputs);
+	long num_outputs = shift_left_value_with_overflow_check(0x1, num_inputs);
 
 	// Create NOT gates for all inputs and put the outputs in their own signal list.
 	signal_list_t *not_gates = init_signal_list();
@@ -1755,7 +1756,7 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 		for (long j = 0; j < num_inputs; j++)
 		{
 			// Look at the jth bit of i. If it's 0, take the negated signal.
-			long value = get_memory_depth_from_address_size(j);
+			long value = shift_left_value_with_overflow_check(0x1, j);
 			value &= i;
 			value >>= j;
 
