@@ -25,8 +25,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 
 #include "netlist_utils.h"
 #include "odin_util.h"
@@ -105,7 +105,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 signal_list_t * connect_function_instantiation_and_alias(short PASS, ast_node_t* module_instance, char *instance_name_prefix);
 void create_symbol_table_for_module(ast_node_t* module_items, char *module_name);
 void create_symbol_table_for_function(ast_node_t* module_items, char *module_name);
-int check_for_initial_reg_value(ast_node_t* var_declare, long long *value);
+int check_for_initial_reg_value(ast_node_t* var_declare, long *value);
 void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_node, char *instance_name_prefix);
 
 signal_list_t *concatenate_signal_lists(signal_list_t **signal_lists, int num_signal_lists);
@@ -157,7 +157,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node);
 void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name)
 {
 	/* with the top module we need to visit the entire ast tree */
-	size_t i, j, k;
+	long i, j, k;
 	char *temp_string;
 	long sc_spot;
 	oassert(module_items->type == MODULE_ITEMS || module_items->type == FUNCTION_ITEMS);
@@ -303,13 +303,13 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 			if(parameter_count > parameter_num)
 			{
 				error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
-						"There are more parameters (%d) in %s than there are specified in the module instantiation (%d)!",
+						"There are more parameters (%ld) in %s than there are specified in the module instantiation (%ld)!",
 						parameter_count, module_name, parameter_num);
 			}
 			else if(parameter_count < parameter_num)
 			{
 				warning_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
-						"There are less parameters (%d) in %s than there are specified in the module instantiation (%d)!",
+						"There are less parameters (%ld) in %s than there are specified in the module instantiation (%ld)!",
 						parameter_count, module_name, parameter_num);
 			}
 		}
@@ -330,7 +330,7 @@ void create_netlist()
 
 	char top_string[] = "top";
 	// Alias the symbol nodes in ast_modules to the actual MODULE nodes
-	size_t i;
+	long i;
 	for (i = 0; i < num_modules; i++)
 	{
 		if (ast_modules[i]->type == IDENTIFIERS)
@@ -423,7 +423,7 @@ void look_for_clocks(netlist_t *netlist)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *find_top_module()
 {
-	size_t i;
+	long i;
 	int j;
 	long sc_spot;
 	int found_top = -1;
@@ -496,7 +496,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 	else
 	{
 		/* ELSE - we need to visit all the children before */
-		size_t i, j;
+		long i, j;
 		int k;
 		//check for defparam
 		for(i = 0; i <current_module->num_children; i++)
@@ -623,7 +623,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_name_prefix)
 {
 	/* with the top module we need to visit the entire ast tree */
-	size_t i;
+	long i;
 	short *child_skip_list = NULL; // list of children not to traverse into
 	short skip_children = FALSE; // skips the DFS completely if TRUE
 	signal_list_t *return_sig_list = NULL;
@@ -696,7 +696,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 						{
                             /* ELSE IF - we deal with instantiations of modules twice to alias input and output nets.  In this
 							 * pass we are looking for any drivers emerging from a module */
-                            size_t j;
+                            long j;
                             for(j = 0; j < node->children[i]->num_children; j++){
 
 							    /* make the aliases for all the drivers as they're passed through modules */
@@ -744,7 +744,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				{
 					for (i = 0; i < node->num_children; i++)
 					{
-                        //printf("   node->children[i]->type %d\n",node->children[i]->type);
+                        //printf("   node->children[i]->type %ld\n",node->children[i]->type);
 						if (node->children[i]->type == VAR_DECLARE_LIST)
 						{
 							/* IF - The port lists of this module are handled else where */
@@ -873,7 +873,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 					for (i = 0; i < node->num_children; i++)
 					{
 						if (node->children[i]->type == MODULE_INSTANCE){
-							size_t j;
+							long j;
 							for(j = 0; j < node->children[i]->num_children; j++){
 
 							/* make the aliases for all the drivers as they're passed through modules */
@@ -1098,7 +1098,7 @@ void create_all_driver_nets_in_this_function(char *instance_name_prefix)
 void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 {
 	/* with the top module we need to visit the entire ast tree */
-	size_t i, j;
+	long i, j;
 	long sc_spot;
 	ast_node_t *module_items = module->children[2];
 	npin_t *new_pin;
@@ -1208,7 +1208,7 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 {
 	/* with the top module we need to visit the entire ast tree */
-	size_t i, j;
+	long i, j;
 	int k;
 	long sc_spot;
 	ast_node_t *module_items = module->children[2];
@@ -1373,7 +1373,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		oassert((node_max->type == NUMBERS) && (node_min->type == NUMBERS));
 
 		/* Check if this array driver should have an initial value */
-		long long initial_value = 0;
+		long initial_value = 0;
 		if(var_declare->types.variable.is_initialized){
 			initial_value = var_declare->types.variable.initial_value;
 		}
@@ -1422,8 +1422,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		char *name = var_declare->children[0]->types.identifier;
 
-		long long data_min = node_min1->types.number.value;
-		long long data_max = node_max1->types.number.value;
+		long data_min = node_min1->types.number.value;
+		long data_max = node_max1->types.number.value;
 
 		if (data_min != 0)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
@@ -1431,8 +1431,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		oassert(data_min <= data_max);
 
-		long long addr_min = node_min2->types.number.value;
-		long long addr_max = node_max2->types.number.value;
+		long addr_min = node_min2->types.number.value;
+		long addr_max = node_max2->types.number.value;
 
 		if (addr_min != 0)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
@@ -1441,7 +1441,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		oassert(addr_min <= addr_max);
 
 		int data_width = data_max - data_min + 1;
-		long long words = addr_max - addr_min + 1;
+		long words = addr_max - addr_min + 1;
 
 		create_implicit_memory_block(data_width, words, name, instance_name_prefix);
 	}
@@ -1462,8 +1462,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		char *name = var_declare->children[0]->types.identifier;
 
-		long long data_min = node_min1->types.number.value;
-		long long data_max = node_max1->types.number.value;
+		long data_min = node_min1->types.number.value;
+		long data_max = node_max1->types.number.value;
 
 		if (data_min != 0)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
@@ -1471,11 +1471,11 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		oassert(data_min <= data_max);
 
-		long long addr_min = node_min2->types.number.value;
-		long long addr_max = node_max2->types.number.value;
+		long addr_min = node_min2->types.number.value;
+		long addr_max = node_max2->types.number.value;
 
-		long long addr_min1= node_min3->types.number.value;
-		long long addr_max1= node_max3->types.number.value;
+		long addr_min1= node_min3->types.number.value;
+		long addr_max1= node_max3->types.number.value;
 
 		if (addr_min != 0)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
@@ -1484,7 +1484,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		oassert(addr_min <= addr_max);
 
 		int data_width = data_max - data_min + 1;
-		long long words = (addr_max - addr_min + 1)*(addr_max1 - addr_min1 + 1)  - 1;
+		long words = (addr_max - addr_min + 1)*(addr_max1 - addr_min1 + 1)  - 1;
 
 		create_implicit_memory_block(data_width, words, name, instance_name_prefix);
 	}
@@ -1595,8 +1595,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 	else if (var_declare->children[3] != NULL)
 	{
 		/* Implicit memory */
-		printf("Unhandled implicit memory in define_nodes_and_nets_with_driver\n");
-		oassert(FALSE);
+		error_message(NETLIST_ERROR, var_declare->children[3]->line_number, var_declare->children[3]->file_number, "%s\n", "Unhandled implicit memory in define_nodes_and_nets_with_driver");
 	}
 
 	return new_net;
@@ -1610,7 +1609,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_name*/)
 {
 	/* with the top module we need to visit the entire ast tree */
-	size_t i, j;
+	long i, j;
 	char *temp_string;
 	long sc_spot;
 	oassert(module_items->type == MODULE_ITEMS);
@@ -1665,7 +1664,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_output = TRUE;
 
 							/* check for an initial value and copy it over if found */
-							long long initial_value;
+							long initial_value;
 							if(check_for_initial_reg_value(var_declare, &initial_value)){
 								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
 								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
@@ -1679,7 +1678,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 
 							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_integer = var_declare->types.variable.is_integer;
 							/* check for an initial value and copy it over if found */
-							long long initial_value;
+							long initial_value;
 							if(check_for_initial_reg_value(var_declare, &initial_value)){
 								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
 								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
@@ -1701,7 +1700,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 						num_local_symbol_table ++;
 
 						/* check for an initial value and store it if found */
-						long long initial_value;
+						long initial_value;
 						if(check_for_initial_reg_value(var_declare, &initial_value)){
 							var_declare->types.variable.is_initialized = TRUE;
 							var_declare->types.variable.initial_value = initial_value;
@@ -1760,7 +1759,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 void create_symbol_table_for_function(ast_node_t* function_items, char * /*function_name*/)
 {
 	/* with the top module we need to visit the entire ast tree */
-	size_t i, j;
+	long i, j;
 	char *temp_string;
 	long sc_spot;
 	oassert(function_items->type == FUNCTION_ITEMS);
@@ -1815,7 +1814,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
 							((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_output = TRUE;
 
 							/* check for an initial value and copy it over if found */
-							long long initial_value;
+							long initial_value;
 							if(check_for_initial_reg_value(var_declare, &initial_value)){
 								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
 								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
@@ -1830,7 +1829,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
                             ((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_integer = var_declare->types.variable.is_integer;
 
 							/* check for an initial value and copy it over if found */
-							long long initial_value;
+							long initial_value;
 							if(check_for_initial_reg_value(var_declare, &initial_value)){
 								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
 								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
@@ -1852,7 +1851,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
 						function_num_local_symbol_table ++;
 
 						/* check for an initial value and store it if found */
-						long long initial_value;
+						long initial_value;
 						if(check_for_initial_reg_value(var_declare, &initial_value)){
 							var_declare->types.variable.is_initialized = TRUE;
 							var_declare->types.variable.initial_value = initial_value;
@@ -1875,7 +1874,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
  *  Returns the initial value in *value if one is found.
  *  Added by Conor
  *-------------------------------------------------------------------------*/
-int check_for_initial_reg_value(ast_node_t* var_declare, long long *value){
+int check_for_initial_reg_value(ast_node_t* var_declare, long *value){
 	oassert(var_declare->type == VAR_DECLARE);
 	// Initial value is always the last child, if one exists
 	if(var_declare->children[5] != NULL){
@@ -1897,7 +1896,7 @@ int check_for_initial_reg_value(ast_node_t* var_declare, long long *value){
 void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefix)
 {
 	ast_node_t *hb_connect_list;
-	size_t i;
+	long i;
 	int j;
 	long sc_spot_output;
 	long sc_spot_input_new, sc_spot_input_old;
@@ -2053,7 +2052,7 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_p
 {
 	t_model *hb_model;
 	ast_node_t *hb_connect_list;
-	size_t i;
+	long i;
 	int j;
 	long sc_spot_output;
 	long sc_spot_input_new, sc_spot_input_old;
@@ -2212,7 +2211,7 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_p
  *-------------------------------------------------------------------------*/
 void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_instance, char *instance_name_prefix)
 {
-	size_t i;
+	long i;
 	int j;
 	ast_node_t *module_node;
 	ast_node_t *module_list;
@@ -2307,8 +2306,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 		else if (module_var_node->children[5] != NULL)
 		{
 			/* Implicit memory */
-			printf("Unhandled implicit memory in connect_module_instantiation_and_alias\n");
-			oassert(FALSE);
+			error_message(NETLIST_ERROR, module_var_node->children[5]->line_number, module_var_node->children[5]->file_number, "%s\n", "Unhandled implicit memory in connect_module_instantiation_and_alias");
 		}
 		for (j = 0; j < port_size; j++)
 		{
@@ -2531,7 +2529,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 {
     signal_list_t *return_list = init_signal_list();
 
-	size_t i;
+	long i;
 	int j;
 	//signal_list_t *aux_node = NULL;
 	ast_node_t *module_node;
@@ -2633,8 +2631,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 		else if (module_var_node->children[5] != NULL)
 		{
 			/* Implicit memory */
-			printf("Unhandled implicit memory in connect_module_instantiation_and_alias\n");
-			oassert(FALSE);
+			error_message(NETLIST_ERROR, module_var_node->children[5]->line_number, module_var_node->children[5]->file_number, "%s\n", "Unhandled implicit memory in connect_module_instantiation_and_alias");
 		}
 		for (j = 0; j < port_size; j++)
 		{
@@ -2692,7 +2689,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 					/*error_message(NETLIST_ERROR, module_instance->line_number, module_instance->file_number,
 							"This module port %s is unused in module %s", alias_name, module_node->children[0]->types.identifier);*/
                     if(port_size > 1)
-                        warning_message(NETLIST_ERROR, -1, -1, "This module port %s[%d] is unused in module %s\n", module_instance_var_node->types.identifier, j, module_node->children[0]->types.identifier);
+                        warning_message(NETLIST_ERROR, -1, -1, "This module port %s[%ld] is unused in module %s\n", module_instance_var_node->types.identifier, j, module_node->children[0]->types.identifier);
                     else warning_message(NETLIST_ERROR, -1, -1, "This module port %s is unused in module %s\n", module_instance_var_node->types.identifier, module_node->children[0]->types.identifier);
 
 				}
@@ -3052,7 +3049,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			if(address->count > right_memory->addr_width)
 			{
 				std::string unused_pins_name = "";
-				for(size_t i = right_memory->addr_width; i < address->count; i++)
+				for(long i = right_memory->addr_width; i < address->count; i++)
 				{
 					unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
 				}
@@ -3154,7 +3151,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 				if(address->count > left_memory->addr_width)
 				{
 					std::string unused_pins_name = "";
-					for(size_t i = left_memory->addr_width; i < address->count; i++)
+					for(long i = left_memory->addr_width; i < address->count; i++)
 					{
 						unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
 					}
@@ -3322,7 +3319,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 
 void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_node, char * /*instance_name_prefix*/)
 {
-    size_t i;
+    long i;
     long sc_spot;
     for(i = 0; i < initial_node->num_children; i++)
     {
@@ -3341,7 +3338,7 @@ void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_no
 				sc_spot = sc_lookup_string(local_symbol_table_sc, initial_node->children[i]->children[0]->types.identifier);
 				if(sc_spot == -1)
 				{
-					printf("** Register [%s] used in initial block is not declared.\n", initial_node->children[i]->children[0]->types.identifier);
+					warning_message(NETLIST_ERROR, initial_node->children[i]->children[0]->line_number, initial_node->children[i]->children[0]->file_number, "Register [%s] used in initial block is not declared.\n", initial_node->children[i]->children[0]->types.identifier);
 				}
 				else
 				{
@@ -3692,7 +3689,7 @@ signal_list_t *create_gate(ast_node_t* gate, char *instance_name_prefix)
 	nnode_t *gate_node;
 
 	ast_node_t *gate_instance;
-    size_t i, j;
+    long i, j;
 
     for(j = 0; j < gate->children[0]->num_children; j++){
 
@@ -3795,13 +3792,13 @@ signal_list_t *create_gate(ast_node_t* gate, char *instance_name_prefix)
  *--------------------------------------------------------------------------*/
 signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists, int list_size, char *instance_name_prefix)
 {
-	int i;
+	long i;
 	signal_list_t *return_list = init_signal_list();
 	nnode_t *operation_node;
-	int max_input_port_width = -1;
-	int output_port_width = -1;
-	int input_port_width = -1;
-	int current_idx;
+	long max_input_port_width = -1;
+	long output_port_width = -1;
+	long input_port_width = -1;
+	long current_idx;
 
 	/* create the node */
 	operation_node = allocate_nnode();
@@ -3879,8 +3876,8 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 			break;
 		case SL: // <<
 			/* Shifts doesn't matter about port size, but second input needs to be a number */
-			output_port_width = input_lists[0]->count + ((0x1ULL<<input_lists[1]->count)-1);
-			input_port_width = input_lists[0]->count + ((0x1ULL<<input_lists[1]->count)-1);
+			output_port_width = input_lists[0]->count + (shift_left_value_with_overflow_check(0x1, input_lists[1]->count)-1);
+			input_port_width = output_port_width;
 			break;
 		case LOGICAL_NOT: // !
 		case LOGICAL_OR: // ||
@@ -4025,7 +4022,7 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
  *-------------------------------------------------------------------------------------------*/
 signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instance_name_prefix)
 {
-	size_t i;
+	long i;
 	edge_type_e edge_type = UNDEFINED_SENSITIVITY;
 	signal_list_t *return_sig_list = init_signal_list();
 
@@ -4311,7 +4308,7 @@ signal_list_t *create_case(ast_node_t *case_ast, char *instance_name_prefix)
  *-------------------------------------------------------------------------------------------*/
 void create_case_control_signals(ast_node_t *case_list_of_items, ast_node_t *compare_against, nnode_t *case_node, char *instance_name_prefix)
 {
-	size_t i;
+	long i;
 	signal_list_t *other_expressions_pin_list = init_signal_list();
 
 	/* reserve the first X pins of the mux for the control signals where X is the number of items */
@@ -4385,7 +4382,7 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 {
 	signal_list_t **case_statement;
 	signal_list_t *return_list;
-	size_t i;
+	long i;
 
 	/* make storage for statements and expressions */
 	case_statement = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*)*(case_list_of_items->num_children));
@@ -4750,7 +4747,7 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 
 	/* Need to do a sanity check to make sure ports line up */
 	t_model_ports *hb_ports;
-	size_t i;
+	long i;
 	for (i = 0; i < block_list->num_children; i++)
 	{
 		block_connect = block_list->children[i];
@@ -4931,7 +4928,7 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 	/* Need to do a sanity check to make sure ports line up */
 	ast_node_t *block_connect;
 	char *ip_name = NULL;
-	size_t i;
+	long i;
 	t_model_ports *hb_ports;
 	for (i = 0; i < block_list->num_children; i++)
 	{
@@ -5112,7 +5109,7 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 			block_instance->children[0]->types.identifier
 	);
 
-	size_t i;
+	long i;
 	signal_list_t **in_list = (signal_list_t **)vtr::malloc(sizeof(signal_list_t *)*block_list->num_children);
 	int out_port_size = 0;
 	int current_idx = 0;
@@ -5263,7 +5260,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 			block_instance->children[0]->types.identifier
 	);
 
-	size_t i;
+	long i;
 	signal_list_t **in_list = (signal_list_t **)vtr::malloc(sizeof(signal_list_t *)*block_list->num_children);
 	int out1_size = 0;
 	int out2_size = 0;
@@ -5407,7 +5404,7 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 	ast_node_t *block_connect;
 	char *ip_name;
 	t_model_ports *hb_ports = NULL;
-	size_t i;
+	long i;
 	int j, current_idx, current_out_idx;
 	int is_mult = 0;
 	int mult_size = 0;
@@ -5490,9 +5487,7 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 
 		if (hb_ports == NULL)
 		{
-			printf("Non-existant port %s in hard block %s\n", ip_name, block->children[0]->types.identifier);
-			block_connect->children[1]->hb_port = NULL;
-			oassert(FALSE);
+			error_message(NETLIST_ERROR, block->children[0]->line_number, block->children[0]->file_number, "Non-existant port %s in hard block %s\n", ip_name, block->children[0]->types.identifier);
 		}
 
 		/* Link the signal to the port definition */
@@ -5750,7 +5745,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 		array_column = node->children[2]->types.number.value;
 		array_index = array_row * array_size + array_column;
 		odin_sprintf(number, "%ld", array_index);
-		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
+		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long(number,sizeof(number)));
 
 	}
 	else if ((node->children[1]->type == NUMBERS) && (node->children[2]->type == IDENTIFIERS))
@@ -5761,7 +5756,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 		array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
 		array_index = array_row * array_size + array_column;
 		odin_sprintf(number, "%ld", array_index);
-		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
+		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long(number,sizeof(number)));
 
 	}
 	else if ((node->children[1]->type == IDENTIFIERS) && (node->children[2]->type == NUMBERS))
@@ -5772,7 +5767,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 		array_row = local_symbol_table[sc_spot]->types.variable.initial_value;
 		array_index = array_row * array_size + array_column;
 		odin_sprintf(number, "%ld", array_index);
-		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
+		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long(number,sizeof(number)));
 	}
 	else
 	{
@@ -5786,7 +5781,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 		array_index = array_row * array_size + array_column;
 
 		odin_sprintf(number, "%ld", array_index);
-		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
+		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long(number,sizeof(number)));
 	}
 	return;
 }

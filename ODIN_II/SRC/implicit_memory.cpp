@@ -20,7 +20,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
-#include "types.h"
+#include "odin_types.h"
 #include "implicit_memory.h"
 #include "node_creation_library.h"
 #include "odin_util.h"
@@ -99,19 +99,22 @@ char is_valid_implicit_memory_reference_ast(char *instance_name_prefix, ast_node
 /*
  * Creates an implicit memory block with the given depth and data width, and the given name and prefix.
  */
-implicit_memory *create_implicit_memory_block(int data_width, long long memory_depth, char *name, char *instance_name_prefix)
+implicit_memory *create_implicit_memory_block(int data_width, long memory_depth, char *name, char *instance_name_prefix)
 {
 	char implicit_string[] = "implicit_ram";
 
+	oassert(memory_depth > 0
+		&& "implicit memory depth must be greater than 0");
+
 	//find closest power of 2 fr memory depth.
 	long addr_width = 1;
-	while ((0x1ULL << addr_width) < memory_depth)
+	while (shift_left_value_with_overflow_check(0x1, addr_width) < memory_depth)
 		addr_width++;
 
 	//verify if it is a power of two (only one bit set)
-	if((memory_depth -(0x1ULL << addr_width)) != 0)
+	if(memory_depth - shift_left_value_with_overflow_check(0x1, addr_width) != 0)
 	{
-		warning_message(NETLIST_ERROR, -1, -1, "Rounding memory <%s> of size <%d> to closest power of two: %d.", name, memory_depth, (0x1ULL << addr_width));
+		warning_message(NETLIST_ERROR, -1, -1, "Rounding memory <%s> of size <%ld> to closest power of two: %ld.", name, memory_depth, shift_left_value_with_overflow_check(0x1, addr_width));
 	}
 
 	nnode_t *node = allocate_nnode();
@@ -237,7 +240,7 @@ void add_dummy_output_port_to_implicit_memory(implicit_memory *memory, int size,
 	{
 		npin_t *dummy_pin = allocate_npin();
 		// Pad outputs with a unique and descriptive name to avoid collisions.
-		dummy_pin->name = append_string("", "dummy_implicit_memory_output~%d", dummy_output_pin_number++);
+		dummy_pin->name = append_string("", "dummy_implicit_memory_output~%ld", dummy_output_pin_number++);
 		add_pin_to_signal_list(signals, dummy_pin);
 	}
 

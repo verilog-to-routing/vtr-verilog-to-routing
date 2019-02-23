@@ -1,4 +1,4 @@
-#include "types.h"
+#include "odin_types.h"
 
 void parse_to_ast();
 

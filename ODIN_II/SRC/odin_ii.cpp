@@ -42,8 +42,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "arch_util.h"
 
 #include "soft_logic_def_parser.h"
-#include "globals.h"
-#include "types.h"
+#include "odin_globals.h"
+#include "odin_types.h"
 #include "netlist_utils.h"
 #include "arch_types.h"
 #include "parse_making_ast.h"
@@ -71,7 +71,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #define DEFAULT_OUTPUT "temp"
 
-size_t current_parse_file;
+int current_parse_file;
 t_arch Arch;
 global_args_t global_args;
 t_type_descriptor* type_descriptors;

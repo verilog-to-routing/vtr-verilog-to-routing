@@ -25,8 +25,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include <stdio.h>
 #include <string.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 #include "verilog_bison.h"
 #include "vtr_util.h"
 #include <string>
@@ -225,7 +225,7 @@ char* standardize_number(const char* input);
 <INITIAL>"//"[^\n]*					{ MP; continue;}
 
 
-<*>.|\n		{ printf("Missing verilog.l rule: Default rule invoked in state %d: \"%s\"\n", YY_START, yytext);printf("Line %d: %s\n", yylineno, yytext); }
+<*>.|\n		{ printf("Missing verilog.l rule: Default rule invoked in state %d\nLine %d::\"%s\"\n", YY_START, yylineno, yytext); }
 
 %%
 

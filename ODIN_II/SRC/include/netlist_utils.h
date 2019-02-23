@@ -1,7 +1,7 @@
 #ifndef NETLIST_UTILS_H_FUNCTIONS
 #define NETLIST_UTILS_H_FUNCTIONS
 
-#include "types.h"
+#include "odin_types.h"
 
 // PROTOTYPES
 //

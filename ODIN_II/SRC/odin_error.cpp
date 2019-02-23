@@ -15,22 +15,23 @@ const char *odin_error_STR[] =
 	"BLIF_ERROR",
 	"NETLIST_FILE_ERROR",
 	"ACTIVATION_ERROR",
-	"SIMULATION_ERROR"
+	"SIMULATION_ERROR",
+	"ACE",
 };
 
-static void print_file_name(int file)
+static void print_file_name(long file)
 {
 	if (file >= 0 && file < configuration.list_of_file_names.size())
 		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file].c_str());
 }
 
-static void print_line_number(int line_number)
+static void print_line_number(long line_number)
 {
 	if (line_number >= 0)
-		fprintf(stderr," (Line number: %d)", line_number+1);
+		fprintf(stderr," (Line number: %ld)", line_number+1);
 }
 
-static void print_culprit_line(int line_number, int file)
+static void print_culprit_line(long line_number, long file)
 {
 	if (file >= 0 && file < configuration.list_of_file_names.size()
 	&& line_number >= 0)
@@ -64,7 +65,7 @@ static void print_culprit_line(int line_number, int file)
 	}
 }
 
-void _log_message(odin_error error_type, int line_number, int file, bool soft_error, const char *function_file_name, int function_line, const char *function_name, const char *message, ...)
+void _log_message(odin_error error_type, long line_number, long file, bool soft_error, const char *function_file_name, long function_line, const char *function_name, const char *message, ...)
 {
 	va_list ap;
 

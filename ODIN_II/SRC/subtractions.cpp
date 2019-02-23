@@ -24,14 +24,14 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "types.h"
+#include "odin_types.h"
 #include "node_creation_library.h"
 #include "adders.h"
 #include "subtractions.h"
 #include "netlist_utils.h"
 #include "partial_map.h"
 #include "read_xml_arch_file.h"
-#include "globals.h"
+#include "odin_globals.h"
 
 
 #include "vtr_memory.h"
@@ -52,9 +52,9 @@ void init_split_adder_for_sub(nnode_t *node, nnode_t *ptr, int a, int sizea, int
  *-------------------------------------------------------------------------*/
 
 /* These values are collected during the unused logic removal sweep */
-extern int subtractor_chain_count;
-extern int longest_subtractor_chain;
-extern int total_subtractors;
+extern long subtractor_chain_count;
+extern long longest_subtractor_chain;
+extern long total_subtractors;
 
 void report_sub_distribution()
 {
@@ -64,16 +64,16 @@ void report_sub_distribution()
 	printf("\nHard MINUS Distribution\n");
 	printf("============================\n");
 	printf("\n");
-	printf("\nTotal # of chains = %d\n", subtractor_chain_count);
+	printf("\nTotal # of chains = %ld\n", subtractor_chain_count);
 
 	printf("\nHard sub chain Details\n");
 	printf("============================\n");
 
 	printf("\n");
-	printf("\nThe Number of Hard Block subs in the Longest Chain: %d\n", longest_subtractor_chain);
+	printf("\nThe Number of Hard Block subs in the Longest Chain: %ld\n", longest_subtractor_chain);
 
 	printf("\n");
-	printf("\nThe Total Number of Hard Block subs: %d\n", total_subtractors);
+	printf("\nThe Total Number of Hard Block subs: %ld\n", total_subtractors);
 
 	return;
 }
@@ -89,7 +89,7 @@ void declare_hard_adder_for_sub(nnode_t *node)
 	/* See if this size instance of adder exists?*/
 	if (hard_adders == NULL)
 	{
-		printf("Instantiating subtraction where carry chain adders do not exist\n");
+		warning_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Instantiating Substraction where hard adders do not exist");
 	}
 	tmp = (t_adder *)hard_adders->instances;
 	width_a = node->input_port_sizes[0];
@@ -147,7 +147,7 @@ void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t * /
 		{
 			len = strlen(node->name) + 20; /* 6 chars for pin idx */
 			new_name = (char*)vtr::malloc(len);
-			odin_sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
+			odin_sprintf(new_name, "%s[%ld]", node->name, node->output_pins[i]->pin_node_idx);
 			node->output_pins[i]->name = new_name;
 		}
 	}
@@ -395,7 +395,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 	{
 		node[i] = allocate_nnode();
 		node[i]->name = (char *)vtr::malloc(strlen(nodeo->name) + 20);
-		odin_sprintf(node[i]->name, "%s-%d", nodeo->name, i);
+		odin_sprintf(node[i]->name, "%s-%ld", nodeo->name, i);
 		if(i == count - 1)
 		{
 			if(configuration.fixed_hard_adder == 1)
@@ -550,7 +550,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 		connect_nodes(netlist->vcc_node, 0, node[0], sizea);
 		//hang the first sumout
 		node[0]->output_pins[1] = allocate_npin();
-		node[0]->output_pins[1]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, 1);
+		node[0]->output_pins[1]->name = append_string("", "%s~dummy_output~%ld~%ld", node[0]->name, 0, 1);
 	}
 
 	//connect the first cin pin to unconn
@@ -590,7 +590,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 			{
 				node[0]->output_pins[j + 1] = allocate_npin();
 				// Pad outputs with a unique and descriptive name to avoid collisions.
-				node[0]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, j + 1);
+				node[0]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%ld~%ld", node[0]->name, 0, j + 1);
 			}
 		}
 	}
@@ -604,7 +604,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 			{
 				node[0]->output_pins[j + 2] = allocate_npin();
 				// Pad outputs with a unique and descriptive name to avoid collisions.
-				node[0]->output_pins[j + 2]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, j + 2);
+				node[0]->output_pins[j + 2]->name = append_string("", "%s~dummy_output~%ld~%ld", node[0]->name, 0, j + 2);
 			}
 		}
 	}
@@ -622,14 +622,14 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 				{
 					node[i]->output_pins[j + 1] = allocate_npin();
 					// Pad outputs with a unique and descriptive name to avoid collisions.
-				    node[i]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%d~%d", node[i]->name, i, j + 2);
+				    node[i]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%ld~%ld", node[i]->name, i, j + 2);
 				}
 			}
 		}
 	}
 		node[count - 1]->output_pins[0] = allocate_npin();
 		// Pad outputs with a unique and descriptive name to avoid collisions.
-		node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), 0);
+		node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%ld~%ld", node[(count - 1)]->name, (count - 1), 0);
 		//connect_nodes(node[count - 1], (node[(count - 1)]->num_output_pins - 1), netlist->gnd_node, 0);
 	//}
 

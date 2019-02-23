@@ -30,8 +30,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <ctype.h>
 #include <limits.h>
 #include <errno.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 #include <cstdarg>
 
 #include "odin_util.h"
@@ -39,6 +39,19 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 #include <regex>
 #include <stdbool.h>
+/*---------------------------------------------------------------------------------------------
+ * (function: node_name_based_on_op)
+ * 	Get the string version of a node
+ *-------------------------------------------------------------------------------------------*/
+long shift_left_value_with_overflow_check(long input_value, long shift_by)
+{
+	if(shift_by < 0)
+		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that is negative [%ld]\n",shift_by);
+	else if(shift_by >= ODIN_STD_BITWIDTH-1 )
+		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that will overflow the maximum size of %d [%ld]\n", shift_by, ODIN_STD_BITWIDTH-1);
+
+	return input_value << shift_by;
+}
 
 /*---------------------------------------------------------------------------------------------
  * (function: node_name_based_on_op)
@@ -131,7 +144,7 @@ char *twos_complement(char *str)
  * the higher accordingly. The returned string will be little
  * endian. Null will be returned if the radix is invalid.
  *
- * Base 10 strings will be limited in length to a long long, but
+ * Base 10 strings will be limited in length to a long, but
  * an error will be issued if the number will be truncated.
  *
  */
@@ -143,8 +156,8 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 	}
 	else if (radix == 10)
 	{
-		long long number = convert_dec_string_of_size_to_long_long(string, binary_size);
-		return convert_long_long_to_bit_string(number, binary_size);
+		long number = convert_dec_string_of_size_to_long(string, binary_size);
+		return convert_long_to_bit_string(number, binary_size);
 	}
 	else if (radix == 8)
 	{
@@ -161,10 +174,10 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: convert_long_long_to_bit_string)
+ * (function: convert_long_to_bit_string)
  * Outputs a string msb to lsb.  For example, 3 becomes "011"
  *-------------------------------------------------------------------------------------------*/
-char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
+char *convert_long_to_bit_string(long orig_long, int num_bits)
 {
 	int i;
 	char *return_val = (char*)malloc(sizeof(char)*(num_bits+1));
@@ -182,30 +195,30 @@ char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
 }
 
 /*
- * Turns the given little endian decimal string into a long long. Throws an error if the
- * string contains non-digits or is larger or smaller than the allowable range of long long.
+ * Turns the given little endian decimal string into a long. Throws an error if the
+ * string contains non-digits or is larger or smaller than the allowable range of long.
  */
-long long convert_dec_string_of_size_to_long_long(char *orig_string, int /*size*/)
+long convert_dec_string_of_size_to_long(char *orig_string, int /*size*/)
 {
 	if (!is_decimal_string(orig_string))
 		error_message(PARSE_ERROR, -1, -1, "Invalid decimal number: %s.\n", orig_string);
 
 	errno = 0;
-	long long number = strtoll(orig_string, NULL, 10);
+	long number = strtoll(orig_string, NULL, 10);
 	if (errno == ERANGE)
 		error_message(PARSE_ERROR, -1, -1, "This suspected decimal number (%s) is too long for Odin\n", orig_string);
 
 	return number;
 }
 
-long long convert_string_of_radix_to_long_long(char *orig_string, int radix)
+long convert_string_of_radix_to_long(char *orig_string, int radix)
 {
 	if (!is_string_of_radix(orig_string, radix))
-		error_message(PARSE_ERROR, -1, -1, "Invalid base %d number: %s.\n", radix, orig_string);
+		error_message(PARSE_ERROR, -1, -1, "Invalid base %ld number: %s.\n", radix, orig_string);
 
-	long long number = strtoll(orig_string, NULL, radix);
+	long number = strtoll(orig_string, NULL, radix);
 	if (number == LLONG_MAX || number == LLONG_MIN)
-		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
+		error_message(PARSE_ERROR, -1, -1, "This base %ld number (%s) is too long for Odin\n", radix, orig_string);
 
 	return number;
 }
@@ -538,12 +551,12 @@ int get_pin_number(char *name)
  * (function: my_power)
  *      My own simple power function
  *-------------------------------------------------------------------------------------------*/
-long long int my_power(long long int x, long long int y)
+long int my_power(long int x, long int y)
 {
 	if (y == 0)
 		return 1;
 
-	long long int value = x;
+	long int value = x;
 	int i;
 	for (i = 1; i < y; i++)
 		value *= x;
@@ -582,7 +595,7 @@ std::string make_simple_name(char *input, const char *flatten_string, char flatt
 /*-----------------------------------------------------------------------
  * (function: my_malloc_struct )
  *-----------------------------------------------------------------*/
-void *my_malloc_struct(size_t bytes_to_alloc)
+void *my_malloc_struct(long bytes_to_alloc)
 {
 	void *allocated = vtr::calloc(1, bytes_to_alloc);
 	static long int m_id = 0;
@@ -605,10 +618,10 @@ void *my_malloc_struct(size_t bytes_to_alloc)
 /*---------------------------------------------------------------------------------------------
  * (function: pow2 )
  *-------------------------------------------------------------------------------------------*/
-long long int pow2(int to_the_power)
+long int pow2(int to_the_power)
 {
 	int i;
-	long long int return_val = 1;
+	long int return_val = 1;
 
 	for (i = 0; i < to_the_power; i++)
 	{
@@ -755,7 +768,7 @@ std::string find_substring(char *src,const char *sKey,int flag)
 
 	std::string tmp(src);
 	std::string key(sKey);
-	std::size_t found = tmp.find(key);
+	long found = tmp.find(key);
 	switch(flag)
 	{
 		case 1:

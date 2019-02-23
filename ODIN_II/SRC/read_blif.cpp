@@ -24,14 +24,14 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include<stdlib.h>
 #include<string.h>
 #include<stdio.h>
-#include "globals.h"
+#include "odin_globals.h"
 #include "read_blif.h"
 #include "string_cache.h"
 #include "netlist_utils.h"
 
 #include "netlist_utils.h"
-#include "types.h"
-#include "hashtable.h"
+#include "odin_types.h"
+#include "Hashtable.hpp"
 #include "netlist_check.h"
 #include "simulate_blif.h"
 #include "vtr_util.h"
@@ -44,7 +44,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #define READ_BLIF_BUFFER 1048576 // 1MB
 
-size_t file_line_number;
+long file_line_number;
 int line_count;
 
 // Stores pin names of the form port[pin]
@@ -52,7 +52,7 @@ typedef struct {
 	int count;
 	char **names;
 	// Maps name to index.
-	hashtable_t *index;
+	Hashtable *index;
 } hard_block_pins;
 
 // Stores port names, and their sizes.
@@ -62,7 +62,7 @@ typedef struct {
 	int *sizes;
 	char **names;
 	// Maps portname to index.
-	hashtable_t *index;
+	Hashtable *index;
 } hard_block_ports;
 
 // Stores all information pertaining to a hard block model. (.model)
@@ -81,7 +81,7 @@ typedef struct {
 	hard_block_model **models;
 	int count;
 	// Maps name to model
-	hashtable_t *index;
+	Hashtable *index;
 } hard_block_models;
 
 
@@ -90,27 +90,27 @@ bool static skip_reading_bit_map=false;
 bool insert_global_clock;
 
 
-void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *output_nets_hash);
+void rb_create_top_driver_nets(const char *instance_name_prefix, Hashtable *output_nets_hash);
 void rb_look_for_clocks();// not sure if this is needed
-void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash);
+void add_top_input_nodes(FILE *file, Hashtable *output_nets_hash);
 void rb_create_top_output_nodes(FILE *file);
-int read_tokens (char *buffer, hard_block_models *models, FILE *file, hashtable_t *output_nets_hash);
+int read_tokens (char *buffer, hard_block_models *models, FILE *file, Hashtable *output_nets_hash);
 static void dum_parse (char *buffer, FILE *file);
-void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash);
+void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash);
 operation_list assign_node_type_from_node_name(char * output_name);// function will decide the node->type of the given node
 operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t * node, FILE *file);
-void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash);
-void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t *output_nets_hash);
-void hook_up_nets(hashtable_t *output_nets_hash);
-void hook_up_node(nnode_t *node, hashtable_t *output_nets_hash);
+void create_latch_node_and_driver(FILE *file, Hashtable *output_nets_hash);
+void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *output_nets_hash);
+void hook_up_nets(Hashtable *output_nets_hash);
+void hook_up_node(nnode_t *node, Hashtable *output_nets_hash);
 char* search_clock_name(FILE *file);
 void free_hard_block_model(hard_block_model *model);
 char *get_hard_block_port_name(char *name);
 long get_hard_block_pin_number(char *original_name);
 static int compare_hard_block_pin_names(const void *p1, const void *p2);
 hard_block_ports *get_hard_block_ports(char **pins, int count);
-hashtable_t *index_names(char **names, int count);
-hashtable_t *associate_names(char **names1, char **names2, int count);
+Hashtable *index_names(char **names, int count);
+Hashtable *associate_names(char **names1, char **names2, int count);
 void free_hard_block_pins(hard_block_pins *p);
 void free_hard_block_ports(hard_block_ports *p);
 
@@ -142,11 +142,11 @@ netlist_t *read_blif()
 	FILE *file = vtr::fopen (configuration.list_of_file_names[current_parse_file].c_str(), "r");
 	if (file == NULL)
 	{
-		error_message(ARG_ERROR, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
+		error_message(ARG_ERROR, -1, current_parse_file, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
 	}
 	int num_lines = count_blif_lines(file);
 
-	hashtable_t *output_nets_hash = create_hashtable((num_lines) + 1);
+	Hashtable *output_nets_hash = new Hashtable();
 
 	printf("Reading top level module\n"); fflush(stdout);
 	/* create the top level module */
@@ -176,7 +176,7 @@ netlist_t *read_blif()
 
 	// Outputs netlist graph.
 	check_netlist(blif_netlist);
-	output_nets_hash->destroy(output_nets_hash);
+	delete output_nets_hash;
 	fclose (file);
 	return blif_netlist;
 }
@@ -189,7 +189,7 @@ netlist_t *read_blif()
  * Parses the given line from the blif file. Returns true if there are more lines
  * to read.
  *-------------------------------------------------------------------------------------------*/
-int read_tokens (char *buffer, hard_block_models *models, FILE *file, hashtable_t *output_nets_hash)
+int read_tokens (char *buffer, hard_block_models *models, FILE *file, Hashtable *output_nets_hash)
 {
 	/* Figures out which, if any token is at the start of this line and *
 	 * takes the appropriate action.                                    */
@@ -288,7 +288,7 @@ operation_list assign_node_type_from_node_name(char * output_name)
      to create an ff node and driver from that node
      format .latch <input> <output> [<type> <control/clock>] <initial val>
 *-------------------------------------------------------------------------------------------*/
-void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
+void create_latch_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 {
 	/* Storing the names of the input and the final output in array names */
 	char ** names = NULL;       // Store the names of the tokens
@@ -330,7 +330,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 				line += " ";
 			}
 
-			error_message(NETLIST_ERROR,current_parse_file,file_line_number, "This .latch Format not supported: <%s> \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>",
+			error_message(NETLIST_ERROR,file_line_number,current_parse_file, "This .latch Format not supported: <%s> \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>",
 			line.c_str());
 		}
 	}
@@ -397,7 +397,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	add_output_pin_to_node(new_node, new_pin, 0);
 	add_driver_pin_to_net(new_net, new_pin);
 
-	output_nets_hash->add(output_nets_hash, new_node->name, strlen(new_node->name)*sizeof(char), new_net);
+	output_nets_hash->add(new_node->name, new_net);
 
 	/* Free the char** names */
 	vtr::free(names);
@@ -477,7 +477,7 @@ char* search_clock_name(FILE* file)
    * function:create_hard_block_nodes
      to create the hard block nodes
 *-------------------------------------------------------------------------------------------*/
-void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t *output_nets_hash)
+void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *output_nets_hash)
 {
 	char buffer[READ_BLIF_BUFFER];
 	char *subcircuit_name = vtr::strtok (NULL, TOKENS, file, buffer);
@@ -504,7 +504,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 	}
 
 	// Associate mappings with their connections.
-	hashtable_t *mapping_index = associate_names(mappings, names, count);
+	Hashtable *mapping_index = associate_names(mappings, names, count);
 
 	// Sort the mappings.
 	qsort(mappings,  count,  sizeof(char *), compare_hard_block_pin_names);
@@ -572,10 +572,10 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
   	for(i = 0; i < model->inputs->count; i++)
   	{
   		char *mapping = model->inputs->names[i];
-  		char *name    = (char *)mapping_index->get(mapping_index, mapping, strlen(mapping) * sizeof(char));
+  		char *name    = (char *)mapping_index->get(mapping);
 
   		if (!name)
-  			error_message(NETLIST_ERROR, file_line_number, -1, "Invalid hard block mapping: %s", mapping);
+  			error_message(NETLIST_ERROR, file_line_number, current_parse_file, "Invalid hard block mapping: %s", mapping);
 
 		npin_t *new_pin = allocate_npin();
 		new_pin->name = vtr::strdup(name);
@@ -589,9 +589,9 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
   	for(i = 0; i < model->outputs->count; i++)
   	{
   		char *mapping = model->outputs->names[i];
-  		char *name = (char *)mapping_index->get(mapping_index, mapping, strlen(mapping) * sizeof(char));
+  		char *name = (char *)mapping_index->get(mapping);
 
-  		if (!name) error_message(NETLIST_ERROR, file_line_number, -1,"Invalid hard block mapping: %s", model->outputs->names[i]);
+  		if (!name) error_message(NETLIST_ERROR, file_line_number, current_parse_file,"Invalid hard block mapping: %s", model->outputs->names[i]);
 
 		npin_t *new_pin = allocate_npin();
 		new_pin->name = vtr::strdup(name);
@@ -606,7 +606,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 		add_driver_pin_to_net(new_net,new_pin);
 
 		// Index the net by name.
-		output_nets_hash->add(output_nets_hash, name, strlen(name)*sizeof(char), new_net);
+		output_nets_hash->add(name, new_net);
 	}
 
   	// Create a fake ast node.
@@ -622,7 +622,8 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 	new_node->line_number = line_count;
 
   	free_hard_block_ports(ports);
-  	mapping_index->destroy_free_items(mapping_index);
+  	mapping_index->destroy_free_items();
+	delete mapping_index;
   	vtr::free(mappings);
   	vtr::free(names);
 
@@ -634,7 +635,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
      to create an internal node and driver from that node
 *-------------------------------------------------------------------------------------------*/
 
-void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
+void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 {
 	/* Storing the names of the input and the final output in array names */
 	char *ptr;
@@ -755,7 +756,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 
 		add_driver_pin_to_net(new_net,new_pin);
 
-		output_nets_hash->add(output_nets_hash, new_node->name, strlen(new_node->name)*sizeof(char), new_net);
+		output_nets_hash->add(new_node->name, new_net);
 
 		/* Free the char** names */
 		vtr::free(names);
@@ -1007,7 +1008,7 @@ operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FI
    * function: add_top_input_nodes
      to add the top level inputs to the netlist
 *-------------------------------------------------------------------------------------------*/
-static void build_top_input_node(const char *name_str, hashtable_t *output_nets_hash)
+static void build_top_input_node(const char *name_str, Hashtable *output_nets_hash)
 {
 	char *temp_string = make_full_ref_name(name_str, NULL, NULL,NULL, -1);
 
@@ -1050,10 +1051,10 @@ static void build_top_input_node(const char *name_str, hashtable_t *output_nets_
 
 	//output_nets_sc->data[sc_spot] = new_net;
 
-	output_nets_hash->add(output_nets_hash, temp_string, strlen(temp_string)*sizeof(char), new_net);
+	output_nets_hash->add(temp_string, new_net);
 }
 
-void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash)
+void add_top_input_nodes(FILE *file, Hashtable *output_nets_hash)
 {
 	/**
 	 * insert a global clock for fall back. 
@@ -1144,7 +1145,7 @@ function: Creates the drivers for the top module
 ---------------------------------------------------------------------------
 */
 
-void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *output_nets_hash)
+void rb_create_top_driver_nets(const char *instance_name_prefix, Hashtable *output_nets_hash)
 {
 	npin_t *new_pin;
 	/* create the constant nets */
@@ -1182,21 +1183,20 @@ void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *ou
 
 	/* CREATE the driver for the ZERO */
 	blif_netlist->zero_net->name = make_full_ref_name(instance_name_prefix, NULL, NULL, zero_string, -1);
-	blif_netlist->gnd_node->name = vtr::strdup(GND_NAME);
-
-	output_nets_hash->add(output_nets_hash, (void *)blif_netlist->gnd_node->name, strlen(blif_netlist->gnd_node->name)*sizeof(char), blif_netlist->zero_net);
+	output_nets_hash->add(GND_NAME, blif_netlist->zero_net);
 
 	/* CREATE the driver for the ONE and store twice */
 	blif_netlist->one_net->name = make_full_ref_name(instance_name_prefix, NULL, NULL, one_string, -1);
-	blif_netlist->vcc_node->name = vtr::strdup(VCC_NAME);
-
-	output_nets_hash->add(output_nets_hash, (void *)blif_netlist->vcc_node->name, strlen(blif_netlist->vcc_node->name)*sizeof(char), blif_netlist->one_net);
+	output_nets_hash->add(VCC_NAME, blif_netlist->one_net);
 
 	/* CREATE the driver for the PAD */
 	blif_netlist->pad_net->name = make_full_ref_name(instance_name_prefix, NULL, NULL, pad_string, -1);
+	output_nets_hash->add(HBPAD_NAME, blif_netlist->pad_net);
+
+	blif_netlist->vcc_node->name = vtr::strdup(VCC_NAME);
+	blif_netlist->gnd_node->name = vtr::strdup(GND_NAME);
 	blif_netlist->pad_node->name = vtr::strdup(HBPAD_NAME);
 
-	output_nets_hash->add(output_nets_hash, (void *)blif_netlist->pad_node->name, strlen(blif_netlist->pad_node->name)*sizeof(char), blif_netlist->pad_net);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1214,7 +1214,7 @@ static void dum_parse (char *buffer, FILE *file)
  * function: hook_up_nets()
  * find the output nets and add the corresponding nets
  *-------------------------------------------------------------------------------------------*/
-void hook_up_nets(hashtable_t *output_nets_hash)
+void hook_up_nets(Hashtable *output_nets_hash)
 {
 	nnode_t **node_sets[] = {blif_netlist->internal_nodes,     blif_netlist->ff_nodes,     blif_netlist->top_output_nodes};
 	int          counts[] = {blif_netlist->num_internal_nodes, blif_netlist->num_ff_nodes, blif_netlist->num_top_output_nodes};
@@ -1237,17 +1237,17 @@ void hook_up_nets(hashtable_t *output_nets_hash)
  * Connect the given node's input pins to their corresponding nets by
  * looking each one up in the output_nets_sc.
  */
-void hook_up_node(nnode_t *node, hashtable_t *output_nets_hash)
+void hook_up_node(nnode_t *node, Hashtable *output_nets_hash)
 {
 	int j;
 	for(j = 0; j < node->num_input_pins; j++)
 	{
 		npin_t *input_pin = node->input_pins[j];
 
-		nnet_t *output_net = (nnet_t *)output_nets_hash->get(output_nets_hash, (void *)(input_pin->name), strlen(input_pin->name)*sizeof(char));
+		nnet_t *output_net = (nnet_t *)output_nets_hash->get(input_pin->name);
 
 		if(!output_net)
-			error_message(NETLIST_ERROR,file_line_number, -1, "Error: Could not hook up the pin %s: not available.", input_pin->name);
+			error_message(NETLIST_ERROR,file_line_number, current_parse_file, "Error: Could not hook up the pin %s: not available.", input_pin->name);
 
 		add_fanout_pin_to_net(output_net, input_pin);
 	}
@@ -1320,7 +1320,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 		}
 
 		if(!model || feof(file))
-			error_message(NETLIST_ERROR, last_line, -1, "A subcircuit model for '%s' with matching ports was not found.",name_subckt);
+			error_message(NETLIST_ERROR, last_line, current_parse_file, "A subcircuit model for '%s' with matching ports was not found.",name_subckt);
 
 		// Sort the names.
 		qsort(model->inputs->names,  model->inputs->count,  sizeof(char *), compare_hard_block_pin_names);
@@ -1386,15 +1386,14 @@ static int compare_hard_block_pin_names(const void *p1, const void *p2)
  * Creates a hashtable index for an array of strings of
  * the form names[i]=>i.
  */
-hashtable_t *index_names(char **names, int count)
+Hashtable *index_names(char **names, int count)
 {
-	hashtable_t *index = create_hashtable((count*2) + 1);
-	int i;
-	for (i = 0; i < count; i++)
+	Hashtable *index = new Hashtable();
+	for (long i = 0; i < count; i++)
 	{
 		int *offset = (int *)vtr::malloc(sizeof(int));
 		*offset = i;
-		index->add(index, names[i], sizeof(char) * strlen(names[i]), offset);
+		index->add(names[i], offset);
 	}
 	return index;
 }
@@ -1402,12 +1401,11 @@ hashtable_t *index_names(char **names, int count)
 /*
  * Create an associative index of names1[i]=>names2[i]
  */
-hashtable_t *associate_names(char **names1, char **names2, int count)
+Hashtable *associate_names(char **names1, char **names2, int count)
 {
-	hashtable_t *index = create_hashtable((count*2) + 1);
-	int i;
-	for (i = 0; i < count; i++)
-		index->add(index, names1[i], sizeof(char) * strlen(names1[i]), names2[i]);
+	Hashtable *index = new Hashtable();
+	for (long i = 0; i < count; i++)
+		index->add(names1[i], names2[i]);
 
 	return index;
 }
@@ -1468,7 +1466,7 @@ int verify_hard_block_ports_against_model(hard_block_ports *ports, hard_block_mo
 			// Look up each port from the model in "ports"
 			char *name = p->names[j];
 			int   size = p->sizes[j];
-			int  *idx  = (int *)ports->index->get(ports->index, name, strlen(name) * sizeof(char));
+			int  *idx  = (int *)ports->index->get(name);
 			// Model port not specified in ports.
 			if (!idx)
 			{
@@ -1494,8 +1492,8 @@ int verify_hard_block_ports_against_model(hard_block_ports *ports, hard_block_mo
 	{
 		// Look up each port from the subckt to make sure it appears in the model.
 		char *name   = ports->names[j];
-		int *in_idx  = (int *)in->index->get(in->index, name, strlen(name) * sizeof(char));
-		int *out_idx = (int *)out->index->get(out->index, name, strlen(name) * sizeof(char));
+		int *in_idx  = (int *)in->index->get(name);
+		int *out_idx = (int *)out->index->get(name);
 		// Port does not appear in the model.
 		if (!in_idx && !out_idx)
 		{
@@ -1521,7 +1519,7 @@ char *generate_hard_block_ports_signature(hard_block_ports *ports)
 	for (j = 0; j < ports->count; j++)
 	{
 		char buffer1[READ_BLIF_BUFFER];
-		odin_sprintf(buffer1, "%s_%d_", ports->names[j], ports->sizes[j]);
+		odin_sprintf(buffer1, "%s_%ld_", ports->names[j], ports->sizes[j]);
 		strcat(buffer, buffer1);
 	}
 	return vtr::strdup(buffer);
@@ -1564,7 +1562,7 @@ long get_hard_block_pin_number(char *original_name)
 	long pin_number = strtol(pin_number_string, &endptr, 10);
 
 	if (pin_number_string == endptr)
-		error_message(NETLIST_ERROR,file_line_number, -1,"The given port name \"%s\" does not contain a valid pin number.", original_name);
+		error_message(NETLIST_ERROR,file_line_number, current_parse_file,"The given port name \"%s\" does not contain a valid pin number.", original_name);
 
 	vtr::free(name);
 
@@ -1582,7 +1580,7 @@ void add_hard_block_model(hard_block_model *m, hard_block_ports *ports, hard_blo
 	strcat(needle, ports->signature);
 	models->models = (hard_block_model **)vtr::realloc(models->models, (models->count * sizeof(hard_block_model *)) + 1);
 	models->models[models->count++] = m;
-	models->index->add(models->index, needle, strlen(needle) * sizeof(char), m);
+	models->index->add(needle, m);
 }
 
 /*
@@ -1595,7 +1593,7 @@ hard_block_model *get_hard_block_model(char *name, hard_block_ports *ports, hard
 	needle[0] = '\0';
 	strcat(needle, name);
 	strcat(needle, ports->signature);
-	return (hard_block_model *)models->index->get(models->index, needle, strlen(needle) * sizeof(char));
+	return (hard_block_model *)models->index->get(needle);
 }
 
 /*
@@ -1606,7 +1604,7 @@ hard_block_models *create_hard_block_models()
 	hard_block_models *m = (hard_block_models *)vtr::malloc(sizeof(hard_block_models));
 	m->models = 0;
 	m->count  = 0;
-	m->index  = create_hashtable(100);
+	m->index  = new Hashtable();
 
 	return m;
 }
@@ -1635,7 +1633,8 @@ int count_blif_lines(FILE *file)
  */
 void free_hard_block_models(hard_block_models *models)
 {
-	models->index->destroy(models->index);
+	//does not delete the items in the hash
+	delete models->index;
 	int i;
 	for (i = 0; i < models->count; i++)
 		free_hard_block_model(models->models[i]);
@@ -1669,7 +1668,8 @@ void free_hard_block_pins(hard_block_pins *p)
 
 	vtr::free(p->names);
 
-	p->index->destroy_free_items(p->index);
+	p->index->destroy_free_items();
+	delete p->index;
 	vtr::free(p);
 }
 
@@ -1685,6 +1685,7 @@ void free_hard_block_ports(hard_block_ports *p)
 	vtr::free(p->names);
 	vtr::free(p->sizes);
 
-	p->index->destroy_free_items(p->index);
+	p->index->destroy_free_items();
+	delete p->index;
 	vtr::free(p);
 }
