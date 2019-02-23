@@ -253,7 +253,7 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 		}
 		else
 		{
-			fprintf(fp, "\t%s [label=\"%ld:%ld\"];\n", temp_string, current_node->forward_level, current_node->backward_level);
+			fprintf(fp, "\t%s [label=\"%d:%d\"];\n", temp_string, current_node->forward_level, current_node->backward_level);
 		}
 		vtr::free(temp_string);
 
@@ -354,7 +354,7 @@ void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t 
 			}
 			else
 			{
-				fprintf(fp, "\t%s [label=\"%ld:%ld\"];\n", temp_string, current_node->forward_level, current_node->backward_level);
+				fprintf(fp, "\t%s [label=\"%d:%d\"];\n", temp_string, current_node->forward_level, current_node->backward_level);
 			}
 		}
 		vtr::free(temp_string);

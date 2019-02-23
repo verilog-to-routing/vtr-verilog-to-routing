@@ -327,10 +327,10 @@ void check_memories_and_report_distribution()
 		temp = temp->next;
 	}
 
-	printf("\nTotal Logical Memory Blocks = %ld \n", total_memory_block_counter);
-	printf("Total Logical Memory bits = %zu \n", total_memory_bits);
-	printf("Max Memory Width = %zu \n", memory_max_width);
-	printf("Max Memory Depth = %zu \n", memory_max_depth);
+	printf("\nTotal Logical Memory Blocks = %d \n", total_memory_block_counter);
+	printf("Total Logical Memory bits = %ld \n", total_memory_bits);
+	printf("Max Memory Width = %ld \n", memory_max_width);
+	printf("Max Memory Depth = %ld \n", memory_max_depth);
 	printf("\n");
 
 	return;

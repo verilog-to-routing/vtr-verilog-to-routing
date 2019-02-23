@@ -1595,8 +1595,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 	else if (var_declare->children[3] != NULL)
 	{
 		/* Implicit memory */
-		printf("Unhandled implicit memory in define_nodes_and_nets_with_driver\n");
-		oassert(FALSE);
+		error_message(NETLIST_ERROR, var_declare->children[3]->line_number, var_declare->children[3]->file_number, "%s\n", "Unhandled implicit memory in define_nodes_and_nets_with_driver");
 	}
 
 	return new_net;
@@ -2307,8 +2306,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 		else if (module_var_node->children[5] != NULL)
 		{
 			/* Implicit memory */
-			printf("Unhandled implicit memory in connect_module_instantiation_and_alias\n");
-			oassert(FALSE);
+			error_message(NETLIST_ERROR, module_var_node->children[5]->line_number, module_var_node->children[5]->file_number, "%s\n", "Unhandled implicit memory in connect_module_instantiation_and_alias");
 		}
 		for (j = 0; j < port_size; j++)
 		{
@@ -2633,8 +2631,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 		else if (module_var_node->children[5] != NULL)
 		{
 			/* Implicit memory */
-			printf("Unhandled implicit memory in connect_module_instantiation_and_alias\n");
-			oassert(FALSE);
+			error_message(NETLIST_ERROR, module_var_node->children[5]->line_number, module_var_node->children[5]->file_number, "%s\n", "Unhandled implicit memory in connect_module_instantiation_and_alias");
 		}
 		for (j = 0; j < port_size; j++)
 		{
@@ -3341,7 +3338,7 @@ void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_no
 				sc_spot = sc_lookup_string(local_symbol_table_sc, initial_node->children[i]->children[0]->types.identifier);
 				if(sc_spot == -1)
 				{
-					printf("** Register [%s] used in initial block is not declared.\n", initial_node->children[i]->children[0]->types.identifier);
+					warning_message(NETLIST_ERROR, initial_node->children[i]->children[0]->line_number, initial_node->children[i]->children[0]->file_number, "Register [%s] used in initial block is not declared.\n", initial_node->children[i]->children[0]->types.identifier);
 				}
 				else
 				{
@@ -5490,9 +5487,7 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 
 		if (hb_ports == NULL)
 		{
-			printf("Non-existant port %s in hard block %s\n", ip_name, block->children[0]->types.identifier);
-			block_connect->children[1]->hb_port = NULL;
-			oassert(FALSE);
+			error_message(NETLIST_ERROR, block->children[0]->line_number, block->children[0]->file_number, "Non-existant port %s in hard block %s\n", ip_name, block->children[0]->types.identifier);
 		}
 
 		/* Link the signal to the port definition */

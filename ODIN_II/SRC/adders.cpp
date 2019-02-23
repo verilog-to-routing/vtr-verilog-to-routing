@@ -90,13 +90,12 @@ void record_add_distribution(nnode_t *node)
  *-------------------------------------------------------------------------*/
 
 /* These values are collected during the unused logic removal sweep */
-extern int adder_chain_count;
-extern int longest_adder_chain;
-extern int total_adders;
+extern long adder_chain_count;
+extern long longest_adder_chain;
+extern long total_adders;
 
 extern double geomean_addsub_length;
 extern double sum_of_addsub_logs;
-extern int total_addsub_chain_count;
 
 void report_add_distribution()
 {
@@ -159,9 +158,8 @@ void declare_hard_adder(nnode_t *node)
 
 	/* See if this size instance of adder exists? */
 	if (hard_adders == NULL)
-	{
-		printf("Instantiating adder where adders do not exist\n");
-	}
+		warning_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Instantiating adder where adders do not exist");
+	
 	tmp = (t_adder *)hard_adders->instances;
 	width_a = node->input_port_sizes[0];
 	width_b = node->input_port_sizes[1];
@@ -1541,12 +1539,12 @@ void instantiate_add_w_carry_block(int *width, nnode_t *node, short mark, netlis
 
 			/* pretty print info */
 			if(current_counter == 1)
-				printf("\n::%s\n[target-bit_size:<%ld>START]~", node->name, width[0]-start_pin);
+				printf("\n::%s\n[target-bit_size:<%d>START]~", node->name, width[0]-start_pin);
 
-			printf("~[<%s><%s>::%ld]~",my_type.c_str(), sub_structure.c_str(), blk_size);
+			printf("~[<%s><%s>::%d]~",my_type.c_str(), sub_structure.c_str(), blk_size);
 
 			if(blk_size+start_pin == width[0]){
-				printf("~[END::sub_module_count:<%ld>] \n", current_counter);
+				printf("~[END::sub_module_count:<%d>] \n", current_counter);
 				fflush(stdout);
 			}
 		}

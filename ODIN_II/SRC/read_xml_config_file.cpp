@@ -139,8 +139,7 @@ void read_outputs(pugi::xml_node a_node, config_t *config, const pugiutil::loc_d
 			/* Two arch files specified? */
 			if (global_args.arch_file != NULL)
 			{
-				printf("Error: Arch file specified in config file AND command line\n");
-				exit(-1);
+				error_message(ARG_ERROR, -1, -1, "%s", "Error: Arch file specified in config file AND command line\n");
 			}
 			global_args.arch_file.set(vtr::strdup(child.child_value()), argparse::Provenance::SPECIFIED);
 		}

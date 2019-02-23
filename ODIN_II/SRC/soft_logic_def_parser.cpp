@@ -150,10 +150,9 @@ void read_soft_def_file(t_model *hard_adder_models)
 		{
 			/* something went wrong! empty everything and throw a warning */
 			soft_def_map = std::map<std::string,soft_sub_structure*>();
-			printf("ERROR line::%ld\n",line_number);
+			warning_message(PARSE_ERROR, -1, -1, "%s", "ERROR parsing adder soft logic definition file @ line::%ld\n",line_number);
 		}
-		else
-			printf("DONE read %ld lines\n",line_number);
+
   	}
 }
 

@@ -142,25 +142,25 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 	{
 		if (0 == strcmp(def_iterator->symbol, symbol))
 		{
-			fprintf(stderr, "Warning: The constant %s defined on line %ld in %s was previously defined on line %ld in %s\n",
+			warning_message(PARSE_ERROR, -1, -1, "The constant %s defined on line %d in %s was previously defined on line %d in %s\n",
 				symbol, line, defined_in->path, def_iterator->line, def_iterator->defined_in->path);
 
 			if (value == NULL || (value[0] == '/' && value[1] == '/'))
 #ifndef BLOCK_EMPTY_DEFINES
 			{
-				fprintf(stderr, "\tWarning: The new value of %s is empty\n\n", symbol);
+				warning_message(PARSE_ERROR, -1, -1, "The new value of %s is empty\n\n", symbol);
 				vtr::free(def_iterator->value);
 				def_iterator->value =NULL;
 			}
 #else
 			{
-				fprintf(stderr, "\tWarning: The new value of %s is empty, doing nothing\n\n", symbol);
+				warning_message(PARSE_ERROR, -1, -1, "The new value of %s is empty, doing nothing\n\n", symbol);
 				return 0;
 			}
 #endif
 			else if (0 != strcmp(def_iterator->value, value))
 			{
-				fprintf(stderr, "\tWarning: The value of %s has been redefined to %s, the previous value was %s\n\n",
+				warning_message(PARSE_ERROR, -1, -1, "The value of %s has been redefined to %s, the previous value was %s\n\n",
 					symbol, value, def_iterator->value);
 				vtr::free(def_iterator->value);
 				def_iterator->value = (char *)vtr::strdup(value);
@@ -208,14 +208,9 @@ veri_include* add_veri_include(const char *path, int line, veri_include *include
 
 	/* Scan previous includes to make sure the file wasn't included previously. */
 	for (i = 0; i < veri_includes.current_index && i < veri_includes.current_size && inc_iterator != NULL; inc_iterator = veri_includes.included_files[++i])
-	{
 		if (0 == strcmp(path, inc_iterator->path))
-		{
-			printf("Warning: including %s multiple times\n", path);
-//			vtr::free(new_inc);
-//			return NULL;
-		}
-	}
+			warning_message(PARSE_ERROR, line, -1, "Warning: including %s multiple times\n", path);
+	
 
 	new_inc->path = vtr::strdup(path);
 	new_inc->included_from = included_from;
@@ -452,7 +447,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				/* If we failed to open the included file handle the error */
 				if (!included_file)
 				{
-					fprintf(stderr, "Warning: Unable to open file %s included on line %ld of %s\n",
+					warning_message(PARSE_ERROR, -1, -1, "Unable to open file %s included on line %d of %s\n",
 						token, line_number, current_include->path);
 					perror("included_file : fopen");
 					/*return erro or exit ? */

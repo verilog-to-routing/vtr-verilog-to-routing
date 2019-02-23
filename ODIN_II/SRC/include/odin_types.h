@@ -453,12 +453,12 @@ struct nnode_t_t
 	short traverse_visited; // a way to mark if we've visited yet
 
 	npin_t **input_pins; // the input pins
-	int num_input_pins;
+	long num_input_pins;
 	int *input_port_sizes; // info about the input ports
 	int num_input_port_sizes;
 
 	npin_t **output_pins; // the output pins
-	int num_output_pins;
+	long num_output_pins;
 	int *output_port_sizes; // info if there is ports
 	int num_output_port_sizes;
 

@@ -210,7 +210,7 @@ ast_node_t *create_tree_node_long_number(long number, int constant_bit_size, int
 /*---------------------------------------------------------------------------------------------
  * (function: create_tree_node_number)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *create_tree_node_number(std::string input_number, bases base, signedness sign, int line_number, int /*file_number*/)
+ast_node_t *create_tree_node_number(std::string input_number, bases base, signedness sign, int line_number, int file_number)
 {
 	oassert(sign != SIGNED && "ODIN_II does not support signed numbers" );
 	short flag_constant_decimal = FALSE;
@@ -243,9 +243,8 @@ ast_node_t *create_tree_node_number(std::string input_number, bases base, signed
 				new_node->types.number.is_full = 0;
 				new_node->types.number.size = std::strtol(input_number.substr(0,loc).c_str(),NULL,10);
 				if(new_node->types.number.size > ODIN_STD_BITWIDTH-1)
-				{
-					printf("%ld::WARNING input number is %ld-bits but ODIN limit is %lu-bits \n",line_number,new_node->types.number.size,ODIN_STD_BITWIDTH-1);
-				}
+					warning_message(PARSE_ERROR, line_number, file_number, "input number is %ld-bits but ODIN limit is %lu-bits \n",new_node->types.number.size,ODIN_STD_BITWIDTH-1);
+
 			}
 			else
 			{
@@ -1146,8 +1145,6 @@ ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_lis
 		long result = 0;
 		short success = FALSE;
 
-		int length =0;
-		int i=0;
 		int length_0 = child_0->types.number.binary_size;
 		char *binary_string_0 = vtr::strdup(child_0->types.number.binary_string);
 
@@ -1283,7 +1280,7 @@ ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_lis
 				result =1;
 				for(long i0=length_0, i1=length_1; i0>=0 && i1>=0; i0--, i1--)
 				{
-					if(get_bit(binary_string_0[i]) != get_bit(binary_string_1[i])){
+					if(get_bit(binary_string_0[i0]) != get_bit(binary_string_1[i1])){
 						result = 0;
 						break;
 					}
@@ -1335,9 +1332,9 @@ ast_node_t *node_is_constant(ast_node_t *node){
 					break;
 				}
 				//fallthrough
-			case(LONG):
+			case LONG:
 				return node;
-				break;
+
             default:
 				break;
 		}

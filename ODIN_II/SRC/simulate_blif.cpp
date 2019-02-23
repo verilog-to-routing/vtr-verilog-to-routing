@@ -181,7 +181,7 @@ static void compute_dual_port_memory(nnode_t *node, int cycle);
 
 static long compute_memory_address(signal_list_t *addr, int cycle);
 
-static void instantiate_memory(nnode_t *node, int data_width, int addr_width);
+static void instantiate_memory(nnode_t *node, long data_width, long addr_width);
 static char *get_mif_filename(nnode_t *node);
 static FILE *preprocess_mif_file(FILE *source);
 static void assign_memory_from_mif_file(nnode_t *node, FILE *mif, char *filename, int width, long address_width);
@@ -3149,7 +3149,7 @@ static void compute_dual_port_memory(nnode_t *node, int cycle)
  * Initialises memory using a memory information file (mif). If not
  * file is found, it is initialised to x's.
  */
-static void instantiate_memory(nnode_t *node, int data_width, int addr_width)
+static void instantiate_memory(nnode_t *node, long data_width, long addr_width)
 {
 	long max_address = get_memory_depth_from_address_size(addr_width);
 	node->memory_data = std::vector<std::vector<signed char>>(max_address, std::vector<signed char>(data_width, init_value(node)));
@@ -4035,9 +4035,9 @@ static void write_vector_to_modelsim_file(lines_t *l, FILE *modelsim_out, int cy
 				int value = get_line_pin_value(l->lines[i],j,cycle);
 
 				if (value < 0)  fprintf(modelsim_out, "%s", "x");
-				else 		fprintf(modelsim_out, "%ld", value);
+				else 		fprintf(modelsim_out, "%d", value);
 			}
-			fprintf(modelsim_out, " %ld\n", cycle/2 * 100);
+			fprintf(modelsim_out, " %d\n", cycle/2 * 100);
 		}
 		else
 		{
@@ -4056,7 +4056,7 @@ static void write_vector_to_modelsim_file(lines_t *l, FILE *modelsim_out, int cy
 					value = 0;
 				}
 			}
-			fprintf(modelsim_out, " %ld\n", cycle/2 * 100);
+			fprintf(modelsim_out, " %d\n", cycle/2 * 100);
 		}
 
 	}
@@ -4484,12 +4484,12 @@ static void print_netlist_stats(stages_t *stages, int /*num_vectors*/)
 		for(long i=0; i < configuration.list_of_file_names.size(); i++)
 			printf("%s:\n", configuration.list_of_file_names[i].c_str());
 
-	printf("  Nodes:           %ld\n",    stages->num_nodes);
-	printf("  Connections:     %ld\n",    stages->num_connections);
-	printf("  Threads:         %ld\n",   number_of_workers);
+	printf("  Nodes:           %d\n",    stages->num_nodes);
+	printf("  Connections:     %d\n",    stages->num_connections);
+	printf("  Threads:         %d\n",   number_of_workers);
 	printf("  Degree:          %3.2f\n", stages->num_connections/(float)stages->num_nodes);
-	printf("  Stages:          %ld\n",    stages->count);
-	printf("  Nodes/thread:    %ld(%4.2f%%)\n", (stages->num_nodes/number_of_workers), 100.0/(double)number_of_workers);
+	printf("  Stages:          %d\n",    stages->count);
+	printf("  Nodes/thread:    %d(%4.2f%%)\n", (stages->num_nodes/number_of_workers), 100.0/(double)number_of_workers);
 	printf("\n");
 
 }
@@ -4507,7 +4507,7 @@ static void print_simulation_stats(stages_t *stages, int /*num_vectors*/, double
 	print_time(total_time);
 	printf("\n");
 	printf("Coverage:          "
-			"%ld (%4.1f%%)\n", covered_nodes, (covered_nodes/(double)stages->num_nodes) * 100);
+			"%d (%4.1f%%)\n", covered_nodes, (covered_nodes/(double)stages->num_nodes) * 100);
 }
 
 /*
@@ -4668,7 +4668,7 @@ static nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 			printf("  ------------\n");
 		}
 		else {
-			printf("  CYCLE DETECTED AFTER %ld NODES.\n", depth);
+			printf("  CYCLE DETECTED AFTER %d NODES.\n", depth);
 			printf("  ------------\n");
 			break;
 		}
@@ -4682,7 +4682,7 @@ static nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 		}
 		else if (max_depth && depth >=max_depth)
 		{
-			printf("  TRACE TRUNCATED AT %ld NODES.\n", max_depth);
+			printf("  TRACE TRUNCATED AT %d NODES.\n", max_depth);
 			printf("  ------------\n");
 			break;
 		}

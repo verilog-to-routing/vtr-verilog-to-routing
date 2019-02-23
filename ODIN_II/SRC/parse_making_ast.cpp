@@ -1066,9 +1066,7 @@ ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int 
 	allocate_children_to_node(new_node, 2, compare_expression, statement);
 
 	/* This needs to be removed once support is added */
-	printf("While statement is NOT supported: line %ld\n", line_number);
-	oassert(0);
-
+	error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "While statements are NOT supported");
 	return new_node;
 }
 
@@ -1732,7 +1730,7 @@ void newConstant(char *id, ast_node_t *number_node, int line_number)
 	/* def_reduct */
 	if ((sc_spot = sc_add_string(defines_for_file_sc, id)) == -1)
 	{
-		error_message(PARSE_ERROR, current_parse_file, line_number, "define with same name (%s) on line %ld\n", id, ((ast_node_t*)(defines_for_file_sc->data[sc_spot]))->line_number);
+		error_message(PARSE_ERROR, current_parse_file, line_number, "define with same name (%s) on line %d\n", id, ((ast_node_t*)(defines_for_file_sc->data[sc_spot]))->line_number);
 	}
 	/* store the data */
 	defines_for_file_sc->data[sc_spot] = (void*)number_node;
@@ -1785,7 +1783,7 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 	/* increase the unique count for other nodes since ours is recorded */
 	int my_label = unique_label_count++;
 
-	fprintf(fp, "\t%ld [label=\"", my_label);
+	fprintf(fp, "\t%d [label=\"", my_label);
 	fprintf(fp, "%s", ids_STR[node->type]);
 	switch(node->type)
 	{
@@ -1823,7 +1821,7 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 	
 	/* print out the connection with the previous node */
 	if (from != NULL)
-		fprintf(fp, "\t%ld -> %ld;\n", from_num, my_label);
+		fprintf(fp, "\t%d -> %d;\n", from_num, my_label);
 
 	for (long i = 0; i < node->num_children; i++)
 	{

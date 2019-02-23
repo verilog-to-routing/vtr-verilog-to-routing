@@ -123,7 +123,7 @@ typedef struct sim_data_t_t
 	FILE *act_out;
 	FILE *modelsim_out;
 	FILE *in  = NULL;
-	int num_vectors;
+	long num_vectors;
 	char *input_vector_file;
 
 	double total_time; // Includes I/O

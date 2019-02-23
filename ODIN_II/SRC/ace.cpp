@@ -28,6 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "bdd/cudd/cuddInt.h"
 #include "bdd/cudd/cudd.h"
 
+#include "odin_error.h"
 #include "ace.h"
 #include "vtr_memory.h"
 
@@ -44,13 +45,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #define BPI     32
 #define LOGBPI  5
-
-#define fail(why) {\
-		(void) fprintf(stderr, "Fatal error: file %s, line %ld\n%s\n",\
-				__FILE__, __LINE__, why);\
-				(void) fflush(stdout);\
-				abort();\
-				}
 
 #define LOOPINIT(size)		((size <= BPI) ? 1 : WHICH_WORD((size)-1))
 
@@ -440,22 +434,34 @@ pset set_clear(pset r, int size)
 int node_error(int code) {
     switch (code) {
     case 0:
-        fail("node_get_cube: node does not have a function");
+        error_message(ACE,-1, -1, "%s", "node_get_cube: node does not have a function");
         /* NOTREACHED */
+        break;
+
     case 1:
-        fail("node_get_cube: cube index out of bounds");
+        error_message(ACE,-1, -1, "%s","node_get_cube: cube index out of bounds");
         /* NOTREACHED */
+        break;
+
     case 2:
-        fail("node_get_literal: bad cube");
+        error_message(ACE,-1, -1, "%s","node_get_literal: bad cube");
         /* NOTREACHED */
+        break;
+
     case 4:
-        fail("foreach_fanin: node changed during generation");
+        error_message(ACE,-1, -1, "%s","foreach_fanin: node changed during generation");
         /* NOTREACHED */
+        break;
+
     case 5:
-        fail("foreach_fanout: node changed during generation");
+        error_message(ACE,-1, -1, "%s","foreach_fanout: node changed during generation");
         /* NOTREACHED */
+        break;
+
     default:
-        fail("error code unused");
+        error_message(ACE,-1, -1, "%s","error code unused");
+        break;
+
     }
     return 0;
 }
@@ -488,7 +494,7 @@ ace_cube_t * ace_cube_dup(ace_cube_t * cube) {
             set_insert(cube_copy->cube, 2 * i + 1);
             break;
 	default:
-	    fail("Bad literal.");
+	    error_message(ACE,-1, -1, "%s","Bad literal.");
         }
     }
     return (cube_copy);
@@ -639,7 +645,7 @@ double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd, ace_cube_t * c
 	    + (1.0 - fanin_info->static_prob) * else_prob;
 	break;
     default:
-	fail("Bad literal.");
+	error_message(ACE,-1, -1, "%s","Bad literal.");
     }
     st__insert(visited, (char *) bdd, (char *) current_prob);
 

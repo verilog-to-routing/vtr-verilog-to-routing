@@ -52,9 +52,9 @@ void init_split_adder_for_sub(nnode_t *node, nnode_t *ptr, int a, int sizea, int
  *-------------------------------------------------------------------------*/
 
 /* These values are collected during the unused logic removal sweep */
-extern int subtractor_chain_count;
-extern int longest_subtractor_chain;
-extern int total_subtractors;
+extern long subtractor_chain_count;
+extern long longest_subtractor_chain;
+extern long total_subtractors;
 
 void report_sub_distribution()
 {
@@ -89,7 +89,7 @@ void declare_hard_adder_for_sub(nnode_t *node)
 	/* See if this size instance of adder exists?*/
 	if (hard_adders == NULL)
 	{
-		printf("Instantiating subtraction where carry chain adders do not exist\n");
+		warning_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Instantiating Substraction where hard adders do not exist");
 	}
 	tmp = (t_adder *)hard_adders->instances;
 	width_a = node->input_port_sizes[0];

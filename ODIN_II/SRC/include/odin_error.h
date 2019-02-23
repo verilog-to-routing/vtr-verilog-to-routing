@@ -20,13 +20,15 @@ typedef enum
 	/* for errors in activation estimateion creation */
 	ACTIVATION_ERROR,
 	/* for errors in the netlist simulation */
-	SIMULATION_ERROR
+	SIMULATION_ERROR,
+	/* for error in ACE */
+	ACE,
 } odin_error;
 
 extern const char *odin_error_STR[];
 
 // causes an interrupt in GDB
-static inline void _verbose_assert(bool condition, const char *condition_str, const char *odin_file_name, int odin_line_number, const char *odin_function_name)
+static inline void _verbose_assert(bool condition, const char *condition_str, const char *odin_file_name, long odin_line_number, const char *odin_function_name)
 {
 	if(!condition)
 	{
@@ -38,9 +40,9 @@ static inline void _verbose_assert(bool condition, const char *condition_str, co
 
 #define oassert(condition) _verbose_assert(condition, #condition, __FILE__, __LINE__, __func__)
 
-void _log_message(odin_error error_type, int line_number, int file, bool soft_error, const char *function_file_name, int function_line, const char *function_name, const char *message, ...);
+void _log_message(odin_error error_type, long line_number, long file, bool soft_error, const char *function_file_name, long function_line, const char *function_name, const char *message, ...);
 
-#define error_message(error_type, line_number, file, message, ...) _log_message(error_type, line_number, file, false, __FILE__, __LINE__, __func__, message, ##__VA_ARGS__)
-#define warning_message(error_type, line_number, file, message, ...) _log_message(error_type, line_number, file, true, __FILE__, __LINE__, __func__, message, ##__VA_ARGS__)
+#define error_message(error_type, line_number, file, message, ...) _log_message(error_type, line_number, file, false, __FILE__, __LINE__, __func__, message, __VA_ARGS__)
+#define warning_message(error_type, line_number, file, message, ...) _log_message(error_type, line_number, file, true, __FILE__, __LINE__, __func__, message, __VA_ARGS__)
 
 #endif

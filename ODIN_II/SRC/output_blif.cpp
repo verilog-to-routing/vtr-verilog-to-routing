@@ -731,7 +731,7 @@ void define_ff(nnode_t *node, FILE *out)
 	else
 		fprintf(out, "%s ", node->input_pins[1]->net->driver_pin->name);
 
-	fprintf(out, "%ld\n\n", initial_value);
+	fprintf(out, "%d\n\n", initial_value);
 }
 
 /*--------------------------------------------------------------------------
