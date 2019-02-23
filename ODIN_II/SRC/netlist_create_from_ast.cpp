@@ -3254,15 +3254,30 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			{
 				/* need to shrink the output list */
 				int i;
-				for (i = 0; i < output_size; i++)
+				for (i = 0; i < output_size; i++) {
 					add_pin_to_signal_list(return_list, in_1->pins[i]);
 
+					/* free unused nnodes for related BLOCKING_STATEMENT nodes */
+					nnode_t *temp_node = in_1->pins[i]->node;
+					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
+						free_nnode(temp_node);
+					}
+				}
 				free_signal_list(in_1);
 			}
 			else
 			{
 				free_signal_list(return_list);
 				return_list = in_1;
+
+				/* free unused nnodes for related BLOCKING_STATEMENT nodes */
+				int i;
+				for (i = 0; i < output_size; i++) {
+					nnode_t *temp_node = in_1->pins[i]->node;
+					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
+						free_nnode(temp_node);
+					}
+				}
 			}
 		}
 
