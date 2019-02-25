@@ -3452,7 +3452,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			if(pin->node) list_dependence_type[i] = pin->node->related_ast_node->type;
 
 			/* clean up non-blocking */
-			if (pin-> node && pin->node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+			if (pin->node && pin->node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
 				free_nnode(pin->node);
 			}
 
