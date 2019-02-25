@@ -3403,8 +3403,21 @@ static void ProcessClockNetworks(
             std::string starty (get_attribute(curr_type, "starty", loc_data).value());
             std::string endy (get_attribute(curr_type, "endy", loc_data).value());
             std::string x (get_attribute(curr_type, "x", loc_data).value());
-            std::string repeatx (get_attribute(curr_type, "repeatx", loc_data).value());
-            std::string repeaty (get_attribute(curr_type, "repeaty", loc_data).value());
+
+            std::string repeatx;
+            auto repeatx_attr = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL);
+            if (repeatx_attr) {
+                repeatx = repeatx_attr.value();
+            } else {
+                repeatx = "W";
+            }
+            std::string repeaty;
+            auto repeaty_attr = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL);
+            if (repeaty_attr) {
+                repeaty = repeaty_attr.value();
+            } else {
+                repeaty = "H";
+            }
 
             clock_network.metal_layer = metal_layer;
             clock_network.wire.start = starty;
@@ -3429,8 +3442,21 @@ static void ProcessClockNetworks(
             std::string startx (get_attribute(curr_type, "startx", loc_data).value());
             std::string endx (get_attribute(curr_type, "endx", loc_data).value());
             std::string y (get_attribute(curr_type, "y", loc_data).value());
-            std::string repeatx (get_attribute(curr_type, "repeatx", loc_data).value());
-            std::string repeaty (get_attribute(curr_type, "repeaty", loc_data).value());
+
+            std::string repeatx;
+            auto repeatx_attr = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL);
+            if (repeatx_attr) {
+                repeatx = repeatx_attr.value();
+            } else {
+                repeatx = "W";
+            }
+            std::string repeaty;
+            auto repeaty_attr = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL);
+            if (repeaty_attr) {
+                repeaty = repeaty_attr.value();
+            } else {
+                repeaty = "H";
+            }
 
             clock_network.metal_layer = metal_layer;
             clock_network.wire.start = startx;
