@@ -851,30 +851,42 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
             // setup device_ctx.switch_fanin_remap, for future swich usage analysis
             device_ctx.switch_fanin_remap[i_arch_switch][fanin] = i_rr_switch;
 
-            /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
-               rr switch should be */
-            double rr_switch_Tdel = device_ctx.arch_switch_inf[i_arch_switch].Tdel(fanin);
-
-            /* copy over the arch switch to rr_switch_inf[i_rr_switch], but with the changed Tdel value */
-            device_ctx.rr_switch_inf[i_rr_switch].set_type(device_ctx.arch_switch_inf[i_arch_switch].type());
-            device_ctx.rr_switch_inf[i_rr_switch].R = device_ctx.arch_switch_inf[i_arch_switch].R;
-            device_ctx.rr_switch_inf[i_rr_switch].Cin = device_ctx.arch_switch_inf[i_arch_switch].Cin;
-            device_ctx.rr_switch_inf[i_rr_switch].Cout = device_ctx.arch_switch_inf[i_arch_switch].Cout;
-            device_ctx.rr_switch_inf[i_rr_switch].Tdel = rr_switch_Tdel;
-            device_ctx.rr_switch_inf[i_rr_switch].mux_trans_size = device_ctx.arch_switch_inf[i_arch_switch].mux_trans_size;
-            if (device_ctx.arch_switch_inf[i_arch_switch].buf_size_type == BufferSize::AUTO) {
-                //Size based on resistance
-                device_ctx.rr_switch_inf[i_rr_switch].buf_size = trans_per_buf(device_ctx.arch_switch_inf[i_arch_switch].R, R_minW_nmos, R_minW_pmos);
-            } else {
-                VTR_ASSERT(device_ctx.arch_switch_inf[i_arch_switch].buf_size_type == BufferSize::ABSOLUTE);
-                //Use the specified size
-                device_ctx.rr_switch_inf[i_rr_switch].buf_size = device_ctx.arch_switch_inf[i_arch_switch].buf_size;
-            }
-            device_ctx.rr_switch_inf[i_rr_switch].name = device_ctx.arch_switch_inf[i_arch_switch].name;
-            device_ctx.rr_switch_inf[i_rr_switch].power_buffer_type = device_ctx.arch_switch_inf[i_arch_switch].power_buffer_type;
-            device_ctx.rr_switch_inf[i_rr_switch].power_buffer_size = device_ctx.arch_switch_inf[i_arch_switch].power_buffer_size;
+            load_rr_switch_from_arch_switch(i_arch_switch, i_rr_switch, fanin, R_minW_nmos, R_minW_pmos);
         }
     }
+}
+
+void load_rr_switch_from_arch_switch(
+        int arch_switch_idx,
+        int rr_switch_idx,
+        int fanin,
+        const float R_minW_nmos,
+        const float R_minW_pmos)
+{
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
+       rr switch should be */
+    double rr_switch_Tdel = device_ctx.arch_switch_inf[arch_switch_idx].Tdel(fanin);
+
+    /* copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel value */
+    device_ctx.rr_switch_inf[rr_switch_idx].set_type(device_ctx.arch_switch_inf[arch_switch_idx].type());
+    device_ctx.rr_switch_inf[rr_switch_idx].R = device_ctx.arch_switch_inf[arch_switch_idx].R;
+    device_ctx.rr_switch_inf[rr_switch_idx].Cin = device_ctx.arch_switch_inf[arch_switch_idx].Cin;
+    device_ctx.rr_switch_inf[rr_switch_idx].Cout = device_ctx.arch_switch_inf[arch_switch_idx].Cout;
+    device_ctx.rr_switch_inf[rr_switch_idx].Tdel = rr_switch_Tdel;
+    device_ctx.rr_switch_inf[rr_switch_idx].mux_trans_size = device_ctx.arch_switch_inf[arch_switch_idx].mux_trans_size;
+    if (device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type == BufferSize::AUTO) {
+        //Size based on resistance
+        device_ctx.rr_switch_inf[rr_switch_idx].buf_size = trans_per_buf(device_ctx.arch_switch_inf[arch_switch_idx].R, R_minW_nmos, R_minW_pmos);
+    } else {
+        VTR_ASSERT(device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type == BufferSize::ABSOLUTE);
+        //Use the specified size
+        device_ctx.rr_switch_inf[rr_switch_idx].buf_size = device_ctx.arch_switch_inf[arch_switch_idx].buf_size;
+    }
+    device_ctx.rr_switch_inf[rr_switch_idx].name = device_ctx.arch_switch_inf[arch_switch_idx].name;
+    device_ctx.rr_switch_inf[rr_switch_idx].power_buffer_type = device_ctx.arch_switch_inf[arch_switch_idx].power_buffer_type;
+    device_ctx.rr_switch_inf[rr_switch_idx].power_buffer_size = device_ctx.arch_switch_inf[arch_switch_idx].power_buffer_size;
 }
 
 /* switch indices of each rr_node original point into the global device_ctx.arch_switch_inf array.

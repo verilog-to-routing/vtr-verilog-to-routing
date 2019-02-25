@@ -55,5 +55,13 @@ void print_rr_node(FILE *fp, const std::vector<t_rr_node> &L_rr_node, int inode)
 
 void init_fan_in(std::vector<t_rr_node>& L_rr_node, const int num_rr_nodes);
 
+// Sets the spec for the rr_switch based on the arch switch
+void load_rr_switch_from_arch_switch(
+        int arch_switch_idx,
+        int rr_switch_idx,
+        int fanin,
+        const float R_minW_nmos,
+        const float R_minW_pmos);
+
 #endif
 

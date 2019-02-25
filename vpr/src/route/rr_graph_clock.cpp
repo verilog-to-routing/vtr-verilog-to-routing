@@ -123,32 +123,11 @@ int ClockRRGraphBuilder::add_rr_switch_from_arch_switch_inf(
     int rr_switch_idx = rr_switch_inf.size() - 1;
 
     // TODO: Add support for non fixed Tdel based on fanin information
+    //       and move assigning Tdel into add_rr_switch
     VTR_ASSERT(arch_switch_inf[arch_switch_idx].fixed_Tdel());
     int fanin = UNDEFINED;
 
-    rr_switch_inf[rr_switch_idx].set_type(arch_switch_inf[arch_switch_idx].type());
-    rr_switch_inf[rr_switch_idx].R = arch_switch_inf[arch_switch_idx].R;
-    rr_switch_inf[rr_switch_idx].Cin = arch_switch_inf[arch_switch_idx].Cin;
-    rr_switch_inf[rr_switch_idx].Cout = arch_switch_inf[arch_switch_idx].Cout;
-    rr_switch_inf[rr_switch_idx].Tdel = arch_switch_inf[arch_switch_idx].Tdel(fanin);
-    rr_switch_inf[rr_switch_idx].mux_trans_size = arch_switch_inf[arch_switch_idx].mux_trans_size;
-
-    if (device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type == BufferSize::AUTO) {
-        //Size based on resistance
-        device_ctx.rr_switch_inf[rr_switch_idx].buf_size =
-            trans_per_buf(device_ctx.arch_switch_inf[arch_switch_idx].R, R_minW_nmos, R_minW_pmos);
-    } else {
-        VTR_ASSERT(device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type==BufferSize::ABSOLUTE);
-        //Use the specified size
-        device_ctx.rr_switch_inf[rr_switch_idx].buf_size =
-            device_ctx.arch_switch_inf[arch_switch_idx].buf_size;
-    }
-
-    rr_switch_inf[rr_switch_idx].name = arch_switch_inf[arch_switch_idx].name;
-    rr_switch_inf[rr_switch_idx].power_buffer_type =
-        arch_switch_inf[arch_switch_idx].power_buffer_type;
-    rr_switch_inf[rr_switch_idx].power_buffer_size =
-        arch_switch_inf[arch_switch_idx].power_buffer_size;
+    load_rr_switch_from_arch_switch(arch_switch_idx, rr_switch_idx, fanin, R_minW_nmos, R_minW_pmos);
 
     return rr_switch_idx;
 }
