@@ -3451,6 +3451,11 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			list_dependence_pin[i] = copy_input_npin(pin);
 			if(pin->node) list_dependence_type[i] = pin->node->related_ast_node->type;
 
+			/* clean up non-blocking */
+			if (pin-> node && pin->node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+				free_nnode(pin->node);
+			}
+
 			/* HERE create the ff node and hookup everything */
 			nnode_t *ff_node = allocate_nnode();
 			ff_node->related_ast_node = always_node;
