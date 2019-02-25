@@ -34,8 +34,8 @@ void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& s
     auto& clock_networks_device = device_ctx.clock_networks;
     auto& grid = device_ctx.grid;
 
-    auto& clock_networks_arch = Arch.clock_networks_arch;
-    auto& clock_metal_layers = Arch.clock_metal_layers;
+    auto& clock_networks_arch = Arch.clock_arch.clock_networks_arch;
+    auto& clock_metal_layers = Arch.clock_arch.clock_metal_layers;
 
     // TODO: copied over from SetupGrid. Ensure consistency by only assiging in one place
     t_formula_data vars;
@@ -118,7 +118,7 @@ void setup_clock_connections(const t_arch& Arch) {
     auto& clock_connections_device = device_ctx.clock_connections;
     auto& grid = device_ctx.grid;
 
-    auto& clock_connections_arch = Arch.clock_connections_arch;
+    auto& clock_connections_arch = Arch.clock_arch.clock_connections_arch;
 
     // TODO: copied over from SetupGrid. Ensure consistency by only assiging in one place
     t_formula_data vars;

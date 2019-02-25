@@ -1266,6 +1266,12 @@ struct t_switchblock_inf{
 	std::vector<t_wireconn_inf> wireconns;	/* list of wire types/groups this SB will connect */
 };
 
+/* Clock related data types used for building a dedicated clock network */
+struct t_clock_arch_spec {
+    std::vector<t_clock_network_arch> clock_networks_arch;
+    std::unordered_map<std::string, t_metal_layer> clock_metal_layers;
+    std::vector<t_clock_connection_arch> clock_connections_arch;
+};
 
 /*   Detailed routing architecture */
 struct t_arch {
@@ -1295,11 +1301,7 @@ struct t_arch {
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 
-    // Clock related data types
-    std::vector<t_clock_network_arch> clock_networks_arch;
-    std::unordered_map<std::string, t_metal_layer> clock_metal_layers;
-    std::vector<t_clock_connection_arch> clock_connections_arch;
-
+    t_clock_arch_spec clock_arch; // Clock related data types
 };
 
 #endif

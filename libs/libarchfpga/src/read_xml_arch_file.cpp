@@ -287,16 +287,16 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
                 {"metal_layers", "clock_network", "clock_routing"};
             expect_only_children(Next, expected_children, loc_data);
 
-            ProcessClockMetalLayers(Next, arch->clock_metal_layers, loc_data);
+            ProcessClockMetalLayers(Next, arch->clock_arch.clock_metal_layers, loc_data);
             ProcessClockNetworks(
                     Next,
-                    arch->clock_networks_arch,
+                    arch->clock_arch.clock_networks_arch,
                     arch->Switches,
                     arch->num_switches,
                     loc_data);
             ProcessClockRouting(
                     Next,
-                    arch->clock_connections_arch,
+                    arch->clock_arch.clock_connections_arch,
                     arch->Switches,
                     arch->num_switches,
                     loc_data);
