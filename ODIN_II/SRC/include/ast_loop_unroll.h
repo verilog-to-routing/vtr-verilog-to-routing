@@ -1,8 +1,8 @@
 #ifndef LOOP_UNROLL_AST_H
 #define LOOP_UNROLL_AST_H
 
-#include "globals.h"
-#include "types.h"
+#include "odin_globals.h"
+#include "odin_types.h"
 #include <stdlib.h>
 #include <functional>
 
@@ -12,8 +12,8 @@
 #define UNSUPPORTED_POST_CONDITION_NODE 3
 
 /* Function Pointer Types */
-typedef std::function<bool(long long)> condition_function;
-typedef std::function<long long(long long)> post_condition_function;
+typedef std::function<bool(long)> condition_function;
+typedef std::function<long(long)> post_condition_function;
 
 void unroll_loops();
 

@@ -26,7 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "types.h"
+#include "odin_types.h"
 #include "parse_making_ast.h"
 
 #define PARSE {printf("here\n");}
@@ -131,7 +131,7 @@ items:
 	;
 
 define:
-	vDEFINE vSYMBOL_ID vINTEGRAL				             {$$ = NULL; newConstant($2, newNumberNode($3, LONG_LONG, UNSIGNED, yylineno), yylineno);}
+	vDEFINE vSYMBOL_ID vINTEGRAL				             {$$ = NULL; newConstant($2, newNumberNode($3, LONG, UNSIGNED, yylineno), yylineno);}
   | vDEFINE vSYMBOL_ID vUNSIGNED_DECIMAL				   {$$ = NULL; newConstant($2, newNumberNode($3, DEC, UNSIGNED, yylineno), yylineno);}
   | vDEFINE vSYMBOL_ID vUNSIGNED_OCTAL				     {$$ = NULL; newConstant($2, newNumberNode($3, OCT, UNSIGNED, yylineno), yylineno);}
   | vDEFINE vSYMBOL_ID vUNSIGNED_HEXADECIMAL			 {$$ = NULL; newConstant($2, newNumberNode($3, HEX, UNSIGNED, yylineno), yylineno);}
@@ -498,7 +498,7 @@ expression:
 	;
 
 primary:
-  vINTEGRAL				                  {$$ = newNumberNode($1, LONG_LONG, UNSIGNED, yylineno);}
+  vINTEGRAL				                  {$$ = newNumberNode($1, LONG, UNSIGNED, yylineno);}
   | vUNSIGNED_DECIMAL				        {$$ = newNumberNode($1, DEC, UNSIGNED, yylineno);}
   | vUNSIGNED_OCTAL				          {$$ = newNumberNode($1, OCT, UNSIGNED, yylineno);}
   | vUNSIGNED_HEXADECIMAL			      {$$ = newNumberNode($1, HEX, UNSIGNED, yylineno);}

@@ -25,8 +25,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include <stdio.h>
 #include <string.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 #include "verilog_bison.h"
 #include "vtr_util.h"
 #include <string>
@@ -87,6 +87,7 @@ char* standardize_number(const char* input);
 <INITIAL>"wire"				{ MP; return vWIRE;}
 <INITIAL>"xnor"				{ MP; return vXNOR;}
 <INITIAL>"xor"				{ MP; return vXOR;}
+<INITIAL>"macromodule"		{ MP; return vMODULE;}
 
 	/*	unsupported Keywords	*/
 <INITIAL>"automatic"		{ MP; return vNOT_SUPPORT;}
@@ -96,7 +97,6 @@ char* standardize_number(const char* input);
 <INITIAL>"disable"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"edge"				{ MP; return vNOT_SUPPORT;}
 <INITIAL>"endtask"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"macromodule"		{ MP; return vNOT_SUPPORT;}
 <INITIAL>"scalared"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"specparam"		{ MP; return vNOT_SUPPORT;}
 <INITIAL>"bufif0"			{ MP; return vNOT_SUPPORT;}
@@ -225,7 +225,7 @@ char* standardize_number(const char* input);
 <INITIAL>"//"[^\n]*					{ MP; continue;}
 
 
-<*>.|\n		{ printf("Missing verilog.l rule: Default rule invoked in state %d: \"%s\"\n", YY_START, yytext);printf("Line %d: %s\n", yylineno, yytext); }
+<*>.|\n		{ printf("Missing verilog.l rule: Default rule invoked in state %d\nLine %d::\"%s\"\n", YY_START, yylineno, yytext); }
 
 %%
 

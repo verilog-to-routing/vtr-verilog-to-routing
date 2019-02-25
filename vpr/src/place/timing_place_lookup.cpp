@@ -29,6 +29,7 @@ using namespace std;
 #include "place_util.h"
 // all functions in profiling:: namespace, which are only activated if PROFILE is defined
 #include "route_profiling.h"
+#include "router_delay_profiling.h"
 
 constexpr float UNINITIALIZED_DELTA = -1; //Indicates the delta delay value has not been calculated
 constexpr float EMPTY_DELTA = -2; //Indicates delta delay from/to an EMPTY block
@@ -47,15 +48,6 @@ static vtr::Matrix<float> f_delta_delay;
 /*** Function Prototypes *****/
 static t_chan_width setup_chan_width(t_router_opts router_opts,
         t_chan_width_dist chan_width_dist);
-
-static void alloc_routing_structs(
-        t_chan_width chan_width,
-        t_router_opts router_opts,
-        t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
-        const t_direct_inf *directs,
-        const int num_directs);
-
-static void free_routing_structs();
 
 static float route_connection_delay(int source_x_loc, int source_y_loc,
         int sink_x_loc, int sink_y_loc,
@@ -87,11 +79,6 @@ static void print_matrix(std::string filename, const vtr::Matrix<float>& array_t
 static void fix_empty_coordinates();
 
 static float find_neightboring_average(vtr::Matrix<float> &matrix, int x, int y);
-
-static bool calculate_delay(int source_node, int sink_node,
-        const t_router_opts& router_opts, float *net_delay);
-
-static t_rt_node* setup_routing_resources_no_net(int source_node);
 
 static void adjust_delta_delays(t_placer_opts placer_opts);
 
@@ -211,54 +198,6 @@ static t_chan_width setup_chan_width(t_router_opts router_opts,
     return init_chan(width_fac, chan_width_dist);
 }
 
-static void alloc_routing_structs(
-        t_chan_width chan_width,
-        t_router_opts router_opts,
-        t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
-        const t_direct_inf *directs,
-        const int num_directs) {
-
-    int warnings;
-    t_graph_type graph_type;
-
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-
-    if (router_opts.route_type == GLOBAL) {
-        graph_type = GRAPH_GLOBAL;
-    } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ?
-                GRAPH_BIDIR : GRAPH_UNIDIR);
-    }
-
-    create_rr_graph(graph_type,
-            device_ctx.num_block_types,
-            device_ctx.block_types,
-            device_ctx.grid,
-            chan_width,
-            device_ctx.num_arch_switches,
-            det_routing_arch,
-            segment_inf,
-            router_opts.base_cost_type,
-            router_opts.trim_empty_channels,
-            router_opts.trim_obs_channels,
-            router_opts.clock_modeling,
-            router_opts.lookahead_type,
-            directs, num_directs,
-            &warnings);
-
-    alloc_and_load_rr_node_route_structs();
-
-    alloc_route_tree_timing_structs();
-}
-
-static void free_routing_structs() {
-
-    free_route_structs();
-    free_trace_structs();
-
-    free_route_tree_timing_structs();
-}
-
 static float route_connection_delay(int source_x, int source_y,
         int sink_x, int sink_y, t_router_opts router_opts) {
     //Routes between the source and sink locations and calculates the delay
@@ -357,6 +296,7 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
             }
         }
     }
+
 }
 
 static void compute_delta_delays(t_router_opts router_opts, size_t longest_length) {
@@ -604,101 +544,6 @@ static void print_delta_delays_echo(const char* filename) {
 }
 
 
-static t_rt_node* setup_routing_resources_no_net(int source_node) {
-
-    /* Build and return a partial route tree from the legal connections from last iteration.
-     * along the way do:
-     * 	update pathfinder costs to be accurate to the partial route tree
-     *	update the net's traceback to be accurate to the partial route tree
-     * 	find and store the pins that still need to be reached in incremental_rerouting_resources.remaining_targets
-     * 	find and store the rt nodes that have been reached in incremental_rerouting_resources.reached_rt_sinks
-     *	mark the rr_node sinks as targets to be reached */
-
-    t_rt_node* rt_root;
-
-    // for nets below a certain size (min_incremental_reroute_fanout), rip up any old routing
-    // otherwise, we incrementally reroute by reusing legal parts of the previous iteration
-    // convert the previous iteration's traceback into the starting route tree for this iteration
-
-    profiling::net_rerouted();
-
-    //    // rip up the whole net
-    //    pathfinder_update_path_cost(route_ctx.trace_head[inet], -1, 0);
-    //    free_traceback(inet);
-
-    rt_root = init_route_tree_to_source_no_net(source_node);
-
-    // completed constructing the partial route tree and updated all other data structures to match
-
-    return rt_root;
-}
-
-static bool calculate_delay(int source_node, int sink_node,
-        const t_router_opts& router_opts, float *net_delay) {
-
-    /* Returns true as long as found some way to hook up this net, even if that *
-     * way resulted in overuse of resources (congestion).  If there is no way   *
-     * to route this net, even ignoring congestion, it returns false.  In this  *
-     * case the rr_graph is disconnected and you can give up.                   */
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    t_rt_node* rt_root = setup_routing_resources_no_net(source_node);
-
-    /* Update base costs according to fanout and criticality rules */
-    update_rr_base_costs(1);
-
-    //maximum bounding box for placement
-    t_bb bounding_box;
-    bounding_box.xmin = 0;
-    bounding_box.xmax = device_ctx.grid.width() + 1;
-    bounding_box.ymin = 0;
-    bounding_box.ymax = device_ctx.grid.height() + 1;
-
-    t_conn_cost_params cost_params;
-    cost_params.criticality = 1.;
-    cost_params.astar_fac = router_opts.astar_fac;
-    cost_params.bend_cost = router_opts.bend_cost;
-
-    route_budgets budgeting_inf;
-
-
-    init_heap(device_ctx.grid);
-
-    std::vector<int> modified_rr_node_inf;
-    RouterStats router_stats;
-    auto router_lookahead = make_router_lookahead(router_opts.lookahead_type);
-    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, *router_lookahead, modified_rr_node_inf, router_stats);
-
-    if (cheapest == nullptr) {
-        return false;
-    }
-    VTR_ASSERT(cheapest->index == sink_node);
-
-    std::set<int> used_rr_nodes;
-    t_rt_node* rt_node_of_sink = update_route_tree(cheapest, nullptr);
-    free_heap_data(cheapest);
-    empty_heap();
-
-    //Reset path costs for the next router call
-    reset_path_costs(modified_rr_node_inf);
-
-    // finished all sinks
-
-    //find delay
-    *net_delay = rt_node_of_sink->Tdel;
-
-    if (*net_delay == 0) { // should be SOURCE->OPIN->IPIN->SINK
-        VTR_ASSERT(device_ctx.rr_nodes[rt_node_of_sink->parent_node->parent_node->inode].type() == OPIN);
-    }
-
-    VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(), "SOURCE should never be congested");
-
-    // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
-    free_route_tree(rt_root);
-    return (true);
-}
-
 static void adjust_delta_delays(t_placer_opts placer_opts) {
     //Apply a constant offset to the delay model
     for (size_t x = 0; x < f_delta_delay.dim_size(0); ++x) {
@@ -727,3 +572,4 @@ static void adjust_delta_delays(t_placer_opts placer_opts) {
         }
     }
 }
+

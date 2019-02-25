@@ -1,7 +1,7 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-#include "types.h"
+#include "odin_types.h"
 #include "string_cache.h"
 #include "read_xml_arch_file.h"
 
@@ -13,9 +13,9 @@ extern short to_view_parse;
 
 extern global_args_t global_args;
 extern config_t configuration;
-extern size_t current_parse_file;
+extern int current_parse_file;
 
-extern size_t num_modules;
+extern long num_modules;
 extern ast_node_t **ast_modules;
 extern STRING_CACHE *module_names_to_idx;
 
@@ -29,9 +29,9 @@ extern netlist_t *verilog_netlist;
 
 extern ast_node_t *top_module;
 extern nnode_t** top_input_nodes;
-extern size_t num_top_input_nodes;
+extern long num_top_input_nodes;
 extern nnode_t** top_output_nodes;
-extern size_t num_top_output_nodes;
+extern long num_top_output_nodes;
 extern nnode_t *gnd_node;
 extern nnode_t *vcc_node;
 extern nnode_t *pad_node;
@@ -51,7 +51,7 @@ extern netlist_t *blif_netlist;
 extern netlist_t *read_blif_netlist;
 extern global_args_read_blif_t global_args_read_blif;
 
-extern size_t file_line_number;
+extern long file_line_number;
 
 #endif
 

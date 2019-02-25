@@ -33,8 +33,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <sstream>
 
-#include "globals.h"
-#include "types.h"
+#include "odin_globals.h"
+#include "odin_types.h"
 
 #include "simulate_blif.h"
 #include "odin_ii.h"

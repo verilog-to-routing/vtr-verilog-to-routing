@@ -3,8 +3,8 @@
 #include <string.h>
 
 /* Odin_II libraries */
-#include "globals.h"
-#include "types.h"
+#include "odin_globals.h"
+#include "odin_types.h"
 #include "ast_util.h"
 #include "parse_making_ast.h"
 #include "odin_util.h"
@@ -18,7 +18,7 @@
 void unroll_loops()
 {
     /* preprocess each module */
-	size_t i;
+	long i;
 	for (i = 0; i < num_modules; i++)
 	{
         ast_node_t* module = for_preprocessor(ast_modules[i]);
@@ -36,7 +36,7 @@ ast_node_t* for_preprocessor(ast_node_t* node)
     if(!node)
         return nullptr;
     /* If this is a for node, something has gone wrong */
-    oassert(!is_for_node(node))
+    oassert(!is_for_node(node));
     
     /* If this node has for loops as children, replace them */
     bool for_loops = false;
@@ -100,20 +100,20 @@ ast_node_t* resolve_for(ast_node_t* node)
     ast_node_t* value = 0;
     if(resolve_pre_condition(pre, &value))
     {
-        error_message(PARSE_ERROR, pre->line_number, pre->file_number, "Unsupported pre-condition node in for loop");
+        error_message(PARSE_ERROR, pre->line_number, pre->file_number, "%s", "Unsupported pre-condition node in for loop");
     }
 
     int error_code = 0;
     condition_function cond_func = resolve_condition(cond, pre->children[0], &error_code);
     if(error_code)
     {
-        error_message(PARSE_ERROR, cond->line_number, cond->file_number, "Unsupported condition node in for loop");
+        error_message(PARSE_ERROR, cond->line_number, cond->file_number, "%s", "Unsupported condition node in for loop");
     }
 
     post_condition_function post_func = resolve_post_condition(post, pre->children[0], &error_code);
     if(error_code)
     {
-        error_message(PARSE_ERROR, post->line_number, post->file_number, "Unsupported post-condition node in for loop");
+        error_message(PARSE_ERROR, post->line_number, post->file_number, "%s", "Unsupported post-condition node in for loop");
     }
     bool dup_body = cond_func(value->types.number.value);
     while(dup_body)
@@ -121,7 +121,7 @@ ast_node_t* resolve_for(ast_node_t* node)
         ast_node_t* new_body = dup_and_fill_body(body, pre->children[0], &value, &error_code);
         if(error_code)
         {
-            error_message(PARSE_ERROR, pre->line_number, pre->file_number, "Unsupported pre-condition node in for loop");
+            error_message(PARSE_ERROR, pre->line_number, pre->file_number, "%s", "Unsupported pre-condition node in for loop");
         }
         value->types.number.value = post_func(value->types.number.value);
         body_parent = body_parent ? newList_entry(body_parent, new_body) : newList(BLOCK, new_body);
@@ -235,7 +235,7 @@ condition_function resolve_condition(ast_node_t* node, ast_node_t* symbol, int* 
             right = resolve_condition(node->children[1], symbol, error_code);
             if(*error_code)
                 return nullptr;
-            return [=](long long value) {
+            return [=](long value) {
                 return (left(value) || right(value));
             };
         case LOGICAL_AND:
@@ -245,14 +245,14 @@ condition_function resolve_condition(ast_node_t* node, ast_node_t* symbol, int* 
             right = resolve_condition(node->children[1], symbol, error_code);
             if(*error_code)
                 return nullptr;
-            return [=](long long value) {
+            return [=](long value) {
                 return (left(value) && right(value));
             };
         case LOGICAL_NOT:
             inner = resolve_condition(node->children[0], symbol, error_code);
             if(*error_code) 
                 return nullptr;
-            return [=](long long value) {
+            return [=](long value) {
                 bool inner_true = inner(value);
                 return !inner_true;
             };
@@ -260,7 +260,7 @@ condition_function resolve_condition(ast_node_t* node, ast_node_t* symbol, int* 
             break;
     }
     /* Non-recursive calls can type check in the lambda to save copy/paste */
-    return [=](long long value) {
+    return [=](long value) {
         switch(node->types.operation.op){
             case LT:
                 return value <  node->children[1]->types.number.value;
@@ -309,7 +309,7 @@ bool is_unsupported_post(ast_node_t* node, ast_node_t* symbol){
 post_condition_function resolve_binary_operation(ast_node_t* node)
 {
     if(node->type == NUMBERS){
-        return [=](long long value){
+        return [=](long value){
             /* 
              * this lambda triggers a warning for unused variable unless
              * we use value to generate a 0
@@ -317,11 +317,11 @@ post_condition_function resolve_binary_operation(ast_node_t* node)
             return node->types.number.value + (value - value);
         };
     } else if (node->type == IDENTIFIERS) {
-        return [=](long long value){
+        return [=](long value){
             return value;
         };
     } else {
-        return [=](long long value) {
+        return [=](long value) {
             post_condition_function left_func = resolve_binary_operation(node->children[0]);
             post_condition_function right_func = resolve_binary_operation(node->children[1]);
             switch(node->types.operation.op){
@@ -334,7 +334,7 @@ post_condition_function resolve_binary_operation(ast_node_t* node)
                 case DIVIDE:
                     return left_func(value) / right_func(value);
                 default:
-                    return 0ll;
+                    return 0x0L;
             }
         };
     }

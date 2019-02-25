@@ -165,6 +165,20 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats);
     
+static std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(
+        const t_conn_cost_params cost_params,
+        t_bb bounding_box,
+        std::vector<int>& modified_rr_node_inf,
+        RouterStats& router_stats);
+
+static void timing_driven_expand_cheapest(t_heap* cheapest,
+                                           int target_node,
+                                           const t_conn_cost_params cost_params,
+                                           t_bb bounding_box,
+                                           const RouterLookahead& router_lookahead,
+                                           std::vector<int>& modified_rr_node_inf,
+                                           RouterStats& router_stats);
+
 static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout,
         CBRR& incremental_rerouting_res, t_rt_node** rt_node_of_sink);
 
@@ -1208,72 +1222,176 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
         const RouterLookahead& router_lookahead,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats) {
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     VTR_ASSERT_SAFE(heap_::is_valid());
 
-    // cheapest t_heap in current route tree to be expanded on
-    t_heap * cheapest{get_heap_head()};
-    ++router_stats.heap_pops;
 
-    if (cheapest == nullptr) { //No source
+    if (is_empty_heap()) { //No source
         VTR_LOGV_DEBUG(f_router_debug, "  Initial heap empty (no source)\n");
-        return nullptr;
     }
 
-    int inode = cheapest->index;
-    VTR_LOGV_DEBUG(f_router_debug, "  Popping node %d\n", inode);
-    while (inode != sink_node) {
-        float old_total_cost = route_ctx.rr_node_route_inf[inode].path_cost;
-        float old_back_cost = route_ctx.rr_node_route_inf[inode].backward_path_cost;
+    t_heap* cheapest = nullptr;
+    while (!is_empty_heap()) {
 
-        float new_total_cost = cheapest->cost;
-        float new_back_cost = cheapest->backward_path_cost;
-
-        /* I only re-expand a node if both the "known" backward cost is lower  *
-         * in the new expansion (this is necessary to prevent loops from       *
-         * forming in the routing and causing havoc) *and* the expected total  *
-         * cost to the sink is lower than the old value.  Different R_upstream *
-         * values could make a path with lower back_path_cost less desirable   *
-         * than one with higher cost.  Test whether or not I should disallow   *
-         * re-expansion based on a higher total cost.                          */
-
-        if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
-
-            VTR_LOGV_DEBUG(f_router_debug, "    Better cost to %d\n", inode);
-            for (t_heap_prev prev : cheapest->previous) {
-                VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for assicated node %d (from %d edge %d)\n", prev.to_node, prev.from_node, prev.from_edge);
-
-                add_to_mod_list(prev.to_node, modified_rr_node_inf);
-
-                route_ctx.rr_node_route_inf[prev.to_node].prev_node = prev.from_node;
-                route_ctx.rr_node_route_inf[prev.to_node].prev_edge = prev.from_edge;
-                route_ctx.rr_node_route_inf[prev.to_node].path_cost = new_total_cost;
-                route_ctx.rr_node_route_inf[prev.to_node].backward_path_cost = new_back_cost;
-            }
-
-            timing_driven_expand_neighbours(cheapest, cost_params, bounding_box,
-                    router_lookahead,
-                    sink_node,
-                    router_stats);
-        }
-
-        free_heap_data(cheapest);
+        // cheapest t_heap in current route tree to be expanded on
         cheapest = get_heap_head();
         ++router_stats.heap_pops;
 
-        if (cheapest == nullptr) { /* Impossible routing.  No path for net. */
-            VTR_LOGV_DEBUG(f_router_debug, "  Empty heap (no path found)\n");
-            return nullptr;
+        int inode = cheapest->index;
+        VTR_LOGV_DEBUG(f_router_debug, "  Popping node %d\n", inode);
+
+        //Have we found the target?
+        if (inode == sink_node) {
+            VTR_LOGV_DEBUG(f_router_debug, "  Found target %8d (%s)\n", inode, describe_rr_node(inode).c_str());
+            break;
         }
 
-        inode = cheapest->index;
-        VTR_LOGV_DEBUG(f_router_debug, "  Popping node %d\n", inode);
+        //If not, keep searching
+        timing_driven_expand_cheapest(cheapest,
+                                      sink_node,
+                                      cost_params,
+                                      bounding_box,
+                                      router_lookahead,
+                                      modified_rr_node_inf,
+                                      router_stats);
+
+        free_heap_data(cheapest);
+        cheapest = nullptr;
     }
-    VTR_LOGV_DEBUG(f_router_debug, "  Found target %8d (%s)\n", inode, describe_rr_node(inode).c_str());
+
+    if (cheapest == nullptr) { /* Impossible routing.  No path for net. */
+        VTR_LOGV_DEBUG(f_router_debug, "  Empty heap (no path found)\n");
+        return nullptr;
+    }
 
     return cheapest;
 }
+
+//Find shortest paths from specified route tree to all nodes in the RR graph
+std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
+        t_rt_node* rt_root,
+        const t_conn_cost_params cost_params,
+        t_bb bounding_box,
+        std::vector<int>& modified_rr_node_inf,
+        RouterStats& router_stats) {
+
+    //Add the route tree to the heap with no specific target node
+    int target_node = OPEN;
+    auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP);
+    add_route_tree_to_heap(rt_root, target_node, cost_params, *router_lookahead, router_stats);
+    heap_::build_heap(); // via sifting down everything
+
+    auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box, modified_rr_node_inf, router_stats);
+
+    return res;
+}
+
+//Find shortest paths from current heap to all nodes in the RR graph
+//
+//Since there is no single *target* node this uses Dijkstra's algorithm
+//with a modified exit condition (runs until heap is empty).
+//
+//Note that to re-use code used for the regular A*-based router we use a
+//no-operation lookahead which always returns zero.
+static std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(
+        const t_conn_cost_params cost_params,
+        t_bb bounding_box,
+        std::vector<int>& modified_rr_node_inf,
+        RouterStats& router_stats) {
+    auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP);
+
+    auto& device_ctx = g_vpr_ctx.device();
+    std::vector<t_heap> cheapest_paths(device_ctx.rr_nodes.size());
+
+    VTR_ASSERT_SAFE(heap_::is_valid());
+
+    if (is_empty_heap()) { //No source
+        VTR_LOGV_DEBUG(f_router_debug, "  Initial heap empty (no source)\n");
+    }
+
+    while (!is_empty_heap()) {
+
+        // cheapest t_heap in current route tree to be expanded on
+        t_heap* cheapest = get_heap_head();
+        ++router_stats.heap_pops;
+
+        int inode = cheapest->index;
+        VTR_LOGV_DEBUG(f_router_debug, "  Popping node %d\n", inode);
+
+        //Since we want to find shortest paths to all nodes in the graph
+        //we do not specify a target node.
+        //
+        //By setting the target_node to OPEN in combination with the NoOp router
+        //lookahead we can re-use the node exploration code from the regular router
+        int target_node = OPEN;
+
+        timing_driven_expand_cheapest(cheapest,
+                                      target_node,
+                                      cost_params,
+                                      bounding_box,
+                                      *router_lookahead,
+                                      modified_rr_node_inf,
+                                      router_stats);
+
+        if (cheapest_paths[inode].index == OPEN || cheapest_paths[inode].cost >= cheapest->cost) {
+            VTR_LOGV_DEBUG(f_router_debug, "  Better cost to node %d: %g (was %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
+            cheapest_paths[inode] = *cheapest;
+        } else {
+            VTR_LOGV_DEBUG(f_router_debug, "  Worse cost to node %d: %g (better %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
+        }
+
+        free_heap_data(cheapest);
+    }
+
+    return cheapest_paths;
+}
+
+static void timing_driven_expand_cheapest(t_heap* cheapest,
+                                          int target_node,
+                                          const t_conn_cost_params cost_params,
+                                          t_bb bounding_box,
+                                          const RouterLookahead& router_lookahead,
+                                          std::vector<int>& modified_rr_node_inf,
+                                          RouterStats& router_stats) {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    int inode = cheapest->index;
+
+    float old_total_cost = route_ctx.rr_node_route_inf[inode].path_cost;
+    float old_back_cost = route_ctx.rr_node_route_inf[inode].backward_path_cost;
+
+    float new_total_cost = cheapest->cost;
+    float new_back_cost = cheapest->backward_path_cost;
+
+    /* I only re-expand a node if both the "known" backward cost is lower  *
+     * in the new expansion (this is necessary to prevent loops from       *
+     * forming in the routing and causing havoc) *and* the expected total  *
+     * cost to the sink is lower than the old value.  Different R_upstream *
+     * values could make a path with lower back_path_cost less desirable   *
+     * than one with higher cost.  Test whether or not I should disallow   *
+     * re-expansion based on a higher total cost.                          */
+
+    if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
+
+        VTR_LOGV_DEBUG(f_router_debug, "    Better cost to %d\n", inode);
+        for (t_heap_prev prev : cheapest->previous) {
+            VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for assicated node %d (from %d edge %d)\n", prev.to_node, prev.from_node, prev.from_edge);
+
+            add_to_mod_list(prev.to_node, modified_rr_node_inf);
+
+            route_ctx.rr_node_route_inf[prev.to_node].prev_node = prev.from_node;
+            route_ctx.rr_node_route_inf[prev.to_node].prev_edge = prev.from_edge;
+            route_ctx.rr_node_route_inf[prev.to_node].path_cost = new_total_cost;
+            route_ctx.rr_node_route_inf[prev.to_node].backward_path_cost = new_back_cost;
+        }
+
+        timing_driven_expand_neighbours(cheapest, cost_params, bounding_box,
+                router_lookahead,
+                target_node,
+                router_stats);
+    }
+}
+
 
 static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigned num_sinks, float pres_fac,
         int min_incremental_reroute_fanout,
@@ -1591,10 +1709,16 @@ static void timing_driven_expand_neighbours(t_heap *current,
 
     int inode = current->index;
 
-    int target_xlow = device_ctx.rr_nodes[target_node].xlow();
-    int target_ylow = device_ctx.rr_nodes[target_node].ylow();
-    int target_xhigh = device_ctx.rr_nodes[target_node].xhigh();
-    int target_yhigh = device_ctx.rr_nodes[target_node].yhigh();
+    int target_xlow = OPEN;
+    int target_ylow = OPEN;
+    int target_xhigh = OPEN;
+    int target_yhigh = OPEN;
+    if (target_node != OPEN) {
+        target_xlow = device_ctx.rr_nodes[target_node].xlow();
+        target_ylow = device_ctx.rr_nodes[target_node].ylow();
+        target_xhigh = device_ctx.rr_nodes[target_node].xhigh();
+        target_yhigh = device_ctx.rr_nodes[target_node].yhigh();
+    }
 
     int num_edges = device_ctx.rr_nodes[inode].num_edges();
     for (int iconn = 0; iconn < num_edges; iconn++) {
@@ -1617,15 +1741,17 @@ static void timing_driven_expand_neighbours(t_heap *current,
          * the issue of how to cost them properly so they don't get expanded before *
          * more promising routes, but makes route-throughs (via CLBs) impossible.   *
          * Change this if you want to investigate route-throughs.                   */
-        t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
-        if (to_type == IPIN) {
-            //Check if this IPIN leads to the target block
-            // IPIN's of the target block should be contained within it's bounding box
-            if (   to_xlow < target_xlow
-                || to_ylow < target_ylow
-                || to_xhigh > target_xhigh
-                || to_yhigh > target_yhigh) {
-                continue;
+        if (target_node != OPEN) {
+            t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
+            if (to_type == IPIN) {
+                //Check if this IPIN leads to the target block
+                // IPIN's of the target block should be contained within it's bounding box
+                if (   to_xlow < target_xlow
+                    || to_ylow < target_ylow
+                    || to_xhigh > target_xhigh
+                    || to_yhigh > target_yhigh) {
+                    continue;
+                }
             }
         }
 

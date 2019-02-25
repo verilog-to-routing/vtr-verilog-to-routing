@@ -34,15 +34,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include <queue>
 #include "sim_block.h"
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 
 #include "netlist_utils.h"
 #include "odin_util.h"
 
 #include "multipliers.h"
 #include "hard_blocks.h"
-#include "types.h"
+#include "odin_types.h"
 #include "memories.h"
 #include "ace.h"
 
@@ -54,9 +54,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define OUTPUT_VECTOR_FILE_NAME "output_vectors"
 #define OUTPUT_ACTIVITY_FILE_NAME "output_activity"
 #define MODEL_SIM_FILE_NAME "test.do"
-
-#define SINGLE_PORT_MEMORY_NAME "single_port_ram"
-#define DUAL_PORT_MEMORY_NAME "dual_port_ram"
 
 #define DEFAULT_CLOCK_NAME "GLOBAL_SIM_BASE_CLK"
 
@@ -126,7 +123,7 @@ typedef struct sim_data_t_t
 	FILE *act_out;
 	FILE *modelsim_out;
 	FILE *in  = NULL;
-	int num_vectors;
+	long num_vectors;
 	char *input_vector_file;
 
 	double total_time; // Includes I/O

@@ -1,5 +1,5 @@
 #include "odin_ii.h"
-#include "types.h"
+#include "odin_types.h"
 #include "vtr_time.h"
 
 int main(int argc, char **argv)
