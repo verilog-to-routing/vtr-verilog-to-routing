@@ -309,6 +309,18 @@ static LogicVec lut_outputs(const t_pb* atom_pb, size_t num_inputs, const t_pb_r
     return lut.table();
 }
 
+static std::vector<std::string> split_fasm_entry(std::string entry,
+                                                 std::string delims,
+                                                 std::string ignore) {
+  for (size_t ii=0; ii<entry.length(); ii++) {
+    while (ignore.find(entry[ii]) != std::string::npos) {
+      entry.erase(ii, 1);
+    }
+  }
+
+  return vtr::split(entry, delims);
+}
+
 static const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node, std::string target_type) {
   if(pb_graph_node == nullptr) {
     return nullptr;
@@ -361,7 +373,7 @@ const LutOutputDefinition* FasmWriterVisitor::find_lut(const t_pb_graph_node* pb
       if(meta != nullptr) {
         VTR_ASSERT(meta->has("fasm_lut"));
         std::string fasm_lut = meta->one("fasm_lut")->as_string();
-        auto lut_parts = vtr::split(vtr::replace_all(fasm_lut, " ", ""), "\n");
+        auto lut_parts = split_fasm_entry(fasm_lut, "\n", "\t ");
         if(__builtin_popcount(lut_parts.size()) != 1) {
           vpr_throw(VPR_ERROR_OTHER,
                     __FILE__, __LINE__,
@@ -449,7 +461,7 @@ void FasmWriterVisitor::check_for_param(const t_pb *atom) {
         Parameters params;
         std::string fasm_params = meta->one("fasm_params")->as_string();
         for(const auto param : vtr::split(fasm_params, "\n")) {
-            auto param_parts = vtr::split(vtr::replace_all(param, " ", ""), "=");
+          auto param_parts = split_fasm_entry(param, "=", "\t ");
             if(param_parts.size() == 0) {
                 continue;
             }
@@ -559,7 +571,7 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
     auto pin_index = mux_input_pin->pin_number;
     auto mux_inputs = vtr::split(fasm_mux, "\n");
     for(const auto &mux_input : mux_inputs) {
-      auto mux_parts = vtr::split(vtr::replace_all(mux_input, " ", ""), "=");
+      auto mux_parts = split_fasm_entry(mux_input, "=", "\t ");
 
       if(mux_parts.size() == 0) {
         // Swallow whitespace.
