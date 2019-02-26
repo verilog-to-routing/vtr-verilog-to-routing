@@ -881,25 +881,24 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 							cur_was_last_inserted = (last_valid_iter->second == cur_molecule);
 						}
 						if(range_empty || !cur_was_last_inserted) {
-						    /* molecule did not cover current atom (possibly because molecule created is
-						     * part of a long chain that extends past multiple logic blocks), try again */
-						    --blk_iter;
+							/* molecule did not cover current atom (possibly because molecule created is
+							 * part of a long chain that extends past multiple logic blocks), try again */
+							--blk_iter;
 						} else if(is_chain) {
 							/* try_pack_molecule function can pack more than one atom */
-							blk_iter += num_packed_atoms;
-							blk_id = *(blk_iter);
 							/* check if we packed last atom of a chain */
-							if(blk_iter == blocks.end()) {
-								/* no more atoms to pack */
-								cur_was_last_inserted = true;
-							} else {
-								/* check if the next block is a part of the chain we're currently packing */
-								if((check_blocks_in_chain(*(blk_iter-1), *(blk_iter), &list_of_pack_patterns[best_pattern]))) {
-									cur_was_last_inserted = false;
+							int num_blocks = cur_molecule->num_blocks;
+							auto last_block = cur_molecule->atom_block_ids[num_blocks-1];
+
+							/* Getting the next blk_id in the chain. If there is not the chain is completed */
+							blk_id = AtomBlockId::INVALID();
+							for (auto iter = blk_iter+1; iter != blocks.end(); iter++) {
+								if ((check_blocks_in_chain(last_block, *(iter), &list_of_pack_patterns[best_pattern]))) {
+									blk_id = *(iter);
 								}
 							}
-							/* compensate loop increment */
-							if(cur_was_last_inserted && !(blk_iter == blocks.end())) blk_iter--;
+
+							cur_was_last_inserted = blk_id == AtomBlockId::INVALID() ? true : false;
 						}
 					}
 				} while(!cur_was_last_inserted); //continue until we pack the whole chain
