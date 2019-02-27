@@ -3576,7 +3576,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 		}
 	}
 	free_signal_list(memory_inputs);
-
+	free_signal_list(potential_clocks);
 	free_signal_list(assignment);
 }
 
