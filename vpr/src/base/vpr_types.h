@@ -732,16 +732,17 @@ struct t_packer_opts {
 	float alpha;
 	float beta;
 	float inter_cluster_net_delay;
-    float target_device_utilization;
+	float target_device_utilization;
 	bool auto_compute_inter_cluster_net_delay;
 	bool allow_unrelated_clustering;
 	bool connection_driven;
 	bool debug_clustering;
-    bool enable_pin_feasibility_filter;
-    t_ext_pin_util_targets target_external_pin_util;
+	bool enable_pin_feasibility_filter;
+	bool enable_round_robin_prepacking;
+	t_ext_pin_util_targets target_external_pin_util;
 	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;
-    std::string device_layout;
+	std::string device_layout;
 	std::string hmetis_input_file;
 };
 
@@ -1162,7 +1163,7 @@ struct t_vpr_setup {
 	t_placer_opts PlacerOpts; /* Options for placer */
 	t_annealing_sched AnnealSched; /* Placement option annealing schedule */
 	t_router_opts RouterOpts; /* router options */
-    t_analysis_opts AnalysisOpts; /* Analysis options */
+	t_analysis_opts AnalysisOpts; /* Analysis options */
 	t_det_routing_arch RoutingArch; /* routing architecture */
 	std::vector <t_lb_type_rr_node> *PackerRRGraph;
 	t_segment_inf * Segments; /* wires in routing architecture */
@@ -1172,9 +1173,9 @@ struct t_vpr_setup {
 	bool gen_netlist_as_blif; /* option to print out post-pack/pre-place netlist as blif */
 	int GraphPause; /* user interactiveness graphics option */
 	t_power_opts PowerOpts;
-    std::string device_layout;
-    e_constant_net_method constant_net_method; //How constant nets should be handled
-    e_clock_modeling clock_modeling; //How clocks should be handled
+	std::string device_layout;
+	e_constant_net_method constant_net_method; //How constant nets should be handled
+	e_clock_modeling clock_modeling; //How clocks should be handled
 };
 
 class RouteStatus {
