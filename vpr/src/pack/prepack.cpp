@@ -821,15 +821,82 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 	t_pack_molecule *cur_molecule;
 	auto& atom_ctx = g_vpr_ctx.atom();
 	int best_pattern;
-	bool *is_used;
 
+	bool *is_used;
 	is_used = (bool*)vtr::calloc(num_packing_patterns, sizeof(bool));
+
 
 	cur_molecule = list_of_molecules_head = nullptr;
 	std::vector<bool> feasible_patterns(num_packing_patterns);
 
 	auto blocks = atom_ctx.nlist.blocks();
 
+	/* Packing CHAIN molecules only */
+	for(auto blk_iter = blocks.begin(); blk_iter != blocks.end(); ++blk_iter) {
+		auto blk_id = *blk_iter;
+
+		/* Find forced pack patterns
+		 * Simplifying assumptions: Each atom can map to at most one molecule
+		*/
+		for (int pattern = 0; pattern < num_packing_patterns; pattern++) {
+			feasible_patterns[pattern] = check_atom_feasible_for_pattern(blk_id, &list_of_pack_patterns[pattern]);
+		}
+
+		// Checking if the pattern is relative to a chain. If yes than use it, otherwise use the best_pattern previously found
+		best_pattern = find_best_pattern(blk_id, list_of_pack_patterns, feasible_patterns, num_packing_patterns, atom_molecules);
+
+		if (list_of_pack_patterns[best_pattern].is_chain == false)
+			continue;
+
+		if (best_pattern >= 0) {
+			bool cur_was_last_inserted = true;
+			int num_packed_atoms = 0;
+			do {
+				cur_molecule = try_create_molecule(list_of_pack_patterns, atom_molecules, best_pattern, blk_id, &num_packed_atoms);
+				if(cur_molecule != nullptr) {
+					list_of_pack_patterns[best_pattern].usage++;
+					cur_molecule->next = list_of_molecules_head;
+					/* In the event of multiple molecules with the same atom block pattern,
+					 * bias to use the molecule with less costly physical resources first */
+					/* TODO: Need to normalize magical number 100 */
+					cur_molecule->base_gain = cur_molecule->num_blocks - (cur_molecule->pack_pattern->base_cost / 100);
+					list_of_molecules_head = cur_molecule;
+
+					//Note: atom_molecules is an (ordered) multimap so the last molecule
+					//      inserted for a given blk_id will be the last valid element
+					//      in the equal_range
+					auto rng = atom_molecules.equal_range(blk_id); //The range of molecules matching this block
+					bool range_empty = (rng.first == rng.second);
+					if (!range_empty) {
+						auto last_valid_iter = --rng.second; //Iterator to last element (only valid if range is not empty)
+						cur_was_last_inserted = (last_valid_iter->second == cur_molecule);
+					}
+					if (range_empty || !cur_was_last_inserted) {
+					    /* molecule did not cover current atom (possibly because molecule created is
+					     * part of a long chain that extends past multiple logic blocks), try again */
+					    --blk_iter;
+					} else {
+						/* try_pack_molecule function can pack more than one atom */
+						/* check if we packed last atom of a chain */
+						int num_blocks = cur_molecule->num_blocks;
+						auto last_block = cur_molecule->atom_block_ids[num_blocks-1];
+
+						/* Getting the next blk_id in the chain. If there is not the chain is completed */
+						blk_id = AtomBlockId::INVALID();
+						for (auto iter = blk_iter+1; iter != blocks.end(); iter++) {
+							if ((check_blocks_in_chain(last_block, *(iter), &list_of_pack_patterns[best_pattern]))) {
+								blk_id = *(iter);
+							}
+						}
+
+						cur_was_last_inserted = blk_id == AtomBlockId::INVALID() ? true : false;
+					}
+				}
+			} while(!cur_was_last_inserted); //continue until we pack the whole chain
+		}
+	}
+
+	/* Packing NON-CHAIN molecules */
 	for (int i = 0; i < num_packing_patterns; i++) {
 		best_pattern = 0;
 		for(int j = 1; j < num_packing_patterns; j++) {
@@ -842,72 +909,41 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 		VTR_ASSERT(is_used[best_pattern] == false);
 		is_used[best_pattern] = true;
 
-		for(auto blk_iter = blocks.begin(); blk_iter != blocks.end(); ++blk_iter) {
-        	auto blk_id = *blk_iter;
+		if (list_of_pack_patterns[best_pattern].is_chain == true)
+			continue;
 
-			/* Find forced pack patterns
-			 * Simplifying assumptions: Each atom can map to at most one molecule,
-			 */
-			for (int pattern = 0; pattern < num_packing_patterns; pattern++) {
-				feasible_patterns[pattern] = check_atom_feasible_for_pattern(blk_id, &list_of_pack_patterns[pattern]);
-			}
+		for (auto blk_iter = blocks.begin(); blk_iter != blocks.end(); ++blk_iter) {
+			auto blk_id = *blk_iter;
+			int num_packed_atoms;
+			cur_molecule = try_create_molecule(list_of_pack_patterns, atom_molecules, best_pattern, blk_id, &num_packed_atoms);
+			if (cur_molecule != nullptr) {
+				cur_molecule->next = list_of_molecules_head;
+				/* In the event of multiple molecules with the same atom block pattern,
+				 * bias to use the molecule with less costly physical resources first */
+				/* TODO: Need to normalize magical number 100 */
+				cur_molecule->base_gain = cur_molecule->num_blocks - (cur_molecule->pack_pattern->base_cost / 100);
+				list_of_molecules_head = cur_molecule;
 
-			// Checking if the pattern is relative to a chain. If yes than use it, otherwise use the best_pattern previously found
-			int tmp_best_pattern = find_best_pattern(blk_id, list_of_pack_patterns, feasible_patterns, num_packing_patterns, atom_molecules);
-			bool is_chain = tmp_best_pattern >= 0 ? list_of_pack_patterns[tmp_best_pattern].is_chain : false;
-			if(is_chain) best_pattern = tmp_best_pattern;
-
-			if(best_pattern >= 0) {
-				bool cur_was_last_inserted = true;
-				int num_packed_atoms = 0;
-				do {
-					cur_molecule = try_create_molecule(list_of_pack_patterns, atom_molecules, best_pattern, blk_id, &num_packed_atoms);
-					if(cur_molecule != nullptr) {
-						list_of_pack_patterns[best_pattern].usage++;
-						cur_molecule->next = list_of_molecules_head;
-						/* In the event of multiple molecules with the same atom block pattern,
-						 * bias to use the molecule with less costly physical resources first */
-						/* TODO: Need to normalize magical number 100 */
-						cur_molecule->base_gain = cur_molecule->num_blocks - (cur_molecule->pack_pattern->base_cost / 100);
-						list_of_molecules_head = cur_molecule;
-
-						//Note: atom_molecules is an (ordered) multimap so the last molecule
-						//      inserted for a given blk_id will be the last valid element
-						//      in the equal_range
-						auto rng = atom_molecules.equal_range(blk_id); //The range of molecules matching this block
-						bool range_empty = (rng.first == rng.second);
-						if (!range_empty) {
-							auto last_valid_iter = --rng.second; //Iterator to last element (only valid if range is not empty)
-							cur_was_last_inserted = (last_valid_iter->second == cur_molecule);
-						}
-						if(range_empty || !cur_was_last_inserted) {
-							/* molecule did not cover current atom (possibly because molecule created is
-							 * part of a long chain that extends past multiple logic blocks), try again */
-							--blk_iter;
-						} else if(is_chain) {
-							/* try_pack_molecule function can pack more than one atom */
-							/* check if we packed last atom of a chain */
-							int num_blocks = cur_molecule->num_blocks;
-							auto last_block = cur_molecule->atom_block_ids[num_blocks-1];
-
-							/* Getting the next blk_id in the chain. If there is not the chain is completed */
-							blk_id = AtomBlockId::INVALID();
-							for (auto iter = blk_iter+1; iter != blocks.end(); iter++) {
-								if ((check_blocks_in_chain(last_block, *(iter), &list_of_pack_patterns[best_pattern]))) {
-									blk_id = *(iter);
-								}
-							}
-
-							cur_was_last_inserted = blk_id == AtomBlockId::INVALID() ? true : false;
-						}
-					}
-				} while(!cur_was_last_inserted); //continue until we pack the whole chain
+				//Note: atom_molecules is an (ordered) multimap so the last molecule
+				//      inserted for a given blk_id will be the last valid element
+				//      in the equal_range
+				auto rng = atom_molecules.equal_range(blk_id); //The range of molecules matching this block
+				bool range_empty = (rng.first == rng.second);
+				bool cur_was_last_inserted = false;
+				if (!range_empty) {
+				    auto last_valid_iter = --rng.second; //Iterator to last element (only valid if range is not empty)
+				    cur_was_last_inserted = (last_valid_iter->second == cur_molecule);
+				}
+				if (range_empty || !cur_was_last_inserted) {
+				    /* molecule did not cover current atom (possibly because molecule created is
+				     * part of a long chain that extends past multiple logic blocks), try again */
+				    --blk_iter;
+				}
 			}
 		}
 	}
 
 	free(is_used);
-
 
 	/* List all atom blocks as a molecule for blocks that do not belong to any molecules.
 	 This allows the packer to be consistent as it now packs molecules only instead of atoms and molecules
@@ -915,14 +951,12 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 	 If a block belongs to a molecule, then carrying the single atoms around can make the packing problem
 	 more difficult because now it needs to consider splitting molecules.
 	 */
-    for(auto blk_id : atom_ctx.nlist.blocks()) {
+	for(auto blk_id : atom_ctx.nlist.blocks()) {
 
-        expected_lowest_cost_pb_gnode[blk_id] = get_expected_lowest_cost_primitive_for_atom_block(blk_id);
+		expected_lowest_cost_pb_gnode[blk_id] = get_expected_lowest_cost_primitive_for_atom_block(blk_id);
+		auto rng = atom_molecules.equal_range(blk_id);
 
-        auto rng = atom_molecules.equal_range(blk_id);
-
-
-        bool rng_empty = (rng.first == rng.second);
+		bool rng_empty = (rng.first == rng.second);
 		if (rng_empty) {
 			cur_molecule = new t_pack_molecule;
 			cur_molecule->valid = true;
@@ -933,13 +967,13 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->chain_pattern = nullptr;
 			cur_molecule->pack_pattern = nullptr;
 
-            cur_molecule->atom_block_ids = {blk_id};
+			cur_molecule->atom_block_ids = {blk_id};
 
 			cur_molecule->next = list_of_molecules_head;
 			cur_molecule->base_gain = 1;
 			list_of_molecules_head = cur_molecule;
 
-            atom_molecules.insert({blk_id, cur_molecule});
+			atom_molecules.insert({blk_id, cur_molecule});
 		}
 	}
 
