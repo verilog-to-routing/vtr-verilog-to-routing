@@ -45,7 +45,6 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
 
     root_clb_ = clb->pb_graph_node;
 
-    auto *pb_type = clb->pb_graph_node->pb_type;
     int x = place_ctx.block_locs[blk_id].x;
     int y = place_ctx.block_locs[blk_id].y;
     auto &grid_loc = device_ctx.grid[x][y];
@@ -57,13 +56,6 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
         grid_prefix = grid_loc.meta->get("fasm_prefix")->front().as_string();
     } else {
       current_blk_has_prefix_= false;
-    }
-
-    std::string pb_type_prefix;
-    if (pb_type->meta != nullptr && pb_type->meta->has("fasm_prefix")) {
-        pb_type_prefix = pb_type->meta->get("fasm_prefix")->front().as_string();
-    } else {
-      current_blk_has_prefix_ = false;
     }
 
     if(current_blk_has_prefix_) {
@@ -103,13 +95,9 @@ void FasmWriterVisitor::check_interconnect(const t_pb_route *pb_route, int inode
 }
 
 std::string FasmWriterVisitor::build_clb_prefix(const t_pb_graph_node* pb_graph_node) const {
-  if(pb_graph_node == root_clb_) {
-    return "";
-  }
-
   std::string clb_prefix = "";
 
-  if(pb_graph_node->parent_pb_graph_node != root_clb_) {
+  if(root_clb_ != pb_graph_node && pb_graph_node->parent_pb_graph_node != root_clb_) {
     VTR_ASSERT(pb_graph_node->parent_pb_graph_node != nullptr);
     clb_prefix = build_clb_prefix(pb_graph_node->parent_pb_graph_node);
   }
