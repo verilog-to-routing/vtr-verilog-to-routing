@@ -881,7 +881,16 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 							/* try_pack_molecule function can pack more than one atom */
 							/* check if we packed last atom of a chain */
 							int num_blocks = cur_molecule->num_blocks;
-							auto last_block = cur_molecule->atom_block_ids[num_blocks-1];
+
+							/* Getting the last valid block of a molecule */
+							auto last_block = AtomBlockId::INVALID();
+							for (int i = 0; i < num_blocks; i++) {
+								auto tmp_last_block = cur_molecule->atom_block_ids[i];
+								if (tmp_last_block != AtomBlockId::INVALID())
+									last_block = tmp_last_block;
+								else
+									break;
+							}
 
 							/* Getting the next blk_id in the chain. If there is not the chain is completed */
 							blk_id = AtomBlockId::INVALID();
