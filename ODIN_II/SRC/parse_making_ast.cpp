@@ -837,10 +837,41 @@ ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expressio
 
 
 /*---------------------------------------------------------------------------------------------
- * (function: newRangePartSelect)
+ * (function: newPartSelectRange)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newRangePartSelect(char *id, ast_node_t *expression1, ast_node_t *expression2, char direction, int line_number)
+ast_node_t *newPartSelectRange(char *id, ast_node_t *expression1, ast_node_t *expression2, char direction, int line_number)
 {
+
+	long sc_spot;
+
+	/* Try to find the original array to check low/high indices */
+	if ((sc_spot = sc_lookup_string(modules_inputs_sc, id)) == -1 &&
+		(sc_spot = sc_lookup_string(modules_outputs_sc, id)) == -1){
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Could not find variable %s", id);
+		return nullptr;
+	}
+
+	ast_node_t *original_range = (ast_node_t *) modules_inputs_sc->data[sc_spot];;
+	long long upper_limit = original_range->children[1]->types.number.value;
+	long long bottom_limit = original_range->children[2]->types.number.value;
+	long long width = expression2->types.number.value;
+	long long low_index = expression1->types.number.value;
+	long long high_index = expression1->types.number.value;
+
+	if (direction == 1)
+		high_index = low_index + width - 1;
+	else
+		low_index = high_index - width + 1;
+
+	if (low_index < bottom_limit || low_index > upper_limit ||
+		high_index < bottom_limit|| high_index > upper_limit) {
+		/* Out of range */
+		error_message(PARSE_ERROR, line_number, current_parse_file,
+					  "The given indices (%s[%d%s%d]) are out of range. It should be within the range: [%d:%d].",
+					  id, expression1->types.number.value, direction == 1 ? "+:" : "-:", expression2->types.number.value,
+					  upper_limit, bottom_limit);
+	}
+
 	/* allocate or check if there's a node for this */
 	ast_node_t *symbol_node = newSymbolNode(id, line_number);
 

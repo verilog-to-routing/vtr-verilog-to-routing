@@ -519,7 +519,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 			rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, concat_top->children[i]->children[2]);
 			oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 			int width = abs(rnode[2]->types.number.value);
-			int msb = rnode[2]->types.number.value < 0 ? rnode[1]->types.number.value : rnode[1]->types.number.value + width;
+			long long msb = rnode[2]->types.number.value < 0 ? rnode[1]->types.number.value : rnode[1]->types.number.value + width;
 			for (j = 0; j < width; j++)
 			{
 				concat_top->types.concat.num_bit_strings ++;
@@ -647,8 +647,9 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[1]);
 		rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[2]);
 		oassert(var_node->children[0]->type == IDENTIFIERS);
-		oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
-		oassert((rnode[1]->types.number.value >= rnode[2]->types.number.value+bit) && bit >= 0);
+		oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS)
+		/* In the case of big_vect[msb_base_expr -: width_expr], width should not be bigger that the msb */
+		oassert(rnode[2]->types.number.value < 0 && (rnode[1]->types.number.value >= -(rnode[2]->types.number.value)+bit) && bit >= 0);
 
 		return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[1]->types.number.value+bit);
 	}
@@ -811,9 +812,10 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		rnode[0] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[0]);
 		rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[1]);
 		rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[2]);
+
 		oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 		width = abs(rnode[2]->types.number.value);
-		int lsb = rnode[2]->types.number.value < 0 ? rnode[1]->types.number.value - width + 1 : rnode[1]->types.number.value;
+		long long lsb = rnode[2]->types.number.value < 0 ? rnode[1]->types.number.value - width + 1 : rnode[1]->types.number.value;
 		if (rnode[0]->type == IDENTIFIERS)
 		{
 			return_string = (char**)vtr::malloc(sizeof(char*)*width);
