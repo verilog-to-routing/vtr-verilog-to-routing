@@ -16,8 +16,9 @@ void free_list_of_pack_patterns(t_pack_patterns *list_of_pack_patterns, const in
 
 t_pack_molecule *alloc_and_load_pack_molecules(
 		t_pack_patterns *list_of_pack_patterns,
-        std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
-        std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
-		const int num_packing_patterns);
+		std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+		std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
+		const int num_packing_patterns,
+		bool enable_round_robin_prepacking);
 
 #endif

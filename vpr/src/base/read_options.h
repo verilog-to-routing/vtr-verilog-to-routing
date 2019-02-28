@@ -69,6 +69,7 @@ struct t_options {
     argparse::ArgValue<bool> enable_clustering_pin_feasibility_filter;
     argparse::ArgValue<std::vector<std::string>> target_external_pin_util;
     argparse::ArgValue<bool> debug_clustering;
+    argparse::ArgValue<bool> enable_round_robin_prepacking;
 
     /* Placement options */
     argparse::ArgValue<int> Seed;

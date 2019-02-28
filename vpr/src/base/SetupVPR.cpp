@@ -408,6 +408,7 @@ void SetupPackerOpts(const t_options& Options,
 	PackerOpts->beta = Options.beta_clustering;
 	PackerOpts->debug_clustering = Options.debug_clustering;
 	PackerOpts->enable_pin_feasibility_filter = Options.enable_clustering_pin_feasibility_filter;
+	PackerOpts->enable_round_robin_prepacking = Options.enable_round_robin_prepacking;
 	PackerOpts->target_external_pin_util = parse_target_external_pin_util(Options.target_external_pin_util);
     PackerOpts->target_device_utilization = Options.target_device_utilization;
 
