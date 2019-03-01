@@ -8,11 +8,11 @@ This involves two key steps:
  #. Specifying the logical timing characteristics of a primitive including:
 
      * whether primitive pins are sequential or combinational, and
-     * what the timing dependancies are between the pins.
+     * what the timing dependencies are between the pins.
 
  #. Specifying the physical delay values
 
-These two steps separatate the logical timing characteristics of a primitive, from the physically dependant delays.
+These two steps separate the logical timing characteristics of a primitive, from the physically dependant delays.
 This enables a single logical netlist primitive type (e.g. Flip-Flop) to be mapped into different physical locations with different timing characteristics.
 
 The :ref:`FPGA architecture description <fpga_architecture_description>` describes the logical timing characteristics in the :ref:`models section <arch_models>`, while the physical timing information is specified on ``pb_types`` within :ref:`complex block <arch_complex_blocks>`.
@@ -31,7 +31,7 @@ A typical combinational block is a full adder,
 
 where ``a``, ``b`` and ``cin`` are combinational inputs, and ``sum`` and ``cout`` are combinational outputs.
 
-We can model these timing dependancies on the model with the ``combinational_sink_ports``, which specifies the output ports which are dependant on an input port:
+We can model these timing dependencies on the model with the ``combinational_sink_ports``, which specifies the output ports which are dependant on an input port:
 
 .. code-block:: xml
 
@@ -67,7 +67,7 @@ For example:
       <delay_constant max="10e-12" in_port="adder.cin" out_port="adder.cout"/>
     </pb_type>
 
-specifies that all the edges of 300ps delays, except to cin to cout edge which has a delay of 10ps.
+specifies that all the edges of 300ps delays, except to ``cin`` to ``cout`` edge which has a delay of 10ps.
 
 .. _dff_timing_modeling:
 
@@ -96,7 +96,7 @@ The assoicated clock port must have ``is_clock="1"`` specified to indicate it is
           <port name="clk" is_clock="1"/>
         </input_ports>
         <output_ports>
-          <port name="q" clock="clk/>
+          <port name="q" clock="clk"/>
         </output_ports>
       </model>
 
@@ -409,10 +409,10 @@ As an example consider the following simple PLL model:
     <model name="simple_pll">
       <input_ports>
         <port name="in_clock" is_clock="1"/>
-      <input_ports/>
+      </input_ports>
       <output_ports>
         <port name="out_clock" is_clock="1"/>
-      <output_ports/>
+      </output_ports>
     </model>
 
 The port named ``in_clock`` is specified as a clock sink, since it is an input port with ``is_clock="1"``  set.

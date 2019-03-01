@@ -35,7 +35,7 @@ void CheckSetup(
 
 		/* Works, but very weird.  Can't optimize timing well, since you're
 		 * not doing proper architecture delay modelling. */
-		vtr::printf_warning(__FILE__, __LINE__,
+		VTR_LOG_WARN(
 				"Using global routing with timing-driven placement. "
 				"This is allowed, but strange, and circuit speed will suffer.\n");
 	}

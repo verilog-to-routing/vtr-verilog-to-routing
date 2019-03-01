@@ -1,12 +1,1 @@
-%include "common/pass_requirements.vpr_status.txt"
-
-crit_path_route_success_iteration;Equal()
-routed_wirelength;Equal()
-setup_TNS;Equal()
-setup_WNS;Equal()
-critical_path_delay;Equal()
-num_pre_packed_nets;Equal()
-num_pre_packed_blocks;Equal()
-num_post_packed_nets;Equal()
-
-%include "common/pass_requirements.vtr_benchmarks.txt"
+%include "pass_requirements_fixed_chan_width.txt"

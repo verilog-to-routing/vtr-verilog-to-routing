@@ -38,7 +38,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef SOFT_LOGIC_PARSER_H
 #define SOFT_LOGIC_PARSER_H
 
-#include "types.h"
+#include "odin_types.h"
 
 typedef struct soft_sub_structure_t
 {
@@ -47,7 +47,7 @@ typedef struct soft_sub_structure_t
 	int bitsize;
 }soft_sub_structure;
 
-void read_soft_def_file(std::string input_file_name);
+void read_soft_def_file(t_model *hard_adder_models);
 soft_sub_structure *fetch_blk(std::string, int width);
 
 

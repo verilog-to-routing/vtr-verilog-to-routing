@@ -6,6 +6,7 @@ ODIN_II/odin_II
 abc_with_bb_support/abc
 ace2/ace
 vpr/vpr
+blifexplorer/blifexplorer
 
 #Install
 bin/
@@ -21,6 +22,8 @@ build
 #VTR Tasks
 #
 vtr_flow/tasks/**/run[0-9]*
+vtr_flow/tasks/**/run_latest
+vtr_flow/tasks/**/latest
 vtr_flow/tasks/**/qor_geomean.txt
 vtr_flow/tasks/**/task_summary/
 quick_test/*
@@ -62,8 +65,8 @@ vgcore*
 #Odin test outputs
 #
 ODIN_II/log
-ODIN_II/regression_test/runs
-ODIN_II/OUTPUT/*
+ODIN_II/regression_test/run[0-9]*
+ODIN_II/temp/*
 ODIN_II/usefull_tools/**/run[0-9]*
 ODIN_II/usefull_tools/**/track_completed
 #
@@ -98,3 +101,9 @@ Session.vim
 #
 .tags*
 tags
+
+#
+# VS Code
+#
+.vscode
+.history

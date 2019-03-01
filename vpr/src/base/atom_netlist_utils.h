@@ -10,16 +10,16 @@
  *
  */
 
+//Walk through the netlist detecting constant generators
+//
+//Note that initial constant generators (e.g. vcc/gnd) should have already been marked on
+//the netlist.
+int mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, int verbosity);
+
 /*
  * Modifies the netlist by absorbing buffer LUTs
  */
-void absorb_buffer_luts(AtomNetlist& netlist, bool verbose);
-
-/*
- * Modifies the netlist to fix cases where a clock is used as data,
- * by replacing the data portion of the net with the specified model/port/bit driver
- */
-void fix_clock_to_data_conversions(AtomNetlist& netlist, const t_model* library_models);
+void absorb_buffer_luts(AtomNetlist& netlist, int verbosity);
 
 /*
  * Modify the netlist by sweeping away unused nets/blocks/inputs
@@ -32,21 +32,21 @@ size_t sweep_iterative(AtomNetlist& netlist,
                        bool should_sweep_dangling_blocks,
                        bool should_sweep_dangling_nets,
                        bool should_sweep_constant_primary_outputs,
-                       bool verbose);
+                       int verbosity);
 
 //Sweeps blocks that have no fanout
-size_t sweep_blocks(AtomNetlist& netlist, bool verbose);
+size_t sweep_blocks(AtomNetlist& netlist, int verbosity);
 
 //Sweeps nets with no drivers and/or no sinks
-size_t sweep_nets(AtomNetlist& netlist, bool verbose);
+size_t sweep_nets(AtomNetlist& netlist, int verbosity);
 
 //Sweeps primary-inputs with no fanout
-size_t sweep_inputs(AtomNetlist& netlist, bool verbose);
+size_t sweep_inputs(AtomNetlist& netlist, int verbosity);
 
 //Sweeps primary-outputs with no fanin
-size_t sweep_outputs(AtomNetlist& netlist, bool verbose);
+size_t sweep_outputs(AtomNetlist& netlist, int verbosity);
 
-size_t sweep_constant_primary_outputs(AtomNetlist& netlist, bool verbose);
+size_t sweep_constant_primary_outputs(AtomNetlist& netlist, int verbosity);
 
 /*
  * Truth-table operations
@@ -85,6 +85,9 @@ std::vector<size_t> cube_to_minterms(std::vector<vtr::LogicValue> cube);
 void print_netlist_as_blif(std::string filename, const AtomNetlist& netlist);
 void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist);
 
+//Returns a user-friendly architectural identifier for the specified atom pin
+std::string atom_pin_arch_name(const AtomNetlist& netlist, const AtomPinId pin);
+
 /*
  * Identify all clock nets
  */
@@ -99,4 +102,7 @@ std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist)
 // so logically unique should be viewed as true only to the extent of VPR's
 // understanding
 std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlist);
+
+//Prints out information about netlist clocks
+void print_netlist_clock_info(const AtomNetlist& netlist);
 #endif

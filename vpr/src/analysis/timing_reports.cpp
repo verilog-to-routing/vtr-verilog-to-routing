@@ -14,9 +14,9 @@
 
 void generate_setup_timing_stats(const SetupTimingInfo& timing_info, const AnalysisDelayCalculator& delay_calc, const t_analysis_opts& analysis_opts) {
 #ifdef ENABLE_CLASSIC_VPR_STA
-    vtr::printf("\n");
-    vtr::printf("New Timing Stats\n");
-    vtr::printf("================\n");
+    VTR_LOG("\n");
+    VTR_LOG("New Timing Stats\n");
+    VTR_LOG("================\n");
 #endif
 
     auto& timing_ctx = g_vpr_ctx.timing();

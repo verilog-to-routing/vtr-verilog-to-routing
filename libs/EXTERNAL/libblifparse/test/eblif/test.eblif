@@ -11,6 +11,8 @@
     q=dff_q \
     clk=clk
 .cname my_dff
+.param parama param_valuea
+.param attra attr_valuea
 
 .conn dff_q o_dff
 

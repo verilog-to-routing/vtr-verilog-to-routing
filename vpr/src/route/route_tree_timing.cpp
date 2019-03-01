@@ -6,6 +6,7 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
+#include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -212,7 +213,7 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
 * updates the Tdel, etc. numbers for the rest of the routing tree.  hptr
 * is the heap pointer of the SINK that was reached.  This routine returns
 * a pointer to the rt_node of the SINK that it adds to the routing.        */
-t_rt_node* update_route_tree(t_heap * hptr) {
+t_rt_node* update_route_tree(t_heap * hptr, SpatialRouteTreeLookup* spatial_rt_lookup) {
 	t_rt_node *start_of_new_subtree_rt_node, *sink_rt_node;
 	t_rt_node *unbuffered_subtree_rt_root, *subtree_parent_rt_node;
 	float Tdel_start;
@@ -246,6 +247,10 @@ t_rt_node* update_route_tree(t_heap * hptr) {
 
 	load_route_tree_Tdel(unbuffered_subtree_rt_root, Tdel_start);
 
+    if (spatial_rt_lookup) {
+        update_route_tree_spatial_lookup_recur(start_of_new_subtree_rt_node, *spatial_rt_lookup);
+    }
+
 	return (sink_rt_node);
 }
 
@@ -278,11 +283,11 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
 	inode = hptr->index;
 
-	if (device_ctx.rr_nodes[inode].type() != SINK) {
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-			"in add_subtree_to_route_tree. Expected type = SINK (%d).\n"
-			"Got type = %d.",  SINK, device_ctx.rr_nodes[inode].type());
-	}
+	//if (device_ctx.rr_nodes[inode].type() != SINK) {
+		//vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+			//"in add_subtree_to_route_tree. Expected type = SINK (%d).\n"
+			//"Got type = %d.",  SINK, device_ctx.rr_nodes[inode].type());
+	//}
 
 	sink_rt_node = alloc_rt_node();
 	sink_rt_node->u.child_list = nullptr;
@@ -637,22 +642,22 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
     }
 
     auto& device_ctx = g_vpr_ctx.device();
-    vtr::printf("%srt_node: %d (%s)", indent.c_str(), rt_node->inode, device_ctx.rr_nodes[rt_node->inode].type_string());
+    VTR_LOG("%srt_node: %d (%s)", indent.c_str(), rt_node->inode, device_ctx.rr_nodes[rt_node->inode].type_string());
 
     if (rt_node->parent_switch != OPEN) {
         bool parent_edge_configurable = device_ctx.rr_switch_inf[rt_node->parent_switch].configurable();
         if (!parent_edge_configurable) {
-            vtr::printf("*");
+            VTR_LOG("*");
         }
     }
 
     auto& route_ctx = g_vpr_ctx.routing();
 
     if (route_ctx.rr_node_route_inf[rt_node->inode].occ() > device_ctx.rr_nodes[rt_node->inode].capacity()) {
-        vtr::printf(" x");
+        VTR_LOG(" x");
     }
 
-    vtr::printf("\n");
+    VTR_LOG("\n");
 
     for (t_linked_rt_edge* rt_edge = rt_node->u.child_list; rt_edge != nullptr; rt_edge = rt_edge->next) {
         print_route_tree(rt_edge->child, depth + 1);
@@ -685,7 +690,7 @@ void update_remaining_net_delays_from_route_tree(float* net_delay,
 /***************  Conversion between traceback and route tree *******************/
 t_rt_node* traceback_to_route_tree(ClusterNetId inet) {
     auto& route_ctx = g_vpr_ctx.routing();
-    return traceback_to_route_tree(route_ctx.trace_head[inet]);
+    return traceback_to_route_tree(route_ctx.trace[inet].head);
 }
 
 t_rt_node* traceback_to_route_tree(t_trace* head) {
@@ -864,8 +869,8 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
 	VTR_ASSERT(num_routed_sinks == num_trace_sinks);
 
 
-	route_ctx.trace_tail[inet] = tail;
-	route_ctx.trace_head[inet] = head;
+	route_ctx.trace[inet].tail = tail;
+	route_ctx.trace[inet].head = head;
 	route_ctx.trace_nodes[inet] = nodes;
 
 	return head;
@@ -1072,7 +1077,7 @@ static void traverse_indented_route_tree(const t_rt_node* rt_root, int branch_le
 	VTR_ASSERT(rt_root != nullptr);
 	t_linked_rt_edge* edges = rt_root->u.child_list;
 	// print branch indent
-	if (new_branch) vtr::printf_info("\n%*s", indent_level*branch_level, " \\ ");
+	if (new_branch) VTR_LOG("\n%*s", indent_level*branch_level, " \\ ");
 
 	op(rt_root);
 	// reached sink, move onto next branch
@@ -1095,13 +1100,13 @@ static void traverse_indented_route_tree(const t_rt_node* rt_root, int branch_le
 
 
 void print_edge(const t_linked_rt_edge* edge) {
-	vtr::printf_info("edges to ");
-	if (!edge) {vtr::printf_info("null"); return;}
+	VTR_LOG("edges to ");
+	if (!edge) {VTR_LOG("null"); return;}
 	while (edge) {
-		vtr::printf_info("%d(%d) ", edge->child->inode, edge->iswitch);
+		VTR_LOG("%d(%d) ", edge->child->inode, edge->iswitch);
 		edge = edge->next;
 	}
-	vtr::printf_info("\n");
+	VTR_LOG("\n");
 }
 
 
@@ -1110,7 +1115,7 @@ static void print_node(const t_rt_node* rt_node) {
 
 	int inode = rt_node->inode;
 	t_rr_type node_type = device_ctx.rr_nodes[inode].type();
-	vtr::printf_info("%5.1e %5.1e %2d%6s|%-6d-> ", rt_node->C_downstream, rt_node->R_upstream,
+	VTR_LOG("%5.1e %5.1e %2d%6s|%-6d-> ", rt_node->C_downstream, rt_node->R_upstream,
 		rt_node->re_expand, rr_node_typename[node_type], inode);
 }
 
@@ -1120,7 +1125,7 @@ static void print_node_inf(const t_rt_node* rt_node) {
 
 	int inode = rt_node->inode;
 	const auto& node_inf = route_ctx.rr_node_route_inf[inode];
-	vtr::printf_info("%5.1e %5.1e%6d%3d|%-6d-> ", node_inf.path_cost, node_inf.backward_path_cost,
+	VTR_LOG("%5.1e %5.1e%6d%3d|%-6d-> ", node_inf.path_cost, node_inf.backward_path_cost,
 		node_inf.prev_node, node_inf.prev_edge, inode);
 }
 
@@ -1133,24 +1138,24 @@ static void print_node_congestion(const t_rt_node* rt_node) {
 	const auto& node_inf = route_ctx.rr_node_route_inf[inode];
 	const auto& node = device_ctx.rr_nodes[inode];
 	const auto& node_state = route_ctx.rr_node_route_inf[inode];
-	vtr::printf_info("%2d %2d|%-6d-> ", node_inf.pres_cost, rt_node->Tdel,
+	VTR_LOG("%2d %2d|%-6d-> ", node_inf.pres_cost, rt_node->Tdel,
 		node_state.occ(), node.capacity(), inode);
 }
 
 
 void print_route_tree_inf(const t_rt_node* rt_root) {
 	traverse_indented_route_tree(rt_root, 0, false, print_node_inf, 34);
-	vtr::printf_info("\n");
+	VTR_LOG("\n");
 }
 
 void print_route_tree(const t_rt_node* rt_root) {
 	traverse_indented_route_tree(rt_root, 0, false, print_node, 34);
-	vtr::printf_info("\n");
+	VTR_LOG("\n");
 }
 
 void print_route_tree_congestion(const t_rt_node* rt_root) {
 	traverse_indented_route_tree(rt_root, 0, false, print_node_congestion, 15);
-	vtr::printf_info("\n");
+	VTR_LOG("\n");
 }
 
 /* the following is_* functions are for debugging correctness of pruned route tree
@@ -1162,7 +1167,7 @@ bool is_equivalent_route_tree(const t_rt_node* root, const t_rt_node* root_clone
 		(!equal_approx(root->R_upstream, root_clone->R_upstream)) ||
 		(!equal_approx(root->C_downstream, root_clone->C_downstream)) ||
 		(!equal_approx(root->Tdel, root_clone->Tdel))) {
-		vtr::printf_info("mismatch i %d|%d R %e|%e C %e|%e T %e %e\n",
+		VTR_LOG("mismatch i %d|%d R %e|%e C %e|%e T %e %e\n",
 			root->inode, root_clone->inode,
 			root->R_upstream, root_clone->R_upstream,
 			root->C_downstream, root_clone->C_downstream,
@@ -1173,7 +1178,7 @@ bool is_equivalent_route_tree(const t_rt_node* root, const t_rt_node* root_clone
 	t_linked_rt_edge* clone_edge {root_clone->u.child_list};
 	while (orig_edge && clone_edge) {
 		if (orig_edge->iswitch != clone_edge->iswitch)
-			vtr::printf_info("mismatch i %d|%d edge switch %d|%d\n",
+			VTR_LOG("mismatch i %d|%d edge switch %d|%d\n",
 				root->inode, root_clone->inode,
 				orig_edge->iswitch, clone_edge->iswitch);
 		if (!is_equivalent_route_tree(orig_edge->child, clone_edge->child)) return false;	// child trees not equivalent
@@ -1181,7 +1186,7 @@ bool is_equivalent_route_tree(const t_rt_node* root, const t_rt_node* root_clone
 		clone_edge = clone_edge->next;
 	}
 	if (orig_edge || clone_edge) {
-		vtr::printf_info("one of the trees have an extra edge!\n");
+		VTR_LOG("one of the trees have an extra edge!\n");
 		return false;
 	}
 	return true;	// passed all tests
@@ -1193,19 +1198,19 @@ bool is_valid_skeleton_tree(const t_rt_node* root) {
 	t_linked_rt_edge* edge = root->u.child_list;
 	while (edge) {
 		if (edge->child->parent_node != root) {
-			vtr::printf_info("parent-child relationship not mutually acknowledged by parent %d->%d child %d<-%d\n",
+			VTR_LOG("parent-child relationship not mutually acknowledged by parent %d->%d child %d<-%d\n",
 				inode, edge->child->inode,
 				edge->child->inode, edge->child->parent_node->inode);
 			return false;
 		}
 		if (edge->iswitch != edge->child->parent_switch) {
-			vtr::printf_info("parent(%d)-child(%d) connected switch not equivalent parent %d child %d\n",
+			VTR_LOG("parent(%d)-child(%d) connected switch not equivalent parent %d child %d\n",
 				inode, edge->child->inode, edge->iswitch, edge->child->parent_switch);
 			return false;
 		}
 
 		if (!is_valid_skeleton_tree(edge->child)) {
-			vtr::printf_info("subtree %d invalid, propagating up\n", edge->child->inode);
+			VTR_LOG("subtree %d invalid, propagating up\n", edge->child->inode);
 			return false;
 		}
 		edge = edge->next;
@@ -1218,24 +1223,29 @@ bool is_valid_route_tree(const t_rt_node* root) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
+    constexpr float CAP_REL_TOL = 1e-6;
+    constexpr float CAP_ABS_TOL = vtr::DEFAULT_ABS_TOL;
+    constexpr float RES_REL_TOL = 1e-6;
+    constexpr float RES_ABS_TOL = vtr::DEFAULT_ABS_TOL;
+
 	int inode = root->inode;
 	short iswitch = root->parent_switch;
 	if (root->parent_node) {
 		if (device_ctx.rr_switch_inf[iswitch].buffered()) {
-			if (root->R_upstream != device_ctx.rr_nodes[inode].R() + device_ctx.rr_switch_inf[iswitch].R) {
-				vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream,
-					device_ctx.rr_nodes[inode].R() + device_ctx.rr_switch_inf[iswitch].R);
+            float R_upstream_check = device_ctx.rr_nodes[inode].R() + device_ctx.rr_switch_inf[iswitch].R;
+			if (!vtr::isclose(root->R_upstream, R_upstream_check, RES_REL_TOL, RES_ABS_TOL)) {
+				VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, R_upstream_check);
 				return false;
 			}
+		} else {
+            float R_upstream_check = device_ctx.rr_nodes[inode].R() + root->parent_node->R_upstream + device_ctx.rr_switch_inf[iswitch].R;
+            if (!vtr::isclose(root->R_upstream, R_upstream_check, RES_REL_TOL, RES_ABS_TOL)) {
+                VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, R_upstream_check);
+                return false;
+            }
 		}
-		else if (root->R_upstream != device_ctx.rr_nodes[inode].R() + root->parent_node->R_upstream + device_ctx.rr_switch_inf[iswitch].R) {
-			vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream,
-				device_ctx.rr_nodes[inode].R() + root->parent_node->R_upstream + device_ctx.rr_switch_inf[iswitch].R);
-			return false;
-		}
-	}
-	else if (root->R_upstream != device_ctx.rr_nodes[inode].R()) {
-		vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, device_ctx.rr_nodes[inode].R());
+	} else if (root->R_upstream != device_ctx.rr_nodes[inode].R()) {
+		VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, device_ctx.rr_nodes[inode].R());
 		return false;
 	}
 
@@ -1247,35 +1257,37 @@ bool is_valid_route_tree(const t_rt_node* root) {
 		int occ = route_ctx.rr_node_route_inf[inode].occ();
 		int capacity = device_ctx.rr_nodes[inode].capacity();
 		if (occ > capacity) {
-			vtr::printf_info("SINK %d occ %d > cap %d\n", inode, occ, capacity);
+			VTR_LOG("SINK %d occ %d > cap %d\n", inode, occ, capacity);
 			return false;
 		}
 	}
 	while (edge) {
 		if (edge->child->parent_node != root) {
-			vtr::printf_info("parent-child relationship not mutually acknowledged by parent %d->%d child %d<-%d\n",
+			VTR_LOG("parent-child relationship not mutually acknowledged by parent %d->%d child %d<-%d\n",
 				inode, edge->child->inode,
 				edge->child->inode, edge->child->parent_node->inode);
 			return false;
 		}
 		if (edge->iswitch != edge->child->parent_switch) {
-			vtr::printf_info("parent(%d)-child(%d) connected switch not equivalent parent %d child %d\n",
+			VTR_LOG("parent(%d)-child(%d) connected switch not equivalent parent %d child %d\n",
 				inode, edge->child->inode, edge->iswitch, edge->child->parent_switch);
 			return false;
 		}
 
-		if (!device_ctx.rr_switch_inf[edge->iswitch].buffered())
+		if (!device_ctx.rr_switch_inf[edge->iswitch].buffered()) {
 			C_downstream_children += edge->child->C_downstream;
+        }
 
 		if (!is_valid_route_tree(edge->child)) {
-			vtr::printf_info("subtree %d invalid, propagating up\n", edge->child->inode);
+			VTR_LOG("subtree %d invalid, propagating up\n", edge->child->inode);
 			return false;
 		}
 		edge = edge->next;
 	}
 
-	if (root->C_downstream != C_downstream_children + device_ctx.rr_nodes[inode].C()) {
-		vtr::printf_info("mismatch C downstream %e supposed %e\n", root->C_downstream, C_downstream_children + device_ctx.rr_nodes[inode].C());
+    float C_downstream_check = C_downstream_children + device_ctx.rr_nodes[inode].C();
+	if (!vtr::isclose(root->C_downstream, C_downstream_check, CAP_REL_TOL, CAP_ABS_TOL)) {
+		VTR_LOG("%d mismatch C downstream %e supposed %e\n", inode, root->C_downstream, C_downstream_check);
 		return false;
 	}
 

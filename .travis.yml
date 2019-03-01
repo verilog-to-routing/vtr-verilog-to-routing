@@ -39,6 +39,7 @@ addons:
     - time
     - valgrind
     - zip
+    - qt5-default
 
 before_install:
  - source .travis/common.sh

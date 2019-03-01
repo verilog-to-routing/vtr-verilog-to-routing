@@ -20,7 +20,22 @@ std::string VprTimingGraphResolver::node_type_name(tatum::NodeId node) const {
     AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
     AtomBlockId blk = netlist_.pin_block(pin);
 
-    return netlist_.block_model(blk)->name;
+
+    std::string name = netlist_.block_model(blk)->name;
+
+    if (detail_level() == e_timing_report_detail::AGGREGATED) {
+        //Annotate primitive grid location, if known
+        auto& atom_ctx = g_vpr_ctx.atom();
+        auto& place_ctx = g_vpr_ctx.placement();
+        ClusterBlockId cb = atom_ctx.lookup.atom_clb(blk);
+        if (cb && place_ctx.block_locs.count(cb)) {
+            int x = place_ctx.block_locs[cb].x;
+            int y = place_ctx.block_locs[cb].y;
+            name += " at (" + std::to_string(x) + "," + std::to_string(y) + ")";
+        }
+    }
+
+    return name;
 }
 
 tatum::EdgeDelayBreakdown VprTimingGraphResolver::edge_delay_breakdown(tatum::EdgeId edge, tatum::DelayType tatum_delay_type) const {

@@ -6,22 +6,52 @@
 namespace vtr {
 
     //Class for tracking time elapsed since construction
-    class ScopedTimer {
+    class Timer {
         public:
-            ScopedTimer();
+            Timer();
+            virtual ~Timer() = default;
 
             //No copy
-            ScopedTimer(ScopedTimer&) = delete;
-            ScopedTimer& operator=(ScopedTimer&) = delete;
+            Timer(Timer&) = delete;
+            Timer& operator=(Timer&) = delete;
 
             //No move
-            ScopedTimer(ScopedTimer&&) = delete;
-            ScopedTimer& operator=(ScopedTimer&&) = delete;
+            Timer(Timer&&) = delete;
+            Timer& operator=(Timer&&) = delete;
 
-            float elapsed_sec();
+            //Return elapsed time in seconds
+            float elapsed_sec() const;
+
+            //Return peak memory resident set size (in MiB)
+            float max_rss_mib() const;
+
+            //Return change in peak memory resident set size (in MiB)
+            float delta_max_rss_mib() const;
         private:
             using clock = std::chrono::steady_clock;
             std::chrono::time_point<clock> start_;
+
+            size_t initial_max_rss_; //Maximum resident set size In bytes
+            constexpr static float BYTE_TO_MIB = 1024*1024;
+    };
+
+    class ScopedActionTimer : public Timer {
+        public:
+            ScopedActionTimer(const std::string action);
+            ~ScopedActionTimer();
+
+            void quiet(bool value);
+            bool quiet() const;
+            std::string action() const;
+
+        protected:
+            int depth() const;
+            std::string pad() const;
+
+        private:
+            const std::string action_;
+            bool quiet_ = false;
+            int depth_;
     };
 
     //Scoped elapsed time class which prints the time elapsed for
@@ -30,18 +60,16 @@ namespace vtr {
     //For example:
     //
     //      {
-    //          vtr::ScopedFinishTimer("my_action")
+    //          vtr::ScopedFinishTimer timer("my_action");
     //
     //          //Do other work
     //
-    //          //Will print: 'my_action took X.XX seconds'
+    //          //Will print: 'my_action took X.XX seconds' when out-of-scope
     //      }
-    class ScopedFinishTimer : public ScopedTimer {
+    class ScopedFinishTimer : public ScopedActionTimer {
         public:
             ScopedFinishTimer(const std::string action);
             ~ScopedFinishTimer();
-        private:
-            const std::string action_;
     };
 
     //Scoped elapsed time class which prints out the action when
@@ -50,15 +78,16 @@ namespace vtr {
     //For example:
     //
     //      {
-    //          vtr::ScopedActionTimer("my_action") //Will print: 'my_action'
+    //          vtr::ScopedStartFinishTimer timer("my_action") //Will print: 'my_action'
     //
     //          //Do other work
     //
-    //          //Will print 'my_action took X.XX seconds'
+    //          //Will print 'my_action took X.XX seconds' when out of scope
     //      }
-    class ScopedActionTimer : public ScopedFinishTimer {
+    class ScopedStartFinishTimer : public ScopedActionTimer {
         public:
-            ScopedActionTimer(const std::string action);
+            ScopedStartFinishTimer(const std::string action);
+            ~ScopedStartFinishTimer();
     };
 }
 

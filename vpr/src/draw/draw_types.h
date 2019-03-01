@@ -24,7 +24,7 @@
 #include "graphics.h"
 #include "vpr_types.h"
 #include "vtr_color_map.h"
-using namespace std;
+#include "vtr_vector.h"
 
 enum e_draw_crit_path {
       DRAW_NO_CRIT_PATH
@@ -86,7 +86,16 @@ enum e_draw_routing_util {
     DRAW_ROUTING_UTIL,
     DRAW_ROUTING_UTIL_WITH_VALUE,
     DRAW_ROUTING_UTIL_WITH_FORMULA,
+    DRAW_ROUTING_UTIL_OVER_BLOCKS, //Draw over blocks at full opacity (useful for figure generation)
     DRAW_ROUTING_UTIL_MAX,
+};
+
+enum e_draw_router_rr_cost {
+    DRAW_NO_ROUTER_RR_COST,
+    DRAW_ROUTER_RR_COST_TOTAL,
+    DRAW_ROUTER_RR_COST_KNOWN,
+    DRAW_ROUTER_RR_COST_EXPECTED,
+    DRAW_ROUTER_RR_COST_MAX, //End of options
 };
 
 enum e_draw_net_type {
@@ -145,6 +154,7 @@ struct t_draw_state {
 	e_draw_congestion show_congestion = DRAW_NO_CONGEST;
 	e_draw_routing_costs show_routing_costs;
     e_draw_block_pin_util show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
+    e_draw_router_rr_cost show_router_rr_cost = DRAW_NO_ROUTER_RR_COST;
     int show_routing_bb = OPEN;
     e_draw_routing_util show_routing_util = DRAW_NO_ROUTING_UTIL;
 	e_draw_rr_toggle draw_rr_toggle = DRAW_NO_RR;
@@ -154,8 +164,8 @@ struct t_draw_state {
 	int gr_automode = 0;
 	e_route_type draw_route_type = GLOBAL;
 	char default_message[vtr::bufsize];
-	vtr::vector_map<ClusterNetId, t_color> net_color;
-	vtr::vector_map<ClusterBlockId, t_color> block_color;
+	vtr::vector<ClusterNetId, t_color> net_color;
+	vtr::vector<ClusterBlockId, t_color> block_color;
 	t_draw_rr_node *draw_rr_node = nullptr;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
@@ -172,7 +182,7 @@ struct t_draw_state {
  * information for all sub-blocks inside. This includes
  * the bounding box for drawing each sub-block. */
 struct t_draw_pb_type_info {
-	vector<t_bound_box> subblk_array;
+    std::vector<t_bound_box> subblk_array;
 
 	t_bound_box get_pb_bbox(const t_pb_graph_node& pb_gnode);
 	t_bound_box& get_pb_bbox_ref(const t_pb_graph_node& pb_gnode);
@@ -199,7 +209,7 @@ struct t_draw_coords {
 	float *tile_x, *tile_y;
 	float pin_size;
 
-	vector<t_draw_pb_type_info> blk_info;
+    std::vector<t_draw_pb_type_info> blk_info;
 
 	t_draw_coords();
 

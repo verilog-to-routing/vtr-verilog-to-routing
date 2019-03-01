@@ -5,6 +5,3 @@ num_DSP;vpr.out;Netlist DSP blocks:\s*(\d+)
 num_M9K;vpr.out;Netlist M9K blocks:\s*(\d+)
 num_M144K;vpr.out;Netlist M144K blocks:\s*(\d+)
 num_PLL;vpr.out;Netlist PLL blocks:\s*(\d+)
-
-num_outputs;vpr.out;Netlist output pins:\s*(\d+)
-num_inputs;vpr.out;Netlist input pins:\s*(\d+)

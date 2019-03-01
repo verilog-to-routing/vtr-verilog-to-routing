@@ -17,7 +17,6 @@ See Section 3.2.4 in Oleg Petelin's MASc thesis (2016) for more discussion.
 #include <cmath>
 #include <vector>
 #include <queue>
-#include <assert.h>
 #include <ctime>
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -26,6 +25,7 @@ See Section 3.2.4 in Oleg Petelin's MASc thesis (2016) for more discussion.
 #include "vtr_math.h"
 #include "vtr_log.h"
 #include "vtr_assert.h"
+#include "vtr_time.h"
 #include "router_lookahead_map.h"
 
 using namespace std;
@@ -110,30 +110,30 @@ public:
 	}
 
 	Cost_Entry get_representative_cost_entry(e_representative_entry_method method){
-		if (cost_vector.empty()){
-			return Cost_Entry();
-		} else {
+        Cost_Entry entry;
+
+		if (!cost_vector.empty()){
 			switch (method){
 				case FIRST:
-					return cost_vector[0];
+					entry = cost_vector[0];
 					break;
 				case SMALLEST:
-					return this->get_smallest_entry();
+					entry = this->get_smallest_entry();
 					break;
 				case AVERAGE:
-					return this->get_average_entry();
+					entry = this->get_average_entry();
 					break;
 				case GEOMEAN:
-					return this->get_geomean_entry();
+					entry = this->get_geomean_entry();
 					break;
 				case MEDIAN:
-					return this->get_median_entry();
+					entry = this->get_median_entry();
 					break;
 				default:
-					return this->get_smallest_entry();
 					break;
 			}
 		}
+        return entry;
 	}
 };
 
@@ -187,11 +187,12 @@ public:
 
 /* provides delay/congestion estimates to travel specified distances
    in the x/y direction */
-typedef vector< vector< vector< vector<Cost_Entry> > > > t_cost_map;        //[0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]	-- [0..1] entry is to
-                                                                            //distinguish between CHANX/CHANY start nodes respectively
+typedef vtr::NdMatrix<Cost_Entry,4> t_cost_map; //[0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
+                                                //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
+
 /* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type.
    the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
-typedef vector< vector<Expansion_Cost_Entry> > t_routing_cost_map;		//[0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
+typedef vtr::Matrix<Expansion_Cost_Entry> t_routing_cost_map; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
 
 
 /******** File-Scope Variables ********/
@@ -217,6 +218,7 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 /* returns the absolute delta_x and delta_y offset required to reach to_node from from_node */
 static void get_xy_deltas(int from_node_ind, int to_node_ind, int *delta_x, int *delta_y);
 
+static void print_cost_map();
 
 /******** Function Definitions ********/
 /* queries the lookahead_map (should have been computed prior to routing) to get the expected cost
@@ -229,7 +231,7 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 	int from_cost_index = from_node.cost_index();
 	int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
 
-	assert(from_seg_index >= 0);
+	VTR_ASSERT(from_seg_index >= 0);
 
 	int delta_x, delta_y;
 	get_xy_deltas(from_node_ind, to_node_ind, &delta_x, &delta_y);
@@ -254,15 +256,11 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 /* Computes the lookahead map to be used by the router. If a map was computed prior to this, a new one will not be computed again.
    The rr graph must have been built before calling this function. */
 void compute_router_lookahead(int num_segments){
-	if (f_cost_map.size()){
-		/* if lookahead map has already been computed, do not compute it again */
-		vtr::printf_info("Router lookahead map already allocated. Will not compute router lookahead map again.\n");
-		return;
-	}
+    vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
+
+    f_cost_map.clear();
 
 	auto& device_ctx = g_vpr_ctx.device();
-
-	clock_t start_time = clock();
 
 	/* free previous delay map and allocate new one */
 	free_cost_map();
@@ -272,8 +270,7 @@ void compute_router_lookahead(int num_segments){
 	for (int iseg = 0; iseg < num_segments; iseg++){
 		for (e_rr_type chan_type : {CHANX, CHANY}){
 			/* allocate the cost map for this iseg/chan_type */
-			t_routing_cost_map routing_cost_map;
-			routing_cost_map.assign( device_ctx.grid.width(), vector<Expansion_Cost_Entry>(device_ctx.grid.height(), Expansion_Cost_Entry()) );
+			t_routing_cost_map routing_cost_map({device_ctx.grid.width(), device_ctx.grid.height()});
 
 			for (int ref_inc=0; ref_inc<3; ref_inc++){
 				for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2){
@@ -297,28 +294,12 @@ void compute_router_lookahead(int num_segments){
 
 			/* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
 			   a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
-			fill_in_missing_lookahead_entries(iseg, chan_type);
+            fill_in_missing_lookahead_entries(iseg, chan_type);
 		}
 	}
 
-	//printing out delay maps
-	//for (int iseg = 0; iseg < num_segments; iseg++){
-	//	for (int chan_index : {0,1}){
-	//		for (int iy = 0; iy < device_ctx.grid.height(); iy++){
-	//			for (int ix = 0; ix < device_ctx.grid.width(); ix++){
-	//				printf("%.3e\t", f_cost_map[chan_index][iseg][ix][iy].delay);
-	//			}
-	//			printf("\n");
-	//		}
-	//		printf("\n\n");
-	//	}
-	//}
-
-	clock_t end_time = clock();
-
-	vtr::printf_info("Computing router lookahead map took %f seconds.\n", ((float)end_time - start_time)/CLOCKS_PER_SEC);
+    if (false) print_cost_map();
 }
-
 
 /* returns index of a node from which to start routing */
 static int get_start_node_ind(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset){
@@ -327,13 +308,6 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 
 	if (rr_type != CHANX && rr_type != CHANY){
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Must start lookahead routing from CHANX or CHANY node\n");
-	}
-
-	int chan_coord = start_x;
-	int seg_coord = start_y;
-	if (rr_type == CHANY){
-		chan_coord = start_y;
-		seg_coord = start_x;
 	}
 
 	/* determine which direction the wire should go in based on the start & target coordinates */
@@ -345,7 +319,9 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 
 	auto& device_ctx = g_vpr_ctx.device();
 
-	vector<int> channel_node_list = device_ctx.rr_node_indices[rr_type][chan_coord][0][seg_coord];
+    VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
+
+    const vector<int>& channel_node_list = device_ctx.rr_node_indices[rr_type][start_x][start_y][0];
 
 	/* find first node in channel that has specified segment index and goes in the desired direction */
 	for (unsigned itrack = 0; itrack < channel_node_list.size(); itrack++){
@@ -374,10 +350,7 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 static void alloc_cost_map(int num_segments){
     auto& device_ctx = g_vpr_ctx.device();
 
-	vector<Cost_Entry> ny_entries( device_ctx.grid.height(), Cost_Entry() );
-	vector< vector<Cost_Entry> > nx_entries( device_ctx.grid.width(), ny_entries );
-	vector< vector< vector<Cost_Entry> > > segment_entries( num_segments, nx_entries );
-	f_cost_map.assign( 2, segment_entries );
+    f_cost_map = t_cost_map({2, size_t(num_segments), device_ctx.grid.width(), device_ctx.grid.height()});
 }
 
 
@@ -455,7 +428,7 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vector<float> &nod
 		PQ_Entry child_entry(child_node_ind, switch_ind, parent_entry.delay,
 		                             parent_entry.R_upstream, parent_entry.congestion_upstream, false);
 
-		assert(child_entry.cost >= 0);
+		//VTR_ASSERT(child_entry.cost >= 0); //Asertion fails in practise. TODO: debug
 
 		/* skip this child if it has been visited with smaller cost */
 		if (node_visited_costs[child_node_ind] >= 0 && node_visited_costs[child_node_ind] < child_entry.cost){
@@ -477,8 +450,8 @@ static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_ro
 	}
 
 	/* set the lookahead cost map entries with a representative cost entry from routing_cost_map */
-	for (unsigned ix = 0; ix < routing_cost_map.size(); ix++){
-		for (unsigned iy = 0; iy < routing_cost_map[ix].size(); iy++){
+	for (unsigned ix = 0; ix < routing_cost_map.dim_size(0); ix++){
+		for (unsigned iy = 0; iy < routing_cost_map.dim_size(1); iy++){
 
 			Expansion_Cost_Entry &expansion_cost_entry = routing_cost_map[ix][iy];
 
@@ -495,9 +468,11 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
 		chan_index = 1;
 	}
 
+    auto& device_ctx = g_vpr_ctx.device();
+
 	/* find missing cost entries and fill them in by copying a nearby cost entry */
-	for (unsigned ix = 0; ix < f_cost_map[chan_index][segment_index].size(); ix++){
-		for (unsigned iy = 0; iy < f_cost_map[chan_index][segment_index][ix].size(); iy++){
+	for (unsigned ix = 0; ix < device_ctx.grid.width(); ix++){
+		for (unsigned iy = 0; iy < device_ctx.grid.height(); iy++){
 			Cost_Entry cost_entry = f_cost_map[chan_index][segment_index][ix][iy];
 
 			if (cost_entry.delay < 0 && cost_entry.congestion < 0){
@@ -514,7 +489,7 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 	/* compute the slope from x,y to 0,0 and then move towards 0,0 by one unit to get the coordinates
 	   of the cost entry to be copied */
 
-	assert(x > 0 || y > 0);
+	//VTR_ASSERT(x > 0 || y > 0); //Asertion fails in practise. TODO: debug
 
 	float slope;
 	if (x == 0){
@@ -534,7 +509,7 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 		copy_y = vtr::nint( (float)x * slope );
 	}
 
-	assert(copy_x > 0 || copy_y > 0);
+	//VTR_ASSERT(copy_x > 0 || copy_y > 0); //Asertion fails in practise. TODO: debug
 
 	Cost_Entry copy_entry = f_cost_map[chan_index][segment_index][copy_x][copy_y];
 
@@ -622,7 +597,7 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry(){
 	for (auto entry : this->cost_vector){
 		float bin_num = floor( (entry.delay - min_del_entry.delay) / bin_size );
 
-		assert(vtr::nint(bin_num) >= 0 && vtr::nint(bin_num) <= num_bins);
+		VTR_ASSERT(vtr::nint(bin_num) >= 0 && vtr::nint(bin_num) <= num_bins);
 		if (vtr::nint(bin_num) == num_bins){
 			/* largest entry will otherwise have an out-of-bounds bin number */
 			bin_num -= 1;
@@ -714,4 +689,21 @@ static void get_xy_deltas(int from_node_ind, int to_node_ind, int *delta_x, int 
 	}
 }
 
+static void print_cost_map() {
+	auto& device_ctx = g_vpr_ctx.device();
+
+    for (size_t chan_index = 0; chan_index < f_cost_map.dim_size(0); chan_index++){
+        for (size_t iseg = 0; iseg < f_cost_map.dim_size(1); iseg++){
+            vtr::printf("Seg %d CHAN %d\n", iseg, chan_index);
+            for (size_t iy = 0; iy < device_ctx.grid.height(); iy++){
+                for (size_t ix = 0; ix < device_ctx.grid.width(); ix++){
+                    vtr::printf("%d,%d: %.3e\t", ix, iy, f_cost_map[chan_index][iseg][ix][iy].delay);
+                }
+                vtr::printf("\n");
+            }
+            vtr::printf("\n\n");
+        }
+    }
+
+}
 

@@ -23,8 +23,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _IMPLICIT_MEMORY_H_
 #define _IMPLICIT_MEMORY_H_
 
-extern hashtable_t *implicit_memories;
-extern hashtable_t *implicit_memory_inputs;
+#include <unordered_map>
 
 /*
  * Contains a pointer to the implicit memory node as well as other
@@ -33,6 +32,7 @@ extern hashtable_t *implicit_memory_inputs;
 typedef struct {
 	nnode_t *node;
 	int data_width;
+	int memory_depth;
 	int addr_width;
 	char clock_added;
 	char output_added;
@@ -46,13 +46,14 @@ implicit_memory *lookup_implicit_memory_reference_ast(char *instance_name_prefix
 
 char is_valid_implicit_memory_reference_ast(char *instance_name_prefix, ast_node_t *node);
 
-implicit_memory *create_implicit_memory_block(int data_width, long long words, char *name, char *instance_name_prefix);
+implicit_memory *create_implicit_memory_block(int data_width, long words, char *name, char *instance_name_prefix);
 
 implicit_memory *lookup_implicit_memory_input(char *name);
 
 void register_implicit_memory_input(char *name, implicit_memory *memory);
 
-void init_implicit_memory_index();
 void free_implicit_memory_index_and_finalize_memories();
+
+void init_implicit_memory_index();
 
 #endif

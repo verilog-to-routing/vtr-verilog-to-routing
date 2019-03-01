@@ -2,10 +2,12 @@
 #define VPR_UTILS_H
 
 #include <vector>
+#include <regex>
 #include "vpr_types.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "netlist.h"
+#include "vtr_vector.h"
 class DeviceGrid;
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required=true);
@@ -33,7 +35,14 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
 
 void sync_grid_to_blocks();
 
+//Returns the name of the pin_index'th pin on the specified block type
 std::string block_type_pin_index_to_name(t_type_ptr type, int pin_index);
+
+//Returns the name of the class_index'th pin class on the specified block type
+std::vector<std::string> block_type_class_index_to_pin_names(t_type_ptr type, int class_index);
+
+//Returns a user-friendly architectural identifier for the specified RR node
+std::string rr_node_arch_name(int inode);
 
 /**************************************************************
 * Intra-Logic Block Utility Functions
@@ -98,7 +107,11 @@ AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 //Returns the block type matching name, or nullptr (if not found)
 t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* types, int num_types);
 
+//Returns the block type which is most common in the device grid
 t_type_ptr find_most_common_block_type(const DeviceGrid& grid);
+
+//Returns the block type which is most likely the logic block
+t_type_ptr infer_logic_block_type(const DeviceGrid& grid);
 
 //Returns true if the specified block type contains the specified blif model name
 bool block_type_contains_blif_model(t_type_ptr type, std::string blif_model_name);
@@ -115,8 +128,8 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLo
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
 t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type);
 void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
-vtr::vector_map<ClusterBlockId, t_pb **> alloc_and_load_pin_id_to_pb_mapping();
-void free_pin_id_to_pb_mapping(vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
+vtr::vector<ClusterBlockId, t_pb **> alloc_and_load_pin_id_to_pb_mapping();
+void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
 
 
 float compute_primitive_base_cost(const t_pb_graph_node *primitive);

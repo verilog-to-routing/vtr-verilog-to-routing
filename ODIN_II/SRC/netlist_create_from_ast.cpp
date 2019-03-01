@@ -25,8 +25,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 
 #include "netlist_utils.h"
 #include "odin_util.h"
@@ -105,7 +105,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 signal_list_t * connect_function_instantiation_and_alias(short PASS, ast_node_t* module_instance, char *instance_name_prefix);
 void create_symbol_table_for_module(ast_node_t* module_items, char *module_name);
 void create_symbol_table_for_function(ast_node_t* module_items, char *module_name);
-int check_for_initial_reg_value(ast_node_t* var_declare, long long *value);
+int check_for_initial_reg_value(ast_node_t* var_declare, long *value);
 void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_node, char *instance_name_prefix);
 
 signal_list_t *concatenate_signal_lists(signal_list_t **signal_lists, int num_signal_lists);
@@ -157,7 +157,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node);
 void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name)
 {
 	/* with the top module we need to visit the entire ast tree */
-	size_t i, j, k;
+	long i, j, k;
 	char *temp_string;
 	long sc_spot;
 	oassert(module_items->type == MODULE_ITEMS || module_items->type == FUNCTION_ITEMS);
@@ -298,17 +298,20 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 
 		}
 
-		if(parameter_count > parameter_num && parameter_count > 0)
+		if(parameter_count && parameter_count != parameter_num)
 		{
-			error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
-					"There are less parameters (%d) in %s than there are specified in the module instantiation (%d)!",
-					parameter_num, module_name, parameter_count);
-		}
-		else if(parameter_count < parameter_num && parameter_count > 0)
-		{
-			warning_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
-					"There are more parameters (>%d) in %s than there are specified in the module instantiation (%d)!",
-					parameter_count, module_name, parameter_num);
+			if(parameter_count > parameter_num)
+			{
+				error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
+						"There are more parameters (%ld) in %s than there are specified in the module instantiation (%ld)!",
+						parameter_count, module_name, parameter_num);
+			}
+			else if(parameter_count < parameter_num)
+			{
+				warning_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
+						"There are less parameters (%ld) in %s than there are specified in the module instantiation (%ld)!",
+						parameter_count, module_name, parameter_num);
+			}
 		}
 	}
 }
@@ -327,7 +330,7 @@ void create_netlist()
 
 	char top_string[] = "top";
 	// Alias the symbol nodes in ast_modules to the actual MODULE nodes
-	size_t i;
+	long i;
 	for (i = 0; i < num_modules; i++)
 	{
 		if (ast_modules[i]->type == IDENTIFIERS)
@@ -420,7 +423,7 @@ void look_for_clocks(netlist_t *netlist)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *find_top_module()
 {
-	size_t i;
+	long i;
 	int j;
 	long sc_spot;
 	int found_top = -1;
@@ -461,7 +464,7 @@ ast_node_t *find_top_module()
 		}
 		else if ((ast_modules[i]->types.module.is_instantiated == FALSE) && (found_top != -1))
 		{
-			error_message(NETLIST_ERROR, ast_modules[i]->line_number, ast_modules[i]->file_number,
+			error_message(NETLIST_ERROR, ast_modules[i]->line_number, ast_modules[i]->file_number, "%s",
 					"Two top level modules - Odin II cannot deal with these types of designs\n");
 		}
 	}
@@ -469,7 +472,7 @@ ast_node_t *find_top_module()
 	/* check atleast one module is top ... and only one */
 	if (found_top == -1)
 	{
-		error_message(NETLIST_ERROR, -1, -1, "Could not find a top level module\n");
+		error_message(NETLIST_ERROR, -1, -1, "%s", "Could not find a top level module\n");
 	}
 
 	return ast_modules[found_top];
@@ -493,7 +496,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 	else
 	{
 		/* ELSE - we need to visit all the children before */
-		size_t i, j;
+		long i, j;
 		int k;
 		//check for defparam
 		for(i = 0; i <current_module->num_children; i++)
@@ -620,7 +623,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_name_prefix)
 {
 	/* with the top module we need to visit the entire ast tree */
-	size_t i;
+	long i;
 	short *child_skip_list = NULL; // list of children not to traverse into
 	short skip_children = FALSE; // skips the DFS completely if TRUE
 	signal_list_t *return_sig_list = NULL;
@@ -693,7 +696,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 						{
                             /* ELSE IF - we deal with instantiations of modules twice to alias input and output nets.  In this
 							 * pass we are looking for any drivers emerging from a module */
-                            size_t j;
+                            long j;
                             for(j = 0; j < node->children[i]->num_children; j++){
 
 							    /* make the aliases for all the drivers as they're passed through modules */
@@ -741,7 +744,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				{
 					for (i = 0; i < node->num_children; i++)
 					{
-                        //printf("   node->children[i]->type %d\n",node->children[i]->type);
+                        //printf("   node->children[i]->type %ld\n",node->children[i]->type);
 						if (node->children[i]->type == VAR_DECLARE_LIST)
 						{
 							/* IF - The port lists of this module are handled else where */
@@ -857,7 +860,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 		switch(node->type)
 		{
 			case FILE_ITEMS:
-				error_message(NETLIST_ERROR, node->line_number, node->file_number,
+				error_message(NETLIST_ERROR, node->line_number, node->file_number,"%s",
 						"FILE_ITEMS are not supported by Odin.\n");
 				break;
 			case CONCATENATE:
@@ -870,7 +873,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 					for (i = 0; i < node->num_children; i++)
 					{
 						if (node->children[i]->type == MODULE_INSTANCE){
-							size_t j;
+							long j;
 							for(j = 0; j < node->children[i]->num_children; j++){
 
 							/* make the aliases for all the drivers as they're passed through modules */
@@ -918,19 +921,31 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 			break;
 			case ALWAYS:
 				/* attach the drivers to the driver nets */
-				if (type_of_circuit == COMBINATIONAL)
+				switch(type_of_circuit)
 				{
-					/* idx 1 element since always has DELAY Control first */
-					terminate_continuous_assignment(node, children_signal_list[1], instance_name_prefix);
-				}
-				else if (type_of_circuit == SEQUENTIAL)
-				{
-					terminate_registered_assignment(node, children_signal_list[1], local_clock_list, instance_name_prefix);
-				}
-				else
-				{
-					printf("Assignment outside of always block.");
-					oassert(FALSE);
+					case FALLING_EDGE_SENSITIVITY:
+					{
+						terminate_registered_assignment(node, children_signal_list[1], local_clock_list, instance_name_prefix);
+						break;
+					}
+					case RISING_EDGE_SENSITIVITY:
+					{
+						terminate_registered_assignment(node, children_signal_list[1], local_clock_list, instance_name_prefix);
+						break;
+					}
+					case ASYNCHRONOUS_SENSITIVITY:
+					{
+						/* idx 1 element since always has DELAY Control first */
+						terminate_continuous_assignment(node, children_signal_list[1], instance_name_prefix);
+						break;
+					}
+					default:
+					{
+						oassert(false &&
+							"Assignment outside of always block.");
+						break;
+					}
+
 				}
 				break;
 			case BINARY_OPERATION:
@@ -1083,7 +1098,7 @@ void create_all_driver_nets_in_this_function(char *instance_name_prefix)
 void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 {
 	/* with the top module we need to visit the entire ast tree */
-	size_t i, j;
+	long i, j;
 	long sc_spot;
 	ast_node_t *module_items = module->children[2];
 	npin_t *new_pin;
@@ -1110,7 +1125,7 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	}
 	else
 	{
-		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Module is empty\n");
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Module is empty\n");
 	}
 
 	/* create the constant nets */
@@ -1149,7 +1164,7 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	sc_spot = sc_add_string(output_nets_sc, zero_string);
 	if (output_nets_sc->data[sc_spot] != NULL)
 	{
-		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Error in Odin\n");
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Error in Odin\n");
 	}
 	/* store the data which is an idx here */
 	output_nets_sc->data[sc_spot] = (void*)verilog_netlist->zero_net;
@@ -1163,7 +1178,7 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	sc_spot = sc_add_string(output_nets_sc, one_string);
 	if (output_nets_sc->data[sc_spot] != NULL)
 	{
-		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Error in Odin\n");
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Error in Odin\n");
 	}
 	/* store the data which is an idx here */
 	output_nets_sc->data[sc_spot] = (void*)verilog_netlist->one_net;
@@ -1177,7 +1192,7 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	sc_spot = sc_add_string(output_nets_sc, pad_string);
 	if (output_nets_sc->data[sc_spot] != NULL)
 	{
-		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Error in Odin\n");
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Error in Odin\n");
 	}
 	/* store the data which is an idx here */
 	output_nets_sc->data[sc_spot] = (void*)verilog_netlist->pad_net;
@@ -1193,7 +1208,7 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 {
 	/* with the top module we need to visit the entire ast tree */
-	size_t i, j;
+	long i, j;
 	int k;
 	long sc_spot;
 	ast_node_t *module_items = module->children[2];
@@ -1294,7 +1309,7 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 						else
 						{
 							/* Implicit memory */
-							error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+							error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 									"Memory not handled ... yet in create_top_output_nodes!\n");
 						}
 					}
@@ -1304,7 +1319,7 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 	}
 	else
 	{
-		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Empty module\n");
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Empty module\n");
 	}
 }
 
@@ -1358,7 +1373,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		oassert((node_max->type == NUMBERS) && (node_min->type == NUMBERS));
 
 		/* Check if this array driver should have an initial value */
-		long long initial_value = 0;
+		long initial_value = 0;
 		if(var_declare->types.variable.is_initialized){
 			initial_value = var_declare->types.variable.initial_value;
 		}
@@ -1407,8 +1422,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		char *name = var_declare->children[0]->types.identifier;
 
-		long long data_min = node_min1->types.number.value;
-		long long data_max = node_max1->types.number.value;
+		long data_min = node_min1->types.number.value;
+		long data_max = node_max1->types.number.value;
 
 		if (data_min != 0)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
@@ -1416,8 +1431,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		oassert(data_min <= data_max);
 
-		long long addr_min = node_min2->types.number.value;
-		long long addr_max = node_max2->types.number.value;
+		long addr_min = node_min2->types.number.value;
+		long addr_max = node_max2->types.number.value;
 
 		if (addr_min != 0)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
@@ -1426,7 +1441,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		oassert(addr_min <= addr_max);
 
 		int data_width = data_max - data_min + 1;
-		long long words = addr_max - addr_min + 1;
+		long words = addr_max - addr_min + 1;
 
 		create_implicit_memory_block(data_width, words, name, instance_name_prefix);
 	}
@@ -1447,8 +1462,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		char *name = var_declare->children[0]->types.identifier;
 
-		long long data_min = node_min1->types.number.value;
-		long long data_max = node_max1->types.number.value;
+		long data_min = node_min1->types.number.value;
+		long data_max = node_max1->types.number.value;
 
 		if (data_min != 0)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
@@ -1456,11 +1471,11 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		oassert(data_min <= data_max);
 
-		long long addr_min = node_min2->types.number.value;
-		long long addr_max = node_max2->types.number.value;
+		long addr_min = node_min2->types.number.value;
+		long addr_max = node_max2->types.number.value;
 
-		long long addr_min1= node_min3->types.number.value;
-		long long addr_max1= node_max3->types.number.value;
+		long addr_min1= node_min3->types.number.value;
+		long addr_max1= node_max3->types.number.value;
 
 		if (addr_min != 0)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
@@ -1469,7 +1484,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		oassert(addr_min <= addr_max);
 
 		int data_width = data_max - data_min + 1;
-		long long words = (addr_max - addr_min + 1)*(addr_max1 - addr_min1 + 1)  - 1;
+		long words = (addr_max - addr_min + 1)*(addr_max1 - addr_min1 + 1)  - 1;
 
 		create_implicit_memory_block(data_width, words, name, instance_name_prefix);
 	}
@@ -1580,8 +1595,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 	else if (var_declare->children[3] != NULL)
 	{
 		/* Implicit memory */
-		printf("Unhandled implicit memory in define_nodes_and_nets_with_driver\n");
-		oassert(FALSE);
+		error_message(NETLIST_ERROR, var_declare->children[3]->line_number, var_declare->children[3]->file_number, "%s\n", "Unhandled implicit memory in define_nodes_and_nets_with_driver");
 	}
 
 	return new_net;
@@ -1595,7 +1609,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_name*/)
 {
 	/* with the top module we need to visit the entire ast tree */
-	size_t i, j;
+	long i, j;
 	char *temp_string;
 	long sc_spot;
 	oassert(module_items->type == MODULE_ITEMS);
@@ -1640,7 +1654,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 								)
 						)
 						{
-							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number,
+							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, "%s",
 									"Input defined as wire or reg means it is a driver in this module.  Not possible\n");
 						}
 						/* MORE ERRORS ... could check for same declaration name ... */
@@ -1650,7 +1664,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_output = TRUE;
 
 							/* check for an initial value and copy it over if found */
-							long long initial_value;
+							long initial_value;
 							if(check_for_initial_reg_value(var_declare, &initial_value)){
 								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
 								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
@@ -1664,7 +1678,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 
 							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_integer = var_declare->types.variable.is_integer;
 							/* check for an initial value and copy it over if found */
-							long long initial_value;
+							long initial_value;
 							if(check_for_initial_reg_value(var_declare, &initial_value)){
 								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
 								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
@@ -1686,7 +1700,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 						num_local_symbol_table ++;
 
 						/* check for an initial value and store it if found */
-						long long initial_value;
+						long initial_value;
 						if(check_for_initial_reg_value(var_declare, &initial_value)){
 							var_declare->types.variable.is_initialized = TRUE;
 							var_declare->types.variable.initial_value = initial_value;
@@ -1700,7 +1714,8 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 				if((module_items->children[i]->children[0]) && (module_items->children[i]->children[0]->type == BLOCKING_STATEMENT))
 				{
 					if((module_items->children[i]->children[0]->children[0]) && (module_items->children[i]->children[0]->children[0]->type == IDENTIFIERS))
-					{ temp_string = make_full_ref_name(NULL, NULL, NULL, module_items->children[i]->children[0]->children[0]->types.identifier, -1);
+					{ 
+						temp_string = make_full_ref_name(NULL, NULL, NULL, module_items->children[i]->children[0]->children[0]->types.identifier, -1);
 						/* look for that element */
 						sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
 						if( sc_spot == -1 )
@@ -1724,7 +1739,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_input = FALSE;
 
 						}
-
+						vtr::free(temp_string);
 					}
 				}
 			}
@@ -1732,7 +1747,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 	}
 	else
 	{
-		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Empty module\n");
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Empty module\n");
 	}
 }
 
@@ -1744,7 +1759,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 void create_symbol_table_for_function(ast_node_t* function_items, char * /*function_name*/)
 {
 	/* with the top module we need to visit the entire ast tree */
-	size_t i, j;
+	long i, j;
 	char *temp_string;
 	long sc_spot;
 	oassert(function_items->type == FUNCTION_ITEMS);
@@ -1789,7 +1804,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
 								)
 						)
 						{
-							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number,
+							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, "%s",
 									"Input defined as wire or reg means it is a driver in this module.  Not possible\n");
 						}
 						/* MORE ERRORS ... could check for same declaration name ... */
@@ -1799,7 +1814,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
 							((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_output = TRUE;
 
 							/* check for an initial value and copy it over if found */
-							long long initial_value;
+							long initial_value;
 							if(check_for_initial_reg_value(var_declare, &initial_value)){
 								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
 								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
@@ -1814,7 +1829,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
                             ((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_integer = var_declare->types.variable.is_integer;
 
 							/* check for an initial value and copy it over if found */
-							long long initial_value;
+							long initial_value;
 							if(check_for_initial_reg_value(var_declare, &initial_value)){
 								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
 								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
@@ -1836,7 +1851,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
 						function_num_local_symbol_table ++;
 
 						/* check for an initial value and store it if found */
-						long long initial_value;
+						long initial_value;
 						if(check_for_initial_reg_value(var_declare, &initial_value)){
 							var_declare->types.variable.is_initialized = TRUE;
 							var_declare->types.variable.initial_value = initial_value;
@@ -1849,7 +1864,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
 	}
 	else
 	{
-		error_message(NETLIST_ERROR, function_items->line_number, function_items->file_number, "Empty module\n");
+		error_message(NETLIST_ERROR, function_items->line_number, function_items->file_number, "%s", "Empty module\n");
 	}
 }
 /*--------------------------------------------------------------------------
@@ -1859,7 +1874,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
  *  Returns the initial value in *value if one is found.
  *  Added by Conor
  *-------------------------------------------------------------------------*/
-int check_for_initial_reg_value(ast_node_t* var_declare, long long *value){
+int check_for_initial_reg_value(ast_node_t* var_declare, long *value){
 	oassert(var_declare->type == VAR_DECLARE);
 	// Initial value is always the last child, if one exists
 	if(var_declare->children[5] != NULL){
@@ -1881,7 +1896,7 @@ int check_for_initial_reg_value(ast_node_t* var_declare, long long *value){
 void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefix)
 {
 	ast_node_t *hb_connect_list;
-	size_t i;
+	long i;
 	int j;
 	long sc_spot_output;
 	long sc_spot_input_new, sc_spot_input_old;
@@ -1907,9 +1922,18 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefi
 			char *full_name;
 			char *alias_name;
 
-			name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
-			full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, -1);
-			vtr::free(name_of_hb_input);
+			/* this will crash because of an oassert. we keep it but we work around the problem here */
+			if (hb_instance_var_node->type == RANGE_REF)
+			{
+				full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, NULL, -1);
+			}
+			else
+			{
+				name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
+				full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, -1);
+				vtr::free(name_of_hb_input);
+			}
+			
 			alias_name = make_full_ref_name(instance_name_prefix,
 					hb_instance->children[0]->types.identifier,
 					hb_instance->children[1]->children[0]->types.identifier,
@@ -1941,9 +1965,17 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefi
 				else
 				{
 					oassert(j == 0);
-					name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
-					full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, -1);
-					vtr::free(name_of_hb_input);
+					/* this will crash because of an oassert. we keep it but we work around the problem here */
+					if (hb_instance_var_node->type == RANGE_REF)
+					{
+						full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, NULL, -1);
+					}
+					else
+					{
+						name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
+						full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, j);
+						vtr::free(name_of_hb_input);
+					}
 
 					alias_name = make_full_ref_name(instance_name_prefix,
 							hb_instance->children[0]->types.identifier,
@@ -2020,7 +2052,7 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_p
 {
 	t_model *hb_model;
 	ast_node_t *hb_connect_list;
-	size_t i;
+	long i;
 	int j;
 	long sc_spot_output;
 	long sc_spot_input_new, sc_spot_input_old;
@@ -2084,9 +2116,17 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_p
 				else
 				{
 					oassert(j == 0);
-					name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
-					full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, -1);
-					vtr::free(name_of_hb_input);
+					/* this will crash because of an oassert. we keep it but we work around the problem here */
+					if (hb_instance_var_node->type == RANGE_REF)
+					{
+						full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, NULL, -1);
+					}
+					else
+					{
+						name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
+						full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, -1);
+						vtr::free(name_of_hb_input);
+					}
 
 					alias_name = make_full_ref_name(instance_name_prefix,
 							hb_instance->children[0]->types.identifier,
@@ -2171,7 +2211,7 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_p
  *-------------------------------------------------------------------------*/
 void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_instance, char *instance_name_prefix)
 {
-	size_t i;
+	long i;
 	int j;
 	ast_node_t *module_node;
 	ast_node_t *module_list;
@@ -2266,8 +2306,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 		else if (module_var_node->children[5] != NULL)
 		{
 			/* Implicit memory */
-			printf("Unhandled implicit memory in connect_module_instantiation_and_alias\n");
-			oassert(FALSE);
+			error_message(NETLIST_ERROR, module_var_node->children[5]->line_number, module_var_node->children[5]->file_number, "%s\n", "Unhandled implicit memory in connect_module_instantiation_and_alias");
 		}
 		for (j = 0; j < port_size; j++)
 		{
@@ -2329,12 +2368,12 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				}
 
 				/* CMM - Check if this pin should be driven by the top level VCC or GND drivers	*/
-				if (strstr(full_name, "ONE_VCC_CNS") != NULL)
+				if (strstr(full_name, ONE_VCC_CNS))
 				{
 					join_nets(verilog_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->one_net;
 				}
-				else if (strstr(full_name, "ZERO_GND_ZERO") != NULL)
+				else if (strstr(full_name, ZERO_GND_ZERO))
 				{
 					join_nets(verilog_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->zero_net;
@@ -2490,7 +2529,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 {
     signal_list_t *return_list = init_signal_list();
 
-	size_t i;
+	long i;
 	int j;
 	//signal_list_t *aux_node = NULL;
 	ast_node_t *module_node;
@@ -2592,8 +2631,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 		else if (module_var_node->children[5] != NULL)
 		{
 			/* Implicit memory */
-			printf("Unhandled implicit memory in connect_module_instantiation_and_alias\n");
-			oassert(FALSE);
+			error_message(NETLIST_ERROR, module_var_node->children[5]->line_number, module_var_node->children[5]->file_number, "%s\n", "Unhandled implicit memory in connect_module_instantiation_and_alias");
 		}
 		for (j = 0; j < port_size; j++)
 		{
@@ -2651,19 +2689,19 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 					/*error_message(NETLIST_ERROR, module_instance->line_number, module_instance->file_number,
 							"This module port %s is unused in module %s", alias_name, module_node->children[0]->types.identifier);*/
                     if(port_size > 1)
-                        warning_message(NETLIST_ERROR, -1, -1, "This module port %s[%d] is unused in module %s\n", module_instance_var_node->types.identifier, j, module_node->children[0]->types.identifier);
+                        warning_message(NETLIST_ERROR, -1, -1, "This module port %s[%ld] is unused in module %s\n", module_instance_var_node->types.identifier, j, module_node->children[0]->types.identifier);
                     else warning_message(NETLIST_ERROR, -1, -1, "This module port %s is unused in module %s\n", module_instance_var_node->types.identifier, module_node->children[0]->types.identifier);
 
 				}
                 else{
 
 				    /* CMM - Check if this pin should be driven by the top level VCC or GND drivers	*/
-				    if (strstr(full_name, "ONE_VCC_CNS") != NULL)
+				    if (strstr(full_name, ONE_VCC_CNS))
 				    {
 					    join_nets(verilog_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					    input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->one_net;
 				    }
-				    else if (strstr(full_name, "ZERO_GND_ZERO") != NULL)
+				    else if (strstr(full_name, ZERO_GND_ZERO))
 				    {
 					    join_nets(verilog_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					    input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->zero_net;
@@ -2854,6 +2892,8 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 	nnet_t *new_in_net;
 	char_list_t *pin_lists = NULL;
 
+	oassert((!name || !var_declare) 
+		&& "Invalid state or internal error");
 	if (name == NULL)
 	{
 		/* get all the pins */
@@ -2867,10 +2907,6 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 		pin_lists->strings[0] = name;
 		pin_lists->num_strings = 1;
 	}
-	else
-	{
-		error_message(0,0,-1,"Invalid state or internal error");
-	}
 
 	for (i = 0; pin_lists && i < pin_lists->num_strings; i++)
 	{
@@ -2878,13 +2914,13 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 		new_pin->name = pin_lists->strings[i];
 
 		/* check if the instantiation pin exists. */
-		if (strstr(pin_lists->strings[i], "ONE_VCC_CNS") != NULL)
+		if (strstr(pin_lists->strings[i], ONE_VCC_CNS))
 		{
 			add_fanout_pin_to_net(verilog_netlist->one_net, new_pin);
 			sc_spot = sc_add_string(input_nets_sc, pin_lists->strings[i]);
 			input_nets_sc->data[sc_spot] = (void*)verilog_netlist->one_net;
 		}
-		else if (strstr(pin_lists->strings[i], "ZERO_GND_ZERO") != NULL)
+		else if (strstr(pin_lists->strings[i], ZERO_GND_ZERO))
 		{
 			add_fanout_pin_to_net(verilog_netlist->zero_net, new_pin);
 			sc_spot = sc_add_string(input_nets_sc, pin_lists->strings[i]);
@@ -2932,7 +2968,10 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 		add_pin_to_signal_list(return_sig_list, new_pin);
 	}
 
-	vtr::free(pin_lists);
+    if (pin_lists != NULL) {
+        vtr::free(pin_lists->strings);
+        vtr::free(pin_lists);
+    }
 	return return_sig_list;
 }
 
@@ -2998,14 +3037,31 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
 							"Invalid addressing mode for implicit memory %s.\n", right_memory->name);
 
-		if(right->children[2] != NULL)
+		if(right->num_children > 2 && right->children[2] != NULL)
 		{
 			convert_multi_to_single_dimentional_array(right);
 		}
 
 		signal_list_t* address = netlist_expand_ast_of_module(right->children[1], instance_name_prefix);
 		// Pad/shrink the address to the depth of the memory.
-		{
+		
+		if(address->count != right_memory->addr_width){
+			if(address->count > right_memory->addr_width)
+			{
+				std::string unused_pins_name = "";
+				for(long i = right_memory->addr_width; i < address->count; i++)
+				{
+					unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
+				}
+				warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+									"indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
+			}
+			else
+			{
+				warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+									"indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
+			}
+
 			while(address->count < right_memory->addr_width)
 				add_pin_to_signal_list(address, get_zero_pin(verilog_netlist));
 			address->count = right_memory->addr_width;
@@ -3073,16 +3129,16 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
 							"Invalid addressing mode for implicit memory %s.\n", left_memory->name);
 
-		// A memory can only be written from a clocked sequential block.
-		if (type_of_circuit != SEQUENTIAL)
+		// A memory can only be written from a clocked rising edge block.
+		if (type_of_circuit != RISING_EDGE_SENSITIVITY)
 		{
 			out_list = NULL;
-			error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
+			error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, "%s",
 				"Assignment to implicit memories is only supported within sequential circuits.\n");
 		}
 		else
 		{
-			if(left->children[2] != NULL)
+			if(left->num_children > 2 && left->children[2] != NULL)
 			{
 				convert_multi_to_single_dimentional_array(left);
 			}
@@ -3091,7 +3147,23 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			signal_list_t* address = netlist_expand_ast_of_module(left->children[1], instance_name_prefix);
 
 			// Pad/shrink the address to the depth of the memory.
-			{
+			if(address->count != left_memory->addr_width){
+				if(address->count > left_memory->addr_width)
+				{
+					std::string unused_pins_name = "";
+					for(long i = left_memory->addr_width; i < address->count; i++)
+					{
+						unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
+					}
+					warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+										"indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
+				}
+				else
+				{
+					warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+										"indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
+				}
+
 				while(address->count < left_memory->addr_width)
 					add_pin_to_signal_list(address, get_zero_pin(verilog_netlist));
 				address->count = left_memory->addr_width;
@@ -3182,14 +3254,30 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			{
 				/* need to shrink the output list */
 				int i;
-				for (i = 0; i < output_size; i++)
+				for (i = 0; i < output_size; i++) {
 					add_pin_to_signal_list(return_list, in_1->pins[i]);
 
+					/* free unused nnodes for related BLOCKING_STATEMENT nodes */
+					nnode_t *temp_node = in_1->pins[i]->node;
+					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
+						free_nnode(temp_node);
+					}
+				}
 				free_signal_list(in_1);
 			}
 			else
 			{
+				free_signal_list(return_list);
 				return_list = in_1;
+
+				/* free unused nnodes for related BLOCKING_STATEMENT nodes */
+				int i;
+				for (i = 0; i < output_size; i++) {
+					nnode_t *temp_node = in_1->pins[i]->node;
+					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
+						free_nnode(temp_node);
+					}
+				}
 			}
 		}
 
@@ -3246,7 +3334,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 
 void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_node, char * /*instance_name_prefix*/)
 {
-    size_t i;
+    long i;
     long sc_spot;
     for(i = 0; i < initial_node->num_children; i++)
     {
@@ -3265,7 +3353,7 @@ void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_no
 				sc_spot = sc_lookup_string(local_symbol_table_sc, initial_node->children[i]->children[0]->types.identifier);
 				if(sc_spot == -1)
 				{
-					printf("** Register [%s] used in initial block is not declared.\n", initial_node->children[i]->children[0]->types.identifier);
+					warning_message(NETLIST_ERROR, initial_node->children[i]->children[0]->line_number, initial_node->children[i]->children[0]->file_number, "Register [%s] used in initial block is not declared.\n", initial_node->children[i]->children[0]->types.identifier);
 				}
 				else
 				{
@@ -3371,10 +3459,9 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			/* create the unique name for this gate */
 			//ff_node->name = node_name(ff_node, instance_name_prefix);
 			/* Name the flipflop based on the name of its output pin */
-			char *ff_name = (char *)vtr::malloc(sizeof(char) * (strlen(pin->name) + strlen("_FF_NODE") + 1));
-			strcpy(ff_name, pin->name);
-			strcat(ff_name, "_FF_NODE");
-			ff_node->name = ff_name;
+			const char *ff_base_name = node_name_based_on_op(ff_node);
+			ff_node->name = (char *)vtr::malloc(sizeof(char) * (strlen(pin->name) + strlen(ff_base_name) + 2));
+			odin_sprintf(ff_node->name, "%s_%s", pin->name, ff_base_name);
 
 			/* Copy over the initial value information from the net */
 			ref_string = (char *)vtr::calloc(strlen(pin->name)+100,sizeof(char));
@@ -3386,8 +3473,6 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 
 				ff_node->has_initial_value = 1;
 				ff_node->initial_value = ((char *)(local_symbol_table_sc->data[sc_spot]))[0];
-				vtr::free(ref_string);
-
 			}
 			else{
 
@@ -3397,6 +3482,8 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 				ff_node->has_initial_value = net->has_initial_value;
 				ff_node->initial_value = net->initial_value;
 			}
+			/* free the reference string */
+			vtr::free(ref_string);
 
 
 			/* allocate the pins needed */
@@ -3598,7 +3685,7 @@ int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *
 		}
 
 		if (global_args.all_warnings && output_list->num_strings < input_list->count)
-			warning_message(NETLIST_ERROR, node->line_number, node->file_number,
+			warning_message(NETLIST_ERROR, node->line_number, node->file_number, "%s",
 					"Alias: More driver pins than nets to drive: sometimes using decimal numbers causes this problem\n");
 
 		return output_list->num_strings;
@@ -3617,7 +3704,7 @@ signal_list_t *create_gate(ast_node_t* gate, char *instance_name_prefix)
 	nnode_t *gate_node;
 
 	ast_node_t *gate_instance;
-    size_t i, j;
+    long i, j;
 
     for(j = 0; j < gate->children[0]->num_children; j++){
 
@@ -3720,13 +3807,13 @@ signal_list_t *create_gate(ast_node_t* gate, char *instance_name_prefix)
  *--------------------------------------------------------------------------*/
 signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists, int list_size, char *instance_name_prefix)
 {
-	int i;
+	long i;
 	signal_list_t *return_list = init_signal_list();
 	nnode_t *operation_node;
-	int max_input_port_width = -1;
-	int output_port_width = -1;
-	int input_port_width = -1;
-	int current_idx;
+	long max_input_port_width = -1;
+	long output_port_width = -1;
+	long input_port_width = -1;
+	long current_idx;
 
 	/* create the node */
 	operation_node = allocate_nnode();
@@ -3797,14 +3884,15 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 			}
 			break;
 		case SR: // >>
+        case ASR: // >>>
 			/* Shifts doesn't matter about port size, but second input needs to be a number */
 			output_port_width = input_lists[0]->count;
 			input_port_width = input_lists[0]->count;
 			break;
 		case SL: // <<
 			/* Shifts doesn't matter about port size, but second input needs to be a number */
-			output_port_width = input_lists[0]->count + ((1<<input_lists[1]->count)-1);
-			input_port_width = input_lists[0]->count + ((1<<input_lists[1]->count)-1);
+			output_port_width = input_lists[0]->count + (shift_left_value_with_overflow_check(0x1, input_lists[1]->count)-1);
+			input_port_width = output_port_width;
 			break;
 		case LOGICAL_NOT: // !
 		case LOGICAL_OR: // ||
@@ -3849,13 +3937,13 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 			break;
 		}
 		case DIVIDE: // /
-			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "Divide operation not supported by Odin\n");
+			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "%s", "Divide operation not supported by Odin\n");
 			break;
 		case MODULO: // %
-			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "Modulo operation not supported by Odin\n");
+			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "%s", "Modulo operation not supported by Odin\n");
 			break;
 		default:
-			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "Operation not supported by Odin\n");
+			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "%s", "Operation not supported by Odin\n");
 			break;
 	}
 
@@ -3864,12 +3952,12 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 
 	for (i = 0; i < list_size; i++)
 	{
-		if ((operation_node->type == SR) || (operation_node->type == SL))
+		if ((operation_node->type == SR) || (operation_node->type == SL) || (operation_node->type == ASR))
 		{
 			/* Need to check that 2nd operand is constant */
 			ast_node_t *second = resolve_node(NULL, FALSE, instance_name_prefix, op->children[1]);
 			if (second->type != NUMBERS)
-				error_message(NETLIST_ERROR, op->line_number, op->file_number, "Odin only supports constant shifts at present\n");
+				error_message(NETLIST_ERROR, op->line_number, op->file_number, "%s", "Odin only supports constant shifts at present\n");
 			oassert(second->type == NUMBERS);
 
 			/* for shift left or right, it's actually a one port operation. The 2nd port is constant */
@@ -3949,65 +4037,76 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
  *-------------------------------------------------------------------------------------------*/
 signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instance_name_prefix)
 {
-	size_t i;
-	short edge_type = -1;
+	long i;
+	edge_type_e edge_type = UNDEFINED_SENSITIVITY;
 	signal_list_t *return_sig_list = init_signal_list();
-	signal_list_t *temp_list;
 
 	if (delay_control == NULL)
 	{
 		/* Assume always @* */
-		free_signal_list(return_sig_list);
-		return_sig_list = NULL;
-		type_of_circuit = COMBINATIONAL;
-
-		return return_sig_list;
+		edge_type = ASYNCHRONOUS_SENSITIVITY;
 	}
-
-	oassert(delay_control->type == DELAY_CONTROL);
-
-	for (i = 0; i < delay_control->num_children; i++)
+	else
 	{
-		if (	((delay_control->children[i]->type == NEGEDGE) || (delay_control->children[i]->type == POSEDGE))
-			&&
-			((edge_type == -1) || (edge_type == SEQUENTIAL)))
-		{
-			edge_type = SEQUENTIAL;
+		oassert(delay_control->type == DELAY_CONTROL);
 
-			temp_list = create_pins(delay_control->children[i]->children[0], NULL, instance_name_prefix);
-			oassert(temp_list->count == 1);
+		for (i = 0; i < delay_control->num_children; i++)
+		{
+			/* gather edge sensitivity */
+			edge_type_e child_sensitivity = UNDEFINED_SENSITIVITY;
+			switch(delay_control->children[i]->type)
+			{
+				case NEGEDGE:	
+					child_sensitivity = FALLING_EDGE_SENSITIVITY;	
+					break;
+				case POSEDGE:	
+					child_sensitivity = RISING_EDGE_SENSITIVITY;	
+					break;
+				default:		
+					child_sensitivity = ASYNCHRONOUS_SENSITIVITY;	
+					break;
+			}
 
-			add_pin_to_signal_list(return_sig_list, temp_list->pins[0]);
-			free_signal_list(temp_list);
-		}
-		else if ((edge_type == -1) || (edge_type == COMBINATIONAL))
-		{
-			/* ELSE - a combinational edge and we don't need to do anything */
-			edge_type = COMBINATIONAL;
-		}
-		else
-		{
-			error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number,
-					"Sensitivity list switches from sequential and combinational.  You can't define something like always @(posedge clock or a).\n");
+			if(edge_type == UNDEFINED_SENSITIVITY)
+				edge_type = child_sensitivity;
+
+			if(	(edge_type != child_sensitivity)
+			&& ((edge_type == ASYNCHRONOUS_SENSITIVITY) || (child_sensitivity == ASYNCHRONOUS_SENSITIVITY)) )
+				error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number, "%s",
+					"Sensitivity list switches between edge sensitive to asynchronous.  You can't define something like always @(posedge clock or a).\n");
+			
+			switch(edge_type)
+			{
+				/**
+				 * TODO: finish support for falling edge, this is left here for future work
+				 */
+				case FALLING_EDGE_SENSITIVITY: //falltrhough
+					edge_type = RISING_EDGE_SENSITIVITY; //fallthrough
+				case RISING_EDGE_SENSITIVITY:
+				{
+					signal_list_t *temp_list = create_pins(delay_control->children[i]->children[0], NULL, instance_name_prefix);
+					oassert(temp_list->count == 1);
+
+					add_pin_to_signal_list(return_sig_list, temp_list->pins[0]);
+					free_signal_list(temp_list);
+					break;
+				}
+				default: /* nothing to do */ break;
+			}
 		}
 	}
 
 	/* update the analysis type of this block of statements */
-	if (edge_type == -1)
-	{
-		error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number, "Sensitivity list error...looks empty?\n");
-	}
-	else if (edge_type == COMBINATIONAL)
+	if(edge_type == UNDEFINED_SENSITIVITY)
+		error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number, "%s", "Sensitivity list error...looks empty?\n");
+
+	else if(edge_type == ASYNCHRONOUS_SENSITIVITY)
 	{
 		free_signal_list(return_sig_list);
 		return_sig_list = NULL;
-		type_of_circuit = edge_type;
-	}
-	else if (edge_type == SEQUENTIAL)
-	{
-		type_of_circuit = edge_type;
 	}
 
+	type_of_circuit = edge_type;
 	return return_sig_list;
 }
 
@@ -4057,12 +4156,13 @@ signal_list_t *create_if_question_mux_expressions(ast_node_t *if_ast, nnode_t *i
 		}
 		else
 		{
-			error_message(NETLIST_ERROR, if_ast->line_number, if_ast->file_number, "No such thing as a a = b ? z;\n");
+			error_message(NETLIST_ERROR, if_ast->line_number, if_ast->file_number, "%s", "No such thing as a a = b ? z;\n");
 		}
 	}
 
 	/* now with all the lists sorted, we do the matching and proper propogation */
 	return_list = create_mux_expressions(if_expressions, if_node, 2, instance_name_prefix);
+	vtr::free(if_expressions);
 
 	return return_list;
 }
@@ -4181,6 +4281,7 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 
 	/* now with all the lists sorted, we do the matching and proper propagation */
 	return_list = create_mux_statements(if_statements, if_node, 2, instance_name_prefix);
+	vtr::free(if_statements);
 
 	return return_list;
 }
@@ -4222,7 +4323,7 @@ signal_list_t *create_case(ast_node_t *case_ast, char *instance_name_prefix)
  *-------------------------------------------------------------------------------------------*/
 void create_case_control_signals(ast_node_t *case_list_of_items, ast_node_t *compare_against, nnode_t *case_node, char *instance_name_prefix)
 {
-	size_t i;
+	long i;
 	signal_list_t *other_expressions_pin_list = init_signal_list();
 
 	/* reserve the first X pins of the mux for the control signals where X is the number of items */
@@ -4277,12 +4378,16 @@ void create_case_control_signals(ast_node_t *case_list_of_items, ast_node_t *com
 
 			/* copy that output pin to be put into the default */
 			add_input_pin_to_node(case_node, default_expression->pins[0], i);
+
+			free_signal_list(default_expression);
 		}
 		else
 		{
 			oassert(FALSE);
 		}
 	}
+
+	free_signal_list(other_expressions_pin_list);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -4292,7 +4397,7 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 {
 	signal_list_t **case_statement;
 	signal_list_t *return_list;
-	size_t i;
+	long i;
 
 	/* make storage for statements and expressions */
 	case_statement = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*)*(case_list_of_items->num_children));
@@ -4320,6 +4425,7 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 
 	/* now with all the lists sorted, we do the matching and proper propogation */
 	return_list = create_mux_statements(case_statement, case_node, case_list_of_items->num_children, instance_name_prefix);
+	vtr::free(case_statement);
 
 	return return_list;
 }
@@ -4392,34 +4498,63 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 				/* Don't match, so this signal is an IMPLIED SIGNAL !!! */
 				npin_t *pin = combined_lists->pins[i];
 
-				/* implied signal for mux */
-				if (type_of_circuit == SEQUENTIAL)
+				switch(type_of_circuit)
 				{
-					if (lookup_implicit_memory_input(pin->name))
+					case RISING_EDGE_SENSITIVITY:
 					{
-						// If the mux feeds an implicit memory, imply zero.
+						/* implied signal for mux */
+						if (lookup_implicit_memory_input(pin->name))
+						{
+							// If the mux feeds an implicit memory, imply zero.
+							add_input_pin_to_node(mux_node, get_zero_pin(verilog_netlist), pin_index);
+						}
+						else
+						{
+							/* lookup this driver name */
+							signal_list_t *this_pin_list = create_pins(NULL, pin->name, instance_name_prefix);
+							oassert(this_pin_list->count == 1);
+							//add_a_input_pin_to_node_spot_idx(mux_node, get_zero_pin(verilog_netlist), pin_index);
+							add_input_pin_to_node(mux_node, this_pin_list->pins[0], pin_index);
+							/* clean up */
+							free_signal_list(this_pin_list);
+						}
+						break;
+					}
+					case FALLING_EDGE_SENSITIVITY:
+					{
+						/* implied signal for mux */
+						if (lookup_implicit_memory_input(pin->name))
+						{
+							// If the mux feeds an implicit memory, imply zero.
+							add_input_pin_to_node(mux_node, get_zero_pin(verilog_netlist), pin_index);
+						}
+						else
+						{
+							/* lookup this driver name */
+							signal_list_t *this_pin_list = create_pins(NULL, pin->name, instance_name_prefix);
+							oassert(this_pin_list->count == 1);
+							//add_a_input_pin_to_node_spot_idx(mux_node, get_zero_pin(verilog_netlist), pin_index);
+							add_input_pin_to_node(mux_node, this_pin_list->pins[0], pin_index);
+							/* clean up */
+							free_signal_list(this_pin_list);
+						}
+						break;
+					}
+					case ASYNCHRONOUS_SENSITIVITY:
+					{
+						/* DON'T CARE - so hookup zero */
 						add_input_pin_to_node(mux_node, get_zero_pin(verilog_netlist), pin_index);
+						// Allows the simulator to be aware of the implied nature of this signal.
+						mux_node->input_pins[pin_index]->is_implied = TRUE;
+						break;
 					}
-					else
+					default:
 					{
-						/* lookup this driver name */
-						signal_list_t *this_pin_list = create_pins(NULL, pin->name, instance_name_prefix);
-						oassert(this_pin_list->count == 1);
-						//add_a_input_pin_to_node_spot_idx(mux_node, get_zero_pin(verilog_netlist), pin_index);
-						add_input_pin_to_node(mux_node, this_pin_list->pins[0], pin_index);
-						/* clean up */
-						free_signal_list(this_pin_list);
+						oassert(false &&
+							"No circuit sensitivity for mux !!");
+						break;
 					}
 				}
-				else if (type_of_circuit == COMBINATIONAL)
-				{
-					/* DON'T CARE - so hookup zero */
-					add_input_pin_to_node(mux_node, get_zero_pin(verilog_netlist), pin_index);
-					// Allows the simulator to be aware of the implied nature of this signal.
-					mux_node->input_pins[pin_index]->is_implied = TRUE;
-				}
-				else
-					oassert(FALSE);
 			}
 		}
 
@@ -4434,6 +4569,7 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 		free_signal_list(statement_lists[i]);
 	}
 	free_signal_list(combined_lists);
+	vtr::free(per_case_statement_idx);
 
 	return return_list;
 }
@@ -4546,7 +4682,7 @@ int find_smallest_non_numerical(ast_node_t *node, signal_list_t **input_list, in
 
 		if (smallest_idx == -1)
 		{
-			error_message(NETLIST_ERROR, node->line_number, node->file_number, "all numbers in padding non numericals\n");
+			error_message(NETLIST_ERROR, node->line_number, node->file_number, "%s", "all numbers in padding non numericals\n");
 		}
 		else
 		{
@@ -4556,22 +4692,19 @@ int find_smallest_non_numerical(ast_node_t *node, signal_list_t **input_list, in
 			/* check if the smallest is not a number */
 			for (i = 0; i < input_list[smallest_idx]->count; i++)
 			{
-				if (input_list[smallest_idx]->pins[i]->name == NULL)
-				{
-					/* Not a number so this is the smallest */
-					found_non_numerical = TRUE;
+				found_non_numerical = !(
+					input_list[smallest_idx]->pins[i]->name 
+					&& (	strstr(input_list[smallest_idx]->pins[i]->name, ONE_VCC_CNS)
+						||	strstr(input_list[smallest_idx]->pins[i]->name, ZERO_GND_ZERO))
+				);
+				/* Not a number so this is the smallest */
+				if (found_non_numerical)
 					break;
-				}
-				if (!((strstr(input_list[smallest_idx]->pins[i]->name, "ONE_VCC_CNS") != NULL)
-						|| strstr(input_list[smallest_idx]->pins[i]->name, "ZERO_GND_ZERO") != NULL))
-				{
-					/* Not a number so this is the smallest */
-					found_non_numerical = TRUE;
-					break;
-				}
 			}
 		}
 	}
+
+	vtr::free(tested);
 
 	return smallest_idx;
 }
@@ -4588,7 +4721,7 @@ void pad_with_zeros(ast_node_t* node, signal_list_t *list, int pad_size, char * 
 		for (i = list->count; i < pad_size; i++)
 		{
 			if (global_args.all_warnings)
-				warning_message(NETLIST_ERROR, node->line_number, node->file_number,
+				warning_message(NETLIST_ERROR, node->line_number, node->file_number, "%s",
 						"Padding an input port with 0 for operation (likely compare)\n");
 			add_pin_to_signal_list(list, get_zero_pin(verilog_netlist));
 		}
@@ -4596,7 +4729,7 @@ void pad_with_zeros(ast_node_t* node, signal_list_t *list, int pad_size, char * 
 	else if (pad_size < list->count)
 	{
 		if (global_args.all_warnings)
-			warning_message(NETLIST_ERROR, node->line_number, node->file_number,
+			warning_message(NETLIST_ERROR, node->line_number, node->file_number, "%s",
 					"More driver pins than nets to drive.  This means that for this operation you are losing some of the most significant bits\n");
 	}
 }
@@ -4609,7 +4742,7 @@ void pad_with_zeros(ast_node_t* node, signal_list_t *list, int pad_size, char * 
 signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name_prefix, t_model* hb_model)
 {
 	if (!hb_model || !is_ast_dp_ram(block))
-		error_message(NETLIST_ERROR, block->line_number, block->file_number, "Error in creating dual port ram\n");
+		error_message(NETLIST_ERROR, block->line_number, block->file_number, "%s", "Error in creating dual port ram\n");
 
 	block->type = RAM;
 
@@ -4629,7 +4762,7 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 
 	/* Need to do a sanity check to make sure ports line up */
 	t_model_ports *hb_ports;
-	size_t i;
+	long i;
 	for (i = 0; i < block_list->num_children; i++)
 	{
 		block_connect = block_list->children[i];
@@ -4784,7 +4917,7 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_name_prefix, t_model* hb_model)
 {
 	if (!hb_model || !is_ast_sp_ram(block))
-		error_message(NETLIST_ERROR, block->line_number, block->file_number, "Error in creating single port ram\n");
+		error_message(NETLIST_ERROR, block->line_number, block->file_number, "%s", "Error in creating single port ram\n");
 
 	// EDDIE: Uses new enum in ids: RAM (opposed to MEMORY from operation_t previously)
 	block->type = RAM;
@@ -4810,7 +4943,7 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 	/* Need to do a sanity check to make sure ports line up */
 	ast_node_t *block_connect;
 	char *ip_name = NULL;
-	size_t i;
+	long i;
 	t_model_ports *hb_ports;
 	for (i = 0; i < block_list->num_children; i++)
 	{
@@ -4974,7 +5107,7 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 	char *identifier = block->children[0]->types.identifier;
 
 	if (!is_ast_sp_ram(block))
-		error_message(NETLIST_ERROR, block->line_number, block->file_number, "Error in creating soft single port ram\n");
+		error_message(NETLIST_ERROR, block->line_number, block->file_number, "%s", "Error in creating soft single port ram\n");
 
 	block->type = RAM;
 
@@ -4991,7 +5124,7 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 			block_instance->children[0]->types.identifier
 	);
 
-	size_t i;
+	long i;
 	signal_list_t **in_list = (signal_list_t **)vtr::malloc(sizeof(signal_list_t *)*block_list->num_children);
 	int out_port_size = 0;
 	int current_idx = 0;
@@ -5125,7 +5258,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 	char *instance_name = block->children[1]->children[0]->types.identifier;
 
 	if (!is_ast_dp_ram(block))
-		error_message(NETLIST_ERROR, block->line_number, block->file_number, "Error in creating soft dual port ram\n");
+		error_message(NETLIST_ERROR, block->line_number, block->file_number, "%s", "Error in creating soft dual port ram\n");
 
 	block->type = RAM;
 
@@ -5142,7 +5275,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 			block_instance->children[0]->types.identifier
 	);
 
-	size_t i;
+	long i;
 	signal_list_t **in_list = (signal_list_t **)vtr::malloc(sizeof(signal_list_t *)*block_list->num_children);
 	int out1_size = 0;
 	int out2_size = 0;
@@ -5286,7 +5419,7 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 	ast_node_t *block_connect;
 	char *ip_name;
 	t_model_ports *hb_ports = NULL;
-	size_t i;
+	long i;
 	int j, current_idx, current_out_idx;
 	int is_mult = 0;
 	int mult_size = 0;
@@ -5369,9 +5502,7 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 
 		if (hb_ports == NULL)
 		{
-			printf("Non-existant port %s in hard block %s\n", ip_name, block->children[0]->types.identifier);
-			block_connect->children[1]->hb_port = NULL;
-			oassert(FALSE);
+			error_message(NETLIST_ERROR, block->children[0]->line_number, block->children[0]->file_number, "Non-existant port %s in hard block %s\n", ip_name, block->children[0]->types.identifier);
 		}
 
 		/* Link the signal to the port definition */
@@ -5628,8 +5759,8 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 		array_row = node->children[1]->types.number.value;
 		array_column = node->children[2]->types.number.value;
 		array_index = array_row * array_size + array_column;
-		sprintf(number, "%ld", array_index);
-		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
+		odin_sprintf(number, "%ld", array_index);
+		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long(number,sizeof(number)));
 
 	}
 	else if ((node->children[1]->type == NUMBERS) && (node->children[2]->type == IDENTIFIERS))
@@ -5639,8 +5770,8 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
 		array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
 		array_index = array_row * array_size + array_column;
-		sprintf(number, "%ld", array_index);
-		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
+		odin_sprintf(number, "%ld", array_index);
+		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long(number,sizeof(number)));
 
 	}
 	else if ((node->children[1]->type == IDENTIFIERS) && (node->children[2]->type == NUMBERS))
@@ -5650,8 +5781,8 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
 		array_row = local_symbol_table[sc_spot]->types.variable.initial_value;
 		array_index = array_row * array_size + array_column;
-		sprintf(number, "%ld", array_index);
-		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
+		odin_sprintf(number, "%ld", array_index);
+		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long(number,sizeof(number)));
 	}
 	else
 	{
@@ -5664,8 +5795,8 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 		array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
 		array_index = array_row * array_size + array_column;
 
-		sprintf(number, "%ld", array_index);
-		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
+		odin_sprintf(number, "%ld", array_index);
+		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long(number,sizeof(number)));
 	}
 	return;
 }

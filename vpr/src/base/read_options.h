@@ -50,26 +50,28 @@ struct t_options {
     argparse::ArgValue<float> target_device_utilization;
     argparse::ArgValue<e_constant_net_method> constant_net_method;
     argparse::ArgValue<e_clock_modeling> clock_modeling;
+    argparse::ArgValue<bool> exit_before_pack;
 
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;
+    argparse::ArgValue<e_const_gen_inference> const_gen_inference;
     argparse::ArgValue<bool> sweep_dangling_primary_ios;
     argparse::ArgValue<bool> sweep_dangling_nets;
     argparse::ArgValue<bool> sweep_dangling_blocks;
     argparse::ArgValue<bool> sweep_constant_primary_outputs;
-    argparse::ArgValue<bool> verbose_sweep;
+    argparse::ArgValue<int> netlist_verbosity;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;
-    argparse::ArgValue<bool> allow_unrelated_clustering;
+    argparse::ArgValue<e_unrelated_clustering> allow_unrelated_clustering;
     argparse::ArgValue<float> alpha_clustering;
     argparse::ArgValue<float> beta_clustering;
     argparse::ArgValue<bool> timing_driven_clustering;
     argparse::ArgValue<e_cluster_seed> cluster_seed_type;
     argparse::ArgValue<bool> enable_clustering_pin_feasibility_filter;
     argparse::ArgValue<std::vector<std::string>> target_external_pin_util;
-    argparse::ArgValue<bool> debug_clustering;
     argparse::ArgValue<bool> enable_round_robin_prepacking;
+    argparse::ArgValue<int> pack_verbosity;
 
     /* Placement options */
     argparse::ArgValue<int> Seed;
@@ -89,6 +91,12 @@ struct t_options {
     argparse::ArgValue<int> inner_loop_recompute_divider;
     argparse::ArgValue<float> place_exp_first;
     argparse::ArgValue<float> place_exp_last;
+    argparse::ArgValue<float> place_delay_offset;
+    argparse::ArgValue<int> place_delay_ramp_delta_threshold;
+    argparse::ArgValue<float> place_delay_ramp_slope;
+    argparse::ArgValue<float> place_tsu_rel_margin;
+    argparse::ArgValue<float> place_tsu_abs_margin;
+    argparse::ArgValue<std::string> post_place_timing_report_file;
 
     /* Router Options */
     argparse::ArgValue<int> max_router_iterations;
@@ -110,8 +118,18 @@ struct t_options {
     argparse::ArgValue<float> astar_fac;
     argparse::ArgValue<float> max_criticality;
     argparse::ArgValue<float> criticality_exp;
+    argparse::ArgValue<e_incr_reroute_delay_ripup> incr_reroute_delay_ripup;
     argparse::ArgValue<e_routing_failure_predictor> routing_failure_predictor;
     argparse::ArgValue<e_routing_budgets_algorithm> routing_budgets_algorithm;
+    argparse::ArgValue<bool> save_routing_per_iteration;
+    argparse::ArgValue<float> congested_routing_iteration_threshold_frac;
+    argparse::ArgValue<e_route_bb_update> route_bb_update;
+    argparse::ArgValue<int> router_high_fanout_threshold;
+    argparse::ArgValue<int> router_debug_net;
+    argparse::ArgValue<int> router_debug_sink_rr;
+    argparse::ArgValue<e_router_lookahead> router_lookahead_type;
+    argparse::ArgValue<int> router_max_convergence_count;
+    argparse::ArgValue<float> router_reconvergence_cpd_threshold;
 
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;

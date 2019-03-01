@@ -1,7 +1,7 @@
 #ifndef NETLIST_UTILS_H_FUNCTIONS
 #define NETLIST_UTILS_H_FUNCTIONS
 
-#include "types.h"
+#include "odin_types.h"
 
 // PROTOTYPES
 //
@@ -37,6 +37,8 @@ void join_nets(nnet_t *net, nnet_t* input_net);
 
 void remap_pin_to_new_net(npin_t *pin, nnet_t *new_net);
 void remap_pin_to_new_node(npin_t *pin, nnode_t *new_node, int pin_idx);
+void remap_pin_to_new_node_range(npin_t *pin, nnode_t *new_node, int pin_range_start, int pin_range_end);
+
 
 signal_list_t *init_signal_list();
 void add_pin_to_signal_list(signal_list_t *list, npin_t* pin);
@@ -58,7 +60,7 @@ int count_nodes_in_netlist(netlist_t *netlist);
 
 netlist_t* allocate_netlist();
 void free_netlist(netlist_t *to_free);
-void add_node_to_netlist(netlist_t *netlist, nnode_t *node, short special_node);
+void add_node_to_netlist(netlist_t *netlist, nnode_t *node, operation_list special_node);
 void mark_clock_node ( netlist_t *netlist, const char *clock_name);
 
 int get_output_pin_index_from_mapping(nnode_t *node, const char *name);

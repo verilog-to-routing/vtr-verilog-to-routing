@@ -11,13 +11,13 @@
 #include "vtr_time.h"
 
 static void process_circuit(AtomNetlist& netlist,
-                            const t_model* library_models,
+                            e_const_gen_inference const_gen_inference_method,
                             bool should_absorb_buffers,
                             bool should_sweep_dangling_primary_ios,
                             bool should_sweep_dangling_nets,
                             bool should_sweep_dangling_blocks,
                             bool should_sweep_constant_primary_outputs,
-                            bool verbose);
+                            int verbosity);
 
 static void show_circuit_stats(const AtomNetlist& netlist);
 
@@ -25,12 +25,13 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
                                      const char* circuit_file,
                                      const t_model* user_models,
                                      const t_model* library_models,
+                                     e_const_gen_inference const_gen_inference,
                                      bool should_absorb_buffers,
                                      bool should_sweep_dangling_primary_ios,
                                      bool should_sweep_dangling_nets,
                                      bool should_sweep_dangling_blocks,
                                      bool should_sweep_constant_primary_outputs,
-                                     bool verbose_sweep) {
+                                     int verbosity) {
 
     if (circuit_format == e_circuit_format::AUTO) {
         auto name_ext = vtr::split_ext(circuit_file);
@@ -47,12 +48,12 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
 
     AtomNetlist netlist;
     {
-        vtr::ScopedActionTimer t("Load circuit");
+        vtr::ScopedStartFinishTimer t("Load circuit");
 
         VTR_ASSERT(circuit_format == e_circuit_format::BLIF
                    || circuit_format == e_circuit_format::EBLIF);
 
-        netlist = read_blif(circuit_format, circuit_file, user_models, library_models);
+        netlist = read_blif(circuit_format, circuit_file, user_models, library_models, verbosity);
     }
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_ORIG)) {
@@ -60,13 +61,13 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
     }
 
     process_circuit(netlist,
-                    library_models,
+                    const_gen_inference, 
                     should_absorb_buffers,
                     should_sweep_dangling_primary_ios,
                     should_sweep_dangling_nets,
                     should_sweep_dangling_blocks,
                     should_sweep_constant_primary_outputs,
-                    verbose_sweep);
+                    verbosity);
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_CLEANED)) {
         print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED), netlist);
@@ -79,38 +80,38 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
 }
 
 static void process_circuit(AtomNetlist& netlist,
-                            const t_model *library_models,
+                            e_const_gen_inference const_gen_inference_method,
                             bool should_absorb_buffers,
                             bool should_sweep_dangling_primary_ios,
                             bool should_sweep_dangling_nets,
                             bool should_sweep_dangling_blocks,
                             bool should_sweep_constant_primary_outputs,
-                            bool verbose_sweep) {
-
+                            int verbosity) {
 
     {
-        vtr::ScopedActionTimer t("Clean circuit");
+        vtr::ScopedStartFinishTimer t("Mark constant generators");
+        mark_constant_generators(netlist, const_gen_inference_method, verbosity);
+    }
+
+    {
+        vtr::ScopedStartFinishTimer t("Clean circuit");
 
         //Clean-up lut buffers
         if(should_absorb_buffers) {
-            absorb_buffer_luts(netlist, verbose_sweep);
+            absorb_buffer_luts(netlist, verbosity);
         }
 
         //Remove the special 'unconn' net
         AtomNetId unconn_net_id = netlist.find_net("unconn");
         if(unconn_net_id) {
-            if (verbose_sweep) {
-                vtr::printf_warning(__FILE__, __LINE__, "Removing special net 'unconn' (assumed it represented explicitly unconnected pins)\n");
-            }
+            VTR_LOGV_WARN(verbosity > 1, "Removing special net 'unconn' (assumed it represented explicitly unconnected pins)\n");
             netlist.remove_net(unconn_net_id);
         }
 
         //Also remove the 'unconn' block driver, if it exists
         AtomBlockId unconn_blk_id = netlist.find_block("unconn");
         if(unconn_blk_id) {
-            if (verbose_sweep) {
-                vtr::printf_warning(__FILE__, __LINE__, "Removing special block 'unconn' (assumed it represented explicitly unconnected pins)\n");
-            }
+            VTR_LOGV_WARN(verbosity > 1, "Removing special block 'unconn' (assumed it represented explicitly unconnected pins)\n");
             netlist.remove_block(unconn_blk_id);
         }
 
@@ -120,27 +121,17 @@ static void process_circuit(AtomNetlist& netlist,
                         should_sweep_dangling_nets,
                         should_sweep_dangling_blocks,
                         should_sweep_constant_primary_outputs,
-                        verbose_sweep);
-
-        //Fix-up cases where a clock is used as a data input
-        // Currently such connections break the clusterer, so
-        // we take care of them here. Note that this modification
-        // likely causes the netlist to no longer be logically equivalent
-        // to the input
-        bool should_fix_clock_to_data_conversions = false; //TODO make cmd line option
-        if(should_fix_clock_to_data_conversions) {
-            fix_clock_to_data_conversions(netlist, library_models);
-        }
+                        verbosity);
     }
 
     {
-        vtr::ScopedActionTimer t("Compress circuit");
+        vtr::ScopedStartFinishTimer t("Compress circuit");
 
         //Compress the netlist to clean-out invalid entries
         netlist.remove_and_compress();
     }
     {
-        vtr::ScopedActionTimer t("Verify circuit");
+        vtr::ScopedStartFinishTimer t("Verify circuit");
 
         netlist.verify();
     }
@@ -203,19 +194,19 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
     }
 
     //Print the statistics
-    vtr::printf_info("Circuit Statistics:\n");
-    vtr::printf_info("  Blocks: %zu\n", netlist.blocks().size());
+    VTR_LOG("Circuit Statistics:\n");
+    VTR_LOG("  Blocks: %zu\n", netlist.blocks().size());
     for(auto kv : block_type_counts) {
-        vtr::printf_info("    %-*s: %7zu\n", max_block_type_len, kv.first.c_str(), kv.second);
+        VTR_LOG("    %-*s: %7zu\n", max_block_type_len, kv.first.c_str(), kv.second);
     }
-    vtr::printf_info("  Nets  : %zu\n", netlist.nets().size());
+    VTR_LOG("  Nets  : %zu\n", netlist.nets().size());
     for(auto kv : net_stats) {
-        vtr::printf_info("    %-*s: %7.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
+        VTR_LOG("    %-*s: %7.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
     }
-    vtr::printf_info("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist).size());
+    VTR_LOG("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist).size());
 
     if (netlist.blocks().empty()) {
-        vtr::printf_warning(__FILE__, __LINE__, "Netlist contains no blocks\n");
+        VTR_LOG_WARN( "Netlist contains no blocks\n");
     }
 }
 

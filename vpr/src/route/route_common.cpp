@@ -67,11 +67,6 @@ static int num_trace_allocated = 0; /* To watch for memory leaks. */
 static int num_heap_allocated = 0;
 static int num_linked_f_pointer_allocated = 0;
 
-static t_linked_f_pointer *rr_modified_head = nullptr;
-static t_linked_f_pointer *linked_f_pointer_free_head = nullptr;
-
-static vtr::t_chunk linked_f_pointer_ch;
-
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *
  *  |    IO     | chan_   |   CLB     | chan_   |   CLB     |               *
@@ -106,10 +101,8 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth=0);
 
-static t_linked_f_pointer *alloc_linked_f_pointer();
-
-static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
-static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
+static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
+static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
 static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
@@ -119,12 +112,12 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
 static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes);
 /************************** Subroutine definitions ***************************/
 
-void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
+void save_routing(vtr::vector<ClusterNetId, t_trace *> &best_routing,
 		const t_clb_opins_used& clb_opins_used_locally,
 		t_clb_opins_used& saved_clb_opins_used_locally) {
 
 	/* This routing frees any routing currently held in best routing,       *
-	 * then copies over the current routing (held in route_ctx.trace_head), and       *
+	 * then copies over the current routing (held in route_ctx.trace), and       *
 	 * finally sets route_ctx.trace_head and route_ctx.trace_tail to all NULLs so that the      *
 	 * connection to the saved routing is broken.  This is necessary so     *
 	 * that the next iteration of the router does not free the saved        *
@@ -147,13 +140,13 @@ void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 		}
 
 		/* Save a pointer to the current routing in best_routing. */
-		best_routing[net_id] = route_ctx.trace_head[net_id];
+		best_routing[net_id] = route_ctx.trace[net_id].head;
 
 		/* Set the current (working) routing to NULL so the current trace       *
 		 * elements won't be reused by the memory allocator.                    */
 
-		route_ctx.trace_head[net_id] = nullptr;
-		route_ctx.trace_tail[net_id] = nullptr;
+		route_ctx.trace[net_id].head = nullptr;
+		route_ctx.trace[net_id].tail = nullptr;
 		route_ctx.trace_nodes[net_id].clear();
 	}
 
@@ -167,7 +160,7 @@ void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 	 * restored -- it is set to all NULLs since it is only used in            *
 	 * update_traceback.  If you need route_ctx.trace_tail restored, modify this        *
 	 * routine.  Also restores the locally used opin data.                    */
-void restore_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
+void restore_routing(vtr::vector<ClusterNetId, t_trace *> &best_routing,
 		t_clb_opins_used&  clb_opins_used_locally,
 		const t_clb_opins_used&  saved_clb_opins_used_locally) {
 
@@ -179,7 +172,7 @@ void restore_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 		free_traceback(net_id);
 
 		/* Set the current routing to the saved one. */
-		route_ctx.trace_head[net_id] = best_routing[net_id];
+		route_ctx.trace[net_id].head = best_routing[net_id];
 		best_routing[net_id] = nullptr; /* No stored routing. */
 	}
 
@@ -205,7 +198,7 @@ void get_serial_num() {
 		/* Global nets will have null trace_heads (never routed) so they *
 		 * are not included in the serial number calculation.            */
 
-		tptr = route_ctx.trace_head[net_id];
+		tptr = route_ctx.trace[net_id].head;
 		while (tptr != nullptr) {
 			inode = tptr->index;
 			serial_num += (size_t(net_id) + 1)
@@ -218,7 +211,7 @@ void get_serial_num() {
 			tptr = tptr->next;
 		}
 	}
-	vtr::printf_info("Serial number (magic cookie) for the routing is: %d\n", serial_num);
+	VTR_LOG("Serial number (magic cookie) for the routing is: %d\n", serial_num);
 }
 
 void try_graph(int width_fac, t_router_opts router_opts,
@@ -237,37 +230,32 @@ void try_graph(int width_fac, t_router_opts router_opts,
 	}
 
 	/* Set the channel widths */
-	init_chan(width_fac, chan_width_dist);
+	t_chan_width chan_width = init_chan(width_fac, chan_width_dist);
 
 	/* Free any old routing graph, if one exists. */
 	free_rr_graph();
-
-	clock_t begin = clock();
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
 	create_rr_graph(graph_type,
             device_ctx.num_block_types, device_ctx.block_types,
             device_ctx.grid,
-			&device_ctx.chan_width,
+			chan_width,
 			device_ctx.num_arch_switches,
             det_routing_arch,
             segment_inf,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
+			router_opts.lookahead_type,
 			directs, num_directs,
 			&device_ctx.num_rr_switches,
 			&warning_count);
-
-	clock_t end = clock();
-
-	vtr::printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 }
 
 bool try_route(int width_fac, t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		vtr::vector_map<ClusterNetId, float *> &net_delay,
+		vtr::vector<ClusterNetId, float *> &net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks,
         const t_timing_inf& timing_inf,
@@ -296,12 +284,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 	}
 
 	/* Set the channel widths */
-	init_chan(width_fac, chan_width_dist);
-
-	/* Free any old routing graph, if one exists. */
-	free_rr_graph();
-
-	clock_t begin = clock();
+	t_chan_width chan_width = init_chan(width_fac, chan_width_dist);
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
@@ -309,20 +292,17 @@ bool try_route(int width_fac, t_router_opts router_opts,
 	create_rr_graph(graph_type,
             device_ctx.num_block_types, device_ctx.block_types,
             device_ctx.grid,
-			&device_ctx.chan_width,
+			chan_width,
 			device_ctx.num_arch_switches,
             det_routing_arch,
             segment_inf,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
+			router_opts.lookahead_type,
 			directs, num_directs,
 			&device_ctx.num_rr_switches,
 			&warning_count);
-
-	clock_t end = clock();
-
-	vtr::printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(width_fac);
@@ -335,14 +315,14 @@ bool try_route(int width_fac, t_router_opts router_opts,
 	init_route_structs(router_opts.bb_factor);
 
     if (cluster_ctx.clb_nlist.nets().empty()) {
-        vtr::printf_warning(__FILE__, __LINE__, "No nets to route\n");
+        VTR_LOG_WARN( "No nets to route\n");
     }
 
 	if (router_opts.router_algorithm == BREADTH_FIRST) {
-		vtr::printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
+		VTR_LOG("Confirming router algorithm: BREADTH_FIRST.\n");
 		success = try_breadth_first_route(router_opts);
 	} else { /* TIMING_DRIVEN route */
-		vtr::printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
+		VTR_LOG("Confirming router algorithm: TIMING_DRIVEN.\n");
 
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.block_types, device_ctx.num_block_types);
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
@@ -409,7 +389,7 @@ std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
 
     std::vector<std::set<ClusterNetId>> rr_node_nets(device_ctx.rr_nodes.size());
     for (ClusterNetId inet : cluster_ctx.clb_nlist.nets()) {
-        t_trace* trace_elem = route_ctx.trace_head[inet];
+        t_trace* trace_elem = route_ctx.trace[inet].head;
         while (trace_elem) {
             int rr_node = trace_elem->index;
 
@@ -427,7 +407,7 @@ void pathfinder_update_path_cost(t_trace *route_segment_start,
 
 	/* This routine updates the occupancy and pres_cost of the rr_nodes that are *
 	 * affected by the portion of the routing of one net that starts at          *
-	 * route_segment_start.  If route_segment_start is route_ctx.trace_head[net_id], the     *
+	 * route_segment_start.  If route_segment_start is route_ctx.trace[net_id].head, the     *
 	 * cost of all the nodes in the routing of net net_id are updated.  If         *
 	 * add_or_sub is -1 the net (or net portion) is ripped up, if it is 1 the    *
 	 * net is added to the routing.  The size of pres_fac determines how severly *
@@ -531,8 +511,7 @@ void init_route_structs(int bb_factor) {
 		free_traceback(net_id);
 
     //Allocate new tracebacks
-	route_ctx.trace_head.resize(cluster_ctx.clb_nlist.nets().size());
-	route_ctx.trace_tail.resize(cluster_ctx.clb_nlist.nets().size());
+	route_ctx.trace.resize(cluster_ctx.clb_nlist.nets().size());
 	route_ctx.trace_nodes.resize(cluster_ctx.clb_nlist.nets().size());
 
     init_heap(device_ctx.grid);
@@ -547,11 +526,6 @@ void init_route_structs(int bb_factor) {
 	/* Check that things that should have been emptied after the last routing *
 	 * really were.                                                           */
 
-	if (rr_modified_head != nullptr) {
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-			"in init_route_structs. List of modified rr nodes is not empty.\n");
-	}
-
 	if (heap_tail != 1) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
 			"in init_route_structs. Heap is not empty.\n");
@@ -563,7 +537,7 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 
 	/* This routine adds the most recently finished wire segment to the         *
 	 * traceback linked list.  The first connection starts with the net SOURCE  *
-	 * and begins at the structure pointed to by route_ctx.trace_head[net_id]. Each         *
+	 * and begins at the structure pointed to by route_ctx.trace[net_id].head. Each         *
 	 * connection ends with a SINK.  After each SINK, the next connection       *
 	 * begins (if the net has more than 2 pins).  The first element after the   *
 	 * SINK gives the routing node on a previous piece of the routing, which is *
@@ -577,22 +551,22 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 
     auto& trace_nodes = route_ctx.trace_nodes[net_id];
 
-    VTR_ASSERT_SAFE(validate_trace_nodes(route_ctx.trace_head[net_id], trace_nodes));
+    VTR_ASSERT_SAFE(validate_trace_nodes(route_ctx.trace[net_id].head, trace_nodes));
 
     t_trace_branch branch = traceback_branch(hptr->index, hptr->previous, trace_nodes);
 
     VTR_ASSERT_SAFE(validate_trace_nodes(branch.head, trace_nodes));
 
     t_trace* ret_ptr = nullptr;
-	if (route_ctx.trace_tail[net_id] != nullptr) {
-		route_ctx.trace_tail[net_id]->next = branch.head; /* Traceback ends with tptr */
+	if (route_ctx.trace[net_id].tail != nullptr) {
+		route_ctx.trace[net_id].tail->next = branch.head; /* Traceback ends with tptr */
 		ret_ptr = branch.head->next; /* First new segment.       */
 	} else { /* This was the first "chunk" of the net's routing */
-		route_ctx.trace_head[net_id] = branch.head;
+		route_ctx.trace[net_id].head = branch.head;
 		ret_ptr = branch.head; /* Whole traceback is new. */
 	}
 
-	route_ctx.trace_tail[net_id] = branch.tail;
+	route_ctx.trace[net_id].tail = branch.tail;
 	return (ret_ptr);
 }
 
@@ -770,34 +744,6 @@ void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
 
 }
 
-void reset_path_costs() {
-	t_linked_f_pointer *mod_ptr;
-	int num_mod_ptrs;
-
-	/* The traversal method below is slightly painful to make it faster. */
-	if (rr_modified_head != nullptr) {
-		mod_ptr = rr_modified_head;
-
-		num_mod_ptrs = 1;
-
-		while (mod_ptr->next != nullptr) {
-			*(mod_ptr->fptr) = HUGE_POSITIVE_FLOAT;
-			mod_ptr = mod_ptr->next;
-			num_mod_ptrs++;
-		}
-		*(mod_ptr->fptr) = HUGE_POSITIVE_FLOAT; /* Do last one. */
-
-		/* Reset the modified list and put all the elements back in the free   *
-		 * list.                                                               */
-
-		mod_ptr->next = linked_f_pointer_free_head;
-		linked_f_pointer_free_head = rr_modified_head;
-		rr_modified_head = nullptr;
-
-		num_linked_f_pointer_allocated -= num_mod_ptrs;
-	}
-}
-
 /* Returns the *congestion* cost of using this rr_node. */
 float get_rr_cong_cost(int inode) {
 	short cost_index;
@@ -868,37 +814,37 @@ void free_traceback(ClusterNetId net_id) {
 	/* Puts the entire traceback (old routing) for this net on the free list *
 	 * and sets the route_ctx.trace_head pointers etc. for the net to NULL.            */
 
-	t_trace *tptr, *tempptr;
-
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    if (route_ctx.trace_head.empty() && route_ctx.trace_tail.empty()) {
+    if (route_ctx.trace.empty()) {
         return;
     }
 
-	if(route_ctx.trace_head[net_id] == nullptr) {
+	if(route_ctx.trace[net_id].head == nullptr) {
 		return;
 	}
 
-	tptr = route_ctx.trace_head[net_id];
+	free_traceback(route_ctx.trace[net_id].head);
 
+	route_ctx.trace[net_id].head = nullptr;
+	route_ctx.trace[net_id].tail = nullptr;
+	route_ctx.trace_nodes[net_id].clear();
+}
+
+void free_traceback(t_trace* tptr) {
 	while (tptr != nullptr) {
-		tempptr = tptr->next;
+		t_trace* tempptr = tptr->next;
 		free_trace_data(tptr);
 		tptr = tempptr;
 	}
-
-	route_ctx.trace_head[net_id] = nullptr;
-	route_ctx.trace_tail[net_id] = nullptr;
-	route_ctx.trace_nodes[net_id].clear();
 }
 
 /* Allocates data structures into which the key routing data can be saved,   *
 * allowing the routing to be recovered later (e.g. after a another routing  *
 * is attempted).                                                            */
-vtr::vector_map<ClusterNetId, t_trace *> alloc_saved_routing() {
+vtr::vector<ClusterNetId, t_trace *> alloc_saved_routing() {
 	auto& cluster_ctx = g_vpr_ctx.clustering();
-	vtr::vector_map<ClusterNetId, t_trace *> best_routing(cluster_ctx.clb_nlist.nets().size());
+	vtr::vector<ClusterNetId, t_trace *> best_routing(cluster_ctx.clb_nlist.nets().size());
 
 	return (best_routing);
 }
@@ -975,19 +921,19 @@ void free_trace_structs() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    if (route_ctx.trace_head.empty() && route_ctx.trace_tail.empty()) {
+    if (route_ctx.trace.empty()) {
         return;
     }
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		free_traceback(net_id);
 
-		if (route_ctx.trace_head[net_id]) {
-			free(route_ctx.trace_head[net_id]);
-			free(route_ctx.trace_tail[net_id]);
+		if (route_ctx.trace[net_id].head) {
+			free(route_ctx.trace[net_id].head);
+			free(route_ctx.trace[net_id].tail);
 		}
-		route_ctx.trace_head[net_id] = nullptr;
-		route_ctx.trace_tail[net_id] = nullptr;
+		route_ctx.trace[net_id].head = nullptr;
+		route_ctx.trace[net_id].tail = nullptr;
 	}
 }
 
@@ -1000,6 +946,7 @@ void free_route_structs() {
 	if(heap != nullptr) {
         //Free the individiaul heap elements (calls destructors)
         for (int i = 1; i < num_heap_allocated; i++) {
+            VTR_LOG("Freeing %p\n", heap[i]);
             vtr::chunk_delete(heap[i], &heap_ch);
         }
 
@@ -1026,12 +973,10 @@ void free_route_structs() {
 
 	/*free the memory chunks that were used by heap and linked f pointer */
 	free_chunk_memory(&heap_ch);
-	free_chunk_memory(&linked_f_pointer_ch);
-	linked_f_pointer_free_head = nullptr;
 }
 
 /* Frees the data structures needed to save a routing.                     */
-void free_saved_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing) {
+void free_saved_routing(vtr::vector<ClusterNetId, t_trace *> &best_routing) {
 	auto &cluster_ctx = g_vpr_ctx.clustering();
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		if (best_routing[net_id] != nullptr) {
@@ -1079,8 +1024,8 @@ void reset_rr_node_route_structs() {
 /* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *
 * index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    *
 * Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
-static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
-    vtr::vector_map<ClusterNetId, std::vector<int>> net_rr_terminals;
+static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
+    vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals;
 
     int inode, i, j, node_block_pin, iclass;
     t_type_ptr type;
@@ -1124,8 +1069,8 @@ static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(con
 * they are used only to reserve pins for locally used OPINs in the router. *
 * [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1].            *
 * The values for blocks that are padsare NOT valid.                        */
-static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices) {
-    vtr::vector_map<ClusterBlockId, std::vector<int>> rr_blk_source;
+static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices) {
+    vtr::vector<ClusterBlockId, std::vector<int>> rr_blk_source;
 
 	int i, j, iclass, inode;
     int class_low, class_high;
@@ -1163,21 +1108,34 @@ static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(con
 }
 
 
-vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
+vtr::vector<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
 
-	/* This routine loads the bounding box arrays used to limit the space  *
-	 * searched by the maze router when routing each net.  The search is   *
-	 * limited to channels contained with the net bounding box expanded    *
-	 * by bb_factor channels on each side.  For example, if bb_factor is   *
-	 * 0, the maze router must route each net within its bounding box.     *
+    vtr::vector<ClusterNetId, t_bb> route_bb;
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    auto nets = cluster_ctx.clb_nlist.nets();
+    route_bb.resize(nets.size());
+	for (auto net_id : nets) {
+        route_bb[net_id] = load_net_route_bb(net_id, bb_factor);
+	}
+    return route_bb;
+}
+
+t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
+	/*
+     * This routine loads the bounding box used to limit the space
+	 * searched by the maze router when routing a specific net. The search is
+	 * limited to channels contained with the net bounding box expanded
+	 * by bb_factor channels on each side.  For example, if bb_factor is
+	 * 0, the maze router must route each net within its bounding box.
 	 * If bb_factor = max(device_ctx.grid.width()-1, device_cts.grid.height() - 1),
-     * the maze router will search every channel in     *
-	 * the FPGA if necessary.  The bounding boxes returned by this routine *
-	 * are different from the ones used by the placer in that they are     *
-	 * clipped to lie within (0,0) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1) rather than (1,1) and   *
-	 * (device_ctx.grid.width()-1,device_ctx.grid.height()-1).                                                            */
-    vtr::vector_map<ClusterNetId, t_bb> route_bb;
-
+     * the maze router will search every channel in
+	 * the FPGA if necessary.  The bounding box returned by this routine
+	 * are different from the ones used by the placer in that they are
+	 * clipped to lie within (0,0) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1)
+     * rather than (1,1) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1).                                                            
+     */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -1189,49 +1147,48 @@ vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
     int max_dim = std::max<int>(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
     bb_factor = std::min(bb_factor, max_dim);
 
-    auto nets = cluster_ctx.clb_nlist.nets();
-    route_bb.resize(nets.size());
-	for (auto net_id : nets) {
-        int driver_rr = route_ctx.net_rr_terminals[net_id][0];
-        const t_rr_node& source_node = device_ctx.rr_nodes[driver_rr];
-        VTR_ASSERT(source_node.type() == SOURCE);
+    int driver_rr = route_ctx.net_rr_terminals[net_id][0];
+    const t_rr_node& source_node = device_ctx.rr_nodes[driver_rr];
+    VTR_ASSERT(source_node.type() == SOURCE);
 
-        VTR_ASSERT(source_node.xlow() <= source_node.xhigh());
-        VTR_ASSERT(source_node.ylow() <= source_node.yhigh());
+    VTR_ASSERT(source_node.xlow() <= source_node.xhigh());
+    VTR_ASSERT(source_node.ylow() <= source_node.yhigh());
 
-		int xmin = source_node.xlow();
-		int ymin = source_node.ylow();
-		int xmax = source_node.xhigh();
-		int ymax = source_node.yhigh();
+    int xmin = source_node.xlow();
+    int ymin = source_node.ylow();
+    int xmax = source_node.xhigh();
+    int ymax = source_node.yhigh();
 
-        auto net_sinks = cluster_ctx.clb_nlist.net_sinks(net_id);
-		for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
-            int sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
-            const t_rr_node& sink_node = device_ctx.rr_nodes[sink_rr];
-            VTR_ASSERT(sink_node.type() == SINK);
+    auto net_sinks = cluster_ctx.clb_nlist.net_sinks(net_id);
+    for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
+        int sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
+        const t_rr_node& sink_node = device_ctx.rr_nodes[sink_rr];
+        VTR_ASSERT(sink_node.type() == SINK);
 
-            VTR_ASSERT(sink_node.xlow() <= sink_node.xhigh());
-            VTR_ASSERT(sink_node.ylow() <= sink_node.yhigh());
+        VTR_ASSERT(sink_node.xlow() <= sink_node.xhigh());
+        VTR_ASSERT(sink_node.ylow() <= sink_node.yhigh());
 
-            xmin = std::min<int>(xmin, sink_node.xlow());
-            xmax = std::max<int>(xmax, sink_node.xhigh());
-            ymin = std::min<int>(ymin, sink_node.ylow());
-            ymax = std::max<int>(ymax, sink_node.yhigh());
-		}
+        xmin = std::min<int>(xmin, sink_node.xlow());
+        xmax = std::max<int>(xmax, sink_node.xhigh());
+        ymin = std::min<int>(ymin, sink_node.ylow());
+        ymax = std::max<int>(ymax, sink_node.yhigh());
+    }
 
-		/* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
-		xmin -= 1;
-		ymin -= 1;
+    /* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
+    xmin -= 1;
+    ymin -= 1;
 
-		/* Expand the net bounding box by bb_factor, then clip to the physical *
-		 * chip area.                                                          */
+    /* Expand the net bounding box by bb_factor, then clip to the physical *
+     * chip area.                                                          */
 
-		route_bb[net_id].xmin = max<int>(xmin - bb_factor, 0);
-		route_bb[net_id].xmax = min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
-		route_bb[net_id].ymin = max<int>(ymin - bb_factor, 0);
-		route_bb[net_id].ymax = min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
-	}
-    return route_bb;
+    t_bb bb;
+
+    bb.xmin = max<int>(xmin - bb_factor, 0);
+    bb.xmax = min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
+    bb.ymin = max<int>(ymin - bb_factor, 0);
+    bb.ymax = min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
+
+    return bb;
 }
 
 void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf) {
@@ -1242,22 +1199,6 @@ void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf) {
     }
 }
 
-void add_to_mod_list(float *fptr) {
-
-	/* This routine adds the floating point pointer (fptr) into a  *
-	 * linked list that indicates all the pathcosts that have been *
-	 * modified thus far.                                          */
-
-	t_linked_f_pointer *mod_ptr;
-
-	mod_ptr = alloc_linked_f_pointer();
-
-	/* Add this element to the start of the modified list. */
-
-	mod_ptr->next = rr_modified_head;
-	mod_ptr->fptr = fptr;
-	rr_modified_head = mod_ptr;
-}
 namespace heap_ {
 	size_t parent(size_t i);
 	size_t left(size_t i);
@@ -1355,13 +1296,13 @@ namespace heap_ {
 	}
 	// extract every element and print it
 	void pop_heap() {
-		while (!is_empty_heap()) vtr::printf_info("%e ", get_heap_head()->cost);
-		vtr::printf_info("\n");
+		while (!is_empty_heap()) VTR_LOG("%e ", get_heap_head()->cost);
+		VTR_LOG("\n");
 	}
 	// print every element; not necessarily in order for minheap
 	void print_heap() {
-		for (int i = 1; i < heap_tail >> 1; ++i) vtr::printf_info("(%e %e %e) ", heap[i]->cost, heap[left(i)]->cost, heap[right(i)]->cost);
-		vtr::printf_info("\n");
+		for (int i = 1; i < heap_tail >> 1; ++i) VTR_LOG("(%e %e %e) ", heap[i]->cost, heap[left(i)]->cost, heap[right(i)]->cost);
+		VTR_LOG("\n");
 	}
 	// verify correctness of extract top by making a copy, sorting it, and iterating it at the same time as extraction
 	void verify_extract_top() {
@@ -1412,8 +1353,7 @@ get_heap_head() {
 
 	do {
 		if (heap_tail == 1) { /* Empty heap. */
-			vtr::printf_warning(__FILE__, __LINE__, "Empty heap occurred in get_heap_head.\n");
-			vtr::printf_warning(__FILE__, __LINE__, "Some blocks are impossible to connect in this architecture.\n");
+			VTR_LOG_WARN("Empty heap occurred in get_heap_head.\n");
 			return (nullptr);
 		}
 
@@ -1515,142 +1455,126 @@ void free_trace_data(t_trace *tptr) {
 	num_trace_allocated--;
 }
 
-static t_linked_f_pointer *
-alloc_linked_f_pointer() {
+void print_route(FILE* fp, const vtr::vector<ClusterNetId,t_traceback>& tracebacks) {
 
-	/* This routine returns a linked list element with a float pointer as *
-	 * the node data.                                                     */
-
-	/*int i;*/
-	t_linked_f_pointer *temp_ptr;
-
-	if (linked_f_pointer_free_head == nullptr) {
-		/* No elements on the free list */
-	linked_f_pointer_free_head = (t_linked_f_pointer *) vtr::chunk_malloc(sizeof(t_linked_f_pointer),&linked_f_pointer_ch);
-	linked_f_pointer_free_head->next = nullptr;
-	}
-
-	temp_ptr = linked_f_pointer_free_head;
-	linked_f_pointer_free_head = linked_f_pointer_free_head->next;
-
-	num_linked_f_pointer_allocated++;
-
-	return (temp_ptr);
-}
-
-/* Prints out the routing to file route_file.  */
-void print_route(const char* placement_file, const char* route_file) {
-	int inode, ilow, jlow, iclass;
-	t_rr_type rr_type;
-	t_trace *tptr;
-	FILE *fp;
-
-	fp = fopen(route_file, "w");
+    if (tracebacks.empty()) return; //Only if routing exists
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
+            fprintf(fp, "\n\nNet %zu (%s)\n\n", size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str());
+            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == false) {
+                fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
+            } else {
+                t_trace* tptr = route_ctx.trace[net_id].head;
+
+                while (tptr != nullptr) {
+                    int inode = tptr->index;
+                    t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
+                    int ilow = device_ctx.rr_nodes[inode].xlow();
+                    int jlow = device_ctx.rr_nodes[inode].ylow();
+
+                    fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode,
+                            device_ctx.rr_nodes[inode].type_string(), ilow, jlow);
+
+                    if ((ilow != device_ctx.rr_nodes[inode].xhigh())
+                            || (jlow != device_ctx.rr_nodes[inode].yhigh()))
+                        fprintf(fp, "to (%d,%d) ", device_ctx.rr_nodes[inode].xhigh(),
+                                device_ctx.rr_nodes[inode].yhigh());
+
+                    switch (rr_type) {
+
+                    case IPIN:
+                    case OPIN:
+                        if (is_io_type(device_ctx.grid[ilow][jlow].type)) {
+                            fprintf(fp, " Pad: ");
+                        } else { /* IO Pad. */
+                            fprintf(fp, " Pin: ");
+                        }
+                        break;
+
+                    case CHANX:
+                    case CHANY:
+                        fprintf(fp, " Track: ");
+                        break;
+
+                    case SOURCE:
+                    case SINK:
+                        if (is_io_type(device_ctx.grid[ilow][jlow].type)) {
+                            fprintf(fp, " Pad: ");
+                        } else { /* IO Pad. */
+                            fprintf(fp, " Class: ");
+                        }
+                        break;
+
+                    default:
+                        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                                  "in print_route: Unexpected traceback element type: %d (%s).\n",
+                                  rr_type, device_ctx.rr_nodes[inode].type_string());
+                        break;
+                    }
+
+                    fprintf(fp, "%d  ", device_ctx.rr_nodes[inode].ptc_num());
+
+                    if (!is_io_type(device_ctx.grid[ilow][jlow].type) && (rr_type == IPIN || rr_type == OPIN)) {
+                        int pin_num = device_ctx.rr_nodes[inode].ptc_num();
+                        int xoffset = device_ctx.grid[ilow][jlow].width_offset;
+                        int yoffset = device_ctx.grid[ilow][jlow].height_offset;
+                        ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[0];
+                        VTR_ASSERT(iblock);
+                        t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
+                        t_pb_type *pb_type = pb_pin->parent_node->pb_type;
+                        fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);
+                    }
+
+                    /* Uncomment line below if you're debugging and want to see the switch types *
+                     * used in the routing.                                                      */
+                    fprintf (fp, "Switch: %d", tptr->iswitch);
+
+                    fprintf(fp, "\n");
+
+                    tptr = tptr->next;
+                }
+            }
+        } else { /* Global net.  Never routed. */
+            fprintf(fp, "\n\nNet %zu (%s): global net connecting:\n\n", size_t(net_id),
+                    cluster_ctx.clb_nlist.net_name(net_id).c_str());
+
+            for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+                ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+                int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+                int iclass = cluster_ctx.clb_nlist.block_type(block_id)->pin_class[pin_index];
+
+                fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
+                    cluster_ctx.clb_nlist.block_name(block_id).c_str(), size_t(block_id),
+                    place_ctx.block_locs[block_id].x,
+                    place_ctx.block_locs[block_id].y,
+                    iclass);
+            }
+        }
+    }
+}
+
+/* Prints out the routing to file route_file.  */
+void print_route(const char* placement_file, const char* route_file) {
+	FILE *fp;
+
+	fp = fopen(route_file, "w");
+
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
     fprintf(fp, "Placement_File: %s Placement_ID: %s\n", placement_file, place_ctx.placement_id.c_str());
 
 	fprintf(fp, "Array size: %zu x %zu logic blocks.\n", device_ctx.grid.width(), device_ctx.grid.height());
 	fprintf(fp, "\nRouting:");
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
-			fprintf(fp, "\n\nNet %zu (%s)\n\n", size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str());
-			if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == false) {
-				fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
-			} else {
-				tptr = route_ctx.trace_head[net_id];
 
-				while (tptr != nullptr) {
-					inode = tptr->index;
-					rr_type = device_ctx.rr_nodes[inode].type();
-					ilow = device_ctx.rr_nodes[inode].xlow();
-					jlow = device_ctx.rr_nodes[inode].ylow();
-
-					fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode,
-							device_ctx.rr_nodes[inode].type_string(), ilow, jlow);
-
-					if ((ilow != device_ctx.rr_nodes[inode].xhigh())
-							|| (jlow != device_ctx.rr_nodes[inode].yhigh()))
-						fprintf(fp, "to (%d,%d) ", device_ctx.rr_nodes[inode].xhigh(),
-								device_ctx.rr_nodes[inode].yhigh());
-
-					switch (rr_type) {
-
-					case IPIN:
-					case OPIN:
-						if (is_io_type(device_ctx.grid[ilow][jlow].type)) {
-							fprintf(fp, " Pad: ");
-						} else { /* IO Pad. */
-							fprintf(fp, " Pin: ");
-						}
-						break;
-
-					case CHANX:
-					case CHANY:
-						fprintf(fp, " Track: ");
-						break;
-
-					case SOURCE:
-					case SINK:
-						if (is_io_type(device_ctx.grid[ilow][jlow].type)) {
-							fprintf(fp, " Pad: ");
-						} else { /* IO Pad. */
-							fprintf(fp, " Class: ");
-						}
-						break;
-
-					default:
-						vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-								  "in print_route: Unexpected traceback element type: %d (%s).\n",
-								  rr_type, device_ctx.rr_nodes[inode].type_string());
-						break;
-					}
-
-					fprintf(fp, "%d  ", device_ctx.rr_nodes[inode].ptc_num());
-
-					if (!is_io_type(device_ctx.grid[ilow][jlow].type) && (rr_type == IPIN || rr_type == OPIN)) {
-						int pin_num = device_ctx.rr_nodes[inode].ptc_num();
-						int xoffset = device_ctx.grid[ilow][jlow].width_offset;
-						int yoffset = device_ctx.grid[ilow][jlow].height_offset;
-						ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[0];
-                        VTR_ASSERT(iblock);
-						t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
-						t_pb_type *pb_type = pb_pin->parent_node->pb_type;
-						fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);
-					}
-
-					/* Uncomment line below if you're debugging and want to see the switch types *
-					 * used in the routing.                                                      */
-					fprintf (fp, "Switch: %d", tptr->iswitch);
-
-					fprintf(fp, "\n");
-
-					tptr = tptr->next;
-				}
-			}
-		}
-
-		else { /* Global net.  Never routed. */
-			fprintf(fp, "\n\nNet %zu (%s): global net connecting:\n\n", size_t(net_id),
-					cluster_ctx.clb_nlist.net_name(net_id).c_str());
-
-			for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-				ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-				int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
-				iclass = cluster_ctx.clb_nlist.block_type(block_id)->pin_class[pin_index];
-
-				fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
-					cluster_ctx.clb_nlist.block_name(block_id).c_str(), size_t(block_id),
-					place_ctx.block_locs[block_id].x,
-					place_ctx.block_locs[block_id].y,
-					iclass);
-			}
-		}
-	}
+    print_route(fp, route_ctx.trace);
 
 	fclose(fp);
 
@@ -1793,17 +1717,17 @@ void print_traceback(ClusterNetId net_id) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-	vtr::printf_info("traceback %zu: ", size_t(net_id));
-	t_trace* head = route_ctx.trace_head[net_id];
+	VTR_LOG("traceback %zu: ", size_t(net_id));
+	t_trace* head = route_ctx.trace[net_id].head;
 	while (head) {
 		int inode {head->index};
 		if (device_ctx.rr_nodes[inode].type() == SINK)
-			vtr::printf_info("%d(sink)(%d)->",inode, route_ctx.rr_node_route_inf[inode].occ());
+			VTR_LOG("%d(sink)(%d)->",inode, route_ctx.rr_node_route_inf[inode].occ());
 		else
-			vtr::printf_info("%d(%d)->",inode, route_ctx.rr_node_route_inf[inode].occ());
+			VTR_LOG("%d(%d)->",inode, route_ctx.rr_node_route_inf[inode].occ());
 		head = head->next;
 	}
-	vtr::printf_info("\n");
+	VTR_LOG("\n");
 }
 
 void print_traceback(const t_trace* trace) {
@@ -1812,24 +1736,24 @@ void print_traceback(const t_trace* trace) {
     const t_trace* prev = nullptr;
 	while (trace) {
 		int inode = trace->index;
-        vtr::printf("%d (%s)", inode, rr_node_typename[device_ctx.rr_nodes[inode].type()]);
+        VTR_LOG("%d (%s)", inode, rr_node_typename[device_ctx.rr_nodes[inode].type()]);
 
         if (trace->iswitch == OPEN) {
-            vtr::printf(" !"); //End of branch
+            VTR_LOG(" !"); //End of branch
         }
 
         if (prev && prev->iswitch != OPEN && !device_ctx.rr_switch_inf[prev->iswitch].configurable()) {
-            vtr::printf("*"); //Reached non-configurably
+            VTR_LOG("*"); //Reached non-configurably
         }
 
         if (route_ctx.rr_node_route_inf[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
-            vtr::printf(" x"); //Overused
+            VTR_LOG(" x"); //Overused
         }
-        vtr::printf("\n");
+        VTR_LOG("\n");
         prev = trace;
 		trace = trace->next;
 	}
-	vtr::printf_info("\n");
+	VTR_LOG("\n");
 }
 
 bool validate_traceback(t_trace* trace) {
@@ -1906,7 +1830,7 @@ void print_invalid_routing_info() {
     std::multimap<int,ClusterNetId> rr_node_nets;
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        t_trace* tptr = route_ctx.trace_head[net_id];
+        t_trace* tptr = route_ctx.trace[net_id].head;
 
         while (tptr != nullptr) {
             rr_node_nets.emplace(tptr->index, net_id);
@@ -1919,12 +1843,12 @@ void print_invalid_routing_info() {
         int cap = device_ctx.rr_nodes[inode].capacity();
 		if (occ > cap) {
 
-            vtr::printf("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(inode).c_str(), occ, cap);
+            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(inode).c_str(), occ, cap);
 
             auto range = rr_node_nets.equal_range(inode);
             for (auto itr = range.first; itr != range.second; ++itr) {
                 auto net_id = itr->second;
-                vtr::printf("    Used by net %s (%zu)\n", cluster_ctx.clb_nlist.net_name(net_id).c_str(), size_t(net_id));
+                VTR_LOG("    Used by net %s (%zu)\n", cluster_ctx.clb_nlist.net_name(net_id).c_str(), size_t(net_id));
             }
 
 		}
@@ -1938,15 +1862,15 @@ void print_rr_node_route_inf() {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
             int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
             int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
-            vtr::printf ("rr_node: %d prev_node: %d prev_edge: %d",
+            VTR_LOG("rr_node: %d prev_node: %d prev_edge: %d",
                     inode, prev_node, prev_edge);
 
 
             if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_nodes[prev_node].edge_is_configurable(prev_edge)) {
-                vtr::printf("*");
+                VTR_LOG("*");
             }
 
-            vtr::printf(" pcost: %g back_pcost: %g\n",
+            VTR_LOG(" pcost: %g back_pcost: %g\n",
                     route_ctx.rr_node_route_inf[inode].path_cost, route_ctx.rr_node_route_inf[inode].backward_path_cost);
         }
     }
@@ -1956,16 +1880,16 @@ void print_rr_node_route_inf_dot() {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-    vtr::printf("digraph G {\n");
-    vtr::printf("\tnode[shape=record]\n");
+    VTR_LOG("digraph G {\n");
+    VTR_LOG("\tnode[shape=record]\n");
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
 
-            vtr::printf("\tnode%zu[label=\"{%zu (%s)", inode, inode, device_ctx.rr_nodes[inode].type_string());
+            VTR_LOG("\tnode%zu[label=\"{%zu (%s)", inode, inode, device_ctx.rr_nodes[inode].type_string());
             if (route_ctx.rr_node_route_inf[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
-                vtr::printf(" x");
+                VTR_LOG(" x");
             }
-            vtr::printf("}\"]\n");
+            VTR_LOG("}\"]\n");
         }
     }
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
@@ -1975,17 +1899,17 @@ void print_rr_node_route_inf_dot() {
             int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
 
             if (prev_node != OPEN && prev_edge != OPEN) {
-                vtr::printf("\tnode%d -> node%zu [", prev_node, inode);
+                VTR_LOG("\tnode%d -> node%zu [", prev_node, inode);
                 if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_nodes[prev_node].edge_is_configurable(prev_edge)) {
-                    vtr::printf("label=\"*\"");
+                    VTR_LOG("label=\"*\"");
                 }
 
-                vtr::printf("];\n");
+                VTR_LOG("];\n");
             }
         }
     }
 
-    vtr::printf("}\n");
+    VTR_LOG("}\n");
 }
 
 static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes) {

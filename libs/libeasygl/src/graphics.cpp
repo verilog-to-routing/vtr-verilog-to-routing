@@ -237,7 +237,6 @@ using namespace std;
 
 #define BUTTON_TEXT_LEN	100
 
-#define ZOOM_FACTOR  1.6667 /* For zooming on the graphics */
 #endif
 
 #ifdef X11
@@ -2613,15 +2612,15 @@ zoom_out(void (*drawscreen) ()) {
     handle_zoom_out(xcen, ycen, drawscreen);
 }
 
-/* Zooms in by a factor of ZOOM_FACTOR */
+/* Zooms in by a factor of gl_state.zoom_factor */
 static void
 handle_zoom_in(float x, float y, void (*drawscreen) ()) {
     //make xright - xleft = 0.6 of the original distance
-    trans_coord.xleft = x - (x - trans_coord.xleft) / ZOOM_FACTOR;
-    trans_coord.xright = x + (trans_coord.xright - x) / ZOOM_FACTOR;
+    trans_coord.xleft = x - (x - trans_coord.xleft) / gl_state.zoom_factor;
+    trans_coord.xright = x + (trans_coord.xright - x) / gl_state.zoom_factor;
     //make ybot - ytop = 0.6 of the original distance
-    trans_coord.ytop = y - (y - trans_coord.ytop) / ZOOM_FACTOR;
-    trans_coord.ybot = y + (trans_coord.ybot - y) / ZOOM_FACTOR;
+    trans_coord.ytop = y - (y - trans_coord.ytop) / gl_state.zoom_factor;
+    trans_coord.ybot = y + (trans_coord.ybot - y) / gl_state.zoom_factor;
 
     update_transform();
     if (drawscreen != nullptr) {
@@ -2629,14 +2628,14 @@ handle_zoom_in(float x, float y, void (*drawscreen) ()) {
     }
 }
 
-/* Zooms out by a factor of ZOOM_FACTOR */
+/* Zooms out by a factor of gl_state.zoom_factor */
 static void
 handle_zoom_out(float x, float y, void (*drawscreen) ()) {
     //restore the original distances before previous zoom in
-    trans_coord.xleft = x - (x - trans_coord.xleft)* ZOOM_FACTOR;
-    trans_coord.xright = x + (trans_coord.xright - x)* ZOOM_FACTOR;
-    trans_coord.ytop = y - (y - trans_coord.ytop)* ZOOM_FACTOR;
-    trans_coord.ybot = y + (trans_coord.ybot - y)* ZOOM_FACTOR;
+    trans_coord.xleft = x - (x - trans_coord.xleft)* gl_state.zoom_factor;
+    trans_coord.xright = x + (trans_coord.xright - x)* gl_state.zoom_factor;
+    trans_coord.ytop = y - (y - trans_coord.ytop)* gl_state.zoom_factor;
+    trans_coord.ybot = y + (trans_coord.ybot - y)* gl_state.zoom_factor;
 
     update_transform();
     if (drawscreen != nullptr) {
@@ -3307,6 +3306,14 @@ void set_mouse_move_input(bool enable) {
 
 void set_keypress_input(bool enable) {
     gl_state.get_keypress_input = enable;
+}
+
+float get_zoom_factor() {
+    return gl_state.zoom_factor;
+}
+
+void set_zoom_factor(float new_zoom_factor) {
+    gl_state.zoom_factor = new_zoom_factor;
 }
 
 void enable_or_disable_button(int ibutton, bool enabled) {
@@ -5322,6 +5329,10 @@ void get_report_structure(t_report*) { }
 void set_mouse_move_input(bool) { }
 
 void set_keypress_input(bool) { }
+
+float get_zoom_factor() { return 1.; }
+
+void set_zoom_factor(float /*new_zoom_factor*/) { }
 
 void set_draw_mode(enum e_draw_mode /*draw_mode*/) { }
 

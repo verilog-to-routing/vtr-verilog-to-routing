@@ -46,12 +46,16 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue);
 
 struct BlifAllocCallback : public blifparse::Callback {
     public:
-        BlifAllocCallback(e_circuit_format blif_format, AtomNetlist& main_netlist, const std::string netlist_id, const t_model* user_models, const t_model* library_models)
+        BlifAllocCallback(e_circuit_format blif_format, AtomNetlist& main_netlist, 
+                          const std::string netlist_id, 
+                          const t_model* user_models, const t_model* library_models,
+                          int verbosity)
             : main_netlist_(main_netlist)
             , netlist_id_(netlist_id)
             , user_arch_models_(user_models)
             , library_arch_models_(library_models)
-            , blif_format_(blif_format) {
+            , blif_format_(blif_format) 
+            , verbosity_(verbosity) {
             VTR_ASSERT(blif_format_ == e_circuit_format::BLIF
                        || blif_format_ == e_circuit_format::EBLIF);
         }
@@ -170,7 +174,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 //  0
                 //
                 output_is_const = true;
-                vtr::printf("Found constant-zero generator '%s'\n", nets[nets.size()-1].c_str());
+                VTR_LOG("Found constant-zero generator '%s'\n", nets[nets.size()-1].c_str());
             } else if(truth_table.size() == 1 && truth_table[0].size() == 1 && truth_table[0][0] == vtr::LogicValue::TRUE) {
                 //A single-entry truth table with value '1' in BLIF corresponds to a constant-one
                 //  e.g.
@@ -180,7 +184,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 //  1
                 //
                 output_is_const = true;
-                vtr::printf("Found constant-one generator '%s'\n", nets[nets.size()-1].c_str());
+                VTR_LOG("Found constant-one generator '%s'\n", nets[nets.size()-1].c_str());
             }
 
             //Create output
@@ -191,7 +195,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
         void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
             if(type == blifparse::LatchType::UNSPECIFIED) {
-                vtr::printf_warning(filename_.c_str(), lineno_, "Treating latch '%s' of unspecified type as rising edge triggered\n", output.c_str());
+                VTR_LOGF_WARN(filename_.c_str(), lineno_, "Treating latch '%s' of unspecified type as rising edge triggered\n", output.c_str());
             } else if(type != blifparse::LatchType::RISING_EDGE) {
                 vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Only rising edge latches supported\n");
             }
@@ -265,7 +269,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 subckt_name = unique_subckt_name();
 
                 //Since this is unusual, warn the user
-                vtr::printf_warning(filename_.c_str(), lineno_,
+                VTR_LOGF_WARN(filename_.c_str(), lineno_,
                         "Subckt of type '%s' at %s:%d has no output pins, and has been named '%s'\n",
                         blk_model->name, filename_.c_str(), lineno_, subckt_name.c_str());
             }
@@ -329,11 +333,6 @@ struct BlifAllocCallback : public blifparse::Callback {
             if(ended_) {
                 vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected .end");
             }
-
-            //We can not determine if a .subckt is a constant generator until all
-            //it's inputs have been created. So we identify them now, once the full
-            //model has been defined
-            mark_constant_generator_subckts();
 
             //Mark as ended
             ended_ = true;
@@ -585,73 +584,6 @@ struct BlifAllocCallback : public blifparse::Callback {
             return true;
         }
 
-        //Marks all constant subckt generator output pins as constants
-        void mark_constant_generator_subckts() {
-            size_t num_blocks_marked;
-
-            //It is possible that by marking one constant generator
-            //it may 'reveal' another constant generator downstream.
-            //As a result we iteratively mark constant generators until
-            //no additional ones are identified.
-            std::unordered_set<AtomBlockId> marked_blocks;
-            do {
-                num_blocks_marked = 0;
-
-                //Look through all the blocks marking those that are
-                //constant generataors
-                for(auto blk_id : curr_model().blocks()) {
-                    if(marked_blocks.count(blk_id)) continue; //Don't mark multiple times
-
-                    if(curr_model().block_type(blk_id) != AtomBlockType::BLOCK) continue; //Don't mark I/Os as constants
-
-                    if(identify_candidate_constant_generator_subckt(blk_id)) {
-                        //This block is a constant generator
-                        marked_blocks.insert(blk_id);
-
-                        vtr::printf("Inferred black-box constant generator '%s'\n",
-                                    curr_model().block_name(blk_id).c_str());
-
-                        //Mark all the output pins as constants
-                        for(auto pin_id : curr_model().block_output_pins(blk_id)) {
-                            curr_model().set_pin_is_constant(pin_id, true);
-                        }
-
-                        ++num_blocks_marked;
-                    }
-                }
-            } while(num_blocks_marked != 0);
-        }
-
-        //Determines if a particular block satisfies all the criteria of a constant
-        //generator.
-        //
-        //Returns true, if the block is a constant generator and should be marked
-        bool identify_candidate_constant_generator_subckt(AtomBlockId blk_id) {
-            const t_model* arch_model = curr_model().block_model(blk_id);
-
-            //We look for combinational blocks which are not .names (i.e.
-            //combinational .subckts)
-            if(curr_model().block_is_combinational(blk_id)
-               && arch_model->name != std::string(MODEL_NAMES)) {
-
-                //A subckt is a constant generator if all its input nets are either:
-                //  1) Constant nets (i.e. driven by constant pins), or
-                //  2) Disconnected
-                for(auto pin_id : curr_model().block_input_pins(blk_id)) {
-                    auto net_id = curr_model().pin_net(pin_id);
-
-                    if(net_id && !curr_model().net_is_constant(net_id)) {
-                        return false;
-                    } else {
-                        VTR_ASSERT(!net_id || curr_model().net_is_constant(net_id));
-                    }
-                }
-                //This subckt is a constant generator
-                return true;
-            }
-            return false;
-        }
-
         //Returns a different unique subck name each time it is called
         std::string unique_subckt_name() {
             return "unnamed_subckt" + std::to_string(unique_subckt_name_counter_++);
@@ -686,6 +618,8 @@ struct BlifAllocCallback : public blifparse::Callback {
         AtomBlockId curr_block_;
 
         e_circuit_format blif_format_ = e_circuit_format::BLIF;
+        e_const_gen_inference const_gen_inference_ = e_const_gen_inference::COMB;
+        int verbosity_ = 1;
 
 };
 
@@ -702,16 +636,17 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
     return new_val;
 }
 
-AtomNetlist read_blif(const e_circuit_format circuit_format,
+AtomNetlist read_blif(e_circuit_format circuit_format,
                       const char *blif_file,
                       const t_model *user_models,
-                      const t_model *library_models) {
+                      const t_model *library_models,
+                      const int verbosity) {
 
 
     AtomNetlist netlist;
     std::string netlist_id = vtr::secure_digest_file(blif_file);
 
-    BlifAllocCallback alloc_callback(circuit_format, netlist, netlist_id, user_models, library_models);
+    BlifAllocCallback alloc_callback(circuit_format, netlist, netlist_id, user_models, library_models, verbosity);
     blifparse::blif_parse_filename(blif_file, alloc_callback);
 
     return netlist;

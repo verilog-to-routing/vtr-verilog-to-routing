@@ -1,0 +1,4 @@
+-V regression_test/benchmark/other/multi_clock_reader_writer/multi_clock_reader_writer.v
+-L reset 
+-g 100
+--coverage 93.0

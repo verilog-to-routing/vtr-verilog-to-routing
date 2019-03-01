@@ -26,7 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "types.h"
+#include "odin_types.h"
 #include "parse_making_ast.h"
 
 #define PARSE {printf("here\n");}
@@ -63,7 +63,7 @@ int yylex(void);
 %token vALWAYS vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vDEFINE vELSE vEND vENDCASE
 %token vENDMODULE vENDSPECIFY vENDFUNCTION vIF vINOUT vINPUT vMODULE vFUNCTION vNAND vNEGEDGE vNOR vNOT vOR vFOR
 %token vOUTPUT vPARAMETER vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND
-%token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
+%token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER
 %token vNOT_SUPPORT
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
@@ -76,7 +76,7 @@ int yylex(void);
 %left '&' voNAND
 %left voEQUAL voNOTEQUAL voCASEEQUAL voCASENOTEQUAL
 %left voGTE voLTE '<' '>'
-%left voSLEFT voSRIGHT
+%left voSLEFT voSRIGHT voASRIGHT
 %left '+' '-'
 %left '*' '/' '%'
 %right voPOWER
@@ -131,7 +131,7 @@ items:
 	;
 
 define:
-	vDEFINE vSYMBOL_ID vINTEGRAL				             {$$ = NULL; newConstant($2, newNumberNode($3, LONG_LONG, UNSIGNED, yylineno), yylineno);}
+	vDEFINE vSYMBOL_ID vINTEGRAL				             {$$ = NULL; newConstant($2, newNumberNode($3, LONG, UNSIGNED, yylineno), yylineno);}
   | vDEFINE vSYMBOL_ID vUNSIGNED_DECIMAL				   {$$ = NULL; newConstant($2, newNumberNode($3, DEC, UNSIGNED, yylineno), yylineno);}
   | vDEFINE vSYMBOL_ID vUNSIGNED_OCTAL				     {$$ = NULL; newConstant($2, newNumberNode($3, OCT, UNSIGNED, yylineno), yylineno);}
   | vDEFINE vSYMBOL_ID vUNSIGNED_HEXADECIMAL			 {$$ = NULL; newConstant($2, newNumberNode($3, HEX, UNSIGNED, yylineno), yylineno);}
@@ -481,6 +481,7 @@ expression:
 	| expression '<' expression								{$$ = newBinaryOperation(LT, $1, $3, yylineno);}
 	| expression '>' expression								{$$ = newBinaryOperation(GT, $1, $3, yylineno);}
 	| expression voSRIGHT expression						{$$ = newBinaryOperation(SR, $1, $3, yylineno);}
+	| expression voASRIGHT expression						{$$ = newBinaryOperation(ASR, $1, $3, yylineno);}
 	| expression voSLEFT expression							{$$ = newBinaryOperation(SL, $1, $3, yylineno);}
 	| expression voEQUAL expression							{$$ = newBinaryOperation(LOGICAL_EQUAL, $1, $3, yylineno);}
 	| expression voNOTEQUAL expression						{$$ = newBinaryOperation(NOT_EQUAL, $1, $3, yylineno);}
@@ -497,7 +498,7 @@ expression:
 	;
 
 primary:
-  vINTEGRAL				                  {$$ = newNumberNode($1, LONG_LONG, UNSIGNED, yylineno);}
+  vINTEGRAL				                  {$$ = newNumberNode($1, LONG, UNSIGNED, yylineno);}
   | vUNSIGNED_DECIMAL				        {$$ = newNumberNode($1, DEC, UNSIGNED, yylineno);}
   | vUNSIGNED_OCTAL				          {$$ = newNumberNode($1, OCT, UNSIGNED, yylineno);}
   | vUNSIGNED_HEXADECIMAL			      {$$ = newNumberNode($1, HEX, UNSIGNED, yylineno);}

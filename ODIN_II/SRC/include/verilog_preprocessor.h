@@ -50,7 +50,7 @@ void clean_veri_include(veri_include *current);
 int add_veri_define(char *symbol, char *value, int line, veri_include *included_from);
 char* ret_veri_definedval(char *symbol);
 int veri_is_defined(char * symbol);
-veri_include* add_veri_include(char *path, int line, veri_include *included_from);
+veri_include* add_veri_include(const char *path, int line, veri_include *included_from);
 
 /* Preprocessor ------------------------------------------------------------- */
 FILE* veri_preproc(FILE *source);

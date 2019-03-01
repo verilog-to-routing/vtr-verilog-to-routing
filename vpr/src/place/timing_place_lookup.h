@@ -1,7 +1,9 @@
 #ifndef TIMING_PLACE_LOOKUP_H
 #define TIMING_PLACE_LOOKUP_H
 
-void compute_delay_lookup_tables(t_router_opts router_opts,
+void compute_delay_lookup_tables(
+        t_placer_opts placer_opts,
+        t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_chan_width_dist chan_width_dist, const t_direct_inf *directs,
 		const int num_directs);

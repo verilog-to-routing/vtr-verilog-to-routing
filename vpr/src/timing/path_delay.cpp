@@ -187,13 +187,13 @@ static void alloc_timing_stats();
 
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain,
 	bool is_prepacked, bool is_final_analysis, long * max_critical_input_paths_ptr,
-    long * max_critical_output_paths_ptr, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping, const t_timing_inf &timing_inf);
+    long * max_critical_output_paths_ptr, vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping, const t_timing_inf &timing_inf);
 
 #ifdef PATH_COUNTING
 static void do_path_counting(float criticality_denom);
 #endif
 
-static float find_least_slack(bool is_prepacked, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
+static float find_least_slack(bool is_prepacked, vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
 
 static void load_tnode(t_pb_graph_pin *pb_graph_pin, const ClusterBlockId iblock,
 		int *inode);
@@ -205,11 +205,11 @@ static void update_normalized_costs(float T_arr_max_this_domain, long max_critic
 
 //static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_from_pin_id);
 
-static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, vtr::vector_map<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
+static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, vtr::vector<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id, vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
 
-static const char * find_tnode_net_name(int inode, bool is_prepacked, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
+static const char * find_tnode_net_name(int inode, bool is_prepacked, vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
 
-static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, vtr::vector_map<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id);
+static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, vtr::vector<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id);
 
 static inline bool has_valid_T_arr(int inode);
 
@@ -258,8 +258,8 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 
 	t_slack * slacks = nullptr;
 	bool do_process_constraints = false;
-	vtr::vector_map<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
-	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
+	vtr::vector<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
+	vtr::vector<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 
 	if (tedge_ch.chunk_ptr_head != nullptr) {
 		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__,
@@ -318,8 +318,8 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
 
 	t_slack * slacks = nullptr;
 	bool do_process_constraints = false;
-	vtr::vector_map<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
-	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
+	vtr::vector<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
+	vtr::vector<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 
 	if (tedge_ch.chunk_ptr_head != nullptr) {
 		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__,
@@ -388,7 +388,7 @@ static t_slack * alloc_slacks() {
 	return slacks;
 }
 
-void load_timing_graph_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay) {
+void load_timing_graph_net_delays(vtr::vector<ClusterNetId, float *> &net_delay) {
 
 	/* Sets the delays of the inter-CLB nets to the values specified by          *
 	 * net_delay[0..net.size()-1][1..num_pins-1].  These net delays should have    *
@@ -428,7 +428,7 @@ void free_timing_graph(t_slack * slacks) {
     auto& timing_ctx = g_vpr_ctx.mutable_timing();
 
 	if (tedge_ch.chunk_ptr_head == nullptr) {
-        vtr::printf_warning(__FILE__, __LINE__, "in free_timing_graph: No timing graph to free.\n");
+        VTR_LOG_WARN( "in free_timing_graph: No timing graph to free.\n");
 	}
 
 	free_chunk_memory(&tedge_ch);
@@ -703,7 +703,7 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 	fprintf(fp, "\n\n");
 }
 
-void print_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay, const char *fname) {
+void print_net_delay(vtr::vector<ClusterNetId, float *> &net_delay, const char *fname) {
 
 	/* Prints the net delays into a file. */
 
@@ -776,10 +776,9 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 	ClusterNetId net_id;
 	int normalized_pin, normalization;
 	t_pb_graph_pin *ipb_graph_pin;
-	t_pb_route *intra_lb_route, *d_intra_lb_route;
 	int num_dangling_pins;
 	t_pb_graph_pin*** intra_lb_pb_pin_lookup;
-	vtr::vector_map<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
+	vtr::vector<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -855,11 +854,11 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		case TN_PRIMITIVE_OPIN:
 		case TN_FF_OPIN:
 		case TN_CLOCK_OPIN:
-		case TN_CB_IPIN:
+		case TN_CB_IPIN: {
 			/* fanout is determined by intra-cluster connections */
 			/* Allocate space for edges  */
 			i_pin_id = timing_ctx.tnodes[i].pb_graph_pin->pin_count_in_cluster;
-			intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
+			const auto& intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
 			ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 
 			if (ipb_graph_pin->parent_node->pb_type->max_internal_delay
@@ -910,6 +909,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			VTR_ASSERT(count >= 0);
 
 			break;
+         }
 		case TN_PRIMITIVE_IPIN:
 			/* Pin info comes from pb_graph block delays
 			 */
@@ -917,7 +917,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			if (timing_inf.timing_analysis_enabled)
 			{
 				i_pin_id = timing_ctx.tnodes[i].pb_graph_pin->pin_count_in_cluster;
-				intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
+				const auto& intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
 				ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 				timing_ctx.tnodes[i].num_edges = ipb_graph_pin->num_pin_timing;
 				timing_ctx.tnodes[i].out_edges = (t_tedge *) vtr::chunk_malloc(
@@ -942,10 +942,10 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 				}
 			}
 			break;
-		case TN_CB_OPIN:
+		case TN_CB_OPIN: {
 			/* load up net info */
 			i_pin_id = timing_ctx.tnodes[i].pb_graph_pin->pin_count_in_cluster;
-			intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
+			const auto& intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
 			ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 
 			VTR_ASSERT(intra_lb_route[i_pin_id].atom_net_id);
@@ -961,7 +961,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 				normalization = cluster_ctx.clb_nlist.block_type(dblock)->num_pins
 						/ cluster_ctx.clb_nlist.block_type(dblock)->capacity;
 				normalized_pin = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, j) % normalization;
-				d_intra_lb_route = cluster_ctx.clb_nlist.block_pb(dblock)->pb_route;
+				const auto& d_intra_lb_route = cluster_ctx.clb_nlist.block_pb(dblock)->pb_route;
 				dpin = OPEN;
 				dport = OPEN;
 				count = 0;
@@ -1012,6 +1012,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 				VTR_ASSERT(net_id != ClusterNetId::INVALID());
 			}
 			break;
+         }
 		case TN_OUTPAD_IPIN:
 		case TN_INPAD_SOURCE:
 		case TN_OUTPAD_SINK:
@@ -1022,14 +1023,14 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		case TN_CLOCK_SOURCE:
 			break;
 		default:
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"Consistency check failed: Unknown tnode type %d.\n", timing_ctx.tnodes[i].type);
 			VTR_ASSERT(0);
 			break;
 		}
 	}
 	if(num_dangling_pins > 0) {
-		vtr::printf_warning(__FILE__, __LINE__,
+		VTR_LOG_WARN(
 				"Unconnected logic in design, number of dangling tnodes = %d\n", num_dangling_pins);
 	}
 
@@ -1050,7 +1051,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
             }
         }
     }
-    vtr::printf_info("Disconnected %d redundant timing edges to constant generators\n", const_gen_edge_break_count);
+    VTR_LOG("Disconnected %d redundant timing edges to constant generators\n", const_gen_edge_break_count);
 
 
 	for (int i = 0; i < device_ctx.num_block_types; i++) {
@@ -1550,7 +1551,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
             }
         }
     }
-    vtr::printf_info("Disconnected %d redundant timing edges to constant generators\n", const_gen_edge_break_count);
+    VTR_LOG("Disconnected %d redundant timing edges to constant generators\n", const_gen_edge_break_count);
 
 
     //Build the net to driver look-up
@@ -1892,7 +1893,7 @@ static void process_constraints() {
 		for (sink_clock_domain = 0; sink_clock_domain < timing_ctx.sdc->num_constrained_clocks; sink_clock_domain++) {
 			if (!constraint_used[sink_clock_domain]) {
                 if(timing_ctx.sdc->domain_constraint[source_clock_domain][sink_clock_domain] != DO_NOT_ANALYSE) {
-                    vtr::printf_warning(__FILE__, __LINE__, "Timing constraint from clock %d to %d of value %f will be disabled"
+                    VTR_LOG_WARN( "Timing constraint from clock %d to %d of value %f will be disabled"
                                                            " since it is not activated by any path in the timing graph.\n",
                                                            source_clock_domain, sink_clock_domain,
                                                            timing_ctx.sdc->domain_constraint[source_clock_domain][sink_clock_domain]);
@@ -2125,7 +2126,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
 	}
 #endif
 
-	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
+	vtr::vector<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 
     if (timing_inf.slack_definition == std::string("I")) {
         /* Find the smallest slack in the design, if negative. */
@@ -2250,7 +2251,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
     timing_ctx.stats.num_old_sta_full_updates  += 1;
 }
 
-static float find_least_slack(bool is_prepacked, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
+static float find_least_slack(bool is_prepacked, vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
 	/* Perform a simplified version of do_timing_analysis_for_constraint
 	to compute only the smallest slack in the design.
     USED ONLY WHEN slack_definition == 'I'! */
@@ -2380,7 +2381,7 @@ static float find_least_slack(bool is_prepacked, vtr::vector_map<ClusterBlockId,
 
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain,
 	bool is_prepacked, bool is_final_analysis, long * max_critical_input_paths_ptr,
-	long * max_critical_output_paths_ptr, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping, const t_timing_inf &timing_inf) {
+	long * max_critical_output_paths_ptr, vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping, const t_timing_inf &timing_inf) {
 
 	/* Performs a single forward and backward traversal for the domain pair
 	source_clock_domain and sink_clock_domain. Returns the denominator that
@@ -2606,7 +2607,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
                         AtomPinId pin_id = atom_ctx.lookup.classic_tnode_atom_pin(inode);
                         VTR_ASSERT(pin_id);
                         AtomBlockId blk_id = atom_ctx.nlist.pin_block(pin_id);
-						vtr::printf_warning(__FILE__, __LINE__,
+						VTR_LOG_WARN(
 								"Pin on block %s.%s[%d] not used\n",
                                 atom_ctx.nlist.block_name(blk_id).c_str(),
 								timing_ctx.tnodes[inode].prepacked_data->model_port_ptr->name,
@@ -2793,7 +2794,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	}
 
 	if(num_dangling_nodes > 0 && (is_final_analysis || is_prepacked)) {
-		vtr::printf_warning(__FILE__, __LINE__,
+		VTR_LOG_WARN(
 				"%d unused pins \n",  num_dangling_nodes);
 	}
 
@@ -3024,7 +3025,7 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 
     auto& timing_ctx = g_vpr_ctx.timing();
 
-	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
+	vtr::vector<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 
 	critical_path_head = allocate_and_load_critical_path(timing_inf);
 	critical_path_node = critical_path_head;
@@ -3058,10 +3059,10 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 	fprintf(fp, "Total logic delay: %g (s)  Total net delay: %g (s)\n",
 			total_logic_delay, total_net_delay);
 
-	vtr::printf_info("Nets on critical path: %d normal.\n",
+	VTR_LOG("Nets on critical path: %d normal.\n",
 			nets_on_crit_path);
 
-	vtr::printf_info("Total logic delay: %g (s), total net delay: %g (s)\n",
+	VTR_LOG("Total logic delay: %g (s), total net delay: %g (s)\n",
 			total_logic_delay, total_net_delay);
 
 	/* Make sure total_logic_delay and total_net_delay add
@@ -3083,7 +3084,7 @@ vtr::t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_i
 	int source_clock_domain = UNDEFINED, sink_clock_domain = UNDEFINED;
 	float min_slack = HUGE_POSITIVE_FLOAT, slack;
 	t_tedge *tedge;
-	vtr::vector_map<ClusterBlockId, t_pb **> empty_pin_id_to_pb_mapping; //Empty vector_map for do_timing_analysis_for_constraint
+	vtr::vector<ClusterBlockId, t_pb **> empty_pin_id_to_pb_mapping; //Empty vector for do_timing_analysis_for_constraint
 
     auto& timing_ctx = g_vpr_ctx.timing();
 
@@ -3204,7 +3205,7 @@ static void update_normalized_costs(float criticality_denom, long max_critical_i
 #endif
 
 
-static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, vtr::vector_map<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
+static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, vtr::vector<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id, vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
 /* Loads clock domain and clock delay onto TN_FF_SOURCE and TN_FF_SINK tnodes.
 The clock domain of each clock is its index in timing_ctx.sdc->constrained_clocks.
 We do this by matching each clock input pad (TN_INPAD_SOURCE), or internal clock
@@ -3326,7 +3327,7 @@ static void propagate_clock_domain_and_skew(int inode) {
 
 	if (!tedge) { /* Leaf/sink node; base case of the recursion. */
 		if(timing_ctx.tnodes[inode].type != TN_FF_CLOCK && timing_ctx.tnodes[inode].type != TN_OUTPAD_SINK) {
-            vtr::printf_warning(__FILE__, __LINE__, "tnode %d appears to take clock as a data input\n", inode);
+            VTR_LOG_WARN( "tnode %d appears to take clock as a data input\n", inode);
             return;
         }
 
@@ -3349,7 +3350,7 @@ static void propagate_clock_domain_and_skew(int inode) {
 	}
 }
 
-static const char * find_tnode_net_name(int inode, bool is_prepacked, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
+static const char * find_tnode_net_name(int inode, bool is_prepacked, vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
 	/* Finds the name of the net which a tnode (inode) is on (different for pre-/post-packed netlists). */
 
 	t_pb_graph_pin * pb_graph_pin;
@@ -3419,7 +3420,7 @@ static const char * find_tnode_net_name(int inode, bool is_prepacked, vtr::vecto
 	}
 }
 
-static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, vtr::vector_map<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id) {
+static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, vtr::vector<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id) {
 	/* Finds the TN_FF_CLOCK tnode on the same flipflop as an TN_FF_SOURCE or TN_FF_SINK tnode. */
 
 	t_tnode * ff_clock_tnode;
@@ -3616,34 +3617,34 @@ void print_timing_stats() {
 	/* Find critical path delay. If the device_ctx.pb_max_internal_delay is greater than this, it becomes
 	 the limiting factor on critical path delay, so print that instead, with a special message. */
     critical_path_delay = get_critical_path_delay();
-    vtr::printf_info("Final critical path: %g ns", critical_path_delay);
+    VTR_LOG("Final critical path: %g ns", critical_path_delay);
 
 	if (timing_ctx.sdc->num_constrained_clocks <= 1) {
 		/* Although critical path delay is always well-defined, it doesn't make sense to talk about fmax for multi-clock circuits */
-		vtr::printf_direct(", f_max: %g MHz", 1e3 / critical_path_delay);
+		VTR_LOG(", f_max: %g MHz", 1e3 / critical_path_delay);
 	}
-	vtr::printf_direct("\n");
+	VTR_LOG("\n");
 
 	/* Also print the least slack in the design */
-	vtr::printf_info("\n");
-	vtr::printf_info("Least slack in design: %g ns\n", 1e9 * least_slack_in_design);
-	vtr::printf_info("\n");
+	VTR_LOG("\n");
+	VTR_LOG("Least slack in design: %g ns\n", 1e9 * least_slack_in_design);
+	VTR_LOG("\n");
 
 	if (timing_ctx.sdc->num_constrained_clocks > 1) { /* Multiple-clock design */
 
 		/* Print minimum possible clock period to meet each constraint. Convert to nanoseconds. */
 
-		vtr::printf_info("Minimum possible clock period to meet each constraint (including skew effects):\n");
+		VTR_LOG("Minimum possible clock period to meet each constraint (including skew effects):\n");
 		for (source_clock_domain = 0; source_clock_domain < timing_ctx.sdc->num_constrained_clocks; source_clock_domain++) {
 			/* Print the intra-domain constraint if it was analysed. */
 			if (timing_ctx.sdc->domain_constraint[source_clock_domain][source_clock_domain] > NEGATIVE_EPSILON) {
-				vtr::printf_info("%s to %s: %g ns (%g MHz)\n",
+				VTR_LOG("%s to %s: %g ns (%g MHz)\n",
 						timing_ctx.sdc->constrained_clocks[source_clock_domain].name,
 						timing_ctx.sdc->constrained_clocks[source_clock_domain].name,
 						1e9 * f_timing_stats->cpd[source_clock_domain][source_clock_domain],
 						1e-6 / f_timing_stats->cpd[source_clock_domain][source_clock_domain]);
 			} else {
-				vtr::printf_info("%s to %s: --\n",
+				VTR_LOG("%s to %s: --\n",
 						timing_ctx.sdc->constrained_clocks[source_clock_domain].name,
 						timing_ctx.sdc->constrained_clocks[source_clock_domain].name);
 			}
@@ -3653,13 +3654,13 @@ void print_timing_stats() {
 				if (source_clock_domain == sink_clock_domain) continue; /* already done that */
 				if (timing_ctx.sdc->domain_constraint[source_clock_domain][sink_clock_domain] > NEGATIVE_EPSILON) {
 					/* If this domain pair was analysed */
-					vtr::printf_info("\t%s to %s: %g ns (%g MHz)\n",
+					VTR_LOG("\t%s to %s: %g ns (%g MHz)\n",
 							timing_ctx.sdc->constrained_clocks[source_clock_domain].name,
 							timing_ctx.sdc->constrained_clocks[sink_clock_domain].name,
 							1e9 * f_timing_stats->cpd[source_clock_domain][sink_clock_domain],
 							1e-6 / f_timing_stats->cpd[source_clock_domain][sink_clock_domain]);
 				} else {
-					vtr::printf_info("\t%s to %s: --\n",
+					VTR_LOG("\t%s to %s: --\n",
 							timing_ctx.sdc->constrained_clocks[source_clock_domain].name,
 							timing_ctx.sdc->constrained_clocks[sink_clock_domain].name);
 				}
@@ -3668,17 +3669,17 @@ void print_timing_stats() {
 
 		/* Print least slack per constraint. */
 
-		vtr::printf_info("\n");
-		vtr::printf_info("Least slack per constraint:\n");
+		VTR_LOG("\n");
+		VTR_LOG("Least slack per constraint:\n");
 		for (source_clock_domain = 0; source_clock_domain < timing_ctx.sdc->num_constrained_clocks; source_clock_domain++) {
 			/* Print the intra-domain slack if valid. */
 			if (f_timing_stats->least_slack[source_clock_domain][source_clock_domain] < HUGE_POSITIVE_FLOAT - 1) {
-				vtr::printf_info("%s to %s: %g ns\n",
+				VTR_LOG("%s to %s: %g ns\n",
 						timing_ctx.sdc->constrained_clocks[source_clock_domain].name,
 						timing_ctx.sdc->constrained_clocks[source_clock_domain].name,
 						1e9 * f_timing_stats->least_slack[source_clock_domain][source_clock_domain]);
 			} else {
-				vtr::printf_info("%s to %s: --\n",
+				VTR_LOG("%s to %s: --\n",
 						timing_ctx.sdc->constrained_clocks[source_clock_domain].name,
 						timing_ctx.sdc->constrained_clocks[source_clock_domain].name);
 			}
@@ -3687,12 +3688,12 @@ void print_timing_stats() {
 				if (source_clock_domain == sink_clock_domain) continue; /* already done that */
 				if (f_timing_stats->least_slack[source_clock_domain][sink_clock_domain] < HUGE_POSITIVE_FLOAT - 1) {
 					/* If this domain pair was analysed and has a valid slack */
-					vtr::printf_info("\t%s to %s: %g ns\n",
+					VTR_LOG("\t%s to %s: %g ns\n",
 							timing_ctx.sdc->constrained_clocks[source_clock_domain].name,
 							timing_ctx.sdc->constrained_clocks[sink_clock_domain].name,
 							1e9 * f_timing_stats->least_slack[source_clock_domain][sink_clock_domain]);
 				} else {
-					vtr::printf_info("\t%s to %s: --\n",
+					VTR_LOG("\t%s to %s: --\n",
 							timing_ctx.sdc->constrained_clocks[source_clock_domain].name,
 							timing_ctx.sdc->constrained_clocks[sink_clock_domain].name);
 				}
@@ -3716,14 +3717,14 @@ void print_timing_stats() {
 			geomean_period = pow(geomean_period, (float) 1/num_netlist_clocks_with_intra_domain_paths);
 			fanout_weighted_geomean_period = exp(fanout_weighted_geomean_period/total_fanout);
 			/* Convert to MHz */
-			vtr::printf_info("\n");
-			vtr::printf_info("Geometric mean intra-domain period: %g ns (%g MHz)\n",
+			VTR_LOG("\n");
+			VTR_LOG("Geometric mean intra-domain period: %g ns (%g MHz)\n",
 					1e9 * geomean_period, 1e-6 / geomean_period);
-			vtr::printf_info("Fanout-weighted geomean intra-domain period: %g ns (%g MHz)\n",
+			VTR_LOG("Fanout-weighted geomean intra-domain period: %g ns (%g MHz)\n",
 					1e9 * fanout_weighted_geomean_period, 1e-6 / fanout_weighted_geomean_period);
 		}
 
-		vtr::printf_info("\n");
+		VTR_LOG("\n");
 	}
 }
 
@@ -3871,11 +3872,11 @@ static void print_spaces(FILE * fp, int num_spaces) {
 /*
  Create a lookup table that returns the tnode index for [iblock][pb_graph_pin_id]
 */
-vtr::vector_map<ClusterBlockId, std::vector<int>> alloc_and_load_tnode_lookup_from_pin_id() {
+vtr::vector<ClusterBlockId, std::vector<int>> alloc_and_load_tnode_lookup_from_pin_id() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& timing_ctx = g_vpr_ctx.timing();
 
-	vtr::vector_map<ClusterBlockId, std::vector<int>> tnode_lookup;
+	vtr::vector<ClusterBlockId, std::vector<int>> tnode_lookup;
 	tnode_lookup.resize(cluster_ctx.clb_nlist.blocks().size());
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
@@ -3904,7 +3905,7 @@ vtr::vector_map<ClusterBlockId, std::vector<int>> alloc_and_load_tnode_lookup_fr
 	return tnode_lookup;
 }
 
-void free_tnode_lookup_from_pin_id(vtr::vector_map<ClusterBlockId, std::vector<int>> &tnode_lookup) {
+void free_tnode_lookup_from_pin_id(vtr::vector<ClusterBlockId, std::vector<int>> &tnode_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
@@ -3960,7 +3961,7 @@ void print_classic_cpds() {
             float least_slack = f_timing_stats->least_slack[source_clock_domain][sink_clock_domain];
             float critical_path_delay = f_timing_stats->cpd[source_clock_domain][sink_clock_domain];
 
-            vtr::printf("Classic %d -> %d: least_slack=%g cpd=%g\n", source_clock_domain, sink_clock_domain, least_slack, critical_path_delay);
+            VTR_LOG("Classic %d -> %d: least_slack=%g cpd=%g\n", source_clock_domain, sink_clock_domain, least_slack, critical_path_delay);
 		}
 	}
 }

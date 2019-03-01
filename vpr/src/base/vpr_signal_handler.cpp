@@ -8,16 +8,25 @@
  * exception is thrown (typically ending the program).
  */
 #include "vtr_log.h"
+#include "vtr_time.h"
 
 #include "vpr_signal_handler.h"
+#include "vpr_exit_codes.h"
 #include "vpr_error.h"
 #include "globals.h"
+
+#include "read_place.h"
+#include "route_export.h"
+#include <atomic>
 
 #ifdef VPR_USE_SIGACTION
 #include <csignal>
 #endif
 
 void vpr_signal_handler(int signal);
+void checkpoint();
+
+std::atomic<int> uncleared_sigint_count(0);
 
 #ifdef VPR_USE_SIGACTION
 
@@ -27,20 +36,39 @@ void vpr_signal_handler(int signal);
         sa.sa_handler = vpr_signal_handler;
         sigemptyset(&sa.sa_mask);
         sa.sa_flags = 0; //Make sure the flags are cleared
-        sigaction(SIGINT, &sa, nullptr);
+        sigaction(SIGINT, &sa, nullptr); //Keyboard interrupt (1 pauses, 2 quits)
+        sigaction(SIGHUP, &sa, nullptr); //Hangup (attempts to checkpoint)
+        sigaction(SIGTERM, &sa, nullptr); //Terminate (attempts to checkpoint, then exit)
     }
 
     void vpr_signal_handler(int signal) {
-        VTR_ASSERT_MSG(signal == SIGINT, "Expected to handle only SIGINT");
+        if (signal == SIGINT) {
+            if (g_vpr_ctx.forced_pause()) {
+                uncleared_sigint_count++; //Previous SIGINT uncleared
+            } else {
+                uncleared_sigint_count.store(1); //Only this SIGINT outstanding
+            }
 
-        bool already_paused = g_vpr_ctx.forced_pause();
-
-        if (!already_paused) {
-            //Ask VPR to pause at the next conveneient point
-            g_vpr_ctx.set_forced_pause(true);
-        } else {
-            //Really stop
-            VPR_THROW(VPR_ERROR_INTERRUPTED, "Interrupted by user");
+            if (uncleared_sigint_count == 1) {
+                //Request a pause at the next reasonable point (e.g. to resume the GUI)
+                VTR_LOG("Recieved SIGINT: Attempting to pause...\n");
+                g_vpr_ctx.set_forced_pause(true);
+            } else if (uncleared_sigint_count == 2) {
+                VTR_LOG("Recieved two uncleared SIGINTs: Attempting to checkpoint and exit...\n");
+                checkpoint();
+                std::quick_exit(INTERRUPTED_EXIT_CODE);
+            } else if (uncleared_sigint_count == 3) {
+                //Really exit (e.g. SIGINT while checkpointing)
+                VTR_LOG("Recieved three uncleared SIGINTs: Exiting...\n");
+                std::quick_exit(INTERRUPTED_EXIT_CODE);
+            }
+        } else if (signal == SIGHUP) {
+            VTR_LOG("Recieved SIGHUP: Attempting to checkpoint...\n");
+            checkpoint();
+        } else if (signal == SIGTERM) {
+            VTR_LOG("Recieved SIGTERM: Attempting to checkpoint then exit...\n");
+            checkpoint();
+            std::quick_exit(INTERRUPTED_EXIT_CODE);
         }
     }
 
@@ -56,3 +84,16 @@ void vpr_signal_handler(int signal);
     }
 
 #endif
+
+void checkpoint() {
+    //Dump the current placement and routing state
+    vtr::ScopedStartFinishTimer timer("Checkpointing");
+
+    std::string placer_checkpoint_file = "placer_checkpoint.place";
+    VTR_LOG("Attempting to checkpoint current placement to file: %s\n", placer_checkpoint_file.c_str());
+    print_place(nullptr, nullptr, placer_checkpoint_file.c_str());
+
+    std::string router_checkpoint_file = "router_checkpoint.route";
+    VTR_LOG("Attempting to checkpoint current routing to file: %s\n", router_checkpoint_file.c_str());
+    print_route(nullptr, router_checkpoint_file.c_str());
+}

@@ -6,7 +6,7 @@
 
 void load_rr_file(const t_graph_type graph_type,
         const DeviceGrid& grid,
-        t_chan_width *nodes_per_chan,
+        t_chan_width nodes_per_chan,
         const int num_seg_types,
         const t_segment_inf * segment_inf,
         const enum e_base_cost_type base_cost_type,

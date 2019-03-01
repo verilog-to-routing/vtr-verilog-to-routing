@@ -12,7 +12,6 @@
 # Inputs: <ODIN_II_BLIF_IN_FILE> <ABC_BLIF_IN_FILE> <ABC_BLIF_OUT_FILE>
 #
 ################################################################################
-
 #Open the ODIN II BLIF File
 open(my $odinInFile, "<".$ARGV[0]) || die "Error Opening ODIN II File $ARGV[0]: $!\n";
 

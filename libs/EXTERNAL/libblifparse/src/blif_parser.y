@@ -248,7 +248,9 @@ string_list: /*empty*/ { $$ = std::vector<std::string>(); }
 conn: DOT_CONN STRING STRING { $$ = Conn(); $$.src = $2; $$.dst = $3; }
 cname: DOT_CNAME STRING { $$ = Cname(); $$.name = $2; }
 attr: DOT_ATTR STRING STRING { $$ = Attr(); $$.name = $2; $$.value = $3; }
+    | DOT_ATTR STRING { $$ = Attr(); $$.name = $2; $$.value = ""; }
 param: DOT_PARAM STRING STRING { $$ = Param(); $$.name = $2; $$.value = $3; }
+    | DOT_PARAM STRING { $$ = Param(); $$.name = $2; $$.value = ""; }
 
 %%
 
