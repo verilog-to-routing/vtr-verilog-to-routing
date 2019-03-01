@@ -641,6 +641,10 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 		{
 			child_skip_list = (short*)vtr::calloc(node->num_children, sizeof(short));
 			children_signal_list = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*)*node->num_children);
+
+			for (i = 0; i < node->num_children; i++) {
+				children_signal_list[i] = NULL;
+			}
 		}
 
 		/* ------------------------------------------------------------------------------*/
@@ -979,6 +983,18 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 	}
 	if (children_signal_list != NULL)
 	{
+		/* skip lists that have already been freed */
+		for (i = 0; i < node->num_children; i++) {
+			if (children_signal_list[i]
+				&& node->type != BINARY_OPERATION 
+				&& node->type != UNARY_OPERATION 
+				&& node->type != BLOCK
+				&& node->type != VAR_DECLARE_LIST
+				&& node->type != ASSIGN
+				&& node->type != ALWAYS
+				&& node->type != CONCATENATE)
+				free_signal_list(children_signal_list[i]);
+		}
 		vtr::free(children_signal_list);
 	}
 
