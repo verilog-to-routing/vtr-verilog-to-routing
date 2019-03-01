@@ -215,7 +215,7 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 					const t_pb_graph_pin * pin  = &pb_graph_node->output_pins[port_index][j];
 					node_index = pin->pin_count_in_cluster;
-					if (pb_type->num_modes > 0 && pb_route[node_index].atom_net_id) {
+					if (pb_type->num_modes > 0 && pb_route.count(node_index) && pb_route[node_index].atom_net_id) {
 						prev_node = pb_route[node_index].driver_pb_pin_id;
 						const t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
 						const t_pb_graph_edge *edge = get_edge_between_pins(prev_pin, pin);
@@ -228,7 +228,6 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 								port_index,
 								edge->interconnect->name);
 							}
-						mode_of_edge = prev_pin->output_edges[prev_edge]->interconnect->parent_mode_index;
 						VTR_ASSERT(mode == nullptr || &pb_type->modes[mode_of_edge] == mode);
 						mode = &pb_type->modes[mode_of_edge];
 					}

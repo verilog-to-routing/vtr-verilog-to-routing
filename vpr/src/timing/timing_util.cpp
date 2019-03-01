@@ -581,19 +581,13 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
             max_req += shift;
         }
 
-        float crit = std::numeric_limits<float>::quiet_NaN();
-        if (max_req > 0.) {
-            //Standard case
-            crit = 1. - (slack / max_req);
+        VTR_ASSERT(max_req > 0.);
 
-        } else if (max_req == 0. && slack == 0.) {
-            //Special case to avoid divide by zero
-            crit = 1.;
-        } else {
-            std::string msg = vtr::string_fmt("Invalid maximum required time %g (expected >= 0). Shifted slack was %g.", max_req, slack);
-            VPR_THROW(VPR_ERROR_TIMING, msg.c_str());
+        if (!std::isfinite(slack)) {
+            continue;
         }
 
+        float crit = 1. - (slack / max_req);
 
         //Soft check for reasonable criticality values
         VTR_ASSERT_MSG(crit >= 0. - CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be negative");

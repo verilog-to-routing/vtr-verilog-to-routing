@@ -1067,7 +1067,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 io_name = atom->name + 4;
             }
 
-			const auto& top_pb_route = find_top_pb_route(atom);
+            const auto& top_pb_route = find_top_pb_route(atom);
 
             if(top_pb_route.count(cluster_pin_idx)) {
                 //Net exists
@@ -1109,7 +1109,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
             VTR_ASSERT(pb_graph_node->num_input_ports == 1); //LUT has one input port
 
-			const auto& top_pb_route = find_top_pb_route(atom);
+            const auto& top_pb_route = find_top_pb_route(atom);
 
             VTR_ASSERT(pb_graph_node->num_output_ports == 1); //LUT has one output port
             VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1); //LUT has one output pin
@@ -1174,7 +1174,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::shared_ptr<Instance> make_latch_instance(const t_pb* atom)  {
             std::string inst_name = join_identifier("latch", atom->name);
 
-			const auto& top_pb_route = find_top_pb_route(atom);
+            const auto& top_pb_route = find_top_pb_route(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
 
             //We expect a single input, output and clock ports
@@ -1225,7 +1225,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         // Note that the primtive interface to dual and single port rams is nearly identical,
         // so we using a single function to handle both
         std::shared_ptr<Instance> make_ram_instance(const t_pb* atom)  {
-			const auto& top_pb_route = find_top_pb_route(atom);
+            const auto& top_pb_route = find_top_pb_route(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
             const t_pb_type* pb_type = pb_graph_node->pb_type;
 
@@ -1371,7 +1371,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::shared_ptr<Instance> make_multiply_instance(const t_pb* atom)  {
             auto& timing_ctx = g_vpr_ctx.timing();
 
-			const auto& top_pb_route = find_top_pb_route(atom);
+            const auto& top_pb_route = find_top_pb_route(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
             const t_pb_type* pb_type = pb_graph_node->pb_type;
 
@@ -1468,7 +1468,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::shared_ptr<Instance> make_adder_instance(const t_pb* atom)  {
             auto& timing_ctx = g_vpr_ctx.timing();
 
-			const auto& top_pb_route = find_top_pb_route(atom);
+            const auto& top_pb_route = find_top_pb_route(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
             const t_pb_type* pb_type = pb_graph_node->pb_type;
 
@@ -1567,7 +1567,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::shared_ptr<Instance> make_blackbox_instance(const t_pb* atom)  {
             auto& timing_ctx = g_vpr_ctx.timing();
 
-			const t_pb_route* top_pb_route = find_top_pb_route(atom);
+            const auto& top_pb_route = find_top_pb_route(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
             const t_pb_type* pb_type = pb_graph_node->pb_type;
 

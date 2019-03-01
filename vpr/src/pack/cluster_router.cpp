@@ -442,7 +442,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 					add_to_rt(lb_nets[idx].rt_tree, exp_node.node_index, router_data, idx);
 				}
 
-				if (debug_clustering) {
+				if (verbosity > 3) {
 					vtr::printf("Routing finished\n");
 					vtr::printf("\tS");
 					print_trace(stdout, lb_nets[idx].rt_tree, router_data);
