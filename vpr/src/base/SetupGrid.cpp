@@ -33,7 +33,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
 
 static void CheckGrid(const DeviceGrid& grid);
 
-static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<int>& grid_priorities);
+static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<int>& grid_priorities, t_metadata_dict *meta);
 
 //Create the device grid based on resource requirements
 DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts, float target_device_utilization) {
@@ -274,7 +274,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     for (size_t x = 0; x < grid_width; ++x) {
         for (size_t y = 0; y < grid_height; ++y) {
             set_grid_block_type(std::numeric_limits<int>::lowest() + 1, //+1 so it overrides without warning
-                    empty_type, x, y, grid, grid_priorities);
+                    empty_type, x, y, grid, grid_priorities, /*meta=*/nullptr);
         }
     }
 
@@ -432,7 +432,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
                 //Fill in the region
                 for(size_t x = x_start; x + (type->width - 1) <= x_max; x += incrx) {
                     for(size_t y = y_start; y + (type->height - 1) <= y_max; y += incry) {
-                        set_grid_block_type(grid_loc_def.priority, type, x, y, grid, grid_priorities);
+                        set_grid_block_type(grid_loc_def.priority, type, x, y, grid, grid_priorities, grid_loc_def.meta);
                     }
                 }
             }
@@ -459,7 +459,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     return device_grid;
 }
 
-static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<int>& grid_priorities) {
+static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<int>& grid_priorities, t_metadata_dict *meta) {
 
     struct TypeLocation {
         TypeLocation(size_t x_val, size_t y_val, const t_type_descriptor* type_val, int priority_val)
@@ -549,6 +549,7 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
             grid[x][y].type = type;
             grid[x][y].width_offset = x_offset;
             grid[x][y].height_offset = y_offset;
+            grid[x][y].meta = meta;
 
             grid_priorities[x][y] = priority;
         }
