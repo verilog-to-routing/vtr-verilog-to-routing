@@ -2409,13 +2409,13 @@ std::string describe_rr_node(int inode) {
 
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
-        if (seg_index < (int) device_ctx.arch.Segments.size()) {
+        if (seg_index < (int) device_ctx.arch->Segments.size()) {
             msg += vtr::string_fmt(" track: %d len: %d longline: %d seg_type: %s dir: %s",
-                        rr_node.track_num(),
-                        rr_node.length(),
-                        device_ctx.arch.Segments[seg_index].longline,
-                        device_ctx.arch.Segments[seg_index].name.c_str(),
-                        rr_node.direction_string());
+                    rr_node.track_num(),
+                    rr_node.length(),
+                    device_ctx.arch->Segments[seg_index].longline,
+                    device_ctx.arch->Segments[seg_index].name.c_str(),
+                    rr_node.direction_string());
         } else {
             msg += vtr::string_fmt(" track: %d len: %d seg_type: ILLEGAL_SEG_INDEX dir: %s",
                         rr_node.track_num(),

@@ -382,10 +382,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    /*
-     * Keep a copy of the architecture
-     */
-    device_ctx.arch = Arch;
+    device_ctx.arch = &Arch;
 
     /*
      *Load the device grid

@@ -31,7 +31,9 @@
 #include <unordered_map>
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <limits>
+#include <numeric>
 
 #include "vtr_ndmatrix.h"
 
@@ -61,6 +63,132 @@ struct t_pb_graph_edge;
 struct t_cluster_placement_primitive;
 struct t_arch;
 enum class e_sb_type;
+
+/****************************************************************************/
+/* FPGA metadata types                                                      */
+/****************************************************************************/
+/* t_offset, t_metadata_as, and t_metadata_dict provide a types to store
+ * metadata about the FPGA architecture and routing routing graph along side
+ * the pb_type, grid, node and edge descriptions.
+ *
+ * The metadata is stored as a simple key/value map.  key's are string and an
+ * optional coordinate. t_metadata_as provides the value storage, which is a
+ * string.  t_metadata_as has some convience methods for a handful of types
+ * (e.g. int, vector of int), but the underlying data type is always a string.
+ */
+
+// Coordinate storage for metadata.
+struct t_offset {
+    int x = 0;
+    int y = 0;
+    int z = 0;
+
+    bool operator==(const t_offset &o) const;
+    bool operator!=(const t_offset &o) const { return !(*this == o); };
+    bool operator<(const t_offset &o) const;
+};
+
+// Hash functions for t_offset and the metadata key,
+// std::pair<t_offset, std::string>.
+namespace std {
+    template <>
+    struct hash<t_offset> {
+        std::size_t operator()(const t_offset& o) const noexcept {
+            std::size_t h1 = std::hash<int>{}(o.x);
+            std::size_t h2 = std::hash<int>{}(o.y);
+            std::size_t h3 = std::hash<int>{}(o.z);
+            return h1 ^ (h2 << 1) ^ (h3 << 2);
+        }
+    };
+
+    template <>
+    struct hash<std::pair<t_offset, std::string>> {
+        std::size_t operator()(const std::pair<t_offset, std::string>& ok) const noexcept {
+            std::size_t h1 = std::hash<t_offset>{}(ok.first);
+            std::size_t h2 = std::hash<string>{}(ok.second);
+            return h1 ^ (h2 << 1);
+        }
+    };
+}
+
+// Metadata value storage.
+class t_metadata_as {
+public:
+    explicit t_metadata_as(std::string v) : value_(v) {}
+    explicit t_metadata_as(const t_metadata_as &o) : value_(o.value_) {}
+
+    // Return string value.
+    std::string as_string() const { return value_; }
+
+private:
+    std::string value_;
+};
+
+// Metadata storage dictionary.
+struct t_metadata_dict : std::unordered_map<
+                            std::pair<t_offset, std::string>,
+                            std::vector<t_metadata_as>> {
+    // Is this key present in the map?
+    inline bool has(std::string key) const {
+        return has(std::make_pair(t_offset(), key));
+    }
+    inline bool has(t_offset o, std::string key) const {
+        return has(std::make_pair(o, key));
+    }
+    inline bool has(std::pair<t_offset, std::string> ok) const {
+        return (this->count(ok) >= 1);
+    }
+
+    // Get all metadata values matching key.
+    //
+    // Returns nullptr if key is not found.
+    inline const std::vector<t_metadata_as>* get(std::string key) const {
+        return get(std::make_pair(t_offset(), key));
+    }
+    inline const std::vector<t_metadata_as>* get(t_offset o, std::string key) const {
+        return get(std::make_pair(o, key));
+    }
+    inline const std::vector<t_metadata_as>* get(std::pair<t_offset, std::string> ok) const {
+        auto iter = this->find(ok);
+        if(iter != this->end()) {
+          return &iter->second;
+        }
+        return nullptr;
+    }
+
+    // Get metadata values matching key.
+    //
+    // Returns nullptr if key is not found or if multiple values are prsent
+    // per key.
+    inline const t_metadata_as* one(std::string key) const {
+        return one(std::make_pair(t_offset(), key));
+    }
+    inline const t_metadata_as* one(t_offset o, std::string key) const {
+        return one(std::make_pair(o, key));
+    }
+    inline const t_metadata_as* one(std::pair<t_offset, std::string> ok) const {
+        auto values = get(ok);
+        if (values == nullptr) {
+            return nullptr;
+        }
+        if (values->size() != 1) {
+            return nullptr;
+        }
+        return &((*values)[0]);
+    }
+
+    // Adds value to key.
+    void add(std::string key, std::string value) {
+        add(std::make_pair(t_offset(), key), value);
+    }
+    void add(t_offset o, std::string key, std::string value) {
+        add(std::make_pair(o, key), value);
+    }
+    void add(std::pair<t_offset, std::string> ok, std::string value) {
+        auto iter = this->emplace(ok, std::vector<t_metadata_as>());
+        iter.first->second.push_back(t_metadata_as(value));
+    }
+};
 
 /*************************************************************************************************/
 /* FPGA basic definitions                                                                        */
@@ -251,6 +379,9 @@ struct t_grid_loc_def {
 
     t_grid_loc_spec x;      //Horizontal location specification
     t_grid_loc_spec y;      //Veritcal location specification
+
+    std::unique_ptr<t_metadata_dict> owned_meta;
+    t_metadata_dict *meta;
 };
 
 enum GridDefType {
@@ -557,6 +688,8 @@ typedef const t_type_descriptor* t_type_ptr;
  *      int num_output_pins: A count of the total number of output pins
  *      timing: Timing matrix of block [0..num_inputs-1][0..num_outputs-1]
  *      parent_mode: mode of the parent block
+ *      t_mode_power: ???
+ *      meta: Table storing extra arbitrary metadata attributes.
  */
 struct t_pb_type {
 	char* name = nullptr;
@@ -583,6 +716,8 @@ struct t_pb_type {
 
 	/* Power related members */
 	t_pb_type_power * pb_type_power = nullptr;
+
+	t_metadata_dict meta;
 };
 
 /** Describes an operational mode of a clustered logic block
@@ -597,18 +732,22 @@ struct t_pb_type {
  *      num_interconnect: Total number of interconnect tags specified by user
  *      parent_pb_type: Which parent contains this mode
  *      index: Index of mode in array with other modes
+ *      t_mode_power: ???
+ *      meta: Table storing extra arbitrary metadata attributes.
  */
 struct t_mode {
-	char* name;
-	t_pb_type *pb_type_children; /* [0..num_child_pb_types] */
-	int num_pb_type_children;
-	t_interconnect *interconnect;
-	int num_interconnect;
-	t_pb_type *parent_pb_type;
-	int index;
+	char* name = nullptr;
+	t_pb_type *pb_type_children = nullptr; /* [0..num_child_pb_types] */
+	int num_pb_type_children = 0;
+	t_interconnect *interconnect = nullptr;
+	int num_interconnect = 0;
+	t_pb_type *parent_pb_type = nullptr;
+	int index = 0;
 
 	/* Power related members */
-	t_mode_power * mode_power;
+	t_mode_power * mode_power = nullptr;
+
+	t_metadata_dict meta;
 };
 
 /** Describes an interconnect edge inside a cluster
@@ -629,23 +768,24 @@ struct t_mode {
  */
 struct t_interconnect {
 	enum e_interconnect type;
-	char *name;
+	char *name = nullptr;
 
-	char *input_string;
-	char *output_string;
+	char *input_string = nullptr;
+	char *output_string = nullptr;
 
-	t_pin_to_pin_annotation *annotations; /* [0..num_annotations-1] */
-	int num_annotations;
-	bool infer_annotations;
+	t_pin_to_pin_annotation *annotations = nullptr; /* [0..num_annotations-1] */
+	int num_annotations = 0;
+	bool infer_annotations = false;
 
-	int line_num; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
+	int line_num = 0; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
 
-	int parent_mode_index;
+	int parent_mode_index = 0;
 
 	/* Power related members */
-	t_mode *parent_mode;
+	t_mode *parent_mode = nullptr;
 
-	t_interconnect_power *interconnect_power;
+	t_interconnect_power *interconnect_power = nullptr;
+	t_metadata_dict meta;
 };
 
 /** Describes I/O and clock ports
@@ -1012,7 +1152,8 @@ enum e_Fc_type {
  * Cmetal: Capacitance of a routing track, per unit logic block length.      *
  * Rmetal: Resistance of a routing track, per unit logic block length.       *
  * (UDSD by AY) drivers: How do signals driving a routing track connect to   *
- *                       the track?                                          */
+ *                       the track?                                          *
+ * meta: Table storing extra arbitrary metadata attributes.                  */
 struct t_segment_inf {
 	std::string name;
 	int frequency;
@@ -1285,14 +1426,14 @@ struct t_arch {
 	int Fs;
 	float grid_logic_tile_area;
 	std::vector<t_segment_inf> Segments;
-    t_arch_switch_inf *Switches;
+	t_arch_switch_inf *Switches = nullptr;
 	int num_switches;
-	t_direct_inf *Directs;
-	int num_directs;
-	t_model *models;
-	t_model *model_library;
-	t_power_arch * power;
-	t_clock_arch * clocks;
+	t_direct_inf *Directs = nullptr;
+	int num_directs = 0;
+	t_model *models = nullptr;
+	t_model *model_library = nullptr;
+	t_power_arch * power = nullptr;
+	t_clock_arch * clocks = nullptr;
 
     //The name of the switch used for the input connection block (i.e. to
     //connect routing tracks to block pins).

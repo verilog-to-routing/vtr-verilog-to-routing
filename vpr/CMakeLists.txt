@@ -42,7 +42,7 @@ target_link_libraries(libvpr
 
 #Create the executable
 add_executable(vpr ${EXEC_SOURCES})
-target_link_libraries(vpr 
+target_link_libraries(vpr
                         libvpr)
 
 if (VPR_USE_IPO_BUILD)
@@ -55,8 +55,22 @@ if (VPR_USE_SIGNAL_HANDLER)
     #Check wheter VPR can use sigaction to handle signals (only supported by POSIX)
     CHECK_CXX_SYMBOL_EXISTS(sigaction csignal HAVE_SIGACTION)
     if(HAVE_SIGACTION)
-        target_compile_definitions(libvpr PRIVATE VPR_USE_SIGACTION)    
+        target_compile_definitions(libvpr PRIVATE VPR_USE_SIGACTION)
     endif()
 endif()
 
 install(TARGETS vpr libvpr DESTINATION bin)
+
+#
+# Unit Tests
+#
+file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
+add_executable(test_vpr ${TEST_SOURCES})
+target_link_libraries(test_vpr
+                        libcatch
+                        libvpr)
+
+add_test(NAME test_vpr
+    COMMAND test_vpr --use-colour=yes
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
+    )

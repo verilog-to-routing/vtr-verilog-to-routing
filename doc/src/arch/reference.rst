@@ -905,7 +905,7 @@ The following tags are common to all <pb_type> tags:
         Input logical equivalence means that the pin order can be swapped without changing functionality.
         For example, an AND gate has logically equivalent inputs because you can swap the order of the inputs and it’s still correct; an adder, on the otherhand, is not logically equivalent because if you swap the MSB with the LSB, the results are completely wrong.
         LUTs are also considered logically equivalent since the logic function (LUT mask) can be rotated to account for pin swapping.
-        
+
         * ``none``: No input pins are logically equivalent.
 
             Input pins can not be swapped by the router. (Generates a unique SINK rr-node for each block input port pin.)
@@ -945,12 +945,12 @@ The following tags are common to all <pb_type> tags:
 
         * ``full``: All output pins are considered logically equivalent.
 
-            All output pins can be swapped without limitation by the router. For example, this option would be appropriate to model an output port which has a full crossbar between it and the logic within the block that drives it. (Generates a single SRC rr-node shared by each output port pin.) 
+            All output pins can be swapped without limitation by the router. For example, this option would be appropriate to model an output port which has a full crossbar between it and the logic within the block that drives it. (Generates a single SRC rr-node shared by each output port pin.)
 
         * ``instance``: Models that sub-instances within a block (e.g. LUTs/BLEs) can be swapped to achieve a limited form of output pin logical equivalence.
-          
-            Like ``full``, this generates a single SRC rr-node shared by each output port pin. However, each net originating from this source can use only one output pin from the equivalence group. This can be useful in modeling more complex forms of equivalence in which you can swap which BLE implements which function to gain access to different inputs. 
-            
+
+            Like ``full``, this generates a single SRC rr-node shared by each output port pin. However, each net originating from this source can use only one output pin from the equivalence group. This can be useful in modeling more complex forms of equivalence in which you can swap which BLE implements which function to gain access to different inputs.
+
             .. warning:: When using ``instance`` equivalence you must be careful to ensure output swapping would not make the cluster internal routing (previously computed by the clusterer) illegal; the tool does not update the cluster internal routing due to output pin swapping.
 
         **Default:** ``none``
@@ -1051,7 +1051,7 @@ They describe how a complex block interfaces with the inter-block world.
         <fc in_type="frac" in_val="0.1" out_type="abs" out_val="25">
 
     The above specifies that each:
-    
+
     * input pin connects to 20 L4 tracks (10% of the 200 L4s) and 5 L16 tracks (10% of the 50 L16s), and
 
     * output pin connects to 25 L4 tracks and 25 L16 tracks.
@@ -1921,7 +1921,7 @@ The full format is documented below.
                 :width: 100%
 
         Examples:
-        
+
         * ``min(from,to)`` --  Creates number of switchblock edges equal to the minimum of the 'from' and 'to' set sizes.
 
             This ensures *no* element of the 'from' or 'to' sets is connected to multiple elements in the opposing set.
@@ -2036,3 +2036,45 @@ The full format is documented below.
     This specifies that the 'from' set is the union of L4 switchpoints 0, 1, 2 and 3; and L16 switchpoints 0, 4, 8 and 12.
     The 'to' set is all L4 switchpoint 0's.
     Note that since different switchpoints are selected from different segment types it is not possible to specify this without using ``<from>`` sub-tags.
+
+.. _arch_metadata:
+
+Architecture metadata
+---------------------
+
+To enable tagging of architecture structures with metadata, the ``<metadata>``
+tag can be inserted under the following XML tags:
+
+* ``<pb_type>``
+* Any tag under ``<interconnect>`` (``<direct>``, ``<mux>``, etc).
+* ``<mode>``
+* Any grid location type (``<perimeter>``, ``<fill>``, ``<corners>``, ``<single>``, ``<col>``, ``<row>``, ``<region>``)
+
+.. arch:tag:: <metadata>
+
+Specifies the root of a metadata block.  Can have 0 or more ``<meta>`` Children.
+
+.. arch:tag:: <meta name="string" x_offset="int" y_offset="int" z_offset="int" >
+
+    :req_param name: Key name of this metadata value.
+    :opt_param x_offset: Optional x offset. **Default:** ``0``
+    :opt_param y_offset: Optional y offset. **Default:** ``0``
+    :opt_param z_offset: Optional z offset. **Default:** ``0``
+
+Specifies a value within a metadata block.  The name and offsets form a key
+for looking up the value contained within the ``<meta>`` tag.  Keys can be
+repeated, and will be stored in a vector in order of occurance.
+
+The value of the ``<meta>`` is the text in the block. Both the ``name`` and
+``<meta>`` value will be stored as a string.  XML children are not supported
+in the ``<meta>`` tag.
+
+Example of a metadata block with 2 keys:
+
+    .. code-block:: xml
+
+      <metadata>
+        <meta name="some_key">Some value</meta>
+        <meta name="other key!">Other value!</meta>
+      </metadata>
+

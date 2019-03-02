@@ -206,7 +206,23 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data & loc_data
     while (Switch) {
         int iSwitch = get_attribute(Switch, "id", loc_data).as_int();
         auto& rr_switch = device_ctx.rr_switch_inf[iSwitch];
-        rr_switch.name = vtr::strdup(get_attribute(Switch, "name", loc_data, OPTIONAL).as_string(nullptr));
+        const char * name = get_attribute(Switch, "name", loc_data, OPTIONAL).as_string(nullptr);
+        bool found_arch_name = false;
+        if(name != nullptr) {
+            for(int i = 0; i < device_ctx.num_arch_switches; ++i) {
+                if(strcmp(name, device_ctx.arch_switch_inf[i].name) == 0) {
+                    name = device_ctx.arch_switch_inf[i].name;
+                    found_arch_name = true;
+                    break;
+                }
+            }
+        }
+
+        if(name != nullptr && !found_arch_name) {
+            VPR_THROW(VPR_ERROR_ROUTE, "Switch name '%s' not found in architecture\n", name);
+        }
+
+        rr_switch.name = name;
 
         std::string switch_type_str = get_attribute(Switch, "type", loc_data).as_string();
         SwitchType switch_type = SwitchType::INVALID;
@@ -363,6 +379,25 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         //clear each node edge
         node.set_num_edges(0);
 
+        //  <metadata>
+        //    <meta name='grid_prefix' x_offset="1" y_offset="0" z_offset="0">CLBLL_L_</meta>
+        //  </metadata>
+        auto metadata = get_single_child(rr_node, "metadata", loc_data, OPTIONAL);
+        if (metadata) {
+            auto rr_node_meta = get_first_child(metadata, "meta", loc_data);
+            while (rr_node_meta) {
+                t_offset o;
+                o.x = get_attribute(rr_node_meta, "x_offset", loc_data, OPTIONAL).as_int(0);
+                o.y = get_attribute(rr_node_meta, "y_offset", loc_data, OPTIONAL).as_int(0);
+                o.z = get_attribute(rr_node_meta, "z_offset", loc_data, OPTIONAL).as_int(0);
+                auto key = get_attribute(rr_node_meta, "name", loc_data).as_string();
+
+                node.add_metadata(o, key, rr_node_meta.child_value());
+
+                rr_node_meta = rr_node_meta.next_sibling(rr_node_meta.name());
+            }
+        }
+
         rr_node = rr_node.next_sibling(rr_node.name());
     }
 }
@@ -438,6 +473,24 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
         //set edge in correct rr_node data structure
         device_ctx.rr_nodes[source_node].set_edge_sink_node(num_edges_for_node[source_node], sink_node);
         device_ctx.rr_nodes[source_node].set_edge_switch(num_edges_for_node[source_node], switch_id);
+
+        // Read the metadata for the edge
+        auto metadata = get_single_child(edges, "metadata", loc_data, OPTIONAL);
+        if (metadata) {
+            auto edges_meta = get_first_child(metadata, "meta", loc_data);
+            while (edges_meta) {
+                t_offset o;
+                o.x = get_attribute(edges_meta, "x_offset", loc_data, OPTIONAL).as_int(0);
+                o.y = get_attribute(edges_meta, "y_offset", loc_data, OPTIONAL).as_int(0);
+                o.z = get_attribute(edges_meta, "z_offset", loc_data, OPTIONAL).as_int(0);
+                auto key = get_attribute(edges_meta, "name", loc_data).as_string();
+
+                device_ctx.rr_nodes[source_node].add_edge_metadata(sink_node, switch_id,
+                                                                   o, key, edges_meta.child_value());
+
+                edges_meta = edges_meta.next_sibling(edges_meta.name());
+            }
+        }
         num_edges_for_node[source_node]++;
 
         edges = edges.next_sibling(edges.name()); //Next edge
