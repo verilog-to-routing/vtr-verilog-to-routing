@@ -62,7 +62,20 @@ struct t_cluster_placement_primitive;
 struct t_arch;
 enum class e_sb_type;
 
-/* FIXME: Use a smarter data structure. */
+/****************************************************************************/
+/* FPGA metadata types                                                      */
+/****************************************************************************/
+/* t_offset, t_metadata_as, and t_metadata_dict provide a types to store
+ * metadata about the FPGA architecture and routing routing graph along side
+ * the pb_type, grid, node and edge descriptions.
+ *
+ * The metadata is stored as a simple key/value map.  key's are string and an
+ * optional coordinate. t_metadata_as provides the value storage, which is a
+ * string.  t_metadata_as has some convience methods for a handful of types
+ * (e.g. int, vector of int), but the underlying data type is always a string.
+ */
+
+// Coordinate storage for metadata.
 struct t_offset {
     int x = 0;
     int y = 0;
@@ -73,6 +86,8 @@ struct t_offset {
     bool operator<(const t_offset &o) const;
 };
 
+// Hash functions for t_offset and the metadata key,
+// std::pair<t_offset, std::string>.
 namespace std {
     template <>
     struct hash<t_offset> {
@@ -94,21 +109,32 @@ namespace std {
     };
 }
 
+// Metadata value storage.
 class t_metadata_as {
-    std::string value_;
-
 public:
-    t_metadata_as(std::string v) : value_(v) {}
-    t_metadata_as(const t_metadata_as &o) : value_(o.value_) {}
+    explicit t_metadata_as(std::string v) : value_(v) {}
+    explicit t_metadata_as(const t_metadata_as &o) : value_(o.value_) {}
+
+    // Extract value as int.
     int as_int() const;
+
+    // Extract value as double.
     double as_double() const;
+
+    // Return string value.
     std::string as_string() const { return value_; }
+
+    // Extract values as pair of ints.
     std::pair<int, int> as_int_pair() const;
+
+    // Extract values as pair of ints.
     std::vector<int> as_int_vector() const;
+
+private:
+    std::string value_;
 };
 
 struct t_metadata_dict : std::unordered_map<std::pair<t_offset, std::string>, std::vector<t_metadata_as> > {
-
     inline bool has(std::string key) const {
         return has(std::make_pair(t_offset(), key));
     }
