@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated>
+      <config projectName="VTR" targetName="get_titan_benchmarks" />
+      <config projectName="VTR" targetName="libabc" />
+      <config projectName="VTR" targetName="ace" />
+      <config projectName="VTR" targetName="read_arch" />
+      <config projectName="VTR" targetName="libvtrutil" />
+      <config projectName="VTR" targetName="libarchfpga" />
+      <config projectName="VTR" targetName="vpr" />
+      <config projectName="VTR" targetName="libabc-pic" />
+      <config projectName="VTR" targetName="libodin_ii" />
+      <config projectName="VTR" targetName="test_log" />
+      <config projectName="VTR" targetName="libvpr" />
+      <config projectName="VTR" targetName="version" />
+      <config projectName="VTR" targetName="sdcparse_test" />
+      <config projectName="VTR" targetName="libsdcparse" />
+      <config projectName="VTR" targetName="liblog" />
+      <config projectName="VTR" targetName="abc" />
+      <config projectName="VTR" targetName="libargparse" />
+      <config projectName="VTR" targetName="libtatum" />
+      <config projectName="VTR" targetName="odin_II" />
+      <config projectName="VTR" targetName="libpugiutil" />
+      <config projectName="VTR" targetName="blifparse_test" />
+      <config projectName="VTR" targetName="libpugixml" />
+      <config projectName="VTR" targetName="libcatch" />
+      <config projectName="VTR" targetName="libeasygl" />
+      <config projectName="VTR" targetName="test_vtrutil" />
+      <config projectName="VTR" targetName="libblifparse" />
+    </generated>
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="cdbd13e4-84a6-4007-aa2d-907a588cb4aa" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/ODIN_II/SRC/include/parse_making_ast.h" beforeDir="false" afterPath="$PROJECT_DIR$/ODIN_II/SRC/include/parse_making_ast.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ODIN_II/SRC/parse_making_ast.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ODIN_II/SRC/parse_making_ast.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ODIN_II/SRC/verilog_bison.y" beforeDir="false" afterPath="$PROJECT_DIR$/ODIN_II/SRC/verilog_bison.y" afterDir="false" />
+    </list>
+    <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="-649" />
+    <option name="y" value="89" />
+    <option name="width" value="1910" />
+    <option name="height" value="810" />
+  </component>
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="VTR" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vtr-verilog-to-routing" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="VTR" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vtr-verilog-to-routing" type="462c0819:PsiDirectoryNode" />
+              <item name="ODIN_II" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="VTR" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vtr-verilog-to-routing" type="462c0819:PsiDirectoryNode" />
+              <item name="ODIN_II" type="462c0819:PsiDirectoryNode" />
+              <item name="SRC" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+      <pane id="Scope" />
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager" selected="Application.abc">
+    <configuration name="abc" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="abc" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="VTR" RUN_TARGET_NAME="abc">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ace" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="ace" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="VTR" RUN_TARGET_NAME="ace">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="blifparse_test" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="blifparse_test" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="VTR" RUN_TARGET_NAME="blifparse_test">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="get_titan_benchmarks" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="get_titan_benchmarks" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libabc-pic" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libabc-pic" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libabc" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libabc" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libarchfpga" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libarchfpga" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libargparse" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libargparse" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libblifparse" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libblifparse" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libcatch" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libcatch" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libeasygl" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libeasygl" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="liblog" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="liblog" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libodin_ii" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libodin_ii" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libpugiutil" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libpugiutil" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libpugixml" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libpugixml" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libsdcparse" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libsdcparse" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libtatum" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libtatum" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libvpr" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libvpr" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="libvtrutil" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="libvtrutil" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="odin_II" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="odin_II" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="VTR" RUN_TARGET_NAME="odin_II">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="read_arch" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="read_arch" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="VTR" RUN_TARGET_NAME="read_arch">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="sdcparse_test" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="sdcparse_test" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="VTR" RUN_TARGET_NAME="sdcparse_test">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_log" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="test_log" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="VTR" RUN_TARGET_NAME="test_log">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_vtrutil" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="test_vtrutil" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="VTR" RUN_TARGET_NAME="test_vtrutil">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="version" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="version" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="vpr" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="VTR" TARGET_NAME="vpr" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="VTR" RUN_TARGET_NAME="vpr">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="Application.get_titan_benchmarks" />
+      <item itemvalue="Application.abc" />
+      <item itemvalue="Application.libabc" />
+      <item itemvalue="Application.libabc-pic" />
+      <item itemvalue="Application.ace" />
+      <item itemvalue="Application.libargparse" />
+      <item itemvalue="Application.blifparse_test" />
+      <item itemvalue="Application.libblifparse" />
+      <item itemvalue="Application.libcatch" />
+      <item itemvalue="Application.libpugixml" />
+      <item itemvalue="Application.libsdcparse" />
+      <item itemvalue="Application.sdcparse_test" />
+      <item itemvalue="Application.libtatum" />
+      <item itemvalue="Application.libarchfpga" />
+      <item itemvalue="Application.read_arch" />
+      <item itemvalue="Application.libeasygl" />
+      <item itemvalue="Application.liblog" />
+      <item itemvalue="Application.test_log" />
+      <item itemvalue="Application.libpugiutil" />
+      <item itemvalue="Application.libvtrutil" />
+      <item itemvalue="Application.test_vtrutil" />
+      <item itemvalue="Application.version" />
+      <item itemvalue="Application.libodin_ii" />
+      <item itemvalue="Application.odin_II" />
+      <item itemvalue="Application.libvpr" />
+      <item itemvalue="Application.vpr" />
+    </list>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="cdbd13e4-84a6-4007-aa2d-907a588cb4aa" name="Default Changelist" comment="" />
+      <created>1551647054709</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1551647054709</updated>
+      <workItem from="1551647056906" duration="654000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TimeTrackingManager">
+    <option name="totallyTimeSpent" value="654000" />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="0" y="27" width="1920" height="1020" extended-state="6" />
+    <layout>
+      <window_info id="Favorites" side_tool="true" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.25" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info anchor="bottom" id="Database Changes" />
+      <window_info anchor="bottom" id="Version Control" />
+      <window_info anchor="bottom" id="Messages" weight="0.32992035" />
+      <window_info anchor="bottom" id="Terminal" />
+      <window_info anchor="bottom" id="Event Log" side_tool="true" />
+      <window_info anchor="bottom" id="CMake" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Run" order="2" />
+      <window_info anchor="bottom" id="Debug" order="3" visible="true" weight="0.3993174" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="right" id="Database" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+    </layout>
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+</project>

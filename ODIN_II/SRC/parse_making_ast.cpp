@@ -358,6 +358,9 @@ ast_node_t *newList(ids node_type, ast_node_t *child)
 	return new_node;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: newfunctionList)
+ *-------------------------------------------------------------------------------------------*/
 ast_node_t *newfunctionList(ids node_type, ast_node_t *child)
 {
     /* create a output node for this array reference that is going to be the first child */
@@ -1118,6 +1121,18 @@ ast_node_t *newAlways(ast_node_t *delay_control, ast_node_t *statement, int line
 	return new_node;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: newAssign)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newAssign(ast_node_t *expression1, ast_node_t *expression2, int line_number)
+{
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(ASSIGN, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 2, expression1, expression2);
+
+	return new_node;
+}
 /*---------------------------------------------------------------------------------------------
  * (function: newModuleConnection)
  *-------------------------------------------------------------------------------------------*/
