@@ -116,6 +116,7 @@ int yylex(void);
 %type <node> expression primary probable_expression_list expression_list module_parameter
 %type <node> list_of_module_parameters specify_block list_of_specify_statement specify_statement
 %type <node> initial_block parallel_connection list_of_blocking_assignment
+%type <node> procedural_continuous_assignment variale_assignment variable_Ivalue
 
 %%
 
@@ -202,6 +203,7 @@ function_item: parameter_declaration	        						{$$ = $1;}
 	| integer_declaration                       						{$$ = $1;}
 	| continuous_assign													{$$ = $1;}
 	| defparam_declaration										   		{$$ = $1;}
+	| procedural_continuous_assignment									{$$ = $1;}
 	| function_statement                        						{$$ = $1;} //TODO	It`s temporary
 	;
 
@@ -285,6 +287,15 @@ list_of_blocking_assignment:
 	list_of_blocking_assignment ',' blocking_assignment 			{$$ = newList_entry($1, $3);}
     |blocking_assignment                                            {$$ = newList(ASSIGN, $1);}
     ;
+
+procedural_continuous_assignment:
+	vASSIGN variale_assignment	';'									{$$ = $2;}
+	|vDEASSIGN primary	';'											{$$ = $2;}
+	;
+
+variale_assignment:
+	primary '=' expression
+
 
 // 3 Primitive Instances	{$$ = NULL;}
 gate_declaration:
@@ -387,6 +398,7 @@ statement:
 	seq_block																					{$$ = $1;}
 	| blocking_assignment ';'																	{$$ = $1;}
 	| non_blocking_assignment ';'																{$$ = $1;}
+	| procedural_continuous_assignment ';'														{$$ = $1;}
 	| vIF '(' expression ')' statement %prec LOWER_THAN_ELSE									{$$ = newIf($3, $5, NULL, yylineno);}
 	| vIF '(' expression ')' statement vELSE statement 											{$$ = newIf($3, $5, $7, yylineno);}
 	| vCASE '(' expression ')' case_item_list vENDCASE											{$$ = newCase($3, $5, yylineno);}
