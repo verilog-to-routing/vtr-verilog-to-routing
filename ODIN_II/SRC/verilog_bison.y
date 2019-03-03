@@ -388,7 +388,7 @@ statement:
 	| blocking_assignment ';'																	{$$ = $1;}
 	| non_blocking_assignment ';'																{$$ = $1;}
 	| vASSIGN primary '=' expression															{$$ = newAssign($2, $4, yylineno);}
-	| vDEASSIGN primary '=' expression															{$$ = newDeassign($2, $4, yylineno);}
+	| vDEASSIGN primary 																		{$$ = newDeassign($2, yylineno);}
 	| vIF '(' expression ')' statement %prec LOWER_THAN_ELSE									{$$ = newIf($3, $5, NULL, yylineno);}
 	| vIF '(' expression ')' statement vELSE statement 											{$$ = newIf($3, $5, $7, yylineno);}
 	| vCASE '(' expression ')' case_item_list vENDCASE											{$$ = newCase($3, $5, yylineno);}

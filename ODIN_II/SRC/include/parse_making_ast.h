@@ -43,7 +43,7 @@ ast_node_t *newAlways(ast_node_t *delay_control, ast_node_t *statements, int lin
 ast_node_t *newFor(ast_node_t *initial, ast_node_t *compare_expression, ast_node_t *terminal, ast_node_t *statement, int line_number);
 ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int line_number);
 ast_node_t *newAssign(ast_node_t *expression1, ast_node_t *expression2, int line_number);
-ast_node_t *newDeassign(ast_node_t *expression1, ast_node_t *expression2, int line_number);
+ast_node_t *newDeassign(ast_node_t *expression, int line_number);
 
 
 
