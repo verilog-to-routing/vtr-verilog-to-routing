@@ -87,7 +87,7 @@ char* standardize_number(const char* input);
 <INITIAL>"wire"				{ MP; return vWIRE;}
 <INITIAL>"xnor"				{ MP; return vXNOR;}
 <INITIAL>"xor"				{ MP; return vXOR;}
-<INITIAL>"deassign"			{ MP; return vNOT_SUPPORT;}
+<INITIAL>"deassign"			{ MP; return vDEASSIGN;}
 
 
 	/*	unsupported Keywords	*/

@@ -64,7 +64,7 @@ int yylex(void);
 %token vENDMODULE vENDSPECIFY vENDFUNCTION vIF vINOUT vINPUT vMODULE vFUNCTION vNAND vNEGEDGE vNOR vNOT vOR vFOR
 %token vOUTPUT vPARAMETER vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
-%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER
+%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vDEASSIGN
 %token vNOT_SUPPORT
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
 
@@ -388,6 +388,7 @@ statement:
 	| blocking_assignment ';'																	{$$ = $1;}
 	| non_blocking_assignment ';'																{$$ = $1;}
 	| vASSIGN primary '=' expression															{$$ = newAssign($2, $4, yylineno);}
+	| vDEASSIGN primary '=' expression															{$$ = newDeassign($2, $4, yylineno);}
 	| vIF '(' expression ')' statement %prec LOWER_THAN_ELSE									{$$ = newIf($3, $5, NULL, yylineno);}
 	| vIF '(' expression ')' statement vELSE statement 											{$$ = newIf($3, $5, $7, yylineno);}
 	| vCASE '(' expression ')' case_item_list vENDCASE											{$$ = newCase($3, $5, yylineno);}

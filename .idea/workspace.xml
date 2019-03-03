@@ -36,11 +36,7 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="cdbd13e4-84a6-4007-aa2d-907a588cb4aa" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/ODIN_II/SRC/include/parse_making_ast.h" beforeDir="false" afterPath="$PROJECT_DIR$/ODIN_II/SRC/include/parse_making_ast.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ODIN_II/SRC/parse_making_ast.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ODIN_II/SRC/parse_making_ast.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ODIN_II/SRC/verilog_bison.y" beforeDir="false" afterPath="$PROJECT_DIR$/ODIN_II/SRC/verilog_bison.y" afterDir="false" />
-    </list>
+    <list default="true" id="cdbd13e4-84a6-4007-aa2d-907a588cb4aa" name="Default Changelist" comment="" />
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
