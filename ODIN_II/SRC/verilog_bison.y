@@ -67,6 +67,7 @@ int yylex(void);
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER
 %token vNOT_SUPPORT
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
+%token vDEASSIGN
 
 %right '?' ':'
 %left voOROR
@@ -175,6 +176,7 @@ module_item:
 	| always									{$$ = $1;}
 	| defparam_declaration						{$$ = $1;}
 	| specify_block                             {$$ = $1;}
+	|procedural_continuous_assignment			{$$ = $1;}
 	;
 
 function_declaration:
