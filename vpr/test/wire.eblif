@@ -1,0 +1,6 @@
+.model top
+.inputs di
+.outputs do
+.names di do
+1 1
+.end
