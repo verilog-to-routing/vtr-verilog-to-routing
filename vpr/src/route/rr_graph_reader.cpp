@@ -209,7 +209,23 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data & loc_data
     while (Switch) {
         int iSwitch = get_attribute(Switch, "id", loc_data).as_int();
         auto& rr_switch = device_ctx.rr_switch_inf[iSwitch];
-        rr_switch.name = vtr::strdup(get_attribute(Switch, "name", loc_data, OPTIONAL).as_string(nullptr));
+        const char * name = get_attribute(Switch, "name", loc_data, OPTIONAL).as_string(nullptr);
+        bool found_arch_name = false;
+        if(name != nullptr) {
+            for(int i = 0; i < device_ctx.num_arch_switches; ++i) {
+                if(strcmp(name, device_ctx.arch_switch_inf[i].name) == 0) {
+                    name = device_ctx.arch_switch_inf[i].name;
+                    found_arch_name = true;
+                    break;
+                }
+            }
+        }
+
+        if(name != nullptr && !found_arch_name) {
+            VPR_THROW(VPR_ERROR_ROUTE, "Switch name '%s' not found in architecture\n", name);
+        }
+
+        rr_switch.name = name;
 
         std::string switch_type_str = get_attribute(Switch, "type", loc_data).as_string();
         SwitchType switch_type = SwitchType::INVALID;

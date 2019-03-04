@@ -151,20 +151,22 @@ const t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, t_of
     return edge_metadata(sink_id, switch_id, std::make_pair(o, key));
 }
 const t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, std::pair<t_offset, std::string> ok) const {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+    const auto& device_ctx = g_vpr_ctx.device();
     std::pair<int, short> rr_edge = std::make_pair(sink_id, switch_id);
 
-    if (device_ctx.rr_edge_metadata.count(this) == 0) {
+    auto map_iter = device_ctx.rr_edge_metadata.find(this);
+    if (map_iter == device_ctx.rr_edge_metadata.end()) {
         return nullptr;
     }
-    auto& edata = device_ctx.rr_edge_metadata.at(this);
 
-    if (edata.count(rr_edge) == 0) {
+    auto iter = map_iter->second.find(rr_edge);
+    if (iter == map_iter->second.end()) {
         return nullptr;
     }
-    auto& data = edata[rr_edge];
-    return data.one(ok);
+
+    return iter->second.one(ok);
 }
+
 void t_rr_node::add_edge_metadata(int sink_id, short switch_id, std::string key, std::string value) {
     return add_edge_metadata(sink_id, switch_id, std::make_pair(t_offset(), key), value);
 }
