@@ -22,6 +22,11 @@ inline bool is_for_node(ast_node_t* node)
     return node && node->type == FOR;
 }
 
+inline bool is_while_node(ast_node_t* node)
+{
+    return node && node->type == WHILE;
+}
+
 /* IMPORTANT: as support for more complex pre conditions is added, update this function. */
 inline bool is_unsupported_pre(ast_node_t* node){
     return  (node == nullptr ||

@@ -1,6 +1,7 @@
 /* Standard libraries */
 #include <stdlib.h>
 #include <string.h>
+#include <unordered_map>
 
 /* Odin_II libraries */
 #include "odin_globals.h"
@@ -26,7 +27,11 @@ void unroll_loops(ast_node_t **ast_module)
 	int num_unrolled_module_instances = 0;
 	int num_original_module_instances = 0;
 
-	ast_node_t* module = for_preprocessor((*ast_module), (*ast_module), &unrolled_module_instances, &num_unrolled_module_instances, &num_original_module_instances);
+	ast_node_t* module = while_preprocessor(ast_module, ast_module);
+	if(module != ast_module)
+		free_whole_tree(ast_module);
+	ast_modules[i] = module;
+	module = for_preprocessor((*ast_module), (*ast_module), &unrolled_module_instances, &num_unrolled_module_instances, &num_original_module_instances);
 	if(module != *ast_module)
 		free_whole_tree(*ast_module);
 	*ast_module = module;
@@ -41,6 +46,7 @@ void unroll_loops(ast_node_t **ast_module)
 		}
 		vtr::free(unrolled_module_instances);
 	}
+
 }
 
 void update_module_instantiations(ast_node_t *ast_module, ast_node_t ****instances, int *num_unrolled, int *num_original)
@@ -119,6 +125,72 @@ long find_module_instance(ast_node_t *ast_module, char *instance_name)
 }
 
 /*
+ *  (function: while_preprocessor)
+ */
+ast_node_t* while_preprocessor(ast_node_t* node, ast_node_t* module)
+{
+	if(!node)
+		return nullptr;
+	oassert(!is_while_node(node));
+    
+    /* If this node has for loops as children, replace them */
+    bool while_loops = false;
+    for(int i=0; i<node->num_children && !while_loops; i++){
+        while_loops = is_while_node(node->children[i]);
+    }
+    ast_node_t* new_node = while_loops ? replace_whiles(node, module) : node;
+    
+    /* Run this function recursively on the children */
+    for(int i=0; i<new_node->num_children; i++){
+        ast_node_t* new_child = while_preprocessor(new_node->children[i], module);
+
+        /* Cleanup replaced child */
+        if(new_node->children[i] != new_child){
+            free_whole_tree(new_node->children[i]);
+            new_node->children[i] = new_child;
+        }
+    }
+    return new_node;
+}
+
+/*
+ *  (function: replace_whiles)
+ */
+ast_node_t* replace_whiles(ast_node_t* node, module)
+{
+    oassert(!is_while_node(node));
+    oassert(node != nullptr);
+
+    ast_node_t* new_node = ast_node_deep_copy(node);
+    if(!new_node)
+        return nullptr;
+    /* Find the root scope and save the path to it */
+	std::vector<ast_node_t*> path;
+    if(path_to_root_scope(node, module, &path))
+    {
+        error_message(
+        	PARSE_ERROR, 
+        	pre->line_number, 
+        	pre->file_number, 
+        	"Unable to find initial condition for all variables"
+        );
+    }
+
+    /* process children one at a time */
+    for(int i=0; i<new_node->num_children; i++){
+        /* unroll `for` children */
+        if(is_while_node(new_node->children[i])){
+            ast_node_t* unrolled_while = 
+            	resolve_while(new_node->children[i], &state);
+            oassert(unrolled_while != nullptr);
+            free_whole_tree(new_node->children[i]);
+            new_node->children[i] = unrolled_while;
+        }
+    }
+    return new_node;
+}
+
+/*
  *  (function: for_preprocessor)
  */
 ast_node_t* for_preprocessor(ast_node_t *ast_module, ast_node_t* node, ast_node_t ****instances, int *num_unrolled, int *num_original)
@@ -191,6 +263,7 @@ ast_node_t* replace_fors(ast_node_t *ast_module, ast_node_t* node, ast_node_t **
  */
 ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, ast_node_t ****instances, int *num_unrolled, int *num_original)
 {
+<<<<<<< HEAD
 	oassert(is_for_node(node));
 	oassert(node != nullptr);
 	ast_node_t* body_parent = nullptr;
@@ -238,6 +311,90 @@ ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, ast_node_t ***
 
 	free_whole_tree(value);
 	return body_parent;
+=======
+    oassert(is_for_node(node));
+    oassert(node != nullptr);
+    ast_node_t* body_parent = nullptr;
+
+    ast_node_t* pre  = node->children[0];
+    ast_node_t* cond = node->children[1];
+    ast_node_t* post = node->children[2];
+    ast_node_t* body = node->children[3];
+    
+    ast_node_t* value = 0;
+    if(resolve_pre_condition(pre, &value))
+    {
+        error_message(
+        	PARSE_ERROR, 
+        	pre->line_number, 
+        	pre->file_number, 
+        	"Unsupported pre-condition node in for loop"
+        );
+    }
+
+    int error_code = 0;
+    condition_function cond_func = resolve_condition(
+    	cond, 
+    	pre->children[0], 
+    	&error_code
+    );
+
+    if(error_code)
+    {
+        error_message(
+        	PARSE_ERROR, 
+        	cond->line_number, 
+        	cond->file_number, 
+        	"Unsupported condition node in for loop"
+        );
+    }
+
+    post_condition_function post_func = resolve_post_condition(
+    	post, 
+    	pre->children[0], 
+    	&error_code
+    );
+
+    if(error_code)
+    {
+        error_message(
+        	PARSE_ERROR, 
+        	post->line_number, 
+        	post->file_number, 
+        	"Unsupported post-condition node in for loop"
+        );
+    }
+
+    bool dup_body = cond_func(value->types.number.value);
+    while(dup_body)
+    {
+        ast_node_t* new_body = dup_and_fill_body(
+        	body, 
+        	pre->children[0], 
+        	&value, 
+        	&error_code
+        );
+
+        if(error_code)
+        {
+            error_message(
+            	PARSE_ERROR, 
+            	pre->line_number, 
+            	pre->file_number, 
+            	"Unsupported pre-condition node in for loop"
+            );
+        }
+
+        value->types.number.value = post_func(value->types.number.value);
+        body_parent = 	body_parent ? 
+        				newList_entry(body_parent, new_body): 
+        				newList(BLOCK, new_body);
+
+        dup_body = cond_func(value->types.number.value);
+    }
+
+    return body_parent;
+>>>>>>> Non-compiling changes to static unrolling in preperation for environment based rewrite
 }
 
 /*
@@ -251,6 +408,7 @@ ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, ast_node_t ***
  */
 int resolve_pre_condition(ast_node_t* node, ast_node_t** number_node)
 {
+<<<<<<< HEAD
 	/* Add new for loop support here. Keep current work in the TODO
 	 * Currently supporting:
 	 *     for(VAR = NUM; ...; ...) ...
@@ -265,9 +423,29 @@ int resolve_pre_condition(ast_node_t* node, ast_node_t** number_node)
 	if (*number_node) free_whole_tree(*number_node);
 	*number_node = ast_node_deep_copy(node->children[1]);
 	return 0;
+=======
+    /* Add new for loop support here. Keep current work in the TODO
+     * Currently supporting:
+     *     for(VAR = NUM; ...; ...) ...
+     * TODO:
+     *     for(VAR = function(PARAMS...); ...; ...) ...
+     */
+
+    /* IMPORTANT: if support for more complex continue 
+     * conditions is added, update this inline function. 
+     */
+    if(is_unsupported_pre(node))
+    {
+        return UNSUPPORTED_PRE_CONDITION_NODE;
+    }
+    *number_node = ast_node_deep_copy(node->children[1]);
+    return 0;
+>>>>>>> Non-compiling changes to static unrolling in preperation for environment based rewrite
 }
 
-/** IMPORTANT: as support for more complex continue conditions is added, update this function. 
+/** IMPORTANT: as support for more complex continue 
+ *  conditions is added, update this function.
+ *
  *  (function: is_unsupported_condition)
  *  returns true if, given the supplied symbol, the node can be simplifed 
  *  to true or false if the symbol is replaced with some value.
