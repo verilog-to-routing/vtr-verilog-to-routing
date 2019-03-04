@@ -104,55 +104,6 @@ short t_rr_node::length() const {
 	return std::max(yhigh_ - ylow_, xhigh_ - xlow_);
 }
 
-bool t_rr_node::found_at(int x, int y) const {
-    switch (type_) {
-    case CHANX: {
-        VTR_ASSERT(ylow_ == yhigh_);
-
-        return ((ylow_ == y) && ((x >= xlow_) && (x <= xhigh_)));
-    }
-    case CHANY: {
-        VTR_ASSERT(xlow_ == xhigh_);
-
-        return ((xlow_ == x) && ((y >= ylow_) && (y <= yhigh_)));
-    }
-    default:
-        return ((x == xlow_) && (y == ylow_));
-    }
-}
-
-static std::pair<int, int> overlap(short low_a, short high_a, short low_b, short high_b) {
-    auto overlap = std::make_pair(std::max(low_a, low_b), std::min(high_a, high_b));
-    if (overlap.first <= overlap.second) {
-        return overlap;
-    } else {
-        return std::make_pair(-1, -1);
-    }
-}
-
-std::pair<t_offset, t_offset> t_rr_node::overlap(t_rr_node& other) const {
-    auto overlap_x = ::overlap(xlow(), xhigh(), other.xlow(), other.xhigh());
-    auto overlap_y = ::overlap(ylow(), yhigh(), other.ylow(), other.yhigh());
-
-    t_offset low;
-    t_offset high;
-    low.x = overlap_x.first;
-    low.y = overlap_y.first;
-    high.x = overlap_x.second;
-    high.y = overlap_y.second;
-    return std::make_pair(low, high);
-}
-
-short t_rr_node::get_iedge(int sink_node, short switch_id) const {
-    for (auto e : edges()) {
-        if (sink_node == edges_[e].sink_node && switch_id == edges_[e].switch_id) {
-            return e;
-        }
-    }
-    VTR_ASSERT(false);
-    return -1;
-}
-
 bool t_rr_node::edge_is_configurable(short iedge) const {
     auto iswitch =  edge_switch(iedge);
 

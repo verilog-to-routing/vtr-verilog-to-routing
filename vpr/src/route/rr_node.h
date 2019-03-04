@@ -79,8 +79,6 @@ class t_rr_node {
         short num_configurable_edges() const { return num_edges() - num_non_configurable_edges(); }
         short num_non_configurable_edges() const { return num_non_configurable_edges_; }
 
-        short get_iedge(int sink_node, short switch_id) const;
-
         int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
         short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_id; }
 
@@ -98,9 +96,6 @@ class t_rr_node {
         signed short length() const;
 
         short capacity() const;
-
-        bool found_at(int x, int y) const;
-        std::pair<t_offset, t_offset> overlap(t_rr_node& other) const;
 
         short ptc_num() const;
         short pin_num() const; //Same as ptc_num() but checks that type() is consistent
