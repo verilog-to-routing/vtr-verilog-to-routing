@@ -795,6 +795,12 @@ The final subtag is the ``rr_edges`` tag that encloses information about all the
     :req_param switch_id:
         The type of switch that connects the two nodes.
 
+Node and Edge Metadata
+^^^^^^^^^^^^^^^^^^^^^^
+
+``metadata`` blocks (see :ref:`arch_metadata`) are supported under both ``node`` and ``edge`` tags.
+
+
 Routing Resource Graph Format Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
