@@ -115,26 +115,18 @@ public:
     explicit t_metadata_as(std::string v) : value_(v) {}
     explicit t_metadata_as(const t_metadata_as &o) : value_(o.value_) {}
 
-    // Extract value as int.
-    int as_int() const;
-
-    // Extract value as double.
-    double as_double() const;
-
     // Return string value.
     std::string as_string() const { return value_; }
-
-    // Extract values as pair of ints.
-    std::pair<int, int> as_int_pair() const;
-
-    // Extract values as pair of ints.
-    std::vector<int> as_int_vector() const;
 
 private:
     std::string value_;
 };
 
-struct t_metadata_dict : std::unordered_map<std::pair<t_offset, std::string>, std::vector<t_metadata_as> > {
+// Metadata storage dictionary.
+struct t_metadata_dict : std::unordered_map<
+                            std::pair<t_offset, std::string>,
+                            std::vector<t_metadata_as>> {
+    // Is this key present in the map?
     inline bool has(std::string key) const {
         return has(std::make_pair(t_offset(), key));
     }
@@ -145,6 +137,9 @@ struct t_metadata_dict : std::unordered_map<std::pair<t_offset, std::string>, st
         return (this->count(ok) >= 1);
     }
 
+    // Get all metadata values matching key.
+    //
+    // Returns nullptr if key is not found.
     inline const std::vector<t_metadata_as>* get(std::string key) const {
         return get(std::make_pair(t_offset(), key));
     }
@@ -159,6 +154,10 @@ struct t_metadata_dict : std::unordered_map<std::pair<t_offset, std::string>, st
         return nullptr;
     }
 
+    // Get metadata values matching key.
+    //
+    // Returns nullptr if key is not found or if multiple values are prsent
+    // per key.
     inline const t_metadata_as* one(std::string key) const {
         return one(std::make_pair(t_offset(), key));
     }
@@ -176,6 +175,7 @@ struct t_metadata_dict : std::unordered_map<std::pair<t_offset, std::string>, st
         return &((*values)[0]);
     }
 
+    // Adds value to key.
     void add(std::string key, std::string value) {
         add(std::make_pair(t_offset(), key), value);
     }
@@ -183,8 +183,8 @@ struct t_metadata_dict : std::unordered_map<std::pair<t_offset, std::string>, st
         add(std::make_pair(o, key), value);
     }
     void add(std::pair<t_offset, std::string> ok, std::string value) {
-        this->emplace(ok, std::vector<t_metadata_as>());
-        (*this)[ok].push_back(t_metadata_as(value));
+        auto iter = this->emplace(ok, std::vector<t_metadata_as>());
+        iter.first->second.push_back(t_metadata_as(value));
     }
 };
 
@@ -377,7 +377,6 @@ struct t_grid_loc_def {
 
     t_grid_loc_spec x;      //Horizontal location specification
     t_grid_loc_spec y;      //Veritcal location specification
-    t_metadata_dict *meta;
 };
 
 enum GridDefType {
@@ -397,6 +396,7 @@ struct t_grid_def {
                                                 //grid_type == AUTO)
 
     std::vector<t_grid_loc_def> loc_defs;       //The list of grid location definitions for this grid specification
+    t_metadata_dict meta;
 };
 
 /************************* POWER ***********************************/
@@ -707,7 +707,7 @@ struct t_pb_type {
 	/* Power related members */
 	t_pb_type_power * pb_type_power = nullptr;
 
-	t_metadata_dict *meta = nullptr;
+	t_metadata_dict meta;
 };
 
 /** Describes an operational mode of a clustered logic block
@@ -737,7 +737,7 @@ struct t_mode {
 	/* Power related members */
 	t_mode_power * mode_power;
 
-	t_metadata_dict *meta = nullptr;
+	t_metadata_dict meta;
 };
 
 /** Describes an interconnect edge inside a cluster
@@ -775,7 +775,7 @@ struct t_interconnect {
 	t_mode *parent_mode;
 
 	t_interconnect_power *interconnect_power;
-	t_metadata_dict *meta = nullptr;
+	t_metadata_dict meta;
 };
 
 /** Describes I/O and clock ports
@@ -1161,7 +1161,7 @@ struct t_segment_inf {
 	bool *sb;
 	int sb_len;
 	//float Cmetal_per_m; /* Wire capacitance (per meter) */
-	t_metadata_dict *meta = nullptr;
+	t_metadata_dict meta;
 };
 
 enum class SwitchType {

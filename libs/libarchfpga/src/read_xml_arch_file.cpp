@@ -100,7 +100,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
         const bool timing_enabled,
         const t_arch& arch,
 		const pugiutil::loc_data& loc_data);
-static t_metadata_dict* ProcessMetadata(pugi::xml_node Parent, const pugiutil::loc_data& loc_data);
+static t_metadata_dict ProcessMetadata(pugi::xml_node Parent, const pugiutil::loc_data& loc_data);
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
@@ -1650,32 +1650,31 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
 	ProcessInterconnect(Cur, mode, loc_data);
 }
 
-static t_metadata_dict* ProcessMetadata(pugi::xml_node Parent,
-        const pugiutil::loc_data& loc_data) {
-    //  <metadata>
-    //    <meta name='x_offset'>12</meta>
-    //    <meta name='y_offset'>100</meta>
-    //    <meta name='grid_prefix'>CLBLL_L_</meta>
-    //  </metadata>
-    t_metadata_dict* data = nullptr;
-    auto metadata = get_single_child(Parent, "metadata", loc_data, OPTIONAL);
-    if (metadata) {
-        data = new t_metadata_dict();
-        auto meta_tag = get_first_child(metadata, "meta", loc_data);
-        while (meta_tag) {
-            std::string key = get_attribute(meta_tag, "name", loc_data).as_string();
-            t_offset offset;
+static t_metadata_dict ProcessMetadata(pugi::xml_node Parent,
+		const pugiutil::loc_data& loc_data) {
+	//	<metadata>
+	//	  <meta name='x_offset'>12</meta>
+	//	  <meta name='y_offset'>100</meta>
+	//	  <meta name='grid_prefix'>CLBLL_L_</meta>
+	//	</metadata>
+	t_metadata_dict data;
+	auto metadata = get_single_child(Parent, "metadata", loc_data, OPTIONAL);
+	if (metadata) {
+		auto meta_tag = get_first_child(metadata, "meta", loc_data);
+		while (meta_tag) {
+			std::string key = get_attribute(meta_tag, "name", loc_data).as_string();
+			t_offset offset;
 
-            offset.x = get_attribute(meta_tag, "x_offset", loc_data, OPTIONAL).as_int(0);
-            offset.y = get_attribute(meta_tag, "y_offset", loc_data, OPTIONAL).as_int(0);
-            offset.z = get_attribute(meta_tag, "z_offset", loc_data, OPTIONAL).as_int(0);
+			offset.x = get_attribute(meta_tag, "x_offset", loc_data, OPTIONAL).as_int(0);
+			offset.y = get_attribute(meta_tag, "y_offset", loc_data, OPTIONAL).as_int(0);
+			offset.z = get_attribute(meta_tag, "z_offset", loc_data, OPTIONAL).as_int(0);
 
-            auto value = meta_tag.child_value();
-            data->add(offset, key, value);
-            meta_tag = meta_tag.next_sibling(meta_tag.name());
-        }
-    }
-    return data;
+			auto value = meta_tag.child_value();
+			data.add(offset, key, value);
+			meta_tag = meta_tag.next_sibling(meta_tag.name());
+		}
+	}
+	return data;
 }
 
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data) {
@@ -2246,7 +2245,7 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch *arch, const pugiuti
 
         t_grid_def grid_def = ProcessGridLayout(layout_type_tag, loc_data);
 
-        arch->grid_layouts.push_back(grid_def);
+        arch->grid_layouts.emplace_back(std::move(grid_def));
     }
 }
 
@@ -2289,7 +2288,7 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
         auto loc_type = loc_spec_tag.name();
         auto type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
         int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
-        auto *meta = ProcessMetadata(loc_spec_tag, loc_data);
+        grid_def.meta = ProcessMetadata(loc_spec_tag, loc_data);
 
         if (loc_type == std::string("perimeter")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
@@ -2300,28 +2299,24 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             left_edge.x.end_expr = "0";
             left_edge.y.start_expr = "0";
             left_edge.y.end_expr = "H - 1";
-            left_edge.meta = meta;
 
             t_grid_loc_def right_edge(type_name, priority); //Including corners
             right_edge.x.start_expr = "W - 1";
             right_edge.x.end_expr = "W - 1";
             right_edge.y.start_expr = "0";
             right_edge.y.end_expr = "H - 1";
-            right_edge.meta = meta;
 
             t_grid_loc_def bottom_edge(type_name, priority); //Exclucing corners
             bottom_edge.x.start_expr = "1";
             bottom_edge.x.end_expr = "W - 2";
             bottom_edge.y.start_expr = "0";
             bottom_edge.y.end_expr = "0";
-            bottom_edge.meta = meta;
 
             t_grid_loc_def top_edge(type_name, priority); //Excluding corners
             top_edge.x.start_expr = "1";
             top_edge.x.end_expr = "W - 2";
             top_edge.y.start_expr = "H - 1";
             top_edge.y.end_expr = "H - 1";
-            top_edge.meta = meta;
 
             grid_def.loc_defs.push_back(left_edge);
             grid_def.loc_defs.push_back(right_edge);
@@ -2337,28 +2332,24 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             bottom_left.x.end_expr = "0";
             bottom_left.y.start_expr = "0";
             bottom_left.y.end_expr = "0";
-            bottom_left.meta = meta;
 
             t_grid_loc_def top_left(type_name, priority);
             top_left.x.start_expr = "0";
             top_left.x.end_expr = "0";
             top_left.y.start_expr = "H-1";
             top_left.y.end_expr = "H-1";
-            top_left.meta = meta;
 
             t_grid_loc_def bottom_right(type_name, priority);
             bottom_right.x.start_expr = "W-1";
             bottom_right.x.end_expr = "W-1";
             bottom_right.y.start_expr = "0";
             bottom_right.y.end_expr = "0";
-            bottom_right.meta = meta;
 
             t_grid_loc_def top_right(type_name, priority);
             top_right.x.start_expr = "W-1";
             top_right.x.end_expr = "W-1";
             top_right.y.start_expr = "H-1";
             top_right.y.end_expr = "H-1";
-            top_right.meta = meta;
 
             grid_def.loc_defs.push_back(bottom_left);
             grid_def.loc_defs.push_back(top_left);
@@ -2373,7 +2364,6 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             fill.x.end_expr = "W - 1";
             fill.y.start_expr = "0";
             fill.y.end_expr = "H - 1";
-            fill.meta = meta;
 
             grid_def.loc_defs.push_back(fill);
 
@@ -2385,7 +2375,6 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             single.y.start_expr = get_attribute(loc_spec_tag, "y", loc_data).value();
             single.x.end_expr = single.x.start_expr + " + w - 1";
             single.y.end_expr = single.y.start_expr + " + h - 1";
-            single.meta = meta;
 
             grid_def.loc_defs.push_back(single);
 
@@ -2413,7 +2402,6 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             if (incry_attr) {
                 col.y.incr_expr = incry_attr.value();
             }
-            col.meta = meta;
 
             grid_def.loc_defs.push_back(col);
 
@@ -2441,7 +2429,6 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             if (incrx_attr) {
                 row.x.incr_expr = incrx_attr.value();
             }
-            row.meta = meta;
 
             grid_def.loc_defs.push_back(row);
         } else if (loc_type == std::string("region")) {
@@ -2491,7 +2478,6 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             if (incry_attr) {
                 region.y.incr_expr = incry_attr.value();
             }
-            region.meta = meta;
 
             grid_def.loc_defs.push_back(region);
         } else {
