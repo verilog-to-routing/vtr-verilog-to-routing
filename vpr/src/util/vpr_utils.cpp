@@ -291,7 +291,7 @@ std::string rr_node_arch_name(int inode) {
         auto cost_index = rr_node.cost_index();
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
-        rr_node_arch_name += device_ctx.arch.Segments[seg_index].name;
+        rr_node_arch_name += device_ctx.arch->Segments[seg_index].name;
     }
     
     return rr_node_arch_name;

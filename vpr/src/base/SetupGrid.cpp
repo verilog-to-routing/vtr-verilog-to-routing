@@ -290,10 +290,8 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         }
     }
 
-    auto grid_loc_defs = grid_def.loc_defs;
-
     std::set<t_type_descriptor*> seen_types;
-    for (const auto& grid_loc_def : grid_loc_defs) {
+    for (const auto& grid_loc_def : grid_def.loc_defs) {
         //Fill in the block types according to the specification
 
         t_type_descriptor* type = find_block_type_by_name(grid_loc_def.block_type, device_ctx.block_types, device_ctx.num_block_types);
@@ -444,7 +442,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
                 //Fill in the region
                 for(size_t x = x_start; x + (type->width - 1) <= x_max; x += incrx) {
                     for(size_t y = y_start; y + (type->height - 1) <= y_max; y += incry) {
-                        set_grid_block_type(grid_loc_def.priority, type, x, y, grid, grid_priorities, &grid_def.meta);
+                        set_grid_block_type(grid_loc_def.priority, type, x, y, grid, grid_priorities, grid_loc_def.meta);
                     }
                 }
             }

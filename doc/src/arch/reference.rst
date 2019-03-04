@@ -2046,10 +2046,9 @@ To enable tagging of architecture structures with metadata, the ``<metadata>``
 tag can be inserted under the following XML tags:
 
 * ``<pb_type>``
-* ``<interconnect>``
+* Any tag under ``<interconnect>`` (``<direct>``, ``<mux>``, etc).
 * ``<mode>``
 * Any grid location type (``<perimeter>``, ``<fill>``, ``<corners>``, ``<single>``, ``<col>``, ``<row>``, ``<region>``)
-* ``<segment>``
 
 .. arch:tag:: <metadata>
 

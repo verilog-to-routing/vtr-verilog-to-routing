@@ -371,12 +371,15 @@ struct t_grid_loc_def {
 
     std::string block_type; //The block type name
 
-	int priority = 0;       //Priority of the specification.
+    int priority = 0;       //Priority of the specification.
                             // In case of conflicting specifications
                             // the largest priority wins.
 
     t_grid_loc_spec x;      //Horizontal location specification
     t_grid_loc_spec y;      //Veritcal location specification
+
+    std::unique_ptr<t_metadata_dict> owned_meta;
+    t_metadata_dict *meta;
 };
 
 enum GridDefType {
@@ -396,7 +399,6 @@ struct t_grid_def {
                                                 //grid_type == AUTO)
 
     std::vector<t_grid_loc_def> loc_defs;       //The list of grid location definitions for this grid specification
-    t_metadata_dict meta;
 };
 
 /************************* POWER ***********************************/
@@ -726,16 +728,16 @@ struct t_pb_type {
  *      meta: Table storing extra arbitrary metadata attributes.
  */
 struct t_mode {
-	char* name;
-	t_pb_type *pb_type_children; /* [0..num_child_pb_types] */
-	int num_pb_type_children;
-	t_interconnect *interconnect;
-	int num_interconnect;
-	t_pb_type *parent_pb_type;
-	int index;
+	char* name = nullptr;
+	t_pb_type *pb_type_children = nullptr; /* [0..num_child_pb_types] */
+	int num_pb_type_children = 0;
+	t_interconnect *interconnect = nullptr;
+	int num_interconnect = 0;
+	t_pb_type *parent_pb_type = nullptr;
+	int index = 0;
 
 	/* Power related members */
-	t_mode_power * mode_power;
+	t_mode_power * mode_power = nullptr;
 
 	t_metadata_dict meta;
 };
@@ -758,23 +760,23 @@ struct t_mode {
  */
 struct t_interconnect {
 	enum e_interconnect type;
-	char *name;
+	char *name = nullptr;
 
-	char *input_string;
-	char *output_string;
+	char *input_string = nullptr;
+	char *output_string = nullptr;
 
-	t_pin_to_pin_annotation *annotations; /* [0..num_annotations-1] */
-	int num_annotations;
-	bool infer_annotations;
+	t_pin_to_pin_annotation *annotations = nullptr; /* [0..num_annotations-1] */
+	int num_annotations = 0;
+	bool infer_annotations = false;
 
-	int line_num; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
+	int line_num = 0; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
 
-	int parent_mode_index;
+	int parent_mode_index = 0;
 
 	/* Power related members */
-	t_mode *parent_mode;
+	t_mode *parent_mode = nullptr;
 
-	t_interconnect_power *interconnect_power;
+	t_interconnect_power *interconnect_power = nullptr;
 	t_metadata_dict meta;
 };
 
@@ -1161,7 +1163,6 @@ struct t_segment_inf {
 	bool *sb;
 	int sb_len;
 	//float Cmetal_per_m; /* Wire capacitance (per meter) */
-	t_metadata_dict meta;
 };
 
 enum class SwitchType {
@@ -1412,16 +1413,16 @@ struct t_arch {
 	float R_minW_pmos;
 	int Fs;
 	float grid_logic_tile_area;
-	t_segment_inf * Segments;
+	t_segment_inf * Segments = nullptr;
 	int num_segments;
-	t_arch_switch_inf *Switches;
+	t_arch_switch_inf *Switches = nullptr;
 	int num_switches;
-	t_direct_inf *Directs;
-	int num_directs;
-	t_model *models;
-	t_model *model_library;
-	t_power_arch * power;
-	t_clock_arch * clocks;
+	t_direct_inf *Directs = nullptr;
+	int num_directs = 0;
+	t_model *models = nullptr;
+	t_model *model_library = nullptr;
+	t_power_arch * power = nullptr;
+	t_clock_arch * clocks = nullptr;
 
     //The name of the switch used for the input connection block (i.e. to
     //connect routing tracks to block pins).
