@@ -1,0 +1,3 @@
+-V regression_test/benchmark/other/hold_low/freq_division.v
+-L reset 
+-g 100

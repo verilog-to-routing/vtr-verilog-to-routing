@@ -43,11 +43,11 @@
   </models>
   <complexblocklist>
     <pb_type name="ff_tile">
-      <input equivalent="false" name="in" num_pins="4"/>
-      <output equivalent="false" name="out" num_pins="4"/>
+      <input name="in" num_pins="4"/>
+      <output name="out" num_pins="4"/>
       <!-- D flip-flop controls -->
-      <clock equivalent="false" name="clk" num_pins="1"/>
-      <input equivalent="false" name="cen" num_pins="1"/>
+      <clock name="clk" num_pins="1"/>
+      <input name="cen" num_pins="1"/>
       <pb_type name="flipflop" num_pb="4">
         <clock name="posclk" num_pins="1"/>
         <clock name="negclk" num_pins="1"/>
@@ -201,8 +201,8 @@
       </pinlocations>
     </pb_type>
     <pb_type name="io_tile">
-      <input equivalent="false" name="in" num_pins="1"/>
-      <output equivalent="false" name="out" num_pins="1"/>
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
       <mode name="OUTPUT">
         <pb_type blif_model=".output" name="pad" num_pb="1">
           <input name="outpad" num_pins="1"/>

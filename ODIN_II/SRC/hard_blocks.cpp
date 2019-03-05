@@ -27,8 +27,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <string.h>
 
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 #include "hard_blocks.h"
 #include "memories.h"
 
@@ -74,8 +74,8 @@ void cache_hard_block_names()
 void register_hard_blocks()
 {
 	cache_hard_block_names();
-	single_port_rams = find_hard_block("single_port_ram");
-	dual_port_rams   = find_hard_block("dual_port_ram");
+	single_port_rams = find_hard_block(SINGLE_PORT_RAM_string);
+	dual_port_rams   = find_hard_block(DUAL_PORT_RAM_string);
 
 	if (single_port_rams)
 	{
@@ -145,7 +145,7 @@ t_model* find_hard_block(const char *name)
 	return NULL;
 }
 
-void define_hard_block(nnode_t *node, short /*type*/, FILE *out)
+void define_hard_block(nnode_t *node, FILE *out)
 {
 	int i, j;
 	int index, port;
@@ -169,20 +169,23 @@ void define_hard_block(nnode_t *node, short /*type*/, FILE *out)
 	for (i = 0;  i < node->num_input_pins; i++)
 	{
 		/* Check that the input pin is driven */
-		if (node->input_pins[i]->net->driver_pin == NULL)
+		if (node->input_pins[i]->net->driver_pin == NULL
+		&& node->input_pins[i]->net != verilog_netlist->zero_net
+		&& node->input_pins[i]->net != verilog_netlist->one_net
+		&& node->input_pins[i]->net != verilog_netlist->pad_net)
 		{
-			printf("Signal %s is not driven. Odin will terminate.\n", node->input_pins[i]->name);
-			exit(1);
+			warning_message(NETLIST_ERROR, -1, -1, "Signal %s is not driven. padding with ground\n", node->input_pins[i]->name);
+			add_fanout_pin_to_net(verilog_netlist->zero_net, node->input_pins[i]);
 		}
 
 		if (node->input_port_sizes[port] == 1)
-			j = sprintf(buffer, " %s=%s", node->input_pins[i]->mapping, node->input_pins[i]->net->driver_pin->node->name);
+			j = odin_sprintf(buffer, " %s=%s", node->input_pins[i]->mapping, node->input_pins[i]->net->driver_pin->node->name);
 		else
 		{
 			if (node->input_pins[i]->net->driver_pin->name != NULL)
-				j = sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->name);
+				j = odin_sprintf(buffer, " %s[%ld]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->name);
 			else
-				j = sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->node->name);
+				j = odin_sprintf(buffer, " %s[%ld]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->node->name);
 		}
 
 		if (count + j > 79)
@@ -205,9 +208,9 @@ void define_hard_block(nnode_t *node, short /*type*/, FILE *out)
 	for (i = 0; i < node->num_output_pins; i++)
 	{
 		if (node->output_port_sizes[port] != 1)
-			j = sprintf(buffer, " %s[%d]=%s", node->output_pins[i]->mapping, index, node->output_pins[i]->name);
+			j = odin_sprintf(buffer, " %s[%ld]=%s", node->output_pins[i]->mapping, index, node->output_pins[i]->name);
 		else
-			j = sprintf(buffer, " %s=%s", node->output_pins[i]->mapping, node->output_pins[i]->name);
+			j = odin_sprintf(buffer, " %s=%s", node->output_pins[i]->mapping, node->output_pins[i]->name);
 
 		if (count + j > 79)
 		{
@@ -257,9 +260,9 @@ void output_hard_blocks(FILE *out)
 				for (i = 0; i < hb_ports->size; i++)
 				{
 					if (hb_ports->size == 1)
-						count = count + sprintf(buffer, " %s", hb_ports->name);
+						count = count + odin_sprintf(buffer, " %s", hb_ports->name);
 					else
-						count = count + sprintf(buffer, " %s[%d]", hb_ports->name, i);
+						count = count + odin_sprintf(buffer, " %s[%ld]", hb_ports->name, i);
 
 					if (count >= 78)
 						count = fprintf(out, " \\\n%s", buffer) - 3;
@@ -276,9 +279,9 @@ void output_hard_blocks(FILE *out)
 				for (i = 0; i < hb_ports->size; i++)
 				{
 					if (hb_ports->size == 1)
-						count = count + sprintf(buffer, " %s", hb_ports->name);
+						count = count + odin_sprintf(buffer, " %s", hb_ports->name);
 					else
-						count = count + sprintf(buffer, " %s[%d]", hb_ports->name, i);
+						count = count + odin_sprintf(buffer, " %s[%ld]", hb_ports->name, i);
 
 					if (count >= 78)
 						count = fprintf(out, " \\\n%s", buffer) - 3;
@@ -332,8 +335,8 @@ hard_block_port_size(t_model *hb, char *pname)
 	 *  depending on the instance of the hard block. May want to extend
 	 *  this list of blocks in the future.
 	 */
-	if ((strcmp(hb->name, "single_port_ram") == 0) ||
-		(strcmp(hb->name, "dual_port_ram") == 0))
+	if ((strcmp(hb->name, SINGLE_PORT_RAM_string) == 0) ||
+		(strcmp(hb->name, DUAL_PORT_RAM_string) == 0))
 	{
 		return -1;
 	}

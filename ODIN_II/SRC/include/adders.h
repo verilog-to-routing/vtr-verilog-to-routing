@@ -24,7 +24,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define ADDERS_H
 
 #include "read_xml_arch_file.h"
-#include "types.h"
+#include "odin_types.h"
 #include <vector>
 
 typedef struct s_adder
@@ -61,7 +61,7 @@ extern void instantiate_hard_adder(nnode_t *node, short mark, netlist_t *netlist
 extern void instantiate_simple_soft_adder(nnode_t *node, short mark, netlist_t *netlist);
 extern void find_hard_adders();
 extern void add_the_blackbox_for_adds(FILE *out);
-extern void define_add_function(nnode_t *node, short type, FILE *out);
+extern void define_add_function(nnode_t *node, FILE *out);
 extern void split_adder(nnode_t *node, int a, int b, int sizea, int sizeb, int cin, int cout, int count, netlist_t *netlist);
 extern void iterate_adders(netlist_t *netlist);
 extern void clean_adders();

@@ -18,8 +18,7 @@ void NetlistWalker::walk() {
     visitor_.finish();
 }
 
-void NetlistWalker::walk_blocks(const t_pb_route *top_pb_route, const t_pb *pb, const t_pb_graph_node *pb_graph_node) {
-    VTR_ASSERT(top_pb_route != nullptr);
+void NetlistWalker::walk_blocks(const t_pb_routes &top_pb_route, const t_pb *pb, const t_pb_graph_node *pb_graph_node) {
     VTR_ASSERT(pb == nullptr || pb_graph_node == pb->pb_graph_node);
     VTR_ASSERT(pb_graph_node != nullptr);
 
@@ -78,7 +77,7 @@ void NetlistVisitor::visit_atom_impl(const t_pb* /*atom*/) {
     //noop
 }
 
-void NetlistVisitor::visit_all_impl(const t_pb_route* /*top_pb_route*/, const t_pb* /* pb */, const t_pb_graph_node* /* pb_graph_node */) {
+void NetlistVisitor::visit_all_impl(const t_pb_routes & /*top_pb_route*/, const t_pb* /* pb */, const t_pb_graph_node* /* pb_graph_node */) {
     //noop
 }
 

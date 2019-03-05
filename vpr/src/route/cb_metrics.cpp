@@ -179,7 +179,7 @@ void adjust_cb_metric(const e_metric metric, const float target, const float tar
 	bool success = annealer(metric, nodes_per_chan, block_type, pin_type, Fc, num_pin_type_pins, target,
 			target_tolerance, pin_to_track_connections, &cb_metrics);
 	if (!success){
-		vtr::printf_info("Failed to adjust specified connection block metric\n");
+		VTR_LOG("Failed to adjust specified connection block metric\n");
 	}
 
 	print_switch_histogram(nodes_per_chan, &cb_metrics);
@@ -1012,10 +1012,10 @@ static void print_switch_histogram(const int nodes_per_chan, const Conn_Block_Me
 		}
 	}
 
-	vtr::printf_info("\t===CB Metrics Switch Histogram===\n\t#switches ==> #num tracks carrying that number of switches\n");
+	VTR_LOG("\t===CB Metrics Switch Histogram===\n\t#switches ==> #num tracks carrying that number of switches\n");
 	map<int,int>::const_iterator it;
 	for (it = switch_histogram.begin(); it != switch_histogram.end(); it++){
-		vtr::printf_info("\t%d ==> %d\n", it->first, it->second);
+		VTR_LOG("\t%d ==> %d\n", it->first, it->second);
 	}
 }
 
@@ -1306,11 +1306,11 @@ static void print_xbar( t_xbar_matrix *xbar ){
 	int cols = (int)xbar->at(0).size();
 
 	for (int irow = 0; irow < rows; irow++){
-		vtr::printf_info("\t\t|\t");
+		VTR_LOG("\t\t|\t");
 		for (int icol = 0; icol < cols; icol++){
-			vtr::printf_info("%.2f\t", xbar->at(irow).at(icol));
+			VTR_LOG("%.2f\t", xbar->at(irow).at(icol));
 		}
-		vtr::printf_info(" |\n");
+		VTR_LOG(" |\n");
 	}
 }
 

@@ -93,10 +93,6 @@ private slots:
     void showRelevantGraph();
     void expandCollapse();
 
-    void setEdgeFall(bool);
-    void setEdgeRise(bool);
-    void setEdgeFallRise(bool);
-
 private:
     void createToolBox();
     void createActions();
@@ -178,7 +174,6 @@ private:
 
     QGridLayout *simStatLayout;
     QLabel* simstatLabel;
-    QVBoxLayout* edgeRadioLayout;
 
     Container* myContainer;
 

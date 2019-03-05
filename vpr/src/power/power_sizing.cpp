@@ -697,7 +697,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 
 	/*
 	 if (strcmp(pin->parent_node->pb_type->name, "clb") == 0) {
-	 //vtr::printf_info("here\n");
+	 //VTR_LOG("here\n");
 	 }*/
 
 	this_pb_interc_sidelength = sqrt(

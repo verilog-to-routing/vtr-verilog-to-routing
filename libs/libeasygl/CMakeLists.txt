@@ -77,15 +77,12 @@ else()
     message(STATUS "EasyGL: graphics disabled")
 endif()
 
-#Specify defines and includes
-add_definitions(${GRAPHICS_DEFINES})
-include_directories(${GRAPHICS_INCLUDES})
-
 #Create the library
 add_library(libeasygl STATIC
              ${LIB_HEADERS}
              ${LIB_SOURCES})
 target_include_directories(libeasygl PUBLIC ${LIB_INCLUDE_DIRS} ${GRAPHICS_INCLUDES})
+target_compile_definitions(libeasygl PUBLIC ${GRAPHICS_DEFINES})
 set_target_properties(libeasygl PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 target_link_libraries(libeasygl 

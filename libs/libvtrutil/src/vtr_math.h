@@ -15,6 +15,15 @@ namespace vtr {
 
     constexpr int nint(float val) { return static_cast<int>(val + 0.5); }
 
+    //Returns a 'safe' ratio which evaluates to zero if the denominator is zero
+    template<typename T>
+    T safe_ratio(T numerator, T denominator) {
+        if (denominator == T(0)) {
+            return 0;
+        }
+        return numerator / denominator;
+    }
+
     template<typename InputIterator>
     double geomean(InputIterator first, InputIterator last, double init=1.) {
         //Compute the geometric mean of the elments in range [first, last)
@@ -62,6 +71,24 @@ namespace vtr {
         } else {
             return (x / gcd(x,y)) * y;
         }
+    }
+
+    constexpr double DEFAULT_REL_TOL = 1e-9;
+    constexpr double DEFAULT_ABS_TOL = 0;
+
+    template<class T>
+    bool isclose(T a, T b, T rel_tol, T abs_tol) {
+
+        if (std::isinf(a) && std::isinf(b)) return (std::signbit(a) == std::signbit(b));
+        if (std::isnan(a) && std::isnan(b)) return false;
+
+        T abs_largest = std::max(std::abs(a), std::abs(b));
+        return std::abs(a - b) <= std::max(rel_tol * abs_largest, abs_tol);
+    }
+
+    template<class T>
+    bool isclose(T a, T b) {
+        return isclose<T>(a, b, DEFAULT_REL_TOL, DEFAULT_ABS_TOL);
     }
 
 }

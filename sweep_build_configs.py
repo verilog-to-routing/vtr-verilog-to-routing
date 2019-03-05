@@ -17,7 +17,8 @@ DEFAULT_CLANG_COMPILER_VERSIONS=["3.6", "3.8"]
 DEFAULT_BUILD_CONFIGS = ["release", "debug"]
 DEFAULT_EASYGL_CONFIGS = ["ON", "OFF"]
 DEFAULT_TATUM_EXECUTION_ENGINE_CONFIGS = ["auto", "serial"]
-DEFAULT_VTR_ASSERT_LEVELS= ["4", "3", "2", "1", "0"]
+DEFAULT_VTR_ASSERT_LEVELS = ["4", "3", "2", "1", "0"]
+DEFAULT_BLIF_EXPLORER_CONFIGS = ["ON", "OFF"]
 
 MINGW_TOOLCHAIN_FILE="cmake/toolchains/mingw-linux-cross-compile-to-windows.cmake"
 
@@ -91,6 +92,11 @@ def parse_args():
                         default=DEFAULT_VTR_ASSERT_LEVELS,
                         metavar="VTR_ASSERT_LEVEL",
                         help="What VTR assert levels to test (default: %(default)s)")
+    config_args.add_argument("--blif_explorer_configs", 
+                        nargs="*",
+                        default=DEFAULT_BLIF_EXPLORER_CONFIGS,
+                        metavar="BLIF_EXPLORER_CONFIG",
+                        help="What BlifExplorer configurations to test (default: %(default)s)")
 
     return parser.parse_args()
 
@@ -158,6 +164,13 @@ def main():
 
                     test_configs.append(config)
 
+    #Check that BlifExplorer builds with the default configuration
+    for blif_explorer_config in args.blif_explorer_configs:
+        config = deepcopy(default_compiler_config)
+        config["WITH_BLIFEXPLORER"] = blif_explorer_config
+
+        test_configs.append(config)
+
     #Test all the regular compilers with the all build configs
     num_failed = 0
     for config in test_configs:
@@ -175,8 +188,6 @@ def main():
 
             if args.exit_on_failure:
                 sys.exit(num_failed)
-
-
 
     if num_failed != 0:
         print "Failed to build {} of {} configurations".format(num_failed, len(test_configs))
@@ -210,13 +221,6 @@ def build_config(args, targets, config):
         config_strs += ["{}={}".format(key, value)]
 
     log_file = "build.log"
-    # if cc != None:
-        # log_file += "_{}".format(cc)
-    # elif cxx != None:
-        # log_file += "_{}".format(cxx)
-    # #Remove an directory dividers from configs to yield a valid filename
-    # escaped_config_strs = [str.replace("/", "_") for str in config_strs] 
-    # log_file += "_{}.log".format('__'.join(escaped_config_strs))
 
     build_successful = True
     with open(log_file, 'w') as f:

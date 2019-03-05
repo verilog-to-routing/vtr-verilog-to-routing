@@ -37,6 +37,8 @@ supported_upgrades = [
     "rename_fc_attributes",
     "longline_no_sb_cb",
     "upgrade_port_equivalence",
+    "upgrade_complex_sb_num_conns",
+    "add_missing_comb_model_internal_timing_edges",
 ]
 
 def parse_args():
@@ -121,6 +123,17 @@ def main():
 
     if "upgrade_port_equivalence" in args.features:
         result = upgrade_port_equivalence(arch)
+        if result:
+            modified = True
+
+    if "upgrade_complex_sb_num_conns" in args.features:
+        result = upgrade_complex_sb_num_conns(arch)
+        if result:
+            modified = True
+
+
+    if "add_missing_comb_model_internal_timing_edges" in args.features:
+        result = add_missing_comb_model_internal_timing_edges(arch)
         if result:
             modified = True
 
@@ -778,7 +791,81 @@ def get_port_names(string):
 
     return ports
 
+def upgrade_complex_sb_num_conns(arch):
+    """
+    Upgrades <wireconn> 'num_conns_type' attribute to 'num_conns"
+    """
 
+    wireconn_tags = arch.findall(".//wireconn[@num_conns_type]")
+
+    changed = False
+
+    for wireconn_tag in wireconn_tags:
+        assert wireconn_tag.tag == "wireconn"
+        assert 'num_conns_type' in wireconn_tag.attrib
+
+        #For inputs, 'true' is upgraded to full, and 'false' to 'none'
+        num_conns_value = wireconn_tag.attrib['num_conns_type']
+
+        del wireconn_tag.attrib['num_conns_type']
+
+        if num_conns_value == 'min':
+            num_conns_value = 'min(from,to)'
+        elif num_conns_value == 'max':
+            num_conns_value = 'max(from,to)'
+
+        wireconn_tag.attrib['num_conns'] = num_conns_value
+
+        changed = True
+
+    return changed
+
+def add_missing_comb_model_internal_timing_edges(arch):
+    """
+    For the purposes of constant generator detection every model needs to include
+    a set of primtiive internal timing edges.
+
+    If we find a combinational model definition which has no internal timing edges,
+    we add timing edges between all input and output ports. This is a pessimistic,
+    but safe assumption.
+
+    Note that if we find any internal timing edges specified we assume the user has
+    specified them correctly and do not make any changes to that model
+    """
+    changed = False
+
+    model_tags = arch.findall("./models/model")
+
+    for model_tag in model_tags:
+
+        input_clock_tags = model_tag.findall("./input_ports/port[@is_clock='1']")
+        if len(input_clock_tags) > 0:
+            continue #Sequential primitive -- no change
+
+        input_tags_with_timing_edges = model_tag.findall("./input_ports/port[@combinational_sink_ports]")
+        if len(input_tags_with_timing_edges) > 0:
+            continue #Already has internal edges specified -- no change
+
+        #Collect the model port definitions
+        input_port_tags = model_tag.findall("./input_ports/port")
+        output_port_tags = model_tag.findall("./output_ports/port")
+
+        #Collect output port names
+        output_port_names = []
+        for output_port_tag in output_port_tags:
+            output_port_names.append(output_port_tag.attrib['name'])
+
+        for input_port_tag in input_port_tags:
+
+            assert 'combinational_sink_ports' not in input_port_tag
+
+            input_port_tag.attrib['combinational_sink_ports'] = " ".join(output_port_names)
+
+            print >>sys.stderr, "Warning: Conservatively upgrading combinational sink dependencies for input port '{}' of model '{}' to '{}'. The user should manually check whether a reduced set of sink dependencies can be safely specified.".format(input_port_tag.attrib['name'], model_tag.attrib['name'], input_port_tag.attrib['combinational_sink_ports'])
+
+            changed = True
+
+    return changed
 
 if __name__ == "__main__":
     main()

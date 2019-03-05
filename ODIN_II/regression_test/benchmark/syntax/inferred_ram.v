@@ -1,23 +1,25 @@
+`define WORD_SIZE 32
+`define DEPTH_LOG2 3
+`define RAM_DEPTH 2**3
 
-module inferred_ram (clk,a,b,reset);
-	input reset;
+module inferred_ram(
+	clk,
+	data_in,
+	data_out,
+	address
+);
+
 	input clk;
-	input [31:0] a;
-	output [31:0] b;
+	input [`DEPTH_LOG2-1:0] address;
+	input [`WORD_SIZE-1:0] data_in;
+	output [`WORD_SIZE-1:0] data_out;
 
-	reg  [31:0] mregs [8:0];  
-	reg [8:0] adr;
+	reg  [`WORD_SIZE-1:0] mregs [`RAM_DEPTH-1:0];  
 
-	reg [31:0] b;
-
-always @ (posedge clk )
-	if (!reset)
+	always @ (posedge clk )
 	begin
-	mregs [adr] <= a;
-	b <= mregs [adr-1];
-	adr <= adr+1;
+		mregs[address] <= data_in;
+		data_out <= mregs[address];
 	end
-	else
-	adr <= 8'b00000000;
 
 endmodule

@@ -22,6 +22,7 @@ enum e_vpr_error {
 	VPR_ERROR_CLB_NETLIST,
 	VPR_ERROR_ANALYSIS,
 	VPR_ERROR_INTERRUPTED,
+	VPR_ERROR_DRAW,
 	VPR_ERROR_OTHER
 };
 typedef enum e_vpr_error t_vpr_error_type;
@@ -44,8 +45,13 @@ class VprError : public vtr::VtrError {
         t_vpr_error_type type_;
 };
 
-void vpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
-void vvpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, va_list args);
+//VPR error reporting routines
+//
+//Note that we mark these functions with the C++11 attribute 'noreturn'
+//as they will throw exceptions and not return normally. This can help
+//reduce false-positive compiler warnings
+[[noreturn]] void vpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
+[[noreturn]] void vvpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, va_list args);
 
 /*
  * Macro wrapper around vpr_throw() which automatically

@@ -30,14 +30,46 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <ctype.h>
 #include <limits.h>
 #include <errno.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
+#include <cstdarg>
 
 #include "odin_util.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
 #include <regex>
 #include <stdbool.h>
+/*---------------------------------------------------------------------------------------------
+ * (function: node_name_based_on_op)
+ * 	Get the string version of a node
+ *-------------------------------------------------------------------------------------------*/
+long shift_left_value_with_overflow_check(long input_value, long shift_by)
+{
+	if(shift_by < 0)
+		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that is negative [%ld]\n",shift_by);
+	else if(shift_by >= ODIN_STD_BITWIDTH-1 )
+		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that will overflow the maximum size of %d [%ld]\n", shift_by, ODIN_STD_BITWIDTH-1);
+
+	return input_value << shift_by;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: node_name_based_on_op)
+ * 	Get the string version of a node
+ *-------------------------------------------------------------------------------------------*/
+const char *name_based_on_op(operation_list op)
+{
+	return operation_list_STR[op][ODIN_STRING_TYPE];
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: node_name_based_on_op)
+ * 	Get the string version of a node
+ *-------------------------------------------------------------------------------------------*/
+const char *node_name_based_on_op(nnode_t *node)
+{
+	return name_based_on_op(node->type);
+}
 
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
@@ -48,7 +80,9 @@ char *make_signal_name(char *signal_name, int bit)
 	oassert(signal_name);
 	std::stringstream return_string;
 	return_string << signal_name;
-	if (bit != -1) return_string << "-" << std::dec << bit;
+	if (bit != -1) 
+		return_string << "-" << std::dec << bit;
+		
 	return vtr::strdup(return_string.str().c_str());
 }
 
@@ -58,15 +92,24 @@ char *make_signal_name(char *signal_name, int bit)
 // {previous_string}.module_name+instance_name^signal_name
 // {previous_string}.module_name+instance_name^signal_name~bit
  *-------------------------------------------------------------------------------------------*/
-char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit)
+char *make_full_ref_name(const char *previous, const char *module_name, const char *module_instance_name, const char *signal_name, long bit)
 {
 
 	std::stringstream return_string;
-	if(previous)								 return_string << previous;
-	if(module_name) 							 return_string	<< "." << module_name << "+" << module_instance_name;
-	if(signal_name && (previous || module_name)) return_string << "^";
-	if(signal_name)								 return_string << signal_name;
-	if(bit != -1){
+	if(previous)								 
+		return_string << previous;
+
+	if(module_name) 							 
+		return_string	<< "." << module_name << "+" << module_instance_name;
+
+	if(signal_name && (previous || module_name)) 
+		return_string << "^";
+
+	if(signal_name)								 
+		return_string << signal_name;
+
+	if(bit != -1)
+	{
 		oassert(signal_name);
 		return_string	<< "~" << std::dec << bit ;
 	}
@@ -101,7 +144,7 @@ char *twos_complement(char *str)
  * the higher accordingly. The returned string will be little
  * endian. Null will be returned if the radix is invalid.
  *
- * Base 10 strings will be limited in length to a long long, but
+ * Base 10 strings will be limited in length to a long, but
  * an error will be issued if the number will be truncated.
  *
  */
@@ -113,8 +156,8 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 	}
 	else if (radix == 10)
 	{
-		long long number = convert_dec_string_of_size_to_long_long(string, binary_size);
-		return convert_long_long_to_bit_string(number, binary_size);
+		long number = convert_dec_string_of_size_to_long(string, binary_size);
+		return convert_long_to_bit_string(number, binary_size);
 	}
 	else if (radix == 8)
 	{
@@ -131,10 +174,10 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: convert_long_long_to_bit_string)
+ * (function: convert_long_to_bit_string)
  * Outputs a string msb to lsb.  For example, 3 becomes "011"
  *-------------------------------------------------------------------------------------------*/
-char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
+char *convert_long_to_bit_string(long orig_long, int num_bits)
 {
 	int i;
 	char *return_val = (char*)malloc(sizeof(char)*(num_bits+1));
@@ -152,30 +195,30 @@ char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
 }
 
 /*
- * Turns the given little endian decimal string into a long long. Throws an error if the
- * string contains non-digits or is larger or smaller than the allowable range of long long.
+ * Turns the given little endian decimal string into a long. Throws an error if the
+ * string contains non-digits or is larger or smaller than the allowable range of long.
  */
-long long convert_dec_string_of_size_to_long_long(char *orig_string, int /*size*/)
+long convert_dec_string_of_size_to_long(char *orig_string, int /*size*/)
 {
 	if (!is_decimal_string(orig_string))
 		error_message(PARSE_ERROR, -1, -1, "Invalid decimal number: %s.\n", orig_string);
 
 	errno = 0;
-	long long number = strtoll(orig_string, NULL, 10);
+	long number = strtoll(orig_string, NULL, 10);
 	if (errno == ERANGE)
 		error_message(PARSE_ERROR, -1, -1, "This suspected decimal number (%s) is too long for Odin\n", orig_string);
 
 	return number;
 }
 
-long long convert_string_of_radix_to_long_long(char *orig_string, int radix)
+long convert_string_of_radix_to_long(char *orig_string, int radix)
 {
 	if (!is_string_of_radix(orig_string, radix))
-		error_message(PARSE_ERROR, -1, -1, "Invalid base %d number: %s.\n", radix, orig_string);
+		error_message(PARSE_ERROR, -1, -1, "Invalid base %ld number: %s.\n", radix, orig_string);
 
-	long long number = strtoll(orig_string, NULL, radix);
+	long number = strtoll(orig_string, NULL, radix);
 	if (number == LLONG_MAX || number == LLONG_MIN)
-		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
+		error_message(PARSE_ERROR, -1, -1, "This base %ld number (%s) is too long for Odin\n", radix, orig_string);
 
 	return number;
 }
@@ -508,12 +551,12 @@ int get_pin_number(char *name)
  * (function: my_power)
  *      My own simple power function
  *-------------------------------------------------------------------------------------------*/
-long long int my_power(long long int x, long long int y)
+long int my_power(long int x, long int y)
 {
 	if (y == 0)
 		return 1;
 
-	long long int value = x;
+	long int value = x;
 	int i;
 	for (i = 1; i < y; i++)
 		value *= x;
@@ -552,7 +595,7 @@ std::string make_simple_name(char *input, const char *flatten_string, char flatt
 /*-----------------------------------------------------------------------
  * (function: my_malloc_struct )
  *-----------------------------------------------------------------*/
-void *my_malloc_struct(size_t bytes_to_alloc)
+void *my_malloc_struct(long bytes_to_alloc)
 {
 	void *allocated = vtr::calloc(1, bytes_to_alloc);
 	static long int m_id = 0;
@@ -575,10 +618,10 @@ void *my_malloc_struct(size_t bytes_to_alloc)
 /*---------------------------------------------------------------------------------------------
  * (function: pow2 )
  *-------------------------------------------------------------------------------------------*/
-long long int pow2(int to_the_power)
+long int pow2(int to_the_power)
 {
 	int i;
-	long long int return_val = 1;
+	long int return_val = 1;
 
 	for (i = 0; i < to_the_power; i++)
 	{
@@ -665,64 +708,36 @@ short get_bit(char in){
     return -1;
 }
 
+void passed_verify_i_o_availabilty(nnode_t *node, int expected_input_size, int expected_output_size, const char *current_src, int line_src) {
+	if(!node)
+		error_message(SIMULATION_ERROR, -1, -1, "node unavailable @%s::%s", current_src, line_src);
 
-/*---------------------------------------------------------------------------------------------
- * (function: error_message)
- *-------------------------------------------------------------------------------------------*/
-void error_message(short error_type, int line_number, int file, const char *message, ...)
-{
-	va_list ap;
+	std::stringstream err_message;
+	int error=0;
 
-	fprintf(stderr,"--------------\nOdin has decided you have failed ;)\n\n");
+	if(expected_input_size != -1 
+	&& node->num_input_pins != expected_input_size) {
+		err_message << " input size is " << std::to_string(node->num_input_pins) << " expected 3:\n";
+		for(int i=0; i< node->num_input_pins; i++)
+			err_message << "\t" << node->input_pins[0]->name << "\n";
 
-	fprintf(stderr,"ERROR:");
-	if (file != -1)
-		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file]);
-	if (line_number > 0)
-		fprintf(stderr," (Line number: %d)", line_number);
-	if (message != NULL)
-	{
-		fprintf(stderr," ");
-		va_start(ap, message);
-		vfprintf(stderr,message, ap);
-		va_end(ap);
+		error=1;
 	}
 
-	if (message[strlen(message)-1] != '\n') fprintf(stderr,"\n");
+	if(expected_output_size != -1
+	&& node->num_output_pins != expected_output_size) {
+		err_message << " output size is " << std::to_string(node->num_output_pins) << " expected 1:\n";
+		for(int i=0; i< node->num_output_pins; i++)
+			err_message << "\t" << node->output_pins[0]->name << "\n";
 
-	exit(error_type);
+		error=1;
+	}
+
+	if(error)
+		error_message(SIMULATION_ERROR, -1, -1, "failed for %s:%s %s\n",node_name_based_on_op(node), node->name, err_message.str().c_str());
 }
 
-/*---------------------------------------------------------------------------------------------
- * (function: warning_message)
- *-------------------------------------------------------------------------------------------*/
-void warning_message(short /*error_type*/, int line_number, int file, const char *message, ...)
-{
-	va_list ap;
-	static short is_warned = FALSE;
-	static long warning_count = 0;
-	warning_count++;
 
-	if (is_warned == FALSE) {
-		fprintf(stderr,"-------------------------\nOdin has decided you may fail ... WARNINGS:\n\n");
-		is_warned = TRUE;
-	}
-
-	fprintf(stderr,"WARNING (%ld):", warning_count);
-	if (file != -1)
-		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file]);
-	if (line_number > 0)
-		fprintf(stderr," (Line number: %d)", line_number);
-	if (message != NULL) {
-		fprintf(stderr," ");
-
-		va_start(ap, message);
-		vfprintf(stderr,message, ap);
-		va_end(ap);
-	}
-
-	if (message[strlen(message)-1] != '\n') fprintf(stderr,"\n");
-}
 /*
 Search and replace a string keeping original string intact
 */
@@ -736,43 +751,35 @@ char *search_replace(char *src, const char *sKey, const char *rKey, int flag)
 	{
 		case 1:
 			tmp = vtr::replace_first(tmp,sKey,rKey);
-			sprintf(line,"%s",tmp.c_str());
+			odin_sprintf(line,"%s",tmp.c_str());
 			break;
 		case 2:
 			tmp = vtr::replace_all(tmp,sKey,rKey);
-			sprintf(line,"%s",tmp.c_str());
+			odin_sprintf(line,"%s",tmp.c_str());
 			break;
 		default:
 			return line;
 	}
 	return line;
 }
-char *find_substring(char *src,const char *sKey,int flag)
+std::string find_substring(char *src,const char *sKey,int flag)
 {
 	// flag == 1 first half, flag == 2 second half
 
-	std::string tmp;
-	std::string key;
-	char *line;
-	line = vtr::strdup(src);
-	tmp = line;
-	key = sKey;
-	std::size_t found = tmp.find(key);
+	std::string tmp(src);
+	std::string key(sKey);
+	long found = tmp.find(key);
 	switch(flag)
 	{
 		case 1:
-   			tmp = tmp.substr(0,found-1);
-			break;
+   			return tmp.substr(0,found-1);
+
 		case 2:
-   			tmp = tmp.substr(found,tmp.length());
-			break;
+   			return tmp.substr(found,tmp.length());
 
 		default:
-			return line;
+			return tmp;
 	}
-	sprintf(line,"%s",tmp.c_str());
-
-	return line;
 }
 
 bool validate_string_regex(const char *str_in, const char *pattern_in)
@@ -786,3 +793,184 @@ bool validate_string_regex(const char *str_in, const char *pattern_in)
 		return true;
 	return false;
 }
+
+/*
+ * Prints the time in appropriate units.
+ */
+void print_time(double time)
+{
+	if      (time > 24*3600) printf("%.1fd",  time/(24*3600.0));
+	else if (time > 3600)    printf("%.1fh",  time/3600.0);
+	else if (time > 60)      printf("%.1fm",  time/60.0);
+	else if (time > 1)       printf("%.1fs",  time);
+	else                     printf("%.1fms", time*1000);
+}
+
+/*
+ * Gets the current time in seconds.
+ */
+double wall_time()
+{
+	typedef std::chrono::system_clock Time;
+	typedef std::chrono::duration<double> dsec;
+	auto time_point = Time::now();
+	dsec time_since_epoch = time_point.time_since_epoch();
+
+	return time_since_epoch.count();
+}
+
+std::string strip_path_and_ext(std::string file)
+{
+	std::string::size_type loc_path = file.find_last_of("/")+1;
+	std::string::size_type loc_ext = file.find_last_of(".");
+	return file.substr(loc_path, loc_ext-loc_path);
+}
+
+/*
+ * Parses the given comma separated list
+ */
+std::vector<std::string> parse_seperated_list(char *list, const char *separator)
+{
+	std::vector<std::string> list_out;
+
+	// Parse the list.
+	if (!list)
+		return list_out;
+
+
+	char *pin_list = vtr::strdup(list);
+	char *token    = strtok(pin_list, separator);
+	while (token)
+	{
+		list_out.push_back(token);
+		token = strtok(NULL, ",");
+	}
+	vtr::free(pin_list);
+	return list_out;
+}
+
+/*
+ * Prints/updates an ASCII progress bar of length "length" to position length * completion
+ * from previous position "position". Updates ETA based on the elapsed time "time".
+ * Returns the new position. If the position is unchanged the bar is not redrawn.
+ *
+ * Call with position = -1 to draw for the first time. Returns the new
+ * position, calculated based on completion.
+ */
+int print_progress_bar(double completion, int position, int length, double time)
+{
+	if (position == -1 || ((int)(completion * length)) > position)
+	{
+		printf("%3.0f%%|", completion * (double)100);
+
+		position = completion * length;
+
+		int i;
+		for (i = 0; i < position; i++)
+			printf("=");
+
+		printf(">");
+
+		for (; i < length; i++)
+			printf("-");
+
+		if (completion < 1.0)
+		{
+			printf("| Remaining: ");
+			double remaining_time = time/(double)completion - time;
+			print_time(remaining_time);
+		}
+		else
+		{
+			printf("| Total time: ");
+			print_time(time);
+		}
+
+		printf("    \r");
+
+		if (position == length)
+			printf("\n");
+
+		fflush(stdout);
+	}
+	return position;
+}
+
+/*
+ * Trims characters in the given "chars" string
+ * from the end of the given string.
+ */
+void trim_string(char* string, const char *chars)
+{
+	if (string)
+	{
+		int length;
+		while((length = strlen(string)))
+		{	int trimmed = FALSE;
+			unsigned int i;
+			for (i = 0; i < strlen(chars); i++)
+			{
+				if (string[length-1] == chars[i])
+				{
+					trimmed = TRUE;
+					string[length-1] = '\0';
+					break;
+				}
+			}
+
+			if (!trimmed)
+				break;
+		}
+	}
+}
+
+/**
+ * verifies only one condition evaluates to true
+ */
+bool only_one_is_true(std::vector<bool> tested)
+{
+	bool previous_value = false;
+	for(bool next_value: tested)
+	{
+		if(!previous_value && next_value)
+			previous_value = true;
+		else if(previous_value && next_value)
+			return false;
+	}
+	return previous_value;
+}
+
+/**
+ * This overrides default sprintf since odin uses sprintf to concatenate strings
+ * sprintf has undefined behavior for such and this prevents string overriding if 
+ * it is also given as an input
+ */
+int odin_sprintf (char *s, const char *format, ...)
+{
+    va_list args, args_copy ;
+    va_start( args, format ) ;
+    va_copy( args_copy, args ) ;
+
+    const auto sz = std::vsnprintf( nullptr, 0, format, args ) + 1 ;
+
+    try
+    {
+        std::string temp( sz, ' ' ) ;
+        std::vsnprintf( &temp.front(), sz, format, args_copy ) ;
+        va_end(args_copy) ;
+        va_end(args) ;
+
+        s = strncpy(s, temp.c_str(),temp.length());
+
+		return temp.length();
+
+    }
+    catch( const std::bad_alloc& )
+    {
+        va_end(args_copy) ;
+        va_end(args) ;
+        return -BUFFER_MAX_SIZE;
+    }
+
+}
+ 

@@ -25,10 +25,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 #include "netlist_utils.h"
 #include "odin_util.h"
+#include "vtr_util.h"
 #include "vtr_memory.h"
 
 void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_number);
@@ -49,7 +50,7 @@ void graphVizOutputNetlist(std::string path, const char* name, short marker_valu
 	FILE *fp;
 
 	/* open the file */
-	sprintf(path_and_file, "%s/%s.dot", path.c_str(), name);
+	odin_sprintf(path_and_file, "%s/%s.dot", path.c_str(), name);
 	fp = fopen(path_and_file, "w");
 
         /* open graph */
@@ -106,7 +107,7 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 		/* mark that we have visitied this node now */
 		node->traverse_visited = traverse_mark_number;
 
-		temp_string = strdup(make_simple_name(node->name, "^-+.", '_').c_str());
+		temp_string= vtr::strdup(make_simple_name(node->name, "^-+.", '_').c_str());
 		if ((node->type == FF_NODE) || (node->type == BUF_NODE))
 		{
 			fprintf(fp, "\t\"%s\" [shape=box];\n", temp_string);
@@ -147,15 +148,15 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 //				if ((node->type == FF_NODE) || (node->type == INPUT_NODE) || (node->type == OUTPUT_NODE))
 //					continue;
 
-				temp_string = strdup(make_simple_name(node->name, "^-+.", '_').c_str());
-				temp_string2 = strdup(make_simple_name(next_node->name, "^-+.", '_').c_str());
+				temp_string= vtr::strdup(make_simple_name(node->name, "^-+.", '_').c_str());
+				temp_string2= vtr::strdup(make_simple_name(next_node->name, "^-+.", '_').c_str());
 				/* renaming for output nodes */
 				if (node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
                     char* temp_string_old = temp_string;
 					temp_string = (char*)vtr::malloc(sizeof(char)*strlen(temp_string)+1+2);
-					sprintf(temp_string, "%s_O", temp_string_old);
+					odin_sprintf(temp_string, "%s_O", temp_string_old);
                     free(temp_string_old);
 				}
 				if (next_node->type == OUTPUT_NODE)
@@ -163,7 +164,7 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 					/* renaming for output nodes */
                     char* temp_string2_old = temp_string2;
 					temp_string2 = (char*)vtr::malloc(sizeof(char)*strlen(temp_string2)+1+2);
-					sprintf(temp_string2, "%s_O", temp_string2_old);
+					odin_sprintf(temp_string2, "%s_O", temp_string2_old);
                     free(temp_string2_old);
 				}
 
@@ -191,7 +192,7 @@ void graphVizOutputCombinationalNet(std::string path, const char* name, short ma
 	FILE *fp;
 
 	/* open the file */
-	sprintf(path_and_file, "%s/%s.dot", path.c_str(), name);
+	odin_sprintf(path_and_file, "%s/%s.dot", path.c_str(), name);
 	fp = fopen(path_and_file, "w");
 
         /* open graph */
@@ -229,7 +230,7 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 		current_node->traverse_visited = marker_value;
 
 		/* printout the details of it */
-		temp_string = strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
+		temp_string= vtr::strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
 		if (index_in_stack == 0)
 		{
 			fprintf(fp, "\t%s [shape=box,color=red];\n", temp_string);
@@ -273,19 +274,19 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 				if (next_node == NULL)
 					continue;
 
-				temp_string = strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
-				temp_string2 = strdup(make_simple_name(next_node->name, "^-+.", '_').c_str());
+				temp_string= vtr::strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
+				temp_string2= vtr::strdup(make_simple_name(next_node->name, "^-+.", '_').c_str());
 				if (current_node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
 					temp_string = (char*)vtr::realloc(temp_string, sizeof(char)*strlen(temp_string)+1+2);
-					sprintf(temp_string, "%s_O", temp_string);
+					odin_sprintf(temp_string, "%s_O", temp_string);
 				}
 				if (next_node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
 					temp_string2 = (char*)vtr::realloc(temp_string2, sizeof(char)*strlen(temp_string2)+1+2);
-					sprintf(temp_string2, "%s_O", temp_string2);
+					odin_sprintf(temp_string2, "%s_O", temp_string2);
 				}
 
 				fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string, temp_string2, current_node->output_pins[j]->net->fanout_pins[k]->name);
@@ -332,7 +333,7 @@ void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t 
 		current_node->traverse_visited = marker_value;
 
 		/* printout the details of it */
-		temp_string = strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
+		temp_string= vtr::strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
 		if (index_in_stack != 0)
 		{
 			if ((current_node->type == FF_NODE) || (current_node->type == BUF_NODE))
@@ -373,8 +374,8 @@ void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t 
 			if (next_node == NULL)
 				continue;
 
-			temp_string = strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
-			temp_string2 = strdup(make_simple_name(next_node->name, "^-+.", '_').c_str());
+			temp_string= vtr::strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
+			temp_string2= vtr::strdup(make_simple_name(next_node->name, "^-+.", '_').c_str());
 
 			fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string2, temp_string, current_node->input_pins[j]->name);
 

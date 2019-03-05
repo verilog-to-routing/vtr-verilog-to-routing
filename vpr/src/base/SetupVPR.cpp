@@ -8,6 +8,7 @@ using namespace std;
 #include "vtr_random.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
+#include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -44,7 +45,6 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 		t_arch * Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
-static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs);
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
@@ -101,6 +101,7 @@ void SetupVPR(t_options *Options,
 	SetupPowerOpts(*Options, PowerOpts, Arch);
 
 	if (readArchFile == true) {
+        vtr::ScopedStartFinishTimer t("Loading Architecture Description");
 		XmlReadArch(Options->ArchFile.value().c_str(), TimingEnabled, Arch, &device_ctx.block_types,
 				&device_ctx.num_block_types);
 	}
@@ -158,7 +159,7 @@ void SetupVPR(t_options *Options,
         PackerOpts->doPacking = STAGE_DO;
         PlacerOpts->doPlacement = STAGE_DO;
         RouterOpts->doRouting = STAGE_DO;
-        AnalysisOpts->doAnalysis = STAGE_DO;
+        AnalysisOpts->doAnalysis = STAGE_AUTO; //Deferred until implementation status known
     } else {
         //We run all stages up to the specified stage
         //Note that by checking in reverse order (i.e. analysis to packing)
@@ -176,7 +177,7 @@ void SetupVPR(t_options *Options,
             PackerOpts->doPacking = STAGE_LOAD;
             PlacerOpts->doPlacement = STAGE_LOAD;
             RouterOpts->doRouting = STAGE_DO;
-            AnalysisOpts->doAnalysis = STAGE_DO; //Always run analysis after routing
+            AnalysisOpts->doAnalysis = ((Options->do_analysis) ? STAGE_DO : STAGE_AUTO); //Always run analysis after routing
         }
 
         if(Options->do_placement) {
@@ -196,9 +197,11 @@ void SetupVPR(t_options *Options,
 	PlacerOpts->seed =  Options->Seed;
 	vtr::srandom(PlacerOpts->seed);
 
-	vtr::printf_info("Building complex block graph.\n");
+    {
+        vtr::ScopedStartFinishTimer t("Building complex block graph");
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
 	*PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
+    }
 
     if (Options->clock_modeling == ROUTED_CLOCK) {
         ClockModeling::treat_clock_pins_as_non_globals();
@@ -291,7 +294,7 @@ static void SetupSwitches(const t_arch& Arch,
     //
     //Note that we don't warn about the R value as it may be used to size the buffer (if buf_size_type is AUTO)
     if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout != 0.) {
-        vtr::printf_warning(__FILE__, __LINE__, "Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block inputs\n",
+        VTR_LOG_WARN( "Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block inputs\n",
                 device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout, Arch.ipin_cblock_switch_name.c_str());
     }
 
@@ -322,6 +325,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts)
 	RouterOpts->max_criticality = Options.max_criticality;
 	RouterOpts->max_router_iterations = Options.max_router_iterations;
 	RouterOpts->min_incremental_reroute_fanout = Options.min_incremental_reroute_fanout;
+	RouterOpts->incr_reroute_delay_ripup = Options.incr_reroute_delay_ripup;
 	RouterOpts->pres_fac_mult = Options.pres_fac_mult;
 	RouterOpts->route_type = Options.RouteType;
 
@@ -351,6 +355,15 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts)
     }
 	RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
     RouterOpts->routing_budgets_algorithm = Options.routing_budgets_algorithm;
+    RouterOpts->save_routing_per_iteration = Options.save_routing_per_iteration;
+    RouterOpts->congested_routing_iteration_threshold_frac = Options.congested_routing_iteration_threshold_frac;
+    RouterOpts->route_bb_update = Options.route_bb_update;
+    RouterOpts->high_fanout_threshold = Options.router_high_fanout_threshold;
+    RouterOpts->router_debug_net = Options.router_debug_net;
+    RouterOpts->router_debug_sink_rr = Options.router_debug_sink_rr;
+    RouterOpts->lookahead_type = Options.router_lookahead_type;
+    RouterOpts->max_convergence_count = Options.router_max_convergence_count;
+    RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -406,10 +419,9 @@ void SetupPackerOpts(const t_options& Options,
 	PackerOpts->cluster_seed_type = Options.cluster_seed_type;
 	PackerOpts->alpha = Options.alpha_clustering;
 	PackerOpts->beta = Options.beta_clustering;
-	PackerOpts->debug_clustering = Options.debug_clustering;
+	PackerOpts->pack_verbosity = Options.pack_verbosity;
 	PackerOpts->enable_pin_feasibility_filter = Options.enable_clustering_pin_feasibility_filter;
-	PackerOpts->enable_round_robin_prepacking = Options.enable_round_robin_prepacking;
-	PackerOpts->target_external_pin_util = parse_target_external_pin_util(Options.target_external_pin_util);
+	PackerOpts->target_external_pin_util = Options.target_external_pin_util;
     PackerOpts->target_device_utilization = Options.target_device_utilization;
 
     //TODO: document?
@@ -424,12 +436,13 @@ void SetupPackerOpts(const t_options& Options,
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {
 
+    NetlistOpts.const_gen_inference = Options.const_gen_inference;
     NetlistOpts.absorb_buffer_luts = Options.absorb_buffer_luts;
     NetlistOpts.sweep_dangling_primary_ios = Options.sweep_dangling_primary_ios;
     NetlistOpts.sweep_dangling_nets = Options.sweep_dangling_nets;
     NetlistOpts.sweep_dangling_blocks = Options.sweep_dangling_blocks;
     NetlistOpts.sweep_constant_primary_outputs = Options.sweep_constant_primary_outputs;
-    NetlistOpts.verbose_sweep = Options.verbose_sweep;
+    NetlistOpts.netlist_verbosity = Options.netlist_verbosity;
 }
 
 /* Sets up the s_placer_opts structure based on users input. Error checking,
@@ -463,8 +476,16 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts *PlacerOpts)
 	/* Depends on PlacerOpts->place_algorithm */
 	PlacerOpts->enable_timing_computations = Options.ShowPlaceTiming;
 
+    PlacerOpts->delay_offset = Options.place_delay_offset;
+    PlacerOpts->delay_ramp_delta_threshold = Options.place_delay_ramp_delta_threshold;
+    PlacerOpts->delay_ramp_slope = Options.place_delay_ramp_slope;
+    PlacerOpts->tsu_rel_margin = Options.place_tsu_rel_margin;
+    PlacerOpts->tsu_abs_margin = Options.place_tsu_abs_margin;
+
     //TODO: document?
 	PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */
+
+    PlacerOpts->post_place_timing_report_file = Options.post_place_timing_report_file;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
@@ -517,72 +538,3 @@ static int find_ipin_cblock_switch_index(const t_arch& Arch) {
     return ipin_cblock_switch_index;
 }
 
-static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs) {
-
-    t_ext_pin_util_targets targets (1., 1.);
-    bool default_set = false;
-    std::set<std::string> seen_block_types;
-
-    for (auto spec : specs) {
-        t_ext_pin_util target_ext_pin_util(1., 1.);
-
-        auto block_values = vtr::split(spec, ":");
-        std::string block_type;
-        std::string values;
-        if (block_values.size() == 2) {
-            block_type = block_values[0];
-            values = block_values[1];
-        } else if (block_values.size() == 1) {
-            values = block_values[0];
-        } else {
-            std::stringstream msg;
-            msg << "In valid block pin utilization specification '" << spec << "' (expected at most one ':' between block name and values";
-            VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
-        }
-
-        auto elements = vtr::split(values, ",");
-        if (elements.size() == 1) {
-            target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
-        } else if (elements.size() == 2) {
-            target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
-            target_ext_pin_util.output_pin_util = vtr::atof(elements[1]);
-        } else {
-            std::stringstream msg;
-            msg << "Invalid conversion from '" << spec << "' to external pin util (expected either a single float value, or two float values separted by a comma)";
-            VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
-        }
-
-        if (target_ext_pin_util.input_pin_util < 0. || target_ext_pin_util.input_pin_util > 1.) {
-            std::stringstream msg;
-            msg << "Out of range target input pin utilization '" << target_ext_pin_util.input_pin_util << "' (expected within range [0.0, 1.0])";
-            VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
-        }
-        if (target_ext_pin_util.output_pin_util < 0. || target_ext_pin_util.output_pin_util > 1.) {
-            std::stringstream msg;
-            msg << "Out of range target output pin utilization '" << target_ext_pin_util.output_pin_util << "' (expected within range [0.0, 1.0])";
-            VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
-        }
-
-        if (block_type.empty()) {
-            //Default value
-            if (default_set) {
-                std::stringstream msg;
-                msg << "Only one default pin utilization should be specified";
-                VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
-            }
-            targets.set_default_pin_util(target_ext_pin_util);
-            default_set = true;
-        } else {
-            if (seen_block_types.count(block_type)) {
-                std::stringstream msg;
-                msg << "Only one pin utilization should be specified for block type '" << block_type << "'";
-                VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
-            }
-
-            targets.set_block_pin_util(block_type, target_ext_pin_util);
-            seen_block_types.insert(block_type);
-        }
-    }
-
-    return targets;
-}

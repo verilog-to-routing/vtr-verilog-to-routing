@@ -5,6 +5,7 @@
 #include "vtr_range.h"
 
 #include <memory>
+#include <cstdint>
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
  * to store algorithm-specific data should be stored in one of the           *
@@ -80,12 +81,12 @@ class t_rr_node {
         const t_metadata_as* metadata(std::pair<t_offset, std::string> ko) const;
 
         edge_idx_range edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges())); }
-        edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_configurable_edges())); }
-        edge_idx_range non_configurable_edges() const { return vtr::make_range(edge_idx_iterator(num_configurable_edges()), edge_idx_iterator(num_edges())); }
+        edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges() - num_non_configurable_edges())); }
+        edge_idx_range non_configurable_edges() const { return vtr::make_range(edge_idx_iterator(num_edges() - num_non_configurable_edges()), edge_idx_iterator(num_edges())); }
 
         short num_edges() const { return num_edges_; }
-        short num_configurable_edges() const { return num_configurable_edges_; }
-        short num_non_configurable_edges() const { return num_edges() - num_configurable_edges(); }
+        short num_configurable_edges() const { return num_edges() - num_non_configurable_edges(); }
+        short num_non_configurable_edges() const { return num_non_configurable_edges_; }
 
         short get_iedge(int sink_node, short switch_id) const;
 
@@ -126,10 +127,14 @@ class t_rr_node {
         float R() const;
         float C() const;
 
+        bool validate() const;
+
     public: //Mutators
         void set_type(t_rr_type new_type);
 
         short add_edge(int sink_node, int iswitch);
+
+        void shrink_to_fit();
 
         //Partitions all edges so that configurable and non-configurable edges
         //are organized for efficient access.
@@ -139,10 +144,10 @@ class t_rr_node {
         //are correct.
         void partition_edges();
 
+
         void set_num_edges(short); //Note will remove any previous edges
         void set_edge_sink_node(short iedge, int sink_node);
         void set_edge_switch(short iedge, short switch_index);
-        void set_edge_is_configurable(short iedge, bool is_configurable);
 
         void add_metadata(std::string key, std::string value);
         void add_metadata(t_offset o, std::string key, std::string value);
@@ -171,19 +176,20 @@ class t_rr_node {
         void set_side(e_side);
 
     private: //Data
-        //Note: we use a plain array and a shorts for size to save space vs std::vector
+        //Note: we use a plain array and use small types for sizes to save space vs std::vector
         //      (using std::vector's nearly doubles the size of the class)
         std::unique_ptr<t_rr_edge[]> edges_ = nullptr;
-        short num_edges_ = 0;
-        short num_configurable_edges_ = 0;
+        uint16_t num_edges_ = 0;
+        uint16_t edges_capacity_ = 0;
+        uint8_t num_non_configurable_edges_ = 0;
 
-        short rc_index_ = -1;
-        short cost_index_ = -1;
+        int8_t cost_index_ = -1;
+        int16_t rc_index_ = -1;
 
-        short xlow_ = -1;
-        short ylow_ = -1;
-        short xhigh_ = -1;
-        short yhigh_ = -1;
+        int16_t xlow_ = -1;
+        int16_t ylow_ = -1;
+        int16_t xhigh_ = -1;
+        int16_t yhigh_ = -1;
 
         t_rr_type type_ = NUM_RR_TYPES;
         union {
@@ -192,12 +198,12 @@ class t_rr_node {
         } dir_side_;
 
         union {
-            short pin_num;
-            short track_num;
-            short class_num;
+            int16_t pin_num;
+            int16_t track_num;
+            int16_t class_num;
         } ptc_;
-        short fan_in_ = 0;
-        short capacity_ = -1;
+        uint16_t fan_in_ = 0;
+        uint16_t capacity_ = 0;
 };
 
 

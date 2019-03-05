@@ -1,0 +1,47 @@
+.model cascading_ff
+.inputs clk clk_2
+.outputs clk_div_1 clk_div_2 clk_div_4 clk_div_8 multi_clk_and
+
+#passthrough
+.names clk clk_div_1
+1 1
+
+#half clock
+.names div_2_FF_out div_2_not
+0 1
+
+.names div_2_FF_IN div_2_FF_out
+1 1
+
+.latch div_2_not div_2_FF_IN re clk 0
+
+#quarter clock
+.names div_4_FF_out div_4_not
+0 1
+
+.names div_4_FF_IN div_4_FF_out
+1 1
+
+.latch div_4_not div_4_FF_IN re div_2_FF_out 0
+
+#eight clock
+.names div_8_FF_out div_8_not
+0 1
+
+.names div_8_FF_IN div_8_FF_out
+1 1
+
+.latch div_8_not div_8_FF_IN re div_4_FF_out 0
+
+.names div_8_FF_out clk_2 multi_clk_and
+10 1
+01 1
+
+.names div_2_FF_out clk_div_2
+1 1
+.names div_4_FF_out clk_div_4
+1 1
+.names div_8_FF_out clk_div_8
+1 1
+
+.end

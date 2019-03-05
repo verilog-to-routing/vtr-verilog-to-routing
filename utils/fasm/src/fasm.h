@@ -30,14 +30,14 @@ class FasmWriterVisitor : public NetlistVisitor {
       // clb in visit_clb_impl stands for complex logic block.
       // visit_clb_impl is called on each top-level pb_type used in the design.
       void visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) override;
-      void visit_all_impl(const t_pb_route *top_pb_route, const t_pb* pb,
+      void visit_all_impl(const t_pb_routes &top_pb_route, const t_pb* pb,
           const t_pb_graph_node* pb_graph_node) override;
       void finish_impl() override;
 
   private:
       void output_fasm_features(std::string features) const;
       void check_features(t_metadata_dict *meta) const;
-      void check_interconnect(const t_pb_route *pb_route, int inode);
+      void check_interconnect(const t_pb_routes &pb_route, int inode);
       void check_for_lut(const t_pb* atom);
       void output_fasm_mux(std::string fasm_mux, t_interconnect *interconnect, t_pb_graph_pin *mux_input_pin);
       void walk_routing();

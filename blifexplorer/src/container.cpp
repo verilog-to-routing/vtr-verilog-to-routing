@@ -242,21 +242,19 @@ void Container::copySimCyclesIntoNodes()
 //compute the layers of all modules inside the container
 void Container::computeLayers()
 {
-    int i;
-
     QQueue<LogicUnit*> nodequeue;
     QHash<QString, LogicUnit*> donehashtable;
-    for (i = 0; i < verilog_netlist->num_top_input_nodes; i++){
-        QString name = verilog_netlist->top_input_nodes[i]->name;
+    for (int i = 0; i < myOdin->blifexplorer_netlist->num_top_input_nodes; i++){
+        QString name = myOdin->blifexplorer_netlist->top_input_nodes[i]->name;
         nodequeue.enqueue(getReferenceToUnit(name));
     }
 
     // Enqueue constant nodes.
-    nnode_t* constant_nodes[] = {verilog_netlist->gnd_node,
-                                 verilog_netlist->vcc_node,
-                                 verilog_netlist->pad_node};
+    nnode_t* constant_nodes[] = {myOdin->blifexplorer_netlist->gnd_node,
+                                 myOdin->blifexplorer_netlist->vcc_node,
+                                 myOdin->blifexplorer_netlist->pad_node};
     int num_constant_nodes = 3;
-    for (i = 0; i < num_constant_nodes; i++){
+    for (int i = 0; i < num_constant_nodes; i++){
         QString name = constant_nodes[i]->name;
         nodequeue.enqueue(getReferenceToUnit(name));
     }
@@ -287,7 +285,7 @@ void Container::computeLayers()
 
         // connect node to all children
         //enqueue children if not already done or in queue
-        for(i=0; i< num_children; i++){
+        for(int i=0; i< num_children; i++){
             nnode_t* nodeKid = children[i];
             QString kidName(nodeKid->name);
             LogicUnit* kidUnit = getReferenceToUnit(kidName);
@@ -361,11 +359,25 @@ void Container::spreadLayers()
  * (function: startOdin)
  *-------------------------------------------------------------------------------------------*/
 void Container::startOdin(){
+    int error_code = 0;
     if(!odinStarted){
         myOdin->setFilename(myFilename);
-        myOdin->startOdin();
-        odinStarted = true;
+        error_code = myOdin->startOdin();
+    }
+    else
+    {
+        std::cout << "odin is already started";
+    }
+
+    odinStarted = (error_code == 0)? true: false;
+    
+    if(odinStarted){
         odinTable = myOdin->getNodeTable();
+    }
+    else
+    {
+        std::cout << "odin failed to start with error:" << std::to_string(error_code);
+        exit(1);
     }
 }
 
@@ -546,7 +558,7 @@ int Container::createConnectionsFromOdinIterate()
                                          the method get_children_of(node->getOdinRef(), &num_children)
                                          sometimes returns a node itself as its child.*/
                              fprintf(stderr, "CONTAINER:  Warning: Node has itself in childlist in Odin II:");
-                             fprintf(stderr,actName.toLatin1().data());
+                             fprintf(stderr,"%s", ((char*)actName.toLocal8Bit().data()));
                              fprintf(stderr,"\n");
                          }else{
                          //for hard blocks add the output pin of the created connection
@@ -559,29 +571,25 @@ int Container::createConnectionsFromOdinIterate()
                              LogicUnit* startModule;
                              LogicUnit* endNode = unithashtable[kidName];
                              LogicUnit* endModule;
-                             if(startNode->hasModule){
+                            if(startNode->hasModule && endNode->hasModule){
                                 startModule = startNode->getModule();
-                             }
-                             if(endNode->hasModule){
-                                 endModule = endNode->getModule();
-                             }
-                             if(startNode->hasModule && endNode->hasModule){
-                                 if(startModule->getName().compare(endModule->getName())==0){
-                                     //do nothing because the connection is inside the module
-                                     ;
-                                 }else{//both connections are in modules
-                                     startModule->addConnection(newWire);
-                                     endModule->addConnection(newWire);
-                                     newWire->setEndModule(endModule);
-                                     newWire->setStartModule(startModule);
-                                 }
-                             }else if(startNode->hasModule){
-                                 startModule->addConnection(newWire);
-                                 newWire->setStartModule(startModule);
-                             }else if(endNode->hasModule){
+                                endModule = endNode->getModule();
+                                if(startModule->getName().compare(endModule->getName())!=0){
+                                //both connections are in modules
+                                    startModule->addConnection(newWire);
+                                    endModule->addConnection(newWire);
+                                    newWire->setEndModule(endModule);
+                                    newWire->setStartModule(startModule);
+                                }
+                            }else if(startNode->hasModule){
+                                startModule = startNode->getModule();
+                                startModule->addConnection(newWire);
+                                newWire->setStartModule(startModule);
+                            }else if(endNode->hasModule){
+                                endModule = endNode->getModule();
                                 endModule->addConnection(newWire);
                                 newWire->setEndModule(endModule);
-                             }
+                            }
 
                              childrenDone[kidName] = nodeKid;
                              conCount++;
@@ -620,26 +628,23 @@ int Container::createConnectionsFromOdinIterate()
                  LogicUnit* startModule;
                  LogicUnit* endNode = unithashtable[kidName];
                  LogicUnit* endModule;
-                 if(startNode->hasModule){
-                    startModule = startNode->getModule();
-                 }
-                 if(endNode->hasModule){
-                     endModule = endNode->getModule();
-                 }
+
                  if(startNode->hasModule && endNode->hasModule){
-                     if(startModule->getName().compare(endModule->getName())==0){
-                         //do nothing because the connection is inside the module
-                         ;
-                     }else{//both connections are in modules
+                     startModule = startNode->getModule();
+                     endModule = endNode->getModule();
+                     if(startModule->getName().compare(endModule->getName())!=0){
+                    //both connections are in modules
                          startModule->addConnection(newWire);
                          endModule->addConnection(newWire);
                          newWire->setEndModule(endModule);
                          newWire->setStartModule(startModule);
                      }
                  }else if(startNode->hasModule){
+                     startModule = startNode->getModule();
                      startModule->addConnection(newWire);
                      newWire->setStartModule(startModule);
                  }else if(endNode->hasModule){
+                    endModule = endNode->getModule();
                     endModule->addConnection(newWire);
                     newWire->setEndModule(endModule);
                  }
@@ -670,15 +675,15 @@ int Container::createConnectionsFromOdin()
     QQueue<LogicUnit*> nodequeue;
     QHash<QString, LogicUnit*> donehashtable;
 
-    for (i = 0; i < verilog_netlist->num_top_input_nodes; i++){
-        QString name = verilog_netlist->top_input_nodes[i]->name;
+    for (i = 0; i < myOdin->blifexplorer_netlist->num_top_input_nodes; i++){
+        QString name = myOdin->blifexplorer_netlist->top_input_nodes[i]->name;
         nodequeue.enqueue(getReferenceToUnit(name));
     }
 
     // Enqueue constant nodes.
-    nnode_t* constant_nodes[] = {verilog_netlist->gnd_node,
-                                 verilog_netlist->vcc_node,
-                                 verilog_netlist->pad_node};
+    nnode_t* constant_nodes[] = {myOdin->blifexplorer_netlist->gnd_node,
+                                 myOdin->blifexplorer_netlist->vcc_node,
+                                 myOdin->blifexplorer_netlist->pad_node};
     int num_constant_nodes = 3;
     for (i = 0; i < num_constant_nodes; i++){
         QString name = constant_nodes[i]->name;
@@ -688,7 +693,6 @@ int Container::createConnectionsFromOdin()
     // go through the netlist. While doing so
     // remove nodes from the queue and add followup nodes
     LogicUnit* node;
-    QList<LogicUnit*> clocks;
     bool clockFound = false;
     while(!nodequeue.isEmpty()){
         node = nodequeue.dequeue();
@@ -970,16 +974,6 @@ void Container::showSimulationStep(int cycle)
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: setEdge)
- *-------------------------------------------------------------------------------------------*/
-void Container::setEdge(int i)
-{
-    if(odinStarted){
-        myOdin->setEdge(i);
-    }
-}
-
-/*---------------------------------------------------------------------------------------------
  * (function: getConnectionBetween)
  *-------------------------------------------------------------------------------------------*/
 Wire *Container::getConnectionBetween(QString nodeName, QString kidName)
@@ -1049,7 +1043,6 @@ void Container::expandCollapse(QString modulename)
 
     //toggle module visibility
     module->setVisible(!module->isVisible());
-    bool now = module->isVisible();
 
     QHash<QString, LogicUnit *> hash =unithashtable;
     QHash<QString, LogicUnit *>::const_iterator blockIterator = hash.constBegin();

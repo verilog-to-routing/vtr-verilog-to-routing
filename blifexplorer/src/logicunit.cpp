@@ -28,7 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 
 LogicUnit::LogicUnit(QString name, UnitType unitType, QMenu *contextMenu,
-             QGraphicsItem *parent, QGraphicsScene *scene)
+             QGraphicsItem *parent, QGraphicsScene * /* scene */ )
     : QGraphicsPolygonItem(parent)
 {
     myUnitType = unitType;
@@ -649,7 +649,6 @@ void LogicUnit::showActivity()
         foreach(Wire* wire, wires){
             activity += wire->getActivity();
         }
-        int count = wires.count();
         activity = activity / wires.count();
         setBrush(QColor(activity,255-activity,0));
     }

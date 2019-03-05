@@ -28,6 +28,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "bdd/cudd/cuddInt.h"
 #include "bdd/cudd/cudd.h"
 
+#include "odin_error.h"
+#include "odin_util.h"
 #include "ace.h"
 #include "vtr_memory.h"
 
@@ -45,13 +47,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define BPI     32
 #define LOGBPI  5
 
-#define fail(why) {\
-		(void) fprintf(stderr, "Fatal error: file %s, line %d\n%s\n",\
-				__FILE__, __LINE__, why);\
-				(void) fflush(stdout);\
-				abort();\
-				}
-
 #define LOOPINIT(size)		((size <= BPI) ? 1 : WHICH_WORD((size)-1))
 
 #define WHICH_WORD(element)     (((element) >> LOGBPI) + 1)
@@ -65,8 +60,8 @@ typedef unsigned int *pset;
 
 #define ALLOC(type, num)	((type *) malloc(sizeof(type) * (num)))
 
-#define set_remove(set, e)      (set[WHICH_WORD(e)] &= ~ (1 << WHICH_BIT(e)))
-#define set_insert(set, e)      (set[WHICH_WORD(e)] |= 1 << WHICH_BIT(e))
+#define set_remove(set, e)      (set[WHICH_WORD(e)] &= ~ (shift_left_value_with_overflow_check(0x1, WHICH_BIT(e))))
+#define set_insert(set, e)      (set[WHICH_WORD(e)] |= (shift_left_value_with_overflow_check(0x1, WHICH_BIT(e))))
 #define set_new(size)		set_clear(ALLOC(unsigned int, set_size(size)), size)
 #define set_size(size)          ((size) <= BPI ? 2 : (WHICH_WORD((size)-1) + 1))
 
@@ -109,13 +104,13 @@ void alloc_and_init_ace_structs(netlist_t *net) {
     /*
     printf ( "alloc_and_init_activity_info\n");
     printf ( "----------------------------\n");
-    printf ("PIs in network: %d\n",  net->num_top_input_nodes);
-    printf ("POs in network: %d\n",  net->num_top_output_nodes);
+    printf ("PIs in network: %ld\n",  net->num_top_input_nodes);
+    printf ("POs in network: %ld\n",  net->num_top_output_nodes);
 
-    printf ("Nodes in network: %d\n",  net->num_internal_nodes);
-    printf ("FF Nodes in network: %d\n",  net->num_ff_nodes);
-    printf ("Forward Level Nodes in network: %d\n",  net->num_forward_levels);
-    printf ("Backward Level Nodes in network: %d\n",  net->num_backward_levels);
+    printf ("Nodes in network: %ld\n",  net->num_internal_nodes);
+    printf ("FF Nodes in network: %ld\n",  net->num_ff_nodes);
+    printf ("Forward Level Nodes in network: %ld\n",  net->num_forward_levels);
+    printf ("Backward Level Nodes in network: %ld\n",  net->num_backward_levels);
     */
 
     // GND Node
@@ -398,7 +393,7 @@ void output_ace_info (netlist_t *net, FILE *act_out ) {
 void output_ace_info_node ( char *name, ace_obj_info_t *info, FILE *act_out ) {
 
     /*
-    printf ( "%s %f %f %f DEBUG: ONES: %3d TOGGLES: %d\n",
+    printf ( "%s %f %f %f DEBUG: ONES: %3d TOGGLES: %ld\n",
              name,
              info->static_prob,
              info->switch_prob ,
@@ -440,22 +435,34 @@ pset set_clear(pset r, int size)
 int node_error(int code) {
     switch (code) {
     case 0:
-        fail("node_get_cube: node does not have a function");
+        error_message(ACE,-1, -1, "%s", "node_get_cube: node does not have a function");
         /* NOTREACHED */
+        break;
+
     case 1:
-        fail("node_get_cube: cube index out of bounds");
+        error_message(ACE,-1, -1, "%s","node_get_cube: cube index out of bounds");
         /* NOTREACHED */
+        break;
+
     case 2:
-        fail("node_get_literal: bad cube");
+        error_message(ACE,-1, -1, "%s","node_get_literal: bad cube");
         /* NOTREACHED */
+        break;
+
     case 4:
-        fail("foreach_fanin: node changed during generation");
+        error_message(ACE,-1, -1, "%s","foreach_fanin: node changed during generation");
         /* NOTREACHED */
+        break;
+
     case 5:
-        fail("foreach_fanout: node changed during generation");
+        error_message(ACE,-1, -1, "%s","foreach_fanout: node changed during generation");
         /* NOTREACHED */
+        break;
+
     default:
-        fail("error code unused");
+        error_message(ACE,-1, -1, "%s","error code unused");
+        break;
+
     }
     return 0;
 }
@@ -488,7 +495,7 @@ ace_cube_t * ace_cube_dup(ace_cube_t * cube) {
             set_insert(cube_copy->cube, 2 * i + 1);
             break;
 	default:
-	    fail("Bad literal.");
+	    error_message(ACE,-1, -1, "%s","Bad literal.");
         }
     }
     return (cube_copy);
@@ -639,7 +646,7 @@ double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd, ace_cube_t * c
 	    + (1.0 - fanin_info->static_prob) * else_prob;
 	break;
     default:
-	fail("Bad literal.");
+	error_message(ACE,-1, -1, "%s","Bad literal.");
     }
     st__insert(visited, (char *) bdd, (char *) current_prob);
 

@@ -88,23 +88,28 @@ for my $parse_entry (@parse_data) {
 		print "\t";
 	}
 	else {
-		undef $/;
 		open( DATA_FILE, "<$file_to_parse_path" );
-		my $parse_file_lines = <DATA_FILE>;
+		my @parse_file_lines = <DATA_FILE>;
 		close(DATA_FILE);
-		$/ = "\n";
+
+        chomp(@parse_file_lines);
 		
 		my $regexp = @$parse_entry[2];
 		$regexp =~ s/\s+$//;
 
-		if ( $parse_file_lines =~ m/$regexp/gm ) {
-			print $1;
-		}
-		else {
-			print $default_not_found;
-		}
+        my $result = $default_not_found;
+        for my $line (@parse_file_lines) {
+            if ( $line =~ m/$regexp/gm ) {
+                #Match
+                $result = $1;
+
+                #Note that we keep going even if a match is found,
+                #so that the recorded value is the *last* match in
+                #the file
+            }
+        }
         # tab separation even at end of line to indicate last element
-        print "\t";
+        print "$result\t";
 	}
 }
 print "\n";

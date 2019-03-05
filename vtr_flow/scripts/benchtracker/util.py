@@ -5,13 +5,22 @@ import os.path
 import socket
 import getpass
 
+
+def is_rundir_name(run_prefix, string):
+    regex = re.compile(run_prefix + "\d+")
+    match = regex.match(string) 
+    if match:
+        return True
+    return False
+
+
 # working on the task directory
 def sort_runs(runs):
     natural_sort(runs)
 
 def walk_runs(params, operation, select=sort_runs):
     """walk the selected run# directories and apply operation on each"""
-    runs = [run for run in immediate_subdir(params.task_dir) if run.startswith(params.run_prefix)]
+    runs = [run for run in immediate_subdir(params.task_dir) if is_rundir_name(params.run_prefix, run)]
     # select how to and which runs to use for a certain range
     select(runs)
     if not runs:

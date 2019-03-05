@@ -922,7 +922,7 @@ struct t_pb_graph_node {
 	t_cluster_placement_primitive *cluster_placement_primitive; /* pointer to indexing structure useful during packing stage */
 
 	int *input_pin_class_size; /* Stores the number of pins that belong to a particular input pin class */
-	int num_input_pin_class; /* number of pin classes that this input pb_graph_node has */
+	int num_input_pin_class; /* number of input pin classes that this pb_graph_node has */
 	int *output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
 	int num_output_pin_class; /* number of output pin classes that this pb_graph_node has */
 
@@ -1296,15 +1296,15 @@ struct t_direct_inf {
 	int y_offset;
 	int z_offset;
 	int switch_type;
+    e_side from_side;
+    e_side to_side;
 	int line;
 };
 
 
-enum class WireConnType {
-    FROM,
-    TO,
-    MIN,
-    MAX
+enum class SwitchPointOrder {
+    FIXED,      //Switchpoints are ordered as specified in architecture
+    SHUFFLED    //Switchpoints are shuffled (more diversity)
 };
 
 //A collection of switchpoints associated with a segment
@@ -1317,26 +1317,24 @@ struct t_wire_switchpoints {
 struct t_wireconn_inf {
     std::vector<t_wire_switchpoints> from_switchpoint_set; //The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
     std::vector<t_wire_switchpoints> to_switchpoint_set;   //The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
-    WireConnType num_conns_type;              /* The type specifies how many connections should be made for this wireconn.
-                                               *
-                                               * FROM: The number of generated connections between the 'from' and 'to' sets equals the
-                                               *       size of the 'from' set. This ensures every element in the from set is connected
-                                               *       to an element of the 'to' set.
-                                               *       Note: this it may result in 'to' elements being driven by multiple 'from'
-                                               *       elements (if 'from' is larger than 'to'), or in some elements of 'to' having
-                                               *       no driving connections (if 'to' is larger than 'from').
-                                               * TO:   The number of generated connections is set equal to the size of the 'to' set.
-                                               *       This ensures that each element of the 'to' set has precisely one incomming connection.
-                                               *       Note: this may result in 'from' elements driving multiple 'to' elements (if 'to' is
-                                               *       larger than 'from'), or some 'from' elements driving to 'to' elements (if 'from' is
-                                               *       larger than 'to')
-                                               * MIN:  The number of generated connections is equal to the minimum size of the 'from' or 'to' sets.
-                                               *       This ensures that no wire in the 'from' or 'to' set is connected more than once.
-                                               *       Note: this will leave some elements from the larger set disconnected.
-                                               * MAX:  The number of generated connections is equal to the maximum size of the 'from' or 'to' sets.
-                                               *       This ensures that no elements in the 'from' or 'to' set is left disconnected.
-                                               *       Note: this will result in multiple connections to some elements from the smaller set.
-                                               */
+    SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; //The desired from_switchpoint_set ordering
+    SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED; //The desired to_switchpoint_set ordering
+
+    std::string num_conns_formula;      /* Specifies how many connections should be made for this wireconn.
+                                         *
+                                         * '<int>': A specific number of connections
+                                         * 'from':  The number of generated connections between the 'from' and 'to' sets equals the
+                                         *          size of the 'from' set. This ensures every element in the from set is connected
+                                         *          to an element of the 'to' set.
+                                         *          Note: this it may result in 'to' elements being driven by multiple 'from'
+                                         *          elements (if 'from' is larger than 'to'), or in some elements of 'to' having
+                                         *          no driving connections (if 'to' is larger than 'from').
+                                         * 'to':    The number of generated connections is set equal to the size of the 'to' set.
+                                         *          This ensures that each element of the 'to' set has precisely one incomming connection.
+                                         *          Note: this may result in 'from' elements driving multiple 'to' elements (if 'to' is
+                                         *          larger than 'from'), or some 'from' elements driving to 'to' elements (if 'from' is
+                                         *          larger than 'to')
+                                         */
 };
 
 /* represents a connection between two sides of a switchblock */

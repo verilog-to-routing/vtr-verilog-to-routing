@@ -1,5 +1,6 @@
 #include <cstring>
 #include <unordered_set>
+#include <regex>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -50,6 +51,10 @@ static int ** f_port_pin_from_blk_pin = nullptr;
  * [0...device_ctx.num_block_types-1][0...num_ports-1][0...num_port_pins-1]               */
 static int *** f_blk_pin_from_port_pin = nullptr;
 
+//Regular expressions used to determine register and logic primitives
+//TODO: Make this set-able from command-line?
+const std::regex REGISTER_MODEL_REGEX("(.subckt\\s+)?.*(latch|dff).*", std::regex::icase);
+const std::regex LOGIC_MODEL_REGEX("(.subckt\\s+)?.*(lut|names|lcell).*", std::regex::icase);
 
 /******************** Subroutine declarations ********************************/
 
@@ -85,6 +90,9 @@ static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapp
 static std::vector<int> find_connected_internal_clb_sink_pins(ClusterBlockId clb, int pb_pin);
 static void find_connected_internal_clb_sink_pins_recurr(ClusterBlockId clb, int pb_pin, std::vector<int>& connected_sink_pb_pins);
 static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_id, const IntraLbPbPinLookup& pb_gpin_lookup);
+
+static bool block_type_contains_blif_model(t_type_ptr type, const std::regex& blif_model_regex);
+static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex);
 
 /******************** Subroutine definitions *********************************/
 
@@ -204,6 +212,8 @@ void sync_grid_to_blocks() {
 }
 
 std::string block_type_pin_index_to_name(t_type_ptr type, int pin_index) {
+    VTR_ASSERT(pin_index < type->num_pins);
+
     std::string pin_name = type->name;
 
     if (type->capacity > 1) {
@@ -233,6 +243,58 @@ std::string block_type_pin_index_to_name(t_type_ptr type, int pin_index) {
     }
 
     return "<UNKOWN>";
+}
+
+std::vector<std::string> block_type_class_index_to_pin_names(t_type_ptr type, int class_index) {
+    VTR_ASSERT(class_index < type->num_class);
+
+    //TODO: unsure if classes are modulo capacity or not... so this may be unnessesary
+    int classes_per_inst = type->num_class / type->capacity;
+    class_index %= classes_per_inst;
+
+    t_class& class_inf = type->class_inf[class_index];
+
+    std::vector<std::string> pin_names;
+    for (int ipin = 0; ipin < class_inf.num_pins; ++ipin) {
+        pin_names.push_back(block_type_pin_index_to_name(type, class_inf.pinlist[ipin]));
+    }
+
+    return pin_names;
+}
+
+std::string rr_node_arch_name(int inode) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    const t_rr_node& rr_node = device_ctx.rr_nodes[inode];
+
+    std::string rr_node_arch_name;
+    if (rr_node.type() == OPIN || rr_node.type() == IPIN) {
+        //Pin names
+        t_type_ptr type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
+        rr_node_arch_name += block_type_pin_index_to_name(type, rr_node.ptc_num());
+    } else if (rr_node.type() == SOURCE || rr_node.type() == SINK) {
+        //Set of pins associated with SOURCE/SINK
+        t_type_ptr type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
+        auto pin_names = block_type_class_index_to_pin_names(type, rr_node.ptc_num());
+        if (pin_names.size() > 1) {
+            rr_node_arch_name += rr_node.type_string();
+            rr_node_arch_name += " connected to ";
+            rr_node_arch_name += "{";
+            rr_node_arch_name += vtr::join(pin_names, ", ");
+            rr_node_arch_name += "}";
+        } else {
+            rr_node_arch_name += pin_names[0];
+        }
+    } else {
+        VTR_ASSERT(rr_node.type() == CHANX || rr_node.type() == CHANY);
+        //Wire segment name
+        auto cost_index = rr_node.cost_index();
+        int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
+
+        rr_node_arch_name += device_ctx.arch.Segments[seg_index].name;
+    }
+    
+    return rr_node_arch_name;
 }
 
 IntraLbPbPinLookup::IntraLbPbPinLookup(t_type_descriptor* block_types, int ntypes)
@@ -307,7 +369,7 @@ AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int clb_pin, const In
         //CLB output pin has no internal driver
         return AtomPinId::INVALID();
     }
-    t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
+    const t_pb_routes& pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
     AtomNetId atom_net = pb_routes[pb_pin_id].atom_net_id;
 
     //Trace back until the driver is reached
@@ -332,8 +394,7 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int clb_p
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
-    VTR_ASSERT(pb_routes);
+    const t_pb_routes& pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
 
     VTR_ASSERT_MSG(clb_pin < cluster_ctx.clb_nlist.block_type(clb)->num_pins, "Must be a valid top-level pin");
 
@@ -447,7 +508,7 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
     VTR_ASSERT(clb != ClusterBlockId::INVALID());
     VTR_ASSERT(sink_pb_pin_id >= 0);
 
-    const t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
+    const t_pb_routes& pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
 
     VTR_ASSERT_MSG(pb_routes[sink_pb_pin_id].atom_net_id, "PB route should be associated with a net");
 
@@ -657,6 +718,45 @@ t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* 
     return nullptr; //Not found
 }
 
+t_type_ptr infer_logic_block_type(const DeviceGrid& grid) {
+    auto& device_ctx = g_vpr_ctx.device();
+    //Collect candidate blocks which contain LUTs
+    std::vector<t_type_ptr> logic_block_candidates;
+
+    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+        t_type_ptr type = &device_ctx.block_types[itype];
+
+        if (block_type_contains_blif_model(type, LOGIC_MODEL_REGEX)) {
+            logic_block_candidates.push_back(type);
+        }
+    }
+
+    if (logic_block_candidates.empty()) {
+        //No LUTs, fallback to looking for which contain FFs
+        for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+            t_type_ptr type = &device_ctx.block_types[itype];
+
+            if (block_type_contains_blif_model(type, REGISTER_MODEL_REGEX)) {
+                logic_block_candidates.push_back(type);
+            }
+        }
+
+    }
+
+    //Sort the candidates by the most common block type
+    auto by_desc_grid_count = [&](t_type_ptr lhs, t_type_ptr rhs) {
+        return grid.num_instances(lhs) > grid.num_instances(rhs); 
+    };
+    std::sort(logic_block_candidates.begin(), logic_block_candidates.end(), by_desc_grid_count);
+
+    if (!logic_block_candidates.empty()) {
+        return logic_block_candidates.front();
+    } else {
+        //Otherwise assume it is the most common block type
+        return find_most_common_block_type(grid);
+    }
+}
+
 t_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -681,6 +781,10 @@ bool block_type_contains_blif_model(t_type_ptr type, std::string blif_model_name
     return pb_type_contains_blif_model(type->pb_type, blif_model_name);
 }
 
+static bool block_type_contains_blif_model(t_type_ptr type, const std::regex& blif_model_regex) {
+    return pb_type_contains_blif_model(type->pb_type, blif_model_regex);
+}
+
 //Returns true of a pb_type (or it's children) contain the specified blif model name
 bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name) {
     if (!pb_type) {
@@ -703,6 +807,34 @@ bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& bl
             for (int ichild = 0; ichild < mode->num_pb_type_children; ++ichild) {
                 const t_pb_type* pb_type_child = &mode->pb_type_children[ichild];
                 if (pb_type_contains_blif_model(pb_type_child, blif_model_name)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex) {
+    if (!pb_type) {
+        return false;
+    }
+
+    if (pb_type->blif_model != nullptr) {
+        //Leaf pb_type
+        VTR_ASSERT(pb_type->num_modes == 0);
+        if (std::regex_match(pb_type->blif_model, blif_model_regex)) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        for (int imode = 0; imode < pb_type->num_modes; ++imode) {
+            const t_mode* mode = &pb_type->modes[imode];
+
+            for (int ichild = 0; ichild < mode->num_pb_type_children; ++ichild) {
+                const t_pb_type* pb_type_child = &mode->pb_type_children[ichild];
+                if (pb_type_contains_blif_model(pb_type_child, blif_model_regex)) {
                     return true;
                 }
             }
@@ -1127,10 +1259,10 @@ void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_fr
 /**
 * Create lookup table that returns a pointer to the pb given [index to block][pin_id].
 */
-vtr::vector_map<ClusterBlockId, t_pb **> alloc_and_load_pin_id_to_pb_mapping() {
+vtr::vector<ClusterBlockId, t_pb **> alloc_and_load_pin_id_to_pb_mapping() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping(cluster_ctx.clb_nlist.blocks().size());
+	vtr::vector<ClusterBlockId, t_pb **> pin_id_to_pb_mapping(cluster_ctx.clb_nlist.blocks().size());
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		pin_id_to_pb_mapping[blk_id] = new t_pb*[cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins];
 		for (int j = 0; j < cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins; j++) {
@@ -1180,7 +1312,7 @@ static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapp
 /*
 * free pin_index_to_pb_mapping lookup table
 */
-void free_pin_id_to_pb_mapping(vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
+void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		delete[] pin_id_to_pb_mapping[blk_id];
@@ -1244,11 +1376,6 @@ void free_pb(t_pb *pb) {
 	int i, j, mode;
 
 	pb_type = pb->pb_graph_node->pb_type;
-
-    if (pb->pb_route) {
-        delete[] pb->pb_route;
-        pb->pb_route = nullptr;
-    }
 
     if (pb->name) {
         free(pb->name);
@@ -1610,6 +1737,11 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 	char * find_format = nullptr;
 	int ichar, match_count;
 
+    if (vtr::split(src_string).size() > 1) {
+        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
+                  "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
+    }
+
 	// parse out the pb_type and port name, possibly pin_indices
 	find_format = strstr(src_string,"[");
 	if (find_format == nullptr) {
@@ -1630,7 +1762,7 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 
 		match_count = sscanf(source_string, "%s %s", pb_type_name, port_name);
 		if (match_count != 2){
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"[LINE %d] Invalid pin - %s, name should be in the format "
 					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
 					"The end_pin_index and start_pin_index can be the same.\n",
@@ -1653,7 +1785,7 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 								pb_type_name, port_name,
 								end_pin_index, start_pin_index);
 		if (match_count != 4){
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"[LINE %d] Invalid pin - %s, name should be in the format "
 					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
 					"The end_pin_index and start_pin_index can be the same.\n",
@@ -1661,14 +1793,14 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 			exit(1);
 		}
 		if (*end_pin_index < 0 || *start_pin_index < 0) {
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"[LINE %d] Invalid pin - %s, the pin_index in "
 					"[end_pin_index:start_pin_index] should not be a negative value.\n",
 					line, src_string);
 			exit(1);
 		}
 		if ( *end_pin_index < *start_pin_index) {
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"[LINE %d] Invalid from_pin - %s, the end_pin_index in "
 					"[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
 					line, src_string);
@@ -1748,7 +1880,7 @@ static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_n
 
 					// Check whether the end_pin_index is valid
 					if (end_pin_index > num_port_pins) {
-						vtr::printf_error(__FILE__, __LINE__,
+						VTR_LOG_ERROR(
 								"[LINE %d] Invalid pin - %s, the end_pin_index in "
 								"[end_pin_index:start_pin_index] should "
 								"be less than the num_port_pins %d.\n",
@@ -1870,8 +2002,7 @@ static int convert_switch_index(int *switch_index, int *fanin) {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (int iswitch = 0; iswitch < device_ctx.num_arch_switches; iswitch ++ ) {
-        map<int, int>::iterator itr;
-        for (itr = device_ctx.switch_fanin_remap[iswitch].begin(); itr != device_ctx.switch_fanin_remap[iswitch].end(); itr++) {
+        for (auto itr = device_ctx.switch_fanin_remap[iswitch].begin(); itr != device_ctx.switch_fanin_remap[iswitch].end(); itr++) {
             if (itr->second == *switch_index) {
                 *switch_index = iswitch;
                 *fanin = itr->first;
@@ -1881,7 +2012,7 @@ static int convert_switch_index(int *switch_index, int *fanin) {
     }
     *switch_index = -1;
     *fanin = -1;
-    vtr::printf_info("\n\nerror converting switch index ! \n\n");
+    VTR_LOG("\n\nerror converting switch index ! \n\n");
     return -1;
 }
 
@@ -1909,8 +2040,8 @@ static int convert_switch_index(int *switch_index, int *fanin) {
 void print_switch_usage() {
     auto& device_ctx = g_vpr_ctx.device();
 
-    if (device_ctx.switch_fanin_remap == nullptr) {
-        vtr::printf_warning(__FILE__, __LINE__, "Cannot print switch usage stats: device_ctx.switch_fanin_remap is NULL\n");
+    if (device_ctx.switch_fanin_remap.empty()) {
+        VTR_LOG_WARN( "Cannot print switch usage stats: device_ctx.switch_fanin_remap is empty\n");
         return;
     }
     map<int, int> *switch_fanin_count;
@@ -1955,20 +2086,20 @@ void print_switch_usage() {
             switch_fanin_delay[switch_index][fanin] = Tdel;
         }
     }
-    vtr::printf_info("\n=============== switch usage stats ===============\n");
+    VTR_LOG("\n=============== switch usage stats ===============\n");
     for (int iswitch = 0; iswitch < device_ctx.num_arch_switches; iswitch ++ ) {
         char *s_name = device_ctx.arch_switch_inf[iswitch].name;
         float s_area = device_ctx.arch_switch_inf[iswitch].mux_trans_size;
-        vtr::printf_info(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name, s_area);
+        VTR_LOG(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name, s_area);
 
         map<int, int>::iterator itr;
         for (itr = switch_fanin_count[iswitch].begin(); itr != switch_fanin_count[iswitch].end(); itr ++ ) {
-            vtr::printf_info("\t\tnumber of fanin: %d", itr->first);
-            vtr::printf_info("\t\tnumber of wires driven by this switch: %d", itr->second);
-            vtr::printf_info("\t\tTdel: %g\n", switch_fanin_delay[iswitch][itr->first]);
+            VTR_LOG("\t\tnumber of fanin: %d", itr->first);
+            VTR_LOG("\t\tnumber of wires driven by this switch: %d", itr->second);
+            VTR_LOG("\t\tTdel: %g\n", switch_fanin_delay[iswitch][itr->first]);
         }
     }
-    vtr::printf_info("\n==================================================\n\n");
+    VTR_LOG("\n==================================================\n\n");
     delete[] switch_fanin_count;
     delete[] switch_fanin_delay;
     delete[] inward_switch_inf;
@@ -2004,15 +2135,15 @@ void print_usage_by_wire_length() {
     for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++) {
         total_wires += itr->second;
     }
-    vtr::printf_info("\n\t-=-=-=-=-=-=-=-=-=-=- wire usage stats -=-=-=-=-=-=-=-=-=-=-\n");
+    VTR_LOG("\n\t-=-=-=-=-=-=-=-=-=-=- wire usage stats -=-=-=-=-=-=-=-=-=-=-\n");
     for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++)
-        vtr::printf_info("\ttotal number: wire of length %d, ratio to all length of wires: %g\n", itr->first, ((float)itr->second) / total_wires);
+        VTR_LOG("\ttotal number: wire of length %d, ratio to all length of wires: %g\n", itr->first, ((float)itr->second) / total_wires);
     for (itr = used_wire_count.begin(); itr != used_wire_count.end(); itr++) {
         float ratio_to_same_type_total = ((float)itr->second) / total_wire_count[itr->first];
         float ratio_to_all_type_total = ((float)itr->second) / total_wires;
-        vtr::printf_info("\t\tratio to same type of wire: %g\tratio to all types of wire: %g\n", ratio_to_same_type_total, ratio_to_all_type_total);
+        VTR_LOG("\t\tratio to same type of wire: %g\tratio to all types of wire: %g\n", ratio_to_same_type_total, ratio_to_all_type_total);
     }
-    vtr::printf_info("\n\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
+    VTR_LOG("\n\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
     used_wire_count.clear();
     total_wire_count.clear();
 }

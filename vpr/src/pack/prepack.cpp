@@ -975,7 +975,6 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->type = MOLECULE_SINGLE_ATOM;
 			cur_molecule->num_blocks = 1;
 			cur_molecule->root = 0;
-			cur_molecule->num_ext_inputs = atom_ctx.nlist.block_input_pins(blk_id).size();
 			cur_molecule->chain_pattern = nullptr;
 			cur_molecule->pack_pattern = nullptr;
 
@@ -1056,7 +1055,6 @@ static t_pack_molecule *try_create_molecule(
 
 		if (list_of_pack_patterns[pack_pattern_index].root_block == nullptr) {failed = true; goto end_prolog;}
 		molecule->root = list_of_pack_patterns[pack_pattern_index].root_block->block_id;
-		molecule->num_ext_inputs = 0;
 
 		if(list_of_pack_patterns[pack_pattern_index].is_chain == true) {
 			/* A chain pattern extends beyond a single logic block so we must find
@@ -1118,7 +1116,6 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
              * return whether or not this matters */
 			return is_optional;
 		} else {
-			molecule->num_ext_inputs--; /* This block is revisited, implies net is entirely internal to molecule, reduce count */
 			return true;
 		}
 	}
@@ -1140,8 +1137,6 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 
         /* store that this node has been visited */
 		molecule->atom_block_ids[current_pattern_block->block_id] = blk_id;
-
-		molecule->num_ext_inputs += atom_ctx.nlist.block_input_pins(blk_id).size();
 
 		cur_pack_pattern_connection = current_pattern_block->connections;
 		while (cur_pack_pattern_connection != nullptr && success == true) {

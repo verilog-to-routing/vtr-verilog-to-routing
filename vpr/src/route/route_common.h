@@ -2,6 +2,7 @@
 #pragma once
 #include <vector>
 #include "clustered_netlist.h"
+#include "vtr_vector.h"
 
 
 struct t_heap_prev {
@@ -44,7 +45,9 @@ struct t_heap {
 
 /******* Subroutines in route_common used only by other router modules ******/
 
-vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor);
+vtr::vector<ClusterNetId, t_bb> load_route_bb(int bb_factor);
+
+t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor);
 
 void pathfinder_update_path_cost(t_trace *route_segment_start,
 		int add_or_sub, float pres_fac);
@@ -55,7 +58,6 @@ void pathfinder_update_cost(float pres_fac, float acc_fac);
 t_trace *update_traceback(t_heap *hptr, ClusterNetId net_id);
 
 void reset_path_costs(const std::vector<int>& visited_rr_nodes);
-void reset_path_costs();
 
 float get_rr_cong_cost(int inode);
 
@@ -70,9 +72,9 @@ void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
 bool is_empty_heap();
 
 void free_traceback(ClusterNetId net_id);
+void free_traceback(t_trace* tptr);
 
 void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);
-void add_to_mod_list(float *fptr);
 
 namespace heap_ {
 	void build_heap();

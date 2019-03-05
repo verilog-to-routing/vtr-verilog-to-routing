@@ -48,7 +48,6 @@ void constrain_all_ios(const AtomNetlist& netlist,
 
 std::map<std::string,AtomPinId> find_netlist_primary_ios(const AtomNetlist& netlist);
 std::string orig_blif_name(std::string name);
-void print_netlist_clock_info(const AtomNetlist& netlist);
 
 std::regex glob_pattern_to_regex(const std::string& glob_pattern);
 
@@ -180,7 +179,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
             if(io_pins.empty()) {
                 //We treat this as a warning, since the primary I/Os in the target may have been swept away
-                vtr::printf_warning( fname_.c_str(), lineno_,
+                VTR_LOGF_WARN( fname_.c_str(), lineno_,
                           "Found no matching primary inputs or primary outputs for %s\n",
                           (cmd.type == sdcparse::IoDelayType::INPUT) ? "set_input_delay" : "set_output_delay");
             }
@@ -216,7 +215,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                         AtomBlockId blk = netlist_.pin_block(pin);
                         std::string io_name = orig_blif_name(netlist_.block_name(blk));
 
-                        vtr::printf_warning(fname_.c_str(), lineno_,
+                        VTR_LOGF_WARN(fname_.c_str(), lineno_,
                                             "set_input_delay command matched but was not applied to primary output '%s'\n",
                                             io_name.c_str());
                     }
@@ -236,7 +235,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                         AtomBlockId blk = netlist_.pin_block(pin);
                         std::string io_name = orig_blif_name(netlist_.block_name(blk));
 
-                        vtr::printf_warning(fname_.c_str(), lineno_,
+                        VTR_LOGF_WARN(fname_.c_str(), lineno_,
                                             "set_output_delay command matched but was not applied to primary input '%s'\n",
                                             io_name.c_str());
                     }
@@ -489,7 +488,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                         const auto& from_pin_name = netlist_.pin_name(from_pin);
                         const auto& to_pin_name = netlist_.pin_name(to_pin);
 
-                        vtr::printf_warning(fname_.c_str(), lineno_,
+                        VTR_LOGF_WARN(fname_.c_str(), lineno_,
                                             "set_disable_timing no timing edge found from pin '%s' to pin '%s'\n",
                                             from_pin_name.c_str(), to_pin_name.c_str());
                     }
@@ -570,7 +569,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
             //Warn the user if we added negative cycles
             if (extra_cycles < 0) {
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG_WARN(
                                     "Added negative (%d) additional capture clock cycles to setup constraint"
                                     " for clock '%s' to clock '%s' transfers; check your set_multicycle_path specifications\n",
                                     extra_cycles, tc_.clock_domain_name(launch_domain).c_str(), tc_.clock_domain_name(capture_domain).c_str());
@@ -586,7 +585,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 float override_setup_constraint = override_iter->second;
 
                 if (setup_constraint > override_setup_constraint) {
-                    vtr::printf_warning(__FILE__, __LINE__,
+                    VTR_LOG_WARN(
                                         "Override setup constraint (%g) overrides a tighter default period-based constraint (%g)"
                                         " for transfers from clock '%s' to clock '%s'\n",
                                         override_setup_constraint, setup_constraint,
@@ -641,7 +640,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 float override_hold_constraint = override_iter->second;
 
                 if (hold_constraint < override_hold_constraint) {
-                    vtr::printf_warning(__FILE__, __LINE__,
+                    VTR_LOG_WARN(
                                         "Override hold constraint (%g) overrides tighter default period-based constraint (%g)"
                                         " for transfers from clock '%s' to clock '%s'\n",
                                         override_hold_constraint, hold_constraint,
@@ -809,7 +808,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 }
 
                 if(!found) {
-                    vtr::printf_warning(fname_.c_str(), lineno_,
+                    VTR_LOGF_WARN(fname_.c_str(), lineno_,
                                         "get_ports target name or pattern '%s' matched no ports\n",
                                         port_pattern.c_str());
                 }
@@ -824,9 +823,10 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 return domains;
             }
 
-            if(clock_group.type != sdcparse::StringGroupType::CLOCK) {
+            if(clock_group.type != sdcparse::StringGroupType::CLOCK
+               && clock_group.type != sdcparse::StringGroupType::STRING) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                         "Expected clock collection via get_clocks");
+                         "Expected clock names or collection via get_clocks");
             }
 
             for (const auto& clock_glob_pattern : clock_group.strings) {
@@ -844,7 +844,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 }
 
                 if(!found) {
-                    vtr::printf_warning(fname_.c_str(), lineno_,
+                    VTR_LOGF_WARN(fname_.c_str(), lineno_,
                                         "get_clocks target name or pattern '%s' matched no clocks\n",
                                         clock_glob_pattern.c_str());
                 }
@@ -881,7 +881,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 }
 
                 if(!found) {
-                    vtr::printf_warning(fname_.c_str(), lineno_,
+                    VTR_LOGF_WARN(fname_.c_str(), lineno_,
                                         "get_pins target name or pattern '%s' matched no pins\n",
                                         pin_pattern.c_str());
                 }
@@ -934,15 +934,15 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_i
     auto timing_constraints = std::make_unique<tatum::TimingConstraints>();
 
     if (!timing_inf.timing_analysis_enabled) {
-		vtr::printf("\n");
-		vtr::printf("Timing analysis off\n");
+		VTR_LOG("\n");
+		VTR_LOG("Timing analysis off\n");
         apply_default_timing_constraints(netlist, lookup, *timing_constraints);
     } else {
         FILE* sdc_file = fopen(timing_inf.SDCFile.c_str(), "r");
         if (sdc_file == nullptr) {
             //No SDC file
-            vtr::printf("\n");
-            vtr::printf("SDC file '%s' not found\n", timing_inf.SDCFile.c_str());
+            VTR_LOG("\n");
+            VTR_LOG("SDC file '%s' not found\n", timing_inf.SDCFile.c_str());
             apply_default_timing_constraints(netlist, lookup, *timing_constraints);
         } else {
 
@@ -954,19 +954,36 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_i
             fclose(sdc_file);
 
             if (callback.num_commands() == 0) {
-                vtr::printf("\n");
-                vtr::printf("SDC file '%s' contained no SDC commands\n", timing_inf.SDCFile.c_str());
+                VTR_LOG("\n");
+                VTR_LOG("SDC file '%s' contained no SDC commands\n", timing_inf.SDCFile.c_str());
                 apply_default_timing_constraints(netlist, lookup, *timing_constraints);
             } else {
-                vtr::printf("\n");
-                vtr::printf("Applied %zu SDC commands from '%s'\n", callback.num_commands(), timing_inf.SDCFile.c_str());
+                VTR_LOG("\n");
+                VTR_LOG("Applied %zu SDC commands from '%s'\n", callback.num_commands(), timing_inf.SDCFile.c_str());
             }
         }
     }
-    vtr::printf("Timing constraints created %zu clocks\n", timing_constraints->clock_domains().size());
-    print_netlist_clock_info(netlist);
+    VTR_LOG("Timing constraints created %zu clocks\n", timing_constraints->clock_domains().size());
+    for (tatum::DomainId domain : timing_constraints->clock_domains()) {
 
-    vtr::printf("\n");
+        if (timing_constraints->is_virtual_clock(domain)) {
+            VTR_LOG("  Constrained Clock '%s' (Virtual Clock)\n", 
+                timing_constraints->clock_domain_name(domain).c_str());
+        } else {
+
+            tatum::NodeId src_tnode = timing_constraints->clock_domain_source_node(domain);
+            VTR_ASSERT(src_tnode);
+
+            AtomPinId src_pin = lookup.tnode_atom_pin(src_tnode);
+            VTR_ASSERT(src_pin);
+
+            VTR_LOG("  Constrained Clock '%s' Source: '%s'\n", 
+                timing_constraints->clock_domain_name(domain).c_str(),
+                netlist.pin_name(src_pin).c_str());
+        }
+    }
+
+    VTR_LOG("\n");
 
     return timing_constraints;
 }
@@ -999,9 +1016,9 @@ void apply_combinational_default_timing_constraints(const AtomNetlist& netlist,
                                                     tatum::TimingConstraints& tc) {
     std::string clock_name = "virtual_io_clock";
 
-    vtr::printf("Setting default timing constraints:\n");
-    vtr::printf("   * constrain all primay inputs and primary outputs on a virtual external clock '%s'\n", clock_name.c_str());
-    vtr::printf("   * optimize virtual clock to run as fast as possible\n");
+    VTR_LOG("Setting default timing constraints:\n");
+    VTR_LOG("   * constrain all primay inputs and primary outputs on a virtual external clock '%s'\n", clock_name.c_str());
+    VTR_LOG("   * optimize virtual clock to run as fast as possible\n");
 
     //Create a virtual clock, with 0 period
     tatum::DomainId domain = tc.create_clock_domain(clock_name);
@@ -1023,9 +1040,9 @@ void apply_single_clock_default_timing_constraints(const AtomNetlist& netlist,
     AtomNetId clock_net = netlist.pin_net(clock_driver);
     std::string clock_name = netlist.net_name(clock_net);
 
-    vtr::printf("Setting default timing constraints:\n");
-    vtr::printf("   * constrain all primay inputs and primary outputs on netlist clock '%s'\n", clock_name.c_str());
-    vtr::printf("   * optimize netlist clock to run as fast as possible\n");
+    VTR_LOG("Setting default timing constraints:\n");
+    VTR_LOG("   * constrain all primay inputs and primary outputs on netlist clock '%s'\n", clock_name.c_str());
+    VTR_LOG("   * optimize netlist clock to run as fast as possible\n");
 
     //Create the netlist clock with period 0
     tatum::DomainId domain = tc.create_clock_domain(clock_name);
@@ -1051,10 +1068,10 @@ void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
                                                   const std::set<AtomPinId>& clock_drivers,
                                                   tatum::TimingConstraints& tc) {
     std::string virtual_clock_name = "virtual_io_clock";
-    vtr::printf("Setting default timing constraints:\n");
-    vtr::printf("   * constrain all primay inputs and primary outputs on a virtual external clock '%s'\n", virtual_clock_name.c_str());
-    vtr::printf("   * optimize all netlist and virtual clocks to run as fast as possible\n");
-    vtr::printf("   * ignore cross netlist clock domain timing paths\n");
+    VTR_LOG("Setting default timing constraints:\n");
+    VTR_LOG("   * constrain all primay inputs and primary outputs on a virtual external clock '%s'\n", virtual_clock_name.c_str());
+    VTR_LOG("   * optimize all netlist and virtual clocks to run as fast as possible\n");
+    VTR_LOG("   * ignore cross netlist clock domain timing paths\n");
 
     //Create a virtual clock, with 0 period
     tatum::DomainId virtual_clock = tc.create_clock_domain(virtual_clock_name);
@@ -1175,27 +1192,6 @@ std::string orig_blif_name(std::string name) {
     return name;
 }
 
-//Print informatino about clocks
-void print_netlist_clock_info(const AtomNetlist& netlist) {
-
-    std::set<AtomPinId> netlist_clock_drivers = find_netlist_logical_clock_drivers(netlist);
-    vtr::printf("Netlist contains %zu clocks\n", netlist_clock_drivers.size());
-
-    //Print out pin/block fanout info for each block
-    for (auto clock_driver : netlist_clock_drivers) {
-        AtomNetId net_id = netlist.pin_net(clock_driver);
-        auto sinks = netlist.net_sinks(net_id);
-        size_t fanout = sinks.size();
-        std::set<AtomBlockId> clk_blks;
-        for (auto pin_id : sinks) {
-            auto blk_id = netlist.pin_block(pin_id);
-            clk_blks.insert(blk_id);
-        }
-        vtr::printf("  Netlist Clock '%s' Fanout: %zu pins (%.1f%), %zu blocks (%.1f%)\n", netlist.net_name(net_id).c_str(), fanout, 100. * float(fanout) / netlist.pins().size(), clk_blks.size(), 100 * float(clk_blks.size()) / netlist.blocks().size());
-    }
-
-}
-
 //Converts a glob pattern to a std::regex
 std::regex glob_pattern_to_regex(const std::string& glob_pattern) {
     //In glob (i.e. unix-shell style):
@@ -1212,6 +1208,6 @@ std::regex glob_pattern_to_regex(const std::string& glob_pattern) {
     std::string regex_str = vtr::replace_all(glob_pattern, ".", "\\.");
     regex_str = vtr::replace_all(regex_str, "*", ".*");
 
-    return std::regex(regex_str, std::regex::grep);
+    return std::regex(regex_str);
 }
 

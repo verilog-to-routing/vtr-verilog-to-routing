@@ -3,6 +3,9 @@
    profiling mostly focuses on per-fanout, but also has per-type (SINK, IPIN, ...) and
    per-criticality */
 
+//Uncomment to enable profiling
+//#define PROFILE
+
 namespace profiling {
 
 // action counters for what actions setting up routing resources took to build targets list

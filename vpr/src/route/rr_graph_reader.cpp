@@ -16,6 +16,18 @@
 #include <string.h>
 #include <algorithm>
 #include <ctime>
+#include <sstream>
+#include <utility>
+
+#include "vtr_version.h"
+#include "vtr_assert.h"
+#include "vtr_util.h"
+#include "vtr_memory.h"
+#include "vtr_matrix.h"
+#include "vtr_math.h"
+#include "vtr_log.h"
+#include "vtr_time.h"
+
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 #include "read_xml_arch_file.h"
@@ -24,15 +36,6 @@
 #include "rr_graph.h"
 #include "rr_graph2.h"
 #include "rr_graph_indexed_data.h"
-#include "vtr_version.h"
-#include <sstream>
-#include <utility>
-#include "vtr_assert.h"
-#include "vtr_util.h"
-#include "vtr_memory.h"
-#include "vtr_matrix.h"
-#include "vtr_math.h"
-#include "vtr_log.h"
 #include "rr_graph_writer.h"
 #include "check_rr_graph.h"
 #include "echo_files.h"
@@ -55,7 +58,7 @@ void process_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const DeviceGrid& grid);
 void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int *wire_to_rr_ipin_switch, const int num_rr_switches);
-void process_channels(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
+void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_rr_node_indices(const DeviceGrid& grid);
 void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
@@ -68,13 +71,14 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
  * structures as well*/
 void load_rr_file(const t_graph_type graph_type,
         const DeviceGrid& grid,
-        t_chan_width *nodes_per_chan,
+        t_chan_width nodes_per_chan,
         const int num_seg_types,
         const t_segment_inf * segment_inf,
         const enum e_base_cost_type base_cost_type,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
         const char* read_rr_graph_name) {
+    vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
 
     const char *Prop;
     pugi::xml_node next_component;
@@ -83,9 +87,9 @@ void load_rr_file(const t_graph_type graph_type,
     pugiutil::loc_data loc_data;
 
     if (vtr::check_file_name_extension(read_rr_graph_name, ".xml") == false) {
-        vtr::printf_warning(__FILE__, __LINE__,
-                "Architecture file '%s' may be in incorrect format. "
-                "Expecting .xml format for RR graph files.\n",
+        VTR_LOG_WARN(
+                "RR graph file '%s' may be in incorrect format. "
+                "Expecting .xml format\n",
                 read_rr_graph_name);
     }
     try {
@@ -101,11 +105,11 @@ void load_rr_file(const t_graph_type graph_type,
         Prop = get_attribute(rr_graph, "tool_version", loc_data, OPTIONAL).as_string(nullptr);
         if (Prop != nullptr) {
             if (strcmp(Prop, vtr::VERSION) != 0) {
-                vtr::printf("\n");
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG("\n");
+                VTR_LOG_WARN(
                         "This architecture version is for VPR %s while your current VPR version is %s compatability issues may arise\n",
                         vtr::VERSION, Prop);
-                vtr::printf("\n");
+                VTR_LOG("\n");
             }
         }
         Prop = get_attribute(rr_graph, "tool_comment", loc_data, OPTIONAL).as_string(nullptr);
@@ -113,11 +117,11 @@ void load_rr_file(const t_graph_type graph_type,
         correct_string += get_arch_file_name();
         if (Prop != nullptr) {
             if (Prop != correct_string) {
-                vtr::printf("\n");
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG("\n");
+                VTR_LOG_WARN(
                         "This RR graph file is based on %s while your input architecture file is %s compatability issues may arise\n"
                         , get_arch_file_name(), Prop);
-                vtr::printf("\n");
+                VTR_LOG("\n");
             }
         }
 
@@ -131,17 +135,16 @@ void load_rr_file(const t_graph_type graph_type,
         next_component = get_single_child(rr_graph, "segments", loc_data);
         verify_segments(next_component, loc_data, segment_inf);
 
-        vtr::printf_info("Starting build routing resource graph...\n");
-        clock_t begin = clock();
+        VTR_LOG("Starting build routing resource graph...\n");
 
         next_component = get_first_child(rr_graph, "channels", loc_data);
-        process_channels(next_component, loc_data);
+        process_channels(nodes_per_chan, next_component, loc_data);
 
         /* Decode the graph_type */
         bool is_global_graph = (GRAPH_GLOBAL == graph_type ? true : false);
 
         /* Global routing uses a single longwire track */
-        int max_chan_width = (is_global_graph ? 1 : nodes_per_chan->max);
+        int max_chan_width = (is_global_graph ? 1 : nodes_per_chan.max);
         VTR_ASSERT(max_chan_width > 0);
 
         /* Alloc rr nodes and count count nodes */
@@ -181,18 +184,13 @@ void load_rr_file(const t_graph_type graph_type,
 
         process_seg_id(next_component, loc_data);
 
-	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
-		dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
-	}
+        device_ctx.chan_width = nodes_per_chan;
+
+        if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
+            dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
+        }
 
         check_rr_graph(graph_type, grid, *num_rr_switches, device_ctx.block_types);
-
-#ifdef USE_MAP_LOOKAHEAD
-        compute_router_lookahead(num_seg_types);
-#endif
-
-        float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
-        vtr::printf_info("Build routing resource graph took %g seconds\n", elapsed_time);
 
     } catch (XmlError& e) {
 
@@ -474,29 +472,28 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
 }
 
 /* All channel info is read in and loaded into device_ctx.chan_width*/
-void process_channels(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
     pugi::xml_node channel, channelLists;
     int index;
 
     channel = get_first_child(parent, "channel", loc_data);
 
-    device_ctx.chan_width.max = get_attribute(channel, "chan_width_max", loc_data).as_uint();
-    device_ctx.chan_width.x_min = get_attribute(channel, "x_min", loc_data).as_uint();
-    device_ctx.chan_width.y_min = get_attribute(channel, "y_min", loc_data).as_uint();
-    device_ctx.chan_width.x_max = get_attribute(channel, "x_max", loc_data).as_uint();
-    device_ctx.chan_width.y_max = get_attribute(channel, "y_max", loc_data).as_uint();
+    chan_width.max = get_attribute(channel, "chan_width_max", loc_data).as_uint();
+    chan_width.x_min = get_attribute(channel, "x_min", loc_data).as_uint();
+    chan_width.y_min = get_attribute(channel, "y_min", loc_data).as_uint();
+    chan_width.x_max = get_attribute(channel, "x_max", loc_data).as_uint();
+    chan_width.y_max = get_attribute(channel, "y_max", loc_data).as_uint();
 
     channelLists = get_first_child(parent, "x_list", loc_data);
     while (channelLists) {
         index = get_attribute(channelLists, "index", loc_data).as_int(0);
-        device_ctx.chan_width.x_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
+        chan_width.x_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
         channelLists = channelLists.next_sibling(channelLists.name());
     }
     channelLists = get_first_child(parent, "y_list", loc_data);
     while (channelLists) {
         index = get_attribute(channelLists, "index", loc_data).as_int(0);
-        device_ctx.chan_width.y_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
+        chan_width.y_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
         channelLists = channelLists.next_sibling(channelLists.name());
     }
 

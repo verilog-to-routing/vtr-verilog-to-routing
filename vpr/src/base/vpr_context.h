@@ -8,6 +8,7 @@
 #include "vpr_types.h"
 #include "vtr_matrix.h"
 #include "vtr_ndmatrix.h"
+#include "vtr_vector.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "rr_node.h"
@@ -16,6 +17,7 @@
 #include "power.h"
 #include "power_components.h"
 #include "device_grid.h"
+#include "route_traceback.h"
 
 
 //A Context is collection of state relating to a particular part of VPR
@@ -74,9 +76,15 @@ struct TimingContext : public Context {
             return old_sta_wallclock_time + old_delay_annotation_wallclock_time;
         }
 
+        size_t num_full_updates() const {
+            return num_full_setup_updates + num_full_hold_updates + num_full_setup_hold_updates;
+        }
+
         double sta_wallclock_time = 0.;
         double slack_wallclock_time = 0.;
-        size_t num_full_updates = 0;
+        size_t num_full_setup_updates = 0;
+        size_t num_full_hold_updates = 0;
+        size_t num_full_setup_hold_updates = 0;
 
         double old_sta_wallclock_time = 0.;
         double old_delay_annotation_wallclock_time = 0.;
@@ -166,7 +174,7 @@ struct DeviceContext : public Context {
      * map key: num of all possible fanin of that type of switch on chip
      * map value: remapped switch index (index in rr_switch_inf)
      */
-    std::map<int, int> *switch_fanin_remap;
+    std::vector<std::map<int, int>> switch_fanin_remap;
 
     /*******************************************************************
      Architecture
@@ -199,7 +207,7 @@ struct PowerContext : public Context {
     t_power_commonly_used* commonly_used;
     t_power_tech* tech;
     t_power_arch* arch;
-    vtr::vector_map<ClusterNetId, t_net_power> clb_net_power;
+    vtr::vector<ClusterNetId, t_net_power> clb_net_power;
 
 
     /* Atom net power info */
@@ -240,20 +248,20 @@ struct PlacementContext : public Context {
 //or related router algorithmic state.
 struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
-    vtr::vector_map<ClusterNetId, t_trace*> trace_head, trace_tail;
-    vtr::vector_map<ClusterNetId, std::unordered_set<int>> trace_nodes;
+    vtr::vector<ClusterNetId, t_traceback> trace;
+    vtr::vector<ClusterNetId, std::unordered_set<int>> trace_nodes;
 
-	vtr::vector_map<ClusterNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
+	vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 
-    vtr::vector_map<ClusterBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
+    vtr::vector<ClusterBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 
     std::vector<t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 
     //Information about current routing status of each net
-    vtr::vector_map<ClusterNetId, t_net_routing_status> net_status; //[0..cluster_ctx.clb_nlist.nets().size()-1]
+    vtr::vector<ClusterNetId, t_net_routing_status> net_status; //[0..cluster_ctx.clb_nlist.nets().size()-1]
 
     //Limits area within which each net must be routed.
-    vtr::vector_map<ClusterNetId, t_bb> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
+    vtr::vector<ClusterNetId, t_bb> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
 
     t_clb_opins_used clb_opins_used_locally; //[0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1]
 

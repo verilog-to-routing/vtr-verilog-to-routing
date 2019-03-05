@@ -469,25 +469,6 @@ void MainWindow::createToolBox()
                 ":/images/next.png"), 2, 0);
 
 
-    //add edge control for the simulation
-    edgeRadioLayout = new QVBoxLayout;
-    QGroupBox* groupBox = new QGroupBox(tr("Show Edge"));
-    QRadioButton* radFall = new QRadioButton(tr("F"));
-    QRadioButton* radRise = new QRadioButton(tr("R"));
-    QRadioButton* radFallRise = new QRadioButton(tr("RF"));
-    radFallRise->setChecked(true);
-    edgeRadioLayout->addWidget(radFall);
-    edgeRadioLayout->addWidget(radRise);
-    edgeRadioLayout->addWidget(radFallRise);
-    groupBox->setLayout(edgeRadioLayout);
-    simulationLayout->addWidget(groupBox,3,0);
-    connect(radFall, SIGNAL(toggled(bool)),
-        this, SLOT(setEdgeFall(bool)));
-    connect(radRise, SIGNAL(toggled(bool)),
-        this, SLOT(setEdgeRise(bool)));
-    connect(radFallRise, SIGNAL(toggled(bool)),
-        this, SLOT(setEdgeFallRise(bool)));
-
     QLabel* legend = new QLabel();
     QSize size(100,100);
     QPixmap* pixmap = new QPixmap(size);
@@ -1308,33 +1289,6 @@ QWidget * MainWindow::createPowerCellWidget(const QString &text, const QString &
     return widget;
 }
 
-/*---------------------------------------------------------------------------------------------
- * (function: setEdgeFall)
- *-------------------------------------------------------------------------------------------*/
-void MainWindow::setEdgeFall(bool val){
-    if(val){
-        myContainer->setEdge(1);
-    }
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: setEdgeRise)
- *-------------------------------------------------------------------------------------------*/
-void MainWindow::setEdgeRise(bool val){
-    if(val){
-        myContainer->setEdge(0);
-    }
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: setEdgeFallRise)
- *-------------------------------------------------------------------------------------------*/
-void MainWindow::setEdgeFallRise(bool val){
-    if(val){
-        myContainer->setEdge(-1);
-    }
-}
-
 void MainWindow::activityCycleCountChangedChanged(int number)
 {
     activityBase = number;
@@ -1362,11 +1316,10 @@ void MainWindow::expandCollapse()
     QGraphicsItem *item = scene->selectedItems().first();
 
         if (item->type() == LogicUnit::Type) {
-            LogicUnit *unit =
-                qgraphicsitem_cast<LogicUnit *>(scene->selectedItems().first());
+            LogicUnit *unit = qgraphicsitem_cast<LogicUnit *>(scene->selectedItems().first());
 
             //if module start right away, otherwise extract module name
-            if(unit->unitType() == LogicUnit::Module){
+            if(unit && unit->unitType() == LogicUnit::Module){
                 myContainer->expandCollapse(unit->getName());
             } else if(unit->getName().contains("+")){
                 QString moduleName = myContainer->extractModuleFromName(
