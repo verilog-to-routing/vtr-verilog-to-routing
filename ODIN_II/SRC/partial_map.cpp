@@ -364,6 +364,8 @@ void instantiate_multi_port_mux(nnode_t *node, short mark, netlist_t * /*netlist
 		remap_pin_to_new_node(node->output_pins[j], muxes[j], 0);
 	}
 	vtr::free(muxes);
+	vtr::free(node->name);
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------

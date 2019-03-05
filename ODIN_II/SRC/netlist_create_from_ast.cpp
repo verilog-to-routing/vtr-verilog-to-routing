@@ -1406,6 +1406,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 				/* Shift out lowest bit */
 				initial_value >>= 1;
 			}
+
+			vtr::free(temp_string);
 		}
 	}
 	/* Implicit memory */
