@@ -119,6 +119,11 @@ nnode_t *free_nnode(nnode_t *to_free)
 		vtr::free(to_free->output_port_sizes);
 		vtr::free(to_free->undriven_pins);
 
+		if (to_free->name) {
+			vtr::free(to_free->name);
+			to_free->name = NULL;
+		}
+
 		/* now free the node */
 	}
 	return (nnode_t*)vtr::free(to_free);
