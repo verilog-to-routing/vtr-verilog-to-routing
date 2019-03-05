@@ -776,6 +776,48 @@ t_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
     return max_type;
 }
 
+//Returns the pin class associated with the specified pin_index_in_port within the port port_name on type
+int find_pin_class(t_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type) {
+    int iclass = OPEN;
+
+    int ipin = find_pin(type, port_name, pin_index_in_port);
+
+    if (ipin != OPEN) {
+        iclass = type->pin_class[ipin];
+
+        if (iclass != OPEN) {
+            VTR_ASSERT(type->class_inf[iclass].type == pin_type);
+        }
+    }
+    return iclass;
+}
+
+int find_pin(t_type_ptr type, std::string port_name, int pin_index_in_port) {
+    int ipin = OPEN;
+
+    t_pb_type* pb_type = type->pb_type;
+    t_port* matched_port = nullptr;
+    int port_base_ipin = 0;
+    for (int iport = 0; iport < pb_type->num_ports; ++iport) {
+        t_port* port = &pb_type->ports[iport];
+
+        if (port->name == port_name) {
+            matched_port = port;
+            break;
+        }
+        port_base_ipin += port->num_pins;
+    }
+
+    if (matched_port) {
+        VTR_ASSERT(matched_port->name == port_name);
+        VTR_ASSERT(pin_index_in_port < matched_port->num_pins);
+
+        ipin = port_base_ipin + pin_index_in_port;
+    }
+
+    return ipin;
+}
+
 //Returns true if the specified block type contains the specified blif model name
 bool block_type_contains_blif_model(t_type_ptr type, std::string blif_model_name) {
     return pb_type_contains_blif_model(type->pb_type, blif_model_name);

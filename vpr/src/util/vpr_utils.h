@@ -110,6 +110,10 @@ t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* 
 //Returns the block type which is most common in the device grid
 t_type_ptr find_most_common_block_type(const DeviceGrid& grid);
 
+int find_pin_class(t_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type);
+
+int find_pin(t_type_ptr type, std::string port_name, int pin_index_in_port);
+
 //Returns the block type which is most likely the logic block
 t_type_ptr infer_logic_block_type(const DeviceGrid& grid);
 

@@ -832,6 +832,19 @@ enum e_place_algorithm {
 	BOUNDING_BOX_PLACE, PATH_TIMING_DRIVEN_PLACE
 };
 
+enum class PlaceDelayModelType {
+    DELTA,          //Delta x/y based delay model
+    DELTA_OVERRIDE, //Delta x/y based delay model with special case delay overrides
+};
+
+enum class e_reducer {
+    MIN,
+    MAX,
+    MEDIAN,
+    ARITHMEAN,
+    GEOMEAN
+};
+
 struct t_placer_opts {
 	enum e_place_algorithm place_algorithm;
 	float timing_tradeoff;
@@ -847,6 +860,9 @@ struct t_placer_opts {
 	int seed;
 	float td_place_exp_last;
 	e_stage_action doPlacement;
+
+    PlaceDelayModelType delay_model_type;
+    e_reducer delay_model_reducer;
 
     float delay_offset;
     int delay_ramp_delta_threshold;

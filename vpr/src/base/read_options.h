@@ -96,6 +96,8 @@ struct t_options {
     argparse::ArgValue<float> place_tsu_rel_margin;
     argparse::ArgValue<float> place_tsu_abs_margin;
     argparse::ArgValue<std::string> post_place_timing_report_file;
+    argparse::ArgValue<PlaceDelayModelType> place_delay_model;
+    argparse::ArgValue<e_reducer> place_delay_model_reducer;
 
     /* Router Options */
     argparse::ArgValue<int> max_router_iterations;
