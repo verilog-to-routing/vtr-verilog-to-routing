@@ -947,6 +947,10 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 					}
 
 				}
+
+				if (local_clock_list)
+					free_signal_list(local_clock_list);
+					
 				break;
 			case BINARY_OPERATION:
 				oassert(node->num_children == 2);
