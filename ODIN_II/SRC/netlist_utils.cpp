@@ -101,7 +101,7 @@ nnode_t *free_nnode(nnode_t *to_free)
 		/* need to free node_data */
 
 		for (int i = 0; i < to_free->num_input_pins; i++) {
-			if (to_free->input_pins[i]) {
+			if (to_free->input_pins[i] && to_free->input_pins[i]->name) {
 				vtr::free(to_free->input_pins[i]->name);
 			}
 			to_free->input_pins[i] = (npin_t*)vtr::free(to_free->input_pins[i]);
@@ -110,7 +110,7 @@ nnode_t *free_nnode(nnode_t *to_free)
 		to_free->input_pins = (npin_t**)vtr::free(to_free->input_pins);
 
 		for (int i = 0; i < to_free->num_output_pins; i++) {
-			if (to_free->output_pins[i]) {
+			if (to_free->output_pins[i] && to_free->output_pins[i]->name) {
 				vtr::free(to_free->output_pins[i]->name);
 			}
 			to_free->output_pins[i] = (npin_t*)vtr::free(to_free->output_pins[i]);
@@ -121,7 +121,9 @@ nnode_t *free_nnode(nnode_t *to_free)
 		vtr::free(to_free->input_port_sizes);
 		vtr::free(to_free->output_port_sizes);
 		vtr::free(to_free->undriven_pins);
-		vtr::free(to_free->name);
+
+		if (to_free->name)
+			vtr::free(to_free->name);
 
 		/* now free the node */
 	}
