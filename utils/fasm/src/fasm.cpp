@@ -64,14 +64,14 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
 }
 
 void FasmWriterVisitor::check_interconnect(const t_pb_routes &pb_route, int inode) {
-  if(!pb_route[inode].atom_net_id) {
+  if(pb_route.count(inode) == 0 || !pb_route.at(inode).atom_net_id) {
     // Net is open.
     return;
   }
 
   /* No previous driver implies that this is either a top-level input pin
     * or a primitive output pin */
-  int prev_node = pb_route[inode].driver_pb_pin_id;
+  int prev_node = pb_route.at(inode).driver_pb_pin_id;
   if(prev_node == OPEN) {
     return;
   }
@@ -136,7 +136,7 @@ static const t_pb_graph_pin* is_node_used(const t_pb_routes &top_pb_route, const
     for(int port_index = 0; port_index < pb_graph_node->num_output_ports; ++port_index) {
         for(int pin_index = 0; pin_index < pb_graph_node->num_output_pins[port_index]; ++pin_index) {
             pin = &pb_graph_node->output_pins[port_index][pin_index];
-            if (top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
+            if (top_pb_route.count(pin->pin_count_in_cluster) > 0 && top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
                 return pin;
             }
         }
@@ -144,7 +144,7 @@ static const t_pb_graph_pin* is_node_used(const t_pb_routes &top_pb_route, const
     for(int port_index = 0; port_index < pb_graph_node->num_input_ports; ++port_index) {
         for(int pin_index = 0; pin_index < pb_graph_node->num_input_pins[port_index]; ++pin_index) {
             pin = &pb_graph_node->input_pins[port_index][pin_index];
-            if (top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
+            if (top_pb_route.count(pin->pin_count_in_cluster) > 0 && top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
                 return pin;
             }
         }
@@ -222,7 +222,11 @@ void FasmWriterVisitor::visit_open_impl(const t_pb* atom) {
 static AtomNetId _find_atom_input_logical_net(const t_pb* atom, const t_pb_routes &pb_route, int atom_input_idx) {
     const t_pb_graph_node* pb_node = atom->pb_graph_node;
     const int cluster_pin_idx = pb_node->input_pins[0][atom_input_idx].pin_count_in_cluster;
-    return pb_route[cluster_pin_idx].atom_net_id;
+    if(pb_route.count(cluster_pin_idx) > 0) {
+        return pb_route[cluster_pin_idx].atom_net_id;
+    } else {
+        return AtomNetId::INVALID();
+    }
 }
 
 static LogicVec lut_outputs(const t_pb* atom_pb, size_t num_inputs, const t_pb_routes &pb_route) {
@@ -500,7 +504,7 @@ void FasmWriterVisitor::walk_routing() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    for(const auto trace : route_ctx.trace) {
+    for(const auto &trace : route_ctx.trace) {
       const t_trace *head = trace.head;
       while(head != nullptr) {
         const auto &cur_node = device_ctx.rr_nodes[head->index];
