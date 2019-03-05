@@ -3119,12 +3119,6 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	{
 		in_1 = netlist_expand_ast_of_module(right, instance_name_prefix);
 		oassert(in_1 != NULL);
-
-		/* free unused names */
-		int i;
-		for (i = 0; i < in_1->count; i++) {
-			vtr::free(in_1->pins[i]->name);
-		}
 	}
 
 	char_list_t *out_list;
@@ -3683,6 +3677,9 @@ int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *
 
 				add_pin_to_signal_list(input_list, get_zero_pin(verilog_netlist));
 			}
+
+			if (input_list->pins[i]->name)
+				vtr::free(input_list->pins[i]->name);
 
 			input_list->pins[i]->name = output_list->strings[i];
 			free_nnode(input_list->pins[i]->node);
