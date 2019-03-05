@@ -318,6 +318,7 @@ typedef enum
 	CASE_ITEM,
 	CASE_DEFAULT,
 	ALWAYS,
+	DEASSIGN,
 	IF,
 	IF_Q,
 	FOR,

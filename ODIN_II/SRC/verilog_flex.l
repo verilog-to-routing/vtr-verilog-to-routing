@@ -88,6 +88,7 @@ char* standardize_number(const char* input);
 <INITIAL>"xnor"				{ MP; return vXNOR;}
 <INITIAL>"xor"				{ MP; return vXOR;}
 <INITIAL>"macromodule"		{ MP; return vMODULE;}
+<INITIAL>"deassign"			{ MP; return vDEASSIGN;}
 
 	/*	unsupported Keywords	*/
 <INITIAL>"automatic"		{ MP; return vNOT_SUPPORT;}
@@ -102,7 +103,6 @@ char* standardize_number(const char* input);
 <INITIAL>"bufif0"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"bufif1"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"cmos"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"deassign"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"endprimitive"		{ MP; return vNOT_SUPPORT;}
 <INITIAL>"endtable"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"event"			{ MP; return vNOT_SUPPORT;}

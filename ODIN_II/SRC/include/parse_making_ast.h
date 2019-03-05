@@ -42,6 +42,10 @@ ast_node_t *newCase(ast_node_t *compare_expression, ast_node_t *case_list, int l
 ast_node_t *newAlways(ast_node_t *delay_control, ast_node_t *statements, int line_number);
 ast_node_t *newFor(ast_node_t *initial, ast_node_t *compare_expression, ast_node_t *terminal, ast_node_t *statement, int line_number);
 ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int line_number);
+ast_node_t *procedural_continuous_assign(ast_node_t *expression1, ast_node_t *expression2, int line_number);
+ast_node_t *procedural_continuous_deassign(ast_node_t *expression, int line_number);
+
+
 
 /* MODULE INSTANCES FUNCTIONS */
 ast_node_t *newModuleConnection(char* id, ast_node_t *expression, int line_number);
