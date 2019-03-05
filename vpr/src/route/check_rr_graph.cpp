@@ -391,7 +391,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             }
 
             if (capacity != tracks_per_node) {
-                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                VTR_LOG_WARN(
                         "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
             }
             break;
@@ -411,7 +411,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             }
 
             if (capacity != tracks_per_node) {
-                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                VTR_LOG_WARN(
                         "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
             }
             break;
