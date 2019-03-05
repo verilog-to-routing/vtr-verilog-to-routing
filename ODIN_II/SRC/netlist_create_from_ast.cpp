@@ -3311,6 +3311,12 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 				{
 					npin_t *pin = right_outputs->pins[i];
 					add_pin_to_signal_list(return_list, pin);
+
+					/* free unused nnodes for related BLOCKING_STATEMENT nodes */
+					nnode_t *temp_node = right_outputs->pins[i]->node;
+					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
+						free_nnode(temp_node);
+					}
 				}
 				free_signal_list(right_outputs);
 				vtr::free(out_list->strings);
