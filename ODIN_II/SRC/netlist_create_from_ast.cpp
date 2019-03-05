@@ -3689,6 +3689,9 @@ int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *
 				add_pin_to_signal_list(input_list, get_zero_pin(verilog_netlist));
 			}
 
+			if (input_list->pins[i]->name)
+				vtr::free(input_list->pins[i]->name);
+
 			input_list->pins[i]->name = output_list->strings[i];
 			free_nnode(input_list->pins[i]->node);
 			input_list->pins[i]->node = allocate_nnode();
