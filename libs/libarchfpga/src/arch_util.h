@@ -21,6 +21,9 @@ class InstPort {
         int num_instances() const;
         int num_pins() const;
 
+    public:
+        void set_port_low_index(int val) { port_.low_idx = val; }
+        void set_port_high_index(int val) { port_.high_idx = val; }
     private:
         struct name_index {
             std::string name = "";

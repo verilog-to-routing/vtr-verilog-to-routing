@@ -776,6 +776,41 @@ t_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
     return max_type;
 }
 
+InstPort parse_inst_port(std::string str) {
+    InstPort inst_port(str);
+
+
+    auto& device_ctx = g_vpr_ctx.device();
+    t_type_descriptor* blk_type = find_block_type_by_name(inst_port.instance_name(), device_ctx.block_types, device_ctx.num_block_types);
+    if (!blk_type) {
+        VPR_THROW(VPR_ERROR_ARCH, "Failed to find block type named %s", inst_port.instance_name().c_str());
+    }
+
+    const t_port* port = find_pb_graph_port(blk_type->pb_graph_head, inst_port.port_name());
+    if (!port) {
+        VPR_THROW(VPR_ERROR_ARCH, "Failed to find port %s on block type %s", inst_port.port_name().c_str(), inst_port.instance_name().c_str());
+    }
+
+    if (inst_port.port_low_index() == InstPort::UNSPECIFIED) {
+        VTR_ASSERT(inst_port.port_high_index() == InstPort::UNSPECIFIED);
+
+        inst_port.set_port_low_index(0);
+        inst_port.set_port_high_index(port->num_pins - 1);
+
+
+
+    } else {
+        if (inst_port.port_low_index() < 0 || inst_port.port_low_index() >= port->num_pins
+            || inst_port.port_high_index() < 0 || inst_port.port_high_index() >= port->num_pins) {
+            VPR_THROW(VPR_ERROR_ARCH, "Pin indices [%d:%d] on port %s of block type %s out of expected range [%d:%d]",
+                      inst_port.port_low_index(), inst_port.port_high_index(),
+                      inst_port.port_name().c_str(), inst_port.instance_name().c_str(),
+                      0, port->num_pins-1);
+        }
+    }
+    return inst_port;
+}
+
 //Returns the pin class associated with the specified pin_index_in_port within the port port_name on type
 int find_pin_class(t_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type) {
     int iclass = OPEN;
