@@ -73,7 +73,7 @@ float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, 
     return delay_val;
 }
 
-void OverrideDelayModel::set_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y, float delay) {
+void OverrideDelayModel::set_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y, float delay_val) {
 
     t_override override_key;
     override_key.from_type = from_type;
@@ -83,9 +83,9 @@ void OverrideDelayModel::set_delay_override(int from_type, int from_class, int t
     override_key.delta_x = delta_x;
     override_key.delta_y = delta_y;
 
-    auto res = delay_overrides_.insert(std::make_pair(override_key, delay));
+    auto res = delay_overrides_.insert(std::make_pair(override_key, delay_val));
     if (!res.second) { //Key already exists
-        res.first->second = delay; //Overwrite existing delay
+        res.first->second = delay_val; //Overwrite existing delay
     }
 }
 
