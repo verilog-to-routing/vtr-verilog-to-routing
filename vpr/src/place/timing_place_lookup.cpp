@@ -174,8 +174,9 @@ static int get_best_class(enum e_pin_type pintype, t_type_ptr type) {
         } else
             currpin += type->class_inf[i].num_pins;
     }
-    VTR_ASSERT(best_class >= 0 && best_class < type->num_class);
-    return (best_class);
+
+    VTR_ASSERT(best_class < type->num_class);
+    return best_class;
 }
 
 static int get_longest_segment_length(
@@ -222,16 +223,24 @@ static float route_connection_delay(int source_x, int source_y,
 
     auto& device_ctx = g_vpr_ctx.device();
 
-
     //Get the rr nodes to route between
     int driver_ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-    int source_rr_node = get_rr_node_index(device_ctx.rr_node_indices, source_x, source_y, SOURCE, driver_ptc);
-    int sink_ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-    int sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
+    int source_rr_node = -1;
+    if (driver_ptc > -1)
+        source_rr_node = get_rr_node_index(device_ctx.rr_node_indices, source_x, source_y, SOURCE, driver_ptc);
 
-    bool successfully_routed = calculate_delay(source_rr_node, sink_rr_node,
+    int sink_ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
+    int sink_rr_node = -1;
+    if (sink_ptc > -1)
+        sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
+
+    bool successfully_routed = false;
+    if (source_rr_node >= 0 && sink_rr_node >= 0) {
+        successfully_routed = calculate_delay(
+            source_rr_node, sink_rr_node,
             router_opts,
             &net_delay_value);
+    }
 
     if (!successfully_routed) {
         VTR_LOG_WARN(
