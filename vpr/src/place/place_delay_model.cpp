@@ -100,7 +100,7 @@ void OverrideDelayModel::dump_echo(std::string filepath) const {
     auto& device_ctx = g_vpr_ctx.device();
     for (auto kv : delay_overrides_) {
         auto override_key = kv.first;
-        float delay = kv.second;
+        float delay_val = kv.second;
         fprintf(f, "from_type: %s to_type: %s from_pin_class: %d to_pin_class: %d delta_x: %d delta_y: %d -> delay: %g\n",
                 device_ctx.block_types[override_key.from_type].name,
                 device_ctx.block_types[override_key.to_type].name,
@@ -108,7 +108,7 @@ void OverrideDelayModel::dump_echo(std::string filepath) const {
                 override_key.to_class,
                 override_key.delta_x,
                 override_key.delta_y,
-                delay);
+                delay_val);
     }
 
     vtr::fclose(f);
