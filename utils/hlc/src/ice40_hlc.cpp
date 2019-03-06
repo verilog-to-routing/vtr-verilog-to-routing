@@ -282,25 +282,27 @@ static const t_pb* _find_top_cb(const t_pb* curr) {
     return curr;
 }
 
-static const t_pb_route* _find_top_pb_route(const t_pb* curr) {
+static const t_pb_routes *_find_top_pb_route(const t_pb* curr) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const t_pb* top_pb = _find_top_cb(curr);
-    const t_pb_route* top_pb_route = nullptr;
     for(auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         if(cluster_ctx.clb_nlist.block_pb(blk_id) == top_pb) {
-            top_pb_route = cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route;
-            break;
+            return &cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route;
         }
     }
-    VTR_ASSERT(top_pb_route);
-    return top_pb_route;
+    VTR_ASSERT(false);
+    return nullptr;
 }
 
 static AtomNetId _find_atom_input_logical_net(const t_pb* atom, int atom_input_idx) {
     const t_pb_graph_node* pb_node = atom->pb_graph_node;
     const int cluster_pin_idx = pb_node->input_pins[0][atom_input_idx].pin_count_in_cluster;
-    const t_pb_route* top_pb_route = _find_top_pb_route(atom);
-    return top_pb_route[cluster_pin_idx].atom_net_id;
+    const auto *top_pb_route = _find_top_pb_route(atom);
+    if(top_pb_route->count(cluster_pin_idx) > 0) {
+        return top_pb_route->at(cluster_pin_idx).atom_net_id;
+    } else {
+        return AtomNetId::INVALID();
+    }
 }
 
 //Helper function for load_lut_mask() which determines how the LUT inputs were
@@ -450,7 +452,7 @@ void ICE40HLCWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* cl
     }
 }
 
-static const t_pb_graph_pin* is_node_used(const t_pb_route *top_pb_route, const t_pb_graph_node* pb_graph_node) {
+static const t_pb_graph_pin* is_node_used(const t_pb_routes &top_pb_route, const t_pb_graph_node* pb_graph_node) {
     // Is the node used at all?
     const t_pb_graph_pin* pin = nullptr;
     for(int port_index = 0; port_index < pb_graph_node->num_output_ports; ++port_index) {
@@ -472,7 +474,7 @@ static const t_pb_graph_pin* is_node_used(const t_pb_route *top_pb_route, const 
     return nullptr;
 }
 
-static const t_pb_graph_pin* is_node_clocked(const t_pb_route *top_pb_route, const t_pb_graph_node* pb_graph_node) {
+static const t_pb_graph_pin* is_node_clocked(const t_pb_routes &top_pb_route, const t_pb_graph_node* pb_graph_node) {
     // Is the node used at all?
     const t_pb_graph_pin* pin = nullptr;
     for(int port_index = 0; port_index < pb_graph_node->num_clock_ports; ++port_index) {
@@ -506,7 +508,7 @@ static std::string lut_outputs(const t_pb* atom_pb) {
     return lut_outputs(truth_table, permute, num_inputs);
 }
 
-void ICE40HLCWriterVisitor::visit_all_impl(const t_pb_route *top_pb_route, const t_pb* pb,
+void ICE40HLCWriterVisitor::visit_all_impl(const t_pb_routes &top_pb_route, const t_pb* pb,
         const t_pb_graph_node* pb_graph_node) {
 
     auto pb_type = pb_graph_node->pb_type;
@@ -734,7 +736,7 @@ void ICE40HLCWriterVisitor::finish_impl() {
             trace << " -----------------" << std::endl;
             std::string no_hlc_name = "No HLC name";
             /** Output the actual trace of the route */
-            for (auto tptr = route_ctx.trace_head[net_id]; tptr->next != nullptr; tptr = tptr->next) {
+            for (auto tptr = route_ctx.trace[net_id].head; tptr->next != nullptr; tptr = tptr->next) {
                 VTR_ASSERT(tptr != nullptr);
                 VTR_ASSERT(tptr->next != nullptr);
                 // Source
@@ -785,7 +787,7 @@ void ICE40HLCWriterVisitor::finish_impl() {
         }
 
         // Set the edges needed for this route in the HLC file.
-        for (auto tptr = route_ctx.trace_head[net_id]; tptr != nullptr; tptr = tptr->next) {
+        for (auto tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
             VTR_ASSERT(tptr != nullptr);
             // Source
             auto src_id = tptr->index;
