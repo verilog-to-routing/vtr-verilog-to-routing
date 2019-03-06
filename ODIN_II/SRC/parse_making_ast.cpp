@@ -853,6 +853,9 @@ ast_node_t *newPartSelectRangeRef(char *id, ast_node_t *expression1, ast_node_t 
 		error_message(PARSE_ERROR, line_number, current_parse_file, "Could not find variable %s", id);
 		return nullptr;
 	}
+	ast_node_t *original_range = (ast_node_t *) modules_inputs_sc->data[sc_spot];;
+	long upper_limit = original_range->children[1]->types.number.value;
+	long bottom_limit = original_range->children[2]->types.number.value;
 
 	if (direction == 1){
 		expression1->types.number.value = expression1->types.number.value + expression2->types.number.value - 1;
