@@ -8,7 +8,7 @@ This branch contains work in progress changes for using Verilog to Routing
 ---
 
 # Verilog to Routing (VTR)
-[![Build Status](https://travis-ci.org/verilog-to-routing/vtr-verilog-to-routing.svg?branch=master)](https://travis-ci.org/verilog-to-routing/vtr-verilog-to-routing) [![Documentation Status](https://readthedocs.org/projects/vtr/badge/?version=latest)](http://docs.verilogtorouting.org/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.com/SymbiFlow/vtr-verilog-to-routing.svg?branch=master)](https://travis-ci.com/SymbiFlow/vtr-verilog-to-routing) [![Documentation Status](https://readthedocs.org/projects/vtr/badge/?version=latest)](http://docs.verilogtorouting.org/en/latest/?badge=latest)
 
 ## Introduction
 The Verilog-to-Routing (VTR) project is a world-wide collaborative effort to provide a open-source framework for conducting FPGA architecture and CAD research and development.
