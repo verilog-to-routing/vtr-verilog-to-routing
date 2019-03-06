@@ -26,7 +26,7 @@ parse_file=vpr_standard.txt
 qor_parse_file=qor_standard.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements.txt
+pass_requirements_file= #No pass requirements since we only care about valgrind results
 
 script_params=-valgrind
 
