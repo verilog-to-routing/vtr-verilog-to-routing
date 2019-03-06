@@ -707,8 +707,8 @@ static std::unique_ptr<OverrideDelayModel> compute_override_delay_model(const t_
     for (int idirect = 0; idirect < device_ctx.arch.num_directs; ++idirect) {
         const t_direct_inf* direct = &device_ctx.arch.Directs[idirect];
 
-        InstPort from_port(direct->from_pin);
-        InstPort to_port(direct->to_pin);
+        InstPort from_port = parse_inst_port(direct->from_pin);
+        InstPort to_port = parse_inst_port(direct->to_pin);
 
         t_type_ptr from_type = find_block_type_by_name(from_port.instance_name(), device_ctx.block_types, device_ctx.num_block_types);
         t_type_ptr to_type = find_block_type_by_name(to_port.instance_name(), device_ctx.block_types, device_ctx.num_block_types);
