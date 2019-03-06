@@ -1525,6 +1525,8 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 		npin_t *output_pin = node->output_pins[i];
 
 		// Make sure the BLIF name comes directly from the MUX.
+		if (output_pin->name)
+			vtr::free(output_pin->name);
 		output_pin->name = NULL;
 
 		remap_pin_to_new_node(output_pin, output_mux, 0);
@@ -1679,7 +1681,12 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 		npin_t *out2_pin = signals->out2->pins[i];
 
 		// Make sure the BLIF name comes directly from the MUX.
+		if (out1_pin->name) 
+			vtr::free(out1_pin->name);
 		out1_pin->name = NULL;
+
+		if (out2_pin->name) 
+			vtr::free(out2_pin->name);
 		out2_pin->name = NULL;
 
 		remap_pin_to_new_node(out1_pin, output_mux1, 0);
