@@ -111,7 +111,11 @@ InstPort::name_index InstPort::parse_name_index(std::string str) {
         second_idx = idx;
     }
 
-    return {name, std::min(first_idx, second_idx), std::max(first_idx, second_idx)};
+    name_index value;
+    value.name = name;
+    value.low_idx = std::min(first_idx, second_idx);
+    value.high_idx = std::max(first_idx, second_idx);
+    return value;
 }
 
 int InstPort::num_instances() const {
