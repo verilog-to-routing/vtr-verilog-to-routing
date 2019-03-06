@@ -3094,6 +3094,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		for (i = 0; i < address->count; i++)
 		{
 			npin_t *pin = address->pins[i];
+			if (pin->name)
+				vtr::free(pin->name);
 			pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, i);
 			add_pin_to_signal_list(right_inputs, pin);
 		}
@@ -3203,6 +3205,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			for (i = 0; i < address->count; i++)
 			{
 				npin_t *pin = address->pins[i];
+				if (pin->name) 
+					vtr::free(pin->name);
 				pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
 				add_pin_to_signal_list(in_1, pin);
 			}
@@ -3211,6 +3215,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			for (i = 0; i < data->count; i++)
 			{
 				npin_t *pin = data->pins[i];
+				if (pin->name)
+					vtr::free(pin->name);
 				pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
 				add_pin_to_signal_list(in_1, pin);
 			}
@@ -3219,6 +3225,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			for (i = 0; i < we->count; i++)
 			{
 				npin_t *pin = we->pins[i];
+				if (pin->name)
+					vtr::free(pin->name);
 				pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
 				add_pin_to_signal_list(in_1, pin);
 			}
