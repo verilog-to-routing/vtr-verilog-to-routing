@@ -458,7 +458,8 @@ static const t_pb_graph_pin* is_node_used(const t_pb_routes &top_pb_route, const
     for(int port_index = 0; port_index < pb_graph_node->num_output_ports; ++port_index) {
         for(int pin_index = 0; pin_index < pb_graph_node->num_output_pins[port_index]; ++pin_index) {
             pin = &pb_graph_node->output_pins[port_index][pin_index];
-            if (top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
+            if (top_pb_route.find(pin->pin_count_in_cluster) != top_pb_route.end() &&
+                top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
                 return pin;
             }
         }
@@ -466,7 +467,8 @@ static const t_pb_graph_pin* is_node_used(const t_pb_routes &top_pb_route, const
     for(int port_index = 0; port_index < pb_graph_node->num_input_ports; ++port_index) {
         for(int pin_index = 0; pin_index < pb_graph_node->num_input_pins[port_index]; ++pin_index) {
             pin = &pb_graph_node->input_pins[port_index][pin_index];
-            if (top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
+            if (top_pb_route.find(pin->pin_count_in_cluster) != top_pb_route.end() &&
+                top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
                 return pin;
             }
         }
@@ -480,7 +482,8 @@ static const t_pb_graph_pin* is_node_clocked(const t_pb_routes &top_pb_route, co
     for(int port_index = 0; port_index < pb_graph_node->num_clock_ports; ++port_index) {
         for(int pin_index = 0; pin_index < pb_graph_node->num_clock_pins[port_index]; ++pin_index) {
             pin = &pb_graph_node->clock_pins[port_index][pin_index];
-            if (top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
+            if (top_pb_route.find(pin->pin_count_in_cluster) != top_pb_route.end() &&
+                top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
                 return pin;
             }
         }
