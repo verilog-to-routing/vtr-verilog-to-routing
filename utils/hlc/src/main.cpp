@@ -97,23 +97,6 @@ int main(int argc, const char **argv) {
 
         entire_flow_end = clock();
 
-        auto& timing_ctx = g_vpr_ctx.timing();
-        vtr::printf_info("Timing analysis took %g seconds (%g STA, %g slack) (%d full updates).\n",
-                timing_ctx.stats.timing_analysis_wallclock_time(),
-                timing_ctx.stats.sta_wallclock_time,
-                timing_ctx.stats.slack_wallclock_time,
-                timing_ctx.stats.num_full_updates);
-#ifdef ENABLE_CLASSIC_VPR_STA
-        vtr::printf_info("Old VPR Timing analysis took %g seconds (%g STA, %g delay annotitaion) (%d full updates).\n",
-                timing_ctx.stats.old_timing_analysis_wallclock_time(),
-                timing_ctx.stats.old_sta_wallclock_time,
-                timing_ctx.stats.old_delay_annotation_wallclock_time,
-                timing_ctx.stats.num_old_sta_full_updates);
-        vtr::printf_info("\tSTA       Speed-up: %.2fx\n",
-                timing_ctx.stats.old_sta_wallclock_time / timing_ctx.stats.sta_wallclock_time);
-        vtr::printf_info("\tSTA+Slack Speed-up: %.2fx\n",
-                timing_ctx.stats.old_timing_analysis_wallclock_time() / timing_ctx.stats.timing_analysis_wallclock_time());
-#endif
         vtr::printf_info("The entire flow of VPR took %g seconds.\n",
                 (float) (entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 

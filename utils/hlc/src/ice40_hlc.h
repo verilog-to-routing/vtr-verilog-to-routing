@@ -20,14 +20,14 @@ class ICE40HLCWriterVisitor : public NetlistVisitor {
         void visit_open_impl(const t_pb* atom) override;
         void visit_atom_impl(const t_pb* atom) override;
         void visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) override;
-        void visit_all_impl(const t_pb_route *top_pb_route, const t_pb* pb,
+        void visit_all_impl(const t_pb_routes &top_pb_route, const t_pb* pb,
             const t_pb_graph_node* pb_graph_node) override;
         void finish_impl() override;
 
     private:
-        void process_ports(const t_pb_route *top_pb_route, const int num_ports,
+        void process_ports(const t_pb_routes &top_pb_route, const int num_ports,
             const int *num_pins, const t_pb_graph_pin *const *pins);
-        void process_route(const t_pb_route *top_pb_route, const t_pb_route *pb_route,
+        void process_route(const t_pb_routes &top_pb_route, const t_pb_route *pb_route,
             const t_pb_graph_pin *pin);
         void close_tile();
 
