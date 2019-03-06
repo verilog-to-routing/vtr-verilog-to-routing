@@ -397,7 +397,7 @@ statement:
 	;
 
 list_of_specify_items:
-	list_of_specify_items specify_item 							{$$ =  newList_entry($1, $2);}
+	list_of_specify_items specify_item 							{$$ = newList_entry($1, $2);}
 	| specify_item										{$$ = newList(SPECIFY_ITEMS, $1);}
 	;
 
@@ -411,7 +411,7 @@ specify_pal_connect_declaration:
 	;
 
 specparam_declaration:
-	vSPECPARAM variable_list ';'								{$$ = markAndProcessSymbolListWith(SPECIFY,SPECIFY_PARAMETER, $2);}
+	vSPECPARAM variable_list ';'								{$$ = $2;}
 	;
 
 blocking_assignment:
