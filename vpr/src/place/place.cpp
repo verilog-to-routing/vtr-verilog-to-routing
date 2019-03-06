@@ -1013,12 +1013,12 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, t_pla
         float new_delay_cost = 0.;
         comp_td_costs(&new_timing_cost, &new_delay_cost);
         if (fabs(new_timing_cost - costs->timing_cost) > costs->timing_cost * ERROR_TOL) {
-            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+            VTR_LOG_WARN(
                     "in recompute_costs_from_scratch: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
                     new_timing_cost, costs->timing_cost, ERROR_TOL);
         }
         if (fabs(new_delay_cost - costs->delay_cost) > costs->delay_cost * ERROR_TOL) {
-            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+            VTR_LOG_WARN(
                     "in recompute_costs_from_scratch: new_delay_cost = %g, old delay_cost = %g, ERROR_TOL = %g\n",
                     new_delay_cost, costs->delay_cost, ERROR_TOL);
         }
@@ -3144,17 +3144,15 @@ static void check_place(const t_placer_costs& costs, enum e_place_algorithm plac
 		comp_td_costs(&timing_cost_check, &delay_cost_check);
 		//VTR_LOG("timing_cost recomputed from scratch: %g\n", timing_cost_check);
 		if (fabs(timing_cost_check - costs.timing_cost) > costs.timing_cost * ERROR_TOL) {
-			VTR_LOG_ERROR(
+			VTR_LOG_WARN(
 					"timing_cost_check: %g and timing_cost: %g differ in check_place.\n",
 					timing_cost_check, costs.timing_cost);
-			error++;
 		}
 		//VTR_LOG("delay_cost recomputed from scratch: %g\n", delay_cost_check);
 		if (fabs(delay_cost_check - costs.delay_cost) > costs.delay_cost * ERROR_TOL) {
-			VTR_LOG_ERROR(
+			VTR_LOG_WARN(
 					"delay_cost_check: %g and delay_cost: %g differ in check_place.\n",
 					delay_cost_check, costs.delay_cost);
-			error++;
 		}
 	}
 
