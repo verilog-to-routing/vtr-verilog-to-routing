@@ -334,11 +334,11 @@ static ClusterBlockId pick_from_block();
 
 static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel& delay_model,
-                        enum e_place_algorithm place_algorithm);
+                        t_placer_opts* placer_opts);
 
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel& delay_model,
-                                 enum e_place_algorithm place_algorithm);
+                                 t_placer_opts* placer_opts);
 static int check_placement_consistency();
 static int check_block_placement_consistency();
 static int check_macro_placement_consistency();
@@ -579,7 +579,7 @@ void try_place(t_placer_opts placer_opts,
     }
 
     //Sanity check that initial placement is legal
-    check_place(costs, *place_delay_model, placer_opts.place_algorithm);
+    check_place(costs, *place_delay_model, &placer_opts);
 
     //Initial pacement statistics
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n",
@@ -745,7 +745,7 @@ void try_place(t_placer_opts placer_opts,
     }
 #endif
 
-    check_place(costs, *place_delay_model, placer_opts.place_algorithm);
+    check_place(costs, *place_delay_model, &placer_opts);
 
     //Some stats
     VTR_LOG("\n");
@@ -3465,7 +3465,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 
 static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel& delay_model,
-                        enum e_place_algorithm place_algorithm) {
+                        t_placer_opts* placer_opts) {
     /* Checks that the placement has not confused our data structures. *
      * i.e. the clb and block structures agree about the locations of  *
      * every block, blocks are in legal spots, etc.  Also recomputes   *
@@ -3475,7 +3475,7 @@ static void check_place(const t_placer_costs& costs,
     int error = 0;
 
     error += check_placement_consistency();
-    error += check_placement_costs(costs, delay_model, place_algorithm);
+    error += check_placement_costs(costs, delay_model, placer_opts);
 
     if (error == 0) {
         VTR_LOG("\n");
@@ -3491,7 +3491,7 @@ static void check_place(const t_placer_costs& costs,
 
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel& delay_model,
-                                 enum e_place_algorithm place_algorithm) {
+                                 t_placer_opts* placer_opts) {
     int error = 0;
     double bb_cost_check;
     double timing_cost_check;
@@ -3503,13 +3503,18 @@ static int check_placement_costs(const t_placer_costs& costs,
         error++;
     }
 
-    if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+    if (placer_opts->place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         comp_td_costs(delay_model, &timing_cost_check);
         //VTR_LOG("timing_cost recomputed from scratch: %g\n", timing_cost_check);
         if (fabs(timing_cost_check - costs.timing_cost) > costs.timing_cost * ERROR_TOL) {
-            VTR_LOG_ERROR("timing_cost_check: %g and timing_cost: %g differ in check_place.\n",
-                          timing_cost_check, costs.timing_cost);
-            error++;
+            std::string msg = vtr::string_fmt("timing_cost_check: %g and timing_cost: %g differ in check_place.\n",
+                                              timing_cost_check, costs.timing_cost);
+            if (placer_opts->strict_checks) {
+                VTR_LOG_ERROR(msg.c_str());
+                error++;
+            } else {
+                VTR_LOG_WARN(msg.c_str());
+            }
         }
     }
     return error;
