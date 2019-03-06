@@ -57,8 +57,8 @@ float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, 
 
     //Delay overrides may be different for +/- delta so do not use
     //an absolute delta for the look-up
-    override_key.delta_x = from_x - to_x;
-    override_key.delta_y = from_y - to_y;
+    override_key.delta_x = to_x - from_x;
+    override_key.delta_y = to_y - from_y;
 
     float delay_val = std::numeric_limits<float>::quiet_NaN();
     auto override_iter = delay_overrides_.find(override_key);
