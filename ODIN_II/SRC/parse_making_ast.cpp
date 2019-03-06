@@ -837,12 +837,15 @@ ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expressio
 
 
 /*---------------------------------------------------------------------------------------------
- * (function: newPartSelectRange)
+ * (function: newPartSelectRangeRef)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newPartSelectRange(char *id, ast_node_t *expression1, ast_node_t *expression2, char direction, int line_number)
+ast_node_t *newPartSelectRangeRef(char *id, ast_node_t *expression1, ast_node_t *expression2, char direction,
+								  int line_number)
 {
 
 	long sc_spot;
+
+	oassert(expression1 != NULL && expression1->type == NUMBERS && expression2 != NULL && expression2->type == NUMBERS);
 
 	/* Try to find the original array to check low/high indices */
 	if ((sc_spot = sc_lookup_string(modules_inputs_sc, id)) == -1 &&
@@ -851,39 +854,14 @@ ast_node_t *newPartSelectRange(char *id, ast_node_t *expression1, ast_node_t *ex
 		return nullptr;
 	}
 
-	ast_node_t *original_range = (ast_node_t *) modules_inputs_sc->data[sc_spot];;
-	long long upper_limit = original_range->children[1]->types.number.value;
-	long long bottom_limit = original_range->children[2]->types.number.value;
-	long long width = expression2->types.number.value;
-	long long low_index = expression1->types.number.value;
-	long long high_index = expression1->types.number.value;
-
-	if (direction == 1)
-		high_index = low_index + width - 1;
-	else
-		low_index = high_index - width + 1;
-
-	if (low_index < bottom_limit || low_index > upper_limit ||
-		high_index < bottom_limit|| high_index > upper_limit) {
-		/* Out of range */
-		error_message(PARSE_ERROR, line_number, current_parse_file,
-					  "The given indices (%s[%d%s%d]) are out of range. It should be within the range: [%d:%d].",
-					  id, expression1->types.number.value, direction == 1 ? "+:" : "-:", expression2->types.number.value,
-					  upper_limit, bottom_limit);
+	if (direction == 1){
+		expression1->types.number.value = expression1->types.number.value + expression2->types.number.value - 1;
+	}
+	else{
+		expression2->types.number.value = expression1->types.number.value - expression2->types.number.value + 1;
 	}
 
-	/* allocate or check if there's a node for this */
-	ast_node_t *symbol_node = newSymbolNode(id, line_number);
-
-	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(RANGE_PART_REF, line_number, current_parse_file);
-
-	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 3, symbol_node, expression1, expression2);
-
-	get_range_part_select(new_node, direction);
-
-	return new_node;
+	return newRangeRef(id, expression1, expression2, line_number);
 }
 
 /*---------------------------------------------------------------------------------------------

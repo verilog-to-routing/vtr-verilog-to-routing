@@ -332,7 +332,6 @@ typedef enum
 	/* basic primitives */
 	ARRAY_REF,
 	RANGE_REF,
-	RANGE_PART_REF,
 	CONCATENATE,
 	/* basic identifiers */
 	IDENTIFIERS,
