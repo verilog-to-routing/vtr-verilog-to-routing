@@ -189,7 +189,7 @@ initial_block:
 	;
 
 specify_block:
-    vSPECIFY list_of_specify_statement vENDSPECIFY            			{$$ = $2;}
+	vSPECIFY list_of_specify_items vENDSPECIFY						{$$ = $2;}
 	;
 
 list_of_function_items:
