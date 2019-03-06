@@ -285,6 +285,19 @@ nnet_t* allocate_nnet()
 	return new_net;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: free_nnet)
+ *-------------------------------------------------------------------------------------------*/
+nnet_t* free_nnet(nnet_t* to_free) {
+	if (to_free)
+	{
+		vtr::free(to_free->fanout_pins);
+
+		/* now free the net */
+	}
+	return (nnet_t*)vtr::free(to_free);
+}
+
 /*---------------------------------------------------------------------------
  * (function: move_a_output_pin)
  *-------------------------------------------------------------------------*/
@@ -425,7 +438,7 @@ void combine_nets(nnet_t *output_net, nnet_t* input_net, netlist_t *netlist)
 	}
 
 	/* free the driver net */
-	vtr::free(output_net);
+	free_nnet(output_net);
 }
 
 /*---------------------------------------------------------------------------------------------
