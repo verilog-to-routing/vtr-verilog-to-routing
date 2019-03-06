@@ -23,7 +23,7 @@ InstPort::InstPort(std::string str) {
     std::vector<std::string> inst_port = vtr::split(str, ".");
 
     if(inst_port.size() == 1) {
-        instance_ = {"", -1, -1};
+        instance_ = name_index();
         port_ = parse_name_index(inst_port[0]);
 
     } else if(inst_port.size() == 2) {
