@@ -195,14 +195,18 @@ if(VTR_ENABLE_DEBUG_LOGGING)
     message(STATUS "Logging Flags: ${LOGGING_FLAGS}")
 endif()
 
-# add colored output, this is a fix for ninja
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set(COLORED_COMPILE "-fdiagnostics-color=always")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(COLORED_COMPILE "-fcolor-diagnostics")
-else()
-    set(COLORED_COMPILE "")
-endif ()
+if (CMAKE_MAKE_PROGRAM EQUAL "ninja" )
+    #Only for coloured output for ninja, it may be desired
+    #to not force colours with other make programs (e.g. if
+    #being parsed by an IDE).
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        set(COLORED_COMPILE "-fdiagnostics-color=always")
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        set(COLORED_COMPILE "-fcolor-diagnostics")
+    else()
+        set(COLORED_COMPILE "")
+    endif ()
+endif()
 
 #
 # Set final flags
