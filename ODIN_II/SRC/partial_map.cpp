@@ -926,6 +926,7 @@ void instantiate_GT(nnode_t *node, operation_list type, short mark, netlist_t *n
 	
 	vtr::free(gt_cells);
 	vtr::free(or_cells);
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
