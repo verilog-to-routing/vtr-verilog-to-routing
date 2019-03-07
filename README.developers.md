@@ -699,7 +699,7 @@ To add a new external subtree to VTR do the following:
 
     Note that the internal_path directory should not already exist.
 
-    You can confirm it works by running: `def/external_subtrees.py --list`:
+    You can confirm it works by running: `dev/external_subtrees.py --list`:
     ```
     Component: abc             Path: abc                            URL: https://github.com/berkeley-abc/abc.git       URL_Ref: master
     Component: libargparse     Path: libs/EXTERNAL/libargparse      URL: https://github.com/kmurray/libargparse.git    URL_Ref: master
