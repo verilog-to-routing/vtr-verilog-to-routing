@@ -8,6 +8,7 @@ void cleanup_parser();
 void cleanup_hard_blocks();
 void init_parser_for_file();
 void clean_up_parser_for_file();
+void cleanup_specify_items(ast_node_t *root);
 
 /* GENERAL PARSER NODES */
 ast_node_t *newSymbolNode(char *id, int line_number);

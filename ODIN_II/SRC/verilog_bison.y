@@ -403,7 +403,7 @@ list_of_specify_items:
 
 specify_item:
 	specify_pal_connect_declaration            						{$$ = newList(SPECIFY_PAL_CONNECT_LIST, $1);}
-	| specparam_declaration            						        {$$ = $1;}
+	| specparam_declaration            						        { cleanup_specify_items($1);}
 	;
 
 specify_pal_connect_declaration:
