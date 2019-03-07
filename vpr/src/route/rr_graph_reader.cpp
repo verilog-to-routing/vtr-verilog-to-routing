@@ -386,6 +386,17 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
 
     while (edges) {
         source_node = get_attribute(edges, "src_node", loc_data).as_int(0);
+        if(source_node < 0) {
+            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                    "source_node %d must be positive",
+                    source_node, device_ctx.rr_nodes.size());
+        }
+        if(source_node >= device_ctx.rr_nodes.size()) {
+            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                    "source_node %d is larger than rr_nodes.size() %d",
+                    source_node, device_ctx.rr_nodes.size());
+        }
+
         num_edges_for_node[source_node]++;
         device_ctx.rr_nodes[source_node].set_num_edges(num_edges_for_node[source_node]);
         edges = edges.next_sibling(edges.name());
@@ -410,6 +421,18 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
         source_node = get_attribute(edges, "src_node", loc_data).as_int(0);
         sink_node = get_attribute(edges, "sink_node", loc_data).as_int(0);
         switch_id = get_attribute(edges, "switch_id", loc_data).as_int(0);
+
+        if(sink_node >= device_ctx.rr_nodes.size()) {
+            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                    "sink_node %d is larger than rr_nodes.size() %d",
+                    sink_node, device_ctx.rr_nodes.size());
+        }
+
+        if(switch_id >= num_rr_switches) {
+            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                    "switch_id %d is larger than num_rr_switches %d",
+                    switch_id, num_rr_switches);
+        }
 
         /*Keeps track of the number of the specific type of switch that connects a wire to an ipin
          * use the pair data structure to keep the maximum*/
@@ -450,12 +473,22 @@ void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pug
     channelLists = get_first_child(parent, "x_list", loc_data);
     while (channelLists) {
         index = get_attribute(channelLists, "index", loc_data).as_int(0);
+        if(index >= chan_width.x_list.size()) {
+            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                    "index %d on x_list exceeds x_list size %u",
+                    index, chan_width.x_list.size());
+        }
         chan_width.x_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
         channelLists = channelLists.next_sibling(channelLists.name());
     }
     channelLists = get_first_child(parent, "y_list", loc_data);
     while (channelLists) {
         index = get_attribute(channelLists, "index", loc_data).as_int(0);
+        if(index >= chan_width.y_list.size()) {
+            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                    "index %d on y_list exceeds y_list size %u",
+                    index, chan_width.y_list.size());
+        }
         chan_width.y_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
         channelLists = channelLists.next_sibling(channelLists.name());
     }
