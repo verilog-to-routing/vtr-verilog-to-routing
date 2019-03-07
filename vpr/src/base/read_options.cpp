@@ -1069,11 +1069,8 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   " the placement delay model is constructed.\n"
                   "Valid options:\n"
                   " * 'delta' uses differences in position only\n"
-                  " * 'extended_delta' uses differences in position plus overrides for direct connects\n"
-                  " * 'delta_from' uses both differences in position and\n"
-                  "                driving pin/type information'\n"
-                  " * 'map' use the router's map lookahead + direct heuristics\n")
-            .default_value("delta")
+                  " * 'delta_override' uses differences in position with overrides for direct connects\n")
+            .default_value("delta_override")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument<e_reducer,ParseReducer>(args.place_delay_model_reducer, "--place_delay_model_reducer")
