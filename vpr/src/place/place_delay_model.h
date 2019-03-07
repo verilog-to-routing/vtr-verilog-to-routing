@@ -49,12 +49,12 @@ class OverrideDelayModel : public PlaceDelayModel {
         std::unique_ptr<PlaceDelayModel> base_delay_model_;
 
         struct t_override {
-            int from_type;
-            int to_type;
-            int from_class;
-            int to_class;
-            int delta_x;
-            int delta_y;
+            short from_type;
+            short to_type;
+            short from_class;
+            short to_class;
+            short delta_x;
+            short delta_y;
 
             friend bool operator<(const t_override& lhs, const t_override& rhs) {
                 return std::tie(lhs.from_type, lhs.to_type, lhs.from_class, lhs.to_class, lhs.delta_x, lhs.delta_y)
