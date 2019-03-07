@@ -161,7 +161,7 @@ static int get_best_class(enum e_pin_type pintype, t_type_ptr type) {
 
     int i, currpin, best_class_num_pins, best_class;
 
-    best_class = -1;
+    best_class = OPEN;
     best_class_num_pins = 0;
     currpin = 0;
     for (i = 0; i < type->num_class; i++) {
@@ -225,17 +225,19 @@ static float route_connection_delay(int source_x, int source_y,
 
     //Get the rr nodes to route between
     int driver_ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-    int source_rr_node = -1;
-    if (driver_ptc > -1)
+    int source_rr_node = OPEN;
+    if (driver_ptc != OPEN) {
         source_rr_node = get_rr_node_index(device_ctx.rr_node_indices, source_x, source_y, SOURCE, driver_ptc);
+    }
 
     int sink_ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-    int sink_rr_node = -1;
-    if (sink_ptc > -1)
+    int sink_rr_node = OPEN;
+    if (sink_ptc != OPEN) {
         sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
+    }
 
     bool successfully_routed = false;
-    if (source_rr_node >= 0 && sink_rr_node >= 0) {
+    if (source_rr_node != OPEN && sink_rr_node != OPEN) {
         successfully_routed = calculate_delay(
             source_rr_node, sink_rr_node,
             router_opts,
