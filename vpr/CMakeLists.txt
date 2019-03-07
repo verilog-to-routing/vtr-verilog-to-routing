@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 2.8.12)
+cmake_policy(VERSION 3.9) #For cmake >= 3.9 INTERPROCEDURAL_OPTIMIZATION behaviour
 
 project("vpr")
 
 option(VPR_USE_SIGNAL_HANDLER "Should VPR use a signal handler to intercept signals (e.g. SIGINT)?" OFF)
+option(VPR_USE_IPO_BUILD "Should VPR be compiled with an interprocedural optimizations?" OFF)
 
 include(CheckCXXSymbolExists)
 
@@ -34,6 +36,12 @@ target_link_libraries(libvpr
 add_executable(vpr ${EXEC_SOURCES})
 target_link_libraries(vpr 
                         libvpr)
+
+if (VPR_USE_IPO_BUILD)
+    message(STATUS "Using IPO build for vpr")
+    set_property(TARGET libvpr PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+    set_property(TARGET vpr PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 
 if (VPR_USE_SIGNAL_HANDLER)
     #Check wheter VPR can use sigaction to handle signals (only supported by POSIX)
