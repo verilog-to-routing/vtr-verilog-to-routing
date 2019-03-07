@@ -2512,7 +2512,8 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				}
 
 				/* clean up input_new_net */
-				free_nnet(input_new_net);
+				if (!(input_new_net->driver_pin))
+					free_nnet(input_new_net);
 
 				/* add this alias for the net */
 				output_nets_sc->data[sc_spot_input_new] = output_nets_sc->data[sc_spot_output];
@@ -2860,6 +2861,10 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 						output_net->driver_pin->node->initial_value = input_new_net->initial_value;
 					}
 				}
+				
+				/* clean up input_new_net */
+				if (!(input_new_net->driver_pin))
+					free_nnet(input_new_net);
 
 				/* add this alias for the net */
 				output_nets_sc->data[sc_spot_input_new] = output_nets_sc->data[sc_spot_output];
