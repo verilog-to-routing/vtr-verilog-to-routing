@@ -392,6 +392,7 @@ void instantiate_not_logic(nnode_t *node, short mark, netlist_t * /*netlist*/)
 	}
 
 	vtr::free(new_not_cells);
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
