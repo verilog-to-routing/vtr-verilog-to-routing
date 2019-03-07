@@ -405,11 +405,11 @@ void SetupPackerOpts(const t_options& Options,
 
 	PackerOpts->blif_file_name = Options.BlifFile;
 
-    if (Options.do_packing) {
-        PackerOpts->doPacking = STAGE_DO;
-    }
+	if (Options.do_packing) {
+		PackerOpts->doPacking = STAGE_DO;
+	}
 
-    //TODO: document?
+	//TODO: document?
 	PackerOpts->global_clocks = true; /* DEFAULT */
 	PackerOpts->hill_climbing_flag = false; /* DEFAULT */
 
@@ -421,15 +421,16 @@ void SetupPackerOpts(const t_options& Options,
 	PackerOpts->beta = Options.beta_clustering;
 	PackerOpts->pack_verbosity = Options.pack_verbosity;
 	PackerOpts->enable_pin_feasibility_filter = Options.enable_clustering_pin_feasibility_filter;
+	PackerOpts->enable_round_robin_prepacking = Options.enable_round_robin_prepacking;
 	PackerOpts->target_external_pin_util = Options.target_external_pin_util;
-    PackerOpts->target_device_utilization = Options.target_device_utilization;
+	PackerOpts->target_device_utilization = Options.target_device_utilization;
 
-    //TODO: document?
+	//TODO: document?
 	PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
 	PackerOpts->auto_compute_inter_cluster_net_delay = true;
 	PackerOpts->packer_algorithm = PACK_GREEDY; /* DEFAULT */
 
-    PackerOpts->device_layout = Options.device_layout;
+	PackerOpts->device_layout = Options.device_layout;
 
 	PackerOpts->hmetis_input_file = Options.hmetis_input_file;
 }
