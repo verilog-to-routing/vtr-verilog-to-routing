@@ -293,6 +293,9 @@ nnet_t* free_nnet(nnet_t* to_free) {
 	{
 		to_free->fanout_pins = (npin_t**)vtr::free(to_free->fanout_pins);
 
+		if (to_free->name)
+			vtr::free(to_free->name);
+
 		/* now free the net */
 	}
 	return (nnet_t*)vtr::free(to_free);
