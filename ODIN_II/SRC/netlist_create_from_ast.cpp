@@ -2512,7 +2512,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				}
 
 				/* clean up input_new_net */
-				if (!(input_new_net->driver_pin))
+				if (!(input_new_net) || !(input_new_net->driver_pin))
 					free_nnet(input_new_net);
 
 				/* add this alias for the net */
@@ -2863,7 +2863,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				}
 				
 				/* clean up input_new_net */
-				if (!(input_new_net->driver_pin))
+				if (!(input_new_net) || !(input_new_net->driver_pin))
 					free_nnet(input_new_net);
 
 				/* add this alias for the net */
