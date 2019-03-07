@@ -291,9 +291,6 @@ nnet_t* allocate_nnet()
 nnet_t* free_nnet(nnet_t* to_free) {
 	if (to_free)
 	{
-		if (to_free->name)
-			to_free->name = (char*)vtr::free(to_free->name);
-
 		to_free->fanout_pins = (npin_t**)vtr::free(to_free->fanout_pins);
 
 		/* now free the net */
