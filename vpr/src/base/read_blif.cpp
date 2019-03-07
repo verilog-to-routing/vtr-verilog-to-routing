@@ -334,6 +334,8 @@ struct BlifAllocCallback : public blifparse::Callback {
                 vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected .end");
             }
 
+            merge_conn_nets();
+
             //Mark as ended
             ended_ = true;
 
@@ -351,7 +353,15 @@ struct BlifAllocCallback : public blifparse::Callback {
             AtomNetId driver_net = curr_model().create_net(src);
             AtomNetId sink_net = curr_model().create_net(dst);
 
-            curr_model().merge_nets(driver_net, sink_net);
+            //We eventually need to merge the driver and sink nets,
+            //however we must defer that until all the net drivers 
+            //and sinks have been created (otherwise they may not 
+            //be properly merged depending on where the .conn is
+            //delcared).
+            //
+            //As a result we record the nets to merge and do the actual merging at
+            //the end of the .model
+            curr_nets_to_merge_.emplace_back(driver_net, sink_net);
 
             set_curr_block(AtomBlockId::INVALID());
         }
@@ -600,6 +610,19 @@ struct BlifAllocCallback : public blifparse::Callback {
             return curr_block_;
         }
 
+        //Merges all the recorded net pairs which need to be merged
+        //
+        //This should only be called at the end of a .model to ensure that
+        //all the associated driver/sink pins have been delcared and connected
+        //to their nets
+        void merge_conn_nets() {
+            for (auto net_pair : curr_nets_to_merge_) {
+                curr_model().merge_nets(net_pair.first, net_pair.second);
+            }
+
+            curr_nets_to_merge_.clear();
+        }
+
     private:
         bool ended_ = true; //Initially no active .model
         std::string filename_ = "";
@@ -616,6 +639,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         size_t unique_subckt_name_counter_ = 0;
 
         AtomBlockId curr_block_;
+        std::vector<std::pair<AtomNetId,AtomNetId>> curr_nets_to_merge_;
 
         e_circuit_format blif_format_ = e_circuit_format::BLIF;
         e_const_gen_inference const_gen_inference_ = e_const_gen_inference::COMB;
