@@ -1293,6 +1293,7 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 
     }
     vtr::free(module_named_instance);
+	vtr::free(module_ref_name);
 	return new_master_node;
 }
 /*-------------------------------------------------------------------------
