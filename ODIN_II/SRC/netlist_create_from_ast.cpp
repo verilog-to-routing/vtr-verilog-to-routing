@@ -2511,6 +2511,9 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 					}
 				}
 
+				/* clean up input_new_net */
+				free_nnet(input_new_net);
+
 				/* add this alias for the net */
 				output_nets_sc->data[sc_spot_input_new] = output_nets_sc->data[sc_spot_output];
 
