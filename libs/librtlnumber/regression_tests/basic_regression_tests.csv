@@ -1,0 +1,64 @@
+#####################
+# Aaron Graham (aaron.graham@unb.ca, aarongraham9@gmail.com),
+#  Jean-Philippe Legault (jlegault@unb.ca, jeanphilippe.legault@gmail.com) and
+#   Dr. Kenneth B. Kent (ken@unb.ca)
+#   for the Reconfigurable Computing Research Lab at the
+#    Univerity of New Brunswick in Fredericton, New Brunswick, Canada
+#####################
+
+# Sign modifier
+Sign_minus,		        -,  10'b1010101010,	'b0101010110
+Sign_plus,			    +,  4'b1010,	'b1010
+
+# Reduction
+Reduction-and,			&,  4'b1010,	0
+#Reduction-or,			|,  4'b1010,	1
+Reduction-xor,			^,  4'b1010,	0
+#Reduction-nand,			~&,	4'b1010,	1
+#Reduction-nor,			~|,	4'b1010,	1
+#Reduction-xnor,			~^,	4'b1010,	1
+
+# bitwise
+Bitwise-Not,	            ~,  4'b1010,	'b0101
+Bitwise-And,	4'b1010,	&,  4'b1000,	'b1000
+Bitwise-Or,		5'b1010,	|,  5'b1000,	'b1010
+#Bitwise-Nor,	5'b1010,	~|, 5'b1000,	5
+#Bitwise-Nand,   5'b1010,	~&, 5'b1000,	7
+#Bitwise-Xnor,   5'b1010,	~^, 5'b1000,	4'b1101
+#Bitwise-Xor,	5'b1010,	^,  5'b1000,	2
+
+# case equivalence
+#Case-eq,		4'b1x10,	===,  4'b1x10,	1
+#Case-ne,		4'b1x11,	!==,  4'b1x10,	1
+Case-ne,		4'b1x10,	!==,  4'b1x10,	0
+Case-eq,		4'b1x11,	===,  4'b1x10,	0
+
+# logical operation
+Logical-Not,	                    !,  4'b1010,	'b0
+#Logical-And,			4'b1010,	&&, 4'b1000,	'b1
+Logical-Or,				4'b1010,	||, 4'b1000,	'b1
+#Logical-Or,				4'b0000,	||, 4'b1000,	'b1
+Logical-Or,				4'b0000,	||, 4'b0000,	'b0	
+Logical-less,			4'b0000,	<,	4'b0001,	'b1
+Logical-greater,		4'b0000,	>,	4'b0001,	'b0	
+Logical-greater-equal,	4'b0000,	>=, 4'b0000,	'b1	
+Logical-less-equal,		4'b0000,	<=, 4'b0000,	'b1	
+Logical-equal,			4'b0000,	==, 4'b0000,	'b1	
+Logical-not-equal,		4'b0000,	!=,	4'b0001,	'b1
+
+# shift operation
+#Shift-left,				2,	<<,	    3,	5'b10000
+#Shift-right, 			5'b00100,	>>,		2'b10,	'b1
+#Signed-shift-left,		5'b00100,	<<<,	2'b10,	5'b10000
+#Signed-shift-right,		5'b10100,	>>>,	2'b10,	'b11101
+
+# arithmetic
+#Addition,			4'b0110,    +,  4'b0011,  'b1001
+#Subtraction,		4'b0100,    -,  4'b0010,  'b10
+#Division,			4'b1010,    /,  4'b0010,  'b10
+#Multiplication,	    4'b0010,    *,  4'b0010,  'b100
+#Modulo,			    4'b1011,    %,  4'b0010,  'b1
+#Power,              4'b0010,    **, 4'b0000,  'b1
+
+# Ternary operations
+Ternary,			1'b1,   ?,  2'b01,  :,  2'b10,  2'b01

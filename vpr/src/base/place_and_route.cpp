@@ -59,7 +59,8 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
         const t_timing_inf& timing_inf,
 #endif
-        std::shared_ptr<SetupHoldTimingInfo> timing_info) {
+        std::shared_ptr<SetupHoldTimingInfo> timing_info,
+        std::shared_ptr<RoutingDelayCalculator> delay_calc) {
 
     /* This routine performs a binary search to find the minimum number of      *
      * tracks per channel required to successfully route a circuit, and returns *
@@ -184,13 +185,17 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 #endif
                     arch->Directs, arch->num_directs);
         }
-        success = try_route(current, router_opts, det_routing_arch, segment_inf,
+        success = try_route(current,
+                router_opts,
+                analysis_opts,
+                det_routing_arch, segment_inf,
                 net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
                 slacks,
                 timing_inf,
 #endif
                 timing_info,
+                delay_calc,
                 arch->Chans,
                 arch->Directs, arch->num_directs,
                 (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR);
@@ -322,13 +327,17 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 #endif
                         arch->Directs, arch->num_directs);
             }
-            success = try_route(current, router_opts, det_routing_arch,
+            success = try_route(current,
+                    router_opts,
+                    analysis_opts,
+                    det_routing_arch,
                     segment_inf, net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
                     slacks,
                     timing_inf,
 #endif
                     timing_info,
+                    delay_calc,
                     arch->Chans, arch->Directs, arch->num_directs,
                     ScreenUpdatePriority::MINOR);
 

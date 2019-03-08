@@ -364,6 +364,7 @@ void instantiate_multi_port_mux(nnode_t *node, short mark, netlist_t * /*netlist
 		remap_pin_to_new_node(node->output_pins[j], muxes[j], 0);
 	}
 	vtr::free(muxes);
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -763,6 +764,8 @@ void instantiate_EQUAL(nnode_t *node, operation_list type, short mark, netlist_t
 	/* Don't need to instantiate a Logic and gate since it is a function itself */
 
 	oassert(combine->num_output_pins == 1);
+
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------

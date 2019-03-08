@@ -3,8 +3,9 @@
 
 #include "timing_info_fwd.h"
 #include "clustered_netlist_utils.h"
+#include "place_delay_model.h"
 
-void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
+std::unique_ptr<PlaceDelayModel> alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 		t_placer_opts place_opts,
 		t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,

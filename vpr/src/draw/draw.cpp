@@ -2366,7 +2366,8 @@ static void highlight_nets(char *message, int hit_node) {
 			if (draw_state->draw_rr_node[tptr->index].color == MAGENTA) {
 				draw_state->net_color[net_id] = draw_state->draw_rr_node[tptr->index].color;
 				if (tptr->index == hit_node) {
-					sprintf(message, "%s  ||  Net: %zu (%s)", message, size_t(net_id),
+                    std::string orig_msg(message);
+					sprintf(message, "%s  ||  Net: %zu (%s)", orig_msg.c_str(), size_t(net_id),
 							cluster_ctx.clb_nlist.net_name(net_id).c_str());
 				}
 			}
@@ -3306,7 +3307,7 @@ static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_
     //Conver the traceback into an easily search-able
     t_rt_node* rt_root = traceback_to_route_tree(net_id);
 
-    VTR_ASSERT(rt_root->inode == route_ctx.net_rr_terminals[net_id][driver_pin]);
+    VTR_ASSERT(rt_root && rt_root->inode == route_ctx.net_rr_terminals[net_id][driver_pin]);
 
     int sink_rr_node = route_ctx.net_rr_terminals[net_id][sink_pin];
 

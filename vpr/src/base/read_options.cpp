@@ -556,6 +556,71 @@ struct ParseRouterLookahead {
     }
 };
 
+struct ParsePlaceDelayModel {
+    ConvertedValue<PlaceDelayModelType> from_str(std::string str) {
+        ConvertedValue<PlaceDelayModelType> conv_value;
+        if      (str == "delta") conv_value.set_value(PlaceDelayModelType::DELTA);
+        else if (str == "delta_override") conv_value.set_value(PlaceDelayModelType::DELTA_OVERRIDE);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to PlaceDelayModelType (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(PlaceDelayModelType val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == PlaceDelayModelType::DELTA) conv_value.set_value("delta");
+        else if (val == PlaceDelayModelType::DELTA_OVERRIDE) conv_value.set_value("delta_override");
+        else { 
+            std::stringstream msg;
+            msg << "Unrecognized PlaceDelayModelType";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"delta", "delta_override"};
+    }
+};
+
+struct ParseReducer {
+    ConvertedValue<e_reducer> from_str(std::string str) {
+        ConvertedValue<e_reducer> conv_value;
+        if      (str == "min") conv_value.set_value(e_reducer::MIN);
+        else if (str == "max") conv_value.set_value(e_reducer::MAX);
+        else if (str == "median") conv_value.set_value(e_reducer::MEDIAN);
+        else if (str == "arithmean") conv_value.set_value(e_reducer::ARITHMEAN);
+        else if (str == "geomean") conv_value.set_value(e_reducer::GEOMEAN);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_reducer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_reducer val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_reducer::MIN) conv_value.set_value("min");
+        else if (val == e_reducer::MAX) conv_value.set_value("max");
+        else if (val == e_reducer::MEDIAN) conv_value.set_value("median");
+        else if (val == e_reducer::ARITHMEAN) conv_value.set_value("arithmean");
+        else { 
+            VTR_ASSERT(val == e_reducer::GEOMEAN);
+            conv_value.set_value("geomean");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"min", "max", "median", "arithmean", "geomean"};
+    }
+};
+
+
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description = "Implements the specified circuit onto the target FPGA architecture"
                               " by performing packing/placement/routing, and analyzes the result.\n"
@@ -1003,6 +1068,20 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("8.0")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_timing_grp.add_argument<PlaceDelayModelType,ParsePlaceDelayModel>(args.place_delay_model, "--place_delay_model")
+            .help("This option controls what information is considered and how"
+                  " the placement delay model is constructed.\n"
+                  "Valid options:\n"
+                  " * 'delta' uses differences in position only\n"
+                  " * 'delta_override' uses differences in position with overrides for direct connects\n")
+            .default_value("delta_override")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument<e_reducer,ParseReducer>(args.place_delay_model_reducer, "--place_delay_model_reducer")
+            .help("When calculating delta delays for the placment delay model how are multiple values combined?")
+            .default_value("min")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_timing_grp.add_argument(args.place_delay_offset, "--place_delay_offset")
             .help("A constant offset (in seconds) applied to the placer's delay model."
                    " Negative values disable the placer delay ramp.")
@@ -1240,6 +1319,11 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   " For example, a value of 0.99 means the router will not give up on reconvergent"
                   " routing if it thinks a > 1% CPD reduction is possible.")
             .default_value("0.99")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
+            .help("Name of the post first routing iteration timing report file (not generated if unspecfied)")
+            .default_value("")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& analysis_grp = parser.add_argument_group("analysis options");

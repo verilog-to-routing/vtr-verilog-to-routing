@@ -1,4 +1,5 @@
 #include <cstring>
+#include <sstream>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -16,6 +17,121 @@
 static void free_all_pb_graph_nodes(t_type_descriptor* type_descriptors, int num_type_descriptors);
 static void free_pb_graph(t_pb_graph_node *pb_graph_node);
 static void free_pb_type(t_pb_type *pb_type);
+
+
+InstPort::InstPort(std::string str) {
+    std::vector<std::string> inst_port = vtr::split(str, ".");
+
+    if(inst_port.size() == 1) {
+        instance_ = name_index();
+        port_ = parse_name_index(inst_port[0]);
+
+    } else if(inst_port.size() == 2) {
+        instance_ = parse_name_index(inst_port[0]);
+        port_ = parse_name_index(inst_port[1]);
+    } else {
+        std::string msg = vtr::string_fmt("Failed to parse instance port specification '%s'",
+                                str.c_str());
+        throw ArchFpgaError(msg);
+    }
+}
+
+InstPort::name_index InstPort::parse_name_index(std::string str) {
+    auto open_bracket_pos = str.find("["); 
+    auto close_bracket_pos = str.find("]"); 
+    auto colon_pos = str.find(":"); 
+
+    //Parse checks
+    if(open_bracket_pos == std::string::npos && close_bracket_pos != std::string::npos) {
+        //Close brace only
+        std::string msg = "near '" + str + "', missing '['";
+        throw ArchFpgaError(msg);
+    }
+
+    if(open_bracket_pos != std::string::npos && close_bracket_pos == std::string::npos) {
+        //Open brace only
+        std::string msg = "near '" + str + "', missing ']'";
+        throw ArchFpgaError(msg);
+    }
+
+    if(open_bracket_pos != std::string::npos && close_bracket_pos != std::string::npos) {
+        //Have open and close braces, close must be after open
+        if(open_bracket_pos > close_bracket_pos) {
+            std::string msg = "near '" + str + "', '[' after ']'";
+            throw ArchFpgaError(msg);
+        }
+    }
+
+    if(colon_pos != std::string::npos) {
+        //Have a colon, it must be between open/close braces
+        if(colon_pos > close_bracket_pos || colon_pos < open_bracket_pos) {
+            std::string msg = "near '" + str + "', found ':' but not between '[' and ']'";
+            throw ArchFpgaError(msg);
+        }
+    }
+
+
+    //Extract the name and index info
+    std::string name = str.substr(0,open_bracket_pos);
+    std::string first_idx_str;
+    std::string second_idx_str;
+
+    if(colon_pos == std::string::npos && open_bracket_pos == std::string::npos && close_bracket_pos == std::string::npos) {
+    } else if(colon_pos == std::string::npos) {
+        //No colon, implies a single element
+        first_idx_str = str.substr(open_bracket_pos + 1, close_bracket_pos);
+        second_idx_str = first_idx_str;
+    } else {
+        //Colon, implies a range
+        first_idx_str = str.substr(open_bracket_pos + 1, colon_pos);
+        second_idx_str = str.substr(colon_pos + 1, close_bracket_pos);
+    }
+
+    int first_idx = UNSPECIFIED;
+    if(!first_idx_str.empty()) {
+        std::stringstream ss(first_idx_str);
+        size_t idx;
+        ss >> idx;
+        if(!ss.good()) {
+            std::string msg = "near '" + str + "', expected positive integer";
+            throw ArchFpgaError(msg);
+        }
+        first_idx = idx;
+    }
+
+    int second_idx = UNSPECIFIED;
+    if(!second_idx_str.empty()) {
+        std::stringstream ss(second_idx_str);
+        size_t idx;
+        ss >> idx;
+        if(!ss.good()) {
+            std::string msg = "near '" + str + "', expected positive integer";
+            throw ArchFpgaError(msg);
+        }
+        second_idx = idx;
+    }
+
+    name_index value;
+    value.name = name;
+    value.low_idx = std::min(first_idx, second_idx);
+    value.high_idx = std::max(first_idx, second_idx);
+    return value;
+}
+
+int InstPort::num_instances() const {
+    if (instance_high_index() == UNSPECIFIED || instance_low_index() == UNSPECIFIED) {
+        throw ArchFpgaError("Unspecified instance indicies");
+    }
+    return instance_high_index() - instance_low_index() + 1;
+}
+
+int InstPort::num_pins() const {
+    if (port_high_index() == UNSPECIFIED || port_low_index() == UNSPECIFIED) {
+        throw ArchFpgaError("Unspecified port indicies");
+    }
+    return port_high_index() - port_low_index() + 1;
+}
+
 
 void free_arch(t_arch* arch) {
     if (arch == nullptr) {

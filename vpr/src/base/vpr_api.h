@@ -35,6 +35,7 @@
 #include "place_macro.h"
 #include "timing_info_fwd.h"
 #include "echo_files.h"
+#include "RoutingDelayCalculator.h"
 
 #include "vpr_error.h"
 
@@ -60,8 +61,8 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform placement
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch); //Loads a previous placement
 
 RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the routing stage
-RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay); //Perform routing at a fixed channel width)
-RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay); //Perform routing to find the minimum channel width
+RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, std::shared_ptr<RoutingDelayCalculator> delay_calc, vtr::vector<ClusterNetId, float *>& net_delay); //Perform routing at a fixed channel width)
+RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, std::shared_ptr<RoutingDelayCalculator> delay_calc, vtr::vector<ClusterNetId, float *>& net_delay); //Perform routing to find the minimum channel width
 RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay); //Loads a previous routing
 
 bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status); //Perform or skips the analysis stage

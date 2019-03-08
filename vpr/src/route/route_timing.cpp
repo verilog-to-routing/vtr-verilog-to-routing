@@ -25,6 +25,7 @@
 #include "draw.h"
 #include "rr_graph.h"
 #include "routing_predictor.h"
+#include "VprTimingGraphResolver.h"
 
 // all functions in profiling:: namespace, which are only activated if PROFILE is defined
 #include "route_profiling.h"
@@ -34,6 +35,8 @@
 #include "route_budgets.h"
 
 #include "router_lookahead_map.h"
+
+#include "tatum/TimingReporter.hpp"
 
 #define CONGESTED_SLOPE_VAL -0.04
 //#define ROUTER_DEBUG
@@ -274,11 +277,19 @@ static bool early_reconvergence_exit_heuristic(const t_router_opts& router_opts,
                                                std::shared_ptr<const SetupHoldTimingInfo> timing_info,
                                                const RoutingMetrics& best_routing_metrics);
 
+static void generate_route_timing_reports(const t_router_opts& router_opts,
+                                          const t_analysis_opts& analysis_opts,
+                                          const SetupTimingInfo& timing_info,
+                                          const RoutingDelayCalculator& delay_calc);
+
 /************************ Subroutine definitions *****************************/
-bool try_timing_driven_route(t_router_opts router_opts,
+bool try_timing_driven_route(
+        const t_router_opts& router_opts,
+        const t_analysis_opts& analysis_opts,
         vtr::vector<ClusterNetId, float *> &net_delay,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
+        std::shared_ptr<RoutingDelayCalculator> delay_calc, 
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks,
         const t_timing_inf &timing_inf,
@@ -469,6 +480,10 @@ bool try_timing_driven_route(t_router_opts router_opts,
             }
 #endif
             VTR_ASSERT_SAFE(timing_driven_check_net_delays(net_delay));
+
+            if (itry == 1) {
+                generate_route_timing_reports(router_opts, analysis_opts, *timing_info, *delay_calc);
+            }
         }
 
         float iter_cumm_time = iteration_timer.elapsed_sec();
@@ -2708,4 +2723,19 @@ static bool early_reconvergence_exit_heuristic(const t_router_opts& router_opts,
     }
 
     return false; //Don't give up
+}
+
+static void generate_route_timing_reports(const t_router_opts& router_opts,
+                                          const t_analysis_opts& analysis_opts,
+                                          const SetupTimingInfo& timing_info,
+                                          const RoutingDelayCalculator& delay_calc) {
+    auto& timing_ctx = g_vpr_ctx.timing();
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc);
+    resolver.set_detail_level(analysis_opts.timing_report_detail);
+
+    tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
+
+    timing_reporter.report_timing_setup(router_opts.first_iteration_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }

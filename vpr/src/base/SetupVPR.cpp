@@ -366,6 +366,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts)
     RouterOpts->lookahead_type = Options.router_lookahead_type;
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
+    RouterOpts->first_iteration_timing_report_file = Options.router_first_iteration_timing_report_file;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -483,6 +484,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts *PlacerOpts)
     PlacerOpts->delay_ramp_slope = Options.place_delay_ramp_slope;
     PlacerOpts->tsu_rel_margin = Options.place_tsu_rel_margin;
     PlacerOpts->tsu_abs_margin = Options.place_tsu_abs_margin;
+    PlacerOpts->delay_model_type = Options.place_delay_model;
+    PlacerOpts->delay_model_reducer = Options.place_delay_model_reducer;
 
     //TODO: document?
 	PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */

@@ -947,6 +947,10 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 					}
 
 				}
+
+				if (local_clock_list)
+					free_signal_list(local_clock_list);
+					
 				break;
 			case BINARY_OPERATION:
 				oassert(node->num_children == 2);
@@ -1406,6 +1410,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 				/* Shift out lowest bit */
 				initial_value >>= 1;
 			}
+
+			vtr::free(temp_string);
 		}
 	}
 	/* Implicit memory */
@@ -3305,6 +3311,12 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 				{
 					npin_t *pin = right_outputs->pins[i];
 					add_pin_to_signal_list(return_list, pin);
+
+					/* free unused nnodes for related BLOCKING_STATEMENT nodes */
+					nnode_t *temp_node = right_outputs->pins[i]->node;
+					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
+						free_nnode(temp_node);
+					}
 				}
 				free_signal_list(right_outputs);
 				vtr::free(out_list->strings);
@@ -3450,6 +3462,11 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			//looking for dependence according to with the type of statement (non-blocking or blocking)
 			list_dependence_pin[i] = copy_input_npin(pin);
 			if(pin->node) list_dependence_type[i] = pin->node->related_ast_node->type;
+
+			/* clean up non-blocking */
+			if (pin->node && pin->node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+				free_nnode(pin->node);
+			}
 
 			/* HERE create the ff node and hookup everything */
 			nnode_t *ff_node = allocate_nnode();
@@ -3677,6 +3694,9 @@ int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *
 
 				add_pin_to_signal_list(input_list, get_zero_pin(verilog_netlist));
 			}
+
+			if (input_list->pins[i]->name)
+				vtr::free(input_list->pins[i]->name);
 
 			input_list->pins[i]->name = output_list->strings[i];
 			free_nnode(input_list->pins[i]->node);

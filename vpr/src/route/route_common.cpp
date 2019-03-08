@@ -254,14 +254,18 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			&warning_count);
 }
 
-bool try_route(int width_fac, t_router_opts router_opts,
-		t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
+bool try_route(int width_fac,
+        const t_router_opts& router_opts,
+        const t_analysis_opts& analysis_opts,
+		t_det_routing_arch *det_routing_arch,
+        std::vector<t_segment_inf>& segment_inf,
 		vtr::vector<ClusterNetId, float *> &net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks,
         const t_timing_inf& timing_inf,
 #endif
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
+        std::shared_ptr<RoutingDelayCalculator> delay_calc, 
 		t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs,
         ScreenUpdatePriority first_iteration_priority) {
@@ -330,9 +334,12 @@ bool try_route(int width_fac, t_router_opts router_opts,
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
 
 
-		success = try_timing_driven_route(router_opts, net_delay,
+		success = try_timing_driven_route(router_opts,
+            analysis_opts,
+            net_delay,
             netlist_pin_lookup,
             timing_info,
+            delay_calc,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
             timing_inf,

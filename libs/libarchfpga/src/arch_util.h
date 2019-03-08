@@ -3,6 +3,40 @@
 
 #include "physical_types.h"
 
+
+class InstPort {
+    public:
+        static constexpr int UNSPECIFIED = -1;
+
+        InstPort() = default;
+        InstPort(std::string str);
+        std::string instance_name() const { return instance_.name; }
+        std::string port_name() const { return port_.name; }
+
+        int instance_low_index() const { return instance_.low_idx; }
+        int instance_high_index() const { return instance_.high_idx; }
+        int port_low_index() const { return port_.low_idx; }
+        int port_high_index() const { return port_.high_idx; }
+
+        int num_instances() const;
+        int num_pins() const;
+
+    public:
+        void set_port_low_index(int val) { port_.low_idx = val; }
+        void set_port_high_index(int val) { port_.high_idx = val; }
+    private:
+        struct name_index {
+            std::string name = "";
+            int low_idx = UNSPECIFIED;
+            int high_idx = UNSPECIFIED;
+        };
+
+        name_index parse_name_index(std::string str);
+
+        name_index instance_;
+        name_index port_;
+};
+
 void free_arch(t_arch* arch);
 
 void free_type_descriptors(t_type_descriptor* type_descriptors, int num_type_descriptors);

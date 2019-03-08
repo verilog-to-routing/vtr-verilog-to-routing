@@ -472,7 +472,7 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         }
 
         /* Sanity check the resulting netlist */
-        check_netlist();
+        check_netlist(packer_opts.pack_verbosity);
 
         /* Output the netlist stats to console. */
         printClusteredNetlistStats();
@@ -659,10 +659,10 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             //Do the actual routing
             if (NO_FIXED_CHANNEL_WIDTH == chan_width) {
                 //Find minimum channel width
-                route_status = vpr_route_min_W(vpr_setup, arch, timing_info, net_delay);
+                route_status = vpr_route_min_W(vpr_setup, arch, timing_info, routing_delay_calc, net_delay);
             } else {
                 //Route at specified channel width
-                route_status = vpr_route_fixed_W(vpr_setup, arch, chan_width, timing_info, net_delay);
+                route_status = vpr_route_fixed_W(vpr_setup, arch, chan_width, timing_info, routing_delay_calc, net_delay);
             }
 
             //Save the routing in the .route file
@@ -717,7 +717,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
     return route_status;
 }
 
-RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay) {
+RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, std::shared_ptr<RoutingDelayCalculator> delay_calc, vtr::vector<ClusterNetId, float *>& net_delay) {
     vtr::ScopedStartFinishTimer timer("Routing");
 
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width || fixed_channel_width <= 0) {
@@ -730,6 +730,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fi
 
     bool status = try_route(fixed_channel_width,
                             vpr_setup.RouterOpts,
+                            vpr_setup.AnalysisOpts,
                             &vpr_setup.RoutingArch,
                             vpr_setup.Segments,
                             net_delay,
@@ -738,6 +739,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fi
                             vpr_setup.Timing,
 #endif
                             timing_info,
+                            delay_calc,
                             arch.Chans,
                             arch.Directs, arch.num_directs,
                             ScreenUpdatePriority::MAJOR);
@@ -746,7 +748,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fi
     return RouteStatus(status, fixed_channel_width);
 }
 
-RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay) {
+RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, std::shared_ptr<RoutingDelayCalculator> delay_calc, vtr::vector<ClusterNetId, float *>& net_delay) {
     vtr::ScopedStartFinishTimer timer("Routing");
 
     auto& router_opts = vpr_setup.RouterOpts;
@@ -764,7 +766,8 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::sha
 #ifdef ENABLE_CLASSIC_VPR_STA
                                               vpr_setup.Timing,
 #endif
-                                              timing_info);
+                                              timing_info,
+                                              delay_calc);
 
     bool status = (min_W > 0);
     return RouteStatus(status, min_W);
@@ -1196,7 +1199,7 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
     }
 
     if (!power_error) {
-        float power_runtime_s;
+        float power_runtime_s = 0;
 
         VTR_LOG("Running power estimation\n");
 

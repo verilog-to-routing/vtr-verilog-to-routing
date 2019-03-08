@@ -23,6 +23,7 @@ option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
 option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
+option(WITH_LIBRTLNUMBER "Enable build with librtlnumber" OFF)
 option(WITH_OLD_ABC "Enable build with old abc" OFF)
 option(ODIN_DEBUG "Enable building oding with extra debug flags" OFF)
 
@@ -194,14 +195,18 @@ if(VTR_ENABLE_DEBUG_LOGGING)
     message(STATUS "Logging Flags: ${LOGGING_FLAGS}")
 endif()
 
-# add colored output, this is a fix for ninja
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set(COLORED_COMPILE "-fdiagnostics-color=always")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(COLORED_COMPILE "-fcolor-diagnostics")
-else()
-    set(COLORED_COMPILE "")
-endif ()
+if (CMAKE_MAKE_PROGRAM EQUAL "ninja" )
+    #Only for coloured output for ninja, it may be desired
+    #to not force colours with other make programs (e.g. if
+    #being parsed by an IDE).
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        set(COLORED_COMPILE "-fdiagnostics-color=always")
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        set(COLORED_COMPILE "-fcolor-diagnostics")
+    else()
+        set(COLORED_COMPILE "")
+    endif ()
+endif()
 
 #
 # Set final flags
@@ -331,6 +336,13 @@ set_target_properties(libtatum
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/EXTERNAL/libtatum"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/EXTERNAL/libtatum"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/EXTERNAL/libtatum")
+if(WITH_LIBRTLNUMBER)
+    set_target_properties(librtlnumber rtl_number
+        PROPERTIES
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/librtlnumber"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/librtlnumber"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/librtlnumber")
+endif()
 set_target_properties(libabc abc 
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc"
