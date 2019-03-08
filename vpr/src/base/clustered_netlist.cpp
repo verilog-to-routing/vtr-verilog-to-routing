@@ -102,10 +102,10 @@ bool ClusteredNetlist::net_is_ignored(const ClusterNetId id) const {
     return net_is_ignored_[id];
 }
 
-bool ClusteredNetlist::is_global_net(const ClusterNetId id) const {
+bool ClusteredNetlist::net_is_global(const ClusterNetId id) const {
     VTR_ASSERT_SAFE(valid_net_id(id));
 
-    return is_global_net_[id];
+    return net_is_global_[id];
 }
 
 /*
@@ -190,7 +190,7 @@ ClusterNetId ClusteredNetlist::create_net(const std::string name) {
     if (net_id == ClusterNetId::INVALID()) {
         net_id = Netlist::create_net(name);
         net_is_ignored_.push_back(false);
-        is_global_net_.push_back(false);
+        net_is_global_.push_back(false);
     }
 
     VTR_ASSERT(validate_net_sizes());
@@ -204,10 +204,10 @@ void ClusteredNetlist::set_net_is_ignored(ClusterNetId net_id, bool state) {
     net_is_ignored_[net_id] = state;
 }
 
-void ClusteredNetlist::set_is_global_net(ClusterNetId net_id, bool state) {
+void ClusteredNetlist::set_net_is_global(ClusterNetId net_id, bool state) {
     VTR_ASSERT(valid_net_id(net_id));
 
-    is_global_net_[net_id] = state;
+    net_is_global_[net_id] = state;
 }
 
 void ClusteredNetlist::remove_block_impl(const ClusterBlockId blk_id) {
@@ -252,7 +252,7 @@ void ClusteredNetlist::clean_pins_impl(const vtr::vector_map<ClusterPinId, Clust
 void ClusteredNetlist::clean_nets_impl(const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map) {
     //Update all the net values
     net_is_ignored_ = clean_and_reorder_values(net_is_ignored_, net_id_map);
-    is_global_net_ = clean_and_reorder_values(is_global_net_, net_id_map);
+    net_is_global_ = clean_and_reorder_values(net_is_global_, net_id_map);
 }
 
 void ClusteredNetlist::rebuild_block_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& /*pin_id_map*/,
@@ -291,7 +291,7 @@ void ClusteredNetlist::shrink_to_fit_impl() {
 
     //Net data
     net_is_ignored_.shrink_to_fit();
-    is_global_net_.shrink_to_fit();
+    net_is_global_.shrink_to_fit();
 }
 
 
@@ -322,7 +322,7 @@ bool ClusteredNetlist::validate_pin_sizes_impl(size_t num_pins) const {
 }
 
 bool ClusteredNetlist::validate_net_sizes_impl(size_t num_nets) const {
-    if (net_is_ignored_.size() != num_nets && is_global_net_.size() != num_nets) {
+    if (net_is_ignored_.size() != num_nets && net_is_global_.size() != num_nets) {
         return false;
     }
     return true;

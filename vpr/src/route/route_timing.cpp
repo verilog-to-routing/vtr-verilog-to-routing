@@ -1052,7 +1052,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id, unsigned itarget, int 
     t_heap* cheapest = nullptr;
     t_bb bounding_box = route_ctx.route_bb[net_id];
 
-    bool is_global_net = cluster_ctx.clb_nlist.is_global_net(net_id);
+    bool net_is_global = cluster_ctx.clb_nlist.net_is_global(net_id);
     bool high_fanout = is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), high_fanout_threshold);
     constexpr float HIGH_FANOUT_CRITICALITY_THRESHOLD = 0.9;
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
@@ -1060,7 +1060,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id, unsigned itarget, int 
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
     //the heap to ensure it has more flexibility to find the best path.
-    if (high_fanout && !sink_critical &&!is_global_net) {
+    if (high_fanout && !sink_critical &&!net_is_global) {
         cheapest = timing_driven_route_connection_from_route_tree_high_fanout(rt_root, sink_node,
                                 cost_params,
                                 bounding_box,

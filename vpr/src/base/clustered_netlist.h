@@ -166,7 +166,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         bool net_is_ignored(const ClusterNetId id) const;
 
         //Returns whether the net is global
-        bool is_global_net(const ClusterNetId id) const;
+        bool net_is_global(const ClusterNetId id) const;
 
     public: //Public Mutators
         //Create or return an existing block in the netlist
@@ -203,8 +203,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         //Sets the flag in net_ignored_ = state
         void set_net_is_ignored(ClusterNetId net_id, bool state);
 
-        //Sets the flag in is_global_net_ = state
-        void set_is_global_net(ClusterNetId net_id, bool state);
+        //Sets the flag in net_is_global_ = state
+        void set_net_is_global(ClusterNetId net_id, bool state);
 
     private: //Private Members
         /*
@@ -257,7 +257,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 
         //Nets
         vtr::vector_map<ClusterNetId, bool> net_is_ignored_;     //Boolean mapping indicating if the net is ignored
-        vtr::vector_map<ClusterNetId, bool> is_global_net_;     //Boolean mapping indicating if the net is global
+        vtr::vector_map<ClusterNetId, bool> net_is_global_;     //Boolean mapping indicating if the net is global
 };
 
 #endif

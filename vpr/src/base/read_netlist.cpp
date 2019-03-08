@@ -982,7 +982,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 
                     // nets connecting to global pins are marked as global nets
                     if (clb_nlist.block_type(blk_id)->is_pin_global[j]) {
-                        clb_nlist.set_is_global_net(clb_net_id, true);
+                        clb_nlist.set_net_is_global(clb_net_id, true);
                     }
 
 					if (clb_nlist.block_type(blk_id)->is_ignored_pin[j]) {
