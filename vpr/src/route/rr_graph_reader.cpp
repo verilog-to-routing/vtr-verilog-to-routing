@@ -379,18 +379,12 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
     pugi::xml_node edges;
 
     edges = get_first_child(parent, "edge", loc_data);
-    int source_node;
     //count the number of edges and store it in a vector
     vector<int> num_edges_for_node;
     num_edges_for_node.resize(device_ctx.rr_nodes.size(), 0);
 
     while (edges) {
-        source_node = get_attribute(edges, "src_node", loc_data).as_int(0);
-        if(source_node < 0) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                    "source_node %d must be positive",
-                    source_node, device_ctx.rr_nodes.size());
-        }
+        size_t source_node = get_attribute(edges, "src_node", loc_data).as_uint();
         if(source_node >= device_ctx.rr_nodes.size()) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "source_node %d is larger than rr_nodes.size() %d",
@@ -407,7 +401,6 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
         num_edges_for_node[inode] = 0;
     }
 
-    int sink_node, switch_id;
     edges = get_first_child(parent, "edge", loc_data);
     /*initialize a vector that keeps track of the number of wire to ipin switches
     There should be only one wire to ipin switch. In case there are more, make sure to
@@ -418,9 +411,9 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
     pair <int, int> most_frequent_switch(-1, 0);
 
     while (edges) {
-        source_node = get_attribute(edges, "src_node", loc_data).as_int(0);
-        sink_node = get_attribute(edges, "sink_node", loc_data).as_int(0);
-        switch_id = get_attribute(edges, "switch_id", loc_data).as_int(0);
+        size_t source_node = get_attribute(edges, "src_node", loc_data).as_uint();
+        size_t sink_node = get_attribute(edges, "sink_node", loc_data).as_uint();
+        int switch_id = get_attribute(edges, "switch_id", loc_data).as_int();
 
         if(sink_node >= device_ctx.rr_nodes.size()) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
@@ -460,7 +453,6 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
 /* All channel info is read in and loaded into device_ctx.chan_width*/
 void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
     pugi::xml_node channel, channelLists;
-    int index;
 
     channel = get_first_child(parent, "channel", loc_data);
 
@@ -472,7 +464,7 @@ void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pug
 
     channelLists = get_first_child(parent, "x_list", loc_data);
     while (channelLists) {
-        index = get_attribute(channelLists, "index", loc_data).as_int(0);
+        size_t index = get_attribute(channelLists, "index", loc_data).as_uint();
         if(index >= chan_width.x_list.size()) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "index %d on x_list exceeds x_list size %u",
@@ -483,7 +475,7 @@ void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pug
     }
     channelLists = get_first_child(parent, "y_list", loc_data);
     while (channelLists) {
-        index = get_attribute(channelLists, "index", loc_data).as_int(0);
+        size_t index = get_attribute(channelLists, "index", loc_data).as_uint();
         if(index >= chan_width.y_list.size()) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "index %d on y_list exceeds y_list size %u",
