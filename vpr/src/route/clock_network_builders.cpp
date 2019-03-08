@@ -63,10 +63,12 @@ void ClockNetwork::set_num_instance(int num_inst) {
  * ClockNetwork (Member functions)
  */
 
-void ClockNetwork::create_rr_nodes_for_clock_network_wires(ClockRRGraphBuilder& clock_graph) {
-
+void ClockNetwork::create_rr_nodes_for_clock_network_wires(
+        ClockRRGraphBuilder& clock_graph,
+        int num_segments)
+{
     for(int inst_num = 0; inst_num < get_num_inst(); inst_num++){
-        create_rr_nodes_and_internal_edges_for_one_instance(clock_graph);
+        create_rr_nodes_and_internal_edges_for_one_instance(clock_graph, num_segments);
     }
 }
 
@@ -181,9 +183,14 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
 }
 
 void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(
-        ClockRRGraphBuilder& clock_graph)
+        ClockRRGraphBuilder& clock_graph,
+        int num_segments)
 {
- 
+
+    // Only chany wires need to know the number of segments inorder
+    // to calculate the cost_index
+    (void) num_segments;
+
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_nodes = device_ctx.rr_nodes;
     auto& grid = device_ctx.grid;
@@ -283,25 +290,26 @@ int ClockRib::create_chanx_wire(
     rr_nodes[node_index].set_type(CHANX);
     rr_nodes[node_index].set_capacity(1);
     rr_nodes[node_index].set_track_num(ptc_num);
-    rr_nodes[node_index].set_cost_index(CHANX_COST_INDEX_START); // Actual value set later
     auto rc_index = find_create_rr_rc_data(x_chan_wire.layer.r_metal, x_chan_wire.layer.c_metal);
     rr_nodes[node_index].set_rc_index(rc_index);
     rr_nodes[node_index].set_direction(direction);
 
+    short seg_index = 0;
     switch(direction) {
         case BI_DIRECTION:
-            rr_nodes[node_index].set_seg_index(drive_seg_idx);
+            seg_index = drive_seg_idx;
             break;
         case DEC_DIRECTION:
-            rr_nodes[node_index].set_seg_index(left_seg_idx);
+            seg_index = left_seg_idx;
             break;
         case INC_DIRECTION:
-            rr_nodes[node_index].set_seg_index(right_seg_idx);
+            seg_index = right_seg_idx;
             break;
         default:
             VTR_ASSERT_MSG(false, "Unidentified direction type for clock rib");
             break;
     }
+    rr_nodes[node_index].set_cost_index(CHANX_COST_INDEX_START+seg_index); // Actual value set later
 
     return node_index;
 }
@@ -434,7 +442,8 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
 }
 
 void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(
-        ClockRRGraphBuilder& clock_graph)
+        ClockRRGraphBuilder& clock_graph,
+        int num_segments)
 {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -488,7 +497,8 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(
                                     x,
                                     ptc_num,
                                     BI_DIRECTION,
-                                    rr_nodes);
+                                    rr_nodes,
+                                    num_segments);
             clock_graph.add_switch_location(get_name(), drive.name, x, drive_y, drive_node_idx);
 
             // create spine wire above and below the drive point
@@ -498,14 +508,16 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(
                                     x,
                                     ptc_num,
                                     DEC_DIRECTION,
-                                    rr_nodes);
+                                    rr_nodes,
+                                    num_segments);
             auto right_node_idx = create_chany_wire(
                                     drive_y+1,
                                     y_end,
                                     x,
                                     ptc_num,
                                     INC_DIRECTION,
-                                    rr_nodes);
+                                    rr_nodes,
+                                    num_segments);
 
             // Keep a record of the rr_node idx that we will use to connects switches to at
             // the tap point
@@ -531,7 +543,8 @@ int ClockSpine::create_chany_wire(
     int x,
     int ptc_num,
     e_direction direction,
-    std::vector<t_rr_node>& rr_nodes)
+    std::vector<t_rr_node>& rr_nodes,
+    int num_segments)
 {
     rr_nodes.emplace_back();
     auto node_index = rr_nodes.size() - 1;
@@ -542,23 +555,24 @@ int ClockSpine::create_chany_wire(
     rr_nodes[node_index].set_track_num(ptc_num);
     auto rc_index = find_create_rr_rc_data(y_chan_wire.layer.r_metal, y_chan_wire.layer.c_metal);
     rr_nodes[node_index].set_rc_index(rc_index);
-    rr_nodes[node_index].set_cost_index(CHANX_COST_INDEX_START); // Actual value set later
     rr_nodes[node_index].set_direction(direction);
 
+    short seg_index = 0;
     switch(direction) {
         case BI_DIRECTION:
-            rr_nodes[node_index].set_seg_index(drive_seg_idx);
+            seg_index = drive_seg_idx;
             break;
         case DEC_DIRECTION:
-            rr_nodes[node_index].set_seg_index(left_seg_idx);
+            seg_index = left_seg_idx;
             break;
         case INC_DIRECTION:
-            rr_nodes[node_index].set_seg_index(right_seg_idx);
+            seg_index = right_seg_idx;
             break;
         default:
             VTR_ASSERT_MSG(false, "Unidentified direction type for clock rib");
             break;
     }
+    rr_nodes[node_index].set_cost_index(CHANX_COST_INDEX_START + num_segments + seg_index);
 
     return node_index;
 }
@@ -596,11 +610,13 @@ void ClockHTree::create_segments(std::vector<t_segment_inf>& segment_inf) {
     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "HTrees are not yet supported.\n");
 }
 void ClockHTree::create_rr_nodes_and_internal_edges_for_one_instance(
-        ClockRRGraphBuilder& clock_graph)
+        ClockRRGraphBuilder& clock_graph,
+        int num_segments)
 {
 
     //Remove unused parameter warning
-    (void)clock_graph; 
+    (void)clock_graph;
+    (void)num_segments;
 
     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "HTrees are not yet supported.\n");
 }

@@ -29,7 +29,7 @@ void ClockRRGraphBuilder::create_and_append_clock_rr_graph(
     size_t clock_nodes_start_idx = device_ctx.rr_nodes.size();
 
     ClockRRGraphBuilder clock_graph = ClockRRGraphBuilder();
-    clock_graph.create_clock_networks_wires(clock_networks);
+    clock_graph.create_clock_networks_wires(clock_networks, segment_inf.size());
     clock_graph.create_clock_networks_switches(clock_routing);
 
     // Reset fanin to account for newly added clock rr_nodes
@@ -43,7 +43,6 @@ void ClockRRGraphBuilder::create_and_append_clock_rr_graph(
 
     alloc_and_load_rr_indexed_data(segment_inf, device_ctx.rr_node_indices,
             chan_width->max, wire_to_rr_ipin_switch, base_cost_type);
-    set_rr_node_cost_idx_based_on_seg_idx(segment_inf.size());
 
     float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
     vtr::printf_info("Building clock network resource graph took %g seconds\n", elapsed_time);
@@ -51,11 +50,12 @@ void ClockRRGraphBuilder::create_and_append_clock_rr_graph(
 
 // Clock network information comes from the arch file
 void ClockRRGraphBuilder::create_clock_networks_wires(
-        std::vector<std::unique_ptr<ClockNetwork>>& clock_networks)
+        std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
+        int num_segments)
 {
     // Add rr_nodes for each clock network wire
     for (auto& clock_network : clock_networks) {
-        clock_network->create_rr_nodes_for_clock_network_wires(*this);
+        clock_network->create_rr_nodes_for_clock_network_wires(*this, num_segments);
     }
 
     // Reduce the capacity of rr_nodes for performance

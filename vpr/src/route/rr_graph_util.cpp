@@ -78,23 +78,3 @@ int seg_index_of_sblock(int from_node, int to_node) {
 	}
 }
 
-void set_rr_node_cost_idx_based_on_seg_idx(int num_segments) {
-
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& rr_nodes = device_ctx.rr_nodes;
-
-    for(size_t node_idx = 0; node_idx < rr_nodes.size(); node_idx++) {
-        t_rr_type rr_type = rr_nodes[node_idx].type();
-        size_t seg_idx = rr_nodes[node_idx].seg_index();
-        // TODO: Add check to make sure that seg_idx was set. Can be done by chaning
-        //       seg_index to be a short and then Asserting that its value is not -1
-        //       since that is the value that rr_node initializes it with. However,
-        //       seg_index() function currently returns a size_t type value
-        if(rr_type == CHANX) {
-            rr_nodes[node_idx].set_cost_index(CHANX_COST_INDEX_START + seg_idx);
-        } else if (rr_type == CHANY) {
-            rr_nodes[node_idx].set_cost_index(CHANX_COST_INDEX_START + num_segments + seg_idx);
-        }
-    }
-
-}

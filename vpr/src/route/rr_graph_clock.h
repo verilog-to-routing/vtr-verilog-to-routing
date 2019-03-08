@@ -107,7 +107,9 @@ class ClockRRGraphBuilder {
 
     private:
         /* loop over all of the clock networks and create their wires */
-        void create_clock_networks_wires(std::vector<std::unique_ptr<ClockNetwork>>& clock_networks);
+        void create_clock_networks_wires(
+            std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
+            int num_segments);
 
         /* loop over all clock routing connections and create the switches and connections */
         void create_clock_networks_switches(

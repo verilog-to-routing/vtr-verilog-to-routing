@@ -235,7 +235,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     int xlow, ylow, xhigh, yhigh, ptc_num, capacity;
     t_rr_type rr_type;
     t_type_ptr type;
-    int nodes_per_chan, tracks_per_node, num_edges;
+    int nodes_per_chan, tracks_per_node, num_edges, cost_index;
     float C, R;
 
 
@@ -246,7 +246,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     yhigh = device_ctx.rr_nodes[inode].yhigh();
     ptc_num = device_ctx.rr_nodes[inode].ptc_num();
     capacity = device_ctx.rr_nodes[inode].capacity();
-    auto cost_index = device_ctx.rr_nodes[inode].cost_index();
+    cost_index = device_ctx.rr_nodes[inode].cost_index();
     type = nullptr;
 
     const auto& grid = device_ctx.grid;
@@ -265,7 +265,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                 "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
     }
 
-    if (cost_index >= device_ctx.rr_indexed_data.size()) {
+    if (cost_index < 0 || cost_index >= (int) device_ctx.rr_indexed_data.size()) {
         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                 "in check_rr_node: node %d cost index (%d) is out of range.\n", inode, cost_index);
     }

@@ -1658,7 +1658,6 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 
         /* Edge arrays have now been built up.  Do everything else.  */
         L_rr_node[node].set_cost_index(cost_index_offset + seg_details[track].index());
-        L_rr_node[node].set_seg_index(seg_details[track].index());
         L_rr_node[node].set_capacity(1); /* GLOBAL routing handled elsewhere */
 
         if (chan_type == CHANX) {
@@ -2370,7 +2369,7 @@ void print_rr_node(FILE * fp, const std::vector<t_rr_node> &L_rr_node, int inode
 
     fprintf(fp, "Capacity: %d\n", L_rr_node[inode].capacity());
     fprintf(fp, "R: %g  C: %g\n", L_rr_node[inode].R(), L_rr_node[inode].C());
-    fprintf(fp, "Cost_index: %zd\n", L_rr_node[inode].cost_index());
+    fprintf(fp, "Cost_index: %d\n", L_rr_node[inode].cost_index());
 }
 
 /* Prints all the device_ctx.rr_indexed_data of index to file fp.   */
