@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 2.8.12)
-cmake_policy(VERSION 3.9) #For cmake >= 3.9 INTERPROCEDURAL_OPTIMIZATION behaviour
+
+if (${CMAKE_VERSION} VERSION_LESS "3.9")
+    #For cmake >= 3.9 INTERPROCEDURAL_OPTIMIZATION behaviour we need to explicitly
+    #set the cmake policy version number
+    cmake_policy(VERSION 3.9) 
+
+    # If we are using verison < 3.9 then setting INTERPROCEDURAL_OPTIMIZATION
+    # has no effect unless an Intel compiler is used
+endif()
 
 project("vpr")
 
