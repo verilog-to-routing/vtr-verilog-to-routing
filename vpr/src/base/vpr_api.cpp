@@ -1192,7 +1192,7 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
     }
 
     if (!power_error) {
-        float power_runtime_s;
+        float power_runtime_s = 0;
 
         VTR_LOG("Running power estimation\n");
 
