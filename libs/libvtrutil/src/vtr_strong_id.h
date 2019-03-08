@@ -223,7 +223,7 @@ bool operator<(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentine
 namespace std {
     template<typename tag, typename T, T sentinel>
     struct hash<vtr::StrongId<tag,T,sentinel>> {
-        std::size_t operator()(const vtr::StrongId<tag,T,sentinel> k) const {
+        std::size_t operator()(const vtr::StrongId<tag,T,sentinel> k) const noexcept {
             return std::hash<T>()(k.id_); //Hash with the underlying type
         }
     };
