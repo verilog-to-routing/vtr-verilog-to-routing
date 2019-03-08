@@ -493,12 +493,12 @@ PinId Netlist<BlockId, PortId, PinId, NetId>::find_pin(const PortId port_id, Bit
         return pin_port_bit(pin_id) < bit_index;
     };
 
-    auto pins = port_pins(port_id);
+    auto pins_rng = port_pins(port_id);
 
     //Finds the location where the pin with bit index port_bit should be located (if it exists)
-    auto iter = std::lower_bound(pins.begin(), pins.end(), port_bit, port_bit_cmp);
+    auto iter = std::lower_bound(pins_rng.begin(), pins_rng.end(), port_bit, port_bit_cmp);
 
-    if (iter == pins.end() || pin_port_bit(*iter) != port_bit) {
+    if (iter == pins_rng.end() || pin_port_bit(*iter) != port_bit) {
         //Either the end of the pins (i.e. not found), or
         //the value does not match (indicating a gap in the indicies, so also not found)
         return PinId::INVALID();
@@ -1689,12 +1689,12 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_net_pin_refs() const {
     vtr::vector_map<PinId, unsigned> seen_pin_ids(pin_ids_.size());
 
     for (auto net_id : nets()) {
-        auto pins = net_pins(net_id);
-        for (auto iter = pins.begin(); iter != pins.end(); ++iter) {
-            int pin_index = std::distance(pins.begin(), iter);
+        auto pins_rng = net_pins(net_id);
+        for (auto iter = pins_rng.begin(); iter != pins_rng.end(); ++iter) {
+            int pin_index = std::distance(pins_rng.begin(), iter);
             auto pin_id = *iter;
 
-            if (iter == pins.begin()) {
+            if (iter == pins_rng.begin()) {
                 //The first net pin is the driver, which may be invalid
                 //if there is no driver.
                 if (pin_id) {
