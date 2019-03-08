@@ -48,14 +48,12 @@ struct BlifAllocCallback : public blifparse::Callback {
     public:
         BlifAllocCallback(e_circuit_format blif_format, AtomNetlist& main_netlist, 
                           const std::string netlist_id, 
-                          const t_model* user_models, const t_model* library_models,
-                          int verbosity)
+                          const t_model* user_models, const t_model* library_models)
             : main_netlist_(main_netlist)
             , netlist_id_(netlist_id)
             , user_arch_models_(user_models)
             , library_arch_models_(library_models)
-            , blif_format_(blif_format) 
-            , verbosity_(verbosity) {
+            , blif_format_(blif_format) {
             VTR_ASSERT(blif_format_ == e_circuit_format::BLIF
                        || blif_format_ == e_circuit_format::EBLIF);
         }
@@ -642,8 +640,6 @@ struct BlifAllocCallback : public blifparse::Callback {
         std::vector<std::pair<AtomNetId,AtomNetId>> curr_nets_to_merge_;
 
         e_circuit_format blif_format_ = e_circuit_format::BLIF;
-        e_const_gen_inference const_gen_inference_ = e_const_gen_inference::COMB;
-        int verbosity_ = 1;
 
 };
 
@@ -663,14 +659,13 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
 AtomNetlist read_blif(e_circuit_format circuit_format,
                       const char *blif_file,
                       const t_model *user_models,
-                      const t_model *library_models,
-                      const int verbosity) {
+                      const t_model *library_models) {
 
 
     AtomNetlist netlist;
     std::string netlist_id = vtr::secure_digest_file(blif_file);
 
-    BlifAllocCallback alloc_callback(circuit_format, netlist, netlist_id, user_models, library_models, verbosity);
+    BlifAllocCallback alloc_callback(circuit_format, netlist, netlist_id, user_models, library_models);
     blifparse::blif_parse_filename(blif_file, alloc_callback);
 
     return netlist;
