@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-if (${CMAKE_VERSION} VERSION_LESS "3.9")
+if (${CMAKE_VERSION} VERSION_GREATER "3.8")
     #For cmake >= 3.9 INTERPROCEDURAL_OPTIMIZATION behaviour we need to explicitly
     #set the cmake policy version number
     cmake_policy(VERSION 3.9) 
