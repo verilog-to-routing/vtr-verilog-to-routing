@@ -48,7 +48,6 @@ using namespace std;
 constexpr float UNINITIALIZED_DELTA = -1; //Indicates the delta delay value has not been calculated
 constexpr float EMPTY_DELTA = -2; //Indicates delta delay from/to an EMPTY block
 constexpr float IMPOSSIBLE_DELTA = std::numeric_limits<float>::infinity(); //Indicates there is no valid delta delay
-constexpr float INVALID_DELTA = std::numeric_limits<float>::quiet_NaN(); //Indicates there is no valid delta delay
 
 struct t_profile_loc {
     t_profile_loc(int x, int y, std::vector<vtr::Point<int>> delta_values)
