@@ -3276,12 +3276,11 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 				free_signal_list(return_list);
 				return_list = in_1;
 
-				/* free unused nnodes for related BLOCKING_STATEMENT/NON_BLOCKING_STATEMENT nodes */
+				/* free unused nnodes for related BLOCKING_STATEMENT nodes */
 				int i;
 				for (i = 0; i < output_size; i++) {
 					nnode_t *temp_node = in_1->pins[i]->node;
-					ids ast_node_type = temp_node->related_ast_node->type;
-					if ((ast_node_type == BLOCKING_STATEMENT || ast_node_type == NON_BLOCKING_STATEMENT) && temp_node->type != MEMORY) {
+					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
 						free_nnode(temp_node);
 					}
 				}
@@ -3313,10 +3312,9 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 					npin_t *pin = right_outputs->pins[i];
 					add_pin_to_signal_list(return_list, pin);
 
-					/* free unused nnodes for related BLOCKING_STATEMENT/NON_BLOCKING_STATEMENT nodes */
+					/* free unused nnodes for related BLOCKING_STATEMENT nodes */
 					nnode_t *temp_node = right_outputs->pins[i]->node;
-					ids ast_node_type = temp_node->related_ast_node->type;
-					if ((ast_node_type == BLOCKING_STATEMENT || ast_node_type == NON_BLOCKING_STATEMENT) && temp_node->type != MEMORY) {
+					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
 						free_nnode(temp_node);
 					}
 				}
@@ -4281,6 +4279,7 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 	signal_list_t **if_statements;
 	signal_list_t *return_list;
 	int i;
+	int j;
 
 	/* make storage for statements and expressions */
 	if_statements = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*)*2);
@@ -4293,6 +4292,11 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 			/* IF - this is a normal case item, then process the case match and the details of the statement */
 			if_statements[i] = netlist_expand_ast_of_module(if_ast->children[i+1], instance_name_prefix);
 			sort_signal_list_alphabetically(if_statements[i]);
+
+			/* free ununused nnodes */
+			for (j = 0; j < if_statements[i]->count; j++) {
+				free_nnode(if_statements[i]->pins[j]->node);
+			}
 		}
 		else
 		{
