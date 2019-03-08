@@ -3266,7 +3266,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 					/* free unused nnodes for related BLOCKING_STATEMENT nodes */
 					nnode_t *temp_node = in_1->pins[i]->node;
 					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
-						free_nnode(temp_node);
+						in_1->pins[i]->node = free_nnode(temp_node);
 					}
 				}
 				free_signal_list(in_1);
@@ -3281,7 +3281,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 				for (i = 0; i < output_size; i++) {
 					nnode_t *temp_node = in_1->pins[i]->node;
 					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
-						free_nnode(temp_node);
+						in_1->pins[i]->node = free_nnode(temp_node);
 					}
 				}
 			}
@@ -3315,7 +3315,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 					/* free unused nnodes for related BLOCKING_STATEMENT nodes */
 					nnode_t *temp_node = right_outputs->pins[i]->node;
 					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
-						free_nnode(temp_node);
+						right_outputs->pins[i]->node = free_nnode(temp_node);
 					}
 				}
 				free_signal_list(right_outputs);
@@ -4293,9 +4293,12 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 			if_statements[i] = netlist_expand_ast_of_module(if_ast->children[i+1], instance_name_prefix);
 			sort_signal_list_alphabetically(if_statements[i]);
 
-			/* free ununused nnodes */
+			/* free unused nnodes */
 			for (j = 0; j < if_statements[i]->count; j++) {
-				free_nnode(if_statements[i]->pins[j]->node);
+				nnode_t* temp_node = if_statements[i]->pins[j]->node;
+				if (temp_node != NULL && temp_node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+					if_statements[i]->pins[j]->node = free_nnode(temp_node);
+				}
 			}
 		}
 		else
