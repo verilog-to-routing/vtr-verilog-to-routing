@@ -2,8 +2,9 @@
 #define CLOCK_MODELING_H
 
 enum e_clock_modeling {
-    IDEAL_CLOCK, //Treat the clock pins as ideal (i.e. not routed)
-    ROUTED_CLOCK //Treat the clock pins as normal nets (i.e. routed)
+    IDEAL_CLOCK,      //Treat the clock pins as ideal (i.e. not routed)
+    ROUTED_CLOCK,     //Treat the clock pins as normal nets (i.e. routed)
+    DEDICATED_NETWORK //Connect clock pins to a dedicated clock network
 };
 
 

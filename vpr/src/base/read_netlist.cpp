@@ -980,9 +980,15 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 					VTR_ASSERT(j == clb_nlist.pin_physical_index(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
 					VTR_ASSERT(j == clb_nlist.net_pin_physical_index(clb_net_id, count[clb_net_id]));
 
-					if (clb_nlist.block_type(blk_id)->is_global_pin[j])
-						clb_nlist.set_net_is_global(clb_net_id, true);
-                    /* Error check performed later to ensure no mixing of global and non-global signals */
+                    // nets connecting to global pins are marked as global nets
+                    if (clb_nlist.block_type(blk_id)->is_pin_global[j]) {
+                        clb_nlist.set_net_is_global(clb_net_id, true);
+                    }
+
+					if (clb_nlist.block_type(blk_id)->is_ignored_pin[j]) {
+						clb_nlist.set_net_is_ignored(clb_net_id, true);
+                    }
+                    /* Error check performed later to ensure no mixing of ignored and non ignored signals */
 
 				} else {
 					VTR_ASSERT(DRIVER == clb_nlist.block_type(blk_id)->class_inf[clb_nlist.block_type(blk_id)->pin_class[j]].type);
@@ -997,8 +1003,8 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
     VTR_ASSERT(ext_ncount == static_cast<int>(clb_nlist.nets().size()));
 	for (auto net_id : clb_nlist.nets()) {
 		for (auto pin_id : clb_nlist.net_sinks(net_id)) {
-			bool is_global_net = clb_nlist.net_is_global(net_id);
-			if (clb_nlist.block_type(clb_nlist.pin_block(pin_id))->is_global_pin[clb_nlist.pin_physical_index(pin_id)] != is_global_net) {
+			bool is_ignored_net = clb_nlist.net_is_ignored(net_id);
+			if (clb_nlist.block_type(clb_nlist.pin_block(pin_id))->is_ignored_pin[clb_nlist.pin_physical_index(pin_id)] != is_ignored_net) {
                 VTR_LOG_WARN(
 					"Netlist connects net %s to both global and non-global pins.\n",
 					clb_nlist.net_name(net_id).c_str());

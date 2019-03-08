@@ -201,9 +201,10 @@ void t_rr_node::set_class_num(short new_class_num) {
     ptc_.class_num = new_class_num;
 }
 
-void t_rr_node::set_cost_index(short new_cost_index) {
+void t_rr_node::set_cost_index(size_t new_cost_index) {
 	cost_index_ = new_cost_index;
 }
+
 void t_rr_node::set_rc_index(short new_rc_index) {
 	rc_index_ = new_rc_index;
 }

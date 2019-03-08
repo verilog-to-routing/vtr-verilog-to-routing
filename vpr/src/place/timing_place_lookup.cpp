@@ -95,8 +95,7 @@ static std::unique_ptr<OverrideDelayModel> compute_override_delay_model(const t_
 static bool verify_delta_delays(const vtr::Matrix<float>& delta_delays);
 static int get_best_class(enum e_pin_type pintype, t_type_ptr type);
 
-static int get_longest_segment_length(
-        t_det_routing_arch det_routing_arch, t_segment_inf * segment_inf);
+static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf);
 
 static void fix_empty_coordinates(vtr::Matrix<float>& delta_delays);
 static void fix_uninitialized_coordinates(vtr::Matrix<float>& delta_delays);
@@ -108,7 +107,7 @@ static float find_neightboring_average(vtr::Matrix<float> &matrix, int x, int y)
 std::unique_ptr<PlaceDelayModel> compute_place_delay_model(
         t_placer_opts placer_opts,
         t_router_opts router_opts,
-        t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+        t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
         t_chan_width_dist chan_width_dist, const t_direct_inf *directs,
         const int num_directs) {
 
@@ -121,7 +120,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(
     alloc_routing_structs(chan_width, router_opts, det_routing_arch, segment_inf,
             directs, num_directs);
 
-    int longest_length = get_longest_segment_length((*det_routing_arch), segment_inf);
+    int longest_length = get_longest_segment_length(segment_inf);
 
     /*now setup and compute the actual arrays */
     std::unique_ptr<PlaceDelayModel> place_delay_model;
@@ -166,7 +165,7 @@ static int get_best_class(enum e_pin_type pintype, t_type_ptr type) {
     currpin = 0;
     for (i = 0; i < type->num_class; i++) {
 
-        if (type->class_inf[i].type == pintype && !type->is_global_pin[currpin] &&
+        if (type->class_inf[i].type == pintype && !type->is_ignored_pin[currpin] &&
                 type->class_inf[i].num_pins > best_class_num_pins) {
             //Save the best class
             best_class_num_pins = type->class_inf[i].num_pins;
@@ -179,13 +178,12 @@ static int get_best_class(enum e_pin_type pintype, t_type_ptr type) {
     return best_class;
 }
 
-static int get_longest_segment_length(
-        t_det_routing_arch det_routing_arch, t_segment_inf * segment_inf) {
+static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf) {
 
-    int i, length;
+    int length;
 
     length = 0;
-    for (i = 0; i < det_routing_arch.num_segment; i++) {
+    for (size_t i = 0; i < segment_inf.size(); i++) {
         if (segment_inf[i].length > length)
             length = segment_inf[i].length;
     }

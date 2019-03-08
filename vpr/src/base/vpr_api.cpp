@@ -39,6 +39,7 @@ using namespace std;
 #include "pack.h"
 #include "place.h"
 #include "SetupGrid.h"
+#include "setup_clocks.h"
 #include "stats.h"
 #include "path_delay.h"
 #include "read_options.h"
@@ -252,7 +253,7 @@ void vpr_init(const int argc, const char **argv,
             &vpr_setup->AnalysisOpts,
             &vpr_setup->RoutingArch,
             &vpr_setup->PackerRRGraph,
-            &vpr_setup->Segments,
+            vpr_setup->Segments,
             &vpr_setup->Timing,
             &vpr_setup->ShowGraphics,
             &vpr_setup->GraphPause,
@@ -365,6 +366,8 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
     vtr::ScopedStartFinishTimer timer("Create Device");
     vpr_create_device_grid(vpr_setup, arch);
 
+    vpr_setup_clock_networks(vpr_setup, arch);
+
     if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
         vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width);
     }
@@ -436,6 +439,12 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         VTR_LOG("\n");
     }
 
+}
+
+void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
+    if(vpr_setup.clock_modeling == DEDICATED_NETWORK) {
+        setup_clock_networks(Arch, vpr_setup.Segments);
+    }
 }
 
 bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -670,8 +679,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::string graphics_msg;
         if (route_status.success()) {
             //Sanity check the routing
-            auto& device_ctx = g_vpr_ctx.device();
-            check_route(router_opts.route_type, device_ctx.num_rr_switches);
+            check_route(router_opts.route_type);
             get_serial_num();
 
             //Update status
@@ -811,7 +819,8 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 
     //Create the RR graph
 	create_rr_graph(graph_type,
-            device_ctx.num_block_types, device_ctx.block_types,
+            device_ctx.num_block_types,
+            device_ctx.block_types,
             device_ctx.grid,
 			chan_width,
 			device_ctx.num_arch_switches,
@@ -820,9 +829,9 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
+            router_opts.clock_modeling,
             router_opts.lookahead_type,
 			arch.Directs, arch.num_directs,
-			&device_ctx.num_rr_switches,
 			&warnings);
 
     //Initialize drawing, now that we have an RR graph
@@ -1024,7 +1033,7 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
         t_analysis_opts* AnalysisOpts,
         t_det_routing_arch *RoutingArch,
         vector <t_lb_type_rr_node> **PackerRRGraph,
-        t_segment_inf ** Segments, t_timing_inf * Timing,
+        std::vector<t_segment_inf>& Segments, t_timing_inf * Timing,
         bool * ShowGraphics, int *GraphPause,
         t_power_opts * PowerOpts) {
     SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch,
@@ -1042,7 +1051,7 @@ void vpr_check_setup(
         const t_packer_opts PackerOpts,
         const t_placer_opts PlacerOpts,
         const t_router_opts RouterOpts,
-        const t_det_routing_arch RoutingArch, const t_segment_inf * Segments,
+        const t_det_routing_arch RoutingArch, const std::vector<t_segment_inf>& Segments,
         const t_timing_inf Timing, const t_chan_width_dist Chans) {
     CheckSetup(PackerOpts, PlacerOpts, RouterOpts, RoutingArch,
             Segments, Timing, Chans);
@@ -1078,7 +1087,6 @@ bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteSt
 
 void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status) {
     auto& route_ctx = g_vpr_ctx.routing();
-    auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& atom_ctx = g_vpr_ctx.atom();
 
 	//Check the first index to see if a pointer exists
@@ -1104,8 +1112,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
     }
 
     routing_stats(vpr_setup.RouterOpts.full_stats, vpr_setup.RouterOpts.route_type,
-            device_ctx.num_rr_switches, vpr_setup.Segments,
-            vpr_setup.RoutingArch.num_segment,
+            vpr_setup.Segments,
             vpr_setup.RoutingArch.R_minW_nmos,
             vpr_setup.RoutingArch.R_minW_pmos,
             Arch.grid_logic_tile_area,

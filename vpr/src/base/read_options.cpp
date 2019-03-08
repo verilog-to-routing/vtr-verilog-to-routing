@@ -367,6 +367,7 @@ struct ParseClockModeling {
         ConvertedValue<e_clock_modeling> conv_value;
         if      (str == "ideal") conv_value.set_value(IDEAL_CLOCK);
         else if (str == "route") conv_value.set_value(ROUTED_CLOCK);
+        else if (str == "dedicated_network") conv_value.set_value(DEDICATED_NETWORK);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '"
@@ -381,15 +382,16 @@ struct ParseClockModeling {
     ConvertedValue<std::string> to_str(e_clock_modeling val) {
         ConvertedValue<std::string> conv_value;
         if (val == IDEAL_CLOCK) conv_value.set_value("ideal");
+        else if (val == ROUTED_CLOCK) conv_value.set_value("route");
         else {
-            VTR_ASSERT(val == ROUTED_CLOCK);
-            conv_value.set_value("route");
+            VTR_ASSERT(val == DEDICATED_NETWORK);
+            conv_value.set_value("dedicated_network");
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"ideal", "route"};
+        return {"ideal", "route", "dedicated_network"};
     }
 };
 
@@ -770,7 +772,9 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("Specifies how constant nets (i.e. those driven to a constant\n"
                   "value) are handled:\n"
                   " * global: Treat constant nets as globals (not routed)\n"
-                  " * route : Treat constant nets as normal nets (routed)\n")
+                  " * route : Treat constant nets as normal nets (routed)\n"
+                  " * dedicated_network : Build a dedicated clock network based on the\n"
+                  "                       clock network specified in the architecture file\n")
             .default_value("global")
             .show_in(argparse::ShowIn::HELP_ONLY);
 

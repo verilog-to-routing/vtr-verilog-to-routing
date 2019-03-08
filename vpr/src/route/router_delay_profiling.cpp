@@ -171,7 +171,7 @@ static t_rt_node* setup_routing_resources_no_net(int source_node) {
 void alloc_routing_structs(
         t_chan_width chan_width,
         t_router_opts router_opts,
-        t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+        t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
         const t_direct_inf *directs,
         const int num_directs) {
 
@@ -197,9 +197,9 @@ void alloc_routing_structs(
             router_opts.base_cost_type,
             router_opts.trim_empty_channels,
             router_opts.trim_obs_channels,
+            router_opts.clock_modeling,
             router_opts.lookahead_type,
             directs, num_directs,
-            &device_ctx.num_rr_switches,
             &warnings);
 
     alloc_and_load_rr_node_route_structs();

@@ -1,5 +1,6 @@
 #ifndef RR_NODE_H
 #define RR_NODE_H
+#include "rr_node_fwd.h"
 #include "vpr_types.h"
 
 #include "vtr_range.h"
@@ -137,7 +138,7 @@ class t_rr_node {
         void set_class_num(short); //Same as set_ptc_num() by checks type() is consistent
 
 
-        void set_cost_index(short);
+        void set_cost_index(size_t);
         void set_rc_index(short);
 
         void set_direction(e_direction);

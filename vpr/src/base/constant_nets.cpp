@@ -23,7 +23,7 @@ void process_constant_nets(ClusteredNetlist& nlist, e_constant_net_method method
                 //Mark net as global, so that it is not routed
                 VTR_LOG_WARN( "Treating constant net '%s' as global (will not be routed)\n",
                         nlist.net_name(net).c_str());
-                nlist.set_net_is_global(net, true);
+                nlist.set_net_is_ignored(net, true);
             }
         }
     } else {

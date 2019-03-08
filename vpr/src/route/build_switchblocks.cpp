@@ -624,20 +624,20 @@ static bool is_core(const DeviceGrid& grid, int x, int y){
 static void count_wire_type_sizes(const t_chan_seg_details *channel, int nodes_per_chan,
 			t_wire_type_sizes *wire_type_sizes){
 	string wire_type;
-	const char * new_type;
+	string new_type;
 	int new_length, length;
 	int new_start, start;
 	int num_wires = 0;
 	Wire_Info wire_info;
 
-	wire_type = channel[0].type_name_ptr();
+	wire_type = channel[0].type_name();
 	length = channel[0].length();
 	start = 0;
 	for (int iwire = 0; iwire < nodes_per_chan; iwire++){
-		new_type = channel[iwire].type_name_ptr();
+		new_type = channel[iwire].type_name();
 		new_length = channel[iwire].length();
 		new_start = iwire;
-		if (strcmp(new_type, wire_type.c_str()) != 0){
+        if (new_type != wire_type){
 			wire_info.set(length, num_wires, start);
 			(*wire_type_sizes)[wire_type] = wire_info;
 			wire_type = new_type;

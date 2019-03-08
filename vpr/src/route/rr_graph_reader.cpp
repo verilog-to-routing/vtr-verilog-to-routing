@@ -52,7 +52,7 @@ using namespace pugiutil;
 
 /*********************** Subroutines local to this module *******************/
 void process_switches(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
-void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const t_segment_inf *segment_inf);
+void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const std::vector<t_segment_inf>& segment_inf);
 void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void process_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const DeviceGrid& grid);
@@ -72,11 +72,9 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
 void load_rr_file(const t_graph_type graph_type,
         const DeviceGrid& grid,
         t_chan_width nodes_per_chan,
-        const int num_seg_types,
-        const t_segment_inf * segment_inf,
+        const std::vector<t_segment_inf>& segment_inf,
         const enum e_base_cost_type base_cost_type,
         int *wire_to_rr_ipin_switch,
-        int *num_rr_switches,
         const char* read_rr_graph_name) {
     vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
 
@@ -159,13 +157,12 @@ void load_rr_file(const t_graph_type graph_type,
         next_component = get_single_child(rr_graph, "switches", loc_data);
 
         int numSwitches = count_children(next_component, "switch", loc_data);
-        *num_rr_switches = numSwitches;
-        device_ctx.rr_switch_inf = new t_rr_switch_inf[numSwitches];
+        device_ctx.rr_switch_inf.resize(numSwitches);
 
         process_switches(next_component, loc_data);
 
         next_component = get_single_child(rr_graph, "rr_edges", loc_data);
-        process_edges(next_component, loc_data, wire_to_rr_ipin_switch, *num_rr_switches);
+        process_edges(next_component, loc_data, wire_to_rr_ipin_switch, numSwitches);
 
         //Partition the rr graph edges for efficient access to configurable/non-configurable
         //edge subsets. Must be done after RR switches have been allocated
@@ -177,9 +174,9 @@ void load_rr_file(const t_graph_type graph_type,
 
         //sets the cost index and seg id information
         next_component = get_single_child(rr_graph, "rr_nodes", loc_data);
-        set_cost_indices(next_component, loc_data, is_global_graph, num_seg_types);
+        set_cost_indices(next_component, loc_data, is_global_graph, segment_inf.size());
 
-        alloc_and_load_rr_indexed_data(segment_inf, num_seg_types, device_ctx.rr_node_indices,
+        alloc_and_load_rr_indexed_data(segment_inf, device_ctx.rr_node_indices,
                 max_chan_width, *wire_to_rr_ipin_switch, base_cost_type);
 
         process_seg_id(next_component, loc_data);
@@ -190,7 +187,7 @@ void load_rr_file(const t_graph_type graph_type,
             dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
         }
 
-        check_rr_graph(graph_type, grid, *num_rr_switches, device_ctx.block_types);
+        check_rr_graph(graph_type, grid, device_ctx.block_types);
 
     } catch (XmlError& e) {
 
@@ -201,7 +198,7 @@ void load_rr_file(const t_graph_type graph_type,
 
 /* Reads in the switch information and adds it to device_ctx.rr_switch_inf as specified*/
 void process_switches(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
     pugi::xml_node Switch, SwitchSubnode;
 
     Switch = get_first_child(parent, "switch", loc_data);
@@ -612,16 +609,16 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
 /* Segments was initialized already. This function checks
  * if it corresponds to the RR graph. Errors out if it doesn't correspond*/
-void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const t_segment_inf * segment_inf) {
+void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const std::vector<t_segment_inf>& segment_inf) {
     pugi::xml_node Segment, subnode;
 
     Segment = get_first_child(parent, "segment", loc_data);
     while (Segment) {
         int segNum = get_attribute(Segment, "id", loc_data).as_int();
         const char* name = get_attribute(Segment, "name", loc_data).as_string();
-        if (strcmp(segment_inf[segNum].name, name) != 0) {
+        if (strcmp(segment_inf[segNum].name.c_str(), name) != 0) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                    "Architecture file does not match RR graph's segment name: arch uses %s, RR graph uses %s", segment_inf[segNum].name, name);
+                    "Architecture file does not match RR graph's segment name: arch uses %s, RR graph uses %s", segment_inf[segNum].name.c_str(), name);
         }
 
         subnode = get_single_child(parent, "timing", loc_data, OPTIONAL);

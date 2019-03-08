@@ -145,15 +145,6 @@ void free_arch(t_arch* arch) {
     }
     delete[] arch->Switches;
     arch->Switches = nullptr;
-    for (int i = 0; i < arch->num_segments; ++i) {
-        vtr::free(arch->Segments[i].cb);
-        arch->Segments[i].cb = nullptr;
-        vtr::free(arch->Segments[i].sb);
-        arch->Segments[i].sb = nullptr;
-        vtr::free(arch->Segments[i].name);
-        arch->Segments[i].name = nullptr;
-    }
-    vtr::free(arch->Segments);
     t_model *model = arch->models;
     while (model) {
         t_model_ports *input_port = model->inputs;
@@ -265,7 +256,8 @@ void free_type_descriptors(t_type_descriptor* type_descriptors, int num_type_des
             vtr::free(type_descriptors[i].class_inf[j].pinlist);
         }
         vtr::free(type_descriptors[i].class_inf);
-        vtr::free(type_descriptors[i].is_global_pin);
+        vtr::free(type_descriptors[i].is_ignored_pin);
+        vtr::free(type_descriptors[i].is_pin_global);
         vtr::free(type_descriptors[i].pin_class);
 
         free_pb_type(type_descriptors[i].pb_type);
@@ -536,7 +528,7 @@ void SetupEmptyType(t_type_descriptor* cb_type_descriptors,
 	type->num_class = 0;
 	type->class_inf = nullptr;
 	type->pin_class = nullptr;
-	type->is_global_pin = nullptr;
+	type->is_ignored_pin = nullptr;
 	type->pb_type = nullptr;
 	type->area = UNDEFINED;
     type->switchblock_locations = vtr::Matrix<e_sb_type>({{size_t(type->width), size_t(type->height)}}, e_sb_type::FULL);
@@ -1346,10 +1338,10 @@ void primitives_annotation_clock_match(
 }
 
 
-t_segment_inf* find_segment(const t_arch* arch, std::string name) {
+const t_segment_inf* find_segment(const t_arch* arch, std::string name) {
 
-    for (int i = 0; i < arch->num_segments; ++i) {
-        t_segment_inf* seg = &arch->Segments[i];
+    for (size_t i = 0; i < (arch->Segments).size(); ++i) {
+        const t_segment_inf* seg = &arch->Segments[i];
         if (seg->name == name) {
             return seg;
         }

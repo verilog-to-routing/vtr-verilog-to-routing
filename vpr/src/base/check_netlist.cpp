@@ -84,7 +84,7 @@ void check_netlist(int verbosity) {
 static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosity) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	bool is_global_net = cluster_ctx.clb_nlist.net_is_global(net_id);
+	bool net_is_ignored = cluster_ctx.clb_nlist.net_is_ignored(net_id);
 
 	/* For now global signals can be driven by an I/O pad or any CLB output       *
 	 * although a CLB output generates a warning.  I could make a global CLB      *
@@ -95,7 +95,7 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
 		ClusterBlockId blk_id = cluster_ctx.clb_nlist.pin_block(pin_id);
 		int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
 
-		if (cluster_ctx.clb_nlist.block_type(blk_id)->is_global_pin[pin_index] != is_global_net
+		if (cluster_ctx.clb_nlist.block_type(blk_id)->is_ignored_pin[pin_index] != net_is_ignored
 			&& !is_io_type(cluster_ctx.clb_nlist.block_type(blk_id))) {
 
             VTR_LOGV_WARN(verbosity > 2,

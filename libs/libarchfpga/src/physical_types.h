@@ -28,6 +28,7 @@
 
 #include <functional>
 #include <vector>
+#include <unordered_map>
 #include <string>
 #include <map>
 #include <limits>
@@ -35,6 +36,7 @@
 #include "vtr_ndmatrix.h"
 
 #include "logic_types.h"
+#include "clock_types.h"
 
 //Forward declarations
 struct t_clock_arch;
@@ -434,7 +436,12 @@ constexpr int DEFAULT_SWITCH = -2;
  * pin_avg_width_offset: Average width offset to specified pin (exact if only a single physical pin instance)
  * pin_avg_height_offset: Average height offset to specified pin (exact if only a single physical pin instance)
  * pin_class: The class a pin belongs to
- * is_global_pin: Whether or not a pin is global (hence not routed)
+ * is_ignored_pin: Whether or not a pin is ignored durring rr_graph generation and routing.
+ *                 This is usually the case for clock pins and other global pins unless the
+ *                 clock_modeling option is set to route the clock through regular inter-block
+ *                 wiring or through a dedicated clock network.
+ * is_pin_global: Whether or not this pin is marked as global. Clock pins and other specified
+ *                global pins in the architecture file are marked as global.
  *
  * fc_specs: The Fc specifications for all pins
  *
@@ -475,7 +482,8 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
     std::vector<int> pin_width_offset; //[0..num_pins-1]
     std::vector<int> pin_height_offset; //[0..num_pins-1]
 	int *pin_class = nullptr; /* [0..num_pins-1] */
-	bool *is_global_pin = nullptr; /* [0..num_pins-1] */
+	bool *is_ignored_pin = nullptr; /* [0..num_pins-1] */
+    bool *is_pin_global = nullptr; /* [0..num_pins -1] */
 
     std::vector<t_fc_specification> fc_specs;
 
@@ -495,7 +503,7 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 	int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
     /* Returns the indices of pins that contain a clock for this physical logic block */
-    std::vector<int> get_clock_pins_indices();
+    std::vector<int> get_clock_pins_indices() const;
 
 };
 typedef const t_type_descriptor* t_type_ptr;
@@ -1006,7 +1014,7 @@ enum e_Fc_type {
  * (UDSD by AY) drivers: How do signals driving a routing track connect to   *
  *                       the track?                                          */
 struct t_segment_inf {
-	char *name;
+	std::string name;
 	int frequency;
 	int length;
 	short arch_wire_switch;
@@ -1017,10 +1025,8 @@ struct t_segment_inf {
 	float Rmetal;
 	float Cmetal;
 	enum e_directionality directionality;
-	bool *cb;
-	int cb_len;
-	bool *sb;
-	int sb_len;
+	std::vector<bool> cb;
+	std::vector<bool> sb;
 	//float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
 
@@ -1260,6 +1266,12 @@ struct t_switchblock_inf{
 	std::vector<t_wireconn_inf> wireconns;	/* list of wire types/groups this SB will connect */
 };
 
+/* Clock related data types used for building a dedicated clock network */
+struct t_clock_arch_spec {
+    std::vector<t_clock_network_arch> clock_networks_arch;
+    std::unordered_map<std::string, t_metal_layer> clock_metal_layers;
+    std::vector<t_clock_connection_arch> clock_connections_arch;
+};
 
 /*   Detailed routing architecture */
 struct t_arch {
@@ -1272,9 +1284,8 @@ struct t_arch {
 	float R_minW_pmos;
 	int Fs;
 	float grid_logic_tile_area;
-	t_segment_inf * Segments;
-	int num_segments;
-	t_arch_switch_inf *Switches;
+	std::vector<t_segment_inf> Segments;
+    t_arch_switch_inf *Switches;
 	int num_switches;
 	t_direct_inf *Directs;
 	int num_directs;
@@ -1289,6 +1300,8 @@ struct t_arch {
     std::string ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
+
+    t_clock_arch_spec clock_arch; // Clock related data types
 };
 
 #endif

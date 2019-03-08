@@ -39,6 +39,7 @@
 #include "tatum/TimingReporter.hpp"
 
 #define CONGESTED_SLOPE_VAL -0.04
+//#define ROUTER_DEBUG
 
 enum class RouterCongestionMode {
     NORMAL,
@@ -328,11 +329,11 @@ bool try_timing_driven_route(
 
     float high_effort_congestion_mode_iteration_threshold = router_opts.congested_routing_iteration_threshold_frac * router_opts.max_router_iterations;
 
-    /* Set delay of global signals to zero. Non-global net delays are set by
+    /* Set delay of ignored signals to zero. Non-ignored net delays are set by
        update_net_delays_from_route_tree() inside timing_driven_route_net(),
-       which is only called for non-global nets. */
+       which is only called for non-ignored nets. */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_global(net_id)) {
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
                 net_delay[net_id][ipin] = 0.;
             }
@@ -763,7 +764,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
 
     if (route_ctx.net_status[net_id].is_fixed) { /* Skip pre-routed nets. */
         is_routed = true;
-    } else if (cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Skip global nets. */
+    } else if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Skip ignored nets. */
         is_routed = true;
     } else if (should_route_net(net_id, connections_inf, true) == false) {
         is_routed = true;
@@ -878,7 +879,7 @@ int get_max_pins_per_net() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_is_global(net_id))
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id))
             max_pins_per_net = max(max_pins_per_net, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
     }
 
@@ -1009,7 +1010,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry,
     // may have to update timing delay of the previously legally reached sinks since downstream capacitance could be changed
     update_net_delays_from_route_tree(net_delay, rt_node_of_sink, net_id);
 
-    if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
+    if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
             if (net_delay[ipin] == 0) { // should be SOURCE->OPIN->IPIN->SINK
                 VTR_ASSERT(device_ctx.rr_nodes[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type() == OPIN);
@@ -1051,6 +1052,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id, unsigned itarget, int 
     t_heap* cheapest = nullptr;
     t_bb bounding_box = route_ctx.route_bb[net_id];
 
+    bool net_is_global = cluster_ctx.clb_nlist.net_is_global(net_id);
     bool high_fanout = is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), high_fanout_threshold);
     constexpr float HIGH_FANOUT_CRITICALITY_THRESHOLD = 0.9;
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
@@ -1058,7 +1060,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id, unsigned itarget, int 
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
     //the heap to ensure it has more flexibility to find the best path.
-    if (high_fanout && !sink_critical) {
+    if (high_fanout && !sink_critical &&!net_is_global) {
         cheapest = timing_driven_route_connection_from_route_tree_high_fanout(rt_root, sink_node,
                                 cost_params,
                                 bounding_box,
@@ -1972,15 +1974,15 @@ void update_rr_base_costs(int fanout) {
 
     /* Changes the base costs of different types of rr_nodes according to the  *
      * criticality, fanout, etc. of the current net being routed (net_id).       */
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
     float factor;
-    int index;
+    size_t index;
 
     /* Other reasonable values for factor include fanout and 1 */
     factor = sqrt(fanout);
 
-    for (index = CHANX_COST_INDEX_START; index < device_ctx.num_rr_indexed_data; index++) {
+    for (index = CHANX_COST_INDEX_START; index < device_ctx.rr_indexed_data.size(); index++) {
         if (device_ctx.rr_indexed_data[index].T_quadratic > 0.) { /* pass transistor */
             device_ctx.rr_indexed_data[index].base_cost =
                     device_ctx.rr_indexed_data[index].saved_base_cost * factor;
@@ -2325,7 +2327,7 @@ static WirelengthInfo calculate_wirelength_info() {
     }
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_is_global(net_id)
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)
                 && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
             int bends, wirelength, segments;
             get_num_bends_and_length(net_id, &bends, &wirelength, &segments);

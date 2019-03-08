@@ -56,7 +56,7 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_is_global(net_id))
+		if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
 			continue;
 
         for (auto clb_pin : cluster_ctx.clb_nlist.net_sinks(net_id)) {
@@ -85,7 +85,7 @@ void set_timing_place_crit(ClusterNetId net_id, int ipin, float val) {
 std::unique_ptr<PlaceDelayModel> alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 		t_placer_opts placer_opts,
 		t_router_opts router_opts,
-		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+		t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
 		const t_direct_inf *directs,
 		const int num_directs) {
 

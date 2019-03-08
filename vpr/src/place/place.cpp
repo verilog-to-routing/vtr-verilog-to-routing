@@ -359,7 +359,7 @@ void try_place(t_placer_opts placer_opts,
         t_router_opts router_opts,
         const t_analysis_opts& analysis_opts,
 		t_chan_width_dist chan_width_dist,
-		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+		t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
 #ifdef ENABLE_CLASSIC_VPR_STA
 		t_timing_inf timing_inf,
 #endif
@@ -1057,7 +1057,7 @@ static int count_connections() {
 
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_is_global(net_id))
+		if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
 			continue;
 
 		count += cluster_ctx.clb_nlist.net_sinks(net_id).size();
@@ -1617,8 +1617,8 @@ static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm
 			ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(blk_pin);
             VTR_ASSERT_SAFE_MSG(net_id, "Only valid nets should be found in compressed netlist block pins");
 
-			if (cluster_ctx.clb_nlist.net_is_global(net_id))
-				continue; //Global nets are assumed to span the whole chip, and do not effect costs
+			if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+				continue; //TODO: do we require anyting special here for global nets. "Global nets are assumed to span the whole chip, and do not effect costs"
 
             //Record effected nets
             record_affected_net(net_id, num_affected_nets);
@@ -1876,7 +1876,7 @@ static float recompute_bb_cost() {
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) { /* for each net ... */
-		if (!cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Do only if not global. */
+		if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
 			/* Bounding boxes don't have to be recomputed; they're correct. */
 			cost += net_cost[net_id];
 		}
@@ -1892,9 +1892,9 @@ static float comp_td_point_to_point_delay(const PlaceDelayModel& delay_model, Cl
 
 	float delay_source_to_sink = 0.;
 
-	if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
+	if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
 		//Only estimate delay for signals routed through the inter-block
-		//routing network. Global signals are assumed to have zero delay.
+		//routing network. TODO: Do how should we compute the delay for globals. "Global signals are assumed to have zero delay."
 
         ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
         ClusterPinId sink_pin = cluster_ctx.clb_nlist.net_pin(net_id, ipin);
@@ -1960,7 +1960,7 @@ static void update_td_cost() {
 		for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(bnum)) {
 			ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
 
-			if (cluster_ctx.clb_nlist.net_is_global(net_id))
+			if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
 				continue;
 
 			if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
@@ -2014,7 +2014,7 @@ static void comp_td_costs(const PlaceDelayModel& delay_model, float *timing_cost
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) { /* For each net ... */
 
-		if (cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Do only if not global. */
+		if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
             continue;
         }
 
@@ -2053,7 +2053,7 @@ static float comp_bb_cost(e_cost_methods method) {
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) { /* for each net ... */
-		if (!cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Do only if not global. */
+		if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
 			/* Small nets don't use incremental updating on their bounding boxes, *
 			 * so they can use a fast bounding box calculator.                    */
 			if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == NORMAL) {
@@ -2229,7 +2229,7 @@ static void alloc_and_load_net_pin_indices() {
 
 	/* Load the values */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_is_global(net_id))
+		if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
 			continue;
 		netpin = 0;
 		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
