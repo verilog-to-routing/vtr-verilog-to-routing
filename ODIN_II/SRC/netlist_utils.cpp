@@ -225,6 +225,22 @@ npin_t* allocate_npin() {
 
 	return new_pin;
 }
+
+/*---------------------------------------------------------------------------------------------
+ * (function: free_npin)
+ *-------------------------------------------------------------------------------------------*/
+npin_t* free_npin(npin_t* to_free) {
+	if (to_free) {
+		if (to_free->name)
+			vtr::free(to_free->name);
+
+		to_free->name = NULL;
+
+		/* now free the pin */
+	}
+	return (npin_t*)vtr::free(to_free);
+}
+
 /*-------------------------------------------------------------------------
  * (function: copy_output_npin)
  * 	Copies an output pin
