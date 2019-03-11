@@ -1532,7 +1532,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 		/* create this node and make the pin connection to the net */
 		new_pin = allocate_npin();
 		new_node = allocate_nnode();
-		new_node->name = strdup(temp_string);
+		new_node->name = vtr::strdup(temp_string);
 
 		new_node->related_ast_node = var_declare;
 		new_node->type = INPUT_NODE;
@@ -1580,7 +1580,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 			new_node = allocate_nnode();
 
 			new_node->related_ast_node = var_declare;
-			new_node->name = strdup(temp_string);
+			new_node->name = vtr::strdup(temp_string);
 			new_node->type = INPUT_NODE;
 			/* allocate the pins needed */
 			allocate_more_output_pins(new_node, 1);
