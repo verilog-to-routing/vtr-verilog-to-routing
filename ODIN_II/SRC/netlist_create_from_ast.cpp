@@ -4032,7 +4032,7 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 		new_pin1 = allocate_npin();
 		new_pin2 = allocate_npin();
 		new_net = allocate_nnet();
-		new_net->name = strdup(operation_node->name);
+		new_net->name = vtr::strdup(operation_node->name);
 		/* hook the output pin into the node */
 		add_output_pin_to_node(operation_node, new_pin1, i);
 		/* hook up new pin 1 into the new net */
