@@ -392,6 +392,7 @@ void instantiate_not_logic(nnode_t *node, short mark, netlist_t * /*netlist*/)
 	}
 
 	vtr::free(new_not_cells);
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -477,6 +478,7 @@ void instantiate_logical_logic(nnode_t *node, operation_list op, short mark, net
 	instantiate_bitwise_reduction(reduction2, BITWISE_OR, mark, netlist);
 
 	remap_pin_to_new_node(node->output_pins[0], new_logic_cell, 0);
+	free_nnode(node);
 }
 /*---------------------------------------------------------------------------------------------
  * (function: instantiate_bitwise_reduction )
@@ -545,6 +547,7 @@ void instantiate_bitwise_reduction(nnode_t *node, operation_list op, short mark,
 	}
 
 	remap_pin_to_new_node(node->output_pins[0], new_logic_cell, 0);
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -926,6 +929,7 @@ void instantiate_GT(nnode_t *node, operation_list type, short mark, netlist_t *n
 	
 	vtr::free(gt_cells);
 	vtr::free(or_cells);
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1008,6 +1012,8 @@ void instantiate_GE(nnode_t *node, operation_list type, short mark, netlist_t *n
 
 	if (type == GTE) instantiate_GT(compare, GT, mark, netlist);
 	else             instantiate_GT(compare, LT, mark, netlist);
+
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1093,6 +1099,8 @@ void instantiate_shift_left_or_right(nnode_t *node, operation_list type, short m
 	}
 	/* instantiate the buffer */
 	instantiate_buffer(buf_node, mark, netlist);
+	free_nnode(buf_node);
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
