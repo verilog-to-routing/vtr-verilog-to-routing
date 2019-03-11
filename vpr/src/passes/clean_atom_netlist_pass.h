@@ -4,7 +4,7 @@
 #include "pass.h"
 
 
-class CleanAtomNetlistPass {
+class CleanAtomNetlistPass : public AtomPass {
     
     bool run_on_atom(AtomContext& atom_ctx) override {
         auto& arch = ctx().device().arch;

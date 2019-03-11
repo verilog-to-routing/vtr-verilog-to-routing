@@ -3,7 +3,7 @@
 #include "pass.h"
 #include "read_blif.h"
 
-class ReadBlifPass : public DevicePass {
+class ReadBlifPass : public AtomPass {
     ReadBlifPass(const e_circuit_format& cct_fmt,
                  const std::string& blif_file_path)
         : cct_fmt_(cct_fmt)

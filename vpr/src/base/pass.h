@@ -3,6 +3,33 @@
 
 #include "vpr_context_fwd.h"
 
+/*
+ * Somewhere the host application will setup a VPR state context and create
+ * passes to be run on the state context.
+ *
+ * For example:
+ *      
+ *      int main() {
+ *          
+ *          VprContext vpr_ctx;
+ *
+ *          std::vector<std::unique_ptr<Pass>> passes;
+ *
+ *          //Add various passes
+ *          passes.emplace_back(std::make_unique<MyPass>(vpr_ctx);
+ *          passes.emplace_back(std::make_unique<OtherPass>(vpr_ctx);
+ *          ...
+ *             
+ *          //Run all passes
+ *          for (auto& pass : passes) {
+ *              pass->run_pass();
+ *          }
+ *      }
+ */
+
+/*
+ * Abstract interface for a pass
+ */
 class Pass {
     public:
         virtual bool run_pass() = 0;
@@ -10,15 +37,20 @@ class Pass {
 
 /*
  * Mutable (read/wrtie) pass
+ *
+ * Mutable passes can modify their context
  */
 class MutablePass : public Pass {
     public:
         MutablePass(VprContext& vpr_ctx);
 
+        //All passes can access the full context immutably (read-only)
         const VprContext& ctx() const { return vpr_ctx_; }
 
-        virtual bool run_pass() final { return run_on_mutable(vpr_ctx_); }
+        //Deligate to run_on_mutable()
+        virtual bool run_pass() final { return run_on_mutable(vpr_ctx_); } //Note final prevents sub-classes from re-defining
 
+        //All MutablePasses get access to the full context mutably (read/write)
         virtual bool run_on_mutable(VprContext& mutable_ctx) = 0;
 
     private:
@@ -27,15 +59,21 @@ class MutablePass : public Pass {
 
 /*
  * Immutable (read-only) pass
+ *
+ * Immutable passes can not modify their input context
  */
 class ImmutablePass : public Pass {
     public:
         ImmutablePass(const VprContext& vpr_ctx);
 
+        //All passes can access the full context immutably (read-only)
         const VprContext& ctx() const { return vpr_ctx_; }
 
-        virtual bool run_pass() final { return run_on_immutable(vpr_ctx_); }
+        //Deligate to run_on_immutable()
+        virtual bool run_pass() final { return run_on_immutable(vpr_ctx_); } //Note final prevents sub-classes from re-defining
 
+        //All ImmutablePasses implement run_on_immutable() which provides immutable (read-only)
+        //acess to the entire VPR context
         virtual bool run_on_immutable(const VprContext& immutable_ctx) = 0;
 
     private:
@@ -47,8 +85,11 @@ class ImmutablePass : public Pass {
  */
 class AtomPass : public MutablePass {
     public:
-        virtual bool run_on_mutable(VprContext& ctx) final { return run_on_atom(ctx.mutable_atom()); }
+        //Deligate to run_on_atom()
+        virtual bool run_on_mutable(VprContext& ctx) final { return run_on_atom(ctx.mutable_atom()); } //Note final prevents sub-classes from re-defining
 
+        //All AtomPass derived passes only get mutable access to the AtomContext.
+        //Note that they can still get immutable access to the full context via ctx().
         virtual bool run_on_atom(AtomContext& atom_ctx) = 0;
 };
 
