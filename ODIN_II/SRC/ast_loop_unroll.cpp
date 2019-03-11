@@ -147,7 +147,7 @@ ast_node_t* while_preprocessor(ast_node_t* node, ast_node_t* module)
         /* Cleanup replaced child */
         if(new_node->children[i] != new_child){
             free_whole_tree(new_node->children[i]);
-            new_node->children[i] = new_child;
+            assign_child_to_node(new_node, new_child, i);
         }
     }
     return new_node;
@@ -184,7 +184,7 @@ ast_node_t* replace_whiles(ast_node_t* node, module)
             	resolve_while(new_node->children[i], &state);
             oassert(unrolled_while != nullptr);
             free_whole_tree(new_node->children[i]);
-            new_node->children[i] = unrolled_while;
+            assign_child_to_node(new_node, unrolled_while, i);
         }
     }
     return new_node;
@@ -225,7 +225,7 @@ ast_node_t* for_preprocessor(ast_node_t *ast_module, ast_node_t* node, ast_node_
 			/* Cleanup replaced child */
 			if(new_node->children[i] != new_child){
 				free_whole_tree(new_node->children[i]);
-				new_node->children[i] = new_child;
+				assign_child_to_node(new_node, new_child, i);
 			}
 		}
 	}
@@ -252,7 +252,7 @@ ast_node_t* replace_fors(ast_node_t *ast_module, ast_node_t* node, ast_node_t **
 			ast_node_t* unrolled_for = resolve_for(ast_module, new_node->children[i], instances, num_unrolled, num_original);
 			oassert(unrolled_for != nullptr);
 			free_whole_tree(new_node->children[i]);
-			new_node->children[i] = unrolled_for;
+			assign_child_to_node(new_node, unrolled_for, i);
 		}
 	}
 	return new_node;
@@ -263,7 +263,6 @@ ast_node_t* replace_fors(ast_node_t *ast_module, ast_node_t* node, ast_node_t **
  */
 ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, ast_node_t ****instances, int *num_unrolled, int *num_original)
 {
-<<<<<<< HEAD
 	oassert(is_for_node(node));
 	oassert(node != nullptr);
 	ast_node_t* body_parent = nullptr;
@@ -311,90 +310,6 @@ ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, ast_node_t ***
 
 	free_whole_tree(value);
 	return body_parent;
-=======
-    oassert(is_for_node(node));
-    oassert(node != nullptr);
-    ast_node_t* body_parent = nullptr;
-
-    ast_node_t* pre  = node->children[0];
-    ast_node_t* cond = node->children[1];
-    ast_node_t* post = node->children[2];
-    ast_node_t* body = node->children[3];
-    
-    ast_node_t* value = 0;
-    if(resolve_pre_condition(pre, &value))
-    {
-        error_message(
-        	PARSE_ERROR, 
-        	pre->line_number, 
-        	pre->file_number, 
-        	"Unsupported pre-condition node in for loop"
-        );
-    }
-
-    int error_code = 0;
-    condition_function cond_func = resolve_condition(
-    	cond, 
-    	pre->children[0], 
-    	&error_code
-    );
-
-    if(error_code)
-    {
-        error_message(
-        	PARSE_ERROR, 
-        	cond->line_number, 
-        	cond->file_number, 
-        	"Unsupported condition node in for loop"
-        );
-    }
-
-    post_condition_function post_func = resolve_post_condition(
-    	post, 
-    	pre->children[0], 
-    	&error_code
-    );
-
-    if(error_code)
-    {
-        error_message(
-        	PARSE_ERROR, 
-        	post->line_number, 
-        	post->file_number, 
-        	"Unsupported post-condition node in for loop"
-        );
-    }
-
-    bool dup_body = cond_func(value->types.number.value);
-    while(dup_body)
-    {
-        ast_node_t* new_body = dup_and_fill_body(
-        	body, 
-        	pre->children[0], 
-        	&value, 
-        	&error_code
-        );
-
-        if(error_code)
-        {
-            error_message(
-            	PARSE_ERROR, 
-            	pre->line_number, 
-            	pre->file_number, 
-            	"Unsupported pre-condition node in for loop"
-            );
-        }
-
-        value->types.number.value = post_func(value->types.number.value);
-        body_parent = 	body_parent ? 
-        				newList_entry(body_parent, new_body): 
-        				newList(BLOCK, new_body);
-
-        dup_body = cond_func(value->types.number.value);
-    }
-
-    return body_parent;
->>>>>>> Non-compiling changes to static unrolling in preperation for environment based rewrite
 }
 
 /*
@@ -408,7 +323,6 @@ ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, ast_node_t ***
  */
 int resolve_pre_condition(ast_node_t* node, ast_node_t** number_node)
 {
-<<<<<<< HEAD
 	/* Add new for loop support here. Keep current work in the TODO
 	 * Currently supporting:
 	 *     for(VAR = NUM; ...; ...) ...
@@ -423,24 +337,6 @@ int resolve_pre_condition(ast_node_t* node, ast_node_t** number_node)
 	if (*number_node) free_whole_tree(*number_node);
 	*number_node = ast_node_deep_copy(node->children[1]);
 	return 0;
-=======
-    /* Add new for loop support here. Keep current work in the TODO
-     * Currently supporting:
-     *     for(VAR = NUM; ...; ...) ...
-     * TODO:
-     *     for(VAR = function(PARAMS...); ...; ...) ...
-     */
-
-    /* IMPORTANT: if support for more complex continue 
-     * conditions is added, update this inline function. 
-     */
-    if(is_unsupported_pre(node))
-    {
-        return UNSUPPORTED_PRE_CONDITION_NODE;
-    }
-    *number_node = ast_node_deep_copy(node->children[1]);
-    return 0;
->>>>>>> Non-compiling changes to static unrolling in preperation for environment based rewrite
 }
 
 /** IMPORTANT: as support for more complex continue 
@@ -699,7 +595,7 @@ ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node
 				{
 					ast_node_t* new_num = ast_node_deep_copy(*value);
 					child = free_whole_tree(child);
-					copy->children[i] = new_num;
+					assign_child_to_node(copy, new_num, i);
 				}
 			} 
 			else if(child->type == MODULE_INSTANCE)
@@ -757,7 +653,8 @@ ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node
 				}
 
 				/* give this unrolled instance a unique name */
-				copy->children[i]->children[1] = replace_named_module(child->children[1], value);
+				ast_node_t* new_child = replace_named_module(child->children[1], value);
+				assign_child_to_node(copy->children[i], new_child, 1)
 				oassert(copy->children[i]->children[1]);
 
 				/* then add it to the table of unrolled instances */
@@ -771,7 +668,8 @@ ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node
 				{
 					if (copy->children[i]->children[j] != child->children[j]) free_whole_tree(copy->children[i]->children[j]);
 				}
-				copy->children[i] = dup_and_fill_body(ast_module, child, pre, value, error_code, instances, num_unrolled, num_original);
+				ast_node_t* new_child = dup_and_fill_body(ast_module, child, pre, value, error_code, instances, num_unrolled, num_original);
+				assign_child_to_node(copy, new_child, i);
 				free_whole_tree(child);
 			}
 		}

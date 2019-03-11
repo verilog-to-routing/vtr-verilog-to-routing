@@ -422,7 +422,6 @@ void create_netlist()
 		}
 		oassert(ast_modules[i]->type == MODULE);
 	}
-
 	/* we will find the top module */
 	top_module = find_top_module();
 

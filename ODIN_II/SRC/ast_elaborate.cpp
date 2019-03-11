@@ -582,8 +582,10 @@ void construct_new_tree(enode *tail, ast_node_t *node, int line_num, int file_nu
 	if (prio == 1 || prio == 2)
 	{
 		node->children = (ast_node_t**)vtr::malloc(2*sizeof(ast_node_t*));
-		node->children[0] = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
-		node->children[1] = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
+		ast_node_t* left  = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
+		ast_node_t* right = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
+		assign_child_to_node(node, left,  0);
+		assign_child_to_node(node, right, 1);
 		construct_new_tree(tail1, node->children[0], line_num, file_num);
 		construct_new_tree(tail2, node->children[1], line_num, file_num);
 	}

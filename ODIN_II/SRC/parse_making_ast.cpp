@@ -487,7 +487,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 		}
 		
         if(top_type == MODULE) {
-
                 switch(id)
 	            {
 		            case PORT:
@@ -499,13 +498,15 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			            {
 				            symbol_list->children[i]->types.variable.is_input = TRUE;
 							free_whole_tree(symbol_list->children[i]->children[0]);
-				            symbol_list->children[i]->children[0] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
+				            ast_node_t* io_node = (ast_node_t*)modules_inputs_sc->data[sc_spot];
+							assign_child_to_node(symbol_list->children[i], io_node, 0);
 			            }
 			            else if ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 			            {
 				            symbol_list->children[i]->types.variable.is_output = TRUE;
 							free_whole_tree(symbol_list->children[i]->children[0]);
-				            symbol_list->children[i]->children[0] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
+				            ast_node_t* io_node = (ast_node_t*)modules_outputs_sc->data[sc_spot];
+							assign_child_to_node(symbol_list->children[i], io_node, 0);
 			            }
 						else
 						{
@@ -606,8 +607,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
         }
         else if(top_type == FUNCTION) {
 
-
-
                 switch(id)
 		        {
 			        case PORT:
@@ -617,15 +616,17 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
                         /* find the related INPUT or OUTPUT definition and store that instead */
 				        if ((sc_spot = sc_lookup_string(functions_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 				        {
-					        symbol_list->children[i]->types.variable.is_input = TRUE;
+							symbol_list->children[i]->types.variable.is_input = TRUE;
 							free_whole_tree(symbol_list->children[i]->children[0]);
-					        symbol_list->children[i]->children[0] = (ast_node_t*)functions_inputs_sc->data[sc_spot];
+							ast_node_t* io_node = (ast_node_t*)functions_inputs_sc->data[sc_spot];
+							assign_child_to_node(symbol_ist->children[i], io_node, 0);
 				        }
 				        else if ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 				        {
                             symbol_list->children[i]->types.variable.is_output = TRUE;
 							free_whole_tree(symbol_list->children[i]->children[0]);
-					        symbol_list->children[i]->children[0] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
+					        ast_node_t* io_node = (ast_node_t*)functions_outputs_sc->data[sc_spot];
+					        assign_child_to_node(symbol_list->children[i], io_node, 0);
 				        }
 				        else
 				        {
@@ -1007,7 +1008,11 @@ ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression
 
 	node = newSymbolNode(label,line_number);
 
-    expression2->children[1]->children[1]->children[0] = newModuleConnection(NULL,  node, line_number);
+    assign_child_to_node(
+    	expression2->children[1]->children[1], 
+    	newModuleConnection(NULL,  node, line_number), 
+    	0
+    );
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(BLOCKING_STATEMENT, line_number, current_parse_file);
@@ -1559,7 +1564,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 
 	var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
 
-	list_of_ports->children[0] = var_node;
+	assign_child_to_node(list_of_ports, var_node, 0);
 
 
 	for(i = 0; i < list_of_module_items->num_children; i++) {
@@ -1716,7 +1721,7 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 				else
 				{
 					ast_node_t* symbol_node = create_node_w_type(MODULE_PARAMETER_LIST, line_number, current_parse_file);
-					ref_node->children[1]->children[2] = symbol_node;
+					assign_child_to_node(ref_node->children[1], symbol_node, 2);
 					add_child_to_node(ref_node->children[1]->children[2], new_node);
 				}
 				flag = 1;
