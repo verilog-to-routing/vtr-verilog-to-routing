@@ -84,4 +84,3 @@ void check_binary_operation(ast_node_t *node);
 void check_node_number(ast_node_t *parent, ast_node_t *child, int flag);
 bool check_mult_bracket(std::vector<int> list);
 short has_intermediate_variable(ast_node_t *node);
-

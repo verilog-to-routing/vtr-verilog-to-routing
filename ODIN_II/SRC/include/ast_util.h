@@ -10,6 +10,7 @@ ast_node_t *create_tree_node_number(std::string number, bases base, signedness s
 
 void initial_node(ast_node_t *node, ids id, int line_number, int file_number, int counter);
 
+void assign_child_to_node(ast_node_t* node, ast_node_t* child, unsigned int index);
 void allocate_children_to_node(ast_node_t* node, int num_children, ...);
 void add_child_to_node(ast_node_t* node, ast_node_t *child);
 void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child);

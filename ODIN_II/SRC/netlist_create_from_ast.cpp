@@ -619,7 +619,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
 									else
 									{
 										ast_node_t* new_node = create_node_w_type(MODULE_PARAMETER_LIST, module_instance->line_number, current_parse_file);
-										module_instance->children[2] = new_node;
+										assign_child_to_node(module_instance, new_node, 2);
 										move_ast_node((*current_module)->children[i], module_instance->children[2], (*current_module)->children[i]->children[j]);
 									}
 									flag = 1;

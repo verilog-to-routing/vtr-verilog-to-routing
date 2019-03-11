@@ -335,6 +335,20 @@ ast_node_t *create_tree_node_number(std::string input_number, bases base, signed
 
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: assign_child_to_node)
+ *-------------------------------------------------------------------------------------------*/
+void assign_child_to_node(ast_node_t* node, ast_node_t *child, unsigned int index)
+{
+	/* Handle case where we have an empty statement. */
+	if (child == NULL)
+		return;
+
+	/* allocate space for the children */
+	node->children[index] = child;
+	child->parent = node;
+}
+
 /*---------------------------------------------------------------------------
  * (function: allocate_children_to_node)
  *-------------------------------------------------------------------------*/
@@ -352,7 +366,7 @@ void allocate_children_to_node(ast_node_t* node, int num_children, ...)
 
 	for (i = 0; i < num_children; i++)
 	{
-		node->children[i] = va_arg(ap, ast_node_t*);
+		assign_child_to_node(node, va_arg(ap, ast_node_t*), i);
 	}
 }
 
@@ -368,7 +382,7 @@ void add_child_to_node(ast_node_t* node, ast_node_t *child)
 	/* allocate space for the children */
 	node->children = (ast_node_t**)vtr::realloc(node->children, sizeof(ast_node_t*)*(node->num_children+1));
 	node->num_children ++;
-	node->children[node->num_children-1] = child;
+	assign_child_to_node(node, child, node->num_children-1);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -396,7 +410,7 @@ void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child)
         ref = ref1;
     }
 
-    node->children[0] = child;
+    assign_child_to_node(node, child, 0);
 
 }
 
@@ -943,9 +957,10 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, 
 		node_copy->children = (ast_node_t **)vtr::calloc(node_copy->num_children,sizeof(ast_node_t*));
 
 		long i;
-		for (i = 0; i < node->num_children; i++)
-		{
-			node_copy->children[i] = resolve_node(local_param_table_sc, module_name, node->children[i]);
+		for (i = 0; i < node->num_children; i++){
+			ast_node_t* resolved_node = 
+				resolve_node(local_param_table_sc, module_name, node->children[i]);
+			assign_child_to_node(node_copy, resolved_node, i);
 		}
 
 		ast_node_t *newNode = NULL;
@@ -1131,7 +1146,7 @@ ast_node_t *ast_node_deep_copy(ast_node_t *node){
 
 	//Recursively copy its children
 	for(i = 0; i < node->num_children; i++){
-		node_copy->children[i] = ast_node_deep_copy(node->children[i]);
+		assign_child_to_node(node_copy, ast_node_deep_copy(node->children[i]), i);
 	}
 
 	return node_copy;

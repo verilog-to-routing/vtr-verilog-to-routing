@@ -424,6 +424,8 @@ struct ast_node_t_t
 	ids type;
 	typ types;
 
+	ast_node_t *parent;
+
 	ast_node_t **children;
 	long num_children;
 

@@ -124,7 +124,7 @@ void reduce_assignment_expression(ast_node_t *ast_module)
 				free_whole_tree(list_assign[j]->children[1]);
 				T = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
 				construct_new_tree(tail, T, list_assign[j]->line_number, list_assign[j]->file_number);
-				list_assign[j]->children[1] = T;
+				assign_child_to_node(list_assign[j], T, 1);
 			}
 			free_exp_list();
 		}
@@ -1148,7 +1148,7 @@ void change_para_node(ast_node_t *node, std::string name, long value)
 }
 
 /*---------------------------------------------------------------------------
- * (function: copy_tree)
+ * (function: shift_operation)
  * find multiply or divide operation that can be replaced with shift operation
  *-------------------------------------------------------------------------*/
 void shift_operation(ast_node_t *ast_module)
@@ -1160,7 +1160,7 @@ void shift_operation(ast_node_t *ast_module)
 }
 
 /*---------------------------------------------------------------------------
- * (function: change_ast_node)
+ * (function: search_certain_operation)
  *  search all AST to find multiply or divide operations
  *-------------------------------------------------------------------------*/
 void search_certain_operation(ast_node_t *node)
@@ -1172,7 +1172,7 @@ void search_certain_operation(ast_node_t *node)
 }
 
 /*---------------------------------------------------------------------------
- * (function: change_ast_node)
+ * (function: check_binary_operation)
  *  check the children nodes of an operation node
  *-------------------------------------------------------------------------*/
 void check_binary_operation(ast_node_t *node)
@@ -1219,7 +1219,7 @@ void check_node_number(ast_node_t *parent, ast_node_t *child, int flag)
 		{
 			parent->types.operation.op = SL;
 			parent->children[0] = parent->children[1];
-			parent->children[1] = child;
+			assign_child_to_node(parent, child, 1);
 		}
 		else if (flag == 3) // divide
 			parent->types.operation.op = SR;
