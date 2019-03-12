@@ -863,7 +863,6 @@ ast_node_t *newPartSelectRangeRef(char *id, ast_node_t *expression1, ast_node_t 
 	}
 	else{
 		expression2->types.number.value = expression1->types.number.value - expression2->types.number.value + 1;
-		expression1->types.number.value = expression1->types.number.value + expression2->types.number.value - 1;
 	}
 
 	return newRangeRef(id, expression1, expression2, line_number);
