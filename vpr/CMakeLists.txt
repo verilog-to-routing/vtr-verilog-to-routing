@@ -12,7 +12,7 @@ endif()
 project("vpr")
 
 option(VPR_USE_SIGNAL_HANDLER "Should VPR use a signal handler to intercept signals (e.g. SIGINT)?" OFF)
-option(VPR_USE_IPO_BUILD "Should VPR be compiled with an interprocedural optimizations?" OFF)
+option(VPR_USE_IPO_BUILD "Should VPR be compiled with an interprocedural optimizations?" ON)
 
 include(CheckCXXSymbolExists)
 
