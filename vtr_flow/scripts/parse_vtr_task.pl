@@ -139,7 +139,7 @@ sub parse_single_task {
     }
 
 	open( CONFIG, "<$task_path/config/config.txt" )
-	  or die "Failed to open $task_path/config/config.txt: $!";
+	  or die "Failed to open $task_path/config/config.txt: $!\n";
 	my @config_data = <CONFIG>;
 	close(CONFIG);
 
@@ -415,7 +415,7 @@ sub calc_geomean {
 	my $summary_file = "$output_path/task_summary/${run_prefix}${exp_id}_summary.txt";
 
 	if ( !-r $summary_file ) {
-		print "[ERROR] Failed to open $summary_file: $!";
+		print "[ERROR] Failed to open $summary_file: $!\n";
 		return;
 	}
 	open( SUMMARY_FILE, "<$summary_file" );
@@ -585,7 +585,7 @@ sub check_two_files {
 
 	my $pass_req_filename = $1;
 
-    if ($pass_req_filename ne "") {
+    if ($pass_req_filename !~ /\s*/) {
 
         # Search for pass requirement file
         $pass_req_filename = expand_user_path($pass_req_filename);
@@ -637,7 +637,7 @@ sub check_pass_requirements() {
 	# Read files
 	##############################################################
 	if ( !-r $test_file_2 ) {
-		print "[ERROR] Failed to open $test_file_2: $!";
+		print "[ERROR] Failed to open $test_file_2: $!\n";
         $failed += 1;
 		return $failed;
 	}
@@ -646,7 +646,7 @@ sub check_pass_requirements() {
 	close(GOLDEN_DATA);
 
 	if ( !-r $pass_req_file ) {
-		print "[ERROR] Failed to open $pass_req_file: $!";
+		print "[ERROR] Failed to open $pass_req_file: $!\n";
         $failed += 1;
 		return $failed;
 	}
@@ -654,7 +654,7 @@ sub check_pass_requirements() {
 	@pass_req_data = load_file_with_includes($pass_req_file);
 
 	if ( !-r $test_file_1 ) {
-		print "[ERROR] Failed to open $test_file_1: $!";
+		print "[ERROR] Failed to open $test_file_1: $!\n";
         $failed += 1;
 		return $failed;
 	}
@@ -911,7 +911,7 @@ sub load_file_with_includes {
 sub load_file_lines {
     my ($filepath) = @_;
 
-	open(FILE, "<$filepath" ) or die("Failed to open file $filepath");
+	open(FILE, "<$filepath" ) or die("Failed to open file $filepath\n");
 	my @lines = <FILE>;
 	close(FILE);
 
