@@ -856,7 +856,15 @@ ast_node_t *newPartSelectRangeRef(char *id, ast_node_t *expression1, ast_node_t 
 	ast_node_t *original_range = (ast_node_t *) modules_inputs_sc->data[sc_spot];;
 	long upper_limit = original_range->children[1]->types.number.value;
 	long bottom_limit = original_range->children[2]->types.number.value;
+	if (expression1->types.number.value < 0 || expression2->types.number.value < 0){
 
+		/* Negetive numbers are not supported */
+		error_message(PARSE_ERROR, line_number, current_parse_file, 
+								"Odin doesn't support negative number in index : %s[%d%s%d].", id,
+								expression1->types.number.value, direction == 1 ? "+:" : "-:",
+								expression2->types.number.value);
+	}
+	
 	if (direction == 1){
 		expression1->types.number.value = expression1->types.number.value + expression2->types.number.value - 1;
 		expression2->types.number.value = expression1->types.number.value - expression2->types.number.value + 1;
@@ -864,24 +872,14 @@ ast_node_t *newPartSelectRangeRef(char *id, ast_node_t *expression1, ast_node_t 
 	else{
 		expression2->types.number.value = expression1->types.number.value - expression2->types.number.value + 1;
 	}
-
-	if (expression1->types.number.value < 0 || expression2->types.number.value < 0){
-
-		/* Negetive numbers are not supported */
-		error_message(PARSE_ERROR, line_number, current_parse_file, 
-								"Odin doesn't support negative number in index : [%d%s%d].", 
-								expression1->types.number.value, direction == 1 ? "+:" : "-:",
-								expression2->types.number.value);
-	}
-	else if (expression1->types.number.value  > upper_limit || expression2->types.number.value < bottom_limit) {
+	if (expression1->types.number.value  > upper_limit || expression2->types.number.value < bottom_limit) {
 		/* out of original range */
 		error_message(PARSE_ERROR, line_number,current_parse_file, 
-								"This part-select range (%s [%d%s%d]) is out of range. It should be in the [%d:%d] range.",
+								"This part-select range %s:[%d%s%d] is out of range. It should be in the %s:[%d:%d] range.",
 								id,expression1->types.number.value, direction ==1 ? "+:" : "-:",expression2->types.number.value,
-								 upper_limit,bottom_limit );
+								 id,upper_limit,bottom_limit );
 	}
 	
-
 	return newRangeRef(id, expression1, expression2, line_number);
 }
 
