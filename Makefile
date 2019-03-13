@@ -44,13 +44,19 @@ export CTEST_OUTPUT_ON_FAILURE=TRUE
 #All targets in this make file are always out of date.
 # This ensures that any make target requests are forwarded to
 # the generated makefile
-.PHONY: all distclean default $(GENERATED_MAKEFILE) $(MAKECMDGOALS)
+.PHONY: all distclean $(GENERATED_MAKEFILE) $(MAKECMDGOALS)
 
-#Build everything
+#For an 'all' build with BUILD_TYPE containing 'pgo' this will perform a 2-stage compilation
+#with profile guided optimization. 
+
+#For a BUILD_TYPE without 'pgo', or a specific target name a single stage (non-pgo) compilation is performed.
 all:
+ifeq ($(CMAKE),)
+	$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
+endif
 	@ mkdir -p $(BUILD_DIR)
 ifneq (,$(findstring pgo,$(BUILD_TYPE)))
-	#PGO Build
+	#Profile Guided Optimization Build
 	@echo "Performing Profile Guided Optimization (PGO) build..."
 	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_gen .. "
 	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_gen .. 
