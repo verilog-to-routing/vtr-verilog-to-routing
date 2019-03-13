@@ -2054,14 +2054,11 @@ tag can be inserted under the following XML tags:
 
 Specifies the root of a metadata block.  Can have 0 or more ``<meta>`` Children.
 
-.. arch:tag:: <meta name="string" x_offset="int" y_offset="int" z_offset="int" >
+.. arch:tag:: <meta name="string" >
 
     :req_param name: Key name of this metadata value.
-    :opt_param x_offset: Optional x offset. **Default:** ``0``
-    :opt_param y_offset: Optional y offset. **Default:** ``0``
-    :opt_param z_offset: Optional z offset. **Default:** ``0``
 
-Specifies a value within a metadata block.  The name and offsets form a key
+Specifies a value within a metadata block.  The name is a key
 for looking up the value contained within the ``<meta>`` tag.  Keys can be
 repeated, and will be stored in a vector in order of occurance.
 

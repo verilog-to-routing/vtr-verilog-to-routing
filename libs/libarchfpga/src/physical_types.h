@@ -78,40 +78,6 @@ enum class e_sb_type;
  * (e.g. int, vector of int), but the underlying data type is always a string.
  */
 
-// Coordinate storage for metadata.
-struct t_offset {
-    int x = 0;
-    int y = 0;
-    int z = 0;
-
-    bool operator==(const t_offset &o) const;
-    bool operator!=(const t_offset &o) const { return !(*this == o); };
-    bool operator<(const t_offset &o) const;
-};
-
-// Hash functions for t_offset and the metadata key,
-// std::pair<t_offset, std::string>.
-namespace std {
-    template <>
-    struct hash<t_offset> {
-        std::size_t operator()(const t_offset& o) const noexcept {
-            std::size_t seed = std::hash<int>{}(o.x);
-            vtr::hash_combine(seed, o.y);
-            vtr::hash_combine(seed, o.z);
-            return seed;
-        }
-    };
-
-    template <>
-    struct hash<std::pair<t_offset, std::string>> {
-        std::size_t operator()(const std::pair<t_offset, std::string>& ok) const noexcept {
-            std::size_t seed = std::hash<t_offset>{}(ok.first);
-            vtr::hash_combine(seed, ok.second);
-            return seed;
-        }
-    };
-}
-
 // Metadata value storage.
 class t_metadata_as {
 public:
@@ -127,30 +93,18 @@ private:
 
 // Metadata storage dictionary.
 struct t_metadata_dict : std::unordered_map<
-                            std::pair<t_offset, std::string>,
+                            std::string,
                             std::vector<t_metadata_as>> {
     // Is this key present in the map?
     inline bool has(std::string key) const {
-        return has(std::make_pair(t_offset(), key));
-    }
-    inline bool has(t_offset o, std::string key) const {
-        return has(std::make_pair(o, key));
-    }
-    inline bool has(std::pair<t_offset, std::string> ok) const {
-        return (this->count(ok) >= 1);
+        return this->count(key) >= 1;
     }
 
     // Get all metadata values matching key.
     //
     // Returns nullptr if key is not found.
     inline const std::vector<t_metadata_as>* get(std::string key) const {
-        return get(std::make_pair(t_offset(), key));
-    }
-    inline const std::vector<t_metadata_as>* get(t_offset o, std::string key) const {
-        return get(std::make_pair(o, key));
-    }
-    inline const std::vector<t_metadata_as>* get(std::pair<t_offset, std::string> ok) const {
-        auto iter = this->find(ok);
+        auto iter = this->find(key);
         if(iter != this->end()) {
           return &iter->second;
         }
@@ -162,13 +116,7 @@ struct t_metadata_dict : std::unordered_map<
     // Returns nullptr if key is not found or if multiple values are prsent
     // per key.
     inline const t_metadata_as* one(std::string key) const {
-        return one(std::make_pair(t_offset(), key));
-    }
-    inline const t_metadata_as* one(t_offset o, std::string key) const {
-        return one(std::make_pair(o, key));
-    }
-    inline const t_metadata_as* one(std::pair<t_offset, std::string> ok) const {
-        auto values = get(ok);
+        auto values = get(key);
         if (values == nullptr) {
             return nullptr;
         }
@@ -180,13 +128,7 @@ struct t_metadata_dict : std::unordered_map<
 
     // Adds value to key.
     void add(std::string key, std::string value) {
-        add(std::make_pair(t_offset(), key), value);
-    }
-    void add(t_offset o, std::string key, std::string value) {
-        add(std::make_pair(o, key), value);
-    }
-    void add(std::pair<t_offset, std::string> ok, std::string value) {
-        auto iter = this->emplace(ok, std::vector<t_metadata_as>());
+        auto iter = this->emplace(key, std::vector<t_metadata_as>());
         iter.first->second.push_back(t_metadata_as(value));
     }
 };

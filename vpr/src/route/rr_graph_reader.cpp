@@ -387,13 +387,9 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         if (metadata) {
             auto rr_node_meta = get_first_child(metadata, "meta", loc_data);
             while (rr_node_meta) {
-                t_offset o;
-                o.x = get_attribute(rr_node_meta, "x_offset", loc_data, OPTIONAL).as_int(0);
-                o.y = get_attribute(rr_node_meta, "y_offset", loc_data, OPTIONAL).as_int(0);
-                o.z = get_attribute(rr_node_meta, "z_offset", loc_data, OPTIONAL).as_int(0);
                 auto key = get_attribute(rr_node_meta, "name", loc_data).as_string();
 
-                vpr::add_node_metadata(inode, o, key, rr_node_meta.child_value());
+                vpr::add_node_metadata(inode, key, rr_node_meta.child_value());
 
                 rr_node_meta = rr_node_meta.next_sibling(rr_node_meta.name());
             }
@@ -480,14 +476,10 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
         if (metadata) {
             auto edges_meta = get_first_child(metadata, "meta", loc_data);
             while (edges_meta) {
-                t_offset o;
-                o.x = get_attribute(edges_meta, "x_offset", loc_data, OPTIONAL).as_int(0);
-                o.y = get_attribute(edges_meta, "y_offset", loc_data, OPTIONAL).as_int(0);
-                o.z = get_attribute(edges_meta, "z_offset", loc_data, OPTIONAL).as_int(0);
                 auto key = get_attribute(edges_meta, "name", loc_data).as_string();
 
                 vpr::add_edge_metadata(source_node, sink_node, switch_id,
-                                  o, key, edges_meta.child_value());
+                                  key, edges_meta.child_value());
 
                 edges_meta = edges_meta.next_sibling(edges_meta.name());
             }

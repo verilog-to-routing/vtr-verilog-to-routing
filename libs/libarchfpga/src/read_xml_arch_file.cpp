@@ -183,20 +183,6 @@ static bool attribute_to_bool(const pugi::xml_node node,
 int find_switch_by_name(const t_arch& arch, std::string switch_name);
 
 
-bool t_offset::operator<(const t_offset &o) const {
-    if (x != o.x) {
-        return x < o.x;
-    } else if (y != o.y) {
-        return y < o.y;
-    } else {
-        return z < o.z;
-    }
-}
-
-bool t_offset::operator==(const t_offset &o) const {
-    return (x == o.x) && (y == o.y) && (z == o.z);
-}
-
 e_side string_to_side(std::string side_str);
 
 /*
@@ -1711,14 +1697,9 @@ static t_metadata_dict ProcessMetadata(pugi::xml_node Parent,
 		auto meta_tag = get_first_child(metadata, "meta", loc_data);
 		while (meta_tag) {
 			std::string key = get_attribute(meta_tag, "name", loc_data).as_string();
-			t_offset offset;
-
-			offset.x = get_attribute(meta_tag, "x_offset", loc_data, OPTIONAL).as_int(0);
-			offset.y = get_attribute(meta_tag, "y_offset", loc_data, OPTIONAL).as_int(0);
-			offset.z = get_attribute(meta_tag, "z_offset", loc_data, OPTIONAL).as_int(0);
 
 			auto value = meta_tag.child_value();
-			data.add(offset, key, value);
+			data.add(key, value);
 			meta_tag = meta_tag.next_sibling(meta_tag.name());
 		}
 	}
