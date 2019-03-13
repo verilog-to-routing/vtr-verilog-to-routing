@@ -4430,12 +4430,28 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 			/* IF - this is a normal case item, then process the case match and the details of the statement */
 			case_statement[i] = netlist_expand_ast_of_module(case_list_of_items->children[i]->children[1], instance_name_prefix);
 			sort_signal_list_alphabetically(case_statement[i]);
+
+			/* free unused nnodes */
+			for (j = 0; j < case_statement[i]->count; j++) {
+				nnode_t* temp_node = case_statement[i]->pins[j]->node;
+				if (temp_node != NULL && temp_node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+					case_statement[i]->pins[j]->node = free_nnode(temp_node);
+				}
+			}
 		}
 		else if (case_list_of_items->children[i]->type == CASE_DEFAULT)
 		{
 			oassert(i == case_list_of_items->num_children - 1); // has to be at the end
 			case_statement[i] = netlist_expand_ast_of_module(case_list_of_items->children[i]->children[0], instance_name_prefix);
 			sort_signal_list_alphabetically(case_statement[i]);
+
+			/* free unused nnodes */
+			for (j = 0; j < case_statement[i]->count; j++) {
+				nnode_t* temp_node = case_statement[i]->pins[j]->node;
+				if (temp_node != NULL && temp_node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+					case_statement[i]->pins[j]->node = free_nnode(temp_node);
+				}
+			}
 		}
 		else
 		{
