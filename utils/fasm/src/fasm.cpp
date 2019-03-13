@@ -47,13 +47,17 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
 
     int x = place_ctx.block_locs[blk_id].x;
     int y = place_ctx.block_locs[blk_id].y;
+    int z = place_ctx.block_locs[blk_id].z;
     auto &grid_loc = device_ctx.grid[x][y];
     blk_type_ = grid_loc.type;
 
     current_blk_has_prefix_ = true;
     std::string grid_prefix;
     if(grid_loc.meta != nullptr && grid_loc.meta->has("fasm_prefix")) {
-        grid_prefix = grid_loc.meta->get("fasm_prefix")->front().as_string();
+      std::string prefix_unsplit = grid_loc.meta->get("fasm_prefix")->front().as_string();
+      std::vector<std::string> fasm_prefixes = vtr::split(prefix_unsplit, " ");
+      VTR_ASSERT(static_cast<size_t>(blk_type_->capacity) == fasm_prefixes.size());
+      grid_prefix = fasm_prefixes[z];
     } else {
       current_blk_has_prefix_= false;
     }
