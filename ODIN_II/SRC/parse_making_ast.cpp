@@ -1405,8 +1405,7 @@ ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *
     for(i = 1; i < expression3->num_children; i++) add_child_to_node(new_node, expression3->children[i]);
 	
 	/* clean up */
-	if (expression3->type == MODULE_CONNECT)
-		expression3 = free_single_node(expression3);
+	if (expression3->type == MODULE_CONNECT) expression3 = free_single_node(expression3);
 
     return new_node;
 }
