@@ -1503,15 +1503,15 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 		else 				free_whole_tree(module_variables_not_defined[i]);
 	}
 
+	/* clean up */
+	vtr::free(module_variables_not_defined);
+
 	if ((sc_spot = sc_add_string(module_names_to_idx, module_name)) == -1)
 	{
 		error_message(PARSE_ERROR, line_number, current_parse_file, "module names with the same name -> %s\n", module_name);
 	}
 	/* store the data which is an idx here */
 	module_names_to_idx->data[sc_spot] = (void*)new_node;
-
-	/* clean up */
-	vtr::free(module_variables_not_defined);
 	
 	/* now that we've bottom up built the parse tree for this module, go to the next module */
 	next_module();
