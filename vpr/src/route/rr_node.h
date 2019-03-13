@@ -68,10 +68,6 @@ class t_rr_node {
         t_rr_type type() const { return type_; }
         const char *type_string() const; /* Retrieve type as a string */
 
-        const t_metadata_as* metadata(std::string key) const;
-        const t_metadata_as* metadata(t_offset o, std::string key) const;
-        const t_metadata_as* metadata(std::pair<t_offset, std::string> ko) const;
-
         edge_idx_range edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges())); }
         edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges() - num_non_configurable_edges())); }
         edge_idx_range non_configurable_edges() const { return vtr::make_range(edge_idx_iterator(num_edges() - num_non_configurable_edges()), edge_idx_iterator(num_edges())); }
@@ -82,10 +78,6 @@ class t_rr_node {
 
         int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
         short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_id; }
-
-        const t_metadata_as* edge_metadata(int sink_node, short switch_id, std::string key) const;
-        const t_metadata_as* edge_metadata(int sink_node, short switch_id, t_offset o, std::string key) const;
-        const t_metadata_as* edge_metadata(int sink_node, short switch_id, std::pair<t_offset, std::string> ko) const;
 
         bool edge_is_configurable(short iedge) const;
         short fan_in() const;
@@ -135,14 +127,6 @@ class t_rr_node {
         void set_num_edges(short); //Note will remove any previous edges
         void set_edge_sink_node(short iedge, int sink_node);
         void set_edge_switch(short iedge, short switch_index);
-
-        void add_metadata(std::string key, std::string value);
-        void add_metadata(t_offset o, std::string key, std::string value);
-        void add_metadata(std::pair<t_offset, std::string> ok, std::string value);
-
-        void add_edge_metadata(int sink_node, short switch_id, std::string key, std::string value);
-        void add_edge_metadata(int sink_node, short switch_id, t_offset o, std::string key, std::string value);
-        void add_edge_metadata(int sink_node, short switch_id, std::pair<t_offset, std::string> ok, std::string value);
 
         void set_fan_in(short);
 

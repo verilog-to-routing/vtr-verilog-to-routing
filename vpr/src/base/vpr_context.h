@@ -108,6 +108,18 @@ struct TimingContext : public Context {
 
 };
 
+namespace std {
+    template <>
+    struct hash<std::tuple<int, int, short>> {
+        std::size_t operator()(const std::tuple<int, int, short>& ok) const noexcept {
+            std::size_t seed = std::hash<int>{}(std::get<0>(ok));
+            vtr::hash_combine(seed, std::get<1>(ok));
+            vtr::hash_combine(seed, std::get<2>(ok));
+            return seed;
+        }
+    };
+}
+
 //State relating the device
 //
 //This should contain only data structures describing the targeted device.
@@ -158,20 +170,19 @@ struct DeviceContext : public Context {
     std::vector<std::unique_ptr<ClockConnection>> clock_connections;
 
     /** Attributes for each rr_node.
-     * key:     Pointer to the routing resource node
+     * key:     rr_node index
      * value:   map of <attribute_name, attribute_value>
      */
-    std::unordered_map<const t_rr_node*, t_metadata_dict> rr_node_metadata;
+    std::unordered_map<int, t_metadata_dict> rr_node_metadata;
     /* Attributes for each rr_edge                                             *
-     * key:     <ptr,iswitch>                                                  *
-     * ptr:     Pointer to the routing resource node.                          *
+     * key:     <source rr_node_index, sink rr_node_index, iswitch>            *
      * iswitch: Index of the switch type used to go from this rr_node to       *
      *          the next one in the routing.  OPEN if there is no next node    *
      *          (i.e. this node is the last one (a SINK) in a branch of the    *
      *          net's routing).                                                *
      * value:   map of <attribute_name, attribute_value>                       */
-    std::unordered_map<const t_rr_node*, std::map<std::pair<int, short>, 
-        t_metadata_dict>> rr_edge_metadata;
+    std::unordered_map<std::tuple<int, int, short>,
+        t_metadata_dict> rr_edge_metadata;
 
     /*
      * switch_fanin_remap is only used for printing out switch fanin stats (the -switch_stats option)

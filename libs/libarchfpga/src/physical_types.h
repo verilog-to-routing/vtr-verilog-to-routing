@@ -36,6 +36,7 @@
 #include <numeric>
 
 #include "vtr_ndmatrix.h"
+#include "vtr_hash.h"
 
 #include "logic_types.h"
 #include "clock_types.h"
@@ -94,19 +95,19 @@ namespace std {
     template <>
     struct hash<t_offset> {
         std::size_t operator()(const t_offset& o) const noexcept {
-            std::size_t h1 = std::hash<int>{}(o.x);
-            std::size_t h2 = std::hash<int>{}(o.y);
-            std::size_t h3 = std::hash<int>{}(o.z);
-            return h1 ^ (h2 << 1) ^ (h3 << 2);
+            std::size_t seed = std::hash<int>{}(o.x);
+            vtr::hash_combine(seed, o.y);
+            vtr::hash_combine(seed, o.z);
+            return seed;
         }
     };
 
     template <>
     struct hash<std::pair<t_offset, std::string>> {
         std::size_t operator()(const std::pair<t_offset, std::string>& ok) const noexcept {
-            std::size_t h1 = std::hash<t_offset>{}(ok.first);
-            std::size_t h2 = std::hash<string>{}(ok.second);
-            return h1 ^ (h2 << 1);
+            std::size_t seed = std::hash<t_offset>{}(ok.first);
+            vtr::hash_combine(seed, ok.second);
+            return seed;
         }
     };
 }
@@ -380,8 +381,13 @@ struct t_grid_loc_def {
     t_grid_loc_spec x;      //Horizontal location specification
     t_grid_loc_spec y;      //Veritcal location specification
 
+    // When 1 metadata tag is split amoung multiple t_grid_loc_def, one
+    // t_grid_loc_def is arbitrarily choosen to own the metadata, and the other
+    // t_grid_loc_def point to the owned version.
     std::unique_ptr<t_metadata_dict> owned_meta;
-    t_metadata_dict *meta;
+    t_metadata_dict *meta; // Metadata for this location definition. This
+                           // metadata may be shared with multiple grid_locs
+                           // that come from a common definition.
 };
 
 enum GridDefType {

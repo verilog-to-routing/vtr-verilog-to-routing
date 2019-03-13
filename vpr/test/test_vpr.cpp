@@ -112,31 +112,28 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
     const auto& device_ctx = g_vpr_ctx.device();
     CHECK(device_ctx.rr_node_metadata.size() == 1);
     for(const auto & node_meta: device_ctx.rr_node_metadata) {
-        CHECK(node_meta.first->type() == SINK);
-        CHECK(node_meta.first->xlow() == 0);
-        CHECK(node_meta.first->xhigh() == 0);
-        CHECK(node_meta.first->ylow() == 1);
-        CHECK(node_meta.first->yhigh() == 1);
+        const auto *node = &device_ctx.rr_nodes[node_meta.first];
+        CHECK(node->type() == SINK);
+        CHECK(node->xlow() == 0);
+        CHECK(node->xhigh() == 0);
+        CHECK(node->ylow() == 1);
+        CHECK(node->yhigh() == 1);
         REQUIRE(node_meta.second.has("node"));
         CHECK_THAT(node_meta.second.one("node")->as_string(), Equals("test node"));
     }
 
     CHECK(device_ctx.rr_edge_metadata.size() == 1);
     for(const auto & edge_meta: device_ctx.rr_edge_metadata) {
-        CHECK(edge_meta.first->type() == CHANY);
-        CHECK(edge_meta.first->xlow() == 1);
-        CHECK(edge_meta.first->xhigh() == 1);
-        CHECK(edge_meta.first->ylow() == 1);
-        CHECK(edge_meta.first->yhigh() == 1);
-
-        CHECK(edge_meta.second.size() == 1);
+        constexpr int kSourceNode = 635;
         constexpr int kSinkNode = 559;
         constexpr int kSwitchId = 2;
 
-        auto iter = edge_meta.second.find(std::make_pair(kSinkNode, kSwitchId));
-        REQUIRE(iter != edge_meta.second.end());
-        REQUIRE(iter->second.has("edge"));
-        CHECK_THAT(iter->second.one("edge")->as_string(), Equals("test edge"));
+        CHECK(std::get<0>(edge_meta.first) == kSourceNode);
+        CHECK(std::get<1>(edge_meta.first) == kSinkNode);
+        CHECK(std::get<2>(edge_meta.first) == kSwitchId);
+
+        REQUIRE(edge_meta.second.has("edge"));
+        CHECK_THAT(edge_meta.second.one("edge")->as_string(), Equals("test edge"));
     }
     vpr_free_all(arch, vpr_setup);
 }
