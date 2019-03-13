@@ -13,13 +13,19 @@
 
 #Default build type
 # Possible values:
+#    release_pgo
 #    release
 #    debug
 BUILD_TYPE ?= release
 
+#Convert to lower case for consistency
+BUILD_TYPE := $(shell echo $(BUILD_TYPE) | tr '[:upper:]' '[:lower:]')
+
+CMAKE_BUILD_TYPE := $(shell echo $(BUILD_TYPE) | sed 's/_pgo//')
+
 #Allows users to pass parameters to cmake
 #  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
-override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -G 'Unix Makefiles' ${CMAKE_PARAMS}
+override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G 'Unix Makefiles' ${CMAKE_PARAMS}
 
 
 # -s : Suppresss makefile output (e.g. entering/leaving directories)
@@ -38,11 +44,32 @@ export CTEST_OUTPUT_ON_FAILURE=TRUE
 #All targets in this make file are always out of date.
 # This ensures that any make target requests are forwarded to
 # the generated makefile
-.PHONY: all distclean $(GENERATED_MAKEFILE) $(MAKECMDGOALS)
+.PHONY: all distclean default $(GENERATED_MAKEFILE) $(MAKECMDGOALS)
 
 #Build everything
-all: $(GENERATED_MAKEFILE)
-	@+$(MAKE) -C $(BUILD_DIR)
+all:
+	#Create profile generation build
+ifneq (,$(findstring pgo,$(BUILD_TYPE)))
+	#PGO Build
+	@echo "Performing Profile Guided Optimization (PGO) build..."
+	@ mkdir -p $(BUILD_DIR)
+	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_gen .. "
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_gen .. 
+	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
+	#Run benchmarks to generate profiling data
+	#Note that this must be done serially to avoid corrupting the generated profiles
+	echo "Generating profile data for PGO (may take several minutes)"
+	./run_reg_test.pl pgo_profile
+	#Re-configure to use profiling data
+	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_use .. "
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_use .. 
+else
+	#Standard build
+	@echo "Performing standard build..."
+	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. "
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. 
+endif
+	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
 
 #Call the generated Makefile's clean, and then remove all cmake generated files
 distclean: $(GENERATED_MAKEFILE)
@@ -61,8 +88,9 @@ endif
 	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. "
 	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. 
 
-#Forward any targets that are not named 'distclean' to the generated Makefile
+#Forward any targets that are not named 'distclean', 'default' or 'pgo' to the generated Makefile
 ifneq ($(MAKECMDGOALS),distclean)
 $(MAKECMDGOALS): $(GENERATED_MAKEFILE)
+	@echo "Building specifc target(s): $(MAKECMDGOALS)"
 	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
 endif

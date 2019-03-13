@@ -14,6 +14,9 @@ project("vpr")
 option(VPR_USE_SIGNAL_HANDLER "Should VPR use a signal handler to intercept signals (e.g. SIGINT)?" OFF)
 option(VPR_IPO_BUILD "Should VPR be compiled with an interprocedural optimizations?" ON)
 
+set(VPR_PGO_CONFIG "none" CACHE STRING "Configure profile-guided optimization prof_gen: generate profiling build, prof_use: use generated profiling during build, none: do nothing")
+set_property(CACHE VPR_PGO_CONFIG PROPERTY STRINGS prof_gen prof_use none)
+
 include(CheckCXXSymbolExists)
 
 #Collect the source files
@@ -49,6 +52,20 @@ if (VPR_USE_IPO_BUILD)
     message(STATUS "Using IPO build for vpr")
     set_property(TARGET libvpr PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     set_property(TARGET vpr PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
+if (VPR_PGO_CONFIG STREQUAL "prof_gen")
+    target_compile_options(libvpr PUBLIC "-fprofile-generate")
+    target_compile_options(vpr PUBLIC "-fprofile-generate")
+    target_link_libraries(vpr "-fprofile-generate")
+elseif (VPR_PGO_CONFIG STREQUAL "prof_use")
+    target_compile_options(libvpr PUBLIC "-fprofile-use")
+    target_compile_options(vpr PUBLIC "-fprofile-use")
+    target_link_libraries(vpr "-fprofile-use")
+elseif (VPR_PGO_CONFIG STREQUAL "none")
+    #Pass
+else()
+    message(ERROR "Unsupported VPR_PGO_CONFIG '${VPR_PGO_CONFIG}'")
 endif()
 
 if (VPR_USE_SIGNAL_HANDLER)
