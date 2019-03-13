@@ -1,6 +1,8 @@
 #include "catch.hpp"
 
 #include "read_xml_arch_file.h"
+#include "rr_metadata.h"
+#include "rr_graph_writer.h"
 #include "arch_util.h"
 #include "vpr_api.h"
 #include <cstring>
@@ -92,47 +94,88 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
 }
 
 TEST_CASE("read_rr_graph_metadata", "[vpr]") {
-    const char *argv[] = {
-        "test_vpr",
-        kArchFile,
-        "wire.eblif",
-        "--read_rr_graph",
-        kRrGraphFile,
-        "--route_chan_width",
-        "100",
-    };
+    int src_inode = -1;
+    int sink_inode = -1;
+    short switch_id = -1;
+
+    {
+        t_vpr_setup vpr_setup;
+        t_arch arch;
+        t_options options;
+        const char *argv[] = {
+            "test_vpr",
+            kArchFile,
+            "wire.eblif",
+            "--route_chan_width",
+            "100",
+        };
+        vpr_init(sizeof(argv)/sizeof(argv[0]), argv,
+                &options, &vpr_setup, &arch);
+        vpr_create_device(vpr_setup, arch);
+
+        const auto& device_ctx = g_vpr_ctx.device();
+
+        int inode;
+        for(inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
+            if((device_ctx.rr_nodes[inode].type() == CHANX ||
+               device_ctx.rr_nodes[inode].type() == CHANY) &&
+                device_ctx.rr_nodes[inode].num_edges() > 0) {
+                src_inode = inode;
+                break;
+            }
+
+        }
+
+        REQUIRE(src_inode != -1);
+        sink_inode = device_ctx.rr_nodes[src_inode].edge_sink_node(0);
+        switch_id = device_ctx.rr_nodes[src_inode].edge_switch(0);
+
+        vpr::add_node_metadata(src_inode, "node", "test node");
+        vpr::add_edge_metadata(src_inode, sink_inode, switch_id, "edge", "test edge");
+
+        write_rr_graph(kRrGraphFile, vpr_setup.Segments);
+        vpr_free_all(arch, vpr_setup);
+    }
+
+    REQUIRE(src_inode != -1);
+    REQUIRE(sink_inode != -1);
+    REQUIRE(switch_id != -1);
 
     t_vpr_setup vpr_setup;
     t_arch arch;
     t_options options;
+    const char *argv[] = {
+        "test_vpr",
+        kArchFile,
+        "wire.eblif",
+        "--route_chan_width",
+        "100",
+        "--read_rr_graph",
+        kRrGraphFile,
+    };
+
     vpr_init(sizeof(argv)/sizeof(argv[0]), argv,
               &options, &vpr_setup, &arch);
     vpr_create_device(vpr_setup, arch);
 
     const auto& device_ctx = g_vpr_ctx.device();
     CHECK(device_ctx.rr_node_metadata.size() == 1);
+    CHECK(device_ctx.rr_edge_metadata.size() == 1);
+
     for(const auto & node_meta: device_ctx.rr_node_metadata) {
-        const auto *node = &device_ctx.rr_nodes[node_meta.first];
-        CHECK(node->type() == SINK);
-        CHECK(node->xlow() == 0);
-        CHECK(node->xhigh() == 0);
-        CHECK(node->ylow() == 1);
-        CHECK(node->yhigh() == 1);
+        CHECK(node_meta.first == src_inode);
         REQUIRE(node_meta.second.has("node"));
+        REQUIRE(node_meta.second.one("node") != nullptr);
         CHECK_THAT(node_meta.second.one("node")->as_string(), Equals("test node"));
     }
 
-    CHECK(device_ctx.rr_edge_metadata.size() == 1);
     for(const auto & edge_meta: device_ctx.rr_edge_metadata) {
-        constexpr int kSourceNode = 635;
-        constexpr int kSinkNode = 559;
-        constexpr int kSwitchId = 2;
-
-        CHECK(std::get<0>(edge_meta.first) == kSourceNode);
-        CHECK(std::get<1>(edge_meta.first) == kSinkNode);
-        CHECK(std::get<2>(edge_meta.first) == kSwitchId);
+        CHECK(std::get<0>(edge_meta.first) == src_inode);
+        CHECK(std::get<1>(edge_meta.first) == sink_inode);
+        CHECK(std::get<2>(edge_meta.first) == switch_id);
 
         REQUIRE(edge_meta.second.has("edge"));
+        REQUIRE(edge_meta.second.one("edge") != nullptr);
         CHECK_THAT(edge_meta.second.one("edge")->as_string(), Equals("test edge"));
     }
     vpr_free_all(arch, vpr_setup);
