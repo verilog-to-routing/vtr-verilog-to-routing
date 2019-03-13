@@ -873,7 +873,7 @@ ast_node_t *newPartSelectRangeRef(char *id, ast_node_t *expression1, ast_node_t 
 								expression1->types.number.value, direction == 1 ? "+:" : "-:",
 								expression2->types.number.value);
 	}
-	else if (expression1->types.number.value < upper_limit || expression2->types.number.value < bottom_limit) {
+	else if (expression1->types.number.value  > upper_limit || expression2->types.number.value < bottom_limit) {
 		/* out of original range */
 		error_message(PARSE_ERROR, line_number,current_parse_file, 
 								"This part-select range (%s [%d%s%d]) is out of range. It should be in the [%d:%d] range.",
