@@ -4278,8 +4278,7 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 {
 	signal_list_t **if_statements;
 	signal_list_t *return_list;
-	int i;
-	int j;
+	int i, j;
 
 	/* make storage for statements and expressions */
 	if_statements = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*)*2);
@@ -4426,7 +4425,7 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 {
 	signal_list_t **case_statement;
 	signal_list_t *return_list;
-	long i;
+	long i, j;
 
 	/* make storage for statements and expressions */
 	case_statement = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*)*(case_list_of_items->num_children));
@@ -4439,12 +4438,28 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 			/* IF - this is a normal case item, then process the case match and the details of the statement */
 			case_statement[i] = netlist_expand_ast_of_module(case_list_of_items->children[i]->children[1], instance_name_prefix);
 			sort_signal_list_alphabetically(case_statement[i]);
+
+			/* free unused nnodes */
+			for (j = 0; j < case_statement[i]->count; j++) {
+				nnode_t* temp_node = case_statement[i]->pins[j]->node;
+				if (temp_node != NULL && temp_node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+					case_statement[i]->pins[j]->node = free_nnode(temp_node);
+				}
+			}
 		}
 		else if (case_list_of_items->children[i]->type == CASE_DEFAULT)
 		{
 			oassert(i == case_list_of_items->num_children - 1); // has to be at the end
 			case_statement[i] = netlist_expand_ast_of_module(case_list_of_items->children[i]->children[0], instance_name_prefix);
 			sort_signal_list_alphabetically(case_statement[i]);
+
+			/* free unused nnodes */
+			for (j = 0; j < case_statement[i]->count; j++) {
+				nnode_t* temp_node = case_statement[i]->pins[j]->node;
+				if (temp_node != NULL && temp_node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+					case_statement[i]->pins[j]->node = free_nnode(temp_node);
+				}
+			}
 		}
 		else
 		{
