@@ -56,7 +56,12 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
     if(grid_loc.meta != nullptr && grid_loc.meta->has("fasm_prefix")) {
       std::string prefix_unsplit = grid_loc.meta->get("fasm_prefix")->front().as_string();
       std::vector<std::string> fasm_prefixes = vtr::split(prefix_unsplit, " ");
-      VTR_ASSERT(static_cast<size_t>(blk_type_->capacity) == fasm_prefixes.size());
+      if(fasm_prefixes.size() != static_cast<size_t>(blk_type_->capacity)) {
+        vpr_throw(VPR_ERROR_OTHER,
+                  __FILE__, __LINE__,
+                  "number of fasm_prefix (%s) options (%d) for block (%s) must match capacity(%d)",
+                  prefix_unsplit, fasm_prefixes.size(), blk_type_->name, blk_type_->capacity);
+      }
       grid_prefix = fasm_prefixes[z];
     } else {
       current_blk_has_prefix_= false;
@@ -119,8 +124,9 @@ std::string FasmWriterVisitor::build_clb_prefix(const t_pb_graph_node* pb_graph_
   VTR_ASSERT(pb_type->num_pb >= 0);
   if(fasm_prefix.size() != static_cast<size_t>(pb_type->num_pb)) {
     vpr_throw(VPR_ERROR_OTHER,
-              __FILE__, __LINE__, "fasm_prefix = %s, num_pb = %d",
-              fasm_prefix_unsplit.c_str(), pb_type->num_pb);
+              __FILE__, __LINE__,
+              "number of fasm_prefix (%s) options (%d) for block (%s) must match capacity(%d)",
+              fasm_prefix_unsplit, fasm_prefix.size(), pb_type->name, pb_type->num_pb);
   }
 
   if(pb_graph_node->placement_index >= pb_type->num_pb) {
