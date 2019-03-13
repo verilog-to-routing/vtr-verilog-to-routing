@@ -863,7 +863,29 @@ ast_node_t *newPartSelectRangeRef(char *id, ast_node_t *expression1, ast_node_t 
 	}
 	else{
 		expression2->types.number.value = expression1->types.number.value - expression2->types.number.value + 1;
+		expression1->types.number.value = expression1->types.number.value + expression2->types.number.value - 1;
 	}
+
+	if (expression1->types.number.value < 0 || expression2->types.number.value < 0){
+
+		/* Negetive numbers are not supported */
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Odin doesn't support negative number in index.", id);
+
+	}
+	else if(expression1->types.number.value < expression2->types.number.value){
+
+		/*ODIN doesn't support m<n */
+	 	error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
+
+	}
+	else if (expression1->types.number.value > upper_limit || expression2->types.number.value > bottom_limit) {
+		/* out of original range */
+		error_message(PARSE_ERROR, line_number,current_parse_file, 
+								"This part select range (%s [%d%s%d]) is out of range. It should be within the [%d:%d] range.",
+								id,expression1->types.number.value, direction ==1 ? "+:" : "-:",expression2->types.number.value,
+								 upper_limit,bottom_limit );
+	}
+	
 
 	return newRangeRef(id, expression1, expression2, line_number);
 }
