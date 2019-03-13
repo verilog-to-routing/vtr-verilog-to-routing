@@ -71,8 +71,8 @@ def main():
         if os.path.isfile(tar_gz_filename):
             file_matches = md5_matches(tar_gz_filename, external_md5)
 
-        if not args.force and file_matches and False:
-            print "Found existing {} (skipping download and extraction)".format(tar_gz_filename)
+        if not args.force and file_matches:
+            print "Found existing {} with matching checksum (skipping download and extraction)".format(tar_gz_filename)
         else:
             if os.path.isfile(tar_gz_filename) and not file_matches:
                 print "Local file MD5 does not match remote MD5"
