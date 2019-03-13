@@ -48,8 +48,8 @@ add_executable(vpr ${EXEC_SOURCES})
 target_link_libraries(vpr 
                         libvpr)
 
-if (VPR_USE_IPO_BUILD)
-    message(STATUS "Using IPO build for vpr")
+if (VPR_IPO_BUILD)
+    message(STATUS "Building VPR use IPO")
     set_property(TARGET libvpr PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     set_property(TARGET vpr PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
