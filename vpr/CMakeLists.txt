@@ -14,7 +14,7 @@ project("vpr")
 option(VPR_USE_SIGNAL_HANDLER "Should VPR use a signal handler to intercept signals (e.g. SIGINT)?" OFF)
 option(VPR_IPO_BUILD "Should VPR be compiled with an interprocedural optimizations?" ON)
 
-set(VPR_PGO_CONFIG "none" CACHE STRING "Configure profile-guided optimization prof_gen: generate profiling build, prof_use: use generated profiling during build, none: do nothing")
+set(VPR_PGO_CONFIG "none" CACHE STRING "Configure VPR Profile-Guided Optimization (PGO). prof_gen: built executable will produce profiling info, prof_use: built executable will be optimized based on generated profiling info, none: disable pgo")
 set_property(CACHE VPR_PGO_CONFIG PROPERTY STRINGS prof_gen prof_use none)
 
 include(CheckCXXSymbolExists)

@@ -48,11 +48,10 @@ export CTEST_OUTPUT_ON_FAILURE=TRUE
 
 #Build everything
 all:
-	#Create profile generation build
+	@ mkdir -p $(BUILD_DIR)
 ifneq (,$(findstring pgo,$(BUILD_TYPE)))
 	#PGO Build
 	@echo "Performing Profile Guided Optimization (PGO) build..."
-	@ mkdir -p $(BUILD_DIR)
 	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_gen .. "
 	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_gen .. 
 	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
