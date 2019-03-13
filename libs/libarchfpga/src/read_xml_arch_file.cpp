@@ -1703,9 +1703,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
 static t_metadata_dict ProcessMetadata(pugi::xml_node Parent,
 		const pugiutil::loc_data& loc_data) {
 	//	<metadata>
-	//	  <meta name='x_offset'>12</meta>
-	//	  <meta name='y_offset'>100</meta>
-	//	  <meta name='grid_prefix'>CLBLL_L_</meta>
+	//	  <meta x_offset="12" y_offset="100" name="grid_prefix">CLBLL_L_</meta>
 	//	</metadata>
 	t_metadata_dict data;
 	auto metadata = get_single_child(Parent, "metadata", loc_data, OPTIONAL);
