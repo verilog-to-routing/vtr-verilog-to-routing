@@ -4,15 +4,15 @@
 ##############################################
 
 # Path to directory of circuits to use
-#circuits_dir=benchmarks/titan_blif
-circuits_dir=benchmarks/titan_other_blif
+circuits_dir=benchmarks/titan_blif
+#circuits_dir=benchmarks/titan_other_blif
 
 # Path to directory of architectures to use
 archs_dir=arch/titan
 
 # Add circuits to list to sweep
-#circuit_list_add=neuron_stratixiv_arch_timing.blif
-circuit_list_add=ucsb_152_tap_fir_stratixiv_arch_timing.blif
+circuit_list_add=neuron_stratixiv_arch_timing.blif
+#circuit_list_add=ucsb_152_tap_fir_stratixiv_arch_timing.blif
 
 # Add architectures to list to sweep
 arch_list_add=stratixiv_arch.timing.xml

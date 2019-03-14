@@ -12,8 +12,8 @@ archs_dir=arch/timing
 sdc_dir=sdc
 
 # Add circuits to list to sweep
-#circuit_list_add=stereovision1.v
-circuit_list_add=stereovision0.v
+circuit_list_add=stereovision1.v
+#circuit_list_add=stereovision0.v
 
 # Add architectures to list to sweep
 arch_list_add=EArch.xml
