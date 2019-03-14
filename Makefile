@@ -34,7 +34,7 @@ override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G 'Unix Makefil
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
 MAKEFLAGS := -s
 
-BUILD_DIR=./build
+BUILD_DIR ?= build
 
 #Check for the cmake exectuable
 CMAKE := $(shell command -v cmake 2> /dev/null)
