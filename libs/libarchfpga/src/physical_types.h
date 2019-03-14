@@ -68,21 +68,20 @@ enum class e_sb_type;
 /****************************************************************************/
 /* FPGA metadata types                                                      */
 /****************************************************************************/
-/* t_offset, t_metadata_as, and t_metadata_dict provide a types to store
+/* t_metadata_value, and t_metadata_dict provide a types to store
  * metadata about the FPGA architecture and routing routing graph along side
  * the pb_type, grid, node and edge descriptions.
  *
  * The metadata is stored as a simple key/value map.  key's are string and an
- * optional coordinate. t_metadata_as provides the value storage, which is a
- * string.  t_metadata_as has some convience methods for a handful of types
- * (e.g. int, vector of int), but the underlying data type is always a string.
+ * optional coordinate. t_metadata_value provides the value storage, which is a
+ * string.
  */
 
 // Metadata value storage.
-class t_metadata_as {
+class t_metadata_value {
 public:
-    explicit t_metadata_as(std::string v) : value_(v) {}
-    explicit t_metadata_as(const t_metadata_as &o) : value_(o.value_) {}
+    explicit t_metadata_value(std::string v) : value_(v) {}
+    explicit t_metadata_value(const t_metadata_value &o) : value_(o.value_) {}
 
     // Return string value.
     std::string as_string() const { return value_; }
@@ -94,7 +93,7 @@ private:
 // Metadata storage dictionary.
 struct t_metadata_dict : std::unordered_map<
                             std::string,
-                            std::vector<t_metadata_as>> {
+                            std::vector<t_metadata_value>> {
     // Is this key present in the map?
     inline bool has(std::string key) const {
         return this->count(key) >= 1;
@@ -103,7 +102,7 @@ struct t_metadata_dict : std::unordered_map<
     // Get all metadata values matching key.
     //
     // Returns nullptr if key is not found.
-    inline const std::vector<t_metadata_as>* get(std::string key) const {
+    inline const std::vector<t_metadata_value>* get(std::string key) const {
         auto iter = this->find(key);
         if(iter != this->end()) {
           return &iter->second;
@@ -115,7 +114,7 @@ struct t_metadata_dict : std::unordered_map<
     //
     // Returns nullptr if key is not found or if multiple values are prsent
     // per key.
-    inline const t_metadata_as* one(std::string key) const {
+    inline const t_metadata_value* one(std::string key) const {
         auto values = get(key);
         if (values == nullptr) {
             return nullptr;
@@ -128,8 +127,10 @@ struct t_metadata_dict : std::unordered_map<
 
     // Adds value to key.
     void add(std::string key, std::string value) {
-        auto iter = this->emplace(key, std::vector<t_metadata_as>());
-        iter.first->second.push_back(t_metadata_as(value));
+        // Get the iterator to the key, which may already have elements if
+        // add was called with this key in the past.
+        auto iter_inserted = this->emplace(key, std::vector<t_metadata_value>());
+        iter_inserted.first->second.push_back(t_metadata_value(value));
     }
 };
 

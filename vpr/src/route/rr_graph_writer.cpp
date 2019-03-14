@@ -69,7 +69,7 @@ static void add_metadata_to_xml(fstream &fp, const char *tab_prefix, const t_met
 
     for(const auto &meta_elem : meta) {
         const std::string & key = meta_elem.first;
-        const std::vector<t_metadata_as> & values = meta_elem.second;
+        const std::vector<t_metadata_value> & values = meta_elem.second;
         for(const auto &value : values) {
           fp << tab_prefix << "\t<meta name=\"" << key << "\"";
           fp << ">" << value.as_string() << "</meta>" << endl;

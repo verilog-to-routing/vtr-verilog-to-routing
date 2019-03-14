@@ -130,8 +130,8 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         sink_inode = device_ctx.rr_nodes[src_inode].edge_sink_node(0);
         switch_id = device_ctx.rr_nodes[src_inode].edge_switch(0);
 
-        vpr::add_node_metadata(src_inode, "node", "test node");
-        vpr::add_edge_metadata(src_inode, sink_inode, switch_id, "edge", "test edge");
+        vpr::add_rr_node_metadata(src_inode, "node", "test node");
+        vpr::add_rr_edge_metadata(src_inode, sink_inode, switch_id, "edge", "test edge");
 
         write_rr_graph(kRrGraphFile, vpr_setup.Segments);
         vpr_free_all(arch, vpr_setup);

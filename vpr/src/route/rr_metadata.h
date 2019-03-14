@@ -5,11 +5,11 @@
 
 namespace vpr {
 
-const t_metadata_as* node_metadata(int src_node, std::string key);
-void add_node_metadata(int src_node, std::string key, std::string value);
+const t_metadata_value* rr_node_metadata(int src_node, std::string key);
+void add_rr_node_metadata(int src_node, std::string key, std::string value);
 
-const t_metadata_as* edge_metadata(int src_node, int sink_node, short switch_id, std::string key);
-void add_edge_metadata(int src_node, int sink_node, short switch_id, std::string key, std::string value);
+const t_metadata_value* rr_edge_metadata(int src_node, int sink_node, short switch_id, std::string key);
+void add_rr_edge_metadata(int src_node, int sink_node, short switch_id, std::string key, std::string value);
 
 } // namespace vpr
 

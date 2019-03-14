@@ -381,7 +381,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         node.set_num_edges(0);
 
         //  <metadata>
-        //    <meta name='grid_prefix' x_offset="1" y_offset="0" z_offset="0">CLBLL_L_</meta>
+        //    <meta name='grid_prefix' >CLBLL_L_</meta>
         //  </metadata>
         auto metadata = get_single_child(rr_node, "metadata", loc_data, OPTIONAL);
         if (metadata) {
@@ -389,7 +389,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
             while (rr_node_meta) {
                 auto key = get_attribute(rr_node_meta, "name", loc_data).as_string();
 
-                vpr::add_node_metadata(inode, key, rr_node_meta.child_value());
+                vpr::add_rr_node_metadata(inode, key, rr_node_meta.child_value());
 
                 rr_node_meta = rr_node_meta.next_sibling(rr_node_meta.name());
             }
@@ -478,7 +478,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
             while (edges_meta) {
                 auto key = get_attribute(edges_meta, "name", loc_data).as_string();
 
-                vpr::add_edge_metadata(source_node, sink_node, switch_id,
+                vpr::add_rr_edge_metadata(source_node, sink_node, switch_id,
                                   key, edges_meta.child_value());
 
                 edges_meta = edges_meta.next_sibling(edges_meta.name());
