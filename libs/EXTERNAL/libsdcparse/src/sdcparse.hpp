@@ -100,7 +100,7 @@ struct StringGroup;
 class Callback {
 
     public:
-        virtual ~Callback() {};
+        virtual ~Callback() {}
 
         //Start of parsing
         virtual void start_parse() = 0;
