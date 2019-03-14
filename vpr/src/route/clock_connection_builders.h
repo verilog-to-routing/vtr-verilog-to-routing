@@ -22,7 +22,7 @@ class ClockConnection {
         /*
          * Destructor
          */
-        virtual ~ClockConnection() {};
+        virtual ~ClockConnection() {}
 
         /*
          * Member functions
