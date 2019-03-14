@@ -54,14 +54,35 @@ if (VPR_IPO_BUILD)
     set_property(TARGET vpr PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
+
+set(PROF_GEN_FLAGS_TO_CHECK 
+    #GCC-like
+    "-fprofile-generate" #Build will generate profiling information
+    )
+set(PROF_USE_FLAGS_TO_CHECK
+    #GCC-like
+    "-fprofile-use"     #Build will use previously generated profiling information to guide code optimization
+    "-Wmissing-profile" #Warn if the used profiling information doesn't match the source code or is missing
+    )
+
 if (VPR_PGO_CONFIG STREQUAL "prof_gen")
-    target_compile_options(libvpr PUBLIC "-fprofile-generate")
-    target_compile_options(vpr PUBLIC "-fprofile-generate")
-    target_link_libraries(vpr "-fprofile-generate")
+    foreach(flag ${PROF_GEN_FLAGS_TO_CHECK})
+        CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
+        if(CXX_COMPILER_SUPPORTS_${flag})
+            target_compile_options(libvpr PUBLIC ${flag})
+            target_compile_options(vpr PUBLIC ${flag})
+            target_link_libraries(vpr ${flag})
+        endif()
+    endforeach()
 elseif (VPR_PGO_CONFIG STREQUAL "prof_use")
-    target_compile_options(libvpr PUBLIC "-fprofile-use -Wmissing-profile")
-    target_compile_options(vpr PUBLIC "-fprofile-use -Wmissing-profile")
-    target_link_libraries(vpr "-fprofile-use")
+    foreach(flag ${PROF_USE_FLAGS_TO_CHECK})
+        CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
+        if(CXX_COMPILER_SUPPORTS_${flag})
+            target_compile_options(libvpr PUBLIC ${flag})
+            target_compile_options(vpr PUBLIC ${flag})
+            target_link_libraries(vpr ${flag})
+        endif()
+    endforeach()
 elseif (VPR_PGO_CONFIG STREQUAL "none")
     #Pass
 else()
