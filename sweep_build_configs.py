@@ -5,16 +5,17 @@ import sys
 import os
 import re
 import shutil
+import time
 from collections import OrderedDict
 from copy import deepcopy
 
 DEFAULT_TARGETS_TO_BUILD=["all"]
 
-DEFAULT_GNU_COMPILER_VERSIONS=["4.9", "5", "6", "7", "8"]
+DEFAULT_GNU_COMPILER_VERSIONS=["8", "7", "6", "5", "4.9"]
 DEFAULT_MINGW_COMPILER_VERSIONS=["5"]
-DEFAULT_CLANG_COMPILER_VERSIONS=["3.6", "3.8"]
+DEFAULT_CLANG_COMPILER_VERSIONS=["3.8", "3.6"]
 
-DEFAULT_BUILD_CONFIGS = ["release", "debug"]
+DEFAULT_BUILD_CONFIGS = ["release", "debug", "release_pgo"]
 DEFAULT_EASYGL_CONFIGS = ["ON", "OFF"]
 DEFAULT_TATUM_EXECUTION_ENGINE_CONFIGS = ["auto", "serial"]
 DEFAULT_VTR_ASSERT_LEVELS = ["4", "3", "2", "1", "0"]
@@ -111,6 +112,7 @@ def main():
         cxx = "g++-" + gnu_version
 
         config = OrderedDict()
+        config['CMAKE_PARAMS'] = OrderedDict() 
         config['CC'] = cc
         config['CXX'] = cxx
         compiler_configs.append(config)
@@ -120,13 +122,15 @@ def main():
         cxx = "clang++-" + clang_version
 
         config = OrderedDict()
+        config['CMAKE_PARAMS'] = OrderedDict() 
         config['CC'] = cc
         config['CXX'] = cxx
         compiler_configs.append(config)
 
     for mingw_version in args.mingw_versions:
         config = OrderedDict() 
-        config["CMAKE_TOOLCHAIN_FILE"] = MINGW_TOOLCHAIN_FILE
+        config['CMAKE_PARAMS'] = OrderedDict() 
+        config['CMAKE_PARAMS']["CMAKE_TOOLCHAIN_FILE"] = MINGW_TOOLCHAIN_FILE
         if mingw_version != "":
             prefix = "x86_64-w64-mingw32"
             config["COMPILER_PREFIX"] = prefix
@@ -149,33 +153,49 @@ def main():
     for compiler_config in compiler_configs:
         test_configs.append(deepcopy(compiler_config))
 
-    #pp.pprint(test_configs)
-
-    #For the default compiler, check all the different combinations
+    #For the default compiler, check each build type
     for build_type in args.build_types:
-        for vtr_assert_level in args.vtr_assert_levels: 
-            for easygl_config in args.easygl_configs: 
-                for tatum_execution_engine_config in args.tatum_execution_engine_configs: 
-                    config = deepcopy(default_compiler_config)
-                    config["CMAKE_BUILD_TYPE"] = build_type
-                    config["EASYGL_ENABLE_GRAPHICS"] = easygl_config
-                    config["TATUM_EXECUTION_ENGINE"] = tatum_execution_engine_config
-                    config["VTR_ASSERT_LEVEL"] = vtr_assert_level
+        config = deepcopy(default_compiler_config)
+        config["BUILD_TYPE"] = build_type
+        test_configs.append(config)
 
-                    test_configs.append(config)
+    #For the default compiler, check all the different build configurations
+    #
+    #Note that for configurations which are expected to interact (e.g. features
+    #within a single tool) it may be better to test the various combinations to
+    #test for bugs in non-standard configurations
+    for vtr_assert_level in args.vtr_assert_levels: 
+        config = deepcopy(default_compiler_config)
+        config["CMAKE_PARAMS"]["VTR_ASSERT_LEVEL"] = vtr_assert_level
+
+        test_configs.append(config)
+
+    #EasyGL is a library, so don't expect any interactions and can test seperately
+    for easygl_config in args.easygl_configs: 
+        config = deepcopy(default_compiler_config)
+        config["CMAKE_PARAMS"]["EASYGL_ENABLE_GRAPHICS"] = easygl_config
+
+        test_configs.append(config)
+
+    #Tatum is a library, so don't expect any interactions and can test seperately
+    for tatum_execution_engine_config in args.tatum_execution_engine_configs: 
+        config = deepcopy(default_compiler_config)
+        config["CMAKE_PARAMS"]["TATUM_EXECUTION_ENGINE"] = tatum_execution_engine_config
+
+        test_configs.append(config)
 
     #Check that BlifExplorer builds with the default configuration
     for blif_explorer_config in args.blif_explorer_configs:
         config = deepcopy(default_compiler_config)
-        config["WITH_BLIFEXPLORER"] = blif_explorer_config
+        config["CMAKE_PARAMS"]["WITH_BLIFEXPLORER"] = blif_explorer_config
 
         test_configs.append(config)
 
-    #Test all the regular compilers with the all build configs
+    #Test all the build configs
     num_failed = 0
     for config in test_configs:
         targets = args.targets
-        if 'CMAKE_TOOLCHAIN_FILE' in config and targets == DEFAULT_TARGETS_TO_BUILD:
+        if 'CMAKE_TOOLCHAIN_FILE' in config['CMAKE_PARAMS'] and targets == DEFAULT_TARGETS_TO_BUILD:
             #Only build VPR with MINGW by default
             # The updated version of ABC (and ace/odin which depend on ABC)
             # fail to compile with MINGW
@@ -191,22 +211,31 @@ def main():
 
     if num_failed != 0:
         print "Failed to build {} of {} configurations".format(num_failed, len(test_configs))
+    else:
+        print "Successfully built {} configurations".format(len(test_configs))
 
     sys.exit(num_failed)
 
 def build_config(args, targets, config):
+    start_time = time.time()
     cc = None
     cxx = None
+    build_type = None
+    cmake_params = []
 
     #Set cc/cxx seperatley from the rest of the config parameters,
     #CC/CXX are set seperately in the command environment, rathern than
     #as command-line options
     if 'CC' in config:
         cc = config['CC']
-        del config['CC']
     if 'CXX' in config:
         cxx = config['CXX']
-        del config['CXX']
+    if 'BUILD_TYPE' in config:
+        build_type = config['BUILD_TYPE']
+
+    if 'CMAKE_PARAMS' in config:
+        for key, value in config['CMAKE_PARAMS'].iteritems():
+            cmake_params.append("{}={}".format(key, value))
 
     if not compiler_is_found(cc):
         print "Failed to find C compiler {}, skipping".format(cc)
@@ -215,10 +244,6 @@ def build_config(args, targets, config):
     if not compiler_is_found(cxx):
         print "Failed to find C++ compiler {}, skipping".format(cxx)
         return False
-
-    config_strs = []
-    for key, value in config.iteritems():
-        config_strs += ["{}={}".format(key, value)]
 
     log_file = "build.log"
 
@@ -232,9 +257,9 @@ def build_config(args, targets, config):
         if cxx != None:
             print      " CXX={}:".format(cxx),
             print >>f, " CXX={}:".format(cxx),
-        if "CMAKE_TOOLCHAIN_FILE" in config:
-            print      " Toolchain={}".format(config["CMAKE_TOOLCHAIN_FILE"]),
-            print >>f, " Toolchain={}".format(config["CMAKE_TOOLCHAIN_FILE"]),
+        if "CMAKE_TOOLCHAIN_FILE" in config['CMAKE_PARAMS']:
+            print      " Toolchain={}".format(config['CMAKE_PARAMS']["CMAKE_TOOLCHAIN_FILE"]),
+            print >>f, " Toolchain={}".format(config['CMAKE_PARAMS']["CMAKE_TOOLCHAIN_FILE"]),
         print      ""
         print >>f, ""
         f.flush()
@@ -255,23 +280,13 @@ def build_config(args, targets, config):
         if cxx != None:
             new_env['CXX'] = cxx
 
-        #Run CMAKE
-        cmake_cmd = ["cmake"]
-        for key, value in config.iteritems():
-            cmake_cmd += ["-D{}={}".format(key, value)]
-        cmake_cmd += [".."]
-
-        print "  " + ' '.join(cmake_cmd)
-        print >>f, "  " + ' '.join(cmake_cmd)
-        f.flush()
-        if not args.dry_run:
-            try:
-                subprocess.check_call(cmake_cmd, cwd=build_dir, stdout=f, stderr=f, env=new_env)
-            except subprocess.CalledProcessError as e:
-                build_successful = False
-
-        #Run Make
+        #Use the Makefile wrapper
         build_cmd = ["make"]
+        build_cmd += ["BUILD_DIR={}".format(build_dir)]
+        if build_type:
+            build_cmd += ["BUILD_TYPE={}".format(build_type)]
+        if len(cmake_params) > 0:
+            build_cmd += ["CMAKE_PARAMS='{}'".format(" ".join(cmake_params))]
         build_cmd += ["-j", "{}".format(args.j)]
         build_cmd += targets
 
@@ -280,7 +295,7 @@ def build_config(args, targets, config):
         f.flush()
         if not args.dry_run:
             try:
-                subprocess.check_call(build_cmd, cwd=build_dir, stdout=f, stderr=f, env=new_env)
+                subprocess.check_call(build_cmd, stdout=f, stderr=f, env=new_env)
             except subprocess.CalledProcessError as e:
                 build_successful = False
 
@@ -292,6 +307,7 @@ def build_config(args, targets, config):
                 print "    " + line,
                 issue_count += 1
 
+    elapsed_time = time.time() - start_time
     if not build_successful:
         print "  ERROR: failed to compile"
     else:
@@ -299,7 +315,7 @@ def build_config(args, targets, config):
         if issue_count > 0:
             print " ({} warnings)".format(issue_count),
         print
-
+    print "  Took {:.2f} seconds".format(elapsed_time)
     return build_successful
 
 def is_valid_warning_error(line):
