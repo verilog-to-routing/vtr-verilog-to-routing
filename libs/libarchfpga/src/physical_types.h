@@ -867,12 +867,15 @@ struct t_pin_to_pin_annotation {
  *      parent_pb_graph_node  : parent pb graph node
  *      total_primitive_count : Total number of this primitive type in the cluster. If there are 10 ALMs per cluster
  *                              and 2 FFs per ALM (given the mode of the parent of this primitive) then the total is 20.
+ *      illegal_modes         : vector containing illigal modes that result in conflicts during routing
  */
 class t_pb_graph_node {
 public:
 	t_pb_type *pb_type;
 
 	int placement_index;
+
+	std::vector<int> illegal_modes;
 
 	t_pb_graph_pin **input_pins; /* [0..num_input_ports-1] [0..num_port_pins-1]*/
 	t_pb_graph_pin **output_pins; /* [0..num_output_ports-1] [0..num_port_pins-1]*/
