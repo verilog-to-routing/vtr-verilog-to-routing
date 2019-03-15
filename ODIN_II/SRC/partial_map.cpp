@@ -1099,6 +1099,11 @@ void instantiate_shift_left_or_right(nnode_t *node, operation_list type, short m
 	}
 	/* instantiate the buffer */
 	instantiate_buffer(buf_node, mark, netlist);
+  
+  	/* clean up */
+	for (i = 0; i < buf_node->num_input_pins; i++) {
+		buf_node->input_pins[i] = free_npin(buf_node->input_pins[i]);
+	}
 	free_nnode(buf_node);
 	free_nnode(node);
 }

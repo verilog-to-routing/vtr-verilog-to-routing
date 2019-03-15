@@ -239,9 +239,8 @@ void ClusteredNetlist::clean_blocks_impl(const vtr::vector_map<ClusterBlockId, C
     block_logical_pins_ = clean_and_reorder_values(block_logical_pins_, block_id_map);
 }
 
-void ClusteredNetlist::clean_ports_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map) {
-    unsigned unused(port_id_map.size()); //Remove unused parameter warning
-    unused = unused;
+void ClusteredNetlist::clean_ports_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& /*port_id_map*/) {
+    //Unused
 }
 
 void ClusteredNetlist::clean_pins_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map) {

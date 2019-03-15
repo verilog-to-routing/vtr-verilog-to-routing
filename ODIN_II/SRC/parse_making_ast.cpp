@@ -1292,7 +1292,10 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	size_module_instantiations++;
 
     }
+	//TODO: free_whole_tree ??
+	vtr::free(module_named_instance->children);
     vtr::free(module_named_instance);
+	vtr::free(module_ref_name);
 	return new_master_node;
 }
 /*-------------------------------------------------------------------------

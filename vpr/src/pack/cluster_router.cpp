@@ -54,7 +54,7 @@ class reservable_pq: public priority_queue<T, U, V>
 		reservable_pq(size_type capacity = 0) {
 			reserve(capacity);
 			cur_cap = capacity;
-		};
+		}
 		void reserve(size_type capacity) {
 			this->c.reserve(capacity);
 			cur_cap = capacity;

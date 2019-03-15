@@ -113,7 +113,7 @@ nnode_t *free_nnode(nnode_t *to_free)
 		for (int i = 0; i < to_free->num_output_pins; i++) {
 			if (to_free->output_pins[i] && to_free->output_pins[i]->name) {
 				vtr::free(to_free->output_pins[i]->name);
-				to_free->input_pins[i]->name = NULL;
+				to_free->output_pins[i]->name = NULL;
 			}
 			to_free->output_pins[i] = (npin_t*)vtr::free(to_free->output_pins[i]);
 		}
@@ -225,6 +225,22 @@ npin_t* allocate_npin() {
 
 	return new_pin;
 }
+
+/*---------------------------------------------------------------------------------------------
+ * (function: free_npin)
+ *-------------------------------------------------------------------------------------------*/
+npin_t* free_npin(npin_t* to_free) {
+	if (to_free) {
+		if (to_free->name)
+			vtr::free(to_free->name);
+
+		to_free->name = NULL;
+
+		/* now free the pin */
+	}
+	return (npin_t*)vtr::free(to_free);
+}
+
 /*-------------------------------------------------------------------------
  * (function: copy_output_npin)
  * 	Copies an output pin
@@ -283,6 +299,22 @@ nnet_t* allocate_nnet()
 	new_net->initial_value = 0;
 
 	return new_net;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: free_nnet)
+ *-------------------------------------------------------------------------------------------*/
+nnet_t* free_nnet(nnet_t* to_free) {
+	if (to_free)
+	{
+		to_free->fanout_pins = (npin_t**)vtr::free(to_free->fanout_pins);
+
+		if (to_free->name)
+			vtr::free(to_free->name);
+
+		/* now free the net */
+	}
+	return (nnet_t*)vtr::free(to_free);
 }
 
 /*---------------------------------------------------------------------------
@@ -425,7 +457,7 @@ void combine_nets(nnet_t *output_net, nnet_t* input_net, netlist_t *netlist)
 	}
 
 	/* free the driver net */
-	vtr::free(output_net);
+	free_nnet(output_net);
 }
 
 /*---------------------------------------------------------------------------------------------

@@ -79,7 +79,7 @@ class ClockNetwork {
         /*
          * Destructor
          */
-        virtual ~ClockNetwork() {};
+        virtual ~ClockNetwork() {}
 
         /*
          * Getters
@@ -128,9 +128,9 @@ class ClockRib : public ClockNetwork {
 
     public:
         /** Constructor**/
-        ClockRib() {}; // default
+        ClockRib() {} // default
         ClockRib(Wire wire1, WireRepeat repeat1, RibDrive drive1, RibTaps tap1):
-            x_chan_wire(wire1), repeat(repeat1), drive(drive1), tap(tap1) {};
+            x_chan_wire(wire1), repeat(repeat1), drive(drive1), tap(tap1) {}
         /*
          * Getters
          */

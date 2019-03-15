@@ -95,7 +95,9 @@ else()
         "-Wredundant-decls"             #Warn if there are overlapping declarations
         "-Wswitch-default"              #Warn if a switch has no default
         "-Wundef"                       #Warn if #if() preprocessor refers to an undefined directive
+        "-Wunused"                      #Warn about unused variables/parameters
         "-Wunused-variable"             #Warn about variables that are not used
+        "-Wunused-parameter"            #Warn about function parameters which are unused
         "-Wdisabled-optimization"       #Warn when optimizations are skipped (usually due to large/complex code)
         "-Wnoexcept"                    #Warn when functions should be noexcept (i.e. compiler know it doesn't throw)
         "-Woverloaded-virtual"          #Warn when a function declaration overrides a virtual method
@@ -104,7 +106,14 @@ else()
         "-Wduplicated-cond"             #Warn about identical conditions in if-else chains
         "-Wduplicated-branches"         #Warn when different branches of an if-else chain are equivalent
         "-Wnull-dereference"            #Warn about null pointer dereference execution paths
+        "-Wuninitialized"               #Warn about unitialized values
+        "-Winit-self"                   #Warn about self-initialization
+        "-Wcatch-value=3"               #Warn when catch statements don't catch by reference
+        "-Wextra-semi"                  #Warn about redudnant semicolons
         #GCC-like optional
+        #"-Wsuggest-final-types"         #Suggest where 'final' would help if specified on a type methods
+        #"-Wsuggest-final-methods"       #Suggest where 'final' would help if specified on methods
+        #"-Wsuggest-override"            #Suggest where 'override' should be specified
         #"-Wold-style-cast"              #Warn about using c-style casts
         #"-Wconversion"                  #Warn when type conversions may change value
         #"-Wsign-conversion"             #Warn if a conversion may change the sign
@@ -116,6 +125,7 @@ else()
         #"-Wsign-promo"                  #Warn when overload resolution converts an unsigned type to signed when an unsigned overload exists
         #"-Wdouble-promotion"            #Warn when float is implicitly propted to double
         #"-Wuseless-cast"                #Warn about casts to the same type
+        #"-Wzero-as-null-pointer-constant" #Warn about using '0' instead of nullptr
         )
 endif()
 
