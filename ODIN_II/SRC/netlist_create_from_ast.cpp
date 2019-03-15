@@ -4264,6 +4264,7 @@ void create_if_control_signals(ast_node_t *if_expression, nnode_t *if_node, char
 		add_input_pin_to_node(if_node, default_expression->pins[0], 0);
 
 		if_logic_expression_final = default_expression;
+		free_signal_list(if_logic_expression);
 	}
 	else
 	{
@@ -4290,6 +4291,7 @@ void create_if_control_signals(ast_node_t *if_expression, nnode_t *if_node, char
 	add_input_pin_to_node(if_node, out_pin_list->pins[0], 1);
 
 	free_signal_list(out_pin_list);
+	free_signal_list(if_logic_expression_final);
 }
 
 /*---------------------------------------------------------------------------------------------
