@@ -445,7 +445,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 
 
 #ifdef ENABLE_CLASSIC_VPR_STA
-        t_slack* slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, expected_lowest_cost_pb_gnode);
+        t_slack* slacks = alloc_and_load_pre_packing_timing_graph(packer_opts.inter_cluster_net_delay, timing_inf, expected_lowest_cost_pb_gnode);
         do_timing_analysis(slacks, timing_inf, true, true);
         std::string fname = std::string("classic.") + getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH);
         print_timing_graph(fname.c_str());
