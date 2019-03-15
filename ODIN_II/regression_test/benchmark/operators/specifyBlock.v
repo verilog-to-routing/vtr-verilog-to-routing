@@ -3,6 +3,7 @@ input a, b;
 output q1;
 output q2;
 specify
+
 ( a => q1 ) = 6;   
 ( b => q2 ) = 7;   
 endspecify
