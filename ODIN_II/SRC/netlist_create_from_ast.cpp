@@ -1410,8 +1410,6 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 				/* Shift out lowest bit */
 				initial_value >>= 1;
 			}
-
-			vtr::free(temp_string);
 		}
 	}
 	/* Implicit memory */
@@ -1534,7 +1532,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 		/* create this node and make the pin connection to the net */
 		new_pin = allocate_npin();
 		new_node = allocate_nnode();
-		new_node->name = temp_string;
+		new_node->name = vtr::strdup(temp_string);
 
 		new_node->related_ast_node = var_declare;
 		new_node->type = INPUT_NODE;
@@ -1582,7 +1580,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 			new_node = allocate_nnode();
 
 			new_node->related_ast_node = var_declare;
-			new_node->name = temp_string;
+			new_node->name = vtr::strdup(temp_string);
 			new_node->type = INPUT_NODE;
 			/* allocate the pins needed */
 			allocate_more_output_pins(new_node, 1);
@@ -2377,11 +2375,13 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				if (strstr(full_name, ONE_VCC_CNS))
 				{
 					join_nets(verilog_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+					free_nnet((nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->one_net;
 				}
 				else if (strstr(full_name, ZERO_GND_ZERO))
 				{
 					join_nets(verilog_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+					free_nnet((nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->zero_net;
 				}
 				/* check if the instantiation pin exists. */
@@ -2412,6 +2412,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 					{
 						/* if they haven't been combined already, then join the inputs and output */
 						join_nets(net, in_net);
+						free_nnet(in_net);
 						/* since the driver net is deleted, copy the spot of the in_net over */
 						input_nets_sc->data[sc_spot_input_old] = (void*)net;
 					}
@@ -2507,6 +2508,10 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 						output_net->driver_pin->node->initial_value = input_new_net->initial_value;
 					}
 				}
+
+				/* clean up input_new_net */
+				if (!(input_new_net) || !(input_new_net->driver_pin))
+					free_nnet(input_new_net);
 
 				/* add this alias for the net */
 				output_nets_sc->data[sc_spot_input_new] = output_nets_sc->data[sc_spot_output];
@@ -2705,11 +2710,13 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				    if (strstr(full_name, ONE_VCC_CNS))
 				    {
 					    join_nets(verilog_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+						free_nnet((nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					    input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->one_net;
 				    }
 				    else if (strstr(full_name, ZERO_GND_ZERO))
 				    {
 					    join_nets(verilog_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+						free_nnet((nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					    input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->zero_net;
 				    }
 				    /* check if the instantiation pin exists. */
@@ -2740,6 +2747,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 					    {
 						    /* if they haven't been combined already, then join the inputs and output */
 						    join_nets(net, in_net);
+							free_nnet(in_net);
 						    /* since the driver net is deleted, copy the spot of the in_net over */
 						    input_nets_sc->data[sc_spot_input_old] = (void*)net;
 					    }
@@ -2851,6 +2859,10 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 						output_net->driver_pin->node->initial_value = input_new_net->initial_value;
 					}
 				}
+				
+				/* clean up input_new_net */
+				if (!(input_new_net) || !(input_new_net->driver_pin))
+					free_nnet(input_new_net);
 
 				/* add this alias for the net */
 				output_nets_sc->data[sc_spot_input_new] = output_nets_sc->data[sc_spot_output];
@@ -2956,6 +2968,7 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 				{
 					/* IF - the input and output nets don't match, then they need to be joined */
 					join_nets(net, (nnet_t*)input_nets_sc->data[sc_spot]);
+					free_nnet((nnet_t*)input_nets_sc->data[sc_spot]);
 					/* since the driver net is deleted, copy the spot of the in_net over */
 					input_nets_sc->data[sc_spot] = (void*)net;
 				}

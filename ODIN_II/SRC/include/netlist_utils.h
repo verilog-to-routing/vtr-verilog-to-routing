@@ -18,6 +18,7 @@ npin_t* copy_output_npin(npin_t* copy_pin);
 nnet_t* allocate_nnet();
 nnode_t* free_nnode(nnode_t *to_free);
 npin_t* free_npin(npin_t *to_free);
+nnet_t* free_nnet(nnet_t* to_free);
 
 
 void allocate_more_input_pins(nnode_t *node, int width);
