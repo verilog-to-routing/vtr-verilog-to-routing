@@ -533,6 +533,7 @@ void change_to_number_node(ast_node_t *node, long value)
 
 	node->types.number.base = DEC;
 	node->types.number.size = len;
+	vtr::free(node->types.number.number);
 	node->types.number.number = number;
 
 	if (value == 0){
@@ -542,6 +543,7 @@ void change_to_number_node(ast_node_t *node, long value)
 	}
 
 	node->types.number.value = value;
+	vtr::free(node->types.number.binary_string);
 	node->types.number.binary_string = convert_long_to_bit_string(value, node->types.number.binary_size);
 
 }
