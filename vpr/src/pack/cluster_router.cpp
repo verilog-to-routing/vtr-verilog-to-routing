@@ -86,7 +86,7 @@ static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *ex
 	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net, int explore_id_index);
 static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node,
 	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int net_fanout);
-static void add_to_rt(t_lb_trace *rt, int node_index, t_lb_router_data *router_data, int irt_net);
+static bool add_to_rt(t_lb_trace *rt, int node_index, t_lb_router_data *router_data, int irt_net);
 static bool is_route_success(t_lb_router_data *router_data);
 static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index);
 static void reset_explored_node_tb(t_lb_router_data *router_data);
@@ -197,9 +197,18 @@ static bool check_edge_for_route_conflicts(
 	if(!result.second) {
 		if(result.first->second != mode) {
 			std::cout << vtr::string_fmt(
-				"Differing modes for block.  Got %s previously and %s for interconnect %s.",
+				"Differing modes for block.  Got %s mode, while previously was %s for interconnect %s.",
 				mode->name, result.first->second->name,
 				edge->interconnect->name) << std::endl;
+
+			if (std::find(pb_graph_node->illegal_modes.begin(), pb_graph_node->illegal_modes.end(), result.first->second->index) == pb_graph_node->illegal_modes.end()) {
+				pb_graph_node->illegal_modes.push_back(result.first->second->index);
+			}
+
+			if (pb_graph_node->illegal_modes.size() >= pb_graph_node->pb_type->num_modes) {
+				VPR_THROW(VPR_ERROR_PACK, "There are no more available modes to be used. Routing Failed!");
+			}
+
 			return true;
 		}
 	}
@@ -351,11 +360,13 @@ void set_reset_pb_modes(t_lb_router_data *router_data, const t_pb *pb, const boo
    Follows pathfinder negotiated congestion algorithm
 */
 bool try_intra_lb_route(t_lb_router_data *router_data,
-                        int verbosity) {
+                        int verbosity,
+                        bool *is_mode_conflict) {
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	bool is_routed = false;
 	bool is_impossible = false;
+	*is_mode_conflict = false;
 	t_expansion_node exp_node;
 
 	/* Stores state info during route */
@@ -439,7 +450,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 
 				if(exp_node.node_index == lb_nets[idx].terminals[itarget]) {
 					/* Net terminal is routed, add this to the route tree, clear data structures, and keep going */
-					add_to_rt(lb_nets[idx].rt_tree, exp_node.node_index, router_data, idx);
+					is_impossible = add_to_rt(lb_nets[idx].rt_tree, exp_node.node_index, router_data, idx);
 				}
 
 				if (verbosity > 3) {
@@ -479,6 +490,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 			// All nets from each pb_type must not have a mode conflict between
 			// the nets.
 			is_impossible = check_for_route_conflicts(lb_nets, router_data);
+			*is_mode_conflict = is_impossible;
 		}
 
 		if(is_impossible == false) {
@@ -1091,6 +1103,8 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 	auto cur_inode = exp_node.node_index;
 	auto cur_cost = exp_node.cost;
 	auto cur_mode = lb_rr_node_stats[cur_inode].mode;
+	auto &node = lb_type_graph[cur_inode];
+	auto *pin = node.pb_graph_pin;
 	t_lb_router_params params = router_data->params;
 
 	for (int mode = 0; mode < lb_type_graph[cur_inode].num_modes; mode++) {
@@ -1098,6 +1112,23 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 		if (cur_mode != -1 && mode != cur_mode) {
 			continue;
 		}
+
+		/* Check whether a mode is illegal. If it is then the node will not be expanded */
+		bool is_illegal = false;
+		if(pin != nullptr) {
+			auto *pb_graph_node = pin->parent_node;
+			for (auto illegal_mode : pb_graph_node->illegal_modes) {
+				if (mode == illegal_mode) {
+					is_illegal = true;
+					break;
+				}
+			}
+		}
+
+		if (is_illegal == true) {
+			continue;
+		}
+
 		for(int iedge = 0; iedge < lb_type_graph[cur_inode].num_fanout[mode]; iedge++) {
 		/* Init new expansion node */
 			t_expansion_node enode;
@@ -1146,7 +1177,7 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 
 
 /* Add new path from existing route tree to target sink */
-static void add_to_rt(t_lb_trace *rt, int node_index, t_lb_router_data *router_data, int irt_net) {
+static bool add_to_rt(t_lb_trace *rt, int node_index, t_lb_router_data *router_data, int irt_net) {
     t_explored_node_tb *explored_node_tb = router_data->explored_node_tb;
 	vector <int> trace_forward;
 	int rt_index, trace_index;
@@ -1163,7 +1194,10 @@ static void add_to_rt(t_lb_trace *rt, int node_index, t_lb_router_data *router_d
 
 	/* Find rt_index on the route tree */
 	link_node = find_node_in_rt(rt, rt_index);
-	VTR_ASSERT(link_node != nullptr);
+	if (link_node == nullptr) {
+		VTR_LOG("Link node is nullptr. Routing impossible");
+		return true;
+	}
 
 	/* Add path to root tree */
 	while(!trace_forward.empty()) {
@@ -1173,6 +1207,8 @@ static void add_to_rt(t_lb_trace *rt, int node_index, t_lb_router_data *router_d
         link_node = &link_node->next_nodes.back();
         trace_forward.pop_back();
 	}
+
+	return false;
 }
 
 /* Determine if a completed route is valid.  A successful route has no congestion (ie. no routing resource is used by two nets). */
