@@ -3287,7 +3287,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 					/* free unused nnodes for related BLOCKING_STATEMENT nodes */
 					nnode_t *temp_node = in_1->pins[i]->node;
 					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
-						free_nnode(temp_node);
+						in_1->pins[i]->node = free_nnode(temp_node);
 					}
 				}
 				free_signal_list(in_1);
@@ -3302,7 +3302,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 				for (i = 0; i < output_size; i++) {
 					nnode_t *temp_node = in_1->pins[i]->node;
 					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
-						free_nnode(temp_node);
+						in_1->pins[i]->node = free_nnode(temp_node);
 					}
 				}
 			}
@@ -3336,7 +3336,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 					/* free unused nnodes for related BLOCKING_STATEMENT nodes */
 					nnode_t *temp_node = right_outputs->pins[i]->node;
 					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
-						free_nnode(temp_node);
+						right_outputs->pins[i]->node = free_nnode(temp_node);
 					}
 				}
 				free_signal_list(right_outputs);
@@ -4301,7 +4301,7 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 {
 	signal_list_t **if_statements;
 	signal_list_t *return_list;
-	int i;
+	int i, j;
 
 	/* make storage for statements and expressions */
 	if_statements = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*)*2);
@@ -4314,6 +4314,14 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 			/* IF - this is a normal case item, then process the case match and the details of the statement */
 			if_statements[i] = netlist_expand_ast_of_module(if_ast->children[i+1], instance_name_prefix);
 			sort_signal_list_alphabetically(if_statements[i]);
+
+			/* free unused nnodes */
+			for (j = 0; j < if_statements[i]->count; j++) {
+				nnode_t* temp_node = if_statements[i]->pins[j]->node;
+				if (temp_node != NULL && temp_node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+					if_statements[i]->pins[j]->node = free_nnode(temp_node);
+				}
+			}
 		}
 		else
 		{
@@ -4440,7 +4448,7 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 {
 	signal_list_t **case_statement;
 	signal_list_t *return_list;
-	long i;
+	long i, j;
 
 	/* make storage for statements and expressions */
 	case_statement = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*)*(case_list_of_items->num_children));
@@ -4453,12 +4461,28 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 			/* IF - this is a normal case item, then process the case match and the details of the statement */
 			case_statement[i] = netlist_expand_ast_of_module(case_list_of_items->children[i]->children[1], instance_name_prefix);
 			sort_signal_list_alphabetically(case_statement[i]);
+
+			/* free unused nnodes */
+			for (j = 0; j < case_statement[i]->count; j++) {
+				nnode_t* temp_node = case_statement[i]->pins[j]->node;
+				if (temp_node != NULL && temp_node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+					case_statement[i]->pins[j]->node = free_nnode(temp_node);
+				}
+			}
 		}
 		else if (case_list_of_items->children[i]->type == CASE_DEFAULT)
 		{
 			oassert(i == case_list_of_items->num_children - 1); // has to be at the end
 			case_statement[i] = netlist_expand_ast_of_module(case_list_of_items->children[i]->children[0], instance_name_prefix);
 			sort_signal_list_alphabetically(case_statement[i]);
+
+			/* free unused nnodes */
+			for (j = 0; j < case_statement[i]->count; j++) {
+				nnode_t* temp_node = case_statement[i]->pins[j]->node;
+				if (temp_node != NULL && temp_node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+					case_statement[i]->pins[j]->node = free_nnode(temp_node);
+				}
+			}
 		}
 		else
 		{
