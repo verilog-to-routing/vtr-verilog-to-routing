@@ -607,9 +607,11 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
             VTR_LOGV(verbosity == 2, "\n");
 
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
-				is_cluster_legal = try_intra_lb_route(router_data, packer_opts.pack_verbosity);
-				if (is_cluster_legal) {
-                    VTR_LOGV(verbosity > 2, "\tPassed route at end.\n");
+				// FIXME: is_mode_conflict does not affect this stage. It will be needed when trying to route the packed clusters later on.
+				bool is_mode_conflict;
+				is_cluster_legal = try_intra_lb_route(router_data, packer_opts.pack_verbosity, &is_mode_conflict);
+				if (is_cluster_legal == true) {
+                    VTR_LOGV(packer_opts.pack_verbosity > 2, "\tPassed route at end.\n");
 				} else {
 					VTR_LOGV(verbosity > 0, "Failed route at end, repack cluster trying detailed routing at each stage.\n");
 				}
@@ -1170,7 +1172,14 @@ static enum e_block_pack_status try_pack_molecule(
 				/* Try to route if heuristic is to route for every atom
 					Skip routing if heuristic is to route at the end of packing complex block
 				*/
-				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && !try_intra_lb_route(router_data, verbosity)) {
+				bool is_mode_conflict = true;
+				bool is_routed = false;
+				bool do_detailed_routing_stage = detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM;
+				while (do_detailed_routing_stage && is_mode_conflict) {
+					is_routed = try_intra_lb_route(router_data, verbosity, &is_mode_conflict);
+				}
+
+				if (do_detailed_routing_stage && is_routed == false) {
 					/* Cannot pack */
                     VTR_LOGV(verbosity > 4, "\t\t\tFAILED Detailed Routing Legality\n");
 					block_pack_status = BLK_FAILED_ROUTE;
