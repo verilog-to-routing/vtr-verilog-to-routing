@@ -1715,7 +1715,10 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 void free_chunk_memory_trace() {
 	if (trace_ch.chunk_ptr_head != nullptr) {
 		free_chunk_memory(&trace_ch);
+		trace_ch.chunk_ptr_head = nullptr;
+		trace_free_head = nullptr;
 	}
+
 }
 
 
