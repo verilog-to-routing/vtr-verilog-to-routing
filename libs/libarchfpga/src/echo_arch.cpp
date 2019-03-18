@@ -112,7 +112,7 @@ void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 	fprintf(Echo, "Printing architecture... \n\n");
 	//Layout
 	fprintf(Echo, "*************************************************\n");
-    for (auto grid_layout : arch->grid_layouts) {
+    for (const auto &grid_layout : arch->grid_layouts) {
         if (grid_layout.grid_type == GridDefType::AUTO) {
             fprintf(Echo, "Layout: '%s' Type: auto Aspect_Ratio: %f\n", grid_layout.name.c_str(), grid_layout.aspect_ratio);
         } else {
@@ -250,7 +250,7 @@ void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 	fprintf(Echo, "*************************************************\n");
 	fprintf(Echo, "Segment List:\n");
 	for (i = 0; i < (int)(arch->Segments).size(); i++) {
-		struct t_segment_inf seg = arch->Segments[i];
+		const struct t_segment_inf &seg = arch->Segments[i];
 		fprintf(Echo,
 				"\tSegment[%d]: frequency %d length %d R_metal %e C_metal %e\n",
 				i + 1, seg.frequency, seg.length,

@@ -712,8 +712,8 @@ static std::unique_ptr<OverrideDelayModel> compute_override_delay_model(const t_
 
     //Look at all the direct connections that exist, and add overrides to delay model
     auto& device_ctx = g_vpr_ctx.device();
-    for (int idirect = 0; idirect < device_ctx.arch.num_directs; ++idirect) {
-        const t_direct_inf* direct = &device_ctx.arch.Directs[idirect];
+    for (int idirect = 0; idirect < device_ctx.arch->num_directs; ++idirect) {
+        const t_direct_inf* direct = &device_ctx.arch->Directs[idirect];
 
         InstPort from_port = parse_inst_port(direct->from_pin);
         InstPort to_port = parse_inst_port(direct->to_pin);

@@ -641,6 +641,7 @@ struct t_grid_tile {
 	t_type_ptr type = nullptr;
 	int width_offset = 0;
 	int height_offset = 0;
+	const t_metadata_dict * meta = nullptr;
 };
 
 /* Stores the bounding box of a net in terms of the minimum and   *

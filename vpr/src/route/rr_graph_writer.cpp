@@ -64,6 +64,21 @@ void write_rr_graph(const char *file_name, const std::vector<t_segment_inf>& seg
     cout << "Finished generating RR graph file named " << file_name << endl << endl;
 }
 
+static void add_metadata_to_xml(fstream &fp, const char *tab_prefix, const t_metadata_dict & meta) {
+    fp << tab_prefix << "<metadata>" << endl;
+
+    for(const auto &meta_elem : meta) {
+        const std::string & key = meta_elem.first;
+        const std::vector<t_metadata_value> & values = meta_elem.second;
+        for(const auto &value : values) {
+          fp << tab_prefix << "\t<meta name=\"" << key << "\"";
+          fp << ">" << value.as_string() << "</meta>" << endl;
+        }
+    }
+    fp << tab_prefix << "</metadata>" << endl;
+}
+
+
 /* Channel info in device_ctx.chan_width is written in xml format.
  * A general summary of the min and max values of the channels are first printed. Every
  * x and y channel list is printed out in its own attribute*/
@@ -120,6 +135,12 @@ void write_rr_node(fstream &fp) {
 
         if (device_ctx.rr_indexed_data[node.cost_index()].seg_index != -1) {
             fp << "\t\t\t<segment segment_id=\"" << device_ctx.rr_indexed_data[node.cost_index()].seg_index << "\"/>" << endl;
+        }
+
+        const auto iter = device_ctx.rr_node_metadata.find(inode);
+        if(iter != device_ctx.rr_node_metadata.end()) {
+            const t_metadata_dict & meta = iter->second;
+            add_metadata_to_xml(fp, "\t\t\t", meta);
         }
 
         fp << "\t\t</node>" << endl;
@@ -269,7 +290,23 @@ void write_rr_edges(fstream &fp) {
         for (int iedge = 0; iedge < node.num_edges(); iedge++) {
             fp << "\t\t<edge src_node=\"" << inode <<
                     "\" sink_node=\"" << node.edge_sink_node(iedge) <<
-                    "\" switch_id=\"" << node.edge_switch(iedge) << "\"/>" << endl;
+                    "\" switch_id=\"" << node.edge_switch(iedge) << "\"";
+
+            bool wrote_edge_metadata = false;
+            const auto iter = device_ctx.rr_edge_metadata.find(std::make_tuple(inode, node.edge_sink_node(iedge), node.edge_switch(iedge)));
+            if(iter != device_ctx.rr_edge_metadata.end()) {
+                fp << ">" << endl;
+
+                const t_metadata_dict & meta = iter->second;
+                add_metadata_to_xml(fp, "\t\t\t", meta);
+                wrote_edge_metadata = true;
+            }
+
+            if(wrote_edge_metadata == false) {
+              fp << "/>" << endl;
+            } else {
+              fp << "\t\t</edge>" << endl;
+            }
         }
     }
     fp << "\t</rr_edges>" << endl << endl;

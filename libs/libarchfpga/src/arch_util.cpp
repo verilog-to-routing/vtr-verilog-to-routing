@@ -420,12 +420,12 @@ static void free_pb_type(t_pb_type *pb_type) {
                 vtr::free(pb_type->modes[i].interconnect[j].interconnect_power);
         }
         if (pb_type->modes[i].interconnect)
-            vtr::free(pb_type->modes[i].interconnect);
+            delete [] pb_type->modes[i].interconnect;
         if (pb_type->modes[i].mode_power)
             vtr::free(pb_type->modes[i].mode_power);
     }
     if (pb_type->modes)
-        vtr::free(pb_type->modes);
+        delete [] pb_type->modes;
 
     for (int i = 0; i < pb_type->num_annotations; ++i) {
         for (int j = 0; j < pb_type->annotations[i].num_value_prop_pairs; ++j) {
@@ -641,8 +641,7 @@ void ProcessLutClass(t_pb_type *lut_pb_type) {
 
 	lut_pb_type->num_modes = 2;
 	lut_pb_type->pb_type_power->leakage_default_mode = 1;
-	lut_pb_type->modes = (t_mode*) vtr::calloc(lut_pb_type->num_modes,
-			sizeof(t_mode));
+	lut_pb_type->modes = new t_mode[lut_pb_type->num_modes];
 
 	/* First mode, route_through */
 	lut_pb_type->modes[0].name = vtr::strdup("wire");
@@ -666,8 +665,7 @@ void ProcessLutClass(t_pb_type *lut_pb_type) {
 		in_port = &lut_pb_type->ports[1];
 	}
 	lut_pb_type->modes[0].num_interconnect = 1;
-	lut_pb_type->modes[0].interconnect = (t_interconnect*) vtr::calloc(1,
-			sizeof(t_interconnect));
+	lut_pb_type->modes[0].interconnect = new t_interconnect[1];
 	lut_pb_type->modes[0].interconnect[0].name = (char*) vtr::calloc(
 			strlen(lut_pb_type->name) + 10, sizeof(char));
 	sprintf(lut_pb_type->modes[0].interconnect[0].name, "complete:%s",
@@ -767,8 +765,7 @@ void ProcessLutClass(t_pb_type *lut_pb_type) {
 
 	/* Process interconnect */
 	lut_pb_type->modes[1].num_interconnect = 2;
-	lut_pb_type->modes[1].interconnect = (t_interconnect*) vtr::calloc(2,
-			sizeof(t_interconnect));
+	lut_pb_type->modes[1].interconnect = new t_interconnect[lut_pb_type->modes[1].num_interconnect];
 	lut_pb_type->modes[1].interconnect[0].name = (char*) vtr::calloc(
 			strlen(lut_pb_type->name) + 10, sizeof(char));
 	sprintf(lut_pb_type->modes[1].interconnect[0].name, "direct:%s",
@@ -831,7 +828,7 @@ void ProcessMemoryClass(t_pb_type *mem_pb_type) {
 		default_name = vtr::strdup("memory_slice_1bit");
 	}
 
-	mem_pb_type->modes = (t_mode*) vtr::calloc(1, sizeof(t_mode));
+	mem_pb_type->modes = new t_mode[1];
 	mem_pb_type->modes[0].name = vtr::strdup(default_name);
 	mem_pb_type->modes[0].parent_pb_type = mem_pb_type;
 	mem_pb_type->modes[0].index = 0;
@@ -869,8 +866,7 @@ void ProcessMemoryClass(t_pb_type *mem_pb_type) {
 	mem_pb_type->model = nullptr;
 
 	mem_pb_type->modes[0].num_interconnect = mem_pb_type->num_ports * num_pb;
-	mem_pb_type->modes[0].interconnect = (t_interconnect*) vtr::calloc(
-			mem_pb_type->modes[0].num_interconnect, sizeof(t_interconnect));
+	mem_pb_type->modes[0].interconnect = new t_interconnect[mem_pb_type->modes[0].num_interconnect];
 
 	for (i = 0; i < mem_pb_type->modes[0].num_interconnect; i++) {
 		mem_pb_type->modes[0].interconnect[i].parent_mode_index = 0;
