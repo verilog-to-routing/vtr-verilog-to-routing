@@ -1,0 +1,327 @@
+.model top
+.inputs \
+    clk
+.outputs \
+    out[0] \
+    out[1] \
+    out[2] \
+    out[3] \
+    out[4] \
+    out[5] \
+    out[6] \
+    out[7]
+
+.names $false
+
+.names $true
+ 1
+
+.names counter0[0] $abc$1168$auto$alumacc.cc:474:replace_alu$26.S[0]
+0 1
+
+.subckt CARRY0 \
+    CI_INIT=$false \
+    S=$abc$1168$auto$alumacc.cc:474:replace_alu$26.S[0] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[1] \
+    CO_FABRIC=__vpr__unconn0 \
+    O=$0\counter0[21:0][0]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[1] \
+    S=counter0[1] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[2] \
+    CO_FABRIC=__vpr__unconn11 \
+    O=$0\counter0[21:0][1]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[2] \
+    S=counter0[2] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[3] \
+    CO_FABRIC=__vpr__unconn14 \
+    O=$0\counter0[21:0][2]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[3] \
+    S=counter0[3] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[4] \
+    CO_FABRIC=__vpr__unconn15 \
+    O=$0\counter0[21:0][3]
+
+.subckt CARRY0 \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[4] \
+    S=counter0[4] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[5] \
+    CO_FABRIC=__vpr__unconn16 \
+    O=$0\counter0[21:0][4]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[5] \
+    S=counter0[5] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[6] \
+    CO_FABRIC=__vpr__unconn17 \
+    O=$0\counter0[21:0][5]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[6] \
+    S=counter0[6] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[7] \
+    CO_FABRIC=__vpr__unconn18 \
+    O=$0\counter0[21:0][6]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[7] \
+    S=counter0[7] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[8] \
+    CO_FABRIC=__vpr__unconn19 \
+    O=$0\counter0[21:0][7]
+
+.subckt CARRY0 \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[8] \
+    S=counter0[8] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[9] \
+    CO_FABRIC=__vpr__unconn20 \
+    O=$0\counter0[21:0][8]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[9] \
+    S=counter0[9] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[10] \
+    CO_FABRIC=__vpr__unconn21 \
+    O=$0\counter0[21:0][9]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[10] \
+    S=counter0[10] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[11] \
+    CO_FABRIC=__vpr__unconn1 \
+    O=$0\counter0[21:0][10]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[11] \
+    S=counter0[11] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[12] \
+    CO_FABRIC=__vpr__unconn2 \
+    O=$0\counter0[21:0][11]
+
+.subckt CARRY0 \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[12] \
+    S=counter0[12] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[13] \
+    CO_FABRIC=__vpr__unconn3 \
+    O=$0\counter0[21:0][12]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[13] \
+    S=counter0[13] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[14] \
+    CO_FABRIC=__vpr__unconn4 \
+    O=$0\counter0[21:0][13]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[14] \
+    S=counter0[14] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[15] \
+    CO_FABRIC=__vpr__unconn5 \
+    O=$0\counter0[21:0][14]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[15] \
+    S=counter0[15] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[16] \
+    CO_FABRIC=__vpr__unconn6 \
+    O=$0\counter0[21:0][15]
+
+.subckt CARRY0 \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[16] \
+    S=counter0[16] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[17] \
+    CO_FABRIC=__vpr__unconn7 \
+    O=$0\counter0[21:0][16]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[17] \
+    S=counter0[17] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[18] \
+    CO_FABRIC=__vpr__unconn8 \
+    O=$0\counter0[21:0][17]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[18] \
+    S=counter0[18] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[19] \
+    CO_FABRIC=__vpr__unconn9 \
+    O=$0\counter0[21:0][18]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[19] \
+    S=counter0[19] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[20] \
+    CO_FABRIC=__vpr__unconn10 \
+    O=$0\counter0[21:0][19]
+
+.subckt CARRY0 \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[20] \
+    S=counter0[20] \
+    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[21] \
+    CO_FABRIC=__vpr__unconn12 \
+    O=$0\counter0[21:0][20]
+
+.subckt CARRY \
+    CI=$auto$alumacc.cc:474:replace_alu$26.C[21] \
+    S=out[0] \
+    CO_CHAIN=__vpr__unconn13 \
+    O=$0\counter0[21:0][21]
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][0] \
+    R=$false \
+    Q=counter0[0] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][1] \
+    R=$false \
+    Q=counter0[1] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][2] \
+    R=$false \
+    Q=counter0[2] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][3] \
+    R=$false \
+    Q=counter0[3] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][4] \
+    R=$false \
+    Q=counter0[4] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][5] \
+    R=$false \
+    Q=counter0[5] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][6] \
+    R=$false \
+    Q=counter0[6] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][7] \
+    R=$false \
+    Q=counter0[7] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][8] \
+    R=$false \
+    Q=counter0[8] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][9] \
+    R=$false \
+    Q=counter0[9] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][10] \
+    R=$false \
+    Q=counter0[10] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][11] \
+    R=$false \
+    Q=counter0[11] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][12] \
+    R=$false \
+    Q=counter0[12] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][13] \
+    R=$false \
+    Q=counter0[13] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][14] \
+    R=$false \
+    Q=counter0[14] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][15] \
+    R=$false \
+    Q=counter0[15] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][16] \
+    R=$false \
+    Q=counter0[16] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][17] \
+    R=$false \
+    Q=counter0[17] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][18] \
+    R=$false \
+    Q=counter0[18] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][19] \
+    R=$false \
+    Q=counter0[19] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][20] \
+    R=$false \
+    Q=counter0[20] \
+    C=clk
+
+.subckt FDRE \
+    CE=$true \
+    D=$0\counter0[21:0][21] \
+    R=$false \
+    Q=out[0] \
+    C=clk
