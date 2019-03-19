@@ -115,8 +115,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
 
         const auto& device_ctx = g_vpr_ctx.device();
 
-        int inode;
-        for(inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
+        for(int inode = 0; inode < (int) device_ctx.rr_nodes.size(); ++inode) {
             if((device_ctx.rr_nodes[inode].type() == CHANX ||
                device_ctx.rr_nodes[inode].type() == CHANY) &&
                 device_ctx.rr_nodes[inode].num_edges() > 0) {
