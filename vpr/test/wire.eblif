@@ -1,8 +1,6 @@
 .model top
-.inputs di0 di1 di2 di3 di4 di5
-.outputs do0 do1
-.names di0 di1 di2 di3 di4 di5 do0
-xxxxx1 1
-.names di0 di1 di2 di3 di4 do1
-xxx1x 1
+.inputs di
+.outputs do
+.names di do
+1 1
 .end
