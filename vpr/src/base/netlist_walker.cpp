@@ -29,7 +29,7 @@ void NetlistWalker::walk_blocks(const t_pb_routes &top_pb_route, const t_pb *pb,
     VTR_ASSERT(pb_graph_node != nullptr);
 
     visitor_.visit_all(top_pb_route, pb, pb_graph_node);
-    if (pb != nullptr) {
+    if (pb != nullptr && pb->child_pbs == nullptr) {
         if (pb->name != NULL) {
             visitor_.visit_atom(pb);
         } else {
