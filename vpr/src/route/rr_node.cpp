@@ -104,135 +104,12 @@ short t_rr_node::length() const {
 	return std::max(yhigh_ - ylow_, xhigh_ - xlow_);
 }
 
-bool t_rr_node::found_at(int x, int y) const {
-    switch (type_) {
-    case CHANX: {
-        VTR_ASSERT(ylow_ == yhigh_);
-
-        return ((ylow_ == y) && ((x >= xlow_) && (x <= xhigh_)));
-    }
-    case CHANY: {
-        VTR_ASSERT(xlow_ == xhigh_);
-
-        return ((xlow_ == x) && ((y >= ylow_) && (y <= yhigh_)));
-    }
-    default:
-        return ((x == xlow_) && (y == ylow_));
-    }
-}
-
-static std::pair<int, int> overlap(short low_a, short high_a, short low_b, short high_b) {
-    auto overlap = std::make_pair(std::max(low_a, low_b), std::min(high_a, high_b));
-    if (overlap.first <= overlap.second) {
-        return overlap;
-    } else {
-        return std::make_pair(-1, -1);
-    }
-}
-
-std::pair<t_offset, t_offset> t_rr_node::overlap(t_rr_node& other) const {
-    auto overlap_x = ::overlap(xlow(), xhigh(), other.xlow(), other.xhigh());
-    auto overlap_y = ::overlap(ylow(), yhigh(), other.ylow(), other.yhigh());
-
-    t_offset low;
-    t_offset high;
-    low.x = overlap_x.first;
-    low.y = overlap_y.first;
-    high.x = overlap_x.second;
-    high.y = overlap_y.second;
-    return std::make_pair(low, high);
-}
-
-short t_rr_node::get_iedge(int sink_node, short switch_id) const {
-    for (auto e : edges()) {
-        if (sink_node == edges_[e].sink_node && switch_id == edges_[e].switch_id) {
-            return e;
-        }
-    }
-    VTR_ASSERT(false);
-    return -1;
-}
-
 bool t_rr_node::edge_is_configurable(short iedge) const {
     auto iswitch =  edge_switch(iedge);
 
     auto& device_ctx = g_vpr_ctx.device();
 
     return device_ctx.rr_switch_inf[iswitch].configurable();
-}
-
-const t_metadata_as* t_rr_node::metadata(std::string key) const {
-    return metadata(std::make_pair(t_offset(), key));
-}
-const t_metadata_as* t_rr_node::metadata(t_offset o, std::string key) const {
-    return metadata(std::make_pair(o, key));
-}
-const t_metadata_as* t_rr_node::metadata(std::pair<t_offset, std::string> ok) const {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-
-    if (device_ctx.rr_node_metadata.size() == 0 || device_ctx.rr_node_metadata.count(this) == 0) {
-        return nullptr;
-    }
-    auto& data = device_ctx.rr_node_metadata.at(this);
-    return data.one(ok);
-}
-
-void t_rr_node::add_metadata(std::string key, std::string value) {
-    add_metadata(std::make_pair(t_offset(), key), value);
-}
-void t_rr_node::add_metadata(t_offset o, std::string key, std::string value) {
-    add_metadata(std::make_pair(o, key), value);
-}
-void t_rr_node::add_metadata(std::pair<t_offset, std::string> ok, std::string value) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-
-    if (device_ctx.rr_node_metadata.count(this) == 0) {
-        device_ctx.rr_node_metadata.emplace(this, t_metadata_dict());
-    }
-    auto& data = device_ctx.rr_node_metadata.at(this);
-    data.add(ok, value);
-}
-
-const t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, std::string key) const {
-    return edge_metadata(sink_id, switch_id, std::make_pair(t_offset(), key));
-}
-const t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, t_offset o, std::string key) const {
-    return edge_metadata(sink_id, switch_id, std::make_pair(o, key));
-}
-const t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, std::pair<t_offset, std::string> ok) const {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    std::pair<int, short> rr_edge = std::make_pair(sink_id, switch_id);
-
-    if (device_ctx.rr_edge_metadata.count(this) == 0) {
-        return nullptr;
-    }
-    auto& edata = device_ctx.rr_edge_metadata.at(this);
-
-    if (edata.count(rr_edge) == 0) {
-        return nullptr;
-    }
-    auto& data = edata[rr_edge];
-    return data.one(ok);
-}
-void t_rr_node::add_edge_metadata(int sink_id, short switch_id, std::string key, std::string value) {
-    return add_edge_metadata(sink_id, switch_id, std::make_pair(t_offset(), key), value);
-}
-void t_rr_node::add_edge_metadata(int sink_id, short switch_id, t_offset o, std::string key, std::string value) {
-    return add_edge_metadata(sink_id, switch_id, std::make_pair(o, key), value);
-}
-void t_rr_node::add_edge_metadata(int sink_id, short switch_id, std::pair<t_offset, std::string> ok, std::string value) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    std::pair<int, short> rr_edge = std::make_pair(sink_id, switch_id);
-
-    if (device_ctx.rr_edge_metadata.count(this) == 0) {
-      device_ctx.rr_edge_metadata.emplace(this, std::map<std::pair<int, short>, t_metadata_dict>());
-    }
-    auto& edata = device_ctx.rr_edge_metadata.at(this);
-    if (edata.count(rr_edge) == 0) {
-        edata.emplace(rr_edge, t_metadata_dict());
-    }
-    auto& data = edata[rr_edge];
-    data.add(ok, value);
 }
 
 float t_rr_node::R() const {
@@ -324,9 +201,10 @@ void t_rr_node::set_class_num(short new_class_num) {
     ptc_.class_num = new_class_num;
 }
 
-void t_rr_node::set_cost_index(short new_cost_index) {
+void t_rr_node::set_cost_index(size_t new_cost_index) {
 	cost_index_ = new_cost_index;
 }
+
 void t_rr_node::set_rc_index(short new_rc_index) {
 	rc_index_ = new_rc_index;
 }

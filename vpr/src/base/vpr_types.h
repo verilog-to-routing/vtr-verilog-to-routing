@@ -641,7 +641,7 @@ struct t_grid_tile {
 	t_type_ptr type = nullptr;
 	int width_offset = 0;
 	int height_offset = 0;
-	t_metadata_dict * meta = nullptr;
+	const t_metadata_dict * meta = nullptr;
 };
 
 /* Stores the bounding box of a net in terms of the minimum and   *
@@ -834,6 +834,19 @@ enum e_place_algorithm {
 	BOUNDING_BOX_PLACE, PATH_TIMING_DRIVEN_PLACE
 };
 
+enum class PlaceDelayModelType {
+    DELTA,          //Delta x/y based delay model
+    DELTA_OVERRIDE, //Delta x/y based delay model with special case delay overrides
+};
+
+enum class e_reducer {
+    MIN,
+    MAX,
+    MEDIAN,
+    ARITHMEAN,
+    GEOMEAN
+};
+
 struct t_placer_opts {
 	enum e_place_algorithm place_algorithm;
 	float timing_tradeoff;
@@ -849,6 +862,9 @@ struct t_placer_opts {
 	int seed;
 	float td_place_exp_last;
 	e_stage_action doPlacement;
+
+    PlaceDelayModelType delay_model_type;
+    e_reducer delay_model_reducer;
 
     float delay_offset;
     int delay_ramp_delta_threshold;
@@ -971,12 +987,14 @@ struct t_router_opts {
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
     e_route_bb_update route_bb_update;
+    enum e_clock_modeling clock_modeling; //How clock pins and nets should be handled
     int high_fanout_threshold;
     int router_debug_net;
     int router_debug_sink_rr;
     e_router_lookahead lookahead_type;
     int max_convergence_count;
     float reconvergence_cpd_threshold;
+    std::string first_iteration_timing_report_file;
 };
 
 struct t_analysis_opts {
@@ -1007,7 +1025,6 @@ struct t_analysis_opts {
  * switchblocks: A vector of custom switch block descriptions that is       *
  *           used with the CUSTOM switch block type. See comment at top of  *
  *           SRC/route/build_switchblocks.c                                 *
- * num_segment:  Number of distinct segment types in the FPGA.              *
  * delayless_switch:  Index of a zero delay switch (used to connect things  *
  *                    that should have no delay).                           *
  * wire_to_arch_ipin_switch: keeps track of the type of architecture switch *
@@ -1028,7 +1045,6 @@ struct t_det_routing_arch {
 	int Fs;
 	enum e_switch_block_type switch_block_type;
 	std::vector<t_switchblock_inf> switchblocks;
-	int num_segment;
 
 	short global_route_switch;
 	short delayless_switch;
@@ -1093,7 +1109,7 @@ struct t_seg_details {
 	int seg_end = 0;
 	int index = 0;
 	float Cmetal_per_m = 0; /* Used for power */
-	const char *type_name_ptr = nullptr;
+	std::string type_name;
 };
 
 class t_chan_seg_details {
@@ -1128,7 +1144,7 @@ class t_chan_seg_details {
 
         int index() const { return seg_detail_->index; }
 
-        const char* type_name_ptr() const { return seg_detail_->type_name_ptr; }
+        std::string type_name() const { return seg_detail_->type_name; }
 
     public: //Modifiers
         void set_length(int new_len) { length_ = new_len; }
@@ -1294,7 +1310,7 @@ struct t_vpr_setup {
     t_analysis_opts AnalysisOpts; /* Analysis options */
 	t_det_routing_arch RoutingArch; /* routing architecture */
 	std::vector <t_lb_type_rr_node> *PackerRRGraph;
-	t_segment_inf * Segments; /* wires in routing architecture */
+	std::vector <t_segment_inf> Segments; /* wires in routing architecture */
 	t_timing_inf Timing; /* timing information */
 	float constant_net_delay; /* timing information when place and route not run */
 	bool ShowGraphics; /* option to show graphics */
