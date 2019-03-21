@@ -11,7 +11,7 @@ the target architecture via architecture specific tooling.
 VPR metadata
 ------------
 
-VPR has been modified to allow for ``metadata`` blocks
+VPR allows for ``metadata`` blocks
 (see :ref:`arch_metadata`) to be attached to the architecture definition and
 routing graph.  By adding FASM specific metadata to both the architecture
 definition and the routing graph, a FASM file that represents the place and
@@ -20,8 +20,8 @@ routed design can be generated.
 FASM metadata
 -------------
 
-While the metadata is ignored when packing, placing and routing, a new VPR
-tool ``genfasm`` uses the metadata to emit a FASM file.  The following
+While the metadata is ignored when packing, placing and routing, the
+``genfasm`` tool uses the metadata to emit a FASM file.  The following
 metadata "keys" are recognized by "genfasm":
 
  * "fasm_prefix"
@@ -103,8 +103,8 @@ can be listed, whitespace separated.  Example:
         <meta name="fasm_features">ZRST</meta>
     </metadata>
 
-The other place that "fasm_features" is used heavily is one <edge> tags in the
-routing graph.  If an edge is used in the find routed design, "genfasm" will
+The other place that "fasm_features" is used heavily is on <edge> tags in the
+routing graph.  If an edge is used in the final routed design, "genfasm" will
 emit features attached to the edge.  Example:
 
 .. code-block:: xml

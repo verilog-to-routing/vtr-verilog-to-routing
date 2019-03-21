@@ -17,6 +17,7 @@ class Lut {
   void SetOutput(const std::vector<vtr::LogicValue> &inputs, vtr::LogicValue value);
 
   // Create a wire from input_pin to LUT output.
+  // Also known as a route through LUT.
   //
   // input_pin must be less than num_inputs.
   void CreateWire(size_t input_pin);
@@ -37,6 +38,7 @@ struct LutOutputDefinition {
   LutOutputDefinition(std::string definition);
 
   // Return a FASM feature directive for a wire from input specified to output.
+  // Also known as a route through LUT.
   std::string CreateWire(int input) const;
 
   // Return a FASM feature directive for a constant LUT.
