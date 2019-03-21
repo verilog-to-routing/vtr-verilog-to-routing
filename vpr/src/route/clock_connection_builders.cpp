@@ -248,11 +248,10 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                     } else if (x == grid.width()-1) {
                         clock_x_offset = -1; // chanx clock always ends at 1 offset
                         clock_y_offset = -1; // pick the chanx below the block
-                    } else if (y == 0) { // pick chanx above the block, no offset needed
-                    } else if (y == grid.height()-1) {
-                        clock_y_offset = -1; // pick the chanx below the block
+                    } else if (y == 0) {
+                        clock_y_offset = 0; // pick chanx above the block, no offset needed
                     } else {
-                        clock_y_offset = -1;
+                        clock_y_offset = -1; // pick the chanx below the block
                     }
 
                     auto clock_pin_node_idx = get_rr_node_index(
