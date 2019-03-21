@@ -63,7 +63,7 @@ void SetupVPR(t_options *Options,
               t_analysis_opts* AnalysisOpts,
               t_det_routing_arch *RoutingArch,
               vector <t_lb_type_rr_node> **PackerRRGraphs,
-              t_segment_inf ** Segments, t_timing_inf * Timing,
+              std::vector <t_segment_inf>& Segments, t_timing_inf * Timing,
               bool * ShowGraphics, int *GraphPause,
               t_power_opts * PowerOpts) {
 	int i;
@@ -138,8 +138,7 @@ void SetupVPR(t_options *Options,
                 "Architecture contains no top-level block type containing '.output' models");
     }
 
-	*Segments = Arch->Segments;
-	RoutingArch->num_segment = Arch->num_segments;
+	Segments = Arch->Segments;
 
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
@@ -203,7 +202,9 @@ void SetupVPR(t_options *Options,
 	*PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
     }
 
-    if (Options->clock_modeling == ROUTED_CLOCK) {
+    if ((Options->clock_modeling == ROUTED_CLOCK) ||
+        (Options->clock_modeling == DEDICATED_NETWORK))
+    {
         ClockModeling::treat_clock_pins_as_non_globals();
     }
 
@@ -310,7 +311,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 	RoutingArch->R_minW_pmos = Arch.R_minW_pmos;
 	RoutingArch->Fs = Arch.Fs;
 	RoutingArch->directionality = BI_DIRECTIONAL;
-	if (Arch.Segments){
+	if (Arch.Segments.size()){
 		RoutingArch->directionality = Arch.Segments[0].directionality;
 	}
 
@@ -358,12 +359,14 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts)
     RouterOpts->save_routing_per_iteration = Options.save_routing_per_iteration;
     RouterOpts->congested_routing_iteration_threshold_frac = Options.congested_routing_iteration_threshold_frac;
     RouterOpts->route_bb_update = Options.route_bb_update;
+    RouterOpts->clock_modeling = Options.clock_modeling;
     RouterOpts->high_fanout_threshold = Options.router_high_fanout_threshold;
     RouterOpts->router_debug_net = Options.router_debug_net;
     RouterOpts->router_debug_sink_rr = Options.router_debug_sink_rr;
     RouterOpts->lookahead_type = Options.router_lookahead_type;
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
+    RouterOpts->first_iteration_timing_report_file = Options.router_first_iteration_timing_report_file;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -482,6 +485,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts *PlacerOpts)
     PlacerOpts->delay_ramp_slope = Options.place_delay_ramp_slope;
     PlacerOpts->tsu_rel_margin = Options.place_tsu_rel_margin;
     PlacerOpts->tsu_abs_margin = Options.place_tsu_abs_margin;
+    PlacerOpts->delay_model_type = Options.place_delay_model;
+    PlacerOpts->delay_model_reducer = Options.place_delay_model_reducer;
 
     //TODO: document?
 	PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */

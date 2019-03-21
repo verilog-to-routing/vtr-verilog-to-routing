@@ -234,7 +234,10 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 
 	/* Cleanup everything */
 	if (adders_for_partial_products != NULL)
-	{
+	{		
+		for (i = 0; i < multiplicand_width-1; i++) {
+			free_nnode(adders_for_partial_products[i]);
+		}
 		vtr::free(adders_for_partial_products);
 	}
 	/* generate the AND partial products */

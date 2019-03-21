@@ -947,6 +947,10 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 					}
 
 				}
+
+				if (local_clock_list)
+					free_signal_list(local_clock_list);
+					
 				break;
 			case BINARY_OPERATION:
 				oassert(node->num_children == 2);
@@ -1528,7 +1532,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 		/* create this node and make the pin connection to the net */
 		new_pin = allocate_npin();
 		new_node = allocate_nnode();
-		new_node->name = temp_string;
+		new_node->name = vtr::strdup(temp_string);
 
 		new_node->related_ast_node = var_declare;
 		new_node->type = INPUT_NODE;
@@ -1576,7 +1580,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 			new_node = allocate_nnode();
 
 			new_node->related_ast_node = var_declare;
-			new_node->name = temp_string;
+			new_node->name = vtr::strdup(temp_string);
 			new_node->type = INPUT_NODE;
 			/* allocate the pins needed */
 			allocate_more_output_pins(new_node, 1);
@@ -2371,11 +2375,13 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				if (strstr(full_name, ONE_VCC_CNS))
 				{
 					join_nets(verilog_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+					free_nnet((nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->one_net;
 				}
 				else if (strstr(full_name, ZERO_GND_ZERO))
 				{
 					join_nets(verilog_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+					free_nnet((nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->zero_net;
 				}
 				/* check if the instantiation pin exists. */
@@ -2406,6 +2412,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 					{
 						/* if they haven't been combined already, then join the inputs and output */
 						join_nets(net, in_net);
+						free_nnet(in_net);
 						/* since the driver net is deleted, copy the spot of the in_net over */
 						input_nets_sc->data[sc_spot_input_old] = (void*)net;
 					}
@@ -2501,6 +2508,10 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 						output_net->driver_pin->node->initial_value = input_new_net->initial_value;
 					}
 				}
+
+				/* clean up input_new_net */
+				if (!(input_new_net) || !(input_new_net->driver_pin))
+					free_nnet(input_new_net);
 
 				/* add this alias for the net */
 				output_nets_sc->data[sc_spot_input_new] = output_nets_sc->data[sc_spot_output];
@@ -2699,11 +2710,13 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				    if (strstr(full_name, ONE_VCC_CNS))
 				    {
 					    join_nets(verilog_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+						free_nnet((nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					    input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->one_net;
 				    }
 				    else if (strstr(full_name, ZERO_GND_ZERO))
 				    {
 					    join_nets(verilog_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+						free_nnet((nnet_t*)input_nets_sc->data[sc_spot_input_old]);
 					    input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->zero_net;
 				    }
 				    /* check if the instantiation pin exists. */
@@ -2734,6 +2747,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 					    {
 						    /* if they haven't been combined already, then join the inputs and output */
 						    join_nets(net, in_net);
+							free_nnet(in_net);
 						    /* since the driver net is deleted, copy the spot of the in_net over */
 						    input_nets_sc->data[sc_spot_input_old] = (void*)net;
 					    }
@@ -2845,6 +2859,10 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 						output_net->driver_pin->node->initial_value = input_new_net->initial_value;
 					}
 				}
+				
+				/* clean up input_new_net */
+				if (!(input_new_net) || !(input_new_net->driver_pin))
+					free_nnet(input_new_net);
 
 				/* add this alias for the net */
 				output_nets_sc->data[sc_spot_input_new] = output_nets_sc->data[sc_spot_output];
@@ -2950,6 +2968,7 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 				{
 					/* IF - the input and output nets don't match, then they need to be joined */
 					join_nets(net, (nnet_t*)input_nets_sc->data[sc_spot]);
+					free_nnet((nnet_t*)input_nets_sc->data[sc_spot]);
 					/* since the driver net is deleted, copy the spot of the in_net over */
 					input_nets_sc->data[sc_spot] = (void*)net;
 				}
@@ -3088,6 +3107,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		for (i = 0; i < address->count; i++)
 		{
 			npin_t *pin = address->pins[i];
+			if (pin->name)
+				vtr::free(pin->name);
 			pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, i);
 			add_pin_to_signal_list(right_inputs, pin);
 		}
@@ -3197,6 +3218,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			for (i = 0; i < address->count; i++)
 			{
 				npin_t *pin = address->pins[i];
+				if (pin->name) 
+					vtr::free(pin->name);
 				pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
 				add_pin_to_signal_list(in_1, pin);
 			}
@@ -3205,6 +3228,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			for (i = 0; i < data->count; i++)
 			{
 				npin_t *pin = data->pins[i];
+				if (pin->name)
+					vtr::free(pin->name);
 				pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
 				add_pin_to_signal_list(in_1, pin);
 			}
@@ -3213,6 +3238,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			for (i = 0; i < we->count; i++)
 			{
 				npin_t *pin = we->pins[i];
+				if (pin->name)
+					vtr::free(pin->name);
 				pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
 				add_pin_to_signal_list(in_1, pin);
 			}
@@ -3260,7 +3287,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 					/* free unused nnodes for related BLOCKING_STATEMENT nodes */
 					nnode_t *temp_node = in_1->pins[i]->node;
 					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
-						free_nnode(temp_node);
+						in_1->pins[i]->node = free_nnode(temp_node);
 					}
 				}
 				free_signal_list(in_1);
@@ -3275,7 +3302,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 				for (i = 0; i < output_size; i++) {
 					nnode_t *temp_node = in_1->pins[i]->node;
 					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
-						free_nnode(temp_node);
+						in_1->pins[i]->node = free_nnode(temp_node);
 					}
 				}
 			}
@@ -3305,6 +3332,12 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 				{
 					npin_t *pin = right_outputs->pins[i];
 					add_pin_to_signal_list(return_list, pin);
+
+					/* free unused nnodes for related BLOCKING_STATEMENT nodes */
+					nnode_t *temp_node = right_outputs->pins[i]->node;
+					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
+						right_outputs->pins[i]->node = free_nnode(temp_node);
+					}
 				}
 				free_signal_list(right_outputs);
 				vtr::free(out_list->strings);
@@ -3450,6 +3483,11 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			//looking for dependence according to with the type of statement (non-blocking or blocking)
 			list_dependence_pin[i] = copy_input_npin(pin);
 			if(pin->node) list_dependence_type[i] = pin->node->related_ast_node->type;
+
+			/* clean up non-blocking */
+			if (pin->node && pin->node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+				free_nnode(pin->node);
+			}
 
 			/* HERE create the ff node and hookup everything */
 			nnode_t *ff_node = allocate_nnode();
@@ -3677,6 +3715,9 @@ int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *
 
 				add_pin_to_signal_list(input_list, get_zero_pin(verilog_netlist));
 			}
+
+			if (input_list->pins[i]->name)
+				vtr::free(input_list->pins[i]->name);
 
 			input_list->pins[i]->name = output_list->strings[i];
 			free_nnode(input_list->pins[i]->node);
@@ -4012,7 +4053,7 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 		new_pin1 = allocate_npin();
 		new_pin2 = allocate_npin();
 		new_net = allocate_nnet();
-		new_net->name = operation_node->name;
+		new_net->name = vtr::strdup(operation_node->name);
 		/* hook the output pin into the node */
 		add_output_pin_to_node(operation_node, new_pin1, i);
 		/* hook up new pin 1 into the new net */
@@ -4223,6 +4264,7 @@ void create_if_control_signals(ast_node_t *if_expression, nnode_t *if_node, char
 		add_input_pin_to_node(if_node, default_expression->pins[0], 0);
 
 		if_logic_expression_final = default_expression;
+		free_signal_list(if_logic_expression);
 	}
 	else
 	{
@@ -4249,6 +4291,7 @@ void create_if_control_signals(ast_node_t *if_expression, nnode_t *if_node, char
 	add_input_pin_to_node(if_node, out_pin_list->pins[0], 1);
 
 	free_signal_list(out_pin_list);
+	free_signal_list(if_logic_expression_final);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -4258,7 +4301,7 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 {
 	signal_list_t **if_statements;
 	signal_list_t *return_list;
-	int i;
+	int i, j;
 
 	/* make storage for statements and expressions */
 	if_statements = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*)*2);
@@ -4271,6 +4314,14 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 			/* IF - this is a normal case item, then process the case match and the details of the statement */
 			if_statements[i] = netlist_expand_ast_of_module(if_ast->children[i+1], instance_name_prefix);
 			sort_signal_list_alphabetically(if_statements[i]);
+
+			/* free unused nnodes */
+			for (j = 0; j < if_statements[i]->count; j++) {
+				nnode_t* temp_node = if_statements[i]->pins[j]->node;
+				if (temp_node != NULL && temp_node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+					if_statements[i]->pins[j]->node = free_nnode(temp_node);
+				}
+			}
 		}
 		else
 		{
@@ -4397,7 +4448,7 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 {
 	signal_list_t **case_statement;
 	signal_list_t *return_list;
-	long i;
+	long i, j;
 
 	/* make storage for statements and expressions */
 	case_statement = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*)*(case_list_of_items->num_children));
@@ -4410,12 +4461,28 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 			/* IF - this is a normal case item, then process the case match and the details of the statement */
 			case_statement[i] = netlist_expand_ast_of_module(case_list_of_items->children[i]->children[1], instance_name_prefix);
 			sort_signal_list_alphabetically(case_statement[i]);
+
+			/* free unused nnodes */
+			for (j = 0; j < case_statement[i]->count; j++) {
+				nnode_t* temp_node = case_statement[i]->pins[j]->node;
+				if (temp_node != NULL && temp_node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+					case_statement[i]->pins[j]->node = free_nnode(temp_node);
+				}
+			}
 		}
 		else if (case_list_of_items->children[i]->type == CASE_DEFAULT)
 		{
 			oassert(i == case_list_of_items->num_children - 1); // has to be at the end
 			case_statement[i] = netlist_expand_ast_of_module(case_list_of_items->children[i]->children[0], instance_name_prefix);
 			sort_signal_list_alphabetically(case_statement[i]);
+
+			/* free unused nnodes */
+			for (j = 0; j < case_statement[i]->count; j++) {
+				nnode_t* temp_node = case_statement[i]->pins[j]->node;
+				if (temp_node != NULL && temp_node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
+					case_statement[i]->pins[j]->node = free_nnode(temp_node);
+				}
+			}
 		}
 		else
 		{

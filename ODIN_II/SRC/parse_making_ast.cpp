@@ -1292,7 +1292,10 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	size_module_instantiations++;
 
     }
+	//TODO: free_whole_tree ??
+	vtr::free(module_named_instance->children);
     vtr::free(module_named_instance);
+	vtr::free(module_ref_name);
 	return new_master_node;
 }
 /*-------------------------------------------------------------------------
@@ -1403,6 +1406,9 @@ ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *
 
     /* allocate n children nodes to this node */
     for(i = 1; i < expression3->num_children; i++) add_child_to_node(new_node, expression3->children[i]);
+	
+	/* clean up */
+	if (expression3->type == MODULE_CONNECT) expression3 = free_single_node(expression3);
 
     return new_node;
 }
@@ -1500,7 +1506,11 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 			}
 		}
 		if(!variable_found) add_child_at_the_beginning_of_the_node(list_of_module_items, module_variables_not_defined[i]);
+		else 				free_whole_tree(module_variables_not_defined[i]);
 	}
+
+	/* clean up */
+	vtr::free(module_variables_not_defined);
 
 	if ((sc_spot = sc_add_string(module_names_to_idx, module_name)) == -1)
 	{
@@ -1508,7 +1518,7 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 	}
 	/* store the data which is an idx here */
 	module_names_to_idx->data[sc_spot] = (void*)new_node;
-
+	
 	/* now that we've bottom up built the parse tree for this module, go to the next module */
 	next_module();
 

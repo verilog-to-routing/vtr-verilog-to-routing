@@ -30,12 +30,12 @@ void write_rr_switches(fstream &fp);
 void write_rr_grid(fstream &fp);
 void write_rr_edges(fstream &fp);
 void write_rr_block_types(fstream &fp);
-void write_rr_segments(fstream &fp, const t_segment_inf *segment_inf, const int num_seg_types);
+void write_rr_segments(fstream &fp, const std::vector<t_segment_inf>& segment_inf);
 
 /************************ Subroutine definitions ****************************/
 
 /* This function is used to write the rr_graph into xml format into a a file with name: file_name */
-void write_rr_graph(const char *file_name, const t_segment_inf *segment_inf, const int num_seg_types) {
+void write_rr_graph(const char *file_name, const std::vector<t_segment_inf>& segment_inf) {
     fstream fp;
     fp.open(file_name, fstream::out | fstream::trunc);
 
@@ -52,7 +52,7 @@ void write_rr_graph(const char *file_name, const t_segment_inf *segment_inf, con
     /* Write out each individual component*/
     write_rr_channel(fp);
     write_rr_switches(fp);
-    write_rr_segments(fp, segment_inf, num_seg_types);
+    write_rr_segments(fp, segment_inf);
     write_rr_block_types(fp);
     write_rr_grid(fp);
     write_rr_node(fp);
@@ -63,6 +63,21 @@ void write_rr_graph(const char *file_name, const t_segment_inf *segment_inf, con
 
     cout << "Finished generating RR graph file named " << file_name << endl << endl;
 }
+
+static void add_metadata_to_xml(fstream &fp, const char *tab_prefix, const t_metadata_dict & meta) {
+    fp << tab_prefix << "<metadata>" << endl;
+
+    for(const auto &meta_elem : meta) {
+        const std::string & key = meta_elem.first;
+        const std::vector<t_metadata_value> & values = meta_elem.second;
+        for(const auto &value : values) {
+          fp << tab_prefix << "\t<meta name=\"" << key << "\"";
+          fp << ">" << value.as_string() << "</meta>" << endl;
+        }
+    }
+    fp << tab_prefix << "</metadata>" << endl;
+}
+
 
 /* Channel info in device_ctx.chan_width is written in xml format.
  * A general summary of the min and max values of the channels are first printed. Every
@@ -122,6 +137,12 @@ void write_rr_node(fstream &fp) {
             fp << "\t\t\t<segment segment_id=\"" << device_ctx.rr_indexed_data[node.cost_index()].seg_index << "\"/>" << endl;
         }
 
+        const auto iter = device_ctx.rr_node_metadata.find(inode);
+        if(iter != device_ctx.rr_node_metadata.end()) {
+            const t_metadata_dict & meta = iter->second;
+            add_metadata_to_xml(fp, "\t\t\t", meta);
+        }
+
         fp << "\t\t</node>" << endl;
     }
 
@@ -130,10 +151,10 @@ void write_rr_node(fstream &fp) {
 
 /* Segment information in the t_segment_inf data structure is written out.
  * Information includes segment id, name, and optional timing parameters*/
-void write_rr_segments(fstream &fp, const t_segment_inf *segment_inf, const int num_seg_types) {
+void write_rr_segments(fstream &fp, const std::vector<t_segment_inf>& segment_inf) {
     fp << "\t<segments>" << endl;
 
-    for (int iseg = 0; iseg < num_seg_types; iseg++) {
+    for (size_t iseg = 0; iseg < segment_inf.size(); iseg++) {
         fp << "\t\t<segment id=\"" << iseg <<
                 "\" name=\"" << segment_inf[iseg].name << "\">" << endl;
         fp << "\t\t\t<timing R_per_meter=\"" << setprecision(FLOAT_PRECISION) <<segment_inf[iseg].Rmetal <<
@@ -149,7 +170,7 @@ void write_rr_switches(fstream &fp) {
     auto& device_ctx = g_vpr_ctx.device();
     fp << "\t<switches>" << endl;
 
-    for (int iSwitch = 0; iSwitch < device_ctx.num_rr_switches; iSwitch++) {
+    for (size_t iSwitch = 0; iSwitch < device_ctx.rr_switch_inf.size(); iSwitch++) {
         t_rr_switch_inf rr_switch = device_ctx.rr_switch_inf[iSwitch];
 
         fp << "\t\t<switch id=\"" << iSwitch;
@@ -269,7 +290,23 @@ void write_rr_edges(fstream &fp) {
         for (int iedge = 0; iedge < node.num_edges(); iedge++) {
             fp << "\t\t<edge src_node=\"" << inode <<
                     "\" sink_node=\"" << node.edge_sink_node(iedge) <<
-                    "\" switch_id=\"" << node.edge_switch(iedge) << "\"/>" << endl;
+                    "\" switch_id=\"" << node.edge_switch(iedge) << "\"";
+
+            bool wrote_edge_metadata = false;
+            const auto iter = device_ctx.rr_edge_metadata.find(std::make_tuple(inode, node.edge_sink_node(iedge), node.edge_switch(iedge)));
+            if(iter != device_ctx.rr_edge_metadata.end()) {
+                fp << ">" << endl;
+
+                const t_metadata_dict & meta = iter->second;
+                add_metadata_to_xml(fp, "\t\t\t", meta);
+                wrote_edge_metadata = true;
+            }
+
+            if(wrote_edge_metadata == false) {
+              fp << "/>" << endl;
+            } else {
+              fp << "\t\t</edge>" << endl;
+            }
         }
     }
     fp << "\t</rr_edges>" << endl << endl;

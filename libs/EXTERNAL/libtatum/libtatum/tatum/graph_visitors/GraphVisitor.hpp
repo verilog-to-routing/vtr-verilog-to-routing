@@ -7,7 +7,7 @@ namespace tatum {
 
 class GraphVisitor {
     public:
-        virtual ~GraphVisitor() {};
+        virtual ~GraphVisitor() {}
         virtual void do_reset_node(const NodeId node_id) = 0;
         virtual void do_reset_edge(const EdgeId edge_id) = 0;
 

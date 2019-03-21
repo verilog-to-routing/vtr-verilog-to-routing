@@ -215,7 +215,7 @@ void get_serial_num() {
 }
 
 void try_graph(int width_fac, t_router_opts router_opts,
-		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+		t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
 		t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs) {
 
@@ -238,7 +238,8 @@ void try_graph(int width_fac, t_router_opts router_opts,
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
 	create_rr_graph(graph_type,
-            device_ctx.num_block_types, device_ctx.block_types,
+            device_ctx.num_block_types,
+            device_ctx.block_types,
             device_ctx.grid,
 			chan_width,
 			device_ctx.num_arch_switches,
@@ -247,20 +248,24 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
+            router_opts.clock_modeling,
 			router_opts.lookahead_type,
 			directs, num_directs,
-			&device_ctx.num_rr_switches,
 			&warning_count);
 }
 
-bool try_route(int width_fac, t_router_opts router_opts,
-		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+bool try_route(int width_fac,
+        const t_router_opts& router_opts,
+        const t_analysis_opts& analysis_opts,
+		t_det_routing_arch *det_routing_arch,
+        std::vector<t_segment_inf>& segment_inf,
 		vtr::vector<ClusterNetId, float *> &net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks,
         const t_timing_inf& timing_inf,
 #endif
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
+        std::shared_ptr<RoutingDelayCalculator> delay_calc, 
 		t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs,
         ScreenUpdatePriority first_iteration_priority) {
@@ -290,7 +295,8 @@ bool try_route(int width_fac, t_router_opts router_opts,
 	int warning_count;
 
 	create_rr_graph(graph_type,
-            device_ctx.num_block_types, device_ctx.block_types,
+            device_ctx.num_block_types,
+            device_ctx.block_types,
             device_ctx.grid,
 			chan_width,
 			device_ctx.num_arch_switches,
@@ -299,9 +305,9 @@ bool try_route(int width_fac, t_router_opts router_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
+            router_opts.clock_modeling,
 			router_opts.lookahead_type,
 			directs, num_directs,
-			&device_ctx.num_rr_switches,
 			&warning_count);
 
     //Initialize drawing, now that we have an RR graph
@@ -328,9 +334,12 @@ bool try_route(int width_fac, t_router_opts router_opts,
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
 
 
-		success = try_timing_driven_route(router_opts, net_delay,
+		success = try_timing_driven_route(router_opts,
+            analysis_opts,
+            net_delay,
             netlist_pin_lookup,
             timing_info,
+            delay_calc,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
             timing_inf,
@@ -1465,7 +1474,7 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId,t_traceback>& tracebac
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             fprintf(fp, "\n\nNet %zu (%s)\n\n", size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str());
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == false) {
                 fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");

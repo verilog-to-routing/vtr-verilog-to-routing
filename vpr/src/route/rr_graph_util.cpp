@@ -77,3 +77,4 @@ int seg_index_of_sblock(int from_node, int to_node) {
 		return OPEN; //Should not reach here once thrown
 	}
 }
+

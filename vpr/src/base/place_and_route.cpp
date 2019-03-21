@@ -54,12 +54,13 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
         t_file_name_opts filename_opts,
         const t_arch* arch,
         bool verify_binary_search, int min_chan_width_hint,
-        t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+        t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
         vtr::vector<ClusterNetId, float *> &net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
         const t_timing_inf& timing_inf,
 #endif
-        std::shared_ptr<SetupHoldTimingInfo> timing_info) {
+        std::shared_ptr<SetupHoldTimingInfo> timing_info,
+        std::shared_ptr<RoutingDelayCalculator> delay_calc) {
 
     /* This routine performs a binary search to find the minimum number of      *
      * tracks per channel required to successfully route a circuit, and returns *
@@ -184,13 +185,17 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 #endif
                     arch->Directs, arch->num_directs);
         }
-        success = try_route(current, router_opts, det_routing_arch, segment_inf,
+        success = try_route(current,
+                router_opts,
+                analysis_opts,
+                det_routing_arch, segment_inf,
                 net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
                 slacks,
                 timing_inf,
 #endif
                 timing_info,
+                delay_calc,
                 arch->Chans,
                 arch->Directs, arch->num_directs,
                 (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR);
@@ -322,13 +327,17 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 #endif
                         arch->Directs, arch->num_directs);
             }
-            success = try_route(current, router_opts, det_routing_arch,
+            success = try_route(current,
+                    router_opts,
+                    analysis_opts,
+                    det_routing_arch,
                     segment_inf, net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
                     slacks,
                     timing_inf,
 #endif
                     timing_info,
+                    delay_calc,
                     arch->Chans, arch->Directs, arch->num_directs,
                     ScreenUpdatePriority::MINOR);
 
@@ -370,9 +379,9 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
+            router_opts.clock_modeling,
 			router_opts.lookahead_type,
 			arch->Directs, arch->num_directs,
-			&device_ctx.num_rr_switches,
 			&warnings);
 
     init_draw_coords(final);

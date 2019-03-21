@@ -1,3 +1,4 @@
+regression_tests/vtr_reg_strong/strong_dedicated_clock
 regression_tests/vtr_reg_strong/strong_titan
 regression_tests/vtr_reg_strong/strong_no_timing
 regression_tests/vtr_reg_strong/strong_mcnc
@@ -5,6 +6,7 @@ regression_tests/vtr_reg_strong/strong_flyover_wires
 regression_tests/vtr_reg_strong/strong_custom_pin_locs
 regression_tests/vtr_reg_strong/strong_custom_switch_block
 regression_tests/vtr_reg_strong/strong_custom_grid
+regression_tests/vtr_reg_strong/strong_place_delay_model
 regression_tests/vtr_reg_strong/strong_fracturable_luts
 regression_tests/vtr_reg_strong/strong_fpu_hard_block_arch
 regression_tests/vtr_reg_strong/strong_timing
