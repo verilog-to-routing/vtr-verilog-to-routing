@@ -220,8 +220,9 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 						const t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
 						const t_pb_graph_edge *edge = get_edge_between_pins(prev_pin, pin);
 
+						VTR_ASSERT(edge != nullptr);
 						mode_of_edge = edge->interconnect->parent_mode_index;
-						if(mode != nullptr && &pb_type->modes[mode_of_edge] != mode) {
+						if (mode != nullptr && &pb_type->modes[mode_of_edge] != mode) {
 							vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 								"Differing modes for block.  Got %s previously and %s for edge %d (interconnect %s).",
 								mode->name, pb_type->modes[mode_of_edge].name,
