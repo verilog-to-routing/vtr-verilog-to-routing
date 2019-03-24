@@ -274,9 +274,9 @@ void clean_up_parser_for_file()
 
 }
 
-void cleanup_specify_items(ast_node_t *root)
+ast_node_t * cleanup_specify_items(ast_node_t *root)
 {
-	free_whole_tree(root);
+	return free_whole_tree(root);
 }
 
 /*---------------------------------------------------------------------------------------------
