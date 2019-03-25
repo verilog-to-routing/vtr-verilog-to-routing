@@ -9,5 +9,5 @@ module test(
 and (Z2,A,B);
 specify 
 specparam h=5;
-endspecify;
+endspecify
 endmodule
