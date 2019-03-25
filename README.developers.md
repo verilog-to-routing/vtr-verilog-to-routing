@@ -659,9 +659,9 @@ this turns on more extensive assertion checking and re-builds VTR.
 # External Subtrees
 VTR includes some code which is developed in external repositories, and is integrated into the VTR source tree using [git subtrees](https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree).
 
-To simplify the process of working with subtrees we use the `dev/update_external_subtrees.py` script.
+To simplify the process of working with subtrees we use the [`dev/external_subtrees.py`](./dev/external_subtrees.py) script.
 
-For instance, running `./dev/update_external_subtrees.py --list` from the VTR root it shows the subtrees:
+For instance, running `./dev/external_subtrees.py --list` from the VTR root it shows the subtrees:
 ```
 Component: abc             Path: abc                            URL: https://github.com/berkeley-abc/abc.git       URL_Ref: master
 Component: libargparse     Path: libs/EXTERNAL/libargparse      URL: https://github.com/kmurray/libargparse.git    URL_Ref: master
