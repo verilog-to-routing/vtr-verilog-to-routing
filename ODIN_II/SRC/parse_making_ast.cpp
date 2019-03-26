@@ -1021,7 +1021,7 @@ ast_node_t *newBlocking(ast_node_t *expression1, ast_node_t *expression2, int li
 	return new_node;
 }
 /*---------------------------------------------------------------------------------------------
- * (function: newBlocking)
+ * (function: newFunctionAssigning)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number)
 {

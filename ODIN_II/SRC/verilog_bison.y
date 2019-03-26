@@ -417,11 +417,11 @@ non_blocking_assignment:
 
 procedural_continuous_assignment:
 	vASSIGN variable_asssignemt								{$$ = $2;}
-	vDEASSIGN primary										{$$ = Procedural_continuous_deassign($2, yylineno);}
-
+	| vDEASSIGN primary										{$$ = Procedural_continuous_deassign($2, yylineno);}
+	;
 variable_asssignemt:
 	primary '=' expression									{$$ = newBlocking($1, $3, yylineno);}
-
+	;
 
 parallel_connection:
 	primary voPAL expression 								{$$ = NULL;}
