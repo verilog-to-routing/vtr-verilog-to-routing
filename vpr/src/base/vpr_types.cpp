@@ -131,7 +131,6 @@ bool t_pb::is_primitive() const {
 std::string t_pb::hierarchical_type_name() const {
     std::vector<std::string> names;
 
-    int child_mode = OPEN;
     for (const t_pb* curr = this; curr != nullptr; curr = curr->parent_pb) {
         std::string type_name;
        
