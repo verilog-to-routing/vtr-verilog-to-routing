@@ -187,26 +187,17 @@ static void discover_pattern_names_in_pb_graph_node(
 	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
 			hasPattern = false;
-			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges;
-					k++) {
-				for (m = 0;
-						m
-								< pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns;
-						m++) {
+			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; k++) {
+				for (m = 0; m < pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
 					hasPattern = true;
-					index =
-							add_pattern_name_to_hash(nhash,
-									pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_names[m],
-									ncount);
-					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices
-							== nullptr) {
-						pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
-								vtr::malloc(
-										pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns
-												* sizeof(int));
+					index = add_pattern_name_to_hash(nhash,
+                                pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_names[m], ncount);
+					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices == nullptr) {
+						pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices =
+                            (int*) vtr::malloc(pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns
+                                                    * sizeof(int));
 					}
-					pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] =
-							index;
+					pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
 				}
 			}
 			if (hasPattern == true) {
@@ -219,26 +210,17 @@ static void discover_pattern_names_in_pb_graph_node(
 	for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
 			hasPattern = false;
-			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges;
-					k++) {
-				for (m = 0;
-						m
-								< pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns;
-						m++) {
+			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; k++) {
+				for (m = 0; m < pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
 					hasPattern = true;
-					index =
-							add_pattern_name_to_hash(nhash,
-									pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_names[m],
-									ncount);
-					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices
-							== nullptr) {
-						pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
-								vtr::malloc(
-										pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns
-												* sizeof(int));
+					index = add_pattern_name_to_hash(nhash,
+							    pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_names[m], ncount);
+					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices == nullptr) {
+						pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices =
+                            (int*) vtr::malloc(pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns
+                                                * sizeof(int));
 					}
-					pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m] =
-							index;
+					pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
 				}
 			}
 			if (hasPattern == true) {
@@ -251,26 +233,17 @@ static void discover_pattern_names_in_pb_graph_node(
 	for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
 			hasPattern = false;
-			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges;
-					k++) {
-				for (m = 0;
-						m
-								< pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns;
-						m++) {
+			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; k++) {
+				for (m = 0; m < pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
 					hasPattern = true;
-					index =
-							add_pattern_name_to_hash(nhash,
-									pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_names[m],
-									ncount);
-					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices
-							== nullptr) {
-						pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
-								vtr::malloc(
-										pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns
-												* sizeof(int));
+					index = add_pattern_name_to_hash(nhash,
+					            pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_names[m], ncount);
+					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices == nullptr) {
+						pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices =
+                            (int*) vtr::malloc(pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns
+                                                * sizeof(int));
 					}
-					pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m] =
-							index;
+					pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
 				}
 			}
 			if (hasPattern == true) {
@@ -281,15 +254,10 @@ static void discover_pattern_names_in_pb_graph_node(
 	}
 
 	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
-				j++) {
-			for (k = 0;
-					k
-							< pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
-					k++) {
+		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+			for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
 				discover_pattern_names_in_pb_graph_node(
-						&pb_graph_node->child_pb_graph_nodes[i][j][k], nhash,
-						ncount);
+				    &pb_graph_node->child_pb_graph_nodes[i][j][k], nhash, ncount);
 			}
 		}
 	}
