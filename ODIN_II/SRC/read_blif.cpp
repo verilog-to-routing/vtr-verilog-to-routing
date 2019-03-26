@@ -663,7 +663,7 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 	}
 	else
 	{
-		/* assign the node type by seeing the name */
+		/* assign the node type by seeing the name  */
 		operation_list node_type = (operation_list)assign_node_type_from_node_name(names[input_count-1]);
 
 		if(node_type != GENERIC)

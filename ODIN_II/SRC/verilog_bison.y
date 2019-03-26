@@ -411,16 +411,22 @@ blocking_assignment:
 	;
 
 non_blocking_assignment:
-	primary voLTE expression 								{$$ = newNonBlocking($1, $3, yylineno);}
-	| primary voLTE vDELAY_ID expression					{$$ = newNonBlocking($1, $4, yylineno);}
+	primary voLTE expression 											{$$ = newNonBlocking($1, $3, yylineno);}
+	| primary voLTE vDELAY_ID expression								{$$ = newNonBlocking($1, $4, yylineno);}
 	;
 
 procedural_continuous_assignment:
-	vASSIGN variable_asssignemt								{$$ = $2;}
-	| vDEASSIGN primary										{$$ = Procedural_continuous_deassign($2, yylineno);}
+	vASSIGN list_of_variable_asssignemt									{$$ = $2;}
+	| vDEASSIGN primary													{$$ = Procedural_continuous_deassign($2, yylineno);}
 	;
-variable_asssignemt:
-	primary '=' expression									{$$ = newBlocking($1, $3, yylineno);}
+
+list_of_variable_asssignemt:
+	list_of_variable_asssignemt ',' variable_asssignemt					{$$ = newList_entry($1, $3);}
+	|variable_asssignemt												{$$ = newList(ASSIGN, $1);}
+	;
+
+variable_asssignemt:								
+	primary '=' expression												{$$ = newBlocking($1, $3, yylineno);}
 	;
 
 parallel_connection:
