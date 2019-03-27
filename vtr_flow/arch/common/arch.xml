@@ -1,0 +1,163 @@
+<?xml version="1.0"?>
+<!-- set: ai sw=2 ts=2 sta et -->
+<architecture>
+  <models>
+    <model name="DFF">
+      <input_ports>
+        <port is_clock="1" name="clk"/>
+        <port clock="clk" name="data"/>
+      </input_ports>
+      <output_ports>
+        <port clock="clk" name="out"/>
+      </output_ports>
+    </model>
+  </models>
+  <complexblocklist>
+    <pb_type name="ff_tile">
+      <input name="in" num_pins="4"/>
+      <output name="out" num_pins="4"/>
+      <!-- D flip-flop controls -->
+      <clock name="clk" num_pins="1"/>
+      <input name="cen" num_pins="1"/>
+      <pb_type name="flipflop" num_pb="4">
+        <clock name="posclk" num_pins="1"/>
+        <clock name="negclk" num_pins="1"/>
+        <input name="cen" num_pins="1"/>
+        <input name="data" num_pins="1"/>
+        <output name="out" num_pins="1"/>
+        <mode name="DFF">
+          <pb_type blif_model=".subckt DFF" name="DFF" num_pb="1">
+            <clock name="clk" num_pins="1"/>
+            <input name="data" num_pins="1"/>
+            <output name="out" num_pins="1"/>
+            <T_setup clock="clk" port="DFF.data" value="10e-12"/>
+            <T_clock_to_Q clock="clk" max="10e-12" port="DFF.out"/>
+          </pb_type>
+          <interconnect>
+            <direct input="flipflop.posclk" name="clk" output="DFF.clk"/>
+            <direct input="flipflop.data" name="data" output="DFF.data"/>
+            <direct input="DFF.out" name="out" output="flipflop.out"/>
+          </interconnect>
+        </mode>
+      </pb_type>
+      <pb_type name="clkinv" num_pb="1">
+        <clock name="clk" num_pins="1"/>
+        <output name="posclk" num_pins="1"/>
+        <output name="negclk" num_pins="1"/>
+        <mode name="straight">
+          <pb_type name="clkinv-pos" num_pb="1">
+            <clock name="in" num_pins="1"/>
+            <output name="out" num_pins="1"/>
+            <interconnect>
+              <direct input="clkinv-pos.in" name="_" output="clkinv-pos.out"/>
+            </interconnect>
+          </pb_type>
+          <interconnect>
+            <direct input="clkinv.clk" name="in" output="clkinv-pos.in"/>
+            <direct input="clkinv-pos.out" name="out" output="clkinv.posclk"/>
+          </interconnect>
+        </mode>
+        <mode name="invert">
+          <pb_type name="clkinv-neg" num_pb="1">
+            <clock name="in" num_pins="1"/>
+            <output name="out" num_pins="1"/>
+            <interconnect>
+              <direct input="clkinv-neg.in" name="_" output="clkinv-neg.out"/>
+            </interconnect>
+          </pb_type>
+          <interconnect>
+            <direct input="clkinv.clk" name="in" output="clkinv-neg.in"/>
+            <direct input="clkinv-neg.out" name="out" output="clkinv.negclk"/>
+          </interconnect>
+        </mode>
+      </pb_type>
+      <interconnect>
+        <direct input="ff_tile.in[0]" name="in[0]" output="flipflop[0].data"/>
+        <direct input="ff_tile.in[1]" name="in[1]" output="flipflop[1].data"/>
+        <direct input="ff_tile.in[2]" name="in[2]" output="flipflop[2].data"/>
+        <direct input="ff_tile.in[3]" name="in[3]" output="flipflop[3].data"/>
+        <direct input="flipflop[0].out" name="out[0]" output="ff_tile.out[0]"/>
+        <direct input="flipflop[1].out" name="out[1]" output="ff_tile.out[1]"/>
+        <direct input="flipflop[2].out" name="out[2]" output="ff_tile.out[2]"/>
+        <direct input="flipflop[3].out" name="out[3]" output="ff_tile.out[3]"/>
+        <!-- clock is shared but goes through the inverter first -->
+        <direct input="ff_tile.clk" name="clk" output="clkinv.clk"/>
+        <direct input="clkinv.posclk" name="posclk[0]" output="flipflop[0].posclk"/>
+        <direct input="clkinv.posclk" name="posclk[1]" output="flipflop[1].posclk"/>
+        <direct input="clkinv.posclk" name="posclk[2]" output="flipflop[2].posclk"/>
+        <direct input="clkinv.posclk" name="posclk[3]" output="flipflop[3].posclk"/>
+        <direct input="clkinv.negclk" name="negclk[0]" output="flipflop[0].negclk"/>
+        <direct input="clkinv.negclk" name="negclk[1]" output="flipflop[1].negclk"/>
+        <direct input="clkinv.negclk" name="negclk[2]" output="flipflop[2].negclk"/>
+        <direct input="clkinv.negclk" name="negclk[3]" output="flipflop[3].negclk"/>
+        <!-- clock enable is shared -->
+        <direct input="ff_tile.cen" name="cen[0]" output="flipflop[0].cen"/>
+        <direct input="ff_tile.cen" name="cen[1]" output="flipflop[1].cen"/>
+        <direct input="ff_tile.cen" name="cen[2]" output="flipflop[2].cen"/>
+        <direct input="ff_tile.cen" name="cen[3]" output="flipflop[3].cen"/>
+      </interconnect>
+      <switchblock_locations pattern="all"/>
+      <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      <pinlocations pattern="custom">
+        <loc side="left" xoffset="0" yoffset="0">ff_tile.in</loc>
+        <loc side="bottom" xoffset="0" yoffset="0">ff_tile.clk ff_tile.cen</loc>
+        <loc side="right" xoffset="0" yoffset="0">ff_tile.out</loc>
+      </pinlocations>
+    </pb_type>
+    <pb_type name="io_tile">
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
+      <mode name="OUTPUT">
+        <pb_type blif_model=".output" name="pad" num_pb="1">
+          <input name="outpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct input="io_tile.in" name="-" output="pad.outpad"/>
+        </interconnect>
+      </mode>
+      <mode name="INPUT">
+        <pb_type blif_model=".input" name="pad" num_pb="1">
+          <output name="inpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct input="pad.inpad" name="-" output="io_tile.out"/>
+        </interconnect>
+      </mode>
+      <pinlocations pattern="custom">
+        <loc side="top" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="left" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="bottom" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="right" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+      </pinlocations>
+      <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+    </pb_type>
+  </complexblocklist>
+  <layout>
+    <auto_layout>
+      <fill type="ff_tile" priority="1"/>
+      <perimeter type="io_tile" priority="2"/>
+      <corners type="EMPTY" priority="3"/>
+    </auto_layout>
+  </layout>
+  <device>
+    <sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>
+    <area grid_logic_tile_area="14813.392"/>
+    <connection_block input_switch_name="sw"/>
+    <switch_block fs="3" type="universal"/>
+    <chan_width_distr>
+      <x distr="uniform" peak="1.000000"/>
+      <y distr="uniform" peak="1.000000"/>
+    </chan_width_distr>
+  </device>
+  <switchlist>
+    <switch Cin=".77e-15" Cout="4e-15" R="1" Tdel="58e-12" buf_size="27.645901" mux_trans_size="2.630740" name="sw" type="mux"/>
+  </switchlist>
+  <segmentlist>
+    <segment Cmetal="22.5e-15" Rmetal="101" freq="1.0" name="wire" type="bidir" length="1">
+      <wire_switch name="sw"/>
+      <opin_switch name="sw"/>
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
+    </segment>
+  </segmentlist>
+</architecture>
