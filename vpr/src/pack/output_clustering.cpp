@@ -86,17 +86,17 @@ static void print_stats() {
                 if (pb->pb_route.count(pb_graph_pin_id)) {
                     //Pin used
                     auto atom_net_id = pb->pb_route[pb_graph_pin_id].atom_net_id;
-				if (atom_net_id) {
-					nets_absorbed[atom_net_id] = false;
+                    if (atom_net_id) {
+                        nets_absorbed[atom_net_id] = false;
                         if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type == RECEIVER) {
-						num_clb_inputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
-					}
+                            num_clb_inputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
+                        }
                         else if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type == DRIVER) {
-						num_clb_outputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
-					}
-				}
+                            num_clb_outputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
+                        }
+                    }
+                }
 			}
-		}
 		}
 		num_clb_types[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
 	}
@@ -387,8 +387,8 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 
 				if (pb_type->parent_mode == nullptr) {
                     if (pb_route.count(node_index)) {
-					pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
-				} else {
+                        pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
+                    } else {
                         pins.push_back(clustering_xml_net_text(AtomNetId::INVALID()));
                     }
 				} else {
@@ -421,7 +421,7 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
                         node_index = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
 
                         if (pb_route.count(node_index)) {
-                        AtomNetId atom_net = pb_route[node_index].atom_net_id;
+                            AtomNetId atom_net = pb_route[node_index].atom_net_id;
 
                             VTR_ASSERT(atom_net);
 
@@ -441,7 +441,7 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 
                             VTR_ASSERT(orig_pin);
                             //The physical pin j, maps to a pin in the atom netlist
-							pin_map_list.push_back(vtr::string_fmt("%d", atom_ctx.nlist.pin_port_bit(orig_pin)));
+                            pin_map_list.push_back(vtr::string_fmt("%d", atom_ctx.nlist.pin_port_bit(orig_pin)));
                         } else {
                             //The physical pin is disconnected
 							pin_map_list.push_back("open");
@@ -490,8 +490,8 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 				node_index = pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
 				if (pb_type->parent_mode == nullptr) {
                     if (pb_route.count(node_index)) {
-					pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
-				} else {
+                        pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
+                    } else {
                         pins.push_back(clustering_xml_net_text(AtomNetId::INVALID()));
                     }
 				} else {
