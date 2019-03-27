@@ -788,7 +788,6 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->type = MOLECULE_SINGLE_ATOM;
 			cur_molecule->num_blocks = 1;
 			cur_molecule->root = 0;
-			cur_molecule->chain_pattern = nullptr;
 			cur_molecule->pack_pattern = nullptr;
 
             cur_molecule->atom_block_ids = {blk_id};

@@ -265,7 +265,6 @@ enum e_pack_pattern_molecule_type {
 struct t_pack_molecule {
 	enum e_pack_pattern_molecule_type type; /* what kind of molecule is this? */
 	t_pack_patterns *pack_pattern; /* If this is a forced_pack molecule, pattern this molecule matches */
-	t_model_chain_pattern *chain_pattern; /* If this is a chain molecule, chain that this molecule matches */
     std::vector<AtomBlockId> atom_block_ids; /* [0..num_blocks-1] IDs of atom blocks that implements this molecule,
                                                 index on pack_pattern_block->index of pack pattern */
 	bool valid; /* Whether or not this molecule is still valid */
