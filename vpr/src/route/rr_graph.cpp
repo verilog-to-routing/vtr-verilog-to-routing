@@ -2857,10 +2857,10 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
     return num_pins;
 }
 
-/* Determines whether the output pins of the specified block type should be perturbed.  *
- *  This is to prevent pathological cases where the output pin connections are      *
- *  spaced such that the connection pattern always skips some types of wire (w.r.t. *
- *  starting points)                                    */
+/* Determines whether the output pins of the specified block type should be perturbed.	*
+ *  This is to prevent pathological cases where the output pin connections are		*
+ *  spaced such that the connection pattern always skips some types of wire (w.r.t.	*
+ *  starting points)									*/
 static std::vector<bool> alloc_and_load_perturb_opins(const t_type_ptr type, const vtr::Matrix<int>& Fc_out,
         const int max_chan_width, const int num_seg_types, const t_segment_inf *segment_inf) {
 
@@ -2875,13 +2875,13 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_type_ptr type, con
 
     i = Fc_max = iclass = 0;
     if (num_seg_types > 1) {
-        /* Segments of one length are grouped together in the channel.  *
-         *  In the future we can determine if any of these segments will    *
-         *  encounter the pathological step size case, and determine if *
-         *  we need to perturb based on the segment's frequency (if     *
-         *  frequency is small we should not perturb - testing has found    *
-         *  that perturbing a channel when unnecessary increases needed *
-         *  W to achieve the same delay); but for now we just return.   */
+        /* Segments of one length are grouped together in the channel.	*
+         *  In the future we can determine if any of these segments will	*
+         *  encounter the pathological step size case, and determine if	*
+         *  we need to perturb based on the segment's frequency (if 	*
+         *  frequency is small we should not perturb - testing has found	*
+         *  that perturbing a channel when unnecessary increases needed	*
+         *  W to achieve the same delay); but for now we just return.	*/
         return perturb_opins;
     } else {
         /* There are as many wire start points as the value of L */
@@ -2900,13 +2900,13 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_type_ptr type, con
         return perturb_opins;
     }
 
-    /* Pathological cases occur when the step size, W/Fc, is a multiple of  *
-     *  the number of wire starting points, L. Specifically, when the step  *
-     *  size is a multiple of a prime factor of L, the connection pattern   *
-     *  will always skip some wires. Thus, we perturb pins if we detect this    *
-     *  case.                               */
+    /* Pathological cases occur when the step size, W/Fc, is a multiple of	*
+     *  the number of wire starting points, L. Specifically, when the step 	*
+     *  size is a multiple of a prime factor of L, the connection pattern	*
+     *  will always skip some wires. Thus, we perturb pins if we detect this	*
+     *  case.								*/
 
-    /* get an upper bound on the number of prime factors of num_wire_types  */
+    /* get an upper bound on the number of prime factors of num_wire_types	*/
     max_primes = (int) floor(log((float) num_wire_types) / log(2.0));
     max_primes = std::max(max_primes, 1); //Minimum of 1 to ensure we allocate space for at least one prime_factor
 
@@ -2934,8 +2934,8 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_type_ptr type, con
         prime_factors[num_factors++] = num_wire_types; /* covers cases when num_wire_types is prime */
     }
 
-    /* Now see if step size is an approximate multiple of one of the factors. A     *
-     *  threshold is used because step size may not be an integer.          */
+    /* Now see if step size is an approximate multiple of one of the factors. A 	*
+     *  threshold is used because step size may not be an integer.			*/
     step_size = (float) max_chan_width / Fc_max;
     for (i = 0; i < num_factors; i++) {
         if (vtr::nint(step_size) < prime_factors[i]) {
