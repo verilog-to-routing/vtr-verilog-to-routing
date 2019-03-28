@@ -2091,11 +2091,11 @@ static float pattern_fmod (float a, float b) {
     float raw_result = a - (int)(a/b)*b;
 
     if (raw_result < 0.0f) {
-	    return 0.0f;
+        return 0.0f;
     }
 
     if (raw_result >= b) {
-	    return 0.0f;
+        return 0.0f;
     }
 
     return raw_result;
@@ -2202,55 +2202,55 @@ static void load_uniform_connection_block_pattern(
         for (int j = 0; j < (Fc / group_size); ++j) {
 
             int max_chan_width = (((side == TOP) || (side == BOTTOM)) ? x_chan_width : y_chan_width);
-	        float step_size = (float) max_chan_width / (float) (Fc * num_phys_pins);
+            float step_size = (float) max_chan_width / (float) (Fc * num_phys_pins);
 
             VTR_ASSERT(Fc > 0);
             float fc_step = (float) max_chan_width / (float) Fc;
 
-	        /* We may go outside the track ID space, because of offset, so use modulo arithmetic below. */
+            /* We may go outside the track ID space, because of offset, so use modulo arithmetic below. */
             
             float ftrack = pattern_fmod((i + offset) * step_size, fc_step) + (j * fc_step);
             int itrack = ((int) ftrack) * group_size;
             
-	        if (j == 0) {
+            if (j == 0) {
                 /* Check if tracks to be assigned by the algorithm were recently assigned to pins at this
                  * (side, dx, dy). If so, loop through all possible alternative track
                  * assignments to find ones that include the most tracks that haven't been selected recently.
                  */
-		        for(;;) {
-	          	    int saved_offset_increment = 0;
-			        int max_num_unassigned_tracks = 0;
+                for(;;) {
+                    int saved_offset_increment = 0;
+                    int max_num_unassigned_tracks = 0;
 
                     /* Across all potential track assignments, determine the maximum number of recently
                      * unassigned tracks that can be assigned this iteration.
                      */
 
                     for (int offset_increment = 0; offset_increment < num_phys_pins; offset_increment++) {
-		                int num_unassigned_tracks = 0;
+                        int num_unassigned_tracks = 0;
                         int num_total_tracks = 0;
 
-    		            for (int j2 = 0; j2 < (Fc / group_size); ++j2) {
-	    	                ftrack = pattern_fmod((i + offset + offset_increment) * step_size, fc_step) + (j2 * fc_step);
+                        for (int j2 = 0; j2 < (Fc / group_size); ++j2) {
+                            ftrack = pattern_fmod((i + offset + offset_increment) * step_size, fc_step) + (j2 * fc_step);
                             itrack = ((int)ftrack) * group_size;
 
                             for (int k = 0; k < group_size; ++k) {
                                 if (excess_tracks_selected[side][width][height][(itrack + k) % max_chan_width] == 0) {
-			                        num_unassigned_tracks++;
-           	                    }
+                                    num_unassigned_tracks++;
+                                }
 
                                 num_total_tracks++;
                             }
                         }
 
-			            if (num_unassigned_tracks > max_num_unassigned_tracks) {
-				            max_num_unassigned_tracks = num_unassigned_tracks;
+                        if (num_unassigned_tracks > max_num_unassigned_tracks) {
+                            max_num_unassigned_tracks = num_unassigned_tracks;
                             saved_offset_increment = offset_increment;
-			            }
+                        }
 
-			            if (num_unassigned_tracks == num_total_tracks) {
+                        if (num_unassigned_tracks == num_total_tracks) {
                             /* We can't do better than this, so end search. */
-				            break;
-			            }
+                            break;
+                        }
                     }
 
                     if (max_num_unassigned_tracks > 0) {
@@ -2261,31 +2261,31 @@ static void load_uniform_connection_block_pattern(
 
                         offset += saved_offset_increment;
 
-				        ftrack = pattern_fmod((i + offset) * step_size, fc_step);
+                        ftrack = pattern_fmod((i + offset) * step_size, fc_step);
                         itrack = ((int) ftrack) * group_size;
 
-				        break;
-			        }
-			        else {
+                        break;
+                    }
+                    else {
                         /* All tracks have been assigned recently. Decrement the excess_tracks_selected counts for
                          * this location (side, dx, dy), modifying the memory of recently assigned
                          * tracks. A decrement is done rather than a reset, so if there was some unevenness of track
                          * assignment, that will be factored into the next round of track assignment.
                          */
                         for (int k = 0; k < max_chan_width; k++) {
-				            VTR_ASSERT(excess_tracks_selected[side][width][height][k] > 0);
+                            VTR_ASSERT(excess_tracks_selected[side][width][height][k] > 0);
                             excess_tracks_selected[side][width][height][k]--;
                         }
-			        }
-		        }
-	        }
+                    }
+                }
+            }
 
-	        /* Assign the group of tracks for the Fc pattern */
+            /* Assign the group of tracks for the Fc pattern */
             for (int k = 0; k < group_size; ++k) {
                 tracks_connected_to_pin[pin][width][height][side][group_size * j + k] = (itrack + k) % max_chan_width;
 
                 excess_tracks_selected[side][width][height][(itrack + k) % max_chan_width]++;
-	        }
+            }
         }
     }
 }
