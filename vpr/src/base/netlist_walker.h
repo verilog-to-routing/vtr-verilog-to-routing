@@ -13,7 +13,7 @@ class NetlistWalker {
         void walk();
 
     private:
-        void walk_blocks(const t_pb_routes &pb_route, const t_pb *pb, const t_pb_graph_node *pb_graph_node);
+        void walk_blocks(const t_pb_routes &pb_route, const t_pb *pb);
 
     private:
         NetlistVisitor& visitor_;
@@ -26,12 +26,23 @@ class NetlistVisitor {
         void start() { start_impl(); }
         void visit_top(const char* top_level_name) { visit_top_impl(top_level_name); }
         void visit_clb(ClusterBlockId blk_id, const t_pb* clb) { visit_clb_impl(blk_id, clb); }
+
+        // visit_atom is called on leaf pb nodes that map to a netlist element.
         void visit_atom(const t_pb* atom) { visit_atom_impl(atom); }
-        void visit_open(const t_pb* atom) { visit_open_impl(atom); }
-        void visit_all(const t_pb_routes &top_pb_route, const t_pb* pb, const t_pb_graph_node* pb_graph_node) {
-                VTR_ASSERT(pb == nullptr || pb_graph_node == pb->pb_graph_node);
-                VTR_ASSERT(pb_graph_node != nullptr);
-                visit_all_impl(top_pb_route, pb, pb_graph_node);
+
+        // visit_route_through is called on leaf pb nodes that do not map to a
+        // netlist element.  This is generally used for route-through nodes.
+        void visit_route_through(const t_pb* atom) {
+            visit_route_through_impl(atom);
+        }
+
+        // visit_all is called on all t_pb nodes that are in use for any
+        // reason.
+        //
+        // top_pb_route is the pb_route for the cluster being visited.
+        // pb is the current element in the cluster being visited.
+        void visit_all(const t_pb_routes &top_pb_route, const t_pb* pb) {
+                visit_all_impl(top_pb_route, pb);
         }
         void finish() { finish_impl(); }
 
@@ -41,8 +52,9 @@ class NetlistVisitor {
         virtual void visit_top_impl(const char* top_level_name);
         virtual void visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb);
         virtual void visit_atom_impl(const t_pb* atom);
-        virtual void visit_open_impl(const t_pb* atom);
-        virtual void visit_all_impl(const t_pb_routes &top_pb_route, const t_pb* pb, const t_pb_graph_node* pb_graph_node);
+        virtual void visit_route_through_impl(const t_pb* atom);
+        virtual void visit_all_impl(const t_pb_routes &top_pb_route, const t_pb* pb);
+
         virtual void finish_impl();
 };
 #endif

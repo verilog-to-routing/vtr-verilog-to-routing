@@ -1,5 +1,11 @@
 #include "lut.h"
 
+#include <sstream>
+
+#include "vtr_assert.h"
+#include "vpr_error.h"
+#include "vtr_util.h"
+
 namespace fasm {
 
 Lut::Lut(size_t num_inputs) : num_inputs_(num_inputs), table_(1 << num_inputs, vtr::LogicValue::DONT_CARE) {}

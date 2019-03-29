@@ -31,6 +31,9 @@ constexpr int ERROR_EXIT_CODE = 1; //Something went wrong internally
 constexpr int UNIMPLEMENTABLE_EXIT_CODE = 2; //Could not implement (e.g. unroutable)
 constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g. SIGINT/ctr-C)
 
+/*
+ * Writes FASM file based on the netlist name by walking the netlist.
+ */
 static bool write_fasm() {
   auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -44,17 +47,13 @@ static bool write_fasm() {
   return true;
 }
 
-/**
- * VPR program
- * Generate FPGA architecture given architecture description
- * Pack, place, and route circuit into FPGA architecture
- * Electrical timing analysis on results
+/*
+ * Generate FASM utility.
  *
- * Overall steps
- * 1.  Initialization
- * 2.  Pack
- * 3.  Place-and-route and timing analysis
- * 4.  Clean up
+ * 1. Loads pack, place and route files
+ * 2. Walks netlist and outputs FASM.
+ * 3. Cleans up and exits.
+ *
  */
 int main(int argc, const char **argv) {
     t_options Options = t_options();
@@ -78,6 +77,7 @@ int main(int argc, const char **argv) {
         bool flow_succeeded = false;
         flow_succeeded = vpr_flow(vpr_setup, Arch);
 
+        /* Actually write output FASM file. */
         flow_succeeded = write_fasm();
         if (!flow_succeeded) {
             return UNIMPLEMENTABLE_EXIT_CODE;

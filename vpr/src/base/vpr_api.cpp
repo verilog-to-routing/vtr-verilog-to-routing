@@ -983,6 +983,30 @@ void free_circuit() {
 	cluster_ctx.clb_nlist = ClusteredNetlist();
 }
 
+static void free_atoms() {
+    auto& atom_ctx = g_vpr_ctx.mutable_atom();
+    atom_ctx.nlist = AtomNetlist();
+    atom_ctx.lookup = AtomLookup();
+}
+
+static void free_placement() {
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    place_ctx.block_locs.clear();
+    place_ctx.grid_blocks.clear();
+}
+
+static void free_routing() {
+    auto& routing_ctx = g_vpr_ctx.mutable_routing();
+    routing_ctx.trace.clear();
+    routing_ctx.trace_nodes.clear();
+    routing_ctx.net_rr_terminals.clear();
+    routing_ctx.rr_blk_source.clear();
+    routing_ctx.rr_blk_source.clear();
+    routing_ctx.rr_node_route_inf.clear();
+    routing_ctx.net_status.clear();
+    routing_ctx.route_bb.clear();
+}
+
 void vpr_free_vpr_data_structures(t_arch& Arch,
         t_vpr_setup& vpr_setup) {
 
@@ -993,6 +1017,9 @@ void vpr_free_vpr_data_structures(t_arch& Arch,
     free_echo_file_info();
     free_timing_stats();
     free_sdc_related_structs();
+    free_placement();
+    free_routing();
+    free_atoms();
 }
 
 void vpr_free_all(t_arch& Arch,
