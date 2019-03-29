@@ -947,7 +947,8 @@ enum e_pb_graph_pin_type {
  *      parent_node: parent pb_graph_node
  *      pin_count_in_cluster: Unique number for pin inside cluster
  */
-struct t_pb_graph_pin {
+class t_pb_graph_pin {
+public:
 	t_port *port = nullptr;
 	int pin_number = 0;
 	t_pb_graph_edge** input_edges = nullptr; /* [0..num_input_edges] */
@@ -989,6 +990,13 @@ struct t_pb_graph_pin {
 	bool is_forced_connection = false; /* This output pin connects to one and only one input pin */
 
 	t_pb_graph_pin_power* pin_power = nullptr;
+
+// class member functions
+public:
+    bool is_primitive_pin() const;
+    bool is_root_block_pin() const;
+    std::string pin_to_string() const;
+
 };
 
 
@@ -1002,7 +1010,8 @@ struct t_pb_graph_pin {
  *      output_pins: array of pb_type graph output pins ptrs exiting this edge
  *      num_output_pins: Number of output pins exiting this edge
  */
-struct t_pb_graph_edge {
+class t_pb_graph_edge {
+public:
 	t_pb_graph_pin **input_pins;
 	int num_input_pins;
 	t_pb_graph_pin **output_pins;
@@ -1023,6 +1032,11 @@ struct t_pb_graph_edge {
 	int *pack_pattern_indices; /*[0..num_pack_patterns(of_edge)-1]*/
 	int num_pack_patterns;
 	bool infer_pattern; /*If true, infer pattern based on patterns connected to it*/
+
+// class member functions
+public:
+    bool annotated_with_pattern(int pattern_index) const;
+
 };
 
 struct t_pb_graph_node_power {

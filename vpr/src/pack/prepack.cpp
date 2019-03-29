@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <queue>
 using namespace std;
 
 #include "vtr_util.h"
@@ -72,6 +73,10 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_
 static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns *list_of_pack_pattern,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
+static std::vector<t_pb_graph_pin *> find_end_of_path(t_pb_graph_pin* input_pin, int pattern_index);
+
+static void expand_search(t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin *>& pins_queue, int pattern_index);
+
 /*****************************************/
 /*Function Definitions					 */
 /*****************************************/
@@ -111,11 +116,16 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 			if (expansion_edge == nullptr) {
 				continue;
 			}
+
 			L_num_blocks = 0;
 			list_of_packing_patterns[i].base_cost = 0;
 			backward_expand_pack_pattern_from_edge(expansion_edge,
 					list_of_packing_patterns, i, nullptr, nullptr, &L_num_blocks);
 			list_of_packing_patterns[i].num_blocks = L_num_blocks;
+
+            if (list_of_packing_patterns[i].is_chain) {
+                auto output_nodes = find_end_of_path(expansion_edge->input_pins[0], i);
+            }
 
 			/* Default settings: A section of a netlist must match all blocks in a pack
              * pattern before it can be made a molecule except for carry-chains.
@@ -1238,5 +1248,117 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 	}
 }
 
+/**
+ * This function takes an input pin to a root (has no parent block) pb_graph_node
+ * an returns a vector of all the output pins that are reachable from this input
+ * pin and have the same packing pattern
+ */
+
+std::vector<t_pb_graph_pin *> find_end_of_path(t_pb_graph_pin* input_pin, int pattern_index) {
+
+    VTR_LOG("Trying to find end of path starting at: %s\n", input_pin->pin_to_string().c_str());
+
+    // Enforce some constraints on the function
+
+    // 1) the start of the path should be at the input of the root block
+    VTR_ASSERT(input_pin->is_root_block_pin());
+
+    // 2) this pin is an input pin to the root block
+    VTR_ASSERT(input_pin->num_input_edges == 0);
+
+    // create a queue of pin pointers for the breadth first search
+    std::queue<t_pb_graph_pin *> pins_queue;
+
+    // add the input pin to the queue
+    pins_queue.push(input_pin);
+
+    // found reachable output pins
+    std::vector<t_pb_graph_pin *> reachable_pins;
+
+    // do breadth first search till all connected
+    // pins are explored
+    while(!pins_queue.empty()) {
+
+       // get the first pin in the queue
+       auto current_pin = pins_queue.front();
+
+       // remove pin from queue
+       pins_queue.pop();
+
+       // expand search from current pin
+       expand_search(current_pin, pins_queue, pattern_index);
+
+       // if this is an output pin of a root block
+       // add to reachable output pins
+       if (current_pin->is_root_block_pin()
+           && current_pin->num_output_edges == 0) {
+           reachable_pins.push_back(current_pin);
+       }
+    }
+
+    VTR_LOG("Found the following output pins:\n");
+    // some checks on the output of the search algorithm
+    for(const auto& pin_ptr: reachable_pins) {
+        VTR_LOG("%s\n", pin_ptr->pin_to_string().c_str());
+        // the found pins should belong to the root block
+        VTR_ASSERT(pin_ptr->is_root_block_pin());
+        // and should be an output pin
+        VTR_ASSERT(pin_ptr->num_output_edges == 0);
+    }
+
+    VTR_LOG("\n\n");
+
+    return reachable_pins;
+}
 
 
+
+void expand_search(t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin *>& pins_queue, int pattern_index) {
+
+    // If not a primitive input pin
+    // ----------------------------
+
+    // iterate over all output edges at this pin
+    for(int iedge = 0; iedge < input_pin->num_output_edges; iedge++) {
+
+        const auto& pin_edge = input_pin->output_edges[iedge];
+        // if we cannot infer the pattern of this edge and its pattern
+        // doesn't match the pattern_index, ignore this edge
+        if (pin_edge->infer_pattern == false
+            && pin_edge->annotated_with_pattern(pattern_index) == false) {
+            continue;
+        }
+
+        // this edge either matched the pack pattern or its pack pattern could be infered
+
+        // iterate over all the pins of that edge and add them to the pins_queue
+        for (int ipin = 0; ipin < pin_edge->num_output_pins; ipin++) {
+             pins_queue.push(pin_edge->output_pins[ipin]);
+        }
+
+    } // End for pin edges
+
+
+    // If a primitive input pin
+    // ------------------------
+
+    // if this is an input pin to a primitive, it won't have output edges
+    // so the previuos for loop won't be entered
+    if (input_pin->is_primitive_pin() && input_pin->num_output_edges == 0) {
+        // iterate over the output ports of the primitive
+        const auto& pin_pb_graph_node = input_pin->parent_node;
+        for (int iport = 0; iport < pin_pb_graph_node->num_output_ports; iport++) {
+             // iterate over the pins of each port
+             const auto& port_pins = pin_pb_graph_node->num_output_pins[iport];
+             for(int ipin = 0; ipin < port_pins; ipin++) {
+                 // add primtive output pins to pins_queue to be explored
+                 pins_queue.push(&pin_pb_graph_node->output_pins[iport][ipin]);
+             }
+        }
+    }
+
+    // If this is a root block output pin
+    // ----------------------------------
+
+    // No expansion will happen in this case
+}
