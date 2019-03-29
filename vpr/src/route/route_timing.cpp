@@ -212,6 +212,17 @@ static void timing_driven_expand_neighbours(t_heap *current,
         int target_node,
         RouterStats& router_stats);
 
+static void timing_driven_expand_neighbour(t_heap* current,
+                                           const int from_node,
+                                           const short from_edge,
+                                           const int to_node,
+                                           const t_conn_cost_params cost_params,
+                                           const t_bb bounding_box,
+                                           const RouterLookahead& router_lookahead,
+                                           int target_node,
+                                           const t_bb target_bb,
+                                           RouterStats& router_stats);
+
 static void timing_driven_add_to_heap(
         const t_conn_cost_params cost_params,
         const RouterLookahead& router_lookahead,
@@ -1404,6 +1415,8 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
                 router_lookahead,
                 target_node,
                 router_stats);
+
+
     }
 }
 
@@ -1716,65 +1729,91 @@ static void timing_driven_expand_neighbours(t_heap *current,
         int target_node,
         RouterStats& router_stats) {
 
-    /* Puts all the rr_nodes adjacent to current on the heap.  rr_nodes outside *
-     * the expanded bounding box specified in bounding_box are not added to the     *
-     * heap.                                                                    */
+    /* Puts all the rr_nodes adjacent to current on the heap.
+     */
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    int inode = current->index;
-
-    int target_xlow = OPEN;
-    int target_ylow = OPEN;
-    int target_xhigh = OPEN;
-    int target_yhigh = OPEN;
+    t_bb target_bb;
     if (target_node != OPEN) {
-        target_xlow = device_ctx.rr_nodes[target_node].xlow();
-        target_ylow = device_ctx.rr_nodes[target_node].ylow();
-        target_xhigh = device_ctx.rr_nodes[target_node].xhigh();
-        target_yhigh = device_ctx.rr_nodes[target_node].yhigh();
+        target_bb.xmin = device_ctx.rr_nodes[target_node].xlow();
+        target_bb.ymin = device_ctx.rr_nodes[target_node].ylow();
+        target_bb.xmax = device_ctx.rr_nodes[target_node].xhigh();
+        target_bb.ymax = device_ctx.rr_nodes[target_node].yhigh();
     }
 
-    int num_edges = device_ctx.rr_nodes[inode].num_edges();
-    for (int iconn = 0; iconn < num_edges; iconn++) {
-        int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iconn);
+    //For each node associated with the current heap element, expand all of it's neighbours
+    for (const t_heap_prev& prev : current->nodes) {
 
-        int to_xlow = device_ctx.rr_nodes[to_node].xlow();
-        int to_ylow = device_ctx.rr_nodes[to_node].ylow();
-        int to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
-        int to_yhigh = device_ctx.rr_nodes[to_node].yhigh();
-
-        if (   to_xhigh < bounding_box.xmin //Strictly left of BB left-edge
-            || to_xlow > bounding_box.xmax //Strictly right of BB right-edge
-            || to_yhigh < bounding_box.ymin //Strictly below BB bottom-edge
-            || to_ylow > bounding_box.ymax) { //Strictly above BB top-edge
-            continue; /* Node is outside (expanded) bounding box. */
+        int num_edges = device_ctx.rr_nodes[prev.to_node].num_edges();
+        for (int iconn = 0; iconn < num_edges; iconn++) {
+            int to_node = device_ctx.rr_nodes[prev.to_node].edge_sink_node(iconn);
+            timing_driven_expand_neighbour(current,
+                                           prev.to_node, iconn, to_node,
+                                           cost_params,
+                                           bounding_box,
+                                           router_lookahead,
+                                           target_node,
+                                           target_bb,
+                                           router_stats);
         }
+    }
+}
+
+//Conditionally adds to_node to the router heap (via path from from_node via from_edge).
+//RR nodes outside the expanded bounding box specified in bounding_box are not added 
+//to the heap.
+static void timing_driven_expand_neighbour(t_heap* current,
+                                           const int from_node,
+                                           const short from_edge,
+                                           const int to_node,
+                                           const t_conn_cost_params cost_params,
+                                           const t_bb bounding_box,
+                                           const RouterLookahead& router_lookahead,
+                                           int target_node,
+                                           const t_bb target_bb,
+                                           RouterStats& router_stats) {
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    int to_xlow = device_ctx.rr_nodes[to_node].xlow();
+    int to_ylow = device_ctx.rr_nodes[to_node].ylow();
+    int to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
+    int to_yhigh = device_ctx.rr_nodes[to_node].yhigh();
+
+    if (   to_xhigh < bounding_box.xmin //Strictly left of BB left-edge
+        || to_xlow > bounding_box.xmax //Strictly right of BB right-edge
+        || to_yhigh < bounding_box.ymin //Strictly below BB bottom-edge
+        || to_ylow > bounding_box.ymax) { //Strictly above BB top-edge
+        return; /* Node is outside (expanded) bounding box. */
+    }
 
 
-        /* Prune away IPINs that lead to blocks other than the target one.  Avoids  *
-         * the issue of how to cost them properly so they don't get expanded before *
-         * more promising routes, but makes route-throughs (via CLBs) impossible.   *
-         * Change this if you want to investigate route-throughs.                   */
-        if (target_node != OPEN) {
-            t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
-            if (to_type == IPIN) {
-                //Check if this IPIN leads to the target block
-                // IPIN's of the target block should be contained within it's bounding box
-                if (   to_xlow < target_xlow
-                    || to_ylow < target_ylow
-                    || to_xhigh > target_xhigh
-                    || to_yhigh > target_yhigh) {
-                    continue;
-                }
+    /* Prune away IPINs that lead to blocks other than the target one.  Avoids  *
+     * the issue of how to cost them properly so they don't get expanded before *
+     * more promising routes, but makes route-throughs (via CLBs) impossible.   *
+     * Change this if you want to investigate route-throughs.                   */
+    if (target_node != OPEN) {
+        t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
+        if (to_type == IPIN) {
+            //Check if this IPIN leads to the target block
+            // IPIN's of the target block should be contained within it's bounding box
+            if (   to_xlow < target_bb.xmin
+                || to_ylow < target_bb.ymin
+                || to_xhigh > target_bb.xmax
+                || to_yhigh > target_bb.ymax) {
+                return;
             }
         }
+    }
 
-        timing_driven_add_to_heap(
-                cost_params,
-                router_lookahead,
-                current, inode, to_node, iconn, target_node, router_stats);
-    } /* End for all neighbours */
+    VTR_LOGV_DEBUG(f_router_debug, "      Expanding node %d edge %d -> %d\n",
+            from_node, from_edge, to_node);
+
+    timing_driven_add_to_heap(
+            cost_params,
+            router_lookahead,
+            current, from_node, to_node, from_edge, target_node, router_stats);
 }
 
 //Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
