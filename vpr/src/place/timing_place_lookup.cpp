@@ -756,6 +756,8 @@ static std::unique_ptr<OverrideDelayModel> compute_override_delay_model(const t_
         //However, if the from/to ports are equivalent we could end up sampling the same RR SOURCE/SINK
         //paths multiple times (wasting CPU time) -- we avoid this by recording the sampled paths in 
         //sampled_rr_pairs and skipping them if they occur multiple times.
+        int missing_instances = 0;
+        int missing_paths = 0;
         std::set<std::pair<int,int>> sampled_rr_pairs;
         for (int iconn = 0; iconn < num_conns; ++iconn) {
             //Find the associated pins
@@ -777,7 +779,7 @@ static std::unique_ptr<OverrideDelayModel> compute_override_delay_model(const t_
 
 
             if (!found_sample_points) {
-                VTR_LOG_WARN("Failed to find delta delay for inter-block direct connect '%s' (no instances of this direct found)\n", direct->name);
+                ++missing_instances;
                 continue;
             }
 
@@ -794,12 +796,15 @@ static std::unique_ptr<OverrideDelayModel> compute_override_delay_model(const t_
             if (found_routing_path) {
                 delay_model->set_delay_override(from_type->index, from_pin_class, to_type->index, to_pin_class, direct->x_offset, direct->y_offset, direct_connect_delay);
             } else {
-                VTR_LOG_WARN("Failed to find delta delay for inter-block direct connect '%s' (no routing path found)\n", direct->name);
+                ++missing_paths;
             }
 
             //Record that we've sampled this pair of source and sink nodes
             sampled_rr_pairs.insert({src_rr,sink_rr});
         }
+
+        VTR_LOGV_WARN(missing_instances > 0, "Found no delta delay for %d bits of inter-block direct connect '%s' (no instances of this direct found)\n", missing_instances, direct->name);
+        VTR_LOGV_WARN(missing_paths > 0, "Found no delta delay for %d bits of inter-block direct connect '%s' (no routing path found)\n", missing_paths, direct->name);
     }
 
     return delay_model;
