@@ -92,7 +92,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
 static std::unique_ptr<OverrideDelayModel> compute_override_delay_model(const t_router_opts& router_opts, std::unique_ptr<PlaceDelayModel> base_model);
 
 static bool verify_delta_delays(const vtr::Matrix<float>& delta_delays);
-static int get_best_class(enum e_pin_type pintype, t_type_ptr type);
+static std::vector<int> get_best_classes(enum e_pin_type pintype, t_type_ptr type);
 
 static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf);
 
@@ -146,35 +146,48 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(
 
 /******* File Accessible Functions **********/
 
-static int get_best_class(enum e_pin_type pintype, t_type_ptr type) {
+static std::vector<int> get_best_classes(enum e_pin_type pintype, t_type_ptr type) {
 
-    /*This function tries to identify the best pin class to hook up
+    /* 
+     * This function tries to identify the best pin classes to hook up
      * for delay calculation.  The assumption is that we should pick
      * the pin class with the largest number of pins. This makes
      * sense, since it ensures we pick commonly used pins, and
      * removes order dependence on how the pins are specified
      * in the architecture (except in the case were the two largest pin classes
      * of a particular pintype have the same number of pins, in which case the
-     * first pin class is used). */
+     * first pin class is used).
+     */
 
-    int i, currpin, best_class_num_pins, best_class;
+    std::vector<int> best_classes;
 
-    best_class = OPEN;
-    best_class_num_pins = 0;
-    currpin = 0;
-    for (i = 0; i < type->num_class; i++) {
+    //Collect all classes of matching type which do not have all their pins ignored
+    for (int i = 0; i < type->num_class; i++) {
 
-        if (type->class_inf[i].type == pintype && !type->is_ignored_pin[currpin] &&
-                type->class_inf[i].num_pins > best_class_num_pins) {
-            //Save the best class
-            best_class_num_pins = type->class_inf[i].num_pins;
-            best_class = i;
-        } else
-            currpin += type->class_inf[i].num_pins;
+        if (type->class_inf[i].type == pintype) {
+
+            bool all_ignored = true;
+            for (int ipin = 0; ipin < type->class_inf[i].num_pins; ++ipin) {
+                int pin = type->class_inf[i].pinlist[ipin];
+                if (!type->is_ignored_pin[pin]) {
+                    all_ignored = false;
+                    break;
+                }
+            }
+            if (!all_ignored) {
+                best_classes.push_back(i);
+            }
+        }
     }
 
-    VTR_ASSERT(best_class < type->num_class);
-    return best_class;
+    //Sort classe so largest pin class is first
+    auto cmp_class = [&](int lhs, int rhs) {
+        return type->class_inf[lhs].num_pins > type->class_inf[rhs].num_pins;
+    };
+
+    std::stable_sort(best_classes.begin(), best_classes.end(), cmp_class);
+
+    return best_classes;
 }
 
 static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf) {
@@ -220,25 +233,34 @@ static float route_connection_delay(int source_x, int source_y,
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    //Get the rr nodes to route between
-    int driver_ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-    int source_rr_node = OPEN;
-    if (driver_ptc != OPEN) {
-        source_rr_node = get_rr_node_index(device_ctx.rr_node_indices, source_x, source_y, SOURCE, driver_ptc);
-    }
-
-    int sink_ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-    int sink_rr_node = OPEN;
-    if (sink_ptc != OPEN) {
-        sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
-    }
-
     bool successfully_routed = false;
-    if (source_rr_node != OPEN && sink_rr_node != OPEN) {
-        successfully_routed = calculate_delay(
-            source_rr_node, sink_rr_node,
-            router_opts,
-            &net_delay_value);
+
+    //Get the rr nodes to route between
+    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid[source_x][source_y].type);
+    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid[source_x][source_y].type);
+
+    for (int driver_ptc : best_driver_ptcs) {
+        VTR_ASSERT(driver_ptc != OPEN);
+
+        int source_rr_node = get_rr_node_index(device_ctx.rr_node_indices, source_x, source_y, SOURCE, driver_ptc);
+
+        VTR_ASSERT(source_rr_node != OPEN);
+
+        for (int sink_ptc : best_sink_ptcs) {
+            VTR_ASSERT(sink_ptc != OPEN);
+
+            int sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
+
+            VTR_ASSERT(sink_rr_node != OPEN);
+
+            successfully_routed = calculate_delay(
+                    source_rr_node, sink_rr_node,
+                    router_opts,
+                    &net_delay_value);
+
+            if (successfully_routed) break;
+        }
+        if (successfully_routed) break;
     }
 
     if (!successfully_routed) {
