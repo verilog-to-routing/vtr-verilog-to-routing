@@ -531,10 +531,10 @@ struct t_grid_tile {
  * the region:                                                    *
  *  (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1) */
 struct t_bb {
-	int xmin;
-	int xmax;
-	int ymin;
-	int ymax;
+	int xmin = 0;
+	int xmax = 0;
+	int ymin = 0;
+	int ymax = 0;
 };
 
 /* capacity:   Capacity of this region, in tracks.               *
