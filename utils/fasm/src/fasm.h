@@ -36,7 +36,7 @@ class FasmWriterVisitor : public NetlistVisitor {
 
   private:
       void output_fasm_features(std::string features) const;
-      void check_features(t_metadata_dict *meta) const;
+      void check_features(const t_metadata_dict *meta) const;
       void check_interconnect(const t_pb_routes &pb_route, int inode);
       void check_for_lut(const t_pb* atom);
       void output_fasm_mux(std::string fasm_mux, t_interconnect *interconnect, t_pb_graph_pin *mux_input_pin);

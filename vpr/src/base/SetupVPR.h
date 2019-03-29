@@ -22,7 +22,7 @@ void SetupVPR(t_options *Options,
 		t_analysis_opts* AnalysisOpts,
 		t_det_routing_arch *RoutingArch,
 		std::vector<t_lb_type_rr_node> **PackerRRGraphs,
-		t_segment_inf ** Segments, t_timing_inf * Timing,
+		std::vector<t_segment_inf>& Segments, t_timing_inf * Timing,
 		bool * ShowGraphics, int *GraphPause,
 		t_power_opts * PowerOpts);
 #endif

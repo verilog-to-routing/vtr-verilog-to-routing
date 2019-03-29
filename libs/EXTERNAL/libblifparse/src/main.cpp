@@ -13,8 +13,8 @@ class NoOpCallback : public Callback {
     public:
         void start_parse() override {}
 
-        void filename(std::string /*fname*/) override {};
-        void lineno(int /*line_num*/) override {};
+        void filename(std::string /*fname*/) override {}
+        void lineno(int /*line_num*/) override {}
 
         void begin_model(std::string /*model_name*/) override {}
         void inputs(std::vector<std::string> /*inputs*/) override {}

@@ -103,7 +103,7 @@ static e_directionality switch_type_directionaity(SwitchType type) {
  * t_type_descriptor
  */
 
-std::vector<int> t_type_descriptor::get_clock_pins_indices () {
+std::vector<int> t_type_descriptor::get_clock_pins_indices () const {
 
     VTR_ASSERT(this->pb_type); // assert not a nullptr
 

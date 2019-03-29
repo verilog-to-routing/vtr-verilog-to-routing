@@ -3,7 +3,7 @@
 #include <memory>
 #include "vpr_types.h"
 
-class t_conn_cost_params; //Forward declaration
+struct t_conn_cost_params; //Forward declaration
 
 class RouterLookahead {
     public:

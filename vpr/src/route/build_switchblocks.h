@@ -55,7 +55,7 @@ public:
 };
 
 struct t_hash_Switchblock_Lookup{
-	size_t operator()(const Switchblock_Lookup &obj) const{
+	size_t operator()(const Switchblock_Lookup &obj) const noexcept {
         //TODO: use vtr::hash_combine
 		size_t result;
 		result = ((((  std::hash<int>()(obj.x_coord)

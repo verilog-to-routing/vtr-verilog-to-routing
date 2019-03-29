@@ -1,4 +1,5 @@
 #include <cstring>
+#include <sstream>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -17,6 +18,121 @@ static void free_all_pb_graph_nodes(t_type_descriptor* type_descriptors, int num
 static void free_pb_graph(t_pb_graph_node *pb_graph_node);
 static void free_pb_type(t_pb_type *pb_type);
 
+
+InstPort::InstPort(std::string str) {
+    std::vector<std::string> inst_port = vtr::split(str, ".");
+
+    if(inst_port.size() == 1) {
+        instance_ = name_index();
+        port_ = parse_name_index(inst_port[0]);
+
+    } else if(inst_port.size() == 2) {
+        instance_ = parse_name_index(inst_port[0]);
+        port_ = parse_name_index(inst_port[1]);
+    } else {
+        std::string msg = vtr::string_fmt("Failed to parse instance port specification '%s'",
+                                str.c_str());
+        throw ArchFpgaError(msg);
+    }
+}
+
+InstPort::name_index InstPort::parse_name_index(std::string str) {
+    auto open_bracket_pos = str.find("["); 
+    auto close_bracket_pos = str.find("]"); 
+    auto colon_pos = str.find(":"); 
+
+    //Parse checks
+    if(open_bracket_pos == std::string::npos && close_bracket_pos != std::string::npos) {
+        //Close brace only
+        std::string msg = "near '" + str + "', missing '['";
+        throw ArchFpgaError(msg);
+    }
+
+    if(open_bracket_pos != std::string::npos && close_bracket_pos == std::string::npos) {
+        //Open brace only
+        std::string msg = "near '" + str + "', missing ']'";
+        throw ArchFpgaError(msg);
+    }
+
+    if(open_bracket_pos != std::string::npos && close_bracket_pos != std::string::npos) {
+        //Have open and close braces, close must be after open
+        if(open_bracket_pos > close_bracket_pos) {
+            std::string msg = "near '" + str + "', '[' after ']'";
+            throw ArchFpgaError(msg);
+        }
+    }
+
+    if(colon_pos != std::string::npos) {
+        //Have a colon, it must be between open/close braces
+        if(colon_pos > close_bracket_pos || colon_pos < open_bracket_pos) {
+            std::string msg = "near '" + str + "', found ':' but not between '[' and ']'";
+            throw ArchFpgaError(msg);
+        }
+    }
+
+
+    //Extract the name and index info
+    std::string name = str.substr(0,open_bracket_pos);
+    std::string first_idx_str;
+    std::string second_idx_str;
+
+    if(colon_pos == std::string::npos && open_bracket_pos == std::string::npos && close_bracket_pos == std::string::npos) {
+    } else if(colon_pos == std::string::npos) {
+        //No colon, implies a single element
+        first_idx_str = str.substr(open_bracket_pos + 1, close_bracket_pos);
+        second_idx_str = first_idx_str;
+    } else {
+        //Colon, implies a range
+        first_idx_str = str.substr(open_bracket_pos + 1, colon_pos);
+        second_idx_str = str.substr(colon_pos + 1, close_bracket_pos);
+    }
+
+    int first_idx = UNSPECIFIED;
+    if(!first_idx_str.empty()) {
+        std::stringstream ss(first_idx_str);
+        size_t idx;
+        ss >> idx;
+        if(!ss.good()) {
+            std::string msg = "near '" + str + "', expected positive integer";
+            throw ArchFpgaError(msg);
+        }
+        first_idx = idx;
+    }
+
+    int second_idx = UNSPECIFIED;
+    if(!second_idx_str.empty()) {
+        std::stringstream ss(second_idx_str);
+        size_t idx;
+        ss >> idx;
+        if(!ss.good()) {
+            std::string msg = "near '" + str + "', expected positive integer";
+            throw ArchFpgaError(msg);
+        }
+        second_idx = idx;
+    }
+
+    name_index value;
+    value.name = name;
+    value.low_idx = std::min(first_idx, second_idx);
+    value.high_idx = std::max(first_idx, second_idx);
+    return value;
+}
+
+int InstPort::num_instances() const {
+    if (instance_high_index() == UNSPECIFIED || instance_low_index() == UNSPECIFIED) {
+        throw ArchFpgaError("Unspecified instance indicies");
+    }
+    return instance_high_index() - instance_low_index() + 1;
+}
+
+int InstPort::num_pins() const {
+    if (port_high_index() == UNSPECIFIED || port_low_index() == UNSPECIFIED) {
+        throw ArchFpgaError("Unspecified port indicies");
+    }
+    return port_high_index() - port_low_index() + 1;
+}
+
+
 void free_arch(t_arch* arch) {
     if (arch == nullptr) {
         return;
@@ -29,15 +145,6 @@ void free_arch(t_arch* arch) {
     }
     delete[] arch->Switches;
     arch->Switches = nullptr;
-    for (int i = 0; i < arch->num_segments; ++i) {
-        vtr::free(arch->Segments[i].cb);
-        arch->Segments[i].cb = nullptr;
-        vtr::free(arch->Segments[i].sb);
-        arch->Segments[i].sb = nullptr;
-        vtr::free(arch->Segments[i].name);
-        arch->Segments[i].name = nullptr;
-    }
-    vtr::free(arch->Segments);
     t_model *model = arch->models;
     while (model) {
         t_model_ports *input_port = model->inputs;
@@ -149,7 +256,8 @@ void free_type_descriptors(t_type_descriptor* type_descriptors, int num_type_des
             vtr::free(type_descriptors[i].class_inf[j].pinlist);
         }
         vtr::free(type_descriptors[i].class_inf);
-        vtr::free(type_descriptors[i].is_global_pin);
+        vtr::free(type_descriptors[i].is_ignored_pin);
+        vtr::free(type_descriptors[i].is_pin_global);
         vtr::free(type_descriptors[i].pin_class);
 
         free_pb_type(type_descriptors[i].pb_type);
@@ -312,12 +420,12 @@ static void free_pb_type(t_pb_type *pb_type) {
                 vtr::free(pb_type->modes[i].interconnect[j].interconnect_power);
         }
         if (pb_type->modes[i].interconnect)
-            vtr::free(pb_type->modes[i].interconnect);
+            delete [] pb_type->modes[i].interconnect;
         if (pb_type->modes[i].mode_power)
             vtr::free(pb_type->modes[i].mode_power);
     }
     if (pb_type->modes)
-        vtr::free(pb_type->modes);
+        delete [] pb_type->modes;
 
     for (int i = 0; i < pb_type->num_annotations; ++i) {
         for (int j = 0; j < pb_type->annotations[i].num_value_prop_pairs; ++j) {
@@ -420,7 +528,7 @@ void SetupEmptyType(t_type_descriptor* cb_type_descriptors,
 	type->num_class = 0;
 	type->class_inf = nullptr;
 	type->pin_class = nullptr;
-	type->is_global_pin = nullptr;
+	type->is_ignored_pin = nullptr;
 	type->pb_type = nullptr;
 	type->area = UNDEFINED;
     type->switchblock_locations = vtr::Matrix<e_sb_type>({{size_t(type->width), size_t(type->height)}}, e_sb_type::FULL);
@@ -533,8 +641,7 @@ void ProcessLutClass(t_pb_type *lut_pb_type) {
 
 	lut_pb_type->num_modes = 2;
 	lut_pb_type->pb_type_power->leakage_default_mode = 1;
-	lut_pb_type->modes = (t_mode*) vtr::calloc(lut_pb_type->num_modes,
-			sizeof(t_mode));
+	lut_pb_type->modes = new t_mode[lut_pb_type->num_modes];
 
 	/* First mode, route_through */
 	lut_pb_type->modes[0].name = vtr::strdup("wire");
@@ -558,8 +665,7 @@ void ProcessLutClass(t_pb_type *lut_pb_type) {
 		in_port = &lut_pb_type->ports[1];
 	}
 	lut_pb_type->modes[0].num_interconnect = 1;
-	lut_pb_type->modes[0].interconnect = (t_interconnect*) vtr::calloc(1,
-			sizeof(t_interconnect));
+	lut_pb_type->modes[0].interconnect = new t_interconnect[1];
 	lut_pb_type->modes[0].interconnect[0].name = (char*) vtr::calloc(
 			strlen(lut_pb_type->name) + 10, sizeof(char));
 	sprintf(lut_pb_type->modes[0].interconnect[0].name, "complete:%s",
@@ -659,8 +765,7 @@ void ProcessLutClass(t_pb_type *lut_pb_type) {
 
 	/* Process interconnect */
 	lut_pb_type->modes[1].num_interconnect = 2;
-	lut_pb_type->modes[1].interconnect = (t_interconnect*) vtr::calloc(2,
-			sizeof(t_interconnect));
+	lut_pb_type->modes[1].interconnect = new t_interconnect[lut_pb_type->modes[1].num_interconnect];
 	lut_pb_type->modes[1].interconnect[0].name = (char*) vtr::calloc(
 			strlen(lut_pb_type->name) + 10, sizeof(char));
 	sprintf(lut_pb_type->modes[1].interconnect[0].name, "direct:%s",
@@ -723,7 +828,7 @@ void ProcessMemoryClass(t_pb_type *mem_pb_type) {
 		default_name = vtr::strdup("memory_slice_1bit");
 	}
 
-	mem_pb_type->modes = (t_mode*) vtr::calloc(1, sizeof(t_mode));
+	mem_pb_type->modes = new t_mode[1];
 	mem_pb_type->modes[0].name = vtr::strdup(default_name);
 	mem_pb_type->modes[0].parent_pb_type = mem_pb_type;
 	mem_pb_type->modes[0].index = 0;
@@ -761,8 +866,7 @@ void ProcessMemoryClass(t_pb_type *mem_pb_type) {
 	mem_pb_type->model = nullptr;
 
 	mem_pb_type->modes[0].num_interconnect = mem_pb_type->num_ports * num_pb;
-	mem_pb_type->modes[0].interconnect = (t_interconnect*) vtr::calloc(
-			mem_pb_type->modes[0].num_interconnect, sizeof(t_interconnect));
+	mem_pb_type->modes[0].interconnect = new t_interconnect[mem_pb_type->modes[0].num_interconnect];
 
 	for (i = 0; i < mem_pb_type->modes[0].num_interconnect; i++) {
 		mem_pb_type->modes[0].interconnect[i].parent_mode_index = 0;
@@ -1230,10 +1334,10 @@ void primitives_annotation_clock_match(
 }
 
 
-t_segment_inf* find_segment(const t_arch* arch, std::string name) {
+const t_segment_inf* find_segment(const t_arch* arch, std::string name) {
 
-    for (int i = 0; i < arch->num_segments; ++i) {
-        t_segment_inf* seg = &arch->Segments[i];
+    for (size_t i = 0; i < (arch->Segments).size(); ++i) {
+        const t_segment_inf* seg = &arch->Segments[i];
         if (seg->name == name) {
             return seg;
         }

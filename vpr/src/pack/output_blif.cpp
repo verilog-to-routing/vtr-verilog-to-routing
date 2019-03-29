@@ -95,6 +95,8 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 
 	const auto& pb_route = cluster_ctx.clb_nlist.block_pb(clb_index)->pb_route;
 	pb_graph_node = atom_ctx.lookup.atom_pb_graph_node(atom_blk);
+    VTR_ASSERT(pb_graph_node);
+
 	pb_type = pb_graph_node->pb_type;
 
 

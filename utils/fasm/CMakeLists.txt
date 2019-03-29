@@ -10,6 +10,8 @@ add_library(fasm
   src/lut.h
   src/parameters.cpp
   src/parameters.h
+  src/fasm_utils.cpp
+  src/fasm_utils.h
   )
 target_include_directories(fasm PUBLIC src)
 target_link_libraries(fasm
@@ -35,10 +37,15 @@ install(TARGETS genfasm DESTINATION bin)
 set(TEST_SOURCES
   test/main.cpp
   test/test_fasm.cpp
+  test/test_lut.cpp
+  test/test_parameters.cpp
+  test/test_utils.cpp
   )
 add_executable(test_fasm ${TEST_SOURCES})
 target_link_libraries(test_fasm fasm libcatch)
 
 add_test(
   NAME test_fasm
-  COMMAND test_fasm --use-colour=yes)
+  COMMAND test_fasm --use-colour=yes
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
+  )

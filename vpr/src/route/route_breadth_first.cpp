@@ -118,7 +118,7 @@ bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac,
 	if (route_ctx.net_status[net_id].is_fixed) { /* Skip pre-routed nets. */
 		is_routed = true;
 
-	} else if (cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Skip global nets. */
+	} else if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Skip ignored nets. */
 		is_routed = true;
 
 	} else {

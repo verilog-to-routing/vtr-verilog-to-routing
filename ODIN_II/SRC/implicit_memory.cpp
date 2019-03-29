@@ -205,6 +205,7 @@ void free_implicit_memory_index_and_finalize_memories()
 		for (auto mem_it : implicit_memories) 
 		{
 			finalize_implicit_memory(mem_it.second);
+			vtr::free(mem_it.second->name);
 			vtr::free(mem_it.second);
 		}
 	}

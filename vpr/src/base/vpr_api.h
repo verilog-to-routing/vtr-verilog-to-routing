@@ -26,6 +26,7 @@
 #ifndef VPR_API_H
 #define VPR_API_H
 
+#include <vector>
 #include "physical_types.h"
 #include "vpr_types.h"
 #include "read_options.h"
@@ -35,6 +36,7 @@
 #include "place_macro.h"
 #include "timing_info_fwd.h"
 #include "echo_files.h"
+#include "RoutingDelayCalculator.h"
 
 #include "vpr_error.h"
 
@@ -60,8 +62,8 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform placement
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch); //Loads a previous placement
 
 RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the routing stage
-RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay); //Perform routing at a fixed channel width)
-RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay); //Perform routing to find the minimum channel width
+RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, std::shared_ptr<RoutingDelayCalculator> delay_calc, vtr::vector<ClusterNetId, float *>& net_delay); //Perform routing at a fixed channel width)
+RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, std::shared_ptr<RoutingDelayCalculator> delay_calc, vtr::vector<ClusterNetId, float *>& net_delay); //Perform routing to find the minimum channel width
 RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay); //Loads a previous routing
 
 bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status); //Perform or skips the analysis stage
@@ -74,6 +76,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_close_graphics(const t_vpr_setup& vpr_setup);
 
+void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch);
 void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup);
 void vpr_free_all(t_arch& Arch, t_vpr_setup& vpr_setup);
 
@@ -99,8 +102,8 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
         t_router_opts *RouterOpts,
         t_analysis_opts* AnalysisOpts,
         t_det_routing_arch *RoutingArch,
-        vector <t_lb_type_rr_node> **PackerRRGraph,
-        t_segment_inf ** Segments, t_timing_inf * Timing,
+        std::vector <t_lb_type_rr_node> **PackerRRGraph,
+        std::vector<t_segment_inf>& Segments, t_timing_inf * Timing,
         bool * ShowGraphics, int *GraphPause,
         t_power_opts * PowerOpts);
 /* Check inputs are reasonable */
@@ -110,7 +113,7 @@ void vpr_check_setup(
         const t_packer_opts PackerOpts,
         const t_placer_opts PlacerOpts,
         const t_router_opts RouterOpts,
-        const t_det_routing_arch RoutingArch, const t_segment_inf * Segments,
+        const t_det_routing_arch RoutingArch, const std::vector<t_segment_inf>& Segments,
         const t_timing_inf Timing, const t_chan_width_dist Chans);
 /* Show current setup */
 void vpr_show_setup(const t_vpr_setup& vpr_setup);

@@ -2,7 +2,10 @@
 .inputs a b clk
 .outputs o_dff
 
-.names a b a_and_b
+.names 1\a 3 a_-1234567890~|:*/\[\]\.\{\}^+$;'"?<>
+
+.names a b \
+  a_and_b
 11 1
 .cname lut_a_and_b
 

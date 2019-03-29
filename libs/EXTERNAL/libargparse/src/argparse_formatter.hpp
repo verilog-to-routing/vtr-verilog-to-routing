@@ -8,7 +8,7 @@ namespace argparse {
 
     class Formatter {
         public:
-            virtual ~Formatter() {};
+            virtual ~Formatter() {}
             virtual void set_parser(ArgumentParser* parser) = 0;
             virtual std::string format_usage() const = 0;
             virtual std::string format_description() const = 0;

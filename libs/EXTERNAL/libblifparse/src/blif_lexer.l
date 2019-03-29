@@ -45,9 +45,7 @@
 %option prefix="blifparse_" 
 
 /* Common character classes */
-ALPHA_SYMBOLS [-a-zA-Z_~|:*/\[\]\.\{\}^+$;'"]
-DIGITS [0-9]
-ALPHA_NUM_SYMBOLS ({ALPHA_SYMBOLS}|{DIGITS})
+ID_SET [^ \t\r\n\\=]
 BACK_SLASH [\\]
 WS [ \t]
 ENDL (\n|\n\r|\r\n)
@@ -61,7 +59,9 @@ ENDL (\n|\n\r|\r\n)
  * Symbol Definitions
  */
 %%
-<*>#.*{ENDL}                    { /* ignore comments */ }
+<*>#.*{ENDL}                    { /* ignore comments, but forward EOL for end of line comments */
+                                  return blifparse::Parser::make_EOL();
+                                }
 ^{WS}*{ENDL}                    { /* Ignore blank lines. */ }
 \\{ENDL}{WS}*{ENDL}             { 
                                   /* 
@@ -139,15 +139,7 @@ ENDL (\n|\n\r|\r\n)
                                   BEGIN(SO_COVER); 
                                   return blifparse::Parser::make_EOL(); 
                                 }
-<INITIAL,NAMES,LATCH>({DIGITS}({ALPHA_NUM_SYMBOLS}|{BACK_SLASH})*{ALPHA_NUM_SYMBOLS}+)|(({ALPHA_SYMBOLS}|{BACK_SLASH})*({ALPHA_NUM_SYMBOLS}|{BACK_SLASH})*{ALPHA_NUM_SYMBOLS}) {
-                                    /* The terrible regex above covers two cases:
-                                     *  1) An identifier starts with a digit, contains a combination of
-                                     *     alpha numeric and symbolic characters. To avoid conflicts with
-                                     *     line continuation, back slashes are forbidden in the last character.
-                                     *  2) An identifier with a non-numeric first letter (i.e. alpha, symbol, back slash)
-                                     *     followed by any number of (alpha, num, symbol, back slash) the last character
-                                     *     can be any alpha/num/symbol excluding back slashes (to avoid conflicts with line continuation)
-                                     */
+<INITIAL,NAMES,LATCH>(({ID_SET}|{BACK_SLASH})*{ID_SET}) {
                                     /*
                                      * We allow all sorts of characters in regular strings.
                                      * However we need to be careful about line continuations

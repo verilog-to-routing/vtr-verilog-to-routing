@@ -123,30 +123,30 @@ static bool should_apply_switch_override(int switch_override);
  * step, if we were closer to target before last more, undo it
  * and end up with a result that uses fewer tracks than given. */
 int *get_seg_track_counts(
-        const int num_sets, const int num_seg_types,
-        const t_segment_inf * segment_inf,
+        const int num_sets,
+        const std::vector<t_segment_inf>& segment_inf,
         const bool use_full_seg_groups) {
 
     int *result;
     double *demand;
-    int i, imax, freq_sum, assigned, size;
+    int imax, freq_sum, assigned, size;
     double scale, max, reduce;
 
-    result = (int *) vtr::malloc(sizeof (int) * num_seg_types);
-    demand = (double *) vtr::malloc(sizeof (double) * num_seg_types);
+    result = (int *) vtr::malloc(sizeof (int) * segment_inf.size());
+    demand = (double *) vtr::malloc(sizeof (double) * segment_inf.size());
 
     /* Scale factor so we can divide by any length
      * and still use integers */
     scale = 1;
     freq_sum = 0;
-    for (i = 0; i < num_seg_types; ++i) {
+    for (size_t i = 0; i < segment_inf.size(); ++i) {
         scale *= segment_inf[i].length;
         freq_sum += segment_inf[i].frequency;
     }
     reduce = scale * freq_sum;
 
     /* Init assignments to 0 and set the demand values */
-    for (i = 0; i < num_seg_types; ++i) {
+    for (size_t i = 0; i < segment_inf.size(); ++i) {
         result[i] = 0;
         demand[i] = scale * num_sets * segment_inf[i].frequency;
         if (use_full_seg_groups) {
@@ -161,7 +161,7 @@ int *get_seg_track_counts(
     while (assigned < num_sets) {
         /* Find current maximum demand */
         max = 0;
-        for (i = 0; i < num_seg_types; ++i) {
+        for (size_t i = 0; i < segment_inf.size(); ++i) {
             if (demand[i] > max) {
                 imax = i;
                 max = demand[i];
@@ -192,7 +192,7 @@ int *get_seg_track_counts(
 
 t_seg_details *alloc_and_load_seg_details(
         int *max_chan_width, const int max_len,
-        const int num_seg_types, const t_segment_inf * segment_inf,
+        const std::vector<t_segment_inf>& segment_inf,
         const bool use_full_seg_groups, const bool is_global_graph,
         const enum e_directionality directionality,
         int * num_seg_details) {
@@ -206,7 +206,7 @@ t_seg_details *alloc_and_load_seg_details(
      * (3) stagger the connection and switch boxes on different long lines,     *
      *     as they will not be staggered by different segment start points.     */
 
-    int i, cur_track, ntracks, itrack, length, j, index;
+    int cur_track, ntracks, itrack, length, j, index;
     int arch_wire_switch, arch_opin_switch, fac, num_sets, tmp;
     int group_start, first_track;
     int *sets_per_seg_type = nullptr;
@@ -227,11 +227,11 @@ t_seg_details *alloc_and_load_seg_details(
 
     /* Map segment type fractions and groupings to counts of tracks */
     sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),
-            num_seg_types, segment_inf, use_full_seg_groups);
+            segment_inf, use_full_seg_groups);
 
     /* Count the number tracks actually assigned. */
     tmp = 0;
-    for (i = 0; i < num_seg_types; ++i) {
+    for (size_t i = 0; i < segment_inf.size(); ++i) {
         tmp += sets_per_seg_type[i] * fac;
     }
     VTR_ASSERT(use_full_seg_groups || (tmp == *max_chan_width));
@@ -241,7 +241,7 @@ t_seg_details *alloc_and_load_seg_details(
 
     /* Setup the seg_details data */
     cur_track = 0;
-    for (i = 0; i < num_seg_types; ++i) {
+    for (size_t i = 0; i < segment_inf.size(); ++i) {
         first_track = cur_track;
 
         num_sets = sets_per_seg_type[i];
@@ -265,7 +265,7 @@ t_seg_details *alloc_and_load_seg_details(
         for (itrack = 0; itrack < ntracks; itrack++) {
 
             /* set the name of the segment type this track belongs to */
-            seg_details[cur_track].type_name_ptr = segment_inf[i].name;
+            seg_details[cur_track].type_name = segment_inf[i].name;
 
             /* Remember the start track of the current wire group */
             if ((itrack / fac) % length == 0 && (itrack % fac) == 0) {
@@ -305,7 +305,7 @@ t_seg_details *alloc_and_load_seg_details(
                     seg_details[cur_track].cb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
-                    index = j % segment_inf[i].cb_len;
+                    index = j % segment_inf[i].cb.size();
                     seg_details[cur_track].cb[j] = segment_inf[i].cb[index];
                 }
             }
@@ -314,7 +314,7 @@ t_seg_details *alloc_and_load_seg_details(
                     seg_details[cur_track].sb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
-                    index = j % segment_inf[i].sb_len;
+                    index = j % segment_inf[i].sb.size();
                     seg_details[cur_track].sb[j] = segment_inf[i].sb[index];
                 }
             }
@@ -1218,6 +1218,23 @@ t_rr_node_indices alloc_and_load_rr_node_indices(
             CHANY, chan_details_y, indices, index);
     return indices;
 }
+
+std::vector<int> get_rr_node_chan_wires_at_location(
+    const t_rr_node_indices& L_rr_node_indices,
+    t_rr_type rr_type,
+    int x,
+    int y)
+{
+    VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
+
+    /* Currently need to swap x and y for CHANX because of chan, seg convention */
+    if (CHANX == rr_type) {
+        std::swap(x, y);
+    }
+
+    return L_rr_node_indices[rr_type][x][y][SIDES[0]];
+}
+
 
 std::vector<int> get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
                                      int x, int y, t_rr_type rr_type, int ptc) {

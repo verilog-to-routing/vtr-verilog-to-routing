@@ -97,6 +97,8 @@ struct t_options {
     argparse::ArgValue<float> place_tsu_rel_margin;
     argparse::ArgValue<float> place_tsu_abs_margin;
     argparse::ArgValue<std::string> post_place_timing_report_file;
+    argparse::ArgValue<PlaceDelayModelType> place_delay_model;
+    argparse::ArgValue<e_reducer> place_delay_model_reducer;
 
     /* Router Options */
     argparse::ArgValue<int> max_router_iterations;
@@ -130,6 +132,7 @@ struct t_options {
     argparse::ArgValue<e_router_lookahead> router_lookahead_type;
     argparse::ArgValue<int> router_max_convergence_count;
     argparse::ArgValue<float> router_reconvergence_cpd_threshold;
+    argparse::ArgValue<std::string> router_first_iteration_timing_report_file;
 
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;
