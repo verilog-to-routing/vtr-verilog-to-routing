@@ -150,6 +150,7 @@ static void alloc_and_load_rr_graph(
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         bool is_global_graph);
 
+static float pattern_fmod (float a, float b);
 static void load_uniform_connection_block_pattern(
         vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
         const std::vector<t_pin_loc>& pin_locations,
@@ -2111,6 +2112,21 @@ static void advance_to_next_block_side(t_type_ptr Type, int& width_offset, int& 
     VTR_ASSERT(side == LEFT || side == RIGHT || side == BOTTOM || side == TOP);
 }
 
+static float pattern_fmod (float a, float b) {
+    /* Compute a modulo b. */
+    float raw_result = a - (int)(a/b)*b;
+
+    if (raw_result < 0.0f) {
+        return 0.0f;
+    }
+
+    if (raw_result >= b) {
+        return 0.0f;
+    }
+
+    return raw_result;
+}
+
 static void load_uniform_connection_block_pattern(
         vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
         const std::vector<t_pin_loc>& pin_locations,
@@ -2137,7 +2153,55 @@ static void load_uniform_connection_block_pattern(
      *    This also means I will not use get_output_block_companion_track to ensure
      *    no bias, since that describes a logical # -> that would confuse people.  */
 
+    int max_width = 0;
+    int max_height = 0;
+
+    int num_phys_pins = pin_locations.size();
+
+    /* Keep a record of how many times each track is selected at each
+     * (side, dx, dy) of the block. This is used to ensure a diversity of tracks are 
+     * assigned to pins that might be related. For a given (side, dx, dy), the counts will be 
+     * decremented after all the tracks have been selected at least once, so the
+     * counts will not get too big.
+     */
+    std::vector<std::vector<std::vector<std::vector<char>>>> excess_tracks_selected;
+    excess_tracks_selected.resize(NUM_SIDES);
+
+    for (int i = 0; i < num_phys_pins; ++i) {
+        int width = pin_locations[i].width_offset;
+        int height = pin_locations[i].height_offset;
+
+        max_width = max(max_width, width);
+        max_height = max(max_height, height);
+    }
+
+    for (int iside = 0; iside < NUM_SIDES; iside++) {
+        excess_tracks_selected[iside].resize(max_width + 1);
+
+        for (int dx = 0; dx <= max_width; dx++) {
+            excess_tracks_selected[iside][dx].resize(max_height + 1);
+
+            for (int dy = 0; dy <= max_height; dy++) {
+                int max_chan_width = (((iside == TOP) || (iside == BOTTOM)) ? x_chan_width : y_chan_width);
+                excess_tracks_selected[iside][dx][dy].resize(max_chan_width);
+            }
+        }
+    }
+
+    for (int i = 0; i < num_phys_pins; ++i) {
+        e_side side = pin_locations[i].side;
+        int width = pin_locations[i].width_offset;
+        int height = pin_locations[i].height_offset;
+
+        int max_chan_width = (((side == TOP) || (side == BOTTOM)) ? x_chan_width : y_chan_width);
+
+        for (int j = 0; j < max_chan_width; j++) {
+            excess_tracks_selected[side][width][height][j] = 0;
+        }
+    }
+
     int group_size;
+
     if (directionality == BI_DIRECTIONAL) {
         group_size = 1;
     } else {
@@ -2147,7 +2211,11 @@ static void load_uniform_connection_block_pattern(
 
     VTR_ASSERT((x_chan_width % group_size == 0) && (y_chan_width % group_size == 0) && (Fc % group_size == 0));
 
-    int num_phys_pins = pin_locations.size();
+    /* offset is used to move to a different point in the track space if it is detected that
+     * the tracks being assigned overlap recently assigned tracks, with the goal of increasing
+     * track diversity.
+     */
+    int offset = 0;
 
     for (int i = 0; i < num_phys_pins; ++i) {
 
@@ -2165,15 +2233,84 @@ static void load_uniform_connection_block_pattern(
             VTR_ASSERT(Fc > 0);
             float fc_step = (float) max_chan_width / (float) Fc;
 
-            float ftrack = (i * step_size) + (j * fc_step);
+            /* We may go outside the track ID space, because of offset, so use modulo arithmetic below. */
+            
+            float ftrack = pattern_fmod((i + offset) * step_size, fc_step) + (j * fc_step);
             int itrack = ((int) ftrack) * group_size;
+            
+            if (j == 0) {
+                /* Check if tracks to be assigned by the algorithm were recently assigned to pins at this
+                 * (side, dx, dy). If so, loop through all possible alternative track
+                 * assignments to find ones that include the most tracks that haven't been selected recently.
+                 */
+                for(;;) {
+                    int saved_offset_increment = 0;
+                    int max_num_unassigned_tracks = 0;
 
-            /* Catch possible floating point round error */
-            itrack = min(itrack, max_chan_width - group_size);
+                    /* Across all potential track assignments, determine the maximum number of recently
+                     * unassigned tracks that can be assigned this iteration.
+                     */
+
+                    for (int offset_increment = 0; offset_increment < num_phys_pins; offset_increment++) {
+                        int num_unassigned_tracks = 0;
+                        int num_total_tracks = 0;
+
+                        for (int j2 = 0; j2 < (Fc / group_size); ++j2) {
+                            ftrack = pattern_fmod((i + offset + offset_increment) * step_size, fc_step) + (j2 * fc_step);
+                            itrack = ((int)ftrack) * group_size;
+
+                            for (int k = 0; k < group_size; ++k) {
+                                if (excess_tracks_selected[side][width][height][(itrack + k) % max_chan_width] == 0) {
+                                    num_unassigned_tracks++;
+                                }
+
+                                num_total_tracks++;
+                            }
+                        }
+
+                        if (num_unassigned_tracks > max_num_unassigned_tracks) {
+                            max_num_unassigned_tracks = num_unassigned_tracks;
+                            saved_offset_increment = offset_increment;
+                        }
+
+                        if (num_unassigned_tracks == num_total_tracks) {
+                            /* We can't do better than this, so end search. */
+                            break;
+                        }
+                    }
+
+                    if (max_num_unassigned_tracks > 0) {
+                        /* Use the minimum offset increment that achieves the desired goal of track diversity,
+                         * so the patterns produced are similar to the old algorithm (which doesn't explicitly
+                         * monitor track diversity).
+                         */
+
+                        offset += saved_offset_increment;
+
+                        ftrack = pattern_fmod((i + offset) * step_size, fc_step);
+                        itrack = ((int) ftrack) * group_size;
+
+                        break;
+                    }
+                    else {
+                        /* All tracks have been assigned recently. Decrement the excess_tracks_selected counts for
+                         * this location (side, dx, dy), modifying the memory of recently assigned
+                         * tracks. A decrement is done rather than a reset, so if there was some unevenness of track
+                         * assignment, that will be factored into the next round of track assignment.
+                         */
+                        for (int k = 0; k < max_chan_width; k++) {
+                            VTR_ASSERT(excess_tracks_selected[side][width][height][k] > 0);
+                            excess_tracks_selected[side][width][height][k]--;
+                        }
+                    }
+                }
+            }
 
             /* Assign the group of tracks for the Fc pattern */
             for (int k = 0; k < group_size; ++k) {
-                tracks_connected_to_pin[pin][width][height][side][group_size * j + k] = itrack + k;
+                tracks_connected_to_pin[pin][width][height][side][group_size * j + k] = (itrack + k) % max_chan_width;
+
+                excess_tracks_selected[side][width][height][(itrack + k) % max_chan_width]++;
             }
         }
     }

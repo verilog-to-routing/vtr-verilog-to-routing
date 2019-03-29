@@ -17,6 +17,7 @@ circuit_list_add=verilog/mkPktMerge.v
 # Add architectures to list to sweep
 arch_list_add=timing/k6_frac_N10_frac_chain_mem32K_htree0_40nm.xml
 arch_list_add=timing/k6_frac_N10_frac_chain_mem32K_htree0_routedCLK_40nm.xml
+arch_list_add=timing/k6_frac_N10_frac_chain_mem32K_htree0short_40nm.xml
 
 # Parse info and how to parse
 parse_file=vpr_clock_modeling.txt
