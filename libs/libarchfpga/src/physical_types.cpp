@@ -140,3 +140,66 @@ std::vector<int> t_type_descriptor::get_clock_pins_indices () const {
 
     return indices;
 }
+
+
+/**
+ * t_pb_graph_pin
+ */
+
+/**
+ *  Returns true if this pin belongs to a primtive
+ */
+
+bool t_pb_graph_pin::is_primitive_pin() const {
+    return this->parent_node->pb_type->num_modes == 0;
+}
+
+
+/**
+ *  Returns true if this pin belongs to a root pb_block
+ *  which is a pb_block that has no parent block
+ */
+
+bool t_pb_graph_pin::is_root_block_pin() const {
+    return this->parent_node->pb_type->parent_mode == nullptr;
+}
+
+
+std::string t_pb_graph_pin::pin_to_string() const {
+
+    std::string parent_name  = this->parent_node->pb_type->name;
+    std::string parent_index = std::to_string(this->parent_node->placement_index);
+    std::string port_name    = this->port->name;
+    std::string pin_index    = std::to_string(this->pin_number);
+
+    std::string pin_string = parent_name + "[" + parent_index + "]";
+    pin_string     += "." + port_name + "[" + pin_index + "]";
+
+    for (auto pb_node = this->parent_node->parent_pb_graph_node; pb_node != nullptr; pb_node = pb_node->parent_pb_graph_node) {
+        std::string parent = pb_node->pb_type->name;
+        parent += "[" + std::to_string(pb_node->placement_index) + "]";
+        pin_string = parent + "/" + pin_string;
+    }
+    return pin_string;
+}
+
+
+/**
+ * t_pb_graph_edge
+ */
+
+/**
+ * Returns true if this edge is annotated with the packing
+ * pattern having the index pattern_index
+ */
+
+bool t_pb_graph_edge::annotated_with_pattern(int pattern_index) const {
+
+    for(int ipattern = 0; ipattern < this->num_pack_patterns; ipattern++) {
+        if (this->pack_pattern_indices[ipattern] == pattern_index) {
+            return true;
+        }
+    }
+
+    return false;
+}
