@@ -244,7 +244,7 @@ static float route_connection_delay(int source_x, int source_y,
 
     //Get the rr nodes to route between
     auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid[source_x][source_y].type);
-    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid[source_x][source_y].type);
+    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
 
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
