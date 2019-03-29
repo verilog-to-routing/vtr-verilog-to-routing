@@ -30,9 +30,11 @@ class NetlistVisitor {
         // visit_atom is called on leaf pb nodes that map to a netlist element.
         void visit_atom(const t_pb* atom) { visit_atom_impl(atom); }
 
-        // visit_open is called on leaf pb nodes that do no map to a netlist
-        // element.  Route-through wires will appears as open pb nodes.
-        void visit_open(const t_pb* atom) { visit_open_impl(atom); }
+        // visit_route_through is called on leaf pb nodes that do not map to a
+        // netlist element.  This is generally used for route-through nodes.
+        void visit_route_through(const t_pb* atom) {
+            visit_route_through_impl(atom);
+        }
 
         // visit_all is called on all t_pb nodes that are in use for any
         // reason.
@@ -50,7 +52,7 @@ class NetlistVisitor {
         virtual void visit_top_impl(const char* top_level_name);
         virtual void visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb);
         virtual void visit_atom_impl(const t_pb* atom);
-        virtual void visit_open_impl(const t_pb* atom);
+        virtual void visit_route_through_impl(const t_pb* atom);
         virtual void visit_all_impl(const t_pb_routes &top_pb_route, const t_pb* pb);
 
         virtual void finish_impl();

@@ -35,7 +35,7 @@ void NetlistWalker::walk_blocks(const t_pb_routes &top_pb_route, const t_pb* pb)
         if (pb->name != NULL) {
             visitor_.visit_atom(pb);
         } else {
-            visitor_.visit_open(pb);
+            visitor_.visit_route_through(pb);
         }
         return;
     }
@@ -64,7 +64,7 @@ void NetlistVisitor::visit_clb_impl(ClusterBlockId /*blk_id*/, const t_pb* /*clb
     //noop
 }
 
-void NetlistVisitor::visit_open_impl(const t_pb* /*atom*/) {
+void NetlistVisitor::visit_route_through_impl(const t_pb* /*atom*/) {
     //noop
 }
 

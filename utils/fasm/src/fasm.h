@@ -56,7 +56,7 @@ class FasmWriterVisitor : public NetlistVisitor {
 
   private:
       void visit_top_impl(const char* top_level_name) override;
-      void visit_open_impl(const t_pb* atom) override;
+      void visit_route_through_impl(const t_pb* atom) override;
       void visit_atom_impl(const t_pb* atom) override;
       // clb in visit_clb_impl stands for complex logic block.
       // visit_clb_impl is called on each top-level pb_type used in the design.

@@ -228,7 +228,7 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
   }
 }
 
-void FasmWriterVisitor::visit_open_impl(const t_pb* atom) {
+void FasmWriterVisitor::visit_route_through_impl(const t_pb* atom) {
   check_for_lut(atom);
   check_for_param(atom);
 }
