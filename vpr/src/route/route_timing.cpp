@@ -1400,7 +1400,7 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
     if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
 
         VTR_LOGV_DEBUG(f_router_debug, "    Better cost to %d\n", inode);
-        for (t_heap_prev prev : cheapest->previous) {
+        for (t_heap_prev prev : cheapest->nodes) {
             VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for assicated node %d (from %d edge %d)\n", prev.to_node, prev.from_node, prev.from_edge);
 
             add_to_mod_list(prev.to_node, modified_rr_node_inf);
@@ -1744,7 +1744,6 @@ static void timing_driven_expand_neighbours(t_heap *current,
 
     //For each node associated with the current heap element, expand all of it's neighbours
     for (const t_heap_prev& prev : current->nodes) {
-
         int num_edges = device_ctx.rr_nodes[prev.to_node].num_edges();
         for (int iconn = 0; iconn < num_edges; iconn++) {
             int to_node = device_ctx.rr_nodes[prev.to_node].edge_sink_node(iconn);
@@ -1889,7 +1888,7 @@ static void timing_driven_expand_node(const t_conn_cost_params cost_params,
                         from_node, to_node, iconn, target_node);
 
     //Record how we reached this node
-    current->previous.emplace_back(to_node, from_node, iconn);
+    current->nodes.emplace_back(to_node, from_node, iconn);
 
     //Since this heap element may represent multiple (non-configurably connected) nodes,
     //keep the minimum cost to the target
