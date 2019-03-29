@@ -176,53 +176,55 @@ void FasmWriterVisitor::check_features(const t_metadata_dict *meta) const {
   output_fasm_features(meta->one("fasm_features")->as_string());
 }
 
-void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb* pb,
-        const t_pb_graph_node* pb_graph_node) {
+void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb* pb) {
+  VTR_ASSERT(pb != nullptr);
+  VTR_ASSERT(pb->pb_graph_node != nullptr);
+
+  const t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
+
   clb_prefix_ = build_clb_prefix(pb_graph_node);
 
-  if(pb_graph_node && pb) {
-    t_pb_type *pb_type = pb_graph_node->pb_type;
-    auto *mode = &pb_type->modes[pb->mode];
+  t_pb_type *pb_type = pb_graph_node->pb_type;
+  auto *mode = &pb_type->modes[pb->mode];
 
-    check_features(&pb_type->meta);
-    if(mode != nullptr) {
-      check_features(&mode->meta);
-    }
+  check_features(&pb_type->meta);
+  if(mode != nullptr) {
+    check_features(&mode->meta);
+  }
 
-    if(mode != nullptr && std::string(mode->name) == "wire") {
-        auto io_pin = is_node_used(pb_routes, pb_graph_node);
-        if(io_pin != nullptr) {
-          const auto& route = pb_routes.at(io_pin->pin_count_in_cluster);
-          const int num_inputs = *route.pb_graph_pin->parent_node->num_input_pins;
-          const auto *lut_definition = find_lut(route.pb_graph_pin->parent_node);
-          VTR_ASSERT(lut_definition->num_inputs == num_inputs);
+  if(mode != nullptr && std::string(mode->name) == "wire") {
+      auto io_pin = is_node_used(pb_routes, pb_graph_node);
+      if(io_pin != nullptr) {
+        const auto& route = pb_routes.at(io_pin->pin_count_in_cluster);
+        const int num_inputs = *route.pb_graph_pin->parent_node->num_input_pins;
+        const auto *lut_definition = find_lut(route.pb_graph_pin->parent_node);
+        VTR_ASSERT(lut_definition->num_inputs == num_inputs);
 
-          output_fasm_features(lut_definition->CreateWire(route.pb_graph_pin->pin_number));
-        }
-    }
+        output_fasm_features(lut_definition->CreateWire(route.pb_graph_pin->pin_number));
+      }
+  }
 
-    int port_index = 0;
-    for (int i = 0; i < pb_type->num_ports; i++) {
-      if (pb_type->ports[i].is_clock || pb_type->ports[i].type != IN_PORT) {
-        continue;
-      }
-      for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
-        int inode = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
-        check_interconnect(pb_routes, inode);
-      }
-      port_index += 1;
+  int port_index = 0;
+  for (int i = 0; i < pb_type->num_ports; i++) {
+    if (pb_type->ports[i].is_clock || pb_type->ports[i].type != IN_PORT) {
+      continue;
     }
-    port_index = 0;
-    for (int i = 0; i < pb_type->num_ports; i++) {
-      if (pb_type->ports[i].type != OUT_PORT) {
-        continue;
-      }
-      for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
-        int inode = pb->pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
-        check_interconnect(pb_routes, inode);
-      }
-      port_index += 1;
+    for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
+      int inode = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+      check_interconnect(pb_routes, inode);
     }
+    port_index += 1;
+  }
+  port_index = 0;
+  for (int i = 0; i < pb_type->num_ports; i++) {
+    if (pb_type->ports[i].type != OUT_PORT) {
+      continue;
+    }
+    for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
+      int inode = pb->pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
+      check_interconnect(pb_routes, inode);
+    }
+    port_index += 1;
   }
 }
 

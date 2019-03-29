@@ -1,34 +1,41 @@
 FPGA Assembly (FASM) Output Support
 ===================================
 
-VPR can emit a FASM_ file to represent
-the place and routed design via FASM metadata encoded in the VPR architecture
-definition and routing graph.  The output FASM file can then be converted into
-the target architecture via architecture specific tooling.
+After VPR has generated a place and routed design, the ``genfasm`` utility can
+emit a FASM_ file to represent design via FASM metadata encoded in the VPR
+architecture definition and routing graph.  The output FASM file can then be
+converted into the target architecture via architecture specific tooling.
 
 .. _FASM: https://github.com/SymbiFlow/fasm
-
-VPR metadata
-------------
-
-VPR allows for ``metadata`` blocks
-(see :ref:`arch_metadata`) to be attached to the architecture definition and
-routing graph.  By adding FASM specific metadata to both the architecture
-definition and the routing graph, a FASM file that represents the place and
-routed design can be generated.
 
 FASM metadata
 -------------
 
-While the metadata is ignored when packing, placing and routing, the
-``genfasm`` tool uses the metadata to emit a FASM file.  The following
-metadata "keys" are recognized by "genfasm":
+The ``genfasm`` utility uses ``metadata`` blocks (see :ref:`arch_metadata`)
+attached to the architecture definition and routing graph to emit FASM
+features.  By adding FASM specific metadata to both the architecture
+definition and the routing graph, a FASM file that represents the place and
+routed design can be generated.
+
+All metadata tags are ignored when packing, placing and routing.  After VPR has
+been completed placement, ``genfasm`` utility loads the VPR output files
+(.net, .place, .route) and then uses the FASM metadata to emit a FASM file.
+The following metadata "keys" are recognized by ``genfasm``:
 
  * "fasm_prefix"
  * "fasm_features"
  * "fasm_type" and "fasm_lut"
  * "fasm_mux"
  * "fasm_params"
+
+Invoking genfasm
+----------------
+
+``genfasm`` expects that place and route on the design is completed (e.g.
+.net, .place, .route files are present), so ensure that routing is complete
+before executing ``genfasm``.  ``genfasm`` should be invoked in the same
+subdirectory as the routing output.  The output FASM file will be written to
+``<blif root>.fasm``.
 
 FASM prefixing
 --------------
@@ -220,13 +227,13 @@ Passing parameters through to the FASM Output
 ---------------------------------------------
 
 In many cases there are parameters that need to be passed directly from the
-eblif input to the FASM file.  These can be passed into a FASM feature via the
-"fasm_params" key.  Note that care must be taken to have the "fasm_params"
-metadata be attached to pb_type that the packer uses, the pb_type with the
-blif_model= ".subckt".
+input :ref:`vpr_eblif_file` to the FASM file.  These can be passed into a FASM
+feature via the "fasm_params" key.  Note that care must be taken to have the
+"fasm_params" metadata be attached to pb_type that the packer uses, the
+pb_type with the blif_model= ".subckt".
 
 The "fasm_params" value is a newline separated list of FASM features to eblif
-parameters.   Example:
+parameters. Example:
 
 .. code-block:: xml
 
@@ -254,11 +261,3 @@ Also note that "genfasm" will not accept "x" (unknown/don't care) or "z"
 (high impedence) values in parameters.  Prior to emitting the eblif for place
 and route, ensure that all parameters that will be mapped to FASM have a
 valid "1" or "0".
-
-Invoking genfasm
-----------------
-
-``genfasm`` expects that place and route on the design is completed, so ensure
-that routing is complete before executing ``genfasm``.  ``genfasm`` should be
-invoked in the same subdirectory as the routing output.  The output FASM file
-will be written to ``<blif root>.fasm``.

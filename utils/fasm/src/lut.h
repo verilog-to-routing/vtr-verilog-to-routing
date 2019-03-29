@@ -1,7 +1,7 @@
 #ifndef LUT_H
 #define LUT_H
 
-#include "netlist_writer.h"
+#include "logic_vec.h"
 
 namespace fasm {
 
