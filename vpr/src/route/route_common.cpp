@@ -97,7 +97,7 @@ static int num_linked_f_pointer_allocated = 0;
  *                                                                          */
 
 /******************** Subroutines local to route_common.c *******************/
-static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::unordered_set<int>& main_branch_visited);
+static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& nodes, std::unordered_set<int>& main_branch_visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth=0);
 
@@ -562,7 +562,7 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 
     VTR_ASSERT_SAFE(validate_trace_nodes(route_ctx.trace[net_id].head, trace_nodes));
 
-    t_trace_branch branch = traceback_branch(hptr->index, hptr->previous, trace_nodes);
+    t_trace_branch branch = traceback_branch(hptr->index, hptr->nodes, trace_nodes);
 
     VTR_ASSERT_SAFE(validate_trace_nodes(branch.head, trace_nodes));
 
@@ -581,7 +581,7 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 
 //Traces back a new routing branch starting from the specified 'node' and working backwards to any existing routing.
 //Returns the new branch, and also updates trace_nodes for any new nodes which are included in the branches traceback.
-static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::unordered_set<int>& trace_nodes) {
+static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& nodes, std::unordered_set<int>& trace_nodes) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -604,7 +604,7 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
 
     std::vector<int> new_nodes_added_to_traceback = {node};
 
-    for (t_heap_prev prev : previous) {
+    for (t_heap_prev prev : nodes) {
         int inode = prev.from_node;
         int iedge = prev.from_edge;
 
@@ -811,8 +811,8 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
 	t_heap* hptr = alloc_heap_data();
 	hptr->index = inode;
 	hptr->cost = total_cost;
-    VTR_ASSERT(hptr->previous.empty());
-	hptr->previous.emplace_back(inode, prev_node, prev_edge);
+    VTR_ASSERT(hptr->nodes.empty());
+	hptr->nodes.emplace_back(inode, prev_node, prev_edge);
 	hptr->backward_path_cost = backward_path_cost;
 	hptr->R_upstream = R_upstream;
 	add_to_heap(hptr);
@@ -1290,7 +1290,7 @@ namespace heap_ {
 		t_heap* hptr = alloc_heap_data();
 		hptr->index = inode;
 		hptr->cost = total_cost;
-        hptr->previous.emplace_back(inode, prev_node, prev_edge);
+        hptr->nodes.emplace_back(inode, prev_node, prev_edge);
 		hptr->backward_path_cost = backward_path_cost;
 		hptr->R_upstream = R_upstream;
 		push_back(hptr);
@@ -1412,7 +1412,7 @@ alloc_heap_data() {
     temp_ptr->backward_path_cost = 0.;
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = OPEN;
-    temp_ptr->previous.clear();
+    temp_ptr->nodes.clear();
 	return (temp_ptr);
 }
 
@@ -1430,7 +1430,7 @@ void invalidate_heap_entries(int sink_node, int ipin_node) {
 
 	for (int i = 1; i < heap_tail; i++) {
 		if (heap[i]->index == sink_node) {
-            for (t_heap_prev prev : heap[i]->previous) {
+            for (t_heap_prev prev : heap[i]->nodes) {
                 if (prev.from_node == ipin_node) {
                     heap[i]->index = OPEN; /* Invalid. */
                     break;
@@ -1715,7 +1715,10 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 void free_chunk_memory_trace() {
 	if (trace_ch.chunk_ptr_head != nullptr) {
 		free_chunk_memory(&trace_ch);
+		trace_ch.chunk_ptr_head = nullptr;
+		trace_free_head = nullptr;
 	}
+
 }
 
 

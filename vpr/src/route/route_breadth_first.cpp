@@ -204,7 +204,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
                 VTR_LOG("    New best cost %g\n", new_pcost);
 #endif
 
-                for (t_heap_prev prev : current->previous) {
+                for (t_heap_prev prev : current->nodes) {
 #ifdef ROUTER_DEBUG
                     VTR_LOG("    Setting routing paths for associated node %d\n", prev.to_node);
 #endif
@@ -420,7 +420,7 @@ static void breadth_first_expand_non_configurable_recurr(const float path_cost, 
         current->cost = std::min(current->cost, new_path_cost);
 
         //Record how we reached this node
-        current->previous.emplace_back(to_node, from_node, iconn);
+        current->nodes.emplace_back(to_node, from_node, iconn);
 
         //Consider any non-configurable edges which must be expanded for correctness
         auto& device_ctx = g_vpr_ctx.device();

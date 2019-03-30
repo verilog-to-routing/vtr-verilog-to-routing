@@ -22,6 +22,7 @@ For more specific documentation about VPR see :ref:`vpr`.
    odin/index
    abc/index
    tutorials/index
+   utils/index
 
 .. toctree::
    :maxdepth: 2
