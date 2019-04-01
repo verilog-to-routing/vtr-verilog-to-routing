@@ -139,6 +139,14 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 					list_of_packing_patterns[i].is_block_optional[k] = true;
 				}
 			}
+
+            // if this is a chain pattern (extends between complex blocks), check if their
+            // are multiple equivalent chains with differnt starting and enging points
+            if (list_of_packing_patterns[i].is_chain) {
+                find_all_equivalent_chains(&list_of_packing_patterns[i], device_ctx.block_types[j].pb_graph_head);
+            }
+
+            // if pack pattern i is found to belong to block j, go to next pack pattern
 			break;
 		}
 	}
@@ -208,10 +216,18 @@ static void discover_pattern_names_in_pb_graph_node(
                                                     * sizeof(int));
 					}
 					pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
+                    // if this output edges belongs to a pack pattern. Expand forward starting from
+                    // all its output pins to check if you need to infer pattern for direct connections
+                    auto& output_edge = pb_graph_node->input_pins[i][j].output_edges[k];
+                    for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {
+                         forward_infer_pattern(output_edge->output_pins[ipin]);
+                    }
 				}
 			}
+            // if the output edge to this pin is annotated with a pack pattern
+            // trace the inputs to this pin and mark them to infer pattern
+            // if they are direct connections (num_input_edges == 1)
 			if (hasPattern == true) {
-				forward_infer_pattern(&pb_graph_node->input_pins[i][j]);
 				backward_infer_pattern(&pb_graph_node->input_pins[i][j]);
 			}
 		}
@@ -231,10 +247,18 @@ static void discover_pattern_names_in_pb_graph_node(
                                                 * sizeof(int));
 					}
 					pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
+                    // if this output edges belongs to a pack pattern. Expand forward starting from
+                    // all its output pins to check if you need to infer pattern for direct connections
+                    auto& output_edge = pb_graph_node->output_pins[i][j].output_edges[k];
+                    for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {
+                         forward_infer_pattern(output_edge->output_pins[ipin]);
+                    }
 				}
 			}
+            // if the output edge to this pin is annotated with a pack pattern
+            // trace the inputs to this pin and mark them to infer pattern
+            // if they are direct connections (num_input_edges == 1)
 			if (hasPattern == true) {
-				forward_infer_pattern(&pb_graph_node->output_pins[i][j]);
 				backward_infer_pattern(&pb_graph_node->output_pins[i][j]);
 			}
 		}
@@ -254,10 +278,18 @@ static void discover_pattern_names_in_pb_graph_node(
                                                 * sizeof(int));
 					}
 					pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
+                    // if this output edges belongs to a pack pattern. Expand forward starting from
+                    // all its output pins to check if you need to infer pattern for direct connections
+                    auto& output_edge = pb_graph_node->clock_pins[i][j].output_edges[k];
+                    for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {
+                         forward_infer_pattern(output_edge->output_pins[ipin]);
+                    }
 				}
 			}
+            // if the output edge to this pin is annotated with a pack pattern
+            // trace the inputs to this pin and mark them to infer pattern
+            // if they are direct connections (num_input_edges == 1)
 			if (hasPattern == true) {
-				forward_infer_pattern(&pb_graph_node->clock_pins[i][j]);
 				backward_infer_pattern(&pb_graph_node->clock_pins[i][j]);
 			}
 		}
