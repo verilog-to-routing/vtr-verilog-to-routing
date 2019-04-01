@@ -115,7 +115,7 @@ int yylex(void);
 %type <node> expression primary probable_expression_list expression_list module_parameter
 %type <node> list_of_module_parameters specify_block list_of_specify_statement specify_statement
 %type <node> initial_block parallel_connection list_of_blocking_assignment
-%type <node> procedural_continuous_assignment variable_asssignemt
+%type <node> procedural_continuous_assignment variable_asssignemt list_of_variable_asssignemt
 %%
 
 // 1 Source Text
@@ -417,7 +417,7 @@ non_blocking_assignment:
 
 procedural_continuous_assignment:
 	vASSIGN list_of_variable_asssignemt									{$$ = $2;}
-	| vDEASSIGN primary													{$$ = Procedural_continuous_deassign($2, yylineno);}
+//	| vDEASSIGN primary													{$$ = Procedural_continuous_deassign($2, yylineno);}
 	;
 
 list_of_variable_asssignemt:
@@ -430,21 +430,21 @@ variable_asssignemt:
 	;
 
 parallel_connection:
-	primary voPAL expression 								{$$ = NULL;}
+	primary voPAL expression 											{$$ = NULL;}
 	;
 
 case_item_list:
-	case_item_list case_items								{$$ = newList_entry($1, $2);}
-	| case_items											{$$ = newList(CASE_LIST, $1);}
+	case_item_list case_items											{$$ = newList_entry($1, $2);}
+	| case_items														{$$ = newList(CASE_LIST, $1);}
 	;
 
 case_items:
-	expression ':' statement								{$$ = newCaseItem($1, $3, yylineno);}
-	| vDEFAULT ':' statement								{$$ = newDefaultCase($3, yylineno);}
+	expression ':' statement											{$$ = newCaseItem($1, $3, yylineno);}
+	| vDEFAULT ':' statement											{$$ = newDefaultCase($3, yylineno);}
 	;
 
 seq_block:
-	vBEGIN stmt_list vEND 									{$$ = $2;}
+	vBEGIN stmt_list vEND 												{$$ = $2;}
 	;
 
 stmt_list:
@@ -462,7 +462,7 @@ delay_control:
 event_expression_list:
 	event_expression_list vOR event_expression				{$$ = newList_entry($1, $3);}
     | event_expression_list ',' event_expression	      	{$$ = newList_entry($1, $3);}
-	| event_exp ression										{$$ = newList(DELAY_CONTROL, $1);}
+	| event_expression										{$$ = newList(DELAY_CONTROL, $1);}
 	;
 
 event_expression:
