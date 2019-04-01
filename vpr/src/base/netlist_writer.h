@@ -1,6 +1,11 @@
 #ifndef NETLIST_WRITER_H
 #define NETLIST_WRITER_H
 #include <memory>
+#include <string>
+#include <sstream>
+
+#include "vtr_logic.h"
+
 #include "AnalysisDelayCalculator.h"
 
 //Writes out the post-synthesis implementation netlists in BLIF and Verilog formats,
