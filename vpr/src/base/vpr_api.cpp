@@ -735,9 +735,6 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
         VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
     }
 
-    //Create the routing resource graph
-    vpr_create_rr_graph(vpr_setup, arch, fixed_channel_width);
-
     auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Load the routing from a file

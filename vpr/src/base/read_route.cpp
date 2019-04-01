@@ -121,10 +121,6 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     /* Finished loading in the routing, now check it*/
     recompute_occupancy_from_scratch();
     bool is_feasible = feasible_routing();
-    if (is_feasible) {
-        check_route(router_opts.route_type);
-    }
-    get_serial_num();
 
     VTR_LOG("Finished loading route file\n");
 
