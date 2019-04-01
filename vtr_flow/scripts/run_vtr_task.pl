@@ -71,6 +71,7 @@ my $system_type            = "local";
 my $shared_script_params   = "";
 my $verbosity              = 0;
 my $short_task_names = 0;
+my $minw_hint_factor = 1.;
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
@@ -120,6 +121,10 @@ while ( $token = shift(@ARGV) ) {
 	}
 	elsif ( $token eq "-short_task_names" ) {
 		$short_task_names = 1;
+	}
+
+	elsif ( $token eq "-minw_hint_factor" ) {
+		$minw_hint_factor = shift(@ARGV);
 	}
 
 	elsif ( $token =~ /^-/ ) {
@@ -459,6 +464,8 @@ sub generate_single_task_actions {
 
                 #Add a hint about the minimum channel width (potentially saves run-time)
                 my $expected_min_W = ret_expected_min_W($circuit, $arch, $full_params_dirname, $golden_results_file);
+                $expected_min_W = int($expected_min_W * $minw_hint_factor);
+                $expected_min_W += ($expected_min_W % 2);
                 if($expected_min_W > 0) {
                     $command .= " --min_route_chan_width_hint $expected_min_W";
                 }
