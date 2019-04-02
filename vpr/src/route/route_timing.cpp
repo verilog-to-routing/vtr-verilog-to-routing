@@ -249,7 +249,7 @@ void reduce_budgets_if_congested(route_budgets &budgeting_inf,
         CBRR& connections_inf, float slope, int itry);
 
 static bool should_route_net(ClusterNetId net_id, const CBRR& connections_inf, bool if_force_reroute);
-static bool early_exit_heuristic(const WirelengthInfo& wirelength_info);
+static bool early_exit_heuristic(const t_router_opts& router_opts, const WirelengthInfo& wirelength_info);
 
 struct more_sinks_than {
     inline bool operator()(const ClusterNetId net_index1, const ClusterNetId net_index2) {
@@ -584,7 +584,7 @@ bool try_timing_driven_route(
         /*
          * Abort checks: Should we give-up because this routing problem is unlikely to converge to a legal routing?
          */
-        if (itry == 1 && early_exit_heuristic(wirelength_info)) {
+        if (itry == 1 && early_exit_heuristic(router_opts, wirelength_info)) {
             //Abort
             break;
         }
@@ -2111,14 +2111,14 @@ static bool should_route_net(ClusterNetId net_id, const CBRR& connections_inf, b
     return false; /* Current route has no overuse */
 }
 
-static bool early_exit_heuristic(const WirelengthInfo& wirelength_info) {
+static bool early_exit_heuristic(const t_router_opts& router_opts, const WirelengthInfo& wirelength_info) {
     /* Early exit code for cases where it is obvious that a successful route will not be found
        Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
 
-    if (wirelength_info.used_wirelength_ratio() > FIRST_ITER_WIRELENTH_LIMIT) {
+    if (wirelength_info.used_wirelength_ratio() > router_opts.init_wirelength_abort_threshold) {
         VTR_LOG("Wire length usage ratio %g exceeds limit of %g, fail routing.\n",
                 wirelength_info.used_wirelength_ratio(),
-                FIRST_ITER_WIRELENTH_LIMIT);
+                router_opts.init_wirelength_abort_threshold);
         return true;
     }
     return false;
