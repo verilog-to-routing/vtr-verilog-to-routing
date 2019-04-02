@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import re
 
@@ -69,7 +71,7 @@ def get_vtr_version_info():
                     prerelease = match.group("prerelease")
 
     except IOError:
-        print "Warning: Failed to find root CMakeLists.txt to find VTR version"
+        print("Warning: Failed to find root CMakeLists.txt to find VTR version")
         pass
 
     return VersionInfo(major, minor, patch, prerelease)
