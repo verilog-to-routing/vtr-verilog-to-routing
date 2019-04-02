@@ -51,7 +51,7 @@ def get_vtr_version_info():
 
         with open(root_cmakelists) as f:
             for line in f:
-                
+
                 match = major_regex.match(line)
                 if match:
                     major = match.group('major')
@@ -59,7 +59,7 @@ def get_vtr_version_info():
                 match = minor_regex.match(line)
                 if match:
                     minor = match.group("minor")
-                
+
                 match = patch_regex.match(line)
                 if match:
                     patch = match.group("patch")
@@ -70,11 +70,6 @@ def get_vtr_version_info():
 
     except IOError:
         print "Warning: Failed to find root CMakeLists.txt to find VTR version"
-        pass 
+        pass
 
     return VersionInfo(major, minor, patch, prerelease)
-
-
-    
-
-
