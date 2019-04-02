@@ -1368,12 +1368,11 @@ static enum e_block_pack_status try_place_atom_block_rec(
             }
 		}
 
-        if (verbosity > 4 && block_pack_status == BLK_PASSED) {
-            VTR_LOG("\t\t\tPlaced atom '%s' (%s) at %s\n",
-                        atom_ctx.nlist.block_name(blk_id).c_str(),
-                        atom_ctx.nlist.block_model(blk_id)->name,
-                        pb->hierarchical_type_name().c_str());
-        }
+        VTR_LOGV(verbosity > 4 && block_pack_status == BLK_PASSED,
+                 "\t\t\tPlaced atom '%s' (%s) at %s\n",
+                 atom_ctx.nlist.block_name(blk_id).c_str(),
+                 atom_ctx.nlist.block_model(blk_id)->name,
+                 pb->hierarchical_type_name().c_str());
 	}
 
     if (block_pack_status != BLK_PASSED) {

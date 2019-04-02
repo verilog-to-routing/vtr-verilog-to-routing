@@ -168,6 +168,7 @@ class t_rr_node;
 struct t_pack_molecule;
 struct t_pb_stats;
 struct t_pb_route;
+struct t_chain_info;
 
 typedef vtr::flat_map2<int,t_pb_route> t_pb_routes;
 
@@ -264,9 +265,13 @@ enum e_pack_pattern_molecule_type {
  */
 struct t_pack_molecule {
 	enum e_pack_pattern_molecule_type type; /* what kind of molecule is this? */
+
 	t_pack_patterns *pack_pattern; /* If this is a forced_pack molecule, pattern this molecule matches */
+
     std::vector<AtomBlockId> atom_block_ids; /* [0..num_blocks-1] IDs of atom blocks that implements this molecule,
                                                 index on pack_pattern_block->index of pack pattern */
+    std::shared_ptr<t_chain_info> chain_info; /* If this is a chained molecule, thsi data strcuture will hold the data
+                                                 shared between all the molecules in the chain */
 	bool valid; /* Whether or not this molecule is still valid */
 
 	int num_blocks; /* number of atom blocks of molecule */
@@ -275,6 +280,20 @@ struct t_pack_molecule {
 	float base_gain; /* Intrinsic "goodness" score for molecule independant of rest of netlist */
 
 	t_pack_molecule *next;
+};
+
+/**
+ * Holdes information to be shared between molecules
+ * forming a chained pattern
+ */
+struct t_chain_info {
+    // specifies if the chain is log and should be
+    // divided on multiple pb blocks
+    bool is_long_chain = false;
+    // specifies the id used to access the chain_root_pins
+    // vector in the t_pack_patterns. This will give the
+    // chain root pin used by this chain
+    int chain_id = -1;
 };
 
 /* Stats keeper for placement information during packing
