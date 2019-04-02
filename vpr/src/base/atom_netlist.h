@@ -123,6 +123,11 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
         //  model_port: The port model to look for
         AtomPortId  find_atom_port(const AtomBlockId blk_id, const t_model_ports* model_port) const;
 
+        // Returns the AtomBlockId of the atom driving the specified pin if it exists or AtomBlockId::INVALID() if not
+        // blk_id: The ID of the block who's ports will be checked
+        // model_port: the port model to look for
+        AtomBlockId find_atom_pin_driver(const AtomBlockId blk_id, const t_model_ports* model_port, const BitIndex port_bit) const;
+
     public: //Public Mutators
         /*
          * Note: all create_*() functions will silently return the appropriate ID if it has already been created

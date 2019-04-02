@@ -75,15 +75,18 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 
 static std::vector<t_pb_graph_pin *> find_end_of_path(t_pb_graph_pin* input_pin, int pattern_index);
 
-static void expand_search(t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin *>& pins_queue, int pattern_index);
+static void expand_search(const t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin *>& pins_queue, const int pattern_index);
 
-static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, t_pb_graph_node* root_block);
+static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_pb_graph_node* root_block);
 
 
 static void update_chain_root_pins(t_pack_patterns* chain_pattern,
-                                   std::vector<t_pb_graph_pin* >& chain_input_pins);
+                                   const std::vector<t_pb_graph_pin* >& chain_input_pins);
 
-static t_pb_graph_pin* get_connected_primitive_pin(t_pb_graph_pin* input_pin, int pack_pattern);
+static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* input_pin, const int pack_pattern);
+
+static void update_molecule_chain_info(const AtomBlockId blk_id, t_pack_molecule* molecule,
+                                       const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
 /*****************************************/
 /*Function Definitions					 */
@@ -147,12 +150,13 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 				}
 			}
 
-            // if this is a chain pattern (extends between complex blocks), check if their
+            // if this is a chain pattern (extends between complex blocks), check if there
             // are multiple equivalent chains with differnt starting and enging points
             if (list_of_packing_patterns[i].is_chain) {
                 find_all_equivalent_chains(&list_of_packing_patterns[i], device_ctx.block_types[j].pb_graph_head);
-                for (const auto& pin_ptr: list_of_packing_patterns[i].chain_root_pins)
+                for (const auto& pin_ptr: list_of_packing_patterns[i].chain_root_pins) {
                      VTR_LOG("%s\n", pin_ptr->to_string().c_str());
+                }
             }
 
             // if pack pattern i is found to belong to block j, go to next pack pattern
@@ -1258,23 +1262,15 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 	/* Assign driver furthest up the chain that matches the root node and is unassigned to a molecule as the root */
 	model_port = root_ipin->port->model_port;
 
-    AtomPortId port_id = atom_ctx.nlist.find_atom_port(blk_id, model_port);
-    if(!port_id) {
-        //There is no port with the chain connection on this block, it must be the furthest
-        //up the chain, so return it as root
+    // find the block id of the atom block driving the input of this block
+	AtomBlockId driver_blk_id = atom_ctx.nlist.find_atom_pin_driver(blk_id, model_port, root_ipin->pin_number);
+
+    // if there is noder driver block for this net
+    // then it is the furthest up the chain
+    if (!driver_blk_id) {
         return blk_id;
     }
-
-	AtomNetId driving_net_id = atom_ctx.nlist.port_net(port_id, root_ipin->pin_number);
-	if(!driving_net_id) {
-        //There is no net associated with the chain connection on this block, it must be the furthest
-        //up the chain, so return it as root
-		return blk_id;
-	}
-
-    auto driver_pin_id = atom_ctx.nlist.net_driver(driving_net_id);
-	AtomBlockId driver_blk_id = atom_ctx.nlist.pin_block(driver_pin_id);
-
+    // check if driver atom is already packed
     auto rng = atom_molecules.equal_range(driver_blk_id);
     bool rng_empty = (rng.first == rng.second);
 	if(!rng_empty) {
@@ -1282,7 +1278,9 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 		return blk_id;
 	}
 
+    // didn't find furthest atom up the chain, keep searching futher up the chain
 	new_root_blk_id = find_new_root_atom_for_chain(driver_blk_id, list_of_pack_pattern, atom_molecules);
+
 	if(!new_root_blk_id) {
 		return blk_id;
 	} else {
@@ -1356,7 +1354,7 @@ static std::vector<t_pb_graph_pin *> find_end_of_path(t_pb_graph_pin* input_pin,
 
 
 
-static void expand_search(t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin *>& pins_queue, int pattern_index) {
+static void expand_search(const t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin *>& pins_queue, const int pattern_index) {
 
     // If not a primitive input pin
     // ----------------------------
@@ -1439,7 +1437,7 @@ static void expand_search(t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin 
  *  In this case, the chain_root_pin array of the pack pattern is updated
  *  with all the pin that represent a starting point for this pattern.
  */
-static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, t_pb_graph_node* root_block) {
+static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_pb_graph_node* root_block) {
 
     // this vector will be updated with all root_block input
     // pins that are annotated with this chain pattern
@@ -1508,9 +1506,11 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, t_pb_grap
  *  a chain to the previous pb block. The function uses the pin pointers
  *  to find the primitive input pin connected to them and updates
  *  the chain_root_pin array with this those pointers
+ *  Side Effect: Updates the chain_root_pins array of the input chain_pattern
  */
 static void update_chain_root_pins(t_pack_patterns* chain_pattern,
-                                   std::vector<t_pb_graph_pin* >& chain_input_pins) {
+                                   const std::vector<t_pb_graph_pin* >& chain_input_pins) {
+
      std::vector<t_pb_graph_pin*> primitive_input_pins;
 
      for (const auto& pin_ptr: chain_input_pins) {
@@ -1525,7 +1525,7 @@ static void update_chain_root_pins(t_pack_patterns* chain_pattern,
  *  Find the next primitive input pin connected to the give input_pin. Following
  *  edges that are annotated with pack_pattern index
  */
-static t_pb_graph_pin* get_connected_primitive_pin(t_pb_graph_pin* input_pin, int pack_pattern) {
+static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* input_pin, const int pack_pattern) {
 
     for (int iedge = 0; iedge < input_pin->num_output_edges; iedge++) {
         const auto& output_edge = input_pin->output_edges[iedge];
