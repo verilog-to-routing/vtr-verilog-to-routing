@@ -4,6 +4,7 @@
 
 # Support Markdown
 recommonmark
+sphinx-markdown-tables
 
 #Handle references in bibtex format
 sphinxcontrib-bibtex
