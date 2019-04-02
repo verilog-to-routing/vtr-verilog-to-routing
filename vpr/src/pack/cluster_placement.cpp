@@ -382,17 +382,11 @@ void commit_primitive(t_cluster_placement_stats *cluster_placement_stats,
 		valid_mode = pb_graph_node->pb_type->parent_mode->index;
 		pb_graph_node = pb_graph_node->parent_pb_graph_node;
 		for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-			for (j = 0;
-					j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
-					j++) {
-				for (k = 0;
-						k
-								< pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
-						k++) {
+			for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+				for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
 					if (&pb_graph_node->child_pb_graph_nodes[i][j][k] != skip) {
-						update_primitive_cost_or_status(
-								&pb_graph_node->child_pb_graph_nodes[i][j][k],
-								incr_cost, (bool)(i == valid_mode));
+						update_primitive_cost_or_status(&pb_graph_node->child_pb_graph_nodes[i][j][k],
+								                        incr_cost, (bool)(i == valid_mode));
 					}
 				}
 			}
@@ -404,8 +398,7 @@ void commit_primitive(t_cluster_placement_stats *cluster_placement_stats,
 /**
  * Set mode of cluster
  */
-void set_mode_cluster_placement_stats(const t_pb_graph_node *pb_graph_node,
-		int mode) {
+void set_mode_cluster_placement_stats(const t_pb_graph_node *pb_graph_node, int mode) {
 	int i, j, k;
 	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
 		if (i != mode) {

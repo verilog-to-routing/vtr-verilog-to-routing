@@ -88,6 +88,26 @@ AtomPortId AtomNetlist::find_atom_port(const AtomBlockId blk_id, const t_model_p
     return AtomPortId::INVALID();
 }
 
+
+AtomBlockId AtomNetlist::find_atom_pin_driver(const AtomBlockId blk_id, const t_model_ports* model_port, const BitIndex port_bit) const {
+
+    // find the port id the matches the given port model
+    AtomPortId port_id = find_atom_port(blk_id, model_port);
+
+    if(port_id) {
+       // if port exists, find the driving net of the given port bit
+	   AtomNetId driving_net_id = port_net(port_id, port_bit);
+       if (driving_net_id) {
+          // if the driving net exists, find the pin driving this net
+          auto driver_pin_id = net_driver(driving_net_id);
+          // return the block id of the block associated with this pin
+          return pin_block(driver_pin_id);
+       }
+    }
+
+    return AtomBlockId::INVALID();
+}
+
 /*
  *
  * Mutators
