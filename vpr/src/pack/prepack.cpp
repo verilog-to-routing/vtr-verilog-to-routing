@@ -154,9 +154,6 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
             // are multiple equivalent chains with differnt starting and enging points
             if (list_of_packing_patterns[i].is_chain) {
                 find_all_equivalent_chains(&list_of_packing_patterns[i], device_ctx.block_types[j].pb_graph_head);
-                for (const auto& pin_ptr: list_of_packing_patterns[i].chain_root_pins) {
-                     VTR_LOG("%s\n", pin_ptr->to_string().c_str());
-                }
             }
 
             // if pack pattern i is found to belong to block j, go to next pack pattern
@@ -348,7 +345,7 @@ static t_pack_patterns *alloc_and_init_pattern_list_from_hash(const int ncount,
 	t_hash_iterator hash_iter;
 	t_hash *curr_pattern;
 
-	nlist = (t_pack_patterns*)vtr::calloc(ncount, sizeof(t_pack_patterns));
+    nlist = new t_pack_patterns[ncount];
 
 	hash_iter = start_hash_table_iterator();
 	curr_pattern = get_next_hash(nhash, &hash_iter);
@@ -378,7 +375,7 @@ void free_list_of_pack_patterns(t_pack_patterns *list_of_pack_patterns, const in
 			}
 			free(pattern_block_list);
 		}
-		free(list_of_pack_patterns);
+        delete [] list_of_pack_patterns;
 	}
 }
 
@@ -956,6 +953,10 @@ static t_pack_molecule *try_create_molecule(
 
 	if (!failed && blk_id && try_expand_molecule(molecule, atom_molecules, blk_id,
 			molecule->pack_pattern->root_block) == true) {
+        // update chain info for chain molecules
+        if (list_of_pack_patterns[pack_pattern_index].is_chain) {
+            update_molecule_chain_info(blk_id, molecule, atom_molecules);
+        }
 		/* Success! commit module */
 		for (i = 0; i < molecule->pack_pattern->num_blocks; i++) {
             auto blk_id2 = molecule->atom_block_ids[i];
@@ -1296,8 +1297,6 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 
 static std::vector<t_pb_graph_pin *> find_end_of_path(t_pb_graph_pin* input_pin, int pattern_index) {
 
-    VTR_LOG("Trying to find end of path starting at: %s\n", input_pin->to_string().c_str());
-
     // Enforce some constraints on the function
 
     // 1) the start of the path should be at the input of the root block
@@ -1322,7 +1321,6 @@ static std::vector<t_pb_graph_pin *> find_end_of_path(t_pb_graph_pin* input_pin,
        // get the first pin in the queue
        auto current_pin = pins_queue.front();
 
-       //VTR_LOG("Removed: %s\n", current_pin->to_string().c_str());
        // remove pin from queue
        pins_queue.pop();
 
@@ -1336,18 +1334,6 @@ static std::vector<t_pb_graph_pin *> find_end_of_path(t_pb_graph_pin* input_pin,
            reachable_pins.push_back(current_pin);
        }
     }
-
-    VTR_LOGV(reachable_pins.size(), "Found the following output pins:\n");
-    // some checks on the output of the search algorithm
-    for(const auto& pin_ptr: reachable_pins) {
-        VTR_LOG("\t%s\n", pin_ptr->to_string().c_str());
-        // the found pins should belong to the root block
-        VTR_ASSERT(pin_ptr->is_root_block_pin());
-        // and should be an output pin
-        VTR_ASSERT(pin_ptr->num_output_edges == 0);
-    }
-
-    VTR_LOGV(reachable_pins.size(), "\n\n");
 
     return reachable_pins;
 }
@@ -1375,7 +1361,6 @@ static void expand_search(const t_pb_graph_pin * input_pin, std::queue<t_pb_grap
         // iterate over all the pins of that edge and add them to the pins_queue
         for (int ipin = 0; ipin < pin_edge->num_output_pins; ipin++) {
              pins_queue.push(pin_edge->output_pins[ipin]);
-             //VTR_LOG("ADDED: %s\n", pins_queue.back()->to_string().c_str());
         }
 
     } // End for pin edges
@@ -1395,7 +1380,6 @@ static void expand_search(const t_pb_graph_pin * input_pin, std::queue<t_pb_grap
              for(int ipin = 0; ipin < port_pins; ipin++) {
                  // add primtive output pins to pins_queue to be explored
                  pins_queue.push(&pin_pb_graph_node->output_pins[iport][ipin]);
-                 //VTR_LOG("ADDED: %s\n", pins_queue.back()->to_string().c_str());
              }
         }
     }
@@ -1461,16 +1445,11 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
     // the chain_input_pins found before
     std::vector<std::vector<t_pb_graph_pin*>> reachable_pins;
 
-    VTR_LOG("Found chain input pins:\n");
-
     for(const auto& pin_ptr: chain_input_pins) {
-        VTR_LOG("Chain input pin: %s\n", pin_ptr->to_string().c_str());
         auto reachable_output_pins = find_end_of_path(pin_ptr, chain_pattern->index);
         std::sort(reachable_output_pins.begin(), reachable_output_pins.end());
         reachable_pins.push_back(reachable_output_pins);
     }
-
-    VTR_LOG("\n\n");
 
     // Search for intersections between reachable pins. Intersection
     // between reachable indicates that found chain_input_pins
@@ -1513,9 +1492,15 @@ static void update_chain_root_pins(t_pack_patterns* chain_pattern,
 
      std::vector<t_pb_graph_pin*> primitive_input_pins;
 
+     VTR_LOGV(chain_input_pins.size(), "\nThere are %zu starting point(s) for chain pattern \"%s\":\n",
+              chain_input_pins.size(), chain_pattern->name);
+
      for (const auto& pin_ptr: chain_input_pins) {
          primitive_input_pins.push_back(get_connected_primitive_pin(pin_ptr, chain_pattern->index));
+         VTR_LOG("\t%s\n", primitive_input_pins.back()->to_string().c_str());
      }
+
+     VTR_LOGV(chain_input_pins.size(), "\n");
 
      chain_pattern->chain_root_pins = primitive_input_pins;
 }
@@ -1544,4 +1529,54 @@ static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* input_p
     // when using this fucntion
     VTR_ASSERT(false);
     return nullptr;
+}
+
+
+/**
+ * This function updates the chain info data structure of the molecule
+ * If this is the furthest molecule up the chain, the chain_info data
+ * structure is created. Otherwise, the chain_info of the input molecule
+ * it set to point to the same chain_info data structure of the other
+ * molecules in the chain.
+ *
+ * Limitiation: This function assums that the molecules of a chain are
+ * created and fed to this function in order. Meaning the first molecule
+ * fed to the function should be the furthers molecule up the chain.
+ * The second one should should be the molecule directly after that one
+ * and so on.
+ */
+static void update_molecule_chain_info(const AtomBlockId blk_id, t_pack_molecule* molecule,
+                                       const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules) {
+    // the input molecule to this function should have a
+    // pack pattern assigned to it and the input block should be valid
+    VTR_ASSERT(molecule->pack_pattern && blk_id);
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    auto root_ipin = molecule->pack_pattern->chain_root_pins[0];
+    auto model_pin = root_ipin->port->model_port;
+    auto pin_bit   = root_ipin->pin_number;
+
+    auto driver_atom_id = atom_ctx.nlist.find_atom_pin_driver(blk_id, model_pin, pin_bit);
+
+    // if this is the first molecule to be created for this chain
+    // initialize the chain info data structure
+    if (!driver_atom_id) {
+        // allocate chain info
+        molecule->chain_info = std::make_shared<t_chain_info>();
+    // this is not the first molecule to be created for this chain
+    } else {
+        // find the molecule this driver atom is mapped to
+        auto itr = atom_molecules.find(driver_atom_id);
+        // if this atom has a driver atom, it should be already packed in a molecule
+        VTR_ASSERT(itr != atom_molecules.end());
+        // molecule driving blk_id
+        auto prev_molecule = itr->second;
+        // molecule should have chain_info associated with it
+        VTR_ASSERT(prev_molecule && prev_molecule->chain_info);
+        // this molecule is now known to blong to a long chain
+        prev_molecule->chain_info->is_long_chain = true;
+        // this new molecule should share the same chain_info
+        molecule->chain_info = prev_molecule->chain_info;
+    }
 }

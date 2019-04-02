@@ -27,15 +27,26 @@ struct t_pack_pattern_connections {
 };
 
 struct t_pack_patterns {
-	char *name; /* name of this logic model pattern */
-	int index; /* array index  for pattern*/
-	t_pack_pattern_block *root_block; /* root block used by this pattern */
-	float base_cost; /* base cost of pattern eg. If a group of logical blocks match a pattern of smaller primitives, that is better than the same group using bigger primitives */
-	int num_blocks; /* number of blocks in pattern */
-	bool *is_block_optional; /* [0..num_blocks-1] is the block_id in this pattern mandatory or optional to form a molecule */
+    char *name; /* name of this logic model pattern */
+    int index; /* array index  for pattern*/
+    t_pack_pattern_block *root_block; /* root block used by this pattern */
+    float base_cost; /* base cost of pattern eg. If a group of logical blocks match a pattern of smaller primitives, that is better than the same group using bigger primitives */
+    int num_blocks; /* number of blocks in pattern */
+    bool *is_block_optional; /* [0..num_blocks-1] is the block_id in this pattern mandatory or optional to form a molecule */
 
-	bool is_chain; /* Does this pattern chain across logic blocks */
+    bool is_chain; /* Does this pattern chain across logic blocks */
     std::vector<t_pb_graph_pin *> chain_root_pins; /* Array of pointers to logic block input pins that can drive this chain from the preceding logic block */
+
+    // constructor
+    t_pack_patterns() {
+        name = nullptr;
+        index = -1;
+        root_block = nullptr;
+        base_cost = 0;
+        num_blocks = 0;
+        is_block_optional = nullptr;
+        is_chain = false;
+    }
 };
 
 /**
