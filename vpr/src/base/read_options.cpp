@@ -1230,6 +1230,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("1.0")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument(args.router_init_wirelength_abort_threshold, "--router_init_wirelength_abort_threshold")
+            .help("The first routing iteration wirelength abort threshold."
+                  " If the first routing iteration uses more than this fraction of available wirelength routing is aborted.")
+            .default_value("0.85")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument<e_incr_reroute_delay_ripup,ParseIncrRerouteDelayRipup>(args.incr_reroute_delay_ripup, "--incremental_reroute_delay_ripup")
             .help("Controls whether incremental net routing will rip-up (and re-route) a critical connection for delay, even if the routing is legal.")
             .default_value("auto")

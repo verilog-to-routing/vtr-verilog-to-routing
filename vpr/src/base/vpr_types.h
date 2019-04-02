@@ -857,6 +857,7 @@ struct t_router_opts {
 	float astar_fac;
 	float max_criticality;
 	float criticality_exp;
+    float init_wirelength_abort_threshold;
 	bool verify_binary_search;
 	bool full_stats;
 	bool congestion_analysis;

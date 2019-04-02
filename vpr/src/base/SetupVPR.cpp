@@ -325,6 +325,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts)
 	RouterOpts->criticality_exp = Options.criticality_exp;
 	RouterOpts->max_criticality = Options.max_criticality;
 	RouterOpts->max_router_iterations = Options.max_router_iterations;
+	RouterOpts->init_wirelength_abort_threshold = Options.router_init_wirelength_abort_threshold;
 	RouterOpts->min_incremental_reroute_fanout = Options.min_incremental_reroute_fanout;
 	RouterOpts->incr_reroute_delay_ripup = Options.incr_reroute_delay_ripup;
 	RouterOpts->pres_fac_mult = Options.pres_fac_mult;
