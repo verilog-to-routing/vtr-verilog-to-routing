@@ -667,6 +667,7 @@ struct t_packer_opts {
 	bool connection_driven;
 	int pack_verbosity;
     bool enable_pin_feasibility_filter;
+    bool balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;
 	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;

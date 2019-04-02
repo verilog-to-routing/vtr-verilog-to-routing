@@ -69,6 +69,7 @@ struct t_options {
     argparse::ArgValue<bool> timing_driven_clustering;
     argparse::ArgValue<e_cluster_seed> cluster_seed_type;
     argparse::ArgValue<bool> enable_clustering_pin_feasibility_filter;
+    argparse::ArgValue<bool> balance_block_type_utilization;
     argparse::ArgValue<std::vector<std::string>> target_external_pin_util;
     argparse::ArgValue<int> pack_verbosity;
 

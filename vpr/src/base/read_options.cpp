@@ -943,6 +943,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("on")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument<bool,ParseOnOff>(args.balance_block_type_utilization, "--balance_block_type_utilization")
+            .help("If enabled, when a primitive can potentially be mapped to multiple block types the packer will "
+                  "pick the block type which (currently) has lower utilization.")
+            .default_value("on")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     pack_grp.add_argument(args.target_external_pin_util, "--target_ext_pin_util")
             .help("Sets the external pin utilization target during clustering.\n"
                   "Value Ranges: [1.0, 0.0]\n"

@@ -241,7 +241,8 @@ static void start_new_cluster(
 	ClusteredNetlist *clb_nlist,
     const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types,
     int verbosity,
-    bool enable_pin_feasibility_filter);
+    bool enable_pin_feasibility_filter,
+    bool balance_block_type_utilization);
 
 static t_pack_molecule* get_highest_gain_molecule(
 		t_pb *cur_pb,
@@ -505,7 +506,8 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 					detailed_routing_stage, &cluster_ctx.clb_nlist,
                     primitive_candidate_block_types,
                     packer_opts.pack_verbosity,
-                    packer_opts.enable_pin_feasibility_filter);
+                    packer_opts.enable_pin_feasibility_filter,
+                    packer_opts.balance_block_type_utilization);
 
             if (packer_opts.pack_verbosity > 1 && packer_opts.pack_verbosity < 3) {
                 VTR_LOG("Complex block %d: %s, type: %s ",
@@ -1855,7 +1857,8 @@ static void start_new_cluster(
 		ClusteredNetlist *clb_nlist,
         const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types,
         int verbosity,
-        bool enable_pin_feasibility_filter) {
+        bool enable_pin_feasibility_filter,
+        bool balance_block_type_utilization) {
 	/* Given a starting seed block, start_new_cluster determines the next cluster type to use
 	 It expands the FPGA if it cannot find a legal cluster for the atom block
 	 */
@@ -1872,19 +1875,21 @@ static void start_new_cluster(
     VTR_ASSERT(itr != primitive_candidate_block_types.end());
     std::vector<t_type_ptr> candidate_types = itr->second;
 
-    //We sort the candidate types in ascending order by their current utilization.
-    //This means that the packer will prefer to use types with lower utilization.
-    //This is a naive approach to try balancing utilization when multiple types can
-    //support the same primitive(s).
-    std::sort(candidate_types.begin(), candidate_types.end(),
-        [&](t_type_ptr lhs, t_type_ptr rhs) {
-            float lhs_util = float(num_used_type_instances[lhs]) / device_ctx.grid.num_instances(lhs);
-            float rhs_util = float(num_used_type_instances[rhs]) / device_ctx.grid.num_instances(rhs);
+    if (balance_block_type_utilization) {
+        //We sort the candidate types in ascending order by their current utilization.
+        //This means that the packer will prefer to use types with lower utilization.
+        //This is a naive approach to try balancing utilization when multiple types can
+        //support the same primitive(s).
+        std::sort(candidate_types.begin(), candidate_types.end(),
+            [&](t_type_ptr lhs, t_type_ptr rhs) {
+                float lhs_util = float(num_used_type_instances[lhs]) / device_ctx.grid.num_instances(lhs);
+                float rhs_util = float(num_used_type_instances[rhs]) / device_ctx.grid.num_instances(rhs);
 
-            //Lower util first
-            return lhs_util < rhs_util;
-        }
-    );
+                //Lower util first
+                return lhs_util < rhs_util;
+            }
+        );
+    }
 
 
     if (verbosity > 2) {
