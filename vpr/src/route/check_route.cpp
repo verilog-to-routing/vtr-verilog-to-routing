@@ -14,6 +14,8 @@ using namespace std;
 #include "rr_graph.h"
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
+#include "route_tree_type.h"
+#include "route_tree_timing.h"
 
 struct t_node_edge {
     t_node_edge(int fnode, int tnode) {
@@ -50,6 +52,11 @@ static void check_locally_used_clb_opins(const t_clb_opins_used&  clb_opins_used
 static t_non_configurable_rr_sets identify_non_configurable_rr_sets();
 static void expand_non_configurable(int inode, std::set<t_node_edge>& edge_set);
 static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets);
+
+
+void check_net_for_stubs(ClusterNetId net);
+std::vector<t_rt_node*> find_route_tree_stubs(t_rt_node* rt_root);
+bool find_route_tree_stubs_recurr(t_rt_node* rt_root, std::vector<t_rt_node*>& stubs);
 
 /************************ Subroutine definitions ****************************/
 
@@ -179,6 +186,8 @@ void check_route(enum e_route_type route_type) {
 		}
 
         check_non_configurable_edges(net_id, non_configurable_rr_sets);
+
+        check_net_for_stubs(net_id);
 
 		reset_flags(net_id, connected_to_route);
 
@@ -879,4 +888,78 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
     }
 
     return true;
+}
+
+//Cheks for stubs in a net's routing.
+//
+//Stubs (routing branches which don't connect to SINKs) serve no purpose, and only chew up wiring unecessarily.
+//The only exception are stubs required by non-configurable switches (e.g. shorts).
+//
+//We treat any configurable stubs as an error.
+void check_net_for_stubs(ClusterNetId net) {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    t_rt_node* rt_root = traceback_to_route_tree(net);
+
+    auto stubs = find_route_tree_stubs(rt_root);
+
+    if (!stubs.empty()) {
+        auto& cluster_ctx = g_vpr_ctx.clustering();
+        std::string msg = vtr::string_fmt("Route tree for net '%s' (#%zu) contains stub branches rooted at:\n",
+                                          cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
+        for (t_rt_node* stub_root : stubs) {
+            msg += vtr::string_fmt("    %s\n", describe_rr_node(stub_root->inode).c_str());
+        }
+
+        VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
+    }
+
+    free_route_tree(rt_root);
+}
+
+//Returns the set of stub roots for a given route tree
+std::vector<t_rt_node*> find_route_tree_stubs(t_rt_node* rt_root) {
+    std::vector<t_rt_node*> stubs;
+    find_route_tree_stubs_recurr(rt_root, stubs);
+    return stubs;
+}
+
+//Returns true if rt_root is a configurable stub.
+//If any of rt_root's children are stubs they are added to 'stubs' since they are stub roots
+//
+//A stub is defined as a branch of the route tree which does not connect to a SINK, but has
+//configurable edges (and hence should have been trimmed).
+bool find_route_tree_stubs_recurr(t_rt_node* rt_root, std::vector<t_rt_node*>& stubs) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    if (rt_root->u.child_list == nullptr) {
+        //If a leaf of the route tree is not a SINK, then it is a stub
+        if (device_ctx.rr_nodes[rt_root->inode].type() != SINK) {
+            return true; //It is the current root of this stub
+        } else {
+            return false;
+        }
+    } else {
+        //If any of the children are not stubs, neither is the current node
+        bool is_stub = true;
+        std::vector<t_rt_node*> child_stubs;
+        for (t_linked_rt_edge* edge = rt_root->u.child_list; edge != nullptr; edge = edge->next) {
+            bool child_is_stub = find_route_tree_stubs_recurr(edge->child, stubs);
+            bool driver_switch_configurable = device_ctx.rr_switch_inf[edge->iswitch].configurable();
+
+            if (child_is_stub && driver_switch_configurable) {
+                child_stubs.push_back(edge->child);
+            } else {
+                is_stub = false;
+            }
+        }
+
+        if (is_stub) {
+            return true; //All children were stubs, so is the current node
+        } else {
+            //This node is not a stub, so add any child stubs as stub roots
+            stubs.insert(stubs.end(), child_stubs.begin(), child_stubs.end());
+            return false;
+        }
+    }
 }
