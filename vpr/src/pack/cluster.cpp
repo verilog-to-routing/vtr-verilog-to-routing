@@ -1155,7 +1155,8 @@ static enum e_block_pack_status try_pack_molecule(
 				failed_location = i + 1;
 				if (molecule->atom_block_ids[i]) {
 					if(molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain && i == molecule->pack_pattern->root_block->block_id) {
-						chain_root_pin = molecule->pack_pattern->chain_root_pin;
+                        VTR_ASSERT(molecule->pack_pattern->chain_root_pins.size());
+						chain_root_pin = molecule->pack_pattern->chain_root_pins[0];
 						is_root_of_chain = true;
 					} else {
 						chain_root_pin = nullptr;

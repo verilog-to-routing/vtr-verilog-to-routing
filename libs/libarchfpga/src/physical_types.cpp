@@ -149,7 +149,6 @@ std::vector<int> t_type_descriptor::get_clock_pins_indices () const {
 /**
  *  Returns true if this pin belongs to a primtive
  */
-
 bool t_pb_graph_pin::is_primitive_pin() const {
     return this->parent_node->pb_type->num_modes == 0;
 }
@@ -159,13 +158,17 @@ bool t_pb_graph_pin::is_primitive_pin() const {
  *  Returns true if this pin belongs to a root pb_block
  *  which is a pb_block that has no parent block
  */
-
 bool t_pb_graph_pin::is_root_block_pin() const {
     return this->parent_node->pb_type->parent_mode == nullptr;
 }
 
 
-std::string t_pb_graph_pin::pin_to_string() const {
+/**
+ *  This function returns a string that contains the name
+ *  of the pin till the root block in the following format:
+ *  clb[0]/lab[0]/fle[3]/ble6[0]/lut6[0].in[0]
+ */
+std::string t_pb_graph_pin::to_string() const {
 
     std::string parent_name  = this->parent_node->pb_type->name;
     std::string parent_index = std::to_string(this->parent_node->placement_index);
@@ -175,7 +178,8 @@ std::string t_pb_graph_pin::pin_to_string() const {
     std::string pin_string = parent_name + "[" + parent_index + "]";
     pin_string     += "." + port_name + "[" + pin_index + "]";
 
-    for (auto pb_node = this->parent_node->parent_pb_graph_node; pb_node != nullptr; pb_node = pb_node->parent_pb_graph_node) {
+    auto parent_parent_node = this->parent_node->parent_pb_graph_node;
+    for (auto pb_node = parent_parent_node; pb_node != nullptr; pb_node = pb_node->parent_pb_graph_node) {
         std::string parent = pb_node->pb_type->name;
         parent += "[" + std::to_string(pb_node->placement_index) + "]";
         pin_string = parent + "/" + pin_string;
@@ -192,7 +196,6 @@ std::string t_pb_graph_pin::pin_to_string() const {
  * Returns true if this edge is annotated with the packing
  * pattern having the index pattern_index
  */
-
 bool t_pb_graph_edge::annotated_with_pattern(int pattern_index) const {
 
     for(int ipattern = 0; ipattern < this->num_pack_patterns; ipattern++) {
@@ -201,5 +204,32 @@ bool t_pb_graph_edge::annotated_with_pattern(int pattern_index) const {
         }
     }
 
+    return false;
+}
+
+
+/**
+ * Returns true is this edge is annotated with pattern_index
+ * or its pattern is infered and a connected output edge is annotated
+ * with pattern_index
+ */
+bool t_pb_graph_edge::belongs_to_pattern(int pattern_index) const {
+
+    // return true if this edge is annotated with this pattern
+    if (this->annotated_with_pattern(pattern_index)) {
+        return true;
+    // if not annoted check if its pattern should be infered
+    } else if (this->infer_pattern) {
+           // if pattern should be infer try to infer it from all connected output edges
+           for (int ipin = 0; ipin < this->num_output_pins; ipin++) {
+               for(int iedge = 0; iedge < this->output_pins[ipin]->num_output_edges; iedge++) {
+                   if (this->output_pins[ipin]->output_edges[iedge]->belongs_to_pattern(pattern_index)) {
+                       return true;
+                   }
+               }
+           }
+    }
+
+    // return false otherwise
     return false;
 }

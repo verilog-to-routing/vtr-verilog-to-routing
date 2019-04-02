@@ -77,6 +77,14 @@ static std::vector<t_pb_graph_pin *> find_end_of_path(t_pb_graph_pin* input_pin,
 
 static void expand_search(t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin *>& pins_queue, int pattern_index);
 
+static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, t_pb_graph_node* root_block);
+
+
+static void update_chain_root_pins(t_pack_patterns* chain_pattern,
+                                   std::vector<t_pb_graph_pin* >& chain_input_pins);
+
+static t_pb_graph_pin* get_connected_primitive_pin(t_pb_graph_pin* input_pin, int pack_pattern);
+
 /*****************************************/
 /*Function Definitions					 */
 /*****************************************/
@@ -112,6 +120,7 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 	/* load packing patterns by traversing the edges to find edges belonging to pattern */
 	for (i = 0; i < ncount; i++) {
 		for (j = 0; j < device_ctx.num_block_types; j++) {
+            // find an edge that belongs to this pattern
 			expansion_edge = find_expansion_edge_of_pattern(i, device_ctx.block_types[j].pb_graph_head);
 			if (expansion_edge == nullptr) {
 				continue;
@@ -119,13 +128,11 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 
 			L_num_blocks = 0;
 			list_of_packing_patterns[i].base_cost = 0;
+            // use the found expansion edge to build the pack pattern
 			backward_expand_pack_pattern_from_edge(expansion_edge,
 					list_of_packing_patterns, i, nullptr, nullptr, &L_num_blocks);
 			list_of_packing_patterns[i].num_blocks = L_num_blocks;
 
-            if (list_of_packing_patterns[i].is_chain) {
-                auto output_nodes = find_end_of_path(expansion_edge->input_pins[0], i);
-            }
 
 			/* Default settings: A section of a netlist must match all blocks in a pack
              * pattern before it can be made a molecule except for carry-chains.
@@ -144,6 +151,8 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
             // are multiple equivalent chains with differnt starting and enging points
             if (list_of_packing_patterns[i].is_chain) {
                 find_all_equivalent_chains(&list_of_packing_patterns[i], device_ctx.block_types[j].pb_graph_head);
+                for (const auto& pin_ptr: list_of_packing_patterns[i].chain_root_pins)
+                     VTR_LOG("%s\n", pin_ptr->to_string().c_str());
             }
 
             // if pack pattern i is found to belong to block j, go to next pack pattern
@@ -439,19 +448,19 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 }
 
 /**
- *  This function expands forward from the given expansion_edge. If a primtive is found that 
+ *  This function expands forward from the given expansion_edge. If a primtive is found that
  *  belongs to the pack pattern we are searching for, create a pack pattern block of using
- *  this primtive to be added later to the pack pattern when creating the pack pattern 
+ *  this primtive to be added later to the pack pattern when creating the pack pattern
  *  connections in the backward_expand_pack_pattern_from_edge function.
  *
- *  expansion_edge: starting edge to expand forward from 
+ *  expansion_edge: starting edge to expand forward from
  *  list_of_packing_patterns: list of packing patterns in the architecture
  *  curr_pattern_index: current packing pattern that we buildng
  *  L_num_blocks: number of primitives found to belong to this pattern so far
  *  make_root_of_chain: flag indicating that the given expansion_edge is connected
  *                      to a primitive that is the root of this packing pattern
  *
- *  Convention: Pack pattern block connections are made on backward expansion only (to make 
+ *  Convention: Pack pattern block connections are made on backward expansion only (to make
  *              future multi-fanout support easier) so this function will not update connections
  */
 static void forward_expand_pack_pattern_from_edge(
@@ -465,7 +474,7 @@ static void forward_expand_pack_pattern_from_edge(
 	t_pb_graph_node *destination_pb_graph_node = nullptr;
 
 	found = expansion_edge->infer_pattern;
-    // if the pack pattern shouldn't be infered check if the expansion 
+    // if the pack pattern shouldn't be infered check if the expansion
     // edge is annotated with the current pack pattern we are expanding
 	for (i = 0;	!found && i < expansion_edge->num_pack_patterns; i++) {
 		if (expansion_edge->pack_pattern_indices[i] == curr_pattern_index) {
@@ -489,12 +498,12 @@ static void forward_expand_pack_pattern_from_edge(
 			/* This is the destination node */
 			found = true;
 
-            // the temp_scratch_pad points to the last primitive from this pb_graph_node that was added to a packing pattern. 
+            // the temp_scratch_pad points to the last primitive from this pb_graph_node that was added to a packing pattern.
             const auto& destination_pb_temp = (t_pack_pattern_block*) destination_pb_graph_node->temp_scratch_pad;
             // if this pb_graph_node (primitive) is not added to the packing pattern already, add it and expand all its edges
 			if (destination_pb_temp == nullptr || destination_pb_temp->pattern_index != curr_pattern_index) {
                 // a primitive that belongs to this pack pattern is found: 1) create a new pattern block,
-                // 2) assign an id to this pattern block, 3) increment the number of found blocks belonging to this 
+                // 2) assign an id to this pattern block, 3) increment the number of found blocks belonging to this
                 // pattern and 4) expand all its edges to find the other primitives that belong to this pattern
 				destination_block = (t_pack_pattern_block*)vtr::calloc(1, sizeof(t_pack_pattern_block));
 				list_of_packing_patterns[curr_pattern_index].base_cost += compute_primitive_base_cost(destination_pb_graph_node);
@@ -504,7 +513,7 @@ static void forward_expand_pack_pattern_from_edge(
 				destination_block->pattern_index = curr_pattern_index;
 				destination_block->pb_type = destination_pb_graph_node->pb_type;
 
-                // explore the inputs to this primitive 
+                // explore the inputs to this primitive
 				for (iport = 0; iport < destination_pb_graph_node->num_input_ports; iport++) {
 					for (ipin = 0; ipin < destination_pb_graph_node->num_input_pins[iport]; ipin++) {
 						for (iedge = 0; iedge < destination_pb_graph_node->input_pins[iport][ipin].num_input_edges; iedge++) {
@@ -549,7 +558,7 @@ static void forward_expand_pack_pattern_from_edge(
 			if (((t_pack_pattern_block*) destination_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index) {
                 // if this pb_graph_node is known to be the root of the chain, update the root block and root pin
 				if(make_root_of_chain == true) {
-					list_of_packing_patterns[curr_pattern_index].chain_root_pin = expansion_edge->output_pins[i];
+					list_of_packing_patterns[curr_pattern_index].chain_root_pins.push_back(expansion_edge->output_pins[i]);
 					list_of_packing_patterns[curr_pattern_index].root_block = destination_block;
 				}
 			}
@@ -582,8 +591,8 @@ static void forward_expand_pack_pattern_from_edge(
 									expansion_edge->output_pins[i]->output_edges[j],
 									list_of_packing_patterns,
 									curr_pattern_index, L_num_blocks, make_root_of_chain);
-						} 
-					}  // End for pack paterns of output edge 
+						}
+					}  // End for pack paterns of output edge
 				}
 			} // End for number of output edges
 		}
@@ -610,7 +619,7 @@ static void backward_expand_pack_pattern_from_edge(
 	t_pack_pattern_connections *pack_pattern_connection = nullptr;
 
 	found = expansion_edge->infer_pattern;
-    // if the pack pattern shouldn't be infered check if the expansion 
+    // if the pack pattern shouldn't be infered check if the expansion
     // edge is annotated with the current pack pattern we are expanding
 	for (i = 0;	!found && i < expansion_edge->num_pack_patterns; i++) {
 		if (expansion_edge->pack_pattern_indices[i] == curr_pattern_index) {
@@ -723,8 +732,8 @@ static void backward_expand_pack_pattern_from_edge(
 			if(expansion_edge->input_pins[i]->num_input_edges == 0) {
                 // check if this input pin of the expansion edge belongs to a root block (i.e doesn't have a parent block)
 				if(expansion_edge->input_pins[i]->parent_node->pb_type->parent_mode == nullptr) {
-					// This pack pattern extends to CLB (root pb block) input pin, 
-                    // thus it extends across multiple logic blocks, treat as a chain 
+					// This pack pattern extends to CLB (root pb block) input pin,
+                    // thus it extends across multiple logic blocks, treat as a chain
 					list_of_packing_patterns[curr_pattern_index].is_chain = true;
                     // since this input pin has not driving nets, expand in the forward direction instead
 					forward_expand_pack_pattern_from_edge(
@@ -1238,7 +1247,8 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
     auto& atom_ctx = g_vpr_ctx.atom();
 
 	VTR_ASSERT(list_of_pack_pattern->is_chain == true);
-	root_ipin = list_of_pack_pattern->chain_root_pin;
+    VTR_ASSERT(list_of_pack_pattern->chain_root_pins.size());
+	root_ipin = list_of_pack_pattern->chain_root_pins[0];
 	root_pb_graph_node = root_ipin->parent_node;
 
 	if(primitive_type_feasible(blk_id, root_pb_graph_node->pb_type) == false) {
@@ -1286,9 +1296,9 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
  * pin and have the same packing pattern
  */
 
-std::vector<t_pb_graph_pin *> find_end_of_path(t_pb_graph_pin* input_pin, int pattern_index) {
+static std::vector<t_pb_graph_pin *> find_end_of_path(t_pb_graph_pin* input_pin, int pattern_index) {
 
-    VTR_LOG("Trying to find end of path starting at: %s\n", input_pin->pin_to_string().c_str());
+    VTR_LOG("Trying to find end of path starting at: %s\n", input_pin->to_string().c_str());
 
     // Enforce some constraints on the function
 
@@ -1314,6 +1324,7 @@ std::vector<t_pb_graph_pin *> find_end_of_path(t_pb_graph_pin* input_pin, int pa
        // get the first pin in the queue
        auto current_pin = pins_queue.front();
 
+       //VTR_LOG("Removed: %s\n", current_pin->to_string().c_str());
        // remove pin from queue
        pins_queue.pop();
 
@@ -1328,24 +1339,24 @@ std::vector<t_pb_graph_pin *> find_end_of_path(t_pb_graph_pin* input_pin, int pa
        }
     }
 
-    VTR_LOG("Found the following output pins:\n");
+    VTR_LOGV(reachable_pins.size(), "Found the following output pins:\n");
     // some checks on the output of the search algorithm
     for(const auto& pin_ptr: reachable_pins) {
-        VTR_LOG("%s\n", pin_ptr->pin_to_string().c_str());
+        VTR_LOG("\t%s\n", pin_ptr->to_string().c_str());
         // the found pins should belong to the root block
         VTR_ASSERT(pin_ptr->is_root_block_pin());
         // and should be an output pin
         VTR_ASSERT(pin_ptr->num_output_edges == 0);
     }
 
-    VTR_LOG("\n\n");
+    VTR_LOGV(reachable_pins.size(), "\n\n");
 
     return reachable_pins;
 }
 
 
 
-void expand_search(t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin *>& pins_queue, int pattern_index) {
+static void expand_search(t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin *>& pins_queue, int pattern_index) {
 
     // If not a primitive input pin
     // ----------------------------
@@ -1366,6 +1377,7 @@ void expand_search(t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin *>& pin
         // iterate over all the pins of that edge and add them to the pins_queue
         for (int ipin = 0; ipin < pin_edge->num_output_pins; ipin++) {
              pins_queue.push(pin_edge->output_pins[ipin]);
+             //VTR_LOG("ADDED: %s\n", pins_queue.back()->to_string().c_str());
         }
 
     } // End for pin edges
@@ -1385,6 +1397,7 @@ void expand_search(t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin *>& pin
              for(int ipin = 0; ipin < port_pins; ipin++) {
                  // add primtive output pins to pins_queue to be explored
                  pins_queue.push(&pin_pb_graph_node->output_pins[iport][ipin]);
+                 //VTR_LOG("ADDED: %s\n", pins_queue.back()->to_string().c_str());
              }
         }
     }
@@ -1393,4 +1406,142 @@ void expand_search(t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin *>& pin
     // ----------------------------------
 
     // No expansion will happen in this case
+}
+
+
+/**
+ *  This function takes a chain pack pattern and a root pb_block
+ *  containing this pattern. Then searches for all the input pins of this
+ *  pb_block that are annoteted with this pattern. The function then
+ *  identifies whether those inputs represent different starting point for
+ *  this pattern or are all required for building this pattern.
+ *
+ *  If ths inputs represent different starting point for this pattern, it
+ *  means that in this pb_block there exist multiple chains that are exactly
+ *  the same. For example an architecture that has two separate adder chains
+ *  behaving exactly the same but are totaly separate from each other.
+ *
+ *                        cin[0] cin[1]
+ *                       ---|------|---
+ *                       | ---    --- |
+ *                       | | |    | |<|---- Full Adder
+ *                       | ---    --- |
+ *   Pb_block ---------> |  |      |<-|---- Second Adder chain
+ *                       |  .      .  |
+ *                       |  .      .  |
+ *                       |  |<-----|--|---- First Adder chain
+ *                       | ---    --- |
+ *                       | | |    | | |
+ *                       | ---    --- |
+ *                       ---|------|---
+ *                       cout[0] cout[1]
+ *
+ *  In this case, the chain_root_pin array of the pack pattern is updated
+ *  with all the pin that represent a starting point for this pattern.
+ */
+static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, t_pb_graph_node* root_block) {
+
+    // this vector will be updated with all root_block input
+    // pins that are annotated with this chain pattern
+    std::vector<t_pb_graph_pin *> chain_input_pins;
+
+    // iterate over all the input pins of the root_block and populate
+    // the chain_input_pins vector
+    for (int iports = 0; iports < root_block->num_input_ports; iports++) {
+        for (int ipins = 0; ipins < root_block->num_input_pins[iports]; ipins++) {
+            auto& input_pin = root_block->input_pins[iports][ipins];
+            for (int iedge = 0; iedge < input_pin.num_output_edges; iedge++) {
+                 if (input_pin.output_edges[iedge]->belongs_to_pattern(chain_pattern->index)) {
+                     chain_input_pins.push_back(&input_pin);
+                 }
+            }
+        }
+    }
+
+
+    // find the root block output pins reachable when starting from
+    // the chain_input_pins found before
+    std::vector<std::vector<t_pb_graph_pin*>> reachable_pins;
+
+    VTR_LOG("Found chain input pins:\n");
+
+    for(const auto& pin_ptr: chain_input_pins) {
+        VTR_LOG("Chain input pin: %s\n", pin_ptr->to_string().c_str());
+        auto reachable_output_pins = find_end_of_path(pin_ptr, chain_pattern->index);
+        std::sort(reachable_output_pins.begin(), reachable_output_pins.end());
+        reachable_pins.push_back(reachable_output_pins);
+    }
+
+    VTR_LOG("\n\n");
+
+    // Search for intersections between reachable pins. Intersection
+    // between reachable indicates that found chain_input_pins
+    // represent a single chain pattern and not multiple similar
+    // chain patterns with multiple starting locations.
+    std::vector<t_pb_graph_pin*> intersection;
+    for (size_t i = 0; i < reachable_pins.size() - 1; i++) {
+        for (size_t j = 1; j < reachable_pins.size(); j++) {
+             std::set_intersection(reachable_pins[i].begin(), reachable_pins[i].end(),
+                                   reachable_pins[j].begin(), reachable_pins[j].end(),
+                                   std::back_inserter(intersection));
+            if (intersection.size()) break;
+        }
+        if (intersection.size()) break;
+    }
+
+    // if there are no intersections between the reachable pins,
+    // this each input pin represents a separate chain of type
+    // chain_pattern. Else, they are all representing the same
+    // chain.
+    if (intersection.empty()) {
+        // update the chain_root_pin array of the chain_pattern
+        // with all the possible starting points of the chain.
+        update_chain_root_pins(chain_pattern, chain_input_pins);
+    }
+
+}
+
+
+/**
+ *  This function takes a chain pack pattern and a vector of pin
+ *  pinters that represent the root pb block input pins that can connect
+ *  a chain to the previous pb block. The function uses the pin pointers
+ *  to find the primitive input pin connected to them and updates
+ *  the chain_root_pin array with this those pointers
+ */
+static void update_chain_root_pins(t_pack_patterns* chain_pattern,
+                                   std::vector<t_pb_graph_pin* >& chain_input_pins) {
+     std::vector<t_pb_graph_pin*> primitive_input_pins;
+
+     for (const auto& pin_ptr: chain_input_pins) {
+         primitive_input_pins.push_back(get_connected_primitive_pin(pin_ptr, chain_pattern->index));
+     }
+
+     chain_pattern->chain_root_pins = primitive_input_pins;
+}
+
+
+/**
+ *  Find the next primitive input pin connected to the give input_pin. Following
+ *  edges that are annotated with pack_pattern index
+ */
+static t_pb_graph_pin* get_connected_primitive_pin(t_pb_graph_pin* input_pin, int pack_pattern) {
+
+    for (int iedge = 0; iedge < input_pin->num_output_edges; iedge++) {
+        const auto& output_edge = input_pin->output_edges[iedge];
+        // if edge is annotated with pack pattern or its pack pattern could be infered
+        if (output_edge->annotated_with_pattern(pack_pattern) || output_edge->infer_pattern) {
+            for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {
+                if (output_edge->output_pins[ipin]->is_primitive_pin()) {
+                    return output_edge->output_pins[ipin];
+                }
+                return get_connected_primitive_pin(output_edge->output_pins[ipin], pack_pattern);
+            }
+        }
+    }
+
+    // primitive input pin should alwasy be found
+    // when using this fucntion
+    VTR_ASSERT(false);
+    return nullptr;
 }
