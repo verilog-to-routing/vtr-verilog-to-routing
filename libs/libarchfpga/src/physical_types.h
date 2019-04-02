@@ -995,7 +995,7 @@ public:
 public:
     bool is_primitive_pin() const;
     bool is_root_block_pin() const;
-    std::string pin_to_string() const;
+    std::string to_string() const;
 
 };
 
@@ -1035,7 +1035,12 @@ public:
 
 // class member functions
 public:
+    // returns true is this edge is annotated with pattern_index
     bool annotated_with_pattern(int pattern_index) const;
+    // returns true is this edge is annotated with pattern_index
+    // or its pattern is infered and a connected output edge is
+    // annotated with pattern_index
+    bool belongs_to_pattern(int pattern_index) const;
 
 };
 
