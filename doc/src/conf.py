@@ -56,6 +56,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx.ext.graphviz',
+    'sphinx_markdown_tables',
     'sdcdomain',
     'archdomain',
     'rrgraphdomain',
