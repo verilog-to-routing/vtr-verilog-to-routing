@@ -287,7 +287,7 @@ static int try_place_macro(int itype, int ipos, int imacro);
 static void initial_placement_pl_macros(int macros_max_num_tries, int* free_locations);
 
 static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pad_loc_type);
-static void initial_placement_location(const int* free_locations, ClusterBlockId blk_id, int& pipos, t_pl_loc& to);
+static void initial_placement_location(const int* free_locations, int itype, int& pipos, t_pl_loc& to);
 
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
                               const char* pad_loc_file);
@@ -375,7 +375,7 @@ static void comp_td_costs(const PlaceDelayModel& delay_model, double* timing_cos
 
 static e_swap_result assess_swap(double delta_c, double t);
 
-static bool find_to(t_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& to);
+static bool find_to(t_type_ptr to_type, t_type_ptr from_type, float rlim, const t_pl_loc from, t_pl_loc& to);
 
 static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new);
 
@@ -431,6 +431,7 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
 
 static void log_move_abort(std::string reason);
 static void report_aborted_moves();
+std::vector<int> get_available_tiles(t_type_ptr type);
 static int grid_to_compressed(const std::vector<int>& coords, int point);
 
 static void print_place_status_header();
@@ -1657,18 +1658,44 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
     // * on chip, and
     // * match the correct block type
     //
-    //Note that we need to explicitly check that the types match, since the device floorplan is not
+    //Note that we need to explicitly check that the types match or are equivalent, since the device floorplan is not
     //(neccessarily) translationally invariant for an arbitrary macro
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
     if (to.x < 0 || to.x >= int(device_ctx.grid.width())
         || to.y < 0 || to.y >= int(device_ctx.grid.height())
-        || to.z < 0 || to.z >= device_ctx.grid[to.x][to.y].type->capacity
-        || (device_ctx.grid[to.x][to.y].type != cluster_ctx.clb_nlist.block_type(blk))) {
+        || to.z < 0 || to.z >= device_ctx.grid[to.x][to.y].type->capacity) {
         return false;
     }
+
+    // Check if types are allowed to be swapped
+    auto blk_type_from = cluster_ctx.clb_nlist.block_type(blk);
+    auto blk_type_to = device_ctx.grid[to.x][to.y].type;
+
+    // First check is to see if `from` type can be placed in `to` type
+    if (!blk_type_from->is_available_tile_index(blk_type_to->index)) {
+        return false;
+    }
+
+    t_pl_loc from = place_ctx.block_locs[blk].loc;
+    ClusterBlockId blk_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+
+    // In case `blk_to` is empty we can skip the second check
+    if (blk_to == EMPTY_BLOCK_ID) {
+        return true;
+    }
+
+    blk_type_from = device_ctx.grid[from.x][from.y].type;
+    blk_type_to = cluster_ctx.clb_nlist.block_type(blk_to);
+
+    // Second check is to see if `to` type can be placed in `from` type
+    if (!blk_type_to->is_available_tile_index(blk_type_from->index)) {
+        return false;
+    }
+
     return true;
 }
 
@@ -1728,7 +1755,25 @@ static e_swap_result try_swap(float t,
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;
-    VTR_ASSERT(cluster_from_type == grid_from_type);
+
+    VTR_ASSERT(cluster_from_type->is_available_tile_index(grid_from_type->index));
+
+    t_type_ptr to_block_type = cluster_ctx.clb_nlist.block_type(b_from);
+
+    // Find random equivalent type (could be of the same type as the `from` one)
+    if (to_block_type->num_equivalent_tiles > 0) {
+        int irand_block_type = std::rand() % (to_block_type->num_equivalent_tiles + 1);
+
+        // If random index is 0 do not use an equivalent tile.
+        if (irand_block_type > 0) {
+            auto result = to_block_type->equivalent_tiles.find(irand_block_type - 1);
+            VTR_ASSERT(result != to_block_type->equivalent_tiles.end());
+
+            to_block_type = result->second;
+        }
+    }
+
+    VTR_ASSERT(cluster_from_type->is_available_tile_index(to_block_type->index));
 
     //Allow some fraction of moves to not be restricted by rlim,
     //in the hopes of better escaping local minima
@@ -1737,7 +1782,7 @@ static e_swap_result try_swap(float t,
     }
 
     t_pl_loc to;
-    if (!find_to(cluster_ctx.clb_nlist.block_type(b_from), rlim, from, to))
+    if (!find_to(to_block_type, grid_from_type, rlim, from, to))
         return REJECTED;
 
 #if 0
@@ -1821,8 +1866,8 @@ static e_swap_result try_swap(float t,
 
         //VTR_ASSERT(check_macro_placement_consistency() == 0);
 #if 0
-        //Check that each accepted swap yields a valid placement
-        check_place(*costs, delay_model, place_algorithm);
+		//Check that each accepted swap yields a valid placement
+		check_place(costs, *place_delay_model, place_algorithm);
 #endif
 
         return (keep_switch);
@@ -1995,7 +2040,7 @@ static void update_td_delta_costs(const PlaceDelayModel& delay_model, const Clus
     }
 }
 
-static bool find_to(t_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& to) {
+static bool find_to(t_type_ptr to_type, t_type_ptr from_type, float rlim, const t_pl_loc from, t_pl_loc& to) {
     //Finds a legal swap to location for the given type, starting from 'x_from' and 'y_from'
     //
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
@@ -2005,29 +2050,39 @@ static bool find_to(t_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& 
     //
     //This ensures that such blocks don't get locked down too early during placement (as would be the
     //case with a physical distance rlim)
-    auto& grid = g_vpr_ctx.device().grid;
-
-    auto grid_type = grid[from.x][from.y].type;
-    VTR_ASSERT(type == grid_type);
 
     //Retrieve the compressed block grid for this block type
-    const auto& compressed_block_grid = f_compressed_block_grids[type->index];
+    const auto& to_compressed_block_grid = f_compressed_block_grids[to_type->index];
+    const auto& from_compressed_block_grid = f_compressed_block_grids[from_type->index];
 
     //Determine the rlim in each dimension
-    int rlim_x = min<int>(compressed_block_grid.compressed_to_grid_x.size(), rlim);
-    int rlim_y = min<int>(compressed_block_grid.compressed_to_grid_y.size(), rlim); /* for aspect_ratio != 1 case. */
+    int rlim_x = min<int>(to_compressed_block_grid.compressed_to_grid_x.size(), rlim);
+    int rlim_y = min<int>(to_compressed_block_grid.compressed_to_grid_y.size(), rlim); /* for aspect_ratio != 1 case. */
 
     //Determine the coordinates in the compressed grid space of the current block
-    int cx_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_x, from.x);
-    int cy_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_y, from.y);
+    int cx_from = grid_to_compressed(from_compressed_block_grid.compressed_to_grid_x, from.x);
+    int cy_from = grid_to_compressed(from_compressed_block_grid.compressed_to_grid_y, from.y);
 
-    //Determin the valid compressed grid location ranges
-    int min_cx = std::max(0, cx_from - rlim_x);
-    int max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_from + rlim_x);
-    int delta_cx = max_cx - min_cx;
+    int min_cx, max_cx;
+    int min_cy, max_cy;
+    int delta_cx;
 
-    int min_cy = std::max(0, cy_from - rlim_y);
-    int max_cy = std::min<int>(compressed_block_grid.compressed_to_grid_y.size() - 1, cy_from + rlim_y);
+    //Determine the valid compressed grid location ranges
+    if (to_type == from_type) {
+        min_cx = std::max(0, cx_from - rlim_x);
+        max_cx = std::min<int>(to_compressed_block_grid.compressed_to_grid_x.size() - 1, cx_from + rlim_x);
+        delta_cx = max_cx - min_cx;
+
+        min_cy = std::max(0, cy_from - rlim_y);
+        max_cy = std::min<int>(to_compressed_block_grid.compressed_to_grid_y.size() - 1, cy_from + rlim_y);
+    } else {
+        min_cx = 0;
+        max_cx = to_compressed_block_grid.compressed_to_grid_x.size() - 1;
+        delta_cx = max_cx - min_cx;
+
+        min_cy = 0;
+        max_cy = to_compressed_block_grid.compressed_to_grid_y.size() - 1;
+    }
 
     int cx_to = OPEN;
     int cy_to = OPEN;
@@ -2054,19 +2109,19 @@ static bool find_to(t_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& 
         //
         //The candidates are stored in a flat_map so we can efficiently find the set of valid
         //candidates with upper/lower bound.
-        auto y_lower_iter = compressed_block_grid.grid[cx_to].lower_bound(min_cy);
-        if (y_lower_iter == compressed_block_grid.grid[cx_to].end()) {
+        auto y_lower_iter = to_compressed_block_grid.grid[cx_to].lower_bound(min_cy);
+        if (y_lower_iter == to_compressed_block_grid.grid[cx_to].end()) {
             continue;
         }
 
-        auto y_upper_iter = compressed_block_grid.grid[cx_to].upper_bound(max_cy);
+        auto y_upper_iter = to_compressed_block_grid.grid[cx_to].upper_bound(max_cy);
 
         if (y_lower_iter->first > min_cy) {
             //No valid blocks at this x location which are within rlim_y
             //
             //Fall back to allow the whole y range
-            y_lower_iter = compressed_block_grid.grid[cx_to].begin();
-            y_upper_iter = compressed_block_grid.grid[cx_to].end();
+            y_lower_iter = to_compressed_block_grid.grid[cx_to].begin();
+            y_upper_iter = to_compressed_block_grid.grid[cx_to].end();
 
             min_cy = y_lower_iter->first;
             max_cy = (y_upper_iter - 1)->first;
@@ -2112,15 +2167,15 @@ static bool find_to(t_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& 
     VTR_ASSERT(cy_to != OPEN);
 
     //Convert to true (uncompressed) grid locations
-    to.x = compressed_block_grid.compressed_to_grid_x[cx_to];
-    to.y = compressed_block_grid.compressed_to_grid_y[cy_to];
+    to.x = to_compressed_block_grid.compressed_to_grid_x[cx_to];
+    to.y = to_compressed_block_grid.compressed_to_grid_y[cy_to];
 
     //Each x/y location contains only a single type, so we can pick a random
     //z (capcity) location
-    to.z = vtr::irand(type->capacity - 1);
+    to.z = vtr::irand(to_type->capacity - 1);
 
     auto& device_ctx = g_vpr_ctx.device();
-    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].type == type, "Type must match");
+    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].type == to_type, "Type must match");
     VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].width_offset == 0, "Should be at block base location");
     VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].height_offset == 0, "Should be at block base location");
 
@@ -3154,11 +3209,10 @@ static int try_place_macro(int itype, int ipos, int imacro) {
 
 static void initial_placement_pl_macros(int macros_max_num_tries, int* free_locations) {
     int macro_placed;
-    int itype, itry, ipos;
+    int itry, ipos;
     ClusterBlockId blk_id;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
     auto& pl_macros = place_ctx.pl_macros;
@@ -3170,49 +3224,62 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
 
         // Assume that all the blocks in the macro are of the same type
         blk_id = pl_macros[imacro].members[0].blk_index;
-        itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
-        if (free_locations[itype] < int(pl_macros[imacro].members.size())) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                            "Initial placement failed.\n"
-                            "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
-                            "VPR cannot auto-size for your circuit, please resize the FPGA manually.\n",
-                            pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
-        }
 
-        // Try to place the macro first, if can be placed - place them, otherwise try again
-        for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
-            // Choose a random position for the head
-            ipos = vtr::irand(free_locations[itype] - 1);
+        bool no_free_locations = true;
+        // Loop over all the possible equivalent tiles
+        for (int itype : get_available_tiles(cluster_ctx.clb_nlist.block_type(blk_id))) {
+            if (free_locations[itype] >= int(pl_macros[imacro].members.size())) {
+                no_free_locations = false;
+            } else {
+                continue;
+            }
 
-            // Try to place the macro
-            macro_placed = try_place_macro(itype, ipos, imacro);
+            // Try to place the macro first, if can be placed - place them, otherwise try again
+            for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
+                // Choose a random position for the head
+                ipos = vtr::irand(free_locations[itype] - 1);
 
-        } // Finished all tries
-
-        if (macro_placed == false) {
-            // if a macro still could not be placed after macros_max_num_tries times,
-            // go through the chip exhaustively to find a legal placement for the macro
-            // place the macro on the first location that is legal
-            // then set macro_placed = true;
-            // if there are no legal positions, error out
-
-            // Exhaustive placement of carry macros
-            for (ipos = 0; ipos < free_locations[itype] && macro_placed == false; ipos++) {
                 // Try to place the macro
                 macro_placed = try_place_macro(itype, ipos, imacro);
 
-            } // Exhausted all the legal placement position for this macro
+            } // Finished all tries
 
-            // If macro could not be placed after exhaustive placement, error out
             if (macro_placed == false) {
-                // Error out
-                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                                "Initial placement failed.\n"
-                                "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
-                                "Please manually size the FPGA because VPR can't do this yet.\n",
-                                pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
+                // if a macro still could not be placed after macros_max_num_tries times,
+                // go through the chip exhaustively to find a legal placement for the macro
+                // place the macro on the first location that is legal
+                // then set macro_placed = true;
+                // if there are no legal positions, error out
+
+                // Exhaustive placement of carry macros
+                for (ipos = 0; ipos < free_locations[itype] && macro_placed == false; ipos++) {
+                    // Try to place the macro
+                    macro_placed = try_place_macro(itype, ipos, imacro);
+
+                } // Exhausted all the legal placement position for this macro
             }
 
+            if (macro_placed == true) {
+                break;
+            }
+        }
+
+        if (no_free_locations) {
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, __FILE__, __LINE__,
+                      "Initial placement failed.\n"
+                      "Could not place macro length %d with head block %s (#%zu); not enough free locations.\n"
+                      "VPR cannot auto-size for your circuit, please resize the FPGA manually.\n",
+                      pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id));
+        }
+
+        // If macro could not be placed even after exhaustive placement, error out
+        if (macro_placed == false) {
+            // Error out
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, __FILE__, __LINE__,
+                      "Initial placement failed.\n"
+                      "Could not place macro length %d with head block %s (#%zu); not enough free locations.\n"
+                      "Please manually size the FPGA because VPR can't do this yet.\n",
+                      pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id));
         } else {
             // This macro has been placed successfully, proceed to place the next macro
             continue;
@@ -3223,10 +3290,9 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
 /* Place blocks that are NOT a part of any macro.
  * We'll randomly place each block in the clustered netlist, one by one. */
 static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pad_loc_type) {
-    int itype, ipos;
+    int ipos;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& device_ctx = g_vpr_ctx.device();
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         if (place_ctx.block_locs[blk_id].loc.x != -1) { // -1 is a sentinel for an empty block
@@ -3242,45 +3308,54 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
              * Choose one randomly and put blk_id there. Then we don't want to pick
              * that location again, so remove it from the free_locations array.
              */
-            itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
-            if (free_locations[itype] <= 0) {
-                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                                "Initial placement failed.\n"
-                                "Could not place block %s (#%zu); no free locations of type %s (#%d).\n",
-                                cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
+            bool no_free_locations = true;
+            // Loop over all the possible equivalent tiles
+            for (int itype : get_available_tiles(cluster_ctx.clb_nlist.block_type(blk_id))) {
+                if (free_locations[itype] > 0) {
+                    no_free_locations = false;
+                } else {
+                    continue;
+                }
+
+                t_pl_loc to;
+                initial_placement_location(free_locations, itype, ipos, to);
+
+                // Make sure that the position is EMPTY_BLOCK before placing the block down
+                VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.z] == EMPTY_BLOCK_ID);
+
+                place_ctx.grid_blocks[to.x][to.y].blocks[to.z] = blk_id;
+                place_ctx.grid_blocks[to.x][to.y].usage++;
+
+                place_ctx.block_locs[blk_id].loc = to;
+
+                //Mark IOs as fixed if specifying a (fixed) random placement
+                if (is_io_type(cluster_ctx.clb_nlist.block_type(blk_id)) && pad_loc_type == RANDOM) {
+                    place_ctx.block_locs[blk_id].is_fixed = true;
+                }
+
+                /* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the
+                 * legal positions in legal_pos to remove the entry (choice) we just used, but faster to
+                 * just move the last entry in legal_pos to the spot we just used and decrement the
+                 * count of free_locations. */
+                legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
+                free_locations[itype]--;
+
+                //Do not check other type as the block has already been placed
+                break;
             }
 
-            t_pl_loc to;
-            initial_placement_location(free_locations, blk_id, ipos, to);
-
-            // Make sure that the position is EMPTY_BLOCK before placing the block down
-            VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.z] == EMPTY_BLOCK_ID);
-
-            place_ctx.grid_blocks[to.x][to.y].blocks[to.z] = blk_id;
-            place_ctx.grid_blocks[to.x][to.y].usage++;
-
-            place_ctx.block_locs[blk_id].loc = to;
-
-            //Mark IOs as fixed if specifying a (fixed) random placement
-            if (is_io_type(cluster_ctx.clb_nlist.block_type(blk_id)) && pad_loc_type == RANDOM) {
-                place_ctx.block_locs[blk_id].is_fixed = true;
+            // Check if there were no available locations
+            if (no_free_locations) {
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE, __FILE__, __LINE__,
+                          "Initial placement failed.\n"
+                          "Could not place block %s (#%zu); no free locations\n",
+                          cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id));
             }
-
-            /* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the
-             * legal positions in legal_pos to remove the entry (choice) we just used, but faster to
-             * just move the last entry in legal_pos to the spot we just used and decrement the
-             * count of free_locations. */
-            legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
-            free_locations[itype]--;
         }
     }
 }
 
-static void initial_placement_location(const int* free_locations, ClusterBlockId blk_id, int& ipos, t_pl_loc& to) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    int itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
-
+static void initial_placement_location(const int* free_locations, int itype, int& ipos, t_pl_loc& to) {
     ipos = vtr::irand(free_locations[itype] - 1);
     to = legal_pos[itype][ipos];
 }
@@ -3537,7 +3612,7 @@ static int check_block_placement_consistency() {
                 if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
                     continue;
 
-                if (cluster_ctx.clb_nlist.block_type(bnum) != device_ctx.grid[i][j].type) {
+                if (!cluster_ctx.clb_nlist.block_type(bnum)->is_available_tile_index(device_ctx.grid[i][j].type->index)) {
                     VTR_LOG_ERROR("Block %zu type (%s) does not match grid location (%zu,%zu) type (%s).\n",
                                   size_t(bnum), cluster_ctx.clb_nlist.block_type(bnum)->name, i, j, device_ctx.grid[i][j].type->name);
                     error++;
@@ -3656,6 +3731,19 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
 
     timing_reporter.report_timing_setup(placer_opts.post_place_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
+}
+
+std::vector<int> get_available_tiles(t_type_ptr type) {
+    std::vector<int> types(1, type->index);
+
+    for (int i = 0; i < type->num_equivalent_tiles; i++) {
+        auto result = type->equivalent_tiles.find(i);
+        VTR_ASSERT(result != type->equivalent_tiles.end());
+
+        types.push_back(result->second->index);
+    }
+
+    return types;
 }
 
 #if 0

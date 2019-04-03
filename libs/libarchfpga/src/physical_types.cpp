@@ -140,6 +140,15 @@ std::vector<int> t_type_descriptor::get_clock_pins_indices() const {
     return indices;
 }
 
+bool t_type_descriptor::is_available_tile_index(int index_to_check) const {
+    auto search = this->available_tiles_indices.find(index_to_check);
+    if (search != available_tiles_indices.end()) {
+        return true;
+    }
+
+    return false;
+}
+
 /**
  * t_pb_graph_node
  */

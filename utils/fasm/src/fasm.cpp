@@ -93,7 +93,11 @@ void FasmWriterVisitor::check_interconnect(const t_pb_routes &pb_routes, int ino
     return;
   }
 
-  t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type_.at(blk_type_->index)[prev_node];
+  auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+  t_type_ptr original_blk_type = clb_nlist.block_type(current_blk_id_, false);
+
+  t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type_.at(original_blk_type->index)[prev_node];
 
   int prev_edge;
   for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {

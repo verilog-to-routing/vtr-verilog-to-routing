@@ -101,7 +101,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor* Type, std::vector
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void ProcessSwitchblockLocations(pugi::xml_node swtichblock_locations, t_type_descriptor* type, const t_arch& arch, const pugiutil::loc_data& loc_data);
 static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
-static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor* Type, const pugiutil::loc_data& loc_data);
+static void ProcessTileProps(pugi::xml_node Node, t_type_descriptor* Type, const pugiutil::loc_data& loc_data);
 static void ProcessChanWidthDistr(pugi::xml_node Node,
                                   t_arch* arch,
                                   const pugiutil::loc_data& loc_data);
@@ -111,12 +111,29 @@ static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::se
 static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
 static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
+static void ProcessTiles(pugi::xml_node Node,
+                         t_type_descriptor** Types,
+                         int* NumTypes,
+                         std::unordered_map<std::string, t_type_descriptor*>* TypeMap,
+                         const pugiutil::loc_data& loc_data);
+static void ProcessTilesTags(pugi::xml_node Node,
+                             std::unordered_map<std::string, t_type_descriptor*> TypeMap,
+                             t_arch& arch,
+                             const t_default_fc_spec& arch_def_fc,
+                             const pugiutil::loc_data& loc_data);
+static void ProcessTileExtraModes(pugi::xml_node Node,
+                                  t_type_descriptor* Type,
+                                  std::unordered_map<std::string, t_type_descriptor*> TypeMap,
+                                  const pugiutil::loc_data& loc_data);
+static void ProcessTileExtraModePinMapping(pugi::xml_node Node,
+                                           t_type_descriptor* Type,
+                                           t_type_descriptor* EquivalentType,
+                                           int imode,
+                                           const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlocks(pugi::xml_node Node,
-                                 t_type_descriptor** Types,
-                                 int* NumTypes,
+                                 std::unordered_map<std::string, t_type_descriptor*> TypeMap,
                                  t_arch& arch,
                                  const bool timing_enabled,
-                                 const t_default_fc_spec& arch_def_fc,
                                  const pugiutil::loc_data& loc_data);
 static void ProcessSwitches(pugi::xml_node Node,
                             t_arch_switch_inf** Switches,
@@ -176,6 +193,8 @@ int find_switch_by_name(const t_arch& arch, std::string switch_name);
 
 e_side string_to_side(std::string side_str);
 
+static t_type_descriptor* get_corresponding_tile(std::unordered_map<std::string, t_type_descriptor*> TypeMap, const char* type_name);
+static int get_pin_index_by_name(t_type_descriptor* Type, const char* port_name, int offset);
 /*
  *
  *
@@ -254,9 +273,18 @@ void XmlReadArch(const char* ArchFile, const bool timing_enabled, t_arch* arch, 
             ProcessSwitchblocks(Next, arch, loc_data);
         }
 
-        /* Process types */
+        /* Process tiles */
+        std::unordered_map<std::string, t_type_descriptor*> TypeMap;
+        Next = get_single_child(architecture, "tiles", loc_data);
+        ProcessTiles(Next, Types, NumTypes, &TypeMap, loc_data);
+
+        /* Process pb_types */
         Next = get_single_child(architecture, "complexblocklist", loc_data);
-        ProcessComplexBlocks(Next, Types, NumTypes, *arch, timing_enabled, arch_def_fc, loc_data);
+        ProcessComplexBlocks(Next, TypeMap, *arch, timing_enabled, loc_data);
+
+        /* Process tile tags that after pb_type have been parsed */
+        Next = get_single_child(architecture, "tiles", loc_data);
+        ProcessTilesTags(Next, TypeMap, *arch, arch_def_fc, loc_data);
 
         /* Process directs */
         Next = get_single_child(architecture, "directlist", loc_data, OPTIONAL);
@@ -969,14 +997,6 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type* pb_type, t_mode* mo
         children_to_expect.push_back("model");
         children_to_expect.push_back("pb_type");
         children_to_expect.push_back("interconnect");
-
-        if (is_root_pb_type) {
-            VTR_ASSERT(!is_leaf_pb_type);
-            //Top level pb_type's may also have the following tag types
-            children_to_expect.push_back("fc");
-            children_to_expect.push_back("pinlocations");
-            children_to_expect.push_back("switchblock_locations");
-        }
     } else {
         VTR_ASSERT(is_leaf_pb_type);
         VTR_ASSERT(!is_root_pb_type);
@@ -1698,7 +1718,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor* Type, std::vector
         /* Use the default value, if available */
         if (!arch_def_fc.specified) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-                           "<pb_type> is missing child <fc>, and no <default_fc> specified in architecture\n");
+                           "<tile> is missing child <fc>, and no <default_fc> specified in architecture\n");
         }
         def_fc_spec = arch_def_fc;
     }
@@ -2014,28 +2034,6 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
             type->switchblock_locations[xoffset][yoffset] = external_type;
             type->switchblock_switch_overrides[xoffset][yoffset] = external_switch;
         }
-    }
-}
-
-/* Thie processes attributes of the 'type' tag */
-static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor* Type, const pugiutil::loc_data& loc_data) {
-    const char* Prop;
-
-    expect_only_attributes(Node, {"name", "capacity", "width", "height", "area"}, loc_data);
-
-    /* Load type name */
-    Prop = get_attribute(Node, "name", loc_data).value();
-    Type->name = vtr::strdup(Prop);
-
-    /* Load properties */
-    Type->capacity = get_attribute(Node, "capacity", loc_data, OPTIONAL).as_uint(1); /* TODO: Any block with capacity > 1 that is not I/O has not been tested, must test */
-    Type->width = get_attribute(Node, "width", loc_data, OPTIONAL).as_uint(1);
-    Type->height = get_attribute(Node, "height", loc_data, OPTIONAL).as_uint(1);
-    Type->area = get_attribute(Node, "area", loc_data, OPTIONAL).as_float(UNDEFINED);
-
-    if (atof(Prop) < 0) {
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-                       "Area for type %s must be non-negative\n", Type->name);
     }
 }
 
@@ -2620,16 +2618,36 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
     chan->dc = get_attribute(Node, "dc", loc_data, hasDc).as_float(0);
 }
 
-/* Takes in node pointing to <typelist> and loads all the
- * child type objects. */
-static void ProcessComplexBlocks(pugi::xml_node Node,
-                                 t_type_descriptor** Types,
-                                 int* NumTypes,
-                                 t_arch& arch,
-                                 const bool timing_enabled,
-                                 const t_default_fc_spec& arch_def_fc,
-                                 const pugiutil::loc_data& loc_data) {
-    pugi::xml_node CurType, Prev;
+/* Thie processes attributes of the 'type' tag */
+static void ProcessTileProps(pugi::xml_node Node, t_type_descriptor* Type, const pugiutil::loc_data& loc_data) {
+    const char* Prop;
+
+    expect_only_attributes(Node, {"name", "capacity", "width", "height", "area"}, loc_data);
+
+    /* Load type name */
+    Prop = get_attribute(Node, "name", loc_data).value();
+    Type->name = vtr::strdup(Prop);
+
+    /* Load properties */
+    Type->capacity = get_attribute(Node, "capacity", loc_data, OPTIONAL).as_uint(1); /* TODO: Any block with capacity > 1 that is not I/O has not been tested, must test */
+    Type->width = get_attribute(Node, "width", loc_data, OPTIONAL).as_uint(1);
+    Type->height = get_attribute(Node, "height", loc_data, OPTIONAL).as_uint(1);
+    Type->area = get_attribute(Node, "area", loc_data, OPTIONAL).as_float(UNDEFINED);
+
+    if (atof(Prop) < 0) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       "Area for type %s must be non-negative\n", Type->name);
+    }
+}
+
+/* Takes in node pointing to <tiles> and loads all the  *
+ * child type objects.                                  */
+static void ProcessTiles(pugi::xml_node Node,
+                         t_type_descriptor** Types,
+                         int* NumTypes,
+                         std::unordered_map<std::string, t_type_descriptor*>* TypeMap,
+                         const pugiutil::loc_data& loc_data) {
+    pugi::xml_node CurType;
     pugi::xml_node Cur;
     t_type_descriptor* Type;
     int i;
@@ -2638,7 +2656,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
     /* Alloc the type list. Need one additional t_type_desctiptors:
      * 1: empty psuedo-type
      */
-    *NumTypes = count_children(Node, "pb_type", loc_data) + 1;
+    *NumTypes = count_children(Node, "tile", loc_data) + 1;
     *Types = new t_type_descriptor[*NumTypes];
 
     cb_type_descriptors = *Types;
@@ -2654,30 +2672,63 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 
     CurType = Node.first_child();
     while (CurType) {
-        check_node(CurType, "pb_type", loc_data);
+        check_node(CurType, "tile", loc_data);
 
         /* Alias to current type */
         Type = &(*Types)[i];
 
         /* Parses the properties fields of the type */
-        ProcessComplexBlockProps(CurType, Type, loc_data);
+        ProcessTileProps(CurType, Type, loc_data);
 
         ret_pb_type_descriptors = pb_type_descriptors.insert(pair<string, int>(Type->name, 0));
         if (!ret_pb_type_descriptors.second) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurType),
-                           "Duplicate pb_type descriptor name: '%s'.\n", Type->name);
+                           "Duplicate tile descriptor name: '%s'.\n", Type->name);
         }
 
-        /* Load pb_type info */
-        Type->pb_type = new t_pb_type;
-        Type->pb_type->name = vtr::strdup(Type->name);
-        ProcessPb_Type(CurType, Type->pb_type, nullptr, timing_enabled, arch, loc_data);
-        Type->num_pins = Type->capacity
-                         * (Type->pb_type->num_input_pins
-                            + Type->pb_type->num_output_pins
-                            + Type->pb_type->num_clock_pins);
-        Type->num_receivers = Type->capacity * Type->pb_type->num_input_pins;
-        Type->num_drivers = Type->capacity * Type->pb_type->num_output_pins;
+        Type->index = i;
+        Type->available_tiles_indices.insert(i);
+
+        auto result = TypeMap->insert(std::make_pair(Type->name, Type));
+        if (!result.second) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurType),
+                           "Duplicate tile found: '%s'.\n", Type->name);
+        }
+
+        /* Type fully read */
+        ++i;
+
+        /* Free this node and get its next sibling node */
+        CurType = CurType.next_sibling(CurType.name());
+    }
+    pb_type_descriptors.clear();
+}
+
+// This step has to be performed after the root pb_type has been parsed
+static void ProcessTilesTags(pugi::xml_node Node,
+                             std::unordered_map<std::string, t_type_descriptor*> TypeMap,
+                             t_arch& arch,
+                             const t_default_fc_spec& arch_def_fc,
+                             const pugiutil::loc_data& loc_data) {
+    pugi::xml_node Cur, CurType;
+    t_type_descriptor* Type;
+
+    /* Process the types */
+    CurType = Node.first_child();
+    while (CurType) {
+        check_node(CurType, "tile", loc_data);
+
+        /* Load type name */
+        const char* NameProp = get_attribute(CurType, "name", loc_data).value();
+
+        /* Alias to current type */
+        Type = get_corresponding_tile(TypeMap, vtr::strdup(NameProp));
+        if (Type == nullptr) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurType),
+                           "No tiles found corresponding to current root level pb type: '%s'.\n", Type->pb_type->name);
+        }
+
+        VTR_ASSERT(Type->pb_type != nullptr);
 
         /* Load pin names and classes and locations */
         Cur = get_single_child(CurType, "pinlocations", loc_data, OPTIONAL);
@@ -2698,19 +2749,178 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
         Cur = get_single_child(CurType, "fc", loc_data, OPTIONAL);
         Process_Fc(Cur, Type, arch.Segments, arch_def_fc, loc_data);
 
-        //Load switchblock type and location overrides
+        /* Load switchblock type and location overrides */
         Cur = get_single_child(CurType, "switchblock_locations", loc_data, OPTIONAL);
         ProcessSwitchblockLocations(Cur, Type, arch, loc_data);
 
-        Type->index = i;
-
-        /* Type fully read */
-        ++i;
+        /* Load possible modes (pb_types which are compatible with the current tile) */
+        Cur = get_single_child(CurType, "equivalent_tiles", loc_data, OPTIONAL);
+        if (Cur) {
+            ProcessTileExtraModes(Cur, Type, TypeMap, loc_data);
+        }
 
         /* Free this node and get its next sibling node */
         CurType = CurType.next_sibling(CurType.name());
     }
-    pb_type_descriptors.clear();
+}
+
+/* Processes the equivalent tiles defined in the XML arch definition
+ * <tiles>
+ *   <tile name="LAB">
+ *     <mode name="MLAB">
+ *       <map .../>
+ *       <map .../>
+ *       <map .../>
+ *     </mode>
+ *   </tile>
+ * </tiles>
+ *
+ * In particular this function parses the `modes` (if they exist) of each tile
+ * and adds the equivalent tile information to the t_type_descriptor relative to
+ * the current tile.
+ * It populates the following t_type_descriptor members:
+ *     - num_equivalent_tiles;
+ *     - equivalent_tiles.
+ */
+static void ProcessTileExtraModes(pugi::xml_node Node,
+                                  t_type_descriptor* Type,
+                                  std::unordered_map<std::string, t_type_descriptor*> TypeMap,
+                                  const pugiutil::loc_data& loc_data) {
+    pugi::xml_node CurType;
+
+    Type->num_equivalent_tiles = count_children(Node, "mode", loc_data);
+    int index = 0;
+    CurType = Node.first_child();
+    while (CurType && index < Type->num_equivalent_tiles) {
+        const char* equivalent_tile_name = get_attribute(CurType, "name", loc_data).value();
+        auto EquivalentTile = get_corresponding_tile(TypeMap, equivalent_tile_name);
+
+        if (EquivalentTile == nullptr) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurType),
+                           "No tiles found corresponding to equivalent tile name: '%s'.\n", Type->pb_type->name);
+        }
+
+        // Inserts equivalent tile as last element so the index points to the correct equivalent tile.
+        auto result = Type->equivalent_tiles.insert(std::make_pair(index, EquivalentTile));
+        if (!result.second) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurType),
+                           "Duplicate equivalent tile found: '%s'.\n", EquivalentTile->name);
+        }
+
+        Type->available_tiles_indices.insert(EquivalentTile->index);
+
+        ProcessTileExtraModePinMapping(CurType, Type, Type->equivalent_tiles[index], index, loc_data);
+
+        index++;
+        CurType = CurType.next_sibling(CurType.name());
+    }
+}
+
+/* Processes the pin_mapping of each equivalent tile.
+ * It goes through each mode and populates the following t_type_descriptor memebrs:
+ *     - equivalent_tile_pin_mapping;
+ *     - equivalent_tile_inverse_pin_mapping.
+ */
+static void ProcessTileExtraModePinMapping(pugi::xml_node Node,
+                                           t_type_descriptor* Type,
+                                           t_type_descriptor* EquivalentType,
+                                           int imode,
+                                           const pugiutil::loc_data& loc_data) {
+    pugi::xml_node CurType = Node.first_child();
+    const char *from_port, *to_port;
+    int from_pin_index, to_pin_index;
+    int num_pins;
+
+    std::unordered_map<int, int> pin_mapping, inverse_pin_mapping;
+
+    while (CurType) {
+        //Process each mode mapping
+        if (CurType.name() != std::string("map")) {
+            bad_tag(CurType, loc_data, Node, {"map"});
+        }
+
+        from_port = get_attribute(CurType, "from", loc_data).value();
+        to_port = get_attribute(CurType, "to", loc_data).value();
+        num_pins = get_attribute(CurType, "num_pins", loc_data, OPTIONAL).as_int(1);
+
+        for (int offset = 0; offset < num_pins; offset++) {
+            from_pin_index = get_pin_index_by_name(Type, from_port, offset);
+            to_pin_index = get_pin_index_by_name(EquivalentType, to_port, offset);
+
+            auto result = pin_mapping.insert(std::make_pair(from_pin_index, to_pin_index));
+            if (!result.second) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurType),
+                               "Duplicate equivalent tile 'from_pin': '%d' (in %s).\n", from_pin_index, Type->name);
+            }
+
+            result = inverse_pin_mapping.insert(std::make_pair(to_pin_index, from_pin_index));
+            if (!result.second) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurType),
+                               "Duplicate equivalent tile 'to_pin': '%d' (in %s).\n", to_pin_index, Type->name);
+            }
+        }
+
+        CurType = CurType.next_sibling(CurType.name());
+    }
+
+    Type->equivalent_tile_pin_mapping.insert(std::make_pair(imode, pin_mapping));
+    Type->equivalent_tile_inverse_pin_mapping.insert(std::make_pair(imode, inverse_pin_mapping));
+}
+
+static void ProcessComplexBlocks(pugi::xml_node Node,
+                                 std::unordered_map<std::string, t_type_descriptor*> TypeMap,
+                                 t_arch& arch,
+                                 const bool timing_enabled,
+                                 const pugiutil::loc_data& loc_data) {
+    pugi::xml_node CurPbType;
+    t_type_descriptor* Type;
+
+    map<string, int> pb_types;
+    pair<map<string, int>::iterator, bool> ret_pb_types;
+
+    CurPbType = Node.first_child();
+    while (CurPbType) {
+        check_node(CurPbType, "pb_type", loc_data);
+
+        char* type_name = nullptr;
+
+        for (pugi::xml_attribute attr : CurPbType.attributes()) {
+            if (attr.name() != std::string("name")) {
+                bad_attribute(attr, CurPbType, loc_data);
+            } else {
+                type_name = vtr::strdup(attr.value());
+            }
+        }
+
+        Type = get_corresponding_tile(TypeMap, type_name);
+        if (Type == nullptr) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurPbType),
+                           "No tiles found corresponding to current root level pb type: '%s'.\n", type_name);
+        }
+
+        Type->pb_type = new t_pb_type;
+        Type->pb_type->name = vtr::strdup(type_name);
+
+        ret_pb_types = pb_types.insert(
+            pair<string, int>(Type->pb_type->name, 0));
+        if (!ret_pb_types.second) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurPbType),
+                           "Duplicate pb_type descriptor name: '%s'.\n", Type->pb_type->name);
+        }
+
+        ProcessPb_Type(CurPbType, Type->pb_type, nullptr, timing_enabled, arch, loc_data);
+        Type->num_pins = Type->capacity
+                         * (Type->pb_type->num_input_pins
+                            + Type->pb_type->num_output_pins
+                            + Type->pb_type->num_clock_pins);
+        Type->num_receivers = Type->capacity * Type->pb_type->num_input_pins;
+        Type->num_drivers = Type->capacity * Type->pb_type->num_output_pins;
+
+        /* Load pin names and classes and locations */
+
+        CurPbType = CurPbType.next_sibling(CurPbType.name());
+    }
+    pb_types.clear();
 }
 
 static void ProcessSegments(pugi::xml_node Parent,
@@ -4120,4 +4330,42 @@ e_side string_to_side(std::string side_str) {
                        "Invalid side specification");
     }
     return side;
+}
+
+static t_type_descriptor* get_corresponding_tile(std::unordered_map<std::string, t_type_descriptor*> TypeMap,
+                                                 const char* type_name) {
+    auto result = TypeMap.find(type_name);
+
+    if (result == TypeMap.end()) {
+        return nullptr;
+    }
+
+    return result->second;
+}
+
+static int get_pin_index_by_name(t_type_descriptor* Type, const char* port_name, int pin_index_in_port) {
+    int ipin = OPEN;
+
+    t_pb_type* pb_type = Type->pb_type;
+    t_port* matched_port = nullptr;
+    int port_base_ipin = 0;
+
+    for (int iport = 0; iport < pb_type->num_ports; ++iport) {
+        t_port* port = &pb_type->ports[iport];
+
+        if (0 == strcmp(port->name, port_name)) {
+            matched_port = port;
+            break;
+        }
+        port_base_ipin += port->num_pins;
+    }
+
+    if (matched_port) {
+        VTR_ASSERT(0 == strcmp(matched_port->name, port_name));
+        VTR_ASSERT(pin_index_in_port < matched_port->num_pins);
+
+        ipin = port_base_ipin + pin_index_in_port;
+    }
+
+    return ipin;
 }

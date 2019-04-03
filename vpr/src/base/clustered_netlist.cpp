@@ -25,9 +25,28 @@ t_pb* ClusteredNetlist::block_pb(const ClusterBlockId id) const {
 }
 
 t_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) const {
+    return block_type(id, true);
+}
+
+t_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id, bool get_equivalent_if_set) const {
     VTR_ASSERT_SAFE(valid_block_id(id));
+    if (block_eq_type_index(id) != OPEN && get_equivalent_if_set) {
+        return block_eq_type_[id];
+    }
 
     return block_types_[id];
+}
+
+int ClusteredNetlist::block_eq_type_index(const ClusterBlockId id) const {
+    VTR_ASSERT_SAFE(valid_block_id(id));
+
+    return block_eq_type_index_[id];
+}
+
+bool ClusteredNetlist::block_eq_type_effective(const ClusterBlockId id) const {
+    VTR_ASSERT_SAFE(valid_block_id(id));
+
+    return block_eq_type_effective_[id];
 }
 
 ClusterNetId ClusteredNetlist::block_net(const ClusterBlockId blk_id, const int phys_pin_index) const {
@@ -120,9 +139,12 @@ ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_type
 
         block_pbs_.insert(blk_id, pb);
         block_types_.insert(blk_id, type);
-
+        block_eq_type_.insert(blk_id, type);
+        block_eq_type_index_.insert(blk_id, OPEN);
+        block_eq_type_effective_.insert(blk_id, false);
         //Allocate and initialize every potential pin of the block
-        block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>(type->num_pins, ClusterPinId::INVALID()));
+        int num_pins = get_max_num_pins(type);
+        block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>(num_pins, ClusterPinId::INVALID()));
     }
 
     //Check post-conditions: size
@@ -133,6 +155,12 @@ ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_type
     VTR_ASSERT(block_type(blk_id) == type);
 
     return blk_id;
+}
+
+void ClusteredNetlist::set_equivalent_block_type(const ClusterBlockId blk_id, int i_eq_type, t_type_ptr eq_type) {
+    block_eq_type_index_[blk_id] = i_eq_type;
+    block_eq_type_effective_[blk_id] = true;
+    block_eq_type_[blk_id] = eq_type;
 }
 
 void ClusteredNetlist::set_pin_physical_index(const ClusterPinId pin, const int phys_pin_index) {
@@ -321,4 +349,21 @@ bool ClusteredNetlist::validate_net_sizes_impl(size_t num_nets) const {
         return false;
     }
     return true;
+}
+
+/*
+ * Utilities
+ */
+int ClusteredNetlist::get_max_num_pins(t_type_ptr type) {
+    int max_pins = type->num_pins;
+
+    for (int itype = 0; itype < type->num_equivalent_tiles; itype++) {
+        auto result = type->equivalent_tiles.find(itype);
+        VTR_ASSERT(result != type->equivalent_tiles.end());
+
+        int num_pins = result->second->num_pins;
+        max_pins = std::max(num_pins, max_pins);
+    }
+
+    return max_pins;
 }

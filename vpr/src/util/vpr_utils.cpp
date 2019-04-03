@@ -90,6 +90,10 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
 static bool block_type_contains_blif_model(t_type_ptr type, const std::regex& blif_model_regex);
 static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex);
 
+static t_type_ptr get_equivalent_tile(t_type_ptr type, int eq_itype);
+static bool try_sync_equivalent_tiles(ClusterBlockId clb, t_type_ptr logic_type, t_type_ptr phyical_type);
+static int get_type_pin(std::unordered_map<int, std::unordered_map<int, int>> pin_mappings, int eq_type_index, int eq_pin);
+
 /******************** Subroutine definitions *********************************/
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required) {
@@ -134,6 +138,46 @@ void print_tabs(FILE* fpout, int num_tab) {
     }
 }
 
+static t_type_ptr get_equivalent_tile(t_type_ptr type, int eq_itype) {
+    auto result = type->equivalent_tiles.find(eq_itype);
+    VTR_ASSERT(result != type->equivalent_tiles.end());
+
+    return result->second;
+}
+
+static int get_type_pin(std::unordered_map<int, std::unordered_map<int, int>> pin_mappings, int eq_type_index, int eq_pin) {
+    auto tile_result = pin_mappings.find(eq_type_index);
+    VTR_ASSERT(tile_result != pin_mappings.end());
+
+    auto pin_mapping = tile_result->second;
+    auto pin_result = pin_mapping.find(eq_pin);
+    VTR_ASSERT(pin_result != pin_mapping.end());
+
+    return pin_result->second;
+}
+
+static bool try_sync_equivalent_tiles(ClusterBlockId clb, t_type_ptr logic_type, t_type_ptr physical_type) {
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& clb_nlist = cluster_ctx.clb_nlist;
+
+    //Searching for equivalent tiles in the logic_type
+    for (int itype = 0; itype < logic_type->num_equivalent_tiles; itype++) {
+        if (get_equivalent_tile(logic_type, itype)->index == physical_type->index) {
+            clb_nlist.set_equivalent_block_type(clb, itype, physical_type);
+
+            //Setting new logical to physical pin mapping
+            for (auto pin : clb_nlist.block_pins(clb)) {
+                int original_ipin = clb_nlist.pin_physical_index(pin);
+                int new_ipin = get_type_pin(logic_type->equivalent_tile_pin_mapping, itype, original_ipin);
+                clb_nlist.set_pin_physical_index(pin, new_ipin);
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /* Points the place_ctx.grid_blocks structure back to the blocks list */
 void sync_grid_to_blocks() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -171,11 +215,16 @@ void sync_grid_to_blocks() {
         }
 
         /* Check types match */
-        if (cluster_ctx.clb_nlist.block_type(blk_id) != device_ctx.grid[blk_x][blk_y].type) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n",
-                            blk_x, blk_y,
-                            cluster_ctx.clb_nlist.block_type(blk_id)->name,
-                            device_ctx.grid[blk_x][blk_y].type->name);
+        auto logic_type = cluster_ctx.clb_nlist.block_type(blk_id);
+        auto physical_type = device_ctx.grid[blk_x][blk_y].type;
+
+        if (logic_type != physical_type) {
+            if (!try_sync_equivalent_tiles(blk_id, logic_type, physical_type)) {
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n",
+                          blk_x, blk_y,
+                          cluster_ctx.clb_nlist.block_type(blk_id)->name,
+                          device_ctx.grid[blk_x][blk_y].type->name);
+            }
         }
 
         /* Check already in use */
@@ -444,7 +493,9 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
     VTR_ASSERT_MSG(cluster_ctx.clb_nlist.block_pb(clb)->pb_route[pb_route_id].atom_net_id, "PB route should correspond to a valid atom net");
 
     //Find the graph pin associated with this pb_route
-    const t_pb_graph_pin* gpin = pb_gpin_lookup.pb_gpin(cluster_ctx.clb_nlist.block_type(clb)->index, pb_route_id);
+    int index = cluster_ctx.clb_nlist.block_type(clb, false)->index;
+
+    const t_pb_graph_pin* gpin = pb_gpin_lookup.pb_gpin(index, pb_route_id);
     VTR_ASSERT(gpin);
 
     //Get the PB associated with this block
@@ -542,25 +593,36 @@ int find_clb_pb_pin(ClusterBlockId clb, int clb_pin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    VTR_ASSERT_MSG(clb_pin < cluster_ctx.clb_nlist.block_type(clb)->num_pins, "Must be a valid top-level pin");
+    auto& clb_nlist = cluster_ctx.clb_nlist;
 
-    int pb_pin = -1;
+    auto type = clb_nlist.block_type(clb);
+
+    int pin = clb_pin;
+
+    // In case an equivalent tile is selected, the CLB block type will be different (e.g. CLB logic type is LAB, CLB physical type is MLAB).
+    // Therefore, I need to retrieve the pin mapping from the LAB type by setting the `false` flag when calling block_type.
+    if (clb_nlist.block_eq_type_effective(clb)) {
+        int eq_type_index = clb_nlist.block_eq_type_index(clb);
+        auto block_type = clb_nlist.block_type(clb, false);
+
+        pin = get_type_pin(block_type->equivalent_tile_inverse_pin_mapping, eq_type_index, clb_pin);
+    }
+
+    int pb_pin = OPEN;
     if (place_ctx.block_locs[clb].nets_and_pins_synced_to_z_coordinate) {
         //Pins have been offset by z-coordinate, need to remove offset
 
-        t_type_ptr type = cluster_ctx.clb_nlist.block_type(clb);
         VTR_ASSERT(type->num_pins % type->capacity == 0);
         int num_basic_block_pins = type->num_pins / type->capacity;
         /* Logical location and physical location is offset by z * max_num_block_pins */
 
-        pb_pin = clb_pin - place_ctx.block_locs[clb].loc.z * num_basic_block_pins;
+        pb_pin = pin - place_ctx.block_locs[clb].loc.z * num_basic_block_pins;
     } else {
         //No offset
-        pb_pin = clb_pin;
+        pb_pin = pin;
     }
 
     VTR_ASSERT(pb_pin >= 0);
-
     return pb_pin;
 }
 
@@ -569,21 +631,35 @@ int find_pb_pin_clb_pin(ClusterBlockId clb, int pb_pin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    int clb_pin = -1;
+    auto& clb_nlist = cluster_ctx.clb_nlist;
+
+    auto type = clb_nlist.block_type(clb);
+
+    int pin = pb_pin;
+
+    // In case an equivalent tile is selected, the CLB block type will be different (e.g. CLB logic type is LAB, CLB physical type is MLAB).
+    // Therefore, I need to retrieve the pin mapping from the LAB type by setting the `false` flag when calling block_type.
+    if (clb_nlist.block_eq_type_effective(clb)) {
+        int eq_type_index = clb_nlist.block_eq_type_index(clb);
+        auto block_type = clb_nlist.block_type(clb, false);
+
+        pin = get_type_pin(block_type->equivalent_tile_pin_mapping, eq_type_index, pb_pin);
+    }
+
+    int clb_pin = OPEN;
     if (place_ctx.block_locs[clb].nets_and_pins_synced_to_z_coordinate) {
         //Pins have been offset by z-coordinate, need to remove offset
-        t_type_ptr type = cluster_ctx.clb_nlist.block_type(clb);
         VTR_ASSERT(type->num_pins % type->capacity == 0);
         int num_basic_block_pins = type->num_pins / type->capacity;
         /* Logical location and physical location is offset by z * max_num_block_pins */
 
-        clb_pin = pb_pin + place_ctx.block_locs[clb].loc.z * num_basic_block_pins;
+        clb_pin = pin + place_ctx.block_locs[clb].loc.z * num_basic_block_pins;
     } else {
         //No offset
-        clb_pin = pb_pin;
+        clb_pin = pin;
     }
-    VTR_ASSERT(clb_pin >= 0);
 
+    VTR_ASSERT(clb_pin >= 0);
     return clb_pin;
 }
 

@@ -31,9 +31,9 @@
 #include <unordered_map>
 #include <string>
 #include <map>
-#include <unordered_map>
 #include <limits>
 #include <numeric>
+#include <unordered_set>
 
 #include "vtr_ndmatrix.h"
 #include "vtr_hash.h"
@@ -556,6 +556,20 @@ constexpr int DEFAULT_SWITCH = -2;
  * pb_type: Internal subblocks and routing information for this physical block
  * pb_graph_head: Head of DAG of pb_types_nodes and their edges
  *
+ *
+ * num_equivalent_tiles: Specifies the number of equivalent physical types that can be used during placement.
+ *                       If the value is `0` all the data structures relative to the equivalent tiles will be empty.
+ * equivalent_tiles: Array containing pointers to the equivalent tiles. The number of elements contained is specified
+ *                   by num_equivalent_tiles.
+ * equivalent_tile_pin_mapping: Multi-dimensional array that, for each different equivalent tile contains a mapping between
+ *                              the pins of the two tiles.
+ *                              Example: equivalent_tile_pin_mapping[eq_tile_index][pin_index] = equivalent_pin_index
+ *                              This is necessary to maintain consistency between two equivalent tiles that have the same pins
+ *                              defined with different indeces.
+ * equivalent_tile_inverse_pin_mapping: Multi-dimensional array that works as the previous one, but the mapping is inverse in this case.
+ *                                      Example: equivalent_tile_pin_mapping[eq_tile_index][equivalent_pin_index] = pin_index
+ * available_tiles_indices: unordered map used to have a fast lookup on the available tiles.
+ *
  * area: Describes how much area this logic block takes, if undefined, use default
  * type_timing_inf: timing information unique to this type
  * num_drivers: Total number of output drivers supplied
@@ -595,6 +609,13 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
     t_pb_type* pb_type = nullptr;
     t_pb_graph_node* pb_graph_head = nullptr;
 
+    /* Equivalent tiles information */
+    int num_equivalent_tiles = 0;
+    std::unordered_map<int, t_type_descriptor*> equivalent_tiles;                              /* [0..num_equivalent_tiles-1] */
+    std::unordered_map<int, std::unordered_map<int, int>> equivalent_tile_pin_mapping;         /* [0..num_equivalent_tiles-1][0..num_pins-1] */
+    std::unordered_map<int, std::unordered_map<int, int>> equivalent_tile_inverse_pin_mapping; /* [0..num_equivalent_tiles-1][0..num_pins-1] */
+    std::unordered_set<int> available_tiles_indices;
+
     float area = 0;
 
     /* This info can be determined from class_inf and pin_class but stored for faster access */
@@ -603,8 +624,15 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
+    /***********
+     * Methods *
+     ***********/
+
     /* Returns the indices of pins that contain a clock for this physical logic block */
     std::vector<int> get_clock_pins_indices() const;
+
+    /* Returns a boolean set to True if the input index belongs to an available tile, False otherwise */
+    bool is_available_tile_index(int index_to_check) const;
 };
 typedef const t_type_descriptor* t_type_ptr;
 
@@ -1200,6 +1228,7 @@ struct t_segment_inf {
     std::vector<bool> cb;
     std::vector<bool> sb;
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
+    t_metadata_dict* meta = nullptr;
 };
 
 enum class SwitchType {

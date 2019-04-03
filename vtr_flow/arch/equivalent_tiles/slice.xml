@@ -1,0 +1,1625 @@
+<?xml version="1.0"?>
+<!-- This architecture definition represents a simplified version of a SLICEM site -->
+<architecture xmlns:xi="http://www.w3.org/2001/XInclude">
+  <models>
+    <model name="CARRY">
+      <input_ports>
+        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="CI"/>
+        <port combinational_sink_ports="CO_CHAIN CO_FABRIC" name="DI"/>
+        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="S"/>
+      </input_ports>
+      <output_ports>
+        <port name="CO_CHAIN"/>
+        <port name="CO_FABRIC"/>
+        <port name="O"/>
+      </output_ports>
+    </model>
+    <model name="CARRY0">
+      <input_ports>
+        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="CI"/>
+        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="CI_INIT"/>
+        <port combinational_sink_ports="CO_CHAIN CO_FABRIC" name="DI"/>
+        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="S"/>
+      </input_ports>
+      <output_ports>
+        <port name="CO_CHAIN"/>
+        <port name="CO_FABRIC"/>
+        <port name="O"/>
+      </output_ports>
+    </model>
+    <model name="FDRE">
+      <input_ports>
+        <port is_clock="1" name="C"/>
+        <port clock="C" name="CE"/>
+        <port clock="C" name="R"/>
+        <port clock="C" name="D"/>
+      </input_ports>
+      <output_ports>
+        <port clock="C" name="Q"/>
+      </output_ports>
+    </model>
+    <model name="DRAM_2_OUTPUT_STUB">
+      <input_ports>
+        <port combinational_sink_ports="DPO_OUT" name="DPO"/>
+        <port combinational_sink_ports="SPO_OUT" name="SPO"/>
+      </input_ports>
+      <output_ports>
+        <port name="DPO_OUT"/>
+        <port name="SPO_OUT"/>
+      </output_ports>
+    </model>
+    <model name="DRAM_4_OUTPUT_STUB">
+      <input_ports>
+        <port combinational_sink_ports="DOA_OUT" name="DOA"/>
+        <port combinational_sink_ports="DOB_OUT" name="DOB"/>
+        <port combinational_sink_ports="DOC_OUT" name="DOC"/>
+        <port combinational_sink_ports="DOD_OUT" name="DOD"/>
+      </input_ports>
+      <output_ports>
+        <port name="DOA_OUT"/>
+        <port name="DOB_OUT"/>
+        <port name="DOC_OUT"/>
+        <port name="DOD_OUT"/>
+      </output_ports>
+    </model>
+  </models>
+  <tiles>
+    <tile name="io_tile">
+      <pinlocations pattern="custom">
+        <loc side="top" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="left" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="bottom" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="right" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+      </pinlocations>
+      <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+    </tile>
+    <tile name="BLK_IG-SLICEM">
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+    </tile>
+    <tile name="BLK_IG-SLICEL">
+      <equivalent_tiles>
+        <mode name="BLK_IG-SLICEM">
+          <map from="DX" to="DX" num_pins="1"/>
+          <map from="D1" to="D1" num_pins="1"/>
+          <map from="D2" to="D2" num_pins="1"/>
+          <map from="D3" to="D3" num_pins="1"/>
+          <map from="D4" to="D4" num_pins="1"/>
+          <map from="D5" to="D5" num_pins="1"/>
+          <map from="D6" to="D6" num_pins="1"/>
+          <map from="CX" to="CX" num_pins="1"/>
+          <map from="C1" to="C1" num_pins="1"/>
+          <map from="C2" to="C2" num_pins="1"/>
+          <map from="C3" to="C3" num_pins="1"/>
+          <map from="C4" to="C4" num_pins="1"/>
+          <map from="C5" to="C5" num_pins="1"/>
+          <map from="C6" to="C6" num_pins="1"/>
+          <map from="BX" to="BX" num_pins="1"/>
+          <map from="B1" to="B1" num_pins="1"/>
+          <map from="B2" to="B2" num_pins="1"/>
+          <map from="B3" to="B3" num_pins="1"/>
+          <map from="B4" to="B4" num_pins="1"/>
+          <map from="B5" to="B5" num_pins="1"/>
+          <map from="B6" to="B6" num_pins="1"/>
+          <map from="AX" to="AX" num_pins="1"/>
+          <map from="A1" to="A1" num_pins="1"/>
+          <map from="A2" to="A2" num_pins="1"/>
+          <map from="A3" to="A3" num_pins="1"/>
+          <map from="A4" to="A4" num_pins="1"/>
+          <map from="A5" to="A5" num_pins="1"/>
+          <map from="A6" to="A6" num_pins="1"/>
+          <map from="SR" to="SR" num_pins="1"/>
+          <map from="CE" to="CE" num_pins="1"/>
+          <map from="CLK" to="CLK" num_pins="1"/>
+          <map from="CIN" to="CIN" num_pins="1"/>
+          <map from="COUT" to="COUT" num_pins="1"/>
+          <map from="DMUX" to="DMUX" num_pins="1"/>
+          <map from="D" to="D" num_pins="1"/>
+          <map from="DQ" to="DQ" num_pins="1"/>
+          <map from="CMUX" to="CMUX" num_pins="1"/>
+          <map from="C" to="C" num_pins="1"/>
+          <map from="CQ" to="CQ" num_pins="1"/>
+          <map from="BMUX" to="BMUX" num_pins="1"/>
+          <map from="B" to="B" num_pins="1"/>
+          <map from="BQ" to="BQ" num_pins="1"/>
+          <map from="AMUX" to="AMUX" num_pins="1"/>
+          <map from="A" to="A" num_pins="1"/>
+          <map from="AQ" to="AQ" num_pins="1"/>
+        </mode>
+      </equivalent_tiles>
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+    </tile>
+  </tiles>
+  <complexblocklist>
+    <pb_type name="io_tile">
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
+      <mode name="OUTPUT">
+        <pb_type blif_model=".output" name="pad" num_pb="1">
+          <input name="outpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct input="io_tile.in" name="-" output="pad.outpad"/>
+        </interconnect>
+      </mode>
+      <mode name="INPUT">
+        <pb_type blif_model=".input" name="pad" num_pb="1">
+          <output name="inpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct input="pad.inpad" name="-" output="io_tile.out"/>
+        </interconnect>
+      </mode>
+    </pb_type>
+    <pb_type name="BLK_IG-SLICEM">
+      <input name="DI" num_pins="1"/>
+      <input name="DX" num_pins="1"/>
+      <input name="D1" num_pins="1"/>
+      <input name="D2" num_pins="1"/>
+      <input name="D3" num_pins="1"/>
+      <input name="D4" num_pins="1"/>
+      <input name="D5" num_pins="1"/>
+      <input name="D6" num_pins="1"/>
+      <input name="CI" num_pins="1"/>
+      <input name="CX" num_pins="1"/>
+      <input name="C1" num_pins="1"/>
+      <input name="C2" num_pins="1"/>
+      <input name="C3" num_pins="1"/>
+      <input name="C4" num_pins="1"/>
+      <input name="C5" num_pins="1"/>
+      <input name="C6" num_pins="1"/>
+      <input name="BI" num_pins="1"/>
+      <input name="BX" num_pins="1"/>
+      <input name="B1" num_pins="1"/>
+      <input name="B2" num_pins="1"/>
+      <input name="B3" num_pins="1"/>
+      <input name="B4" num_pins="1"/>
+      <input name="B5" num_pins="1"/>
+      <input name="B6" num_pins="1"/>
+      <input name="AI" num_pins="1"/>
+      <input name="AX" num_pins="1"/>
+      <input name="A1" num_pins="1"/>
+      <input name="A2" num_pins="1"/>
+      <input name="A3" num_pins="1"/>
+      <input name="A4" num_pins="1"/>
+      <input name="A5" num_pins="1"/>
+      <input name="A6" num_pins="1"/>
+      <input name="SR" num_pins="1"/>
+      <input name="CE" num_pins="1"/>
+      <input name="WE" num_pins="1"/>
+      <clock name="CLK" num_pins="1"/>
+      <input name="CIN" num_pins="1"/>
+      <output name="COUT" num_pins="1"/>
+      <output name="DMUX" num_pins="1"/>
+      <output name="D" num_pins="1"/>
+      <output name="DQ" num_pins="1"/>
+      <output name="CMUX" num_pins="1"/>
+      <output name="C" num_pins="1"/>
+      <output name="CQ" num_pins="1"/>
+      <output name="BMUX" num_pins="1"/>
+      <output name="B" num_pins="1"/>
+      <output name="BQ" num_pins="1"/>
+      <output name="AMUX" num_pins="1"/>
+      <output name="A" num_pins="1"/>
+      <output name="AQ" num_pins="1"/>
+      <pb_type name="BLK_IG-COMMON_SLICE" num_pb="1">
+        <input name="DX" num_pins="1"/>
+        <input name="CX" num_pins="1"/>
+        <input name="BX" num_pins="1"/>
+        <input name="AX" num_pins="1"/>
+        <input name="DO6" num_pins="1"/>
+        <input name="CO6" num_pins="1"/>
+        <input name="BO6" num_pins="1"/>
+        <input name="AO6" num_pins="1"/>
+        <input name="DO5" num_pins="1"/>
+        <input name="CO5" num_pins="1"/>
+        <input name="BO5" num_pins="1"/>
+        <input name="AO5" num_pins="1"/>
+        <input name="SR" num_pins="1"/>
+        <input name="CE" num_pins="1"/>
+        <input name="AMC31" num_pins="1"/>
+        <clock name="CLK" num_pins="1"/>
+        <input name="CIN" num_pins="1"/>
+        <output name="COUT" num_pins="1"/>
+        <output name="DMUX" num_pins="1"/>
+        <output name="D" num_pins="1"/>
+        <output name="DQ" num_pins="1"/>
+        <output name="CMUX" num_pins="1"/>
+        <output name="C" num_pins="1"/>
+        <output name="CQ" num_pins="1"/>
+        <output name="BMUX" num_pins="1"/>
+        <output name="B" num_pins="1"/>
+        <output name="BQ" num_pins="1"/>
+        <output name="AMUX" num_pins="1"/>
+        <output name="A" num_pins="1"/>
+        <output name="AQ" num_pins="1"/>
+        <!-- Model of FF group in SLICEL and SLICEM -->
+        <pb_type name="BLK_BB-SLICE_FF" num_pb="1">
+          <!-- CK, CE and SR are slice wide. -->
+          <input name="CE" num_pins="1"/>
+          <input name="SR" num_pins="1"/>
+          <clock name="CK" num_pins="1"/>
+          <input name="D" num_pins="4"/>
+          <output name="Q" num_pins="4"/>
+          <input name="D5" num_pins="4"/>
+          <output name="Q5" num_pins="4"/>
+          <!-- |      |FFSYNC|LATCH|ZRST | -->
+          <!-- |FDRE  |   X  |     |  X  | -->
+          <mode name="FDRE">
+            <pb_type blif_model=".subckt FDRE" name="BEL_FF-FDRE" num_pb="8">
+              <input name="D" num_pins="1"/>
+              <input name="CE" num_pins="1"/>
+              <clock name="C" num_pins="1"/>
+              <input name="R" num_pins="1"/>
+              <output name="Q" num_pins="1"/>
+              <T_setup clock="C" port="BEL_FF-FDRE.D" value="10e-12"/>
+              <T_setup clock="C" port="BEL_FF-FDRE.CE" value="10e-12"/>
+              <T_setup clock="C" port="BEL_FF-FDRE.R" value="10e-12"/>
+              <T_clock_to_Q clock="C" max="10e-12" port="BEL_FF-FDRE.Q"/>
+            </pb_type>
+            <interconnect>
+              <complete input="BLK_BB-SLICE_FF.CE" name="CE" output="BEL_FF-FDRE.CE"/>
+              <complete input="BLK_BB-SLICE_FF.CK" name="C" output="BEL_FF-FDRE.C"/>
+              <complete input="BLK_BB-SLICE_FF.SR" name="SR" output="BEL_FF-FDRE.R"/>
+              <direct input="BLK_BB-SLICE_FF.D[3:0]" name="D" output="BEL_FF-FDRE[3:0].D"/>
+              <direct input="BEL_FF-FDRE[3:0].Q" name="Q" output="BLK_BB-SLICE_FF.Q[3:0]"/>
+              <direct input="BLK_BB-SLICE_FF.D5[3:0]" name="D5" output="BEL_FF-FDRE[7:4].D"/>
+              <direct input="BEL_FF-FDRE[7:4].Q" name="Q5" output="BLK_BB-SLICE_FF.Q5[3:0]"/>
+            </interconnect>
+          </mode>
+        </pb_type>
+        <!-- CARRY4 logic -->
+        <pb_type blif_model=".subckt CARRY0" name="BEL_BB-CARRY0" num_pb="1">
+          <input name="CI" num_pins="1"/>
+          <input name="CI_INIT" num_pins="1"/>
+          <output name="CO_CHAIN" num_pins="1"/>
+          <output name="CO_FABRIC" num_pins="1"/>
+          <input name="DI" num_pins="1"/>
+          <output name="O" num_pins="1"/>
+          <input name="S" num_pins="1"/>
+          <delay_constant in_port="BEL_BB-CARRY0.CI" max="10e-12" out_port="BEL_BB-CARRY0.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY0.CI_INIT" max="10e-12" out_port="BEL_BB-CARRY0.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY0.DI" max="10e-12" out_port="BEL_BB-CARRY0.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY0.S" max="10e-12" out_port="BEL_BB-CARRY0.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY0.CI" max="10e-12" out_port="BEL_BB-CARRY0.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY0.CI_INIT" max="10e-12" out_port="BEL_BB-CARRY0.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY0.DI" max="10e-12" out_port="BEL_BB-CARRY0.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY0.S" max="10e-12" out_port="BEL_BB-CARRY0.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY0.CI" max="10e-12" out_port="BEL_BB-CARRY0.O"/>
+          <delay_constant in_port="BEL_BB-CARRY0.CI_INIT" max="10e-12" out_port="BEL_BB-CARRY0.O"/>
+          <delay_constant in_port="BEL_BB-CARRY0.S" max="10e-12" out_port="BEL_BB-CARRY0.O"/>
+        </pb_type>
+        <pb_type blif_model=".subckt CARRY" name="BEL_BB-CARRY" num_pb="3">
+          <input name="CI" num_pins="1"/>
+          <output name="CO_CHAIN" num_pins="1"/>
+          <output name="CO_FABRIC" num_pins="1"/>
+          <input name="DI" num_pins="1"/>
+          <output name="O" num_pins="1"/>
+          <input name="S" num_pins="1"/>
+          <delay_constant in_port="BEL_BB-CARRY.CI" max="10e-12" out_port="BEL_BB-CARRY.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY.DI" max="10e-12" out_port="BEL_BB-CARRY.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY.S" max="10e-12" out_port="BEL_BB-CARRY.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY.CI" max="10e-12" out_port="BEL_BB-CARRY.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY.DI" max="10e-12" out_port="BEL_BB-CARRY.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY.S" max="10e-12" out_port="BEL_BB-CARRY.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY.CI" max="10e-12" out_port="BEL_BB-CARRY.O"/>
+          <delay_constant in_port="BEL_BB-CARRY.S" max="10e-12" out_port="BEL_BB-CARRY.O"/>
+        </pb_type>
+        <interconnect>
+          <direct input="BLK_IG-COMMON_SLICE.DX" name="DX" output="BLK_BB-SLICE_FF.D5[3]"/>
+          <direct input="BLK_IG-COMMON_SLICE.CX" name="CX" output="BLK_BB-SLICE_FF.D5[2]"/>
+          <direct input="BLK_IG-COMMON_SLICE.BX" name="BX" output="BLK_BB-SLICE_FF.D5[1]"/>
+          <direct input="BLK_IG-COMMON_SLICE.AX" name="AX" output="BLK_BB-SLICE_FF.D5[0]"/>
+          <mux input="BLK_IG-COMMON_SLICE.AMC31 BLK_BB-SLICE_FF.Q5[3] BEL_BB-CARRY[2].O BEL_BB-CARRY[2].CO_FABRIC BLK_IG-COMMON_SLICE.DO6 BLK_IG-COMMON_SLICE.DO5" name="DMUX" output="BLK_IG-COMMON_SLICE.DMUX"/>
+          <mux input="BLK_BB-SLICE_FF.Q5[2] BEL_BB-CARRY[1].O BEL_BB-CARRY[1].CO_FABRIC BLK_IG-COMMON_SLICE.CO6 BLK_IG-COMMON_SLICE.CO5" name="CMUX" output="BLK_IG-COMMON_SLICE.CMUX"/>
+          <mux input="BLK_BB-SLICE_FF.Q5[1] BEL_BB-CARRY[0].O BEL_BB-CARRY[0].CO_FABRIC BLK_IG-COMMON_SLICE.BO6 BLK_IG-COMMON_SLICE.BO5" name="BMUX" output="BLK_IG-COMMON_SLICE.BMUX"/>
+          <mux input="BLK_BB-SLICE_FF.Q5[0] BEL_BB-CARRY0.O BEL_BB-CARRY0.CO_FABRIC BLK_IG-COMMON_SLICE.AO6 BLK_IG-COMMON_SLICE.AO5" name="AMUX" output="BLK_IG-COMMON_SLICE.AMUX"/>
+          <mux input="BEL_BB-CARRY[2].O BEL_BB-CARRY[2].CO_FABRIC BLK_IG-COMMON_SLICE.DO6 BLK_IG-COMMON_SLICE.DO5 BLK_IG-COMMON_SLICE.DX" name="DFFMUX" output="BLK_BB-SLICE_FF.D[3]"/>
+          <mux input="BEL_BB-CARRY[1].O BEL_BB-CARRY[1].CO_FABRIC BLK_IG-COMMON_SLICE.CO6 BLK_IG-COMMON_SLICE.CO5 BLK_IG-COMMON_SLICE.CX" name="CFFMUX" output="BLK_BB-SLICE_FF.D[2]"/>
+          <mux input="BEL_BB-CARRY[0].O BEL_BB-CARRY[0].CO_FABRIC BLK_IG-COMMON_SLICE.BO6 BLK_IG-COMMON_SLICE.BO5 BLK_IG-COMMON_SLICE.BX" name="BFFMUX" output="BLK_BB-SLICE_FF.D[1]"/>
+          <mux input="BEL_BB-CARRY0.O BEL_BB-CARRY0.CO_FABRIC BLK_IG-COMMON_SLICE.AO6 BLK_IG-COMMON_SLICE.AO5 BLK_IG-COMMON_SLICE.AX" name="AFFMUX" output="BLK_BB-SLICE_FF.D[0]"/>
+          <direct input="BLK_BB-SLICE_FF.Q[0]" name="AFF" output="BLK_IG-COMMON_SLICE.AQ"/>
+          <direct input="BLK_BB-SLICE_FF.Q[1]" name="BFF" output="BLK_IG-COMMON_SLICE.BQ"/>
+          <direct input="BLK_BB-SLICE_FF.Q[2]" name="CFF" output="BLK_IG-COMMON_SLICE.CQ"/>
+          <direct input="BLK_BB-SLICE_FF.Q[3]" name="DFF" output="BLK_IG-COMMON_SLICE.DQ"/>
+          <!-- LUT O6 output -->
+          <direct input="BLK_IG-COMMON_SLICE.DO6" name="BLK_IG-COMMON_SLICE_DOUT" output="BLK_IG-COMMON_SLICE.D"/>
+          <direct input="BLK_IG-COMMON_SLICE.CO6" name="BLK_IG-COMMON_SLICE_COUT" output="BLK_IG-COMMON_SLICE.C"/>
+          <direct input="BLK_IG-COMMON_SLICE.BO6" name="BLK_IG-COMMON_SLICE_BOUT" output="BLK_IG-COMMON_SLICE.B"/>
+          <direct input="BLK_IG-COMMON_SLICE.AO6" name="BLK_IG-COMMON_SLICE_AOUT" output="BLK_IG-COMMON_SLICE.A"/>
+          <!-- Carry -->
+          <!-- Carry initialization -->
+          <direct input="BLK_IG-COMMON_SLICE.AX" name="PRECYINIT_MUX" output="BEL_BB-CARRY0.CI_INIT"/>
+
+          <direct input="BLK_IG-COMMON_SLICE.CIN" name="CIN_TO_CARRY0" output="BEL_BB-CARRY0.CI"/>
+          <!-- Tile internal carry -->
+          <direct input="BEL_BB-CARRY0.CO_CHAIN" name="CARRY0_TO_CARRY1" output="BEL_BB-CARRY[0].CI"/>
+          <direct input="BEL_BB-CARRY[0].CO_CHAIN" name="CARRY1_TO_CARRY2" output="BEL_BB-CARRY[1].CI"/>
+          <direct input="BEL_BB-CARRY[1].CO_CHAIN" name="CARRY2_TO_CARRY3" output="BEL_BB-CARRY[2].CI"/>
+          <!-- Carry selects -->
+          <direct input="BLK_IG-COMMON_SLICE.DO6" name="CARRY_S3" output="BEL_BB-CARRY[2].S"/>
+          <direct input="BLK_IG-COMMON_SLICE.CO6" name="CARRY_S2" output="BEL_BB-CARRY[1].S"/>
+          <direct input="BLK_IG-COMMON_SLICE.BO6" name="CARRY_S1" output="BEL_BB-CARRY[0].S"/>
+          <direct input="BLK_IG-COMMON_SLICE.AO6" name="CARRY_S0" output="BEL_BB-CARRY0.S"/>
+          <!-- Carry MUXCY.DI -->
+          <mux input="BLK_IG-COMMON_SLICE.DO5 BLK_IG-COMMON_SLICE.DX" name="CARRY_DI3" output="BEL_BB-CARRY[2].DI"/>
+          <mux input="BLK_IG-COMMON_SLICE.CO5 BLK_IG-COMMON_SLICE.CX" name="CARRY_DI2" output="BEL_BB-CARRY[1].DI"/>
+          <mux input="BLK_IG-COMMON_SLICE.BO5 BLK_IG-COMMON_SLICE.BX" name="CARRY_DI1" output="BEL_BB-CARRY[0].DI"/>
+          <mux input="BLK_IG-COMMON_SLICE.AO5 BLK_IG-COMMON_SLICE.AX" name="CARRY_DI0" output="BEL_BB-CARRY0.DI"/>
+          <direct input="BEL_BB-CARRY[2].CO_CHAIN" name="COUT" output="BLK_IG-COMMON_SLICE.COUT"/>
+          <!-- Clock, Clock Enable and Reset -->
+          <direct input="BLK_IG-COMMON_SLICE.CLK" name="CK" output="BLK_BB-SLICE_FF.CK"/>
+          <direct input="BLK_IG-COMMON_SLICE.CE" name="CE" output="BLK_BB-SLICE_FF.CE"/>
+          <direct input="BLK_IG-COMMON_SLICE.SR" name="SR" output="BLK_BB-SLICE_FF.SR"/>
+        </interconnect>
+      </pb_type>
+      <pb_type name="BLK_IG-SLICEM_MODES" num_pb="1">
+        <input name="DI" num_pins="1"/>
+        <input name="DX" num_pins="1"/>
+        <input name="D1" num_pins="1"/>
+        <input name="D2" num_pins="1"/>
+        <input name="D3" num_pins="1"/>
+        <input name="D4" num_pins="1"/>
+        <input name="D5" num_pins="1"/>
+        <input name="D6" num_pins="1"/>
+        <input name="CI" num_pins="1"/>
+        <input name="CX" num_pins="1"/>
+        <input name="C1" num_pins="1"/>
+        <input name="C2" num_pins="1"/>
+        <input name="C3" num_pins="1"/>
+        <input name="C4" num_pins="1"/>
+        <input name="C5" num_pins="1"/>
+        <input name="C6" num_pins="1"/>
+        <input name="BI" num_pins="1"/>
+        <input name="BX" num_pins="1"/>
+        <input name="B1" num_pins="1"/>
+        <input name="B2" num_pins="1"/>
+        <input name="B3" num_pins="1"/>
+        <input name="B4" num_pins="1"/>
+        <input name="B5" num_pins="1"/>
+        <input name="B6" num_pins="1"/>
+        <input name="AI" num_pins="1"/>
+        <input name="AX" num_pins="1"/>
+        <input name="A1" num_pins="1"/>
+        <input name="A2" num_pins="1"/>
+        <input name="A3" num_pins="1"/>
+        <input name="A4" num_pins="1"/>
+        <input name="A5" num_pins="1"/>
+        <input name="A6" num_pins="1"/>
+        <input name="WA7" num_pins="1"/>
+        <input name="WA8" num_pins="1"/>
+        <input name="CE" num_pins="1"/>
+        <input name="WE" num_pins="1"/>
+        <output name="DO6" num_pins="1"/>
+        <output name="DO5" num_pins="1"/>
+        <output name="CO6" num_pins="1"/>
+        <output name="CO5" num_pins="1"/>
+        <output name="BO6" num_pins="1"/>
+        <output name="BO5" num_pins="1"/>
+        <output name="AO6" num_pins="1"/>
+        <output name="AO5" num_pins="1"/>
+        <clock name="CLK" num_pins="1"/>
+        <mode name="LUTs">
+          <pb_type name="BLK_IG-COMMON_LUT_AND_F78MUX" num_pb="1">
+            <input name="D1" num_pins="1"/>
+            <input name="D2" num_pins="1"/>
+            <input name="D3" num_pins="1"/>
+            <input name="D4" num_pins="1"/>
+            <input name="D5" num_pins="1"/>
+            <input name="D6" num_pins="1"/>
+            <input name="CX" num_pins="1"/>
+            <input name="C1" num_pins="1"/>
+            <input name="C2" num_pins="1"/>
+            <input name="C3" num_pins="1"/>
+            <input name="C4" num_pins="1"/>
+            <input name="C5" num_pins="1"/>
+            <input name="C6" num_pins="1"/>
+            <input name="BX" num_pins="1"/>
+            <input name="B1" num_pins="1"/>
+            <input name="B2" num_pins="1"/>
+            <input name="B3" num_pins="1"/>
+            <input name="B4" num_pins="1"/>
+            <input name="B5" num_pins="1"/>
+            <input name="B6" num_pins="1"/>
+            <input name="AX" num_pins="1"/>
+            <input name="A1" num_pins="1"/>
+            <input name="A2" num_pins="1"/>
+            <input name="A3" num_pins="1"/>
+            <input name="A4" num_pins="1"/>
+            <input name="A5" num_pins="1"/>
+            <input name="A6" num_pins="1"/>
+            <output name="DO6" num_pins="1"/>
+            <output name="CO6" num_pins="1"/>
+            <output name="BO6" num_pins="1"/>
+            <output name="AO6" num_pins="1"/>
+            <output name="DO5" num_pins="1"/>
+            <output name="CO5" num_pins="1"/>
+            <output name="BO5" num_pins="1"/>
+            <output name="AO5" num_pins="1"/>
+            <pb_type name="BLK_IG-ALUT" num_pb="1">
+              <input name="A1" num_pins="1"/>
+              <input name="A2" num_pins="1"/>
+              <input name="A3" num_pins="1"/>
+              <input name="A4" num_pins="1"/>
+              <input name="A5" num_pins="1"/>
+              <input name="A6" num_pins="1"/>
+              <output name="O5" num_pins="1"/>
+              <output name="O6" num_pins="1"/>
+              <!-- LUT5+LUT5+F6MUX with two outputs -->
+              <mode name="BLK_IG-ALUT-LUT5_MUX">
+                <pb_type blif_model=".names" class="lut" name="BEL_LT-A5LUT" num_pb="2">
+                  <input name="in" num_pins="5" port_class="lut_in"/>
+                  <output name="out" num_pins="1" port_class="lut_out"/>
+                  <delay_matrix in_port="BEL_LT-A5LUT.in" out_port="BEL_LT-A5LUT.out" type="max">
+                    0.068e-9
+                    0.068e-9
+                    0.068e-9
+                    0.068e-9
+                    0.068e-9
+                  </delay_matrix>
+                </pb_type>
+                <interconnect>
+                  <!-- LUT5 (upper) -> O6 -->
+                  <direct input="BLK_IG-ALUT.A5" name="ALUT_A5_0" output="BEL_LT-A5LUT[0].in[4]"/>
+                  <direct input="BLK_IG-ALUT.A4" name="ALUT_A4_0" output="BEL_LT-A5LUT[0].in[3]"/>
+                  <direct input="BLK_IG-ALUT.A3" name="ALUT_A3_0" output="BEL_LT-A5LUT[0].in[2]"/>
+                  <direct input="BLK_IG-ALUT.A2" name="ALUT_A2_0" output="BEL_LT-A5LUT[0].in[1]"/>
+                  <direct input="BLK_IG-ALUT.A1" name="ALUT_A1_0" output="BEL_LT-A5LUT[0].in[0]"/>
+                  <!-- LUT5 (lower) -> O5 -->
+                  <direct input="BLK_IG-ALUT.A5" name="ALUT_A5_1" output="BEL_LT-A5LUT[1].in[4]"/>
+                  <direct input="BLK_IG-ALUT.A4" name="ALUT_A4_1" output="BEL_LT-A5LUT[1].in[3]"/>
+                  <direct input="BLK_IG-ALUT.A3" name="ALUT_A3_1" output="BEL_LT-A5LUT[1].in[2]"/>
+                  <direct input="BLK_IG-ALUT.A2" name="ALUT_A2_1" output="BEL_LT-A5LUT[1].in[1]"/>
+                  <direct input="BLK_IG-ALUT.A1" name="ALUT_A1_1" output="BEL_LT-A5LUT[1].in[0]"/>
+                  <!-- MUX used for LUT6 -->
+                  <!-- LUT outputs -->
+                  <direct input="BEL_LT-A5LUT[0].out" name="O5" output="BLK_IG-ALUT.O5">
+                    <pack_pattern in_port="BEL_LT-A5LUT[0].out" name="LUT5x2" out_port="BLK_IG-ALUT.O5"/>
+                  </direct>
+                  <direct input="BEL_LT-A5LUT[1].out" name="O6" output="BLK_IG-ALUT.O6">
+                    <pack_pattern in_port="BEL_LT-A5LUT[1].out" name="LUT5x2" out_port="BLK_IG-ALUT.O6"/>
+                  </direct>
+                </interconnect>
+              </mode>
+            </pb_type>
+            <pb_type name="BLK_IG-BLUT" num_pb="1">
+              <input name="A1" num_pins="1"/>
+              <input name="A2" num_pins="1"/>
+              <input name="A3" num_pins="1"/>
+              <input name="A4" num_pins="1"/>
+              <input name="A5" num_pins="1"/>
+              <input name="A6" num_pins="1"/>
+              <output name="O5" num_pins="1"/>
+              <output name="O6" num_pins="1"/>
+              <!-- LUT5+LUT5+F6MUX with two outputs -->
+              <mode name="BLK_IG-BLUT-LUT5_MUX">
+                <pb_type blif_model=".names" class="lut" name="BEL_LT-B5LUT" num_pb="2">
+                  <input name="in" num_pins="5" port_class="lut_in"/>
+                  <output name="out" num_pins="1" port_class="lut_out"/>
+                  <delay_matrix in_port="BEL_LT-B5LUT.in" out_port="BEL_LT-B5LUT.out" type="max">
+                    0.068e-9
+                    0.068e-9
+                    0.068e-9
+                    0.068e-9
+                    0.068e-9
+                  </delay_matrix>
+                </pb_type>
+                <interconnect>
+                  <!-- LUT5 (upper) -> O6 -->
+                  <direct input="BLK_IG-BLUT.A5" name="BLUT_A5_0" output="BEL_LT-B5LUT[0].in[4]"/>
+                  <direct input="BLK_IG-BLUT.A4" name="BLUT_A4_0" output="BEL_LT-B5LUT[0].in[3]"/>
+                  <direct input="BLK_IG-BLUT.A3" name="BLUT_A3_0" output="BEL_LT-B5LUT[0].in[2]"/>
+                  <direct input="BLK_IG-BLUT.A2" name="BLUT_A2_0" output="BEL_LT-B5LUT[0].in[1]"/>
+                  <direct input="BLK_IG-BLUT.A1" name="BLUT_A1_0" output="BEL_LT-B5LUT[0].in[0]"/>
+                  <!-- LUT5 (lower) -> O5 -->
+                  <direct input="BLK_IG-BLUT.A5" name="BLUT_A5_1" output="BEL_LT-B5LUT[1].in[4]"/>
+                  <direct input="BLK_IG-BLUT.A4" name="BLUT_A4_1" output="BEL_LT-B5LUT[1].in[3]"/>
+                  <direct input="BLK_IG-BLUT.A3" name="BLUT_A3_1" output="BEL_LT-B5LUT[1].in[2]"/>
+                  <direct input="BLK_IG-BLUT.A2" name="BLUT_A2_1" output="BEL_LT-B5LUT[1].in[1]"/>
+                  <direct input="BLK_IG-BLUT.A1" name="BLUT_A1_1" output="BEL_LT-B5LUT[1].in[0]"/>
+                  <!-- LUT outputs -->
+                  <direct input="BEL_LT-B5LUT[0].out" name="O5" output="BLK_IG-BLUT.O5">
+                    <pack_pattern in_port="BEL_LT-B5LUT[0].out" name="LUT5x2" out_port="BLK_IG-BLUT.O5"/>
+                  </direct>
+                  <direct input="BEL_LT-B5LUT[1].out" name="O6" output="BLK_IG-BLUT.O6">
+                    <pack_pattern in_port="BEL_LT-B5LUT[1].out" name="LUT5x2" out_port="BLK_IG-BLUT.O6"/>
+                  </direct>
+                </interconnect>
+              </mode>
+            </pb_type>
+            <pb_type name="BLK_IG-CLUT" num_pb="1">
+              <input name="A1" num_pins="1"/>
+              <input name="A2" num_pins="1"/>
+              <input name="A3" num_pins="1"/>
+              <input name="A4" num_pins="1"/>
+              <input name="A5" num_pins="1"/>
+              <input name="A6" num_pins="1"/>
+              <output name="O5" num_pins="1"/>
+              <output name="O6" num_pins="1"/>
+              <!-- LUT5+LUT5+F6MUX with two outputs -->
+              <mode name="BLK_IG-CLUT-LUT5_MUX">
+                <pb_type blif_model=".names" class="lut" name="BEL_LT-C5LUT" num_pb="2">
+                  <input name="in" num_pins="5" port_class="lut_in"/>
+                  <output name="out" num_pins="1" port_class="lut_out"/>
+                  <delay_matrix in_port="BEL_LT-C5LUT.in" out_port="BEL_LT-C5LUT.out" type="max">
+                    0.068e-9
+                    0.068e-9
+                    0.068e-9
+                    0.068e-9
+                    0.068e-9
+                  </delay_matrix>
+                </pb_type>
+                <interconnect>
+                  <!-- LUT5 (upper) -> O6 -->
+                  <direct input="BLK_IG-CLUT.A5" name="CLUT_A5_0" output="BEL_LT-C5LUT[0].in[4]"/>
+                  <direct input="BLK_IG-CLUT.A4" name="CLUT_A4_0" output="BEL_LT-C5LUT[0].in[3]"/>
+                  <direct input="BLK_IG-CLUT.A3" name="CLUT_A3_0" output="BEL_LT-C5LUT[0].in[2]"/>
+                  <direct input="BLK_IG-CLUT.A2" name="CLUT_A2_0" output="BEL_LT-C5LUT[0].in[1]"/>
+                  <direct input="BLK_IG-CLUT.A1" name="CLUT_A1_0" output="BEL_LT-C5LUT[0].in[0]"/>
+                  <!-- LUT5 (lower) -> O5 -->
+                  <direct input="BLK_IG-CLUT.A5" name="CLUT_A5_1" output="BEL_LT-C5LUT[1].in[4]"/>
+                  <direct input="BLK_IG-CLUT.A4" name="CLUT_A4_1" output="BEL_LT-C5LUT[1].in[3]"/>
+                  <direct input="BLK_IG-CLUT.A3" name="CLUT_A3_1" output="BEL_LT-C5LUT[1].in[2]"/>
+                  <direct input="BLK_IG-CLUT.A2" name="CLUT_A2_1" output="BEL_LT-C5LUT[1].in[1]"/>
+                  <direct input="BLK_IG-CLUT.A1" name="CLUT_A1_1" output="BEL_LT-C5LUT[1].in[0]"/>
+                  <!-- LUT outputs -->
+                  <direct input="BEL_LT-C5LUT[0].out" name="O5" output="BLK_IG-CLUT.O5">
+                    <pack_pattern in_port="BEL_LT-C5LUT[0].out" name="LUT5x2" out_port="BLK_IG-CLUT.O5"/>
+                  </direct>
+                  <direct input="BEL_LT-C5LUT[1].out" name="O6" output="BLK_IG-CLUT.O6">
+                    <pack_pattern in_port="BEL_LT-C5LUT[1].out" name="LUT5x2" out_port="BLK_IG-CLUT.O6"/>
+                  </direct>
+                </interconnect>
+              </mode>
+            </pb_type>
+            <pb_type name="BLK_IG-DLUT" num_pb="1">
+              <input name="A1" num_pins="1"/>
+              <input name="A2" num_pins="1"/>
+              <input name="A3" num_pins="1"/>
+              <input name="A4" num_pins="1"/>
+              <input name="A5" num_pins="1"/>
+              <input name="A6" num_pins="1"/>
+              <output name="O5" num_pins="1"/>
+              <output name="O6" num_pins="1"/>
+              <!-- LUT5+LUT5+F6MUX with two outputs -->
+              <mode name="BLK_IG-DLUT-LUT5_MUX">
+                <pb_type blif_model=".names" class="lut" name="BEL_LT-D5LUT" num_pb="2">
+                  <input name="in" num_pins="5" port_class="lut_in"/>
+                  <output name="out" num_pins="1" port_class="lut_out"/>
+                  <delay_matrix in_port="BEL_LT-D5LUT.in" out_port="BEL_LT-D5LUT.out" type="max">
+                    0.068e-9
+                    0.068e-9
+                    0.068e-9
+                    0.068e-9
+                    0.068e-9
+                  </delay_matrix>
+                </pb_type>
+                <interconnect>
+                  <!-- LUT5 (upper) -> O6 -->
+                  <direct input="BLK_IG-DLUT.A5" name="DLUT_A5_0" output="BEL_LT-D5LUT[0].in[4]"/>
+                  <direct input="BLK_IG-DLUT.A4" name="DLUT_A4_0" output="BEL_LT-D5LUT[0].in[3]"/>
+                  <direct input="BLK_IG-DLUT.A3" name="DLUT_A3_0" output="BEL_LT-D5LUT[0].in[2]"/>
+                  <direct input="BLK_IG-DLUT.A2" name="DLUT_A2_0" output="BEL_LT-D5LUT[0].in[1]"/>
+                  <direct input="BLK_IG-DLUT.A1" name="DLUT_A1_0" output="BEL_LT-D5LUT[0].in[0]"/>
+                  <!-- LUT5 (lower) -> O5 -->
+                  <direct input="BLK_IG-DLUT.A5" name="DLUT_A5_1" output="BEL_LT-D5LUT[1].in[4]"/>
+                  <direct input="BLK_IG-DLUT.A4" name="DLUT_A4_1" output="BEL_LT-D5LUT[1].in[3]"/>
+                  <direct input="BLK_IG-DLUT.A3" name="DLUT_A3_1" output="BEL_LT-D5LUT[1].in[2]"/>
+                  <direct input="BLK_IG-DLUT.A2" name="DLUT_A2_1" output="BEL_LT-D5LUT[1].in[1]"/>
+                  <direct input="BLK_IG-DLUT.A1" name="DLUT_A1_1" output="BEL_LT-D5LUT[1].in[0]"/>
+                  <!-- LUT outputs -->
+                  <direct input="BEL_LT-D5LUT[0].out" name="O5" output="BLK_IG-DLUT.O5">
+                    <pack_pattern in_port="BEL_LT-D5LUT[0].out" name="LUT5x2" out_port="BLK_IG-DLUT.O5"/>
+                  </direct>
+                  <direct input="BEL_LT-D5LUT[1].out" name="O6" output="BLK_IG-DLUT.O6">
+                    <pack_pattern in_port="BEL_LT-D5LUT[1].out" name="LUT5x2" out_port="BLK_IG-DLUT.O6"/>
+                  </direct>
+                </interconnect>
+              </mode>
+            </pb_type>
+            <interconnect>
+              <!-- LUT input pins -->
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.D1" name="D1" output="BLK_IG-DLUT.A1"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.D2" name="D2" output="BLK_IG-DLUT.A2"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.D3" name="D3" output="BLK_IG-DLUT.A3"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.D4" name="D4" output="BLK_IG-DLUT.A4"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.D5" name="D5" output="BLK_IG-DLUT.A5"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.D6" name="D6" output="BLK_IG-DLUT.A6"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.C1" name="C1" output="BLK_IG-CLUT.A1"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.C2" name="C2" output="BLK_IG-CLUT.A2"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.C3" name="C3" output="BLK_IG-CLUT.A3"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.C4" name="C4" output="BLK_IG-CLUT.A4"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.C5" name="C5" output="BLK_IG-CLUT.A5"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.C6" name="C6" output="BLK_IG-CLUT.A6"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.B1" name="B1" output="BLK_IG-BLUT.A1"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.B2" name="B2" output="BLK_IG-BLUT.A2"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.B3" name="B3" output="BLK_IG-BLUT.A3"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.B4" name="B4" output="BLK_IG-BLUT.A4"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.B5" name="B5" output="BLK_IG-BLUT.A5"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.B6" name="B6" output="BLK_IG-BLUT.A6"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.A1" name="A1" output="BLK_IG-ALUT.A1"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.A2" name="A2" output="BLK_IG-ALUT.A2"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.A3" name="A3" output="BLK_IG-ALUT.A3"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.A4" name="A4" output="BLK_IG-ALUT.A4"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.A5" name="A5" output="BLK_IG-ALUT.A5"/>
+              <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.A6" name="A6" output="BLK_IG-ALUT.A6"/>
+              <direct input="BLK_IG-DLUT.O6" name="DO6" output="BLK_IG-COMMON_LUT_AND_F78MUX.DO6"/>
+              <direct input="BLK_IG-DLUT.O5" name="DO5" output="BLK_IG-COMMON_LUT_AND_F78MUX.DO5"/>
+              <direct input="BLK_IG-CLUT.O6" name="CO6" output="BLK_IG-COMMON_LUT_AND_F78MUX.CO6"/>
+              <direct input="BLK_IG-CLUT.O5" name="CO5" output="BLK_IG-COMMON_LUT_AND_F78MUX.CO5"/>
+              <direct input="BLK_IG-BLUT.O6" name="BO6" output="BLK_IG-COMMON_LUT_AND_F78MUX.BO6"/>
+              <direct input="BLK_IG-BLUT.O5" name="BO5" output="BLK_IG-COMMON_LUT_AND_F78MUX.BO5"/>
+              <direct input="BLK_IG-ALUT.O6" name="AO6" output="BLK_IG-COMMON_LUT_AND_F78MUX.AO6"/>
+              <direct input="BLK_IG-ALUT.O5" name="AO5" output="BLK_IG-COMMON_LUT_AND_F78MUX.AO5"/>
+            </interconnect>
+          </pb_type>
+          <interconnect>
+            <!-- Normal LUT input pins -->
+            <direct input="BLK_IG-SLICEM_MODES.D1" name="D1" output="BLK_IG-COMMON_LUT_AND_F78MUX.D1"/>
+            <direct input="BLK_IG-SLICEM_MODES.D2" name="D2" output="BLK_IG-COMMON_LUT_AND_F78MUX.D2"/>
+            <direct input="BLK_IG-SLICEM_MODES.D3" name="D3" output="BLK_IG-COMMON_LUT_AND_F78MUX.D3"/>
+            <direct input="BLK_IG-SLICEM_MODES.D4" name="D4" output="BLK_IG-COMMON_LUT_AND_F78MUX.D4"/>
+            <direct input="BLK_IG-SLICEM_MODES.D5" name="D5" output="BLK_IG-COMMON_LUT_AND_F78MUX.D5"/>
+            <direct input="BLK_IG-SLICEM_MODES.D6" name="D6" output="BLK_IG-COMMON_LUT_AND_F78MUX.D6"/>
+            <direct input="BLK_IG-SLICEM_MODES.C1" name="C1" output="BLK_IG-COMMON_LUT_AND_F78MUX.C1"/>
+            <direct input="BLK_IG-SLICEM_MODES.C2" name="C2" output="BLK_IG-COMMON_LUT_AND_F78MUX.C2"/>
+            <direct input="BLK_IG-SLICEM_MODES.C3" name="C3" output="BLK_IG-COMMON_LUT_AND_F78MUX.C3"/>
+            <direct input="BLK_IG-SLICEM_MODES.C4" name="C4" output="BLK_IG-COMMON_LUT_AND_F78MUX.C4"/>
+            <direct input="BLK_IG-SLICEM_MODES.C5" name="C5" output="BLK_IG-COMMON_LUT_AND_F78MUX.C5"/>
+            <direct input="BLK_IG-SLICEM_MODES.C6" name="C6" output="BLK_IG-COMMON_LUT_AND_F78MUX.C6"/>
+            <direct input="BLK_IG-SLICEM_MODES.B1" name="B1" output="BLK_IG-COMMON_LUT_AND_F78MUX.B1"/>
+            <direct input="BLK_IG-SLICEM_MODES.B2" name="B2" output="BLK_IG-COMMON_LUT_AND_F78MUX.B2"/>
+            <direct input="BLK_IG-SLICEM_MODES.B3" name="B3" output="BLK_IG-COMMON_LUT_AND_F78MUX.B3"/>
+            <direct input="BLK_IG-SLICEM_MODES.B4" name="B4" output="BLK_IG-COMMON_LUT_AND_F78MUX.B4"/>
+            <direct input="BLK_IG-SLICEM_MODES.B5" name="B5" output="BLK_IG-COMMON_LUT_AND_F78MUX.B5"/>
+            <direct input="BLK_IG-SLICEM_MODES.B6" name="B6" output="BLK_IG-COMMON_LUT_AND_F78MUX.B6"/>
+            <direct input="BLK_IG-SLICEM_MODES.A1" name="A1" output="BLK_IG-COMMON_LUT_AND_F78MUX.A1"/>
+            <direct input="BLK_IG-SLICEM_MODES.A2" name="A2" output="BLK_IG-COMMON_LUT_AND_F78MUX.A2"/>
+            <direct input="BLK_IG-SLICEM_MODES.A3" name="A3" output="BLK_IG-COMMON_LUT_AND_F78MUX.A3"/>
+            <direct input="BLK_IG-SLICEM_MODES.A4" name="A4" output="BLK_IG-COMMON_LUT_AND_F78MUX.A4"/>
+            <direct input="BLK_IG-SLICEM_MODES.A5" name="A5" output="BLK_IG-COMMON_LUT_AND_F78MUX.A5"/>
+            <direct input="BLK_IG-SLICEM_MODES.A6" name="A6" output="BLK_IG-COMMON_LUT_AND_F78MUX.A6"/>
+            <direct input="BLK_IG-SLICEM_MODES.CX" name="CX" output="BLK_IG-COMMON_LUT_AND_F78MUX.CX"/>
+            <direct input="BLK_IG-SLICEM_MODES.BX" name="BX" output="BLK_IG-COMMON_LUT_AND_F78MUX.BX"/>
+            <direct input="BLK_IG-SLICEM_MODES.AX" name="AX" output="BLK_IG-COMMON_LUT_AND_F78MUX.AX"/>
+            <!-- COMMON_SLICE inputs -->
+            <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.DO6" name="DO6" output="BLK_IG-SLICEM_MODES.DO6"/>
+            <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.DO5" name="DO5" output="BLK_IG-SLICEM_MODES.DO5"/>
+            <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.CO6" name="CO6" output="BLK_IG-SLICEM_MODES.CO6"/>
+            <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.CO5" name="CO5" output="BLK_IG-SLICEM_MODES.CO5"/>
+            <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.BO6" name="BO6" output="BLK_IG-SLICEM_MODES.BO6"/>
+            <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.BO5" name="BO5" output="BLK_IG-SLICEM_MODES.BO5"/>
+            <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.AO6" name="AO6" output="BLK_IG-SLICEM_MODES.AO6"/>
+            <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.AO5" name="AO5" output="BLK_IG-SLICEM_MODES.AO5"/>
+          </interconnect>
+        </mode>
+        <mode name="DRAMs">
+          <pb_type name="BLK_IG-A_DRAM" num_pb="1">
+            <clock name="CLK" num_pins="1"/>
+            <input name="A" num_pins="6"/>
+            <input name="WA" num_pins="8"/>
+            <input name="AI" num_pins="1"/>
+            <input name="PARENT_DI" num_pins="1"/>
+            <input name="DI2" num_pins="1"/>
+            <input name="WE" num_pins="1"/>
+            <output name="DO6" num_pins="1"/>
+            <output name="DO6_32" num_pins="1"/>
+            <output name="SO6" num_pins="1"/>
+            <output name="SO6_32" num_pins="1"/>
+            <output name="O6" num_pins="1"/>
+            <output name="O5" num_pins="1"/>
+            <!-- Only LUT mode is used for the purpose of this test architecture. Normally there would be all the DRAM modes (e.g. 64_DUAL_PORT, 32_SINGLE_PORT, ...)
+                 All the DRAM modes have been disabled to increase readability -->
+            <mode name="LUT">
+              <pb_type blif_model=".names" class="lut" name="BEL_LT-A5LUT" num_pb="2">
+                <input name="in" num_pins="5" port_class="lut_in"/>
+                <output name="out" num_pins="1" port_class="lut_out"/>
+                <delay_matrix in_port="BEL_LT-A5LUT.in" out_port="BEL_LT-A5LUT.out" type="max">
+                  0.068e-9
+                  0.068e-9
+                  0.068e-9
+                  0.068e-9
+                  0.068e-9
+                </delay_matrix>
+              </pb_type>
+              <interconnect>
+                <direct input="BLK_IG-A_DRAM.A[4:0]" name="ALUT_A5_0" output="BEL_LT-A5LUT[0].in[4:0]"/>
+                <direct input="BLK_IG-A_DRAM.A[4:0]" name="ALUT_A5_1" output="BEL_LT-A5LUT[1].in[4:0]"/>
+                <direct input="BEL_LT-A5LUT[0].out" name="O5" output="BLK_IG-A_DRAM.O5">
+                  <pack_pattern in_port="BEL_LT-A5LUT[0].out" name="LUT5x2" out_port="BLK_IG-A_DRAM.O5"/>
+                </direct>
+                <direct input="BEL_LT-A5LUT[1].out" name="O6" output="BLK_IG-A_DRAM.O6">
+                  <pack_pattern in_port="BEL_LT-A5LUT[1].out" name="LUT5x2" out_port="BLK_IG-A_DRAM.O6"/>
+                </direct>
+              </interconnect>
+            </mode>
+          </pb_type>
+          <pb_type name="BLK_IG-B_DRAM" num_pb="1">
+            <clock name="CLK" num_pins="1"/>
+            <input name="A" num_pins="6"/>
+            <input name="WA" num_pins="8"/>
+            <input name="BI" num_pins="1"/>
+            <input name="PARENT_DI" num_pins="1"/>
+            <input name="DI2" num_pins="1"/>
+            <input name="WE" num_pins="1"/>
+            <output name="DO6" num_pins="1"/>
+            <output name="DO6_32" num_pins="1"/>
+            <output name="SO6" num_pins="1"/>
+            <output name="SO6_32" num_pins="1"/>
+            <output name="O6" num_pins="1"/>
+            <output name="O5" num_pins="1"/>
+            <!-- Only LUT mode is used for the purpose of this test architecture. Normally there would be all the DRAM modes (e.g. 64_DUAL_PORT, 32_SINGLE_PORT, ...)
+                 All the DRAM modes have been disabled to increase readability -->
+            <mode name="LUT">
+              <pb_type blif_model=".names" class="lut" name="BEL_LT-B5LUT" num_pb="2">
+                <input name="in" num_pins="5" port_class="lut_in"/>
+                <output name="out" num_pins="1" port_class="lut_out"/>
+                <delay_matrix in_port="BEL_LT-B5LUT.in" out_port="BEL_LT-B5LUT.out" type="max">
+                  0.068e-9
+                  0.068e-9
+                  0.068e-9
+                  0.068e-9
+                  0.068e-9
+                </delay_matrix>
+              </pb_type>
+              <interconnect>
+                <direct input="BLK_IG-B_DRAM.A[4:0]" name="BLUT_A5_0" output="BEL_LT-B5LUT[0].in[4:0]"/>
+                <direct input="BLK_IG-B_DRAM.A[4:0]" name="BLUT_A5_1" output="BEL_LT-B5LUT[1].in[4:0]"/>
+                <direct input="BEL_LT-B5LUT[0].out" name="O5" output="BLK_IG-B_DRAM.O5">
+                  <pack_pattern in_port="BEL_LT-B5LUT[0].out" name="LUT5x2" out_port="BLK_IG-B_DRAM.O5"/>
+                </direct>
+                <direct input="BEL_LT-B5LUT[1].out" name="O6" output="BLK_IG-B_DRAM.O6">
+                  <pack_pattern in_port="BEL_LT-B5LUT[1].out" name="LUT5x2" out_port="BLK_IG-B_DRAM.O6"/>
+                </direct>
+              </interconnect>
+            </mode>
+          </pb_type>
+          <pb_type name="BLK_IG-C_DRAM" num_pb="1">
+            <clock name="CLK" num_pins="1"/>
+            <input name="A" num_pins="6"/>
+            <input name="WA" num_pins="8"/>
+            <input name="CI" num_pins="1"/>
+            <input name="PARENT_DI" num_pins="1"/>
+            <input name="DI2" num_pins="1"/>
+            <input name="WE" num_pins="1"/>
+            <output name="DO6" num_pins="1"/>
+            <output name="DO6_32" num_pins="1"/>
+            <output name="SO6" num_pins="1"/>
+            <output name="SO6_32" num_pins="1"/>
+            <output name="O6" num_pins="1"/>
+            <output name="O5" num_pins="1"/>
+            <!-- Only LUT mode is used for the purpose of this test architecture. Normally there would be all the DRAM modes (e.g. 64_DUAL_PORT, 32_SINGLE_PORT, ...)
+                 All the DRAM modes have been disabled to increase readability -->
+            <mode name="LUT">
+              <pb_type blif_model=".names" class="lut" name="BEL_LT-C5LUT" num_pb="2">
+                <input name="in" num_pins="5" port_class="lut_in"/>
+                <output name="out" num_pins="1" port_class="lut_out"/>
+                <delay_matrix in_port="BEL_LT-C5LUT.in" out_port="BEL_LT-C5LUT.out" type="max">
+                  0.068e-9
+                  0.068e-9
+                  0.068e-9
+                  0.068e-9
+                  0.068e-9
+                </delay_matrix>
+              </pb_type>
+              <interconnect>
+                <direct input="BLK_IG-C_DRAM.A[4:0]" name="CLUT_A5_0" output="BEL_LT-C5LUT[0].in[4:0]"/>
+                <direct input="BLK_IG-C_DRAM.A[4:0]" name="CLUT_A5_1" output="BEL_LT-C5LUT[1].in[4:0]"/>
+                <direct input="BEL_LT-C5LUT[0].out" name="O5" output="BLK_IG-C_DRAM.O5">
+                  <pack_pattern in_port="BEL_LT-C5LUT[0].out" name="LUT5x2" out_port="BLK_IG-C_DRAM.O5"/>
+                </direct>
+                <direct input="BEL_LT-C5LUT[1].out" name="O6" output="BLK_IG-C_DRAM.O6">
+                  <pack_pattern in_port="BEL_LT-C5LUT[1].out" name="LUT5x2" out_port="BLK_IG-C_DRAM.O6"/>
+                </direct>
+              </interconnect>
+            </mode>
+          </pb_type>
+
+          <!-- D_DRAM does not have a LUT mode because, if DRAMs mode is selected for SLICEM-MODES pb type DLUT can only operate in DRAM mode.
+               For the purpose of this test all the DRAM modes from {N}_DRAM pb types have been disabled to increase readability -->
+          <pb_type name="BLK_IG-D_DRAM" num_pb="1">
+            <clock name="CLK" num_pins="1"/>
+            <input name="A" num_pins="6"/>
+            <input name="WA7" num_pins="1"/>
+            <input name="WA8" num_pins="1"/>
+            <input name="DI1" num_pins="1"/>
+            <input name="DI2" num_pins="1"/>
+            <input name="WE" num_pins="1"/>
+            <output name="SO6" num_pins="1"/>
+            <output name="SO6_32" num_pins="1"/>
+            <output name="O6" num_pins="1"/>
+            <output name="O5" num_pins="1"/>
+            <interconnect/>
+          </pb_type>
+          <pb_type blif_model=".subckt DRAM_4_OUTPUT_STUB" name="BEL_BB-DRAM_4_OUTPUT_STUB" num_pb="2">
+            <input name="DOA" num_pins="1"/>
+            <output name="DOA_OUT" num_pins="1"/>
+            <input name="DOB" num_pins="1"/>
+            <output name="DOB_OUT" num_pins="1"/>
+            <input name="DOC" num_pins="1"/>
+            <output name="DOC_OUT" num_pins="1"/>
+            <input name="DOD" num_pins="1"/>
+            <output name="DOD_OUT" num_pins="1"/>
+            <delay_constant in_port="BEL_BB-DRAM_4_OUTPUT_STUB.DOA" max="0" out_port="BEL_BB-DRAM_4_OUTPUT_STUB.DOA_OUT"/>
+            <delay_constant in_port="BEL_BB-DRAM_4_OUTPUT_STUB.DOB" max="0" out_port="BEL_BB-DRAM_4_OUTPUT_STUB.DOB_OUT"/>
+            <delay_constant in_port="BEL_BB-DRAM_4_OUTPUT_STUB.DOC" max="0" out_port="BEL_BB-DRAM_4_OUTPUT_STUB.DOC_OUT"/>
+            <delay_constant in_port="BEL_BB-DRAM_4_OUTPUT_STUB.DOD" max="0" out_port="BEL_BB-DRAM_4_OUTPUT_STUB.DOD_OUT"/>
+          </pb_type>
+          <pb_type blif_model=".subckt DRAM_2_OUTPUT_STUB" name="BEL_BB-DRAM_2_OUTPUT_STUB" num_pb="4">
+            <input name="DPO" num_pins="1"/>
+            <output name="DPO_OUT" num_pins="1"/>
+            <input name="SPO" num_pins="1"/>
+            <output name="SPO_OUT" num_pins="1"/>
+            <delay_constant in_port="BEL_BB-DRAM_2_OUTPUT_STUB.DPO" max="0" out_port="BEL_BB-DRAM_2_OUTPUT_STUB.DPO_OUT"/>
+            <delay_constant in_port="BEL_BB-DRAM_2_OUTPUT_STUB.SPO" max="0" out_port="BEL_BB-DRAM_2_OUTPUT_STUB.SPO_OUT"/>
+          </pb_type>
+          <pb_type name="BLK_MM-WE_MUX" num_pb="1">
+            <input name="CE" num_pins="1"/>
+            <input name="WE" num_pins="1"/>
+            <output name="WE_OUT" num_pins="1"/>
+            <interconnect>
+              <mux input="BLK_MM-WE_MUX.CE BLK_MM-WE_MUX.WE" name="WE_MUX" output="BLK_MM-WE_MUX.WE_OUT">
+              </mux>
+            </interconnect>
+          </pb_type>
+          <interconnect>
+            <direct input="BLK_IG-SLICEM_MODES.CLK" name="AMEMCLK" output="BLK_IG-A_DRAM.CLK"/>
+            <direct input="BLK_IG-SLICEM_MODES.CLK" name="BMEMCLK" output="BLK_IG-B_DRAM.CLK"/>
+            <direct input="BLK_IG-SLICEM_MODES.CLK" name="CMEMCLK" output="BLK_IG-C_DRAM.CLK"/>
+            <direct input="BLK_IG-SLICEM_MODES.CLK" name="DMEMCLK" output="BLK_IG-D_DRAM.CLK"/>
+            <direct input="BLK_IG-SLICEM_MODES.D1" name="D1" output="BLK_IG-D_DRAM.A[0]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D2" name="D2" output="BLK_IG-D_DRAM.A[1]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D3" name="D3" output="BLK_IG-D_DRAM.A[2]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D4" name="D4" output="BLK_IG-D_DRAM.A[3]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D5" name="D5" output="BLK_IG-D_DRAM.A[4]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D6" name="D6" output="BLK_IG-D_DRAM.A[5]"/>
+            <direct input="BLK_IG-SLICEM_MODES.C1" name="C1" output="BLK_IG-C_DRAM.A[0]"/>
+            <direct input="BLK_IG-SLICEM_MODES.C2" name="C2" output="BLK_IG-C_DRAM.A[1]"/>
+            <direct input="BLK_IG-SLICEM_MODES.C3" name="C3" output="BLK_IG-C_DRAM.A[2]"/>
+            <direct input="BLK_IG-SLICEM_MODES.C4" name="C4" output="BLK_IG-C_DRAM.A[3]"/>
+            <direct input="BLK_IG-SLICEM_MODES.C5" name="C5" output="BLK_IG-C_DRAM.A[4]"/>
+            <direct input="BLK_IG-SLICEM_MODES.C6" name="C6" output="BLK_IG-C_DRAM.A[5]"/>
+            <direct input="BLK_IG-SLICEM_MODES.B1" name="B1" output="BLK_IG-B_DRAM.A[0]"/>
+            <direct input="BLK_IG-SLICEM_MODES.B2" name="B2" output="BLK_IG-B_DRAM.A[1]"/>
+            <direct input="BLK_IG-SLICEM_MODES.B3" name="B3" output="BLK_IG-B_DRAM.A[2]"/>
+            <direct input="BLK_IG-SLICEM_MODES.B4" name="B4" output="BLK_IG-B_DRAM.A[3]"/>
+            <direct input="BLK_IG-SLICEM_MODES.B5" name="B5" output="BLK_IG-B_DRAM.A[4]"/>
+            <direct input="BLK_IG-SLICEM_MODES.B6" name="B6" output="BLK_IG-B_DRAM.A[5]"/>
+            <direct input="BLK_IG-SLICEM_MODES.A1" name="A1" output="BLK_IG-A_DRAM.A[0]"/>
+            <direct input="BLK_IG-SLICEM_MODES.A2" name="A2" output="BLK_IG-A_DRAM.A[1]"/>
+            <direct input="BLK_IG-SLICEM_MODES.A3" name="A3" output="BLK_IG-A_DRAM.A[2]"/>
+            <direct input="BLK_IG-SLICEM_MODES.A4" name="A4" output="BLK_IG-A_DRAM.A[3]"/>
+            <direct input="BLK_IG-SLICEM_MODES.A5" name="A5" output="BLK_IG-A_DRAM.A[4]"/>
+            <direct input="BLK_IG-SLICEM_MODES.A6" name="A6" output="BLK_IG-A_DRAM.A[5]"/>
+            <!-- W Address lines come in on the DLUT pins and go to all the LUTs -->
+            <direct input="BLK_IG-SLICEM_MODES.D1" name="WC1" output="BLK_IG-C_DRAM.WA[0]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D2" name="WC2" output="BLK_IG-C_DRAM.WA[1]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D3" name="WC3" output="BLK_IG-C_DRAM.WA[2]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D4" name="WC4" output="BLK_IG-C_DRAM.WA[3]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D5" name="WC5" output="BLK_IG-C_DRAM.WA[4]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D6" name="WC6" output="BLK_IG-C_DRAM.WA[5]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D1" name="WB1" output="BLK_IG-B_DRAM.WA[0]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D2" name="WB2" output="BLK_IG-B_DRAM.WA[1]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D3" name="WB3" output="BLK_IG-B_DRAM.WA[2]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D4" name="WB4" output="BLK_IG-B_DRAM.WA[3]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D5" name="WB5" output="BLK_IG-B_DRAM.WA[4]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D6" name="WB6" output="BLK_IG-B_DRAM.WA[5]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D1" name="WA1" output="BLK_IG-A_DRAM.WA[0]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D2" name="WA2" output="BLK_IG-A_DRAM.WA[1]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D3" name="WA3" output="BLK_IG-A_DRAM.WA[2]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D4" name="WA4" output="BLK_IG-A_DRAM.WA[3]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D5" name="WA5" output="BLK_IG-A_DRAM.WA[4]"/>
+            <direct input="BLK_IG-SLICEM_MODES.D6" name="WA6" output="BLK_IG-A_DRAM.WA[5]"/>
+            <direct input="BLK_IG-SLICEM_MODES.WA7" name="D_WA7" output="BLK_IG-D_DRAM.WA7"/>
+            <direct input="BLK_IG-SLICEM_MODES.WA7" name="C_WA7" output="BLK_IG-C_DRAM.WA[6]"/>
+            <direct input="BLK_IG-SLICEM_MODES.WA7" name="B_WA7" output="BLK_IG-B_DRAM.WA[6]"/>
+            <direct input="BLK_IG-SLICEM_MODES.WA7" name="A_WA7" output="BLK_IG-A_DRAM.WA[6]"/>
+            <direct input="BLK_IG-SLICEM_MODES.WA8" name="D_WA8" output="BLK_IG-D_DRAM.WA8"/>
+            <direct input="BLK_IG-SLICEM_MODES.WA8" name="C_WA8" output="BLK_IG-C_DRAM.WA[7]"/>
+            <direct input="BLK_IG-SLICEM_MODES.WA8" name="B_WA8" output="BLK_IG-B_DRAM.WA[7]"/>
+            <direct input="BLK_IG-SLICEM_MODES.WA8" name="A_WA8" output="BLK_IG-A_DRAM.WA[7]"/>
+            <!-- Direct DI1 inputs -->
+            <direct input="BLK_IG-SLICEM_MODES.DI" name="DI" output="BLK_IG-D_DRAM.DI1"/>
+            <direct input="BLK_IG-SLICEM_MODES.CI" name="CI" output="BLK_IG-C_DRAM.CI"/>
+            <direct input="BLK_IG-SLICEM_MODES.BI" name="BI" output="BLK_IG-B_DRAM.BI"/>
+            <direct input="BLK_IG-SLICEM_MODES.AI" name="AI" output="BLK_IG-A_DRAM.AI"/>
+            <!-- Parent DI1 inputs -->
+            <direct input="BLK_IG-SLICEM_MODES.DI" name="P_CI" output="BLK_IG-C_DRAM.PARENT_DI"/>
+            <direct input="BLK_IG-SLICEM_MODES.DI" name="P_BI" output="BLK_IG-B_DRAM.PARENT_DI"/>
+            <mux input="BLK_IG-SLICEM_MODES.DI BLK_IG-SLICEM_MODES.BI" name="P_AI" output="BLK_IG-A_DRAM.PARENT_DI"/>
+            <!-- DI2 inputs -->
+            <direct input="BLK_IG-SLICEM_MODES.DX" name="D_DI2" output="BLK_IG-D_DRAM.DI2"/>
+            <direct input="BLK_IG-SLICEM_MODES.CX" name="C_DI2" output="BLK_IG-C_DRAM.DI2"/>
+            <direct input="BLK_IG-SLICEM_MODES.BX" name="B_DI2" output="BLK_IG-B_DRAM.DI2"/>
+            <direct input="BLK_IG-SLICEM_MODES.AX" name="A_DI2" output="BLK_IG-A_DRAM.DI2"/>
+            <!-- WE inputs -->
+            <direct input="BLK_IG-SLICEM_MODES.CE" name="CE_TO_WE_MUX" output="BLK_MM-WE_MUX.CE"/>
+            <direct input="BLK_IG-SLICEM_MODES.WE" name="WE_TO_WE_MUX" output="BLK_MM-WE_MUX.WE"/>
+            <direct input="BLK_MM-WE_MUX.WE_OUT" name="WE1" output="BLK_IG-A_DRAM.WE"/>
+            <direct input="BLK_MM-WE_MUX.WE_OUT" name="WE2" output="BLK_IG-B_DRAM.WE"/>
+            <direct input="BLK_MM-WE_MUX.WE_OUT" name="WE3" output="BLK_IG-C_DRAM.WE"/>
+            <direct input="BLK_MM-WE_MUX.WE_OUT" name="WE4" output="BLK_IG-D_DRAM.WE"/>
+            <!-- Outputs -->
+            <direct input="BLK_IG-D_DRAM.SO6_32" name="SPO_0" output="BEL_BB-DRAM_2_OUTPUT_STUB[0].SPO"/>
+            <direct input="BLK_IG-C_DRAM.DO6_32" name="DPO_0" output="BEL_BB-DRAM_2_OUTPUT_STUB[0].DPO"/>
+            <direct input="BLK_IG-B_DRAM.SO6_32" name="SPO_1" output="BEL_BB-DRAM_2_OUTPUT_STUB[1].SPO"/>
+            <direct input="BLK_IG-A_DRAM.DO6_32" name="DPO_1" output="BEL_BB-DRAM_2_OUTPUT_STUB[1].DPO"/>
+            <direct input="BLK_IG-D_DRAM.SO6" name="SPO_2" output="BEL_BB-DRAM_2_OUTPUT_STUB[2].SPO"/>
+            <direct input="BLK_IG-C_DRAM.DO6" name="DPO_2" output="BEL_BB-DRAM_2_OUTPUT_STUB[2].DPO"/>
+            <direct input="BLK_IG-B_DRAM.SO6" name="SPO_3" output="BEL_BB-DRAM_2_OUTPUT_STUB[3].SPO"/>
+            <direct input="BLK_IG-A_DRAM.DO6" name="DPO_3" output="BEL_BB-DRAM_2_OUTPUT_STUB[3].DPO"/>
+            <direct input="BLK_IG-D_DRAM.SO6_32" name="DOD32" output="BEL_BB-DRAM_4_OUTPUT_STUB[0].DOD"/>
+            <direct input="BLK_IG-C_DRAM.DO6_32" name="DOC32" output="BEL_BB-DRAM_4_OUTPUT_STUB[0].DOC"/>
+            <direct input="BLK_IG-B_DRAM.DO6_32" name="DOB32" output="BEL_BB-DRAM_4_OUTPUT_STUB[0].DOB"/>
+            <direct input="BLK_IG-A_DRAM.DO6_32" name="DOA32" output="BEL_BB-DRAM_4_OUTPUT_STUB[0].DOA"/>
+            <direct input="BLK_IG-D_DRAM.SO6" name="DOD" output="BEL_BB-DRAM_4_OUTPUT_STUB[1].DOD"/>
+            <direct input="BLK_IG-C_DRAM.DO6" name="DOC" output="BEL_BB-DRAM_4_OUTPUT_STUB[1].DOC"/>
+            <direct input="BLK_IG-B_DRAM.DO6" name="DOB" output="BEL_BB-DRAM_4_OUTPUT_STUB[1].DOB"/>
+            <direct input="BLK_IG-A_DRAM.DO6" name="DOA" output="BEL_BB-DRAM_4_OUTPUT_STUB[1].DOA"/>
+            <mux input="BLK_IG-D_DRAM.O6 BEL_BB-DRAM_2_OUTPUT_STUB[0].SPO_OUT BEL_BB-DRAM_2_OUTPUT_STUB[2].SPO_OUT BEL_BB-DRAM_4_OUTPUT_STUB[0].DOD_OUT BEL_BB-DRAM_4_OUTPUT_STUB[1].DOD_OUT" name="DO6" output="BLK_IG-SLICEM_MODES.DO6"/>
+            <direct input="BLK_IG-D_DRAM.O5" name="DO5" output="BLK_IG-SLICEM_MODES.DO5"/>
+            <mux input="BLK_IG-C_DRAM.O6 BEL_BB-DRAM_2_OUTPUT_STUB[0].DPO_OUT BEL_BB-DRAM_2_OUTPUT_STUB[2].DPO_OUT BEL_BB-DRAM_4_OUTPUT_STUB[0].DOC_OUT BEL_BB-DRAM_4_OUTPUT_STUB[1].DOC_OUT" name="CO6" output="BLK_IG-SLICEM_MODES.CO6"/>
+            <direct input="BLK_IG-C_DRAM.O5" name="CO5" output="BLK_IG-SLICEM_MODES.CO5"/>
+            <mux input="BLK_IG-B_DRAM.O6 BEL_BB-DRAM_2_OUTPUT_STUB[1].SPO_OUT BEL_BB-DRAM_2_OUTPUT_STUB[3].SPO_OUT BEL_BB-DRAM_4_OUTPUT_STUB[0].DOB_OUT BEL_BB-DRAM_4_OUTPUT_STUB[1].DOB_OUT" name="BO6" output="BLK_IG-SLICEM_MODES.BO6"/>
+            <direct input="BLK_IG-B_DRAM.O5" name="BO5" output="BLK_IG-SLICEM_MODES.BO5"/>
+            <mux input="BLK_IG-A_DRAM.O6 BEL_BB-DRAM_2_OUTPUT_STUB[1].DPO_OUT BEL_BB-DRAM_2_OUTPUT_STUB[3].DPO_OUT BEL_BB-DRAM_4_OUTPUT_STUB[0].DOA_OUT BEL_BB-DRAM_4_OUTPUT_STUB[1].DOA_OUT" name="AO6" output="BLK_IG-SLICEM_MODES.AO6"/>
+            <direct input="BLK_IG-A_DRAM.O5" name="AO5" output="BLK_IG-SLICEM_MODES.AO5"/>
+          </interconnect>
+        </mode>
+      </pb_type>
+      <interconnect>
+        <!-- SLICEM_MODES inputs -->
+        <direct input="BLK_IG-SLICEM.DI" name="DI" output="BLK_IG-SLICEM_MODES.DI"/>
+        <direct input="BLK_IG-SLICEM.DX" name="DX2" output="BLK_IG-SLICEM_MODES.DX"/>
+        <direct input="BLK_IG-SLICEM.D1" name="D1" output="BLK_IG-SLICEM_MODES.D1"/>
+        <direct input="BLK_IG-SLICEM.D2" name="D2" output="BLK_IG-SLICEM_MODES.D2"/>
+        <direct input="BLK_IG-SLICEM.D3" name="D3" output="BLK_IG-SLICEM_MODES.D3"/>
+        <direct input="BLK_IG-SLICEM.D4" name="D4" output="BLK_IG-SLICEM_MODES.D4"/>
+        <direct input="BLK_IG-SLICEM.D5" name="D5" output="BLK_IG-SLICEM_MODES.D5"/>
+        <direct input="BLK_IG-SLICEM.D6" name="D6" output="BLK_IG-SLICEM_MODES.D6"/>
+        <direct input="BLK_IG-SLICEM.CI" name="CI" output="BLK_IG-SLICEM_MODES.CI"/>
+        <direct input="BLK_IG-SLICEM.CX" name="CX2" output="BLK_IG-SLICEM_MODES.CX"/>
+        <direct input="BLK_IG-SLICEM.C1" name="C1" output="BLK_IG-SLICEM_MODES.C1"/>
+        <direct input="BLK_IG-SLICEM.C2" name="C2" output="BLK_IG-SLICEM_MODES.C2"/>
+        <direct input="BLK_IG-SLICEM.C3" name="C3" output="BLK_IG-SLICEM_MODES.C3"/>
+        <direct input="BLK_IG-SLICEM.C4" name="C4" output="BLK_IG-SLICEM_MODES.C4"/>
+        <direct input="BLK_IG-SLICEM.C5" name="C5" output="BLK_IG-SLICEM_MODES.C5"/>
+        <direct input="BLK_IG-SLICEM.C6" name="C6" output="BLK_IG-SLICEM_MODES.C6"/>
+        <direct input="BLK_IG-SLICEM.BI" name="BI" output="BLK_IG-SLICEM_MODES.BI"/>
+        <direct input="BLK_IG-SLICEM.BX" name="BX2" output="BLK_IG-SLICEM_MODES.BX"/>
+        <direct input="BLK_IG-SLICEM.B1" name="B1" output="BLK_IG-SLICEM_MODES.B1"/>
+        <direct input="BLK_IG-SLICEM.B2" name="B2" output="BLK_IG-SLICEM_MODES.B2"/>
+        <direct input="BLK_IG-SLICEM.B3" name="B3" output="BLK_IG-SLICEM_MODES.B3"/>
+        <direct input="BLK_IG-SLICEM.B4" name="B4" output="BLK_IG-SLICEM_MODES.B4"/>
+        <direct input="BLK_IG-SLICEM.B5" name="B5" output="BLK_IG-SLICEM_MODES.B5"/>
+        <direct input="BLK_IG-SLICEM.B6" name="B6" output="BLK_IG-SLICEM_MODES.B6"/>
+        <direct input="BLK_IG-SLICEM.AI" name="AI" output="BLK_IG-SLICEM_MODES.AI"/>
+        <direct input="BLK_IG-SLICEM.AX" name="AX2" output="BLK_IG-SLICEM_MODES.AX"/>
+        <direct input="BLK_IG-SLICEM.A1" name="A1" output="BLK_IG-SLICEM_MODES.A1"/>
+        <direct input="BLK_IG-SLICEM.A2" name="A2" output="BLK_IG-SLICEM_MODES.A2"/>
+        <direct input="BLK_IG-SLICEM.A3" name="A3" output="BLK_IG-SLICEM_MODES.A3"/>
+        <direct input="BLK_IG-SLICEM.A4" name="A4" output="BLK_IG-SLICEM_MODES.A4"/>
+        <direct input="BLK_IG-SLICEM.A5" name="A5" output="BLK_IG-SLICEM_MODES.A5"/>
+        <direct input="BLK_IG-SLICEM.A6" name="A6" output="BLK_IG-SLICEM_MODES.A6"/>
+        <direct input="BLK_IG-SLICEM.CLK" name="CK2" output="BLK_IG-SLICEM_MODES.CLK"/>
+        <direct input="BLK_IG-SLICEM.CE" name="CE2" output="BLK_IG-SLICEM_MODES.CE"/>
+        <direct input="BLK_IG-SLICEM.WE" name="WE2" output="BLK_IG-SLICEM_MODES.WE"/>
+        <!-- SLICEM_MODES Outputs -->
+        <direct input="BLK_IG-SLICEM_MODES.DO6" name="DO6" output="BLK_IG-COMMON_SLICE.DO6"/>
+        <direct input="BLK_IG-SLICEM_MODES.DO5" name="DO5" output="BLK_IG-COMMON_SLICE.DO5"/>
+        <direct input="BLK_IG-SLICEM_MODES.CO6" name="CO6" output="BLK_IG-COMMON_SLICE.CO6"/>
+        <direct input="BLK_IG-SLICEM_MODES.CO5" name="CO5" output="BLK_IG-COMMON_SLICE.CO5"/>
+        <direct input="BLK_IG-SLICEM_MODES.BO6" name="BO6" output="BLK_IG-COMMON_SLICE.BO6"/>
+        <direct input="BLK_IG-SLICEM_MODES.BO5" name="BO5" output="BLK_IG-COMMON_SLICE.BO5"/>
+        <direct input="BLK_IG-SLICEM_MODES.AO6" name="AO6" output="BLK_IG-COMMON_SLICE.AO6"/>
+        <direct input="BLK_IG-SLICEM_MODES.AO5" name="AO5" output="BLK_IG-COMMON_SLICE.AO5"/>
+        <!-- A-DX inputs -->
+        <direct input="BLK_IG-SLICEM.DX" name="DX" output="BLK_IG-COMMON_SLICE.DX"/>
+        <direct input="BLK_IG-SLICEM.CX" name="CX" output="BLK_IG-COMMON_SLICE.CX"/>
+        <direct input="BLK_IG-SLICEM.BX" name="BX" output="BLK_IG-COMMON_SLICE.BX"/>
+        <direct input="BLK_IG-SLICEM.AX" name="AX" output="BLK_IG-COMMON_SLICE.AX"/>
+        <!-- [A-F]Q outputs -->
+        <direct input="BLK_IG-COMMON_SLICE.AQ" name="AQ" output="BLK_IG-SLICEM.AQ"/>
+        <direct input="BLK_IG-COMMON_SLICE.BQ" name="BQ" output="BLK_IG-SLICEM.BQ"/>
+        <direct input="BLK_IG-COMMON_SLICE.CQ" name="CQ" output="BLK_IG-SLICEM.CQ"/>
+        <direct input="BLK_IG-COMMON_SLICE.DQ" name="DQ" output="BLK_IG-SLICEM.DQ"/>
+        <!-- A-D output -->
+        <direct input="BLK_IG-COMMON_SLICE.D" name="BLK_IG-SLICEM_DOUT" output="BLK_IG-SLICEM.D"/>
+        <direct input="BLK_IG-COMMON_SLICE.C" name="BLK_IG-SLICEM_COUT" output="BLK_IG-SLICEM.C"/>
+        <direct input="BLK_IG-COMMON_SLICE.B" name="BLK_IG-SLICEM_BOUT" output="BLK_IG-SLICEM.B"/>
+        <direct input="BLK_IG-COMMON_SLICE.A" name="BLK_IG-SLICEM_AOUT" output="BLK_IG-SLICEM.A"/>
+        <!-- AMUX-DMUX output -->
+        <direct input="BLK_IG-COMMON_SLICE.DMUX" name="BLK_IG-SLICEM_DMUX" output="BLK_IG-SLICEM.DMUX"/>
+        <direct input="BLK_IG-COMMON_SLICE.CMUX" name="BLK_IG-SLICEM_CMUX" output="BLK_IG-SLICEM.CMUX"/>
+        <direct input="BLK_IG-COMMON_SLICE.BMUX" name="BLK_IG-SLICEM_BMUX" output="BLK_IG-SLICEM.BMUX"/>
+        <direct input="BLK_IG-COMMON_SLICE.AMUX" name="BLK_IG-SLICEM_AMUX" output="BLK_IG-SLICEM.AMUX"/>
+        <!-- Carry -->
+        <direct input="BLK_IG-SLICEM.CIN" name="CIN" output="BLK_IG-COMMON_SLICE.CIN"/>
+        <direct input="BLK_IG-COMMON_SLICE.COUT" name="COUT" output="BLK_IG-SLICEM.COUT"/>
+        <!-- Clock, Clock Enable and Reset -->
+        <direct input="BLK_IG-SLICEM.CLK" name="CK" output="BLK_IG-COMMON_SLICE.CLK"/>
+        <direct input="BLK_IG-SLICEM.CE" name="CE" output="BLK_IG-COMMON_SLICE.CE"/>
+        <direct input="BLK_IG-SLICEM.SR" name="SR" output="BLK_IG-COMMON_SLICE.SR"/>
+        <!-- WA7 and WA8 -->
+        <direct input="BLK_IG-SLICEM.CX" name="WA7" output="BLK_IG-SLICEM_MODES.WA7">
+        </direct>
+        <direct input="BLK_IG-SLICEM.BX" name="WA8" output="BLK_IG-SLICEM_MODES.WA8">
+        </direct>
+      </interconnect>
+    </pb_type>
+    <pb_type name="BLK_IG-SLICEL">
+      <input name="DX" num_pins="1"/>
+      <input name="D1" num_pins="1"/>
+      <input name="D2" num_pins="1"/>
+      <input name="D3" num_pins="1"/>
+      <input name="D4" num_pins="1"/>
+      <input name="D5" num_pins="1"/>
+      <input name="D6" num_pins="1"/>
+      <input name="CX" num_pins="1"/>
+      <input name="C1" num_pins="1"/>
+      <input name="C2" num_pins="1"/>
+      <input name="C3" num_pins="1"/>
+      <input name="C4" num_pins="1"/>
+      <input name="C5" num_pins="1"/>
+      <input name="C6" num_pins="1"/>
+      <input name="BX" num_pins="1"/>
+      <input name="B1" num_pins="1"/>
+      <input name="B2" num_pins="1"/>
+      <input name="B3" num_pins="1"/>
+      <input name="B4" num_pins="1"/>
+      <input name="B5" num_pins="1"/>
+      <input name="B6" num_pins="1"/>
+      <input name="AX" num_pins="1"/>
+      <input name="A1" num_pins="1"/>
+      <input name="A2" num_pins="1"/>
+      <input name="A3" num_pins="1"/>
+      <input name="A4" num_pins="1"/>
+      <input name="A5" num_pins="1"/>
+      <input name="A6" num_pins="1"/>
+      <input name="SR" num_pins="1"/>
+      <input name="CE" num_pins="1"/>
+      <clock name="CLK" num_pins="1"/>
+      <input name="CIN" num_pins="1"/>
+      <output name="COUT" num_pins="1"/>
+      <output name="DMUX" num_pins="1"/>
+      <output name="D" num_pins="1"/>
+      <output name="DQ" num_pins="1"/>
+      <output name="CMUX" num_pins="1"/>
+      <output name="C" num_pins="1"/>
+      <output name="CQ" num_pins="1"/>
+      <output name="BMUX" num_pins="1"/>
+      <output name="B" num_pins="1"/>
+      <output name="BQ" num_pins="1"/>
+      <output name="AMUX" num_pins="1"/>
+      <output name="A" num_pins="1"/>
+      <output name="AQ" num_pins="1"/>
+      <pb_type name="BLK_IG-COMMON_LUT_AND_F78MUX" num_pb="1">
+        <input name="D1" num_pins="1"/>
+        <input name="D2" num_pins="1"/>
+        <input name="D3" num_pins="1"/>
+        <input name="D4" num_pins="1"/>
+        <input name="D5" num_pins="1"/>
+        <input name="D6" num_pins="1"/>
+        <input name="CX" num_pins="1"/>
+        <input name="C1" num_pins="1"/>
+        <input name="C2" num_pins="1"/>
+        <input name="C3" num_pins="1"/>
+        <input name="C4" num_pins="1"/>
+        <input name="C5" num_pins="1"/>
+        <input name="C6" num_pins="1"/>
+        <input name="BX" num_pins="1"/>
+        <input name="B1" num_pins="1"/>
+        <input name="B2" num_pins="1"/>
+        <input name="B3" num_pins="1"/>
+        <input name="B4" num_pins="1"/>
+        <input name="B5" num_pins="1"/>
+        <input name="B6" num_pins="1"/>
+        <input name="AX" num_pins="1"/>
+        <input name="A1" num_pins="1"/>
+        <input name="A2" num_pins="1"/>
+        <input name="A3" num_pins="1"/>
+        <input name="A4" num_pins="1"/>
+        <input name="A5" num_pins="1"/>
+        <input name="A6" num_pins="1"/>
+        <output name="DO6" num_pins="1"/>
+        <output name="CO6" num_pins="1"/>
+        <output name="BO6" num_pins="1"/>
+        <output name="AO6" num_pins="1"/>
+        <output name="DO5" num_pins="1"/>
+        <output name="CO5" num_pins="1"/>
+        <output name="BO5" num_pins="1"/>
+        <output name="AO5" num_pins="1"/>
+        <pb_type name="BLK_IG-ALUT" num_pb="1">
+          <input name="A1" num_pins="1"/>
+          <input name="A2" num_pins="1"/>
+          <input name="A3" num_pins="1"/>
+          <input name="A4" num_pins="1"/>
+          <input name="A5" num_pins="1"/>
+          <input name="A6" num_pins="1"/>
+          <output name="O5" num_pins="1"/>
+          <output name="O6" num_pins="1"/>
+          <!-- LUT5+LUT5+F6MUX with two outputs -->
+          <mode name="BLK_IG-ALUT-LUT5_MUX">
+            <pb_type blif_model=".names" class="lut" name="BEL_LT-A5LUT" num_pb="2">
+              <input name="in" num_pins="5" port_class="lut_in"/>
+              <output name="out" num_pins="1" port_class="lut_out"/>
+              <delay_matrix in_port="BEL_LT-A5LUT.in" out_port="BEL_LT-A5LUT.out" type="max">
+                0.068e-9
+                0.068e-9
+                0.068e-9
+                0.068e-9
+                0.068e-9
+              </delay_matrix>
+            </pb_type>
+            <interconnect>
+              <!-- LUT5 (upper) -> O6 -->
+              <direct input="BLK_IG-ALUT.A5" name="ALUT_A5_0" output="BEL_LT-A5LUT[0].in[4]"/>
+              <direct input="BLK_IG-ALUT.A4" name="ALUT_A4_0" output="BEL_LT-A5LUT[0].in[3]"/>
+              <direct input="BLK_IG-ALUT.A3" name="ALUT_A3_0" output="BEL_LT-A5LUT[0].in[2]"/>
+              <direct input="BLK_IG-ALUT.A2" name="ALUT_A2_0" output="BEL_LT-A5LUT[0].in[1]"/>
+              <direct input="BLK_IG-ALUT.A1" name="ALUT_A1_0" output="BEL_LT-A5LUT[0].in[0]"/>
+              <!-- LUT5 (lower) -> O5 -->
+              <direct input="BLK_IG-ALUT.A5" name="ALUT_A5_1" output="BEL_LT-A5LUT[1].in[4]"/>
+              <direct input="BLK_IG-ALUT.A4" name="ALUT_A4_1" output="BEL_LT-A5LUT[1].in[3]"/>
+              <direct input="BLK_IG-ALUT.A3" name="ALUT_A3_1" output="BEL_LT-A5LUT[1].in[2]"/>
+              <direct input="BLK_IG-ALUT.A2" name="ALUT_A2_1" output="BEL_LT-A5LUT[1].in[1]"/>
+              <direct input="BLK_IG-ALUT.A1" name="ALUT_A1_1" output="BEL_LT-A5LUT[1].in[0]"/>
+              <!-- LUT outputs -->
+              <direct input="BEL_LT-A5LUT[0].out" name="O5" output="BLK_IG-ALUT.O5">
+                <pack_pattern in_port="BEL_LT-A5LUT[0].out" name="LUT5x2" out_port="BLK_IG-ALUT.O5"/>
+              </direct>
+              <direct input="BEL_LT-A5LUT[1].out" name="O6" output="BLK_IG-ALUT.O6">
+                <pack_pattern in_port="BEL_LT-A5LUT[1].out" name="LUT5x2" out_port="BLK_IG-ALUT.O6"/>
+              </direct>
+            </interconnect>
+          </mode>
+        </pb_type>
+        <pb_type name="BLK_IG-BLUT" num_pb="1">
+          <input name="A1" num_pins="1"/>
+          <input name="A2" num_pins="1"/>
+          <input name="A3" num_pins="1"/>
+          <input name="A4" num_pins="1"/>
+          <input name="A5" num_pins="1"/>
+          <input name="A6" num_pins="1"/>
+          <output name="O5" num_pins="1"/>
+          <output name="O6" num_pins="1"/>
+          <!-- LUT5+LUT5+F6MUX with two outputs -->
+          <mode name="BLK_IG-BLUT-LUT5_MUX">
+            <pb_type blif_model=".names" class="lut" name="BEL_LT-B5LUT" num_pb="2">
+              <input name="in" num_pins="5" port_class="lut_in"/>
+              <output name="out" num_pins="1" port_class="lut_out"/>
+              <delay_matrix in_port="BEL_LT-B5LUT.in" out_port="BEL_LT-B5LUT.out" type="max">
+                0.068e-9
+                0.068e-9
+                0.068e-9
+                0.068e-9
+                0.068e-9
+              </delay_matrix>
+            </pb_type>
+            <interconnect>
+              <!-- LUT5 (upper) -> O6 -->
+              <direct input="BLK_IG-BLUT.A5" name="BLUT_A5_0" output="BEL_LT-B5LUT[0].in[4]"/>
+              <direct input="BLK_IG-BLUT.A4" name="BLUT_A4_0" output="BEL_LT-B5LUT[0].in[3]"/>
+              <direct input="BLK_IG-BLUT.A3" name="BLUT_A3_0" output="BEL_LT-B5LUT[0].in[2]"/>
+              <direct input="BLK_IG-BLUT.A2" name="BLUT_A2_0" output="BEL_LT-B5LUT[0].in[1]"/>
+              <direct input="BLK_IG-BLUT.A1" name="BLUT_A1_0" output="BEL_LT-B5LUT[0].in[0]"/>
+              <!-- LUT5 (lower) -> O5 -->
+              <direct input="BLK_IG-BLUT.A5" name="BLUT_A5_1" output="BEL_LT-B5LUT[1].in[4]"/>
+              <direct input="BLK_IG-BLUT.A4" name="BLUT_A4_1" output="BEL_LT-B5LUT[1].in[3]"/>
+              <direct input="BLK_IG-BLUT.A3" name="BLUT_A3_1" output="BEL_LT-B5LUT[1].in[2]"/>
+              <direct input="BLK_IG-BLUT.A2" name="BLUT_A2_1" output="BEL_LT-B5LUT[1].in[1]"/>
+              <direct input="BLK_IG-BLUT.A1" name="BLUT_A1_1" output="BEL_LT-B5LUT[1].in[0]"/>
+              <!-- LUT outputs -->
+              <direct input="BEL_LT-B5LUT[0].out" name="O5" output="BLK_IG-BLUT.O5">
+                <pack_pattern in_port="BEL_LT-B5LUT[0].out" name="LUT5x2" out_port="BLK_IG-BLUT.O5"/>
+              </direct>
+              <direct input="BEL_LT-B5LUT[1].out" name="O6" output="BLK_IG-BLUT.O6">
+                <pack_pattern in_port="BEL_LT-B5LUT[1].out" name="LUT5x2" out_port="BLK_IG-BLUT.O6"/>
+              </direct>
+            </interconnect>
+          </mode>
+        </pb_type>
+        <pb_type name="BLK_IG-CLUT" num_pb="1">
+          <input name="A1" num_pins="1"/>
+          <input name="A2" num_pins="1"/>
+          <input name="A3" num_pins="1"/>
+          <input name="A4" num_pins="1"/>
+          <input name="A5" num_pins="1"/>
+          <input name="A6" num_pins="1"/>
+          <output name="O5" num_pins="1"/>
+          <output name="O6" num_pins="1"/>
+          <!-- LUT5+LUT5+F6MUX with two outputs -->
+          <mode name="BLK_IG-CLUT-LUT5_MUX">
+            <pb_type blif_model=".names" class="lut" name="BEL_LT-C5LUT" num_pb="2">
+              <input name="in" num_pins="5" port_class="lut_in"/>
+              <output name="out" num_pins="1" port_class="lut_out"/>
+              <delay_matrix in_port="BEL_LT-C5LUT.in" out_port="BEL_LT-C5LUT.out" type="max">
+                0.068e-9
+                0.068e-9
+                0.068e-9
+                0.068e-9
+                0.068e-9
+              </delay_matrix>
+            </pb_type>
+            <interconnect>
+              <!-- LUT5 (upper) -> O6 -->
+              <direct input="BLK_IG-CLUT.A5" name="CLUT_A5_0" output="BEL_LT-C5LUT[0].in[4]"/>
+              <direct input="BLK_IG-CLUT.A4" name="CLUT_A4_0" output="BEL_LT-C5LUT[0].in[3]"/>
+              <direct input="BLK_IG-CLUT.A3" name="CLUT_A3_0" output="BEL_LT-C5LUT[0].in[2]"/>
+              <direct input="BLK_IG-CLUT.A2" name="CLUT_A2_0" output="BEL_LT-C5LUT[0].in[1]"/>
+              <direct input="BLK_IG-CLUT.A1" name="CLUT_A1_0" output="BEL_LT-C5LUT[0].in[0]"/>
+              <!-- LUT5 (lower) -> O5 -->
+              <direct input="BLK_IG-CLUT.A5" name="CLUT_A5_1" output="BEL_LT-C5LUT[1].in[4]"/>
+              <direct input="BLK_IG-CLUT.A4" name="CLUT_A4_1" output="BEL_LT-C5LUT[1].in[3]"/>
+              <direct input="BLK_IG-CLUT.A3" name="CLUT_A3_1" output="BEL_LT-C5LUT[1].in[2]"/>
+              <direct input="BLK_IG-CLUT.A2" name="CLUT_A2_1" output="BEL_LT-C5LUT[1].in[1]"/>
+              <direct input="BLK_IG-CLUT.A1" name="CLUT_A1_1" output="BEL_LT-C5LUT[1].in[0]"/>
+              <!-- LUT outputs -->
+              <direct input="BEL_LT-C5LUT[0].out" name="O5" output="BLK_IG-CLUT.O5">
+                <pack_pattern in_port="BEL_LT-C5LUT[0].out" name="LUT5x2" out_port="BLK_IG-CLUT.O5"/>
+              </direct>
+              <direct input="BEL_LT-C5LUT[1].out" name="O6" output="BLK_IG-CLUT.O6">
+                <pack_pattern in_port="BEL_LT-C5LUT[1].out" name="LUT5x2" out_port="BLK_IG-CLUT.O6"/>
+              </direct>
+            </interconnect>
+          </mode>
+        </pb_type>
+        <pb_type name="BLK_IG-DLUT" num_pb="1">
+          <input name="A1" num_pins="1"/>
+          <input name="A2" num_pins="1"/>
+          <input name="A3" num_pins="1"/>
+          <input name="A4" num_pins="1"/>
+          <input name="A5" num_pins="1"/>
+          <input name="A6" num_pins="1"/>
+          <output name="O5" num_pins="1"/>
+          <output name="O6" num_pins="1"/>
+          <!-- LUT5+LUT5+F6MUX with two outputs -->
+          <mode name="BLK_IG-DLUT-LUT5_MUX">
+            <pb_type blif_model=".names" class="lut" name="BEL_LT-D5LUT" num_pb="2">
+              <input name="in" num_pins="5" port_class="lut_in"/>
+              <output name="out" num_pins="1" port_class="lut_out"/>
+              <delay_matrix in_port="BEL_LT-D5LUT.in" out_port="BEL_LT-D5LUT.out" type="max">
+                0.068e-9
+                0.068e-9
+                0.068e-9
+                0.068e-9
+                0.068e-9
+              </delay_matrix>
+            </pb_type>
+            <interconnect>
+              <!-- LUT5 (upper) -> O6 -->
+              <direct input="BLK_IG-DLUT.A5" name="DLUT_A5_0" output="BEL_LT-D5LUT[0].in[4]"/>
+              <direct input="BLK_IG-DLUT.A4" name="DLUT_A4_0" output="BEL_LT-D5LUT[0].in[3]"/>
+              <direct input="BLK_IG-DLUT.A3" name="DLUT_A3_0" output="BEL_LT-D5LUT[0].in[2]"/>
+              <direct input="BLK_IG-DLUT.A2" name="DLUT_A2_0" output="BEL_LT-D5LUT[0].in[1]"/>
+              <direct input="BLK_IG-DLUT.A1" name="DLUT_A1_0" output="BEL_LT-D5LUT[0].in[0]"/>
+              <!-- LUT5 (lower) -> O5 -->
+              <direct input="BLK_IG-DLUT.A5" name="DLUT_A5_1" output="BEL_LT-D5LUT[1].in[4]"/>
+              <direct input="BLK_IG-DLUT.A4" name="DLUT_A4_1" output="BEL_LT-D5LUT[1].in[3]"/>
+              <direct input="BLK_IG-DLUT.A3" name="DLUT_A3_1" output="BEL_LT-D5LUT[1].in[2]"/>
+              <direct input="BLK_IG-DLUT.A2" name="DLUT_A2_1" output="BEL_LT-D5LUT[1].in[1]"/>
+              <direct input="BLK_IG-DLUT.A1" name="DLUT_A1_1" output="BEL_LT-D5LUT[1].in[0]"/>
+              <!-- LUT outputs -->
+              <direct input="BEL_LT-D5LUT[0].out" name="O5" output="BLK_IG-DLUT.O5">
+                <pack_pattern in_port="BEL_LT-D5LUT[0].out" name="LUT5x2" out_port="BLK_IG-DLUT.O5"/>
+              </direct>
+              <direct input="BEL_LT-D5LUT[1].out" name="O6" output="BLK_IG-DLUT.O6">
+                <pack_pattern in_port="BEL_LT-D5LUT[1].out" name="LUT5x2" out_port="BLK_IG-DLUT.O6"/>
+              </direct>
+            </interconnect>
+          </mode>
+        </pb_type>
+        <interconnect>
+          <!-- LUT input pins -->
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.D1" name="D1" output="BLK_IG-DLUT.A1"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.D2" name="D2" output="BLK_IG-DLUT.A2"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.D3" name="D3" output="BLK_IG-DLUT.A3"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.D4" name="D4" output="BLK_IG-DLUT.A4"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.D5" name="D5" output="BLK_IG-DLUT.A5"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.D6" name="D6" output="BLK_IG-DLUT.A6"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.C1" name="C1" output="BLK_IG-CLUT.A1"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.C2" name="C2" output="BLK_IG-CLUT.A2"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.C3" name="C3" output="BLK_IG-CLUT.A3"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.C4" name="C4" output="BLK_IG-CLUT.A4"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.C5" name="C5" output="BLK_IG-CLUT.A5"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.C6" name="C6" output="BLK_IG-CLUT.A6"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.B1" name="B1" output="BLK_IG-BLUT.A1"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.B2" name="B2" output="BLK_IG-BLUT.A2"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.B3" name="B3" output="BLK_IG-BLUT.A3"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.B4" name="B4" output="BLK_IG-BLUT.A4"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.B5" name="B5" output="BLK_IG-BLUT.A5"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.B6" name="B6" output="BLK_IG-BLUT.A6"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.A1" name="A1" output="BLK_IG-ALUT.A1"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.A2" name="A2" output="BLK_IG-ALUT.A2"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.A3" name="A3" output="BLK_IG-ALUT.A3"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.A4" name="A4" output="BLK_IG-ALUT.A4"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.A5" name="A5" output="BLK_IG-ALUT.A5"/>
+          <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.A6" name="A6" output="BLK_IG-ALUT.A6"/>
+          <direct input="BLK_IG-DLUT.O6" name="DO6" output="BLK_IG-COMMON_LUT_AND_F78MUX.DO6"/>
+          <direct input="BLK_IG-DLUT.O5" name="DO5" output="BLK_IG-COMMON_LUT_AND_F78MUX.DO5"/>
+          <direct input="BLK_IG-CLUT.O6" name="CO6" output="BLK_IG-COMMON_LUT_AND_F78MUX.CO6"/>
+          <direct input="BLK_IG-CLUT.O5" name="CO5" output="BLK_IG-COMMON_LUT_AND_F78MUX.CO5"/>
+          <direct input="BLK_IG-BLUT.O6" name="BO6" output="BLK_IG-COMMON_LUT_AND_F78MUX.BO6"/>
+          <direct input="BLK_IG-BLUT.O5" name="BO5" output="BLK_IG-COMMON_LUT_AND_F78MUX.BO5"/>
+          <direct input="BLK_IG-ALUT.O6" name="AO6" output="BLK_IG-COMMON_LUT_AND_F78MUX.AO6"/>
+          <direct input="BLK_IG-ALUT.O5" name="AO5" output="BLK_IG-COMMON_LUT_AND_F78MUX.AO5"/>
+        </interconnect>
+      </pb_type>
+      <pb_type name="BLK_IG-COMMON_SLICE" num_pb="1">
+        <input name="DX" num_pins="1"/>
+        <input name="CX" num_pins="1"/>
+        <input name="BX" num_pins="1"/>
+        <input name="AX" num_pins="1"/>
+        <input name="DO6" num_pins="1"/>
+        <input name="CO6" num_pins="1"/>
+        <input name="BO6" num_pins="1"/>
+        <input name="AO6" num_pins="1"/>
+        <input name="DO5" num_pins="1"/>
+        <input name="CO5" num_pins="1"/>
+        <input name="BO5" num_pins="1"/>
+        <input name="AO5" num_pins="1"/>
+        <input name="SR" num_pins="1"/>
+        <input name="CE" num_pins="1"/>
+        <!-- This input in unconnected on SLICEL -->
+        <input name="AMC31" num_pins="1"/>
+        <clock name="CLK" num_pins="1"/>
+        <input name="CIN" num_pins="1"/>
+        <output name="COUT" num_pins="1"/>
+        <output name="DMUX" num_pins="1"/>
+        <output name="D" num_pins="1"/>
+        <output name="DQ" num_pins="1"/>
+        <output name="CMUX" num_pins="1"/>
+        <output name="C" num_pins="1"/>
+        <output name="CQ" num_pins="1"/>
+        <output name="BMUX" num_pins="1"/>
+        <output name="B" num_pins="1"/>
+        <output name="BQ" num_pins="1"/>
+        <output name="AMUX" num_pins="1"/>
+        <output name="A" num_pins="1"/>
+        <output name="AQ" num_pins="1"/>
+        <!-- Model of FF group in SLICEL and SLICEM -->
+        <pb_type name="BLK_BB-SLICE_FF" num_pb="1">
+          <!-- CK, CE and SR are slice wide. -->
+          <input name="CE" num_pins="1"/>
+          <input name="SR" num_pins="1"/>
+          <clock name="CK" num_pins="1"/>
+          <input name="D" num_pins="4"/>
+          <output name="Q" num_pins="4"/>
+          <input name="D5" num_pins="4"/>
+          <output name="Q5" num_pins="4"/>
+          <!-- |      |FFSYNC|LATCH|ZRST | -->
+          <!-- |FDRE  |   X  |     |  X  | -->
+          <mode name="FDRE">
+            <pb_type blif_model=".subckt FDRE" name="BEL_FF-FDRE" num_pb="8">
+              <input name="D" num_pins="1"/>
+              <input name="CE" num_pins="1"/>
+              <clock name="C" num_pins="1"/>
+              <input name="R" num_pins="1"/>
+              <output name="Q" num_pins="1"/>
+              <T_setup clock="C" port="BEL_FF-FDRE.D" value="10e-12"/>
+              <T_setup clock="C" port="BEL_FF-FDRE.CE" value="10e-12"/>
+              <T_setup clock="C" port="BEL_FF-FDRE.R" value="10e-12"/>
+              <T_clock_to_Q clock="C" max="10e-12" port="BEL_FF-FDRE.Q"/>
+            </pb_type>
+            <interconnect>
+              <complete input="BLK_BB-SLICE_FF.CE" name="CE" output="BEL_FF-FDRE.CE"/>
+              <complete input="BLK_BB-SLICE_FF.CK" name="C" output="BEL_FF-FDRE.C"/>
+              <complete input="BLK_BB-SLICE_FF.SR" name="SR" output="BEL_FF-FDRE.R"/>
+              <direct input="BLK_BB-SLICE_FF.D[3:0]" name="D" output="BEL_FF-FDRE[3:0].D"/>
+              <direct input="BEL_FF-FDRE[3:0].Q" name="Q" output="BLK_BB-SLICE_FF.Q[3:0]"/>
+              <direct input="BLK_BB-SLICE_FF.D5[3:0]" name="D5" output="BEL_FF-FDRE[7:4].D"/>
+              <direct input="BEL_FF-FDRE[7:4].Q" name="Q5" output="BLK_BB-SLICE_FF.Q5[3:0]"/>
+            </interconnect>
+          </mode>
+        </pb_type>
+        <!-- CARRY4 logic -->
+        <pb_type blif_model=".subckt CARRY0" name="BEL_BB-CARRY0" num_pb="1">
+          <input name="CI" num_pins="1"/>
+          <input name="CI_INIT" num_pins="1"/>
+          <output name="CO_CHAIN" num_pins="1"/>
+          <output name="CO_FABRIC" num_pins="1"/>
+          <input name="DI" num_pins="1"/>
+          <output name="O" num_pins="1"/>
+          <input name="S" num_pins="1"/>
+          <delay_constant in_port="BEL_BB-CARRY0.CI" max="10e-12" out_port="BEL_BB-CARRY0.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY0.CI_INIT" max="10e-12" out_port="BEL_BB-CARRY0.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY0.DI" max="10e-12" out_port="BEL_BB-CARRY0.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY0.S" max="10e-12" out_port="BEL_BB-CARRY0.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY0.CI" max="10e-12" out_port="BEL_BB-CARRY0.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY0.CI_INIT" max="10e-12" out_port="BEL_BB-CARRY0.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY0.DI" max="10e-12" out_port="BEL_BB-CARRY0.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY0.S" max="10e-12" out_port="BEL_BB-CARRY0.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY0.CI" max="10e-12" out_port="BEL_BB-CARRY0.O"/>
+          <delay_constant in_port="BEL_BB-CARRY0.CI_INIT" max="10e-12" out_port="BEL_BB-CARRY0.O"/>
+          <delay_constant in_port="BEL_BB-CARRY0.S" max="10e-12" out_port="BEL_BB-CARRY0.O"/>
+        </pb_type>
+        <pb_type blif_model=".subckt CARRY" name="BEL_BB-CARRY" num_pb="3">
+          <input name="CI" num_pins="1"/>
+          <output name="CO_CHAIN" num_pins="1"/>
+          <output name="CO_FABRIC" num_pins="1"/>
+          <input name="DI" num_pins="1"/>
+          <output name="O" num_pins="1"/>
+          <input name="S" num_pins="1"/>
+          <delay_constant in_port="BEL_BB-CARRY.CI" max="10e-12" out_port="BEL_BB-CARRY.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY.DI" max="10e-12" out_port="BEL_BB-CARRY.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY.S" max="10e-12" out_port="BEL_BB-CARRY.CO_CHAIN"/>
+          <delay_constant in_port="BEL_BB-CARRY.CI" max="10e-12" out_port="BEL_BB-CARRY.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY.DI" max="10e-12" out_port="BEL_BB-CARRY.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY.S" max="10e-12" out_port="BEL_BB-CARRY.CO_FABRIC"/>
+          <delay_constant in_port="BEL_BB-CARRY.CI" max="10e-12" out_port="BEL_BB-CARRY.O"/>
+          <delay_constant in_port="BEL_BB-CARRY.S" max="10e-12" out_port="BEL_BB-CARRY.O"/>
+        </pb_type>
+        <interconnect>
+          <!-- 5FF MUXs -->
+          <mux input="BLK_IG-COMMON_SLICE.DX BLK_IG-COMMON_SLICE.DO5" name="D5FFMUX" output="BLK_BB-SLICE_FF.D5[3]"/>
+          <mux input="BLK_IG-COMMON_SLICE.CX BLK_IG-COMMON_SLICE.CO5" name="C5FFMUX" output="BLK_BB-SLICE_FF.D5[2]"/>
+          <mux input="BLK_IG-COMMON_SLICE.BX BLK_IG-COMMON_SLICE.BO5" name="B5FFMUX" output="BLK_BB-SLICE_FF.D5[1]"/>
+          <mux input="BLK_IG-COMMON_SLICE.AX BLK_IG-COMMON_SLICE.AO5" name="A5FFMUX" output="BLK_BB-SLICE_FF.D5[0]"/>
+          <!-- [A-D]MUX -->
+          <mux input="BLK_IG-COMMON_SLICE.AMC31 BLK_BB-SLICE_FF.Q5[3] BEL_BB-CARRY[2].O BEL_BB-CARRY[2].CO_FABRIC BLK_IG-COMMON_SLICE.DO6 BLK_IG-COMMON_SLICE.DO5" name="DMUX" output="BLK_IG-COMMON_SLICE.DMUX"/>
+          <mux input="BLK_BB-SLICE_FF.Q5[2] BEL_BB-CARRY[1].O BEL_BB-CARRY[1].CO_FABRIC BLK_IG-COMMON_SLICE.CO6 BLK_IG-COMMON_SLICE.CO5" name="CMUX" output="BLK_IG-COMMON_SLICE.CMUX"/>
+          <mux input="BLK_BB-SLICE_FF.Q5[1] BEL_BB-CARRY[0].O BEL_BB-CARRY[0].CO_FABRIC BLK_IG-COMMON_SLICE.BO6 BLK_IG-COMMON_SLICE.BO5" name="BMUX" output="BLK_IG-COMMON_SLICE.BMUX"/>
+          <mux input="BLK_BB-SLICE_FF.Q5[0] BEL_BB-CARRY0.O BEL_BB-CARRY0.CO_FABRIC BLK_IG-COMMON_SLICE.AO6 BLK_IG-COMMON_SLICE.AO5" name="AMUX" output="BLK_IG-COMMON_SLICE.AMUX"/>
+          <!-- [A-D]FFMUX -->
+          <mux input="BEL_BB-CARRY[2].O BEL_BB-CARRY[2].CO_FABRIC BLK_IG-COMMON_SLICE.DO6 BLK_IG-COMMON_SLICE.DO5 BLK_IG-COMMON_SLICE.DX" name="DFFMUX" output="BLK_BB-SLICE_FF.D[3]"/>
+          <mux input="BEL_BB-CARRY[1].O BEL_BB-CARRY[1].CO_FABRIC BLK_IG-COMMON_SLICE.CO6 BLK_IG-COMMON_SLICE.CO5 BLK_IG-COMMON_SLICE.CX" name="CFFMUX" output="BLK_BB-SLICE_FF.D[2]"/>
+          <mux input="BEL_BB-CARRY[0].O BEL_BB-CARRY[0].CO_FABRIC BLK_IG-COMMON_SLICE.BO6 BLK_IG-COMMON_SLICE.BO5 BLK_IG-COMMON_SLICE.BX" name="BFFMUX" output="BLK_BB-SLICE_FF.D[1]"/>
+          <mux input="BEL_BB-CARRY0.O BEL_BB-CARRY0.CO_FABRIC BLK_IG-COMMON_SLICE.AO6 BLK_IG-COMMON_SLICE.AO5 BLK_IG-COMMON_SLICE.AX" name="AFFMUX" output="BLK_BB-SLICE_FF.D[0]"/>
+          <!-- [A-F]Q outputs -->
+          <direct input="BLK_BB-SLICE_FF.Q[0]" name="AFF" output="BLK_IG-COMMON_SLICE.AQ"/>
+          <direct input="BLK_BB-SLICE_FF.Q[1]" name="BFF" output="BLK_IG-COMMON_SLICE.BQ"/>
+          <direct input="BLK_BB-SLICE_FF.Q[2]" name="CFF" output="BLK_IG-COMMON_SLICE.CQ"/>
+          <direct input="BLK_BB-SLICE_FF.Q[3]" name="DFF" output="BLK_IG-COMMON_SLICE.DQ"/>
+          <!-- LUT O6 output -->
+          <direct input="BLK_IG-COMMON_SLICE.DO6" name="BLK_IG-COMMON_SLICE_DOUT" output="BLK_IG-COMMON_SLICE.D"/>
+          <direct input="BLK_IG-COMMON_SLICE.CO6" name="BLK_IG-COMMON_SLICE_COUT" output="BLK_IG-COMMON_SLICE.C"/>
+          <direct input="BLK_IG-COMMON_SLICE.BO6" name="BLK_IG-COMMON_SLICE_BOUT" output="BLK_IG-COMMON_SLICE.B"/>
+          <direct input="BLK_IG-COMMON_SLICE.AO6" name="BLK_IG-COMMON_SLICE_AOUT" output="BLK_IG-COMMON_SLICE.A"/>
+          <!-- Carry -->
+          <!-- Carry initialization -->
+          <direct input="BLK_IG-COMMON_SLICE.AX" name="PRECYINIT_MUX" output="BEL_BB-CARRY0.CI_INIT"/>
+          <direct input="BLK_IG-COMMON_SLICE.CIN" name="CIN_TO_CARRY0" output="BEL_BB-CARRY0.CI">
+            <pack_pattern in_port="BLK_IG-COMMON_SLICE.CIN" name="BLK_TI-CLBLL_R.BLK_IG-SLICEL.CARRYCHAIN" out_port="BEL_BB-CARRY0.CI"/>
+          </direct>
+          <!-- Tile internal carry -->
+          <direct input="BEL_BB-CARRY0.CO_CHAIN" name="CARRY0_TO_CARRY1" output="BEL_BB-CARRY[0].CI">
+            <pack_pattern in_port="BEL_BB-CARRY0.CO_CHAIN" name="BLK_TI-CLBLL_R.BLK_IG-SLICEL.CARRYCHAIN" out_port="BEL_BB-CARRY[0].CI"/>
+          </direct>
+          <direct input="BEL_BB-CARRY[0].CO_CHAIN" name="CARRY1_TO_CARRY2" output="BEL_BB-CARRY[1].CI">
+            <pack_pattern in_port="BEL_BB-CARRY[0].CO_CHAIN" name="BLK_TI-CLBLL_R.BLK_IG-SLICEL.CARRYCHAIN" out_port="BEL_BB-CARRY[1].CI"/>
+          </direct>
+          <direct input="BEL_BB-CARRY[1].CO_CHAIN" name="CARRY2_TO_CARRY3" output="BEL_BB-CARRY[2].CI">
+            <pack_pattern in_port="BEL_BB-CARRY[1].CO_CHAIN" name="BLK_TI-CLBLL_R.BLK_IG-SLICEL.CARRYCHAIN" out_port="BEL_BB-CARRY[2].CI"/>
+          </direct>
+          <!-- Carry selects -->
+          <direct input="BLK_IG-COMMON_SLICE.DO6" name="CARRY_S3" output="BEL_BB-CARRY[2].S"/>
+          <direct input="BLK_IG-COMMON_SLICE.CO6" name="CARRY_S2" output="BEL_BB-CARRY[1].S"/>
+          <direct input="BLK_IG-COMMON_SLICE.BO6" name="CARRY_S1" output="BEL_BB-CARRY[0].S"/>
+          <direct input="BLK_IG-COMMON_SLICE.AO6" name="CARRY_S0" output="BEL_BB-CARRY0.S"/>
+          <!-- Carry MUXCY.DI -->
+          <mux input="BLK_IG-COMMON_SLICE.DO5 BLK_IG-COMMON_SLICE.DX" name="CARRY_DI3" output="BEL_BB-CARRY[2].DI"/>
+          <mux input="BLK_IG-COMMON_SLICE.CO5 BLK_IG-COMMON_SLICE.CX" name="CARRY_DI2" output="BEL_BB-CARRY[1].DI"/>
+          <mux input="BLK_IG-COMMON_SLICE.BO5 BLK_IG-COMMON_SLICE.BX" name="CARRY_DI1" output="BEL_BB-CARRY[0].DI"/>
+          <mux input="BLK_IG-COMMON_SLICE.AO5 BLK_IG-COMMON_SLICE.AX" name="CARRY_DI0" output="BEL_BB-CARRY0.DI"/>
+          <direct input="BEL_BB-CARRY[2].CO_CHAIN" name="COUT" output="BLK_IG-COMMON_SLICE.COUT">
+            <pack_pattern in_port="BEL_BB-CARRY[2].CO_CHAIN" name="BLK_TI-CLBLL_R.BLK_IG-SLICEL.CARRYCHAIN" out_port="BLK_IG-COMMON_SLICE.COUT"/>
+          </direct>
+          <!-- Clock, Clock Enable and Reset -->
+          <direct input="BLK_IG-COMMON_SLICE.CLK" name="CK" output="BLK_BB-SLICE_FF.CK"/>
+          <direct input="BLK_IG-COMMON_SLICE.CE" name="CE" output="BLK_BB-SLICE_FF.CE"/>
+          <direct input="BLK_IG-COMMON_SLICE.SR" name="SR" output="BLK_BB-SLICE_FF.SR"/>
+        </interconnect>
+      </pb_type>
+      <interconnect>
+        <!-- LUT input pins -->
+        <direct input="BLK_IG-SLICEL.D1" name="D1" output="BLK_IG-COMMON_LUT_AND_F78MUX.D1"/>
+        <direct input="BLK_IG-SLICEL.D2" name="D2" output="BLK_IG-COMMON_LUT_AND_F78MUX.D2"/>
+        <direct input="BLK_IG-SLICEL.D3" name="D3" output="BLK_IG-COMMON_LUT_AND_F78MUX.D3"/>
+        <direct input="BLK_IG-SLICEL.D4" name="D4" output="BLK_IG-COMMON_LUT_AND_F78MUX.D4"/>
+        <direct input="BLK_IG-SLICEL.D5" name="D5" output="BLK_IG-COMMON_LUT_AND_F78MUX.D5"/>
+        <direct input="BLK_IG-SLICEL.D6" name="D6" output="BLK_IG-COMMON_LUT_AND_F78MUX.D6"/>
+        <direct input="BLK_IG-SLICEL.C1" name="C1" output="BLK_IG-COMMON_LUT_AND_F78MUX.C1"/>
+        <direct input="BLK_IG-SLICEL.C2" name="C2" output="BLK_IG-COMMON_LUT_AND_F78MUX.C2"/>
+        <direct input="BLK_IG-SLICEL.C3" name="C3" output="BLK_IG-COMMON_LUT_AND_F78MUX.C3"/>
+        <direct input="BLK_IG-SLICEL.C4" name="C4" output="BLK_IG-COMMON_LUT_AND_F78MUX.C4"/>
+        <direct input="BLK_IG-SLICEL.C5" name="C5" output="BLK_IG-COMMON_LUT_AND_F78MUX.C5"/>
+        <direct input="BLK_IG-SLICEL.C6" name="C6" output="BLK_IG-COMMON_LUT_AND_F78MUX.C6"/>
+        <direct input="BLK_IG-SLICEL.B1" name="B1" output="BLK_IG-COMMON_LUT_AND_F78MUX.B1"/>
+        <direct input="BLK_IG-SLICEL.B2" name="B2" output="BLK_IG-COMMON_LUT_AND_F78MUX.B2"/>
+        <direct input="BLK_IG-SLICEL.B3" name="B3" output="BLK_IG-COMMON_LUT_AND_F78MUX.B3"/>
+        <direct input="BLK_IG-SLICEL.B4" name="B4" output="BLK_IG-COMMON_LUT_AND_F78MUX.B4"/>
+        <direct input="BLK_IG-SLICEL.B5" name="B5" output="BLK_IG-COMMON_LUT_AND_F78MUX.B5"/>
+        <direct input="BLK_IG-SLICEL.B6" name="B6" output="BLK_IG-COMMON_LUT_AND_F78MUX.B6"/>
+        <direct input="BLK_IG-SLICEL.A1" name="A1" output="BLK_IG-COMMON_LUT_AND_F78MUX.A1"/>
+        <direct input="BLK_IG-SLICEL.A2" name="A2" output="BLK_IG-COMMON_LUT_AND_F78MUX.A2"/>
+        <direct input="BLK_IG-SLICEL.A3" name="A3" output="BLK_IG-COMMON_LUT_AND_F78MUX.A3"/>
+        <direct input="BLK_IG-SLICEL.A4" name="A4" output="BLK_IG-COMMON_LUT_AND_F78MUX.A4"/>
+        <direct input="BLK_IG-SLICEL.A5" name="A5" output="BLK_IG-COMMON_LUT_AND_F78MUX.A5"/>
+        <direct input="BLK_IG-SLICEL.A6" name="A6" output="BLK_IG-COMMON_LUT_AND_F78MUX.A6"/>
+        <direct input="BLK_IG-SLICEL.CX" name="CX" output="BLK_IG-COMMON_LUT_AND_F78MUX.CX"/>
+        <direct input="BLK_IG-SLICEL.BX" name="BX" output="BLK_IG-COMMON_LUT_AND_F78MUX.BX"/>
+        <direct input="BLK_IG-SLICEL.AX" name="AX" output="BLK_IG-COMMON_LUT_AND_F78MUX.AX"/>
+        <!-- COMMON_SLICE inputs -->
+        <direct input="BLK_IG-SLICEL.DX" name="DX2" output="BLK_IG-COMMON_SLICE.DX"/>
+        <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.DO6" name="DO6" output="BLK_IG-COMMON_SLICE.DO6"/>
+        <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.DO5" name="DO5" output="BLK_IG-COMMON_SLICE.DO5"/>
+        <direct input="BLK_IG-SLICEL.CX" name="CX2" output="BLK_IG-COMMON_SLICE.CX"/>
+        <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.CO6" name="CO6" output="BLK_IG-COMMON_SLICE.CO6"/>
+        <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.CO5" name="CO5" output="BLK_IG-COMMON_SLICE.CO5"/>
+        <direct input="BLK_IG-SLICEL.BX" name="BX2" output="BLK_IG-COMMON_SLICE.BX"/>
+        <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.BO6" name="BO6" output="BLK_IG-COMMON_SLICE.BO6"/>
+        <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.BO5" name="BO5" output="BLK_IG-COMMON_SLICE.BO5"/>
+        <direct input="BLK_IG-SLICEL.AX" name="AX2" output="BLK_IG-COMMON_SLICE.AX"/>
+        <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.AO6" name="AO6" output="BLK_IG-COMMON_SLICE.AO6"/>
+        <direct input="BLK_IG-COMMON_LUT_AND_F78MUX.AO5" name="AO5" output="BLK_IG-COMMON_SLICE.AO5"/>
+        <!-- [A-F]Q outputs -->
+        <direct input="BLK_IG-COMMON_SLICE.AQ" name="AQ" output="BLK_IG-SLICEL.AQ"/>
+        <direct input="BLK_IG-COMMON_SLICE.BQ" name="BQ" output="BLK_IG-SLICEL.BQ"/>
+        <direct input="BLK_IG-COMMON_SLICE.CQ" name="CQ" output="BLK_IG-SLICEL.CQ"/>
+        <direct input="BLK_IG-COMMON_SLICE.DQ" name="DQ" output="BLK_IG-SLICEL.DQ"/>
+        <!-- A-D output -->
+        <direct input="BLK_IG-COMMON_SLICE.D" name="BLK_IG-SLICEL_DOUT" output="BLK_IG-SLICEL.D"/>
+        <direct input="BLK_IG-COMMON_SLICE.C" name="BLK_IG-SLICEL_COUT" output="BLK_IG-SLICEL.C"/>
+        <direct input="BLK_IG-COMMON_SLICE.B" name="BLK_IG-SLICEL_BOUT" output="BLK_IG-SLICEL.B"/>
+        <direct input="BLK_IG-COMMON_SLICE.A" name="BLK_IG-SLICEL_AOUT" output="BLK_IG-SLICEL.A"/>
+        <!-- AMUX-DMUX output -->
+        <direct input="BLK_IG-COMMON_SLICE.DMUX" name="BLK_IG-SLICEL_DMUX" output="BLK_IG-SLICEL.DMUX"/>
+        <direct input="BLK_IG-COMMON_SLICE.CMUX" name="BLK_IG-SLICEL_CMUX" output="BLK_IG-SLICEL.CMUX"/>
+        <direct input="BLK_IG-COMMON_SLICE.BMUX" name="BLK_IG-SLICEL_BMUX" output="BLK_IG-SLICEL.BMUX"/>
+        <direct input="BLK_IG-COMMON_SLICE.AMUX" name="BLK_IG-SLICEL_AMUX" output="BLK_IG-SLICEL.AMUX"/>
+        <!-- Carry -->
+        <direct input="BLK_IG-SLICEL.CIN" name="CIN" output="BLK_IG-COMMON_SLICE.CIN"/>
+        <direct input="BLK_IG-COMMON_SLICE.COUT" name="COUT" output="BLK_IG-SLICEL.COUT"/>
+        <!-- Clock, Clock Enable and Reset -->
+        <direct input="BLK_IG-SLICEL.CLK" name="CK" output="BLK_IG-COMMON_SLICE.CLK"/>
+        <direct input="BLK_IG-SLICEL.CE" name="CE" output="BLK_IG-COMMON_SLICE.CE"/>
+        <direct input="BLK_IG-SLICEL.SR" name="SR" output="BLK_IG-COMMON_SLICE.SR"/>
+      </interconnect>
+    </pb_type>
+  </complexblocklist>
+  <layout>
+    <fixed_layout name="TEST" width="6" height="6">
+      <single priority="1" type="io_tile" x="0" y="1"/>
+      <single priority="1" type="io_tile" x="0" y="2"/>
+      <single priority="1" type="io_tile" x="0" y="3"/>
+      <single priority="1" type="io_tile" x="0" y="4"/>
+      <single priority="1" type="io_tile" x="3" y="1"/>
+      <single priority="1" type="io_tile" x="3" y="2"/>
+      <single priority="1" type="io_tile" x="3" y="3"/>
+      <single priority="1" type="io_tile" x="3" y="4"/>
+      <single priority="1" type="io_tile" x="1" y="0"/>
+      <single priority="1" type="io_tile" x="2" y="0"/>
+      <single priority="1" type="io_tile" x="1" y="5"/>
+      <single priority="1" type="io_tile" x="2" y="5"/>
+      <single priority="1" type="BLK_IG-SLICEM" x="1" y="1"/>
+      <single priority="1" type="BLK_IG-SLICEM" x="1" y="2"/>
+      <single priority="1" type="BLK_IG-SLICEM" x="1" y="3"/>
+      <single priority="1" type="BLK_IG-SLICEM" x="1" y="4"/>
+      <single priority="1" type="BLK_IG-SLICEL" x="2" y="1"/>
+      <single priority="1" type="BLK_IG-SLICEL" x="2" y="2"/>
+      <single priority="1" type="BLK_IG-SLICEL" x="2" y="3"/>
+      <single priority="1" type="BLK_IG-SLICEL" x="2" y="4"/>
+    </fixed_layout>
+  </layout>
+  <device>
+    <sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>
+    <area grid_logic_tile_area="14813.392"/>
+    <connection_block input_switch_name="buffer"/>
+    <switch_block fs="3" type="wilton"/>
+    <chan_width_distr>
+      <x distr="uniform" peak="1.0"/>
+      <y distr="uniform" peak="1.0"/>
+    </chan_width_distr>
+  </device>
+  <switchlist>
+    <switch Cin=".77e-15" Cout="4e-15" R="551" Tdel="6.8e-12" buf_size="27.645901" mux_trans_size="2.630740" name="routing" type="mux"/>
+    <switch Cin=".77e-15" Cout="4e-15" R="551" Tdel="6.8e-12" buf_size="27.645901" mux_trans_size="2.630740" name="buffer" type="mux"/>
+  </switchlist>
+  <segmentlist>
+    <segment Cmetal="22.5e-15" Rmetal="101" freq="1.0" length="12" name="dummy" type="bidir">
+      <wire_switch name="routing"/>
+      <opin_switch name="routing"/>
+      <sb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1</sb>
+      <cb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1</cb>
+    </segment>
+  </segmentlist>
+</architecture>

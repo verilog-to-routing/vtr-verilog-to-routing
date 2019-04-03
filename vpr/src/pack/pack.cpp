@@ -279,9 +279,15 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_type_ptr, 
         if (itr == num_type_instances.end()) continue;
 
         float num_instances = itr->second;
+
+        int num_available_instances = device_ctx.grid.num_instances(type);
+        for (int itype = 0; itype < type->num_equivalent_tiles; itype++) {
+            num_available_instances += device_ctx.grid.num_instances(type->equivalent_tiles[itype]);
+        }
+
         float util = 0.;
-        if (device_ctx.grid.num_instances(type) != 0) {
-            util = num_instances / device_ctx.grid.num_instances(type);
+        if (num_instances != 0) {
+            util = num_instances / num_available_instances;
         }
         type_util[type] = util;
 

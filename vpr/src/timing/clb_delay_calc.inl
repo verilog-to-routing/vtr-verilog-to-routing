@@ -73,7 +73,8 @@ inline float ClbDelayCalc::pb_route_delay(ClusterBlockId clb, int pb_route_idx, 
 inline const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(ClusterBlockId clb, int pb_route_idx) const {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int type_index = cluster_ctx.clb_nlist.block_type(clb)->index;
+    //Getting the original block type in case the CLB has been placed in an equivalent tile.
+    int type_index = cluster_ctx.clb_nlist.block_type(clb, false)->index;
 
     const t_pb* pb = cluster_ctx.clb_nlist.block_pb(clb);
     if (pb->pb_route.count(pb_route_idx)) {
@@ -84,7 +85,7 @@ inline const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(ClusterBlockId cl
             const t_pb_graph_pin* pb_gpin = intra_lb_pb_pin_lookup_.pb_gpin(type_index, pb_route_idx);
             const t_pb_graph_pin* upstream_pb_gpin = intra_lb_pb_pin_lookup_.pb_gpin(type_index, upstream_pb_route_idx);
 
-            return find_pb_graph_edge(upstream_pb_gpin, pb_gpin); 
+            return find_pb_graph_edge(upstream_pb_gpin, pb_gpin);
         }
     }
 

@@ -125,8 +125,25 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     //Returns the physical block
     t_pb* block_pb(const ClusterBlockId id) const;
 
-    //Returns the type of CLB (Logic block, RAM, DSP, etc.)
+    /*
+     * Returns the type of CLB (Logic block, RAM, DSP, etc.). There are two different overloaded block_type functions
+     * 1) The first one (without the boolean) is used to retrieve the actual physical type corresponding to the placed
+     *    block. This function will call the one with the boolean, setting `get_equivalent_if_set` to true.
+     * 2) The second one (with the boolean) is used to retrieve the physical or logical type relative to a block.
+     *    Depending on the value of `get_equivalent_if_set` we will get a different block_type:
+     *        - True: the function returns the physical placed tile (can be an equivalent tile) of the block;
+     *        - False: the function returns the logical tile of the block (even if it was placed in an equivalent tile).
+     */
     t_type_ptr block_type(const ClusterBlockId id) const;
+    t_type_ptr block_type(const ClusterBlockId id, bool get_equivalent_if_set) const;
+
+    //Returns the equivalent type index (if any) of a CLB
+    //The index is used to retrieve the equivalent type from the t_type_descriptor structure
+    //Example: type->equivalent_tiles[index]
+    int block_eq_type_index(const ClusterBlockId id) const;
+
+    //Returns true if the block has been placed in an equivalent tile
+    bool block_eq_type_effective(const ClusterBlockId id) const;
 
     //Returns the net of the block attached to the specific pin index
     ClusterNetId block_net(const ClusterBlockId blk_id, const int pin_index) const;
@@ -173,6 +190,13 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     //  pb          : The physical representation of the block
     //  t_type_ptr  : The type of the CLB
     ClusterBlockId create_block(const char* name, t_pb* pb, t_type_ptr type);
+
+    //Add the equivalent block type for a CLB. This mutator adds both the equivalent type index and
+    //the equivalent type to the corresponding vector_maps
+    //  blk_id      : The block placed in an equivalent tile location
+    //  i_eq_type   : The index used to retrieve the equivalent tile from the t_type_ptr structure
+    //  eq_type     : The equivalent type associated with this block
+    void set_equivalent_block_type(const ClusterBlockId blk_id, int i_eq_type, t_type_ptr eq_type);
 
     //Create or return an existing port in the netlist
     //  blk_id      : The block the port is associated with
@@ -242,10 +266,18 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     bool validate_pin_sizes_impl(size_t num_pins) const override;
     bool validate_net_sizes_impl(size_t num_nets) const override;
 
+    /*
+     * Utilities
+     */
+    int get_max_num_pins(t_type_ptr type);
+
   private: //Private Data
     //Blocks
     vtr::vector_map<ClusterBlockId, t_pb*> block_pbs_;                              //Physical block representing the clustering & internal hierarchy of each CLB
     vtr::vector_map<ClusterBlockId, t_type_ptr> block_types_;                       //The type of physical block this user circuit block is mapped to
+    vtr::vector_map<ClusterBlockId, t_type_ptr> block_eq_type_;                     //The equivalent type (if any) selected for a CLB
+    vtr::vector_map<ClusterBlockId, int> block_eq_type_index_;                      //Index relative to the equivalent tile chosen during placement
+    vtr::vector_map<ClusterBlockId, bool> block_eq_type_effective_;                 //Boolean to state if equivalent tile is used
     vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>> block_logical_pins_; //The logical pin associated with each physical block pin
 
     //Pins
