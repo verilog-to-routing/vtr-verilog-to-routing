@@ -667,6 +667,7 @@ void try_place(t_placer_opts placer_opts,
                          place_delay_value, 1e9*critical_path.delay(), 1e9*sTNS, 1e9*sWNS,
                          success_rat, std_dev, rlim, crit_exponent,
                          tot_iter, t / oldt);
+        fflush(stdout);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
