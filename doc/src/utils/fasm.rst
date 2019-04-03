@@ -149,6 +149,13 @@ example:
      </meta>
    </metadata>
 
+FASM LUT metadata must be attached to the ``<pb_type>`` at or within the
+``<mode>`` tag directly above the ``<pb_type>`` with ``blif_model=".names"``.
+Do note that there is an implicit ``<mode>`` tag within intermediate
+``<pb_type>`` when no explicit ``<mode>`` tag is present. The FASM LUT
+metadata tags will not be recognized attached inside of ``<pb_type>``'s higher
+above the leaf type.
+
 When specifying a FASM features with more than one bit, explicitly specify the
 bit range being set.  This is required because "genfasm" does not have access
 to the actual bit database, and would otherwise not have the width of the
