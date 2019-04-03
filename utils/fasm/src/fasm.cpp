@@ -324,14 +324,17 @@ static const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node
     return nullptr;
   }
 
-  t_metadata_dict *meta = nullptr;
+  const t_metadata_dict *meta = nullptr;
   if(pb_graph_node->pb_type->meta.has("fasm_type")) {
     meta = &pb_graph_node->pb_type->meta;
   }
 
-  if(pb_graph_node->pb_type->parent_mode != nullptr &&
-     pb_graph_node->pb_type->parent_mode->meta.has("fasm_type")) {
-    meta = &pb_graph_node->pb_type->parent_mode->meta;
+  if(pb_graph_node->pb_type->parent_mode != nullptr) {
+    VTR_ASSERT(pb_graph_node->pb_type->parent_mode->parent_pb_type != nullptr);
+    const t_pb_type *pb_type = pb_graph_node->pb_type->parent_mode->parent_pb_type;
+    if(pb_type->meta.has("fasm_type")) {
+      meta = &pb_type->meta;
+    }
   }
 
   if(meta != nullptr && meta->one("fasm_type")->as_string() == target_type) {
