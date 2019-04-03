@@ -1266,7 +1266,7 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
     // find the block id of the atom block driving the input of this block
 	AtomBlockId driver_blk_id = atom_ctx.nlist.find_atom_pin_driver(blk_id, model_port, root_ipin->pin_number);
 
-    // if there is noder driver block for this net
+    // if there is no driver block for this net
     // then it is the furthest up the chain
     if (!driver_blk_id) {
         return blk_id;
@@ -1557,19 +1557,21 @@ static void update_molecule_chain_info(const AtomBlockId blk_id, t_pack_molecule
     auto model_pin = root_ipin->port->model_port;
     auto pin_bit   = root_ipin->pin_number;
 
+    // find the atom driving the chain input pin of this atom
     auto driver_atom_id = atom_ctx.nlist.find_atom_pin_driver(blk_id, model_pin, pin_bit);
 
+    // find the molecule this driver atom is mapped to
+    auto itr = atom_molecules.find(driver_atom_id);
+
     // if this is the first molecule to be created for this chain
-    // initialize the chain info data structure
-    if (!driver_atom_id) {
+    // initialize the chain info data structure. This is the case
+    // if either there is no driver to the block input pin or
+    // if the driver is not part of a molecule
+    if (!driver_atom_id || itr == atom_molecules.end()) {
         // allocate chain info
         molecule->chain_info = std::make_shared<t_chain_info>();
     // this is not the first molecule to be created for this chain
     } else {
-        // find the molecule this driver atom is mapped to
-        auto itr = atom_molecules.find(driver_atom_id);
-        // if this atom has a driver atom, it should be already packed in a molecule
-        VTR_ASSERT(itr != atom_molecules.end());
         // molecule driving blk_id
         auto prev_molecule = itr->second;
         // molecule should have chain_info associated with it
