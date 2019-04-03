@@ -537,17 +537,13 @@ static bool expand_forced_pack_molecule_placement(
 				next_primitive = next_pin->parent_node;
 				/* Check for legality of placement, if legal, expand from legal placement, if not, return false */
 				if (molecule->atom_block_ids[next_block->block_id] && primitives_list[next_block->block_id] == nullptr) {
-					if (next_primitive->cluster_placement_primitive->valid
-							== true
-							&& primitive_type_feasible(
-									molecule->atom_block_ids[next_block->block_id],
-									next_primitive->pb_type)) {
+					if (next_primitive->cluster_placement_primitive->valid == true &&
+                        primitive_type_feasible(molecule->atom_block_ids[next_block->block_id],
+								                next_primitive->pb_type)) {
 						primitives_list[next_block->block_id] = next_primitive;
-						*cost +=
-								next_primitive->cluster_placement_primitive->base_cost
-										+ next_primitive->cluster_placement_primitive->incremental_cost;
-						if (!expand_forced_pack_molecule_placement(molecule,
-								next_block, primitives_list, cost)) {
+						*cost += next_primitive->cluster_placement_primitive->base_cost +
+                                 next_primitive->cluster_placement_primitive->incremental_cost;
+						if (!expand_forced_pack_molecule_placement(molecule, next_block, primitives_list, cost)) {
 							return false;
 						}
 					} else {

@@ -294,6 +294,11 @@ struct t_chain_info {
     // vector in the t_pack_patterns. This will give the
     // chain root pin used by this chain
     int chain_id = -1;
+    // first molecule to be packed in this chain
+    // this molecule is the one that is defining
+    // the chain id associated with this chain
+    t_pack_molecule *first_packed_molecule;
+
 };
 
 /* Stats keeper for placement information during packing
