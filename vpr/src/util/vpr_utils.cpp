@@ -1531,6 +1531,18 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
                     /* All atom blocks are open for this molecule, place back in queue */
                     if (i == get_array_size_of_molecule(cur_molecule)) {
                         cur_molecule->valid = true;
+                        // when invalidating a molecule check if it's a chain molecule
+                        // that is part of a long chain. If so, check if this molecule
+                        // have modified the chain_id value based on the stale packing
+                        // then reset the chain id and the first packed molecule pointer
+                        // this is packing is being reseted
+                        if (cur_molecule->type == MOLECULE_FORCED_PACK &&
+                            cur_molecule->pack_pattern->is_chain &&
+                            cur_molecule->chain_info->is_long_chain &&
+                            cur_molecule->chain_info->first_packed_molecule == cur_molecule) {
+                            cur_molecule->chain_info->first_packed_molecule = nullptr;
+                            cur_molecule->chain_info->chain_id = -1;
+                        }
                     }
                 }
             }
