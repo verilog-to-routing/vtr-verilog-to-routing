@@ -4,6 +4,9 @@
 
 sphinx_rtd_theme
 
+# Support custom domains
+sphinxcontrib-domaintools
+
 # Support Markdown
 recommonmark
 sphinx-markdown-tables

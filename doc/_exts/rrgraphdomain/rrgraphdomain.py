@@ -1,4 +1,4 @@
-from domaintools import custom_domain
+from sphinxcontrib.domaintools import custom_domain
 from sphinx.util.docfields import *
 
 def setup(app):
