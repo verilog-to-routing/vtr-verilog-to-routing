@@ -382,8 +382,12 @@ static const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node
   if(pb_graph_node->pb_type->parent_mode != nullptr) {
     VTR_ASSERT(pb_graph_node->pb_type->parent_mode->parent_pb_type != nullptr);
     const t_pb_type *pb_type = pb_graph_node->pb_type->parent_mode->parent_pb_type;
-    if(pb_type->meta.has("fasm_type")) {
-      meta = &pb_type->meta;
+    if(pb_graph_node->pb_type->parent_mode->meta.has("fasm_type")) {
+      meta = &pb_graph_node->pb_type->parent_mode->meta;
+    } else if(pb_type->num_modes <= 1) {
+      if(pb_type->meta.has("fasm_type")) {
+        meta = &pb_type->meta;
+      }
     }
   }
 
