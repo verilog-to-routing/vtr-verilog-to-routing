@@ -1139,12 +1139,21 @@ static enum e_block_pack_status try_pack_molecule(
         VTR_LOG("\t\tTry pack molecule: '%s' (%s) ",
                         atom_ctx.nlist.block_name(root_atom).c_str(),
                         atom_ctx.nlist.block_model(root_atom)->name);
-        if (molecule->pack_pattern) {
-            VTR_LOG("molecule_type %s molecule_size %zu",
-                molecule->pack_pattern->name,
-                molecule->atom_block_ids.size());
-        }
+        VTR_LOGV(molecule->pack_pattern,
+                 "molecule_type %s molecule_size %zu",
+                 molecule->pack_pattern->name,
+                 molecule->atom_block_ids.size());
         VTR_LOG("\n");
+    }
+
+    // if this cluster has a molecule placed in it that is part of a long chain
+    // (a chain that cosists of more than one molecule), don't allow more long chain
+    // molecules to be placed in this cluster. (to avoid possible routability problems)
+    if (cluster_placement_stats_ptr->has_long_chain &&
+        molecule->type == MOLECULE_FORCED_PACK &&
+        molecule->pack_pattern->is_chain &&
+        molecule->chain_info->is_long_chain) {
+        return BLK_FAILED_FEASIBLE;
     }
 
 	while (block_pack_status != BLK_PASSED) {
@@ -1213,12 +1222,16 @@ static enum e_block_pack_status try_pack_molecule(
 						    cur_pb->name = vtr::strdup(atom_ctx.nlist.block_name(chain_root_blk_id).c_str());
 						    cur_pb = cur_pb->parent_pb;
                         }
-                        // if this molecule is part of a chain, check if its the first molecule in the 
-                        // chain to be packed. If so, update the chain id for this chain of molecules
-                        // to make sure all molecules will be packed to the same chain id
-                        if (molecule->chain_info->is_long_chain &&
-                            molecule->chain_info->chain_id == -1) {
-                            update_molecule_chain_info(molecule, primitives_list[molecule->root]);
+                        // if this molecule is part of a chain, mark the cluster as having a long chain
+                        // molecule. Also check if it's the first molecule in the chain to be packed.
+                        // If so, update the chain id for this chain of molecules to make sure all
+                        // molecules will be packed to the same chain id and can reach eachother using
+                        // the direct links between clusters
+                        if (molecule->chain_info->is_long_chain) {
+                            cluster_placement_stats_ptr->has_long_chain = true;
+                            if (molecule->chain_info->chain_id == -1) {
+                                update_molecule_chain_info(molecule, primitives_list[molecule->root]);
+                            }
                         }
 					}
 					for (i = 0; i < molecule_size; i++) {

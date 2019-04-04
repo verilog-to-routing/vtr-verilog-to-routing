@@ -306,6 +306,7 @@ struct t_chain_info {
  */
 struct t_cluster_placement_stats {
 	int num_pb_types; /* num primitive pb_types inside complex block */
+    bool has_long_chain; /* specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster) */
 	const t_pack_molecule *curr_molecule; /* current molecule being considered for packing */
 	t_cluster_placement_primitive **valid_primitives; /* [0..num_pb_types-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty */
 	t_cluster_placement_primitive *in_flight; /* ptrs to primitives currently being considered */

@@ -85,7 +85,7 @@ static void update_chain_root_pins(t_pack_patterns* chain_pattern,
 
 static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* input_pin, const int pack_pattern);
 
-static void update_molecule_chain_info(const AtomBlockId blk_id, t_pack_molecule* molecule,
+static void init_molecule_chain_info(const AtomBlockId blk_id, t_pack_molecule* molecule,
                                        const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
 /*****************************************/
@@ -955,7 +955,7 @@ static t_pack_molecule *try_create_molecule(
 			molecule->pack_pattern->root_block) == true) {
         // update chain info for chain molecules
         if (list_of_pack_patterns[pack_pattern_index].is_chain) {
-            update_molecule_chain_info(blk_id, molecule, atom_molecules);
+            init_molecule_chain_info(blk_id, molecule, atom_molecules);
         }
 		/* Success! commit module */
 		for (i = 0; i < molecule->pack_pattern->num_blocks; i++) {
@@ -1533,11 +1533,10 @@ static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* input_p
 
 
 /**
- * This function updates the chain info data structure of the molecule
+ * This function initializes the chain info data structure of the molecule
  * If this is the furthest molecule up the chain, the chain_info data
- * structure is created. Otherwise, the chain_info of the input molecule
- * it set to point to the same chain_info data structure of the other
- * molecules in the chain.
+ * structure is created. Otherwise, the input pack_molecule is set to
+ * point to the same chain_info of the molecule feeding it
  *
  * Limitiation: This function assums that the molecules of a chain are
  * created and fed to this function in order. Meaning the first molecule
@@ -1545,7 +1544,7 @@ static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* input_p
  * The second one should should be the molecule directly after that one
  * and so on.
  */
-static void update_molecule_chain_info(const AtomBlockId blk_id, t_pack_molecule* molecule,
+static void init_molecule_chain_info(const AtomBlockId blk_id, t_pack_molecule* molecule,
                                        const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules) {
     // the input molecule to this function should have a
     // pack pattern assigned to it and the input block should be valid
