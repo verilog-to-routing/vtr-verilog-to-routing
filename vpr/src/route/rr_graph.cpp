@@ -2248,7 +2248,10 @@ static void load_uniform_connection_block_pattern(
                     int max_num_unassigned_tracks = 0;
 
                     /* Across all potential track assignments, determine the maximum number of recently
-                     * unassigned tracks that can be assigned this iteration.
+                     * unassigned tracks that can be assigned this iteration. offset_increment is used to
+                     * increment through the potential track assignments. The nested loops inside the
+                     * offset_increment loop, iterate through all the tracks associated with a particular
+                     * track assignment.
                      */
 
                     for (int offset_increment = 0; offset_increment < num_phys_pins; offset_increment++) {
