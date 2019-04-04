@@ -217,6 +217,7 @@ void reset_cluster_placement_stats(
 		}
 	}
 	cluster_placement_stats->curr_molecule = nullptr;
+    cluster_placement_stats->has_long_chain = false;
 }
 
 /**
