@@ -93,6 +93,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 AtomBlockId blk_id = curr_model().create_block(input, blk_model);
                 AtomPortId port_id = curr_model().create_port(blk_id, blk_model->outputs);
                 AtomNetId net_id = curr_model().create_net(input);
+                assert_net_has_no_driver(net_id, input);
                 curr_model().create_pin(port_id, 0, net_id, PinType::DRIVER);
             }
             set_curr_block(AtomBlockId::INVALID()); //This statement doesn't define a block, so mark invalid
@@ -118,6 +119,20 @@ struct BlifAllocCallback : public blifparse::Callback {
             set_curr_block(AtomBlockId::INVALID()); //This statement doesn't define a block, so mark invalid
         }
 
+       void assert_net_has_no_driver(std::string net_name) {
+            AtomNetId net_id = curr_model().create_net(net_name);
+            assert_net_has_no_driver(net_id, net_name);
+        }
+
+       void assert_net_has_no_driver(AtomNetId net_id, std::string net_name) {
+            AtomPinId net_driver_pin_id = curr_model().net_driver(net_id);
+            if (net_driver_pin_id != AtomPinId::INVALID()) {
+                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
+                          "Net '%s' already has a driver (multi-driven nets are not supported)",
+                          net_name.c_str());
+            }
+        }
+
         void names(std::vector<std::string> nets, std::vector<std::vector<blifparse::LogicValue>> so_cover) override {
             const t_model* blk_model = find_model(MODEL_NAMES);
 
@@ -133,6 +148,10 @@ struct BlifAllocCallback : public blifparse::Callback {
             VTR_ASSERT_MSG(blk_model->outputs, ".names has no output port");
             VTR_ASSERT_MSG(!blk_model->outputs->next, ".names model has multiple output ports");
             VTR_ASSERT_MSG(blk_model->outputs->size == 1, ".names model has non-single-bit output");
+
+            std::string output_net_name = nets[nets.size()-1];
+            AtomNetId output_net_id = curr_model().create_net(output_net_name);
+            assert_net_has_no_driver(output_net_id, output_net_name);
 
             //Convert the single-output cover to a netlist truth table
             AtomNetlist::TruthTable truth_table;
@@ -186,9 +205,8 @@ struct BlifAllocCallback : public blifparse::Callback {
             }
 
             //Create output
-            AtomNetId net_id = curr_model().create_net(nets[nets.size()-1]);
             AtomPortId output_port_id = curr_model().create_port(blk_id, blk_model->outputs);
-            curr_model().create_pin(output_port_id, 0, net_id, PinType::DRIVER, output_is_const);
+            curr_model().create_pin(output_port_id, 0, output_net_id, PinType::DRIVER, output_is_const);
         }
 
         void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
@@ -237,6 +255,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             //The output
             AtomPortId q_port_id = curr_model().create_port(blk_id, q_model_port);
             AtomNetId q_net_id = curr_model().create_net(output);
+            assert_net_has_no_driver(q_net_id, output);
             curr_model().create_pin(q_port_id, 0, q_net_id, PinType::DRIVER);
 
             //The clock
@@ -251,14 +270,19 @@ struct BlifAllocCallback : public blifparse::Callback {
             const t_model* blk_model = find_model(subckt_model);
 
             //We name the subckt based on the net it's first output pin drives
+            //We also check that the output nets don't have other drivers already.
             std::string subckt_name;
+            bool subckt_name_set = false;
             for(size_t i = 0; i < ports.size(); ++i) {
                 const t_model_ports* model_port = find_model_port(blk_model, ports[i]);
                 VTR_ASSERT(model_port);
 
                 if(model_port->dir == OUT_PORT) {
-                    subckt_name = nets[i];
-                    break;
+                    if (subckt_name_set == false) {
+                        subckt_name = nets[i];
+                        subckt_name_set = true;
+                    }
+                    assert_net_has_no_driver(nets[i]);
                 }
             }
 
