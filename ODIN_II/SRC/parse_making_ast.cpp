@@ -1716,8 +1716,7 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 {
 	ast_node_t *new_node = NULL;
 	ast_node_t *ref_node;
-	char *module_instance_name = (char*)vtr::calloc(1024,sizeof(char));
-	module_instance_name = NULL;
+	char *module_instance_name = NULL;
 	long i;
 	int j;
 	//long sc_spot;
