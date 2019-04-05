@@ -152,15 +152,24 @@ static void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats
 		t_cluster_placement_stats **cluster_placement_stats,
 		t_pb_graph_node ***primitives_list, t_pack_molecule *molecules_head,
 		int num_molecules);
+
 static void free_pb_stats_recursive(t_pb *pb);
+
 static void try_update_lookahead_pins_used(t_pb *cur_pb);
+
 static void reset_lookahead_pins_used(t_pb *cur_pb);
+
 static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id);
+
 static void compute_and_mark_lookahead_pins_used_for_pin(
 		const t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, const AtomNetId net_id);
+
 static void commit_lookahead_pins_used(t_pb *cur_pb);
+
 static bool check_lookahead_pins_used(t_pb *cur_pb, t_ext_pin_util max_external_pin_util);
+
 static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb);
+
 static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_type, const AtomBlockId sibling_memory_blk);
 
 static t_pack_molecule *get_molecule_by_num_ext_inputs(
@@ -180,13 +189,15 @@ static enum e_block_pack_status try_pack_molecule(
         int verbosity,
         bool enable_pin_feasibility_filter,
         t_ext_pin_util max_external_pin_util);
+
 static enum e_block_pack_status try_place_atom_block_rec(
 		const t_pb_graph_node *pb_graph_node, const AtomBlockId blk_id,
 		t_pb *cb, t_pb **parent, const int max_models,
 		const int max_cluster_size, const ClusterBlockId clb_index,
 		const t_cluster_placement_stats *cluster_placement_stats_ptr,
-		const bool is_root_of_chain, const std::vector<t_pb_graph_pin*>& chain_root_pins, t_lb_router_data *router_data,
+		const t_pack_molecule *molecule, t_lb_router_data *router_data,
         int verbosity);
+
 static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *router_data,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
@@ -1118,13 +1129,13 @@ static enum e_block_pack_status try_pack_molecule(
         int verbosity,
         bool enable_pin_feasibility_filter,
         t_ext_pin_util max_external_pin_util) {
+
 	int molecule_size, failed_location;
 	int i;
 	enum e_block_pack_status block_pack_status;
 	t_pb *parent;
 	t_pb *cur_pb;
-	bool is_root_of_chain;
-    std::vector<t_pb_graph_pin*> chain_root_pins;
+
     auto& atom_ctx = g_vpr_ctx.atom();
 
 	parent = nullptr;
@@ -1164,30 +1175,13 @@ static enum e_block_pack_status try_pack_molecule(
 			for (i = 0; i < molecule_size && block_pack_status == BLK_PASSED; i++) {
 				VTR_ASSERT((primitives_list[i] == nullptr) == (!molecule->atom_block_ids[i]));
 				failed_location = i + 1;
+                // try place atom block if it exists
 				if (molecule->atom_block_ids[i]) {
-					if(molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain && i == molecule->pack_pattern->root_block->block_id) {
-                        VTR_ASSERT(molecule->chain_info->chain_id < 
-                                   static_cast<int>(molecule->pack_pattern->chain_root_pins.size()));
-                        // if the molecule should be place in a certain chain id pass it to
-                        // the try_place_atom_block_rec, else pass all the possible chain_root_pins
-                        if (molecule->chain_info->chain_id == -1) {
-                            chain_root_pins = molecule->pack_pattern->chain_root_pins;
-                        } else {
-                            chain_root_pins.clear();
-                            chain_root_pins.push_back(
-                                    molecule->pack_pattern->chain_root_pins[molecule->chain_info->chain_id]);
-                        }
-						is_root_of_chain = true;
-					} else {
-						chain_root_pins.clear();
-						is_root_of_chain = false;
-					}
 					block_pack_status = try_place_atom_block_rec(
 							primitives_list[i],
 							molecule->atom_block_ids[i], pb, &parent,
 							max_models, max_cluster_size, clb_index,
-							cluster_placement_stats_ptr, is_root_of_chain, chain_root_pins, router_data,
-                            verbosity);
+							cluster_placement_stats_ptr, molecule, router_data, verbosity);
 				}
 			}
 			if (enable_pin_feasibility_filter && block_pack_status == BLK_PASSED) {
@@ -1225,8 +1219,8 @@ static enum e_block_pack_status try_pack_molecule(
                         // if this molecule is part of a chain, mark the cluster as having a long chain
                         // molecule. Also check if it's the first molecule in the chain to be packed.
                         // If so, update the chain id for this chain of molecules to make sure all
-                        // molecules will be packed to the same chain id and can reach eachother using
-                        // the direct links between clusters
+                        // molecules will be packed to the same chain id and can reach each other using
+                        // the chain direct links between clusters
                         if (molecule->chain_info->is_long_chain) {
                             cluster_placement_stats_ptr->has_long_chain = true;
                             if (molecule->chain_info->chain_id == -1) {
@@ -1234,6 +1228,7 @@ static enum e_block_pack_status try_pack_molecule(
                             }
                         }
 					}
+
 					for (i = 0; i < molecule_size; i++) {
                         if (molecule->atom_block_ids[i]) {
 							/* invalidate all molecules that share atom block with current molecule */
@@ -1249,6 +1244,7 @@ static enum e_block_pack_status try_pack_molecule(
 					}
 				}
 			}
+
 			if (block_pack_status != BLK_PASSED) {
 				for (i = 0; i < failed_location; i++) {
 					if (molecule->atom_block_ids[i]) {
@@ -1284,7 +1280,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		t_pb *cb, t_pb **parent, const int max_models,
 		const int max_cluster_size, const ClusterBlockId clb_index,
 		const t_cluster_placement_stats *cluster_placement_stats_ptr,
-		const bool is_root_of_chain, const std::vector<t_pb_graph_pin*>& chain_root_pins, t_lb_router_data *router_data,
+		const t_pack_molecule *molecule, t_lb_router_data *router_data,
         int verbosity) {
 	int i, j;
 	bool is_primitive;
@@ -1305,8 +1301,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		block_pack_status = try_place_atom_block_rec(
 				pb_graph_node->parent_pb_graph_node, blk_id, cb,
 				&my_parent, max_models, max_cluster_size, clb_index,
-				cluster_placement_stats_ptr, is_root_of_chain, chain_root_pins, router_data,
-                verbosity);
+				cluster_placement_stats_ptr, molecule, router_data, verbosity);
 		parent_pb = my_parent;
 	} else {
 		parent_pb = cb;
@@ -1374,30 +1369,43 @@ static enum e_block_pack_status try_place_atom_block_rec(
 			block_pack_status = BLK_FAILED_FEASIBLE;
 		}
 
-		if (block_pack_status == BLK_PASSED && is_root_of_chain == true) {
-			/* is carry chain, must check if this carry chain spans multiple logic blocks or not */
-            t_model_ports *root_port = chain_root_pins[0]->port->model_port;
-            auto port_id = atom_ctx.nlist.find_atom_port(blk_id, root_port);
-            if(port_id) {
-                auto chain_net_id = atom_ctx.nlist.port_net(port_id, chain_root_pins[0]->pin_number);
+        // if this block passed and is part of a chained molecule
+        if (block_pack_status == BLK_PASSED &&
+            molecule->type == MOLECULE_FORCED_PACK &&
+            molecule->pack_pattern->is_chain) {
 
-                if(chain_net_id) {
-                    // if chain spans multiple blocks, check the the chosen pb_graph_node
-                    // matches the allowed starting points of the chain given to this function
+            auto molecule_root_block = molecule->atom_block_ids[molecule->root];
+            bool is_root_of_chain = (blk_id == molecule_root_block);
+            bool is_long_chain = molecule->chain_info->is_long_chain;
+ 
+            // if this block is the root block of the chain and this chain
+            // spains more than one cluster
+            if (is_root_of_chain && is_long_chain) {
+
+                const auto& chain_root_pins = molecule->pack_pattern->chain_root_pins;
+                auto chain_id = molecule->chain_info->chain_id;
+                // if this chain has a chain id assigned to it
+                if (chain_id != -1) {
+                    // the chosen primtive should be a valid starting pooint for the chain
+                    if (pb_graph_node != chain_root_pins[chain_id]->parent_node) {
+                        block_pack_status = BLK_FAILED_FEASIBLE;
+                    }
+                // the chain doesn't have an assigned chain_id yet
+                } else {
                     block_pack_status = BLK_FAILED_FEASIBLE;
                     for (const auto& chain_root_pin: chain_root_pins) {
-                        // this carry chain spans multiple logic blocks, must match up
-                        // correctly with previous chain for this to route
+                        // check if this chosen primitive is one of the possible
+                        // starting points for this chain.
                         if(pb_graph_node == chain_root_pin->parent_node) {
                             // this location matches with the one of the dedicated chain
                             // input from outside logic block, therefore it is feasible
                             block_pack_status = BLK_PASSED;
+                            break;
                         }
                     }
-
-                }
+               }
             }
-		}
+        }
 
         VTR_LOGV(verbosity > 4 && block_pack_status == BLK_PASSED,
                  "\t\t\tPlaced atom '%s' (%s) at %s\n",
