@@ -640,11 +640,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 		if (node->num_children > 0)
 		{
 			child_skip_list = (short*)vtr::calloc(node->num_children, sizeof(short));
-			children_signal_list = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*)*node->num_children);
-
-			for (i = 0; i < node->num_children; i++) {
-				children_signal_list[i] = NULL;
-			}
+			children_signal_list = (signal_list_t**)vtr::calloc(node->num_children, sizeof(signal_list_t*));
 		}
 
 		/* ------------------------------------------------------------------------------*/
