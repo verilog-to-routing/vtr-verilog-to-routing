@@ -316,6 +316,10 @@ static std::map<const t_model*,std::vector<t_type_ptr>> identify_primitive_candi
 
 static void update_molecule_chain_info(t_pack_molecule* chain_molecule, const t_pb_graph_node* root_primitive);
 
+static enum e_block_pack_status check_chain_root_placement_feasibility(
+        const t_pb_graph_node* pb_graph_node,
+        const t_pack_molecule* molecule, const AtomBlockId blk_id);
+
 /*****************************************/
 /*globally accessible function*/
 std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, const t_arch *arch, t_pack_molecule *molecule_head,
@@ -1375,35 +1379,9 @@ static enum e_block_pack_status try_place_atom_block_rec(
             molecule->pack_pattern->is_chain) {
 
             auto molecule_root_block = molecule->atom_block_ids[molecule->root];
-            bool is_root_of_chain = (blk_id == molecule_root_block);
-            bool is_long_chain = molecule->chain_info->is_long_chain;
- 
-            // if this block is the root block of the chain and this chain
-            // spains more than one cluster
-            if (is_root_of_chain && is_long_chain) {
-
-                const auto& chain_root_pins = molecule->pack_pattern->chain_root_pins;
-                auto chain_id = molecule->chain_info->chain_id;
-                // if this chain has a chain id assigned to it
-                if (chain_id != -1) {
-                    // the chosen primtive should be a valid starting pooint for the chain
-                    if (pb_graph_node != chain_root_pins[chain_id]->parent_node) {
-                        block_pack_status = BLK_FAILED_FEASIBLE;
-                    }
-                // the chain doesn't have an assigned chain_id yet
-                } else {
-                    block_pack_status = BLK_FAILED_FEASIBLE;
-                    for (const auto& chain_root_pin: chain_root_pins) {
-                        // check if this chosen primitive is one of the possible
-                        // starting points for this chain.
-                        if(pb_graph_node == chain_root_pin->parent_node) {
-                            // this location matches with the one of the dedicated chain
-                            // input from outside logic block, therefore it is feasible
-                            block_pack_status = BLK_PASSED;
-                            break;
-                        }
-                    }
-               }
+            // if this is the root block of the chain molecule check its placmeent feasibility 
+            if (blk_id == molecule_root_block) {
+                block_pack_status = check_chain_root_placement_feasibility(pb_graph_node, molecule, blk_id);
             }
         }
 
@@ -3205,4 +3183,60 @@ static void update_molecule_chain_info(t_pack_molecule* chain_molecule, const t_
     }
 
     VTR_ASSERT(false);
+}
+
+/**
+ * This function takes the root block of a chain molecule and a proposed
+ * placement primitive for this block. The function then checks if this
+ * chain root block has a placement contraints (such as being driven from
+ * outside the cluster) and returns the status of the placement accordingly.
+ */
+static enum e_block_pack_status check_chain_root_placement_feasibility(
+        const t_pb_graph_node* pb_graph_node,
+        const t_pack_molecule* molecule, const AtomBlockId blk_id) {
+
+    enum e_block_pack_status block_pack_status = BLK_PASSED;
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    bool is_long_chain = molecule->chain_info->is_long_chain;
+
+    // For some architectures (titan) even small chains that can fit within one cluster
+    // still need to start at the top of the cluster since their input is driven
+    // by a global gnd or vdd. Therefore even if this is not a long chain we still
+    // neet to check that it's input pin not driven by a global net
+    const auto& chain_root_pins = molecule->pack_pattern->chain_root_pins;
+
+    t_model_ports *root_port = chain_root_pins[0]->port->model_port;
+    auto port_id = atom_ctx.nlist.find_atom_port(blk_id, root_port);
+
+    if (port_id) {
+        auto chain_net_id = atom_ctx.nlist.port_net(port_id, chain_root_pins[0]->pin_number);
+        // if this block is the root block of the chain and this chain spains more than one cluster
+        if (is_long_chain || chain_net_id) {
+
+            auto chain_id = molecule->chain_info->chain_id;
+            // if this chain has a chain id assigned to it
+            if (chain_id != -1) {
+                // the chosen primtive should be a valid starting pooint for the chain
+                if (pb_graph_node != chain_root_pins[chain_id]->parent_node) {
+                    block_pack_status = BLK_FAILED_FEASIBLE;
+                }
+            // the chain doesn't have an assigned chain_id yet
+            } else {
+                block_pack_status = BLK_FAILED_FEASIBLE;
+                for (const auto& chain_root_pin: chain_root_pins) {
+                    // check if this chosen primitive is one of the possible
+                    // starting points for this chain.
+                    if(pb_graph_node == chain_root_pin->parent_node) {
+                        // this location matches with the one of the dedicated chain
+                        // input from outside logic block, therefore it is feasible
+                        block_pack_status = BLK_PASSED;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    return block_pack_status;
 }
