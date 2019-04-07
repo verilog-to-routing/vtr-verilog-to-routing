@@ -26,17 +26,17 @@ using namespace std;
 #include "SetupGrid.h"
 #include "expr_eval.h"
 
-static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts, float maximum_device_utilization);
+static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def> &grid_layouts, const std::map<t_type_ptr,size_t> &minimum_instance_counts, float maximum_device_utilization);
 static std::vector<t_type_ptr> grid_overused_resources(const DeviceGrid& grid, std::map<t_type_ptr,size_t> instance_counts);
 static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_type_ptr,size_t> instance_counts, float maximum_utilization);
 static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height, bool warn_out_of_range=true, std::vector<t_type_ptr> limiting_resources=std::vector<t_type_ptr>());
 
 static void CheckGrid(const DeviceGrid& grid);
 
-static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<int>& grid_priorities);
+static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<int>& grid_priorities, const t_metadata_dict *meta);
 
 //Create the device grid based on resource requirements
-DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts, float target_device_utilization) {
+DeviceGrid create_device_grid(std::string layout_name, const std::vector<t_grid_def> &grid_layouts, const std::map<t_type_ptr,size_t> &minimum_instance_counts, float target_device_utilization) {
     if (layout_name == "auto") {
         //Auto-size the device
         //
@@ -68,7 +68,7 @@ DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> g
 }
 
 //Create the device grid based on dimensions
-DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> grid_layouts, size_t width, size_t height) {
+DeviceGrid create_device_grid(std::string layout_name, const std::vector<t_grid_def> &grid_layouts, size_t width, size_t height) {
     if (layout_name == "auto") {
         VTR_ASSERT(grid_layouts.size() > 0);
         //Auto-size
@@ -77,17 +77,22 @@ DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> g
             return build_device_grid(grid_layouts[0], width, height);
         } else {
             //Find the fixed layout close to the target size
-            auto sort_cmp = [](const t_grid_def& lhs, const t_grid_def& rhs) {
-                return lhs.width < rhs.width || lhs.height < rhs.width;
+            std::vector<const t_grid_def *> grid_layouts_view;
+            grid_layouts_view.reserve(grid_layouts.size());
+            for(const auto &layout : grid_layouts) {
+                grid_layouts_view.push_back(&layout);
+            }
+            auto sort_cmp = [](const t_grid_def* lhs, const t_grid_def* rhs) {
+                return lhs->width < rhs->width || lhs->height < rhs->width;
             };
-            std::stable_sort(grid_layouts.begin(), grid_layouts.end(), sort_cmp);
+            std::stable_sort(grid_layouts_view.begin(), grid_layouts_view.end(), sort_cmp);
 
-            auto find_cmp = [&](const t_grid_def& grid_def) {
-                return grid_def.width >= int(width) && grid_def.height >= int(height);
+            auto find_cmp = [&](const t_grid_def* grid_def) {
+                return grid_def->width >= int(width) && grid_def->height >= int(height);
             };
-            auto iter = std::find_if(grid_layouts.begin(), grid_layouts.end(), find_cmp);
+            auto iter = std::find_if(grid_layouts_view.begin(), grid_layouts_view.end(), find_cmp);
 
-            if (iter == grid_layouts.end()) {
+            if (iter == grid_layouts_view.end()) {
                 //No device larger than specified width/height, so choose largest possible
                 VTR_LOG_WARN(
                         "Specified device dimensions (%zux%zu) exceed those of the largest fixed-size device."
@@ -96,7 +101,9 @@ DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> g
                 --iter;
             }
 
-            return build_device_grid(*iter, iter->width, iter->height);
+            const t_grid_def *layout = *iter;
+
+            return build_device_grid(*layout, layout->width, layout->height);
         }
     } else {
         //Use the specified device
@@ -124,7 +131,7 @@ DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> g
 //Create a device grid which satisfies the minimum block counts
 //  If a set of fixed grid layouts are specified, the smallest satisfying grid is picked
 //  If an auto grid layouts are specified, the smallest dynamicly sized grid is picked
-static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts, float maximum_device_utilization) {
+static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def> &grid_layouts, const std::map<t_type_ptr,size_t> &minimum_instance_counts, float maximum_device_utilization) {
     VTR_ASSERT(grid_layouts.size() > 0);
 
     DeviceGrid grid;
@@ -182,24 +189,29 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
         //Fixed grid layouts, find the smallest of the fixed layouts
 
         //Sort the grid layouts from smallest to largest
-        auto area_cmp = [](const t_grid_def& lhs, const t_grid_def& rhs) {
-            VTR_ASSERT(lhs.grid_type == GridDefType::FIXED);
-            VTR_ASSERT(rhs.grid_type == GridDefType::FIXED);
+        std::vector<const t_grid_def *> grid_layouts_view;
+        grid_layouts_view.reserve(grid_layouts.size());
+        for(const auto &layout : grid_layouts) {
+            grid_layouts_view.push_back(&layout);
+        }
+        auto area_cmp = [](const t_grid_def* lhs, const t_grid_def* rhs) {
+            VTR_ASSERT(lhs->grid_type == GridDefType::FIXED);
+            VTR_ASSERT(rhs->grid_type == GridDefType::FIXED);
 
-            int lhs_area = lhs.width * lhs.height;
-            int rhs_area = rhs.width * rhs.height;
+            int lhs_area = lhs->width * lhs->height;
+            int rhs_area = rhs->width * rhs->height;
 
             return lhs_area < rhs_area;
         };
-        std::stable_sort(grid_layouts.begin(), grid_layouts.end(), area_cmp);
+        std::stable_sort(grid_layouts_view.begin(), grid_layouts_view.end(), area_cmp);
 
         std::vector<t_type_ptr> limiting_resources;
 
         //Try all the fixed devices in order from smallest to largest
-        for (const auto& grid_def : grid_layouts) {
+        for (const auto* grid_def : grid_layouts_view) {
 
             //Build the grid
-            grid = build_device_grid(grid_def, grid_def.width, grid_def.height, true, limiting_resources);
+            grid = build_device_grid(*grid_def, grid_def->width, grid_def->height, true, limiting_resources);
 
             if (grid_satisfies_instance_counts(grid, minimum_instance_counts, maximum_device_utilization)) {
                 return grid;
@@ -274,14 +286,12 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     for (size_t x = 0; x < grid_width; ++x) {
         for (size_t y = 0; y < grid_height; ++y) {
             set_grid_block_type(std::numeric_limits<int>::lowest() + 1, //+1 so it overrides without warning
-                    empty_type, x, y, grid, grid_priorities);
+                    empty_type, x, y, grid, grid_priorities, /*meta=*/nullptr);
         }
     }
 
-    auto grid_loc_defs = grid_def.loc_defs;
-
     std::set<t_type_descriptor*> seen_types;
-    for (const auto& grid_loc_def : grid_loc_defs) {
+    for (const auto& grid_loc_def : grid_def.loc_defs) {
         //Fill in the block types according to the specification
 
         t_type_descriptor* type = find_block_type_by_name(grid_loc_def.block_type, device_ctx.block_types, device_ctx.num_block_types);
@@ -432,7 +442,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
                 //Fill in the region
                 for(size_t x = x_start; x + (type->width - 1) <= x_max; x += incrx) {
                     for(size_t y = y_start; y + (type->height - 1) <= y_max; y += incry) {
-                        set_grid_block_type(grid_loc_def.priority, type, x, y, grid, grid_priorities);
+                        set_grid_block_type(grid_loc_def.priority, type, x, y, grid, grid_priorities, grid_loc_def.meta);
                     }
                 }
             }
@@ -459,7 +469,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     return device_grid;
 }
 
-static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<int>& grid_priorities) {
+static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<int>& grid_priorities, const t_metadata_dict *meta) {
 
     struct TypeLocation {
         TypeLocation(size_t x_val, size_t y_val, const t_type_descriptor* type_val, int priority_val)
@@ -549,6 +559,7 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
             grid[x][y].type = type;
             grid[x][y].width_offset = x_offset;
             grid[x][y].height_offset = y_offset;
+            grid[x][y].meta = meta;
 
             grid_priorities[x][y] = priority;
         }
@@ -689,33 +700,5 @@ float calculate_device_utilization(const DeviceGrid& grid, std::map<t_type_ptr,s
 }
 
 size_t count_grid_tiles(const DeviceGrid& grid) {
-    //In some cases the device size may not be strictly the produce of device width and height,
-    //for instance if there is an empty perimeter left around the device.
-    //
-    //Here we figure out what the bounding box of all non-empty grid tiles and use that
-    //to calculate the size of the device, which should handle cases like an empty-perimeter
-    //correctly.
-    size_t xmin = std::numeric_limits<size_t>::max();
-    size_t ymin = std::numeric_limits<size_t>::max();
-    size_t xmax = 0;
-    size_t ymax = 0;
-    for (size_t x = 0; x < grid.width(); ++x) {
-        for (size_t y = 0; y < grid.height(); ++y) {
-            const auto& grid_tile = grid[x][y];
-            if (grid_tile.type && !is_empty_type(grid_tile.type)) {
-                xmin = std::min(xmin, x);
-                xmax = std::max(xmax, x);
-                ymin = std::min(ymin, y);
-                ymax = std::max(ymax, y);
-            }
-        }
-    }
-
-    size_t effective_width = xmax - xmin + 1;
-    size_t effective_height = ymax - ymin + 1;
-    size_t grid_tile_count = effective_width * effective_height;
-
-    VTR_LOG("BB: %zu,%zu x %zu,%zu = %zu*%zu = %zu\n", xmin, ymin, xmax, ymax, effective_width, effective_height, grid_tile_count);
-
-    return grid_tile_count;
+    return grid.width() * grid.height();
 }

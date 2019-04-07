@@ -22,6 +22,8 @@ template<class T>
 bool operator==(Point<T> lhs, Point<T> rhs);
 template<class T>
 bool operator!=(Point<T> lhs, Point<T> rhs);
+template<class T>
+bool operator<(Point<T> lhs, Point<T> rhs);
 
 template<class T>
 bool operator==(const Rect<T>& lhs, const Rect<T>& rhs);
@@ -50,6 +52,7 @@ class Point {
 
         friend bool operator== <>(Point<T> lhs, Point<T> rhs);
         friend bool operator!= <>(Point<T> lhs, Point<T> rhs);
+        friend bool operator< <>(Point<T> lhs, Point<T> rhs);
     private:
         T x_;
         T y_;

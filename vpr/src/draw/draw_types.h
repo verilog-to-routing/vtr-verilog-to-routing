@@ -24,7 +24,7 @@
 #include "graphics.h"
 #include "vpr_types.h"
 #include "vtr_color_map.h"
-using namespace std;
+#include "vtr_vector.h"
 
 enum e_draw_crit_path {
       DRAW_NO_CRIT_PATH
@@ -164,8 +164,8 @@ struct t_draw_state {
 	int gr_automode = 0;
 	e_route_type draw_route_type = GLOBAL;
 	char default_message[vtr::bufsize];
-	vtr::vector_map<ClusterNetId, t_color> net_color;
-	vtr::vector_map<ClusterBlockId, t_color> block_color;
+	vtr::vector<ClusterNetId, t_color> net_color;
+	vtr::vector<ClusterBlockId, t_color> block_color;
 	t_draw_rr_node *draw_rr_node = nullptr;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
@@ -182,7 +182,7 @@ struct t_draw_state {
  * information for all sub-blocks inside. This includes
  * the bounding box for drawing each sub-block. */
 struct t_draw_pb_type_info {
-	vector<t_bound_box> subblk_array;
+    std::vector<t_bound_box> subblk_array;
 
 	t_bound_box get_pb_bbox(const t_pb_graph_node& pb_gnode);
 	t_bound_box& get_pb_bbox_ref(const t_pb_graph_node& pb_gnode);
@@ -209,7 +209,7 @@ struct t_draw_coords {
 	float *tile_x, *tile_y;
 	float pin_size;
 
-	vector<t_draw_pb_type_info> blk_info;
+    std::vector<t_draw_pb_type_info> blk_info;
 
 	t_draw_coords();
 

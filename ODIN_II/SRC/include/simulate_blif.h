@@ -28,19 +28,21 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdarg.h>
 #include <unordered_map>
 
+
+#define SIM_WAVE_LENGTH 16
 #define BUFFER_MAX_SIZE 1024
 
 #include <queue>
 #include "sim_block.h"
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 
 #include "netlist_utils.h"
 #include "odin_util.h"
 
 #include "multipliers.h"
 #include "hard_blocks.h"
-#include "types.h"
+#include "odin_types.h"
 #include "memories.h"
 #include "ace.h"
 
@@ -52,9 +54,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define OUTPUT_VECTOR_FILE_NAME "output_vectors"
 #define OUTPUT_ACTIVITY_FILE_NAME "output_activity"
 #define MODEL_SIM_FILE_NAME "test.do"
-
-#define SINGLE_PORT_MEMORY_NAME "single_port_ram"
-#define DUAL_PORT_MEMORY_NAME "dual_port_ram"
 
 #define DEFAULT_CLOCK_NAME "GLOBAL_SIM_BASE_CLK"
 
@@ -90,6 +89,20 @@ typedef struct {
 	bool warned;
 } stages_t;
 
+//maria
+typedef struct {
+	nnode_t **nodes;
+	int number_of_nodes;
+} netlist_subset;
+
+//maria
+typedef struct {
+	netlist_subset **thread_nodes;
+	int number_of_threads;
+	netlist_subset *memory_nodes; //pointers to memory nodes
+}thread_node_distribution;
+
+
 typedef struct {
 	signed char  **values;
 	int           *counts;
@@ -98,6 +111,10 @@ typedef struct {
 
 typedef struct sim_data_t_t
 {
+	//maria
+	lines_t **input_lines_per_wave;
+	lines_t **output_lines_per_wave;
+
 	// Create and verify the lines.
 	lines_t *input_lines;
 	lines_t *output_lines;
@@ -106,13 +123,15 @@ typedef struct sim_data_t_t
 	FILE *act_out;
 	FILE *modelsim_out;
 	FILE *in  = NULL;
-	int num_vectors;
+	long num_vectors;
 	char *input_vector_file;
 
 	double total_time; // Includes I/O
 	double simulation_time; // Does not include I/O
 
 	stages_t *stages;
+	//maria
+	thread_node_distribution *thread_distribution; //nodes distributed to threads for parallel calculations
 
 	// Parse -L and -H options containing lists of pins to hold high or low during random vector generation.
 	std::unordered_map<std::string,short> held_at;
@@ -123,12 +142,17 @@ typedef struct sim_data_t_t
 
 }sim_data_t;
 
+
 void simulate_netlist(netlist_t *netlist);
 
 /*these are called by simulate_netlist*/
 sim_data_t *init_simulation(netlist_t *netlist);
 sim_data_t *terminate_simulation(sim_data_t *sim_data);
 int single_step(sim_data_t *sim_data, int wave);
+//maria
+void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,int min_coverage);
+void simulate_steps_sequential(sim_data_t *sim_data,int min_coverage);
+
 
 nnode_t **get_children_of(nnode_t *node, int *count);
 nnode_t **get_children_of_nodepin(nnode_t *node, int *num_children, int output_pin);

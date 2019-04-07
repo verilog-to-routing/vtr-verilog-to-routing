@@ -26,11 +26,16 @@ void log_set_output_file(const char *filename) {
 	if(log_stream != nullptr) {
 		fclose(log_stream);
 	}
-	log_stream = fopen(filename, "w");
-	if(log_stream == nullptr) {
-		printf("Error writing to file %s\n\n", filename);
-	}
-	fprintf(log_stream, "filename\n");
+
+    if (filename == nullptr) {
+        log_stream = nullptr;
+    } else {
+
+        log_stream = fopen(filename, "w");
+        if(log_stream == nullptr) {
+            printf("Error writing to file %s\n\n", filename);
+        }
+    }
 }
 
 void log_print_direct(const char* message, ...) {
@@ -48,11 +53,13 @@ void log_print_info(const char* message, ...) {
 	vprintf(message, args);
 	va_end(args);
 
-	va_start(args, message); /* Must reset variable arguments so that they can be read again */
-	vfprintf(log_stream, message, args);
-	va_end(args);
+    if (log_stream) {
+        va_start(args, message); /* Must reset variable arguments so that they can be read again */
+        vfprintf(log_stream, message, args);
+        va_end(args);
 
-	fflush(log_stream);
+        fflush(log_stream);
+    }
 }
 
 void log_print_warning(const char* /*filename*/, unsigned int /*line_num*/, const char* message, ...) {
@@ -66,12 +73,14 @@ void log_print_warning(const char* /*filename*/, unsigned int /*line_num*/, cons
 	vprintf(message, args);
 	va_end(args);
 
-	va_start(args, message); /* Must reset variable arguments so that they can be read again */
-	fprintf(log_stream, "Warning %d: ", log_warning);
-	vfprintf(log_stream, message, args);
+    if (log_stream) {
+        va_start(args, message); /* Must reset variable arguments so that they can be read again */
+        fprintf(log_stream, "Warning %d: ", log_warning);
+        vfprintf(log_stream, message, args);
 
-	va_end(args);
-	fflush(log_stream);
+        va_end(args);
+        fflush(log_stream);
+    }
 }
 
 void log_print_error(const char* /*filename*/, unsigned int /*line_num*/, const char* message, ...) {
@@ -86,29 +95,27 @@ void log_print_error(const char* /*filename*/, unsigned int /*line_num*/, const 
 	vfprintf(stderr, message, args);
 	va_end(args);
 
-	va_start(args, message); /* Must reset variable arguments so that they can be read again */
-	fprintf(log_stream, "Error %d: ", log_error);
-	vfprintf(log_stream, message, args);
+    if (log_stream) {
+        va_start(args, message); /* Must reset variable arguments so that they can be read again */
+        fprintf(log_stream, "Error %d: ", log_error);
+        vfprintf(log_stream, message, args);
 
-	va_end(args);
+        va_end(args);
 
-	fflush(log_stream);
+        fflush(log_stream);
+    }
 }
 
 /**
  * Check if output log file setup, if not, then this function also sets it up
  */
 static void check_init() {
-	if(log_stream == nullptr) {
-		log_stream = fopen(LOG_DEFAULT_FILE_NAME, "w");
-		if(log_stream == nullptr) {
-			printf("Error writing to file %s\n", LOG_DEFAULT_FILE_NAME);
-		}
-		fprintf(log_stream, "%s\n\n", LOG_DEFAULT_FILE_NAME);
-	}
+    //We now allow a nullptr log_stream (i.e. no log file) so nothing to do here
 }
 
 
 void log_close() {
-	fclose(log_stream);
+    if (log_stream) {
+        fclose(log_stream);
+    }
 }

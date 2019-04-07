@@ -54,7 +54,7 @@ class reservable_pq: public priority_queue<T, U, V>
 		reservable_pq(size_type capacity = 0) {
 			reserve(capacity);
 			cur_cap = capacity;
-		};
+		}
 		void reserve(size_type capacity) {
 			this->c.reserve(capacity);
 			cur_cap = capacity;
@@ -250,7 +250,7 @@ void set_reset_pb_modes(t_lb_router_data *router_data, const t_pb *pb, const boo
    Follows pathfinder negotiated congestion algorithm
 */
 bool try_intra_lb_route(t_lb_router_data *router_data,
-                        bool debug_clustering) {
+                        int verbosity) {
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	bool is_routed = false;
@@ -306,7 +306,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
                         int driver_rr_node = lb_nets[inet].terminals[0];
                         int sink_rr_node = lb_nets[inet].terminals[itarget];
 
-                        if (debug_clustering) {
+                        if (verbosity > 3) {
                             VTR_LOG("No possible routing path from %s to %s: needed for net '%s' from net pin '%s'",
                                         describe_lb_type_rr_node(driver_rr_node, router_data).c_str(),
                                         describe_lb_type_rr_node(sink_rr_node, router_data).c_str(),
@@ -372,7 +372,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 		print_route("intra_lb_failed_route.echo", router_data);
 #endif
 
-		if (debug_clustering) {
+		if (verbosity > 3) {
 			if (!is_impossible) {
 				//Report the congested nodes and associated nets
 				auto congested_rr_nodes = find_congested_rr_nodes(lb_type_graph, router_data->lb_rr_node_stats);

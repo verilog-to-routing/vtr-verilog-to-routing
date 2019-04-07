@@ -3,7 +3,7 @@
 #include <memory>
 #include "vpr_types.h"
 
-class t_conn_cost_params; //Forward declaration
+struct t_conn_cost_params; //Forward declaration
 
 class RouterLookahead {
     public:
@@ -24,6 +24,11 @@ class ClassicLookahead : public RouterLookahead {
 };
 
 class MapLookahead : public RouterLookahead {
+    protected:
+        float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+};
+
+class NoOpLookahead : public RouterLookahead {
     protected:
         float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
 };

@@ -291,7 +291,7 @@ std::string rr_node_arch_name(int inode) {
         auto cost_index = rr_node.cost_index();
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
-        rr_node_arch_name += device_ctx.arch.Segments[seg_index].name;
+        rr_node_arch_name += device_ctx.arch->Segments[seg_index].name;
     }
     
     return rr_node_arch_name;
@@ -774,6 +774,83 @@ t_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
 
     VTR_ASSERT(max_type);
     return max_type;
+}
+
+InstPort parse_inst_port(std::string str) {
+    InstPort inst_port(str);
+
+
+    auto& device_ctx = g_vpr_ctx.device();
+    t_type_descriptor* blk_type = find_block_type_by_name(inst_port.instance_name(), device_ctx.block_types, device_ctx.num_block_types);
+    if (!blk_type) {
+        VPR_THROW(VPR_ERROR_ARCH, "Failed to find block type named %s", inst_port.instance_name().c_str());
+    }
+
+    const t_port* port = find_pb_graph_port(blk_type->pb_graph_head, inst_port.port_name());
+    if (!port) {
+        VPR_THROW(VPR_ERROR_ARCH, "Failed to find port %s on block type %s", inst_port.port_name().c_str(), inst_port.instance_name().c_str());
+    }
+
+    if (inst_port.port_low_index() == InstPort::UNSPECIFIED) {
+        VTR_ASSERT(inst_port.port_high_index() == InstPort::UNSPECIFIED);
+
+        inst_port.set_port_low_index(0);
+        inst_port.set_port_high_index(port->num_pins - 1);
+
+
+
+    } else {
+        if (inst_port.port_low_index() < 0 || inst_port.port_low_index() >= port->num_pins
+            || inst_port.port_high_index() < 0 || inst_port.port_high_index() >= port->num_pins) {
+            VPR_THROW(VPR_ERROR_ARCH, "Pin indices [%d:%d] on port %s of block type %s out of expected range [%d:%d]",
+                      inst_port.port_low_index(), inst_port.port_high_index(),
+                      inst_port.port_name().c_str(), inst_port.instance_name().c_str(),
+                      0, port->num_pins-1);
+        }
+    }
+    return inst_port;
+}
+
+//Returns the pin class associated with the specified pin_index_in_port within the port port_name on type
+int find_pin_class(t_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type) {
+    int iclass = OPEN;
+
+    int ipin = find_pin(type, port_name, pin_index_in_port);
+
+    if (ipin != OPEN) {
+        iclass = type->pin_class[ipin];
+
+        if (iclass != OPEN) {
+            VTR_ASSERT(type->class_inf[iclass].type == pin_type);
+        }
+    }
+    return iclass;
+}
+
+int find_pin(t_type_ptr type, std::string port_name, int pin_index_in_port) {
+    int ipin = OPEN;
+
+    t_pb_type* pb_type = type->pb_type;
+    t_port* matched_port = nullptr;
+    int port_base_ipin = 0;
+    for (int iport = 0; iport < pb_type->num_ports; ++iport) {
+        t_port* port = &pb_type->ports[iport];
+
+        if (port->name == port_name) {
+            matched_port = port;
+            break;
+        }
+        port_base_ipin += port->num_pins;
+    }
+
+    if (matched_port) {
+        VTR_ASSERT(matched_port->name == port_name);
+        VTR_ASSERT(pin_index_in_port < matched_port->num_pins);
+
+        ipin = port_base_ipin + pin_index_in_port;
+    }
+
+    return ipin;
 }
 
 //Returns true if the specified block type contains the specified blif model name
@@ -1259,10 +1336,10 @@ void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_fr
 /**
 * Create lookup table that returns a pointer to the pb given [index to block][pin_id].
 */
-vtr::vector_map<ClusterBlockId, t_pb **> alloc_and_load_pin_id_to_pb_mapping() {
+vtr::vector<ClusterBlockId, t_pb **> alloc_and_load_pin_id_to_pb_mapping() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping(cluster_ctx.clb_nlist.blocks().size());
+	vtr::vector<ClusterBlockId, t_pb **> pin_id_to_pb_mapping(cluster_ctx.clb_nlist.blocks().size());
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		pin_id_to_pb_mapping[blk_id] = new t_pb*[cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins];
 		for (int j = 0; j < cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins; j++) {
@@ -1312,7 +1389,7 @@ static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapp
 /*
 * free pin_index_to_pb_mapping lookup table
 */
-void free_pin_id_to_pb_mapping(vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
+void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		delete[] pin_id_to_pb_mapping[blk_id];
@@ -1736,6 +1813,11 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 	char source_string[MAX_STRING_LEN+1];
 	char * find_format = nullptr;
 	int ichar, match_count;
+
+    if (vtr::split(src_string).size() > 1) {
+        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
+                  "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
+    }
 
 	// parse out the pb_type and port name, possibly pin_indices
 	find_format = strstr(src_string,"[");

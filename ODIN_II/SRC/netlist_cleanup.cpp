@@ -23,8 +23,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 
 #include "netlist_utils.h"
 #include "vtr_util.h"
@@ -178,17 +178,17 @@ void remove_unused_nodes(node_list_t *remove){
 /* Since we are traversing the entire netlist anyway, we can use this
  * opportunity to keep track of the heads of adder/subtractors chains
  * and then compute statistics on them */
-int adder_chain_count = 0;
-int longest_adder_chain = 0;
-int total_adders = 0;
+long adder_chain_count = 0;
+long longest_adder_chain = 0;
+long total_adders = 0;
 
-int subtractor_chain_count = 0;
-int longest_subtractor_chain = 0;
-int total_subtractors = 0;
+long subtractor_chain_count = 0;
+long longest_subtractor_chain = 0;
+long total_subtractors = 0;
 
 double geomean_addsub_length = 0.0; // Geometric mean of add/sub chain length
 double sum_of_addsub_logs = 0.0; // Sum of the logarithms of the add/sub chain lengths; used for geomean
-int total_addsub_chain_count = 0;
+double total_addsub_chain_count = 0.0;
 
 void calculate_addsub_statistics(node_list_t *addsub){
 	while(addsub != NULL && addsub->node != NULL){
@@ -220,7 +220,7 @@ void calculate_addsub_statistics(node_list_t *addsub){
 			}
 
 			sum_of_addsub_logs += log(chain_depth);
-			total_addsub_chain_count++;
+			total_addsub_chain_count += 1.0;
 		}
 
 		addsub = addsub->next;

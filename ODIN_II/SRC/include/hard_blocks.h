@@ -24,7 +24,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef HARD_BLOCKS_H
 #define HARD_BLOCKS_H
 
-#include "types.h"
+#include "odin_types.h"
 
 extern STRING_CACHE *hard_block_names;
 

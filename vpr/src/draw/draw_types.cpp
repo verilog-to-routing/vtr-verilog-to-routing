@@ -79,7 +79,7 @@ t_bound_box t_draw_coords::get_absolute_pb_bbox(const ClusterBlockId clb_index, 
 
 	// go up the graph, adding the parent bboxes to the result,
 	// ie. make it relative to one level higher each time.
-	while (pb_gnode->parent_pb_graph_node != nullptr) {
+	while (pb_gnode && pb_gnode->parent_pb_graph_node != nullptr) {
 		t_bound_box parents_bbox = this->get_pb_bbox(clb_index, *pb_gnode->parent_pb_graph_node);
 		result += parents_bbox.bottom_left();
 		pb_gnode = pb_gnode->parent_pb_graph_node;

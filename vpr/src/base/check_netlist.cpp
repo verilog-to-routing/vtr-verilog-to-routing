@@ -21,7 +21,7 @@ using namespace std;
 
 /**************** Subroutines local to this module **************************/
 
-static void check_connections_to_global_clb_pins(ClusterNetId net_id);
+static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosity);
 
 static int check_for_duplicated_names();
 
@@ -31,7 +31,7 @@ static int check_clb_internal_nets(ClusterBlockId iblk);
 
 /*********************** Subroutine definitions *****************************/
 
-void check_netlist() {
+void check_netlist(int verbosity) {
 	int error = 0;
 	int num_conn;
 	t_hash **net_hash_table, *h_net_ptr;
@@ -42,6 +42,7 @@ void check_netlist() {
 	net_hash_table = alloc_hash_table();
 
 	/* Check that nets fanout and have a driver. */
+    int global_to_non_global_connection_count = 0;
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name(net_id).c_str(),size_t(net_id));
 		if (h_net_ptr->count != 1) {
@@ -49,13 +50,14 @@ void check_netlist() {
 					"Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name(net_id).c_str());
 			error++;
 		}
-		check_connections_to_global_clb_pins(net_id);
+		global_to_non_global_connection_count += check_connections_to_global_clb_pins(net_id, verbosity);
 		if (error >= ERROR_THRESHOLD) {
 			VTR_LOG_ERROR(
 					"Too many errors in netlist, exiting.\n");
 		}
 	}
 	free_hash_table(net_hash_table);
+    VTR_LOG_WARN("Netlist contains %d global net to non-global architecture pin connections\n", global_to_non_global_connection_count);
 
 	/* Check that each block makes sense. */
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
@@ -79,29 +81,34 @@ void check_netlist() {
 /* Checks that a global net (net_id) connects only to global CLB input pins  *
 * and that non-global nets never connects to a global CLB pin.  Either       *
 * global or non-global nets are allowed to connect to pads.                  */
-static void check_connections_to_global_clb_pins(ClusterNetId net_id) {
+static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosity) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	bool is_global_net = cluster_ctx.clb_nlist.net_is_global(net_id);
+	bool net_is_ignored = cluster_ctx.clb_nlist.net_is_ignored(net_id);
 
 	/* For now global signals can be driven by an I/O pad or any CLB output       *
 	 * although a CLB output generates a warning.  I could make a global CLB      *
 	 * output pin type to allow people to make architectures that didn't have     *
 	 * this warning.                                                              */
+    int global_to_non_global_connection_count = 0;
 	for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
 		ClusterBlockId blk_id = cluster_ctx.clb_nlist.pin_block(pin_id);
 		int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
 
-		if (cluster_ctx.clb_nlist.block_type(blk_id)->is_global_pin[pin_index] != is_global_net
+		if (cluster_ctx.clb_nlist.block_type(blk_id)->is_ignored_pin[pin_index] != net_is_ignored
 			&& !is_io_type(cluster_ctx.clb_nlist.block_type(blk_id))) {
 
-            VTR_LOG_WARN(
+            VTR_LOGV_WARN(verbosity > 2,
                     "Global net '%s' connects to non-global architecture pin '%s' (netlist pin '%s')\n",
                     cluster_ctx.clb_nlist.net_name(net_id).c_str(),
                     block_type_pin_index_to_name(cluster_ctx.clb_nlist.block_type(blk_id), pin_index).c_str(),
                     cluster_ctx.clb_nlist.pin_name(pin_id).c_str());
+
+            ++global_to_non_global_connection_count;
 		}
 	}
+
+    return global_to_non_global_connection_count;
 }
 
 /* Checks that the connections into and out of the clb make sense.  */

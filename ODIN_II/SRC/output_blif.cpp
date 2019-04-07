@@ -25,8 +25,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 
 #include "netlist_utils.h"
 #include "odin_util.h"
@@ -41,7 +41,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
-short haveOutputLatchBlackbox = FALSE;
+bool haveOutputLatchBlackbox = false;
 
 void depth_first_traversal_to_output(short marker_value, FILE *fp, netlist_t *netlist);
 void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *fp);
@@ -51,7 +51,6 @@ void define_set_input_logical_function(nnode_t *node, const char *bit_output, FI
 void define_ff(nnode_t *node, FILE *out);
 void define_decoded_mux(nnode_t *node, FILE *out);
 void output_blif_pin_connect(nnode_t *node, FILE *out);
-void add_the_blackbox_for_latches(FILE *out);
 
 /*---------------------------------------------------------------------------
  * (function: output_blif)
@@ -174,7 +173,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 	}
 	else
 	{
-		error_message(NETLIST_ERROR, 0, -1, "Invalid output file type.");
+		error_message(NETLIST_ERROR, 0, -1, "%s", "Invalid output file type.");
 	}
 
 	/* connect all the outputs up to the last gate */
@@ -223,12 +222,6 @@ void output_blif(char *file_name, netlist_t *netlist)
 	/* Print out any hard block modules */
 	add_the_blackbox_for_mults(out);
 	add_the_blackbox_for_adds(out);
-
-	//Check if blackbox latches are enabled && one has been included in the BLIF file
-	if(global_args.black_box_latches && (TRUE == haveOutputLatchBlackbox))
-	{
-		add_the_blackbox_for_latches(out);
-	}
 
 	output_hard_blocks(out);
 	fclose(out);
@@ -404,7 +397,7 @@ void output_node(nnode_t *node, short /*traverse_number*/, FILE *fp)
 		case LTE:
 		default:
 			/* these nodes should have been converted to softer versions */
-			error_message(NETLIST_ERROR, 0,-1,"Output blif: node should have been converted to softer version.");
+			error_message(NETLIST_ERROR, 0,-1, "%s", "Output blif: node should have been converted to softer version.");
 			break;
 	}
 }
@@ -548,7 +541,7 @@ void define_logical_function(nnode_t *node, FILE *out)
 			{
 				if ((i % 8 == 1) || (i % 8 == 2) || (i % 8 == 4) || (i % 8 == 7))
 				{
-					temp_string = convert_long_long_to_bit_string(i, node->num_input_pins);
+					temp_string = convert_long_to_bit_string(i, node->num_input_pins);
 					fprintf(out, "%s", temp_string);
 					vtr::free(temp_string);
 					fprintf(out, " 1\n");
@@ -564,7 +557,7 @@ void define_logical_function(nnode_t *node, FILE *out)
 			{
 				if ((i % 8 == 0) || (i % 8 == 3) || (i % 8 == 5) || (i % 8 == 6))
 				{
-					temp_string = convert_long_long_to_bit_string(i, node->num_input_pins);
+					temp_string = convert_long_to_bit_string(i, node->num_input_pins);
 					fprintf(out, "%s", temp_string);
 					vtr::free(temp_string);
 					fprintf(out, " 1\n");
@@ -839,31 +832,6 @@ void define_decoded_mux(nnode_t *node, FILE *out)
 	}
 
 	fprintf(out, "\n");
-}
-
-/*--------------------------------------------------------------------------
- * (function: add_the_blackbox_for_latches)
- *------------------------------------------------------------------------*/
-void add_the_blackbox_for_latches(FILE *out)
-{
-	fprintf(out, ".model bb_latch\n");
-
-	/* add the inputs */
-	fprintf(out, ".inputs");
-	fprintf(out, " i[0]");
-	fprintf(out, "\n");
-
-	/* add the outputs */
-	fprintf(out, ".outputs");
-	fprintf(out, " o[0]");
-	fprintf(out, "\n");
-
-	fprintf(out, ".blackbox\n");
-	fprintf(out, ".end\n");
-	fprintf(out, "\n");
-
-
-	return;
 }
 
 /*--------------------------------------------------------------------------

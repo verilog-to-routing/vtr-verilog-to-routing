@@ -139,7 +139,7 @@ sub parse_single_task {
     }
 
 	open( CONFIG, "<$task_path/config/config.txt" )
-	  or die "Failed to open $task_path/config/config.txt: $!";
+	  or die "Failed to open $task_path/config/config.txt: $!\n";
 	my @config_data = <CONFIG>;
 	close(CONFIG);
 
@@ -415,7 +415,7 @@ sub calc_geomean {
 	my $summary_file = "$output_path/task_summary/${run_prefix}${exp_id}_summary.txt";
 
 	if ( !-r $summary_file ) {
-		print "[ERROR] Failed to open $summary_file: $!";
+		print "[ERROR] Failed to open $summary_file: $!\n";
 		return;
 	}
 	open( SUMMARY_FILE, "<$summary_file" );
@@ -580,36 +580,50 @@ sub check_two_files {
 	if ( $lines =~ /^\s*pass_requirements_file\s*=\s*(\S+)\s*$/m ) { }
 	else {
 		print
-		  "[ERROR] No 'pass_requirements_file' in task configuration file ($task_path/config/config.txt)\n";
-        $failed += 1;
-		return $failed;
+		  "[Warning] No 'pass_requirements_file' in task configuration file ($task_path/config/config.txt)\n";
 	}
 
 	my $pass_req_filename = $1;
 
-	# Search for pass requirement file
-	$pass_req_filename = expand_user_path($pass_req_filename);
-	if ( -e "$task_path/config/$pass_req_filename" ) {
-		$pass_req_file = "$task_path/config/$pass_req_filename";
+    if ($pass_req_filename !~ /\s*/) {
+
+        # Search for pass requirement file
+        $pass_req_filename = expand_user_path($pass_req_filename);
+        if ( -e "$task_path/config/$pass_req_filename" ) {
+            $pass_req_file = "$task_path/config/$pass_req_filename";
+        }
+        elsif ( -e "$vtr_flow_path/parse/pass_requirements/$pass_req_filename" ) {
+            $pass_req_file =
+              "$vtr_flow_path/parse/pass_requirements/$pass_req_filename";
+        }
+        elsif ( -e $pass_req_filename ) {
+            $pass_req_file = $pass_req_filename;
+        }
+        else {
+            print
+              "[ERROR] Cannot find pass_requirements_file.  Checked for $task_path/config/$pass_req_filename or $vtr_flow_path/parse/$pass_req_filename or $pass_req_filename\n";
+            $failed += 1;
+            return $failed;
+        }
+
+        if ( -e $pass_req_file ) {
+            $failed += check_pass_requirements($pass_req_file, $test_file_1, $test_file_2, $is_golden);
+        }
+    }
+
+	if ($failed == 0) {
+		print "[Pass]\n";
 	}
-	elsif ( -e "$vtr_flow_path/parse/pass_requirements/$pass_req_filename" ) {
-		$pass_req_file =
-		  "$vtr_flow_path/parse/pass_requirements/$pass_req_filename";
-	}
-	elsif ( -e $pass_req_filename ) {
-		$pass_req_file = $pass_req_filename;
-	}
-	else {
-		print
-		  "[ERROR] Cannot find pass_requirements_file.  Checked for $task_path/config/$pass_req_filename or $vtr_flow_path/parse/$pass_req_filename or $pass_req_filename\n";
-        $failed = 0;
-		return $failed;
-	}
+    return $failed;
+}
+
+sub check_pass_requirements() {
+    my ($pass_req_file, $test_file_1, $test_file_2, $is_golden) = @_;
 
 	my $line;
 
 	my @first_test_data;
-        my @second_test_data;
+    my @second_test_data;
 	my @pass_req_data;
 
 	my @params;
@@ -617,12 +631,13 @@ sub check_two_files {
 	my %min_threshold;
 	my %max_threshold;
 	my %abs_diff_threshold;
+    my $failed = 0;
 
 	##############################################################
 	# Read files
 	##############################################################
 	if ( !-r $test_file_2 ) {
-		print "[ERROR] Failed to open $test_file_2: $!";
+		print "[ERROR] Failed to open $test_file_2: $!\n";
         $failed += 1;
 		return $failed;
 	}
@@ -631,7 +646,7 @@ sub check_two_files {
 	close(GOLDEN_DATA);
 
 	if ( !-r $pass_req_file ) {
-		print "[ERROR] Failed to open $pass_req_file: $!";
+		print "[ERROR] Failed to open $pass_req_file: $!\n";
         $failed += 1;
 		return $failed;
 	}
@@ -639,7 +654,7 @@ sub check_two_files {
 	@pass_req_data = load_file_with_includes($pass_req_file);
 
 	if ( !-r $test_file_1 ) {
-		print "[ERROR] Failed to open $test_file_1: $!";
+		print "[ERROR] Failed to open $test_file_1: $!\n";
         $failed += 1;
 		return $failed;
 	}
@@ -835,10 +850,6 @@ sub check_two_files {
 			}
 		}
 	}
-
-	if ($failed == 0) {
-		print "[Pass]\n";
-	}
     return $failed;
 }
 
@@ -900,7 +911,7 @@ sub load_file_with_includes {
 sub load_file_lines {
     my ($filepath) = @_;
 
-	open(FILE, "<$filepath" ) or die("Failed to open file $filepath");
+	open(FILE, "<$filepath" ) or die("Failed to open file $filepath\n");
 	my @lines = <FILE>;
 	close(FILE);
 

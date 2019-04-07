@@ -24,8 +24,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 #include "read_xml_config_file.h"
 #include "read_xml_util.h"
 #include "pugixml.hpp"
@@ -139,8 +139,7 @@ void read_outputs(pugi::xml_node a_node, config_t *config, const pugiutil::loc_d
 			/* Two arch files specified? */
 			if (global_args.arch_file != NULL)
 			{
-				printf("Error: Arch file specified in config file AND command line\n");
-				exit(-1);
+				error_message(ARG_ERROR, -1, -1, "%s", "Error: Arch file specified in config file AND command line\n");
 			}
 			global_args.arch_file.set(vtr::strdup(child.child_value()), argparse::Provenance::SPECIFIED);
 		}
@@ -170,7 +169,7 @@ void read_debug_switches(pugi::xml_node a_node, config_t *config, const pugiutil
 	child = get_single_child(a_node, "debug_output_path", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		config->debug_output_path = vtr::strdup(child.child_value());
+		config->debug_output_path = std::string(child.child_value());
 	}
 
 	child = get_single_child(a_node, "print_parse_tokens", loc_data, OPTIONAL);

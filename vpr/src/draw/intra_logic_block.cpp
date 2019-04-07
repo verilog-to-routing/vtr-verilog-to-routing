@@ -47,6 +47,13 @@ static int draw_internal_find_max_lvl(t_pb_type pb_type);
 static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_bound_box& parent_bbox, const t_type_ptr type);
 static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_type_ptr type);
 
+
+void draw_selected_pb_flylines();
+void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms);
+std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb);
+void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
+
+
 void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const t_point& local_pt, int max_depth);
 
@@ -173,6 +180,10 @@ void draw_internal_draw_subblk() {
 			}
 		}
 	}
+
+    //Draw the atom-level net flylines for the selected pb
+    //(inputs: blue, outputs: red, internal: orange)
+    draw_selected_pb_flylines();
 }
 
 
@@ -463,10 +474,98 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_b
 
 			// now recurse
 			draw_internal_pb(clb_index, child_pb, abs_bbox, type);
-
 		}
 	}
 }
+
+void draw_selected_pb_flylines() {
+	t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
+
+    const t_pb* pb = sel_sub_info.get_selected_pb();
+
+    if (pb) {
+        auto atoms = collect_pb_atoms(pb);
+        draw_atoms_fanin_fanout_flylines(atoms);
+    }
+}
+
+void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms) {
+    std::set<AtomBlockId> atoms_set(atoms.begin(), atoms.end());
+
+    auto& atom_nl = g_vpr_ctx.atom().nlist;
+
+    setlinestyle(SOLID);
+    setlinewidth(2);
+
+    for (AtomBlockId blk : atoms) {
+        for (AtomPinId ipin : atom_nl.block_input_pins(blk)) {
+            AtomNetId net = atom_nl.pin_net(ipin);
+
+            AtomPinId net_driver = atom_nl.net_driver(net);
+            AtomBlockId net_driver_blk = atom_nl.pin_block(net_driver);
+
+            if (atoms_set.count(net_driver_blk)) {
+                setcolor(ORANGE); //Internal
+            } else {
+                setcolor(BLUE); //External input
+            }
+
+            t_point start = atom_pin_draw_coord(net_driver);
+            t_point end = atom_pin_draw_coord(ipin);
+            drawline(start, end);
+            draw_triangle_along_line(start, end, 0.95, 40*DEFAULT_ARROW_SIZE);
+            draw_triangle_along_line(start, end, 0.05, 40*DEFAULT_ARROW_SIZE);
+        }
+
+        for (AtomPinId opin : atom_nl.block_output_pins(blk)) {
+            AtomNetId net = atom_nl.pin_net(opin);
+
+            for (AtomPinId net_sink : atom_nl.net_sinks(net)) {
+                AtomBlockId net_sink_blk = atom_nl.pin_block(net_sink);
+
+                if (atoms_set.count(net_sink_blk)) {
+                    setcolor(ORANGE); //Internal
+                } else {
+                    setcolor(RED); //External output
+                }
+
+                t_point start = atom_pin_draw_coord(opin);
+                t_point end = atom_pin_draw_coord(net_sink);
+                drawline(start, end);
+                draw_triangle_along_line(start, end, 0.95, 40*DEFAULT_ARROW_SIZE);
+                draw_triangle_along_line(start, end, 0.05, 40*DEFAULT_ARROW_SIZE);
+            }
+        }
+    }
+}
+
+std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb) {
+    std::vector<AtomBlockId> atoms;
+    collect_pb_atoms_recurr(pb, atoms);
+    return atoms;
+}
+
+void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms) {
+    auto& atom_ctx = g_vpr_ctx.atom(); 
+
+    if (pb->is_primitive()) {
+        //Base case
+        AtomBlockId blk = atom_ctx.lookup.pb_atom(pb);
+        if (blk) {
+            atoms.push_back(blk);
+        }
+    } else {
+        //Recurse
+        VTR_ASSERT_DEBUG(atom_ctx.lookup.pb_atom(pb) == AtomBlockId::INVALID());
+        
+        for (int itype = 0; itype < pb->get_num_child_types(); ++itype) {
+            for (int ichild = 0; ichild < pb->get_num_children_of_type(itype); ++ichild) {
+                collect_pb_atoms_recurr(&pb->child_pbs[itype][ichild], atoms);
+            }
+        }
+    }
+}
+
 
 void draw_logical_connections() {
 	const t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();

@@ -48,23 +48,25 @@ static float comp_width(t_chan * chan, float x, float separation);
 /************************* Subroutine Definitions ****************************/
 
 int binary_search_place_and_route(t_placer_opts placer_opts,
+        t_annealing_sched annealing_sched,
+        t_router_opts router_opts,
+        const t_analysis_opts& analysis_opts,
         t_file_name_opts filename_opts,
         const t_arch* arch,
         bool verify_binary_search, int min_chan_width_hint,
-        t_annealing_sched annealing_sched,
-        t_router_opts router_opts,
-        t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-        vtr::vector_map<ClusterNetId, float *> &net_delay,
+        t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
+        vtr::vector<ClusterNetId, float *> &net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
         const t_timing_inf& timing_inf,
 #endif
-        std::shared_ptr<SetupHoldTimingInfo> timing_info) {
+        std::shared_ptr<SetupHoldTimingInfo> timing_info,
+        std::shared_ptr<RoutingDelayCalculator> delay_calc) {
 
     /* This routine performs a binary search to find the minimum number of      *
      * tracks per channel required to successfully route a circuit, and returns *
      * that minimum width_fac.                                                  */
 
-	vtr::vector_map<ClusterNetId, t_trace *>best_routing; /* Saves the best routing found so far. */
+	vtr::vector<ClusterNetId, t_trace *> best_routing; /* Saves the best routing found so far. */
     int current, low, high, final;
     bool success, prev_success, prev2_success, Fc_clipped = false;
 #ifdef ENABLE_CLASSIC_VPR_STA
@@ -176,20 +178,24 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 
         if (placer_opts.place_freq == PLACE_ALWAYS) {
             placer_opts.place_chan_width = current;
-            try_place(placer_opts, annealing_sched, arch->Chans,
-                    router_opts, det_routing_arch, segment_inf,
+            try_place(placer_opts, annealing_sched, router_opts, analysis_opts,
+                    arch->Chans, det_routing_arch, segment_inf,
 #ifdef ENABLE_CLASSIC_VPR_STA
                     timing_inf,
 #endif
                     arch->Directs, arch->num_directs);
         }
-        success = try_route(current, router_opts, det_routing_arch, segment_inf,
+        success = try_route(current,
+                router_opts,
+                analysis_opts,
+                det_routing_arch, segment_inf,
                 net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
                 slacks,
                 timing_inf,
 #endif
                 timing_info,
+                delay_calc,
                 arch->Chans,
                 arch->Directs, arch->num_directs,
                 (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR);
@@ -314,20 +320,24 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
                 break;
             if (placer_opts.place_freq == PLACE_ALWAYS) {
                 placer_opts.place_chan_width = current;
-                try_place(placer_opts, annealing_sched, arch->Chans,
-                        router_opts, det_routing_arch, segment_inf,
+                try_place(placer_opts, annealing_sched, router_opts, analysis_opts,
+                        arch->Chans, det_routing_arch, segment_inf,
 #ifdef ENABLE_CLASSIC_VPR_STA
                         timing_inf,
 #endif
                         arch->Directs, arch->num_directs);
             }
-            success = try_route(current, router_opts, det_routing_arch,
+            success = try_route(current,
+                    router_opts,
+                    analysis_opts,
+                    det_routing_arch,
                     segment_inf, net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
                     slacks,
                     timing_inf,
 #endif
                     timing_info,
+                    delay_calc,
                     arch->Chans, arch->Directs, arch->num_directs,
                     ScreenUpdatePriority::MINOR);
 
@@ -355,23 +365,23 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
     /* End binary search verification. */
     /* Restore the best placement (if necessary), the best routing, and  *
      * * the best channel widths for final drawing and statistics output.  */
-    init_chan(final, arch->Chans);
+    t_chan_width chan_width = init_chan(final, arch->Chans);
 
     free_rr_graph();
 
 	create_rr_graph(graph_type,
             device_ctx.num_block_types, device_ctx.block_types,
             device_ctx.grid,
-			&device_ctx.chan_width,
+			chan_width,
 			device_ctx.num_arch_switches,
             det_routing_arch,
             segment_inf,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
+            router_opts.clock_modeling,
 			router_opts.lookahead_type,
 			arch->Directs, arch->num_directs,
-			&device_ctx.num_rr_switches,
 			&warnings);
 
     init_draw_coords(final);
@@ -397,7 +407,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 
 }
 
-void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
+t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 
     /* Assigns widths to channels (in tracks).  Minimum one track          *
      * per channel. The channel distributions read from the architecture  *
@@ -409,6 +419,10 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
     t_chan chan_x_dist = chan_width_dist.chan_x_dist;
     t_chan chan_y_dist = chan_width_dist.chan_y_dist;
 
+    t_chan_width chan_width;
+    chan_width.x_list.resize(grid.height());
+    chan_width.y_list.resize(grid.width());
+
     if (grid.height() > 1) {
         int num_channels = grid.height() - 1;
         VTR_ASSERT(num_channels > 0);
@@ -416,9 +430,8 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 
         for (size_t i = 0; i < grid.height(); ++i) {
             float y = float(i) / num_channels;
-            device_ctx.chan_width.x_list[i] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
-
-            device_ctx.chan_width.x_list[i] = max(device_ctx.chan_width.x_list[i], 1); //Minimum channel width 1
+            chan_width.x_list[i] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
+            chan_width.x_list[i] = max(chan_width.x_list[i], 1); //Minimum channel width 1
         }
     }
 
@@ -430,38 +443,40 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
         for (size_t i = 0; i < grid.width(); ++i) { //-2 for no perim channels
             float x = float(i) / num_channels;
 
-            device_ctx.chan_width.y_list[i] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
-            device_ctx.chan_width.y_list[i] = max(device_ctx.chan_width.y_list[i], 1); //Minimum channel width 1
+            chan_width.y_list[i] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
+            chan_width.y_list[i] = max(chan_width.y_list[i], 1); //Minimum channel width 1
         }
     }
 
-    device_ctx.chan_width.max = 0;
-    device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = INT_MIN;
-    device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = INT_MAX;
+    chan_width.max = 0;
+    chan_width.x_max = chan_width.y_max = INT_MIN;
+    chan_width.x_min = chan_width.y_min = INT_MAX;
     for (size_t i = 0; i < grid.height(); ++i) {
-        device_ctx.chan_width.max = max(device_ctx.chan_width.max, device_ctx.chan_width.x_list[i]);
-        device_ctx.chan_width.x_max = max(device_ctx.chan_width.x_max, device_ctx.chan_width.x_list[i]);
-        device_ctx.chan_width.x_min = min(device_ctx.chan_width.x_min, device_ctx.chan_width.x_list[i]);
+        chan_width.max = max(chan_width.max, chan_width.x_list[i]);
+        chan_width.x_max = max(chan_width.x_max, chan_width.x_list[i]);
+        chan_width.x_min = min(chan_width.x_min, chan_width.x_list[i]);
     }
     for (size_t i = 0; i < grid.width(); ++i) {
-        device_ctx.chan_width.max = max(device_ctx.chan_width.max, device_ctx.chan_width.y_list[i]);
-        device_ctx.chan_width.y_max = max(device_ctx.chan_width.y_max, device_ctx.chan_width.y_list[i]);
-        device_ctx.chan_width.y_min = min(device_ctx.chan_width.y_min, device_ctx.chan_width.y_list[i]);
+        chan_width.max = max(chan_width.max, chan_width.y_list[i]);
+        chan_width.y_max = max(chan_width.y_max, chan_width.y_list[i]);
+        chan_width.y_min = min(chan_width.y_min, chan_width.y_list[i]);
     }
 
 #ifdef VERBOSE
     VTR_LOG("\n");
     VTR_LOG("device_ctx.chan_width.x_list:\n");
     for (size_t i = 0; i < grid.height(); ++i) {
-        VTR_LOG("%d  ", device_ctx.chan_width.x_list[i]);
+        VTR_LOG("%d  ", chan_width.x_list[i]);
     }
     VTR_LOG("\n");
     VTR_LOG("device_ctx.chan_width.y_list:\n");
     for (size_t i = 0; i < grid.width(); ++i) {
-        VTR_LOG("%d  ", device_ctx.chan_width.y_list[i]);
+        VTR_LOG("%d  ", chan_width.y_list[i]);
     }
     VTR_LOG("\n");
 #endif
+
+    return chan_width;
 }
 
 static float comp_width(t_chan * chan, float x, float separation) {

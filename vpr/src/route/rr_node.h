@@ -1,5 +1,6 @@
 #ifndef RR_NODE_H
 #define RR_NODE_H
+#include "rr_node_fwd.h"
 #include "vpr_types.h"
 
 #include "vtr_range.h"
@@ -77,6 +78,7 @@ class t_rr_node {
 
         int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
         short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_id; }
+
         bool edge_is_configurable(short iedge) const;
         short fan_in() const;
 
@@ -125,6 +127,7 @@ class t_rr_node {
         void set_num_edges(short); //Note will remove any previous edges
         void set_edge_sink_node(short iedge, int sink_node);
         void set_edge_switch(short iedge, short switch_index);
+
         void set_fan_in(short);
 
         void set_coordinates(short x1, short y1, short x2, short y2);
@@ -137,7 +140,7 @@ class t_rr_node {
         void set_class_num(short); //Same as set_ptc_num() by checks type() is consistent
 
 
-        void set_cost_index(short);
+        void set_cost_index(size_t);
         void set_rc_index(short);
 
         void set_direction(e_direction);

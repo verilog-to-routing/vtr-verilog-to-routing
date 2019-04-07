@@ -22,42 +22,28 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
-#define hashtable_t struct hashtable_t_t
-#define hashtable_node_t struct hashtable_node_t_t
-#include<sys/types.h>
-#include<stdint.h>
 
-// Constructor
-hashtable_t* create_hashtable(int store_size);
+#include <stdlib.h>
+#include <stdint.h>
+#include <unordered_map>
 
-struct hashtable_t_t
+class Hashtable
 {
-	int count;
-	int store_size;
-	hashtable_node_t **store;
+private:
+	std::unordered_map<std::string,void*> my_map;
+	
+public:
 
 	// Adds an item to the hashtable.
-	void   (*add)                (hashtable_t *h, const void *key, size_t key_length, void *item);
+	void   add                (std::string key, void *item);
 	// Removes an item from the hashtable. If the item is not present, a null pointer is returned.
-	void*  (*remove)             (hashtable_t *h, const void *key, size_t key_length);
+	void*  remove             (std::string key);
 	// Gets an item from the hashtable without removing it. If the item is not present, a null pointer is returned.
-	void*  (*get)                (hashtable_t *h, const void *key, size_t key_length);
-	// Gets an array of all items in the hastable.
-	void** (*get_all)            (hashtable_t *h);
+	void*  get                (std::string key);
 	// Check to see if the hashtable is empty.
-	int    (*is_empty)           (hashtable_t *h);
-	// Destroys the hashtable but does not free the memory used by the items added or the keys.
-	void   (*destroy)            (hashtable_t *h);
-	// Destroys the hashtable and calls free on each item.
-	void   (*destroy_free_items) (hashtable_t *h);
-};
-
-struct hashtable_node_t_t
-{
-	size_t key_length;
-	void *key;
-	void *item;
-	hashtable_node_t *next;
+	bool   is_empty           ();
+	// calls free on each item.
+	void   destroy_free_items 		  ();
 };
 
 #endif

@@ -298,18 +298,22 @@ if (    $stage_idx_abc >= $starting_stage
 my $abc_path;
 my $abc_rc_path;
 if ( $stage_idx_abc >= $starting_stage or $stage_idx_vpr <= $ending_stage ) {
-    #Need ABC for either synthesis or post-VPR verification
-    my $abc_dir_path = "$vtr_flow_path/../abc";
+	#Need ABC for either synthesis or post-VPR verification
+	if ($use_old_abc) 
+	{
+		my $abc_dir_path = "$vtr_flow_path/../abc_with_bb_support";
+		$abc_path = "$abc_dir_path/oldabc";
+		$abc_rc_path = "$abc_dir_path/abc.rc";
+	}
+	else 
+	{
+		my $abc_dir_path = "$vtr_flow_path/../abc";
+		$abc_path = "$abc_dir_path/abc";
+		$abc_rc_path = "$abc_dir_path/abc.rc";
+	}
 
-    if ($use_old_abc) {
-        $abc_dir_path = "$vtr_flow_path/../abc_with_bb_support";
-    }
-
-	$abc_path = "$abc_dir_path/abc";
 	( -e $abc_path or -e "${abc_path}.exe" )
 	  or die "Cannot find ABC executable ($abc_path)";
-
-	$abc_rc_path = "$abc_dir_path/abc.rc";
 	( -e $abc_rc_path ) or die "Cannot find ABC RC file ($abc_rc_path)";
 
 	copy( $abc_rc_path, $temp_dir );
@@ -640,7 +644,16 @@ if (    $starting_stage <= $stage_idx_abc
 
 		if ($use_old_abc) {
 			#Legacy ABC script
-			$abc_commands="read $pre_abc_blif; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $pre_abc_blif $post_abc_raw_blif; print_stats";
+			$abc_commands="
+			read $pre_abc_blif; 
+			time; 
+			resyn; 
+			resyn2; 
+			if -K $lut_size; 
+			time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; 
+			write_hie ${pre_abc_blif} ${post_abc_raw_blif}; 
+			print_stats;
+			";
 		}
 
 		$abc_commands =~ s/\R/ /g; #Convert new-lines to spaces
@@ -1561,4 +1574,3 @@ sub calculate_relaxed_W {
 
     return $relaxed_W;
 }
-

@@ -5,13 +5,13 @@
 #include "vpr_types.h"
 
 void routing_stats(bool full_stats, enum e_route_type route_type,
-		int num_rr_switch, t_segment_inf * segment_inf, int num_segment,
+		std::vector<t_segment_inf>& segment_inf,
 		float R_minW_nmos, float R_minW_pmos,
         float grid_logic_tile_area,
 		enum e_directionality directionality, int wire_to_ipin_switch,
 		bool timing_analysis_enabled
 #ifdef ENABLE_CLASSIC_VPR_STA
-		, vtr::vector_map<ClusterNetId, float *> &net_delay
+		, vtr::vector<ClusterNetId, float *> &net_delay
         , t_slack * slacks, const t_timing_inf &timing_inf
 #endif
         );

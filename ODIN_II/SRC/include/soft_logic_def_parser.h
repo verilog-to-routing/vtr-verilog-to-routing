@@ -38,7 +38,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef SOFT_LOGIC_PARSER_H
 #define SOFT_LOGIC_PARSER_H
 
-#include "types.h"
+#include "odin_types.h"
 
 typedef struct soft_sub_structure_t
 {

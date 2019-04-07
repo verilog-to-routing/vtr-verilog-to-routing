@@ -14,6 +14,7 @@ sdc_dir=sdc
 
 # Add circuits to list to sweep
 circuit_list_add=test_eblif.eblif
+circuit_list_add=conn_order.eblif
 
 # Add architectures to list to sweep
 arch_list_add=k6_frac_N10_40nm.xml

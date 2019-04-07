@@ -23,7 +23,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef __ACE_ACE_H__
 #define __ACE_ACE_H__
 
-#include "types.h"
+#include "odin_types.h"
 
 void alloc_and_init_ace_structs (netlist_t * net);
 void calculate_activity ( netlist_t *net, int max_cycles, FILE *act_out );

@@ -54,6 +54,13 @@ int get_rr_node_index(
 std::vector<int> get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
                                      int x, int y, t_rr_type rr_type, int ptc);
 
+//Returns all x-channel or y-channel wires at the specified location
+std::vector<int> get_rr_node_chan_wires_at_location(
+    const t_rr_node_indices& L_rr_node_indices,
+    t_rr_type rr_type,
+    int x,
+    int y);
+
 //Return the first rr node of the specified type and coordinates
 // For non-IPIN/OPIN types 'side' is ignored
 int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
@@ -67,8 +74,7 @@ int find_average_rr_node_index(
 t_seg_details *alloc_and_load_seg_details(
 		int *max_chan_width,
 		const int max_len,
-		const int num_seg_types,
-		const t_segment_inf *segment_inf,
+		const std::vector<t_segment_inf>& segment_inf,
 		const bool use_full_seg_groups,
 		const bool is_global_graph,
 		const enum e_directionality directionality,
@@ -209,8 +215,8 @@ void load_sblock_pattern_lookup(
 		t_sblock_pattern& sblock_pattern);
 
 int *get_seg_track_counts(
-		const int num_sets, const int num_seg_types,
-		const t_segment_inf * segment_inf, const bool use_full_seg_groups);
+		const int num_sets,
+		const std::vector<t_segment_inf>& segment_inf, const bool use_full_seg_groups);
 
 void dump_seg_details(
 		const t_chan_seg_details *seg_details,

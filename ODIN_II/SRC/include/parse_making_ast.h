@@ -1,4 +1,4 @@
-#include "types.h"
+#include "odin_types.h"
 
 void parse_to_ast();
 
@@ -11,7 +11,7 @@ void clean_up_parser_for_file();
 
 /* GENERAL PARSER NODES */
 ast_node_t *newSymbolNode(char *id, int line_number);
-ast_node_t *newNumberNode(std::string num, bases base, signedness sign, int line_number);
+ast_node_t *newNumberNode(char *num, bases base, signedness sign, int line_number);
 ast_node_t *newList(ids type_id, ast_node_t *expression);
 ast_node_t *newList_entry(ast_node_t *concat_node, ast_node_t *expression);
 ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child );
@@ -21,6 +21,8 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 ast_node_t *newArrayRef(char *id, ast_node_t *expression, int line_number);
 ast_node_t *newArrayRef2D(char *id, ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expression2, int line_number);
+ast_node_t *newPartSelectRangeRef(char *id, ast_node_t *expression1, ast_node_t *expression2, char direction,
+								  int line_number);
 ast_node_t *newRangeRef2D(char *id, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, int line_number);
 ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number);

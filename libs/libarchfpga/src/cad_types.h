@@ -38,16 +38,6 @@ struct t_pack_patterns {
 	t_pb_graph_pin *chain_root_pin; /* pointer to logic block input pin that drives this chain from the preceding logic block */
 };
 
-struct t_model_chain_pattern {
-	char *name; /* name of this chain of logic */
-	t_model *model; /* block associated with chain */
-	t_model_ports *input_link_port; /* pointer to port of chain input */
-	int inport_link_pin; /* applicable pin of chain input port */
-	t_model_ports *output_link_port; /* pointer to port of chain output */
-	int outport_link_pin; /* applicable pin of chain output port */
-	t_model_chain_pattern *next; /* next chain (linked list) */
-};
-
 /**
  * Keeps track of locations that a primitive can go to during packing
  * Linked list for easy insertion/deletion

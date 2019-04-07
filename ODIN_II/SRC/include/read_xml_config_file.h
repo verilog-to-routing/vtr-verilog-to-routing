@@ -26,7 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef READ_XML_CONFIG_FILE_H
 #define READ_XML_CONFIG_FILE_H
 
-#include "types.h"
+#include "odin_types.h"
 
 extern void read_config_file(char *file_name);
 #endif

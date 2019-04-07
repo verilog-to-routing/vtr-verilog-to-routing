@@ -18,7 +18,7 @@ class Connection_based_routing_resources {
 	// each net maps SINK node index -> PIN index for net
 	// only need to be built once at the start since the SINK nodes never change
 	// the reverse lookup of route_ctx.net_rr_terminals
-	vtr::vector_map<ClusterNetId, std::unordered_map<int,int>> rr_sink_node_to_pin;
+	vtr::vector<ClusterNetId, std::unordered_map<int,int>> rr_sink_node_to_pin;
 
 	// a property of each net, but only valid after pruning the previous route tree
 	// the "targets" in question can be either rr_node indices or pin indices, the
@@ -60,11 +60,11 @@ private:
 		2. the connection is critical enough
 		3. the connection is suboptimal, in comparison to lower_bound_connection_delay
 	*/
-	vtr::vector_map<ClusterNetId, std::unordered_map<int,bool>> forcible_reroute_connection_flag;
+	vtr::vector<ClusterNetId, std::unordered_map<int,bool>> forcible_reroute_connection_flag;
 
 	// the optimal delay for a connection [inet][ipin] ([0...num_net][1...num_pin])
 	// determined after the first routing iteration when only optimizing for timing delay
-	vtr::vector_map<ClusterNetId, std::vector<float>> lower_bound_connection_delay;
+	vtr::vector<ClusterNetId, std::vector<float>> lower_bound_connection_delay;
 
 	// the current net that's being routed
 	ClusterNetId current_inet;
@@ -84,7 +84,7 @@ private:
 
 public:
 	// after timing analysis of 1st iteration, can set a lower bound on connection delay
-	void set_lower_bound_connection_delays(vtr::vector_map<ClusterNetId, float *> &net_delay);
+	void set_lower_bound_connection_delays(vtr::vector<ClusterNetId, float *> &net_delay);
 
 	// initialize routing resources at the start of routing to a new net
 	void prepare_routing_for_net(ClusterNetId inet) {
@@ -123,7 +123,7 @@ public:
 	bool forcibly_reroute_connections(float max_criticality,
             std::shared_ptr<const SetupTimingInfo> timing_info,
             const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-            vtr::vector_map<ClusterNetId, float *> &net_delay);
+            vtr::vector<ClusterNetId, float *> &net_delay);
 
 };
 

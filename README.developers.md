@@ -10,7 +10,7 @@ In the event that you are responsible for "breaking the build", fix the build at
 
 We have some guidelines in place to help catch most of these problems:
 
-1.  Before you push code to the central repository, your code MUST pass the check-in regression test. 
+1.  Before you push code to the central repository, your code MUST pass the check-in regression test.
     The check-in regression test is a quick way to test if any part of the VTR flow is broken.
 
     At a minimum you must run:
@@ -38,8 +38,8 @@ We have some guidelines in place to help catch most of these problems:
 
 4.  In the event a regression test is broken, the one responsible for having the test pass is in charge of determining:
     * If there is a bug in the source code, in which case the source code needs to be updated to fix the bug, or
-    * If there is a problem with the test (perhaps the quality of the tool did in fact get better or perhaps there is a bug with the test itself), in which case the test needs to be updated to reflect the new changes. 
-   
+    * If there is a problem with the test (perhaps the quality of the tool did in fact get better or perhaps there is a bug with the test itself), in which case the test needs to be updated to reflect the new changes.
+
     If the golden results need to be updated and you are sure that the new golden results are better, use the command `../scripts/parse_vtr_task.pl -create_golden your_regression_test_name_here`
 
 5.  Keep in sync with the master branch as regularly as you can (i.e. `git pull` or `git pull --rebase`).
@@ -55,7 +55,7 @@ There are 4 main regression tests:
 
 * `vtr_reg_basic`: ~3 minutes serial
 
-    **Goal:** Quickly check basic VTR flow correctness
+    **Goal:** Fast functionality check
 
     **Feature Coverage:** Low
 
@@ -63,11 +63,15 @@ There are 4 main regression tests:
 
     **Architectures:** A few simple architectures
 
-    Not suitable for evaluating QoR or performance.
+    This regression test is *not* suitable for evaluating QoR or performance.
+    It's primary purpose is to make sure the various tools do not crash/fail in the basic VTR flow.
+
+    QoR checks in this regression test are primarily 'canary' checks to catch gross degredations in QoR.
+    Ocassionally, code changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
 
 * `vtr_reg_strong`: ~30 minutes serial, ~15 minutes with `-j4`
 
-    **Goal:** Exercise most of VTR's features, moderately fast.
+    **Goal:** Broad functionaly check
 
     **Feature Coverage:** High
 
@@ -75,7 +79,11 @@ There are 4 main regression tests:
 
     **Architectures:** A variety of architectures, including special architectures to exercise specific features
 
-    Not suitable for evaluating QoR or performance.
+    This regression test is *not* suitable for evaluating QoR or performance.
+    It's primary purpose is try and achieve high functionality coverage.
+
+    QoR checks in this regression test are primarily 'canary' checks to catch gross degredations in QoR.
+    Ocassionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
 
 * `vtr_reg_nightly`: ~15 hours with `-j2`
 
@@ -88,9 +96,12 @@ There are 4 main regression tests:
     * MCNC20 benchmarks
     * VTR benchmarks
     * Titan 'other' benchmarks (smaller than Titan23)
-   
+
     **Architectures:** A wider variety of architectures
-   
+
+   QoR checks in this regression are aimed at evaluating quality and run-time of the VTR flow.
+   As a result any QoR failures are a concern and should be investigated and understood.
+
 * `vtr_reg_weekly`: ~30 hours with `-j2`
 
     **Goal:** Full QoR and Performance evaluation.
@@ -101,8 +112,11 @@ There are 4 main regression tests:
 
     * VTR benchmarks
     * Titan23 benchmarks
-   
+
     **Architectures:** A wide variety of architectures
+
+   QoR checks in this regression are aimed at evaluating quality and run-time of the VTR flow.
+   As a result any QoR failures are a concern and should be investigated and understood.
 
 These can be run with `run_reg_test.pl`:
 ```shell
@@ -224,7 +238,7 @@ This process is made more challenging by the fact that many of VTR's optimizatio
 This means that VTR's implementation results are dependent upon:
  * The initial conditions (e.g. input architecture & netlist, random number generator seed), and
  * The precise optimization algorithms used.
- 
+
 The result is that a minor change to either of these can can make the measured QoR change.
 This effect can be viewed as an intrinsic 'noise' or 'variance' to any QoR measurement for a particular architecture/benchmark/algorithm combination.
 
@@ -238,7 +252,7 @@ There are typically two key methods used to measure the 'true' QoR:
     A typical example would be to sweep an entire benchmark set accross 3 or 5 different seeds.
 
 In practise any algorithm changes will likely cause improvements on some architecture/benchmark combinations, and degredations on others.
-As a result we primarily focus on the *average* behaviour of a change to evaluate its impact. 
+As a result we primarily focus on the *average* behaviour of a change to evaluate its impact.
 However extreme outlier behaviour on particular circuits is also important, since it may indicate bugs or other unexpected behaviour.
 
 ### Key QoR Metrics
@@ -318,7 +332,7 @@ You need at least two sets of QoR measurements:
 
 Note that it is important to generate both sets of QoR measurements on the same computing infrastructure to ensure a fair run-time comparison.
 
-The following examples show how a single set of QoR measurements can be produced using the VTR flow infrastructure. 
+The following examples show how a single set of QoR measurements can be produced using the VTR flow infrastructure.
 
 ### Example: VTR Benchmarks QoR Measurement
 
@@ -344,10 +358,10 @@ $ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_nightly/vtr_reg_qor_chai
 #The run directory should now contain a summary parse_results.txt file
 $ head -5 vtr_reg_nightly/vtr_reg_qor_chain/latest/parse_results.txt
 arch                                  	circuit           	script_params	vpr_revision 	vpr_status	error	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_post_packed_blocks	device_width	device_height	num_clb	num_io	num_outputs	num_memoriesnum_mult	placed_wirelength_est	placed_CPD_est	placed_setup_TNS_est	placed_setup_WNS_est	min_chan_width	routed_wirelength	min_chan_width_route_success_iteration	crit_path_routed_wirelength	crit_path_route_success_iteration	critical_path_delay	setup_TNS	setup_WNS	hold_TNS	hold_WNS	logic_block_area_total	logic_block_area_used	min_chan_width_routing_area_total	min_chan_width_routing_area_per_tile	crit_path_routing_area_total	crit_path_routing_area_per_tile	odin_synth_time	abc_synth_time	abc_cec_time	abc_sec_time	ace_time	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	vtr_flow_elapsed_time	max_vpr_mem	max_odin_mem	max_abc_mem
-k6_frac_N10_frac_chain_mem32K_40nm.xml	bgm.v             	common       	9f591f6-dirty	success   	     	26431              	24575                	14738               	2258                  	53          	53           	1958   	257   	32         	0           11      	871090               	18.5121       	-13652.6            	-18.5121            	84            	328781           	32                                    	297718                     	18                               	20.4406            	-15027.8 	-20.4406 	0       	0       	1.70873e+08           	1.09883e+08          	1.63166e+07                      	5595.54                             	2.07456e+07                 	7114.41                        	11.16          	1.03          	-1          	-1          	-1      	141.53   	108.26    	142.42                   	15.63               	652.17               	1329712    	528868      	146796     
-k6_frac_N10_frac_chain_mem32K_40nm.xml	blob_merge.v      	common       	9f591f6-dirty	success   	     	14163              	11407                	3445                	700                   	30          	30           	564    	36    	100        	0           0       	113369               	13.4111       	-2338.12            	-13.4111            	64            	80075            	18                                    	75615                      	23                               	15.3479            	-2659.17 	-15.3479 	0       	0       	4.8774e+07            	3.03962e+07          	3.87092e+06                      	4301.02                             	4.83441e+06                 	5371.56                        	0.46           	0.17          	-1          	-1          	-1      	67.89    	11.30     	47.60                    	3.48                	198.58               	307756     	48148       	58104      
-k6_frac_N10_frac_chain_mem32K_40nm.xml	boundtop.v        	common       	9f591f6-dirty	success   	     	1071               	1141                 	595                 	389                   	13          	13           	55     	142   	192        	0           0       	5360                 	3.2524        	-466.039            	-3.2524             	34            	4534             	15                                    	3767                       	12                               	3.96224            	-559.389 	-3.96224 	0       	0       	6.63067e+06           	2.96417e+06          	353000.                          	2088.76                             	434699.                     	2572.18                        	0.29           	0.11          	-1          	-1          	-1      	2.55     	0.82      	2.10                     	0.15                	7.24                 	87552      	38484       	37384      
-k6_frac_N10_frac_chain_mem32K_40nm.xml	ch_intrinsics.v   	common       	9f591f6-dirty	success   	     	363                	493                  	270                 	247                   	10          	10           	17     	99    	130        	1           0       	1792                 	1.86527       	-194.602            	-1.86527            	46            	1562             	13                                    	1438                       	20                               	2.4542             	-226.033 	-2.4542  	0       	0       	3.92691e+06           	1.4642e+06           	259806.                          	2598.06                             	333135.                     	3331.35                        	0.03           	0.01          	-1          	-1          	-1      	0.46     	0.31      	0.94                     	0.09                	2.59                 	62684      	8672        	32940      
+k6_frac_N10_frac_chain_mem32K_40nm.xml	bgm.v             	common       	9f591f6-dirty	success   	     	26431              	24575                	14738               	2258                  	53          	53           	1958   	257   	32         	0           11      	871090               	18.5121       	-13652.6            	-18.5121            	84            	328781           	32                                    	297718                     	18                               	20.4406            	-15027.8 	-20.4406 	0       	0       	1.70873e+08           	1.09883e+08          	1.63166e+07                      	5595.54                             	2.07456e+07                 	7114.41                        	11.16          	1.03          	-1          	-1          	-1      	141.53   	108.26    	142.42                   	15.63               	652.17               	1329712    	528868      	146796
+k6_frac_N10_frac_chain_mem32K_40nm.xml	blob_merge.v      	common       	9f591f6-dirty	success   	     	14163              	11407                	3445                	700                   	30          	30           	564    	36    	100        	0           0       	113369               	13.4111       	-2338.12            	-13.4111            	64            	80075            	18                                    	75615                      	23                               	15.3479            	-2659.17 	-15.3479 	0       	0       	4.8774e+07            	3.03962e+07          	3.87092e+06                      	4301.02                             	4.83441e+06                 	5371.56                        	0.46           	0.17          	-1          	-1          	-1      	67.89    	11.30     	47.60                    	3.48                	198.58               	307756     	48148       	58104
+k6_frac_N10_frac_chain_mem32K_40nm.xml	boundtop.v        	common       	9f591f6-dirty	success   	     	1071               	1141                 	595                 	389                   	13          	13           	55     	142   	192        	0           0       	5360                 	3.2524        	-466.039            	-3.2524             	34            	4534             	15                                    	3767                       	12                               	3.96224            	-559.389 	-3.96224 	0       	0       	6.63067e+06           	2.96417e+06          	353000.                          	2088.76                             	434699.                     	2572.18                        	0.29           	0.11          	-1          	-1          	-1      	2.55     	0.82      	2.10                     	0.15                	7.24                 	87552      	38484       	37384
+k6_frac_N10_frac_chain_mem32K_40nm.xml	ch_intrinsics.v   	common       	9f591f6-dirty	success   	     	363                	493                  	270                 	247                   	10          	10           	17     	99    	130        	1           0       	1792                 	1.86527       	-194.602            	-1.86527            	46            	1562             	13                                    	1438                       	20                               	2.4542             	-226.033 	-2.4542  	0       	0       	3.92691e+06           	1.4642e+06           	259806.                          	2598.06                             	333135.                     	3331.35                        	0.03           	0.01          	-1          	-1          	-1      	0.46     	0.31      	0.94                     	0.09                	2.59                 	62684      	8672        	32940
 ```
 
 ### Example: Titan Benchmarks QoR Measurements
@@ -379,10 +393,10 @@ $ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_nightly/vtr_reg_titan
 #The run directory should now contain a summary parse_results.txt file
 $ head -5 vtr_reg_nightly/vtr_reg_qor_chain/latest/parse_results.txt
 arch                     	circuit                                 	vpr_revision	vpr_status	error	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_post_packed_blocks	device_width	device_height	num_clb	num_io	num_outputs	num_memoriesnum_mult	placed_wirelength_est	placed_CPD_est	placed_setup_TNS_est	placed_setup_WNS_est	routed_wirelength	crit_path_route_success_iteration	logic_block_area_total	logic_block_area_used	routing_area_total	routing_area_per_tile	critical_path_delay	setup_TNS   setup_WNS	hold_TNS	hold_WNS	pack_time	place_time	crit_path_route_time	max_vpr_mem	max_odin_mem	max_abc_mem
-stratixiv_arch.timing.xml	neuron_stratixiv_arch_timing.blif       	0208312     	success   	     	119888             	86875                	51408               	3370                  	128         	95           	-1     	42    	35         	-1          -1      	3985635              	8.70971       	-234032             	-8.70971            	1086419          	20                               	0                     	0                    	2.66512e+08       	21917.1              	9.64877            	-262034     -9.64877 	0       	0       	127.92   	218.48    	259.96              	5133800    	-1          	-1         
-stratixiv_arch.timing.xml	sparcT1_core_stratixiv_arch_timing.blif 	0208312     	success   	     	92813              	91974                	54564               	4170                  	77          	57           	-1     	173   	137        	-1          -1      	3213593              	7.87734       	-534295             	-7.87734            	1527941          	43                               	0                     	0                    	9.64428e+07       	21973.8              	9.06977            	-625483     -9.06977 	0       	0       	327.38   	338.65    	364.46              	3690032    	-1          	-1         
-stratixiv_arch.timing.xml	stereo_vision_stratixiv_arch_timing.blif	0208312     	success   	     	127088             	94088                	62912               	3776                  	128         	95           	-1     	326   	681        	-1          -1      	4875541              	8.77339       	-166097             	-8.77339            	998408           	16                               	0                     	0                    	2.66512e+08       	21917.1              	9.36528            	-187552     -9.36528 	0       	0       	110.03   	214.16    	189.83              	5048580    	-1          	-1         
-stratixiv_arch.timing.xml	cholesky_mc_stratixiv_arch_timing.blif  	0208312     	success   	     	140214             	108592               	67410               	5444                  	121         	90           	-1     	111   	151        	-1          -1      	5221059              	8.16972       	-454610             	-8.16972            	1518597          	15                               	0                     	0                    	2.38657e+08       	21915.3              	9.34704            	-531231     -9.34704 	0       	0       	211.12   	364.32    	490.24              	6356252    	-1          	-1         
+stratixiv_arch.timing.xml	neuron_stratixiv_arch_timing.blif       	0208312     	success   	     	119888             	86875                	51408               	3370                  	128         	95           	-1     	42    	35         	-1          -1      	3985635              	8.70971       	-234032             	-8.70971            	1086419          	20                               	0                     	0                    	2.66512e+08       	21917.1              	9.64877            	-262034     -9.64877 	0       	0       	127.92   	218.48    	259.96              	5133800    	-1          	-1
+stratixiv_arch.timing.xml	sparcT1_core_stratixiv_arch_timing.blif 	0208312     	success   	     	92813              	91974                	54564               	4170                  	77          	57           	-1     	173   	137        	-1          -1      	3213593              	7.87734       	-534295             	-7.87734            	1527941          	43                               	0                     	0                    	9.64428e+07       	21973.8              	9.06977            	-625483     -9.06977 	0       	0       	327.38   	338.65    	364.46              	3690032    	-1          	-1
+stratixiv_arch.timing.xml	stereo_vision_stratixiv_arch_timing.blif	0208312     	success   	     	127088             	94088                	62912               	3776                  	128         	95           	-1     	326   	681        	-1          -1      	4875541              	8.77339       	-166097             	-8.77339            	998408           	16                               	0                     	0                    	2.66512e+08       	21917.1              	9.36528            	-187552     -9.36528 	0       	0       	110.03   	214.16    	189.83              	5048580    	-1          	-1
+stratixiv_arch.timing.xml	cholesky_mc_stratixiv_arch_timing.blif  	0208312     	success   	     	140214             	108592               	67410               	5444                  	121         	90           	-1     	111   	151        	-1          -1      	5221059              	8.16972       	-454610             	-8.16972            	1518597          	15                               	0                     	0                    	2.38657e+08       	21915.3              	9.34704            	-531231     -9.34704 	0       	0       	211.12   	364.32    	490.24              	6356252    	-1          	-1
 ```
 
 ## Comparing QoR Measurements
@@ -556,7 +570,7 @@ This describes adding a test to `vtr_reg_strong`, but the process is similar for
     $ cp strong_timing/config/config.txt strong_mytest/config/.
     ```
     You can now edit `strong_mytest/config/config.txt` to customize your test.
-   
+
 2. Generate golden reference results
 
     Now we need to test our new test and generate 'golden' reference results.
@@ -645,9 +659,9 @@ this turns on more extensive assertion checking and re-builds VTR.
 # External Subtrees
 VTR includes some code which is developed in external repositories, and is integrated into the VTR source tree using [git subtrees](https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree).
 
-To simplify the process of working with subtrees we use the `dev/update_external_subtrees.py` script.
+To simplify the process of working with subtrees we use the [`dev/external_subtrees.py`](./dev/external_subtrees.py) script.
 
-For instance, running `./dev/update_external_subtrees.py --list` from the VTR root it shows the subtrees:
+For instance, running `./dev/external_subtrees.py --list` from the VTR root it shows the subtrees:
 ```
 Component: abc             Path: abc                            URL: https://github.com/berkeley-abc/abc.git       URL_Ref: master
 Component: libargparse     Path: libs/EXTERNAL/libargparse      URL: https://github.com/kmurray/libargparse.git    URL_Ref: master
@@ -675,7 +689,7 @@ To add a new external subtree to VTR do the following:
 
     For example to add a subtree name `libfoo` from the `master` branch of `https://github.com/kmurray/libfoo.git` to `libs/EXTERNAL/libfoo` you would add:
     ```xml
-    <subtree 
+    <subtree
         name="libfoo"
         internal_path="libs/EXTERNAL/libfoo"
         external_url="https://github.com/kmurray/libfoo.git"
@@ -685,7 +699,7 @@ To add a new external subtree to VTR do the following:
 
     Note that the internal_path directory should not already exist.
 
-    You can confirm it works by running: `def/external_subtrees.py --list`:
+    You can confirm it works by running: `dev/external_subtrees.py --list`:
     ```
     Component: abc             Path: abc                            URL: https://github.com/berkeley-abc/abc.git       URL_Ref: master
     Component: libargparse     Path: libs/EXTERNAL/libargparse      URL: https://github.com/kmurray/libargparse.git    URL_Ref: master
@@ -703,7 +717,7 @@ To add a new external subtree to VTR do the following:
     ./dev/update_external_subtrees.py libfoo
     ```
 
-    This will create two commits to the repository. 
+    This will create two commits to the repository.
     The first will squash all the upstream changes, the second will merge those changes into the current branch.
 
 
@@ -748,7 +762,7 @@ To submit a build to coverity do the following:
 Note that we explicitly asked for gcc and g++, the coverity build tool defaults to these compilers, and may not like the default 'cc' or 'c++' (even if they are linked to gcc/g++).
 
 3. Run the coverity build tool
-   
+
     ```shell
     #From the build directory where we ran cmake
     cov-build --dir cov-int make -j8
@@ -774,7 +788,7 @@ You may need to configure coverity to 'know' about your compiler. For example:
     ```shell
     cov-configure --compiler `which gcc-7`
     ```
-   
+
 On unix-like systems run `scan-build make` from the root VTR directory.
 to output the html analysis to a specific folder, run `scan-build make -o /some/folder`
 

@@ -24,8 +24,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 
 #include "netlist_utils.h"
 #include "node_creation_library.h"
@@ -266,8 +266,8 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			char *identifier = ast_node->children[0]->types.identifier;
 			if (find_hard_block(identifier))
 			{
-				int depth = is_sp_ram(node)? get_sp_ram_depth(node) : get_dp_ram_depth(node);
-				int width = is_sp_ram(node)? get_sp_ram_width(node) : get_dp_ram_width(node);
+				long depth = is_sp_ram(node)? get_sp_ram_depth(node) : get_dp_ram_depth(node);
+				long width = is_sp_ram(node)? get_sp_ram_width(node) : get_dp_ram_width(node);
 
 				// If the memory satisfies the threshold for the use of a hard logic block, use one.
 				if (depth > configuration.soft_logic_memory_depth_threshold || width > configuration.soft_logic_memory_width_threshold)
@@ -276,7 +276,7 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 				}
 				else
 				{
-					printf("\tInferring soft logic ram: %dx%d\n", width, depth);
+					printf("\tInferring soft logic ram: %zux%zu\n", width, depth);
 					instantiate_soft_logic_ram(node, traverse_number, netlist);
 				}
 			}
@@ -307,7 +307,7 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 		case DIVIDE:
 		case MODULO:
 		default:
-			error_message(NETLIST_ERROR, 0, -1, "Partial map: node should have been converted to softer version.");
+			error_message(NETLIST_ERROR, 0, -1, "%s", "Partial map: node should have been converted to softer version.");
 			break;
 	}
 }
@@ -363,6 +363,8 @@ void instantiate_multi_port_mux(nnode_t *node, short mark, netlist_t * /*netlist
 		/* now hookup outputs */
 		remap_pin_to_new_node(node->output_pins[j], muxes[j], 0);
 	}
+	vtr::free(muxes);
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -390,6 +392,7 @@ void instantiate_not_logic(nnode_t *node, short mark, netlist_t * /*netlist*/)
 	}
 
 	vtr::free(new_not_cells);
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -475,6 +478,7 @@ void instantiate_logical_logic(nnode_t *node, operation_list op, short mark, net
 	instantiate_bitwise_reduction(reduction2, BITWISE_OR, mark, netlist);
 
 	remap_pin_to_new_node(node->output_pins[0], new_logic_cell, 0);
+	free_nnode(node);
 }
 /*---------------------------------------------------------------------------------------------
  * (function: instantiate_bitwise_reduction )
@@ -543,6 +547,7 @@ void instantiate_bitwise_reduction(nnode_t *node, operation_list op, short mark,
 	}
 
 	remap_pin_to_new_node(node->output_pins[0], new_logic_cell, 0);
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -605,6 +610,8 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 
 		remap_pin_to_new_node(node->output_pins[i], new_logic_cells, 0);
 	}
+
+	free_nnode(node);
 }
 
 /*--------------------------------------------------------------------------
@@ -760,6 +767,8 @@ void instantiate_EQUAL(nnode_t *node, operation_list type, short mark, netlist_t
 	/* Don't need to instantiate a Logic and gate since it is a function itself */
 
 	oassert(combine->num_output_pins == 1);
+
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -916,11 +925,11 @@ void instantiate_GT(nnode_t *node, operation_list type, short mark, netlist_t *n
 	if (xor_gate!= NULL)
 	{
 		instantiate_bitwise_logic(xor_gate, BITWISE_XOR, mark, netlist);
-		vtr::free(xor_gate);
 	}
 	
 	vtr::free(gt_cells);
 	vtr::free(or_cells);
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1003,6 +1012,8 @@ void instantiate_GE(nnode_t *node, operation_list type, short mark, netlist_t *n
 
 	if (type == GTE) instantiate_GT(compare, GT, mark, netlist);
 	else             instantiate_GT(compare, LT, mark, netlist);
+
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1027,7 +1038,7 @@ void instantiate_shift_left_or_right(nnode_t *node, operation_list type, short m
 	else
 	{
 		shift_size = 0;
-		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Odin only supports constant shifts at present\n");
+		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Odin only supports constant shifts at present");
 	}
 
 	buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
@@ -1088,6 +1099,14 @@ void instantiate_shift_left_or_right(nnode_t *node, operation_list type, short m
 	}
 	/* instantiate the buffer */
 	instantiate_buffer(buf_node, mark, netlist);
+  
+  	/* clean up */
+	for (i = 0; i < buf_node->num_input_pins; i++) {
+		buf_node->output_pins[i]->net = free_nnet(buf_node->output_pins[i]->net);
+		buf_node->input_pins[i] = free_npin(buf_node->input_pins[i]);
+	}
+	free_nnode(buf_node);
+	free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1110,7 +1129,7 @@ void instantiate_arithmetic_shift_right(nnode_t *node, short mark, netlist_t *ne
 	else
 	{
 		shift_size = 0;
-		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Odin only supports constant shifts at present\n");
+		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Odin only supports constant shifts at present");
 	}
 	buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
 	/* connect inputs to outputs */

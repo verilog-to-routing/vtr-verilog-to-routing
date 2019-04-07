@@ -46,7 +46,7 @@ implicit_memory *lookup_implicit_memory_reference_ast(char *instance_name_prefix
 
 char is_valid_implicit_memory_reference_ast(char *instance_name_prefix, ast_node_t *node);
 
-implicit_memory *create_implicit_memory_block(int data_width, long long words, char *name, char *instance_name_prefix);
+implicit_memory *create_implicit_memory_block(int data_width, long words, char *name, char *instance_name_prefix);
 
 implicit_memory *lookup_implicit_memory_input(char *name);
 

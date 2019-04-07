@@ -24,13 +24,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "types.h"
+#include "odin_types.h"
 #include "node_creation_library.h"
 #include "multipliers.h"
 #include "netlist_utils.h"
 #include "partial_map.h"
 #include "read_xml_arch_file.h"
-#include "globals.h"
+#include "odin_globals.h"
 
 #include "adders.h"
 
@@ -206,7 +206,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 		if (multiplicand_width == 1)
 		{
 			// this is undealt with
-			error_message(1,-1,-1,"Cannot create soft multiplier with multiplicand width of 1.\n");
+			error_message(PARSE_ERROR,-1,-1, "%s", "Cannot create soft multiplier with multiplicand width of 1.\n");
 		}
 		else if (i == 0)
 		{
@@ -234,7 +234,10 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 
 	/* Cleanup everything */
 	if (adders_for_partial_products != NULL)
-	{
+	{		
+		for (i = 0; i < multiplicand_width-1; i++) {
+			free_nnode(adders_for_partial_products[i]);
+		}
 		vtr::free(adders_for_partial_products);
 	}
 	/* generate the AND partial products */
@@ -290,27 +293,26 @@ void record_mult_distribution(nnode_t *node)
  *-------------------------------------------------------------------------*/
 void report_mult_distribution()
 {
-	int i, j;
-	int num_total = 0;
+	long num_total = 0;
 
 	if(hard_multipliers == NULL)
 		return;
 
 	printf("\nHard Multiplier Distribution\n");
 	printf("============================\n");
-	for (i = 0; i <= hard_multipliers->inputs->size; i++)
+	for (long i = 0; i <= hard_multipliers->inputs->size; i++)
 	{
-		for (j = 1; j <= hard_multipliers->inputs->next->size; j++)
+		for (long j = 1; j <= hard_multipliers->inputs->next->size; j++)
 		{
 			if (mults[i * hard_multipliers->inputs->size + j] != 0)
 			{
 				num_total += mults[i * hard_multipliers->inputs->size + j];
-				printf("%d X %d => %d\n", i, j, mults[i * hard_multipliers->inputs->size + j]);
+				printf("%ld X %ld => %d\n", i, j, mults[i * hard_multipliers->inputs->size + j]);
 			}
 		}
 	}
 	printf("\n");
-	printf("\nTotal # of multipliers = %d\n", num_total);
+	printf("\nTotal # of multipliers = %ld\n", num_total);
 	return;
 }
 
@@ -347,9 +349,8 @@ void declare_hard_multiplier(nnode_t *node)
 
 	/* See if this size instance of multiplier exists? */
 	if (hard_multipliers == NULL)
-	{
-		printf("Instantiating multiplier where multipliers do not exist\n");
-	}
+		warning_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Instantiating Mulitpliers where hard multipliers do not exist");
+	
 	tmp = (t_multiplier *)hard_multipliers->instances;
 	width_a = node->input_port_sizes[0];
 	width_b = node->input_port_sizes[1];
@@ -426,7 +427,7 @@ void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t * /*netlis
  *--------------------------------------------------------------------------*/
 void add_the_blackbox_for_mults(FILE *out)
 {
-	int i;
+	long i;
 	int count;
 	int hard_mult_inputs;
 	t_multiplier *muls;
@@ -466,11 +467,11 @@ void add_the_blackbox_for_mults(FILE *out)
 		{
 			if (i < muls->size_a)
 			{
-				count = count + odin_sprintf(buffer, " %s[%d]", pa, i);
+				count = count + odin_sprintf(buffer, " %s[%ld]", pa, i);
 			}
 			else
 			{
-				count = count + odin_sprintf(buffer, " %s[%d]", pb, i - muls->size_a);
+				count = count + odin_sprintf(buffer, " %s[%ld]", pb, i - muls->size_a);
 			}
 
 			if (count > 78)
@@ -484,7 +485,7 @@ void add_the_blackbox_for_mults(FILE *out)
 		count = fprintf(out, ".outputs");
 		for (i = 0; i < muls->size_out; i++)
 		{
-			count = count + odin_sprintf(buffer, " %s[%d]", po, i);
+			count = count + odin_sprintf(buffer, " %s[%ld]", po, i);
 			if (count > 78)
 			{
 				fprintf(out, " \\\n%s", buffer);
@@ -507,7 +508,7 @@ void add_the_blackbox_for_mults(FILE *out)
  *-----------------------------------------------------------------------*/
 void define_mult_function(nnode_t *node, FILE *out)
 {
-	int i, j;
+	long i, j;
 	int count;
 	char buffer[MAX_BUF];
 
@@ -550,9 +551,9 @@ void define_mult_function(nnode_t *node, FILE *out)
 						:node->input_pins[i                          ]->net->driver_pin;
 
 			if (!driver_pin->name)
-				j = odin_sprintf(buffer, " %s[%d]=%s", hard_multipliers->inputs->next->name, i, driver_pin->node->name);
+				j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->next->name, i, driver_pin->node->name);
 			else
-				j = odin_sprintf(buffer, " %s[%d]=%s", hard_multipliers->inputs->next->name, i, driver_pin->name);
+				j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->next->name, i, driver_pin->name);
 		}
 		else
 		{
@@ -560,14 +561,14 @@ void define_mult_function(nnode_t *node, FILE *out)
 						?node->input_pins[i-node->input_port_sizes[1]]->net->driver_pin
 						:node->input_pins[i                          ]->net->driver_pin;
 
-			int index = flip
+			long index = flip
 						?i - node->input_port_sizes[1]
 						:i - node->input_port_sizes[0];
 
 			if (!driver_pin->name)
-				j = odin_sprintf(buffer, " %s[%d]=%s", hard_multipliers->inputs->name, index, driver_pin->node->name);
+				j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->name, index, driver_pin->node->name);
 			else
-				j = odin_sprintf(buffer, " %s[%d]=%s", hard_multipliers->inputs->name, index, driver_pin->name);
+				j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->name, index, driver_pin->name);
 		}
 
 		if (count + j > 79)
@@ -581,7 +582,7 @@ void define_mult_function(nnode_t *node, FILE *out)
 
 	for (i = 0; i < node->num_output_pins; i++)
 	{
-		j = odin_sprintf(buffer, " %s[%d]=%s", hard_multipliers->outputs->name, i, node->output_pins[i]->name);
+		j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->outputs->name, i, node->output_pins[i]->name);
 		if (count + j > 79)
 		{
 			fprintf(out, "\\\n");
@@ -1059,7 +1060,7 @@ void pad_multiplier(nnode_t *node, netlist_t *netlist)
 			// Add new pins to the higher order spots.
 			npin_t *new_pin = allocate_npin();
 			// Pad outputs with a unique and descriptive name to avoid collisions.
-			new_pin->name = append_string("", "unconnected_multiplier_output~%d", pad_pin_number++);
+			new_pin->name = append_string("", "unconnected_multiplier_output~%ld", pad_pin_number++);
 			add_output_pin_to_node(node, new_pin, i + sizeout);
 		}
 		node->output_port_sizes[0] = sizeout + diffout;

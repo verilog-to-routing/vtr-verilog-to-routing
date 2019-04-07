@@ -24,8 +24,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 
 #include "netlist_utils.h"
 #include "odin_util.h"
@@ -536,9 +536,9 @@ void levelize_forwards_clean_checking_for_combo_loop_and_liveness(short ast_base
 						{
 							/* Combo node since one of the outputs hasn'y been visisted. */
 							if (ast_based)
-								error_message(NETLIST_ERROR, output_node->related_ast_node->line_number, output_node->related_ast_node->file_number, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %d.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
+								error_message(NETLIST_ERROR, output_node->related_ast_node->line_number, output_node->related_ast_node->file_number, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %ld.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
 							else
-								error_message(NETLIST_ERROR, -1, -1, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %d.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
+								error_message(NETLIST_ERROR, -1, -1, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %ld.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
 						}
 						/* free the data and reset to be used elsewhere */
 						vtr::free(fanouts_visited);
@@ -761,9 +761,9 @@ void levelize_backwards_clean_checking_for_liveness(short ast_based, netlist_t *
 					{
 						/* one of these nodes was not visited on the backward analysis */
 						if (ast_based)
-							warning_message(NETLIST_ERROR, current_node->related_ast_node->line_number, current_node->related_ast_node->file_number, "Liveness check on backward pass.  Node %s is missing a driving pin idx %d\n", current_node->name, k);
+							warning_message(NETLIST_ERROR, current_node->related_ast_node->line_number, current_node->related_ast_node->file_number, "Liveness check on backward pass.  Node %s is missing a driving pin idx %ld\n", current_node->name, k);
 						else
-							warning_message(NETLIST_ERROR, -1, -1, "Liveness check on backward pass.  Node %s is missing a driving pin idx %d\n", current_node->name, k);
+							warning_message(NETLIST_ERROR, -1, -1, "Liveness check on backward pass.  Node %s is missing a driving pin idx %ld\n", current_node->name, k);
 					}
 
 					/* free the data and reset to be used elsewhere */

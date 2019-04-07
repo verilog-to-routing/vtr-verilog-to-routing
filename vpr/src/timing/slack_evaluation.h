@@ -4,7 +4,7 @@
 #include "atom_netlist_fwd.h"
 #include "DomainPair.h"
 #include "tatum/timing_analyzers.hpp"
-#include "vtr_vector_map.h"
+#include "vtr_vector.h"
 
 class SetupSlackCrit {
     public: //Constructors
@@ -40,8 +40,8 @@ class SetupSlackCrit {
         const AtomNetlist& netlist_;
         const AtomLookup& netlist_lookup_;
 
-        vtr::vector_map<AtomPinId, float> pin_slacks_;
-        vtr::vector_map<AtomPinId, float> pin_criticalities_;
+        vtr::vector<AtomPinId, float> pin_slacks_;
+        vtr::vector<AtomPinId, float> pin_criticalities_;
 };
 
 //TODO: implement a HoldSlackCrit class for hold analysis
@@ -80,8 +80,8 @@ class HoldSlackCrit {
         const AtomNetlist& netlist_;
         const AtomLookup& netlist_lookup_;
 
-        vtr::vector_map<AtomPinId, float> pin_slacks_;
-        vtr::vector_map<AtomPinId, float> pin_criticalities_;
+        vtr::vector<AtomPinId, float> pin_slacks_;
+        vtr::vector<AtomPinId, float> pin_criticalities_;
 };
 
 #endif

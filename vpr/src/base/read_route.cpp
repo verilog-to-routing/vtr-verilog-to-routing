@@ -60,7 +60,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& place_ctx = g_vpr_ctx.placement();
     /* Begin parsing the file */
-    VTR_LOG("Begin loading packed FPGA routing file.\n");
+    VTR_LOG("Begin loading FPGA routing file.\n");
 
     string header_str;
 
@@ -123,7 +123,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
 	recompute_occupancy_from_scratch();
     bool is_feasible = feasible_routing();
     if (is_feasible) {
-        check_route(router_opts.route_type, device_ctx.num_rr_switches);
+        check_route(router_opts.route_type);
     }
     get_serial_num();
 
@@ -160,7 +160,7 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
     if (input_tokens.size() > 3 && input_tokens[3] == "global"
             && input_tokens[4] == "net" && input_tokens[5] == "connecting:") {
         /* Global net.  Never routed. */
-        if (!cluster_ctx.clb_nlist.net_is_global(inet)) {
+        if (!cluster_ctx.clb_nlist.net_is_ignored(inet)) {
             vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                     "Net %lu should be a global net", size_t(inet));
         }
@@ -177,7 +177,7 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
         process_global_blocks(fp, inet, filename, lineno);
     } else {
         /* Not a global net */
-        if (cluster_ctx.clb_nlist.net_is_global(inet)) {
+        if (cluster_ctx.clb_nlist.net_is_ignored(inet)) {
             VTR_LOG_WARN( "Net %lu (%s) is marked as global in the netlist, but is non-global in the .route file\n", size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str());
         }
 

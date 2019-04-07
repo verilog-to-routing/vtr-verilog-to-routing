@@ -9,4 +9,4 @@ min_chan_width_routing_area_total;vpr.out;Total routing area: (.*), per logic ti
 min_chan_width_routing_area_per_tile;vpr.out;Total routing area: .*, per logic tile: (.*)
 
 #VPR Run-time Metrics
-min_chan_width_route_time;vpr.out;^\s*Routing took (.*) seconds
+min_chan_width_route_time;vpr.out;^#*\s*Routing took (.*) seconds

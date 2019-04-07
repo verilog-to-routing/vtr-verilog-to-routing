@@ -27,8 +27,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <assert.h>
 #include <math.h>
 #include <sstream>
-#include "globals.h"
-#include "types.h"
+#include "odin_globals.h"
+#include "odin_types.h"
 #include "ast_util.h"
 #include "parse_making_ast.h"
 #include "string_cache.h"
@@ -64,7 +64,7 @@ int size_function_instantiations;
 ast_node_t **function_instantiations_instance_by_module;
 int size_function_instantiations_by_module;
 
-size_t num_modules;
+long num_modules;
 ast_node_t **ast_modules;
 
 int num_functions;
@@ -123,7 +123,7 @@ void parse_to_ast()
 		yyin = fopen(configuration.list_of_file_names[current_parse_file].c_str(), "r");
 		if (yyin == NULL)
 		{
-			error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
+			error_message(ARG_ERROR, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
 		}
 
 		/*Testing preprocessor - Paddy O'Brien*/
@@ -180,7 +180,7 @@ BASIC PARSING FUNCTIONS
 void cleanup_hard_blocks()
 {
 	int i;
-	size_t j;
+	long j;
 	ast_node_t *block_node, *instance_node, *connect_list_node;
 
 	for (i = 0; i < size_block_instantiations; i++)
@@ -236,7 +236,7 @@ void init_parser()
  *-------------------------------------------------------------------------------------------*/
 void cleanup_parser()
 {
-	size_t i;
+	long i;
 
 	/* frees all the defines for module string caches (used for parameters) */
 	if (num_modules > 0)
@@ -279,7 +279,7 @@ void clean_up_parser_for_file()
  *-------------------------------------------------------------------------------------------*/
 void next_parsed_verilog_file(ast_node_t *file_items_list)
 {
-	size_t i;
+	long i;
 	/* optimization entry point */
 	printf("Optimizing module by AST based optimizations\n");
 	cleanup_hard_blocks();
@@ -339,9 +339,10 @@ ast_node_t *newSymbolNode(char *id, int line_number)
 /*---------------------------------------------------------------------------------------------
  * (function: newNumberNode)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newNumberNode(std::string num, bases base, signedness sign, int line_number)
+ast_node_t *newNumberNode(char *num, bases base, signedness sign, int line_number)
 {
 	ast_node_t *current_node = create_tree_node_number(num, base, sign, line_number, current_parse_file);
+	vtr::free(num);
 	return current_node;
 }
 
@@ -406,7 +407,7 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 }
 ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list)
 {
-	size_t i;
+	long i;
 	long sc_spot;
 	long range_temp_max = 0;
 	long range_temp_min = 0;
@@ -491,10 +492,10 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				    }
 
 			    if(range_temp_min > range_temp_max)
-				    error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support arrays declared [m:n] where m is less than n.");
+				    error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
 			    //ODIN doesn't support negative number in index now.
 			    if(range_temp_min < 0 || range_temp_max < 0)
-				    warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support negative number in index.");
+				    warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support negative number in index.");
 
                 }
 
@@ -516,12 +517,14 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			            if ((sc_spot = sc_lookup_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 			            {
 				            symbol_list->children[i]->types.variable.is_input = TRUE;
+							free_whole_tree(symbol_list->children[i]->children[0]);
 				            symbol_list->children[i]->children[0] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
 				            found_match = TRUE;
 			            }
 			            if ((found_match == FALSE) && ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1))
 			            {
 				            symbol_list->children[i]->types.variable.is_output = TRUE;
+							free_whole_tree(symbol_list->children[i]->children[0]);
 				            symbol_list->children[i]->children[0] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
 				            found_match = TRUE;
 			            }
@@ -548,7 +551,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					            && (symbol_list->children[i]->children[5]->types.number.base == BIN)
 					            && (symbol_list->children[i]->children[5]->types.number.size != binary_range))
 				            {
-					            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %d don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
+					            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %ld don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
 				            }
 				            else
 				            {
@@ -674,10 +677,10 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				        }
 
 			        if(range_temp_min > range_temp_max)
-				        error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support arrays declared [m:n] where m is less than n.");
+				        error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
 			        //ODIN doesn't support negative number in index now.
 			        if(range_temp_min < 0 || range_temp_max < 0)
-				        warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support negative number in index.");
+				        warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support negative number in index.");
                 }
 
 
@@ -700,6 +703,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				        if ((sc_spot = sc_lookup_string(functions_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 				        {
 					        symbol_list->children[i]->types.variable.is_input = TRUE;
+							free_whole_tree(symbol_list->children[i]->children[0]);
 					        symbol_list->children[i]->children[0] = (ast_node_t*)functions_inputs_sc->data[sc_spot];
 					        found_match = TRUE;
 				        }
@@ -707,6 +711,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				        if ((found_match == FALSE) && ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1))
 				        {
                             symbol_list->children[i]->types.variable.is_output = TRUE;
+							free_whole_tree(symbol_list->children[i]->children[0]);
 					        symbol_list->children[i]->children[0] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
 					        found_match = TRUE;
 				        }
@@ -733,7 +738,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						        && (symbol_list->children[i]->children[5]->types.number.base == BIN)
 						        && (symbol_list->children[i]->children[5]->types.number.size != binary_range))
 					        {
-						        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %d don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
+						        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %ld don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
 					        }
 					        else
 					        {
@@ -830,6 +835,54 @@ ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expressio
 	return new_node;
 }
 
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newPartSelectRangeRef)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newPartSelectRangeRef(char *id, ast_node_t *expression1, ast_node_t *expression2, char direction,
+								  int line_number)
+{
+
+	long sc_spot;
+
+	oassert(expression1 != NULL && expression1->type == NUMBERS && expression2 != NULL && expression2->type == NUMBERS);
+
+	/* Try to find the original array to check low/high indices */
+	if ((sc_spot = sc_lookup_string(modules_inputs_sc, id)) == -1 &&
+		(sc_spot = sc_lookup_string(modules_outputs_sc, id)) == -1){
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Could not find variable %s", id);
+		return nullptr;
+	}
+	ast_node_t *original_range = (ast_node_t *) modules_inputs_sc->data[sc_spot];;
+	long upper_limit = original_range->children[1]->types.number.value;
+	long bottom_limit = original_range->children[2]->types.number.value;
+	if (expression1->types.number.value < 0 || expression2->types.number.value < 0){
+
+		/* Negetive numbers are not supported */
+		error_message(PARSE_ERROR, line_number, current_parse_file, 
+								"Odin doesn't support negative number in index : %s[%d%s%d].", id,
+								expression1->types.number.value, direction == 1 ? "+:" : "-:",
+								expression2->types.number.value);
+	}
+	
+	if (direction == 1){
+		expression1->types.number.value = expression1->types.number.value + expression2->types.number.value - 1;
+		expression2->types.number.value = expression1->types.number.value - expression2->types.number.value + 1;
+	}
+	else{
+		expression2->types.number.value = expression1->types.number.value - expression2->types.number.value + 1;
+	}
+	if (expression1->types.number.value  > upper_limit || expression2->types.number.value < bottom_limit) {
+		/* out of original range */
+		error_message(PARSE_ERROR, line_number,current_parse_file, 
+								"This part-select range %s:[%d%s%d] is out of range. It should be in the %s:[%d:%d] range.",
+								id,expression1->types.number.value, direction ==1 ? "+:" : "-:",expression2->types.number.value,
+								 id,upper_limit,bottom_limit );
+	}
+	
+	return newRangeRef(id, expression1, expression2, line_number);
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: newBinaryOperation)
  *-------------------------------------------------------------------------------------------*/
@@ -861,11 +914,11 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 		int len = expression2->types.number.value;
 		if( expression1->type == NUMBERS ){
 			int len1 = expression1->types.number.value;
-			long long powRes = pow(len1, len);
-			new_node = create_tree_node_long_long_number(powRes,128, line_number, current_parse_file);
+			long powRes = pow(len1, len);
+			new_node = create_tree_node_long_number(powRes,ODIN_STD_BITWIDTH, line_number, current_parse_file);
 		} else {
 			if (len == 0){
-				new_node = create_tree_node_long_long_number(1, 128, line_number, current_parse_file);
+				new_node = create_tree_node_long_number(1, ODIN_STD_BITWIDTH, line_number, current_parse_file);
 			} else {
 				new_node = expression1;
 				for(int i=1; i < len; ++i){
@@ -882,7 +935,7 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 	}
 	else
 	{
-	error_message(NETLIST_ERROR, line_number, current_parse_file, "Operation not supported by Odin\n");
+	error_message(NETLIST_ERROR, line_number, current_parse_file, "%s", "Operation not supported by Odin\n");
         }
 	/* see if this binary expression can have some constant folding */
 	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
@@ -1061,9 +1114,7 @@ ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int 
 	allocate_children_to_node(new_node, 2, compare_expression, statement);
 
 	/* This needs to be removed once support is added */
-	printf("While statement is NOT supported: line %d\n", line_number);
-	oassert(0);
-
+	error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "While statements are NOT supported");
 	return new_node;
 }
 
@@ -1160,7 +1211,7 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
 
 	if (expression->type != NUMBERS)
 	{
-		error_message(PARSE_ERROR, line_number, current_parse_file, "Parameter value must be of type NUMBERS!\n");
+		error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "Parameter value must be of type NUMBERS!\n");
 	}
 
 	/* allocate child nodes to this node */
@@ -1200,7 +1251,7 @@ ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t
     aux_name = (char *)vtr::calloc(char_qntd,sizeof(char));
     unique_name = (char *)vtr::calloc(char_qntd,sizeof(char));
     strcpy(unique_name,"function_instance_");
-    odin_sprintf(aux_name,"%d",size_function_instantiations_by_module);
+    odin_sprintf(aux_name,"%ld",size_function_instantiations_by_module);
     strcat(unique_name,aux_name);
 
     ast_node_t *symbol_node = newSymbolNode(unique_name, line_number);
@@ -1237,15 +1288,15 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
  *-----------------------------------------------------------------------*/
 ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number)
 {
-	size_t i;
+	long i;
 	/* create a node for this array reference */
 	ast_node_t* new_master_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
 	for(i = 0; i < module_named_instance->num_children; i++){
 	if
 	(
 		   sc_lookup_string(hard_block_names, module_ref_name) != -1
-		|| !strcmp(module_ref_name, "single_port_ram")
-		|| !strcmp(module_ref_name, "dual_port_ram")
+		|| !strcmp(module_ref_name, SINGLE_PORT_RAM_string)
+		|| !strcmp(module_ref_name, DUAL_PORT_RAM_string)
 	)
 	{
 		return newHardBlockInstance(module_ref_name, module_named_instance->children[i], line_number);
@@ -1289,7 +1340,10 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	size_module_instantiations++;
 
     }
+	//TODO: free_whole_tree ??
+	vtr::free(module_named_instance->children);
     vtr::free(module_named_instance);
+	vtr::free(module_ref_name);
 	return new_master_node;
 }
 /*-------------------------------------------------------------------------
@@ -1300,8 +1354,8 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
 	if
 	(
 		   sc_lookup_string(hard_block_names, function_ref_name) != -1
-		|| !strcmp(function_ref_name, "single_port_ram")
-		|| !strcmp(function_ref_name, "dual_port_ram")
+		|| !strcmp(function_ref_name, SINGLE_PORT_RAM_string)
+		|| !strcmp(function_ref_name, DUAL_PORT_RAM_string)
 	)
 	{
 		return newHardBlockInstance(function_ref_name, function_named_instance, line_number);
@@ -1362,7 +1416,7 @@ ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, a
 
 ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, int line_number)
 {
-    size_t i;
+    long i;
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(GATE_INSTANCE, line_number, current_parse_file);
 
@@ -1400,6 +1454,9 @@ ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *
 
     /* allocate n children nodes to this node */
     for(i = 1; i < expression3->num_children; i++) add_child_to_node(new_node, expression3->children[i]);
+	
+	/* clean up */
+	if (expression3->type == MODULE_CONNECT) expression3 = free_single_node(expression3);
 
     return new_node;
 }
@@ -1444,9 +1501,9 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ 
 {
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 
-    ast_node_t *number_node_with_value_31 = create_tree_node_long_long_number(31, 128, line_number,current_parse_file);
+    ast_node_t *number_node_with_value_31 = create_tree_node_long_number(31, ODIN_STD_BITWIDTH, line_number,current_parse_file);
 
-    ast_node_t *number_node_with_value_0 = create_tree_node_long_long_number(0, 128, line_number,current_parse_file);
+    ast_node_t *number_node_with_value_0 = create_tree_node_long_number(0, ODIN_STD_BITWIDTH, line_number,current_parse_file);
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(VAR_DECLARE, line_number, current_parse_file);
@@ -1463,7 +1520,7 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ 
 ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number)
 {
 	int i;
-	size_t j, k;
+	long j, k;
 	long sc_spot;
 	ast_node_t *symbol_node = newSymbolNode(module_name, line_number);
 
@@ -1497,7 +1554,11 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 			}
 		}
 		if(!variable_found) add_child_at_the_beginning_of_the_node(list_of_module_items, module_variables_not_defined[i]);
+		else 				free_whole_tree(module_variables_not_defined[i]);
 	}
+
+	/* clean up */
+	vtr::free(module_variables_not_defined);
 
 	if ((sc_spot = sc_add_string(module_names_to_idx, module_name)) == -1)
 	{
@@ -1505,7 +1566,7 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 	}
 	/* store the data which is an idx here */
 	module_names_to_idx->data[sc_spot] = (void*)new_node;
-
+	
 	/* now that we've bottom up built the parse tree for this module, go to the next module */
 	next_module();
 
@@ -1519,7 +1580,7 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number) //function and module declaration work the same way (Lucas Cambuim)
 {
 
-	size_t i,j;
+	long i,j;
 	long sc_spot;
 	char *function_name;
 	char *label;
@@ -1655,9 +1716,8 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 {
 	ast_node_t *new_node = NULL;
 	ast_node_t *ref_node;
-	char *module_instance_name = (char*)vtr::calloc(1024,sizeof(char));
-	module_instance_name = NULL;
-	size_t i;
+	char *module_instance_name = NULL;
+	long i;
 	int j;
 	//long sc_spot;
 	if(val)
@@ -1774,320 +1834,71 @@ void graphVizOutputAst(std::string path, ast_node_t *top)
  *-------------------------------------------------------------------------------------------*/
 void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *from, int from_num)
 {
-	size_t i;
-	int my_label = unique_label_count;
+	if(!node)
+		return;
 
 	/* increase the unique count for other nodes since ours is recorded */
-	unique_label_count++;
+	int my_label = unique_label_count++;
 
-	if (node == NULL)
+	fprintf(fp, "\t%d [label=\"", my_label);
+	fprintf(fp, "%s", ids_STR[node->type]);
+	switch(node->type)
 	{
-		/* print out the node and label details */
-	}
-	else
-	{
-		switch(node->type)
+		case VAR_DECLARE:
 		{
-			case FILE_ITEMS:
-				fprintf(fp, "\t%d [label=\"FILE_ITEMS\"];\n", my_label);
-				break;
-			case MODULE:
-				fprintf(fp, "\t%d [label=\"MODULE\"];\n", my_label);
-				break;
-			case MODULE_ITEMS:
-				fprintf(fp, "\t%d [label=\"MODULE_ITEMS\"];\n", my_label);
-				break;
-			case VAR_DECLARE:
-				{
-					std::stringstream temp;
-					if(node->types.variable.is_input)		temp << " INPUT";
-					if(node->types.variable.is_output)		temp << " OUTPUT";
-					if(node->types.variable.is_inout)		temp << " INOUT";
-					if(node->types.variable.is_port)		temp << " PORT";
-					if(node->types.variable.is_parameter)	temp << " PARAMETER";
-					if(node->types.variable.is_wire)		temp << " WIRE";
-					if(node->types.variable.is_reg)			temp << " REG";
+			std::stringstream temp;
+			if(node->types.variable.is_input)		temp << " INPUT";
+			if(node->types.variable.is_output)		temp << " OUTPUT";
+			if(node->types.variable.is_inout)		temp << " INOUT";
+			if(node->types.variable.is_port)		temp << " PORT";
+			if(node->types.variable.is_parameter)	temp << " PARAMETER";
+			if(node->types.variable.is_wire)		temp << " WIRE";
+			if(node->types.variable.is_reg)			temp << " REG";
 
-					fprintf(fp, "\t%d [label=\"VAR_DECLARE %s\"];\n", my_label, temp.str().c_str());
-				}
-				break;
-			case VAR_DECLARE_LIST:
-				fprintf(fp, "\t%d [label=\"VAR_DECLARE_LIST\"];\n", my_label);
-				break;
-			case ASSIGN:
-				fprintf(fp, "\t%d [label=\"ASSIGN\"];\n", my_label);
-				break;
-			case GATE:
-				fprintf(fp, "\t%d [label=\"GATE\"];\n", my_label);
-				break;
-			case GATE_INSTANCE:
-				fprintf(fp, "\t%d [label=\"GATE_INSTANCE\"];\n", my_label);
-				break;
-			case ONE_GATE_INSTANCE:
-				fprintf(fp, "\t%d [label=\"ONE_GATE_INSTANCE\"];\n", my_label);
-				break;
-			case MODULE_CONNECT_LIST:
-				fprintf(fp, "\t%d [label=\"MODULE_CONNECT_LIST\"];\n", my_label);
-				break;
-			case MODULE_CONNECT:
-				fprintf(fp, "\t%d [label=\"MODULE_CONNECT\"];\n", my_label);
-				break;
-			case MODULE_PARAMETER_LIST:
-				fprintf(fp, "\t%d [label=\"MODULE_PARAMETER_LIST\"];\n", my_label);
-				break;
-			case MODULE_PARAMETER:
-				fprintf(fp, "\t%d [label=\"MODULE_PARAMETER\"];\n", my_label);
-				break;
-			case MODULE_NAMED_INSTANCE:
-				fprintf(fp, "\t%d [label=\"MODULE_NAMED_INSTANCE\"];\n", my_label);
-				break;
-			case MODULE_INSTANCE:
-				fprintf(fp, "\t%d [label=\"MODULE_INSTANCE\"];\n", my_label);
-				break;
-			case HARD_BLOCK:
-				fprintf(fp, "\t%d [label=\"HARD_BLOCK\"];\n", my_label);
-				break;
-			case HARD_BLOCK_NAMED_INSTANCE:
-				fprintf(fp, "\t%d [label=\"HARD_BLOCK_NAMED_INSTANCE\"];\n", my_label);
-				break;
-			case HARD_BLOCK_CONNECT:
-				fprintf(fp, "\t%d [label=\"HARD_BLOCK_CONNECT\"];\n", my_label);
-				break;
-			case HARD_BLOCK_CONNECT_LIST:
-				fprintf(fp, "\t%d [label=\"HARD_BLOCK_CONNECT_LIST\"];\n", my_label);
-				break;
-			case BLOCK:
-				fprintf(fp, "\t%d [label=\"BLOCK\"];\n", my_label);
-				break;
-			case NON_BLOCKING_STATEMENT:
-				fprintf(fp, "\t%d [label=\"NON_BLOCKING_STATEMENT\"];\n", my_label);
-				break;
-			case BLOCKING_STATEMENT:
-				fprintf(fp, "\t%d [label=\"BLOCKING_STATEMENT\"];\n", my_label);
-				break;
-			case CASE:
-				fprintf(fp, "\t%d [label=\"CASE\"];\n", my_label);
-				break;
-			case CASE_LIST:
-				fprintf(fp, "\t%d [label=\"CASE_LIST\"];\n", my_label);
-				break;
-			case CASE_ITEM:
-				fprintf(fp, "\t%d [label=\"CASE_ITEM\"];\n", my_label);
-				break;
-			case CASE_DEFAULT:
-				fprintf(fp, "\t%d [label=\"CASE_DEFAULT\"];\n", my_label);
-				break;
-			case ALWAYS:
-				fprintf(fp, "\t%d [label=\"ALWAYS\"];\n", my_label);
-				break;
-			case DELAY_CONTROL:
-				fprintf(fp, "\t%d [label=\"DELAY_CONTROL\"];\n", my_label);
-				break;
-			case POSEDGE:
-				fprintf(fp, "\t%d [label=\"POSEDGE\"];\n", my_label);
-				break;
-			case NEGEDGE:
-				fprintf(fp, "\t%d [label=\"NEGEDGE\"];\n", my_label);
-				break;
-			case WHILE:
-				fprintf(fp, "\t%d [label=\"WHILE\"];\n", my_label);
-				break;
-			case FOR:
-				fprintf(fp, "\t%d [label=\"FOR\"];\n", my_label);
-				break;
-			case IF:
-				fprintf(fp, "\t%d [label=\"IF\"];\n", my_label);
-				break;
-			case IF_Q:
-				fprintf(fp, "\t%d [label=\"IF_Q\"];\n", my_label);
-				break;
-			case BINARY_OPERATION:
-				switch (node->types.operation.op)
-				{
-					case ADD:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION ADD\"];\n", my_label);
-						break;
-					case MINUS:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION MINUS\"];\n", my_label);
-						break;
-					case BITWISE_NOT:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_NOT\"];\n", my_label);
-						break;
-					case BITWISE_AND:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_AND\"];\n", my_label);
-						break;
-					case BITWISE_OR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_OR\"];\n", my_label);
-						break;
-					case BITWISE_NAND:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_NAND\"];\n", my_label);
-						break;
-					case BITWISE_NOR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_NOR\"];\n", my_label);
-						break;
-					case BITWISE_XNOR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_XNOR\"];\n", my_label);
-						break;
-					case BITWISE_XOR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION BITWISE_XOR\"];\n", my_label);
-						break;
-					case LOGICAL_NOT:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION LOGICAL_NOT\"];\n", my_label);
-						break;
-					case LOGICAL_OR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION LOGICAL_OR\"];\n", my_label);
-						break;
-					case LOGICAL_AND:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION LOGICAL_AND\"];\n", my_label);
-						break;
-					case MULTIPLY:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION MULTIPLY\"];\n", my_label);
-						break;
-					case DIVIDE:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION DIVIDE\"];\n", my_label);
-						break;
-					case MODULO:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION MODULO\"];\n", my_label);
-						break;
-					case LT:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION LT\"];\n", my_label);
-						break;
-					case GT:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION GT\"];\n", my_label);
-						break;
-					case LOGICAL_EQUAL:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION LOGICAL_EQUAL\"];\n", my_label);
-						break;
-					case NOT_EQUAL:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION NOT_EQUAL\"];\n", my_label);
-						break;
-					case LTE:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION LTE\"];\n", my_label);
-						break;
-					case GTE:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION GTE\"];\n", my_label);
-						break;
-					case SR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION SR\"];\n", my_label);
-						break;
-					case ASR:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION ASR\"];\n", my_label);
-						break;
-					case SL:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION SL\"];\n", my_label);
-						break;
-					case CASE_EQUAL:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION CASE_EQUAL\"];\n", my_label);
-						break;
-					case CASE_NOT_EQUAL:
-						fprintf(fp, "\t%d [label=\"BINARY_OPERATION\"];\n", my_label);
-						break;
-					default:
-						break;
-				}
-				break;
-			case UNARY_OPERATION:
-				switch (node->types.operation.op)
-				{
-					case ADD:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION ADD\"];\n", my_label);
-						break;
-					case MINUS:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION MINUS\"];\n", my_label);
-						break;
-					case BITWISE_NOT:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_NOT\"];\n", my_label);
-						break;
-					case BITWISE_AND:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_AND\"];\n", my_label);
-						break;
-					case BITWISE_OR:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_OR\"];\n", my_label);
-						break;
-					case BITWISE_NAND:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_NAND\"];\n", my_label);
-						break;
-					case BITWISE_NOR:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_NOR\"];\n", my_label);
-						break;
-					case BITWISE_XNOR:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_XNOR\"];\n", my_label);
-						break;
-					case BITWISE_XOR:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION BITWISE_XOR\"];\n", my_label);
-						break;
-					case LOGICAL_NOT:
-						fprintf(fp, "\t%d [label=\"UNARY_OPERATION LOGICAL_NOT\"];\n", my_label);
-						break;
-					default:
-						break;
-				}
-				break;
-			case ARRAY_REF:
-				fprintf(fp, "\t%d [label=\"ARRAY_REF\"];\n", my_label);
-				break;
-			case RANGE_REF:
-				fprintf(fp, "\t%d [label=\"RANGE_REF\"];\n", my_label);
-				break;
-			case CONCATENATE:
-				fprintf(fp, "\t%d [label=\"CONCATENATE\"];\n", my_label);
-				break;
-			case IDENTIFIERS:
-				fprintf(fp, "\t%d [label=\"IDENTIFIERS:%s\"];\n", my_label, node->types.identifier);
-				break;
-			case NUMBERS:
-				switch (node->types.number.base)
-				{
-					case(DEC):
-						fprintf(fp, "\t%d [label=\"NUMBERS DEC:%s\"];\n", my_label, node->types.number.number);
-						break;
-					case(HEX):
-						fprintf(fp, "\t%d [label=\"NUMBERS HEX:%s\"];\n", my_label, node->types.number.number);
-						break;
-					case(OCT):
-						fprintf(fp, "\t%d [label=\"NUMBERS OCT:%s\"];\n", my_label, node->types.number.number);
-						break;
-					case(BIN):
-						fprintf(fp, "\t%d [label=\"NUMBERS BIN:%s\"];\n", my_label, node->types.number.number);
-						break;
-					case(LONG_LONG):
-						fprintf(fp, "\t%d [label=\"NUMBERS LONG_LONG:%lld\"];\n", my_label, node->types.number.value);
-						break;
-                    default:
-                        oassert(FALSE);
-                        break;
-				}
-				break;
-			default:
-				oassert(FALSE);
+			fprintf(fp, ": %s",  temp.str().c_str());
+			break;
 		}
-	}
+		case NUMBERS:
+			fprintf(fp, ": %s",  node->types.number.binary_string );
+			break;
 
-	if (node != NULL)
+		case UNARY_OPERATION: //fallthrough
+		case BINARY_OPERATION:
+			fprintf(fp, ": %s", name_based_on_op(node->types.operation.op));
+			break;
+
+		case IDENTIFIERS:
+			fprintf(fp, ": %s", node->types.identifier);
+			break;
+		
+		default:
+			break;
+	}
+	fprintf(fp, "\"];\n");		
+	
+	/* print out the connection with the previous node */
+	if (from != NULL)
+		fprintf(fp, "\t%d -> %d;\n", from_num, my_label);
+
+	for (long i = 0; i < node->num_children; i++)
 	{
-		/* print out the connection with the previous node */
-		if (from != NULL)
-			fprintf(fp, "\t%d -> %d;\n", from_num, my_label);
-
-		for (i = 0; i < node->num_children; i++)
-		{
-			graphVizOutputAst_traverse_node(fp, node->children[i], node, my_label);
-		}
+		graphVizOutputAst_traverse_node(fp, node->children[i], node, my_label);
 	}
+
 }
 
 long calculate_operation(ast_node_t *node){
 	node = resolve_node(defines_for_module_sc[num_modules], TRUE, NULL, node);
 	if(node_is_constant(node)){
-		long long result = node->types.number.value;
+		long result = node->types.number.value;
 		if(result >= 0){
 			return (long)result;
 		}else{
-			error_message(PARSE_ERROR, node->line_number, current_parse_file,"Negative numbers are used in the range in ODIN II!");
+			error_message(PARSE_ERROR, node->line_number, current_parse_file, "%s", "Negative numbers are used in the range in ODIN II!");
 			return 0;
 		}
 	}else{
-		error_message(PARSE_ERROR, node->line_number, current_parse_file,"could not resolve parameter in range");
+		error_message(PARSE_ERROR, node->line_number, current_parse_file, "%s", "could not resolve parameter in range");
 		return 0;
 	}
 }

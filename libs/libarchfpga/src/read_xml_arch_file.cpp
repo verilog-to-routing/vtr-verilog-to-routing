@@ -85,7 +85,7 @@ static t_type_descriptor *cb_type_descriptors;
 static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
 
-/*    Process XML hiearchy */
+/*    Process XML hierarchy */
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		t_mode * mode, 
         const bool timing_enabled,
@@ -100,8 +100,9 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
         const bool timing_enabled,
         const t_arch& arch,
 		const pugiutil::loc_data& loc_data);
+static t_metadata_dict ProcessMetadata(pugi::xml_node Parent, const pugiutil::loc_data& loc_data);
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data);
-static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
+static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, std::vector<t_segment_inf>& segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void ProcessSwitchblockLocations(pugi::xml_node swtichblock_locations, t_type_descriptor* type, const t_arch& arch, const pugiutil::loc_data& loc_data);
 static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
@@ -128,13 +129,35 @@ static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled,
 static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 		 int *NumDirects, const t_arch_switch_inf *Switches, const int NumSwitches,
 		 const pugiutil::loc_data& loc_data);
+static void ProcessClockMetalLayers(
+        pugi::xml_node parent,
+        std::unordered_map<std::string, t_metal_layer>& metal_layers,
+        pugiutil::loc_data& loc_data);
+static void ProcessClockNetworks(
+        pugi::xml_node parent,
+        std::vector<t_clock_network_arch>& clock_networks,
+        const t_arch_switch_inf *switches,
+        const int num_switches,
+        pugiutil::loc_data& loc_data);
+static void ProcessClockSwitchPoints(
+        pugi::xml_node parent,
+        t_clock_network_arch& clock_network,
+        const t_arch_switch_inf *switches,
+        const int num_switches,
+        pugiutil::loc_data& loc_data);
+static void ProcessClockRouting(
+        pugi::xml_node parent,
+        std::vector<t_clock_connection_arch>& clock_connections,
+        const t_arch_switch_inf *switches,
+        const int num_switches,
+        pugiutil::loc_data& loc_data);
 static void ProcessSegments(pugi::xml_node Parent,
-		t_segment_inf **Segs, int *NumSegs,
+		std::vector<t_segment_inf>& Segs,
 		const t_arch_switch_inf *Switches, const int NumSwitches,
 		const bool timing_enabled, const bool switchblocklist_required, const pugiutil::loc_data& loc_data);
 static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data);
-static void ProcessCB_SB(pugi::xml_node Node, bool * list,
-		const int len, const pugiutil::loc_data& loc_data);
+static void ProcessCB_SB(pugi::xml_node Node, std::vector<bool>& list,
+		const pugiutil::loc_data& loc_data);
 static void ProcessPower( pugi::xml_node parent,
 		t_power_arch * power_arch,
         const pugiutil::loc_data& loc_data);
@@ -158,6 +181,9 @@ static bool attribute_to_bool(const pugi::xml_node node,
                 const pugi::xml_attribute attr,
                 const pugiutil::loc_data& loc_data);
 int find_switch_by_name(const t_arch& arch, std::string switch_name);
+
+
+e_side string_to_side(std::string side_str);
 
 /*
  *
@@ -234,7 +260,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 
         /* Process segments. This depends on switches */
         Next = get_single_child(architecture, "segmentlist", loc_data);
-        ProcessSegments(Next, &(arch->Segments), &(arch->num_segments),
+        ProcessSegments(Next, arch->Segments,
                 arch->Switches, arch->num_switches, timing_enabled, switchblocklist_required, loc_data);
 
 
@@ -252,6 +278,29 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
         if (Next) {
             ProcessDirects(Next, &(arch->Directs), &(arch->num_directs),
                     arch->Switches, arch->num_switches,
+                    loc_data);
+        }
+
+        /* Process Clock Networks */
+        Next = get_single_child(architecture, "clocknetworks", loc_data, OPTIONAL);
+        if (Next) {
+
+            std::vector<std::string> expected_children =
+                {"metal_layers", "clock_network", "clock_routing"};
+            expect_only_children(Next, expected_children, loc_data);
+
+            ProcessClockMetalLayers(Next, arch->clock_arch.clock_metal_layers, loc_data);
+            ProcessClockNetworks(
+                    Next,
+                    arch->clock_arch.clock_networks_arch,
+                    arch->Switches,
+                    arch->num_switches,
+                    loc_data);
+            ProcessClockRouting(
+                    Next,
+                    arch->clock_arch.clock_connections_arch,
+                    arch->Switches,
+                    arch->num_switches,
                     loc_data);
         }
 
@@ -533,10 +582,12 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	Type->class_inf = (t_class*) vtr::calloc(num_class, sizeof(t_class));
 	Type->num_class = num_class;
 	Type->pin_class = (int*) vtr::malloc(Type->num_pins * sizeof(int) * capacity);
-	Type->is_global_pin = (bool*) vtr::malloc( Type->num_pins * sizeof(bool)* capacity);
+	Type->is_ignored_pin = (bool*) vtr::malloc( Type->num_pins * sizeof(bool)* capacity);
+	Type->is_pin_global = (bool*) vtr::malloc( Type->num_pins * sizeof(bool)* capacity);
 	for (i = 0; i < Type->num_pins * capacity; i++) {
 		Type->pin_class[i] = OPEN;
-		Type->is_global_pin[i] = true;
+		Type->is_ignored_pin[i] = true;
+		Type->is_pin_global[i] = true;
 	}
 
 	pin_count = 0;
@@ -568,7 +619,13 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 					Type->class_inf[num_class].type = DRIVER;
 				}
 				Type->pin_class[pin_count] = num_class;
-				Type->is_global_pin[pin_count] = Type->pb_type->ports[j].is_clock ||
+                // clock pins and other specified global ports are initially specified
+                // as ignored pins (i.e. connections are not created in the rr_graph and
+                // nets connected to the port are ignored as well).
+				Type->is_ignored_pin[pin_count] = Type->pb_type->ports[j].is_clock ||
+                    Type->pb_type->ports[j].is_non_clock_global;
+				// clock pins and other specified global ports are flaged as global
+                Type->is_pin_global[pin_count] = Type->pb_type->ports[j].is_clock ||
                     Type->pb_type->ports[j].is_non_clock_global;
 				pin_count++;
 
@@ -938,7 +995,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
     bool is_root_pb_type = !(mode != nullptr && mode->parent_pb_type != nullptr);
     bool is_leaf_pb_type = bool(get_attribute(Parent, "blif_model", loc_data, OPTIONAL));
 
-    std::vector<std::string> children_to_expect = {"input", "output", "clock", "mode", "power"};
+    std::vector<std::string> children_to_expect = {"input", "output", "clock", "mode", "power", "metadata"};
     if (!is_leaf_pb_type) {
         //Non-leafs may have a model/pb_type children
         children_to_expect.push_back("model");
@@ -1181,15 +1238,13 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		if (pb_type->num_modes == 0) {
 			/* The pb_type operates in an implied one mode */
 			pb_type->num_modes = 1;
-			pb_type->modes = (t_mode*) vtr::calloc(pb_type->num_modes,
-					sizeof(t_mode));
+			pb_type->modes = new t_mode[pb_type->num_modes];
 			pb_type->modes[i].parent_pb_type = pb_type;
 			pb_type->modes[i].index = i;
 			ProcessMode(Parent, &pb_type->modes[i], timing_enabled, arch, loc_data);
 			i++;
 		} else {
-			pb_type->modes = (t_mode*) vtr::calloc(pb_type->num_modes,
-					sizeof(t_mode));
+			pb_type->modes = new t_mode[pb_type->num_modes];
 
 			Cur = get_first_child(Parent, "mode", loc_data);
 			while (Cur != nullptr) {
@@ -1217,6 +1272,8 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 
 	pb_port_names.clear();
 	mode_names.clear();
+
+	pb_type->meta = ProcessMetadata(Parent, loc_data);
 	ProcessPb_TypePower(Parent, pb_type, loc_data);
 
 }
@@ -1471,8 +1528,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugi
 	num_interconnect = num_complete + num_direct + num_mux;
 
 	mode->num_interconnect = num_interconnect;
-	mode->interconnect = (t_interconnect*) vtr::calloc(num_interconnect,
-			sizeof(t_interconnect));
+	mode->interconnect = new t_interconnect[num_interconnect];
 
 	i = 0;
 	for (L_index = 0; L_index < 3; L_index++) {
@@ -1506,6 +1562,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugi
 
 			Prop = get_attribute(Cur, "name", loc_data).value();
 			mode->interconnect[i].name = vtr::strdup(Prop);
+			mode->interconnect[i].meta = ProcessMetadata(Cur, loc_data);
 
 			ret_interc_names = interc_names.insert(
 					pair<string, int>(mode->interconnect[i].name, 0));
@@ -1620,11 +1677,33 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
 	/* Allocate power structure */
 	mode->mode_power = (t_mode_power*) vtr::calloc(1, sizeof(t_mode_power));
 
+	mode->meta = ProcessMetadata(Parent, loc_data);
+
 	/* Clear STL map used for duplicate checks */
 	pb_type_names.clear();
 
 	Cur = get_single_child(Parent, "interconnect", loc_data);
 	ProcessInterconnect(Cur, mode, loc_data);
+}
+
+static t_metadata_dict ProcessMetadata(pugi::xml_node Parent,
+		const pugiutil::loc_data& loc_data) {
+	//	<metadata>
+	//	  <meta>CLBLL_L_</meta>
+	//	</metadata>
+	t_metadata_dict data;
+	auto metadata = get_single_child(Parent, "metadata", loc_data, OPTIONAL);
+	if (metadata) {
+		auto meta_tag = get_first_child(metadata, "meta", loc_data);
+		while (meta_tag) {
+			std::string key = get_attribute(meta_tag, "name", loc_data).as_string();
+
+			auto value = meta_tag.child_value();
+			data.add(key, value);
+			meta_tag = meta_tag.next_sibling(meta_tag.name());
+		}
+	}
+	return data;
 }
 
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data) {
@@ -1647,7 +1726,7 @@ static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, cons
 
 /* Takes in the node ptr for the 'fc' elements and initializes
  * the appropriate fields of type. */
-static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data) {
+static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, std::vector<t_segment_inf>& segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data) {
     std::vector<t_fc_override> fc_overrides;
     t_default_fc_spec def_fc_spec;
     if (Node) {
@@ -1671,7 +1750,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
      * overriden) pin/seg Fc specifications */
     const t_pb_type* pb_type = Type->pb_type;
     int pins_per_capacity_instance = Type->num_pins / Type->capacity;
-    for (int iseg = 0; iseg < num_segments; ++iseg) {
+    for (size_t iseg = 0; iseg < segments.size(); ++iseg) {
 
         for(int icapacity = 0; icapacity < Type->capacity; ++icapacity) {
 
@@ -2195,7 +2274,7 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch *arch, const pugiuti
 
         t_grid_def grid_def = ProcessGridLayout(layout_type_tag, loc_data);
 
-        arch->grid_layouts.push_back(grid_def);
+        arch->grid_layouts.emplace_back(std::move(grid_def));
     }
 }
 
@@ -2238,6 +2317,7 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
         auto loc_type = loc_spec_tag.name();
         auto type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
         int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
+        t_metadata_dict meta = ProcessMetadata(loc_spec_tag, loc_data);
 
         if (loc_type == std::string("perimeter")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
@@ -2267,10 +2347,16 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             top_edge.y.start_expr = "H - 1";
             top_edge.y.end_expr = "H - 1";
 
-            grid_def.loc_defs.push_back(left_edge);
-            grid_def.loc_defs.push_back(right_edge);
-            grid_def.loc_defs.push_back(top_edge);
-            grid_def.loc_defs.push_back(bottom_edge);
+            left_edge.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            left_edge.meta = left_edge.owned_meta.get();
+            right_edge.meta = left_edge.owned_meta.get();
+            top_edge.meta = left_edge.owned_meta.get();
+            bottom_edge.meta = left_edge.owned_meta.get();
+
+            grid_def.loc_defs.emplace_back(std::move(left_edge));
+            grid_def.loc_defs.emplace_back(std::move(right_edge));
+            grid_def.loc_defs.emplace_back(std::move(top_edge));
+            grid_def.loc_defs.emplace_back(std::move(bottom_edge));
 
         } else if (loc_type == std::string("corners")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
@@ -2300,10 +2386,16 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             top_right.y.start_expr = "H-1";
             top_right.y.end_expr = "H-1";
 
-            grid_def.loc_defs.push_back(bottom_left);
-            grid_def.loc_defs.push_back(top_left);
-            grid_def.loc_defs.push_back(bottom_right);
-            grid_def.loc_defs.push_back(top_right);
+            bottom_left.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            bottom_left.meta = bottom_left.owned_meta.get();
+            top_left.meta = bottom_left.owned_meta.get();
+            bottom_right.meta = bottom_left.owned_meta.get();
+            top_right.meta = bottom_left.owned_meta.get();
+
+            grid_def.loc_defs.emplace_back(std::move(bottom_left));
+            grid_def.loc_defs.emplace_back(std::move(top_left));
+            grid_def.loc_defs.emplace_back(std::move(bottom_right));
+            grid_def.loc_defs.emplace_back(std::move(top_right));
 
         } else if (loc_type == std::string("fill")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
@@ -2314,7 +2406,10 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             fill.y.start_expr = "0";
             fill.y.end_expr = "H - 1";
 
-            grid_def.loc_defs.push_back(fill);
+            fill.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            fill.meta = fill.owned_meta.get();
+
+            grid_def.loc_defs.emplace_back(std::move(fill));
 
         } else if (loc_type == std::string("single")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "x", "y"}, loc_data);
@@ -2325,7 +2420,10 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             single.x.end_expr = single.x.start_expr + " + w - 1";
             single.y.end_expr = single.y.start_expr + " + h - 1";
 
-            grid_def.loc_defs.push_back(single);
+            single.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            single.meta = single.owned_meta.get();
+
+            grid_def.loc_defs.emplace_back(std::move(single));
 
         } else if (loc_type == std::string("col")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx", "starty", "incry"}, loc_data);
@@ -2352,7 +2450,10 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
                 col.y.incr_expr = incry_attr.value();
             }
 
-            grid_def.loc_defs.push_back(col);
+            col.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            col.meta = col.owned_meta.get();
+
+            grid_def.loc_defs.emplace_back(std::move(col));
 
         } else if (loc_type == std::string("row")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty", "startx", "incrx"}, loc_data);
@@ -2379,7 +2480,10 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
                 row.x.incr_expr = incrx_attr.value();
             }
 
-            grid_def.loc_defs.push_back(row);
+            row.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            row.meta = row.owned_meta.get();
+
+            grid_def.loc_defs.emplace_back(std::move(row));
         } else if (loc_type == std::string("region")) {
             expect_only_attributes(loc_spec_tag,
                                    {"type", "priority",
@@ -2428,7 +2532,10 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
                 region.y.incr_expr = incry_attr.value();
             }
 
-            grid_def.loc_defs.push_back(region);
+            region.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            region.meta = region.owned_meta.get();
+
+            grid_def.loc_defs.emplace_back(std::move(region));
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
                     "Unrecognized grid location specification type '%s'\n", loc_type);
@@ -2641,7 +2748,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 
         /* Load Fc */
         Cur = get_single_child(CurType, "fc", loc_data, OPTIONAL);
-        Process_Fc(Cur, Type, arch.Segments, arch.num_segments, arch_def_fc, loc_data);
+        Process_Fc(Cur, Type, arch.Segments, arch_def_fc, loc_data);
 
         //Load switchblock type and location overrides
         Cur = get_single_child(CurType, "switchblock_locations", loc_data, OPTIONAL);
@@ -2661,7 +2768,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 
 
 static void ProcessSegments(pugi::xml_node Parent,
-		t_segment_inf **Segs, int *NumSegs,
+		std::vector<t_segment_inf>& Segs,
 		const t_arch_switch_inf *Switches, const int NumSwitches,
 		const bool timing_enabled, const bool switchblocklist_required, const pugiutil::loc_data& loc_data) {
 	int i, j, length;
@@ -2672,24 +2779,21 @@ static void ProcessSegments(pugi::xml_node Parent,
 
 	/* Count the number of segs and check they are in fact
 	 * of segment elements. */
-	*NumSegs = count_children(Parent, "segment", loc_data);
+	int NumSegs = count_children(Parent, "segment", loc_data);
 
 	/* Alloc segment list */
-	*Segs = nullptr;
-	if (*NumSegs > 0) {
-		*Segs = (t_segment_inf *) vtr::malloc(
-				*NumSegs * sizeof(t_segment_inf));
-		memset(*Segs, 0, (*NumSegs * sizeof(t_segment_inf)));
+	if (NumSegs > 0) {
+		Segs.resize(NumSegs);
 	}
 
 	/* Load the segments. */
 	Node = get_first_child(Parent, "segment", loc_data);
-	for (i = 0; i < *NumSegs; ++i) {
+	for (i = 0; i < NumSegs; ++i) {
 
 		/* Get segment name */
 		tmp = get_attribute(Node, "name", loc_data, OPTIONAL).as_string(nullptr);
 		if (tmp) {
-			(*Segs)[i].name = vtr::strdup(tmp);
+			Segs[i].name = std::string(tmp);
 		} else {
 			/* if swich block is "custom", then you have to provide a name for segment */
 			if (switchblocklist_required) {
@@ -2702,7 +2806,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 			ss << "unnamed_segment_" << i;
 			string dummy = ss.str();
 			tmp = dummy.c_str();
-			(*Segs)[i].name = vtr::strdup(tmp);
+			Segs[i].name = std::string(tmp);
 		}
 
 		/* Get segment length */
@@ -2710,24 +2814,24 @@ static void ProcessSegments(pugi::xml_node Parent,
 		tmp = get_attribute(Node, "length", loc_data, OPTIONAL).as_string(nullptr);
 		if (tmp) {
 			if (strcmp(tmp, "longline") == 0) {
-				(*Segs)[i].longline = true;
+				Segs[i].longline = true;
 			} else {
 				length = vtr::atoi(tmp);
 			}
 		}
-		(*Segs)[i].length = length;
+		Segs[i].length = length;
 
 		/* Get the frequency */
-		(*Segs)[i].frequency = 1; /* DEFAULT */
+		Segs[i].frequency = 1; /* DEFAULT */
 		tmp = get_attribute(Node, "freq", loc_data, OPTIONAL).as_string(nullptr);
 		if (tmp) {
-			(*Segs)[i].frequency = (int) (atof(tmp) * MAX_CHANNEL_WIDTH);
+			Segs[i].frequency = (int) (atof(tmp) * MAX_CHANNEL_WIDTH);
 		}
 
 		/* Get timing info */
 		ReqOpt TIMING_ENABLE_REQD = BoolToReqOpt(timing_enabled);
-		(*Segs)[i].Rmetal = get_attribute(Node, "Rmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
-		(*Segs)[i].Cmetal = get_attribute(Node, "Cmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
+		Segs[i].Rmetal = get_attribute(Node, "Rmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
+		Segs[i].Cmetal = get_attribute(Node, "Cmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
 
 		/* Get Power info */
 		/*
@@ -2737,7 +2841,7 @@ static void ProcessSegments(pugi::xml_node Parent,
         //Set of expected subtags (exact subtags are dependant on parameters)
         std::vector<std::string> expected_subtags;
 
-        if (!(*Segs)[i].longline) {
+        if (!Segs[i].longline) {
             //Long line doesn't accpet <sb> or <cb> since it assumes full population
             expected_subtags.push_back("sb");
             expected_subtags.push_back("cb");
@@ -2746,7 +2850,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 		/* Get the type */
 		tmp = get_attribute(Node, "type", loc_data).value();
 		if (0 == strcmp(tmp, "bidir")) {
-			(*Segs)[i].directionality = BI_DIRECTIONAL;
+			Segs[i].directionality = BI_DIRECTIONAL;
 
             //Bidir requires the following tags
             expected_subtags.push_back("wire_switch");
@@ -2754,7 +2858,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 		}
 
 		else if (0 == strcmp(tmp, "unidir")) {
-			(*Segs)[i].directionality = UNI_DIRECTIONAL;
+			Segs[i].directionality = UNI_DIRECTIONAL;
 
             //Unidir requires the following tags
             expected_subtags.push_back("mux");
@@ -2769,7 +2873,7 @@ static void ProcessSegments(pugi::xml_node Parent,
         expect_only_children(Node, expected_subtags, loc_data);
 
 		/* Get the wire and opin switches, or mux switch if unidir */
-		if (UNI_DIRECTIONAL == (*Segs)[i].directionality) {
+		if (UNI_DIRECTIONAL == Segs[i].directionality) {
 			SubElem = get_single_child(Node, "mux", loc_data);
 			tmp = get_attribute(SubElem, "name", loc_data).value();
 
@@ -2787,12 +2891,12 @@ static void ProcessSegments(pugi::xml_node Parent,
 			/* Unidir muxes must have the same switch
 			 * for wire and opin fanin since there is
 			 * really only the mux in unidir. */
-			(*Segs)[i].arch_wire_switch = j;
-			(*Segs)[i].arch_opin_switch = j;
+			Segs[i].arch_wire_switch = j;
+			Segs[i].arch_opin_switch = j;
 		}
 
 		else {
-			VTR_ASSERT(BI_DIRECTIONAL == (*Segs)[i].directionality);
+			VTR_ASSERT(BI_DIRECTIONAL == Segs[i].directionality);
 			SubElem = get_single_child(Node, "wire_switch", loc_data);
 			tmp = get_attribute(SubElem, "name", loc_data).value();
 
@@ -2806,7 +2910,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
 						"'%s' is not a valid wire_switch name.\n", tmp);
 			}
-			(*Segs)[i].arch_wire_switch = j;
+			Segs[i].arch_wire_switch = j;
 			SubElem = get_single_child(Node, "opin_switch", loc_data);
 			tmp = get_attribute(SubElem, "name", loc_data).value();
 
@@ -2820,29 +2924,27 @@ static void ProcessSegments(pugi::xml_node Parent,
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
 						"'%s' is not a valid opin_switch name.\n", tmp);
 			}
-			(*Segs)[i].arch_opin_switch = j;
+			Segs[i].arch_opin_switch = j;
 		}
 
 		/* Setup the CB list if they give one, otherwise use full */
-		(*Segs)[i].cb_len = length;
-		(*Segs)[i].cb = (bool *) vtr::malloc(length * sizeof(bool));
+		Segs[i].cb.resize(length);
 		for (j = 0; j < length; ++j) {
-			(*Segs)[i].cb[j] = true;
+			Segs[i].cb[j] = true;
 		}
 		SubElem = get_single_child(Node, "cb", loc_data, OPTIONAL);
 		if (SubElem) {
-			ProcessCB_SB(SubElem, (*Segs)[i].cb, length, loc_data);
+			ProcessCB_SB(SubElem, Segs[i].cb, loc_data);
 		}
 
 		/* Setup the SB list if they give one, otherwise use full */
-		(*Segs)[i].sb_len = (length + 1);
-		(*Segs)[i].sb = (bool *) vtr::malloc((length + 1) * sizeof(bool));
+		Segs[i].sb.resize(length + 1);
 		for (j = 0; j < (length + 1); ++j) {
-			(*Segs)[i].sb[j] = true;
+			Segs[i].sb[j] = true;
 		}
 		SubElem = get_single_child(Node, "sb", loc_data, OPTIONAL);
 		if (SubElem) {
-			ProcessCB_SB(SubElem, (*Segs)[i].sb, (length + 1), loc_data);
+			ProcessCB_SB(SubElem, Segs[i].sb, loc_data);
 		}
 
 		/* Get next Node */
@@ -2926,11 +3028,11 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
 }
 
 
-static void ProcessCB_SB(pugi::xml_node Node, bool * list,
-		const int len, const pugiutil::loc_data& loc_data) {
+static void ProcessCB_SB(pugi::xml_node Node, std::vector<bool>& list,
+		const pugiutil::loc_data& loc_data) {
 	const char *tmp = nullptr;
 	int i;
-
+    int len = list.size();
 	/* Check the type. We only support 'pattern' for now.
 	 * Should add frac back eventually. */
 	tmp = get_attribute(Node, "type", loc_data).value();
@@ -3191,6 +3293,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 	pugi::xml_node Node;
 
 	/* Count the children and check they are direct connections */
+    expect_only_children(Parent, {"direct"}, loc_data);
 	*NumDirects = count_children(Parent, "direct", loc_data);
 
 	/* Alloc direct list */
@@ -3204,6 +3307,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 	/* Load the directs. */
 	Node = get_first_child(Parent, "direct", loc_data);
 	for (i = 0; i < *NumDirects; ++i) {
+        expect_only_attributes(Node, {"name", "from_pin", "to_pin", "x_offset", "y_offset", "z_offset", "switch_name", "from_side", "to_side"}, loc_data);
 
 		direct_name = get_attribute(Node, "name", loc_data).value();
 		/* Check for direct name collisions */
@@ -3232,6 +3336,11 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 		(*Directs)[i].x_offset = get_attribute(Node, "x_offset", loc_data).as_int(0);
 		(*Directs)[i].y_offset = get_attribute(Node, "y_offset", loc_data).as_int(0);
 		(*Directs)[i].z_offset = get_attribute(Node, "z_offset", loc_data).as_int(0);
+
+        std::string from_side_str = get_attribute(Node, "from_side", loc_data, OPTIONAL).value();
+        (*Directs)[i].from_side = string_to_side(from_side_str);
+        std::string to_side_str = get_attribute(Node, "to_side", loc_data, OPTIONAL).value();
+        (*Directs)[i].to_side = string_to_side(to_side_str);
 
         //Set the optional switch type
         switch_name = get_attribute(Node, "switch_name", loc_data, OPTIONAL).as_string(nullptr);
@@ -3268,6 +3377,310 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 		/* Get next direct element */
 		Node = Node.next_sibling(Node.name());
 	}
+}
+
+static void ProcessClockMetalLayers(
+        pugi::xml_node parent,
+        std::unordered_map<std::string, t_metal_layer>& metal_layers,
+        pugiutil::loc_data& loc_data)
+{
+    std::vector<std::string> expected_attributes = {"name", "Rmetal", "Cmetal"};
+    std::vector<std::string> expected_children = {"metal_layer"};
+
+    pugi::xml_node metal_layers_parent = get_single_child(parent, "metal_layers", loc_data);
+    int num_metal_layers = count_children(metal_layers_parent, "metal_layer", loc_data);
+
+    pugi::xml_node curr_layer = get_first_child(metal_layers_parent, "metal_layer", loc_data);
+    for(int i = 0; i < num_metal_layers; i++) {
+
+        expect_only_children(metal_layers_parent, expected_children, loc_data);
+        expect_only_attributes(curr_layer, expected_attributes, loc_data);
+
+        // Get metal layer values: name, r_metal, and c_metal
+        std::string name (get_attribute(curr_layer, "name", loc_data).value());
+        t_metal_layer metal_layer;
+        metal_layer.r_metal = get_attribute(curr_layer, "Rmetal", loc_data).as_float(0.);
+        metal_layer.c_metal = get_attribute(curr_layer, "Cmetal", loc_data).as_float(0.);
+
+        // Insert metal layer into map
+        auto itter = metal_layers.find(name);
+        if(itter != metal_layers.end()) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_layer),
+                    "Two metal layers with the same name '%s' were found.\n",
+                    name.c_str());
+        }
+        metal_layers.insert({name, metal_layer});
+
+        curr_layer = curr_layer.next_sibling(curr_layer.name());
+    }
+}
+
+static void ProcessClockNetworks(
+        pugi::xml_node parent,
+        std::vector<t_clock_network_arch>& clock_networks,
+        const t_arch_switch_inf *switches,
+        const int num_switches,
+        pugiutil::loc_data& loc_data)
+{
+    std::vector<std::string> expected_spine_attributes =
+        {"name", "num_inst", "metal_layer", "starty", "endy", "x", "repeatx", "repeaty"};
+    std::vector<std::string> expected_rib_attributes =
+        {"name", "num_inst", "metal_layer", "startx", "endx", "y", "repeatx", "repeaty"};
+    std::vector<std::string> expected_children = {"rib", "spine"};
+
+    int num_clock_networks = count_children(parent, "clock_network", loc_data);
+    pugi::xml_node curr_network = get_first_child(parent, "clock_network", loc_data);
+    for(int i = 0; i < num_clock_networks; i++) {
+
+        expect_only_children(curr_network, expected_children, loc_data);
+
+        t_clock_network_arch clock_network;
+
+        std::string name (get_attribute(curr_network, "name", loc_data).value());
+        clock_network.name = name;
+        clock_network.num_inst = get_attribute(curr_network, "num_inst", loc_data).as_int(0);
+        bool is_supported_clock_type = false;
+        pugi::xml_node curr_type;
+
+        // Parse spine
+        curr_type = get_single_child(curr_network, "spine", loc_data, OPTIONAL);
+        if(curr_type) {
+
+            expect_only_attributes(curr_network, expected_spine_attributes, loc_data);
+
+            is_supported_clock_type = true;
+            clock_network.type = e_clock_type::SPINE;
+
+            std::string metal_layer (get_attribute(curr_type, "metal_layer", loc_data).value());
+            std::string starty (get_attribute(curr_type, "starty", loc_data).value());
+            std::string endy (get_attribute(curr_type, "endy", loc_data).value());
+            std::string x (get_attribute(curr_type, "x", loc_data).value());
+
+            std::string repeatx;
+            auto repeatx_attr = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL);
+            if (repeatx_attr) {
+                repeatx = repeatx_attr.value();
+            } else {
+                repeatx = "W";
+            }
+            std::string repeaty;
+            auto repeaty_attr = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL);
+            if (repeaty_attr) {
+                repeaty = repeaty_attr.value();
+            } else {
+                repeaty = "H";
+            }
+
+            clock_network.metal_layer = metal_layer;
+            clock_network.wire.start = starty;
+            clock_network.wire.end = endy;
+            clock_network.wire.position = x;
+            clock_network.repeat.x = repeatx;
+            clock_network.repeat.y = repeaty;
+
+            ProcessClockSwitchPoints(curr_type, clock_network, switches, num_switches, loc_data);
+        }
+
+        // Parse rib
+        curr_type = get_single_child(curr_network, "rib", loc_data, OPTIONAL);
+        if(curr_type) {
+
+            expect_only_attributes(curr_network, expected_spine_attributes, loc_data);
+
+            is_supported_clock_type = true;
+            clock_network.type = e_clock_type::RIB;
+
+            std::string metal_layer (get_attribute(curr_type, "metal_layer", loc_data).value());
+            std::string startx (get_attribute(curr_type, "startx", loc_data).value());
+            std::string endx (get_attribute(curr_type, "endx", loc_data).value());
+            std::string y (get_attribute(curr_type, "y", loc_data).value());
+
+            std::string repeatx;
+            auto repeatx_attr = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL);
+            if (repeatx_attr) {
+                repeatx = repeatx_attr.value();
+            } else {
+                repeatx = "W";
+            }
+            std::string repeaty;
+            auto repeaty_attr = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL);
+            if (repeaty_attr) {
+                repeaty = repeaty_attr.value();
+            } else {
+                repeaty = "H";
+            }
+
+            clock_network.metal_layer = metal_layer;
+            clock_network.wire.start = startx;
+            clock_network.wire.end = endx;
+            clock_network.wire.position = y;
+            clock_network.repeat.x = repeatx;
+            clock_network.repeat.y = repeaty;
+
+            ProcessClockSwitchPoints(curr_type, clock_network, switches, num_switches, loc_data);
+        }
+
+        // Currently their is only support for ribs and spines
+        if(!is_supported_clock_type) {
+            archfpga_throw(loc_data.filename_c_str(),loc_data.line(curr_type),
+                    "Found no supported clock network type for '%s' clock network.\n"
+                    "Currently there is only support for rib and spine networks.\n",
+                    name.c_str());
+        }
+
+        clock_networks.push_back(clock_network);
+        curr_network = curr_network.next_sibling(curr_network.name());
+    }
+}
+
+static void ProcessClockSwitchPoints(
+        pugi::xml_node parent,
+        t_clock_network_arch& clock_network,
+        const t_arch_switch_inf *switches,
+        const int num_switches,
+        pugiutil::loc_data& loc_data)
+{
+    std::vector<std::string> expected_spine_drive_attributes =
+        {"name", "type", "yoffset", "switch_name"};
+    std::vector<std::string> expected_rib_drive_attributes =
+        {"name", "type", "xoffset", "switch_name"};
+    std::vector<std::string> expected_spine_tap_attributes =
+        {"name", "type", "yoffset", "yincr"};
+    std::vector<std::string> expected_rib_tap_attributes =
+        {"name", "type", "xoffset", "xincr"};
+    std::vector<std::string> expected_children =
+        {"switch_point"};
+
+    int num_clock_switches = count_children(parent, "switch_point", loc_data);
+    pugi::xml_node curr_switch = get_first_child(parent, "switch_point", loc_data);
+
+    //TODO: currently only supporting one drive and one tap. Should change to support
+    //      multiple taps
+    VTR_ASSERT(num_switches != 2);
+
+    //TODO: ensure switch name is unique for every switch of this clock network
+    for (int i = 0; i < num_clock_switches; i++) {
+
+        expect_only_children(curr_switch, expected_children, loc_data);
+
+        std::string switch_type (get_attribute(curr_switch, "type", loc_data).value());
+        if(switch_type == "drive") {
+            t_clock_drive drive;
+
+            std::string name (get_attribute(curr_switch, "name", loc_data).value());
+            const char* offset;
+            if (clock_network.type == e_clock_type::SPINE) {
+                expect_only_attributes(curr_switch, expected_spine_drive_attributes, loc_data);
+                offset = get_attribute(curr_switch, "yoffset", loc_data).value();
+            } else {
+                VTR_ASSERT(clock_network.type == e_clock_type::RIB);
+                expect_only_attributes(curr_switch, expected_rib_drive_attributes, loc_data);
+                offset = get_attribute(curr_switch, "xoffset", loc_data).value();
+            }
+
+			// get switch index
+            const char* switch_name = get_attribute(curr_switch, "switch_name", loc_data).value();
+            int switch_idx;
+            for (switch_idx = 0; switch_idx < num_switches; switch_idx++) {
+                if (0 == strcmp(switch_name, switches[switch_idx].name)) {
+					break; // switch_idx has been found
+				}
+			}
+			if (switch_idx >= num_switches) {
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_switch),
+						"'%s' is not a valid switch name.\n", switch_name);
+			}
+
+            drive.name = name;
+            drive.offset = offset;
+            drive.arch_switch_idx = switch_idx;
+            clock_network.drive = drive;
+
+        } else if (switch_type == "tap") {
+            t_clock_taps tap;
+
+            std::string name (get_attribute(curr_switch, "name", loc_data).value());
+            const char* offset;
+            const char* increment;
+            if (clock_network.type == e_clock_type::SPINE) {
+                expect_only_attributes(curr_switch, expected_spine_tap_attributes, loc_data);
+                offset = get_attribute(curr_switch, "yoffset", loc_data).value();
+                increment = get_attribute(curr_switch, "yincr", loc_data).value();
+            } else {
+                VTR_ASSERT(clock_network.type == e_clock_type::RIB);
+                expect_only_attributes(curr_switch, expected_rib_tap_attributes, loc_data);
+                offset = get_attribute(curr_switch, "xoffset", loc_data).value();
+                increment = get_attribute(curr_switch, "xincr", loc_data).value();
+            }
+
+            tap.name = name;
+            tap.offset = offset;
+            tap.increment = increment;
+            clock_network.tap = tap;
+
+        } else {
+            archfpga_throw(loc_data.filename_c_str(),loc_data.line(curr_switch),
+                    "Found unsupported switch type for '%s' clock network.\n"
+                    "Currently there is only support for drive and tap switch types.\n",
+                    clock_network.name.c_str());
+        }
+
+        curr_switch = curr_switch.next_sibling(curr_switch.name());
+    }
+}
+
+static void ProcessClockRouting(
+        pugi::xml_node parent,
+        std::vector<t_clock_connection_arch>& clock_connections,
+        const t_arch_switch_inf *switches,
+        const int num_switches,
+        pugiutil::loc_data& loc_data)
+{
+    std::vector<std::string> expected_attributes =
+        {"from", "to", "switch", "fc_val", "locationx", "locationy"};
+
+    pugi::xml_node clock_routing_parent = get_single_child(parent, "clock_routing", loc_data);
+    int num_routing_connections = count_children(clock_routing_parent, "tap", loc_data);
+
+    pugi::xml_node curr_connection =
+        get_first_child(clock_routing_parent, "tap", loc_data);
+    for(int i = 0; i < num_routing_connections; i++) {
+
+        expect_only_attributes(curr_connection, expected_attributes, loc_data);
+
+        t_clock_connection_arch clock_connection;
+
+        const char* from = get_attribute(curr_connection, "from", loc_data).value();
+        const char* to = get_attribute(curr_connection, "to", loc_data).value();
+        const char* switch_name = get_attribute(curr_connection, "switch", loc_data).value();
+        const char* locationx =
+            get_attribute(curr_connection, "locationx", loc_data, OPTIONAL).value();
+        const char* locationy =
+            get_attribute(curr_connection, "locationy", loc_data, OPTIONAL).value();
+        float fc = get_attribute(curr_connection, "fc_val", loc_data).as_float(0.);
+
+        int switch_idx;
+        for (switch_idx = 0; switch_idx < num_switches; switch_idx++) {
+            if (0 == strcmp(switch_name, switches[switch_idx].name)) {
+                break; // switch_idx has been found
+            }
+        }
+        if (switch_idx >= num_switches) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_connection),
+                    "'%s' is not a valid switch name.\n", switch_name);
+        }
+
+        clock_connection.from = from;
+        clock_connection.to = to;
+        clock_connection.arch_switch_idx = switch_idx;
+        clock_connection.locationx = locationx;
+        clock_connection.locationy = locationy;
+        clock_connection.fc = fc;
+
+        clock_connections.push_back(clock_connection);
+
+        curr_connection = curr_connection.next_sibling(curr_connection.name());
+    }
 }
 
 static void ProcessPower( pugi::xml_node parent,
@@ -3780,4 +4193,23 @@ int find_switch_by_name(const t_arch& arch, std::string switch_name) {
     }
 
     return OPEN;
+}
+
+e_side string_to_side(std::string side_str) {
+    e_side side = NUM_SIDES;
+    if (side_str.empty()) {
+        side = NUM_SIDES;
+    } else if (side_str == "left") {
+        side = LEFT;
+    } else if (side_str == "right") {
+        side = RIGHT;
+    } else if (side_str == "top") {
+        side = TOP;
+    } else if (side_str == "bottom") {
+        side = BOTTOM;
+    } else {
+        archfpga_throw(__FILE__, __LINE__,
+                "Invalid side specification");
+    }
+    return side;
 }

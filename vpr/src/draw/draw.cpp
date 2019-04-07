@@ -981,8 +981,8 @@ static void drawnets() {
 	 * blocks (or sub blocks in the case of IOs).                                */
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_is_global(net_id))
-			continue; /* Don't draw global nets. */
+		if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+			continue; /* Don't draw */
 
 		setcolor(draw_state->net_color[net_id]);
 		b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
@@ -1792,12 +1792,12 @@ static void draw_chanx_to_chanx_edge(int from_node, int to_node,
 		if (device_ctx.rr_nodes[to_node].direction() != BI_DIRECTION) {
 			/* must connect to to_node's wire beginning at x2 */
 			if (to_track % 2 == 0) { /* INC wire starts at leftmost edge */
-				VTR_ASSERT(from_xlow < to_xlow);
+			    VTR_ASSERT(from_xlow < to_xlow);
 				x2 = to_chan.left();
 				/* since no U-turns from_track must be INC as well */
 				x1 = draw_coords->tile_x[to_xlow - 1] + draw_coords->get_tile_width();
 			} else { /* DEC wire starts at rightmost edge */
-				VTR_ASSERT(from_xhigh > to_xhigh);
+			    VTR_ASSERT(from_xhigh > to_xhigh);
 				x2 = to_chan.right();
 				x1 = draw_coords->tile_x[to_xhigh + 1];
 			}
@@ -2127,7 +2127,7 @@ static void draw_routed_net(ClusterNetId net_id) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
 
-    if (cluster_ctx.clb_nlist.net_is_global(net_id)) /* Don't draw global nets. */
+    if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Don't draw. */
         return;
 
     if (route_ctx.trace[net_id].head == nullptr) /* No routing.  Skip.  (Allows me to draw */
@@ -2366,7 +2366,8 @@ static void highlight_nets(char *message, int hit_node) {
 			if (draw_state->draw_rr_node[tptr->index].color == MAGENTA) {
 				draw_state->net_color[net_id] = draw_state->draw_rr_node[tptr->index].color;
 				if (tptr->index == hit_node) {
-					sprintf(message, "%s  ||  Net: %zu (%s)", message, size_t(net_id),
+                    std::string orig_msg(message);
+					sprintf(message, "%s  ||  Net: %zu (%s)", orig_msg.c_str(), size_t(net_id),
 							cluster_ctx.clb_nlist.net_name(net_id).c_str());
 				}
 			}
@@ -3306,7 +3307,7 @@ static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_
     //Conver the traceback into an easily search-able
     t_rt_node* rt_root = traceback_to_route_tree(net_id);
 
-    VTR_ASSERT(rt_root->inode == route_ctx.net_rr_terminals[net_id][driver_pin]);
+    VTR_ASSERT(rt_root && rt_root->inode == route_ctx.net_rr_terminals[net_id][driver_pin]);
 
     int sink_rr_node = route_ctx.net_rr_terminals[net_id][sink_pin];
 

@@ -231,7 +231,7 @@ void check_timing_graph() {
 	}
 }
 
-float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
+float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node, vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
 
 	/* Prints one tnode on the critical path out to fp. Returns the delay to the next node. */
 

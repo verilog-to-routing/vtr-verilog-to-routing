@@ -33,7 +33,7 @@
 
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
-#include "vtr_vector_map.h"
+#include "vtr_vector.h"
 #include "vtr_util.h"
 #include "vtr_flat_map.h"
 
@@ -100,7 +100,8 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 
 enum class e_router_lookahead {
     CLASSIC, //VPR's classic lookahead (assumes uniform wire types)
-    MAP      //Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
+    MAP,     //Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
+    NO_OP    //A no-operation lookahead which always returns zero
 };
 
 enum class e_route_bb_update {
@@ -200,158 +201,41 @@ struct t_pb {
 	int clock_net = 0; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
 
 
-	int get_num_child_types() const {
-		if (child_pbs != nullptr && has_modes()) {
-			return pb_graph_node->pb_type->modes[mode].num_pb_type_children;
-		} else {
-			return 0;
-		}
-	}
+	int get_num_child_types() const;
+    
+	int get_num_children_of_type(int type_index) const;
 
-	int get_num_children_of_type(int type_index) const {
-        t_mode* mode_ptr = get_mode();
-        if (mode_ptr) {
-            return mode_ptr->pb_type_children[type_index].num_pb;
-        }
-        return 0; //No mode
-	}
+	t_mode* get_mode() const;
 
-	t_mode* get_mode() const {
-		if (has_modes()) {
-			return &pb_graph_node->pb_type->modes[mode];
-		} else {
-			return nullptr;
-		}
-	}
-
-	bool has_modes() const {
-		return pb_graph_node->pb_type->num_modes > 0;
-	}
+	bool has_modes() const; 
 
     //Returns the t_pb associated with the specified gnode which is contained
     //within the current pb
-    const t_pb* find_pb(const t_pb_graph_node* gnode) const {
-        //Base case
-        if(pb_graph_node == gnode) {
-            return this;
-        }
+    const t_pb* find_pb(const t_pb_graph_node* gnode) const;
 
-        //Search recursively
-        for(int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
-
-            if(child_pbs[ichild_type] == nullptr) continue;
-
-            for(int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
-
-                const t_pb* child_pb = &child_pbs[ichild_type][ipb];
-
-                const t_pb* found_pb = child_pb->find_pb(gnode);
-                if(found_pb != nullptr) {
-                    VTR_ASSERT(found_pb->pb_graph_node == gnode);
-                    return found_pb; //Found
-                }
-            }
-        }
-        return nullptr; //Not found
-    }
-
-    const t_pb* find_pb_for_model(const std::string& blif_model) const {
-        //Base case
-        const t_model* model = pb_graph_node->pb_type->model;
-        if (model && model->name == blif_model) {
-            return this;
-        }
-
-        //Search recursively
-        for(int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
-
-            if(child_pbs[ichild_type] == nullptr) continue;
-
-            for(int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
-
-                const t_pb* child_pb = &child_pbs[ichild_type][ipb];
-
-                const t_pb* matching_pb = child_pb->find_pb_for_model(blif_model);
-                if (matching_pb) {
-                    return this;
-                }
-            }
-        }
-        return nullptr; //Not found
-    }
+    const t_pb* find_pb_for_model(const std::string& blif_model) const;
 
     //Returns the root pb containing this pb
-    const t_pb* root_pb() const {
+    const t_pb* root_pb() const;
 
-        const t_pb* curr_pb = this;
-        while(!is_root()) {
-            curr_pb = curr_pb->parent_pb;
-        }
-
-        VTR_ASSERT(curr_pb->parent_pb == nullptr);
-        return curr_pb;
-    }
-
-    bool is_root() const {
-        return parent_pb == nullptr;
-    }
+    bool is_root() const;
 
     //Returns true if this pb corresponds to a primitive block (i.e. in the AtomNetlist)
-    bool is_primitive() const {
-        return child_pbs == nullptr;
-    }
-
-    std::string hierarchical_type_name() const {
-        std::vector<std::string> names;
-
-        int child_mode = OPEN;
-        for (const t_pb* curr = this; curr != nullptr; curr = curr->parent_pb) {
-            std::string type_name;
-
-            //Type
-            if (curr->pb_graph_node) {
-                type_name = curr->pb_graph_node->pb_type->name;
-                type_name += "[" + std::to_string(curr->pb_graph_node->placement_index) + "]";
-
-                //Mode
-                if (child_mode != OPEN) {
-                    std::string mode_name = curr->pb_graph_node->pb_type->modes[child_mode].name;
-                    type_name += "[" + mode_name + "]";
-                }
-            }
-
-            child_mode = curr->mode; //Save the mode of curr since it will be child on next iteration
-
-            names.push_back(type_name);
-        }
-
-        //We walked up from the leaf to root, so we join in reverse order
-        return vtr::join(names.rbegin(), names.rend(), "/");
-    }
+    bool is_primitive() const; 
+   
+    // Returns a string containing the hierarchical type name of a physical block
+    // Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
+    std::string hierarchical_type_name() const; 
 
     //Returns the bit index into the AtomPort for the specified primitive
     //pb_graph_pin, considering any pin rotations which have been applied to logically
     //equivalent pins
-    BitIndex atom_pin_bit_index(const t_pb_graph_pin* gpin) const {
-        VTR_ASSERT_MSG(is_primitive(), "Atom pin indicies can only be looked up from primitives");
-
-        auto iter = pin_rotations_.find(gpin);
-
-        if(iter != pin_rotations_.end()) {
-            //Return the original atom pin index
-            return iter->second;
-        } else {
-            //No re-mapping, return the index directly
-            return gpin->pin_number;
-        }
-    }
+    BitIndex atom_pin_bit_index(const t_pb_graph_pin* gpin) const;
 
     //For a given gpin, sets the mapping to the original atom netlist pin's bit index in
     //it's AtomPort.  This is used to record any pin rotations which have been applied to
     //logically equivalent pins
-    void set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_idx) {
-        pin_rotations_[gpin] = atom_pin_bit_idx;
-    }
+    void set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_idx);
 
 private:
     std::map<const t_pb_graph_pin*,BitIndex> pin_rotations_; //Contains the atom netlist port bit index associated
@@ -381,7 +265,6 @@ enum e_pack_pattern_molecule_type {
 struct t_pack_molecule {
 	enum e_pack_pattern_molecule_type type; /* what kind of molecule is this? */
 	t_pack_patterns *pack_pattern; /* If this is a forced_pack molecule, pattern this molecule matches */
-	t_model_chain_pattern *chain_pattern; /* If this is a chain molecule, chain that this molecule matches */
     std::vector<AtomBlockId> atom_block_ids; /* [0..num_blocks-1] IDs of atom blocks that implements this molecule,
                                                 index on pack_pattern_block->index of pack pattern */
 	bool valid; /* Whether or not this molecule is still valid */
@@ -640,6 +523,7 @@ struct t_grid_tile {
 	t_type_ptr type = nullptr;
 	int width_offset = 0;
 	int height_offset = 0;
+	const t_metadata_dict * meta = nullptr;
 };
 
 /* Stores the bounding box of a net in terms of the minimum and   *
@@ -647,10 +531,10 @@ struct t_grid_tile {
  * the region:                                                    *
  *  (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1) */
 struct t_bb {
-	int xmin;
-	int xmax;
-	int ymin;
-	int ymax;
+	int xmin = 0;
+	int xmax = 0;
+	int ymin = 0;
+	int ymax = 0;
 };
 
 /* capacity:   Capacity of this region, in tracks.               *
@@ -783,6 +667,7 @@ struct t_packer_opts {
 	bool connection_driven;
 	int pack_verbosity;
     bool enable_pin_feasibility_filter;
+    bool balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;
 	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;
@@ -831,6 +716,19 @@ enum e_place_algorithm {
 	BOUNDING_BOX_PLACE, PATH_TIMING_DRIVEN_PLACE
 };
 
+enum class PlaceDelayModelType {
+    DELTA,          //Delta x/y based delay model
+    DELTA_OVERRIDE, //Delta x/y based delay model with special case delay overrides
+};
+
+enum class e_reducer {
+    MIN,
+    MAX,
+    MEDIAN,
+    ARITHMEAN,
+    GEOMEAN
+};
+
 struct t_placer_opts {
 	enum e_place_algorithm place_algorithm;
 	float timing_tradeoff;
@@ -846,6 +744,17 @@ struct t_placer_opts {
 	int seed;
 	float td_place_exp_last;
 	e_stage_action doPlacement;
+
+    PlaceDelayModelType delay_model_type;
+    e_reducer delay_model_reducer;
+
+    float delay_offset;
+    int delay_ramp_delta_threshold;
+    float delay_ramp_slope;
+    float tsu_rel_margin;
+    float tsu_abs_margin;
+
+    std::string post_place_timing_report_file;
 };
 
 /* All the parameters controlling the router's operation are in this        *
@@ -949,6 +858,7 @@ struct t_router_opts {
 	float astar_fac;
 	float max_criticality;
 	float criticality_exp;
+    float init_wirelength_abort_threshold;
 	bool verify_binary_search;
 	bool full_stats;
 	bool congestion_analysis;
@@ -960,12 +870,14 @@ struct t_router_opts {
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
     e_route_bb_update route_bb_update;
+    enum e_clock_modeling clock_modeling; //How clock pins and nets should be handled
     int high_fanout_threshold;
     int router_debug_net;
     int router_debug_sink_rr;
     e_router_lookahead lookahead_type;
     int max_convergence_count;
     float reconvergence_cpd_threshold;
+    std::string first_iteration_timing_report_file;
 };
 
 struct t_analysis_opts {
@@ -996,7 +908,6 @@ struct t_analysis_opts {
  * switchblocks: A vector of custom switch block descriptions that is       *
  *           used with the CUSTOM switch block type. See comment at top of  *
  *           SRC/route/build_switchblocks.c                                 *
- * num_segment:  Number of distinct segment types in the FPGA.              *
  * delayless_switch:  Index of a zero delay switch (used to connect things  *
  *                    that should have no delay).                           *
  * wire_to_arch_ipin_switch: keeps track of the type of architecture switch *
@@ -1017,7 +928,6 @@ struct t_det_routing_arch {
 	int Fs;
 	enum e_switch_block_type switch_block_type;
 	std::vector<t_switchblock_inf> switchblocks;
-	int num_segment;
 
 	short global_route_switch;
 	short delayless_switch;
@@ -1082,7 +992,7 @@ struct t_seg_details {
 	int seg_end = 0;
 	int index = 0;
 	float Cmetal_per_m = 0; /* Used for power */
-	const char *type_name_ptr = nullptr;
+	std::string type_name;
 };
 
 class t_chan_seg_details {
@@ -1117,7 +1027,7 @@ class t_chan_seg_details {
 
         int index() const { return seg_detail_->index; }
 
-        const char* type_name_ptr() const { return seg_detail_->type_name_ptr; }
+        std::string type_name() const { return seg_detail_->type_name; }
 
     public: //Modifiers
         void set_length(int new_len) { length_ = new_len; }
@@ -1252,13 +1162,13 @@ struct t_power_opts {
 
 /* Channel width data */
 struct t_chan_width {
-	int max;
-	int x_max;
-	int y_max;
-	int x_min;
-	int y_min;
-	int *x_list;
-	int *y_list;
+	int max = 0;
+	int x_max = 0;
+	int y_max = 0;
+	int x_min = 0;
+	int y_min = 0;
+    std::vector<int> x_list;
+	std::vector<int> y_list;
 };
 
 /* Type to store our list of token to enum pairings */
@@ -1283,7 +1193,7 @@ struct t_vpr_setup {
     t_analysis_opts AnalysisOpts; /* Analysis options */
 	t_det_routing_arch RoutingArch; /* routing architecture */
 	std::vector <t_lb_type_rr_node> *PackerRRGraph;
-	t_segment_inf * Segments; /* wires in routing architecture */
+	std::vector <t_segment_inf> Segments; /* wires in routing architecture */
 	t_timing_inf Timing; /* timing information */
 	float constant_net_delay; /* timing information when place and route not run */
 	bool ShowGraphics; /* option to show graphics */
@@ -1304,17 +1214,17 @@ class RouteStatus {
             , chan_width_(chan_width_val) {}
 
         //Was routing successful?
-        operator bool() { return success(); }
-        bool success() { return success_; }
+        operator bool() const { return success(); }
+        bool success() const { return success_; }
 
         //What was the channel width?
-        int chan_width() { return chan_width_; }
+        int chan_width() const { return chan_width_; }
 
     private:
         bool success_ = false;
         int chan_width_ = -1;
 };
 
-typedef vtr::vector_map<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
+typedef vtr::vector<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 #endif

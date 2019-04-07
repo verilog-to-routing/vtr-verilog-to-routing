@@ -129,7 +129,6 @@ that formulas are evaluated in 'parse_switchblocks.c'):
 #include <algorithm>
 #include <iterator>
 #include <iostream>
-#include <random>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -184,10 +183,6 @@ struct t_wire_switchpoint {
 /* Used to get info about a given wire type based on the name */
 typedef map< string, Wire_Info > t_wire_type_sizes;
 
-constexpr int SEED = 1;
-std::default_random_engine f_switchpoint_shuffle_rng(SEED);
-
-
 /************ Function Declarations ************/
 /* Counts the number of wires in each wire type in the specified channel */
 static void count_wire_type_sizes(const t_chan_seg_details *channel, int nodes_per_chan,
@@ -229,21 +224,22 @@ static void compute_wire_connections(int x_coord, int y_coord,
             t_switchblock_inf *sb,
             const DeviceGrid& grid,
 			t_wire_type_sizes *wire_type_sizes, e_directionality directionality,
-			t_sb_connection_map *sb_conns);
+			t_sb_connection_map *sb_conns,
+            vtr::RandState& rand_state);
 
 /* ... sb_conn represents the 'coordinates' of the desired switch block connections */
 static void compute_wireconn_connections(const DeviceGrid& grid, e_directionality directionality,
 		const t_chan_details& from_chan_details, const t_chan_details& to_chan_details, Switchblock_Lookup sb_conn,
 		int from_x, int from_y, int to_x, int to_y, t_rr_type from_chan_type, t_rr_type to_chan_type,
 		t_wire_type_sizes *wire_type_sizes, t_switchblock_inf *sb,
-		t_wireconn_inf *wireconn_ptr, t_sb_connection_map *sb_conns);
+		t_wireconn_inf *wireconn_ptr, t_sb_connection_map *sb_conns, vtr::RandState& rand_state);
 
 static int evaluate_num_conns_formula(std::string num_conns_formula, int from_wire_count, int to_wire_count);
 
 /* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */
 static std::vector<t_wire_switchpoint> get_switchpoint_wires(const DeviceGrid& grid, const t_chan_seg_details* chan_details,
 		t_rr_type chan_type, int x, int y, e_side side, const vector<t_wire_switchpoints>& wire_switchpoints_vec,
-		t_wire_type_sizes *wire_type_sizes, bool is_dest, SwitchPointOrder order);
+		t_wire_type_sizes *wire_type_sizes, bool is_dest, SwitchPointOrder order, vtr::RandState& rand_state);
 
 static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, enum e_side side,
 			const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
@@ -288,7 +284,8 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations(
                 const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
                 const DeviceGrid& grid,
 				vector<t_switchblock_inf> switchblocks,
-				t_chan_width *nodes_per_chan, e_directionality directionality){
+				t_chan_width *nodes_per_chan, e_directionality directionality,
+                vtr::RandState& rand_state){
 
 	/* get a single number for channel width */
 	int channel_width = nodes_per_chan->max;
@@ -347,7 +344,7 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations(
                            the current wire will connect to */
                         compute_wire_connections(x_coord, y_coord, from_side, to_side,
                                 chan_details_x, chan_details_y, &sb, grid,
-                                &wire_type_sizes, directionality, sb_conns);
+                                &wire_type_sizes, directionality, sb_conns, rand_state);
 
                     }
                 }
@@ -627,20 +624,20 @@ static bool is_core(const DeviceGrid& grid, int x, int y){
 static void count_wire_type_sizes(const t_chan_seg_details *channel, int nodes_per_chan,
 			t_wire_type_sizes *wire_type_sizes){
 	string wire_type;
-	const char * new_type;
+	string new_type;
 	int new_length, length;
 	int new_start, start;
 	int num_wires = 0;
 	Wire_Info wire_info;
 
-	wire_type = channel[0].type_name_ptr();
+	wire_type = channel[0].type_name();
 	length = channel[0].length();
 	start = 0;
 	for (int iwire = 0; iwire < nodes_per_chan; iwire++){
-		new_type = channel[iwire].type_name_ptr();
+		new_type = channel[iwire].type_name();
 		new_length = channel[iwire].length();
 		new_start = iwire;
-		if (strcmp(new_type, wire_type.c_str()) != 0){
+        if (new_type != wire_type){
 			wire_info.set(length, num_wires, start);
 			(*wire_type_sizes)[wire_type] = wire_info;
 			wire_type = new_type;
@@ -660,7 +657,7 @@ static void count_wire_type_sizes(const t_chan_seg_details *channel, int nodes_p
 /* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */
 static std::vector<t_wire_switchpoint> get_switchpoint_wires(const DeviceGrid& grid, const t_chan_seg_details* chan_details,
 		t_rr_type chan_type, int x, int y, e_side side, const vector<t_wire_switchpoints>& wire_switchpoints_vec,
-		t_wire_type_sizes *wire_type_sizes, bool is_dest, SwitchPointOrder switchpoint_order){
+		t_wire_type_sizes *wire_type_sizes, bool is_dest, SwitchPointOrder switchpoint_order, vtr::RandState& rand_state){
     std::vector<t_wire_switchpoint> all_collected_wire_switchpoints;
 
 	int seg_coord = x;
@@ -733,7 +730,7 @@ static std::vector<t_wire_switchpoint> get_switchpoint_wires(const DeviceGrid& g
     if (switchpoint_order == SwitchPointOrder::SHUFFLED) {
         //We new re-order the switchpoints to try to make adjacent switchpoints have different values
 
-        std::shuffle(all_collected_wire_switchpoints.begin(), all_collected_wire_switchpoints.end(), f_switchpoint_shuffle_rng);
+        vtr::shuffle(all_collected_wire_switchpoints.begin(), all_collected_wire_switchpoints.end(), rand_state);
     } else {
         VTR_ASSERT(switchpoint_order == SwitchPointOrder::FIXED);
         //Already ordered so same switchpoints are adjacent by above collection loop
@@ -753,7 +750,8 @@ static void compute_wire_connections(int x_coord, int y_coord,
 			const DeviceGrid& grid,
 			t_wire_type_sizes *wire_type_sizes,
             e_directionality directionality,
-			t_sb_connection_map* sb_conns){
+			t_sb_connection_map* sb_conns,
+            vtr::RandState& rand_state){
 
 	int from_x, from_y;				/* index into source channel */
 	int to_x, to_y;					/* index into destination channel */
@@ -799,7 +797,7 @@ static void compute_wire_connections(int x_coord, int y_coord,
 		   current wireconn */
 		compute_wireconn_connections(grid, directionality, from_chan_details, to_chan_details,
 						sb_conn, from_x, from_y, to_x, to_y, from_chan_type, to_chan_type, wire_type_sizes,
-						sb, wireconn_ptr, sb_conns);
+						sb, wireconn_ptr, sb_conns, rand_state);
 	}
 
 	return;
@@ -814,17 +812,18 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
 		const t_chan_details& from_chan_details, const t_chan_details& to_chan_details, Switchblock_Lookup sb_conn,
 		int from_x, int from_y, int to_x, int to_y, t_rr_type from_chan_type, t_rr_type to_chan_type,
 		t_wire_type_sizes *wire_type_sizes, t_switchblock_inf *sb,
-		t_wireconn_inf *wireconn_ptr, t_sb_connection_map *sb_conns){
+		t_wireconn_inf *wireconn_ptr, t_sb_connection_map *sb_conns,
+        vtr::RandState& rand_state){
 
     constexpr bool verbose = false;
 
 	/* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
 
 	std::vector<t_wire_switchpoint> potential_src_wires = get_switchpoint_wires(grid, from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, sb_conn.from_side,
-                                                                                wireconn_ptr->from_switchpoint_set, wire_type_sizes, false, wireconn_ptr->from_switchpoint_order);
+                                                                                wireconn_ptr->from_switchpoint_set, wire_type_sizes, false, wireconn_ptr->from_switchpoint_order, rand_state);
 
 	std::vector<t_wire_switchpoint> potential_dest_wires = get_switchpoint_wires(grid, to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, sb_conn.to_side,
-                                                                                 wireconn_ptr->to_switchpoint_set, wire_type_sizes, true, wireconn_ptr->to_switchpoint_order);
+                                                                                 wireconn_ptr->to_switchpoint_set, wire_type_sizes, true, wireconn_ptr->to_switchpoint_order, rand_state);
 
     VTR_LOGV(verbose, "SB_LOC: %d,%d %s->%s\n", sb_conn.x_coord, sb_conn.y_coord, SIDE_STRING[sb_conn.from_side], SIDE_STRING[sb_conn.to_side]);
 

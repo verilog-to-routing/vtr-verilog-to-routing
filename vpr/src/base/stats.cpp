@@ -42,13 +42,13 @@ static void get_channel_occupancy_stats();
 /************************* Subroutine definitions ****************************/
 
 void routing_stats(bool full_stats, enum e_route_type route_type,
-		int num_rr_switch, t_segment_inf * segment_inf, int num_segment,
+		std::vector<t_segment_inf>& segment_inf,
 		float R_minW_nmos, float R_minW_pmos,
         float grid_logic_tile_area,
 		enum e_directionality directionality, int wire_to_ipin_switch,
 		bool timing_analysis_enabled
 #ifdef ENABLE_CLASSIC_VPR_STA
-		, vtr::vector_map<ClusterNetId, float *> &net_delay
+		, vtr::vector<ClusterNetId, float *> &net_delay
         , t_slack * slacks, const t_timing_inf &timing_inf
 #endif
         ) {
@@ -61,7 +61,9 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	length_and_bends_stats();
+    int num_rr_switch = device_ctx.rr_switch_inf.size();
+
+    length_and_bends_stats();
     print_channel_stats();
 	get_channel_occupancy_stats();
 
@@ -101,7 +103,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	if (route_type == DETAILED) {
 		count_routing_transistors(directionality, num_rr_switch, wire_to_ipin_switch,
 				segment_inf, R_minW_nmos, R_minW_pmos);
-		get_segment_usage_stats(num_segment, segment_inf);
+		get_segment_usage_stats(segment_inf);
 
 	}
 
@@ -168,7 +170,7 @@ void length_and_bends_stats() {
 	num_clb_opins_reserved = 0;
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (!cluster_ctx.clb_nlist.net_is_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
+		if (!cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
 			get_num_bends_and_length(net_id, &bends, &length, &segments);
 
 			total_bends += bends;
@@ -179,7 +181,7 @@ void length_and_bends_stats() {
 
 			total_segments += segments;
 			max_segments = max(segments, max_segments);
-		} else if (cluster_ctx.clb_nlist.net_is_global(net_id)) {
+		} else if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
 			num_global_nets++;
 		} else {
 			num_clb_opins_reserved++;
@@ -282,7 +284,7 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
 	/* Now go through each net and count the tracks and pins used everywhere */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		/* Skip global and empty nets. */
-		if (cluster_ctx.clb_nlist.net_is_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0)
+		if (cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0)
 			continue;
 
 		tptr = route_ctx.trace[net_id].head;
@@ -389,7 +391,7 @@ void print_wirelen_prob_dist() {
 	norm_fac = 0.;
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (!cluster_ctx.clb_nlist.net_is_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) {
+		if (!cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) {
 			get_num_bends_and_length(net_id, &bends, &length, &segments);
 
 			/*  Assign probability to two integer lengths proportionately -- i.e.  *
@@ -480,7 +482,7 @@ void print_lambda() {
 				if (type->class_inf[iclass].type == RECEIVER) {
 					ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
 					if (net_id != ClusterNetId::INVALID()) /* Pin is connected? */
-						if (!cluster_ctx.clb_nlist.net_is_global(net_id)) /* Not a global clock */
+						if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Not a global clock */
 							num_inputs_used++;
 				}
 			}

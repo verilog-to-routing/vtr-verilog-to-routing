@@ -30,8 +30,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <ctype.h>
 #include <limits.h>
 #include <errno.h>
-#include "types.h"
-#include "globals.h"
+#include "odin_types.h"
+#include "odin_globals.h"
 #include <cstdarg>
 
 #include "odin_util.h"
@@ -39,52 +39,28 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 #include <regex>
 #include <stdbool.h>
+/*---------------------------------------------------------------------------------------------
+ * (function: node_name_based_on_op)
+ * 	Get the string version of a node
+ *-------------------------------------------------------------------------------------------*/
+long shift_left_value_with_overflow_check(long input_value, long shift_by)
+{
+	if(shift_by < 0)
+		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that is negative [%ld]\n",shift_by);
+	else if(shift_by >= ODIN_STD_BITWIDTH-1 )
+		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that will overflow the maximum size of %d [%ld]\n", shift_by, ODIN_STD_BITWIDTH-1);
 
+	return input_value << shift_by;
+}
 
-/* string conversions */
-const char *MULTI_PORT_MUX_string = "MULTI_PORT_MUX";
-const char *FF_NODE_string = "FF_NODE";
-const char *BUF_NODE_string = "BUF_NODE";
-const char *INPUT_NODE_string = "INPUT_NODE";
-const char *CLOCK_NODE_string = "CLOCK_NODE";
-const char *OUTPUT_NODE_string = "OUTPUT_NODE";
-const char *GND_NODE_string = "GND_NODE";
-const char *VCC_NODE_string = "VCC_NODE";
-const char *ADD_string = "ADD";
-const char *MINUS_string = "MINUS";
-const char *BITWISE_NOT_string = "BITWISE_NOT";
-const char *BITWISE_AND_string = "BITWISE_AND";
-const char *BITWISE_OR_string = "BITWISE_OR";
-const char *BITWISE_NAND_string = "BITWISE_NAND";
-const char *BITWISE_NOR_string = "BITWISE_NOR";
-const char *BITWISE_XNOR_string = "BITWISE_XNOR";
-const char *BITWISE_XOR_string = "BITWISE_XOR";
-const char *LOGICAL_NOT_string = "LOGICAL_NOT";
-const char *LOGICAL_OR_string = "LOGICAL_OR";
-const char *LOGICAL_AND_string = "LOGICAL_AND";
-const char *LOGICAL_NAND_string = "LOGICAL_NAND";
-const char *LOGICAL_NOR_string = "LOGICAL_NOR";
-const char *LOGICAL_XOR_string = "LOGICAL_XOR";
-const char *LOGICAL_XNOR_string = "LOGICAL_XNOR";
-const char *MULTIPLY_string = "MULTIPLY";
-const char *DIVIDE_string = "DIVIDE";
-const char *MODULO_string = "MODULO";
-const char *LT_string = "LT";
-const char *GT_string = "GT";
-const char *LOGICAL_EQUAL_string = "LOGICAL_EQUAL";
-const char *NOT_EQUAL_string = "NOT_EQUAL";
-const char *LTE_string = "LTE";
-const char *GTE_string = "GTE";
-const char *SR_string = "SR";
-const char *ASR_string = "ASR";
-const char *SL_string = "SL";
-const char *CASE_EQUAL_string = "CASE_EQUAL";
-const char *CASE_NOT_EQUAL_string = "CASE_NOT_EQUAL";
-const char *ADDER_FUNC_string = "ADDER_FUNC";
-const char *CARRY_FUNC_string = "CARRY_FUNC";
-const char *MUX_2_string = "MUX_2";
-const char *HARD_IP_string = "HARD_IP";
-const char *MEMORY_string = "MEMORY";
+/*---------------------------------------------------------------------------------------------
+ * (function: node_name_based_on_op)
+ * 	Get the string version of a node
+ *-------------------------------------------------------------------------------------------*/
+const char *name_based_on_op(operation_list op)
+{
+	return operation_list_STR[op][ODIN_STRING_TYPE];
+}
 
 /*---------------------------------------------------------------------------------------------
  * (function: node_name_based_on_op)
@@ -92,145 +68,7 @@ const char *MEMORY_string = "MEMORY";
  *-------------------------------------------------------------------------------------------*/
 const char *node_name_based_on_op(nnode_t *node)
 {
-	const char *return_string;
-
-	switch(node->type)
-	{
-		case MULTI_PORT_MUX:
-			return_string = MULTI_PORT_MUX_string;
-			break;
-		case FF_NODE:
-			return_string = FF_NODE_string;
-			break;
-		case BUF_NODE:
-			return_string = BUF_NODE_string;
-			break;
-		case CLOCK_NODE:
-			return_string = CLOCK_NODE_string;
-			break;
-		case INPUT_NODE:
-			return_string = INPUT_NODE_string;
-			break;
-		case OUTPUT_NODE:
-			return_string = OUTPUT_NODE_string;
-			break;
-		case GND_NODE:
-			return_string = GND_NODE_string;
-			break;
-		case VCC_NODE:
-			return_string = VCC_NODE_string;
-			break;
-		case ADD:
-			return_string = ADD_string;
-			break;
-		case MINUS:
-			return_string = MINUS_string;
-			break;
-		case BITWISE_NOT:
-			return_string = BITWISE_NOT_string;
-			break;
-		case BITWISE_AND:
-			return_string = BITWISE_AND_string;
-			break;
-		case BITWISE_OR:
-			return_string = BITWISE_OR_string;
-			break;
-		case BITWISE_NAND:
-			return_string = BITWISE_NAND_string;
-			break;
-		case BITWISE_NOR:
-			return_string = BITWISE_NOR_string;
-			break;
-		case BITWISE_XNOR:
-			return_string = BITWISE_XNOR_string;
-			break;
-		case BITWISE_XOR:
-			return_string = BITWISE_XOR_string;
-			break;
-		case LOGICAL_NOT:
-			return_string = LOGICAL_NOT_string;
-			break;
-		case LOGICAL_OR:
-			return_string = LOGICAL_OR_string;
-			break;
-		case LOGICAL_AND:
-			return_string = LOGICAL_AND_string;
-			break;
-		case LOGICAL_NOR:
-			return_string = LOGICAL_NOR_string;
-			break;
-		case LOGICAL_NAND:
-			return_string = LOGICAL_NAND_string;
-			break;
-		case LOGICAL_XOR:
-			return_string = LOGICAL_XOR_string;
-			break;
-		case LOGICAL_XNOR:
-			return_string = LOGICAL_XNOR_string;
-			break;
-		case MULTIPLY:
-			return_string = MULTIPLY_string;
-			break;
-		case DIVIDE:
-			return_string = DIVIDE_string;
-			break;
-		case MODULO:
-			return_string = MODULO_string;
-			break;
-		case LT:
-			return_string = LT_string;
-			break;
-		case GT:
-			return_string = GT_string;
-			break;
-		case LOGICAL_EQUAL:
-			return_string = LOGICAL_EQUAL_string;
-			break;
-		case NOT_EQUAL:
-			return_string = NOT_EQUAL_string;
-			break;
-		case LTE:
-			return_string = LTE_string;
-			break;
-		case GTE:
-			return_string = GTE_string;
-			break;
-		case SR:
-			return_string = SR_string;
-			break;
-		case ASR:
-			return_string = ASR_string;
-			break;
-		case SL:
-			return_string = SL_string;
-			break;
-		case CASE_EQUAL:
-			return_string = CASE_EQUAL_string;
-			break;
-		case CASE_NOT_EQUAL:
-			return_string = CASE_NOT_EQUAL_string;
-			break;
-		case ADDER_FUNC:
-			return_string = ADDER_FUNC_string;
-			break;
-		case CARRY_FUNC:
-			return_string = CARRY_FUNC_string;
-			break;
-		case MUX_2:
-			return_string = MUX_2_string;
-			break;
-		case MEMORY:
-			return_string = MEMORY_string;
-			break;
-		case HARD_IP:
-			return_string = HARD_IP_string;
-			break;
-		default:
-			return_string = NULL;
-			oassert(FALSE);
-			break;
-	}
-	return return_string;
+	return name_based_on_op(node->type);
 }
 
 /*--------------------------------------------------------------------------
@@ -254,7 +92,7 @@ char *make_signal_name(char *signal_name, int bit)
 // {previous_string}.module_name+instance_name^signal_name
 // {previous_string}.module_name+instance_name^signal_name~bit
  *-------------------------------------------------------------------------------------------*/
-char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit)
+char *make_full_ref_name(const char *previous, const char *module_name, const char *module_instance_name, const char *signal_name, long bit)
 {
 
 	std::stringstream return_string;
@@ -306,7 +144,7 @@ char *twos_complement(char *str)
  * the higher accordingly. The returned string will be little
  * endian. Null will be returned if the radix is invalid.
  *
- * Base 10 strings will be limited in length to a long long, but
+ * Base 10 strings will be limited in length to a long, but
  * an error will be issued if the number will be truncated.
  *
  */
@@ -318,8 +156,8 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 	}
 	else if (radix == 10)
 	{
-		long long number = convert_dec_string_of_size_to_long_long(string, binary_size);
-		return convert_long_long_to_bit_string(number, binary_size);
+		long number = convert_dec_string_of_size_to_long(string, binary_size);
+		return convert_long_to_bit_string(number, binary_size);
 	}
 	else if (radix == 8)
 	{
@@ -336,10 +174,10 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: convert_long_long_to_bit_string)
+ * (function: convert_long_to_bit_string)
  * Outputs a string msb to lsb.  For example, 3 becomes "011"
  *-------------------------------------------------------------------------------------------*/
-char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
+char *convert_long_to_bit_string(long orig_long, int num_bits)
 {
 	int i;
 	char *return_val = (char*)malloc(sizeof(char)*(num_bits+1));
@@ -357,30 +195,30 @@ char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
 }
 
 /*
- * Turns the given little endian decimal string into a long long. Throws an error if the
- * string contains non-digits or is larger or smaller than the allowable range of long long.
+ * Turns the given little endian decimal string into a long. Throws an error if the
+ * string contains non-digits or is larger or smaller than the allowable range of long.
  */
-long long convert_dec_string_of_size_to_long_long(char *orig_string, int /*size*/)
+long convert_dec_string_of_size_to_long(char *orig_string, int /*size*/)
 {
 	if (!is_decimal_string(orig_string))
 		error_message(PARSE_ERROR, -1, -1, "Invalid decimal number: %s.\n", orig_string);
 
 	errno = 0;
-	long long number = strtoll(orig_string, NULL, 10);
+	long number = strtoll(orig_string, NULL, 10);
 	if (errno == ERANGE)
 		error_message(PARSE_ERROR, -1, -1, "This suspected decimal number (%s) is too long for Odin\n", orig_string);
 
 	return number;
 }
 
-long long convert_string_of_radix_to_long_long(char *orig_string, int radix)
+long convert_string_of_radix_to_long(char *orig_string, int radix)
 {
 	if (!is_string_of_radix(orig_string, radix))
-		error_message(PARSE_ERROR, -1, -1, "Invalid base %d number: %s.\n", radix, orig_string);
+		error_message(PARSE_ERROR, -1, -1, "Invalid base %ld number: %s.\n", radix, orig_string);
 
-	long long number = strtoll(orig_string, NULL, radix);
+	long number = strtoll(orig_string, NULL, radix);
 	if (number == LLONG_MAX || number == LLONG_MIN)
-		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
+		error_message(PARSE_ERROR, -1, -1, "This base %ld number (%s) is too long for Odin\n", radix, orig_string);
 
 	return number;
 }
@@ -713,12 +551,12 @@ int get_pin_number(char *name)
  * (function: my_power)
  *      My own simple power function
  *-------------------------------------------------------------------------------------------*/
-long long int my_power(long long int x, long long int y)
+long int my_power(long int x, long int y)
 {
 	if (y == 0)
 		return 1;
 
-	long long int value = x;
+	long int value = x;
 	int i;
 	for (i = 1; i < y; i++)
 		value *= x;
@@ -757,7 +595,7 @@ std::string make_simple_name(char *input, const char *flatten_string, char flatt
 /*-----------------------------------------------------------------------
  * (function: my_malloc_struct )
  *-----------------------------------------------------------------*/
-void *my_malloc_struct(size_t bytes_to_alloc)
+void *my_malloc_struct(long bytes_to_alloc)
 {
 	void *allocated = vtr::calloc(1, bytes_to_alloc);
 	static long int m_id = 0;
@@ -780,10 +618,10 @@ void *my_malloc_struct(size_t bytes_to_alloc)
 /*---------------------------------------------------------------------------------------------
  * (function: pow2 )
  *-------------------------------------------------------------------------------------------*/
-long long int pow2(int to_the_power)
+long int pow2(int to_the_power)
 {
 	int i;
-	long long int return_val = 1;
+	long int return_val = 1;
 
 	for (i = 0; i < to_the_power; i++)
 	{
@@ -870,65 +708,6 @@ short get_bit(char in){
     return -1;
 }
 
-
-/*---------------------------------------------------------------------------------------------
- * (function: error_message)
- *-------------------------------------------------------------------------------------------*/
-void error_message(short error_type, int line_number, int file, const char *message, ...)
-{
-	va_list ap;
-
-	fprintf(stderr,"--------------\nOdin has decided you have failed ;)\n\n");
-
-	fprintf(stderr,"ERROR:");
-	if (file != -1)
-		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file].c_str());
-	if (line_number > 0)
-		fprintf(stderr," (Line number: %d)", line_number);
-	if (message != NULL)
-	{
-		fprintf(stderr," ");
-		va_start(ap, message);
-		vfprintf(stderr,message, ap);
-		va_end(ap);
-	}
-
-	if (message[strlen(message)-1] != '\n') fprintf(stderr,"\n");
-
-	exit(error_type);
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: warning_message)
- *-------------------------------------------------------------------------------------------*/
-void warning_message(short /*error_type*/, int line_number, int file, const char *message, ...)
-{
-	va_list ap;
-	static short is_warned = FALSE;
-	static long warning_count = 0;
-	warning_count++;
-
-	if (is_warned == FALSE) {
-		fprintf(stderr,"-------------------------\nOdin has decided you may fail ... WARNINGS:\n\n");
-		is_warned = TRUE;
-	}
-
-	fprintf(stderr,"WARNING (%ld):", warning_count);
-	if (file != -1)
-		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file].c_str());
-	if (line_number > 0)
-		fprintf(stderr," (Line number: %d)", line_number);
-	if (message != NULL) {
-		fprintf(stderr," ");
-
-		va_start(ap, message);
-		vfprintf(stderr,message, ap);
-		va_end(ap);
-	}
-
-	if (message[strlen(message)-1] != '\n') fprintf(stderr,"\n");
-}
-
 void passed_verify_i_o_availabilty(nnode_t *node, int expected_input_size, int expected_output_size, const char *current_src, int line_src) {
 	if(!node)
 		error_message(SIMULATION_ERROR, -1, -1, "node unavailable @%s::%s", current_src, line_src);
@@ -983,32 +762,24 @@ char *search_replace(char *src, const char *sKey, const char *rKey, int flag)
 	}
 	return line;
 }
-char *find_substring(char *src,const char *sKey,int flag)
+std::string find_substring(char *src,const char *sKey,int flag)
 {
 	// flag == 1 first half, flag == 2 second half
 
-	std::string tmp;
-	std::string key;
-	char *line;
-	line = vtr::strdup(src);
-	tmp = line;
-	key = sKey;
-	std::size_t found = tmp.find(key);
+	std::string tmp(src);
+	std::string key(sKey);
+	long found = tmp.find(key);
 	switch(flag)
 	{
 		case 1:
-   			tmp = tmp.substr(0,found-1);
-			break;
+   			return tmp.substr(0,found-1);
+
 		case 2:
-   			tmp = tmp.substr(found,tmp.length());
-			break;
+   			return tmp.substr(found,tmp.length());
 
 		default:
-			return line;
+			return tmp;
 	}
-	odin_sprintf(line,"%s",tmp.c_str());
-
-	return line;
 }
 
 bool validate_string_regex(const char *str_in, const char *pattern_in)

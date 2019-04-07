@@ -7,6 +7,8 @@
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "netlist.h"
+#include "vtr_vector.h"
+#include "arch_util.h"
 class DeviceGrid;
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required=true);
@@ -109,6 +111,14 @@ t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* 
 //Returns the block type which is most common in the device grid
 t_type_ptr find_most_common_block_type(const DeviceGrid& grid);
 
+//Parses a block_name.port[x:y] (e.g. LAB.data_in[3:10]) pin range specification, if no pin range is specified
+//looks-up the block port and fills in the full range
+InstPort parse_inst_port(std::string str);
+
+int find_pin_class(t_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type);
+
+int find_pin(t_type_ptr type, std::string port_name, int pin_index_in_port);
+
 //Returns the block type which is most likely the logic block
 t_type_ptr infer_logic_block_type(const DeviceGrid& grid);
 
@@ -127,8 +137,8 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLo
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
 t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type);
 void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
-vtr::vector_map<ClusterBlockId, t_pb **> alloc_and_load_pin_id_to_pb_mapping();
-void free_pin_id_to_pb_mapping(vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
+vtr::vector<ClusterBlockId, t_pb **> alloc_and_load_pin_id_to_pb_mapping();
+void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
 
 
 float compute_primitive_base_cost(const t_pb_graph_node *primitive);

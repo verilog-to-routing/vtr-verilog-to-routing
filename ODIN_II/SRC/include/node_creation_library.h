@@ -1,4 +1,4 @@
-#include "types.h"
+#include "odin_types.h"
 
 nnode_t *make_not_gate_with_input(npin_t *input_pin, nnode_t *node, short mark);
 nnode_t *make_1port_logic_gate_with_inputs(operation_list type, int width, signal_list_t *pin_list, nnode_t *node, short mark);

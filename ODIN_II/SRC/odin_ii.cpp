@@ -42,8 +42,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "arch_util.h"
 
 #include "soft_logic_def_parser.h"
-#include "globals.h"
-#include "types.h"
+#include "odin_globals.h"
+#include "odin_types.h"
 #include "netlist_utils.h"
 #include "arch_types.h"
 #include "parse_making_ast.h"
@@ -69,9 +69,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_path.h"
 #include "vtr_memory.h"
 
+
 #define DEFAULT_OUTPUT "temp"
 
-size_t current_parse_file;
+int current_parse_file;
 t_arch Arch;
 global_args_t global_args;
 t_type_descriptor* type_descriptors;
@@ -204,9 +205,9 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 {
 
 	/* Some initialization */
-	one_string = vtr::strdup("ONE_VCC_CNS");
-	zero_string = vtr::strdup("ZERO_GND_ZERO");
-	pad_string = vtr::strdup("ZERO_PAD_ZERO");
+	one_string = vtr::strdup(ONE_VCC_CNS);
+	zero_string = vtr::strdup(ZERO_GND_ZERO);
+	pad_string = vtr::strdup(ZERO_PAD_ZERO);
 
 	// CREATE OUTPUT DIRECTORY
 	#ifdef WIN32
@@ -538,7 +539,7 @@ void get_options(int argc, char** argv) {
 		!global_args.verilog_files.value().empty()	//have a verilog input list
 	})){
 		parser.print_usage();
-		error_message(-1,0,-1,"Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
+		error_message(ARG_ERROR,0,-1, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
 	}
 
 	//adjust thread count

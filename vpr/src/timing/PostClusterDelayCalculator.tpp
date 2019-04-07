@@ -12,7 +12,7 @@
 
 inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist& netlist, 
                                                           const AtomLookup& netlist_lookup, 
-                                                          vtr::vector_map<ClusterNetId, float *> &net_delay)
+                                                          vtr::vector<ClusterNetId, float *> &net_delay)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
     , net_delay_()
@@ -26,6 +26,25 @@ inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist&
 	, pin_cache_min_(g_vpr_ctx.timing().graph->edges().size(), std::pair<ClusterPinId, ClusterPinId>(ClusterPinId::INVALID(), ClusterPinId::INVALID()))
 	, pin_cache_max_(g_vpr_ctx.timing().graph->edges().size(), std::pair<ClusterPinId, ClusterPinId>(ClusterPinId::INVALID(), ClusterPinId::INVALID())) {
 	net_delay_ = net_delay;
+}
+
+inline void PostClusterDelayCalculator::clear_cache() {
+    std::fill(edge_min_delay_cache_.begin(), edge_min_delay_cache_.end(), tatum::Time(NAN));
+    std::fill(edge_max_delay_cache_.begin(), edge_max_delay_cache_.end(), tatum::Time(NAN));
+    std::fill(driver_clb_min_delay_cache_.begin(), driver_clb_min_delay_cache_.end(), tatum::Time(NAN));
+    std::fill(driver_clb_max_delay_cache_.begin(), driver_clb_max_delay_cache_.end(), tatum::Time(NAN));
+    std::fill(sink_clb_min_delay_cache_.begin(), sink_clb_min_delay_cache_.end(), tatum::Time(NAN));
+    std::fill(sink_clb_max_delay_cache_.begin(), sink_clb_max_delay_cache_.end(), tatum::Time(NAN));
+    std::fill(pin_cache_min_.begin(), pin_cache_min_.end(), std::pair<ClusterPinId, ClusterPinId>(ClusterPinId::INVALID(), ClusterPinId::INVALID()));
+    std::fill(pin_cache_max_.begin(), pin_cache_max_.end(), std::pair<ClusterPinId, ClusterPinId>(ClusterPinId::INVALID(), ClusterPinId::INVALID()));
+}
+
+inline void PostClusterDelayCalculator::set_tsu_margin_relative(float new_margin) {
+    tsu_margin_rel_ = new_margin;
+}
+
+inline void PostClusterDelayCalculator::set_tsu_margin_absolute(float new_margin) {
+    tsu_margin_abs_ = new_margin;
 }
 
 inline tatum::Time PostClusterDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
@@ -112,7 +131,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_setup_time(const tatum::Timi
         AtomPinId input_pin = netlist_lookup_.tnode_atom_pin(in_node);
         AtomPinId clock_pin = netlist_lookup_.tnode_atom_pin(clock_node);
 
-        tsu = tatum::Time(atom_delay_calc_.atom_setup_time(clock_pin, input_pin));
+        tsu = tatum::Time(tsu_margin_rel_ * atom_delay_calc_.atom_setup_time(clock_pin, input_pin) + tsu_margin_abs_);
 
         //Insert
         set_cached_setup_time(edge_id,tsu);

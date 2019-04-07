@@ -25,7 +25,7 @@ using namespace std;
 
 #ifdef USE_HMETIS
 #include "hmetis_graph_writer.h"
-static vtr::vector_map<AtomBlockId, int> read_hmetis_graph(string &hmetis_output_file_name, const int num_parts);
+static vtr::vector<AtomBlockId, int> read_hmetis_graph(string &hmetis_output_file_name, const int num_parts);
 //TODO: CHANGE THIS HARDCODING
 static string hmetis("/cygdrive/c/Source/Repos/vtr-verilog-to-routing/vpr/hmetis-1.5-WIN32/shmetis.exe ");
 #endif
@@ -57,7 +57,7 @@ bool try_pack(t_packer_opts *packer_opts,
 	int num_packing_patterns;
 	t_pack_molecule *list_of_pack_molecules, * cur_pack_molecule;
 #ifdef USE_HMETIS
-	vtr::vector_map<AtomBlockId,int> partitions;
+	vtr::vector<AtomBlockId,int> partitions;
 #endif
 	VTR_LOG("Begin packing '%s'.\n", packer_opts->blif_file_name.c_str());
 
@@ -147,7 +147,7 @@ bool try_pack(t_packer_opts *packer_opts,
 		system(run_hmetis.c_str());
 
 		/* Parse the output file from hMetis, contains |V| lines, ith line = partition of V_i.
-		*  Store the results into a vector_map.
+		*  Store the results into a vector.
 		*/
 		string hmetis_output_file(packer_opts->hmetis_input_file + ".part." + to_string(num_parts));
 
@@ -185,22 +185,12 @@ bool try_pack(t_packer_opts *packer_opts,
     while (true) {
 
         //Cluster the netlist
-        auto num_type_instances = do_clustering(arch, list_of_pack_molecules, num_models,
-                                    packer_opts->global_clocks, is_clock,
+        auto num_type_instances = do_clustering(*packer_opts, arch, list_of_pack_molecules, num_models,
+                                    is_clock,
                                     atom_molecules,
                                     expected_lowest_cost_pb_gnode,
-                                    packer_opts->hill_climbing_flag, packer_opts->output_file.c_str(),
-                                    packer_opts->timing_driven, packer_opts->cluster_seed_type,
-                                    packer_opts->alpha, packer_opts->beta,
-                                    packer_opts->inter_cluster_net_delay,
-                                    packer_opts->target_device_utilization,
                                     allow_unrelated_clustering,
-                                    packer_opts->connection_driven,
-                                    packer_opts->packer_algorithm,
                                     lb_type_rr_graphs,
-                                    packer_opts->device_layout,
-                                    packer_opts->pack_verbosity,
-                                    packer_opts->enable_pin_feasibility_filter,
                                     target_external_pin_util
 #ifdef USE_HMETIS
                                     , partitions
@@ -330,9 +320,9 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
 /* Reads in the output of the hMetis partitioner and returns
 *  A 2-D vector that contains all the blocks in each partition
 */
-static vtr::vector_map<AtomBlockId, int> read_hmetis_graph(string &hmetis_output_file, const int num_parts) {
+static vtr::vector<AtomBlockId, int> read_hmetis_graph(string &hmetis_output_file, const int num_parts) {
 	ifstream fp(hmetis_output_file.c_str());
-	vtr::vector_map<AtomBlockId, int> partitions;
+	vtr::vector<AtomBlockId, int> partitions;
 	string line;
 	int block_num = 0; //Indexing for CLB's start at 0
 

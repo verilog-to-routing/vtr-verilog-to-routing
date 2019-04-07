@@ -50,3 +50,9 @@ start_section "vtr.test.4" "${GREEN}Testing..${NC} ${CYAN}odin_reg_micro${NC}"
 end_section "vtr.test.4"
 
 $SPACER
+
+start_section "vtr.test.5" "${GREEN}Testing..${NC} ${CYAN}odin_reg_operators${NC}"
+./run_reg_test.pl odin_reg_operators
+end_section "vtr.test.5"
+
+$SPACER

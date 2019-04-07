@@ -3,9 +3,12 @@
 
 #include <unordered_map>
 #include <vector>
+#include <random>
 #include "physical_types.h"
 #include "vpr_types.h"
 #include "device_grid.h"
+
+#include "vtr_random.h"
 
 
 /************ Classes, structs, typedefs ************/
@@ -52,7 +55,7 @@ public:
 };
 
 struct t_hash_Switchblock_Lookup{
-	size_t operator()(const Switchblock_Lookup &obj) const{
+	size_t operator()(const Switchblock_Lookup &obj) const noexcept {
         //TODO: use vtr::hash_combine
 		size_t result;
 		result = ((((  std::hash<int>()(obj.x_coord)
@@ -87,7 +90,8 @@ typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, 
 t_sb_connection_map * alloc_and_load_switchblock_permutations(const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
                 const DeviceGrid& grid,
 				std::vector<t_switchblock_inf> switchblocks,
-				t_chan_width *nodes_per_chan, enum e_directionality directionality);
+				t_chan_width *nodes_per_chan, enum e_directionality directionality,
+                vtr::RandState& rand_state);
 
 /* deallocates switch block connections sparse array */
 void free_switchblock_permutations(t_sb_connection_map *sb_conns);

@@ -283,11 +283,11 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
 	inode = hptr->index;
 
-	if (device_ctx.rr_nodes[inode].type() != SINK) {
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-			"in add_subtree_to_route_tree. Expected type = SINK (%d).\n"
-			"Got type = %d.",  SINK, device_ctx.rr_nodes[inode].type());
-	}
+	//if (device_ctx.rr_nodes[inode].type() != SINK) {
+		//vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+			//"in add_subtree_to_route_tree. Expected type = SINK (%d).\n"
+			//"Got type = %d.",  SINK, device_ctx.rr_nodes[inode].type());
+	//}
 
 	sink_rt_node = alloc_rt_node();
 	sink_rt_node->u.child_list = nullptr;
@@ -305,7 +305,7 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	downstream_rt_node = sink_rt_node;
 
     std::unordered_set<int> main_branch_visited;
-    for (t_heap_prev prev : hptr->previous) {
+    for (t_heap_prev prev : hptr->nodes) {
         inode = prev.from_node;
         iedge = prev.from_edge;
         iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
