@@ -390,7 +390,6 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 	char *token;
 	veri_include *new_include = NULL;
 
-
 	while (NULL != fgets(line, MaxLine, source))
 	{
 		//fprintf(stderr, "%s:%ld\t%s", current_include->path,line_number, line);
@@ -661,6 +660,7 @@ int pop(veri_flag_stack *stack)
 	}
 	return 0;
 }
+
 void push(veri_flag_stack *stack, int flag)
 {
 	if(stack != NULL)
@@ -672,35 +672,53 @@ void push(veri_flag_stack *stack, int flag)
 		stack->top = new_node;
 	}
 }
+
 FILE *format_verilog_file(FILE *source)
 {
 	FILE *destination = tmpfile();
 	char searchString [4][7]= {"input","output","reg","wire"};
-	char templine[MaxLine] = { 0 };
-	char *line = templine;
+	char tempLine[MaxLine] = { 0 };
+	char *line = tempLine;
+	char checkerLine[MaxLine] = { 0 };
+	char *checker = checkerLine;
 	char ch;
-	unsigned i;
+	unsigned i = 0;
+	unsigned j = 0;
+	unsigned k = 0;
+	int pos;
 	char temp[10];
-	int j;
 	static const char *pattern = "\\binput\\b|\\boutput\\b|\\breg\\b|\\bwire\\b";
-	i = 0;
-	while( (ch = getc(source) ) != ';')
-	{
-		line[i++] = ch;
-		if (ch == '`')
-		{
-			while( (ch = getc(source)) != '\n')
-			{
-				line[i++] = ch;
-			}
-			line[i] = '\n';
-			fputs(line,destination);
-			i = 0;
-		}
 
+	/* Pass through file line-by-line until module declaration begins */
+	while(fgets(checker, MaxLine, source))
+	{
+		std::string s(checker);
+		pos = s.find_first_not_of(" ");
+		if(s.find("module") == pos)
+		{
+			/* "module" found at line start -- copy first part of module declaration into "line" */
+			while(checker[k] != '\n' && checker[k] != ';')
+			{
+				line[k] = checker[k];
+				k++;
+			}
+			if(checker[k] == '\n')
+			{
+				/* Not a one-line declaration */
+				line[k++] = '\n';
+				while( (ch = getc(source) ) != ';')
+				{
+					line[k++] = ch;
+				}
+			}
+			line[k++] = ';';
+			break;
+		}
+		/* Else, move current line to destination */
+		fputs(checker,destination);
 	}
-	line[i++] = ch;
-	line[i] = '\0';
+
+	line[k] = '\0';
 	std::string sub_line = find_substring(line,"module",2);
 	sprintf(line,"%s",sub_line.c_str());
 	line = search_replace(line,"\n","",2);
