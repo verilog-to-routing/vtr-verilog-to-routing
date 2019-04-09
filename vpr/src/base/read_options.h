@@ -25,7 +25,6 @@ struct t_options {
     argparse::ArgValue<std::string> pad_loc_file;
     argparse::ArgValue<std::string> write_rr_graph_file;
     argparse::ArgValue<std::string> read_rr_graph_file;
-    argparse::ArgValue<std::string> hmetis_input_file;
 
     /* Stage Options */
     argparse::ArgValue<bool> do_packing;

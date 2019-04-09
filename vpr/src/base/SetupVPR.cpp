@@ -420,8 +420,6 @@ void SetupPackerOpts(const t_options& Options,
 	PackerOpts->packer_algorithm = PACK_GREEDY; /* DEFAULT */
 
     PackerOpts->device_layout = Options.device_layout;
-
-	PackerOpts->hmetis_input_file = Options.hmetis_input_file;
 }
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {

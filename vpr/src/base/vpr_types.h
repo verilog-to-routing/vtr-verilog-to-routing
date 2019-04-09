@@ -497,7 +497,6 @@ struct t_packer_opts {
 	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;
     std::string device_layout;
-	std::string hmetis_input_file;
 };
 
 /* Annealing schedule information for the placer.  The schedule type      *

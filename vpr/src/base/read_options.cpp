@@ -829,10 +829,6 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .metavar("RR_GRAPH_FILE")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-	file_grp.add_argument(args.hmetis_input_file, "--hmetis_input_file")
-			.help("Reads in a filename to write packing stats for input to hmetis")
-			.show_in(argparse::ShowIn::HELP_ONLY);
-
     file_grp.add_argument(args.out_file_prefix, "--outfile_prefix")
             .help("Prefix for output files")
             .show_in(argparse::ShowIn::HELP_ONLY);

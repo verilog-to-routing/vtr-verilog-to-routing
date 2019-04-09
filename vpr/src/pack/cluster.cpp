@@ -313,9 +313,6 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 		bool allow_unrelated_clustering,
 		std::vector<t_lb_type_rr_node> *lb_type_rr_graphs,
         const t_ext_pin_util_targets& ext_pin_util_targets
-#ifdef USE_HMETIS
-		, vtr::vector<AtomBlockId, int>& partitions
-#endif
         ) {
 
 	/* Does the actual work of clustering multiple netlist blocks *
