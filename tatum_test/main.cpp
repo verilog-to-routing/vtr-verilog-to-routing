@@ -32,9 +32,7 @@
 #include "util.hpp"
 #include "profile.hpp"
 
-#if defined(TATUM_USE_CILK) 
-# include <cilk/cilk_api.h>
-#elif defined(TATUM_USE_TBB) 
+#if defined(TATUM_USE_TBB) 
 # include <tbb/task_scheduler_init.h>
 #endif
 typedef std::chrono::duration<double> dsec;
@@ -256,16 +254,7 @@ int main(int argc, char** argv) {
         cout << "NodeType class alignof = " << alignof(tatum::NodeType) << " bytes." << endl;
     }
 
-#if defined(TATUM_USE_CILK)
-    size_t actual_num_workers = args.num_workers;
-    if (actual_num_workers == 0) {
-        actual_num_workers = __cilkrts_get_nworkers();
-    }
-    if (__cilkrts_set_param("nworkers", std::to_string(actual_num_workers).c_str()) != 0) {
-        exit(1);
-    }
-    cout << "Tatum executing with up to " << actual_num_workers << " workers via cilk\n";
-#elif defined(TATUM_USE_TBB) 
+#if defined(TATUM_USE_TBB) 
     size_t actual_num_workers = args.num_workers;
     if (actual_num_workers == 0) {
         actual_num_workers = tbb::task_scheduler_init::default_num_threads();
