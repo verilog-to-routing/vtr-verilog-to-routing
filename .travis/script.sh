@@ -6,7 +6,15 @@ set -e
 $SPACER
 
 start_section "vtr.build" "${GREEN}Building..${NC}"
-make CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on" -j2
+# FIXME For Mac OS, BLIF_EXPLORER requires QT5 which has not been tested so far
+# ODIN II errors out due to some unsuppored coding style in clang++
+# VPR is working
+if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
+  make CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=off" -j2
+else 
+# For linux, we enable full package compilation
+  make CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on" -j2
+fi
 end_section "vtr.build"
 
 $SPACER
