@@ -26,7 +26,6 @@ static void ShowRoutingArch(const t_det_routing_arch& RoutingArch);
 
 void ShowSetup(const t_vpr_setup& vpr_setup) {
 	VTR_LOG("Timing analysis: %s\n", (vpr_setup.TimingEnabled? "ON" : "OFF"));
-    VTR_LOG("Slack definition: %s\n", vpr_setup.Timing.slack_definition.c_str());
 
 	VTR_LOG("Circuit netlist file: %s\n", vpr_setup.FileNameOpts.NetFile.c_str());
 	VTR_LOG("Circuit placement file: %s\n", vpr_setup.FileNameOpts.PlaceFile.c_str());

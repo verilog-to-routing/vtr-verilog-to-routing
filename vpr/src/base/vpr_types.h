@@ -303,7 +303,6 @@ struct t_timing_inf {
 	float C_ipin_cblock;
 	float T_ipin_cblock;
     std::string SDCFile;
-    std::string slack_definition;
 };
 
 /***************************************************************************
