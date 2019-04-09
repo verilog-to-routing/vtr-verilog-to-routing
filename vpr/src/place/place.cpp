@@ -8,7 +8,6 @@ using namespace std;
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_random.h"
-#include "vtr_matrix.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"

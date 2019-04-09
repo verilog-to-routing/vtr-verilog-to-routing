@@ -18,7 +18,6 @@ using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_list.h"
-#include "vtr_matrix.h"
 #include "vtr_math.h"
 #include "vtr_log.h"
 #include "vtr_version.h"

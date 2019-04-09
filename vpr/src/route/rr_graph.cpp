@@ -10,7 +10,6 @@ using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_memory.h"
-#include "vtr_matrix.h"
 #include "vtr_math.h"
 #include "vtr_log.h"
 #include "vtr_time.h"

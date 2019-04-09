@@ -21,7 +21,6 @@
 using namespace std;
 
 #include "vtr_assert.h"
-#include "vtr_matrix.h"
 #include "vtr_ndoffsetmatrix.h"
 #include "vtr_memory.h"
 #include "vtr_log.h"

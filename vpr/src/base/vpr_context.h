@@ -6,7 +6,6 @@
 #include <csignal> //for sig_atomic_t
 
 #include "vpr_types.h"
-#include "vtr_matrix.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 #include "atom_netlist.h"
