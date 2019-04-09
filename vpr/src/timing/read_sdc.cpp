@@ -1,4 +1,4 @@
-#include "read_sdc2.h"
+#include "read_sdc.h"
 
 #include <regex>
 
@@ -51,9 +51,9 @@ std::string orig_blif_name(std::string name);
 
 std::regex glob_pattern_to_regex(const std::string& glob_pattern);
 
-class SdcParseCallback2 : public sdcparse::Callback {
+class SdcParseCallback : public sdcparse::Callback {
     public:
-        SdcParseCallback2(const AtomNetlist& netlist,
+        SdcParseCallback(const AtomNetlist& netlist,
                           const AtomLookup& lookup,
                           tatum::TimingConstraints& timing_constraints,
                           tatum::TimingGraph& tg)
@@ -927,7 +927,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
         std::map<std::pair<tatum::DomainId,tatum::DomainId>,int> hold_mcp_overrides_;
 };
 
-std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_inf,
+std::unique_ptr<tatum::TimingConstraints> read_sdc(const t_timing_inf& timing_inf,
                                                    const AtomNetlist& netlist,
                                                    const AtomLookup& lookup,
                                                    tatum::TimingGraph& timing_graph) {
@@ -949,7 +949,7 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_i
             VTR_ASSERT(sdc_file != nullptr);
 
             //Parse the file
-            SdcParseCallback2 callback(netlist, lookup, *timing_constraints, timing_graph);
+            SdcParseCallback callback(netlist, lookup, *timing_constraints, timing_graph);
             sdc_parse_file(sdc_file, callback, timing_inf.SDCFile.c_str());
             fclose(sdc_file);
 

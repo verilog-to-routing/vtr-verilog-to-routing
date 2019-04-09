@@ -54,7 +54,7 @@ using namespace std;
 #include "timing_place_lookup.h"
 #include "route_export.h"
 #include "vpr_api.h"
-#include "read_sdc2.h"
+#include "read_sdc.h"
 #include "power.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
@@ -308,7 +308,7 @@ void vpr_init(const int argc, const char **argv,
         }
         {
             vtr::ScopedStartFinishTimer t("Load Timing Constraints");
-            timing_ctx.constraints = read_sdc2(vpr_setup->Timing, atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph);
+            timing_ctx.constraints = read_sdc(vpr_setup->Timing, atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph);
         }
     }
 
