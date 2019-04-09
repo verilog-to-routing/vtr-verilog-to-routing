@@ -659,7 +659,6 @@ struct t_pb_type {
 	t_mode *parent_mode = nullptr;
 	int depth = 0; /* depth of pb_type */
 
-	float max_internal_delay = -1; //TODO: remove when VPR's classic timing analyzer is removed
 	t_pin_to_pin_annotation *annotations = nullptr; /* [0..num_annotations-1] */
 	int num_annotations = 0;
 
