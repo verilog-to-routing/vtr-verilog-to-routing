@@ -293,10 +293,6 @@ struct t_cluster_placement_stats {
  * Timing data types
  *******************************************************************/
 
-//Enable the legacy STA engine to run along side the
-//new STA engine
-//#define ENABLE_CLASSIC_VPR_STA
-
 // #define PATH_COUNTING 'P'
 /* Uncomment this to turn on path counting. Its value determines how path criticality
  is calculated from forward and backward weights.  Possible values:

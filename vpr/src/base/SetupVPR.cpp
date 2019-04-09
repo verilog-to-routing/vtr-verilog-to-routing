@@ -243,13 +243,6 @@ static void SetupTiming(const t_options& Options, const t_arch& Arch,
 	Timing->T_ipin_cblock = Arch.Switches[ipin_cblock_switch_index].Tdel();
 	Timing->timing_analysis_enabled = TimingEnabled;
     Timing->SDCFile = Options.SDCFile;
-    Timing->slack_definition = Options.SlackDefinition;
-
-#ifdef ENABLE_CLASSIC_VPR_STA
-    VTR_ASSERT(Timing->slack_definition == std::string("R") || Timing->slack_definition == std::string("I") ||
-           Timing->slack_definition == std::string("S") || Timing->slack_definition == std::string("G") ||
-           Timing->slack_definition == std::string("C") || Timing->slack_definition == std::string("N"));
-#endif
 }
 
 /* This loads up VPR's arch_switch_inf data by combining the switches from

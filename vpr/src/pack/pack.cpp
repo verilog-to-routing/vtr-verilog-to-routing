@@ -43,11 +43,7 @@ bool try_pack(t_packer_opts *packer_opts,
 		const t_model *user_models,
         const t_model *library_models,
         float interc_delay,
-        vector<t_lb_type_rr_node> *lb_type_rr_graphs
-#ifdef ENABLE_CLASSIC_VPR_STA
-        , t_timing_inf timing_inf
-#endif
-        ) {
+        vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
     std::unordered_set<AtomNetId> is_clock;
     std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules; //The molecules associated with each atom block
     std::unordered_map<AtomBlockId,t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
@@ -194,9 +190,6 @@ bool try_pack(t_packer_opts *packer_opts,
                                     target_external_pin_util
 #ifdef USE_HMETIS
                                     , partitions
-#endif
-#ifdef ENABLE_CLASSIC_VPR_STA
-                                    , timing_inf
 #endif
                                     );
 

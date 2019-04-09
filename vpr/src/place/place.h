@@ -8,9 +8,6 @@ void try_place(t_placer_opts placer_opts,
         const t_analysis_opts& analysis_opts,
 		t_chan_width_dist chan_width_dist, 
 		t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
-#ifdef ENABLE_CLASSIC_VPR_STA
-		t_timing_inf timing_inf,
-#endif
         t_direct_inf *directs, int num_directs);
 
 #endif

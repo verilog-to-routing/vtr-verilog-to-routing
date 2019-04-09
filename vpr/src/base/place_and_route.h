@@ -39,9 +39,6 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
         bool verify_binary_search, int min_chan_width_hint,
         t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
         vtr::vector<ClusterNetId, float *> &net_delay,
-#ifdef ENABLE_CLASSIC_VPR_STA
-        const t_timing_inf& timing_inf,
-#endif
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
         std::shared_ptr<RoutingDelayCalculator> delay_calc);
 

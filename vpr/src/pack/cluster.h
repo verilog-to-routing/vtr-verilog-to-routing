@@ -22,9 +22,6 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 #ifdef USE_HMETIS
 		, vtr::vector<AtomBlockId, int>& partitions
 #endif
-#ifdef ENABLE_CLASSIC_VPR_STA
-        , t_timing_inf timing_inf
-#endif
         );
 int get_cluster_of_block(int blkidx);
 #endif

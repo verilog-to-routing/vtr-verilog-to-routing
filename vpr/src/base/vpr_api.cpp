@@ -539,11 +539,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     }
 
     return try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models,
-            vpr_setup.library_models, inter_cluster_delay, vpr_setup.PackerRRGraph
-#ifdef ENABLE_CLASSIC_VPR_STA
-            , vpr_setup.Timing
-#endif
-            );
+            vpr_setup.library_models, inter_cluster_delay, vpr_setup.PackerRRGraph);
 }
 
 void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -601,9 +597,6 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
               arch.Chans,
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
-#ifdef ENABLE_CLASSIC_VPR_STA
-              vpr_setup.Timing,
-#endif
               arch.Directs,
               arch.num_directs);
 
@@ -721,20 +714,12 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fi
         VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when routing at fixed channel width (was %d)", fixed_channel_width);
     }
 
-#ifdef ENABLE_CLASSIC_VPR_STA
-    t_slack *slacks = alloc_and_load_timing_graph(vpr_setup.Timing);
-#endif
-
     bool status = try_route(fixed_channel_width,
                             vpr_setup.RouterOpts,
                             vpr_setup.AnalysisOpts,
                             &vpr_setup.RoutingArch,
                             vpr_setup.Segments,
                             net_delay,
-#ifdef ENABLE_CLASSIC_VPR_STA
-                            slacks,
-                            vpr_setup.Timing,
-#endif
                             timing_info,
                             delay_calc,
                             arch.Chans,
@@ -760,9 +745,6 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::sha
                                               &vpr_setup.RoutingArch,
                                               vpr_setup.Segments,
                                               net_delay,
-#ifdef ENABLE_CLASSIC_VPR_STA
-                                              vpr_setup.Timing,
-#endif
                                               timing_info,
                                               delay_calc);
 
@@ -1122,17 +1104,10 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 
 	vtr::vector<ClusterNetId, float *> net_delay;
     vtr::t_chunk net_delay_ch;
-#ifdef ENABLE_CLASSIC_VPR_STA
-    t_slack* slacks = nullptr;
-#endif
     if (vpr_setup.TimingEnabled) {
         //Load the net delays
         net_delay = alloc_net_delay(&net_delay_ch);
         load_net_delay_from_routing(net_delay);
-
-#ifdef ENABLE_CLASSIC_VPR_STA
-        slacks = alloc_and_load_timing_graph(vpr_setup.Timing);
-#endif
     }
 
     routing_stats(vpr_setup.RouterOpts.full_stats, vpr_setup.RouterOpts.route_type,
@@ -1143,9 +1118,6 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
             vpr_setup.RoutingArch.directionality,
             vpr_setup.RoutingArch.wire_to_rr_ipin_switch,
             vpr_setup.TimingEnabled
-#ifdef ENABLE_CLASSIC_VPR_STA
-            , net_delay, slacks, vpr_setup.Timing
-#endif
             );
 
     if (vpr_setup.TimingEnabled) {
@@ -1160,10 +1132,6 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
             tatum::write_echo(getEchoFileName(E_ECHO_ANALYSIS_TIMING_GRAPH),
                     *timing_ctx.graph, *timing_ctx.constraints, *analysis_delay_calc, timing_info->analyzer());
         }
-
-#ifdef ENABLE_CLASSIC_VPR_STA
-        do_timing_analysis(slacks, vpr_setup.Timing, false, true);
-#endif
 
         //Timing stats
         VTR_LOG("\n");
@@ -1184,9 +1152,6 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
         //Clean-up the net delays
         free_net_delay(net_delay, &net_delay_ch);
 
-#ifdef ENABLE_CLASSIC_VPR_STA
-        free_timing_graph(slacks);
-#endif
     }
 }
 

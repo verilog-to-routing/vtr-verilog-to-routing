@@ -741,14 +741,6 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("Controls whether timing analysis (and timing driven optimizations) are enabled.")
             .default_value("on");
 
-#ifdef ENABLE_CLASSIC_VPR_STA
-    gen_grp.add_argument(args.SlackDefinition, "--slack_definition")
-            .help("Sets the slack definition used by the classic timing analyzer")
-            .default_value("R")
-            .choices({"R", "I", "S", "G", "C", "N"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
-#endif
-
     gen_grp.add_argument<bool,ParseOnOff>(args.CreateEchoFile, "--echo_file")
             .help("Generate echo files of key internal data structures."
                   " Useful for debugging VPR, and typically end in .echo")

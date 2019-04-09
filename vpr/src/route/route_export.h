@@ -17,10 +17,6 @@ bool try_route(int width_fac,
 		t_det_routing_arch *det_routing_arch,
         std::vector<t_segment_inf>& segment_inf,
 		vtr::vector<ClusterNetId, float *> &net_delay,
-#ifdef ENABLE_CLASSIC_VPR_STA
-        t_slack * slacks,
-        const t_timing_inf& timing_inf,
-#endif
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
         std::shared_ptr<RoutingDelayCalculator> delay_calc, 
 		t_chan_width_dist chan_width_dist,

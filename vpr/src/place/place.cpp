@@ -322,10 +322,6 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 	float * place_delay_value,
 	int * outer_crit_iter_count, 
     const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-#ifdef ENABLE_CLASSIC_VPR_STA
-    t_slack* slacks,
-    t_timing_inf timing_inf,
-#endif
     const PlaceDelayModel& delay_model,
     SetupTimingInfo& timing_info);
 
@@ -336,10 +332,6 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
     t_placer_costs* costs,
     t_placer_prev_inverse_costs* prev_inverse_costs,
     int* moves_since_cost_recompute,
-#ifdef ENABLE_CLASSIC_VPR_STA
-    t_slack* slacks,
-    t_timing_inf timing_inf,
-#endif
     const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
     const PlaceDelayModel& delay_model,
     SetupTimingInfo& timing_info);
@@ -360,9 +352,6 @@ void try_place(t_placer_opts placer_opts,
         const t_analysis_opts& analysis_opts,
 		t_chan_width_dist chan_width_dist,
 		t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
-#ifdef ENABLE_CLASSIC_VPR_STA
-		t_timing_inf timing_inf,
-#endif
         t_direct_inf *directs, int num_directs) {
 
 	/* Does almost all the work of placing a circuit.  Width_fac gives the   *
@@ -386,9 +375,6 @@ void try_place(t_placer_opts placer_opts,
 	double std_dev;
 	char msg[vtr::bufsize];
 	t_placer_statistics stats;
-#ifdef ENABLE_CLASSIC_VPR_STA
-	t_slack * slacks = NULL;
-#endif
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -415,10 +401,6 @@ void try_place(t_placer_opts placer_opts,
         if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
             place_delay_model->dump_echo(getEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL));
         }
-
-#ifdef ENABLE_CLASSIC_VPR_STA
-        slacks = alloc_and_load_timing_graph(timing_inf);
-#endif
 	}
 
 	width_fac = placer_opts.place_chan_width;
@@ -476,30 +458,9 @@ void try_place(t_placer_opts placer_opts,
                     *timing_ctx.graph, *timing_ctx.constraints, *placement_delay_calc, timing_info->analyzer());
         }
 
-#ifdef ENABLE_CLASSIC_VPR_STA
-        load_timing_graph_net_delays(point_to_point_delay_cost);
-		do_timing_analysis(slacks, timing_inf, false, true);
-
-        float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
-        if(cpd_diff_ns > ERROR_TOL) {
-            print_classic_cpds();
-            print_tatum_cpds(timing_info->critical_paths());
-
-            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
-        }
-#endif
-
 		/*now we can properly compute costs  */
 		comp_td_costs(*place_delay_model, &costs.timing_cost, &costs.delay_cost); /*also updates values in point_to_point_delay_cost */
 
-		if (getEchoEnabled()) {
-#ifdef ENABLE_CLASSIC_VPR_STA
-			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_SLACK))
-				print_slack(slacks->slack, false, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_SLACK));
-			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_CRITICALITY))
-				print_criticality(slacks, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY));
-#endif
-		}
 		outer_crit_iter_count = 1;
 
 		prev_inverse_costs.timing_cost = 1 / costs.timing_cost;
@@ -624,10 +585,6 @@ void try_place(t_placer_opts placer_opts,
 			crit_exponent, &place_delay_value,
 			&outer_crit_iter_count,
             netlist_pin_lookup,
-#ifdef ENABLE_CLASSIC_VPR_STA
-            slacks,
-            timing_inf,
-#endif
             *place_delay_model,
             *timing_info);
 
@@ -636,10 +593,6 @@ void try_place(t_placer_opts placer_opts,
 			&costs,
             &prev_inverse_costs,
             &moves_since_cost_recompute,
-#ifdef ENABLE_CLASSIC_VPR_STA
-            slacks,
-            timing_inf,
-#endif
             netlist_pin_lookup,
             *place_delay_model,
             *timing_info);
@@ -669,18 +622,6 @@ void try_place(t_placer_opts placer_opts,
                          tot_iter, t / oldt);
         fflush(stdout);
 
-#ifdef ENABLE_CLASSIC_VPR_STA
-        if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-            float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
-            if(cpd_diff_ns > ERROR_TOL) {
-                print_classic_cpds();
-                print_tatum_cpds(timing_info->critical_paths());
-
-                vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
-            }
-        }
-#endif
-
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
 				costs.cost, costs.bb_cost, costs.timing_cost, t);
 		update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info);
@@ -706,10 +647,6 @@ void try_place(t_placer_opts placer_opts,
 			crit_exponent, &place_delay_value,
 			&outer_crit_iter_count,
             netlist_pin_lookup,
-#ifdef ENABLE_CLASSIC_VPR_STA
-            slacks,
-            timing_inf,
-#endif
             *place_delay_model,
             *timing_info);
 
@@ -722,10 +659,6 @@ void try_place(t_placer_opts placer_opts,
 			&costs,
             &prev_inverse_costs,
             &moves_since_cost_recompute,
-#ifdef ENABLE_CLASSIC_VPR_STA
-            slacks,
-            timing_inf,
-#endif
             netlist_pin_lookup,
             *place_delay_model,
             *timing_info);
@@ -798,20 +731,11 @@ void try_place(t_placer_opts placer_opts,
                                            analysis_opts,
                                            *timing_info,
                                            *placement_delay_calc);
-#ifdef ENABLE_CLASSIC_VPR_STA
-        //Old VPR analyzer
-        load_timing_graph_net_delays(point_to_point_delay_cost);
-		do_timing_analysis(slacks, timing_inf, false, true);
-#endif
-
 
 		/* Print critical path delay. */
 		VTR_LOG("\n");
 		VTR_LOG("Placement estimated critical path delay: %g ns",
                 1e9*critical_path.delay(), get_critical_path_delay());
-#ifdef ENABLE_CLASSIC_VPR_STA
-		VTR_LOG(" (classic VPR STA %g ns)", get_critical_path_delay());
-#endif
         VTR_LOG("\n");
         VTR_LOG("Placement estimated setup Total Negative Slack (sTNS): %g ns\n",
                 1e9*timing_info->setup_total_negative_slack());
@@ -823,15 +747,6 @@ void try_place(t_placer_opts placer_opts,
         print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
         VTR_LOG("\n");
 
-#ifdef ENABLE_CLASSIC_VPR_STA
-        float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
-        if(cpd_diff_ns > ERROR_TOL) {
-            print_classic_cpds();
-            print_tatum_cpds(timing_info->critical_paths());
-
-            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
-        }
-#endif
 	}
 
 	sprintf(msg, "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
@@ -856,10 +771,6 @@ void try_place(t_placer_opts placer_opts,
 	free_placement_structs(placer_opts);
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
-#ifdef ENABLE_CLASSIC_VPR_STA
-        free_timing_graph(slacks);
-#endif
-
 		free_lookups_and_criticalities();
 	}
 
@@ -874,10 +785,6 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 	float * place_delay_value,
 	int * outer_crit_iter_count,
     const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-#ifdef ENABLE_CLASSIC_VPR_STA
-    t_slack* slacks,
-    t_timing_inf timing_inf,
-#endif
     const PlaceDelayModel& delay_model,
     SetupTimingInfo& timing_info) {
 
@@ -900,11 +807,6 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
         timing_info.update();
 		load_criticalities(timing_info, crit_exponent, netlist_pin_lookup);
 
-#ifdef ENABLE_CLASSIC_VPR_STA
-        load_timing_graph_net_delays(point_to_point_delay_cost);
-		do_timing_analysis(slacks, timing_inf, false, true);
-#endif
-
 		/*recompute costs from scratch, based on new criticalities */
 		comp_td_costs(delay_model, &costs->timing_cost, &costs->delay_cost);
 		*outer_crit_iter_count = 0;
@@ -926,10 +828,6 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
     t_placer_costs* costs,
     t_placer_prev_inverse_costs* prev_inverse_costs,
     int* moves_since_cost_recompute,
-#ifdef ENABLE_CLASSIC_VPR_STA
-	t_slack* slacks,
-	t_timing_inf timing_inf,
-#endif
 	const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
     const PlaceDelayModel& delay_model,
 	SetupTimingInfo& timing_info) {
@@ -987,11 +885,6 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 				 //Inner loop timing update
 				timing_info.update();
 				load_criticalities(timing_info, crit_exponent, netlist_pin_lookup);
-
-#ifdef ENABLE_CLASSIC_VPR_STA
-				load_timing_graph_net_delays(point_to_point_delay_cost);
-				do_timing_analysis(slacks, timing_inf, false, true);
-#endif
 
 				comp_td_costs(delay_model, &costs->timing_cost, &costs->delay_cost);
 			}
