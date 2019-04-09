@@ -41,7 +41,6 @@ using namespace std;
 #include "SetupGrid.h"
 #include "setup_clocks.h"
 #include "stats.h"
-#include "path_delay.h"
 #include "read_options.h"
 #include "echo_files.h"
 #include "read_xml_arch_file.h"
@@ -55,7 +54,6 @@ using namespace std;
 #include "timing_place_lookup.h"
 #include "route_export.h"
 #include "vpr_api.h"
-#include "read_sdc.h"
 #include "read_sdc2.h"
 #include "power.h"
 #include "pack_types.h"
@@ -997,8 +995,6 @@ void vpr_free_vpr_data_structures(t_arch& Arch,
     free_arch(&Arch);
     free_device(vpr_setup.RoutingArch);
     free_echo_file_info();
-    free_timing_stats();
-    free_sdc_related_structs();
     free_placement();
     free_routing();
     free_atoms();

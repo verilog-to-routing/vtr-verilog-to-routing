@@ -57,8 +57,6 @@ using namespace std;
 #include "output_clustering.h"
 #include "SetupGrid.h"
 #include "read_xml_arch_file.h"
-#include "path_delay2.h"
-#include "path_delay.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
 #include "echo_files.h"
@@ -69,8 +67,6 @@ using namespace std;
 #include "PreClusterDelayCalculator.h"
 #include "tatum/echo_writer.hpp"
 #include "tatum/report/graphviz_dot_writer.hpp"
-
-#include "read_sdc.h"
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 #define AAPACK_MAX_NET_SINKS_IGNORE 64				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */

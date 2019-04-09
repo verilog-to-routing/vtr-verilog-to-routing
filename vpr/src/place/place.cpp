@@ -20,7 +20,6 @@ using namespace std;
 #include "draw.h"
 #include "place_and_route.h"
 #include "net_delay.h"
-#include "path_delay.h"
 #include "timing_place_lookup.h"
 #include "timing_place.h"
 #include "read_xml_arch_file.h"
@@ -735,7 +734,7 @@ void try_place(t_placer_opts placer_opts,
 		/* Print critical path delay. */
 		VTR_LOG("\n");
 		VTR_LOG("Placement estimated critical path delay: %g ns",
-                1e9*critical_path.delay(), get_critical_path_delay());
+                1e9*critical_path.delay());
         VTR_LOG("\n");
         VTR_LOG("Placement estimated setup Total Negative Slack (sTNS): %g ns\n",
                 1e9*timing_info->setup_total_negative_slack());

@@ -11,7 +11,6 @@ using namespace std;
 #include "vpr_error.h"
 
 #include "physical_types.h"
-#include "path_delay.h"
 #include "globals.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"

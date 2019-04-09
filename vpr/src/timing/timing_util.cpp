@@ -8,8 +8,6 @@
 #include "timing_util.h"
 #include "timing_info.h"
 
-#include "read_sdc.h"
-
 double sec_to_nanosec(double seconds) {
     return 1e9 * seconds;
 }

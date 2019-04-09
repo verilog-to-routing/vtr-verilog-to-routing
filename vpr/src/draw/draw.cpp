@@ -32,7 +32,6 @@ using namespace std;
 
 #include "globals.h"
 #include "graphics.h"
-#include "path_delay.h"
 #include "draw.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"

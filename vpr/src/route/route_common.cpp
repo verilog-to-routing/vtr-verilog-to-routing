@@ -38,9 +38,6 @@ using namespace std;
 #include "tatum/echo_writer.hpp"
 
 
-#include "path_delay.h"
-
-
 /**************** Types local to route_common.c ******************/
 struct t_trace_branch {
     t_trace* head;
