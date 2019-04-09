@@ -301,7 +301,6 @@ struct t_cluster_placement_stats {
 struct t_timing_inf {
 	bool timing_analysis_enabled;
 	float C_ipin_cblock;
-	float T_ipin_cblock;
     std::string SDCFile;
 };
 

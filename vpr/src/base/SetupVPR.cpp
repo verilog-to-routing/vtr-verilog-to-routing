@@ -240,7 +240,6 @@ static void SetupTiming(const t_options& Options, const t_arch& Arch,
     int ipin_cblock_switch_index = find_ipin_cblock_switch_index(Arch);
 
 	Timing->C_ipin_cblock = Arch.Switches[ipin_cblock_switch_index].Cin;
-	Timing->T_ipin_cblock = Arch.Switches[ipin_cblock_switch_index].Tdel();
 	Timing->timing_analysis_enabled = TimingEnabled;
     Timing->SDCFile = Options.SDCFile;
 }
