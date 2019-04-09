@@ -694,7 +694,7 @@ FILE *format_verilog_file(FILE *source)
 	{
 		std::string s(checker);
 		pos = s.find_first_not_of(" ");
-		if(s.find("module") == pos)
+		if(s.find("module") == pos || s.find("macromodule") == pos)
 		{
 			/* "module" found at line start -- copy first part of module declaration into "line" */
 			while(checker[k] != '\n' && checker[k] != ';')
