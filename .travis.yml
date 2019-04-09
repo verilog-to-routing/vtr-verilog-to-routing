@@ -1,9 +1,9 @@
 language: cpp
 
 # Supported Operating systems
-os:
-  - linux
-  - osx
+#os:
+#  - linux
+#  - osx
 
 # Currently sudo is not required, NO ENV is used 
 sudo: false
@@ -67,6 +67,8 @@ matrix:
           - flex
           - fontconfig
           - git
+          - gcc@6
+          - gcc@4.9
           - libxml++
           - qt5
 
