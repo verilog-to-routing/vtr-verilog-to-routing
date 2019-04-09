@@ -10,7 +10,7 @@ start_section "vtr.build" "${GREEN}Building..${NC}"
 # ODIN II errors out due to some unsuppored coding style in clang++
 # VPR is working
 if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
-  make CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=off" -j2
+  make CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on" -j2
 else 
 # For linux, we enable full package compilation
   make CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on" -j2

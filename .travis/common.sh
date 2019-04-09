@@ -32,6 +32,8 @@ function end_section() {
 if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
   export CC=clang
   export CXX=clang++
+  export PATH="/usr/local/opt/bison/bin:/usr/local/bin:$PATH"
+  export PATH="/usr/local/opt/qt/bin:$PATH"
 else 
   export CC=gcc-6
   export CXX=g++-6
