@@ -65,7 +65,10 @@ matrix:
         - cmake
         - ctags
         - flex
+        - fontconfig
         - git
+        - libxml++
+        - qt5
 
 before_install:
  - source .travis/common.sh
