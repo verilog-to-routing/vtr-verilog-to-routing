@@ -2225,43 +2225,6 @@ void print_usage_by_wire_length() {
 }
 */
 
-AtomBlockId find_tnode_atom_block(int inode) {
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& timing_ctx = g_vpr_ctx.timing();
-
-    AtomBlockId blk_id;
-    AtomPinId pin_id;
-    auto type = timing_ctx.tnodes[inode].type;
-    if(type == TN_INPAD_SOURCE || type == TN_FF_SOURCE) {
-        //A source does not map directly to a netlist pin,
-        //so we walk to it's assoicated OPIN
-        VTR_ASSERT_MSG(timing_ctx.tnodes[inode].num_edges == 1, "Source nodes must have a single output edge");
-        int i_opin_node = timing_ctx.tnodes[inode].out_edges[0].to_node;
-
-        VTR_ASSERT(timing_ctx.tnodes[i_opin_node].type == TN_INPAD_OPIN ||timing_ctx.tnodes[i_opin_node].type == TN_FF_OPIN);
-
-        pin_id = atom_ctx.lookup.classic_tnode_atom_pin(i_opin_node);
-
-    } else if (type == TN_OUTPAD_SINK || type == TN_FF_SINK) {
-        //A sink does not map directly to a netlist pin,
-        //so we go back to its input pin
-
-        //By convention the sink pin is at one index before the sink itself
-        int i_ipin_node = inode - 1;
-        VTR_ASSERT(timing_ctx.tnodes[i_ipin_node].type == TN_OUTPAD_IPIN || timing_ctx.tnodes[i_ipin_node].type == TN_FF_IPIN);
-        VTR_ASSERT(timing_ctx.tnodes[i_ipin_node].num_edges == 1);
-        VTR_ASSERT(timing_ctx.tnodes[i_ipin_node].out_edges[0].to_node == inode);
-
-        pin_id = atom_ctx.lookup.classic_tnode_atom_pin(i_ipin_node);
-    } else {
-        pin_id = atom_ctx.lookup.classic_tnode_atom_pin(inode);
-    }
-
-    blk_id = atom_ctx.nlist.pin_block(pin_id);
-
-    return blk_id;
-}
-
 void place_sync_external_block_connections(ClusterBlockId iblk) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();

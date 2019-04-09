@@ -93,19 +93,6 @@ struct TimingContext : public Context {
         size_t num_old_sta_full_updates = 0;
     };
     timing_analysis_profile_info stats;
-
-
-    //Legacy timing analyzer globals (TODO: remove)
-    t_timing_constraints* sdc;
-    int num_tnodes; /* Number of nodes (pins) in the timing graph */
-    t_tnode* tnodes; /* [0..num_tnodes - 1] nodes in the timing graph */
-    int num_tnode_levels; /* Number of levels in the timing graph. */
-    std::vector<std::vector<int>> tnodes_at_level; /* [0..num__tnode_levels - 1].  Count and list of tnodes at each level of
-                                   * the timing graph, to make topological searches easier. Level-0 nodes are
-                                   * sources to the timing graph (types TN_FF_SOURCE, TN_INPAD_SOURCE
-                                   * and TN_CONSTANT_GEN_SOURCE). Level-N nodes are in the immediate fanout of
-                                   * nodes with level at most N-1. */
-
 };
 
 namespace std {
