@@ -16,7 +16,7 @@ matrix:
   include:
   - os: osx
     osx_image: xcode10.2 # we target latest MacOS Mojave
-    compiler: clang # Use clang instead of gcc in MacOS
+    compiler: clang++ # Use clang instead of gcc in MacOS
     addons:
       homebrew:
         packages:
@@ -26,7 +26,7 @@ matrix:
         - flex
         - git
   - os: linux
-    compiler: gcc
+    compiler: g++-6
     addons:
       apt:
         sources:
