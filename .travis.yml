@@ -1,9 +1,9 @@
 language: cpp
 
 # Supported Operating systems
-#os:
-#  - linux
-#  - osx
+os:
+  - linux
+  - osx
 
 # Currently sudo is not required, NO ENV is used 
 sudo: false
@@ -14,61 +14,61 @@ matrix:
     - os: osx
      #dist: trusty
   include:
-  - os: linux
-    # Compiler is specified in ./travis/common.sh
-    #compiler: g++-6
-    addons:
-      apt:
-        sources:
-        - ubuntu-toolchain-r-test # For newer GCC
-        - george-edison55-precise-backports # For cmake
-        packages:
-        - autoconf
-        - automake
-        - bash
-        - bison
-        - build-essential
-        - cmake
-        - ctags
-        - curl
-        - doxygen
-        - flex
-        - fontconfig
-        - gcc-6
-        - g++-6
-        - gcc-4.9
-        - gdb
-        - git
-        - gperf
-        - libcairo2-dev
-        - libevent-dev
-        - libfontconfig1-dev
-        - liblist-moreutils-perl
-        - libncurses5-dev
-        - libx11-dev
-        - libxft-dev
-        - libxml++2.6-dev
-        - perl
-        - python
-        - texinfo
-        - time
-        - valgrind
-        - zip
-        - qt5-default
-  - os: osx
-    osx_image: xcode10.2 # we target latest MacOS Mojave
-    #compiler: clang++ # Use clang instead of gcc in MacOS
-    addons:
-      homebrew:
-        packages:
-        - bison
-        - cmake
-        - ctags
-        - flex
-        - fontconfig
-        - git
-        - libxml++
-        - qt5
+    - os: linux
+      # Compiler is specified in ./travis/common.sh
+      #compiler: g++-6
+      addons:
+        apt:
+          sources:
+          - ubuntu-toolchain-r-test # For newer GCC
+          - george-edison55-precise-backports # For cmake
+          packages:
+          - autoconf
+          - automake
+          - bash
+          - bison
+          - build-essential
+          - cmake
+          - ctags
+          - curl
+          - doxygen
+          - flex
+          - fontconfig
+          - gcc-6
+          - g++-6
+          - gcc-4.9
+          - gdb
+          - git
+          - gperf
+          - libcairo2-dev
+          - libevent-dev
+          - libfontconfig1-dev
+          - liblist-moreutils-perl
+          - libncurses5-dev
+          - libx11-dev
+          - libxft-dev
+          - libxml++2.6-dev
+          - perl
+          - python
+          - texinfo
+          - time
+          - valgrind
+          - zip
+          - qt5-default
+    - os: osx
+      osx_image: xcode10.2 # we target latest MacOS Mojave
+      #compiler: clang++ # Use clang instead of gcc in MacOS
+      addons:
+        homebrew:
+          packages:
+          - bison
+          - cmake
+          - ctags
+          - flex
+          - fontconfig
+          - git
+          - libxml++
+          - qt5
 
 before_install:
  - source .travis/common.sh
