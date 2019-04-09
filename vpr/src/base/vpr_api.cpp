@@ -1112,9 +1112,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
             vpr_setup.RoutingArch.R_minW_pmos,
             Arch.grid_logic_tile_area,
             vpr_setup.RoutingArch.directionality,
-            vpr_setup.RoutingArch.wire_to_rr_ipin_switch,
-            vpr_setup.TimingEnabled
-            );
+            vpr_setup.RoutingArch.wire_to_rr_ipin_switch);
 
     if (vpr_setup.TimingEnabled) {
 

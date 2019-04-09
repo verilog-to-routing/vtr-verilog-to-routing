@@ -43,8 +43,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		std::vector<t_segment_inf>& segment_inf,
 		float R_minW_nmos, float R_minW_pmos,
         float grid_logic_tile_area,
-		enum e_directionality directionality, int wire_to_ipin_switch,
-		bool timing_analysis_enabled) {
+		enum e_directionality directionality, int wire_to_ipin_switch) {
 
 	/* Prints out various statistics about the current routing.  Both a routing *
 	 * and an rr_graph must exist when you call this routine.                   */
