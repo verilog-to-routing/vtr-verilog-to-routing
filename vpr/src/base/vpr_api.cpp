@@ -22,7 +22,6 @@ using namespace std;
 #include "vtr_version.h"
 #include "vtr_time.h"
 #include "vtr_path.h"
-#include "vtr_cilk.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -196,20 +195,6 @@ void vpr_init(const int argc, const char **argv,
 
     VTR_LOG("Using up to %zu parallel worker(s)\n", num_workers);
     tbb_scheduler = std::make_unique<tbb::task_scheduler_init>(num_workers);
-
-#elif defined(__cilk)
-    //Using cilk, set the number of workers for the run-time
-
-    if (num_workers == 0) {
-        //Use default concurrency (i.e. maximum conccurency)
-        num_workers = __cilkrts_get_nworkers();
-    }
-
-    std::string num_workers_str = std::to_string(num_workers);
-    VTR_LOG("Using up to %zu parallel worker(s)\n", num_workers);
-    if (__cilkrts_set_param("nworkers", num_workers_str.c_str()) != 0) {
-        VPR_THROW(VPR_ERROR_OTHER, "Failed to set the number of workers for cilkrts");
-    }
 #else
     //No parallel execution support
     if (num_workers != 1) {
