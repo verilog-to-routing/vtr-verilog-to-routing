@@ -14,19 +14,9 @@ matrix:
     - os: osx
      #dist: trusty
   include:
-  - os: osx
-    osx_image: xcode10.2 # we target latest MacOS Mojave
-    compiler: clang++ # Use clang instead of gcc in MacOS
-    addons:
-      homebrew:
-        packages:
-        - bison
-        - cmake
-        - ctags
-        - flex
-        - git
   - os: linux
-    compiler: g++-6
+    # Compiler is specified in ./travis/common.sh
+    #compiler: g++-6
     addons:
       apt:
         sources:
@@ -65,6 +55,17 @@ matrix:
         - valgrind
         - zip
         - qt5-default
+  - os: osx
+    osx_image: xcode10.2 # we target latest MacOS Mojave
+    #compiler: clang++ # Use clang instead of gcc in MacOS
+    addons:
+      homebrew:
+        packages:
+        - bison
+        - cmake
+        - ctags
+        - flex
+        - git
 
 before_install:
  - source .travis/common.sh

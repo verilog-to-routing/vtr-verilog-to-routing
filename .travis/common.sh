@@ -27,8 +27,15 @@ function end_section() {
 	travis_fold end "$1"
 }
 
-export CC=gcc-6
-export CXX=g++-6
+# For Mac OS, we use clang++ and clang as default compilers
+# For linux, we use g++-6 and gcc-6 as default compilers
+if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
+  export CC=clang
+  export CXX=clang++
+else 
+  export CC=gcc-6
+  export CXX=g++-6
+fi
 
 export PREFIX=$HOME/vtr
 export CMAKE_PARAMS="-DCMAKE_INSTALL_PREFIX=$PREFIX"
