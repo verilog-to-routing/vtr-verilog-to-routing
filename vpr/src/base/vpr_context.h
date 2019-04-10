@@ -187,13 +187,6 @@ struct DeviceContext : public Context {
      Clock Network
      ********************************************************************/
     t_clock_arch * clock_arch;
-
-    /*******************************************************************
-     Timing related
-     ********************************************************************/
-    //TODO: Remove these max_internal_delay globals when the classic timing analyzer is removed
-    float pb_max_internal_delay = UNDEFINED; /* biggest internal delay of block */
-    const t_pb_type *pbtype_max_internal_delay; /* block type with highest internal delay */
 };
 
 //State relating to power analysis
