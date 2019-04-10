@@ -922,66 +922,65 @@ static t_pack_molecule *try_create_molecule(
         std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int pack_pattern_index,
 		AtomBlockId blk_id) {
-	int i;
+
 	t_pack_molecule *molecule;
 
-	bool failed = false;
 
-	{
-		molecule = new t_pack_molecule;
-		molecule->valid = true;
-		molecule->type = MOLECULE_FORCED_PACK;
-		molecule->pack_pattern = &list_of_pack_patterns[pack_pattern_index];
-		if (molecule->pack_pattern == nullptr) {failed = true; goto end_prolog;}
+    auto pack_pattern = &list_of_pack_patterns[pack_pattern_index];
 
-        molecule->atom_block_ids = std::vector<AtomBlockId>(molecule->pack_pattern->num_blocks); //Initializes invalid
+    // Check pack pattern validity
+    if (pack_pattern == nullptr ||
+        pack_pattern->num_blocks == 0 ||
+        pack_pattern->root_block == nullptr) {
+        return nullptr;
+    }
 
-		molecule->num_blocks = list_of_pack_patterns[pack_pattern_index].num_blocks;
-		if (molecule->num_blocks == 0) {failed = true; goto end_prolog;}
+    molecule = new t_pack_molecule;
+    molecule->valid = true;
+    molecule->type = MOLECULE_FORCED_PACK;
+    molecule->pack_pattern = pack_pattern;
+    molecule->atom_block_ids = std::vector<AtomBlockId>(pack_pattern->num_blocks); //Initializes invalid
+    molecule->num_blocks = pack_pattern->num_blocks;
+    molecule->root = pack_pattern->root_block->block_id;
 
-		if (list_of_pack_patterns[pack_pattern_index].root_block == nullptr) {failed = true; goto end_prolog;}
-		molecule->root = list_of_pack_patterns[pack_pattern_index].root_block->block_id;
+    if(list_of_pack_patterns[pack_pattern_index].is_chain) {
+        /* A chain pattern extends beyond a single logic block so we must find
+         * the blk_id that matches with the portion of a chain for this particular logic block */
+        blk_id = find_new_root_atom_for_chain(blk_id, pack_pattern, atom_molecules);
 
-		if(list_of_pack_patterns[pack_pattern_index].is_chain == true) {
-			/* A chain pattern extends beyond a single logic block so we must find
-             * the blk_id that matches with the portion of a chain for this particular logic block */
-			blk_id = find_new_root_atom_for_chain(blk_id, &list_of_pack_patterns[pack_pattern_index], atom_molecules);
-		}
-	}
+        if (!blk_id) return nullptr;
+    }
 
-	end_prolog:
-
-	if (!failed && blk_id && try_expand_molecule(molecule, atom_molecules, blk_id,
-			molecule->pack_pattern->root_block) == true) {
+	if (try_expand_molecule(molecule, atom_molecules, blk_id, molecule->pack_pattern->root_block)) {
         // update chain info for chain molecules
-        if (list_of_pack_patterns[pack_pattern_index].is_chain) {
+        if (molecule->pack_pattern->is_chain) {
             init_molecule_chain_info(blk_id, molecule, atom_molecules);
         }
 		/* Success! commit module */
-		for (i = 0; i < molecule->pack_pattern->num_blocks; i++) {
+		for (int i = 0; i < molecule->pack_pattern->num_blocks; i++) {
             auto blk_id2 = molecule->atom_block_ids[i];
 			if(!blk_id2) {
-				VTR_ASSERT(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == true);
+				VTR_ASSERT(molecule->pack_pattern->is_block_optional[i]);
 				continue;
 			}
 
             atom_molecules.insert({blk_id2, molecule});
 		}
 	} else {
-		failed = true;
-	}
+        /* Does not match pattern, free molecule */
+        delete molecule;
+        return nullptr;
+    }
 
-	if (failed == true) {
-		/* Does not match pattern, free molecule */
-		delete molecule;
-		molecule = nullptr;
-	}
 	return molecule;
 }
 
 /**
- * Determine if atom block can match with the pattern to form a molecule
- * return true if it matches, return false otherwise
+ * Determine if an atom block can match with the pattern to from a molecule.
+ *
+ * Expand from given atom to find all connected atoms matching the
+ * given pack pattern. If all the non-optional primitive positions
+ * in the pattern are filled return true, return false otherwise
  */
 static bool try_expand_molecule(t_pack_molecule *molecule,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
