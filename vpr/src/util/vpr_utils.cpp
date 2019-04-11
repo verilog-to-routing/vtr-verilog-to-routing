@@ -1002,7 +1002,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_t
         return false;
     }
 
-    VTR_ASSERT_MSG(atom_ctx.nlist.is_compressed(), "This function assumes a compresssed/non-dirty netlist");
+    VTR_ASSERT_MSG(atom_ctx.nlist.is_compressed(), "This function assumes a compressed/non-dirty netlist");
 
 
     //Keep track of how many atom ports were checked.
@@ -1039,7 +1039,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_t
         }
     }
 
-    //Similarily to pins, only in-use ports are stored in the compressed
+    //Similarly to pins, only in-use ports are stored in the compressed
     //atom netlist, so we can figure out how many ports should have been
     //checked directly
     size_t atom_ports = atom_ctx.nlist.block_ports(blk_id).size();
@@ -1385,9 +1385,9 @@ static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapp
 	}
 }
 
-/*
-* free pin_index_to_pb_mapping lookup table
-*/
+/**
+ * free pin_index_to_pb_mapping lookup table
+ */
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
@@ -1400,7 +1400,7 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_p
 
 /**
  * Determine cost for using primitive within a complex block, should use primitives of low cost before selecting primitives of high cost
- For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more
+ * For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more
  */
 float compute_primitive_base_cost(const t_pb_graph_node *primitive) {
 
@@ -1412,8 +1412,8 @@ float compute_primitive_base_cost(const t_pb_graph_node *primitive) {
 int num_ext_inputs_atom_block(AtomBlockId blk_id) {
 
 	/* Returns the number of input pins on this atom block that must be hooked *
-	 * up through external interconnect.  That is, the number of input    *
-	 * pins used - the number which connect (internally) to the outputs.   */
+	 * up through external interconnect. That is, the number of input          *
+	 * pins used - the number which connect (internally) to the outputs.       */
 
 	int ext_inps = 0;
 

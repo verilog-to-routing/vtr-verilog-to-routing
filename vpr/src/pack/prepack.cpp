@@ -14,6 +14,7 @@
 #include <cstring>
 #include <map>
 #include <queue>
+#include <utility>
 using namespace std;
 
 #include "vtr_util.h"
@@ -36,40 +37,54 @@ using namespace std;
 /*****************************************/
 static int add_pattern_name_to_hash(t_hash **nhash,
 		const char *pattern_name, int *ncount);
+
 static void discover_pattern_names_in_pb_graph_node(
 		t_pb_graph_node *pb_graph_node, t_hash **nhash,
 		int *ncount);
+
 static void forward_infer_pattern(t_pb_graph_pin *pb_graph_pin);
+
 static void backward_infer_pattern(t_pb_graph_pin *pb_graph_pin);
+
 static t_pack_patterns *alloc_and_init_pattern_list_from_hash(const int ncount,
 		t_hash **nhash);
+
 static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 		const t_pb_graph_node *pb_graph_node);
+
 static void forward_expand_pack_pattern_from_edge(
 		const t_pb_graph_edge *expansion_edge,
 		t_pack_patterns *list_of_packing_patterns,
 		const int curr_pattern_index, int *L_num_blocks, const bool make_root_of_chain);
+
 static void backward_expand_pack_pattern_from_edge(
 		const t_pb_graph_edge* expansion_edge,
 		t_pack_patterns *list_of_packing_patterns,
 		const int curr_pattern_index, t_pb_graph_pin *destination_pin,
 		t_pack_pattern_block *destination_block, int *L_num_blocks);
+
 static int compare_pack_pattern(const t_pack_patterns *pattern_a, const t_pack_patterns *pattern_b);
+
 static void free_pack_pattern(t_pack_pattern_block *pattern_block, t_pack_pattern_block **pattern_block_list);
+
 static t_pack_molecule *try_create_molecule(
 		t_pack_patterns *list_of_pack_patterns,
         std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int pack_pattern_index,
 		AtomBlockId blk_id);
+
 static bool try_expand_molecule(t_pack_molecule *molecule,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
-		const AtomBlockId blk_id,
-		const t_pack_pattern_block *current_pattern_block);
+		const AtomBlockId blk_id);
+
 static void print_pack_molecules(const char *fname,
 		const t_pack_patterns *list_of_pack_patterns, const int num_pack_patterns,
 		const t_pack_molecule *list_of_molecules);
+
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id);
+
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(const AtomBlockId blk_id, t_pb_graph_node *curr_pb_graph_node, float *cost);
+
 static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns *list_of_pack_pattern,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
@@ -87,6 +102,10 @@ static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* input_p
 
 static void init_molecule_chain_info(const AtomBlockId blk_id, t_pack_molecule* molecule,
                                        const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
+
+static AtomBlockId get_sink_block(const AtomBlockId block_id, const t_model_ports *model_port, const BitIndex pin_number);
+
+static AtomBlockId get_driving_block(const AtomBlockId block_id, const t_model_ports *model_port, const BitIndex pin_number);
 
 /*****************************************/
 /*Function Definitions					 */
@@ -951,12 +970,15 @@ static t_pack_molecule *try_create_molecule(
     molecule->root = pack_pattern->root_block->block_id;
 
 
-	if (try_expand_molecule(molecule, atom_molecules, blk_id, molecule->pack_pattern->root_block)) {
+	if (try_expand_molecule(molecule, atom_molecules, blk_id)) {
+		// Success! commit molecule
+
         // update chain info for chain molecules
         if (molecule->pack_pattern->is_chain) {
             init_molecule_chain_info(blk_id, molecule, atom_molecules);
         }
-		/* Success! commit module */
+
+        // update the atom_molcules with the atoms that are mapped to this molecule
 		for (int i = 0; i < molecule->pack_pattern->num_blocks; i++) {
             auto blk_id2 = molecule->atom_block_ids[i];
 			if(!blk_id2) {
@@ -967,7 +989,7 @@ static t_pack_molecule *try_create_molecule(
             atom_molecules.insert({blk_id2, molecule});
 		}
 	} else {
-        /* Does not match pattern, free molecule */
+        // Failed to create molecule
         delete molecule;
         return nullptr;
     }
@@ -978,113 +1000,162 @@ static t_pack_molecule *try_create_molecule(
 /**
  * Determine if an atom block can match with the pattern to from a molecule.
  *
- * Expand from given atom to find all connected atoms matching the
- * given pack pattern. If all the non-optional primitive positions
- * in the pattern are filled return true, return false otherwise
+ * This function takes a molecule that represents a packing pattern. It also
+ * takes a (netlist) atom block represented by blk_id which matches the
+ * root primitive of this packing pattern. Using this atom block and the structure
+ * of the packing pattern, this function tries to fill all the available positions
+ * in the packing pattern. If all the non-optional primitive positions in the
+ * pattern are filled return true, return false otherwise.
+ *      molecule       : the molecule we are trying to expand
+ *      atom_molecules : map of atom block ids that are assigned a molecule and a pointer to this molecule
+ *      blk_id         : chosen to be the root of this molecule and the code is expanding from
  */
 static bool try_expand_molecule(t_pack_molecule *molecule,
-        const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
-		const AtomBlockId blk_id,
-		const t_pack_pattern_block *current_pattern_block) {
-	int ipin;
-	bool success;
-	bool is_optional;
-	bool *is_block_optional;
-	t_pack_pattern_connections *cur_pack_pattern_connection;
+        const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+        const AtomBlockId blk_id) {
+
+    // root block of the pack pattern, which is the starting point of this pattern
+    const auto pattern_root_block = molecule->pack_pattern->root_block;
+    // bool array indicating whether a position in a pack pattern is optional or should
+    // be filled with an atom for legality
+    const auto is_block_optional = molecule->pack_pattern->is_block_optional;
+
+    // create a queue of pattern block and atom block id suggested for this block
+    std::queue<std::pair<t_pack_pattern_block*, AtomBlockId>> pattern_block_queue;
+    // initialize the queue with the pattern root block and the matching atom block
+    pattern_block_queue.push(std::make_pair(pattern_root_block, blk_id));
+
+    // do breadth first search by walking through the pack pattern structure along
+    // with the atom netlist structure
+    while(!pattern_block_queue.empty()) {
+
+        // get the front pattern block, atom block id pair from the queue
+        const auto pattern_block_atom_pair = pattern_block_queue.front();
+        const auto pattern_block = pattern_block_atom_pair.first;
+        const auto block_id = pattern_block_atom_pair.second;
+
+        // remove the front of the queue
+        pattern_block_queue.pop();
+
+        // get the atom block id of the atom occupying this primitive position in this molecule
+        auto molecule_atom_block_id = molecule->atom_block_ids[pattern_block->block_id];
+
+        // if this primitive position in this molecule is already visited and
+        // matches block in the atom netlist go to the next node in the queue
+        if (molecule_atom_block_id && molecule_atom_block_id == block_id) {
+            continue;
+        }
+
+        if (!block_id ||
+            !primitive_type_feasible(block_id, pattern_block->pb_type) ||
+            (molecule_atom_block_id && molecule_atom_block_id != block_id) ||
+            atom_molecules.find(block_id) != atom_molecules.end()) {
+            // Stopping conditions, if:
+            // 1) this is an invalid atom block (nothing)
+            // 2) this atom block cannot fit in this primitive type
+            // 3) this primitive is occupied by another block
+            // 4) this atom block is already used by another molecule
+            // then if the molecule cannot be formed without placing an atom
+            // at that primitive position, then creating this molecule has failed
+            // otherwise go to the next atom block and its corresponding pattern block
+            if (!is_block_optional[pattern_block->block_id]) {
+                return false;
+            }
+            continue;
+        }
+
+        // set this node in the molecule as visited
+		molecule->atom_block_ids[pattern_block->block_id] = block_id;
+
+        // starting from the first connections, add all the connections of this block to the queue
+        auto block_connection = pattern_block->connections;
+
+        while(block_connection != nullptr) {
+
+            // this block is the driver of this connection
+            if (block_connection->from_block == pattern_block) {
+                // find the block this connection is driving and add it to the queue
+                auto port_model  = block_connection->from_pin->port->model_port;
+                auto ipin        = block_connection->from_pin->pin_number;
+                auto sink_blk_id = get_sink_block(block_id, port_model, ipin);
+                // add this sink block id with its corresponding pattern block to the queue
+                pattern_block_queue.push(std::make_pair(block_connection->to_block, sink_blk_id));
+            // this block is being driven by this connection
+            } else if (block_connection->to_block == pattern_block) {
+                // find the block that is driving this connection and it to the queue
+                auto port_model    = block_connection->to_pin->port->model_port;
+                auto ipin          = block_connection->to_pin->pin_number;
+                auto driver_blk_id = get_driving_block(block_id, port_model, ipin);
+                // add this driver block id with its corresponding pattern block to the queue
+                pattern_block_queue.push(std::make_pair(block_connection->from_block, driver_blk_id));
+            }
+
+            // this block should be either driving or driven by the connection
+            VTR_ASSERT(block_connection->from_block == pattern_block || block_connection->to_block == pattern_block);
+            // go to the next connection of this pattern block
+            block_connection = block_connection->next;
+        }
+
+    }
+    // if all non-optional positions in the pack pattern have atoms
+    // mapped to them, then this molecule is valid
+    return true;
+}
+
+/**
+ * Find the atom block in the netlist driven by this pin of the input atom block
+ * If doesn't exist return AtomBlockId::INVALID()
+ * Limitation: The block should be driving only one sink block
+ *      block_id   : id of the atom block that is driving the net connected to the sink block
+ *      model_port : the model of the port driving the net
+ *      pin_number : the pin_number of the pin driving the net (pin index within the port)
+ */
+static AtomBlockId get_sink_block(const AtomBlockId block_id, const t_model_ports *model_port, const BitIndex pin_number) {
 
     auto& atom_ctx = g_vpr_ctx.atom();
 
-	is_block_optional = molecule->pack_pattern->is_block_optional;
-	is_optional = is_block_optional[current_pattern_block->block_id];
+    auto port_id = atom_ctx.nlist.find_atom_port(block_id, model_port);
 
-    /* If the block in the pattern has already been visited, then there is no need to revisit it */
-	if (molecule->atom_block_ids[current_pattern_block->block_id]) {
-		if (molecule->atom_block_ids[current_pattern_block->block_id] != blk_id) {
-			/* Mismatch between the visited block and the current block implies
-             * that the current netlist structure does not match the expected pattern,
-             * return whether or not this matters */
-			return is_optional;
-		} else {
-			return true;
-		}
-	}
+    if(port_id) {
+        auto net_id = atom_ctx.nlist.port_net(port_id, pin_number);
+        if (net_id && atom_ctx.nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
+            auto net_sinks = atom_ctx.nlist.net_sinks(net_id);
+            auto sink_pin_id = *(net_sinks.begin());
+            return atom_ctx.nlist.pin_block(sink_pin_id);
+        }
+    }
 
-	/* This node has never been visited */
-	/* Simplifying assumption: An atom can only map to one molecule */
-    auto rng = atom_molecules.equal_range(blk_id);
-    bool rng_empty = rng.first == rng.second;
-	if(!rng_empty) {
-		/* This block is already in a molecule, return whether or not this matters */
-		return is_optional;
-	}
+    return AtomBlockId::INVALID();
+ }
 
-	if (primitive_type_feasible(blk_id, current_pattern_block->pb_type)) {
+/**
+ * Find the atom block in the netlist driving this pin of the input atom block
+ * If doesn't exist return AtomBlockId::INVALID()
+ * Limitation: This driving block should be driving only the input block
+ *      block_id   : id of the atom block that is connected to a net driven by the driving block
+ *      model_port : the model of the port driven by the net
+ *      pin_number : the pin_number of the pin driven by the net (pin index within the port)
+ */
+static AtomBlockId get_driving_block(const AtomBlockId block_id, const t_model_ports *model_port, const BitIndex pin_number) {
 
-		success = true;
-		/* If the primitive types match, store it, expand it and explore neighbouring nodes */
+    if (model_port->is_clock) {
+        VTR_ASSERT(pin_number == 1); //TODO: support multi-clock primitives
+    }
 
+    auto& atom_ctx = g_vpr_ctx.atom();
 
-        /* store that this node has been visited */
-		molecule->atom_block_ids[current_pattern_block->block_id] = blk_id;
+    auto port_id = atom_ctx.nlist.find_atom_port(block_id, model_port);
 
-		cur_pack_pattern_connection = current_pattern_block->connections;
-		while (cur_pack_pattern_connection != nullptr && success == true) {
-			if (cur_pack_pattern_connection->from_block == current_pattern_block) {
-				/* find net corresponding to pattern */
-                AtomPortId port_id = atom_ctx.nlist.find_atom_port(blk_id, cur_pack_pattern_connection->from_pin->port->model_port);
-                if(!port_id) {
-                    //No matching port, we may be at the end
-                    success = is_block_optional[cur_pack_pattern_connection->to_block->block_id];
-                } else {
-                    ipin = cur_pack_pattern_connection->from_pin->pin_number;
-                    AtomNetId net_id = atom_ctx.nlist.port_net(port_id, ipin);
+    if (port_id) {
+        auto net_id = atom_ctx.nlist.port_net(port_id, pin_number);
+        if (net_id && atom_ctx.nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
+            return atom_ctx.nlist.net_driver_block(net_id);
+        }
+    }
 
-                    /* Check if net is valid */
-                    if (!net_id || atom_ctx.nlist.net_sinks(net_id).size() != 1) { /* One fanout assumption */
-                        success = is_block_optional[cur_pack_pattern_connection->to_block->block_id];
-                    } else {
-                        auto net_sinks = atom_ctx.nlist.net_sinks(net_id);
-                        VTR_ASSERT(net_sinks.size() == 1);
-
-                        auto sink_pin_id = *net_sinks.begin();
-                        auto sink_blk_id = atom_ctx.nlist.pin_block(sink_pin_id);
-
-                        success = try_expand_molecule(molecule, atom_molecules, sink_blk_id,
-                                    cur_pack_pattern_connection->to_block);
-                    }
-                }
-			} else {
-				VTR_ASSERT(cur_pack_pattern_connection->to_block == current_pattern_block);
-				/* find net corresponding to pattern */
-
-                auto port_id = atom_ctx.nlist.find_atom_port(blk_id, cur_pack_pattern_connection->to_pin->port->model_port);
-                VTR_ASSERT(port_id);
-				ipin = cur_pack_pattern_connection->to_pin->pin_number;
-
-                AtomNetId net_id;
-				if (cur_pack_pattern_connection->to_pin->port->model_port->is_clock) {
-                    VTR_ASSERT(ipin == 1); //TODO: support multi-clock primitives
-					net_id = atom_ctx.nlist.port_net(port_id, ipin);
-				} else {
-					net_id = atom_ctx.nlist.port_net(port_id, ipin);
-				}
-				/* Check if net is valid */
-				if (!net_id || atom_ctx.nlist.net_sinks(net_id).size() != 1) { /* One fanout assumption */
-					success = is_block_optional[cur_pack_pattern_connection->from_block->block_id];
-				} else {
-                    auto driver_blk_id = atom_ctx.nlist.net_driver_block(net_id);
-					success = try_expand_molecule(molecule, atom_molecules, driver_blk_id,
-                                cur_pack_pattern_connection->from_block);
-				}
-			}
-			cur_pack_pattern_connection = cur_pack_pattern_connection->next;
-		}
-	} else {
-		success = is_optional;
-	}
-
-	return success;
+    return AtomBlockId::INVALID();
 }
+
 
 static void print_pack_molecules(const char *fname,
 		const t_pack_patterns *list_of_pack_patterns, const int num_pack_patterns,
@@ -1538,7 +1609,7 @@ static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* cluster
 
 
 /**
- * This function initializes the chain info data structure of the molecule
+ * This function initializes the chain info data structure of the molecule.
  * If this is the furthest molecule up the chain, the chain_info data
  * structure is created. Otherwise, the input pack_molecule is set to
  * point to the same chain_info of the molecule feeding it
