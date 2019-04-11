@@ -1130,7 +1130,7 @@ ast_node_t *newAlways(ast_node_t *delay_control, ast_node_t *statement, int line
 ast_node_t *procedural_continuous_assign(ast_node_t *expression1, ast_node_t *expression2, int line_number)
 {
 	
-	ast_node_t* new_node = create_node_w_type(ASSIGN, line_number, current_parse_file);
+	ast_node_t* new_node = create_node_w_type(PROCEDURAL_ASSIGN, line_number, current_parse_file);
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 2, expression1, expression2);
 

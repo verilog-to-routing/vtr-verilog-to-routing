@@ -284,8 +284,6 @@ list_of_blocking_assignment:
     |blocking_assignment                                            {$$ = newList(ASSIGN, $1);}
     ;
 
-
-
 // 3 Primitive Instances	{$$ = NULL;}
 gate_declaration:
 	vAND list_of_multiple_inputs_gate_declaration_instance ';'							{$$ = newGate(BITWISE_AND, $2, yylineno);}
@@ -417,34 +415,34 @@ non_blocking_assignment:
 
 procedural_continuous_assignment:
 	vASSIGN list_of_variable_asssignemt									{$$ = $2;}
-//	| vDEASSIGN primary													{$$ = Procedural_continuous_deassign($2, yylineno);}
+	| vDEASSIGN primary													{$$ = procedural_continuous_deassign($2, yylineno);}
 	;
 
 list_of_variable_asssignemt:
 	list_of_variable_asssignemt ',' variable_asssignemt					{$$ = newList_entry($1, $3);}
-	|variable_asssignemt												{$$ = newList(ASSIGN, $1);}
+	|variable_asssignemt												{$$ = $1;}
 	;
 
 variable_asssignemt:								
-	primary '=' expression												{$$ = newBlocking($1, $3, yylineno);}
+	primary '=' expression												{$$ = procedural_continuous_assign($1, $3, yylineno) /*newBlocking($1, $3, yylineno)*/;}
 	;
 
 parallel_connection:
-	primary voPAL expression 											{$$ = NULL;}
+	primary voPAL expression 								{$$ = NULL;}
 	;
 
 case_item_list:
-	case_item_list case_items											{$$ = newList_entry($1, $2);}
-	| case_items														{$$ = newList(CASE_LIST, $1);}
+	case_item_list case_items								{$$ = newList_entry($1, $2);}
+	| case_items											{$$ = newList(CASE_LIST, $1);}
 	;
 
 case_items:
-	expression ':' statement											{$$ = newCaseItem($1, $3, yylineno);}
-	| vDEFAULT ':' statement											{$$ = newDefaultCase($3, yylineno);}
+	expression ':' statement								{$$ = newCaseItem($1, $3, yylineno);}
+	| vDEFAULT ':' statement								{$$ = newDefaultCase($3, yylineno);}
 	;
 
 seq_block:
-	vBEGIN stmt_list vEND 												{$$ = $2;}
+	vBEGIN stmt_list vEND 									{$$ = $2;}
 	;
 
 stmt_list:

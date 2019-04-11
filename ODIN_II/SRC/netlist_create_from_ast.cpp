@@ -790,7 +790,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				break;
 			}
 			/* ---------------------- */
-			case COMBINATIONAL_ASSIGN:
+			case ASSIGN:
 				/* combinational path */
 				type_of_circuit = COMBINATIONAL;
 				break;
@@ -801,9 +801,10 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				skip_children = TRUE;
 				break;
 
-			case PROCEDURAL_DEASSIGN:
+			case DEASSIGN:
 				/* sequential path */
-				return_sig_list = assignment_alias(node, instance_name_prefix);
+				/* TODO: Remove the assignment */
+				//return_sig_list = assignment_alias(node, instance_name_prefix);
 				skip_children = TRUE;
 				break;	
 				
