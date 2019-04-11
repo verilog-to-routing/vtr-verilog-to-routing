@@ -1162,8 +1162,10 @@ static enum e_block_pack_status try_pack_molecule(
     }
 
     // if this cluster has a molecule placed in it that is part of a long chain
-    // (a chain that cosists of more than one molecule), don't allow more long chain
-    // molecules to be placed in this cluster. (to avoid possible routability problems)
+    // (a chain that consists of more than one molecule), don't allow more long chain
+    // molecules to be placed in this cluster. To avoid possibly creating cluster level
+    // blocks that have incompatible placement constraints or form very long placement
+    // macros that limit placement flexibility.
     if (cluster_placement_stats_ptr->has_long_chain &&
         molecule->type == MOLECULE_FORCED_PACK &&
         molecule->pack_pattern->is_chain &&
@@ -3162,9 +3164,9 @@ static void print_seed_gains(const char * fname, const std::vector<AtomBlockId>&
 
 /**
  * This function takes a chain molecule, and the pb_graph_node that is chosen
- * for packing the molecules root block. Using the given root_primitive, this
+ * for packing the molecule's root block. Using the given root_primitive, this
  * function will identify which chain id this molecule is being mapped to and
- * will upate the chain id value inside the chain info data structure of this
+ * will update the chain id value inside the chain info data structure of this
  * molecule
  */
 static void update_molecule_chain_info(t_pack_molecule* chain_molecule, const t_pb_graph_node* root_primitive) {
@@ -3188,7 +3190,7 @@ static void update_molecule_chain_info(t_pack_molecule* chain_molecule, const t_
 /**
  * This function takes the root block of a chain molecule and a proposed
  * placement primitive for this block. The function then checks if this
- * chain root block has a placement contraints (such as being driven from
+ * chain root block has a placement constraint (such as being driven from
  * outside the cluster) and returns the status of the placement accordingly.
  */
 static enum e_block_pack_status check_chain_root_placement_feasibility(
@@ -3200,10 +3202,6 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(
 
     bool is_long_chain = molecule->chain_info->is_long_chain;
 
-    // For some architectures (titan) even small chains that can fit within one cluster
-    // still need to start at the top of the cluster since their input is driven
-    // by a global gnd or vdd. Therefore even if this is not a long chain we still
-    // neet to check that it's input pin not driven by a global net
     const auto& chain_root_pins = molecule->pack_pattern->chain_root_pins;
 
     t_model_ports *root_port = chain_root_pins[0]->port->model_port;
@@ -3211,13 +3209,18 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(
 
     if (port_id) {
         auto chain_net_id = atom_ctx.nlist.port_net(port_id, chain_root_pins[0]->pin_number);
-        // if this block is the root block of the chain and this chain spains more than one cluster
+        // if this block is part of a long chain or it is driven by a cluster
+        // input pin we need to check the placement legality of this block
+        // For some architectures (titan) even small chains that can fit within one
+        // cluster still need to start at the top of the cluster since their input is
+        // driven by a global gnd or vdd. Therefore even if this is not a long chain
+        // but its input pin is driven by a net, the placement legality is checked.
         if (is_long_chain || chain_net_id) {
 
             auto chain_id = molecule->chain_info->chain_id;
             // if this chain has a chain id assigned to it
             if (chain_id != -1) {
-                // the chosen primtive should be a valid starting pooint for the chain
+                // the chosen primitive should be a valid starting point for the chain
                 if (pb_graph_node != chain_root_pins[chain_id]->parent_node) {
                     block_pack_status = BLK_FAILED_FEASIBLE;
                 }

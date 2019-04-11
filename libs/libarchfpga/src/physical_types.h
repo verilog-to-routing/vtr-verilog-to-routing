@@ -993,8 +993,18 @@ public:
 
 // class member functions
 public:
+    // Returns true if this pin belongs to a primitive block like
+    // a LUT or FF, instead of a cluster-level block like a CLB.
     bool is_primitive_pin() const;
+
+    // Returns true if this pin belongs to a root pb_block which is a pb_block
+    // that has no parent block. For example, pins of a CLB, IO, DSP, etc.
     bool is_root_block_pin() const;
+
+    // This function returns a string that contains the name of the pin
+    // and the entire sequence of pb_types in the hierarchy from the block
+    // of this pin back to the cluster-level (top-level) pb_type in the
+    // following format: clb[0]/lab[0]/fle[3]/ble6[0]/lut6[0].in[0]
     std::string to_string() const;
 
 };
@@ -1009,9 +1019,18 @@ public:
  *      num_input_pins: Number of input pins entering this edge
  *      output_pins: array of pb_type graph output pins ptrs exiting this edge
  *      num_output_pins: Number of output pins exiting this edge
+ *
+ *      num_pack_patterns: number of pack patterns this edge belongs to
+ *      pack_pattern_names: [0..num_pack_patterns-1] name of each pack pattern
+ *      pack_pattern_indices: [0..num_pack_patterns-1] id of each pack pattern
+ *      infer_pattern: if true, pattern of this edge could be inferred by checking
+ *                     input/output edges. This is true when the edge is a single
+ *                     fanout edge and is driven or driving another edge which is
+ *                     annotated with a pack pattern.
  */
 class t_pb_graph_edge {
 public:
+    /* edge connectivity */
 	t_pb_graph_pin **input_pins;
 	int num_input_pins;
 	t_pb_graph_pin **output_pins;
@@ -1028,18 +1047,20 @@ public:
 	int driver_pin;
 
 	/* pack pattern info */
-	const char **pack_pattern_names; /*[0..num_pack_patterns(of_edge)-1]*/
-	int *pack_pattern_indices; /*[0..num_pack_patterns(of_edge)-1]*/
 	int num_pack_patterns;
-	bool infer_pattern; /*If true, infer pattern based on patterns connected to it*/
+	const char **pack_pattern_names;
+	int *pack_pattern_indices;
+	bool infer_pattern;
 
 // class member functions
 public:
-    // returns true is this edge is annotated with pattern_index
+    // Returns true is this edge is annotated with the given pattern_index
+    //  pattern_index : index of the packing pattern
     bool annotated_with_pattern(int pattern_index) const;
-    // returns true is this edge is annotated with pattern_index
-    // or its pattern is infered and a connected output edge is
-    // annotated with pattern_index
+
+    // Returns true is this edge is annotated with pattern_index or its pattern
+    // is inferred and a connected output edge is annotated with pattern_index
+    //   pattern_index : index of the packing pattern
     bool belongs_to_pattern(int pattern_index) const;
 
 };
