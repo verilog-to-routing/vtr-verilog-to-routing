@@ -890,6 +890,27 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
     return true;
 }
 
+// StubFinder traverses a net definition and find ensures that all nodes that
+// are children of a configurable node have at least one sink.
+class StubFinder {
+public:
+    // Checks specified net for stubs, return true if at least one stub is
+    // found.
+    bool CheckNet(ClusterNetId net);
+
+    // Returns set of stub nodes.
+    const std::set<int> &stub_nodes() {
+        return stub_nodes_;
+    }
+private:
+    bool RecurseTree(t_rt_node* rt_root);
+
+    // Set of stub nodes
+    // Note this is an ordered set so that node output is sorted by node
+    // id.
+    std::set<int> stub_nodes_;
+};
+
 //Cheks for stubs in a net's routing.
 //
 //Stubs (routing branches which don't connect to SINKs) serve no purpose, and only chew up wiring unecessarily.
@@ -899,37 +920,33 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
 void check_net_for_stubs(ClusterNetId net) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    t_rt_node* rt_root = traceback_to_route_tree(net);
+    StubFinder stub_finder;
 
-    auto stubs = find_route_tree_stubs(rt_root);
-
-    if (!stubs.empty()) {
+    bool any_stubs = stub_finder.CheckNet(net);
+    if(any_stubs) {
         auto& cluster_ctx = g_vpr_ctx.clustering();
         std::string msg = vtr::string_fmt("Route tree for net '%s' (#%zu) contains stub branches rooted at:\n",
                                           cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
-        for (t_rt_node* stub_root : stubs) {
-            msg += vtr::string_fmt("    %s\n", describe_rr_node(stub_root->inode).c_str());
+        for (int inode : stub_finder.stub_nodes()) {
+            msg += vtr::string_fmt("    %s\n", describe_rr_node(inode).c_str());
         }
 
         VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
     }
+}
 
+bool StubFinder::CheckNet(ClusterNetId net) {
+    stub_nodes_.clear();
+
+    t_rt_node* rt_root = traceback_to_route_tree(net);
+    RecurseTree(rt_root);
     free_route_tree(rt_root);
+
+    return !stub_nodes_.empty();
 }
 
-//Returns the set of stub roots for a given route tree
-std::vector<t_rt_node*> find_route_tree_stubs(t_rt_node* rt_root) {
-    std::vector<t_rt_node*> stubs;
-    find_route_tree_stubs_recurr(rt_root, stubs);
-    return stubs;
-}
-
-//Returns true if rt_root is a configurable stub.
-//If any of rt_root's children are stubs they are added to 'stubs' since they are stub roots
-//
-//A stub is defined as a branch of the route tree which does not connect to a SINK, but has
-//configurable edges (and hence should have been trimmed).
-bool find_route_tree_stubs_recurr(t_rt_node* rt_root, std::vector<t_rt_node*>& stubs) {
+// Returns true if this node is a stub.
+bool StubFinder::RecurseTree(t_rt_node* rt_root) {
     auto& device_ctx = g_vpr_ctx.device();
 
     if (rt_root->u.child_list == nullptr) {
@@ -940,26 +957,21 @@ bool find_route_tree_stubs_recurr(t_rt_node* rt_root, std::vector<t_rt_node*>& s
             return false;
         }
     } else {
-        //If any of the children are not stubs, neither is the current node
         bool is_stub = true;
-        std::vector<t_rt_node*> child_stubs;
         for (t_linked_rt_edge* edge = rt_root->u.child_list; edge != nullptr; edge = edge->next) {
-            bool child_is_stub = find_route_tree_stubs_recurr(edge->child, stubs);
             bool driver_switch_configurable = device_ctx.rr_switch_inf[edge->iswitch].configurable();
 
-            if (child_is_stub && driver_switch_configurable) {
-                child_stubs.push_back(edge->child);
-            } else {
+            bool child_is_stub = RecurseTree(edge->child);
+            if(!child_is_stub) {
+                // Because the child was not a stub, this node is not a stub.
                 is_stub = false;
+            } else if(driver_switch_configurable) {
+                // This child was stub, and we drove it from a configurable
+                // edge, this is an error.
+                stub_nodes_.insert(edge->child->inode);
             }
         }
 
-        if (is_stub) {
-            return true; //All children were stubs, so is the current node
-        } else {
-            //This node is not a stub, so add any child stubs as stub roots
-            stubs.insert(stubs.end(), child_stubs.begin(), child_stubs.end());
-            return false;
-        }
+        return is_stub;
     }
 }

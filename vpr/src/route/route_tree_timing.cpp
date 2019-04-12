@@ -631,7 +631,10 @@ void free_route_tree(t_rt_node * rt_node) {
 		rt_edge = next_edge;
 	}
 
-    rr_node_to_rt_node[rt_node->inode] = nullptr;
+    if(!rr_node_to_rt_node.empty()) {
+        rr_node_to_rt_node.at(rt_node->inode) = nullptr;
+    }
+
 	free_rt_node(rt_node);
 }
 
