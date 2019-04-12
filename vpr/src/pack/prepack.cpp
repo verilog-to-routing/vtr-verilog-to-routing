@@ -935,6 +935,13 @@ static t_pack_molecule *try_create_molecule(
         return nullptr;
     }
 
+    // If a chain pattern extends beyond a single logic block, we must find
+    // the furthest blk_id up the chain that is not mapped to a molecule yet.
+    if(pack_pattern->is_chain) {
+        blk_id = find_new_root_atom_for_chain(blk_id, pack_pattern, atom_molecules);
+        if (!blk_id) return nullptr;
+    }
+
     molecule = new t_pack_molecule;
     molecule->valid = true;
     molecule->type = MOLECULE_FORCED_PACK;
@@ -943,13 +950,6 @@ static t_pack_molecule *try_create_molecule(
     molecule->num_blocks = pack_pattern->num_blocks;
     molecule->root = pack_pattern->root_block->block_id;
 
-    if(list_of_pack_patterns[pack_pattern_index].is_chain) {
-        /* A chain pattern extends beyond a single logic block so we must find
-         * the blk_id that matches with the portion of a chain for this particular logic block */
-        blk_id = find_new_root_atom_for_chain(blk_id, pack_pattern, atom_molecules);
-
-        if (!blk_id) return nullptr;
-    }
 
 	if (try_expand_molecule(molecule, atom_molecules, blk_id, molecule->pack_pattern->root_block)) {
         // update chain info for chain molecules
