@@ -22,6 +22,7 @@
 #include "netlist_writer.h"
 #include "lut.h"
 #include "parameters.h"
+#include "route_tree_type.h"
 
 namespace fasm {
 
@@ -71,7 +72,8 @@ class FasmWriterVisitor : public NetlistVisitor {
       void check_for_lut(const t_pb* atom);
       void output_fasm_mux(std::string fasm_mux, t_interconnect *interconnect, t_pb_graph_pin *mux_input_pin);
       void walk_routing();
-      std::string build_clb_prefix(const t_pb_graph_node* pb_graph_node) const;
+      void walk_route_tree(const t_rt_node *root);
+      std::string build_clb_prefix(const t_pb *pb, const t_pb_graph_node* pb_graph_node) const;
       const LutOutputDefinition* find_lut(const t_pb_graph_node* pb_graph_node);
       void check_for_param(const t_pb *atom);
 
