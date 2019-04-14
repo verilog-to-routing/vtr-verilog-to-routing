@@ -1412,22 +1412,19 @@ static std::vector<t_pb_graph_pin *> find_end_of_path(t_pb_graph_pin* input_pin,
 
 static void expand_search(const t_pb_graph_pin * input_pin, std::queue<t_pb_graph_pin *>& pins_queue, const int pattern_index) {
 
-    // If not a primitive input pin
-    // ----------------------------
+    // If not a primitive input pin (has output edges)
+    // -----------------------------------------------
 
     // iterate over all output edges at this pin
     for(int iedge = 0; iedge < input_pin->num_output_edges; iedge++) {
 
         const auto& pin_edge = input_pin->output_edges[iedge];
-        // if we cannot infer the pattern of this edge and its pattern
-        // doesn't match the pattern_index, ignore this edge
-        if (pin_edge->infer_pattern == false
-            && pin_edge->annotated_with_pattern(pattern_index) == false) {
+        // if this edge is not anotated with this pattern and its pattern cannot be inferred, ignore it.
+        if (!pin_edge->annotated_with_pattern(pattern_index) && !pin_edge->infer_pattern) {
             continue;
         }
 
         // this edge either matched the pack pattern or its pack pattern could be inferred
-
         // iterate over all the pins of that edge and add them to the pins_queue
         for (int ipin = 0; ipin < pin_edge->num_output_pins; ipin++) {
              pins_queue.push(pin_edge->output_pins[ipin]);
@@ -1439,8 +1436,8 @@ static void expand_search(const t_pb_graph_pin * input_pin, std::queue<t_pb_grap
     // If a primitive input pin
     // ------------------------
 
-    // if this is an input pin to a primitive, it won't have output edges
-    // so the previous for loop won't be entered
+    // if this is an input pin to a primitive, it won't have
+    // output edges so the previous for loop won't be entered
     if (input_pin->is_primitive_pin() && input_pin->num_output_edges == 0) {
         // iterate over the output ports of the primitive
         const auto& pin_pb_graph_node = input_pin->parent_node;
