@@ -79,15 +79,15 @@ sc_lookup_string(STRING_CACHE * sc,
         return -1;
     }
     else {
-	    hash = string_hash(sc, string) % sc->string_hash_size;
-	    i = sc->string_hash[hash];
-	    while(i >= 0)
-		{
-		    if(!strcmp(sc->string[i], string))
-			return i;
-		    i = sc->next_string[i];
-		}
-	    return -1;
+    hash = string_hash(sc, string) % sc->string_hash_size;
+    i = sc->string_hash[hash];
+    while(i >= 0)
+	{
+	    if(!strcmp(sc->string[i], string))
+		return i;
+	    i = sc->next_string[i];
+	}
+    return -1;
     }
 }
 
