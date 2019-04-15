@@ -285,6 +285,7 @@ void vpr_init(const int argc, const char **argv,
             timing_ctx.graph = TimingGraphBuilder(atom_ctx.nlist, atom_ctx.lookup).timing_graph();
             VTR_LOG("  Timing Graph Nodes: %zu\n", timing_ctx.graph->nodes().size());
             VTR_LOG("  Timing Graph Edges: %zu\n", timing_ctx.graph->edges().size());
+            VTR_LOG("  Timing Graph Levels: %zu\n", timing_ctx.graph->levels().size());
         }
         {
             print_netlist_clock_info(atom_ctx.nlist);
