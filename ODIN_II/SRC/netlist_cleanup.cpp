@@ -107,8 +107,14 @@ void traverse_forward(nnode_t *node, int toplevel, int remove_me){
 	}
 
 	if(node->type == ADD || node->type == MINUS){
+        // check if adders/subtractors are starting using a global gnd/vcc node or a pad node
+        auto ADDER_START_NODE = PAD_NODE;
+        if (configuration.adder_cin_global) {
+            if (node->type == ADD) ADDER_START_NODE = GND_NODE;
+            else ADDER_START_NODE = VCC_NODE;
+        }
 		/* Check if we've found the head of an adder or subtractor chain */
-		if(node->input_pins[node->num_input_pins-1]->net->driver_pin->node->type == PAD_NODE){
+		if(node->input_pins[node->num_input_pins-1]->net->driver_pin->node->type == ADDER_START_NODE) {
 			addsub_list_next = insert_node_list(addsub_list_next, node);
 		}
 	}

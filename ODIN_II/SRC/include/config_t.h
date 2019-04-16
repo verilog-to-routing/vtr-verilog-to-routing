@@ -38,6 +38,9 @@ struct config_t
 	int split_hard_adder;
 	//  Threshold from hard to soft logic
 	int min_threshold_adder;
+    // defines if the first cin of an adder/subtractor is connected to a global gnd/vdd
+    // or generated using a dummy adder with both inputs set to gnd/vdd
+    bool adder_cin_global;
 
 	// If the memory is smaller than both of these, it will be converted to soft logic.
 	int soft_logic_memory_depth_threshold;
