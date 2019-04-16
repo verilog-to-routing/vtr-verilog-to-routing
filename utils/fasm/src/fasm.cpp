@@ -22,6 +22,7 @@
 #include "atom_netlist_utils.h"
 #include "netlist_writer.h"
 #include "vpr_utils.h"
+#include "route_tree_timing.h"
 
 #include "fasm_utils.h"
 
@@ -556,27 +557,29 @@ void FasmWriterVisitor::visit_atom_impl(const t_pb* atom) {
   check_for_param(atom);
 }
 
-void FasmWriterVisitor::walk_routing() {
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    for(const auto &trace : route_ctx.trace) {
-      const t_trace *head = trace.head;
-      while(head != nullptr) {
-        const t_trace *next = head->next;
-
-        if(next != nullptr) {
-          const auto next_inode = next->index;
-          auto *meta = vpr::rr_edge_metadata(head->index, next_inode, head->iswitch, "fasm_features");
-          if(meta != nullptr) {
+void FasmWriterVisitor::walk_route_tree(const t_rt_node *root) {
+    for (t_linked_rt_edge* edge = root->u.child_list; edge != nullptr; edge = edge->next) {
+        auto *meta = vpr::rr_edge_metadata(root->inode, edge->child->inode, edge->iswitch, "fasm_features");
+        if(meta != nullptr) {
             current_blk_has_prefix_ = false;
             output_fasm_features(meta->as_string());
-          }
         }
 
-        head = next;
-      }
+        walk_route_tree(edge->child);
     }
 }
+
+void FasmWriterVisitor::walk_routing() {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    for(const auto &trace : route_ctx.trace) {
+      t_trace *head = trace.head;
+      t_rt_node* root = traceback_to_route_tree(head);
+      walk_route_tree(root);
+      free_route_tree(root);
+    }
+}
+
 
 void FasmWriterVisitor::finish_impl() {
     auto& device_ctx = g_vpr_ctx.device();
