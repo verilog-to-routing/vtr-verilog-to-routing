@@ -599,38 +599,66 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 }
 
 /* General Utility methods ------------------------------------------------- */
+#define UPPER_BUFFER_LIMIT 32728
+bool is_whitespace(const char in)
+{
+	return (in == ' ' || in == '\t' || in == '\n' || in == '\r');
+}
 
 /**
  * the trim function remove consequent whitespace and remove trailing whitespace
  */
-inline static bool are_both_whitespace(char a, char b) 
-{ 
-	return isspace(a) && isspace(b);
-}
-
-char* trim(char *string)
+char *trim(char *input_str)
 {
-	if (!string)
-		return string;
-
-	std::string temp = string;
-	//replace large space{1 or more} with single space inside text
-	std::string::iterator new_end = std::unique(temp.begin(), temp.end(), are_both_whitespace);
-	temp.erase(new_end, temp.end());   
-
-	//remove head whitespace
-	if( temp.length() > 0 && isspace(temp[0]) )					temp.erase(0,1);
-	//remove trailing whitespace
-	if( temp.length() > 0 && isspace(temp[temp.length()-1]) )	temp.erase(temp.length()-1,1);
-	//copy string over
-	if( temp.length() > 0)										memcpy(string,temp.c_str(), temp.length());
-	
-	//make sure we have a nul terminated string
-	string[temp.length()] = '\0';
-
-	return string;
+	return trim(input_str, UPPER_BUFFER_LIMIT);
 }
 
+char* trim(char *input_string, size_t n)
+{
+	size_t upper_limit = (n < 1)?  UPPER_BUFFER_LIMIT: (n > UPPER_BUFFER_LIMIT)? UPPER_BUFFER_LIMIT: n;
+	if (!input_string)
+		return input_string;
+  
+	int head = 0;
+	int tail = 0;
+	char current = ' ';
+	char previous = ' ';
+
+	// trim head and compress
+	while( tail < upper_limit && input_string[tail] != '\0' )
+	{
+		previous = current;
+		current = input_string[tail];
+		input_string[tail] = '\0';
+
+		tail += 1;
+
+		if( is_whitespace(current) )
+		{
+			if( ! is_whitespace(previous) )
+			{
+				input_string[head] = ' ';
+				head += 1;	
+			}
+		}
+		else
+		{
+			input_string[head] = current;
+			head += 1;	
+		}
+	}
+	input_string[head] = '\0';
+
+	// trim tail end
+	while( head >= 0 
+	&& (input_string[head] == '\0' || is_whitespace(input_string[head]) ) )
+	{
+		input_string[head] = '\0';
+		head -= 1;
+	}
+
+	return input_string;
+}
 /* ------------------------------------------------------------------------- */
 
 
