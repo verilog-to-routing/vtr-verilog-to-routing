@@ -12,7 +12,8 @@
 
 ClusteredNetlist read_netlist(const char *net_file,
 		const t_arch *arch,
-        bool verify_file_digests);
+        bool verify_file_digests,
+        int verbosity);
 
 #endif
 
