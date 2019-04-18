@@ -141,3 +141,6 @@ Detailed Command-line Options
     The script will automatically create this directory if necessary.
 
     **Default:** ``./temp``
+    
+.. option:: -other_options <tbd>
+    There are other options Mohamed is using and he's going to document the ones he's figured out
