@@ -536,7 +536,7 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                          &arch,
                                          vpr_setup.FileNameOpts.verify_file_digests);
 
-    process_constant_nets(cluster_ctx.clb_nlist, vpr_setup.constant_net_method);
+    process_constant_nets(cluster_ctx.clb_nlist, vpr_setup.constant_net_method, vpr_setup.PackerOpts.pack_verbosity);
 
     {
         std::ofstream ofs("packing_pin_util.rpt");
