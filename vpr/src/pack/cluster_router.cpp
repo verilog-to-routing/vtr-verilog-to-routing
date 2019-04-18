@@ -201,10 +201,14 @@ static bool check_edge_for_route_conflicts(
 				mode->name, result.first->second->name,
 				edge->interconnect->name) << std::endl;
 
+			// The illegal mode is added to the pb_graph_node as it resulted in a conflict during atom-to-atom routing. This mode cannot be used in the consequent cluster
+			// generation try.
 			if (std::find(pb_graph_node->illegal_modes.begin(), pb_graph_node->illegal_modes.end(), result.first->second->index) == pb_graph_node->illegal_modes.end()) {
 				pb_graph_node->illegal_modes.push_back(result.first->second->index);
 			}
 
+			// If the number of illegal modes equals the number of available mode for a specific pb_graph_node it means that no cluster can be generated. This resuts
+			// in a fatal error.
 			if (pb_graph_node->illegal_modes.size() >= pb_graph_node->pb_type->num_modes) {
 				VPR_THROW(VPR_ERROR_PACK, "There are no more available modes to be used. Routing Failed!");
 			}
