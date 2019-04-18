@@ -81,7 +81,7 @@ using namespace std;
 
 #include "log.h"
 
-#if defined(TBB_INTERFACE_VERSION)
+#ifdef VPR_USE_TBB
 # include <tbb/task_scheduler_init.h>
 
 //We need to store the scheduler object so any concurrency
@@ -186,7 +186,7 @@ void vpr_init(const int argc, const char **argv,
         }
     }
 
-#if defined(TBB_INTERFACE_VERSION)
+#ifdef VPR_USE_TBB
     //Using Thread Building Blocks
     if (num_workers == 0) {
         //Use default concurrency (i.e. maximum conccurency)
