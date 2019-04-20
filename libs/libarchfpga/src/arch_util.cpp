@@ -586,7 +586,6 @@ void alloc_and_load_default_child_for_pb_type( t_pb_type *pb_type,
 		}
 	}
 
-	copy->max_internal_delay = pb_type->max_internal_delay;
 	copy->annotations = (t_pin_to_pin_annotation*) vtr::calloc(
 			pb_type->num_annotations, sizeof(t_pin_to_pin_annotation));
 	copy->num_annotations = pb_type->num_annotations;

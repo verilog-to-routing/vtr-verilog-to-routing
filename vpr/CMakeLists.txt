@@ -11,12 +11,23 @@ endif()
 
 project("vpr")
 
+#
+# VPR Build Options
+#
+
+set(VPR_EXECUTION_ENGINE "auto" CACHE STRING "Specify the framework for (potential) parallel execution")
+set_property(CACHE VPR_EXECUTION_ENGINE PROPERTY STRINGS auto serial tbb)
+
 option(VPR_USE_SIGNAL_HANDLER "Should VPR use a signal handler to intercept signals (e.g. SIGINT)?" OFF)
+
 option(VPR_IPO_BUILD "Should VPR be compiled with an interprocedural optimizations?" ON)
 
 set(VPR_PGO_CONFIG "none" CACHE STRING "Configure VPR Profile-Guided Optimization (PGO). prof_gen: built executable will produce profiling info, prof_use: built executable will be optimized based on generated profiling info, none: disable pgo")
 set_property(CACHE VPR_PGO_CONFIG PROPERTY STRINGS prof_gen prof_use none)
 
+#
+# Build Configuration
+#
 include(CheckCXXSymbolExists)
 
 #Collect the source files
@@ -56,6 +67,10 @@ endif()
 
 
 set(PROF_GEN_FLAGS_TO_CHECK
+#
+# Profile Guilded Optimization Configuration
+#
+set(PROF_GEN_FLAGS_TO_CHECK 
     #GCC-like
     "-fprofile-generate" #Build will generate profiling information
     )
@@ -91,6 +106,48 @@ else()
     message(ERROR "Unsupported VPR_PGO_CONFIG '${VPR_PGO_CONFIG}'")
 endif()
 
+    find_package(TBB)
+
+#
+# Execution Engine Configuration
+#
+
+#Figure out which engine to use
+if (VPR_EXECUTION_ENGINE STREQUAL "serial")
+    set(VPR_USE_EXECUTION_ENGINE "serial")
+else()
+    find_package(TBB)
+
+    if (VPR_EXECUTION_ENGINE STREQUAL "auto")
+        if (TBB_FOUND)
+            set(VPR_USE_EXECUTION_ENGINE "tbb") 
+        else()
+            set(VPR_USE_EXECUTION_ENGINE "serial") 
+        endif()
+    elseif(VPR_EXECUTION_ENGINE STREQUAL "tbb")
+        if (TBB_FOUND)
+            set(VPR_USE_EXECUTION_ENGINE "tbb") 
+        else()
+            message(FATAL_ERROR "VPR: TBB requested but not found (on debian/ubuntu try 'sudo apt install libtbb-dev'")
+        endif()
+    endif()
+endif()
+
+#Configure the build to use the selected engine
+if (VPR_USE_EXECUTION_ENGINE STREQUAL "tbb")
+    target_compile_definitions(libvpr PRIVATE VPR_USE_TBB)
+    target_link_libraries(libvpr tbb)
+    target_link_libraries(libvpr tbbmalloc_proxy) #Use the scalable memory allocator
+    message(STATUS "VPR: will support parallel execution using '${VPR_USE_EXECUTION_ENGINE}'")
+elseif(VPR_USE_EXECUTION_ENGINE STREQUAL "serial")
+    message(STATUS "VPR: will only support serial execution")
+else()
+    message(FATAL_ERROR "VPR: Unrecognized execution engine '${VPR_USE_EXECUTION_ENGINE}'")
+endif()
+
+#
+# Signal handler configuration
+#
 if (VPR_USE_SIGNAL_HANDLER)
     #Check wheter VPR can use sigaction to handle signals (only supported by POSIX)
     CHECK_CXX_SYMBOL_EXISTS(sigaction csignal HAVE_SIGACTION)

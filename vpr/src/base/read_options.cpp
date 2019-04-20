@@ -741,14 +741,6 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("Controls whether timing analysis (and timing driven optimizations) are enabled.")
             .default_value("on");
 
-#ifdef ENABLE_CLASSIC_VPR_STA
-    gen_grp.add_argument(args.SlackDefinition, "--slack_definition")
-            .help("Sets the slack definition used by the classic timing analyzer")
-            .default_value("R")
-            .choices({"R", "I", "S", "G", "C", "N"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
-#endif
-
     gen_grp.add_argument<bool,ParseOnOff>(args.CreateEchoFile, "--echo_file")
             .help("Generate echo files of key internal data structures."
                   " Useful for debugging VPR, and typically end in .echo")
@@ -836,10 +828,6 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("Writes the routing resource graph to the specified file")
             .metavar("RR_GRAPH_FILE")
             .show_in(argparse::ShowIn::HELP_ONLY);
-
-	file_grp.add_argument(args.hmetis_input_file, "--hmetis_input_file")
-			.help("Reads in a filename to write packing stats for input to hmetis")
-			.show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.out_file_prefix, "--outfile_prefix")
             .help("Prefix for output files")
@@ -948,6 +936,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("off")
             .show_in(argparse::ShowIn::HELP_ONLY);
     
+    pack_grp.add_argument<bool,ParseOnOff>(args.balance_block_type_utilization, "--balance_block_type_utilization")
+            .help("If enabled, when a primitive can potentially be mapped to multiple block types the packer will "
+                  "pick the block type which (currently) has the lowest utilization.")
+            .default_value("off")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     pack_grp.add_argument(args.target_external_pin_util, "--target_ext_pin_util")
             .help("Sets the external pin utilization target during clustering.\n"
                   "Value Ranges: [1.0, 0.0]\n"
@@ -1079,7 +1073,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   "Valid options:\n"
                   " * 'delta' uses differences in position only\n"
                   " * 'delta_override' uses differences in position with overrides for direct connects\n")
-            .default_value("delta_override")
+            .default_value("delta")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument<e_reducer,ParseReducer>(args.place_delay_model_reducer, "--place_delay_model_reducer")

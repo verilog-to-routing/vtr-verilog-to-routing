@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.3.0)
 
 project("VTR")
 
@@ -60,12 +60,9 @@ include(CheckCXXCompilerFlag)
 #
 # We require c++14 support
 #
-CHECK_CXX_COMPILER_FLAG("-std=c++14" CXX_COMPILER_SUPPORTS_CXX14_FLAG)
-if(CXX_COMPILER_SUPPORTS_CXX14_FLAG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-else()
-    message(FATAL_ERROR "Could not determine C++14 support for compiler ${CMAKE_CXX_COMPILER}. C++14 support is required.")
-endif()
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF) #No compiler specific extensions
 
 #
 # Warning flags

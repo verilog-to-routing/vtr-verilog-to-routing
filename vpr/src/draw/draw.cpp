@@ -21,7 +21,6 @@
 using namespace std;
 
 #include "vtr_assert.h"
-#include "vtr_matrix.h"
 #include "vtr_ndoffsetmatrix.h"
 #include "vtr_memory.h"
 #include "vtr_log.h"
@@ -32,7 +31,6 @@ using namespace std;
 
 #include "globals.h"
 #include "graphics.h"
-#include "path_delay.h"
 #include "draw.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"

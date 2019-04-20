@@ -25,7 +25,6 @@ struct t_options {
     argparse::ArgValue<std::string> pad_loc_file;
     argparse::ArgValue<std::string> write_rr_graph_file;
     argparse::ArgValue<std::string> read_rr_graph_file;
-    argparse::ArgValue<std::string> hmetis_input_file;
 
     /* Stage Options */
     argparse::ArgValue<bool> do_packing;
@@ -43,7 +42,6 @@ struct t_options {
     argparse::ArgValue<bool> show_version;
     argparse::ArgValue<size_t> num_workers;
     argparse::ArgValue<bool> timing_analysis;
-    argparse::ArgValue<std::string> SlackDefinition; //TODO: eventually remove
     argparse::ArgValue<bool> CreateEchoFile;
     argparse::ArgValue<bool> verify_file_digests;
     argparse::ArgValue<std::string> device_layout;
@@ -69,6 +67,7 @@ struct t_options {
     argparse::ArgValue<bool> timing_driven_clustering;
     argparse::ArgValue<e_cluster_seed> cluster_seed_type;
     argparse::ArgValue<bool> enable_clustering_pin_feasibility_filter;
+    argparse::ArgValue<bool> balance_block_type_utilization;
     argparse::ArgValue<std::vector<std::string>> target_external_pin_util;
     argparse::ArgValue<bool> enable_round_robin_prepacking;
     argparse::ArgValue<int> pack_verbosity;

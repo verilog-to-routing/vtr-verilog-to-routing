@@ -35,7 +35,7 @@ extern int yylineno;
 	#define YYLINENO yylineno
 #endif
 
-void yyerror(const char *str){	fprintf(stderr,"error in parsing: %s - on line number %d\n",str, yylineno);	exit(-1);}
+void yyerror(const char *str){	fprintf(stderr,"error in parsing: (%s)::%d\n",str, yylineno-1);	exit(-1);}
 int yywrap(){	return 1;}
 int yyparse();
 int yylex(void);
@@ -65,8 +65,9 @@ int yylex(void);
 %token vOUTPUT vPARAMETER vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER
-%token vNOT_SUPPORT
+%token vPLUS_COLON vMINUS_COLON
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
+%token vNOT_SUPPORT 
 
 %right '?' ':'
 %left voOROR
@@ -131,21 +132,21 @@ items:
 	;
 
 define:
-	vDEFINE vSYMBOL_ID vINTEGRAL				             {$$ = NULL; newConstant($2, newNumberNode($3, LONG, UNSIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vUNSIGNED_DECIMAL				   {$$ = NULL; newConstant($2, newNumberNode($3, DEC, UNSIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vUNSIGNED_OCTAL				     {$$ = NULL; newConstant($2, newNumberNode($3, OCT, UNSIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vUNSIGNED_HEXADECIMAL			 {$$ = NULL; newConstant($2, newNumberNode($3, HEX, UNSIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vUNSIGNED_BINARY				     {$$ = NULL; newConstant($2, newNumberNode($3, BIN, UNSIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vSIGNED_DECIMAL				   {$$ = NULL; newConstant($2, newNumberNode($3, DEC, SIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vSIGNED_OCTAL				     {$$ = NULL; newConstant($2, newNumberNode($3, OCT, SIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vSIGNED_HEXADECIMAL			 {$$ = NULL; newConstant($2, newNumberNode($3, HEX, SIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vSIGNED_BINARY				     {$$ = NULL; newConstant($2, newNumberNode($3, BIN, SIGNED, yylineno), yylineno);}
+	vDEFINE vSYMBOL_ID vINTEGRAL							{$$ = NULL; newConstant($2, newNumberNode($3, LONG, UNSIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vUNSIGNED_DECIMAL					{$$ = NULL; newConstant($2, newNumberNode($3, DEC, UNSIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vUNSIGNED_OCTAL					{$$ = NULL; newConstant($2, newNumberNode($3, OCT, UNSIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vUNSIGNED_HEXADECIMAL				{$$ = NULL; newConstant($2, newNumberNode($3, HEX, UNSIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vUNSIGNED_BINARY					{$$ = NULL; newConstant($2, newNumberNode($3, BIN, UNSIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vSIGNED_DECIMAL					{$$ = NULL; newConstant($2, newNumberNode($3, DEC, SIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vSIGNED_OCTAL						{$$ = NULL; newConstant($2, newNumberNode($3, OCT, SIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vSIGNED_HEXADECIMAL				{$$ = NULL; newConstant($2, newNumberNode($3, HEX, SIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vSIGNED_BINARY						{$$ = NULL; newConstant($2, newNumberNode($3, BIN, SIGNED, yylineno), yylineno);}
 	;
 
 
 module:
 	vMODULE vSYMBOL_ID '(' variable_define_list ')' ';' list_of_module_items vENDMODULE				{$$ = newModule($2, $4, $7, yylineno);}
-	| vMODULE vSYMBOL_ID '(' variable_define_list ',' ')' ';' list_of_module_items vENDMODULE		{$$ = newModule($2, $4, $8, yylineno);} //TODO this is supported?? not in standards
+	| vMODULE vSYMBOL_ID '(' variable_define_list ',' ')' ';' list_of_module_items vENDMODULE		{$$ = newModule($2, $4, $8, yylineno);}
 	| vMODULE vSYMBOL_ID '(' ')' ';' list_of_module_items vENDMODULE								{$$ = newModule($2, NULL, $6, yylineno);}
 	;
 
@@ -194,7 +195,8 @@ list_of_function_items:
 	| function_item              										{$$ = newList(FUNCTION_ITEMS, $1);}
 	;
 
-function_item: parameter_declaration	        						{$$ = $1;}
+function_item: 
+	parameter_declaration	        									{$$ = $1;}
 	| function_input_declaration			    						{$$ = $1;}
 	| net_declaration													{$$ = $1;}
 	| integer_declaration                       						{$$ = $1;}
@@ -498,21 +500,23 @@ expression:
 	;
 
 primary:
-  vINTEGRAL				                  {$$ = newNumberNode($1, LONG, UNSIGNED, yylineno);}
-  | vUNSIGNED_DECIMAL				        {$$ = newNumberNode($1, DEC, UNSIGNED, yylineno);}
-  | vUNSIGNED_OCTAL				          {$$ = newNumberNode($1, OCT, UNSIGNED, yylineno);}
-  | vUNSIGNED_HEXADECIMAL			      {$$ = newNumberNode($1, HEX, UNSIGNED, yylineno);}
-  | vUNSIGNED_BINARY				        {$$ = newNumberNode($1, BIN, UNSIGNED, yylineno);}
-  | vSIGNED_DECIMAL				        {$$ = newNumberNode($1, DEC, SIGNED, yylineno);}
-  | vSIGNED_OCTAL				          {$$ = newNumberNode($1, OCT, SIGNED, yylineno);}
-  | vSIGNED_HEXADECIMAL			      {$$ = newNumberNode($1, HEX, SIGNED, yylineno);}
-  | vSIGNED_BINARY				        {$$ = newNumberNode($1, BIN, SIGNED, yylineno);}
-	| vSYMBOL_ID											{$$ = newSymbolNode($1, yylineno);}
-	| vSYMBOL_ID '[' expression ']'							{$$ = newArrayRef($1, $3, yylineno);}
-	| vSYMBOL_ID '[' expression ']' '[' expression ']'		{$$ = newArrayRef2D($1, $3, $6, yylineno);}
-	| vSYMBOL_ID '[' expression ':' expression ']'			{$$ = newRangeRef($1, $3, $5, yylineno);}
+	vINTEGRAL								{$$ = newNumberNode($1, LONG, UNSIGNED, yylineno);}
+	| vUNSIGNED_DECIMAL						{$$ = newNumberNode($1, DEC, UNSIGNED, yylineno);}
+	| vUNSIGNED_OCTAL						{$$ = newNumberNode($1, OCT, UNSIGNED, yylineno);}
+	| vUNSIGNED_HEXADECIMAL					{$$ = newNumberNode($1, HEX, UNSIGNED, yylineno);}
+	| vUNSIGNED_BINARY						{$$ = newNumberNode($1, BIN, UNSIGNED, yylineno);}
+	| vSIGNED_DECIMAL						{$$ = newNumberNode($1, DEC, SIGNED, yylineno);}
+	| vSIGNED_OCTAL							{$$ = newNumberNode($1, OCT, SIGNED, yylineno);}
+	| vSIGNED_HEXADECIMAL					{$$ = newNumberNode($1, HEX, SIGNED, yylineno);}
+	| vSIGNED_BINARY						{$$ = newNumberNode($1, BIN, SIGNED, yylineno);}
+	| vSYMBOL_ID																		{$$ = newSymbolNode($1, yylineno);}
+	| vSYMBOL_ID '[' expression ']'														{$$ = newArrayRef($1, $3, yylineno);}
+	| vSYMBOL_ID '[' expression ']' '[' expression ']'									{$$ = newArrayRef2D($1, $3, $6, yylineno);}
+	| vSYMBOL_ID '[' expression vPLUS_COLON expression ']'								{$$ = newPartSelectRangeRef($1, $3, $5, 1, yylineno);}
+	| vSYMBOL_ID '[' expression vMINUS_COLON expression ']'								{$$ = newPartSelectRangeRef($1, $3, $5, -1, yylineno);}
+	| vSYMBOL_ID '[' expression ':' expression ']'										{$$ = newRangeRef($1, $3, $5, yylineno);}
 	| vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newRangeRef2D($1, $3, $5, $8, $10, yylineno);}
-	| '{' probable_expression_list '}' 						{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
+	| '{' probable_expression_list '}'													{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
 	;
 
 probable_expression_list:

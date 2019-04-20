@@ -98,6 +98,4 @@ float calc_relaxed_criticality(const std::map<DomainPair,float>& domains_max_req
  * Debug
  */
 void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds);
-
-void compare_tatum_classic_constraints();
 #endif

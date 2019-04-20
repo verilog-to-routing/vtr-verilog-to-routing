@@ -10,7 +10,6 @@ using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_memory.h"
-#include "vtr_matrix.h"
 #include "vtr_math.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
@@ -76,6 +75,8 @@ typedef std::vector<std::map<int,int>> t_arch_switch_fanin;
 
 
 /********************* Subroutines local to this module. *******************/
+void print_rr_graph_stats();
+
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed);
 
 static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
@@ -340,6 +341,8 @@ void create_rr_graph(
         }
     }
 
+    print_rr_graph_stats();
+
     if (router_lookahead_type == e_router_lookahead::MAP) {
         compute_router_lookahead(segment_inf.size());
     }
@@ -348,6 +351,18 @@ void create_rr_graph(
     if (!det_routing_arch->write_rr_graph_filename.empty()) {
         write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str(), segment_inf);
     }
+}
+
+void print_rr_graph_stats() {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    size_t num_rr_edges = 0;
+    for (auto& rr_node : device_ctx.rr_nodes) {
+        num_rr_edges += rr_node.edges().size();
+    }
+
+    VTR_LOG("  RR Graph Nodes: %zu\n", device_ctx.rr_nodes.size());
+    VTR_LOG("  RR Graph Edges: %zu\n", num_rr_edges);
 }
 
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed) {
@@ -2248,7 +2263,10 @@ static void load_uniform_connection_block_pattern(
                     int max_num_unassigned_tracks = 0;
 
                     /* Across all potential track assignments, determine the maximum number of recently
-                     * unassigned tracks that can be assigned this iteration.
+                     * unassigned tracks that can be assigned this iteration. offset_increment is used to
+                     * increment through the potential track assignments. The nested loops inside the
+                     * offset_increment loop, iterate through all the tracks associated with a particular
+                     * track assignment.
                      */
 
                     for (int offset_increment = 0; offset_increment < num_phys_pins; offset_increment++) {

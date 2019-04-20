@@ -1,3 +1,4 @@
+regression_tests/vtr_reg_strong/strong_two_chains
 regression_tests/vtr_reg_strong/strong_dedicated_clock
 regression_tests/vtr_reg_strong/strong_titan
 regression_tests/vtr_reg_strong/strong_no_timing

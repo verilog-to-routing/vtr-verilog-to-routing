@@ -49,7 +49,6 @@
 #include "tatum/base/TimingType.hpp"
 #include "timing_info.h"
 #include "tatum/echo_writer.hpp"
-#include "path_delay.h"
 #include "net_delay.h"
 #include "route_budgets.h"
 

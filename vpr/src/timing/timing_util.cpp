@@ -8,8 +8,6 @@
 #include "timing_util.h"
 #include "timing_info.h"
 
-#include "read_sdc.h"
-
 double sec_to_nanosec(double seconds) {
     return 1e9 * seconds;
 }
@@ -608,29 +606,5 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
 void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
     for (auto path : cpds) {
         VTR_LOG("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain()), size_t(path.capture_domain()), float(path.slack()), float(path.delay()));
-    }
-}
-
-void compare_tatum_classic_constraints() {
-    auto& timing_ctx = g_vpr_ctx.timing();
-
-    if (timing_ctx.sdc) {
-        VTR_LOG("Comparing timing constraints:\n");
-        for (int launch_clk = 0; launch_clk < timing_ctx.sdc->num_constrained_clocks; ++launch_clk) {
-            tatum::DomainId launch_domain = timing_ctx.constraints->find_clock_domain(timing_ctx.sdc->constrained_clocks[launch_clk].name);
-            VTR_ASSERT(launch_domain);
-
-            for (int capture_clk = 0; capture_clk < timing_ctx.sdc->num_constrained_clocks; ++capture_clk) {
-                tatum::DomainId capture_domain = timing_ctx.constraints->find_clock_domain(timing_ctx.sdc->constrained_clocks[capture_clk].name);
-                VTR_ASSERT(capture_domain);
-
-                tatum::Time constraint = timing_ctx.constraints->setup_constraint(launch_domain, capture_domain);
-
-                VTR_LOG("  %s -> %s Classic: %g Tatum: %g\n",
-                        timing_ctx.sdc->constrained_clocks[launch_clk].name, timing_ctx.sdc->constrained_clocks[capture_clk].name,
-                        timing_ctx.sdc->domain_constraint[launch_clk][capture_clk],
-                        constraint.value());
-            }
-        }
     }
 }

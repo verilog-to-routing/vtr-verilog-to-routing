@@ -20,10 +20,6 @@ bool try_timing_driven_route(
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
         std::shared_ptr<RoutingDelayCalculator> delay_calc, 
-#ifdef ENABLE_CLASSIC_VPR_STA
-        t_slack * slacks,
-        const t_timing_inf &timing_inf,
-#endif
         ScreenUpdatePriority first_iteration_priority
         );
 bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,

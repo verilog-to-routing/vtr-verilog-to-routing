@@ -129,44 +129,6 @@ void AtomLookup::set_atom_clb_net(const AtomNetId net_id, const ClusterNetId clb
 }
 
 /*
- * Classic Timing nodes
- */
-AtomPinId AtomLookup::classic_tnode_atom_pin(const int tnode_index) const {
-    auto iter = atom_pin_to_classic_tnode_.find(tnode_index);
-    if(iter == atom_pin_to_classic_tnode_.inverse_end()) {
-        //Not found
-        return AtomPinId::INVALID();
-    }
-    return iter->second;
-}
-
-int AtomLookup::atom_pin_classic_tnode(const AtomPinId pin_id) const {
-    auto iter = atom_pin_to_classic_tnode_.find(pin_id);
-    if(iter == atom_pin_to_classic_tnode_.end()) {
-        //Not found
-        return OPEN;
-    }
-    return iter->second;
-
-}
-
-
-void AtomLookup::set_atom_pin_classic_tnode(const AtomPinId pin_id, const int tnode_index) {
-    VTR_ASSERT(pin_id);
-    //If either are invalid remove any mapping
-    if(!pin_id && tnode_index != OPEN) {
-        //Remove
-        atom_pin_to_classic_tnode_.erase(tnode_index);
-    } else if(pin_id && tnode_index == OPEN) {
-        //Remove
-        atom_pin_to_classic_tnode_.erase(pin_id);
-    } else if(pin_id && tnode_index != OPEN) {
-        //Store
-        atom_pin_to_classic_tnode_.update(pin_id, tnode_index);
-    }
-}
-
-/*
  * Timing Nodes
  */
 tatum::NodeId AtomLookup::atom_pin_tnode(const AtomPinId pin, BlockTnode block_tnode_type) const {

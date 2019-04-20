@@ -101,21 +101,26 @@ function print_time_since() {
 }
 
 function init_temp() {
+	RUN_NAME="run001"
 	last_run=$(find regression_test/run* -maxdepth 0 -type d 2>/dev/null | tail -1 )
 	if [ "_${last_run}" != "_" ]
 	then
 		last_run_id=${last_run##regression_test/run}
 		n=$(echo $last_run_id | awk '{print $0 + 1}')
-		new_run=regression_test/run$(printf "%03d" $n)
+		RUN_NAME="run$(printf "%03d" $n)"
 	fi
+	new_run=regression_test/${RUN_NAME}
 	echo "running benchmark @${new_run}"
 	mkdir -p ${new_run}
+	unlink regression_test/latest 
+	ln -s ${RUN_NAME} regression_test/latest
 }
 
 function cleanup_temp() {
 	for runs in regression_test/run*
 	do 
 		rm -Rf ${runs}
+		unlink regression_test/latest || /bin/true
 	done
 }
 

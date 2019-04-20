@@ -1,9 +1,15 @@
 #Python requirements file for building documentation
-# used by Read The Docs to install python required 
+# used by Read The Docs to install python required
 # modules with pip.
+
+sphinx_rtd_theme
+
+# Support custom domains
+sphinxcontrib-domaintools
 
 # Support Markdown
 recommonmark
+sphinx-markdown-tables
 
 #Handle references in bibtex format
 sphinxcontrib-bibtex

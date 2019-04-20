@@ -1,10 +1,10 @@
 /****************************************************************************
-          ISA definition file
+		  ISA definition file
 
   - The MIPS I ISA has a 6 bit opcode in the upper 6 bits.  
   - The opcode can also specify a "class".  There are two classes:
-            1.  SPECIAL - look in lowest 6 bits to find operation
-            2.  REGIMM - look in [20:16] to find type of branch
+			1.  SPECIAL - look in lowest 6 bits to find operation
+			2.  REGIMM - look in [20:16] to find type of branch
 
 ****************************************************************************/
 
@@ -23,7 +23,7 @@
 `define D_ADDRESSWIDTH 32
 `define DM_DATAWIDTH 32
 `define DM_BYTEENAWIDTH 4
-`define DM_ADDRESSWIDTH 16
+`define DM_ADDRESSWIDTH 10
 `define DM_SIZE 16384
 
 
@@ -124,7 +124,7 @@ module system (
 	boot_ddata,
 	boot_dwe,
 	nop7_q
-	);
+);
 
 /************************* IO Declarations *********************/
 input clk;
@@ -1205,9 +1205,6 @@ data_mem data_mem (
 	.stalled(ctrl_data_mem_stalled),
 	.d_writedata(nop7_q),
 	.d_address(addersub_result),
-	.boot_daddr(boot_daddr),
-	.boot_ddata(boot_ddata),
-	.boot_dwe(boot_dwe),
 	.op(ctrl_data_mem_op),
 	.d_loadresult(data_mem_d_loadresult));
 
@@ -1520,11 +1517,11 @@ pipereg_w5 pipereg13 (
 endmodule
 
 /****************************************************************************
-          AddSub unit
+		  AddSub unit
 - Should perform ADD, ADDU, SUBU, SUB, SLT, SLTU
 
   is_slt signext addsub
-    op[2] op[1] op[0]  |  Operation
+	op[2] op[1] op[0]  |  Operation
 0     0     0     0         SUBU
 2     0     1     0         SUB
 1     0     0     1         ADDU
@@ -1534,10 +1531,12 @@ endmodule
 
 ****************************************************************************/
 module addersub (
-            opB, opA,
-            op, 
-            result_slt,
-            result );
+	opB, 
+	opA,
+	op, 
+	result_slt,
+	result 
+);
 
 //parameter WIDTH=32;
 //`DEFINE WIDTH 32
@@ -1574,20 +1573,20 @@ dummy_add_sub adder32bit (opA,opB,not_addsub,sum);
 // This is an LPM from Altera, replacing with a dummy one for now
 /*
 lpm_add_sub adder_inst(
-    .dataa({signext&opA[WIDTH-1],opA}),
-    .datab({signext&opB[WIDTH-1],opB}),
-    .cin(~addsub),
-    .add_sub(addsub),
-    .result(sum)
-        // synopsys translate_off
-        ,
-        .cout (),
-        .clken (),
-        .clock (),
-        .overflow (),
-        .aclr ()
-        // synopsys translate_on
-    );
+	.dataa({signext&opA[WIDTH-1],opA}),
+	.datab({signext&opB[WIDTH-1],opB}),
+	.cin(~addsub),
+	.add_sub(addsub),
+	.result(sum)
+		// synopsys translate_off
+		,
+		.cout (),
+		.clken (),
+		.clock (),
+		.overflow (),
+		.aclr ()
+		// synopsys translate_on
+	);
 //defparam 
 //    adder_inst.lpm_width=WIDTH+1,
 //   adder_inst.lpm_representation="SIGNED";
@@ -1599,7 +1598,13 @@ endmodule
 
 
 
-module dummy_add_sub (dataa,datab,cin,result);
+module dummy_add_sub (
+	dataa,
+	datab,
+	cin,
+	result
+);
+
 //this is goign to be UUUUGGGGGGLLLYYYYY
 //probably going to do some serious timing violations
 // but i'm sure it will be interesting for the packing problem
@@ -1654,8 +1659,6 @@ assign result [32] = carry_from [31];
 endmodule
 
 
-
-
 module full_adder (cin,x,y,s,cout);
 input cin;
 input x;
@@ -1667,21 +1670,28 @@ assign cout = (x&y) | (x & cin) | (y&cin);
 endmodule
 
 /****************************************************************************
-          Register File
+		  Register File
 
    - Has two read ports (a and b) and one write port (c)
    - sel chooses the register to be read/written
 ****************************************************************************/
 
-module reg_file(clk,resetn,  c_writedatain,
-	c_reg,b_reg,a_reg,c_we, b_en, a_en,
-b_readdataout, a_readdataout);
-
-
+module reg_file(
+	clk, 
+	resetn, 
+	c_writedatain,
+	c_reg,
+	b_reg,
+	a_reg,
+	c_we, 
+	b_en, 
+	a_en,
+	b_readdataout, 
+	a_readdataout
+);
 //parameter WIDTH=32;
 //parameter NUMREGS=32;
 //parameter LOG2NUMREGS=5;
-
 input clk;
 input resetn;
 
@@ -1705,142 +1715,42 @@ wire [31:0] b_readdataout_temp;
 assign b_readdataout = b_readdataout_temp;
 assign a_readdataout = a_readdataout_temp;
 
-/*
-	altsyncram	reg_file1(
-				.wren_a (c_we&(|c_reg)),
-				.clock0 (clk),
-        .clock1 (clk),
-        .clocken1 (a_en),
-				.address_a (c_reg[LOG2NUMREGS-1:0]),
-				.address_b (a_reg[LOG2NUMREGS-1:0]),
-				.data_a (c_writedatain),
-				.q_b (a_readdataout)
-        // synopsys translate_off
-        ,
-        .aclr0 (1'b0),
-        .aclr1 (1'b0),
-        .byteena_a (1'b1),
-        .byteena_b (1'b1),
-        .data_b (32'b11111111),
-        .wren_b (1'b0),
-        .rden_b(1'b1),
-        .q_a (),
-        .clocken0 (1'b1),
-        .addressstall_a (1'b0),
-        .addressstall_b (1'b0)
-        // synopsys translate_on
-    );
-	defparam
-		reg_file1.operation_mode = "DUAL_PORT",
-		reg_file1.width_a = WIDTH,
-		reg_file1.widthad_a = LOG2NUMREGS,
-		reg_file1.numwords_a = NUMREGS,
-		reg_file1.width_b = WIDTH,
-		reg_file1.widthad_b = LOG2NUMREGS,
-		reg_file1.numwords_b = NUMREGS,
-		reg_file1.lpm_type = "altsyncram",
-		reg_file1.width_byteena_a = 1,
-		reg_file1.outdata_reg_b = "UNREGISTERED",
-		reg_file1.indata_aclr_a = "NONE",
-		reg_file1.wrcontrol_aclr_a = "NONE",
-		reg_file1.address_aclr_a = "NONE",
-		reg_file1.rdcontrol_reg_b = "CLOCK1",
-		reg_file1.address_reg_b = "CLOCK1",
-		reg_file1.address_aclr_b = "NONE",
-		reg_file1.outdata_aclr_b = "NONE",
-		reg_file1.read_during_write_mode_mixed_ports = "OLD_DATA",
-		reg_file1.ram_block_type = "AUTO",
-		reg_file1.intended_device_family = "Stratix";
+wire wren1;
+assign wren1 = (c_we & (|c_reg));
+single_port_ram regfile1_replace (
+	.clk (clk),
+	.we(wren1),
+	.data(c_writedatain),
+	.out(a_readdataout_temp),
+	.addr(c_reg[4:0])
+);
 
-		//Reg file duplicated to avoid contention between 2 read
-		//and 1 write
-		*/
-		wire [31:0] dummy_out;
-		wire [31:0] constone;
-		assign constone = 32'b11111111111111111111111111111111;
-		wire wren1;
-		assign wren1 = (c_we & (|c_reg));
-	dual_port_ram regfile1_replace (
-  .clk (clk),
-  .we1(wren1),
-  .we2(1'b0),
-  .data1(c_writedatain),
-  .data2(constone),
-  .out1(a_readdataout_temp),
-  .out2(dummy_out),
-  .addr1(c_reg),
-  .addr2(a_reg));
-		
-		
-		
-		//MORE MEMORY
-		/*
-	altsyncram	reg_file2(
-				.wren_a (c_we&(|c_reg)),
-				.clock0 (clk),
-        .clock1 (clk),
-        .clocken1 (b_en),
-				.address_a (c_reg[LOG2NUMREGS-1:0]),
-				.address_b (b_reg[LOG2NUMREGS-1:0]),
-				.data_a (c_writedatain),
-				.q_b (b_readdataout)
-        // synopsys translate_off
-        ,
-        .aclr0 (1'b0),
-        .aclr1 (1'b0),
-        .byteena_a (1'b1),
-        .byteena_b (1'b1),
-        .data_b (32'b11111111),
-        .rden_b(1'b1),
-        .wren_b (1'b0),
-        .q_a (),
-        .clocken0 (1'b1),
-        .addressstall_a (1'b0),
-        .addressstall_b (1'b0)
-        // synopsys translate_on
-    );
-	defparam
-		reg_file2.operation_mode = "DUAL_PORT",
-		reg_file2.width_a = WIDTH,
-		reg_file2.widthad_a = LOG2NUMREGS,
-		reg_file2.numwords_a = NUMREGS,
-		reg_file2.width_b = WIDTH,
-		reg_file2.widthad_b = LOG2NUMREGS,
-		reg_file2.numwords_b = NUMREGS,
-		reg_file2.lpm_type = "altsyncram",
-		reg_file2.width_byteena_a = 1,
-		reg_file2.outdata_reg_b = "UNREGISTERED",
-		reg_file2.indata_aclr_a = "NONE",
-		reg_file2.wrcontrol_aclr_a = "NONE",
-		reg_file2.address_aclr_a = "NONE",
-		reg_file2.rdcontrol_reg_b = "CLOCK1",
-		reg_file2.address_reg_b = "CLOCK1",
-		reg_file2.address_aclr_b = "NONE",
-		reg_file2.outdata_aclr_b = "NONE",
-		reg_file2.read_during_write_mode_mixed_ports = "OLD_DATA",
-		reg_file2.ram_block_type = "AUTO",
-		reg_file2.intended_device_family = "Stratix";
-*/
+//Reg file duplicated to avoid contention 
+//between 2 read and 1 write
+//MORE MEMORY
 
-wire [31:0] dummywire;
-dual_port_ram regfile2_replace(
-  .clk (clk),
-  .we1(wren1),
-  .we2(1'b0),
-  .data1(c_writedatain),
-  .data2(constone),
-  .out1(b_readdataout_temp),
-  .out2(dummywire),
-  .addr1(c_reg),
-  .addr2(b_reg));
-		
+single_port_ram regfile2_replace(
+	.clk (clk),
+	.we(wren1),
+	.data(c_writedatain),
+	.out(b_readdataout_temp),
+	.addr(c_reg[4:0])
+);		
 
+//Odin II does not recognize that address 
+//registers are being used to read and 
+//write data, so they are assigned to an 
+//unused wire which is later dropped by the
+//optimizer.
 wire useless_inputs;
-assign useless_inputs = resetn & b_en & a_en;
+//`a_reg` and `b_reg` were not used correctly in last version 
+//of `spree.v` according to the comment above this module.
+//Investigate whether the comment or the code is wrong
+assign useless_inputs = resetn & b_en & a_en & ( | a_reg ) & ( | b_reg );
 endmodule
 
 /****************************************************************************
-          MUL/DIV unit
+		  MUL/DIV unit
 
 Operation table
 
@@ -1851,12 +1761,20 @@ Operation table
 1  0   0    1    |  ShiftRightLogic
 3  0   1    1    |  ShiftRightArith
 ****************************************************************************/
-module mul(clk, resetn, sa,  dst, opB,opA,
-            op, start, stalled,
-            shift_result,
-             lo,hi);
-//parameter 32=32;
-
+module mul(
+	clk,
+	resetn,
+	sa,
+	dst, 
+	opB,
+	opA,
+	op, 
+	start, 
+	stalled,
+	shift_result,
+	lo,
+	hi
+);
 
 input clk;
 input resetn;
@@ -1935,7 +1853,14 @@ onecyclestall staller(request,clk,resetn,stalled);
 
 endmodule
 
-module dummy_mult  (opA,opB_mux_out, clk, resetn, result);
+module dummy_mult  (
+	opA,
+	opB_mux_out, 
+	clk, 
+	resetn, 
+	result
+);
+
 input [31:0] opA;
 input [31:0] opB_mux_out;
 input  clk;
@@ -1947,44 +1872,47 @@ reg [31:0] result;
 always @ (posedge clk)
 begin
 	if (resetn)
-	result <= 32'b00000000000000000000000000000000;
+		result <= 32'b00000000000000000000000000000000;
 	else
 		//multiplier by star symbol
 		//though this is probably supposed to be signed
 		result <= opA * opB_mux_out;
 end
-		endmodule
+endmodule
 		
 
 /****************************************************************************
-            Fetch Unit
+			Fetch Unit
 op
   0  Conditional PC write
   1  UnConditional PC write
 
 ****************************************************************************/
 
-module ifetch(clk,resetn,
- boot_iaddr, 
-  boot_idata, 
-  boot_iwe,
-  load,
-  load_data,
-     op,
-	  we,
-	     squashn,
-		  en,
-		  pc_out,
-		   instr,
-		   opcode,
-		    func,
-			  rs,
-        rt,
-        rd,
-			 instr_index,
-			   offset,
-			     sa,
-		  next_pc);
+module ifetch(
+	clk,
+	resetn,
+	boot_iaddr, 
+	boot_idata, 
+	boot_iwe,
+	load,
+	load_data,
+	op,
+	we,
+	squashn,
+	en,
+	pc_out,
+	instr,
+	opcode,
+	func,
+	rs,
+	rt,
+	rd,
+	instr_index,
+	offset,
+	sa,
+	next_pc
+);
 
 //parameter PC_WIDTH=30;
 //parameter I_DATAWIDTH=32;
@@ -2043,34 +1971,31 @@ register_1bit sync_pcs_up( reg_d, clk, resetn,reg_en, out_of_sync);
 
 wire wren1;
 assign wren1 = 1'b0;
-wire [31:0] next_pc_wire;
-assign next_pc_wire = next_pc [13:0];
-
-dual_port_ram imem_replace(
-  .clk (clk),
-  .we1(wren1),
-  .we2(boot_iwe),
-  .data1(load_data),
-  .data2(boot_idata),
-  .out1(instr),
-  .out2(dummyout2),
-  .addr1(next_pc_wire),
-  .addr2(boot_iaddr));
+wire [9:0] next_pc_wire;
+assign next_pc_wire = next_pc [9:0];
 
 wire [31:0]dummyout2;
+
+dual_port_ram imem_replace(
+	.clk (clk),
+	.we1(wren1),
+	.we2(boot_iwe),
+	.data1(load_data),
+	.data2(boot_idata),
+	.out1(instr),
+	.out2(dummyout2),
+	.addr1(next_pc_wire),
+	.addr2(boot_iaddr[9:0])
+);
+
 wire [31:0] dummyin1;
 assign dummyin1 = 32'b00000000000000000000000000000000;
-wire dummy;
-
 
 dummy_counter pc_reg ((reg_load_data),(clk),(counter_en),(count_en),(notresetn),(ctrl_load),(pc));
-//assign {dummy,pc_plus_1} = pc + {1'b0,~out_of_sync};
-//assign pc_out={pc_plus_1,2'b0};
 assign pc_out [31:2] = pc_plus_1;
 assign pc_out [1:0] = 2'b00;
 
 assign next_pc = ctrl_load ? load_data[31:2] : pc_plus_1;
-//assign next_pc = pc_plus_1;
 assign opcode=instr[31:26];
 assign rs=instr[25:21];
 assign rt=instr[20:16];
@@ -2080,12 +2005,26 @@ assign offset=instr[15:0];
 assign instr_index=instr[25:0];
 assign func=instr[5:0];
 
-
+//Odin II does not recognize that boot_iaddr 
+//is being used to write data when system 
+//is given 1'b1 on the boot_iwe wire so is
+//is assigned to an unused wire which is 
+//later dropped by the optimizer.
+wire NoUSE;
+assign NoUse = ( |boot_iaddr );
 
 endmodule
 
 
-module dummy_counter (data,clock,clk_en,cnt_en,aset,sload,q);
+module dummy_counter (
+	data,
+	clock,
+	clk_en,
+	cnt_en,
+	aset,
+	sload,
+	q
+);
 
 input [31:2] data;
 input clock;
@@ -2108,81 +2047,49 @@ always @ (posedge clock)
 begin
 
 case (sload_cnten_aset)
-		3'b000:
+	3'b000:
 		q <= q;
-		3'b011:
+	3'b011:
 		q <= q;
-		3'b110:
+	3'b110:
 		q <= q;
-		3'b111:
+	3'b111:
 		q <= q;
-		3'b101:
+	3'b101:
 		q <= q;
-		3'b100: 
-			q <= data;
-		3'b010:
-		begin
-			if (clk_en) 
-				q <= q+1;
-			else
-				q <= q;
-
-			end
-		3'b001:
-			q <= 29'b00000000000000000000000000000;
-		default:
+	3'b100: 
+		q <= data;
+	3'b010:
+	begin
+		if (clk_en) 
+			q <= q+1;
+		else
 			q <= q;
+		end
+	3'b001:
+		q <= 29'b00000000000000000000000000000;
+	default:
+		q <= q;
 endcase
 end
-/*case (sload)
-	1'b1:
-		begin
-			q = data;
-		end
-	default:
-		begin
-			case (cnt_en)
-			1'b1:
-				begin
-					q = q+1;
-				end
-			default:
-				begin
-					case (aset)
-					1'b1:
-						begin
-							q = 0;
-						end
-					default:
-						begin
-							q = q;
-						end
-					endcase
-				end
-			endcase
-
-		end
-	endcase
-*/
-		endmodule
+endmodule
 
 
 
 
-module data_mem( clk, resetn, stalled,
-                d_writedata,
-                d_address,
-                boot_daddr, boot_ddata, boot_dwe, 
-                op,
-                d_loadresult);
+module data_mem(
+	clk, 
+	resetn, 
+	stalled,
+	d_writedata,
+	d_address,
+	op,
+	d_loadresult
+);
 
 input clk;
 input resetn;
 output stalled;
-
-input [31:0] boot_daddr;
-input [31:0] boot_ddata;
-input boot_dwe;
 
 input [`D_ADDRESSWIDTH-1:0] d_address;
 input [3:0] op;
@@ -2203,7 +2110,7 @@ assign d_small_adr = d_address[1:0];
 
 wire one;
 assign one = 1'b1;
-                
+				
 
 wire [1:0] d_adr_one_zero;
 assign d_adr_one_zero = d_address [1:0];
@@ -2215,41 +2122,37 @@ assign opext = op[2];
 
 
 store_data_translator sdtrans_inst(
-    .write_data(d_writedata),
-    .d_address(d_adr_one_zero),
-    .store_size(op[1:0]),
-    .d_byteena(d_byteena),
-    .d_writedataout(d_writedatamem));
+	.write_data(d_writedata),
+	.d_address(d_adr_one_zero),
+	.store_size(op[1:0]),
+	.d_byteena(d_byteena),
+	.d_writedataout(d_writedatamem)
+);
 
 
 
 load_data_translator ldtrans_inst(
-    .d_readdatain(d_readdatain),
-  
-    .d_loadresult(d_loadresult));
+	.d_readdatain(d_readdatain),  
+	.d_loadresult(d_loadresult)
+);
 
 
 wire  dnot_address;
 assign dnot_address = ~d_address[31];
 wire will_be_wren1;
 assign will_be_wren1 = d_write&(dnot_address);
-wire [31:0] dont_care;
 
-
-wire [31:0] memaddr_wrd;
+wire [9:0] memaddr_wrd;
 
 
 assign memaddr_wrd = d_address[`DM_ADDRESSWIDTH:2];
-dual_port_ram dmem_replace(
-  .clk (clk),
-  .we1(will_be_wren1),
-  .we2(boot_dwe),
-  .data1(d_writedatamem),
-  .data2(boot_ddata),
-  .out1(d_readdatain),
-.out2 (dont_care),
-  .addr1(memaddr_wrd),
-  .addr2(boot_daddr));
+single_port_ram dmem_replace(
+	.clk (clk),
+	.we(will_be_wren1),
+	.data(d_writedatamem),
+	.out(d_readdatain),
+	.addr(memaddr_wrd)
+);
 // 1 cycle stall state machine
 
 wire en_and_not_d_write;
@@ -2267,18 +2170,19 @@ endmodule
 
 
 /****************************************************************************
-          Store data translator
-          - moves store data to appropriate byte/halfword 
-          - interfaces with altera blockrams
+		  Store data translator
+		  - moves store data to appropriate byte/halfword 
+		  - interfaces with altera blockrams
 ****************************************************************************/
 module store_data_translator(
-    write_data,             // data in least significant position
-    d_address,
-    store_size,
-    d_byteena,
-    d_writedataout);        // shifted data to coincide with address
-//parameter WIDTH=32;
+	write_data,    // data in least significant position
+	d_address,
+	store_size,
+	d_byteena,
+	d_writedataout // shifted data to coincide with address
+);
 
+//parameter WIDTH=32;
 
 input [31:0] write_data;
 input [1:0] d_address;
@@ -2291,63 +2195,64 @@ reg [31:0] d_writedataout;
 
 always @(write_data or d_address or store_size)
 begin
-    case (store_size)
-        2'b11:
-            case(d_address[1:0])
-                2'b00: 
-                begin 
-                    d_byteena=4'b1000; 
-                    d_writedataout={write_data[7:0],24'b0}; 
-                end
-                2'b01: 
-                begin 
-                    d_byteena=4'b0100; 
-                    d_writedataout={8'b0,write_data[7:0],16'b0}; 
-                end
-                2'b10: 
-                begin 
-                    d_byteena=4'b0010; 
-                    d_writedataout={16'b0,write_data[7:0],8'b0}; 
-                end
-                default: 
-                begin 
-                    d_byteena=4'b0001; 
-                    d_writedataout={24'b0,write_data[7:0]}; 
-                end
-            endcase
-        2'b01:
-            case(d_address[1])
-                1'b0: 
-                begin 
-                    d_byteena=4'b1100; 
-                    d_writedataout={write_data[15:0],16'b0}; 
-                end
-                default: 
-                begin 
-                    d_byteena=4'b0011; 
-                    d_writedataout={16'b0,write_data[15:0]}; 
-                end
-            endcase
-        default:
-        begin
-            d_byteena=4'b1111;
-            d_writedataout=write_data;
-        end
-    endcase
+	case (store_size)
+		2'b11:
+			case(d_address[1:0])
+				2'b00: 
+				begin 
+					d_byteena=4'b1000; 
+					d_writedataout={write_data[7:0],24'b0}; 
+				end
+				2'b01: 
+				begin 
+					d_byteena=4'b0100; 
+					d_writedataout={8'b0,write_data[7:0],16'b0}; 
+				end
+				2'b10: 
+				begin 
+					d_byteena=4'b0010; 
+					d_writedataout={16'b0,write_data[7:0],8'b0}; 
+				end
+				default: 
+				begin 
+					d_byteena=4'b0001; 
+					d_writedataout={24'b0,write_data[7:0]}; 
+				end
+			endcase
+		2'b01:
+			case(d_address[1])
+				1'b0: 
+				begin 
+					d_byteena=4'b1100; 
+					d_writedataout={write_data[15:0],16'b0}; 
+				end
+				default: 
+				begin 
+					d_byteena=4'b0011; 
+					d_writedataout={16'b0,write_data[15:0]}; 
+				end
+			endcase
+		default:
+		begin
+			d_byteena=4'b1111;
+			d_writedataout=write_data;
+		end
+	endcase
 end
 
 endmodule
 
 /****************************************************************************
-          Load data translator
-          - moves read data to appropriate byte/halfword and zero/sign extends
+		  Load data translator
+		  - moves read data to appropriate byte/halfword and zero/sign extends
 ****************************************************************************/
 
 module load_data_translator(
-    d_readdatain,
-    d_loadresult);
-//parameter WIDTH=32;
+	d_readdatain,
+	d_loadresult
+);
 
+//parameter WIDTH=32;
 
 input [31:0] d_readdatain;
 
@@ -2364,40 +2269,40 @@ assign d_address [1:0] =d_readdatain [25:24];
 //assume always full-word-access
 always @(d_readdatain or d_address )
 begin
-            d_loadresult[31:0]=d_readdatain[31:0];
+	d_loadresult[31:0]=d_readdatain[31:0];
 end
 /*
 Odin II REFUSES TO ACKNOWLEDGE THAT SIGN EXTENDING IS NOT A COMBINATIONAL LOOP
 always @(d_readdatain or d_address or load_size or load_sign_ext)
 begin
-    case (load_size)
-        2'b11:
-        begin
-            case (d_address)
-                2'b00:
+	case (load_size)
+		2'b11:
+		begin
+			case (d_address)
+				2'b00:
 					begin
 					d_loadresult[7:0]=d_readdatain[31:24];
 					sign = d_readdatain[31];
 					end
-                2'b01:
+				2'b01:
 						begin
 						d_loadresult[7:0]=d_readdatain[23:16];
 						sign = d_readdatain[23];
 						end
-                2'b10: 
+				2'b10: 
 					begin
 					d_loadresult[7:0]=d_readdatain[15:8];
 					sign = d_readdatain[15];
 					end
-                default: 
+				default: 
 					begin
 					d_loadresult[7:0]=d_readdatain[7:0];
 					sign = d_readdatain[7];
 					end
-            endcase
+			endcase
 			// peter milankov note: do this by hand
 			// odin II does not support multiple concatenation
-            //d_loadresult[31:8]={24{load_sign_ext&d_loadresult[7]}};
+			//d_loadresult[31:8]={24{load_sign_ext&d_loadresult[7]}};
 			d_loadresult[31]= load_sign_ext&sign;
 			d_loadresult[30]= load_sign_ext&sign;
 			d_loadresult[29]= load_sign_ext&sign;
@@ -2422,23 +2327,23 @@ begin
 			d_loadresult[10]= load_sign_ext&sign;
 			d_loadresult[9]= load_sign_ext&sign;
 			d_loadresult[8]= load_sign_ext&sign;
-        end
-        2'b01:
-        begin
-            case (d_adr_one)
-                1'b0:
+		end
+		2'b01:
+		begin
+			case (d_adr_one)
+				1'b0:
 					begin
 						d_loadresult[15:0]=d_readdatain[31:16];
 						sign = d_readdatain[31];
 					end
-                default:
+				default:
 					begin
 						d_loadresult[15:0]=d_readdatain[15:0];
 						sign = d_readdatain[15];
 					end
-            endcase
+			endcase
 // peter milankov note sign extend is concat, do by hand
-            //d_loadresult[31:16]={16{load_sign_ext&d_loadresult[15]}};
+			//d_loadresult[31:16]={16{load_sign_ext&d_loadresult[15]}};
 			d_loadresult[31]= load_sign_ext&sign;
 			d_loadresult[30]= load_sign_ext&sign;
 			d_loadresult[29]= load_sign_ext&sign;
@@ -2455,16 +2360,16 @@ begin
 			d_loadresult[18]= load_sign_ext&sign;
 			d_loadresult[17]= load_sign_ext&sign;
 			d_loadresult[16]= load_sign_ext&sign;
-        end
-        default:
-            d_loadresult[31:0]=d_readdatain[31:0];
-    endcase
+		end
+		default:
+			d_loadresult[31:0]=d_readdatain[31:0];
+	endcase
 end
 */
 endmodule
 
 /****************************************************************************
-          logic unit
+		  logic unit
 - note ALU must be able to increment PC for JAL type instructions
 
 Operation Table
@@ -2475,12 +2380,13 @@ Operation Table
   3     NOR
 ****************************************************************************/
 module logic_unit (
-            opB, opA,
-            op,
-            result);
+	opB, 
+	opA,
+	op,
+	result
+);
+
 //parameter WIDTH=32;
-
-
 
 input [31:0] opA;
 input [31:0] opB;
@@ -2490,23 +2396,28 @@ output [31:0] result;
 reg [31:0] logic_result;
 
 always@(opA or opB or op )
-    case(op)
-        2'b00:
-            logic_result=opA&opB;
-        2'b01:
-            logic_result=opA|opB;
-        2'b10:
-            logic_result=opA^opB;
-        2'b11:
-            logic_result=~(opA|opB);
-    endcase
+	case(op)
+		2'b00:
+			logic_result=opA&opB;
+		2'b01:
+			logic_result=opA|opB;
+		2'b10:
+			logic_result=opA^opB;
+		2'b11:
+			logic_result=~(opA|opB);
+	endcase
 
 assign result=logic_result;
 
 
 endmodule
 
-module pcadder(offset,pc, result);
+module pcadder(
+	offset,
+	pc, 
+	result
+);
+
 //parameter PC_WIDTH=32;
 
 
@@ -2522,7 +2433,7 @@ assign {dum,result} = pc + {offset[31:0],2'b0};
 endmodule
 
 
-module signext16 ( in, out);
+module signext16 (in, out);
 
 input [15:0] in;
 output [31:0] out;
@@ -2566,9 +2477,16 @@ assign useless_inputs = |in1 & |in2;
 endmodule
 
 /****************************************************************************
-          Generic Register
+		  Generic Register
 ****************************************************************************/
-module lo_reg(clk,resetn,d,en,q);
+module lo_reg(
+	clk,
+	resetn,
+	d,
+	en,
+	q
+);
+
 //parameter WIDTH=32;
 
 
@@ -2590,9 +2508,16 @@ end
 endmodule
 
 /****************************************************************************
-          Generic Register
+		  Generic Register
 ****************************************************************************/
-module hi_reg(clk,resetn,d,en,q);
+module hi_reg(
+	clk,
+	resetn,
+	d,
+	en,
+	q
+);
+
 //parameter WIDTH=32;
 
 
@@ -2614,7 +2539,7 @@ end
 endmodule
 
 /****************************************************************************
-          Generic Register
+		  Generic Register
 ****************************************************************************/
 
 //`define WIDTH 32
@@ -2644,13 +2569,15 @@ end
 
 endmodule
 */
-module register_1bit(d,clk,resetn,en,q);
+module register_1bit(
+	d,
+	clk,
+	resetn,
+	en,
+	q
+);
+
 //parameter WIDTH=32;
-
-
-
-
-
 
 input clk;
 input resetn;
@@ -2671,7 +2598,7 @@ endmodule
 
 
 /****************************************************************************
-          Generic Register - synchronous reset
+		  Generic Register - synchronous reset
 ****************************************************************************/
 /*
 module register_sync(d,clk,resetn,en,q);
@@ -2695,11 +2622,11 @@ end
 endmodule
 */
 /****************************************************************************
-          Generic Pipelined Register
+		  Generic Pipelined Register
 
-          - Special component, components starting with "pipereg" have
-          their enables treated independently of instructrions that use them.
-          - They are enabled whenever the stage is active and not stalled
+		  - Special component, components starting with "pipereg" have
+		  their enables treated independently of instructrions that use them.
+		  - They are enabled whenever the stage is active and not stalled
 ****************************************************************************/
 /*
 module pipereg(clk,resetn,d,squashn,en,q);
@@ -2717,14 +2644,22 @@ reg [31:0] q;
 always @(posedge clk)   //synchronous reset
 begin
   if (resetn==0 || squashn==0)
-    q<=0;
+	q<=0;
   else if (en==1)
-    q<=d;
+	q<=d;
 end
 
 endmodule
 */
-module pipereg_w32(clk,resetn,d,squashn,en,q);
+module pipereg_w32(
+	clk,
+	resetn,
+	d,
+	squashn,
+	en,
+	q
+);
+
 //parameter WIDTH=32;
 //`define WIDTH 32
 
@@ -2739,15 +2674,23 @@ reg [31:0] q;
 always @(posedge clk)   //synchronous reset
 begin
   if (resetn==0 || squashn==0)
-    q<=0;
+	q<=0;
   else if (en==1)
-    q<=d;
+	q<=d;
 end
 
 endmodule
 
 
-module pipereg_w26(clk,resetn,d,squashn,en,q);
+module pipereg_w26(
+	clk,
+	resetn,
+	d,
+	squashn,
+	en,
+	q
+);
+
 //parameter WIDTH=32;
 //`define WIDTH 32
 
@@ -2762,15 +2705,23 @@ reg [25:0] q;
 always @(posedge clk)   //synchronous reset
 begin
   if (resetn==0 || squashn==0)
-    q<=0;
+	q<=0;
   else if (en==1)
-    q<=d;
+	q<=d;
 end
 
 endmodule
 
 
-module pipereg_w6(clk,resetn,d,squashn,en,q);
+module pipereg_w6(
+	clk,
+	resetn,
+	d,
+	squashn,
+	en,
+	q
+);
+
 //parameter WIDTH=32;
 //`define WIDTH 32
 
@@ -2785,10 +2736,10 @@ reg [31:0] q;
 always @(posedge clk)   //synchronous reset
 begin
   if (resetn==0 || squashn==0)
-    q<=0;
+	q<=0;
   else if (en==1)
   begin
-    q[5:0]<=d;
+	q[5:0]<=d;
 	q[31:6] <= 0;
 	
 	end
@@ -2797,7 +2748,15 @@ end
 endmodule
 
 
-module pipereg_w5(clk,resetn,d,squashn,en,q);
+module pipereg_w5(
+	clk,
+	resetn,
+	d,
+	squashn,
+	en,
+	q
+);
+
 //parameter WIDTH=32;
 //`define WIDTH 32
 
@@ -2812,10 +2771,10 @@ reg [31:0] q;
 always @(posedge clk)   //synchronous reset
 begin
   if (resetn==0 || squashn==0)
-    q<=0;
+	q<=0;
   else if (en==1)
    begin
-    q[4:0]<=d;
+	q[4:0]<=d;
 	q[31:5] <= 0;
 	
 	end
@@ -2823,7 +2782,15 @@ end
 
 endmodule
 
-module pipereg_w1(clk,resetn,d,squashn,en,q);
+module pipereg_w1(
+	clk,
+	resetn,
+	d,
+	squashn,
+	en,
+	q
+);
+
 //parameter WIDTH=32;
 //`define WIDTH 32
 
@@ -2838,17 +2805,17 @@ reg q;
 always @(posedge clk)   //synchronous reset
 begin
   if (resetn==0 || squashn==0)
-    q<=0;
+	q<=0;
   else if (en==1)
-    q<=d;
+	q<=d;
 end
 
 endmodule
 
 /****************************************************************************
-          Generic Pipelined Register 2 -OLD: If not enabled, queues squash
+		  Generic Pipelined Register 2 -OLD: If not enabled, queues squash
 
-          - This piperegister stalls the reset signal as well
+		  - This piperegister stalls the reset signal as well
 */
 /*
 module pipereg_full(d,clk,resetn,squashn,en,q);
@@ -2865,27 +2832,33 @@ reg squash_save;
 
   always @(posedge clk)   //synchronous reset
   begin
-    if (resetn==0 || (squashn==0 && en==1) || (squash_save&en))
-      q<=0;
-    else if (en==1)
-      q<=d;
+	if (resetn==0 || (squashn==0 && en==1) || (squash_save&en))
+	  q<=0;
+	else if (en==1)
+	  q<=d;
   end
 
   always @(posedge clk)
   begin
-    if (resetn==1 && squashn==0 && en==0)
-      squash_save<=1;
-    else
-      squash_save<=0;
+	if (resetn==1 && squashn==0 && en==0)
+	  squash_save<=1;
+	else
+	  squash_save<=0;
   end
 endmodule
 */
 /****************************************************************************/
 
 /****************************************************************************
-          One cycle Stall circuit
+		  One cycle Stall circuit
 ****************************************************************************/
-module onecyclestall(request,clk,resetn,stalled);
+module onecyclestall(
+	request,
+	clk,
+	resetn,
+	stalled
+);
+
 input request;
 input clk;
 input resetn;
@@ -2896,25 +2869,25 @@ output stalled;
   // State machine for Stalling 1 cycle
   always@(request or T)
   begin
-    case(T) 
-      1'b0: Tnext=request;
-      1'b1: Tnext=0;
-    endcase 
+	case(T) 
+	  1'b0: Tnext=request;
+	  1'b1: Tnext=0;
+	endcase 
   end       
   always@(posedge clk)
-    if (~resetn)
-      T<=0; 
-    else    
-      T<=Tnext;
+	if (~resetn)
+	  T<=0; 
+	else    
+	  T<=Tnext;
   assign stalled=(request&~T);
 endmodule
 
 /****************************************************************************
 
-          Multi cycle Stall circuit - with wait signal
+		  Multi cycle Stall circuit - with wait signal
 
-          - One FF plus one 2:1 mux to stall 1st cycle on request, then wait
-          - this makes wait don't care for the first cycle
+		  - One FF plus one 2:1 mux to stall 1st cycle on request, then wait
+		  - this makes wait don't care for the first cycle
 ****************************************************************************/
 /*
 module multicyclestall(request, devwait,clk,resetn,stalled);
@@ -2927,16 +2900,16 @@ output stalled;
   reg T;
 
   always@(posedge clk)
-    if (~resetn)
-      T<=0;
-    else
-      T<=stalled;
+	if (~resetn)
+	  T<=0;
+	else
+	  T<=stalled;
 
   assign stalled=(T) ? devwait : request;
 endmodule
 */
 /****************************************************************************
-          One cycle - Pipeline delay register
+		  One cycle - Pipeline delay register
 ****************************************************************************/
 /*
 module pipedelayreg(d,en,clk,resetn,squashn,dst,stalled,q);
@@ -2957,23 +2930,23 @@ output [31:0] q;
   // State machine for Stalling 1 cycle
   always@(en or T or dst)
   begin
-    case(T) 
-      0: Tnext=en&(|dst);
-      1: Tnext=0;
-    endcase 
+	case(T) 
+	  0: Tnext=en&(|dst);
+	  1: Tnext=0;
+	endcase 
   end       
   always@(posedge clk)
-    if (~resetn)
-      T<=0; 
-    else    
-      T<=Tnext;
+	if (~resetn)
+	  T<=0; 
+	else    
+	  T<=Tnext;
 
   always @(posedge clk)   //synchronous reset
   begin
-    if (resetn==0 || squashn==0)
-      q<=0;
-    else if (en==1)
-      q<=d;
+	if (resetn==0 || squashn==0)
+	  q<=0;
+	else if (en==1)
+	  q<=d;
   end
 
   assign stalled=(en&~T&(|dst));
@@ -2981,7 +2954,7 @@ endmodule
 */
 
 /****************************************************************************
-          Fake Delay
+		  Fake Delay
 ****************************************************************************/
 module fakedelay(clk,d,q);
 //`define WIDTH 32
@@ -2997,7 +2970,7 @@ assign q=d;
 endmodule
 
 /****************************************************************************
-          Zeroer
+		  Zeroer
 ****************************************************************************/
 module zeroer(d,en,q);
 //parameter WIDTH=32;
@@ -3012,7 +2985,7 @@ assign q [31:05] = 0;
 endmodule
 
 /****************************************************************************
-          NOP - used to hack position of multiplexors
+		  NOP - used to hack position of multiplexors
 ****************************************************************************/
 module nop(d,q);
 //parameter WIDTH=32;
@@ -3027,11 +3000,11 @@ endmodule
 
 /****************************************************************************
 
-          Const
+		  Const
 ****************************************************************************/
 
 /****************************************************************************
-          Branch detector
+		  Branch detector
 ****************************************************************************/
 /*
 module branch_detector(opcode, func, is_branch);
@@ -3045,12 +3018,25 @@ wire is_special;
 
 assign is_special=!(|opcode);
 assign is_branch=((!(|opcode[5:3])) && !is_special) || 
-                  ((is_special)&&(func[5:3]==3'b001));
+				  ((is_special)&&(func[5:3]==3'b001));
 
 endmodule
 */
 //`define WIDTH 32
-module branchresolve ( rt, rs,en, eqz,gez,gtz,lez,ltz,ne, eq);
+
+module branchresolve ( 
+	rt, 
+	rs,
+	en, 
+	eqz,
+	gez,
+	gtz,
+	lez,
+	ltz,
+	ne, 
+	eq
+);
+
 //parameter WIDTH=32;
 
 input en;

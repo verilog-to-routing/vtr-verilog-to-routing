@@ -38,9 +38,6 @@ using namespace std;
 #include "tatum/echo_writer.hpp"
 
 
-#include "path_delay.h"
-
-
 /**************** Types local to route_common.c ******************/
 struct t_trace_branch {
     t_trace* head;
@@ -260,10 +257,6 @@ bool try_route(int width_fac,
 		t_det_routing_arch *det_routing_arch,
         std::vector<t_segment_inf>& segment_inf,
 		vtr::vector<ClusterNetId, float *> &net_delay,
-#ifdef ENABLE_CLASSIC_VPR_STA
-        t_slack * slacks,
-        const t_timing_inf& timing_inf,
-#endif
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
         std::shared_ptr<RoutingDelayCalculator> delay_calc, 
 		t_chan_width_dist chan_width_dist,
@@ -340,10 +333,6 @@ bool try_route(int width_fac,
             netlist_pin_lookup,
             timing_info,
             delay_calc,
-#ifdef ENABLE_CLASSIC_VPR_STA
-            slacks,
-            timing_inf,
-#endif
             first_iteration_priority
             );
 
