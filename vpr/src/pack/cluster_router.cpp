@@ -205,7 +205,7 @@ static bool check_edge_for_route_conflicts(
 				pb_graph_node->illegal_modes.push_back(result.first->second->index);
 			}
 
-			if (pb_graph_node->illegal_modes.size() >= pb_graph_node->pb_type->num_modes) {
+			if ((int)pb_graph_node->illegal_modes.size() >= pb_graph_node->pb_type->num_modes) {
 				VPR_THROW(VPR_ERROR_PACK, "There are no more available modes to be used. Routing Failed!");
 			}
 

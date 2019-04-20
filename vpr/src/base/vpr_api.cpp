@@ -85,6 +85,7 @@ using namespace std;
 #include "arch_util.h"
 
 #include "log.h"
+#define UNUSED_PARAM(x) (void)x
 
 #if defined(TBB_INTERFACE_VERSION)
 # include <tbb/task_scheduler_init.h>
@@ -772,6 +773,7 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::sha
 
 RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *>& net_delay) {
     vtr::ScopedStartFinishTimer timer("Load Routing");
+    UNUSED_PARAM(arch);
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
         VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
     }
