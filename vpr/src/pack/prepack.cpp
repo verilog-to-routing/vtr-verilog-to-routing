@@ -1001,9 +1001,16 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
         // get the atom block id of the atom occupying this primitive position in this molecule
         auto molecule_atom_block_id = molecule->atom_block_ids[pattern_block->block_id];
 
-        // if this primitive position in this molecule is already visited and
-        // matches block in the atom netlist go to the next node in the queue
-        if (molecule_atom_block_id && molecule_atom_block_id == block_id) {
+        // if this primitive position in this molecule is already visited go to
+        // the next node in the queue
+        // NOTE: Another condition might need to be added for completeness. That is
+        // the block found in this position in the molecule should match the block
+        // found in the netlist. Meaning (molecule_atom_block_id == block id).
+        // This condition is not added to be able handle the case where inside a pack
+        // pattern there is a connection between a primitive and an adder input. Since
+        // the packer doesn't know that adder inputs are logically equivalent. If the
+        // packer becomes aware of this, this condition could be added.
+        if (molecule_atom_block_id) {
             continue;
         }
 
