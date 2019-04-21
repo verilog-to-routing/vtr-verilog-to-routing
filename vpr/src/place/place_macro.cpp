@@ -93,7 +93,7 @@ static void find_all_the_macro (int * num_of_macro, std::vector<ClusterBlockId> 
             //  * a connection to a constant net (e.g. gnd/vcc) which is not driven by a direct
             //
             // Note that the restriction that constant nets are not driven from another direct ensures that
-            // blocks in the middle of a chain with internal constant signals are not detected has potential
+            // blocks in the middle of a chain with internal constant signals are not detected as potential
             // head blocks.
 			if (to_src_or_sink == SINK && to_idirect != OPEN
                 && (to_net_id == ClusterNetId::INVALID()
@@ -167,7 +167,7 @@ static void find_all_the_macro (int * num_of_macro, std::vector<ClusterBlockId> 
 }
 
 
-int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl_macro ** macros){
+int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl_macro*& macros){
 
 	/* This function allocates and loads the macros placement macros   *
 	 * and returns the total number of macros in 2 steps.              *
@@ -234,13 +234,13 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	}
 
 	/* Returns the pointer to the macro by reference. */
-	*macros = macro;
+	macros = macro;
 
     if(isEchoFileEnabled(E_ECHO_PLACE_MACROS)) {
-        write_place_macros(getEchoFileName(E_ECHO_PLACE_MACROS), *macros, num_macro);
+        write_place_macros(getEchoFileName(E_ECHO_PLACE_MACROS), macros, num_macro);
     }
 
-    validate_macros(*macros, num_macro);
+    validate_macros(macros, num_macro);
 
 	return (num_macro);
 }

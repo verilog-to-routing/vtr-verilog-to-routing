@@ -2096,7 +2096,7 @@ static void alloc_and_load_placement_structs(
 
 	alloc_and_load_try_swap_structs();
 
-	num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, &pl_macros);
+	num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, pl_macros);
 }
 
 /* Allocates and loads net_pin_indices array, this array allows us to quickly   *

@@ -628,7 +628,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
 				is_cluster_legal = try_intra_lb_route(router_data, packer_opts.pack_verbosity);
-				if (is_cluster_legal == true) {
+				if (is_cluster_legal) {
                     VTR_LOGV(packer_opts.pack_verbosity > 2, "\tPassed route at end.\n");
 				} else {
 					VTR_LOGV(packer_opts.pack_verbosity > 0, "Failed route at end, repack cluster trying detailed routing at each stage.\n");
@@ -636,7 +636,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 			} else {
 				is_cluster_legal = true;
 			}
-			if (is_cluster_legal == true) {
+			if (is_cluster_legal) {
 				intra_lb_routing.push_back(router_data->saved_lb_nets);
 				VTR_ASSERT((int)intra_lb_routing.size() == num_clb);
 				router_data->saved_lb_nets = nullptr;
@@ -1204,7 +1204,7 @@ static enum e_block_pack_status try_pack_molecule(
 				/* Try to route if heuristic is to route for every atom
 					Skip routing if heuristic is to route at the end of packing complex block
 				*/
-				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_intra_lb_route(router_data, verbosity) == false) {
+				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && !try_intra_lb_route(router_data, verbosity)) {
 					/* Cannot pack */
                     VTR_LOGV(verbosity > 4, "\t\t\tFAILED Detailed Routing Legality\n");
 					block_pack_status = BLK_FAILED_ROUTE;
@@ -1382,7 +1382,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
             molecule->pack_pattern->is_chain) {
 
             auto molecule_root_block = molecule->atom_block_ids[molecule->root];
-            // if this is the root block of the chain molecule check its placmeent feasibility 
+            // if this is the root block of the chain molecule check its placmeent feasibility
             if (blk_id == molecule_root_block) {
                 block_pack_status = check_chain_root_placement_feasibility(pb_graph_node, molecule, blk_id);
             }
