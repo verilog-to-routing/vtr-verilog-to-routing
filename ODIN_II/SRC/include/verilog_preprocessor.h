@@ -81,6 +81,7 @@ void push(veri_flag_stack *stack, int flag);
 
 
 /* General Utility methods ------------------------------------------------- */
+bool is_whitespace(const char in);
 char *trim(char *input_str);
 char* trim(char *input_string, size_t n);
 
