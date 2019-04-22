@@ -105,6 +105,14 @@ bool try_pack(t_packer_opts *packer_opts,
     } else if (packer_opts->allow_unrelated_clustering == e_unrelated_clustering::OFF) {
         allow_unrelated_clustering = false;
     }
+
+    bool balance_block_type_util = false;
+    if (packer_opts->balance_block_type_utilization == e_balance_block_type_util::ON) {
+        balance_block_type_util = true;
+    } else if (packer_opts->balance_block_type_utilization == e_balance_block_type_util::OFF) {
+        balance_block_type_util = false;
+    }
+
     int pack_iteration = 1;
 
     while (true) {
@@ -115,6 +123,7 @@ bool try_pack(t_packer_opts *packer_opts,
                                     atom_molecules,
                                     expected_lowest_cost_pb_gnode,
                                     allow_unrelated_clustering,
+                                    balance_block_type_util,
                                     lb_type_rr_graphs,
                                     target_external_pin_util
                                     );
@@ -124,13 +133,21 @@ bool try_pack(t_packer_opts *packer_opts,
 
         if (fits_on_device) {
             break; //Done
-        } else if (pack_iteration == 1 && packer_opts->allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
+        } else if (pack_iteration == 1) {
             //1st pack attempt was unsucessful (i.e. not dense enough) and we have control of unrelated clustering
             //
             //Turn it on to increase packing density
-            VTR_ASSERT(allow_unrelated_clustering == false);
-            allow_unrelated_clustering = true;
-            VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s\n", (allow_unrelated_clustering ? "true" : "false"));
+            if (packer_opts->allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
+                VTR_ASSERT(allow_unrelated_clustering == false);
+                allow_unrelated_clustering = true;
+            }
+            if (packer_opts->balance_block_type_utilization == e_balance_block_type_util::AUTO) {
+                VTR_ASSERT(balance_block_type_util == false);
+                balance_block_type_util = true;
+            }
+            VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s\n",
+                        (allow_unrelated_clustering ? "true" : "false"),
+                        (balance_block_type_util ? "true" : "false"));
         } else {
             //Unable to pack densely enough: Give Up
 

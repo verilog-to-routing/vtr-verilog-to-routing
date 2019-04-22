@@ -428,6 +428,39 @@ struct ParseUnrelatedClustering {
     }
 };
 
+struct ParseBalanceBlockTypeUtil {
+    ConvertedValue<e_balance_block_type_util> from_str(std::string str) {
+        ConvertedValue<e_balance_block_type_util> conv_value;
+        if      (str == "on") conv_value.set_value(e_balance_block_type_util::ON);
+        else if (str == "off") conv_value.set_value(e_balance_block_type_util::OFF);
+        else if (str == "auto") conv_value.set_value(e_balance_block_type_util::AUTO);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '"
+                << str
+                << "' to e_balance_block_type_util (expected one of: "
+                << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_balance_block_type_util val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_balance_block_type_util::ON) conv_value.set_value("on");
+        else if (val == e_balance_block_type_util::OFF) conv_value.set_value("off");
+        else {
+            VTR_ASSERT(val == e_balance_block_type_util::AUTO);
+            conv_value.set_value("auto");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"on", "off", "auto"};
+    }
+};
+
 struct ParseConstGenInference{
     ConvertedValue<e_const_gen_inference> from_str(std::string str) {
         ConvertedValue<e_const_gen_inference> conv_value;
@@ -931,10 +964,13 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("on")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument<bool,ParseOnOff>(args.balance_block_type_utilization, "--balance_block_type_utilization")
-            .help("If enabled, when a primitive can potentially be mapped to multiple block types the packer will "
-                  "pick the block type which (currently) has the lowest utilization.")
-            .default_value("off")
+    pack_grp.add_argument<e_balance_block_type_util,ParseBalanceBlockTypeUtil>(args.balance_block_type_utilization, "--balance_block_type_utilization")
+            .help("If enabled, when a primitive can potentially be mapped to multiple block types the packer will\n"
+                  "pick the block type which (currently) has the lowest utilization.\n"
+                  " * on  : Try to balance block type utilization\n"
+                  " * off : Do not try to balance block type utilization\n"
+                  " * auto: Dynamically enabled/disabled (based on density)\n")
+            .default_value("auto")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.target_external_pin_util, "--target_ext_pin_util")

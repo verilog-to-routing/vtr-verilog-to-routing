@@ -119,6 +119,10 @@ enum class e_unrelated_clustering {
     OFF, ON, AUTO	
 };
 
+enum class e_balance_block_type_util {
+    OFF, ON, AUTO	
+};
+
 /* Selection algorithm for selecting next seed  */
 enum class e_cluster_seed {
 	TIMING, MAX_INPUTS, BLEND, MAX_PINS, MAX_INPUT_PINS, BLEND2
@@ -535,7 +539,7 @@ struct t_packer_opts {
 	bool connection_driven;
 	int pack_verbosity;
     bool enable_pin_feasibility_filter;
-    bool balance_block_type_utilization;
+    e_balance_block_type_util balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;
 	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;

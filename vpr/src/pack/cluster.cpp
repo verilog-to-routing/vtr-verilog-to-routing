@@ -328,6 +328,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
         std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
 		bool allow_unrelated_clustering,
+        bool balance_block_type_utilization,
 		std::vector<t_lb_type_rr_node> *lb_type_rr_graphs,
         const t_ext_pin_util_targets& ext_pin_util_targets
         ) {
@@ -492,7 +493,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
                     primitive_candidate_block_types,
                     packer_opts.pack_verbosity,
                     packer_opts.enable_pin_feasibility_filter,
-                    packer_opts.balance_block_type_utilization);
+                    balance_block_type_utilization);
 
             if (packer_opts.pack_verbosity > 1 && packer_opts.pack_verbosity < 3) {
                 VTR_LOG("Complex block %d: %s, type: %s ",
