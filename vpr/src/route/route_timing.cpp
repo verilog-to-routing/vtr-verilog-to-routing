@@ -38,7 +38,7 @@
 /* IGNORE_ITERATION_LIMIT_HEAP_PUSH_FACTOR when defined changes the router
  * behavior to ignore max_router_iterations. Instead of terminating the router loop
  * when the iteration count is hit, the router will monitor average heap ops per
- * iteration, and will allow the router to continue past max_router_iterations
+ * iteration, and will allow the router loop to continue past max_router_iterations
  * if the number of heap ops done per iteration is "meaningfully smaller" than the average;
  * "meaningfully smaller" is based on the factor specified.
  * The idea behind this is to let the router proceed, if it seems close to converging,
