@@ -35,6 +35,17 @@
 
 #include "router_lookahead_map.h"
 
+/* IGNORE_ITERATION_LIMIT_HEAP_PUSH_FACTOR when defined changes the router
+ * behavior to ignore max_router_iterations. Instead of terminating the router loop
+ * when the iteration count is hit, the router will monitor average heap ops per
+ * iteration, and will allow the router to continue past max_router_iterations
+ * if the number of heap ops done per iteration is "meaningfully smaller" than the average;
+ * "meaningfully smaller" is based on the factor specified.
+ * The idea behind this is to let the router proceed, if it seems close to converging,
+ * even though that takes it past the iteration limit.
+ */
+//#define IGNORE_ITERATION_LIMIT_HEAP_PUSH_FACTOR 2.0
+
 #define CONGESTED_SLOPE_VAL -0.04
 
 enum class RouterCongestionMode {
@@ -364,7 +375,14 @@ bool try_timing_driven_route(t_router_opts router_opts,
     vtr::Timer iteration_timer;
     int num_net_bounding_boxes_updated = 0;
     int itry_since_last_convergence = -1;
-    for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
+
+    bool heap_pushes_are_well_below_average = false;
+
+#ifdef IGNORE_ITERATION_LIMIT_HEAP_PUSH_FACTOR
+    double average_heap_pushes_per_iteration = 0;
+#endif /* IGNORE_ITERATION_LIMIT_HEAP_PUSH_FACTOR */
+
+    for (itry = 1; heap_pushes_are_well_below_average ? true : (itry <= router_opts.max_router_iterations); ++itry) {
 
         RouterStats router_iteration_stats;
 
@@ -429,6 +447,23 @@ bool try_timing_driven_route(t_router_opts router_opts,
         overuse_info = calculate_overuse_info();
         wirelength_info = calculate_wirelength_info();
         routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes());
+
+#ifdef IGNORE_ITERATION_LIMIT_HEAP_PUSH_FACTOR
+        /* Update average heap pushes per iteration based on current iteration heap pushes. */
+        average_heap_pushes_per_iteration =
+            average_heap_pushes_per_iteration * (1.0 - 1.0/(double)itry) +
+            (double)router_iteration_stats.heap_pushes/(double)itry;
+
+        /* Record if the current iteration uses significantly less heap pushes than the average iteration.
+         */
+        if (router_iteration_stats.heap_pushes * IGNORE_ITERATION_LIMIT_HEAP_PUSH_FACTOR <
+                average_heap_pushes_per_iteration) {
+            heap_pushes_are_well_below_average = true;
+        }
+        else {
+            heap_pushes_are_well_below_average = false;
+        }
+#endif /* IGNORE_ITERATION_LIMIT_HEAP_PUSH_FACTOR */
 
         if (timing_info) {
             //Update timing based on the new routing
