@@ -356,7 +356,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 
     std::map<t_type_ptr,size_t> num_used_type_instances;
 
-	bool early_exit, is_cluster_legal;
+	bool is_cluster_legal;
 	enum e_block_pack_status block_pack_status;
 
 	t_cluster_placement_stats *cluster_placement_stats, *cur_cluster_placement_stats_ptr;
@@ -425,7 +425,6 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
     auto primitive_candidate_block_types = identify_primitive_candidate_block_types();
 
 	blocks_since_last_analysis = 0;
-	early_exit = false;
 	num_blocks_hill_added = 0;
 
 	VTR_ASSERT(max_cluster_size < MAX_SHORT);
@@ -512,7 +511,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
                     *timing_info);
 			num_clb++;
 
-			if (packer_opts.timing_driven && !early_exit) {
+			if (packer_opts.timing_driven) {
 				blocks_since_last_analysis++;
 				/*it doesn't make sense to do a timing analysis here since there*
 				 *is only one atom block clustered it would not change anything      */
@@ -611,7 +610,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
                         *timing_info);
 				num_unrelated_clustering_attempts = 0;
 
-				if (packer_opts.timing_driven && !early_exit) {
+				if (packer_opts.timing_driven) {
 					blocks_since_last_analysis++; /* historically, timing slacks were recomputed after X number of blocks were packed, but this doesn't significantly alter results so I (jluu) did not port the code */
 				}
 				next_molecule = get_molecule_for_cluster(
@@ -645,7 +644,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
                 istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, seed_atoms);
 
 				if (packer_opts.timing_driven) {
-					if (num_blocks_hill_added > 0 && !early_exit) {
+					if (num_blocks_hill_added > 0) {
 						blocks_since_last_analysis += num_blocks_hill_added;
 					}
                 }
