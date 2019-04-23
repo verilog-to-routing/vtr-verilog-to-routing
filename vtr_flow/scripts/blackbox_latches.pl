@@ -135,10 +135,10 @@ foreach my $cur_arg (@ARGV)
 	}
 }
 
-#default is vanilla all latches
+#default is blackbox all latches
 if(!$vanilla && !$has_clk_list && !$has_restore_clk)
 {
-	$vanilla = 1;
+	print "blackboxing all latches in file\n";
 }
 
 if(!$has_output && ($has_restore_clk || $has_clk_list))
