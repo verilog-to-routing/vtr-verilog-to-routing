@@ -307,7 +307,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
                             int driver_rr_node = lb_nets[inet].terminals[0];
                             int sink_rr_node = lb_nets[inet].terminals[itarget];
 
-                            VTR_LOG("No possible routing path from %s to %s: needed for net '%s' from net pin '%s'",
+                            VTR_LOG("\t\t\tNo possible routing path from %s to %s: needed for net '%s' from net pin '%s'",
                                         describe_lb_type_rr_node(driver_rr_node, router_data).c_str(),
                                         describe_lb_type_rr_node(sink_rr_node, router_data).c_str(),
                                         atom_nlist.net_name(net_id).c_str(),
@@ -327,7 +327,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 							router_data->explored_node_tb[exp_node.node_index].explored_id = router_data->explore_id_index;
 							router_data->explored_node_tb[exp_node.node_index].prev_index = exp_node.prev_index;
 							if(exp_node.node_index != lb_nets[idx].terminals[itarget]) {
-								expand_node(router_data, exp_node, pq, lb_nets[idx].terminals.size() - 1);
+							   expand_node(router_data, exp_node, pq, lb_nets[idx].terminals.size() - 1);
 							}
                         }
 					}
@@ -356,7 +356,8 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 		} else {
 			--inet;
             auto& atom_ctx = g_vpr_ctx.atom();
-			VTR_LOG("Net '%s' is impossible to route within proposed %s cluster\n", atom_ctx.nlist.net_name(lb_nets[inet].atom_net_id).c_str(), router_data->lb_type->name);
+			VTR_LOGV(verbosity < 3, "Net '%s' is impossible to route within proposed %s cluster\n",
+                     atom_ctx.nlist.net_name(lb_nets[inet].atom_net_id).c_str(), router_data->lb_type->name);
 			is_routed = false;
 		}
 		router_data->pres_con_fac *= router_data->params.pres_fac_mult;

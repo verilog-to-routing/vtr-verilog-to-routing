@@ -354,6 +354,8 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 		seedindex, savedseedindex /* index of next most timing critical block */,
 		detailed_routing_stage, *hill_climbing_inputs_avail;
 
+    const int verbosity = packer_opts.pack_verbosity;
+
     std::map<t_type_ptr,size_t> num_used_type_instances;
 
 	bool is_cluster_legal;
@@ -477,9 +479,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 
 			ClusterBlockId clb_index(num_clb);
 
-            if (packer_opts.pack_verbosity > 2) {
-                VTR_LOG("Complex block %d:\n", num_clb);
-            }
+            VTR_LOGV(verbosity > 2, "Complex block %d:\n", num_clb);
 
 			start_new_cluster(cluster_placement_stats, primitives_list,
 					atom_molecules, clb_index, istart,
@@ -494,11 +494,11 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
                     packer_opts.enable_pin_feasibility_filter,
                     balance_block_type_utilization);
 
-            if (packer_opts.pack_verbosity > 1 && packer_opts.pack_verbosity < 3) {
-                VTR_LOG("Complex block %d: %s, type: %s ",
-                        num_clb, cluster_ctx.clb_nlist.block_name(clb_index).c_str(), cluster_ctx.clb_nlist.block_type(clb_index)->name);
-                VTR_LOGV(packer_opts.pack_verbosity > 1, "."); //Progress dot for seed-block
-            }
+            VTR_LOGV(verbosity == 2,
+                     "Complex block %d: '%s' (%s) ", num_clb,
+                     cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
+                     cluster_ctx.clb_nlist.block_type(clb_index)->name);
+            VTR_LOGV(verbosity == 2, "."); //Progress dot for seed-block
 			fflush(stdout);
 
             t_ext_pin_util target_ext_pin_util = ext_pin_util_targets.get_pin_util(cluster_ctx.clb_nlist.block_type(clb_index)->name);
@@ -546,36 +546,21 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
                 const t_model* blk_model = atom_ctx.nlist.block_model(blk_id);
 
 				if (block_pack_status != BLK_PASSED) {
-					if (next_molecule != nullptr) {
-						if (block_pack_status == BLK_FAILED_ROUTE) {
-                            if (packer_opts.pack_verbosity > 2) {
-                                VTR_LOG("\tNO_ROUTE: %s type %s",
-                                        blk_name.c_str(),
-                                        blk_model->name);
-                                if (next_molecule->pack_pattern) {
-                                    VTR_LOG("molecule %s molecule_size %zu",
-                                        next_molecule->pack_pattern->name,
-                                        next_molecule->atom_block_ids.size());
-                                }
-                                VTR_LOG("\n");
-                                fflush(stdout);
-                            }
-						} else {
-                            if (packer_opts.pack_verbosity > 2) {
-                                VTR_LOG("\tFAILED_CHECK: %s type %s check %d",
-                                        blk_name.c_str(),
-                                        blk_model->name,
-                                        block_pack_status);
-                                if (next_molecule->pack_pattern) {
-                                    VTR_LOG("molecule %s molecule_size %zu",
-                                        next_molecule->pack_pattern->name,
-                                        next_molecule->atom_block_ids.size());
-                                }
-                                VTR_LOG("\n");
-                                fflush(stdout);
-                            }
-						}
-					}
+                    if (verbosity > 2) {
+                        if (block_pack_status == BLK_FAILED_ROUTE) {
+                            VTR_LOG("\tNO_ROUTE: '%s' (%s)", blk_name.c_str(), blk_model->name);
+                            VTR_LOGV(next_molecule->pack_pattern, " molecule %s molecule_size %zu",
+                                     next_molecule->pack_pattern->name, next_molecule->atom_block_ids.size());
+                            VTR_LOG("\n");
+                            fflush(stdout);
+                        } else {
+                            VTR_LOG("\tFAILED_FEASIBILITY_CHECK: '%s' (%s)", blk_name.c_str(), blk_model->name, block_pack_status);
+                            VTR_LOGV(next_molecule->pack_pattern, " molecule %s molecule_size %zu",
+                                     next_molecule->pack_pattern->name, next_molecule->atom_block_ids.size());
+                            VTR_LOG("\n");
+                            fflush(stdout);
+                        }
+                    }
 
 					next_molecule = get_molecule_for_cluster(
 							cluster_ctx.clb_nlist.block_pb(clb_index),
@@ -588,18 +573,13 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 					continue;
 				} else {
 					/* Continue packing by filling smallest cluster */
-                    if (packer_opts.pack_verbosity > 2) {
-                        VTR_LOG("\tPASSED: %s type %s",
-                                blk_name.c_str(),
-                                blk_model->name);
-                        if (next_molecule && next_molecule->pack_pattern) {
-                            VTR_LOG(" molecule %s molecule_size %zu",
-                                    next_molecule->pack_pattern->name,
-                                    next_molecule->atom_block_ids.size());
-                        }
+                    if (verbosity > 2) {
+                        VTR_LOG("\tPASSED: '%s' (%s)", blk_name.c_str(), blk_model->name);
+                        VTR_LOGV(next_molecule->pack_pattern, " molecule %s molecule_size %zu",
+                                 next_molecule->pack_pattern->name, next_molecule->atom_block_ids.size());
                         VTR_LOG("\n");
                     }
-                    VTR_LOGV(packer_opts.pack_verbosity > 1 && packer_opts.pack_verbosity < 3, ".");
+                    VTR_LOGV(verbosity == 2, ".");
 					fflush(stdout);
 				}
 				update_cluster_stats(next_molecule, clb_index,
@@ -623,14 +603,14 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 						clb_index, packer_opts.pack_verbosity);
 			}
 
-            VTR_LOGV(packer_opts.pack_verbosity > 1 && packer_opts.pack_verbosity < 3, "\n");
+            VTR_LOGV(verbosity == 2, "\n");
 
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
 				is_cluster_legal = try_intra_lb_route(router_data, packer_opts.pack_verbosity);
 				if (is_cluster_legal) {
-                    VTR_LOGV(packer_opts.pack_verbosity > 2, "\tPassed route at end.\n");
+                    VTR_LOGV(verbosity > 2, "\tPassed route at end.\n");
 				} else {
-					VTR_LOGV(packer_opts.pack_verbosity > 0, "Failed route at end, repack cluster trying detailed routing at each stage.\n");
+					VTR_LOGV(verbosity > 0, "Failed route at end, repack cluster trying detailed routing at each stage.\n");
 				}
 			} else {
 				is_cluster_legal = true;
@@ -1151,11 +1131,11 @@ static enum e_block_pack_status try_pack_molecule(
 
     if (verbosity > 3) {
         AtomBlockId root_atom = molecule->atom_block_ids[molecule->root];
-        VTR_LOG("\t\tTry pack molecule: '%s' (%s) ",
-                        atom_ctx.nlist.block_name(root_atom).c_str(),
-                        atom_ctx.nlist.block_model(root_atom)->name);
+        VTR_LOG("\t\tTry pack molecule: '%s' (%s)",
+                atom_ctx.nlist.block_name(root_atom).c_str(),
+                atom_ctx.nlist.block_model(root_atom)->name);
         VTR_LOGV(molecule->pack_pattern,
-                 "molecule_type %s molecule_size %zu",
+                 " molecule_type %s molecule_size %zu",
                  molecule->pack_pattern->name,
                  molecule->atom_block_ids.size());
         VTR_LOG("\n");
@@ -1170,6 +1150,7 @@ static enum e_block_pack_status try_pack_molecule(
         molecule->type == MOLECULE_FORCED_PACK &&
         molecule->pack_pattern->is_chain &&
         molecule->chain_info->is_long_chain) {
+        VTR_LOGV(verbosity > 4, "\t\t\tFAILED Placement Feasibility Filter: Only one long chain per cluster is allowed\n");
         return BLK_FAILED_FEASIBLE;
     }
 
@@ -1191,7 +1172,7 @@ static enum e_block_pack_status try_pack_molecule(
 				}
 			}
 			if (enable_pin_feasibility_filter && block_pack_status == BLK_PASSED) {
-				/* Check if pin usage is feasible for the current packing assigment */
+				/* Check if pin usage is feasible for the current packing assignment */
 				reset_lookahead_pins_used(pb);
 				try_update_lookahead_pins_used(pb);
 				if (!check_lookahead_pins_used(pb, max_external_pin_util)) {
@@ -1259,10 +1240,7 @@ static enum e_block_pack_status try_pack_molecule(
 				}
 				for (i = 0; i < failed_location; i++) {
 					if (molecule->atom_block_ids[i]) {
-						revert_place_atom_block(
-								molecule->atom_block_ids[i],
-								router_data,
-                                atom_molecules);
+						revert_place_atom_block(molecule->atom_block_ids[i], router_data, atom_molecules);
 					}
 				}
 			} else {
@@ -1880,14 +1858,9 @@ static void start_new_cluster(
 
 
     if (verbosity > 2) {
-        VTR_LOG("\tSeed: '%s' (%s) ",
-                        root_atom_name.c_str(),
-                        root_model->name);
-        if (molecule->pack_pattern) {
-            VTR_LOG("molecule_type %s molecule_size %zu",
-                molecule->pack_pattern->name,
-                molecule->atom_block_ids.size());
-        }
+        VTR_LOG("\tSeed: '%s' (%s)", root_atom_name.c_str(), root_model->name);
+        VTR_LOGV(molecule->pack_pattern, " molecule_type %s molecule_size %zu",
+                 molecule->pack_pattern->name, molecule->atom_block_ids.size());
         VTR_LOG("\n");
     }
 
@@ -1929,11 +1902,7 @@ static void start_new_cluster(
         }
 
         if (success) {
-            if (verbosity > 2) {
-                VTR_LOG("\tPASSED_SEED: Block Type %s\n",
-                    type->name);
-            }
-
+            VTR_LOGV(verbosity > 2, "\tPASSED_SEED: Block Type %s\n", type->name);
             //Once clustering succeeds, add it to the clb netlist
             if (pb->name != nullptr) {
                 free(pb->name);
@@ -1942,11 +1911,7 @@ static void start_new_cluster(
             clb_index = clb_nlist->create_block(root_atom_name.c_str(), pb, type);
             break;
         } else {
-            if (verbosity > 2) {
-                VTR_LOG("\tFAILED_SEED: Block Type %s\n",
-                    type->name);
-            }
-
+            VTR_LOGV(verbosity > 2, "\tFAILED_SEED: Block Type %s\n", type->name);
             //Free failed clustering and try again
             free_router_data(*router_data);
             free_pb(pb);
@@ -1980,7 +1945,7 @@ static void start_new_cluster(
 	if (num_used_type_instances[clb_nlist->block_type(clb_index)] > device_ctx.grid.num_instances(clb_nlist->block_type(clb_index))) {
 		device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances, target_device_utilization);
 		VTR_LOGV(verbosity > 0, "Not enough resources expand FPGA size to (%d x %d)\n",
-			device_ctx.grid.width(), device_ctx.grid.height());
+			     device_ctx.grid.width(), device_ctx.grid.height());
 	}
 }
 
@@ -2193,8 +2158,8 @@ static t_pack_molecule *get_molecule_for_cluster(
 		ClusterBlockId cluster_index,
         int verbosity) {
 
-	/* Finds the block with the the greatest gain that satisifies the      *
-	 * input, clock and capacity constraints of a cluster that are       *
+	/* Finds the block with the greatest gain that satisfies the
+	 * input, clock and capacity constraints of a cluster that are
 	 * passed in.  If no suitable block is found it returns ClusterBlockId::INVALID().
 	 */
 
@@ -2205,9 +2170,9 @@ static t_pack_molecule *get_molecule_for_cluster(
 	best_molecule = get_highest_gain_molecule(cur_pb, atom_molecules,
 			NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets, cluster_index);
 
-	/* If no blocks have any gain to the current cluster, the code above *
+	/* If no blocks have any gain to the current cluster, the code above      *
 	 * will not find anything.  However, another atom block with no inputs in *
-	 * common with the cluster may still be inserted into the cluster.   */
+	 * common with the cluster may still be inserted into the cluster.        */
 
 	if (allow_unrelated_clustering) {
 		if (best_molecule == nullptr) {
@@ -2216,23 +2181,14 @@ static t_pack_molecule *get_molecule_for_cluster(
 								cur_pb,
 								cluster_placement_stats_ptr);
 				(*num_unrelated_clustering_attempts)++;
-            if (best_molecule != nullptr) {
-                if (verbosity > 2) {
-                    VTR_LOG("\tFound unrelated molecule to cluster\n");
-                }
-            }
+                VTR_LOGV(best_molecule && verbosity > 2, "\tFound unrelated molecule to cluster\n");
 			}
 		} else {
 			*num_unrelated_clustering_attempts = 0;
 		}
 	} else {
-		if (best_molecule == nullptr) {
-            if (verbosity > 2) {
-                VTR_LOG("\tNo related molecule found and unrelated clustering disabled\n");
-            }
-        }
+        VTR_LOGV(!best_molecule && verbosity > 2, "\tNo related molecule found and unrelated clustering disabled\n");
     }
-
 
 	return best_molecule;
 }
