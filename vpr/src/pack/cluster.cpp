@@ -320,6 +320,8 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(
         const t_pb_graph_node* pb_graph_node,
         const t_pack_molecule* molecule, const AtomBlockId blk_id);
 
+static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const AtomPinId driver_pin_id);
+
 /*****************************************/
 /*globally accessible function*/
 std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, const t_arch *arch, t_pack_molecule *molecule_head,
@@ -2676,6 +2678,7 @@ static void try_update_lookahead_pins_used(t_pb *cur_pb) {
 	int i, j;
 	const t_pb_type *pb_type = cur_pb->pb_graph_node->pb_type;
 
+    // run recursively till a leaf (primitive) pb block is reached
 	if (pb_type->num_modes > 0 && cur_pb->name != nullptr) {
 		if (cur_pb->child_pbs != nullptr) {
 			for (i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
@@ -2687,7 +2690,8 @@ static void try_update_lookahead_pins_used(t_pb *cur_pb) {
 			}
 		}
 	} else {
-
+        // find if this child (primitive) pb block has an atom mapped to it,
+        // if yes compute and mark lookahead pins used for that pb block
         auto& atom_ctx = g_vpr_ctx.atom();
         AtomBlockId blk_id = atom_ctx.lookup.pb_atom(cur_pb);
 		if (pb_type->blif_model != nullptr && blk_id) {
@@ -2741,152 +2745,132 @@ static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id) {
     }
 }
 
-/* Given a pin and its assigned net, mark all pin classes that are affected */
+/**
+ * Given a pin and its assigned net, mark all pin classes that are affected.
+ * Check if connecting this pin to it's driver pin or to all sink pins will
+ * require leaving a pb_block starting from the parent pb_block of the
+ * primitive till the root block (depth = 0). If leaving a pb_block is
+ * required add this net to the pin class (to increment the number of used
+ * pins from this class) that should be used to leave the pb_block.
+ */
 static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, const AtomNetId net_id) {
-	int depth;
-	int pin_class, output_port;
-	t_pb * cur_pb;
-	const t_pb_type *pb_type;
-	t_port *prim_port;
-	t_pb_graph_pin *output_pb_graph_pin;
-
-	bool skip, found;
 
     auto& atom_ctx = g_vpr_ctx.atom();
 
-	cur_pb = primitive_pb->parent_pb;
+    // starting from the parent pb of the input primitive go up in the hierarchy till the root block
+	for (auto cur_pb = primitive_pb->parent_pb; cur_pb; cur_pb = cur_pb->parent_pb) {
+        const auto depth = cur_pb->pb_graph_node->pb_type->depth;
+        const auto pin_class = pb_graph_pin->parent_pin_class[depth];
+        VTR_ASSERT(pin_class != OPEN);
 
-	while (cur_pb) {
-		depth = cur_pb->pb_graph_node->pb_type->depth;
-		pin_class = pb_graph_pin->parent_pin_class[depth];
-		VTR_ASSERT(pin_class != OPEN);
+        const auto driver_blk_id = atom_ctx.nlist.net_driver_block(net_id);
 
-        auto driver_blk_id = atom_ctx.nlist.net_driver_block(net_id);
+        // if this primitive pin is an input pin
+        if (pb_graph_pin->port->type == IN_PORT) {
+            /* find location of net driver if exist in clb, NULL otherwise */
+            // find the driver of the input net connected to the pin being studied
+            const auto driver_pin_id = atom_ctx.nlist.net_driver(net_id);
+            // find the id of the atom occupying the input primitive_pb
+            const auto prim_blk_id = atom_ctx.lookup.pb_atom(primitive_pb);
+            // find the pb block occupied by the driving atom
+            const auto driver_pb = atom_ctx.lookup.atom_pb(driver_blk_id);
+            // pb_graph_pin driving net_id in the driver pb block
+            t_pb_graph_pin* output_pb_graph_pin = nullptr;
+            // if the driver block is in the same clb as the input primitive block
+            if (atom_ctx.lookup.atom_clb(driver_blk_id) == atom_ctx.lookup.atom_clb(prim_blk_id)) {
+                // get pb_graph_pin driving the given net
+                output_pb_graph_pin = get_driver_pb_graph_pin(driver_pb, driver_pin_id);
+            }
 
-		if (pb_graph_pin->port->type == IN_PORT) {
-			/* find location of net driver if exist in clb, NULL otherwise */
-            auto driver_pin_id = atom_ctx.nlist.net_driver(net_id);
+            bool is_reachable = false;
 
-            auto prim_blk_id = atom_ctx.lookup.pb_atom(primitive_pb);
+            // if the driver pin is within the cluster
+            if (output_pb_graph_pin) {
+                // find if the driver pin can reach the input pin of the primitive or not
+                const t_pb* check_pb = driver_pb;
+                while (check_pb && check_pb != cur_pb) {
+                       check_pb = check_pb->parent_pb;
+                }
+                if (check_pb) {
+                    for (int i = 0; i < output_pb_graph_pin->num_connectable_primitive_input_pins[depth]; i++) {
+                         if (pb_graph_pin == output_pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][i]) {
+                             is_reachable = true;
+                             break;
+                         }
+                    }
+                }
+            }
 
-            const t_pb* driver_pb = atom_ctx.lookup.atom_pb(driver_blk_id);
-
-			output_pb_graph_pin = nullptr;
-			if (atom_ctx.lookup.atom_clb(driver_blk_id) == atom_ctx.lookup.atom_clb(prim_blk_id)) {
-				pb_type = driver_pb->pb_graph_node->pb_type;
-				output_port = 0;
-				found = false;
-				for (int i = 0; i < pb_type->num_ports && !found; i++) {
-					prim_port = &pb_type->ports[i];
-					if (prim_port->type == OUT_PORT) {
-                        auto driver_port_id = atom_ctx.nlist.pin_port(driver_pin_id);
-                        auto driver_model_port = atom_ctx.nlist.port_model(driver_port_id);
-						if (pb_type->ports[i].model_port == driver_model_port) {
-							found = true;
-							break;
-						}
-						output_port++;
-					}
-				}
-				VTR_ASSERT(found);
-				output_pb_graph_pin = &(driver_pb->pb_graph_node->output_pins[output_port][atom_ctx.nlist.pin_port_bit(driver_pin_id)]);
-			}
-
-			skip = false;
-
-			/* check if driving pin for input is contained within the currently
-             * investigated cluster, if yes, do nothing since no input needs to be used */
-			if (output_pb_graph_pin != nullptr) {
-				const t_pb* check_pb = driver_pb;
-				while (check_pb != nullptr && check_pb != cur_pb) {
-					check_pb = check_pb->parent_pb;
-				}
-				if (check_pb != nullptr) {
-					for (int i = 0; skip == false && i < output_pb_graph_pin->num_connectable_primitive_input_pins[depth]; i++) {
-						if (pb_graph_pin == output_pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][i]) {
-							skip = true;
-						}
-					}
-				}
-			}
-
-			/* Must use input pin */
-			if (!skip) {
-				/* Check if already in pin class, if yes, skip */
-				skip = false;
-				int la_inpins_size = (int)cur_pb->pb_stats->lookahead_input_pins_used[pin_class].size();
-				for (int i = 0; i < la_inpins_size; i++) {
-					if (cur_pb->pb_stats->lookahead_input_pins_used[pin_class][i] == net_id) {
-						skip = true;
-					}
-				}
-				if (!skip) {
-					/* Net must take up a slot */
-					cur_pb->pb_stats->lookahead_input_pins_used[pin_class].push_back(net_id);
-				}
-			}
-		} else {
-			VTR_ASSERT(pb_graph_pin->port->type == OUT_PORT);
+            // Must use an input pin to connect the driver to the input pin of the given primitive, either the
+            // driver atom is not contained in the cluster or is contained but cannot reach the primitive pin
+            if (!is_reachable) {
+                // add net to lookahead_input_pins_used if not already added
+                auto it = std::find(cur_pb->pb_stats->lookahead_input_pins_used[pin_class].begin(),
+                                    cur_pb->pb_stats->lookahead_input_pins_used[pin_class].end(), net_id);
+                if (it == cur_pb->pb_stats->lookahead_input_pins_used[pin_class].end()) {
+                    cur_pb->pb_stats->lookahead_input_pins_used[pin_class].push_back(net_id);
+                }
+            }
+        } else {
+            VTR_ASSERT(pb_graph_pin->port->type == OUT_PORT);
             /*
-             * Determine if this net (which is driven within this cluster) leaves this cluster
-             * (and hense uses an output pin).
+             * Determine if this net (which is driven from within this cluster) leaves this cluster
+             * (and hence uses an output pin).
              */
 
-			bool net_exits_cluster = true;
+            bool net_exits_cluster = true;
             int num_net_sinks = static_cast<int>(atom_ctx.nlist.net_sinks(net_id).size());
 
-			if (pb_graph_pin->num_connectable_primitive_input_pins[depth] >= num_net_sinks) {
+            if (pb_graph_pin->num_connectable_primitive_input_pins[depth] >= num_net_sinks) {
                 //It is possible the net is completely absorbed in the cluster,
                 //since this pin could (potentially) drive all the net's sinks
 
-				/* Important: This runtime penalty looks a lot scarier than it really is.
+                /* Important: This runtime penalty looks a lot scarier than it really is.
                  * For high fan-out nets, I at most look at the number of pins within the
                  * cluster which limits runtime.
                  *
-				 * DO NOT REMOVE THIS INITIAL FILTER WITHOUT CAREFUL ANALYSIS ON RUNTIME!!!
-				 *
-				 * Key Observation:
-				 * For LUT-based designs it is impossible for the average fanout to exceed
+                 * DO NOT REMOVE THIS INITIAL FILTER WITHOUT CAREFUL ANALYSIS ON RUNTIME!!!
+                 *
+                 * Key Observation:
+                 * For LUT-based designs it is impossible for the average fanout to exceed
                  * the number of LUT inputs so it's usually around 4-5 (pigeon-hole argument,
                  * if the average fanout is greater than the number of LUT inputs, where do
                  * the extra connections go?  Therefore, average fanout must be capped to a
                  * small constant where the constant is equal to the number of LUT inputs).
                  * The real danger to runtime is when the number of sinks of a net gets doubled
-				 */
+                 */
 
                 //Check if all the net sinks are, in fact, inside this cluster
                 bool all_sinks_in_cur_cluster = true;
-				ClusterBlockId driver_clb = atom_ctx.lookup.atom_clb(driver_blk_id);
+                ClusterBlockId driver_clb = atom_ctx.lookup.atom_clb(driver_blk_id);
                 for(auto pin_id : atom_ctx.nlist.net_sinks(net_id)) {
                     auto sink_blk_id = atom_ctx.nlist.pin_block(pin_id);
-					if (atom_ctx.lookup.atom_clb(sink_blk_id) != driver_clb) {
+                    if (atom_ctx.lookup.atom_clb(sink_blk_id) != driver_clb) {
                         all_sinks_in_cur_cluster = false;
-						break;
-					}
-				}
+                        break;
+                    }
+                }
 
-				if (all_sinks_in_cur_cluster) {
+                if (all_sinks_in_cur_cluster) {
                     //All the sinks are part of this cluster, so the net may be fully absorbed.
                     //
                     //Verify this, by counting the number of net sinks reachable from the driver pin.
                     //If the count equals the number of net sinks then the net is fully absorbed and
                     //the net does not exit the cluster
-					/* TODO: I should cache the absorbed outputs, once net is absorbed,
+                    /* TODO: I should cache the absorbed outputs, once net is absorbed,
                      *       net is forever absorbed, no point in rechecking every time */
-					if (net_sinks_reachable_in_cluster(pb_graph_pin, depth, net_id)) {
+                    if (net_sinks_reachable_in_cluster(pb_graph_pin, depth, net_id)) {
                         //All the sinks are reachable inside the cluster
-						net_exits_cluster = false;
-					}
-				}
-			}
+                        net_exits_cluster = false;
+                    }
+                }
+            }
 
-			if (net_exits_cluster) {
-				/* This output must exit this cluster */
-				cur_pb->pb_stats->lookahead_output_pins_used[pin_class].push_back(net_id);
-			}
-		}
-
-		cur_pb = cur_pb->parent_pb;
+            if (net_exits_cluster) {
+                /* This output must exit this cluster */
+                cur_pb->pb_stats->lookahead_output_pins_used[pin_class].push_back(net_id);
+            }
+        }
 	}
 }
 
@@ -2916,6 +2900,33 @@ int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const i
     }
 
     return false;
+}
+
+/**
+ * Returns the pb_graph_pin of the atom pin defined by the driver_pin_id in the driver_pb
+ */
+static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const AtomPinId driver_pin_id) {
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+    const auto driver_pb_type = driver_pb->pb_graph_node->pb_type;
+    int output_port = 0;
+    // find the port of the pin driving the net as well as the port model
+    auto driver_port_id = atom_ctx.nlist.pin_port(driver_pin_id);
+    auto driver_model_port = atom_ctx.nlist.port_model(driver_port_id);
+    // find the port id of the port containing the driving pin in the driver_pb_type
+    for (int i = 0; i < driver_pb_type->num_ports; i++) {
+        auto& prim_port = driver_pb_type->ports[i];
+        if (prim_port.type == OUT_PORT) {
+            if (prim_port.model_port == driver_model_port) {
+                // get the output pb_graph_pin driving this input net
+                return &(driver_pb->pb_graph_node->output_pins[output_port][atom_ctx.nlist.pin_port_bit(driver_pin_id)]);
+            }
+            output_port++;
+        }
+    }
+    // the pin should be found
+    VTR_ASSERT(false);
+    return nullptr;
 }
 
 /* Check if the number of available inputs/outputs for a pin class is sufficient for speculatively packed blocks */
