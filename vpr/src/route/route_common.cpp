@@ -294,6 +294,8 @@ bool try_route(int width_fac,
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
 
+    /* Create a rr_graph */
+    RRGraph rr_graph = 
 	create_rr_graph(graph_type,
             device_ctx.num_block_types,
             device_ctx.block_types,

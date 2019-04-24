@@ -7,6 +7,7 @@
 #define INCLUDE_TRACK_BUFFERS false
 
 #include "device_grid.h"
+#include "rr_graph_obj.h"
 
 enum e_graph_type {
     GRAPH_GLOBAL, /* One node per channel with wire capacity > 1 and full connectivity */
@@ -25,7 +26,7 @@ enum {
     RR_GRAPH_WARN_CHAN_WIDTH_CHANGED = 0x02
 };
 
-void create_rr_graph(
+RRGraph create_rr_graph(
         const t_graph_type graph_type,
         const int num_block_types,
         const t_type_ptr block_types,

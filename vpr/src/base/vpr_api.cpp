@@ -745,8 +745,13 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fi
     return RouteStatus(status, fixed_channel_width);
 }
 
-RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, std::shared_ptr<RoutingDelayCalculator> delay_calc, vtr::vector<ClusterNetId, float *>& net_delay) {
-    vtr::ScopedStartFinishTimer timer("Routing");
+RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, 
+                            const t_arch& arch, 
+                            std::shared_ptr<SetupHoldTimingInfo> timing_info, 
+                            std::shared_ptr<RoutingDelayCalculator> delay_calc, 
+                            vtr::vector<ClusterNetId,
+                            float *>& net_delay) {
+                            vtr::ScopedStartFinishTimer timer("Routing");
 
     auto& router_opts = vpr_setup.RouterOpts;
     int min_W = binary_search_place_and_route(vpr_setup.PlacerOpts,

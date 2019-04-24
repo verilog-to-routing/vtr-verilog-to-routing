@@ -5,35 +5,49 @@
 #ifndef RR_GRAPH_OBJ_H
 #define RR_GRAPH_OBJ_H
 
+/*
+ * Notes in include header files in a head file 
+ * Only include the neccessary header files 
+ * that is required by the data types in the function/class declarations!
+ */
+/* Header files should be included in a sequence */
+/* Standard header files required go first */
 #include <limits>
 #include <vector>
 
-#include "rr_graph_fwd.h"
+/* EXTERNAL library header files go second*/
 #include "vtr_vector.h"
 #include "vtr_range.h"
 #include "vtr_geometry.h"
 #include "arch_types.h"
-#include "rr_graph_node_types.h"
+
+/* VPR header files go second*/
+#include "vpr_types.h"
+#include "rr_graph_fwd.h"
 
 class RRGraph {
   public: //Types
     typedef vtr::vector<RRNodeId,RRNodeId>::const_iterator node_iterator;
     typedef vtr::vector<RREdgeId,RREdgeId>::const_iterator edge_iterator;
     typedef vtr::vector<RRSwitchId,RRSwitchId>::const_iterator switch_iterator;
+    typedef vtr::vector<RRSegmentId,RRSegmentId>::const_iterator segment_iterator;
 
     typedef vtr::Range<node_iterator> node_range;
     typedef vtr::Range<edge_iterator> edge_range;
     typedef vtr::Range<switch_iterator> switch_range;
+    typedef vtr::Range<segment_iterator> segment_range;
 
   public: //Accessors
     //Aggregates
     node_range nodes() const;
     edge_range edges() const;
     switch_range switches() const;
+    segment_range segments() const;
 
     //Node attributes
-    t_rr_graph_node_type node_type(RRNodeId node) const;
-    const char* node_typename(RRNodeId node) const;
+    size_t node_index(RRNodeId node) const;
+    t_rr_type node_type(RRNodeId node) const;
+    const char* node_type_string(RRNodeId node) const;
 
     short node_xlow(RRNodeId node) const;
     short node_ylow(RRNodeId node) const;
@@ -52,8 +66,10 @@ class RRGraph {
     short node_class_num(RRNodeId node) const;
 
     short node_cost_index(RRNodeId node) const;
-    e_rr_graph_node_direction node_direction(RRNodeId node) const;
+    e_direction node_direction(RRNodeId node) const;
+    const char* node_direction_string(RRNodeId node) const;
     e_side node_side(RRNodeId node) const;
+    const char* node_side_string(RRNodeId node) const;
     float node_R(RRNodeId node) const;
     float node_C(RRNodeId node) const;
     short node_segment_id(RRNodeId node) const; /* get the segment id of a rr_node */
@@ -67,6 +83,7 @@ class RRGraph {
     edge_range node_in_edges(RRNodeId node) const;
 
     //Edge attributes
+    size_t edge_index(RREdgeId edge) const;
     RRNodeId edge_src_node(RREdgeId edge) const;
     RRNodeId edge_sink_node(RREdgeId edge) const;
     RRSwitchId edge_switch(RREdgeId edge) const;
@@ -74,15 +91,17 @@ class RRGraph {
     bool edge_is_non_configurable(RREdgeId edge) const;
 
     /* Switch Info */
+    size_t switch_index(RRSwitchId switch_id) const;
     t_rr_switch_inf get_switch(RRSwitchId switch_id) const;
 
     /* Segment Info */
+    size_t segment_index(RRSegmentId segment_id) const;
     t_segment_inf get_segment(RRSegmentId segment_id) const;
 
     //Utilities
     RREdgeId find_edge(RRNodeId src_node, RRNodeId sink_node) const;
-    RRNodeId find_node(short x, short y, t_rr_graph_node_type type, int ptc, e_side side=NUM_SIDES) const;
-    node_range find_nodes(short x, short y, t_rr_graph_node_type type, int ptc) const;
+    RRNodeId find_node(short x, short y, t_rr_type type, int ptc, e_side side=NUM_SIDES) const;
+    node_range find_nodes(short x, short y, t_rr_type type, int ptc) const;
 
     bool is_dirty() const;
 
@@ -100,9 +119,10 @@ class RRGraph {
     void reserve_segments(int num_segments);
 
     /* Related to Nodes */
-    RRNodeId create_node(t_rr_graph_node_type type);
+    RRNodeId create_node(t_rr_type type);
     RREdgeId create_edge(RRNodeId source, RRNodeId sink, RRSwitchId switch_id);
     RRSwitchId create_switch(t_rr_switch_inf switch_info);
+    RRSegmentId create_segment(t_segment_inf segment_info);
 
     void remove_node(RRNodeId node);
     void remove_edge(RREdgeId edge);
@@ -121,14 +141,14 @@ class RRGraph {
     void set_node_class_num(RRNodeId node, short class_id);
 
     void set_node_cost_index(RRNodeId node, short cost_index);
-    void set_node_direction(RRNodeId node, e_rr_graph_node_direction direction);
+    void set_node_direction(RRNodeId node, e_direction direction);
     void set_node_side(RRNodeId node, e_side side);
     void set_node_R(RRNodeId node, float R);
     void set_node_C(RRNodeId node, float C);
-    void set_node_switch_id(RRNodeId node, short switch_index);
     void set_node_segment_id(RRNodeId node, short segment_index);
 
     /* Edge related */
+    void partition_node_edges(RRNodeId node); /* classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) */
     void partition_edges(); /* classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) */
     void load_switch_C(); /* configure the C of each node with the C of each incoming edge switch */
   
@@ -173,25 +193,21 @@ class RRGraph {
 
     //Node related data
     vtr::vector<RRNodeId,RRNodeId> node_ids_;
-    vtr::vector<RRNodeId,t_rr_graph_node_type> node_types_;
+    vtr::vector<RRNodeId,t_rr_type> node_types_;
 
     vtr::vector<RRNodeId,vtr::Rect<short>> node_bounding_boxes_;
 
     vtr::vector<RRNodeId,short> node_capacities_;
     vtr::vector<RRNodeId,short> node_ptc_nums_;
     vtr::vector<RRNodeId,short> node_cost_indices_;
-    vtr::vector<RRNodeId,e_rr_graph_node_direction> node_directions_;
+    vtr::vector<RRNodeId,e_direction> node_directions_;
     vtr::vector<RRNodeId,e_side> node_sides_;
     vtr::vector<RRNodeId,float> node_Rs_;
     vtr::vector<RRNodeId,float> node_Cs_;
-    vtr::vector<RRNodeId,short> node_switch_ids_; /* Segment ids for each node */
     vtr::vector<RRNodeId,short> node_segment_ids_; /* Segment ids for each node */
 
     vtr::vector<RRNodeId,std::vector<RREdgeId>> node_in_edges_;
     vtr::vector<RRNodeId,std::vector<RREdgeId>> node_out_edges_;
-    /* Edge statistics */
-    vtr::vector<RRNodeId,RREdgeId> node_num_configurable_in_edges_;
-    vtr::vector<RRNodeId,RREdgeId> node_num_configurable_out_edges_;
 
     //Edge related data
     vtr::vector<RREdgeId,RREdgeId> edge_ids_;

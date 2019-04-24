@@ -39,6 +39,9 @@ using namespace std;
 
 #include "rr_types.h"
 
+#include "create_rr_graph.h"
+#include "rr_graph_obj_writer.h"
+
 //#define VERBOSE
 
 struct t_mux {
@@ -270,7 +273,7 @@ static void build_rr_graph(
 
 /******************* Subroutine definitions *******************************/
 
-void create_rr_graph(
+RRGraph create_rr_graph(
         const t_graph_type graph_type,
         const int num_block_types,
         const t_type_ptr block_types,
@@ -292,7 +295,7 @@ void create_rr_graph(
     if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
         //No change in channel width, so skip re-building RR graph
         VTR_LOG("RR graph channel widths unchanged, skipping RR graph rebuild\n");
-        return;    
+        return convert_rr_graph();
     }
 
     free_rr_graph();
@@ -344,10 +347,15 @@ void create_rr_graph(
         compute_router_lookahead(segment_inf.size());
     }
 
+    RRGraph rr_graph = convert_rr_graph();
+
     //Write out rr graph file if needed
     if (!det_routing_arch->write_rr_graph_filename.empty()) {
         write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str(), segment_inf);
+        write_rr_graph_obj_to_xml(det_routing_arch->write_rr_graph_filename.c_str(), &rr_graph);
     }
+
+    return rr_graph; 
 }
 
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed) {
