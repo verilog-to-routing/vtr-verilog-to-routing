@@ -11,6 +11,7 @@
 #include "odin_util.h"
 #include "vtr_memory.h"
 #include "vtr_util.h"
+#include "ast_environment.hpp"
 
 /* This files header */
 #include "ast_loop_unroll.h"
@@ -156,7 +157,7 @@ ast_node_t* while_preprocessor(ast_node_t* node, ast_node_t* module)
 /*
  *  (function: replace_whiles)
  */
-ast_node_t* replace_whiles(ast_node_t* node, module)
+ast_node_t* replace_whiles(ast_node_t* node, ast_node_t* module)
 {
     oassert(!is_while_node(node));
     oassert(node != nullptr);
@@ -189,6 +190,62 @@ ast_node_t* replace_whiles(ast_node_t* node, module)
     }
     return new_node;
 }
+
+/*
+ *  (function: resolve_while)
+ */
+ast_node_t* resolve_while(ast_node_t* node, ast_node_t* module)
+{
+    oassert(is_for_node(node));
+    oassert(node != nullptr);
+    ast_node_t* body_parent = nullptr;
+
+	std::unordered_map<ast_node_t*,int> state;
+    ast_node_t* cond = node->children[0];
+    ast_node_t* body = node->children[1];
+
+    int error_code = 0;
+
+	Environment env(make_path(node, module));
+
+    if(error_code)
+    {
+        error_message(
+        	PARSE_ERROR, 
+        	cond->line_number, 
+        	cond->file_number, 
+        	"Unsupported condition node in for loop"
+        );
+    }
+
+    while(dup_body)
+    {
+        ast_node_t* new_body = dup_and_fill_body(
+        	body, 
+        	pre->children[0], 
+        	&state, 
+        	&error_code
+        );
+        if(error_code)
+        {
+            error_message(
+            	PARSE_ERROR, 
+            	pre->line_number, 
+            	pre->file_number, 
+            	"Unsupported pre-condition node in for loop"
+            );
+        }
+        value->types.number.value = post_func(value->types.number.value);
+        body_parent = 	body_parent ? 
+        				newList_entry(body_parent, new_body): 
+        				newList(BLOCK, new_body);
+
+        dup_body = cond_func(&state);
+    }
+
+    return body_parent;
+}
+
 
 /*
  *  (function: for_preprocessor)

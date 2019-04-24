@@ -1094,6 +1094,29 @@ char *make_module_param_name(STRING_CACHE *defines_for_module_sc, ast_node_t *mo
 }
 
 
+/*---------------------------------------------------------------------------------------------
+ * (function: remove_ast_node)
+ * remove node from src
+ *-------------------------------------------------------------------------------------------*/
+void remove_ast_node(ast_node_t *src, ast_node_t *node)
+{
+	int i, j;
+	int number;
+	number = src->num_children;
+	for(i = 0; i < number; i++)
+	{
+		if(src->children[i]->unique_count == node->unique_count)
+		{
+			number = number - 1;
+			src->num_children = number;
+			for(j = i; j < number; j++)
+			{
+				src->children[j] = src->children[j + 1];
+			}
+		}
+	}
+	free_whole_tree(node);
+}
 
 
 /*---------------------------------------------------------------------------------------------
