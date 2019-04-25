@@ -24,6 +24,7 @@ using namespace std;
  * float -> string -> float conversions */
 constexpr int FLOAT_PRECISION = std::numeric_limits<float>::max_digits10;
 /*********************** Subroutines local to this module *******************/
+void add_metadata_to_xml(fstream &fp, const char *tab_prefix, const t_metadata_dict & meta);
 void write_rr_channel(fstream &fp);
 void write_rr_node(fstream &fp);
 void write_rr_switches(fstream &fp);
@@ -64,7 +65,7 @@ void write_rr_graph(const char *file_name, const std::vector<t_segment_inf>& seg
     cout << "Finished generating RR graph file named " << file_name << endl << endl;
 }
 
-static void add_metadata_to_xml(fstream &fp, const char *tab_prefix, const t_metadata_dict & meta) {
+void add_metadata_to_xml(fstream &fp, const char *tab_prefix, const t_metadata_dict & meta) {
     fp << tab_prefix << "<metadata>" << endl;
 
     for(const auto &meta_elem : meta) {

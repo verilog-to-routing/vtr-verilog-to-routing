@@ -948,7 +948,9 @@ enum e_direction : unsigned char {
     NUM_DIRECTIONS
 };
 
-constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTION_STRING = { {"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"} };
+constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTION_STRING = { 
+  {"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"} 
+};
 
 /* Lists detailed information about segmentation.  [0 .. W-1].              *
  * length:  length of segment.                                              *

@@ -121,7 +121,17 @@ e_direction RRGraph::node_direction(RRNodeId node) const {
 const char* RRGraph::node_direction_string(RRNodeId node) const {
   VTR_ASSERT_SAFE(valid_node_id(node));
   VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direction valid only for CHANX/CHANY RR nodes");
-  return DIRECTION_STRING[node_type(node)];
+
+  if (INC_DIRECTION == node_direction(node)) {
+    return "INC_DIR";
+  } else if (DEC_DIRECTION == node_direction(node)) {
+    return "DEC_DIR";
+  } else if (BI_DIRECTION == node_direction(node)) {
+    return "BI_DIR";
+  }
+
+  VTR_ASSERT(NO_DIRECTION == node_direction(node));
+  return "NO_DIR";
 }
 
 e_side RRGraph::node_side(RRNodeId node) const {
@@ -133,7 +143,7 @@ e_side RRGraph::node_side(RRNodeId node) const {
 const char* RRGraph::node_side_string(RRNodeId node) const {
   VTR_ASSERT_SAFE(valid_node_id(node));
   VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Direction valid only for IPIN/OPIN RR nodes");
-  return SIDE_STRING[node_type(node)];
+  return SIDE_STRING[node_side(node)];
 }
 
 /* Get the resistance of a node */
@@ -159,6 +169,9 @@ short RRGraph::node_segment_id(RRNodeId node) const {
 
 /* 
  * Get the number of configurable input edges of a node
+ * TODO: we would use the node_num_configurable_in_edges() 
+ * when the rr_graph edges have been partitioned 
+ * This can avoid unneccessary walkthrough
  */
 short RRGraph::node_num_configurable_in_edges(RRNodeId node) const {
   /* Ensure a valid node id */
@@ -177,6 +190,9 @@ short RRGraph::node_num_configurable_in_edges(RRNodeId node) const {
 
 /* 
  * Get the number of configurable output edges of a node
+ * TODO: we would use the node_num_configurable_out_edges() 
+ * when the rr_graph edges have been partitioned 
+ * This can avoid unneccessary walkthrough
  */
 short RRGraph::node_num_configurable_out_edges(RRNodeId node) const {
   /* Ensure a valid node id */
@@ -195,6 +211,9 @@ short RRGraph::node_num_configurable_out_edges(RRNodeId node) const {
 
 /* 
  * Get the number of non-configurable input edges of a node
+ * TODO: we would use the node_num_configurable_in_edges() 
+ * when the rr_graph edges have been partitioned 
+ * This can avoid unneccessary walkthrough
  */
 short RRGraph::node_num_non_configurable_in_edges(RRNodeId node) const {
   /* Ensure a valid node id */
@@ -213,6 +232,9 @@ short RRGraph::node_num_non_configurable_in_edges(RRNodeId node) const {
 
 /* 
  * Get the number of non-configurable output edges of a node
+ * TODO: we would use the node_num_configurable_out_edges() 
+ * when the rr_graph edges have been partitioned 
+ * This can avoid unneccessary walkthrough
  */
 short RRGraph::node_num_non_configurable_out_edges(RRNodeId node) const {
   /* Ensure a valid node id */
@@ -504,6 +526,8 @@ void RRGraph::reserve_nodes(int num_nodes) {
   this->node_Rs_.reserve(num_nodes);  
   this->node_Cs_.reserve(num_nodes);  
   this->node_segment_ids_.reserve(num_nodes);  
+  this->node_num_non_configurable_in_edges_.reserve(num_nodes); 
+  this->node_num_non_configurable_out_edges_.reserve(num_nodes); 
  
   /* Edge-relate vectors */
   this->node_in_edges_.reserve(num_nodes);  
@@ -774,15 +798,17 @@ void RRGraph::set_node_segment_id(RRNodeId node, short segment_id) {
 void RRGraph::partition_node_in_edges(RRNodeId node) {
 
   //Partition the edges so the first set of edges are all configurable, and the later are not
-  auto first_non_config_edge = std::partition(node_in_edges(node).begin(), node_in_edges(node).end(), 
+  auto first_non_config_edge = std::partition(node_in_edges_[node].begin(), node_in_edges_[node].end(), 
                                               [&](const RREdgeId edge) { return edge_is_configurable(edge); } ); /* Condition to partition edges */
 
-  size_t num_conf_edges = std::distance(node_in_edges(node).begin(), first_non_config_edge);
-  size_t num_non_conf_edges = node_in_edges(node).size() - num_conf_edges; //Note we calculate using the size_t to get full range
+  size_t num_conf_edges = std::distance(node_in_edges_[node].begin(), first_non_config_edge);
+  size_t num_non_conf_edges = node_in_edges_[node].size() - num_conf_edges; //Note we calculate using the size_t to get full range
 
-  //Check that within allowable range (no overflow when stored as num_non_configurable_edges_
-  VTR_ASSERT_MSG(num_non_conf_edges > std::numeric_limits<decltype(node_num_non_configurable_in_edges_[node])>::max(),
-                 "Exceeded RR node maximum number of non-configurable edges");
+  /* FIXME: this causes some compilation errors 
+   * Check that within allowable range (no overflow when stored as num_non_configurable_edges_
+   */
+  //VTR_ASSERT_MSG(num_non_conf_edges > std::numeric_limits<decltype(node_num_non_configurable_in_edges_[node])>::max(),
+  //               "Exceeded RR node maximum number of non-configurable input edges");
 
   node_num_non_configurable_in_edges_[node] = num_non_conf_edges; //Narrowing
 
@@ -795,15 +821,17 @@ void RRGraph::partition_node_in_edges(RRNodeId node) {
 void RRGraph::partition_node_out_edges(RRNodeId node) {
 
   //Partition the edges so the first set of edges are all configurable, and the later are not
-  auto first_non_config_edge = std::partition(node_out_edges(node).begin(), node_out_edges(node).end(),
+  auto first_non_config_edge = std::partition(node_out_edges_[node].begin(), node_out_edges_[node].end(),
                                               [&](const RREdgeId edge) { return edge_is_configurable(edge); } ); /* Condition to partition edges */
 
-  size_t num_conf_edges = std::distance(node_out_edges(node).begin(), first_non_config_edge);
-  size_t num_non_conf_edges = node_out_edges(node).size() - num_conf_edges; //Note we calculate using the size_t to get full range
+  size_t num_conf_edges = std::distance(node_out_edges_[node].begin(), first_non_config_edge);
+  size_t num_non_conf_edges = node_out_edges_[node].size() - num_conf_edges; //Note we calculate using the size_t to get full range
 
-  //Check that within allowable range (no overflow when stored as num_non_configurable_edges_
-  VTR_ASSERT_MSG(num_non_conf_edges > std::numeric_limits<decltype(node_num_non_configurable_out_edges_[node])>::max(),
-                 "Exceeded RR node maximum number of non-configurable edges");
+  /* FIXME: this causes some compilation errors 
+   * Check that within allowable range (no overflow when stored as num_non_configurable_edges_
+   */
+  //VTR_ASSERT_MSG(num_non_conf_edges > std::numeric_limits<decltype(node_num_non_configurable_out_edges_[node])>::max(),
+  //               "Exceeded RR node maximum number of non-configurable output edges");
 
   node_num_non_configurable_out_edges_[node] = num_non_conf_edges; //Narrowing
 

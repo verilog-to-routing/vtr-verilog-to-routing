@@ -26,6 +26,7 @@ using namespace std;
 constexpr int FLOAT_PRECISION = std::numeric_limits<float>::max_digits10;
 
 /*********************** External Subroutines to this module *******************/
+void add_metadata_to_xml(fstream &fp, const char *tab_prefix, const t_metadata_dict & meta);
 void write_rr_channel(fstream &fp);
 void write_rr_grid(fstream &fp);
 void write_rr_block_types(fstream &fp);
@@ -73,21 +74,6 @@ void write_rr_graph_obj_to_xml(const char *file_name, const RRGraph* rr_graph) {
 
     cout << "Finished generating RR graph file named " << file_name << endl << endl;
 }
-
-static void add_metadata_to_xml(fstream &fp, const char *tab_prefix, const t_metadata_dict & meta) {
-    fp << tab_prefix << "<metadata>" << endl;
-
-    for(const auto &meta_elem : meta) {
-        const std::string & key = meta_elem.first;
-        const std::vector<t_metadata_value> & values = meta_elem.second;
-        for(const auto &value : values) {
-          fp << tab_prefix << "\t<meta name=\"" << key << "\"";
-          fp << ">" << value.as_string() << "</meta>" << endl;
-        }
-    }
-    fp << tab_prefix << "</metadata>" << endl;
-}
-
 
 /* All relevant rr node info is written out to the graph.
  * This includes location, timing, and segment info*/
