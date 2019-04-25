@@ -51,6 +51,13 @@ namespace vtr {
         , top_right_(top_right_val) {
         //pass
     }
+    /* A new contructor which initialize everything to be zero*/
+    template<class T>
+    Rect<T>::Rect()
+       : Rect<T>(Point<T>(0, 0), Point<T>(0, 0)) {
+       //pass
+    }
+
 
     template<class T>
     T Rect<T>::xmin() const {

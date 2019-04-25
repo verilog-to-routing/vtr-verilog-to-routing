@@ -92,11 +92,11 @@ class RRGraph {
 
     /* Switch Info */
     size_t switch_index(RRSwitchId switch_id) const;
-    t_rr_switch_inf get_switch(RRSwitchId switch_id) const;
+    const t_rr_switch_inf& get_switch(RRSwitchId switch_id) const;
 
     /* Segment Info */
     size_t segment_index(RRSegmentId segment_id) const;
-    t_segment_inf get_segment(RRSegmentId segment_id) const;
+    const t_segment_inf& get_segment(RRSegmentId segment_id) const;
 
     //Utilities
     RREdgeId find_edge(RRNodeId src_node, RRNodeId sink_node) const;
