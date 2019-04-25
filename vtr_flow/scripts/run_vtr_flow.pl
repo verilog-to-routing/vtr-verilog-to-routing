@@ -681,7 +681,19 @@ if (    $starting_stage <= $stage_idx_abc
 			write_hie ${pre_abc_blif} ${post_abc_raw_blif};
 			print_stats;
 			";
-		}
+		} elsif ($use_old_abc_script) {
+			#Legacy ABC script adapted for new ABC by moving scleanup before if
+			$abc_commands="
+			read $pre_abc_blif; 
+			time; 
+			resyn; 
+			resyn2; 
+			time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; 
+			if -K $lut_size; 
+			write_hie ${pre_abc_blif} ${post_abc_raw_blif}; 
+			print_stats;
+			";
+        }
 
 		$abc_commands =~ s/\R/ /g; #Convert new-lines to spaces
 
