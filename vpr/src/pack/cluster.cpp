@@ -2931,14 +2931,13 @@ static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const Atom
 
 /* Check if the number of available inputs/outputs for a pin class is sufficient for speculatively packed blocks */
 static bool check_lookahead_pins_used(t_pb *cur_pb, t_ext_pin_util max_external_pin_util) {
-	int i, j;
-	const t_pb_type *pb_type = cur_pb->pb_graph_node->pb_type;
-	bool success;
 
-	success = true;
+	const t_pb_type *pb_type = cur_pb->pb_graph_node->pb_type;
+
+	bool success = true;
 
 	if (pb_type->num_modes > 0 && cur_pb->name != nullptr) {
-		for (i = 0; i < cur_pb->pb_graph_node->num_input_pin_class && success; i++) {
+		for (int i = 0; i < cur_pb->pb_graph_node->num_input_pin_class && success; i++) {
             size_t class_size = cur_pb->pb_graph_node->input_pin_class_size[i];
             if (cur_pb->is_root()) {
                 //Scale the class size by the specified utilization.
@@ -2951,7 +2950,7 @@ static bool check_lookahead_pins_used(t_pb *cur_pb, t_ext_pin_util max_external_
 			}
 		}
 
-		for (i = 0; i < cur_pb->pb_graph_node->num_output_pin_class && success; i++) {
+		for (int i = 0; i < cur_pb->pb_graph_node->num_output_pin_class && success; i++) {
             size_t class_size = cur_pb->pb_graph_node->output_pin_class_size[i];
             if (cur_pb->is_root()) {
                 //Scale the class size by the specified utilization.
@@ -2965,9 +2964,9 @@ static bool check_lookahead_pins_used(t_pb *cur_pb, t_ext_pin_util max_external_
 		}
 
 		if (success && cur_pb->child_pbs != nullptr) {
-			for (i = 0; success && i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
+			for (int i = 0; success && i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
 				if (cur_pb->child_pbs[i] != nullptr) {
-					for (j = 0; success && j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
+					for (int j = 0; success && j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
 						success = check_lookahead_pins_used(&cur_pb->child_pbs[i][j], max_external_pin_util);
 					}
 				}
