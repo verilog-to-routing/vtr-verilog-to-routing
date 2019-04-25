@@ -352,7 +352,10 @@ RRGraph create_rr_graph(
     //Write out rr graph file if needed
     if (!det_routing_arch->write_rr_graph_filename.empty()) {
         write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str(), segment_inf);
-        write_rr_graph_obj_to_xml(det_routing_arch->write_rr_graph_filename.c_str(), &rr_graph);
+        /* Just to test the writer of rr_graph_obj, give a filename in a fixed style*/
+        std::string rr_graph_obj_filename(det_routing_arch->write_rr_graph_filename);
+        rr_graph_obj_filename.append(".obj");
+        write_rr_graph_obj_to_xml(rr_graph_obj_filename.c_str(), &rr_graph);
     }
 
     return rr_graph; 

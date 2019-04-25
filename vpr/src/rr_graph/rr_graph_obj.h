@@ -79,6 +79,12 @@ class RRGraph {
     short node_num_configurable_out_edges(RRNodeId node) const; /* get the number of configurable output edges of a node */
     short node_num_non_configurable_out_edges(RRNodeId node) const; /* get the number of non-configurable output edges of a node */
 
+    /* Get the range (list) of edges related to a given node */
+    edge_range node_configurable_in_edges(RRNodeId node) const;
+    edge_range node_non_configurable_in_edges(RRNodeId node) const;
+    edge_range node_configurable_out_edges(RRNodeId node) const;
+    edge_range node_non_configurable_out_edges(RRNodeId node) const;
+
     edge_range node_out_edges(RRNodeId node) const;
     edge_range node_in_edges(RRNodeId node) const;
 
@@ -108,6 +114,7 @@ class RRGraph {
   public: /* Echo and checkers */
     void print_node(RRNodeId node) const; /* Print the detailed information of a node */
     /* Fundamental checking */
+    bool check_node_duplicated_edges(RRNodeId node) const;
     bool check_duplicated_edges() const; /* identify and report any duplicated edges between two nodes */
     bool check_dangling_nodes() const; /* identify if there is any dangling nodes in the graph */
 
@@ -148,7 +155,12 @@ class RRGraph {
     void set_node_segment_id(RRNodeId node, short segment_index);
 
     /* Edge related */
-    void partition_node_edges(RRNodeId node); /* classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) */
+    /* classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) */
+    void partition_node_in_edges(RRNodeId node); 
+    /* classify the output edges of each node to be configurable (1st part) and non-configurable (2nd part) */
+    void partition_node_out_edges(RRNodeId node); 
+    void partition_in_edges(); /* classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) */
+    void partition_out_edges(); /* classify the output edges of each node to be configurable (1st part) and non-configurable (2nd part) */
     void partition_edges(); /* classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) */
     void load_switch_C(); /* configure the C of each node with the C of each incoming edge switch */
   
@@ -189,6 +201,7 @@ class RRGraph {
     void clean_nodes(const vtr::vector<RRNodeId,RRNodeId>& node_id_map);
     void clean_edges(const vtr::vector<RREdgeId,RREdgeId>& edge_id_map);
     void rebuild_node_refs(const vtr::vector<RREdgeId,RREdgeId>& edge_id_map);
+
   private: //Data
 
     //Node related data
@@ -205,6 +218,9 @@ class RRGraph {
     vtr::vector<RRNodeId,float> node_Rs_;
     vtr::vector<RRNodeId,float> node_Cs_;
     vtr::vector<RRNodeId,short> node_segment_ids_; /* Segment ids for each node */
+    /* Record the dividing point between configurable and non-configurable edges for each node */
+    vtr::vector<RRNodeId,size_t> node_num_non_configurable_in_edges_; 
+    vtr::vector<RRNodeId,size_t> node_num_non_configurable_out_edges_; 
 
     vtr::vector<RRNodeId,std::vector<RREdgeId>> node_in_edges_;
     vtr::vector<RRNodeId,std::vector<RREdgeId>> node_out_edges_;
