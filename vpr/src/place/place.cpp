@@ -1105,7 +1105,7 @@ static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int 
 	/* Find all the blocks affected when b_from is swapped with b_to.
 	 * Returns abort_swap.                  */
 
-	int imoved_blk, imacro;
+	int imoved_blk;
 	int x_from, y_from, z_from;
 	ClusterBlockId b_to;
 	int abort_swap = false;
@@ -1140,13 +1140,6 @@ static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int 
 		blocks_affected.num_moved_blocks ++;
 
 	} else if (b_to != INVALID_BLOCK_ID) {
-
-		// Does not allow a swap with a macro yet
-		get_imacro_from_iblk(&imacro, b_to, place_ctx.pl_macros, place_ctx.num_pl_macros);
-		if (imacro != -1) {
-			abort_swap = true;
-			return (abort_swap);
-		}
 
 		// Swap the block, dont swap the nets yet
 		place_ctx.block_locs[b_to].x = x_from;
@@ -1192,8 +1185,9 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 
 	/* Finds and set ups the affected_blocks array.
 	 * Returns abort_swap. */
+    VTR_ASSERT_SAFE(b_from);
 
-	int imacro, imember;
+	int imacro_from, imember_from;
 	int x_swap_offset, y_swap_offset, z_swap_offset, x_from, y_from, z_from;
 	ClusterBlockId curr_b_from;
 	int curr_x_from, curr_y_from, curr_z_from, curr_x_to, curr_y_to, curr_z_to;
@@ -1210,8 +1204,8 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
     auto& pl_macros = place_ctx.pl_macros;
     auto& num_pl_macros = place_ctx.num_pl_macros;
 
-	get_imacro_from_iblk(&imacro, b_from, pl_macros, num_pl_macros);
-	if ( imacro != -1) {
+	get_imacro_from_iblk(&imacro_from, b_from, pl_macros, num_pl_macros);
+	if ( imacro_from != -1) {
 		// b_from is part of a macro, I need to swap the whole macro
 
 		// Record down the relative position of the swap
@@ -1219,11 +1213,11 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 		y_swap_offset = y_to - y_from;
 		z_swap_offset = z_to - z_from;
 
-		for (imember = 0; imember < pl_macros[imacro].num_blocks && abort_swap == false; imember++) {
+		for (imember_from = 0; imember_from < pl_macros[imacro_from].num_blocks && abort_swap == false; imember_from++) {
 
 			// Gets the new from and to info for every block in the macro
 			// cannot use the old from and to info
-			curr_b_from = pl_macros[imacro].members[imember].blk_index;
+			curr_b_from = pl_macros[imacro_from].members[imember_from].blk_index;
 
 			curr_x_from = place_ctx.block_locs[curr_b_from].x;
 			curr_y_from = place_ctx.block_locs[curr_b_from].y;
@@ -1235,24 +1229,49 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 
 			//Make sure that the swap_to location is valid
             //It must be:
-            // * chip, and
+            // * on chip, and
             // * match the correct block type
             //
             //Note that we need to explicitly check that the types match, since the device floorplan is not
             //(neccessarily) translationally invariant for an arbitrary macro
-			if (   curr_x_to < 1 || curr_x_to >= int(device_ctx.grid.width())
-                || curr_y_to < 1 || curr_y_to >= int(device_ctx.grid.height())
-                || curr_z_to < 0
-                || device_ctx.grid[curr_x_to][curr_y_to].type != cluster_ctx.clb_nlist.block_type(curr_b_from)) {
+			if (   curr_x_to < 0 || curr_x_to >= int(device_ctx.grid.width())
+                || curr_y_to < 0 || curr_y_to >= int(device_ctx.grid.height())
+                || (curr_z_to < 0)
+                || (device_ctx.grid[curr_x_to][curr_y_to].type != cluster_ctx.clb_nlist.block_type(curr_b_from))) {
 				abort_swap = true;
 			} else {
-				abort_swap = setup_blocks_affected(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
+
+                ClusterBlockId b_to = place_ctx.grid_blocks[curr_x_to][curr_y_to].blocks[curr_z_to];
+                int imacro_to = -1;
+                get_imacro_from_iblk(&imacro_to, b_to, pl_macros, num_pl_macros);
+
+                if (imacro_to != -1) {
+                    //To block is a macro
+                    //TODO: support this
+                    abort_swap = true;
+                } else {
+                    //To block is not a macro
+                    abort_swap = setup_blocks_affected(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
+                }
 			}
 		} // Finish going through all the blocks in the macro
 
 	} else {
-		// This is not a macro - I could use the from and to info from before
-		abort_swap = setup_blocks_affected(b_from, x_to, y_to, z_to);
+
+        ClusterBlockId b_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
+        int imacro_to = -1;
+        get_imacro_from_iblk(&imacro_to, b_to, pl_macros, num_pl_macros);
+
+        if (imacro_to != -1) {
+            //To block is a macro but from is a single block.
+            //
+            //Since we support swapping a macro as 'from' to a single 'to' block,
+            //just invert the swap direction (which is equivalent)
+            abort_swap = find_affected_blocks(b_to, x_from, y_from, z_from);
+        } else {
+            // This is not a macro - I could use the from and to info from before
+            abort_swap = setup_blocks_affected(b_from, x_to, y_to, z_to);
+        }
 
 	} // Finish handling cases for blocks in macro and otherwise
 

@@ -396,8 +396,12 @@ void get_imacro_from_iblk(int *imacro, ClusterBlockId iblk, t_pl_macro *macros, 
 		alloc_and_load_imacro_from_iblk(macros, num_macros);
 	}
 
-	/* Return the imacro for the block. */
-	*imacro = f_imacro_from_iblk[iblk];
+    if (iblk) {
+        /* Return the imacro for the block. */
+        *imacro = f_imacro_from_iblk[iblk];
+    } else {
+        *imacro = OPEN; //No valid block, so no valid macro
+    }
 
 }
 
