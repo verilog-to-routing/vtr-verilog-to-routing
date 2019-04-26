@@ -1448,7 +1448,7 @@ static e_swap_result try_swap(float t,
 
 #if 0
         //Check that each accepted swap yields a valid placement
-        check_place(costs, *place_delay_model, place_algorithm);
+        check_place(*costs, delay_model, place_algorithm);
 #endif
 
 		return (keep_switch);
