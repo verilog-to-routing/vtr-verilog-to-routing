@@ -883,6 +883,11 @@ void RRGraph::partition_edges() {
  * configure the capacitance of each node with 
  * the capacitance of each incoming edge switch 
  * TODO: adapt from the function rr_graph_externals
+ * Other thoughts: we may have to keep this function outside 
+ * for the following reasons:
+ * 1. It will sum up capaitances from switches for nodes
+ *    But it may change depending on architectures
+ * 2. It still requires a large amount of device information  
  */
 void RRGraph::load_switch_C() {
   return;
@@ -1160,3 +1165,66 @@ void RRGraph::rebuild_node_refs(const vtr::vector<RREdgeId,RREdgeId>& edge_id_ma
   }
 }
 
+/* Empty all the vectors related to nodes */
+void RRGraph::clear_nodes() {
+  node_ids_.clear();
+
+  node_types_.clear();
+  node_bounding_boxes_.clear();
+
+  node_capacities_.clear();
+  node_ptc_nums_.clear();
+  node_cost_indices_.clear();
+  node_directions_.clear();
+  node_sides_.clear();
+  node_Rs_.clear();
+  node_Cs_.clear();
+  node_segment_ids_.clear();
+
+  node_num_non_configurable_in_edges_.clear();
+  node_num_non_configurable_out_edges_.clear();
+
+  node_in_edges_.clear();
+  node_out_edges_.clear();
+
+  /* clean node_look_up */
+  node_lookup_.clear();
+
+  return;
+}
+
+/* Empty all the vectors related to edges */
+void RRGraph::clear_edges() {
+  edge_ids_.clear();
+  edge_src_nodes_.clear();
+  edge_sink_nodes_.clear();
+  edge_switches_.clear();
+
+  return;
+}
+
+/* Empty all the vectors related to switches */
+void RRGraph::clear_switches() {
+  switch_ids_.clear();
+  switches_.clear();
+
+  return;
+}
+
+/* Empty all the vectors related to segments */
+void RRGraph::clear_segments() {
+  segment_ids_.clear();
+  segments_.clear();
+
+  return;
+}
+
+/* Clean the rr_graph */
+void RRGraph::clear() {
+  clear_nodes();
+  clear_edges();
+  clear_switches();
+  clear_segments();
+
+  return;
+}

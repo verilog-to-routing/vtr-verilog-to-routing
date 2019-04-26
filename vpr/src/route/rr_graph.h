@@ -26,7 +26,7 @@ enum {
     RR_GRAPH_WARN_CHAN_WIDTH_CHANGED = 0x02
 };
 
-RRGraph create_rr_graph(
+void create_rr_graph(
         const t_graph_type graph_type,
         const int num_block_types,
         const t_type_ptr block_types,

@@ -21,6 +21,9 @@
 #include "clock_connection_builders.h"
 #include "route_traceback.h"
 
+/* For RRGraph obj */
+#include "rr_graph_obj.h"
+
 
 //A Context is collection of state relating to a particular part of VPR
 //
@@ -145,7 +148,7 @@ struct DeviceContext : public Context {
     /*******************************************************************
      RRGraph related: TODO: TO BE ADDED WHEN REFACTORING IS DONE
      ********************************************************************/
-    /* RRGraph rr_graph; */
+    RRGraph rr_graph; 
 
     /*******************************************************************
      Routing related

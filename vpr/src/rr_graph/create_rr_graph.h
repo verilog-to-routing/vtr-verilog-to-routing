@@ -8,6 +8,6 @@
  */
 #include "rr_graph_obj.h"
 
-RRGraph convert_rr_graph();
+void convert_rr_graph();
 
 #endif 

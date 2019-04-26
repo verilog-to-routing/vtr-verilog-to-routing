@@ -17,61 +17,64 @@
  * This function will convert an existing rr_graph in device_ctx to the RRGraph object
  * This function is used to test our RRGraph if it is acceptable in downstream routers  
  */
-RRGraph convert_rr_graph() {
-  auto& device_ctx = g_vpr_ctx.device();
+void convert_rr_graph() {
+  auto& device_ctx = g_vpr_ctx.mutable_device();
 
-  RRGraph rr_graph;
+  /* TODO: make sure we have a clean empty rr_graph */
+  /* We need an empty() function ! 
+   */
+  device_ctx.rr_graph.clear(); 
 
   /* The number of switches are in general small, 
    * reserve switches may not bring significant memory efficiency 
    * So, we just use create_switch to push_back each time 
    */
-  rr_graph.reserve_switches(device_ctx.rr_switch_inf.size());
+  device_ctx.rr_graph.reserve_switches(device_ctx.rr_switch_inf.size());
   //Create the switches
   for (size_t iswitch = 0; iswitch < device_ctx.rr_switch_inf.size(); ++iswitch) {
-    rr_graph.create_switch(device_ctx.rr_switch_inf[iswitch]);
+    device_ctx.rr_graph.create_switch(device_ctx.rr_switch_inf[iswitch]);
   }
 
   /* The number of segments are in general small, reserve segments may not bring significant memory efficiency */
-  rr_graph.reserve_segments(device_ctx.arch->Segments.size());
+  device_ctx.rr_graph.reserve_segments(device_ctx.arch->Segments.size());
   //Create the segments
   for (size_t iseg = 0; iseg < device_ctx.arch->Segments.size(); ++iseg) {
-    rr_graph.create_segment(device_ctx.arch->Segments[iseg]);
+    device_ctx.rr_graph.create_segment(device_ctx.arch->Segments[iseg]);
   }
 
   /* Reserve list of nodes to be memory efficient */
-  rr_graph.reserve_nodes(device_ctx.rr_nodes.size());
+  device_ctx.rr_graph.reserve_nodes(device_ctx.rr_nodes.size());
 
   //Create the nodes
   std::map<int,RRNodeId> old_to_new_rr_node;
   for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
     auto& node = device_ctx.rr_nodes[inode];
-    RRNodeId rr_node = rr_graph.create_node(node.type());
+    RRNodeId rr_node = device_ctx.rr_graph.create_node(node.type());
 
-    rr_graph.set_node_xlow(rr_node, node.xlow());
-    rr_graph.set_node_ylow(rr_node, node.ylow());
-    rr_graph.set_node_xhigh(rr_node, node.xhigh());
-    rr_graph.set_node_yhigh(rr_node, node.yhigh());
+    device_ctx.rr_graph.set_node_xlow(rr_node, node.xlow());
+    device_ctx.rr_graph.set_node_ylow(rr_node, node.ylow());
+    device_ctx.rr_graph.set_node_xhigh(rr_node, node.xhigh());
+    device_ctx.rr_graph.set_node_yhigh(rr_node, node.yhigh());
 
-    rr_graph.set_node_capacity(rr_node, node.capacity());
+    device_ctx.rr_graph.set_node_capacity(rr_node, node.capacity());
 
-    rr_graph.set_node_ptc_num(rr_node, node.ptc_num());
+    device_ctx.rr_graph.set_node_ptc_num(rr_node, node.ptc_num());
 
-    rr_graph.set_node_cost_index(rr_node, node.cost_index());
+    device_ctx.rr_graph.set_node_cost_index(rr_node, node.cost_index());
 
     if ( CHANX == node.type() || CHANY == node.type() ) {
-      rr_graph.set_node_direction(rr_node, node.direction());
+      device_ctx.rr_graph.set_node_direction(rr_node, node.direction());
     }
     if ( IPIN == node.type() || OPIN == node.type() ) {
-      rr_graph.set_node_side(rr_node, node.side());
+      device_ctx.rr_graph.set_node_side(rr_node, node.side());
     }
-    rr_graph.set_node_R(rr_node, node.R());
-    rr_graph.set_node_C(rr_node, node.C());
+    device_ctx.rr_graph.set_node_R(rr_node, node.R());
+    device_ctx.rr_graph.set_node_C(rr_node, node.C());
 
     /* Set up segment id */
     short irc_data = node.cost_index();
     short iseg = device_ctx.rr_indexed_data[irc_data].seg_index;
-    rr_graph.set_node_segment_id(rr_node, iseg);
+    device_ctx.rr_graph.set_node_segment_id(rr_node, iseg);
     
     VTR_ASSERT(!old_to_new_rr_node.count(inode));
     old_to_new_rr_node[inode] = rr_node;
@@ -84,7 +87,7 @@ RRGraph convert_rr_graph() {
         const auto& node = device_ctx.rr_nodes[inode];
         num_edges_to_reserve += node.num_edges();
     }
-    rr_graph.reserve_edges(num_edges_to_reserve);
+    device_ctx.rr_graph.reserve_edges(num_edges_to_reserve);
   }
 
   //Create the edges
@@ -99,9 +102,9 @@ RRGraph convert_rr_graph() {
       VTR_ASSERT(old_to_new_rr_node.count(inode));
       VTR_ASSERT(old_to_new_rr_node.count(isink_node));
       
-      RREdgeId rr_edge = rr_graph.create_edge(old_to_new_rr_node[inode], 
-                                              old_to_new_rr_node[isink_node], 
-                                              RRSwitchId(iswitch));
+      RREdgeId rr_edge = device_ctx.rr_graph.create_edge(old_to_new_rr_node[inode], 
+                                                         old_to_new_rr_node[isink_node], 
+                                                         RRSwitchId(iswitch));
 
       auto key = std::make_pair(inode, iedge);
       VTR_ASSERT(!old_to_new_rr_edge.count(key));
@@ -113,8 +116,8 @@ RRGraph convert_rr_graph() {
    * See how the router will use the edges and determine the strategy
    * if we want to partition the edges first or depends on the routing needs  
    */
-  rr_graph.partition_edges();
+  device_ctx.rr_graph.partition_edges();
 
-  return rr_graph;
+  return;
 }
 

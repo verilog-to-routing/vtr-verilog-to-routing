@@ -166,6 +166,12 @@ class RRGraph {
   
     void compress();
     bool validate();
+
+    void clear_nodes();
+    void clear_edges();
+    void clear_switches();
+    void clear_segments();
+    void clear();
   private: //Internal
     void set_dirty();
     void clear_dirty();

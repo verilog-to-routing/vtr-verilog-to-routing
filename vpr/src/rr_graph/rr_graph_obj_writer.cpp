@@ -32,15 +32,15 @@ void write_rr_grid(fstream &fp);
 void write_rr_block_types(fstream &fp);
 
 /*********************** Subroutines local to this module *******************/
-void write_rr_graph_node(fstream &fp, const RRGraph* rr_graph);
-void write_rr_graph_switches(fstream &fp, const RRGraph* rr_graph);
-void write_rr_graph_edges(fstream &fp, const RRGraph* rr_graph);
-void write_rr_graph_segments(fstream &fp, const RRGraph* rr_graph);
+void write_rr_graph_node(fstream &fp, const RRGraph& rr_graph);
+void write_rr_graph_switches(fstream &fp, const RRGraph& rr_graph);
+void write_rr_graph_edges(fstream &fp, const RRGraph& rr_graph);
+void write_rr_graph_segments(fstream &fp, const RRGraph& rr_graph);
 
 /************************ Subroutine definitions ****************************/
 
 /* This function is used to write the rr_graph into xml format into a a file with name: file_name */
-void write_rr_graph_obj_to_xml(const char *file_name, const RRGraph* rr_graph) {
+void write_rr_graph_obj_to_xml(const char *file_name, const RRGraph& rr_graph) {
     fstream fp;
     fp.open(file_name, fstream::out | fstream::trunc);
 
@@ -77,39 +77,39 @@ void write_rr_graph_obj_to_xml(const char *file_name, const RRGraph* rr_graph) {
 
 /* All relevant rr node info is written out to the graph.
  * This includes location, timing, and segment info*/
-void write_rr_graph_node(fstream &fp, const RRGraph* rr_graph) {
+void write_rr_graph_node(fstream &fp, const RRGraph& rr_graph) {
   /* TODO: we should make it function full independent from device_ctx !!! */
   auto& device_ctx = g_vpr_ctx.device();
 
   fp << "\t<rr_nodes>" << endl;
 
-  for (auto node : rr_graph->nodes()) {
+  for (auto node : rr_graph.nodes()) {
     fp << "\t\t<node";
-    fp << " id=\"" << rr_graph->node_index(node);
-    fp << "\" type=\"" <<  rr_graph->node_type_string(node);
-    if (CHANX == rr_graph->node_type(node) || CHANY == rr_graph->node_type(node)) {
-      fp << "\" direction=\"" << rr_graph->node_direction_string(node);
+    fp << " id=\"" << rr_graph.node_index(node);
+    fp << "\" type=\"" <<  rr_graph.node_type_string(node);
+    if (CHANX == rr_graph.node_type(node) || CHANY == rr_graph.node_type(node)) {
+      fp << "\" direction=\"" << rr_graph.node_direction_string(node);
     }
-    fp << "\" capacity=\"" << rr_graph->node_capacity(node);
+    fp << "\" capacity=\"" << rr_graph.node_capacity(node);
     fp << "\">" << endl;
     fp << "\t\t\t<loc";
-    fp << " xlow=\"" << rr_graph->node_xlow(node);
-    fp << "\" ylow=\"" << rr_graph->node_ylow(node);
-    fp << "\" xhigh=\"" << rr_graph->node_xhigh(node);
-    fp << "\" yhigh=\"" << rr_graph->node_yhigh(node);
-    if (IPIN == rr_graph->node_type(node) || OPIN == rr_graph->node_type(node)) {
-      fp << "\" side=\"" << rr_graph->node_side_string(node) ;
+    fp << " xlow=\"" << rr_graph.node_xlow(node);
+    fp << "\" ylow=\"" << rr_graph.node_ylow(node);
+    fp << "\" xhigh=\"" << rr_graph.node_xhigh(node);
+    fp << "\" yhigh=\"" << rr_graph.node_yhigh(node);
+    if (IPIN == rr_graph.node_type(node) || OPIN == rr_graph.node_type(node)) {
+      fp << "\" side=\"" << rr_graph.node_side_string(node) ;
     }
-    fp << "\" ptc=\"" << rr_graph->node_ptc_num(node) ;
+    fp << "\" ptc=\"" << rr_graph.node_ptc_num(node) ;
     fp << "\"/>" << endl;
-    fp << "\t\t\t<timing R=\"" << setprecision(FLOAT_PRECISION) << rr_graph->node_R(node)
-            << "\" C=\"" << setprecision(FLOAT_PRECISION) << rr_graph->node_C(node) << "\"/>" << endl;
+    fp << "\t\t\t<timing R=\"" << setprecision(FLOAT_PRECISION) << rr_graph.node_R(node)
+            << "\" C=\"" << setprecision(FLOAT_PRECISION) << rr_graph.node_C(node) << "\"/>" << endl;
 
-    if (-1 != rr_graph->node_segment_id(node)) {
-      fp << "\t\t\t<segment segment_id=\"" << rr_graph->node_segment_id(node) << "\"/>" << endl;
+    if (-1 != rr_graph.node_segment_id(node)) {
+      fp << "\t\t\t<segment segment_id=\"" << rr_graph.node_segment_id(node) << "\"/>" << endl;
     }
 
-    const auto iter = device_ctx.rr_node_metadata.find(rr_graph->node_index(node));
+    const auto iter = device_ctx.rr_node_metadata.find(rr_graph.node_index(node));
     if(iter != device_ctx.rr_node_metadata.end()) {
       const t_metadata_dict & meta = iter->second;
       add_metadata_to_xml(fp, "\t\t\t", meta);
@@ -125,14 +125,14 @@ void write_rr_graph_node(fstream &fp, const RRGraph* rr_graph) {
 
 /* Segment information in the t_segment_inf data structure is written out.
  * Information includes segment id, name, and optional timing parameters*/
-void write_rr_graph_segments(fstream &fp, const RRGraph* rr_graph) {
+void write_rr_graph_segments(fstream &fp, const RRGraph& rr_graph) {
   fp << "\t<segments>" << endl;
 
-  for (auto seg : rr_graph->segments()) {
-    fp << "\t\t<segment id=\"" << rr_graph->segment_index(seg) <<
-          "\" name=\"" << rr_graph->get_segment(seg).name << "\">" << endl;
-    fp << "\t\t\t<timing R_per_meter=\"" << setprecision(FLOAT_PRECISION) << rr_graph->get_segment(seg).Rmetal <<
-          "\" C_per_meter=\"" <<setprecision(FLOAT_PRECISION) << rr_graph->get_segment(seg).Cmetal << "\"/>" << endl;
+  for (auto seg : rr_graph.segments()) {
+    fp << "\t\t<segment id=\"" << rr_graph.segment_index(seg) <<
+          "\" name=\"" << rr_graph.get_segment(seg).name << "\">" << endl;
+    fp << "\t\t\t<timing R_per_meter=\"" << setprecision(FLOAT_PRECISION) << rr_graph.get_segment(seg).Rmetal <<
+          "\" C_per_meter=\"" <<setprecision(FLOAT_PRECISION) << rr_graph.get_segment(seg).Cmetal << "\"/>" << endl;
     fp << "\t\t</segment>" << endl;
   }
   fp << "\t</segments>" << endl << endl;
@@ -142,12 +142,12 @@ void write_rr_graph_segments(fstream &fp, const RRGraph* rr_graph) {
 
 /* Switch info is written out into xml format. This includes
  * general, sizing, and optional timing information*/
-void write_rr_graph_switches(fstream &fp, const RRGraph* rr_graph) {
+void write_rr_graph_switches(fstream &fp, const RRGraph& rr_graph) {
   fp << "\t<switches>" << endl;
 
-  for (auto rr_switch : rr_graph->switches()) {
-    fp << "\t\t<switch id=\"" << rr_graph->switch_index(rr_switch);
-    t_rr_switch_inf cur_switch = rr_graph->get_switch(rr_switch);
+  for (auto rr_switch : rr_graph.switches()) {
+    fp << "\t\t<switch id=\"" << rr_graph.switch_index(rr_switch);
+    t_rr_switch_inf cur_switch = rr_graph.get_switch(rr_switch);
 
     if (cur_switch.type() == SwitchType::TRISTATE) {
       fp << "\" type=\"tristate";
@@ -184,20 +184,20 @@ void write_rr_graph_switches(fstream &fp, const RRGraph* rr_graph) {
 
 /* Edges connecting to each rr node is printed out. The two nodes
  * it connects to are also printed*/
-void write_rr_graph_edges(fstream &fp, const RRGraph* rr_graph) {
+void write_rr_graph_edges(fstream &fp, const RRGraph& rr_graph) {
   auto& device_ctx = g_vpr_ctx.device();
   fp << "\t<rr_edges>" << endl;
 
-  for (auto node : rr_graph->nodes()) {
-    for (auto edge: rr_graph->node_out_edges(node)) {
-      fp << "\t\t<edge src_node=\"" << rr_graph->node_index(node) <<
-            "\" sink_node=\"" << rr_graph->node_index(rr_graph->edge_sink_node(edge)) <<
-            "\" switch_id=\"" << rr_graph->switch_index(rr_graph->edge_switch(edge)) << "\"";
+  for (auto node : rr_graph.nodes()) {
+    for (auto edge: rr_graph.node_out_edges(node)) {
+      fp << "\t\t<edge src_node=\"" << rr_graph.node_index(node) <<
+            "\" sink_node=\"" << rr_graph.node_index(rr_graph.edge_sink_node(edge)) <<
+            "\" switch_id=\"" << rr_graph.switch_index(rr_graph.edge_switch(edge)) << "\"";
 
       bool wrote_edge_metadata = false;
-      const auto iter = device_ctx.rr_edge_metadata.find( std::make_tuple(rr_graph->node_index(node), 
-                                                          rr_graph->node_index(rr_graph->edge_sink_node(edge)),
-                                                          rr_graph->switch_index(rr_graph->edge_switch(edge))) );
+      const auto iter = device_ctx.rr_edge_metadata.find( std::make_tuple(rr_graph.node_index(node), 
+                                                          rr_graph.node_index(rr_graph.edge_sink_node(edge)),
+                                                          rr_graph.switch_index(rr_graph.edge_switch(edge))) );
       if(iter != device_ctx.rr_edge_metadata.end()) {
         fp << ">" << endl;
 
