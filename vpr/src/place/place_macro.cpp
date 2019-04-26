@@ -454,6 +454,8 @@ static void write_place_macros(std::string filename, const t_pl_macro *macros, i
 
     FILE* f = vtr::fopen(filename.c_str(), "w");
 
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
     fprintf(f, "#Identified Placement macros\n");
     fprintf(f, "Num_Macros: %d\n", num_macros);
     for (int imacro = 0; imacro < num_macros; ++imacro) {
@@ -462,8 +464,9 @@ static void write_place_macros(std::string filename, const t_pl_macro *macros, i
         fprintf(f, "------------------------------------------------------\n");
         for (int imember = 0; imember < macro->num_blocks; ++imember) {
             const t_pl_macro_member* macro_memb = &macro->members[imember];
-            fprintf(f, "Block_Id: %zu, x_offset: %d, y_offset: %d, z_offset: %d\n",
+            fprintf(f, "Block_Id: %zu (%s), x_offset: %d, y_offset: %d, z_offset: %d\n",
                     size_t(macro_memb->blk_index),
+                    cluster_ctx.clb_nlist.block_name(macro_memb->blk_index).c_str(),
                     macro_memb->x_offset,
                     macro_memb->y_offset,
                     macro_memb->z_offset);
