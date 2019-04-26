@@ -586,6 +586,9 @@ RRNodeId RRGraph::create_node(t_rr_type type) {
   node_in_edges_.emplace_back(); //Initially empty
   node_out_edges_.emplace_back(); //Initially empty
 
+  node_num_non_configurable_in_edges_.emplace_back(); //Initially empty
+  node_num_non_configurable_out_edges_.emplace_back(); //Initially empty
+
   invalidate_fast_node_lookup();
 
   VTR_ASSERT(validate_sizes());
@@ -804,11 +807,11 @@ void RRGraph::partition_node_in_edges(RRNodeId node) {
   size_t num_conf_edges = std::distance(node_in_edges_[node].begin(), first_non_config_edge);
   size_t num_non_conf_edges = node_in_edges_[node].size() - num_conf_edges; //Note we calculate using the size_t to get full range
 
-  /* FIXME: this causes some compilation errors 
-   * Check that within allowable range (no overflow when stored as num_non_configurable_edges_
+  /* Check that within allowable range (no overflow when stored as num_non_configurable_edges_
    */
-  //VTR_ASSERT_MSG(num_non_conf_edges > std::numeric_limits<decltype(node_num_non_configurable_in_edges_[node])>::max(),
-  //               "Exceeded RR node maximum number of non-configurable input edges");
+  VTR_ASSERT_MSG(num_non_conf_edges <= 
+                 node_in_edges_[node].size(),
+                 "Exceeded RR node maximum number of non-configurable input edges");
 
   node_num_non_configurable_in_edges_[node] = num_non_conf_edges; //Narrowing
 
@@ -827,11 +830,11 @@ void RRGraph::partition_node_out_edges(RRNodeId node) {
   size_t num_conf_edges = std::distance(node_out_edges_[node].begin(), first_non_config_edge);
   size_t num_non_conf_edges = node_out_edges_[node].size() - num_conf_edges; //Note we calculate using the size_t to get full range
 
-  /* FIXME: this causes some compilation errors 
-   * Check that within allowable range (no overflow when stored as num_non_configurable_edges_
+  /* Check that within allowable range (no overflow when stored as num_non_configurable_edges_
    */
-  //VTR_ASSERT_MSG(num_non_conf_edges > std::numeric_limits<decltype(node_num_non_configurable_out_edges_[node])>::max(),
-  //               "Exceeded RR node maximum number of non-configurable output edges");
+  VTR_ASSERT_MSG(num_non_conf_edges <= 
+                 node_out_edges_[node].size(),
+                 "Exceeded RR node maximum number of non-configurable output edges");
 
   node_num_non_configurable_out_edges_[node] = num_non_conf_edges; //Narrowing
 
