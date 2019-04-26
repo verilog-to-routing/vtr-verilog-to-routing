@@ -170,11 +170,6 @@ static float** chany_place_cost_fac; //[0...device_ctx.grid.height()-2]
 static vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
 static std::vector<ClusterNetId> ts_nets_to_update;
 
-/* The pl_macros array stores all the carry chains placement macros.   *
- * [0...num_pl_macros-1]                                               */
-t_pl_macro * pl_macros = nullptr;
-int num_pl_macros;
-
 /* These file-scoped variables keep track of the number of swaps       *
  * rejected, accepted or aborted. The total number of swap attempts    *
  * is the sum of the three number.                                     */
@@ -1147,7 +1142,7 @@ static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int 
 	} else if (b_to != INVALID_BLOCK_ID) {
 
 		// Does not allow a swap with a macro yet
-		get_imacro_from_iblk(&imacro, b_to, pl_macros, num_pl_macros);
+		get_imacro_from_iblk(&imacro, b_to, place_ctx.pl_macros, place_ctx.num_pl_macros);
 		if (imacro != -1) {
 			abort_swap = true;
 			return (abort_swap);
@@ -1211,6 +1206,9 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 	x_from = place_ctx.block_locs[b_from].x;
 	y_from = place_ctx.block_locs[b_from].y;
 	z_from = place_ctx.block_locs[b_from].z;
+
+    auto& pl_macros = place_ctx.pl_macros;
+    auto& num_pl_macros = place_ctx.num_pl_macros;
 
 	get_imacro_from_iblk(&imacro, b_from, pl_macros, num_pl_macros);
 	if ( imacro != -1) {
@@ -2009,12 +2007,14 @@ static void free_placement_structs(t_placer_opts placer_opts) {
 
 	free_placement_macros_structs();
 
-	for (imacro = 0; imacro < num_pl_macros; imacro++)
-		free(pl_macros[imacro].members);
-	free(pl_macros);
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+	for (imacro = 0; imacro < place_ctx.num_pl_macros; imacro++)
+		free(place_ctx.pl_macros[imacro].members);
+	free(place_ctx.pl_macros);
 
 	/* Defensive coding. */
-	pl_macros = nullptr;
+	place_ctx.pl_macros = nullptr;
+	place_ctx.num_pl_macros = 0;
 
 	/* Frees up all the data structure used in vpr_utils. */
 	free_port_pin_from_blk_pin();
@@ -2033,6 +2033,7 @@ static void alloc_and_load_placement_structs(
 
 	auto& device_ctx = g_vpr_ctx.device();
 	auto& cluster_ctx = g_vpr_ctx.clustering();
+	auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
@@ -2096,7 +2097,7 @@ static void alloc_and_load_placement_structs(
 
 	alloc_and_load_try_swap_structs();
 
-	num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, pl_macros);
+	place_ctx.num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, place_ctx.pl_macros);
 }
 
 /* Allocates and loads net_pin_indices array, this array allows us to quickly   *
@@ -2641,6 +2642,8 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 	// Every macro can be placed until proven otherwise
 	int macro_can_be_placed = true;
 
+    auto& pl_macros = place_ctx.pl_macros;
+
 	// Check whether all the members can be placed
 	for (imember = 0; imember < pl_macros[imacro].num_blocks; imember++) {
 		member_x = x + pl_macros[imacro].members[imember].x_offset;
@@ -2689,6 +2692,8 @@ static int try_place_macro(int itype, int ipos, int imacro){
 
 	if (macro_can_be_placed) {
 
+        auto& pl_macros = place_ctx.pl_macros;
+
 		// Place down the macro
 		macro_placed = true;
 		for (imember = 0; imember < pl_macros[imacro].num_blocks; imember++) {
@@ -2726,6 +2731,10 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    auto& pl_macros = place_ctx.pl_macros;
+    auto& num_pl_macros = place_ctx.num_pl_macros;
 
 	/* Macros are harder to place.  Do them first */
 	for (imacro = 0; imacro < num_pl_macros; imacro++) {
@@ -3140,6 +3149,9 @@ static void check_place(const t_placer_costs& costs,
 			error++;
 		}
 	bdone.clear();
+
+    auto& pl_macros = place_ctx.pl_macros;
+    auto& num_pl_macros = place_ctx.num_pl_macros;
 
 	/* Check the pl_macro placement are legal - blocks are in the proper relative position. */
 	for (imacro = 0; imacro < num_pl_macros; imacro++) {

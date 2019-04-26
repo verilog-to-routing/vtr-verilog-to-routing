@@ -3775,8 +3775,8 @@ static void draw_placement_macros() {
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    for (int imacro = 0; imacro < num_pl_macros; ++imacro) {
-        const t_pl_macro* pl_macro = &pl_macros[imacro];
+    for (int imacro = 0; imacro < place_ctx.num_pl_macros; ++imacro) {
+        const t_pl_macro* pl_macro = &place_ctx.pl_macros[imacro];
 
         //TODO: for now we just draw the bounding box of the macro, which is incorrect for non-rectangular macros...
         int xlow = std::numeric_limits<int>::max();
