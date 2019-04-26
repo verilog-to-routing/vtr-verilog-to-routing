@@ -3784,29 +3784,25 @@ static void draw_placement_macros() {
         int xhigh = std::numeric_limits<int>::min();
         int yhigh = std::numeric_limits<int>::min();
 
-        int x_prev = OPEN;
-        int y_prev = OPEN;
+        int x_root = OPEN;
+        int y_root = OPEN;
         for (int imember = 0; imember < pl_macro->num_blocks; ++imember) {
             const t_pl_macro_member* member = &pl_macro->members[imember];
 
             ClusterBlockId blk = member->blk_index;
-            int x = OPEN;
-            int y = OPEN;
+
             if (imember == 0) {
-                x = place_ctx.block_locs[blk].x;
-                y = place_ctx.block_locs[blk].y;
-            } else {
-                x = x_prev + member->x_offset;
-                y = y_prev + member->y_offset;
+                x_root = place_ctx.block_locs[blk].x;
+                y_root = place_ctx.block_locs[blk].y;
             }
+
+            int x = x_root + member->x_offset;
+            int y = y_root + member->y_offset;
 
             xlow = std::min(xlow, x);
             ylow = std::min(ylow, y);
             xhigh = std::max(xhigh, x + cluster_ctx.clb_nlist.block_type(blk)->width);
             yhigh = std::max(yhigh, y + cluster_ctx.clb_nlist.block_type(blk)->height);
-
-            x_prev = x;
-            y_prev = y;
         }
 
         int draw_xlow = draw_coords->tile_x[xlow];
