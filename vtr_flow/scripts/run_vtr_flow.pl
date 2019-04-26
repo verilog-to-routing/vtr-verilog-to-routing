@@ -203,9 +203,15 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	}
 	elsif ( $token eq "-iterative_bb" ){
 		$flow_type = 2;
+		$use_new_latches_restoration_script = 1;
 	}
 	elsif ( $token eq "-once_bb" ){
 		$flow_type = 1;
+		$use_new_latches_restoration_script = 1;
+	}
+	elsif ( $token eq "-blanket_bb" ){
+		$flow_type = 3;
+		$use_new_latches_restoration_script = 1;
 	}
 	elsif ( $token eq "-relax_W_factor" ){
 		$relax_W_factor = shift(@ARGV);
@@ -481,7 +487,6 @@ if (    $starting_stage <= $stage_idx_abc
 		system "mkdir simulation_init";
 
 		$q = &system_with_timeout( "$odin2_path", "sim_produce_vector.out", $timeout, $temp_dir,
-			"-E",
 			"-b", $temp_dir . $odin_output_file_name,
 			"-a", $temp_dir . $architecture_file_name,
 			"-sim_dir", $temp_dir."simulation_init/",
@@ -560,8 +565,19 @@ if (    $starting_stage <= $stage_idx_abc
 		my $post_abc_raw_blif = $domain_itter."_".$abc_raw_output_file_name;
 		my $post_abc_blif = $domain_itter."_".$abc_output_file_name;
 
+		if( $flow_type == 3 )
+		{
+			# black box latches
+			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
+					"--input", $input_blif, "--output", $pre_abc_blif);	
 
-		if ( exists  $clock_list[$domain_itter] )
+			if ($q ne "success") {
+				$error_status = "failed: to black box the clocks for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
+				$error_code = 1;
+				last ABC_OPTIMIZATION;
+			}	
+		}
+		elsif ( exists  $clock_list[$domain_itter] )
 		{
 			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
@@ -681,7 +697,7 @@ if (    $starting_stage <= $stage_idx_abc
 		#restore the current valgrind flag
 		$valgrind = $skip_valgrind;
 
-		if ( exists  $clock_list[$domain_itter] )
+		if ( $flow_type != 3 and exists  $clock_list[$domain_itter] )
 		{
 			# restore latches with the clock
 			$q = &system_with_timeout($blackbox_latches_script, "restore_latch".$domain_itter.".out", $timeout, $temp_dir,
@@ -753,7 +769,6 @@ if (    $starting_stage <= $stage_idx_abc
 		system "mkdir simulation_test";
 
 		$q = &system_with_timeout( "$odin2_path", "odin_simulation.out", $timeout, $temp_dir,
-			"-E",
 			"-b", $temp_dir . $abc_output_file_name,
 			"-a", $temp_dir . $architecture_file_name,
 			"-t", $temp_dir . "simulation_init/input_vectors",

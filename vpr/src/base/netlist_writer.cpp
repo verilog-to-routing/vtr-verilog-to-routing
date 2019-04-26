@@ -23,9 +23,9 @@
 #include "netlist_writer.h"
 
 #include "globals.h"
-#include "path_delay.h"
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
+#include "logic_vec.h"
 
 //Overview
 //========
@@ -91,8 +91,6 @@
 //
 //File local type declarations
 //
-std::ostream& operator<<(std::ostream& os, vtr::LogicValue val);
-
 
 /*enum class PortType {
     IN,
@@ -120,45 +118,6 @@ std::string join_identifier(std::string lhs, std::string rhs);
 // File local class and function implementations
 //
 //
-
-//A vector-like object containing logic values.
-class LogicVec {
-    public:
-        LogicVec() = default;
-        LogicVec(size_t size_val, //Number of logic values
-                 vtr::LogicValue init_value) //Default value
-            : values_(size_val, init_value)
-            {}
-        LogicVec(std::vector<vtr::LogicValue> values)
-            : values_(values) {}
-
-        //Array indexing operator
-        vtr::LogicValue& operator[](size_t i) { return values_[i]; }
-
-        //Size accessor
-        size_t size() { return values_.size(); }
-
-
-        //Output operator which writes the logic vector in verilog format
-        friend std::ostream& operator<<(std::ostream& os, LogicVec logic_vec) {
-            os << logic_vec.values_.size() << "'b";
-            //Print in reverse since th convention is MSB on the left, LSB on the right
-            //but we store things in array order (putting LSB on left, MSB on right)
-            for(auto iter = logic_vec.begin(); iter != logic_vec.end(); iter++) {
-                os << *iter;
-            }
-            return os;
-        }
-
-        //Standard iterators
-        std::vector<vtr::LogicValue>::reverse_iterator begin() { return values_.rbegin(); }
-        std::vector<vtr::LogicValue>::reverse_iterator end() { return values_.rend(); }
-        std::vector<vtr::LogicValue>::const_reverse_iterator begin() const { return values_.crbegin(); }
-        std::vector<vtr::LogicValue>::const_reverse_iterator end() const { return values_.crend(); }
-
-    private:
-        std::vector<vtr::LogicValue> values_; //The logic values
-};
 
 //A combinational timing arc
 class Arc {
@@ -1846,7 +1805,6 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
             return count;
         }
-
         //Returns the logical net ID
         AtomNetId find_atom_input_logical_net(const t_pb* atom, int atom_input_idx) {
             const t_pb_graph_node* pb_node = atom->pb_graph_node;
@@ -1938,17 +1896,6 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
 //
 // File-scope function implementations
 //
-
-//Output operator for vtr::LogicValue
-std::ostream& operator<<(std::ostream& os, vtr::LogicValue val) {
-    if(val == vtr::LogicValue::FALSE) os << "0";
-    else if (val == vtr::LogicValue::TRUE) os << "1";
-    else if (val == vtr::LogicValue::DONT_CARE) os << "-";
-    else if (val == vtr::LogicValue::UNKOWN) os << "x";
-    else VTR_ASSERT(false);
-    return os;
-}
-
 
 //Returns a blank string for indenting the given depth
 std::string indent(size_t depth) {

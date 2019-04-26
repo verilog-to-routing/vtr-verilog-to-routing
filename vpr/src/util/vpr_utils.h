@@ -8,6 +8,7 @@
 #include "clustered_netlist.h"
 #include "netlist.h"
 #include "vtr_vector.h"
+#include "arch_util.h"
 class DeviceGrid;
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required=true);
@@ -110,6 +111,14 @@ t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* 
 //Returns the block type which is most common in the device grid
 t_type_ptr find_most_common_block_type(const DeviceGrid& grid);
 
+//Parses a block_name.port[x:y] (e.g. LAB.data_in[3:10]) pin range specification, if no pin range is specified
+//looks-up the block port and fills in the full range
+InstPort parse_inst_port(std::string str);
+
+int find_pin_class(t_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type);
+
+int find_pin(t_type_ptr type, std::string port_name, int pin_index_in_port);
+
 //Returns the block type which is most likely the logic block
 t_type_ptr infer_logic_block_type(const DeviceGrid& grid);
 
@@ -157,7 +166,6 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
 void print_switch_usage();
 void print_usage_by_wire_length();
 
-AtomBlockId find_tnode_atom_block(int inode);
 AtomBlockId find_memory_sibling(const t_pb* pb);
 
 void place_sync_external_block_connections(ClusterBlockId iblk);

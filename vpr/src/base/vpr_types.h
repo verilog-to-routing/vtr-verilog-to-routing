@@ -119,6 +119,10 @@ enum class e_unrelated_clustering {
     OFF, ON, AUTO	
 };
 
+enum class e_balance_block_type_util {
+    OFF, ON, AUTO	
+};
+
 /* Selection algorithm for selecting next seed  */
 enum class e_cluster_seed {
 	TIMING, MAX_INPUTS, BLEND, MAX_PINS, MAX_INPUT_PINS, BLEND2
@@ -168,6 +172,7 @@ class t_rr_node;
 struct t_pack_molecule;
 struct t_pb_stats;
 struct t_pb_route;
+struct t_chain_info;
 
 typedef vtr::flat_map2<int,t_pb_route> t_pb_routes;
 
@@ -201,158 +206,41 @@ struct t_pb {
 	int clock_net = 0; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
 
 
-	int get_num_child_types() const {
-		if (child_pbs != nullptr && has_modes()) {
-			return pb_graph_node->pb_type->modes[mode].num_pb_type_children;
-		} else {
-			return 0;
-		}
-	}
+	int get_num_child_types() const;
+    
+	int get_num_children_of_type(int type_index) const;
 
-	int get_num_children_of_type(int type_index) const {
-        t_mode* mode_ptr = get_mode();
-        if (mode_ptr) {
-            return mode_ptr->pb_type_children[type_index].num_pb;
-        }
-        return 0; //No mode
-	}
+	t_mode* get_mode() const;
 
-	t_mode* get_mode() const {
-		if (has_modes()) {
-			return &pb_graph_node->pb_type->modes[mode];
-		} else {
-			return nullptr;
-		}
-	}
-
-	bool has_modes() const {
-		return pb_graph_node->pb_type->num_modes > 0;
-	}
+	bool has_modes() const; 
 
     //Returns the t_pb associated with the specified gnode which is contained
     //within the current pb
-    const t_pb* find_pb(const t_pb_graph_node* gnode) const {
-        //Base case
-        if(pb_graph_node == gnode) {
-            return this;
-        }
+    const t_pb* find_pb(const t_pb_graph_node* gnode) const;
 
-        //Search recursively
-        for(int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
-
-            if(child_pbs[ichild_type] == nullptr) continue;
-
-            for(int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
-
-                const t_pb* child_pb = &child_pbs[ichild_type][ipb];
-
-                const t_pb* found_pb = child_pb->find_pb(gnode);
-                if(found_pb != nullptr) {
-                    VTR_ASSERT(found_pb->pb_graph_node == gnode);
-                    return found_pb; //Found
-                }
-            }
-        }
-        return nullptr; //Not found
-    }
-
-    const t_pb* find_pb_for_model(const std::string& blif_model) const {
-        //Base case
-        const t_model* model = pb_graph_node->pb_type->model;
-        if (model && model->name == blif_model) {
-            return this;
-        }
-
-        //Search recursively
-        for(int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
-
-            if(child_pbs[ichild_type] == nullptr) continue;
-
-            for(int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
-
-                const t_pb* child_pb = &child_pbs[ichild_type][ipb];
-
-                const t_pb* matching_pb = child_pb->find_pb_for_model(blif_model);
-                if (matching_pb) {
-                    return this;
-                }
-            }
-        }
-        return nullptr; //Not found
-    }
+    const t_pb* find_pb_for_model(const std::string& blif_model) const;
 
     //Returns the root pb containing this pb
-    const t_pb* root_pb() const {
+    const t_pb* root_pb() const;
 
-        const t_pb* curr_pb = this;
-        while(!is_root()) {
-            curr_pb = curr_pb->parent_pb;
-        }
-
-        VTR_ASSERT(curr_pb->parent_pb == nullptr);
-        return curr_pb;
-    }
-
-    bool is_root() const {
-        return parent_pb == nullptr;
-    }
+    bool is_root() const;
 
     //Returns true if this pb corresponds to a primitive block (i.e. in the AtomNetlist)
-    bool is_primitive() const {
-        return child_pbs == nullptr;
-    }
-
-    std::string hierarchical_type_name() const {
-        std::vector<std::string> names;
-
-        int child_mode = OPEN;
-        for (const t_pb* curr = this; curr != nullptr; curr = curr->parent_pb) {
-            std::string type_name;
-
-            //Type
-            if (curr->pb_graph_node) {
-                type_name = curr->pb_graph_node->pb_type->name;
-                type_name += "[" + std::to_string(curr->pb_graph_node->placement_index) + "]";
-
-                //Mode
-                if (child_mode != OPEN) {
-                    std::string mode_name = curr->pb_graph_node->pb_type->modes[child_mode].name;
-                    type_name += "[" + mode_name + "]";
-                }
-            }
-
-            child_mode = curr->mode; //Save the mode of curr since it will be child on next iteration
-
-            names.push_back(type_name);
-        }
-
-        //We walked up from the leaf to root, so we join in reverse order
-        return vtr::join(names.rbegin(), names.rend(), "/");
-    }
+    bool is_primitive() const; 
+   
+    // Returns a string containing the hierarchical type name of a physical block
+    // Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
+    std::string hierarchical_type_name() const; 
 
     //Returns the bit index into the AtomPort for the specified primitive
     //pb_graph_pin, considering any pin rotations which have been applied to logically
     //equivalent pins
-    BitIndex atom_pin_bit_index(const t_pb_graph_pin* gpin) const {
-        VTR_ASSERT_MSG(is_primitive(), "Atom pin indicies can only be looked up from primitives");
-
-        auto iter = pin_rotations_.find(gpin);
-
-        if(iter != pin_rotations_.end()) {
-            //Return the original atom pin index
-            return iter->second;
-        } else {
-            //No re-mapping, return the index directly
-            return gpin->pin_number;
-        }
-    }
+    BitIndex atom_pin_bit_index(const t_pb_graph_pin* gpin) const;
 
     //For a given gpin, sets the mapping to the original atom netlist pin's bit index in
     //it's AtomPort.  This is used to record any pin rotations which have been applied to
     //logically equivalent pins
-    void set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_idx) {
-        pin_rotations_[gpin] = atom_pin_bit_idx;
-    }
+    void set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_idx);
 
 private:
     std::map<const t_pb_graph_pin*,BitIndex> pin_rotations_; //Contains the atom netlist port bit index associated
@@ -368,6 +256,12 @@ struct t_pb_route {
     const t_pb_graph_pin* pb_graph_pin = nullptr; /* The graph pin associated with this node */
 };
 
+/**
+ * Describes the molecule type
+ *
+ * MOLECULE_SINGLE_ATOM : single atom forming a molecule (no pack pattern associated)
+ * MOLECULE_FORCED_PACK : more than one atom representing a packing pattern forming a large molecule
+ */
 enum e_pack_pattern_molecule_type {
 	MOLECULE_SINGLE_ATOM, MOLECULE_FORCED_PACK
 };
@@ -378,21 +272,55 @@ enum e_pack_pattern_molecule_type {
  * A chain is a special type of pack pattern.  A chain can extend across multiple logic blocks.
  * Must segment the chain to fit in a logic block by identifying the actual atom that forms the root of the new chain.
  * Assumes that the root of a chain is the primitive that starts the chain or is driven from outside the logic block
+ *
+ * Data members:
+ *
+ *      type           : either a single atom or more atoms representing a packing pattern
+ *      pack_pattern   : if not a single atom, this is the pack pattern representing this molecule
+ *      atom_block_ids : [0..num_blocks-1] IDs of atom blocks that implements this molecule, indexed by
+ *                       t_pack_pattern_block->block_id
+ *      chain_info     : if this is a molecule representing a chained pack pattern, this data structure will
+ *                       hold the data shared between all molecules forming a chain together.
+ *      valid          : whether the molecule is still valid for packing or not.
+ *      num_blocks     : maximum number of atom blocks that can fit in this molecule
+ *      root           : index of the pack_pattern->root_block in the atom_blocks_ids. root_block_id = atom_block_ids[root]
+ *      base_gain      : intrinsic "goodness" score for molecule independent of rest of netlist
+ *      next           : next molecule in the linked list
  */
 struct t_pack_molecule {
-	enum e_pack_pattern_molecule_type type; /* what kind of molecule is this? */
-	t_pack_patterns *pack_pattern; /* If this is a forced_pack molecule, pattern this molecule matches */
-	t_model_chain_pattern *chain_pattern; /* If this is a chain molecule, chain that this molecule matches */
-    std::vector<AtomBlockId> atom_block_ids; /* [0..num_blocks-1] IDs of atom blocks that implements this molecule,
-                                                index on pack_pattern_block->index of pack pattern */
-	bool valid; /* Whether or not this molecule is still valid */
+    /* general molecule info */
+	bool valid;
+	float base_gain;
+	enum e_pack_pattern_molecule_type type;
 
-	int num_blocks; /* number of atom blocks of molecule */
-	int root; /* root index of molecule, atom_block_ids[root] is the root atom block */
-
-	float base_gain; /* Intrinsic "goodness" score for molecule independant of rest of netlist */
+    /* large molecules info */
+	t_pack_patterns *pack_pattern;
+	int root;
+	int num_blocks;
+    std::vector<AtomBlockId> atom_block_ids;
+    std::shared_ptr<t_chain_info> chain_info;
 
 	t_pack_molecule *next;
+};
+
+/**
+ * Holds information to be shared between molecules that represent the same chained pack pattern.
+ * For example, molecules that are representing a long carry chain that spans multiple logic blocks.
+ *
+ * Data members:
+ *      is_long_chain         : is this a long that is divided on multiple clusters (divided on multiple molecules).
+ *      chain_id              : is used to access the chain_root_pins vector in the t_pack_patterns of the molecule. To get
+ *                              the starting point of this chain in the cluster. This id is useful when we have multiple
+ *                              (architectural) carry chains in a logic block, for example. It lets us see which of the chains
+ *                              is being used for this long (netlist) chain, so we continue to use that chain in the packing
+ *                              of other molecules of this long chain.
+ *      first_packed_molecule : first molecule to be packed out of the molecules forming this chain. This is the molecule
+ *                              setting the value of the chain_id.
+ */
+struct t_chain_info {
+    bool is_long_chain = false;
+    int chain_id = -1;
+    t_pack_molecule *first_packed_molecule = nullptr;
 };
 
 /* Stats keeper for placement information during packing
@@ -400,6 +328,7 @@ struct t_pack_molecule {
  */
 struct t_cluster_placement_stats {
 	int num_pb_types; /* num primitive pb_types inside complex block */
+    bool has_long_chain; /* specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster) */
 	const t_pack_molecule *curr_molecule; /* current molecule being considered for packing */
 	t_cluster_placement_primitive **valid_primitives; /* [0..num_pb_types-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty */
 	t_cluster_placement_primitive *in_flight; /* ptrs to primitives currently being considered */
@@ -411,179 +340,6 @@ struct t_cluster_placement_stats {
  * Timing data types
  *******************************************************************/
 
-//Enable the legacy STA engine to run along side the
-//new STA engine
-//#define ENABLE_CLASSIC_VPR_STA
-
-// #define PATH_COUNTING 'P'
-/* Uncomment this to turn on path counting. Its value determines how path criticality
- is calculated from forward and backward weights.  Possible values:
- 'S' - sum of forward and backward weights
- 'P' - product of forward and backward weights
- 'L' - natural log of the product of forward and backward weights
- 'R' - product of the natural logs of forward and backward weights
- See path_delay.h for further path-counting options. */
-
-/* Timing graph information */
-struct t_tedge {
-	/* Edge in the timing graph. */
-	int to_node; /* index of node at the sink end of this edge */
-	float Tdel; /* delay to go to to_node along this edge */
-};
-
-enum e_tnode_type {
-	/* Types of tnodes (timing graph nodes). */
-	TN_INPAD_SOURCE, /* input to an input I/O pad */
-	TN_INPAD_OPIN, /* output from an input I/O pad */
-	TN_OUTPAD_IPIN, /* input to an output I/O pad */
-	TN_OUTPAD_SINK, /* output from an output I/O pad */
-	TN_CB_IPIN, /* input pin to complex block */
-	TN_CB_OPIN, /* output pin from complex block */
-	TN_INTERMEDIATE_NODE, /* Used in post-packed timing graph only:
-	 connection between intra-cluster pins. */
-	TN_PRIMITIVE_IPIN, /* input pin to a primitive (e.g. a LUT) */
-	TN_PRIMITIVE_OPIN, /* output pin from a primitive (e.g. a LUT) */
-	TN_FF_IPIN, /* input pin to a flip-flop - goes to TN_FF_SINK */
-	TN_FF_OPIN, /* output pin from a flip-flop - comes from TN_FF_SOURCE */
-	TN_FF_SINK, /* sink (D) pin of flip-flop */
-	TN_FF_SOURCE, /* source (Q) pin of flip-flop */
-	TN_FF_CLOCK, /* clock pin of flip-flop */
-    TN_CLOCK_SOURCE, /* An on-chip clock generator such as a pll */
-    TN_CLOCK_OPIN, /* Output pin from an on-chip clock source - comes from TN_CLOCK_SOURCE */
-	TN_CONSTANT_GEN_SOURCE /* source of a constant logic 1 or 0 */
-};
-
-struct t_prepacked_tnode_data {
-	/* Data only used by prepacked tnodes. Stored separately so it
-	 doesn't need to be allocated in the post-packed netlist. */
-	int model_port, model_pin; /* technology mapped model pin */
-	t_model_ports *model_port_ptr;
-#ifndef PATH_COUNTING
-	long num_critical_input_paths, num_critical_output_paths; /* count of critical paths fanning into/out of this tnode */
-	float normalized_slack; /* slack (normalized with respect to max slack) */
-	float normalized_total_critical_paths; /* critical path count (normalized with respect to max count) */
-	float normalized_T_arr; /* arrival time (normalized with respect to max time) */
-#endif
-};
-
-struct t_tnode {
-	/* Node in the timing graph. Note: we combine 2 members into a bit field. */
-	e_tnode_type type; /* see the above enum */
-	t_tedge *out_edges; /* [0..num_edges - 1] array of edges fanning out from this tnode.
-	 Note: there is a correspondence in indexing between out_edges and the
-	 net data structure: out_edges[iedge] = net[inet].node_block[iedge + 1]
-	 There is an offset of 1 because net[inet].node_block includes the driver
-	 node at index 0, while out_edges is part of the driver node and does
-	 not bother to refer to itself. */
-	int num_edges;
-	float T_arr; /* Arrival time of the last input signal to this node. */
-	float T_req; /* Required arrival time of the last input signal to this node
-	 if the critical path is not to be lengthened. */
-	ClusterBlockId block; /* atom block primitive which this tnode is part of */
-
-#ifdef PATH_COUNTING
-	float forward_weight, backward_weight; /* Weightings of the importance of paths
-	 fanning into and out of this node, respectively. */
-#endif
-
-	/* Valid values for TN_FF_SINK, TN_FF_SOURCE, TN_FF_CLOCK, TN_INPAD_SOURCE, and TN_OUTPAD_SINK only: */
-	int clock_domain; /* Index of the clock in timing_ctx.sdc->constrained_clocks which this flip-flop or I/O is constrained on. */
-	float clock_delay; /* The time taken for a clock signal to get to the flip-flop or I/O (assumed 0 for I/Os). */
-
-	/* Used in post-packing timing graph only: */
-	t_pb_graph_pin *pb_graph_pin; /* pb_graph_pin that this block is connected to */
-
-	/* Used in pre-packing timing graph only: */
-	t_prepacked_tnode_data * prepacked_data;
-
-	unsigned int is_comb_loop_breakpoint : 1; /* Indicates that this tnode had input edges purposely
-											     disconnected to break a combinational loop */
-};
-
-/* Other structures storing timing information */
-struct t_clock {
-	/* Stores information on clocks given timing constraints.
-	 Used in SDC parsing and timing analysis. */
-	char * name;
-	bool is_netlist_clock; /* Is this a netlist or virtual (external) clock? */
-	int fanout;
-};
-
-struct t_io {
-	/* Stores information on I/Os given timing constraints.
-	 Used in SDC parsing and timing analysis. */
-	char * name; /* I/O port name with an SDC constraint */
-	char * clock_name; /* Clock it was constrained on */
-	float delay; /* Delay through the I/O in this constraint */
-	int file_line_number; /* line in the SDC file I/O was constrained on - used for error reporting */
-};
-
-struct t_timing_stats {
-	/* Timing statistics for final reporting for each constraint
-	 (pair of constrained source and sink clock domains).
-
-	 cpd holds the critical path delay, the longest path between the
-	 pair of domains, or equivalently the path with the least slack.
-
-	 least_slack holds the slack of the connection with the least slack
-	 over all paths in this constraint, even if this connection is part
-	 of another constraint and has a lower slack from that constraint.
-
-	 The "critical path" of the entire design is the path with the least
-	 slack in the constraint with the least slack
-	 (see get_critical_path_delay()). */
-
-	float ** cpd;
-	float ** least_slack;
-};
-
-struct t_slack {
-	/* Matrices storing slacks and criticalities of each sink pin on each net
-	 [0..net.size()-1][1..num_pins-1] for post-packed netlists. */
-	float ** slack;
-	float ** timing_criticality;
-};
-
-struct t_override_constraint {
-	/* A special-case constraint to override the default, calculated, timing constraint.  Holds data from
-	 set_clock_groups, set_false_path, set_max_delay, and set_multicycle_path commands. Can hold data for
-	 clock-to-clock, clock-to-flip-flop, flip-flop-to-clock or flip-flop-to-flip-flop constraints, each of
-	 which has its own array (timing_ctx.sdc->cc_constraints, timing_ctx.sdc->cf_constraints, timing_ctx.sdc->fc_constraints, and timing_ctx.sdc->ff_constraints). */
-	char ** source_list; /* Array of net names of flip-flops or clocks */
-	char ** sink_list;
-	int num_source;
-	int num_sink;
-	float constraint;
-	int num_multicycles;
-	int file_line_number; /* line in the SDC file clock was constrained on - used for error reporting */
-};
-
-struct t_timing_constraints { /* Container structure for all SDC timing constraints.
- See top-level comment to read_sdc.c for details on members. */
-	int num_constrained_clocks; /* number of clocks with timing constraints */
-	t_clock * constrained_clocks; /* [0..timing_ctx.sdc->num_constrained_clocks - 1] array of clocks with timing constraints */
-
-    vtr::Matrix<float> domain_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
-
-	int num_constrained_inputs; /* number of inputs with timing constraints */
-	t_io * constrained_inputs; /* [0..num_constrained_inputs - 1] array of inputs with timing constraints */
-
-	int num_constrained_outputs; /* number of outputs with timing constraints */
-	t_io * constrained_outputs; /* [0..num_constrained_outputs - 1] array of outputs with timing constraints */
-
-	int num_cc_constraints; /* number of special-case clock-to-clock constraints overriding default, calculated, timing constraints */
-	t_override_constraint * cc_constraints; /*  [0..num_cc_constraints - 1] array of such constraints */
-
-	int num_cf_constraints; /* number of special-case clock-to-flipflop constraints */
-	t_override_constraint * cf_constraints; /*  [0..num_cf_constraints - 1] array of such constraints */
-
-	int num_fc_constraints; /* number of special-case flipflop-to-clock constraints */
-	t_override_constraint * fc_constraints; /*  [0..num_fc_constraints - 1] */
-
-	int num_ff_constraints; /* number of special-case flipflop-to-flipflop constraints */
-	t_override_constraint * ff_constraints; /*  [0..num_ff_constraints - 1] array of such constraints */
-};
-
 /* Cluster timing delays:
  * C_ipin_cblock: Capacitance added to a routing track by the isolation     *
  *                buffer between a track and the Cblocks at an (i,j) loc.   *
@@ -592,9 +348,7 @@ struct t_timing_constraints { /* Container structure for all SDC timing constrai
 struct t_timing_inf {
 	bool timing_analysis_enabled;
 	float C_ipin_cblock;
-	float T_ipin_cblock;
     std::string SDCFile;
-    std::string slack_definition;
 };
 
 /***************************************************************************
@@ -641,6 +395,7 @@ struct t_grid_tile {
 	t_type_ptr type = nullptr;
 	int width_offset = 0;
 	int height_offset = 0;
+	const t_metadata_dict * meta = nullptr;
 };
 
 /* Stores the bounding box of a net in terms of the minimum and   *
@@ -648,10 +403,10 @@ struct t_grid_tile {
  * the region:                                                    *
  *  (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1) */
 struct t_bb {
-	int xmin;
-	int xmax;
-	int ymin;
-	int ymax;
+	int xmin = 0;
+	int xmax = 0;
+	int ymin = 0;
+	int ymax = 0;
 };
 
 /* capacity:   Capacity of this region, in tracks.               *
@@ -784,11 +539,11 @@ struct t_packer_opts {
 	bool connection_driven;
 	int pack_verbosity;
     bool enable_pin_feasibility_filter;
+    e_balance_block_type_util balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;
 	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;
     std::string device_layout;
-	std::string hmetis_input_file;
 };
 
 /* Annealing schedule information for the placer.  The schedule type      *
@@ -832,6 +587,19 @@ enum e_place_algorithm {
 	BOUNDING_BOX_PLACE, PATH_TIMING_DRIVEN_PLACE
 };
 
+enum class PlaceDelayModelType {
+    DELTA,          //Delta x/y based delay model
+    DELTA_OVERRIDE, //Delta x/y based delay model with special case delay overrides
+};
+
+enum class e_reducer {
+    MIN,
+    MAX,
+    MEDIAN,
+    ARITHMEAN,
+    GEOMEAN
+};
+
 struct t_placer_opts {
 	enum e_place_algorithm place_algorithm;
 	float timing_tradeoff;
@@ -847,6 +615,9 @@ struct t_placer_opts {
 	int seed;
 	float td_place_exp_last;
 	e_stage_action doPlacement;
+
+    PlaceDelayModelType delay_model_type;
+    e_reducer delay_model_reducer;
 
     float delay_offset;
     int delay_ramp_delta_threshold;
@@ -958,6 +729,7 @@ struct t_router_opts {
 	float astar_fac;
 	float max_criticality;
 	float criticality_exp;
+    float init_wirelength_abort_threshold;
 	bool verify_binary_search;
 	bool full_stats;
 	bool congestion_analysis;
@@ -969,12 +741,14 @@ struct t_router_opts {
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
     e_route_bb_update route_bb_update;
+    enum e_clock_modeling clock_modeling; //How clock pins and nets should be handled
     int high_fanout_threshold;
     int router_debug_net;
     int router_debug_sink_rr;
     e_router_lookahead lookahead_type;
     int max_convergence_count;
     float reconvergence_cpd_threshold;
+    std::string first_iteration_timing_report_file;
 };
 
 struct t_analysis_opts {
@@ -1005,7 +779,6 @@ struct t_analysis_opts {
  * switchblocks: A vector of custom switch block descriptions that is       *
  *           used with the CUSTOM switch block type. See comment at top of  *
  *           SRC/route/build_switchblocks.c                                 *
- * num_segment:  Number of distinct segment types in the FPGA.              *
  * delayless_switch:  Index of a zero delay switch (used to connect things  *
  *                    that should have no delay).                           *
  * wire_to_arch_ipin_switch: keeps track of the type of architecture switch *
@@ -1026,7 +799,6 @@ struct t_det_routing_arch {
 	int Fs;
 	enum e_switch_block_type switch_block_type;
 	std::vector<t_switchblock_inf> switchblocks;
-	int num_segment;
 
 	short global_route_switch;
 	short delayless_switch;
@@ -1091,7 +863,7 @@ struct t_seg_details {
 	int seg_end = 0;
 	int index = 0;
 	float Cmetal_per_m = 0; /* Used for power */
-	const char *type_name_ptr = nullptr;
+	std::string type_name;
 };
 
 class t_chan_seg_details {
@@ -1126,7 +898,7 @@ class t_chan_seg_details {
 
         int index() const { return seg_detail_->index; }
 
-        const char* type_name_ptr() const { return seg_detail_->type_name_ptr; }
+        std::string type_name() const { return seg_detail_->type_name; }
 
     public: //Modifiers
         void set_length(int new_len) { length_ = new_len; }
@@ -1292,7 +1064,7 @@ struct t_vpr_setup {
     t_analysis_opts AnalysisOpts; /* Analysis options */
 	t_det_routing_arch RoutingArch; /* routing architecture */
 	std::vector <t_lb_type_rr_node> *PackerRRGraph;
-	t_segment_inf * Segments; /* wires in routing architecture */
+	std::vector <t_segment_inf> Segments; /* wires in routing architecture */
 	t_timing_inf Timing; /* timing information */
 	float constant_net_delay; /* timing information when place and route not run */
 	bool ShowGraphics; /* option to show graphics */

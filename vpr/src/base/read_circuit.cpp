@@ -53,7 +53,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
         VTR_ASSERT(circuit_format == e_circuit_format::BLIF
                    || circuit_format == e_circuit_format::EBLIF);
 
-        netlist = read_blif(circuit_format, circuit_file, user_models, library_models, verbosity);
+        netlist = read_blif(circuit_format, circuit_file, user_models, library_models);
     }
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_ORIG)) {

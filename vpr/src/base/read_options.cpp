@@ -367,6 +367,7 @@ struct ParseClockModeling {
         ConvertedValue<e_clock_modeling> conv_value;
         if      (str == "ideal") conv_value.set_value(IDEAL_CLOCK);
         else if (str == "route") conv_value.set_value(ROUTED_CLOCK);
+        else if (str == "dedicated_network") conv_value.set_value(DEDICATED_NETWORK);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '"
@@ -381,15 +382,16 @@ struct ParseClockModeling {
     ConvertedValue<std::string> to_str(e_clock_modeling val) {
         ConvertedValue<std::string> conv_value;
         if (val == IDEAL_CLOCK) conv_value.set_value("ideal");
+        else if (val == ROUTED_CLOCK) conv_value.set_value("route");
         else {
-            VTR_ASSERT(val == ROUTED_CLOCK);
-            conv_value.set_value("route");
+            VTR_ASSERT(val == DEDICATED_NETWORK);
+            conv_value.set_value("dedicated_network");
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"ideal", "route"};
+        return {"ideal", "route", "dedicated_network"};
     }
 };
 
@@ -416,6 +418,39 @@ struct ParseUnrelatedClustering {
         else if (val == e_unrelated_clustering::OFF) conv_value.set_value("off");
         else {
             VTR_ASSERT(val == e_unrelated_clustering::AUTO);
+            conv_value.set_value("auto");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"on", "off", "auto"};
+    }
+};
+
+struct ParseBalanceBlockTypeUtil {
+    ConvertedValue<e_balance_block_type_util> from_str(std::string str) {
+        ConvertedValue<e_balance_block_type_util> conv_value;
+        if      (str == "on") conv_value.set_value(e_balance_block_type_util::ON);
+        else if (str == "off") conv_value.set_value(e_balance_block_type_util::OFF);
+        else if (str == "auto") conv_value.set_value(e_balance_block_type_util::AUTO);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '"
+                << str
+                << "' to e_balance_block_type_util (expected one of: "
+                << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_balance_block_type_util val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_balance_block_type_util::ON) conv_value.set_value("on");
+        else if (val == e_balance_block_type_util::OFF) conv_value.set_value("off");
+        else {
+            VTR_ASSERT(val == e_balance_block_type_util::AUTO);
             conv_value.set_value("auto");
         }
         return conv_value;
@@ -554,6 +589,71 @@ struct ParseRouterLookahead {
     }
 };
 
+struct ParsePlaceDelayModel {
+    ConvertedValue<PlaceDelayModelType> from_str(std::string str) {
+        ConvertedValue<PlaceDelayModelType> conv_value;
+        if      (str == "delta") conv_value.set_value(PlaceDelayModelType::DELTA);
+        else if (str == "delta_override") conv_value.set_value(PlaceDelayModelType::DELTA_OVERRIDE);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to PlaceDelayModelType (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(PlaceDelayModelType val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == PlaceDelayModelType::DELTA) conv_value.set_value("delta");
+        else if (val == PlaceDelayModelType::DELTA_OVERRIDE) conv_value.set_value("delta_override");
+        else { 
+            std::stringstream msg;
+            msg << "Unrecognized PlaceDelayModelType";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"delta", "delta_override"};
+    }
+};
+
+struct ParseReducer {
+    ConvertedValue<e_reducer> from_str(std::string str) {
+        ConvertedValue<e_reducer> conv_value;
+        if      (str == "min") conv_value.set_value(e_reducer::MIN);
+        else if (str == "max") conv_value.set_value(e_reducer::MAX);
+        else if (str == "median") conv_value.set_value(e_reducer::MEDIAN);
+        else if (str == "arithmean") conv_value.set_value(e_reducer::ARITHMEAN);
+        else if (str == "geomean") conv_value.set_value(e_reducer::GEOMEAN);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_reducer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_reducer val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_reducer::MIN) conv_value.set_value("min");
+        else if (val == e_reducer::MAX) conv_value.set_value("max");
+        else if (val == e_reducer::MEDIAN) conv_value.set_value("median");
+        else if (val == e_reducer::ARITHMEAN) conv_value.set_value("arithmean");
+        else { 
+            VTR_ASSERT(val == e_reducer::GEOMEAN);
+            conv_value.set_value("geomean");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"min", "max", "median", "arithmean", "geomean"};
+    }
+};
+
+
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description = "Implements the specified circuit onto the target FPGA architecture"
                               " by performing packing/placement/routing, and analyzes the result.\n"
@@ -674,14 +774,6 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("Controls whether timing analysis (and timing driven optimizations) are enabled.")
             .default_value("on");
 
-#ifdef ENABLE_CLASSIC_VPR_STA
-    gen_grp.add_argument(args.SlackDefinition, "--slack_definition")
-            .help("Sets the slack definition used by the classic timing analyzer")
-            .default_value("R")
-            .choices({"R", "I", "S", "G", "C", "N"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
-#endif
-
     gen_grp.add_argument<bool,ParseOnOff>(args.CreateEchoFile, "--echo_file")
             .help("Generate echo files of key internal data structures."
                   " Useful for debugging VPR, and typically end in .echo")
@@ -705,7 +797,9 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("Specifies how constant nets (i.e. those driven to a constant\n"
                   "value) are handled:\n"
                   " * global: Treat constant nets as globals (not routed)\n"
-                  " * route : Treat constant nets as normal nets (routed)\n")
+                  " * route : Treat constant nets as normal nets (routed)\n"
+                  " * dedicated_network : Build a dedicated clock network based on the\n"
+                  "                       clock network specified in the architecture file\n")
             .default_value("global")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -767,10 +861,6 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("Writes the routing resource graph to the specified file")
             .metavar("RR_GRAPH_FILE")
             .show_in(argparse::ShowIn::HELP_ONLY);
-
-	file_grp.add_argument(args.hmetis_input_file, "--hmetis_input_file")
-			.help("Reads in a filename to write packing stats for input to hmetis")
-			.show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.out_file_prefix, "--outfile_prefix")
             .help("Prefix for output files")
@@ -872,6 +962,15 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   " for which the cluster has insufficient pins to route (without performing a full routing)."
                   " This reduces packer run-time")
             .default_value("on")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    pack_grp.add_argument<e_balance_block_type_util,ParseBalanceBlockTypeUtil>(args.balance_block_type_utilization, "--balance_block_type_utilization")
+            .help("If enabled, when a primitive can potentially be mapped to multiple block types the packer will\n"
+                  "pick the block type which (currently) has the lowest utilization.\n"
+                  " * on  : Try to balance block type utilization\n"
+                  " * off : Do not try to balance block type utilization\n"
+                  " * auto: Dynamically enabled/disabled (based on density)\n")
+            .default_value("auto")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.target_external_pin_util, "--target_ext_pin_util")
@@ -997,6 +1096,20 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     place_timing_grp.add_argument(args.place_exp_last, "--td_place_exp_last")
             .help("Controls how critical a connection is as a function of slack at the end of placement.")
             .default_value("8.0")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument<PlaceDelayModelType,ParsePlaceDelayModel>(args.place_delay_model, "--place_delay_model")
+            .help("This option controls what information is considered and how"
+                  " the placement delay model is constructed.\n"
+                  "Valid options:\n"
+                  " * 'delta' uses differences in position only\n"
+                  " * 'delta_override' uses differences in position with overrides for direct connects\n")
+            .default_value("delta")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument<e_reducer,ParseReducer>(args.place_delay_model_reducer, "--place_delay_model_reducer")
+            .help("When calculating delta delays for the placment delay model how are multiple values combined?")
+            .default_value("min")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.place_delay_offset, "--place_delay_offset")
@@ -1147,6 +1260,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("1.0")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument(args.router_init_wirelength_abort_threshold, "--router_init_wirelength_abort_threshold")
+            .help("The first routing iteration wirelength abort threshold."
+                  " If the first routing iteration uses more than this fraction of available wirelength routing is aborted.")
+            .default_value("0.85")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument<e_incr_reroute_delay_ripup,ParseIncrRerouteDelayRipup>(args.incr_reroute_delay_ripup, "--incremental_reroute_delay_ripup")
             .help("Controls whether incremental net routing will rip-up (and re-route) a critical connection for delay, even if the routing is legal.")
             .default_value("auto")
@@ -1236,6 +1355,11 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   " For example, a value of 0.99 means the router will not give up on reconvergent"
                   " routing if it thinks a > 1% CPD reduction is possible.")
             .default_value("0.99")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
+            .help("Name of the post first routing iteration timing report file (not generated if unspecfied)")
+            .default_value("")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& analysis_grp = parser.add_argument_group("analysis options");

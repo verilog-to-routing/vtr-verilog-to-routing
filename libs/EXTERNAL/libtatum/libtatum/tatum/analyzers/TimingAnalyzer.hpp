@@ -23,7 +23,7 @@ namespace tatum {
  */
 class TimingAnalyzer {
     public:
-        virtual ~TimingAnalyzer() {};
+        virtual ~TimingAnalyzer() {}
 
         ///Perform timing analysis to update timing information (i.e. arrival & required times)
         void update_timing() { update_timing_impl(); }

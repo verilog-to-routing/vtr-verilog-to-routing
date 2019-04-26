@@ -1,6 +1,5 @@
 #include "vtr_assert.h"
 
-#include "vtr_matrix.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
 

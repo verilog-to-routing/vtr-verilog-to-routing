@@ -28,7 +28,6 @@ using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
-#include "vtr_list.h"
 #include "vtr_log.h"
 #include "vtr_logic.h"
 #include "vtr_time.h"
@@ -48,14 +47,12 @@ struct BlifAllocCallback : public blifparse::Callback {
     public:
         BlifAllocCallback(e_circuit_format blif_format, AtomNetlist& main_netlist, 
                           const std::string netlist_id, 
-                          const t_model* user_models, const t_model* library_models,
-                          int verbosity)
+                          const t_model* user_models, const t_model* library_models)
             : main_netlist_(main_netlist)
             , netlist_id_(netlist_id)
             , user_arch_models_(user_models)
             , library_arch_models_(library_models)
-            , blif_format_(blif_format) 
-            , verbosity_(verbosity) {
+            , blif_format_(blif_format) {
             VTR_ASSERT(blif_format_ == e_circuit_format::BLIF
                        || blif_format_ == e_circuit_format::EBLIF);
         }
@@ -334,6 +331,8 @@ struct BlifAllocCallback : public blifparse::Callback {
                 vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected .end");
             }
 
+            merge_conn_nets();
+
             //Mark as ended
             ended_ = true;
 
@@ -351,7 +350,15 @@ struct BlifAllocCallback : public blifparse::Callback {
             AtomNetId driver_net = curr_model().create_net(src);
             AtomNetId sink_net = curr_model().create_net(dst);
 
-            curr_model().merge_nets(driver_net, sink_net);
+            //We eventually need to merge the driver and sink nets,
+            //however we must defer that until all the net drivers 
+            //and sinks have been created (otherwise they may not 
+            //be properly merged depending on where the .conn is
+            //delcared).
+            //
+            //As a result we record the nets to merge and do the actual merging at
+            //the end of the .model
+            curr_nets_to_merge_.emplace_back(driver_net, sink_net);
 
             set_curr_block(AtomBlockId::INVALID());
         }
@@ -600,6 +607,19 @@ struct BlifAllocCallback : public blifparse::Callback {
             return curr_block_;
         }
 
+        //Merges all the recorded net pairs which need to be merged
+        //
+        //This should only be called at the end of a .model to ensure that
+        //all the associated driver/sink pins have been delcared and connected
+        //to their nets
+        void merge_conn_nets() {
+            for (auto net_pair : curr_nets_to_merge_) {
+                curr_model().merge_nets(net_pair.first, net_pair.second);
+            }
+
+            curr_nets_to_merge_.clear();
+        }
+
     private:
         bool ended_ = true; //Initially no active .model
         std::string filename_ = "";
@@ -616,10 +636,9 @@ struct BlifAllocCallback : public blifparse::Callback {
         size_t unique_subckt_name_counter_ = 0;
 
         AtomBlockId curr_block_;
+        std::vector<std::pair<AtomNetId,AtomNetId>> curr_nets_to_merge_;
 
         e_circuit_format blif_format_ = e_circuit_format::BLIF;
-        e_const_gen_inference const_gen_inference_ = e_const_gen_inference::COMB;
-        int verbosity_ = 1;
 
 };
 
@@ -639,14 +658,13 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
 AtomNetlist read_blif(e_circuit_format circuit_format,
                       const char *blif_file,
                       const t_model *user_models,
-                      const t_model *library_models,
-                      const int verbosity) {
+                      const t_model *library_models) {
 
 
     AtomNetlist netlist;
     std::string netlist_id = vtr::secure_digest_file(blif_file);
 
-    BlifAllocCallback alloc_callback(circuit_format, netlist, netlist_id, user_models, library_models, verbosity);
+    BlifAllocCallback alloc_callback(circuit_format, netlist, netlist_id, user_models, library_models);
     blifparse::blif_parse_filename(blif_file, alloc_callback);
 
     return netlist;

@@ -150,7 +150,7 @@ void load_net_delay_from_routing(vtr::vector<ClusterNetId, float *> &net_delay) 
 	rc_edge_free_list = nullptr;
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_is_global(net_id)) {
+		if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
 			load_one_constant_net_delay(net_delay, net_id, 0.);
 		} else {
 			rc_root = alloc_and_load_rc_tree(net_id, &rc_node_free_list,

@@ -11,7 +11,6 @@ using namespace std;
 #include "vpr_error.h"
 
 #include "physical_types.h"
-#include "path_delay.h"
 #include "globals.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
@@ -291,7 +290,7 @@ std::string rr_node_arch_name(int inode) {
         auto cost_index = rr_node.cost_index();
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
-        rr_node_arch_name += device_ctx.arch.Segments[seg_index].name;
+        rr_node_arch_name += device_ctx.arch->Segments[seg_index].name;
     }
     
     return rr_node_arch_name;
@@ -774,6 +773,83 @@ t_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
 
     VTR_ASSERT(max_type);
     return max_type;
+}
+
+InstPort parse_inst_port(std::string str) {
+    InstPort inst_port(str);
+
+
+    auto& device_ctx = g_vpr_ctx.device();
+    t_type_descriptor* blk_type = find_block_type_by_name(inst_port.instance_name(), device_ctx.block_types, device_ctx.num_block_types);
+    if (!blk_type) {
+        VPR_THROW(VPR_ERROR_ARCH, "Failed to find block type named %s", inst_port.instance_name().c_str());
+    }
+
+    const t_port* port = find_pb_graph_port(blk_type->pb_graph_head, inst_port.port_name());
+    if (!port) {
+        VPR_THROW(VPR_ERROR_ARCH, "Failed to find port %s on block type %s", inst_port.port_name().c_str(), inst_port.instance_name().c_str());
+    }
+
+    if (inst_port.port_low_index() == InstPort::UNSPECIFIED) {
+        VTR_ASSERT(inst_port.port_high_index() == InstPort::UNSPECIFIED);
+
+        inst_port.set_port_low_index(0);
+        inst_port.set_port_high_index(port->num_pins - 1);
+
+
+
+    } else {
+        if (inst_port.port_low_index() < 0 || inst_port.port_low_index() >= port->num_pins
+            || inst_port.port_high_index() < 0 || inst_port.port_high_index() >= port->num_pins) {
+            VPR_THROW(VPR_ERROR_ARCH, "Pin indices [%d:%d] on port %s of block type %s out of expected range [%d:%d]",
+                      inst_port.port_low_index(), inst_port.port_high_index(),
+                      inst_port.port_name().c_str(), inst_port.instance_name().c_str(),
+                      0, port->num_pins-1);
+        }
+    }
+    return inst_port;
+}
+
+//Returns the pin class associated with the specified pin_index_in_port within the port port_name on type
+int find_pin_class(t_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type) {
+    int iclass = OPEN;
+
+    int ipin = find_pin(type, port_name, pin_index_in_port);
+
+    if (ipin != OPEN) {
+        iclass = type->pin_class[ipin];
+
+        if (iclass != OPEN) {
+            VTR_ASSERT(type->class_inf[iclass].type == pin_type);
+        }
+    }
+    return iclass;
+}
+
+int find_pin(t_type_ptr type, std::string port_name, int pin_index_in_port) {
+    int ipin = OPEN;
+
+    t_pb_type* pb_type = type->pb_type;
+    t_port* matched_port = nullptr;
+    int port_base_ipin = 0;
+    for (int iport = 0; iport < pb_type->num_ports; ++iport) {
+        t_port* port = &pb_type->ports[iport];
+
+        if (port->name == port_name) {
+            matched_port = port;
+            break;
+        }
+        port_base_ipin += port->num_pins;
+    }
+
+    if (matched_port) {
+        VTR_ASSERT(matched_port->name == port_name);
+        VTR_ASSERT(pin_index_in_port < matched_port->num_pins);
+
+        ipin = port_base_ipin + pin_index_in_port;
+    }
+
+    return ipin;
 }
 
 //Returns true if the specified block type contains the specified blif model name
@@ -1455,6 +1531,18 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
                     /* All atom blocks are open for this molecule, place back in queue */
                     if (i == get_array_size_of_molecule(cur_molecule)) {
                         cur_molecule->valid = true;
+                        // when invalidating a molecule check if it's a chain molecule
+                        // that is part of a long chain. If so, check if this molecule
+                        // have modified the chain_id value based on the stale packing
+                        // then reset the chain id and the first packed molecule pointer
+                        // this is packing is being reseted
+                        if (cur_molecule->type == MOLECULE_FORCED_PACK &&
+                            cur_molecule->pack_pattern->is_chain &&
+                            cur_molecule->chain_info->is_long_chain &&
+                            cur_molecule->chain_info->first_packed_molecule == cur_molecule) {
+                            cur_molecule->chain_info->first_packed_molecule = nullptr;
+                            cur_molecule->chain_info->chain_id = -1;
+                        }
                     }
                 }
             }
@@ -2148,43 +2236,6 @@ void print_usage_by_wire_length() {
     total_wire_count.clear();
 }
 */
-
-AtomBlockId find_tnode_atom_block(int inode) {
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& timing_ctx = g_vpr_ctx.timing();
-
-    AtomBlockId blk_id;
-    AtomPinId pin_id;
-    auto type = timing_ctx.tnodes[inode].type;
-    if(type == TN_INPAD_SOURCE || type == TN_FF_SOURCE) {
-        //A source does not map directly to a netlist pin,
-        //so we walk to it's assoicated OPIN
-        VTR_ASSERT_MSG(timing_ctx.tnodes[inode].num_edges == 1, "Source nodes must have a single output edge");
-        int i_opin_node = timing_ctx.tnodes[inode].out_edges[0].to_node;
-
-        VTR_ASSERT(timing_ctx.tnodes[i_opin_node].type == TN_INPAD_OPIN ||timing_ctx.tnodes[i_opin_node].type == TN_FF_OPIN);
-
-        pin_id = atom_ctx.lookup.classic_tnode_atom_pin(i_opin_node);
-
-    } else if (type == TN_OUTPAD_SINK || type == TN_FF_SINK) {
-        //A sink does not map directly to a netlist pin,
-        //so we go back to its input pin
-
-        //By convention the sink pin is at one index before the sink itself
-        int i_ipin_node = inode - 1;
-        VTR_ASSERT(timing_ctx.tnodes[i_ipin_node].type == TN_OUTPAD_IPIN || timing_ctx.tnodes[i_ipin_node].type == TN_FF_IPIN);
-        VTR_ASSERT(timing_ctx.tnodes[i_ipin_node].num_edges == 1);
-        VTR_ASSERT(timing_ctx.tnodes[i_ipin_node].out_edges[0].to_node == inode);
-
-        pin_id = atom_ctx.lookup.classic_tnode_atom_pin(i_ipin_node);
-    } else {
-        pin_id = atom_ctx.lookup.classic_tnode_atom_pin(inode);
-    }
-
-    blk_id = atom_ctx.nlist.pin_block(pin_id);
-
-    return blk_id;
-}
 
 void place_sync_external_block_connections(ClusterBlockId iblk) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();

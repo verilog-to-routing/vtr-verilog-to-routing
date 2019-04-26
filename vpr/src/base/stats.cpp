@@ -5,7 +5,6 @@
 using namespace std;
 
 #include "vtr_assert.h"
-#include "vtr_matrix.h"
 #include "vtr_log.h"
 #include "vtr_math.h"
 #include "vtr_ndmatrix.h"
@@ -20,10 +19,8 @@ using namespace std;
 #include "channel_stats.h"
 #include "stats.h"
 #include "net_delay.h"
-#include "path_delay.h"
 #include "read_xml_arch_file.h"
 #include "echo_files.h"
-#include "endpoint_timing.h"
 
 #include "timing_info.h"
 #include "RoutingDelayCalculator.h"
@@ -42,16 +39,10 @@ static void get_channel_occupancy_stats();
 /************************* Subroutine definitions ****************************/
 
 void routing_stats(bool full_stats, enum e_route_type route_type,
-		int num_rr_switch, t_segment_inf * segment_inf, int num_segment,
+		std::vector<t_segment_inf>& segment_inf,
 		float R_minW_nmos, float R_minW_pmos,
         float grid_logic_tile_area,
-		enum e_directionality directionality, int wire_to_ipin_switch,
-		bool timing_analysis_enabled
-#ifdef ENABLE_CLASSIC_VPR_STA
-		, vtr::vector<ClusterNetId, float *> &net_delay
-        , t_slack * slacks, const t_timing_inf &timing_inf
-#endif
-        ) {
+		enum e_directionality directionality, int wire_to_ipin_switch) {
 
 	/* Prints out various statistics about the current routing.  Both a routing *
 	 * and an rr_graph must exist when you call this routine.                   */
@@ -61,7 +52,9 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	length_and_bends_stats();
+    int num_rr_switch = device_ctx.rr_switch_inf.size();
+
+    length_and_bends_stats();
     print_channel_stats();
 	get_channel_occupancy_stats();
 
@@ -101,47 +94,9 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	if (route_type == DETAILED) {
 		count_routing_transistors(directionality, num_rr_switch, wire_to_ipin_switch,
 				segment_inf, R_minW_nmos, R_minW_pmos);
-		get_segment_usage_stats(num_segment, segment_inf);
+		get_segment_usage_stats(segment_inf);
 
 	}
-
-    if (timing_analysis_enabled) {
-#ifdef ENABLE_CLASSIC_VPR_STA
-        auto& atom_ctx = g_vpr_ctx.atom();
-        //TODO: These calls to the modern timing analyzer are here to remain comparible to the classic analyzer
-        //      They should ultimately be removed, since we don't produce any of the classic timing echo files,
-        //      and timing reports are now generated from the analysis stage
-        load_net_delay_from_routing(net_delay);
-
-        //Tatum-based analyzer
-        auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
-
-        std::shared_ptr<SetupTimingInfo> timing_info = make_setup_timing_info(routing_delay_calc);
-        timing_info->update();
-
-        //Classic Analyzer
-        load_timing_graph_net_delays(net_delay);
-        do_timing_analysis(slacks, timing_inf, false, true);
-
-        if (getEchoEnabled()) {
-            print_timing_graph("routing_stats.timing_graph.classic.echo");
-            if (isEchoFileEnabled(E_ECHO_NET_DELAY))
-                print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
-        }
-
-        print_slack(slacks->slack, true, getOutputFileName(E_SLACK_FILE));
-        print_critical_path(getOutputFileName(E_CRIT_PATH_FILE), timing_inf);
-
-        if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ENDPOINT_TIMING)) {
-            print_endpoint_timing(getEchoFileName(E_ECHO_ENDPOINT_TIMING));
-        }
-
-        VTR_LOG("Classic Timing Stats\n");
-        VTR_LOG("====================\n");
-        print_timing_stats();
-#endif
-
-    }
 
 	if (full_stats == true)
 		print_wirelen_prob_dist();
@@ -168,7 +123,7 @@ void length_and_bends_stats() {
 	num_clb_opins_reserved = 0;
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (!cluster_ctx.clb_nlist.net_is_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
+		if (!cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
 			get_num_bends_and_length(net_id, &bends, &length, &segments);
 
 			total_bends += bends;
@@ -179,7 +134,7 @@ void length_and_bends_stats() {
 
 			total_segments += segments;
 			max_segments = max(segments, max_segments);
-		} else if (cluster_ctx.clb_nlist.net_is_global(net_id)) {
+		} else if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
 			num_global_nets++;
 		} else {
 			num_clb_opins_reserved++;
@@ -282,7 +237,7 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
 	/* Now go through each net and count the tracks and pins used everywhere */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		/* Skip global and empty nets. */
-		if (cluster_ctx.clb_nlist.net_is_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0)
+		if (cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0)
 			continue;
 
 		tptr = route_ctx.trace[net_id].head;
@@ -389,7 +344,7 @@ void print_wirelen_prob_dist() {
 	norm_fac = 0.;
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (!cluster_ctx.clb_nlist.net_is_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) {
+		if (!cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) {
 			get_num_bends_and_length(net_id, &bends, &length, &segments);
 
 			/*  Assign probability to two integer lengths proportionately -- i.e.  *
@@ -480,7 +435,7 @@ void print_lambda() {
 				if (type->class_inf[iclass].type == RECEIVER) {
 					ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
 					if (net_id != ClusterNetId::INVALID()) /* Pin is connected? */
-						if (!cluster_ctx.clb_nlist.net_is_global(net_id)) /* Not a global clock */
+						if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Not a global clock */
 							num_inputs_used++;
 				}
 			}

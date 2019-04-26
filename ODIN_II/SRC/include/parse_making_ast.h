@@ -21,6 +21,8 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 ast_node_t *newArrayRef(char *id, ast_node_t *expression, int line_number);
 ast_node_t *newArrayRef2D(char *id, ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expression2, int line_number);
+ast_node_t *newPartSelectRangeRef(char *id, ast_node_t *expression1, ast_node_t *expression2, char direction,
+								  int line_number);
 ast_node_t *newRangeRef2D(char *id, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, int line_number);
 ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number);

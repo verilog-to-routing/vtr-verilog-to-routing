@@ -38,9 +38,6 @@ using namespace std;
 #include "tatum/echo_writer.hpp"
 
 
-#include "path_delay.h"
-
-
 /**************** Types local to route_common.c ******************/
 struct t_trace_branch {
     t_trace* head;
@@ -97,7 +94,7 @@ static int num_linked_f_pointer_allocated = 0;
  *                                                                          */
 
 /******************** Subroutines local to route_common.c *******************/
-static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::unordered_set<int>& main_branch_visited);
+static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& nodes, std::unordered_set<int>& main_branch_visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth=0);
 
@@ -215,7 +212,7 @@ void get_serial_num() {
 }
 
 void try_graph(int width_fac, t_router_opts router_opts,
-		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+		t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
 		t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs) {
 
@@ -238,7 +235,8 @@ void try_graph(int width_fac, t_router_opts router_opts,
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
 	create_rr_graph(graph_type,
-            device_ctx.num_block_types, device_ctx.block_types,
+            device_ctx.num_block_types,
+            device_ctx.block_types,
             device_ctx.grid,
 			chan_width,
 			device_ctx.num_arch_switches,
@@ -247,20 +245,20 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
+            router_opts.clock_modeling,
 			router_opts.lookahead_type,
 			directs, num_directs,
-			&device_ctx.num_rr_switches,
 			&warning_count);
 }
 
-bool try_route(int width_fac, t_router_opts router_opts,
-		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+bool try_route(int width_fac,
+        const t_router_opts& router_opts,
+        const t_analysis_opts& analysis_opts,
+		t_det_routing_arch *det_routing_arch,
+        std::vector<t_segment_inf>& segment_inf,
 		vtr::vector<ClusterNetId, float *> &net_delay,
-#ifdef ENABLE_CLASSIC_VPR_STA
-        t_slack * slacks,
-        const t_timing_inf& timing_inf,
-#endif
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
+        std::shared_ptr<RoutingDelayCalculator> delay_calc, 
 		t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs,
         ScreenUpdatePriority first_iteration_priority) {
@@ -290,7 +288,8 @@ bool try_route(int width_fac, t_router_opts router_opts,
 	int warning_count;
 
 	create_rr_graph(graph_type,
-            device_ctx.num_block_types, device_ctx.block_types,
+            device_ctx.num_block_types,
+            device_ctx.block_types,
             device_ctx.grid,
 			chan_width,
 			device_ctx.num_arch_switches,
@@ -299,9 +298,9 @@ bool try_route(int width_fac, t_router_opts router_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
+            router_opts.clock_modeling,
 			router_opts.lookahead_type,
 			directs, num_directs,
-			&device_ctx.num_rr_switches,
 			&warning_count);
 
     //Initialize drawing, now that we have an RR graph
@@ -328,13 +327,12 @@ bool try_route(int width_fac, t_router_opts router_opts,
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
 
 
-		success = try_timing_driven_route(router_opts, net_delay,
+		success = try_timing_driven_route(router_opts,
+            analysis_opts,
+            net_delay,
             netlist_pin_lookup,
             timing_info,
-#ifdef ENABLE_CLASSIC_VPR_STA
-            slacks,
-            timing_inf,
-#endif
+            delay_calc,
             first_iteration_priority
             );
 
@@ -553,7 +551,7 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 
     VTR_ASSERT_SAFE(validate_trace_nodes(route_ctx.trace[net_id].head, trace_nodes));
 
-    t_trace_branch branch = traceback_branch(hptr->index, hptr->previous, trace_nodes);
+    t_trace_branch branch = traceback_branch(hptr->index, hptr->nodes, trace_nodes);
 
     VTR_ASSERT_SAFE(validate_trace_nodes(branch.head, trace_nodes));
 
@@ -572,7 +570,7 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 
 //Traces back a new routing branch starting from the specified 'node' and working backwards to any existing routing.
 //Returns the new branch, and also updates trace_nodes for any new nodes which are included in the branches traceback.
-static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::unordered_set<int>& trace_nodes) {
+static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& nodes, std::unordered_set<int>& trace_nodes) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -595,7 +593,7 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
 
     std::vector<int> new_nodes_added_to_traceback = {node};
 
-    for (t_heap_prev prev : previous) {
+    for (t_heap_prev prev : nodes) {
         int inode = prev.from_node;
         int iedge = prev.from_edge;
 
@@ -802,8 +800,8 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
 	t_heap* hptr = alloc_heap_data();
 	hptr->index = inode;
 	hptr->cost = total_cost;
-    VTR_ASSERT(hptr->previous.empty());
-	hptr->previous.emplace_back(inode, prev_node, prev_edge);
+    VTR_ASSERT(hptr->nodes.empty());
+	hptr->nodes.emplace_back(inode, prev_node, prev_edge);
 	hptr->backward_path_cost = backward_path_cost;
 	hptr->R_upstream = R_upstream;
 	add_to_heap(hptr);
@@ -1281,7 +1279,7 @@ namespace heap_ {
 		t_heap* hptr = alloc_heap_data();
 		hptr->index = inode;
 		hptr->cost = total_cost;
-        hptr->previous.emplace_back(inode, prev_node, prev_edge);
+        hptr->nodes.emplace_back(inode, prev_node, prev_edge);
 		hptr->backward_path_cost = backward_path_cost;
 		hptr->R_upstream = R_upstream;
 		push_back(hptr);
@@ -1403,7 +1401,7 @@ alloc_heap_data() {
     temp_ptr->backward_path_cost = 0.;
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = OPEN;
-    temp_ptr->previous.clear();
+    temp_ptr->nodes.clear();
 	return (temp_ptr);
 }
 
@@ -1421,7 +1419,7 @@ void invalidate_heap_entries(int sink_node, int ipin_node) {
 
 	for (int i = 1; i < heap_tail; i++) {
 		if (heap[i]->index == sink_node) {
-            for (t_heap_prev prev : heap[i]->previous) {
+            for (t_heap_prev prev : heap[i]->nodes) {
                 if (prev.from_node == ipin_node) {
                     heap[i]->index = OPEN; /* Invalid. */
                     break;
@@ -1465,7 +1463,7 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId,t_traceback>& tracebac
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             fprintf(fp, "\n\nNet %zu (%s)\n\n", size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str());
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == false) {
                 fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
@@ -1706,7 +1704,10 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 void free_chunk_memory_trace() {
 	if (trace_ch.chunk_ptr_head != nullptr) {
 		free_chunk_memory(&trace_ch);
+		trace_ch.chunk_ptr_head = nullptr;
+		trace_free_head = nullptr;
 	}
+
 }
 
 

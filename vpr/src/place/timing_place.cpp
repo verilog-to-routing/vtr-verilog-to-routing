@@ -9,15 +9,13 @@ using namespace std;
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
-#include "path_delay.h"
-#include "path_delay2.h"
 #include "net_delay.h"
 #include "timing_place_lookup.h"
 #include "timing_place.h"
 
 #include "timing_info.h"
 
-static vtr::vector<ClusterNetId, float *> f_timing_place_crit; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
+vtr::vector<ClusterNetId, float *> f_timing_place_crit; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
 
 static vtr::t_chunk f_timing_place_crit_ch;
 
@@ -56,7 +54,7 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_is_global(net_id))
+		if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
 			continue;
 
         for (auto clb_pin : cluster_ctx.clb_nlist.net_sinks(net_id)) {
@@ -82,25 +80,23 @@ void set_timing_place_crit(ClusterNetId net_id, int ipin, float val) {
 }
 
 /**************************************/
-void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
+std::unique_ptr<PlaceDelayModel> alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 		t_placer_opts placer_opts,
 		t_router_opts router_opts,
-		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+		t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
 		const t_direct_inf *directs,
 		const int num_directs) {
 
-	compute_delay_lookup_tables(placer_opts, router_opts, det_routing_arch, segment_inf,
-			chan_width_dist, directs, num_directs);
-
 	alloc_crit(&f_timing_place_crit_ch);
+
+	return compute_place_delay_model(placer_opts, router_opts, det_routing_arch, segment_inf,
+			chan_width_dist, directs, num_directs);
 }
 
 /**************************************/
 void free_lookups_and_criticalities() {
 	//TODO: May need to free f_timing_place_crit ?
 	free_crit(&f_timing_place_crit_ch);
-
-	free_place_lookup_structs();
 }
 
 /**************************************/

@@ -12,7 +12,7 @@ void CheckSetup(
         const t_placer_opts& PlacerOpts,
 		const t_router_opts& RouterOpts,
 		const t_det_routing_arch& RoutingArch,
-        const t_segment_inf * Segments,
+        const std::vector<t_segment_inf>& Segments,
 		const t_timing_inf Timing,
         const t_chan_width_dist Chans) {
 	int i;
@@ -76,7 +76,7 @@ void CheckSetup(
 		}
 	}
 
-	for (i = 0; i < RoutingArch.num_segment; ++i) {
+	for (i = 0; i < (int)Segments.size(); ++i) {
 		Tmp = Segments[i].arch_opin_switch;
         auto& device_ctx = g_vpr_ctx.device();
 		if (false == device_ctx.arch_switch_inf[Tmp].buffered()) {

@@ -417,6 +417,10 @@ sub run_odin_test {
 		$return_status = system("./verify_odin.sh --clean --test micro --nb_of_process $num_cpu");
 	} elsif ( $token eq "odin_reg" ) {
 		$return_status = system("./verify_odin.sh --clean --test full --nb_of_process $num_cpu");
+	} elsif ( $token eq "odin_reg_large" ) {
+		$return_status = system("./verify_odin.sh --clean --test large --nb_of_process $num_cpu");
+	} elsif ( $token eq "odin_reg_operators" ) {
+		$return_status = system("./verify_odin.sh --clean --test operators --nb_of_process $num_cpu");
 	} elsif ( $token eq "odin_reg_arch" ) {
 		$return_status = system("./verify_odin.sh --clean --test arch --nb_of_process $num_cpu");
 	} elsif ( $token eq "odin_reg_syntax" ) {

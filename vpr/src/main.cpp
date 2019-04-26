@@ -74,17 +74,6 @@ int main(int argc, const char **argv) {
                 timing_ctx.stats.num_full_setup_updates,
                 timing_ctx.stats.num_full_hold_updates,
                 timing_ctx.stats.num_full_setup_hold_updates);
-#ifdef ENABLE_CLASSIC_VPR_STA
-        VTR_LOG("Old VPR Timing analysis took %g seconds (%g STA, %g delay annotitaion) (%d full updates).\n",
-                timing_ctx.stats.old_timing_analysis_wallclock_time(),
-                timing_ctx.stats.old_sta_wallclock_time,
-                timing_ctx.stats.old_delay_annotation_wallclock_time,
-                timing_ctx.stats.num_old_sta_full_updates);
-        VTR_LOG("\tSTA       Speed-up: %.2fx\n",
-                timing_ctx.stats.old_sta_wallclock_time / timing_ctx.stats.sta_wallclock_time);
-        VTR_LOG("\tSTA+Slack Speed-up: %.2fx\n",
-                timing_ctx.stats.old_timing_analysis_wallclock_time() / timing_ctx.stats.timing_analysis_wallclock_time());
-#endif
 
         /* free data structures */
         vpr_free_all(Arch, vpr_setup);

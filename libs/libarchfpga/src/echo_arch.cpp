@@ -87,7 +87,7 @@ void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
                 VTR_ASSERT(false);
             }
             fprintf(Echo, " fc_value: %f", fc_spec.fc_value);
-            fprintf(Echo, " segment: %s", arch->Segments[fc_spec.seg_index].name);
+            fprintf(Echo, " segment: %s", arch->Segments[fc_spec.seg_index].name.c_str());
             fprintf(Echo, " pins:");
             for (int pin : fc_spec.pins) {
                 fprintf(Echo, " %d", pin);
@@ -112,7 +112,7 @@ void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 	fprintf(Echo, "Printing architecture... \n\n");
 	//Layout
 	fprintf(Echo, "*************************************************\n");
-    for (auto grid_layout : arch->grid_layouts) {
+    for (const auto &grid_layout : arch->grid_layouts) {
         if (grid_layout.grid_type == GridDefType::AUTO) {
             fprintf(Echo, "Layout: '%s' Type: auto Aspect_Ratio: %f\n", grid_layout.name.c_str(), grid_layout.aspect_ratio);
         } else {
@@ -249,8 +249,8 @@ void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 	//Segment List
 	fprintf(Echo, "*************************************************\n");
 	fprintf(Echo, "Segment List:\n");
-	for (i = 0; i < arch->num_segments; i++) {
-		struct t_segment_inf seg = arch->Segments[i];
+	for (i = 0; i < (int)(arch->Segments).size(); i++) {
+		const struct t_segment_inf &seg = arch->Segments[i];
 		fprintf(Echo,
 				"\tSegment[%d]: frequency %d length %d R_metal %e C_metal %e\n",
 				i + 1, seg.frequency, seg.length,
@@ -267,7 +267,7 @@ void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 		}
 
 		fprintf(Echo, "\t\t\t\tcb ");
-		for (j = 0; j < seg.cb_len; j++) {
+		for (j = 0; j < (int)seg.cb.size(); j++) {
 			if (seg.cb[j]) {
 				fprintf(Echo, "1 ");
 			} else {
@@ -277,7 +277,7 @@ void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 		fprintf(Echo, "\n");
 
 		fprintf(Echo, "\t\t\t\tsb ");
-		for (j = 0; j < seg.sb_len; j++) {
+		for (j = 0; j < (int)seg.sb.size(); j++) {
 			if (seg.sb[j]) {
 				fprintf(Echo, "1 ");
 			} else {
