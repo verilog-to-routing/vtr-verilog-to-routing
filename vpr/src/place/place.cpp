@@ -172,8 +172,8 @@ static std::vector<ClusterNetId> ts_nets_to_update;
 
 /* The pl_macros array stores all the carry chains placement macros.   *
  * [0...num_pl_macros-1]                                               */
-static t_pl_macro * pl_macros = nullptr;
-static int num_pl_macros;
+t_pl_macro * pl_macros = nullptr;
+int num_pl_macros;
 
 /* These file-scoped variables keep track of the number of swaps       *
  * rejected, accepted or aborted. The total number of swap attempts    *

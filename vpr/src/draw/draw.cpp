@@ -58,6 +58,7 @@ using namespace std;
 
 #include "rr_graph.h"
 #include "route_util.h"
+#include "place_macro.h"
 
 /****************************** Define Macros *******************************/
 
@@ -260,6 +261,10 @@ const std::vector<color_types> block_type_colors = {
     ALICEBLUE,
 };
 
+//FIXME: ugly hack
+extern t_pl_macro* pl_macros;
+extern int num_pl_macros;
+
 /************************** File Scope Variables ****************************/
 
 std::string rr_highlight_message;
@@ -275,6 +280,7 @@ static void toggle_routing_util(void (*drawscreen_ptr)());
 static void toggle_crit_path(void (*drawscreen_ptr)());
 static void toggle_block_pin_util(void (*drawscreen_ptr)());
 static void toggle_router_rr_costs(void (*drawscreen_ptr)());
+static void toggle_placement_macros(void (*drawscreen_ptr)());
 
 static void drawscreen();
 static void redraw_screen();
@@ -286,6 +292,7 @@ static void draw_routing_costs();
 static void draw_routing_bb();
 static void draw_routing_util();
 static void draw_crit_path();
+static void draw_placement_macros();
 
 static void highlight_blocks(float x, float y, t_event_buttonPressed button_info);
 static void act_on_mouse_over(float x, float y);
@@ -391,8 +398,9 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 			create_button("Window", "Toggle Nets", toggle_nets);
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
 			create_button("Blk Internal", "Blk Pin Util", toggle_block_pin_util);
+			create_button("Blk Pin Util", "Place Macros", toggle_placement_macros);
             if(setup_timing_info) {
-                create_button("Blk Pin Util", "Crit. Path", toggle_crit_path);
+                create_button("Place Macros", "Crit. Path", toggle_crit_path);
             }
 		} else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
             //Routing, opening after placement
@@ -535,6 +543,8 @@ static void redraw_screen() {
 			default:
 			break;
 		}
+
+        draw_placement_macros();
 
 	} else { /* ROUTING on screen */
 
@@ -714,6 +724,17 @@ static void toggle_block_pin_util(void (*drawscreen_ptr)()) {
         draw_reset_blk_colors();
 		update_message(draw_state->default_message);
     }
+    drawscreen_ptr();
+}
+
+static void toggle_placement_macros(void (*drawscreen_ptr)()) {
+	t_draw_state *draw_state = get_draw_state_vars();
+
+	e_draw_placement_macros new_state = (enum e_draw_placement_macros) (((int)draw_state->show_placement_macros + 1)
+														  % ((int)DRAW_PLACEMENT_MACROS_MAX));
+
+    draw_state->show_placement_macros = new_state;
+
     drawscreen_ptr();
 }
 
@@ -1234,7 +1255,6 @@ static void draw_routing_bb() {
     fillrect(draw_xlow, draw_ylow, draw_xhigh, draw_yhigh);
     
     draw_routed_net(net_id);
-
 
     std::string msg;;
     msg += "Showing BB";
@@ -3743,3 +3763,65 @@ static void draw_rr_costs(const std::vector<float>& rr_costs, bool lowest_cost_f
 
     draw_state->color_map = std::move(cmap);
 }
+
+static void draw_placement_macros() {
+	t_draw_state* draw_state = get_draw_state_vars();
+
+    if (draw_state->show_placement_macros == DRAW_NO_PLACEMENT_MACROS) {
+        return;
+    }
+
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    for (int imacro = 0; imacro < num_pl_macros; ++imacro) {
+        const t_pl_macro* pl_macro = &pl_macros[imacro];
+
+        //TODO: for now we just draw the bounding box of the macro, which is incorrect for non-rectangular macros...
+        int xlow = std::numeric_limits<int>::max();
+        int ylow = std::numeric_limits<int>::max();
+        int xhigh = std::numeric_limits<int>::min();
+        int yhigh = std::numeric_limits<int>::min();
+
+        int x_prev = OPEN;
+        int y_prev = OPEN;
+        for (int imember = 0; imember < pl_macro->num_blocks; ++imember) {
+            const t_pl_macro_member* member = &pl_macro->members[imember];
+
+            ClusterBlockId blk = member->blk_index;
+            int x = OPEN;
+            int y = OPEN;
+            if (imember == 0) {
+                x = place_ctx.block_locs[blk].x;
+                y = place_ctx.block_locs[blk].y;
+            } else {
+                x = x_prev + member->x_offset;
+                y = y_prev + member->y_offset;
+            }
+
+            xlow = std::min(xlow, x);
+            ylow = std::min(ylow, y);
+            xhigh = std::max(xhigh, x + cluster_ctx.clb_nlist.block_type(blk)->width);
+            yhigh = std::max(yhigh, y + cluster_ctx.clb_nlist.block_type(blk)->height);
+
+            x_prev = x;
+            y_prev = y;
+        }
+
+        int draw_xlow = draw_coords->tile_x[xlow];
+        int draw_ylow = draw_coords->tile_y[ylow];
+        int draw_xhigh = draw_coords->tile_x[xhigh];
+        int draw_yhigh = draw_coords->tile_y[yhigh];
+
+        setcolor(RED);
+        drawrect(draw_xlow, draw_ylow, draw_xhigh, draw_yhigh);
+
+        t_color fill = SKYBLUE;
+        fill.alpha *= 0.3;
+        setcolor(fill);
+        fillrect(draw_xlow, draw_ylow, draw_xhigh, draw_yhigh);
+
+    }
+}
+
