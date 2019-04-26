@@ -231,7 +231,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 static float comp_bb_cost(e_cost_methods method);
 
-static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int z_to);
+static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 
 static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 
@@ -1100,7 +1100,7 @@ static float starting_t(t_placer_costs* costs,
 }
 
 
-static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
+static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
 
 	/* Find all the blocks affected when b_from is swapped with b_to.
 	 * Returns abort_swap.                  */
@@ -1251,7 +1251,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
                     abort_swap = true;
                 } else {
                     //To block is not a macro
-                    abort_swap = setup_blocks_affected(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
+                    abort_swap = record_single_block_swap(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
                 }
 			}
 		} // Finish going through all the blocks in the macro
@@ -1270,7 +1270,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
             abort_swap = find_affected_blocks(b_to, x_from, y_from, z_from);
         } else {
             // This is not a macro - I could use the from and to info from before
-            abort_swap = setup_blocks_affected(b_from, x_to, y_to, z_to);
+            abort_swap = record_single_block_swap(b_from, x_to, y_to, z_to);
         }
 
 	} // Finish handling cases for blocks in macro and otherwise
