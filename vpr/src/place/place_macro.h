@@ -140,8 +140,9 @@
  * structs of arrays for cache efficiency.
  * Could have more data members for other macro type.
  * blk_index: The cluster_ctx.blocks index of this block.
- * x_offset: The x_offset of the previous block to this cluster_ctx.blocks.
- * y_offset: The y_offset of the previous block to this cluster_ctx.blocks.
+ * x_offset: The x_offset from the first macro member to this member
+ * y_offset: The y_offset from the first macro member to this member
+ * z_offset: The z_offset from the first macro member to this member
  */
 struct t_pl_macro_member{
 	ClusterBlockId blk_index;
