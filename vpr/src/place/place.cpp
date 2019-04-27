@@ -1491,10 +1491,10 @@ static e_swap_result try_swap(float t,
 
 #if 0
     auto& grid = g_vpr_ctx.device().grid;
-	int b_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
-	VTR_LOG( "swap [%d][%d][%d] %s \"%s\" <=> [%d][%d][%d] %s \"%s\"\n",
-		x_from, y_from, z_from, grid[x_from][y_from].type->name, (b_from != -1 ? cluster_ctx.blocks[b_from].name : ""),
-		x_to, y_to, z_to, grid[x_to][y_to].type->name, (b_to != -1 ? cluster_ctx.blocks[b_to].name : ""));
+	ClusterBlockId b_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
+	VTR_LOG( "swap [%d][%d][%d] %s block %zu \"%s\" <=> [%d][%d][%d] %s block %zu \"%s\"\n",
+		x_from, y_from, z_from, grid[x_from][y_from].type->name, size_t(b_from), (b_from ? cluster_ctx.clb_nlist.block_name(b_from).c_str() : ""),
+		x_to, y_to, z_to, grid[x_to][y_to].type->name, size_t(b_to), (b_to ? cluster_ctx.clb_nlist.block_name(b_to).c_str() : ""));
 #endif
 
 	/* Make the switch in order to make computing the new bounding *
