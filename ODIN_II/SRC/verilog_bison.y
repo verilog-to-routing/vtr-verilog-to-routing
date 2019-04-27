@@ -388,6 +388,7 @@ statement:
 	seq_block																					{$$ = $1;}
 	| blocking_assignment ';'																	{$$ = $1;}
 	| non_blocking_assignment ';'																{$$ = $1;}
+	| procedural_continuous_assignment ';'														{$$ = $1;}
 	| vIF '(' expression ')' statement %prec LOWER_THAN_ELSE									{$$ = newIf($3, $5, NULL, yylineno);}
 	| vIF '(' expression ')' statement vELSE statement 											{$$ = newIf($3, $5, $7, yylineno);}
 	| vCASE '(' expression ')' case_item_list vENDCASE											{$$ = newCase($3, $5, yylineno);}
@@ -411,8 +412,22 @@ blocking_assignment:
 	;
 
 non_blocking_assignment:
-	primary voLTE expression 								{$$ = newNonBlocking($1, $3, yylineno);}
-	| primary voLTE vDELAY_ID expression					{$$ = newNonBlocking($1, $4, yylineno);}
+	primary voLTE expression 											{$$ = newNonBlocking($1, $3, yylineno);}
+	| primary voLTE vDELAY_ID expression								{$$ = newNonBlocking($1, $4, yylineno);}
+	;
+
+procedural_continuous_assignment:
+	vASSIGN list_of_variable_asssignemt									{$$ = $2;}
+	| vDEASSIGN primary													{$$ = procedural_continuous_deassign($2, yylineno);}
+	;
+
+list_of_variable_asssignemt:
+	list_of_variable_asssignemt ',' variable_asssignemt					{$$ = newList_entry($1, $3);}
+	|variable_asssignemt												{$$ = $1;}
+	;
+
+variable_asssignemt:								
+	primary '=' expression												{$$ = procedural_continuous_assign($1, $3, yylineno) /*newBlocking($1, $3, yylineno)*/;}
 	;
 
 parallel_connection:
