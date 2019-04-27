@@ -922,22 +922,22 @@ void RRGraph::build_fast_node_lookup() const {
 
   for (auto node : nodes()) {
     size_t x = node_xlow(node);
-    if (x < node_lookup_.size()) {
+    if (x >= node_lookup_.size()) {
         node_lookup_.resize(x + 1);
     }
 
     size_t y = node_ylow(node);
-    if (y < node_lookup_[x].size()) {
+    if (y >= node_lookup_[x].size()) {
         node_lookup_[x].resize(y + 1);
     }
 
     size_t itype = node_type(node);
-    if (itype < node_lookup_[x][y].size()) {
+    if (itype >= node_lookup_[x][y].size()) {
         node_lookup_[x][y].resize(itype + 1);
     }
 
     size_t ptc = node_ptc_num(node);
-    if (ptc < node_lookup_[x][y][itype].size()) {
+    if (ptc >= node_lookup_[x][y][itype].size()) {
         node_lookup_[x][y][itype].resize(ptc + 1);
     }
 
@@ -948,7 +948,7 @@ void RRGraph::build_fast_node_lookup() const {
         iside = NUM_SIDES;
     }
 
-    if (iside < node_lookup_[x][y][itype][ptc].size()) {
+    if (iside >= node_lookup_[x][y][itype][ptc].size()) {
         node_lookup_[x][y][itype][ptc].resize(iside + 1);
     }
 
@@ -1187,6 +1187,22 @@ void RRGraph::rebuild_node_refs(const vtr::vector<RREdgeId,RREdgeId>& edge_id_ma
     VTR_ASSERT_MSG(all_valid(node_in_edges_[node]), "All Ids should be valid");
     VTR_ASSERT_MSG(all_valid(node_out_edges_[node]), "All Ids should be valid");
   }
+}
+
+/* This function should be used when nodes, edges, switches and segments have been used after 
+ * We will build the fast_lookup, partition edges and check 
+ */
+void RRGraph::check() {
+  if (!valid_fast_node_lookup()) {
+    build_fast_node_lookup();
+  }
+  for (auto node : nodes()) {
+    check_node_duplicated_edges(node); 
+  }
+  check_duplicated_edges();
+  check_dangling_nodes();
+  
+  return;
 }
 
 /* Empty all the vectors related to nodes */

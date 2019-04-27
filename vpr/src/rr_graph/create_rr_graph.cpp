@@ -118,6 +118,9 @@ void convert_rr_graph() {
    */
   device_ctx.rr_graph.partition_edges();
 
+  /* Essential check for rr_graph, build look-up and  */
+  device_ctx.rr_graph.check();
+
   return;
 }
 

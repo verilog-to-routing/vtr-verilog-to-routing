@@ -169,6 +169,8 @@ class RRGraph {
     void compress();
     bool validate();
 
+    void check();
+
     void clear_nodes();
     void clear_edges();
     void clear_switches();
