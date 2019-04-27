@@ -13,22 +13,27 @@ See Section 3.2.4 in Oleg Petelin's MASc thesis (2016) for more discussion.
 
 */
 
-
+/* Standard header files required go first */
 #include <cmath>
 #include <vector>
 #include <queue>
 #include <ctime>
-#include "vpr_types.h"
-#include "vpr_error.h"
-#include "vpr_utils.h"
-#include "globals.h"
+
+/* EXTERNAL library header files go second*/
 #include "vtr_math.h"
 #include "vtr_log.h"
 #include "vtr_assert.h"
 #include "vtr_time.h"
-#include "timing_driven_router_lookahead_map.h"
 
+/* VPR header files go second*/
+#include "vpr_types.h"
+#include "vpr_error.h"
+#include "vpr_utils.h"
+#include "timing_driven_router_lookahead_map.h"
 #include "rr_graph_fwd.h"
+
+/* Finally we include global variables */
+#include "globals.h"
 
 using namespace std;
 
