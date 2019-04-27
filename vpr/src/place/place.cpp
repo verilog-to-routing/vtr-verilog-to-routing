@@ -1218,57 +1218,29 @@ static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, i
 
     VTR_ASSERT_SAFE(b_from);
 
-	int imoved_blk;
-	int x_from, y_from, z_from;
-	ClusterBlockId b_to;
 	int abort_swap = false;
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-	x_from = place_ctx.block_locs[b_from].x;
-	y_from = place_ctx.block_locs[b_from].y;
-	z_from = place_ctx.block_locs[b_from].z;
-
     VTR_ASSERT_SAFE(z_to < int(place_ctx.grid_blocks[x_to][y_to].blocks.size()));
 
-	b_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
+	ClusterBlockId b_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
 
 	// Check whether the to_location is empty
 	if (b_to == EMPTY_BLOCK_ID) {
 
 		// Sets up the blocks moved
-		imoved_blk = blocks_affected.num_moved_blocks;
-		blocks_affected.moved_blocks[imoved_blk].block_num = b_from;
-		blocks_affected.moved_blocks[imoved_blk].xold = x_from;
-		blocks_affected.moved_blocks[imoved_blk].xnew = x_to;
-		blocks_affected.moved_blocks[imoved_blk].yold = y_from;
-		blocks_affected.moved_blocks[imoved_blk].ynew = y_to;
-		blocks_affected.moved_blocks[imoved_blk].zold = z_from;
-		blocks_affected.moved_blocks[imoved_blk].znew = z_to;
-		blocks_affected.num_moved_blocks ++;
+        record_block_move(b_from, x_to, y_to, z_to);
 
 	} else if (b_to != INVALID_BLOCK_ID) {
 
 		// Sets up the blocks moved
-		imoved_blk = blocks_affected.num_moved_blocks;
-		blocks_affected.moved_blocks[imoved_blk].block_num = b_from;
-		blocks_affected.moved_blocks[imoved_blk].xold = x_from;
-		blocks_affected.moved_blocks[imoved_blk].xnew = x_to;
-		blocks_affected.moved_blocks[imoved_blk].yold = y_from;
-		blocks_affected.moved_blocks[imoved_blk].ynew = y_to;
-		blocks_affected.moved_blocks[imoved_blk].zold = z_from;
-		blocks_affected.moved_blocks[imoved_blk].znew = z_to;
-		blocks_affected.num_moved_blocks ++;
+        record_block_move(b_from, x_to, y_to, z_to);
 
-		imoved_blk = blocks_affected.num_moved_blocks;
-		blocks_affected.moved_blocks[imoved_blk].block_num = b_to;
-		blocks_affected.moved_blocks[imoved_blk].xold = x_to;
-		blocks_affected.moved_blocks[imoved_blk].xnew = x_from;
-		blocks_affected.moved_blocks[imoved_blk].yold = y_to;
-		blocks_affected.moved_blocks[imoved_blk].ynew = y_from;
-		blocks_affected.moved_blocks[imoved_blk].zold = z_to;
-		blocks_affected.moved_blocks[imoved_blk].znew = z_from;
-		blocks_affected.num_moved_blocks ++;
+        int x_from = place_ctx.block_locs[b_from].x;
+        int y_from = place_ctx.block_locs[b_from].y;
+        int z_from = place_ctx.block_locs[b_from].z;
+        record_block_move(b_to, x_from, y_from, z_from);
 
 	} // Finish swapping the blocks and setting up blocks_affected
 
