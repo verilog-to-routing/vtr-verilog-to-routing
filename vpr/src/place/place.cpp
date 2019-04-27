@@ -231,6 +231,9 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 static float comp_bb_cost(e_cost_methods method);
 
+static void apply_block_swap();
+static void revert_block_swap();
+static void commit_block_swap();
 static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 
 static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to);
@@ -1150,6 +1153,74 @@ static void revert_block_swap() {
 }
 #endif
 
+//Moves the blocks in blocks_affected to their new locations
+static void apply_block_swap() {
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    //Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
+    //yet since we don't know whether the swap will be accepted
+    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
+
+        ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
+        
+		place_ctx.block_locs[blk].x = blocks_affected.moved_blocks[iblk].xnew;
+		place_ctx.block_locs[blk].y = blocks_affected.moved_blocks[iblk].ynew;
+		place_ctx.block_locs[blk].z = blocks_affected.moved_blocks[iblk].znew;
+    }
+}
+
+//Commits the blocks in blocks_affected to their new locations (updates inverse
+//lookups via place_ctx.grid_blocks)
+static void commit_block_swap() {
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    /* Swap physical location */
+    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
+
+        ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
+        
+        int x_to = blocks_affected.moved_blocks[iblk].xnew;
+        int y_to = blocks_affected.moved_blocks[iblk].ynew;
+        int z_to = blocks_affected.moved_blocks[iblk].znew;
+
+        int x_from = blocks_affected.moved_blocks[iblk].xold;
+        int y_from = blocks_affected.moved_blocks[iblk].yold;
+        int z_from = blocks_affected.moved_blocks[iblk].zold;
+
+        place_ctx.grid_blocks[x_to][y_to].blocks[z_to] = blk;
+
+        if (blocks_affected.moved_blocks[iblk].swapped_to_was_empty) {
+            place_ctx.grid_blocks[x_to][y_to].usage++;
+        }
+        if (blocks_affected.moved_blocks[iblk].swapped_from_is_empty) {
+            place_ctx.grid_blocks[x_from][y_from].usage--;
+            place_ctx.grid_blocks[x_from][y_from].blocks[z_from] = EMPTY_BLOCK_ID;
+        }
+
+    } // Finish updating clb for all blocks
+}
+
+//Moves the blocks in blocks_affected to their old locations
+static void revert_block_swap() {
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    // Swap the blocks back, nets not yet swapped they don't need to be changed
+    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
+
+        ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
+
+		int xold = blocks_affected.moved_blocks[iblk].xold;
+		int yold = blocks_affected.moved_blocks[iblk].yold;
+		int zold = blocks_affected.moved_blocks[iblk].zold;
+
+		place_ctx.block_locs[blk].x = xold;
+		place_ctx.block_locs[blk].y = yold;
+		place_ctx.block_locs[blk].z = zold;
+
+        VTR_ASSERT_SAFE_MSG(place_ctx.grid_blocks[xold][yold].blocks[zold] = blk, "Grid blocks should only have been updated if swap commited (not reverted)");
+    }
+}
+
 static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
 
 	/* Find all the blocks affected when b_from is swapped with b_to.
@@ -1175,14 +1246,6 @@ static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, i
 	// Check whether the to_location is empty
 	if (b_to == EMPTY_BLOCK_ID) {
 
-		// Swap the block, dont swap the nets yet
-		place_ctx.block_locs[b_from].x = x_to;
-		place_ctx.block_locs[b_from].y = y_to;
-		place_ctx.block_locs[b_from].z = z_to;
-
-        //place_ctx.grid_blocks[x_from][y_from].blocks[z_from] = ClusterBlockId::INVALID();
-        //place_ctx.grid_blocks[x_to][y_to].blocks[z_to] = b_from;
-
 		// Sets up the blocks moved
 		imoved_blk = blocks_affected.num_moved_blocks;
 		blocks_affected.moved_blocks[imoved_blk].block_num = b_from;
@@ -1197,17 +1260,6 @@ static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, i
 		blocks_affected.num_moved_blocks ++;
 
 	} else if (b_to != INVALID_BLOCK_ID) {
-
-		// Swap the block, dont swap the nets yet
-		place_ctx.block_locs[b_to].x = x_from;
-		place_ctx.block_locs[b_to].y = y_from;
-		place_ctx.block_locs[b_to].z = z_from;
-
-		place_ctx.block_locs[b_from].x = x_to;
-		place_ctx.block_locs[b_from].y = y_to;
-		place_ctx.block_locs[b_from].z = z_to;
-
-        //std::swap(place_ctx.grid_blocks[x_from][y_from].blocks[z_from], place_ctx.grid_blocks[x_to][y_to].blocks[z_to]);
 
 		// Sets up the blocks moved
 		imoved_blk = blocks_affected.num_moved_blocks;
@@ -1479,7 +1531,6 @@ static e_swap_result try_swap(float t,
 
 	int x_from = place_ctx.block_locs[b_from].x;
 	int y_from = place_ctx.block_locs[b_from].y;
-	int z_from = place_ctx.block_locs[b_from].z;
 
     int x_to = OPEN;
     int y_to = OPEN;
@@ -1517,6 +1568,9 @@ static e_swap_result try_swap(float t,
 	bool abort_swap = find_affected_blocks(b_from, x_to, y_to, z_to);
 
 	if (abort_swap == false) {
+
+        //Swap the blocks
+        apply_block_swap();
 
 		// Find all the nets affected by this swap and update thier bounding box
 		int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm, delay_model, bb_delta_c, timing_delta_c, delay_delta_c);
@@ -1564,30 +1618,7 @@ static e_swap_result try_swap(float t,
 			}
 
 			/* Update clb data structures since we kept the move. */
-			/* Swap physical location */
-			for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
-
-				x_to = blocks_affected.moved_blocks[iblk].xnew;
-				y_to = blocks_affected.moved_blocks[iblk].ynew;
-				z_to = blocks_affected.moved_blocks[iblk].znew;
-
-				x_from = blocks_affected.moved_blocks[iblk].xold;
-				y_from = blocks_affected.moved_blocks[iblk].yold;
-				z_from = blocks_affected.moved_blocks[iblk].zold;
-
-				b_from = blocks_affected.moved_blocks[iblk].block_num;
-
-				place_ctx.grid_blocks[x_to][y_to].blocks[z_to] = b_from;
-
-				if (blocks_affected.moved_blocks[iblk].swapped_to_was_empty) {
-					place_ctx.grid_blocks[x_to][y_to].usage++;
-				}
-				if (blocks_affected.moved_blocks[iblk].swapped_from_is_empty) {
-					place_ctx.grid_blocks[x_from][y_from].usage--;
-					place_ctx.grid_blocks[x_from][y_from].blocks[z_from] = EMPTY_BLOCK_ID;
-				}
-
-			} // Finish updating clb for all blocks
+            commit_block_swap();
 
 		} else { /* Move was rejected.  */
 
@@ -1599,19 +1630,7 @@ static e_swap_result try_swap(float t,
 			}
 
 			/* Restore the place_ctx.block_locs data structures to their state before the move. */
-			for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
-				b_from = blocks_affected.moved_blocks[iblk].block_num;
-
-                int xold = blocks_affected.moved_blocks[iblk].xold;
-                int yold = blocks_affected.moved_blocks[iblk].yold;
-                int zold = blocks_affected.moved_blocks[iblk].zold;
-
-				place_ctx.block_locs[b_from].x = xold;
-				place_ctx.block_locs[b_from].y = yold;
-				place_ctx.block_locs[b_from].z = zold;
-
-                place_ctx.grid_blocks[xold][yold].blocks[zold] = b_from;
-			}
+            revert_block_swap();
 		}
 
 		/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
