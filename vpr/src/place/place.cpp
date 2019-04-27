@@ -235,12 +235,15 @@ static void apply_block_swap();
 static void revert_block_swap();
 static void commit_block_swap();
 static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to);
+static void record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to);
 
 static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 
 static bool record_macro_block_swaps(const int imacro_from, int& imember_from, 
                                         const int imacro_to,
                                         ClusterBlockId blk_to, int x_to, int y_to, int z_to);
+
+static bool record_macro_self_swaps(const int imacro, int x_swap_offset, int y_swap_offset, int z_swap_offset);
 
 bool is_legal_swap_to_location(ClusterBlockId blk, int x_to, int y_to, int z_to);
 
@@ -1187,6 +1190,27 @@ static void revert_block_swap() {
     }
 }
 
+static void record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to) {
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+	int x_from = place_ctx.block_locs[blk].x;
+	int y_from = place_ctx.block_locs[blk].y;
+	int z_from = place_ctx.block_locs[blk].z;
+
+    VTR_ASSERT_SAFE(z_to < int(place_ctx.grid_blocks[x_to][y_to].blocks.size()));
+
+    // Sets up the blocks moved
+    int imoved_blk = blocks_affected.num_moved_blocks;
+    blocks_affected.moved_blocks[imoved_blk].block_num = blk;
+    blocks_affected.moved_blocks[imoved_blk].xold = x_from;
+    blocks_affected.moved_blocks[imoved_blk].xnew = x_to;
+    blocks_affected.moved_blocks[imoved_blk].yold = y_from;
+    blocks_affected.moved_blocks[imoved_blk].ynew = y_to;
+    blocks_affected.moved_blocks[imoved_blk].zold = z_from;
+    blocks_affected.moved_blocks[imoved_blk].znew = z_to;
+    blocks_affected.num_moved_blocks ++;
+}
+
 static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
 
 	/* Find all the blocks affected when b_from is swapped with b_to.
@@ -1315,7 +1339,8 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
                     //To block is a macro
 
                     if (imacro_from == imacro_to) {
-                        abort_swap = true;
+                        abort_swap = record_macro_self_swaps(imacro_from, x_swap_offset, y_swap_offset, z_swap_offset);
+                        break; //record_macro_self_swaps() handles this case completely, so we don't need to continue the loop
                     } else {
                         abort_swap = record_macro_block_swaps(imacro_from, imember_from, imacro_to, b_to,
                                                                   x_swap_offset, y_swap_offset, z_swap_offset);
@@ -1439,6 +1464,80 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
         return true; //Abort
     }
 #endif
+
+    return false; //Success
+}
+
+static bool record_macro_self_swaps(const int imacro, int x_swap_offset, int y_swap_offset, int z_swap_offset) {
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    blocks_affected.num_moved_blocks = 0; //Reset
+
+    std::set<std::tuple<int,int,int>> emptied_locations; //Locations which are empty/holes due to macro shifting
+    std::set<std::tuple<int,int,int>> filled_locations; //Locations which are filed due to macro shifting
+    std::vector<ClusterBlockId> blocks_to_wrap; //Blocks which need to be wrapped around the macro
+
+    for (int imember = 0; imember < place_ctx.pl_macros[imacro].num_blocks; ++imember) {
+
+        ClusterBlockId blk = place_ctx.pl_macros[imacro].members[imember].blk_index;
+
+        int x_from = place_ctx.block_locs[blk].x;
+        int y_from = place_ctx.block_locs[blk].y;
+        int z_from = place_ctx.block_locs[blk].z;
+
+        int x_to = x_from + x_swap_offset;
+        int y_to = y_from + y_swap_offset;
+        int z_to = z_from + z_swap_offset;
+
+        ClusterBlockId blk_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
+
+        int imacro_to = -1;
+        get_imacro_from_iblk(&imacro_to, blk_to, place_ctx.pl_macros, place_ctx.num_pl_macros);
+
+        if (blk_to) {
+            filled_locations.emplace(x_to, y_to, z_to);
+        }
+        emptied_locations.emplace(x_from, y_from, z_from);
+
+        if (imacro_to == imacro) {
+
+            record_block_move(blk, x_to, y_to, z_to);
+
+        } else if (imacro_to == -1) {
+            //non-macro block
+
+            //Move the macro element to block to it's target position
+            record_block_move(blk, x_to, y_to, z_to);
+
+            if (blk_to) {
+                blocks_to_wrap.push_back(blk_to);
+            }
+        } else {
+            //Another macro
+            //
+            //TODO: could extend with call record_macro_block_swaps()
+            return true; //Abort
+        }
+    }
+
+    //Any blocks which were overwritten by the macro shift need to be wrapped
+    //around the macro, filling holes created by shifting the macro
+    std::set<std::tuple<int,int,int>> empty_locations;
+    std::set_difference(emptied_locations.begin(), emptied_locations.end(),
+                        filled_locations.begin(), filled_locations.end(),
+                        std::inserter(empty_locations, empty_locations.begin()));
+
+    VTR_ASSERT_SAFE(blocks_to_wrap.size() <= empty_locations.size());
+
+    for (int iblk = 0; iblk < int(blocks_to_wrap.size()); ++iblk) {
+        auto itr = empty_locations.begin();
+        VTR_ASSERT_SAFE(itr != empty_locations.end());
+
+        record_block_move(blocks_to_wrap[iblk], std::get<0>(*itr), std::get<1>(*itr), std::get<2>(*itr));
+
+        empty_locations.erase(itr);
+    }
+
 
     return false; //Success
 }
