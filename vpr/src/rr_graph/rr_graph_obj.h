@@ -108,14 +108,8 @@ class RRGraph {
     RREdgeId find_edge(RRNodeId src_node, RRNodeId sink_node) const;
     RRNodeId find_node(short x, short y, t_rr_type type, int ptc, e_side side=NUM_SIDES) const;
     node_range find_nodes(short x, short y, t_rr_type type, int ptc) const;
-
-    void node_xy_deltas(RRNodeId from_node_id, RRNodeId to_node_id, 
-                        int* delta_x, int* delta_y) const;
-    RRNodeId get_chan_start_node_id(short start_x, short start_y, 
-                                    short target_x, short target_y, 
-                                    t_rr_type chan_type, 
-                                    short seg_id, short track_offset) const ;
-
+    RRNodeId find_chan_node(short x, short y, t_rr_type type, int ptc) const;
+    short chan_num_tracks(short x, short y, t_rr_type type) const;
 
     bool is_dirty() const;
 

@@ -218,6 +218,14 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
 /* returns a cost entry in the f_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
 static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int chan_index);
 
+static void get_xy_deltas(RRNodeId from_node_id, RRNodeId to_node_id, 
+                          int* delta_x, int* delta_y);
+
+static RRNodeId get_chan_start_node_id(short start_x, short start_y, 
+                                       short target_x, short target_y, 
+                                       t_rr_type rr_type, 
+                                       short seg_id, short track_offset);
+
 static void print_cost_map();
 
 /******** Function Definitions ********/
@@ -232,7 +240,7 @@ float get_lookahead_map_cost(RRNodeId from_node_ind, RRNodeId to_node_ind, float
   VTR_ASSERT(from_seg_index >= 0);
 
   int delta_x, delta_y;
-  device_ctx.rr_graph.node_xy_deltas(from_node_ind, to_node_ind, &delta_x, &delta_y);
+  get_xy_deltas(from_node_ind, to_node_ind, &delta_x, &delta_y);
   delta_x = abs(delta_x);
   delta_y = abs(delta_y);
 
@@ -273,9 +281,9 @@ void compute_router_lookahead(size_t num_segments){
       for (size_t ref_inc = 0; ref_inc < 3; ++ref_inc) {
         for (size_t track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2){
           /* get the rr node index from which to start routing */
-          RRNodeId start_node_ind = device_ctx.rr_graph.get_chan_start_node_id(REF_X+ref_inc, REF_Y+ref_inc,
-                                                                               device_ctx.grid.width()-2, device_ctx.grid.height()-2,  //non-corner upper right
-                                                                               chan_type, iseg, track_offset);
+          RRNodeId start_node_ind = get_chan_start_node_id(REF_X+ref_inc, REF_Y+ref_inc,
+                                                           device_ctx.grid.width()-2, device_ctx.grid.height()-2,  //non-corner upper right
+                                                           chan_type, iseg, track_offset);
 
           if (size_t(UNDEFINED) == size_t(start_node_ind)){
             continue;
@@ -349,7 +357,7 @@ static void run_dijkstra(RRNodeId start_node_ind, int start_x, int start_y, t_ro
 
       if (ipin_x >= start_x && ipin_y >= start_y){
         int delta_x, delta_y;
-        device_ctx.rr_graph.node_xy_deltas(start_node_ind, node_ind, &delta_x, &delta_y);
+        get_xy_deltas(start_node_ind, node_ind, &delta_x, &delta_y);
 
         routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
       }
@@ -588,5 +596,122 @@ static void print_cost_map() {
     }
   }
 
+}
+
+/* returns the absolute delta_x and delta_y offset required to reach to_node from from_node */
+static void get_xy_deltas(RRNodeId from_node_id, RRNodeId to_node_id, 
+                          int* delta_x, int* delta_y) {
+  auto& device_ctx = g_vpr_ctx.device();
+  /* Both from_node and to_node should be CHANX or CHANY */
+  VTR_ASSERT_MSG( (CHANX == device_ctx.rr_graph.node_type(from_node_id) 
+                || CHANY == device_ctx.rr_graph.node_type(from_node_id)), 
+                 "from_node should be either CHANX or CHANY");
+  VTR_ASSERT_MSG( (CHANX == device_ctx.rr_graph.node_type(to_node_id) 
+                || CHANY == device_ctx.rr_graph.node_type(to_node_id)), 
+                 "to_node should be either CHANX or CHANY");
+  /* get chan/seg coordinates of the from/to nodes. seg coordinate is along the wire,
+           chan coordinate is orthogonal to the wire */
+  short from_seg_low = device_ctx.rr_graph.node_xlow(from_node_id);
+  short from_seg_high = device_ctx.rr_graph.node_xhigh(from_node_id);
+  short from_chan = device_ctx.rr_graph.node_ylow(from_node_id);
+  short to_seg = device_ctx.rr_graph.node_xlow(to_node_id);
+  short to_chan = device_ctx.rr_graph.node_ylow(to_node_id);
+
+  if (CHANY == device_ctx.rr_graph.node_type(from_node_id)){
+    from_seg_low = device_ctx.rr_graph.node_ylow(from_node_id);
+    from_seg_high = device_ctx.rr_graph.node_yhigh(from_node_id);
+    from_chan = device_ctx.rr_graph.node_xlow(from_node_id);
+    to_seg = device_ctx.rr_graph.node_ylow(to_node_id);
+    to_chan = device_ctx.rr_graph.node_xlow(to_node_id);
+  }
+
+  /* now we want to count the minimum number of *channel segments* between the from and to nodes */
+  int delta_seg, delta_chan;
+
+  /* orthogonal to wire */
+  int no_need_to_pass_by_clb = 0;  //if we need orthogonal wires then we don't need to pass by the target CLB along the current wire direction
+  if (to_chan > from_chan + 1){
+    /* above */
+    delta_chan = to_chan - from_chan;
+    no_need_to_pass_by_clb = 1;
+  } else if (to_chan < from_chan){
+    /* below */
+    delta_chan = from_chan - to_chan + 1;
+    no_need_to_pass_by_clb = 1;
+  } else {
+    /* adjacent to current channel */
+    delta_chan = 0;
+    no_need_to_pass_by_clb = 0;
+  }
+
+  /* along same direction as wire. */
+  if (to_seg > from_seg_high){
+    /* ahead */
+    delta_seg = to_seg - from_seg_high - no_need_to_pass_by_clb;
+  } else if (to_seg < from_seg_low){
+    /* behind */
+    delta_seg = from_seg_low - to_seg - no_need_to_pass_by_clb;
+  } else {
+    /* along the span of the wire */
+    delta_seg = 0;
+  }
+
+  /* account for wire direction. lookahead map was computed by looking up and to the right starting at INC wires. for targets
+     that are opposite of the wire direction, let's add 1 to delta_seg */
+  if ( (to_seg < from_seg_low && INC_DIRECTION == device_ctx.rr_graph.node_direction(from_node_id) ) ||
+       (to_seg > from_seg_high && DEC_DIRECTION == device_ctx.rr_graph.node_direction(from_node_id) ) ){
+    delta_seg++;
+  }
+
+  *delta_x = delta_seg;
+  *delta_y = delta_chan;
+  if (CHANY == device_ctx.rr_graph.node_type(from_node_id)){
+    *delta_x = delta_chan;
+    *delta_y = delta_seg;
+  }
+
+  return;
+}
+
+/* returns Id of a node from which to start routing */
+static RRNodeId get_chan_start_node_id(short start_x, short start_y, 
+                                       short target_x, short target_y, 
+                                       t_rr_type rr_type, 
+                                       short seg_id, short track_offset) {
+  if (rr_type != CHANX && rr_type != CHANY){
+    vpr_throw(VPR_ERROR_ROUTE, 
+              __FILE__, __LINE__, 
+              "Must start lookahead routing from CHANX or CHANY node\n");
+  }
+
+  /* determine which direction the wire should go in based on the start & target coordinates */
+  e_direction direction = INC_DIRECTION;
+  if ((rr_type == CHANX && target_x < start_x) ||
+        (rr_type == CHANY && target_y < start_y)){
+    direction = DEC_DIRECTION;
+  }
+
+  auto& device_ctx = g_vpr_ctx.device();
+
+  VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
+
+  /* find first node in channel that has specified segment index and goes in the desired direction */
+  RRNodeId result = RRNodeId(UNDEFINED);
+  for (short itrack = 0; itrack < device_ctx.rr_graph.chan_num_tracks(start_x, start_y, rr_type); ++itrack) {
+    RRNodeId node_ind = device_ctx.rr_graph.find_chan_node(start_x, start_y, rr_type, itrack);
+
+    if (((device_ctx.rr_graph.node_direction(node_ind) == direction) 
+      || (device_ctx.rr_graph.node_direction(node_ind) == BI_DIRECTION) ) 
+      && (device_ctx.rr_graph.node_segment_id(node_ind) == seg_id) ){
+      /* found first track that has the specified segment index and goes in the desired direction */
+      result = node_ind;
+      if (track_offset == 0){
+        break;
+      }
+      track_offset -= 2;
+    }
+  }
+
+  return result;
 }
 

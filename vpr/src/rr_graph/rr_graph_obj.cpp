@@ -418,6 +418,30 @@ RRGraph::node_range RRGraph::find_nodes(short x, short y, t_rr_type type, int pt
   return vtr::make_range(matching_nodes.begin(), matching_nodes.end());
 }
 
+RRNodeId RRGraph::find_chan_node(short x, short y, t_rr_type type, int ptc) const {
+  /* Must be CHANX or CHANY */
+  VTR_ASSERT_MSG(CHANX == type || CHANY == type, 
+                 "Required node_type to be CHANX or CHANY!");
+  if (!valid_fast_node_lookup()) {
+    build_fast_node_lookup();
+  }
+
+  return node_lookup_[x][y][type][ptc][NUM_SIDES];
+}
+
+/* Find the channel width (number of tracks) of a channel [x][y] */
+short RRGraph::chan_num_tracks(short x, short y, t_rr_type type) const {
+  /* Must be CHANX or CHANY */
+  VTR_ASSERT_MSG(CHANX == type || CHANY == type, 
+                 "Required node_type to be CHANX or CHANY!");
+  if (!valid_fast_node_lookup()) {
+    build_fast_node_lookup();
+  }
+
+  return node_lookup_[x][y][type].size();
+}
+
+
 /* This function aims to print basic information about a node */
 void RRGraph::print_node(RRNodeId node) const {
 
@@ -1163,113 +1187,6 @@ void RRGraph::rebuild_node_refs(const vtr::vector<RREdgeId,RREdgeId>& edge_id_ma
     VTR_ASSERT_MSG(all_valid(node_in_edges_[node]), "All Ids should be valid");
     VTR_ASSERT_MSG(all_valid(node_out_edges_[node]), "All Ids should be valid");
   }
-}
-
-/* returns the absolute delta_x and delta_y offset required to reach to_node from from_node */
-void RRGraph::node_xy_deltas(RRNodeId from_node_id, RRNodeId to_node_id, 
-                             int* delta_x, int* delta_y) const {
-  /* Both from_node and to_node should be CHANX or CHANY */
-  VTR_ASSERT_MSG( (CHANX == node_type(from_node_id) || CHANY == node_type(from_node_id)), 
-                 "from_node should be either CHANX or CHANY");
-  VTR_ASSERT_MSG( (CHANX == node_type(to_node_id) || CHANY == node_type(to_node_id)), 
-                 "to_node should be either CHANX or CHANY");
-  /* get chan/seg coordinates of the from/to nodes. seg coordinate is along the wire,
-           chan coordinate is orthogonal to the wire */
-  short from_seg_low = node_xlow(from_node_id);
-  short from_seg_high = node_xhigh(from_node_id);
-  short from_chan = node_ylow(from_node_id);
-  short to_seg = node_xlow(to_node_id);
-  short to_chan = node_ylow(to_node_id);
-
-  if (CHANY == node_type(from_node_id)){
-    from_seg_low = node_ylow(from_node_id);
-    from_seg_high = node_yhigh(from_node_id);
-    from_chan = node_xlow(from_node_id);
-    to_seg = node_ylow(to_node_id);
-    to_chan = node_xlow(to_node_id);
-  }
-
-  /* now we want to count the minimum number of *channel segments* between the from and to nodes */
-  int delta_seg, delta_chan;
-
-  /* orthogonal to wire */
-  int no_need_to_pass_by_clb = 0;  //if we need orthogonal wires then we don't need to pass by the target CLB along the current wire direction
-  if (to_chan > from_chan + 1){
-    /* above */
-    delta_chan = to_chan - from_chan;
-    no_need_to_pass_by_clb = 1;
-  } else if (to_chan < from_chan){
-    /* below */
-    delta_chan = from_chan - to_chan + 1;
-    no_need_to_pass_by_clb = 1;
-  } else {
-    /* adjacent to current channel */
-    delta_chan = 0;
-    no_need_to_pass_by_clb = 0;
-  }
-
-  /* along same direction as wire. */
-  if (to_seg > from_seg_high){
-    /* ahead */
-    delta_seg = to_seg - from_seg_high - no_need_to_pass_by_clb;
-  } else if (to_seg < from_seg_low){
-    /* behind */
-    delta_seg = from_seg_low - to_seg - no_need_to_pass_by_clb;
-  } else {
-    /* along the span of the wire */
-    delta_seg = 0;
-  }
-
-  /* account for wire direction. lookahead map was computed by looking up and to the right starting at INC wires. for targets
-     that are opposite of the wire direction, let's add 1 to delta_seg */
-  if ( (to_seg < from_seg_low && INC_DIRECTION == node_direction(from_node_id) ) ||
-       (to_seg > from_seg_high && DEC_DIRECTION == node_direction(from_node_id) ) ){
-    delta_seg++;
-  }
-
-  *delta_x = delta_seg;
-  *delta_y = delta_chan;
-  if (CHANY == node_type(from_node_id)){
-    *delta_x = delta_chan;
-    *delta_y = delta_seg;
-  }
-
-  return;
-}
-
-/* returns Id of a node from which to start routing */
-RRNodeId RRGraph::get_chan_start_node_id(short start_x, short start_y, 
-                                         short target_x, short target_y, 
-                                         t_rr_type chan_type, 
-                                         short seg_id, short track_offset) const {
-
-  VTR_ASSERT_MSG((CHANX == chan_type || CHANY == chan_type), 
-                 "Node type must be CHANX or CHANY\n");
-
-  /* determine which direction the wire should go in based on the start & target coordinates */
-  e_direction chan_direction = INC_DIRECTION;
-  if (  (chan_type == CHANX && target_x < start_x) 
-      ||(chan_type == CHANY && target_y < start_y)){
-    chan_direction = DEC_DIRECTION;
-  }
-
-  VTR_ASSERT(CHANX == chan_type || CHANY == chan_type);
-
-  /* find first node in channel that has specified segment index and goes in the desired direction */
-  short tmp = track_offset;
-  RRNodeId result = RRNodeId(UNDEFINED);
-  while (tmp <= track_offset) {
-    RRNodeId track_node = find_node(start_x, start_y, chan_type, tmp, TOP);
-    if ( (node_direction(track_node) == chan_direction || BI_DIRECTION == node_direction(track_node) ) 
-      && (node_segment_id(track_node) == seg_id) ) {
-      /* found first track that has the specified segment index and goes in the desired direction */
-      result = track_node;
-      break;
-    }
-    tmp += 2;
-  }
-
-  return result;
 }
 
 /* Empty all the vectors related to nodes */
