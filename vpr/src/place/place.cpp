@@ -1263,10 +1263,6 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
     auto& pl_macros = place_ctx.pl_macros;
     auto& num_pl_macros = place_ctx.num_pl_macros;
 
-    if (size_t(b_from) == 4 && x_to == 13 && y_to == 4 && z_to == 0) {
-        VTR_LOG("FOUND\n");
-    }
-
 	get_imacro_from_iblk(&imacro_from, b_from, pl_macros, num_pl_macros);
 	if ( imacro_from != -1) {
 		// b_from is part of a macro, I need to swap the whole macro
@@ -1312,7 +1308,6 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
                     //To block is a macro
 
                     if (imacro_from == imacro_to) {
-                        VTR_LOG("Aborting macro self-swap\n");
                         abort_swap = true;
                     } else {
                         abort_swap = record_macro_block_swaps(imacro_from, imember_from, imacro_to, b_to,
@@ -1419,7 +1414,9 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
         record_single_block_swap(b_from, curr_x_to, curr_y_to, curr_z_to);
     }
 
+#if 0
     //We may have finished the 'from' macro but still have part of the 'to' macro left, continue walking it
+    //FIXME: Doesn't handle if the from is part of a macro
     for (; imember_to < place_ctx.pl_macros[imacro_to].num_blocks; ++imember_to) {
         ClusterBlockId b_to = place_ctx.pl_macros[imacro_to].members[imember_to].blk_index;
 
@@ -1437,6 +1434,12 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
         //Note that here we use an inverted swap to allow the from location to be empty
         record_single_block_swap(b_to, curr_x_from, curr_y_from, curr_z_from);
     }
+#else
+    if (imember_to < place_ctx.pl_macros[imacro_to].num_blocks) {
+        //The to macro extends beyond the from macro (not yet supported)
+        return true; //Abort
+    }
+#endif
 
     return false; //Success
 }
@@ -1614,9 +1617,8 @@ static e_swap_result try_swap(float t,
 		/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
 		blocks_affected.num_moved_blocks = 0;
 
-#if 1
+#if 0
         //Check that each accepted swap yields a valid placement
-        VTR_LOG("Swap %zu to (%d,%d,%d)\n", size_t(b_from), x_to, y_to, z_to);
         check_place(*costs, delay_model, place_algorithm);
 #endif
 
