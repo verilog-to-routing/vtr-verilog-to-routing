@@ -968,7 +968,8 @@ static void drawplace() {
 				/* Draw text if the space has parts of the netlist */
 				if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
-					drawtext_in(abs_clb_bbox, cluster_ctx.clb_nlist.block_name(bnum));
+                    std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
+					drawtext_in(abs_clb_bbox, name.c_str());
 				}
 
 				/* Draw text for block type so that user knows what block */
