@@ -242,6 +242,8 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
                                         const int imacro_to,
                                         ClusterBlockId blk_to, int x_to, int y_to, int z_to);
 
+bool is_legal_swap_to_location(ClusterBlockId blk, int x_to, int y_to, int z_to);
+
 static e_swap_result try_swap(float t,
         t_placer_costs* costs,
         t_placer_prev_inverse_costs* prev_inverse_costs,
@@ -1305,8 +1307,6 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 	int abort_swap = false;
 
     auto& place_ctx = g_vpr_ctx.placement();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	x_from = place_ctx.block_locs[b_from].x;
 	y_from = place_ctx.block_locs[b_from].y;
@@ -1345,10 +1345,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
             //
             //Note that we need to explicitly check that the types match, since the device floorplan is not
             //(neccessarily) translationally invariant for an arbitrary macro
-			if (   curr_x_to < 0 || curr_x_to >= int(device_ctx.grid.width())
-                || curr_y_to < 0 || curr_y_to >= int(device_ctx.grid.height())
-                || (curr_z_to < 0)
-                || (device_ctx.grid[curr_x_to][curr_y_to].type != cluster_ctx.clb_nlist.block_type(curr_b_from))) {
+            if (!is_legal_swap_to_location(curr_b_from, curr_x_to, curr_y_to, curr_z_to)) {
 				abort_swap = true;
 			} else {
 
@@ -1408,8 +1405,6 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
     //macro fro the to block is 'imacro_to'.
 
     auto& place_ctx = g_vpr_ctx.placement();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //At the moment, we only support blk_to being the first element of the 'to' macro.
     //
@@ -1456,10 +1451,7 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
         VTR_ASSERT_SAFE(curr_y_to == place_ctx.block_locs[b_to].y);
         VTR_ASSERT_SAFE(curr_z_to == place_ctx.block_locs[b_to].z);
 
-        if (   curr_x_to < 0 || curr_x_to >= int(device_ctx.grid.width())
-            || curr_y_to < 0 || curr_y_to >= int(device_ctx.grid.height())
-            || (curr_z_to < 0)
-            || (device_ctx.grid[curr_x_to][curr_y_to].type != cluster_ctx.clb_nlist.block_type(b_from))) {
+        if (!is_legal_swap_to_location(b_from, curr_x_to, curr_y_to, curr_z_to)) {
             return true; //Abort
         }
 
@@ -1476,10 +1468,7 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
         int curr_y_from = place_ctx.block_locs[b_to].y - y_swap_offset;
         int curr_z_from = place_ctx.block_locs[b_to].z - z_swap_offset;
 
-        if (   curr_x_from < 0 || curr_x_from >= int(device_ctx.grid.width())
-            || curr_y_from < 0 || curr_y_from >= int(device_ctx.grid.height())
-            || (curr_z_from < 0)
-            || (device_ctx.grid[curr_x_from][curr_y_from].type != cluster_ctx.clb_nlist.block_type(b_to))) {
+        if (!is_legal_swap_to_location(b_to, curr_x_from, curr_y_from, curr_z_from)) {
             return true; //Abort
         }
 
@@ -1494,6 +1483,27 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
 #endif
 
     return false; //Success
+}
+
+bool is_legal_swap_to_location(ClusterBlockId blk, int x_to, int y_to, int z_to) {
+    //Make sure that the swap_to location is valid
+    //It must be:
+    // * on chip, and
+    // * match the correct block type
+    //
+    //Note that we need to explicitly check that the types match, since the device floorplan is not
+    //(neccessarily) translationally invariant for an arbitrary macro
+
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    if (   x_to < 0 || x_to >= int(device_ctx.grid.width())
+        || y_to < 0 || y_to >= int(device_ctx.grid.height())
+        || z_to < 0 || z_to >= device_ctx.grid[x_to][y_to].type->capacity
+        || (device_ctx.grid[x_to][y_to].type != cluster_ctx.clb_nlist.block_type(blk))) {
+        return false;
+    }
+    return true;
 }
 
 static e_swap_result try_swap(float t,
