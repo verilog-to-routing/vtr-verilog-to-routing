@@ -15,26 +15,32 @@
 
 #include "rr_graph_fwd.h"
 
+/* TODO: the cost params may be moved to the namespace later */
 struct t_conn_cost_params; //Forward declaration
+
+
+/* Categorize all the functions in the specific name space of this router */
+namespace timing_driven_router {
+
 
 /* To modularize the timing-driven router:
  * The class is named after TimingDriven
  * The upstream functions in timing-driven router should be adapted to use this 
  */
 
-class TimingDrivenRouterLookahead {
+class RouterLookahead {
   public:
     virtual float get_expected_cost(RRNodeId node, RRNodeId target_node, 
                                     const t_conn_cost_params& params, float R_upstream) const = 0;
 
-    virtual ~TimingDrivenRouterLookahead() {}
+    virtual ~RouterLookahead() {}
 };
 
 
-std::unique_ptr<TimingDrivenRouterLookahead> make_timing_driven_router_lookahead(e_router_lookahead router_lookahead_type);
+std::unique_ptr<RouterLookahead> make_timing_driven_router_lookahead(e_router_lookahead router_lookahead_type);
 
 
-class TimingDrivenClassicLookahead : public TimingDrivenRouterLookahead {
+class ClassicLookahead : public RouterLookahead {
   public:
     float get_expected_cost(RRNodeId node_id, RRNodeId target_node_id, 
                             const t_conn_cost_params& params, float R_upstream) const override;
@@ -43,16 +49,18 @@ class TimingDrivenClassicLookahead : public TimingDrivenRouterLookahead {
                                       float criticality, float R_upstream) const;
 };
 
-class TimingDrivenMapLookahead : public TimingDrivenRouterLookahead {
+class MapLookahead : public RouterLookahead {
   protected:
     float get_expected_cost(RRNodeId node_id, RRNodeId target_node_id, 
                             const t_conn_cost_params& params, float R_upstream) const override;
 };
 
-class TimingDrivenNoOpLookahead : public TimingDrivenRouterLookahead {
+class NoOpLookahead : public RouterLookahead {
   protected:
     float get_expected_cost(RRNodeId node_id, RRNodeId target_node_id, 
                             const t_conn_cost_params& params, float R_upstream) const override;
 };
+
+}// end namespace timing_driven_router
 
 #endif

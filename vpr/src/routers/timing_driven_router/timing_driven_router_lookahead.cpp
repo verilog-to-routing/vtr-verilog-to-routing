@@ -12,16 +12,19 @@
 /* Finally we include global variables */
 #include "globals.h"
 
+/* Categorize all the functions in the specific name space of this router */
+namespace timing_driven_router {
+
 static int get_expected_segs_to_target(RRNodeId inode_id, RRNodeId target_node_id, int *num_segs_ortho_dir_ptr);
 static int round_up(float x);
 
-std::unique_ptr<TimingDrivenRouterLookahead> make_timing_driven_router_lookahead(e_router_lookahead router_lookahead_type) {
+std::unique_ptr<RouterLookahead> make_timing_driven_router_lookahead(e_router_lookahead router_lookahead_type) {
     if (router_lookahead_type == e_router_lookahead::CLASSIC) {
-        return std::make_unique<TimingDrivenClassicLookahead>();
+        return std::make_unique<ClassicLookahead>();
     } else if (router_lookahead_type == e_router_lookahead::MAP) {
-        return std::make_unique<TimingDrivenMapLookahead>();
+        return std::make_unique<MapLookahead>();
     } else if (router_lookahead_type == e_router_lookahead::NO_OP) {
-        return std::make_unique<TimingDrivenNoOpLookahead>();
+        return std::make_unique<NoOpLookahead>();
     }
 
     VPR_THROW(VPR_ERROR_ROUTE, "Unrecognized router lookahead type");
@@ -29,8 +32,8 @@ std::unique_ptr<TimingDrivenRouterLookahead> make_timing_driven_router_lookahead
 }
 
 
-float TimingDrivenClassicLookahead::get_expected_cost(RRNodeId current_node_id, RRNodeId target_node_id, 
-                                                      const t_conn_cost_params& params, float R_upstream) const {
+float ClassicLookahead::get_expected_cost(RRNodeId current_node_id, RRNodeId target_node_id, 
+                                          const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
 
     t_rr_type rr_type = device_ctx.rr_graph.node_type(current_node_id);
@@ -44,8 +47,8 @@ float TimingDrivenClassicLookahead::get_expected_cost(RRNodeId current_node_id, 
     }
 }
 
-float TimingDrivenClassicLookahead::classic_wire_lookahead_cost(RRNodeId inode_id, RRNodeId target_node_id,
-                                                                float criticality, float R_upstream) const {
+float ClassicLookahead::classic_wire_lookahead_cost(RRNodeId inode_id, RRNodeId target_node_id,
+                                                    float criticality, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
 
     VTR_ASSERT_SAFE(CHANX == device_ctx.rr_graph.node_type(inode_id) 
@@ -79,7 +82,8 @@ float TimingDrivenClassicLookahead::classic_wire_lookahead_cost(RRNodeId inode_i
     return (expected_cost);
 }
 
-float TimingDrivenMapLookahead::get_expected_cost(RRNodeId current_node_id, RRNodeId target_node_id, const t_conn_cost_params& params, float /*R_upstream*/) const {
+float MapLookahead::get_expected_cost(RRNodeId current_node_id, RRNodeId target_node_id, 
+                                      const t_conn_cost_params& params, float /*R_upstream*/) const {
     auto& device_ctx = g_vpr_ctx.device();
 
     t_rr_type rr_type = device_ctx.rr_graph.node_type(current_node_id);
@@ -93,8 +97,8 @@ float TimingDrivenMapLookahead::get_expected_cost(RRNodeId current_node_id, RRNo
     }
 }
 
-float TimingDrivenNoOpLookahead::get_expected_cost(RRNodeId /*current_node*/, RRNodeId /*target_node*/, 
-                                                   const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
+float NoOpLookahead::get_expected_cost(RRNodeId /*current_node*/, RRNodeId /*target_node*/, 
+                                       const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
     return 0.;
 }
 
@@ -193,3 +197,4 @@ static int get_expected_segs_to_target(RRNodeId inode_id, RRNodeId target_node_i
     return (num_segs_same_dir);
 }
 
+}// end namespace timing_driven_router
