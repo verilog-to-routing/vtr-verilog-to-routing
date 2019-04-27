@@ -3327,8 +3327,9 @@ static int check_block_placement_consistency() {
 				}
 				if ((place_ctx.block_locs[bnum].x != int(i)) || (place_ctx.block_locs[bnum].y != int(j))) {
 					VTR_LOG_ERROR(
-							"Block %zu location conflicts with grid(%zu,%zu) data.\n",
-							size_t(bnum), i, j);
+							"Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d).\n",
+							size_t(bnum), place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y, place_ctx.block_locs[bnum].z,
+                            i, j, k);
 					error++;
 				}
 				++usage_check;
