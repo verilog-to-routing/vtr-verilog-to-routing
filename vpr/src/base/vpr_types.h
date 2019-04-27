@@ -434,8 +434,6 @@ struct t_pl_moved_block {
 	int ynew;
 	int zold;
 	int znew;
-	int swapped_to_was_empty;
-	int swapped_from_is_empty;
 };
 
 /* Stores the list of blocks to be moved in a swap during       *

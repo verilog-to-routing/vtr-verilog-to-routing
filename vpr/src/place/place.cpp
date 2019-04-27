@@ -1116,45 +1116,6 @@ static float starting_t(t_placer_costs* costs,
 	return (20. * std_dev);
 }
 
-#if 0
-static void apply_block_swap() {
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
-        ClusterBlockId from_blk = blocks_affected.moved_blocks[iblk].block_num;
-
-        int xnew = blocks_affected.moved_blocks[iblk].xnew;
-        int ynew = blocks_affected.moved_blocks[iblk].ynew;
-        int znew = blocks_affected.moved_blocks[iblk].znew;
-
-        int xold = blocks_affected.moved_blocks[iblk].xold;
-        int yold = blocks_affected.moved_blocks[iblk].yold;
-        int zold = blocks_affected.moved_blocks[iblk].zold;
-
-        ClusterBlockId to_blk = place_ctx.grid_blocks[xold][yold].blokcs[zold];
-
-
-		place_ctx.block_locs[from_blk].x = xnew;
-		place_ctx.block_locs[from_blk].y = ynew;
-		place_ctx.block_locs[from_blk].z = znew;
-
-        place_ctx.grid_blocks[xnew][ynew].blocks[znew] = from_blk;
-
-        if (to_blk) {
-            VTR_ASSERT_SAFE(!blocks_affected.moved_blocks[iblk].swapped_to_was_empty);
-
-            place_ctx.block_locs[to_blk].x = xold;
-            place_ctx.block_locs[to_blk].y = yold;
-            place_ctx.block_locs[to_blk].z = zold;
-        }
-
-        place_ctx.grid_blocks[xold][yold].blocks[zold] = to_blk;
-    }
-}
-
-static void revert_block_swap() {
-
-}
-#endif
-
 //Moves the blocks in blocks_affected to their new locations
 static void apply_block_swap() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -1189,15 +1150,18 @@ static void commit_block_swap() {
         int y_from = blocks_affected.moved_blocks[iblk].yold;
         int z_from = blocks_affected.moved_blocks[iblk].zold;
 
-        place_ctx.grid_blocks[x_to][y_to].blocks[z_to] = blk;
-
-        if (blocks_affected.moved_blocks[iblk].swapped_to_was_empty) {
-            place_ctx.grid_blocks[x_to][y_to].usage++;
-        }
-        if (blocks_affected.moved_blocks[iblk].swapped_from_is_empty) {
-            place_ctx.grid_blocks[x_from][y_from].usage--;
+        //Remove from old location only if it hasn't already been updated by a previous block update
+        if (place_ctx.grid_blocks[x_from][y_from].blocks[z_from] == blk) {;
             place_ctx.grid_blocks[x_from][y_from].blocks[z_from] = EMPTY_BLOCK_ID;
+            --place_ctx.grid_blocks[x_from][y_from].usage;
         }
+
+        //Add to new location
+        if (place_ctx.grid_blocks[x_to][y_to].blocks[z_to] == EMPTY_BLOCK_ID) {;
+            //Only need to increase usage if previously unused
+            ++place_ctx.grid_blocks[x_to][y_to].usage;
+        }
+        place_ctx.grid_blocks[x_to][y_to].blocks[z_to] = blk;
 
     } // Finish updating clb for all blocks
 }
@@ -1257,8 +1221,6 @@ static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, i
 		blocks_affected.moved_blocks[imoved_blk].ynew = y_to;
 		blocks_affected.moved_blocks[imoved_blk].zold = z_from;
 		blocks_affected.moved_blocks[imoved_blk].znew = z_to;
-		blocks_affected.moved_blocks[imoved_blk].swapped_to_was_empty = true;
-		blocks_affected.moved_blocks[imoved_blk].swapped_from_is_empty = true;
 		blocks_affected.num_moved_blocks ++;
 
 	} else if (b_to != INVALID_BLOCK_ID) {
@@ -1272,8 +1234,6 @@ static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, i
 		blocks_affected.moved_blocks[imoved_blk].ynew = y_to;
 		blocks_affected.moved_blocks[imoved_blk].zold = z_from;
 		blocks_affected.moved_blocks[imoved_blk].znew = z_to;
-		blocks_affected.moved_blocks[imoved_blk].swapped_to_was_empty = false;
-		blocks_affected.moved_blocks[imoved_blk].swapped_from_is_empty = false;
 		blocks_affected.num_moved_blocks ++;
 
 		imoved_blk = blocks_affected.num_moved_blocks;
@@ -1284,8 +1244,6 @@ static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, i
 		blocks_affected.moved_blocks[imoved_blk].ynew = y_from;
 		blocks_affected.moved_blocks[imoved_blk].zold = z_to;
 		blocks_affected.moved_blocks[imoved_blk].znew = z_from;
-		blocks_affected.moved_blocks[imoved_blk].swapped_to_was_empty = false;
-		blocks_affected.moved_blocks[imoved_blk].swapped_from_is_empty = false;
 		blocks_affected.num_moved_blocks ++;
 
 	} // Finish swapping the blocks and setting up blocks_affected
