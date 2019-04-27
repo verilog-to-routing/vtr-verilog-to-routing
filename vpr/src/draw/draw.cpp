@@ -61,6 +61,9 @@ using namespace std;
 #include "rr_graph.h"
 #include "route_util.h"
 
+/* TODO: router_utils.h will fully replace route_util.h */
+#include "router_utils.h"
+
 /****************************** Define Macros *******************************/
 
 #define DEFAULT_RR_NODE_COLOR BLACK
@@ -3517,18 +3520,18 @@ static void draw_routing_util() {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_usage = calculate_routing_usage(CHANX);
-    auto chany_usage = calculate_routing_usage(CHANY);
+    auto chanx_usage = router::calculate_routing_usage(CHANX);
+    auto chany_usage = router::calculate_routing_usage(CHANY);
 
-    auto chanx_avail = calculate_routing_avail(CHANX);
-    auto chany_avail = calculate_routing_avail(CHANY);
+    auto chanx_avail = router::calculate_routing_avail(CHANX);
+    auto chany_avail = router::calculate_routing_avail(CHANY);
 
     float min_util = 0.;
     float max_util = -std::numeric_limits<float>::infinity();
     for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
         for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
-            max_util = std::max(max_util, routing_util(chanx_usage[x][y], chanx_avail[x][y]));
-            max_util = std::max(max_util, routing_util(chany_usage[x][y], chany_avail[x][y]));
+            max_util = std::max(max_util, router::routing_util(chanx_usage[x][y], chanx_avail[x][y]));
+            max_util = std::max(max_util, router::routing_util(chany_usage[x][y], chany_avail[x][y]));
         }
     }
     max_util = std::max(max_util, 1.f);
@@ -3552,7 +3555,7 @@ static void draw_routing_util() {
             float chany_util = 0;
             int chan_count = 0;
             if (x > 0) {
-                chanx_util = routing_util(chanx_usage[x][y], chanx_avail[x][y]);
+                chanx_util = router::routing_util(chanx_usage[x][y], chanx_avail[x][y]);
                 t_color chanx_color = to_t_color(cmap->color(chanx_util));
                 chanx_color.alpha *= ALPHA;
                 setcolor(chanx_color);
@@ -3572,7 +3575,7 @@ static void draw_routing_util() {
             }
 
             if (y > 0) {
-                chany_util = routing_util(chany_usage[x][y], chany_avail[x][y]);
+                chany_util = router::routing_util(chany_usage[x][y], chany_avail[x][y]);
                 t_color chany_color = to_t_color(cmap->color(chany_util));
                 chany_color.alpha *= ALPHA;
                 setcolor(chany_color);
@@ -3593,9 +3596,9 @@ static void draw_routing_util() {
 
             //For now SB util is just average of surrounding channels
             //TODO: calculate actual usage
-            sb_util += routing_util(chanx_usage[x+1][y], chanx_avail[x+1][y]);
+            sb_util += router::routing_util(chanx_usage[x+1][y], chanx_avail[x+1][y]);
             chan_count += 1;
-            sb_util += routing_util(chany_usage[x][y+1], chany_avail[x][y+1]);
+            sb_util += router::routing_util(chany_usage[x][y+1], chany_avail[x][y+1]);
             chan_count += 1;
 
             VTR_ASSERT(chan_count > 0);

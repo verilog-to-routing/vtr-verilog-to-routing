@@ -29,14 +29,14 @@ See Section 3.2.4 in Oleg Petelin's MASc thesis (2016) for more discussion.
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
-#include "timing_driven_router_lookahead_map.h"
+#include "router_lookahead_map.h"
 #include "rr_graph_fwd.h"
 
 /* Finally we include global variables */
 #include "globals.h"
 
 /* Categorize all the functions in the specific name space of this router */
-namespace timing_driven_router {
+namespace router {
 
 /* the cost map is computed by running a Dijkstra search from channel segment rr nodes at the specified reference coordinate */
 #define REF_X 3

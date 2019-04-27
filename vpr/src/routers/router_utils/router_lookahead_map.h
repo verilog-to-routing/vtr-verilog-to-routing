@@ -2,8 +2,8 @@
  * The following preprocessing flags are added to 
  * avoid compilation error when this headers are included in more than 1 times 
  */
-#ifndef TIMING_DRIVEN_ROUTER_LOOKAHEAD_MAP_H
-#define TIMING_DRIVEN_ROUTER_LOOKAHEAD_MAP_H
+#ifndef ROUTER_LOOKAHEAD_MAP_H
+#define ROUTER_LOOKAHEAD_MAP_H
 
 /*
  * Notes in include header files in a head file 
@@ -14,7 +14,7 @@
 /* Standard header files required go first */
 #include "rr_graph_fwd.h"
 
-namespace timing_driven_router {
+namespace router {
 
 /* Computes the lookahead map to be used by the router. If a map was computed prior to this, a new one will not be computed again.
    The rr graph must have been built before calling this function. */

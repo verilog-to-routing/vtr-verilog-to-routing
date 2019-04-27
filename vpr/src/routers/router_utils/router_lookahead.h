@@ -2,8 +2,8 @@
  * The following preprocessing flags are added to 
  * avoid compilation error when this headers are included in more than 1 times 
  */
-#ifndef TIMING_DRIVEN_ROUTER_LOOKAHEAD_H
-#define TIMING_DRIVEN_ROUTER_LOOKAHEAD_H
+#ifndef ROUTER_LOOKAHEAD_H
+#define ROUTER_LOOKAHEAD_H
 
 /*
  * Notes in include header files in a head file 
@@ -20,7 +20,7 @@ struct t_conn_cost_params; //Forward declaration
 
 
 /* Categorize all the functions in the specific name space of this router */
-namespace timing_driven_router {
+namespace router {
 
 
 /* To modularize the timing-driven router:
@@ -37,7 +37,7 @@ class RouterLookahead {
 };
 
 
-std::unique_ptr<RouterLookahead> make_timing_driven_router_lookahead(e_router_lookahead router_lookahead_type);
+std::unique_ptr<RouterLookahead> make_router_lookahead(e_router_lookahead router_lookahead_type);
 
 
 class ClassicLookahead : public RouterLookahead {

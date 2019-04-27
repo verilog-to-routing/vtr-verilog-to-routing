@@ -342,12 +342,13 @@ void create_rr_graph(
                 base_cost_type);
         }
     }
-
-    if (router_lookahead_type == e_router_lookahead::MAP) {
-        compute_router_lookahead(segment_inf.size());
-    }
-
+    /* Convert to rr_graph Object */
     convert_rr_graph();
+
+    /* Build the lookahead for rr_graph object */
+    if (router_lookahead_type == e_router_lookahead::MAP) {
+        router::compute_router_lookahead(segment_inf.size());
+    }
 
     //Write out rr graph file if needed
     if (!det_routing_arch->write_rr_graph_filename.empty()) {

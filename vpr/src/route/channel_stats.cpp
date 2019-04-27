@@ -3,6 +3,9 @@
 #include "histogram.h"
 #include "globals.h"
 
+/* TODO: router_utils.h will fully replace route_util.h */
+#include "router_utils.h"
+
 void print_channel_stats() {
     std::vector<HistogramBucket> histogram;
 
@@ -21,11 +24,11 @@ void print_channel_stats() {
     histogram.emplace_back(1.0, std::numeric_limits<float>::infinity());
 
 
-    auto chanx_usage = calculate_routing_usage(CHANX);
-    auto chany_usage = calculate_routing_usage(CHANY);
+    auto chanx_usage = router::calculate_routing_usage(CHANX);
+    auto chany_usage = router::calculate_routing_usage(CHANY);
 
-    auto chanx_avail = calculate_routing_avail(CHANX);
-    auto chany_avail = calculate_routing_avail(CHANY);
+    auto chanx_avail = router::calculate_routing_avail(CHANX);
+    auto chany_avail = router::calculate_routing_avail(CHANY);
 
     auto comp = [](const HistogramBucket& bucket, float value) {
         return bucket.max_value < value;
@@ -36,8 +39,8 @@ void print_channel_stats() {
     size_t peak_y = 0.;
     for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
         for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
-            float chanx_util = routing_util(chanx_usage[x][y], chanx_avail[x][y]);
-            float chany_util = routing_util(chanx_usage[x][y], chanx_avail[x][y]);
+            float chanx_util = router::routing_util(chanx_usage[x][y], chanx_avail[x][y]);
+            float chany_util = router::routing_util(chanx_usage[x][y], chanx_avail[x][y]);
 
             for (float util : {chanx_util, chany_util}) {
                 //Record peak utilization

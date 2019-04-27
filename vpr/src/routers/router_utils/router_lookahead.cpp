@@ -1,11 +1,21 @@
-#include "router_lookahead.h"
+/* Standard header files required go first */
 
+/* EXTERNAL library header files go second*/
+
+/* VPR header files go second*/
 #include "router_lookahead_map.h"
 #include "vpr_error.h"
-#include "globals.h"
 #include "route_timing.h"
+#include "router_lookahead.h"
+#include "rr_graph_fwd.h"
 
-static int get_expected_segs_to_target(int inode, int target_node, int *num_segs_ortho_dir_ptr);
+/* Finally we include global variables */
+#include "globals.h"
+
+/* Categorize all the functions in the specific name space of this router */
+namespace router {
+
+static int get_expected_segs_to_target(RRNodeId inode_id, RRNodeId target_node_id, int *num_segs_ortho_dir_ptr);
 static int round_up(float x);
 
 std::unique_ptr<RouterLookahead> make_router_lookahead(e_router_lookahead router_lookahead_type) {
@@ -22,13 +32,14 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(e_router_lookahead router
 }
 
 
-float ClassicLookahead::get_expected_cost(int current_node, int target_node, const t_conn_cost_params& params, float R_upstream) const {
+float ClassicLookahead::get_expected_cost(RRNodeId current_node_id, RRNodeId target_node_id, 
+                                          const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_rr_type rr_type = device_ctx.rr_nodes[current_node].type();
+    t_rr_type rr_type = device_ctx.rr_graph.node_type(current_node_id);
 
     if (rr_type == CHANX || rr_type == CHANY) {
-        return classic_wire_lookahead_cost(current_node, target_node, params.criticality, R_upstream);
+        return classic_wire_lookahead_cost(current_node_id, target_node_id, params.criticality, R_upstream);
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
         return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
@@ -36,15 +47,17 @@ float ClassicLookahead::get_expected_cost(int current_node, int target_node, con
     }
 }
 
-float ClassicLookahead::classic_wire_lookahead_cost(int inode, int target_node, float criticality, float R_upstream) const {
+float ClassicLookahead::classic_wire_lookahead_cost(RRNodeId inode_id, RRNodeId target_node_id,
+                                                    float criticality, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
 
-    VTR_ASSERT_SAFE(device_ctx.rr_nodes[inode].type() == CHANX || device_ctx.rr_nodes[inode].type() == CHANY);
+    VTR_ASSERT_SAFE(CHANX == device_ctx.rr_graph.node_type(inode_id) 
+                 || CHANY == device_ctx.rr_graph.node_type(inode_id));
 
     int num_segs_ortho_dir = 0;
-    int num_segs_same_dir = get_expected_segs_to_target(inode, target_node, &num_segs_ortho_dir);
+    int num_segs_same_dir = get_expected_segs_to_target(inode_id, target_node_id, &num_segs_ortho_dir);
 
-    int cost_index = device_ctx.rr_nodes[inode].cost_index();
+    int cost_index = device_ctx.rr_graph.node_cost_index(inode_id);
     int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
 
     const auto& same_data = device_ctx.rr_indexed_data[cost_index];
@@ -69,13 +82,14 @@ float ClassicLookahead::classic_wire_lookahead_cost(int inode, int target_node, 
     return (expected_cost);
 }
 
-float MapLookahead::get_expected_cost(int current_node, int target_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
+float MapLookahead::get_expected_cost(RRNodeId current_node_id, RRNodeId target_node_id, 
+                                      const t_conn_cost_params& params, float /*R_upstream*/) const {
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_rr_type rr_type = device_ctx.rr_nodes[current_node].type();
+    t_rr_type rr_type = device_ctx.rr_graph.node_type(current_node_id);
 
     if (rr_type == CHANX || rr_type == CHANY) {
-        return get_lookahead_map_cost(current_node, target_node, params.criticality);
+        return get_lookahead_map_cost(current_node_id, target_node_id, params.criticality);
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
         return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
@@ -83,7 +97,8 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
     }
 }
 
-float NoOpLookahead::get_expected_cost(int /*current_node*/, int /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
+float NoOpLookahead::get_expected_cost(RRNodeId /*current_node*/, RRNodeId /*target_node*/, 
+                                       const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
     return 0.;
 }
 
@@ -94,8 +109,8 @@ static int round_up(float x) {
     return std::ceil(x - 0.001);
 }
 
-static int get_expected_segs_to_target(int inode, int target_node,
-        int *num_segs_ortho_dir_ptr) {
+static int get_expected_segs_to_target(RRNodeId inode_id, RRNodeId target_node_id,
+                                       int *num_segs_ortho_dir_ptr) {
 
     /* Returns the number of segments the same type as inode that will be needed *
      * to reach target_node (not including inode) in each direction (the same    *
@@ -108,19 +123,18 @@ static int get_expected_segs_to_target(int inode, int target_node,
     int no_need_to_pass_by_clb;
     float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
 
-
-    target_x = device_ctx.rr_nodes[target_node].xlow();
-    target_y = device_ctx.rr_nodes[target_node].ylow();
-    cost_index = device_ctx.rr_nodes[inode].cost_index();
+    target_x = device_ctx.rr_graph.node_xlow(target_node_id);
+    target_y = device_ctx.rr_graph.node_ylow(target_node_id);
+    cost_index = device_ctx.rr_graph.node_cost_index(inode_id);
     inv_length = device_ctx.rr_indexed_data[cost_index].inv_length;
     ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
     ortho_inv_length = device_ctx.rr_indexed_data[ortho_cost_index].inv_length;
-    rr_type = device_ctx.rr_nodes[inode].type();
+    rr_type = device_ctx.rr_graph.node_type(inode_id);
 
     if (rr_type == CHANX) {
-        ylow = device_ctx.rr_nodes[inode].ylow();
-        xhigh = device_ctx.rr_nodes[inode].xhigh();
-        xlow = device_ctx.rr_nodes[inode].xlow();
+        ylow = device_ctx.rr_graph.node_ylow(inode_id);
+        xhigh = device_ctx.rr_graph.node_xhigh(inode_id);
+        xlow = device_ctx.rr_graph.node_xlow(inode_id);
 
         /* Count vertical (orthogonal to inode) segs first. */
 
@@ -148,9 +162,9 @@ static int get_expected_segs_to_target(int inode, int target_node,
             num_segs_same_dir = 0;
         }
     } else { /* inode is a CHANY */
-        ylow = device_ctx.rr_nodes[inode].ylow();
-        yhigh = device_ctx.rr_nodes[inode].yhigh();
-        xlow = device_ctx.rr_nodes[inode].xlow();
+        ylow = device_ctx.rr_graph.node_ylow(inode_id);
+        yhigh = device_ctx.rr_graph.node_yhigh(inode_id);
+        xlow = device_ctx.rr_graph.node_xlow(inode_id);
 
         /* Count horizontal (orthogonal to inode) segs first. */
 
@@ -183,3 +197,4 @@ static int get_expected_segs_to_target(int inode, int target_node,
     return (num_segs_same_dir);
 }
 
+}// end namespace timing_driven_router
