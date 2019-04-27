@@ -4,7 +4,7 @@
 /* EXTERNAL library header files go second*/
 #include "vtr_assert.h"
 
-/* VPR header files go second*/
+/* VPR header files go then */
 #include "vpr_types.h"
 #include "rr_graph_obj.h"
 #include "create_rr_graph.h"
