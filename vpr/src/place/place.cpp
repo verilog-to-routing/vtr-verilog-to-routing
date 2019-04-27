@@ -252,6 +252,13 @@ static void check_place(const t_placer_costs& costs,
         const PlaceDelayModel& delay_model,
         enum e_place_algorithm place_algorithm);
 
+static int check_placement_costs(const t_placer_costs& costs,
+                          const PlaceDelayModel& delay_model,
+                          enum e_place_algorithm place_algorithm);
+static int check_placement_consistency();
+static int check_block_placement_consistency();
+static int check_macro_placement_consistency();
+
 static float starting_t(t_placer_costs* costs,
         t_placer_prev_inverse_costs* prev_inverse_costs,
 		t_annealing_sched annealing_sched, int max_moves, float rlim,
@@ -1256,7 +1263,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
     auto& pl_macros = place_ctx.pl_macros;
     auto& num_pl_macros = place_ctx.num_pl_macros;
 
-    if (size_t(b_from) == 3 && x_to == 13 && y_to == 4 && z_to == 0) {
+    if (size_t(b_from) == 4 && x_to == 13 && y_to == 4 && z_to == 0) {
         VTR_LOG("FOUND\n");
     }
 
@@ -1310,7 +1317,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
                     } else {
                         abort_swap = record_macro_block_swaps(imacro_from, imember_from, imacro_to, b_to,
                                                                   x_swap_offset, y_swap_offset, z_swap_offset);
-                        imember_from -= 1;
+                        imember_from -= 1; //record_macro_block_swaps() will have already advanced the original imember_from
                     }
                 } else {
                     //To block is not a macro
@@ -1607,8 +1614,9 @@ static e_swap_result try_swap(float t,
 		/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
 		blocks_affected.num_moved_blocks = 0;
 
-#if 0
+#if 1
         //Check that each accepted swap yields a valid placement
+        VTR_LOG("Swap %zu to (%d,%d,%d)\n", size_t(b_from), x_to, y_to, z_to);
         check_place(*costs, delay_model, place_algorithm);
 #endif
 
@@ -3243,13 +3251,29 @@ static void check_place(const t_placer_costs& costs,
 	 * the final placement cost from scratch and makes sure it is      *
 	 * within roundoff of what we think the cost is.                   */
 
-	vtr::vector<ClusterBlockId, int> bdone;
+    int error = 0;
+    
+    error += check_placement_consistency();
+    error += check_placement_costs(costs, delay_model, place_algorithm);
+
+	if (error == 0) {
+		VTR_LOG("\n");
+		VTR_LOG("Completed placement consistency check successfully.\n");
+
+	} else {
+		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+				"\nCompleted placement consistency check, %d errors found.\n"
+				"Aborting program.\n", error);
+	}
+
+}
+
+static int check_placement_costs(const t_placer_costs& costs,
+                          const PlaceDelayModel& delay_model,
+                          enum e_place_algorithm place_algorithm) {
 	int error = 0;
-	ClusterBlockId bnum, head_iblk, member_iblk;
 	float bb_cost_check;
-	int usage_check;
 	float timing_cost_check, delay_cost_check;
-	int imacro, imember, member_x, member_y, member_z;
 
 	bb_cost_check = comp_bb_cost(CHECK);
 	if (fabs(bb_cost_check - costs.bb_cost) > costs.bb_cost * ERROR_TOL) {
@@ -3275,12 +3299,21 @@ static void check_place(const t_placer_costs& costs,
 			error++;
 		}
 	}
+    return error;
+}
+
+static int check_placement_consistency() {
+    return check_block_placement_consistency() + check_macro_placement_consistency();
+}
+
+static int check_block_placement_consistency() {
+    int error = 0;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-	bdone.resize(cluster_ctx.clb_nlist.blocks().size(), 0);
+    vtr::vector<ClusterBlockId,int> bdone(cluster_ctx.clb_nlist.blocks().size(), 0);
 
 	/* Step through device grid and placement. Check it against blocks */
 	for (size_t i = 0; i < device_ctx.grid.width(); i++)
@@ -3291,9 +3324,9 @@ static void check_place(const t_placer_costs& costs,
 						i, j, place_ctx.grid_blocks[i][j].usage);
 				error++;
 			}
-			usage_check = 0;
+			int usage_check = 0;
 			for (int k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
-				bnum = place_ctx.grid_blocks[i][j].blocks[k];
+				auto bnum = place_ctx.grid_blocks[i][j].blocks[k];
 				if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
 					continue;
 
@@ -3328,24 +3361,30 @@ static void check_place(const t_placer_costs& costs,
 					size_t(blk_id), bdone[blk_id]);
 			error++;
 		}
-	bdone.clear();
+
+    return error;
+}
+
+int check_macro_placement_consistency() {
+    int error = 0;
+    auto& place_ctx = g_vpr_ctx.placement();
 
     auto& pl_macros = place_ctx.pl_macros;
     auto& num_pl_macros = place_ctx.num_pl_macros;
 
 	/* Check the pl_macro placement are legal - blocks are in the proper relative position. */
-	for (imacro = 0; imacro < num_pl_macros; imacro++) {
+	for (int imacro = 0; imacro < num_pl_macros; imacro++) {
 
-		head_iblk = pl_macros[imacro].members[0].blk_index;
+		auto head_iblk = pl_macros[imacro].members[0].blk_index;
 
-		for (imember = 0; imember < pl_macros[imacro].num_blocks; imember++) {
+		for (int imember = 0; imember < pl_macros[imacro].num_blocks; imember++) {
 
-			member_iblk = pl_macros[imacro].members[imember].blk_index;
+			auto member_iblk = pl_macros[imacro].members[imember].blk_index;
 
 			// Compute the suppossed member's x,y,z location
-			member_x = place_ctx.block_locs[head_iblk].x + pl_macros[imacro].members[imember].x_offset;
-			member_y = place_ctx.block_locs[head_iblk].y + pl_macros[imacro].members[imember].y_offset;
-			member_z = place_ctx.block_locs[head_iblk].z + pl_macros[imacro].members[imember].z_offset;
+			int member_x = place_ctx.block_locs[head_iblk].x + pl_macros[imacro].members[imember].x_offset;
+			int member_y = place_ctx.block_locs[head_iblk].y + pl_macros[imacro].members[imember].y_offset;
+			int member_z = place_ctx.block_locs[head_iblk].z + pl_macros[imacro].members[imember].z_offset;
 
 			// Check the place_ctx.block_locs data structure first
 			if (place_ctx.block_locs[member_iblk].x != member_x
@@ -3366,17 +3405,7 @@ static void check_place(const t_placer_costs& costs,
 			}
 		} // Finish going through all the members
 	} // Finish going through all the macros
-
-	if (error == 0) {
-		VTR_LOG("\n");
-		VTR_LOG("Completed placement consistency check successfully.\n");
-
-	} else {
-		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-				"\nCompleted placement consistency check, %d errors found.\n"
-				"Aborting program.\n", error);
-	}
-
+    return error;
 }
 
 #ifdef VERBOSE
