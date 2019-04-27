@@ -275,9 +275,9 @@ void compute_router_lookahead(size_t num_segments){
           /* get the rr node index from which to start routing */
           RRNodeId start_node_ind = device_ctx.rr_graph.get_chan_start_node_id(REF_X+ref_inc, REF_Y+ref_inc,
                                                                                device_ctx.grid.width()-2, device_ctx.grid.height()-2,  //non-corner upper right
-                                                                               chan_type, RRSegmentId(iseg), track_offset);
+                                                                               chan_type, iseg, track_offset);
 
-          if (-1 == size_t(start_node_ind)){
+          if (size_t(UNDEFINED) == size_t(start_node_ind)){
             continue;
           }
 

@@ -1241,8 +1241,7 @@ void RRGraph::node_xy_deltas(RRNodeId from_node_id, RRNodeId to_node_id,
 RRNodeId RRGraph::get_chan_start_node_id(short start_x, short start_y, 
                                          short target_x, short target_y, 
                                          t_rr_type chan_type, 
-                                         RRSegmentId seg_id, short track_offset) const {
-  RRNodeId result;
+                                         short seg_id, short track_offset) const {
 
   VTR_ASSERT_MSG((CHANX == chan_type || CHANY == chan_type), 
                  "Node type must be CHANX or CHANY\n");
@@ -1257,17 +1256,17 @@ RRNodeId RRGraph::get_chan_start_node_id(short start_x, short start_y,
   VTR_ASSERT(CHANX == chan_type || CHANY == chan_type);
 
   /* find first node in channel that has specified segment index and goes in the desired direction */
-  short track_offset_tmp = track_offset;
-  for (auto track_node : node_lookup_[start_x][start_y][chan_type]) {
+  short tmp = track_offset;
+  RRNodeId result = RRNodeId(UNDEFINED);
+  while (tmp <= track_offset) {
+    RRNodeId track_node = find_node(start_x, start_y, chan_type, tmp, TOP);
     if ( (node_direction(track_node) == chan_direction || BI_DIRECTION == node_direction(track_node) ) 
-        && (node_segment_id(track_node) == seg_id) ) {
+      && (node_segment_id(track_node) == seg_id) ) {
       /* found first track that has the specified segment index and goes in the desired direction */
       result = track_node;
-      if (track_offset_tmp == 0){
-        break;
-      }
-      track_offset_tmp -= 2;
+      break;
     }
+    tmp += 2;
   }
 
   return result;

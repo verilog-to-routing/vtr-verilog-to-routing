@@ -114,7 +114,7 @@ class RRGraph {
     RRNodeId get_chan_start_node_id(short start_x, short start_y, 
                                     short target_x, short target_y, 
                                     t_rr_type chan_type, 
-                                    RRSegmentId seg_id, short track_offset) const ;
+                                    short seg_id, short track_offset) const ;
 
 
     bool is_dirty() const;
