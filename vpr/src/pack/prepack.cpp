@@ -108,6 +108,17 @@ static void print_chain_starting_points(t_pack_patterns* chain_pattern);
 
 static t_pb_graph_pin* find_chain_exit_pin(t_pb_graph_pin* input_pin, int pattern_index);
 
+static t_pack_pattern_block* get_atom_pattern_block(const t_pack_molecule* molecule, const int block_id);
+
+static bool chain_input_is_reachable(const t_pack_molecule* molecule,
+        const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules);
+
+static t_pb_graph_node* get_driver_pb_graph_node(const t_pack_molecule* prev_molecule, const AtomBlockId driver_block);
+
+static void print_chain_pins(const t_pack_patterns* chain_pattern);
+
+static int get_forced_chain_id(t_pack_molecule* molecule, const t_pack_molecule* prev_molecule, const AtomBlockId driver_block_id);
+
 /*****************************************/
 /*Function Definitions					 */
 /*****************************************/
@@ -546,14 +557,14 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
             // if this pb_graph_node (primitive) should be added to the pack pattern blocks
             if (((t_pack_pattern_block*)destination_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index) {
                 // if this pb_graph_node is known to be the root of the chain, update the root block and root pin
-                if (make_root_of_chain == true) {
-                    list_of_packing_patterns[curr_pattern_index].chain_root_pins = {{expansion_edge->output_pins[i]}};
-                    list_of_packing_patterns[curr_pattern_index].root_block = destination_block;
-                }
-            }
+				if(make_root_of_chain && destination_block) {
+					list_of_packing_patterns[curr_pattern_index].chain_root_pins.push_back(expansion_edge->output_pins[i]);
+					list_of_packing_patterns[curr_pattern_index].root_block = destination_block;
+				}
+			}
 
-            // the expansion_edge parent node is not a primitive
-        } else {
+        // the expansion_edge parent node is not a primitive
+		} else {
             // continue expanding forward
             for (j = 0; j < expansion_edge->output_pins[i]->num_output_edges; j++) {
                 if (expansion_edge->output_pins[i]->output_edges[j]->infer_pattern == true) {
@@ -1064,8 +1075,15 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
             block_connection = block_connection->next;
         }
     }
+
+    // if this molecule is being fed by another molecule check that the root
+    // block is reachable from the other molecule
     // if all non-optional positions in the pack pattern have atoms
     // mapped to them, then this molecule is valid
+    if (molecule->type == MOLECULE_FORCED_PACK &&
+        molecule->pack_pattern->is_chain)
+        return chain_input_is_reachable(molecule, atom_molecules);
+
     return true;
 }
 
@@ -1121,13 +1139,129 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id, const t_model_p
     return AtomBlockId::INVALID();
 }
 
-static void print_pack_molecules(const char* fname,
-                                 const t_pack_patterns* list_of_pack_patterns,
-                                 const int num_pack_patterns,
-                                 const t_pack_molecule* list_of_molecules) {
-    int i;
-    FILE* fp;
-    const t_pack_molecule* list_of_molecules_current;
+static bool chain_input_is_reachable(const t_pack_molecule* molecule,
+        const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules) {
+
+    const auto& chain_root_pins = molecule->pack_pattern->chain_root_pins;
+    // assume that if the molecule can start in multiple locations
+    // it will always be reachable from the previous molecule
+    if (chain_root_pins.size() > 1)
+        return true;
+
+    // id of the root block of this molecule
+    const auto root_block = molecule->atom_block_ids[molecule->root];
+    // get the model of the cin port of the adder primitive
+    const auto cin_port_model = chain_root_pins[0]->port->model_port;
+    // get the pin number of the cin pin within the cin port
+    const auto cin_pin_number = chain_root_pins[0]->pin_number;
+    // get the atom block driving the root block of this molecule
+    const auto driver_block = g_vpr_ctx.atom().nlist.find_atom_pin_driver(root_block, cin_port_model, cin_pin_number);
+
+    auto driver_molecule_it = atom_molecules.find(driver_block);
+    // if the driver block is not in molecule yet
+    // then the block is driven by a constant net
+    if (driver_molecule_it == atom_molecules.end())
+        return true;
+
+    auto driver_molecule = driver_molecule_it->second;
+
+    if (driver_molecule->type != MOLECULE_FORCED_PACK)
+        return true;
+
+    t_pb_graph_node* driver_pb_graph_node = get_driver_pb_graph_node(driver_molecule, driver_block);
+
+    // get the model of the cout port of the adder primitive
+    const auto cout_port_model = molecule->pack_pattern->chain_exit_pins[0]->port->model_port;
+
+    for (int iport = 0; iport < driver_pb_graph_node->num_output_ports; iport++) {
+        for (int ipin = 0; ipin < driver_pb_graph_node->num_output_pins[iport]; ipin++) {
+            const auto& pin = driver_pb_graph_node->output_pins[iport][ipin];
+            if (pin.port->model_port == cout_port_model) {
+                if (&pin == molecule->pack_pattern->chain_exit_pins[0])
+                    return true;
+                else
+                    return false;
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
+ * This function finds the atom driving the root block of a moleucle
+ * and find the pb_graph_node associated with this block
+ */
+static t_pb_graph_node* get_driver_pb_graph_node(const t_pack_molecule* driver_molecule, const AtomBlockId driver_block) {
+
+    auto it = std::find(driver_molecule->atom_block_ids.begin(), driver_molecule->atom_block_ids.end(), driver_block);
+    VTR_ASSERT(it != driver_molecule->atom_block_ids.end());
+
+    auto driver_pattern_block_id = std::distance(driver_molecule->atom_block_ids.begin(), it);
+    auto driver_pattern_block = get_atom_pattern_block(driver_molecule, driver_pattern_block_id);
+
+    auto block_connection = driver_pattern_block->connections;
+    while (block_connection) {
+       if (block_connection->to_block == driver_pattern_block) {
+           return block_connection->to_pin->parent_node;
+       }
+       block_connection = block_connection->next;
+    }
+
+    VTR_ASSERT(false);
+    return nullptr;
+}
+
+/**
+ * get the pattern block that matches the input block id in this molecule
+ */
+static t_pack_pattern_block* get_atom_pattern_block(const t_pack_molecule* molecule, const int block_id) {
+
+    const auto root_block = molecule->pack_pattern->root_block;
+
+    std::vector<bool> visited_blocks(molecule->num_blocks);
+
+    std::queue<t_pack_pattern_block*> pattern_block_queue;
+    pattern_block_queue.push(root_block);
+
+    // do breadth first search to find the block that matches block_id
+    while(!pattern_block_queue.empty()) {
+
+        auto pattern_block = pattern_block_queue.front();
+        pattern_block_queue.pop();
+
+        // ignore if a nullptr or is already visited
+        if (!pattern_block || visited_blocks[pattern_block->block_id])
+            continue;
+
+        if (pattern_block->block_id == block_id)
+            return pattern_block;
+
+        visited_blocks[pattern_block->block_id] = true;
+
+        auto block_connections = pattern_block->connections;
+
+        // add all the blocks in the list of connections to the queue
+        while (block_connections) {
+            pattern_block_queue.push(block_connections->from_block);
+            pattern_block_queue.push(block_connections->to_block);
+            block_connections = block_connections->next;
+        }
+
+    }
+
+    // this block is in this molecule
+    // so it should be found
+    VTR_ASSERT(false);
+    return nullptr;
+}
+
+static void print_pack_molecules(const char *fname,
+		const t_pack_patterns *list_of_pack_patterns, const int num_pack_patterns,
+		const t_pack_molecule *list_of_molecules) {
+	int i;
+	FILE *fp;
+	const t_pack_molecule *list_of_molecules_current;
     auto& atom_ctx = g_vpr_ctx.atom();
 
     fp = std::fopen(fname, "w");
@@ -1648,7 +1782,40 @@ static void init_molecule_chain_info(const AtomBlockId blk_id, t_pack_molecule* 
         prev_molecule->chain_info->is_long_chain = true;
         // this new molecule should share the same chain_info
         molecule->chain_info = prev_molecule->chain_info;
+        // if the two molecules are of different types
+        if (prev_molecule->pack_pattern->chain_root_pins.size() <
+            molecule->pack_pattern->chain_root_pins.size()) {
+            molecule->chain_info->chain_id = get_forced_chain_id(molecule, prev_molecule, driver_atom_id);
+        }
     }
+}
+
+
+static int get_forced_chain_id(t_pack_molecule* molecule, const t_pack_molecule* prev_molecule,
+                               const AtomBlockId driver_block_id){
+
+    t_pb_graph_node* driver_pb_graph_node = get_driver_pb_graph_node(prev_molecule, driver_block_id);
+
+    VTR_ASSERT(driver_pb_graph_node);
+
+    const auto& chain_exit_pins = molecule->pack_pattern->chain_exit_pins;
+    // get the model of the cout port of the adder primitive
+    const auto cout_port_model = chain_exit_pins[0]->port->model_port;
+
+    for (int iport = 0; iport < driver_pb_graph_node->num_output_ports; iport++) {
+        for (int ipin = 0; ipin < driver_pb_graph_node->num_output_pins[iport]; ipin++) {
+            const auto& pin = driver_pb_graph_node->output_pins[iport][ipin];
+            if (pin.port->model_port == cout_port_model) {
+                for (size_t chain_id = 0; chain_id < chain_exit_pins.size(); chain_id++) {
+                    if (&pin == chain_exit_pins[chain_id])
+                        return chain_id;
+                }
+            }
+        }
+    }
+
+    VTR_ASSERT(false);
+    return -1;
 }
 
 /**
