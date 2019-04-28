@@ -527,6 +527,12 @@ RRNodeId RRGraph::find_chan_node(short x, short y, t_rr_type type, int ptc) cons
     return OPEN_NODE_ID;
   }
 
+  /* check if SIDES is a zero vector */
+  if (0 == node_lookup_[x][y][type][ptc].size()) {
+    /* Return a zero range! */
+    return OPEN_NODE_ID;
+  }
+
   return node_lookup_[x][y][type][ptc][NUM_SIDES];
 }
 
