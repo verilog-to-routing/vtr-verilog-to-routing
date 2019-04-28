@@ -119,6 +119,8 @@ static void print_chain_pins(const t_pack_patterns* chain_pattern);
 
 static int get_forced_chain_id(t_pack_molecule* molecule, const t_pack_molecule* prev_molecule, const AtomBlockId driver_block_id);
 
+static AtomBlockId get_adder_driver_block(const AtomBlockId block_id, const t_pack_patterns* pack_pattern,
+                                          const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 /*****************************************/
 /*Function Definitions					 */
 /*****************************************/
@@ -1412,37 +1414,25 @@ static int compare_pack_pattern(const t_pack_patterns* pattern_a, const t_pack_p
  */
 static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns* list_of_pack_pattern, const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules) {
     AtomBlockId new_root_blk_id;
-    t_pb_graph_pin* root_ipin;
-    t_pb_graph_node* root_pb_graph_node;
-    t_model_ports* model_port;
+	t_pb_graph_pin *root_ipin;
+	t_pb_graph_node *root_pb_graph_node;
 
-    auto& atom_ctx = g_vpr_ctx.atom();
-
-    VTR_ASSERT(list_of_pack_pattern->is_chain == true);
+	VTR_ASSERT(list_of_pack_pattern->is_chain);
     VTR_ASSERT(list_of_pack_pattern->chain_root_pins.size());
-    root_ipin = list_of_pack_pattern->chain_root_pins[0][0];
-    root_pb_graph_node = root_ipin->parent_node;
 
-    if (primitive_type_feasible(blk_id, root_pb_graph_node->pb_type) == false) {
-        return AtomBlockId::INVALID();
-    }
+	root_ipin = list_of_pack_pattern->chain_root_pins[0];
+	root_pb_graph_node = root_ipin->parent_node;
 
-    /* Assign driver furthest up the chain that matches the root node and is unassigned to a molecule as the root */
-    model_port = root_ipin->port->model_port;
+	if(!primitive_type_feasible(blk_id, root_pb_graph_node->pb_type)) {
+		return AtomBlockId::INVALID();
+	}
 
     // find the block id of the atom block driving the input of this block
-    AtomBlockId driver_blk_id = atom_ctx.nlist.find_atom_pin_driver(blk_id, model_port, root_ipin->pin_number);
+    AtomBlockId driver_blk_id = get_adder_driver_block(blk_id, list_of_pack_pattern, atom_molecules);
 
     // if there is no driver block for this net
     // then it is the furthest up the chain
     if (!driver_blk_id) {
-        return blk_id;
-    }
-    // check if driver atom is already packed
-    auto rng = atom_molecules.equal_range(driver_blk_id);
-    bool rng_empty = (rng.first == rng.second);
-    if (!rng_empty) {
-        /* Driver is used/invalid, so current block is the furthest up the chain, return it */
         return blk_id;
     }
 
@@ -1454,6 +1444,42 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
     } else {
         return new_root_blk_id;
     }
+}
+
+
+static AtomBlockId get_adder_driver_block(const AtomBlockId block_id, const t_pack_patterns* pack_pattern,
+                                          const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules) {
+
+    const auto& atom_ctx = g_vpr_ctx.atom();
+
+    const auto cin_pin = pack_pattern->chain_root_pins[0];
+    const auto cin_model = cin_pin->port->model_port;
+    const auto block_pb_graph_node = cin_pin->parent_node;
+    const auto block_pb_type = block_pb_graph_node->pb_type;
+
+    for (int iport = 0; iport < block_pb_graph_node->num_input_ports; iport++) {
+        for (int ipin = 0; ipin < block_pb_graph_node->num_input_pins[iport]; ipin++) {
+            const auto& pin = block_pb_graph_node->input_pins[iport][ipin];
+            if (pin.port->model_port != cin_model) {
+                auto driver_id = atom_ctx.nlist.find_atom_pin_driver(block_id, pin.port->model_port, pin.pin_number);
+                if (driver_id &&
+                    primitive_type_feasible(driver_id, block_pb_type) &&
+                    atom_molecules.find(driver_id) == atom_molecules.end()) {
+                    return driver_id;
+                }
+            }
+        }
+    }
+
+    // checked all porst except for cin and no port is driven by an adder
+    // check the cin port then
+    auto driver_id = atom_ctx.nlist.find_atom_pin_driver(block_id, cin_model, cin_pin->pin_number);
+    if (driver_id &&
+        primitive_type_feasible(driver_id, block_pb_type) &&
+        atom_molecules.find(driver_id) == atom_molecules.end())
+        return driver_id;
+
+    return AtomBlockId::INVALID();
 }
 
 /**
