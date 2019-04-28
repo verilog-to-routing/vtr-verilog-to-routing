@@ -720,6 +720,10 @@ static RRNodeId get_chan_start_node_id(short start_x, short start_y,
   RRNodeId result = OPEN_NODE_ID;
   for (short itrack = 0; itrack < device_ctx.rr_graph.chan_num_tracks(start_x, start_y, rr_type); ++itrack) {
     RRNodeId node_ind = device_ctx.rr_graph.find_chan_node(start_x, start_y, rr_type, itrack);
+    /* If we cannot find any, return OPEN_ID */
+    if (OPEN_NODE_ID == node_ind) {
+      continue;
+    }
 
     if (((device_ctx.rr_graph.node_direction(node_ind) == direction) 
       || (device_ctx.rr_graph.node_direction(node_ind) == BI_DIRECTION) ) 

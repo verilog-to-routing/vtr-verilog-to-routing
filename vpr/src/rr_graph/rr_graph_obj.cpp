@@ -449,10 +449,43 @@ RRGraph::node_range RRGraph::find_nodes(short x, short y, t_rr_type type, int pt
     build_fast_node_lookup();
   }
 
-  /* TODO: IMPORTANT!!! 
+  /* IMPORTANT!!! 
    * check x, y, type, ptc if they are in the range
    * if not, return a zero range 
    */
+  size_t itype = type;
+
+  /* Check if x, y, type and ptc, side is valid */
+  if ( (x < 0)  /* See if x is smaller than the index of first element */
+    || (size_t(x) > node_lookup_.size() - 1) ) { /* See if x is large than the index of last element */
+    /* Return a zero range! */
+    const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
+    return vtr::make_range(zero_range.begin(), zero_range.end());
+  }
+
+  /* Check if x, y, type and ptc, side is valid */
+  if ( (y < 0)  /* See if y is smaller than the index of first element */
+    || (size_t(y) > node_lookup_[x].size() - 1) ) { /* See if y is large than the index of last element */
+    /* Return a zero range! */
+    const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
+    return vtr::make_range(zero_range.begin(), zero_range.end());
+  }
+
+  /* Check if x, y, type and ptc, side is valid */
+  /* itype is always larger than -1, we can skip checking */
+  if (itype > node_lookup_[x][y].size() - 1)  { /* See if type is large than the index of last element */
+    /* Return a zero range! */
+    const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
+    return vtr::make_range(zero_range.begin(), zero_range.end());
+  }
+
+  /* Check if x, y, type and ptc, side is valid */
+  if ( (ptc < 0)  /* See if ptc is smaller than the index of first element */
+    || (size_t(ptc) > node_lookup_[x][y][type].size() - 1) ) { /* See if ptc is large than the index of last element */
+    /* Return a zero range! */
+    const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
+    return vtr::make_range(zero_range.begin(), zero_range.end());
+  }
 
   const auto& matching_nodes = node_lookup_[x][y][type][ptc];
 
