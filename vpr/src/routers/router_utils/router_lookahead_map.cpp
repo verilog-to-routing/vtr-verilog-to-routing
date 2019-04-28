@@ -297,11 +297,11 @@ void compute_router_lookahead(size_t num_segments){
       for (size_t ref_inc = 0; ref_inc < 3; ++ref_inc) {
         for (size_t track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2){
           /* get the rr node index from which to start routing */
-          RRNodeId start_node_ind = get_chan_start_node_id(REF_X+ref_inc, REF_Y+ref_inc,
-                                                           device_ctx.grid.width()-2, device_ctx.grid.height()-2,  //non-corner upper right
+          RRNodeId start_node_ind = get_chan_start_node_id(REF_X + ref_inc, REF_Y + ref_inc,
+                                                           device_ctx.grid.width() - 2, device_ctx.grid.height() - 2,  //non-corner upper right
                                                            chan_type, iseg, track_offset);
 
-          if (size_t(UNDEFINED) == size_t(start_node_ind)){
+          if (OPEN_NODE_ID == start_node_ind){
             continue;
           }
 
@@ -351,7 +351,7 @@ static void run_dijkstra(RRNodeId start_node_ind, int start_x, int start_y,
   std::priority_queue<PQ_Entry> pq;
 
   /* first entry has no upstream delay or congestion */
-  PQ_Entry first_entry(start_node_ind, RRSwitchId(UNDEFINED), 0, 0, 0, true);
+  PQ_Entry first_entry(start_node_ind, OPEN_SWITCH_ID, 0, 0, 0, true);
 
   pq.push( first_entry );
 
@@ -622,13 +622,14 @@ static void print_cost_map() {
 static void get_xy_deltas(RRNodeId from_node_id, RRNodeId to_node_id, 
                           int* delta_x, int* delta_y) {
   auto& device_ctx = g_vpr_ctx.device();
-  /* Both from_node and to_node should be CHANX or CHANY */
+  /* Both from_node and to_node should be CHANX or CHANY 
   VTR_ASSERT_MSG( (CHANX == device_ctx.rr_graph.node_type(from_node_id) 
                 || CHANY == device_ctx.rr_graph.node_type(from_node_id)), 
                  "from_node should be either CHANX or CHANY");
   VTR_ASSERT_MSG( (CHANX == device_ctx.rr_graph.node_type(to_node_id) 
                 || CHANY == device_ctx.rr_graph.node_type(to_node_id)), 
                  "to_node should be either CHANX or CHANY");
+   */
   /* get chan/seg coordinates of the from/to nodes. seg coordinate is along the wire,
            chan coordinate is orthogonal to the wire */
   short from_seg_low = device_ctx.rr_graph.node_xlow(from_node_id);
@@ -716,7 +717,7 @@ static RRNodeId get_chan_start_node_id(short start_x, short start_y,
   VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
 
   /* find first node in channel that has specified segment index and goes in the desired direction */
-  RRNodeId result = RRNodeId(UNDEFINED);
+  RRNodeId result = OPEN_NODE_ID;
   for (short itrack = 0; itrack < device_ctx.rr_graph.chan_num_tracks(start_x, start_y, rr_type); ++itrack) {
     RRNodeId node_ind = device_ctx.rr_graph.find_chan_node(start_x, start_y, rr_type, itrack);
 

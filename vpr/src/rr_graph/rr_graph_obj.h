@@ -25,6 +25,14 @@
 #include "vpr_types.h"
 #include "rr_graph_fwd.h"
 
+/* Create an alias to the open NodeId
+ * Useful in identifying if a node exist in a rr_graph
+ */
+#define OPEN_NODE_ID RRNodeId(-1)
+#define OPEN_EDGE_ID RREdgeId(-1)
+#define OPEN_SWITCH_ID RRSwitchId(-1)
+#define OPEN_SEGMENT_ID RRSegmentId(-1)
+
 class RRGraph {
   public: //Types
     typedef vtr::vector<RRNodeId,RRNodeId>::const_iterator node_iterator;

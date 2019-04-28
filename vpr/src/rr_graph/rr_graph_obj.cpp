@@ -136,13 +136,13 @@ const char* RRGraph::node_direction_string(RRNodeId node) const {
 
 e_side RRGraph::node_side(RRNodeId node) const {
   VTR_ASSERT_SAFE(valid_node_id(node));
-  VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Direction valid only for IPIN/OPIN RR nodes");
+  VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side valid only for IPIN/OPIN RR nodes");
   return node_sides_[node];
 }
 
 const char* RRGraph::node_side_string(RRNodeId node) const {
   VTR_ASSERT_SAFE(valid_node_id(node));
-  VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Direction valid only for IPIN/OPIN RR nodes");
+  VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side valid only for IPIN/OPIN RR nodes");
   return SIDE_STRING[node_side(node)];
 }
 
@@ -405,6 +405,42 @@ RRNodeId RRGraph::find_node(short x, short y, t_rr_type type, int ptc, e_side si
   }
   size_t itype = type;
   size_t iside = side;
+
+  /* Check if x, y, type and ptc, side is valid */
+  if ( (x < 0)  /* See if x is smaller than the index of first element */
+    || (size_t(x) > node_lookup_.size() - 1) ) { /* See if x is large than the index of last element */
+    /* Return a zero range! */
+    return OPEN_NODE_ID;
+  }
+
+  /* Check if x, y, type and ptc, side is valid */
+  if ( (y < 0)  /* See if y is smaller than the index of first element */
+    || (size_t(y) > node_lookup_[x].size() - 1) ) { /* See if y is large than the index of last element */
+    /* Return a zero range! */
+    return OPEN_NODE_ID;
+  }
+
+  /* Check if x, y, type and ptc, side is valid */
+  /* itype is always larger than -1, we can skip checking */
+  if (itype > node_lookup_[x][y].size() - 1)  { /* See if type is large than the index of last element */
+    /* Return a zero range! */
+    return OPEN_NODE_ID;
+  }
+
+  /* Check if x, y, type and ptc, side is valid */
+  if ( (ptc < 0)  /* See if ptc is smaller than the index of first element */
+    || (size_t(ptc) > node_lookup_[x][y][type].size() - 1) ) { /* See if ptc is large than the index of last element */
+    /* Return a zero range! */
+    return OPEN_NODE_ID;
+  }
+
+  /* Check if x, y, type and ptc, side is valid */
+  /* iside is always larger than -1, we can skip checking */
+  if (iside > node_lookup_[x][y][type][ptc].size() - 1) { /* See if side is large than the index of last element */
+    /* Return a zero range! */
+    return OPEN_NODE_ID;
+  }
+
   return node_lookup_[x][y][itype][ptc][iside];
 }
 
@@ -412,6 +448,11 @@ RRGraph::node_range RRGraph::find_nodes(short x, short y, t_rr_type type, int pt
   if (!valid_fast_node_lookup()) {
     build_fast_node_lookup();
   }
+
+  /* TODO: IMPORTANT!!! 
+   * check x, y, type, ptc if they are in the range
+   * if not, return a zero range 
+   */
 
   const auto& matching_nodes = node_lookup_[x][y][type][ptc];
 
@@ -426,6 +467,33 @@ RRNodeId RRGraph::find_chan_node(short x, short y, t_rr_type type, int ptc) cons
     build_fast_node_lookup();
   }
 
+  /* Check if x, y, type and ptc is valid */
+  if ( (x < 0)  /* See if x is smaller than the index of first element */
+    || (size_t(x) > node_lookup_.size() - 1) ) { /* See if x is large than the index of last element */
+    /* Return a zero range! */
+    return OPEN_NODE_ID;
+  }
+
+  /* Check if x, y, type and ptc is valid */
+  if ( (y < 0)  /* See if y is smaller than the index of first element */
+    || (size_t(y) > node_lookup_[x].size() - 1) ) { /* See if y is large than the index of last element */
+    /* Return a zero range! */
+    return OPEN_NODE_ID;
+  }
+
+  /* Check if x, y, type and ptc is valid */
+  if ((size_t(type) > node_lookup_[x][y].size() - 1) ) { /* See if type is large than the index of last element */
+    /* Return a zero range! */
+    return OPEN_NODE_ID;
+  }
+
+  /* Check if x, y, type and ptc is valid */
+  if ( (ptc < 0)  /* See if ptc is smaller than the index of first element */
+    || (size_t(ptc) > node_lookup_[x][y][type].size() - 1) ) { /* See if ptc is large than the index of last element */
+    /* Return a zero range! */
+    return OPEN_NODE_ID;
+  }
+
   return node_lookup_[x][y][type][ptc][NUM_SIDES];
 }
 
@@ -438,7 +506,29 @@ short RRGraph::chan_num_tracks(short x, short y, t_rr_type type) const {
     build_fast_node_lookup();
   }
 
-  return node_lookup_[x][y][type].size();
+  /* Check if x, y, type and ptc is valid */
+  if ( (x < 0)  /* See if x is smaller than the index of first element */
+    || (size_t(x) > node_lookup_.size() - 1) ) { /* See if x is large than the index of last element */
+    /* Return a zero range! */
+    return 0;
+  }
+
+  /* Check if x, y, type and ptc is valid */
+  if ( (y < 0)  /* See if y is smaller than the index of first element */
+    || (size_t(y) > node_lookup_[x].size() - 1) ) { /* See if y is large than the index of last element */
+    /* Return a zero range! */
+    return 0;
+  }
+
+  /* Check if x, y, type and ptc is valid */
+  if ((size_t(type) > node_lookup_[x][y].size() - 1) ) { /* See if type is large than the index of last element */
+    /* Return a zero range! */
+    return 0;
+  }
+
+  const auto& matching_nodes = node_lookup_[x][y][type];
+
+  return vtr::make_range(matching_nodes.begin(), matching_nodes.end()).size();
 }
 
 
@@ -923,33 +1013,33 @@ void RRGraph::build_fast_node_lookup() const {
   for (auto node : nodes()) {
     size_t x = node_xlow(node);
     if (x >= node_lookup_.size()) {
-        node_lookup_.resize(x + 1);
+      node_lookup_.resize(x + 1);
     }
 
     size_t y = node_ylow(node);
     if (y >= node_lookup_[x].size()) {
-        node_lookup_[x].resize(y + 1);
+      node_lookup_[x].resize(y + 1);
     }
 
     size_t itype = node_type(node);
     if (itype >= node_lookup_[x][y].size()) {
-        node_lookup_[x][y].resize(itype + 1);
+      node_lookup_[x][y].resize(itype + 1);
     }
 
     size_t ptc = node_ptc_num(node);
     if (ptc >= node_lookup_[x][y][itype].size()) {
-        node_lookup_[x][y][itype].resize(ptc + 1);
+      node_lookup_[x][y][itype].resize(ptc + 1);
     }
 
     size_t iside = -1;
     if (node_type(node) == OPIN || node_type(node) == IPIN) {
-        iside = node_side(node); 
+      iside = node_side(node); 
     } else {
-        iside = NUM_SIDES;
+      iside = NUM_SIDES;
     }
 
     if (iside >= node_lookup_[x][y][itype][ptc].size()) {
-        node_lookup_[x][y][itype][ptc].resize(iside + 1);
+      node_lookup_[x][y][itype][ptc].resize(iside + 1);
     }
 
     //Save node in lookup
