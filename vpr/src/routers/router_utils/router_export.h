@@ -1,3 +1,19 @@
+/* IMPORTANT:
+ * The following preprocessing flags are added to 
+ * avoid compilation error when this headers are included in more than 1 times 
+ */
+#ifndef ROUTER_EXPORT_H
+#define ROUTER_EXPORT_H
+
+/*
+ * Notes in include header files in a head file 
+ * Only include the neccessary header files 
+ * that is required by the data types in the function/class declarations!
+ */
+/* Header files should be included in a sequence */
+/* Standard header files required go first */
+
+
 /******** Function prototypes for functions in route_common.c that ***********
  ******** are used outside the router modules.                     ***********/
 #include "vpr_types.h"
@@ -26,6 +42,8 @@ bool try_route(int width_fac,
 		t_direct_inf *directs, int num_directs,
         ScreenUpdatePriority first_iteration_priority);
 
+namespace router {
+
 bool feasible_routing();
 
 std::vector<int> collect_congested_rr_nodes();
@@ -52,3 +70,6 @@ void get_serial_num();
 
 void print_route(const char* place_file, const char* route_file);
 void print_route(FILE* fp, const vtr::vector<ClusterNetId,t_traceback>& tracebacks);
+} /* end namespace router */
+
+#endif

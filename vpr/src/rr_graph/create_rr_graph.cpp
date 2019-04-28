@@ -12,7 +12,6 @@
 /* Finally we include global variables */
 #include "globals.h"
 
-
 /* TODO: remove when this conversion (from traditional to new data structure) is no longer needed
  * This function will convert an existing rr_graph in device_ctx to the RRGraph object
  * This function is used to test our RRGraph if it is acceptable in downstream routers  
