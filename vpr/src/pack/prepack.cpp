@@ -92,7 +92,9 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
 static void update_chain_root_pins(t_pack_patterns* chain_pattern,
                                    const std::vector<t_pb_graph_pin*>& chain_input_pins);
 
-static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* input_pin, const int pack_pattern);
+static t_pb_graph_pin* get_connected_primitive_input_pin(const t_pb_graph_pin* input_pin, const int pack_pattern);
+
+static t_pb_graph_pin* get_connected_primitive_output_pin(const t_pb_graph_pin* output_pin, const int pack_pattern);
 
 static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input_pin, std::vector<t_pb_graph_pin*>& connected_primitive_pins);
 
@@ -103,6 +105,8 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id, const t_model_port
 static AtomBlockId get_driving_block(const AtomBlockId block_id, const t_model_ports* model_port, const BitIndex pin_number);
 
 static void print_chain_starting_points(t_pack_patterns* chain_pattern);
+
+static t_pb_graph_pin* find_chain_exit_pin(t_pb_graph_pin* input_pin, int pattern_index);
 
 /*****************************************/
 /*Function Definitions					 */
@@ -1470,9 +1474,13 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
 
     for (const auto& pin_ptr : chain_input_pins) {
         auto reachable_output_pins = find_end_of_path(pin_ptr, chain_pattern->index);
+        // find the chain exit pin of this chain input pin
+        auto chain_exit_pin = find_chain_exit_pin(pin_ptr, chain_pattern->index);
         // sort the reachable output pins to compare them later using set_intersection
         std::stable_sort(reachable_output_pins.begin(), reachable_output_pins.end());
         reachable_pins.push_back(reachable_output_pins);
+        // update the chain exit pins array
+        chain_pattern->chain_exit_pins.push_back(chain_exit_pin);
     }
 
     // Search for intersections between reachable pins. Intersection
@@ -1535,7 +1543,7 @@ static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* cluster
                 if (output_edge->output_pins[ipin]->is_primitive_pin()) {
                     return output_edge->output_pins[ipin];
                 }
-                return get_connected_primitive_pin(output_edge->output_pins[ipin], pack_pattern);
+                return get_connected_primitive_input_pin(output_edge->output_pins[ipin], pack_pattern);
             }
         }
     }
@@ -1567,6 +1575,32 @@ static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input
 
     VTR_ASSERT(connected_primitive_pins.size());
 }
+
+/**
+ *  Find the previous primitive output pin connected to the given cluster_output_pin.
+ *  Following edges that are annotated with pack_pattern index
+ */
+static t_pb_graph_pin* get_connected_primitive_output_pin(const t_pb_graph_pin* cluster_output_pin, const int pack_pattern) {
+
+    for (int iedge = 0; iedge < cluster_output_pin->num_input_edges; iedge++) {
+        const auto& input_edge = cluster_output_pin->input_edges[iedge];
+        // if edge is annotated with pack pattern or its pack pattern could be inferred
+        if (input_edge->annotated_with_pattern(pack_pattern) || input_edge->infer_pattern) {
+            for (int ipin = 0; ipin < input_edge->num_input_pins; ipin++) {
+                if (input_edge->input_pins[ipin]->is_primitive_pin()) {
+                    return input_edge->input_pins[ipin];
+                }
+                return get_connected_primitive_output_pin(input_edge->input_pins[ipin], pack_pattern);
+            }
+        }
+    }
+
+    // primitive output pin should always
+    // be found when using this function
+    VTR_ASSERT(false);
+    return nullptr;
+}
+
 
 /**
  * This function initializes the chain info data structure of the molecule.
@@ -1637,4 +1671,57 @@ static void print_chain_starting_points(t_pack_patterns* chain_pattern) {
     }
 
     VTR_LOG("\n");
+}
+
+/**
+ * This function takes the input pin starting a chain (Cin of the root block) and finds the
+ * the Cout pin of the last adder primitve of the chain.
+ */
+static t_pb_graph_pin* find_chain_exit_pin(t_pb_graph_pin* input_pin, int pattern_index) {
+
+    VTR_ASSERT(input_pin->num_output_edges == 1);
+    VTR_ASSERT(input_pin->output_edges[0]->annotated_with_pattern(pattern_index));
+
+    auto first_cin_pin = get_connected_primitive_input_pin(input_pin, pattern_index);
+    // pointer to the port model of the cin port of the adder primitive
+    const auto cin_port_model = first_cin_pin->port->model_port;
+
+    // create a queue of pin pointers for the breadth first search
+    std::queue<t_pb_graph_pin *> pins_queue;
+
+    // add the input pin to the queue
+    pins_queue.push(first_cin_pin);
+
+    // do breadth first search till all
+    // connected pins are explored
+    while(!pins_queue.empty()) {
+
+       // get the first pin in the queue
+       auto current_pin = pins_queue.front();
+
+       // remove pin from queue
+       pins_queue.pop();
+
+       // if this is a primitive input pin and it's not a cin port, ignore pin
+       // since we are only searching along the path of the chain ports
+       if (current_pin->is_primitive_pin()
+           && current_pin->port->type == IN_PORT
+           && current_pin->port->model_port != cin_port_model) {
+           continue;
+       }
+
+       // expand search from current pin
+       expand_search(current_pin, pins_queue, pattern_index);
+
+       // if this is an output pin of a root block then its connected
+       // to the last cout of the chain. Return the connected primtive pin.
+       if (current_pin->is_root_block_pin()
+           && current_pin->num_output_edges == 0) {
+           return get_connected_primitive_output_pin(current_pin, pattern_index);
+       }
+    }
+
+    // Exit chain pin should be found
+    VTR_ASSERT(false);
+    return nullptr;
 }

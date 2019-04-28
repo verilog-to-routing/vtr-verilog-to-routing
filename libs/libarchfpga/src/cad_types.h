@@ -89,6 +89,8 @@ struct t_pack_pattern_connections {
  *                          chooses between the cout of the preceding adder and the cin pin of the cluster. Which will
  *                          give more freedom to the packer when placing small adders that are driven by a constant
  *                          net (gnd/vdd)  [0...num_of_chains][0...num_of_tie_offs]
+ *      chain_exit_pins   : this is the same as the chain root pins however it points the cout pin of the last
+ *                          adder primitive of the chain which is directly connected to the cout port of the root block
  */
 struct t_pack_patterns {
     char* name;
@@ -102,6 +104,7 @@ struct t_pack_patterns {
 
     bool is_chain;
     std::vector<std::vector<t_pb_graph_pin*>> chain_root_pins;
+    std::vector<t_pb_graph_pin *> chain_exit_pins;
 
     // default constructor initializing to an invalid pack pattern
     t_pack_patterns() {
