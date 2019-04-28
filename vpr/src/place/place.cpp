@@ -1461,6 +1461,10 @@ static bool record_macro_self_swaps(const int imacro, int x_swap_offset, int y_s
         int y_to = y_from + y_swap_offset;
         int z_to = z_from + z_swap_offset;
 
+        if (!is_legal_swap_to_location(blk, x_to, y_to, z_to)) {
+            return true; //Abort
+        }
+
         ClusterBlockId blk_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
 
         int imacro_to = -1;
