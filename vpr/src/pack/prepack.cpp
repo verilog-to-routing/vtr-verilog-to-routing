@@ -990,9 +990,11 @@ static t_pack_molecule* try_create_molecule(t_pack_patterns* list_of_pack_patter
  *      atom_molecules : map of atom block ids that are assigned a molecule and a pointer to this molecule
  *      blk_id         : chosen to be the root of this molecule and the code is expanding from
  */
-static bool try_expand_molecule(t_pack_molecule* molecule,
-                                const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
-                                const AtomBlockId blk_id) {
+static bool try_expand_molecule(t_pack_molecule *molecule,
+        const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+        const AtomBlockId blk_id) {
+
+    bool has_second_level = false;
     // root block of the pack pattern, which is the starting point of this pattern
     const auto pattern_root_block = molecule->pack_pattern->root_block;
     // bool array indicating whether a position in a pack pattern is optional or should
@@ -1067,6 +1069,12 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
                 auto port_model = block_connection->to_pin->port->model_port;
                 auto ipin = block_connection->to_pin->pin_number;
                 auto driver_blk_id = get_driving_block(block_id, port_model, ipin);
+                if (molecule->type == MOLECULE_FORCED_PACK &&
+                    molecule->pack_pattern->is_chain &&
+                    port_model != molecule->pack_pattern->chain_root_pins[0]->port->model_port &&
+                    block_connection->to_pin->parent_node->pb_type == block_connection->from_pin->parent_node->pb_type) {
+                    has_second_level = true;
+                }
                 // add this driver block id with its corresponding pattern block to the queue
                 pattern_block_queue.push(std::make_pair(block_connection->from_block, driver_blk_id));
             }
@@ -1076,6 +1084,10 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
             // go to the next connection of this pattern block
             block_connection = block_connection->next;
         }
+    }
+
+    if (!has_second_level && molecule->pack_pattern->num_blocks > 40) {
+        return false;
     }
 
     // if this molecule is being fed by another molecule check that the root
