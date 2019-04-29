@@ -130,8 +130,8 @@ bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac,
 
   bool is_routed = false;
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
+  auto& cluster_ctx = g_vpr_ctx.clustering();
+  auto& route_ctx = g_vpr_ctx.mutable_routing();
 
   if (route_ctx.net_status[net_id].is_fixed) { /* Skip pre-routed nets. */
     is_routed = true;

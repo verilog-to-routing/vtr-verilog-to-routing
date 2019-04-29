@@ -80,7 +80,7 @@ class RRGraph {
     const char* node_side_string(RRNodeId node) const;
     float node_R(RRNodeId node) const;
     float node_C(RRNodeId node) const;
-    short node_segment_id(RRNodeId node) const; /* get the segment id of a rr_node */
+    RRSegmentId node_segment(RRNodeId node) const; /* get the segment id of a rr_node */
 
     short node_num_configurable_in_edges(RRNodeId node) const; /* get the number of configurable input edges of a node */
     short node_num_non_configurable_in_edges(RRNodeId node) const; /* get the number of non-configurable input edges of a node */
@@ -121,12 +121,36 @@ class RRGraph {
 
     bool is_dirty() const;
 
-  public: /* Echo and checkers */
+  public: /* Echos */
     void print_node(RRNodeId node) const; /* Print the detailed information of a node */
-    /* Fundamental checking */
+  public: /* Checkers */
+    /* Node-level checking */
+    bool check_node_segment(RRNodeId node) const;
     bool check_node_duplicated_edges(RRNodeId node) const;
+    bool check_node_in_edges(RRNodeId node) const;
+    bool check_node_out_edges(RRNodeId node) const;
+    bool check_node_edges(RRNodeId node) const;
+
+    /* Edge-level checking */
+    bool check_node_is_edge_src(RRNodeId node, RREdgeId edge) const;
+    bool check_node_is_edge_sink(RRNodeId node, RREdgeId edge) const;
+    bool check_edge_switch(RREdgeId edge) const;
+    bool check_edge_src_node(RREdgeId edge) const;
+    bool check_edge_sink_node(RREdgeId edge) const;
+
+    /* List-level checking */
+    bool check_nodes_in_edges() const;
+    bool check_nodes_out_edges() const;
+    bool check_nodes_edges() const;
+    bool check_node_segments() const;
+    bool check_edge_switches() const;
+    bool check_edge_src_nodes() const;
+    bool check_edge_sink_nodes() const;
     bool check_duplicated_edges() const; /* identify and report any duplicated edges between two nodes */
     bool check_dangling_nodes() const; /* identify if there is any dangling nodes in the graph */
+
+    /* Full set checking using listed checking functions*/ 
+    bool check() const; 
 
   public: //Mutators
     /* reserve the lists of nodes, edges, switches etc */
@@ -162,7 +186,7 @@ class RRGraph {
     void set_node_side(RRNodeId node, e_side side);
     void set_node_R(RRNodeId node, float R);
     void set_node_C(RRNodeId node, float C);
-    void set_node_segment_id(RRNodeId node, short segment_index);
+    void set_node_segment(RRNodeId node, RRSegmentId segment_index);
 
     /* Edge related */
     /* classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) */
@@ -176,8 +200,6 @@ class RRGraph {
   
     void compress();
     bool validate();
-
-    void check();
 
     void clear_nodes();
     void clear_edges();
@@ -235,7 +257,7 @@ class RRGraph {
     vtr::vector<RRNodeId,e_side> node_sides_;
     vtr::vector<RRNodeId,float> node_Rs_;
     vtr::vector<RRNodeId,float> node_Cs_;
-    vtr::vector<RRNodeId,short> node_segment_ids_; /* Segment ids for each node */
+    vtr::vector<RRNodeId,RRSegmentId> node_segments_; /* Segment ids for each node */
     /* Record the dividing point between configurable and non-configurable edges for each node */
     vtr::vector<RRNodeId,size_t> node_num_non_configurable_in_edges_; 
     vtr::vector<RRNodeId,size_t> node_num_non_configurable_out_edges_; 

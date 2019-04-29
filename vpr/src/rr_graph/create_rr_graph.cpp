@@ -73,7 +73,7 @@ void convert_rr_graph() {
     /* Set up segment id */
     short irc_data = node.cost_index();
     short iseg = device_ctx.rr_indexed_data[irc_data].seg_index;
-    device_ctx.rr_graph.set_node_segment_id(rr_node, iseg);
+    device_ctx.rr_graph.set_node_segment(rr_node, RRSegmentId(iseg));
     
     VTR_ASSERT(!old_to_new_rr_node.count(inode));
     old_to_new_rr_node[inode] = rr_node;
@@ -118,7 +118,14 @@ void convert_rr_graph() {
   device_ctx.rr_graph.partition_edges();
 
   /* Essential check for rr_graph, build look-up and  */
-  device_ctx.rr_graph.check();
+  bool check_pass =  device_ctx.rr_graph.check();
+  if (false == check_pass) {
+    /* Error out if check rr_graph fails */
+    /*
+    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+              "Fail in checking rr_graph!\n");
+     */
+  }
 
   return;
 }

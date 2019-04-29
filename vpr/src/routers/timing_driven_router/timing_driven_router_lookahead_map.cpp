@@ -261,7 +261,7 @@ float get_lookahead_map_cost(RRNodeId from_node_ind, RRNodeId to_node_ind, float
   auto& device_ctx = g_vpr_ctx.device();
 
   e_rr_type from_type = device_ctx.rr_graph.node_type(from_node_ind);
-  short from_seg_index = device_ctx.rr_graph.node_segment_id(from_node_ind);
+  short from_seg_index = size_t(device_ctx.rr_graph.node_segment(from_node_ind));
 
   VTR_ASSERT(from_seg_index >= 0);
 
@@ -737,7 +737,7 @@ static RRNodeId get_chan_start_node_id(short start_x, short start_y,
 
     if (((device_ctx.rr_graph.node_direction(node_ind) == direction) 
       || (device_ctx.rr_graph.node_direction(node_ind) == BI_DIRECTION) ) 
-      && (device_ctx.rr_graph.node_segment_id(node_ind) == seg_id) ){
+      && (device_ctx.rr_graph.node_segment(node_ind) == RRSegmentId(seg_id)) ){
       /* found first track that has the specified segment index and goes in the desired direction */
       result = node_ind;
       if (track_offset == 0){

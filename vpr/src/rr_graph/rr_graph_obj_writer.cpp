@@ -105,8 +105,8 @@ void write_rr_graph_node(fstream &fp, const RRGraph& rr_graph) {
     fp << "\t\t\t<timing R=\"" << setprecision(FLOAT_PRECISION) << rr_graph.node_R(node)
             << "\" C=\"" << setprecision(FLOAT_PRECISION) << rr_graph.node_C(node) << "\"/>" << endl;
 
-    if (-1 != rr_graph.node_segment_id(node)) {
-      fp << "\t\t\t<segment segment_id=\"" << rr_graph.node_segment_id(node) << "\"/>" << endl;
+    if (OPEN_SEGMENT_ID != rr_graph.node_segment(node)) {
+      fp << "\t\t\t<segment segment_id=\"" << size_t(rr_graph.node_segment(node)) << "\"/>" << endl;
     }
 
     const auto iter = device_ctx.rr_node_metadata.find(rr_graph.node_index(node));

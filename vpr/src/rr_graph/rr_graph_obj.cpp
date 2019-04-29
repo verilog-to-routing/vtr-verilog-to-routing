@@ -161,10 +161,10 @@ float RRGraph::node_C(RRNodeId node) const {
 /*
  * Get a segment id of a node in rr_graph 
  */
-short RRGraph::node_segment_id(RRNodeId node) const {
+RRSegmentId RRGraph::node_segment(RRNodeId node) const {
   VTR_ASSERT_SAFE(valid_node_id(node));
 
-  return node_segment_ids_[node];
+  return node_segments_[node];
 }
 
 /* 
@@ -570,7 +570,6 @@ short RRGraph::chan_num_tracks(short x, short y, t_rr_type type) const {
   return vtr::make_range(matching_nodes.begin(), matching_nodes.end()).size();
 }
 
-
 /* This function aims to print basic information about a node */
 void RRGraph::print_node(RRNodeId node) const {
 
@@ -585,6 +584,244 @@ void RRGraph::print_node(RRNodeId node) const {
   VTR_LOG("Node num out_edges: %d\n", node_out_edges(node).size()); 
 
   return;
+}
+
+/* Check if the segment id of a node is in range */
+bool RRGraph::check_node_segment(RRNodeId node) const {
+  VTR_ASSERT_SAFE(valid_node_id(node));
+  /* Only CHANX and CHANY requires a valid segment id */
+  if ( (CHANX == node_type(node)) 
+    || (CHANY == node_type(node)) ) {
+    return valid_segment_id(node_segments_[node]);  
+  } else {
+    return true;
+  }
+}
+
+
+/* Check if the segment id of every node is in range */
+bool RRGraph::check_node_segments() const {
+  bool all_valid = true;
+  for (auto node : nodes()) {
+    if (true == check_node_segment(node)) {
+      continue;
+    }
+    /* Reach here it means we find an invalid segment id */ 
+    all_valid = false;
+    /* Print a warning! */
+    VTR_LOG_WARN("Node %d has an invalid segment id (%d)!\n", 
+                 size_t(node), size_t(node_segment(node)));
+  }
+  return all_valid;
+} 
+
+/* Check if the switch id of a edge is in range */
+bool RRGraph::check_edge_switch(RREdgeId edge) const {
+  VTR_ASSERT_SAFE(valid_edge_id(edge));
+  return valid_switch_id(edge_switches_[edge]);  
+}
+
+
+/* Check if the switch id of every edge is in range */
+bool RRGraph::check_edge_switches() const {
+  bool all_valid = true;
+  for (auto edge : edges()) {
+    if (true == check_edge_switch(edge)) {
+      continue;
+    }
+    /* Reach here it means we find an invalid segment id */ 
+    all_valid = false;
+    /* Print a warning! */
+    VTR_LOG_WARN("Edge %d has an invalid switch id (%d)!\n", 
+                 size_t(edge), size_t(edge_switch(edge)));
+  }
+  return all_valid;
+} 
+
+/* Check if a node is in the list of source_nodes of a edge */
+bool RRGraph::check_node_is_edge_src(RRNodeId node, RREdgeId edge) const {
+  /* Assure a valid node id */
+  VTR_ASSERT_SAFE(valid_node_id(node));
+  /* assure a valid edge id */
+  VTR_ASSERT_SAFE(valid_edge_id(edge));
+  /* find if the node is the src */
+  if (node == edge_src_node(edge)) {
+    return true; /* confirmed source node*/
+  } else {
+    return false; /* not a source */
+  }
+}
+
+/* Check if a node is in the list of sink_nodes of a edge */
+bool RRGraph::check_node_is_edge_sink(RRNodeId node, RREdgeId edge) const {
+  /* Assure a valid node id */
+  VTR_ASSERT_SAFE(valid_node_id(node));
+  /* assure a valid edge id */
+  VTR_ASSERT_SAFE(valid_edge_id(edge));
+  /* find if the node is the sink */
+  if (node == edge_sink_node(edge)) {
+    return true; /* confirmed source node*/
+  } else {
+    return false; /* not a source */
+  }
+
+}
+
+/* This function will check if a node has valid input edges
+ * 1. Check the edge ids are valid
+ * 2. Check the node is in the list of edge_sink_node
+ */
+bool RRGraph::check_node_in_edges(RRNodeId node) const {
+  bool all_valid = true;
+  /* Assure a valid node id */
+  VTR_ASSERT_SAFE(valid_node_id(node));
+  /* Check each edge */
+  for (auto edge : node_in_edges(node)) {
+    /* assure a valid edge id */
+    VTR_ASSERT_SAFE(valid_edge_id(edge));
+    /* check the node is in the list of edge_sink_node */
+    if (true == check_node_is_edge_sink(node, edge)) {
+      continue;
+    }
+    /* Reach here, it means there is something wrong! 
+     * Print a warning  
+     */
+    VTR_LOG_WARN("Edge %d is in the input edge list of node %d while the node is not in edge's sink node list!\n", 
+                 size_t(edge), size_t(node));
+    all_valid = false;
+  }
+
+  return all_valid;
+}
+
+/* This function will check if a node has valid output edges
+ * 1. Check the edge ids are valid
+ * 2. Check the node is in the list of edge_source_node
+ */
+bool RRGraph::check_node_out_edges(RRNodeId node) const {
+  bool all_valid = true;
+  /* Assure a valid node id */
+  VTR_ASSERT_SAFE(valid_node_id(node));
+  /* Check each edge */
+  for (auto edge : node_out_edges(node)) {
+    /* assure a valid edge id */
+    VTR_ASSERT_SAFE(valid_edge_id(edge));
+    /* check the node is in the list of edge_sink_node */
+    if (true == check_node_is_edge_src(node, edge)) {
+      continue;
+    }
+    /* Reach here, it means there is something wrong! 
+     * Print a warning  
+     */
+    VTR_LOG_WARN("Edge %d is in the output edge list of node %d while the node is not in edge's source node list!\n", 
+                 size_t(edge), size_t(node));
+    all_valid = false;
+  }
+
+  return all_valid;
+}
+
+/* check all the edges of a node */
+bool RRGraph::check_node_edges(RRNodeId node) const {
+  bool all_valid = true;
+
+  if (false == check_node_in_edges(node)) {
+    all_valid = false;
+  }
+  if (false == check_node_out_edges(node)) {
+    all_valid = false;
+  }
+
+  return all_valid;
+}
+
+/* check if all the nodes' input edges are valid */
+bool RRGraph::check_nodes_in_edges() const {
+  bool all_valid = true;
+  for (auto node : nodes()) {
+    if (true == check_node_in_edges(node)) {
+      continue;
+    }
+    /* Reach here, it means there is something wrong! 
+     * Print a warning  
+     */
+    all_valid = false;
+  }
+  return all_valid;
+}
+
+/* check if all the nodes' output edges are valid */
+bool RRGraph::check_nodes_out_edges() const {
+  bool all_valid = true;
+  for (auto node : nodes()) {
+    if (true == check_node_out_edges(node)) {
+      continue;
+    }
+    /* Reach here, it means there is something wrong! 
+     * Print a warning  
+     */
+    all_valid = false;
+  }
+  return all_valid;
+}
+
+/* check all the edges of every node */
+bool RRGraph::check_nodes_edges() const {
+  bool all_valid = true;
+
+  if (false == check_nodes_in_edges()) {
+    all_valid = false;
+  }
+  if (false == check_nodes_out_edges()) {
+    all_valid = false;
+  }
+
+  return all_valid;
+
+}
+
+/* Check if source node of a edge is valid */
+bool RRGraph::check_edge_src_node(RREdgeId edge) const {
+  return valid_node_id(edge_src_node(edge));
+}
+
+/* Check if sink node of a edge is valid */
+bool RRGraph::check_edge_sink_node(RREdgeId edge) const {
+  return valid_node_id(edge_sink_node(edge));
+}
+
+/* Check if source nodes of a edge are all valid */
+bool RRGraph::check_edge_src_nodes() const {
+  bool all_valid = true;
+  for (auto edge : edges()) {
+    if (true == check_edge_src_node(edge)) {
+      continue;
+    }
+    /* Reach here, it means there is something wrong! 
+     * Print a warning  
+     */
+    VTR_LOG_WARN("Edge %d has a invalid source node %d!\n", 
+                 size_t(edge), size_t(edge_src_node(edge)));
+    all_valid = false;
+  }
+  return all_valid;
+}
+
+/* Check if source nodes of a edge are all valid */
+bool RRGraph::check_edge_sink_nodes() const {
+  bool all_valid = true;
+  for (auto edge : edges()) {
+    if (true == check_edge_sink_node(edge)) {
+      continue;
+    }
+    /* Reach here, it means there is something wrong! 
+     * Print a warning  
+     */
+    VTR_LOG_WARN("Edge %d has a invalid sink node %d!\n", 
+                 size_t(edge), size_t(edge_sink_node(edge)));
+    all_valid = false;
+  }
+  return all_valid;
 }
 
 /* This function aims at checking any duplicated edges (with same EdgeId) 
@@ -602,8 +839,8 @@ bool RRGraph::check_node_duplicated_edges(RRNodeId node) const {
       }
       /* Reach here it means we find some duplicated edges and report errors */ 
       /* Print a warning! */
-      VTR_LOG_WARN("Node %s has duplicated input edges (edgeId:%d and %d)!\n", 
-                   node, iedge, jedge);
+      VTR_LOG_WARN("Node %d has duplicated input edges (edgeId:%d and %d)!\n", 
+                   size_t(node), iedge, jedge);
       this->print_node(node);
       no_duplication = false;
     }
@@ -611,6 +848,7 @@ bool RRGraph::check_node_duplicated_edges(RRNodeId node) const {
   
   return no_duplication;
 }
+
 
 /* Check the whole Routing Resource Graph  
  * identify and report any duplicated edges between two nodes 
@@ -621,7 +859,7 @@ bool RRGraph::check_duplicated_edges() const {
    * Search input edges, see there are two edges with same id or address 
    */
   for (auto node : nodes()) {
-    if (true == check_node_duplicated_edges(node)) {
+    if (false == check_node_duplicated_edges(node)) {
       no_duplication = false;
     }
   }
@@ -639,8 +877,8 @@ bool RRGraph::check_dangling_nodes() const {
    * If so, this is a dangling nodes and report 
    */
   for (auto node : nodes()) {
-    if  (  (0 == this->node_fan_in(node))
-       &&(0 == this->node_fan_out(node)) ) {
+    if (  (0 == this->node_fan_in(node))
+       && (0 == this->node_fan_out(node)) ) {
       /* Print a warning! */
       VTR_LOG_WARN("Node %s is dangling (zero fan-in and zero fan-out)!\n", 
                    node);
@@ -651,6 +889,68 @@ bool RRGraph::check_dangling_nodes() const {
   } 
 
   return no_dangling;
+}
+
+/* This function should be used when nodes, edges, switches and segments have been used after 
+ * We will build the fast_lookup, partition edges and check 
+ */
+bool RRGraph::check() const {
+  bool check_flag = true;
+  size_t num_err = 0;
+
+  if (!valid_fast_node_lookup()) {
+    build_fast_node_lookup();
+  }
+
+  /* Fundamental check */
+  if (false == check_nodes_edges()) {
+    VTR_LOG_WARN("Fail in checking edges connected to each node!\n");
+    check_flag = false;
+    num_err++;
+  }
+
+  if (false == check_node_segments()) { 
+    VTR_LOG_WARN("Fail in checking segment IDs of nodes !\n");
+    check_flag = false;
+    num_err++;
+  }
+
+  if (false == check_edge_src_nodes()) {
+    VTR_LOG_WARN("Fail in checking source nodes of edges !\n");
+    check_flag = false;
+    num_err++;
+  }
+
+  if (false == check_edge_sink_nodes()) {
+    VTR_LOG_WARN("Fail in checking sink nodes of edges !\n");
+    check_flag = false;
+    num_err++;
+  }
+
+  if (false == check_edge_switches()) {
+    VTR_LOG_WARN("Fail in checking switch IDs of edges !\n");
+    check_flag = false;
+    num_err++;
+  }
+
+
+  /* Advanced check */
+  if (false == check_duplicated_edges()) {
+    VTR_LOG_WARN("Fail in checking duplicated edges !\n");
+    check_flag = false;
+    num_err++;
+  }
+
+  if (false == check_dangling_nodes()) {
+    VTR_LOG_WARN("Fail in checking dangling nodes !\n");
+    check_flag = false;
+    num_err++;
+  }
+
+  VTR_LOG("Checked Routing Resource graph with %d errors !\n", 
+          num_err);
+
+  return check_flag;
 }
 
 bool RRGraph::is_dirty() const {
@@ -678,7 +978,7 @@ void RRGraph::reserve_nodes(int num_nodes) {
   this->node_sides_.reserve(num_nodes);  
   this->node_Rs_.reserve(num_nodes);  
   this->node_Cs_.reserve(num_nodes);  
-  this->node_segment_ids_.reserve(num_nodes);  
+  this->node_segments_.reserve(num_nodes);  
   this->node_num_non_configurable_in_edges_.reserve(num_nodes); 
   this->node_num_non_configurable_out_edges_.reserve(num_nodes); 
  
@@ -940,10 +1240,16 @@ void RRGraph::set_node_C(RRNodeId node, float C) {
 /*
  * Set a segment id for a node in rr_graph 
  */
-void RRGraph::set_node_segment_id(RRNodeId node, short segment_id) {
+void RRGraph::set_node_segment(RRNodeId node, RRSegmentId segment_id) {
   VTR_ASSERT(valid_node_id(node));
 
-  node_segment_ids_[node] = segment_id;
+  /* Only CHANX and CHANY requires a valid segment id */
+  if ( (CHANX == node_type(node)) 
+    || (CHANY == node_type(node)) ) {
+    VTR_ASSERT(valid_segment_id(segment_id));
+  }
+
+  node_segments_[node] = segment_id;
 
   return; 
 }
@@ -1318,22 +1624,6 @@ void RRGraph::rebuild_node_refs(const vtr::vector<RREdgeId,RREdgeId>& edge_id_ma
   }
 }
 
-/* This function should be used when nodes, edges, switches and segments have been used after 
- * We will build the fast_lookup, partition edges and check 
- */
-void RRGraph::check() {
-  if (!valid_fast_node_lookup()) {
-    build_fast_node_lookup();
-  }
-  for (auto node : nodes()) {
-    check_node_duplicated_edges(node); 
-  }
-  check_duplicated_edges();
-  check_dangling_nodes();
-  
-  return;
-}
-
 /* Empty all the vectors related to nodes */
 void RRGraph::clear_nodes() {
   node_ids_.clear();
@@ -1348,7 +1638,7 @@ void RRGraph::clear_nodes() {
   node_sides_.clear();
   node_Rs_.clear();
   node_Cs_.clear();
-  node_segment_ids_.clear();
+  node_segments_.clear();
 
   node_num_non_configurable_in_edges_.clear();
   node_num_non_configurable_out_edges_.clear();
