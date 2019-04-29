@@ -71,6 +71,7 @@ using namespace std;
 #include "net_delay.h"
 #include "RoutingDelayCalculator.h"
 #include "check_route.h"
+#include "router_check.h" /* Remove check_route.h when passed tests */
 #include "constant_nets.h"
 #include "atom_netlist_utils.h"
 
@@ -678,9 +679,12 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::string graphics_msg;
         if (route_status.success()) {
             //Sanity check the routing
+            /* Remove the legacy check_route when new function passed tests
             check_route(router_opts.route_type);
             get_serial_num();
-
+            */
+            router::check_route(router_opts.route_type);
+            router::get_serial_num();
             //Update status
             VTR_LOG("Circuit successfully routed with a channel width factor of %d.\n", route_status.chan_width());
             graphics_msg = vtr::string_fmt("Routing succeeded with a channel width factor of %d.", route_status.chan_width());

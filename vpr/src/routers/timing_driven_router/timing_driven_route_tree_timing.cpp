@@ -570,6 +570,7 @@ update_unbuffered_ancestors_C_downstream(t_rt_node * start_of_new_path_rt_node) 
    */
 
   while (parent_rt_node != nullptr && device_ctx.rr_graph.get_switch(RRSwitchId(iswitch)).buffered() == false) {
+    rt_node = parent_rt_node;
     rt_node->C_downstream += C_downstream_addition;
     parent_rt_node = rt_node->parent_node;
     iswitch = rt_node->parent_switch;

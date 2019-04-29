@@ -143,7 +143,10 @@ void load_net_delay_from_routing(vtr::vector<ClusterNetId, float *> &net_delay) 
 	t_linked_rc_edge *rc_edge_free_list;
 	t_linked_rc_ptr *rr_node_to_rc_node; /* [0..device_ctx.rr_nodes.size()-1]  */
 
+    /* FIXME remove commented line when rr_graph_obj passed tests 
 	rr_node_to_rc_node = (t_linked_rc_ptr *) vtr::calloc(device_ctx.rr_nodes.size(),
+     */
+	rr_node_to_rc_node = (t_linked_rc_ptr *) vtr::calloc(device_ctx.rr_graph.nodes().size(),
 			sizeof(t_linked_rc_ptr));
 
 	rc_node_free_list = nullptr;
@@ -337,14 +340,20 @@ static float load_rc_tree_C(t_rc_node * rc_node) {
 
 	linked_rc_edge = rc_node->u.child_list;
 	inode = rc_node->inode;
+    /* FIXME remove commented line when rr_graph_obj passed tests 
 	C = device_ctx.rr_nodes[inode].C();
+    */
+	C = device_ctx.rr_graph.node_C(RRNodeId(inode));
 
 	while (linked_rc_edge != nullptr) { /* For all children */
 		iswitch = linked_rc_edge->iswitch;
 		child_node = linked_rc_edge->child;
 		C_downstream = load_rc_tree_C(child_node);
 
+        /* FIXME remove commented line when rr_graph_obj passed tests 
 		if (!device_ctx.rr_switch_inf[iswitch].buffered())
+         */
+		if (!device_ctx.rr_graph.get_switch(RRSwitchId(iswitch)).buffered())
 			C += C_downstream;
 
 		linked_rc_edge = linked_rc_edge->next;
@@ -371,7 +380,10 @@ static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival) {
 
 	Tdel = T_arrival;
 	inode = rc_node->inode;
+    /* FIXME remove commented line when rr_graph_obj passed tests 
 	Rmetal = device_ctx.rr_nodes[inode].R();
+     */
+	Rmetal = device_ctx.rr_graph.node_R(RRNodeId(inode));
 
 	/* NB:  device_ctx.rr_nodes[inode].C gives the capacitance of this node, while          *
 	 * rc_node->C_downstream gives the unbuffered downstream capacitance rooted *
@@ -396,8 +408,12 @@ static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival) {
 		iswitch = linked_rc_edge->iswitch;
 		child_node = linked_rc_edge->child;
 
+        /* FIXME remove commented line when rr_graph_obj passed tests 
 		Tchild = Tdel + device_ctx.rr_switch_inf[iswitch].R * child_node->C_downstream;
-		Tchild += device_ctx.rr_switch_inf[iswitch].Tdel; /* Intrinsic switch delay. */
+		Tchild += device_ctx.rr_switch_inf[iswitch].Tdel; 
+          */
+		Tchild = Tdel + device_ctx.rr_graph.get_switch(RRSwitchId(iswitch)).R * child_node->C_downstream;
+		Tchild += device_ctx.rr_graph.get_switch(RRSwitchId(iswitch)).Tdel; /* Intrinsic switch delay. */
 		load_rc_tree_T(child_node, Tchild);
 
 		linked_rc_edge = linked_rc_edge->next;
