@@ -430,6 +430,7 @@ case_items:
 
 seq_block:
 	vBEGIN stmt_list vEND 									{$$ = $2;}
+	| vBEGIN ':' vSYMBOL_ID stmt_list vEND					{$$ = $4;}
 	;
 
 stmt_list:
