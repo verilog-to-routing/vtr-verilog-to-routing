@@ -526,7 +526,11 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
  *-------------------------------------------------------------------------*/
 void change_to_number_node(ast_node_t *node, long value)
 {
-	char *temp_ident = strdup(node->types.identifier);
+	char *temp_ident;
+	if (node->types.identifier != NULL) 
+	{
+		temp_ident = strdup(node->types.identifier);
+	}
 	free_assignement_of_node_keep_tree(node);
 	
 	long len = snprintf(NULL,0,"%ld", value);
