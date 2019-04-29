@@ -275,7 +275,7 @@ RRGraph::edge_range RRGraph::node_non_configurable_in_edges(RRNodeId node) const
   VTR_ASSERT_SAFE(valid_node_id(node));
 
   /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
-  auto begin = node_in_edges(node).begin() + node_num_non_configurable_in_edges_[node];  
+  auto begin = node_in_edges(node).end() - node_num_non_configurable_in_edges_[node];  
 
   /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
   auto end = node_in_edges(node).end();  
@@ -291,10 +291,10 @@ RRGraph::edge_range RRGraph::node_configurable_out_edges(RRNodeId node) const {
   VTR_ASSERT_SAFE(valid_node_id(node));
 
   /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
-  auto begin = node_in_edges(node).begin();  
+  auto begin = node_out_edges(node).begin();  
 
   /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
-  auto end = node_in_edges(node).end() - node_num_non_configurable_out_edges_[node];  
+  auto end = node_out_edges(node).end() - node_num_non_configurable_out_edges_[node];  
 
   return vtr::make_range(begin, end); 
 }
@@ -307,10 +307,10 @@ RRGraph::edge_range RRGraph::node_non_configurable_out_edges(RRNodeId node) cons
   VTR_ASSERT_SAFE(valid_node_id(node));
 
   /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
-  auto begin = node_in_edges(node).begin() + node_num_non_configurable_out_edges_[node];  
+  auto begin = node_out_edges(node).end() - node_num_non_configurable_out_edges_[node];  
 
   /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
-  auto end = node_in_edges(node).end();  
+  auto end = node_out_edges(node).end();  
 
   return vtr::make_range(begin, end); 
 }

@@ -52,8 +52,10 @@ using namespace std;
 #include "rr_graph.h"
 #include "pb_type_graph.h"
 #include "route_common.h"
+#include "router_common.h" /* TODO: remove old router when router using RRGraph Obj is stable */
 #include "timing_place_lookup.h"
 #include "route_export.h"
+#include "router_export.h" /* TODO: remove old router when router using RRGraph Obj is stable */
 #include "vpr_api.h"
 #include "read_sdc.h"
 #include "read_sdc2.h"
@@ -725,7 +727,8 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fi
     t_slack *slacks = alloc_and_load_timing_graph(vpr_setup.Timing);
 #endif
 
-    bool status = try_route(fixed_channel_width,
+    /* bool status = try_route(fixed_channel_width, */
+    bool status = router::try_route(fixed_channel_width,
                             vpr_setup.RouterOpts,
                             vpr_setup.AnalysisOpts,
                             &vpr_setup.RoutingArch,

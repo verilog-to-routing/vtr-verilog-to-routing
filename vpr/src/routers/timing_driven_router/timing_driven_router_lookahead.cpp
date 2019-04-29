@@ -3,17 +3,27 @@
 /* EXTERNAL library header files go second*/
 
 /* VPR header files go second*/
-#include "router_lookahead_map.h"
+#include "timing_driven_router_lookahead_map.h"
 #include "vpr_error.h"
-#include "route_timing.h"
-#include "router_lookahead.h"
+#include "timing_driven_route_timing.h"
+#include "timing_driven_router_lookahead.h"
 #include "rr_graph_fwd.h"
 
 /* Finally we include global variables */
 #include "globals.h"
 
+
+/* All the routers should be placed in the namespace of router
+ * A specific router may have it own namespace under the router namespace
+ * To call a function in a router, function need a prefix of router::<your_router_namespace>::
+ * This will ease the development in modularization.
+ * The concern is to minimize/avoid conflicts between data type names as much as possible
+ * Also, this will keep function names as short as possible.
+ */
 /* Categorize all the functions in the specific name space of this router */
 namespace router {
+
+namespace timing_driven {
 
 static int get_expected_segs_to_target(RRNodeId inode_id, RRNodeId target_node_id, int *num_segs_ortho_dir_ptr);
 static int round_up(float x);
@@ -197,4 +207,6 @@ static int get_expected_segs_to_target(RRNodeId inode_id, RRNodeId target_node_i
     return (num_segs_same_dir);
 }
 
-}// end namespace timing_driven_router
+}// end namespace timing_driven
+
+}// end namespace router

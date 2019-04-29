@@ -6,7 +6,16 @@
 #define TIMING_DRIVEN_ROUTE_TREE_TYPE_H
 
 /* Namespace declaration */
-namespace time_driven_router {
+/* All the routers should be placed in the namespace of router
+ * A specific router may have it own namespace under the router namespace
+ * To call a function in a router, function need a prefix of router::<your_router_namespace>::
+ * This will ease the development in modularization.
+ * The concern is to minimize/avoid conflicts between data type names as much as possible
+ * Also, this will keep function names as short as possible.
+ */
+namespace router {
+
+namespace timing_driven {
 
 /************** Types and defines exported by route_tree_timing.c ************/
 struct t_rt_node;
@@ -17,12 +26,10 @@ struct t_rt_node;
  * next:   Pointer to the next linked_rt_edge in the linked list (allows     *
  *         you to get the next child of the current rt_node).                */
 struct t_linked_rt_edge {
-	t_rt_node *child;
-	short iswitch;
-	t_linked_rt_edge *next;
+  t_rt_node *child;
+  short iswitch;
+  t_linked_rt_edge *next;
 };
-
-
 
 /* Structure describing one node in a routing tree (used to get net delays   *
  * incrementally during routing, as pieces are being added).                 *
@@ -45,17 +52,21 @@ struct t_linked_rt_edge {
  * Tdel:  Time delay for the signal to get from the net source to this node. *
  *        Includes the time to go through this node.                         */
 struct t_rt_node {
-	union {
-		t_linked_rt_edge *child_list;
-		t_rt_node *next;
-	} u;
-	t_rt_node *parent_node;
-	short parent_switch;
-	bool re_expand;
-	int inode;
-	float C_downstream;
-	float R_upstream;
-	float Tdel;
+  union {
+    t_linked_rt_edge *child_list;
+    t_rt_node *next;
+  } u;
+  t_rt_node *parent_node;
+  short parent_switch;
+  bool re_expand;
+  int inode;
+  float C_downstream;
+  float R_upstream;
+  float Tdel;
 };
 
-} /* end of namespace time_driven_router */
+} /* end of namespace timing_driven */
+
+} /* end of namespace router */
+
+#endif

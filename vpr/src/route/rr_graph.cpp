@@ -39,6 +39,7 @@ using namespace std;
 
 #include "rr_types.h"
 
+#include "timing_driven_router_lookahead_map.h"
 #include "create_rr_graph.h"
 #include "rr_graph_obj_writer.h"
 
@@ -347,7 +348,8 @@ void create_rr_graph(
 
     /* Build the lookahead for rr_graph object */
     if (router_lookahead_type == e_router_lookahead::MAP) {
-        router::compute_router_lookahead(segment_inf.size());
+        compute_router_lookahead(segment_inf.size());
+        router::timing_driven::compute_router_lookahead(segment_inf.size());
     }
 
     //Write out rr graph file if needed

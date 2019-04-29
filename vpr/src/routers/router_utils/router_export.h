@@ -21,6 +21,8 @@
 #include "timing_info_fwd.h"
 #include "RoutingDelayCalculator.h"
 
+namespace router {
+
 void try_graph(int width_fac, t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
 		t_chan_width_dist chan_width_dist,
@@ -41,8 +43,6 @@ bool try_route(int width_fac,
 		t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs,
         ScreenUpdatePriority first_iteration_priority);
-
-namespace router {
 
 bool feasible_routing();
 

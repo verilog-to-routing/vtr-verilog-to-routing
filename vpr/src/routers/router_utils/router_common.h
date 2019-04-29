@@ -24,6 +24,14 @@
 #include "rr_graph_fwd.h"
 
 /* use a namespace for the functions */
+/* Namespace declaration */
+/* All the routers should be placed in the namespace of router
+ * A specific router may have it own namespace under the router namespace
+ * To call a function in a router, function need a prefix of router::<your_router_namespace>::
+ * This will ease the development in modularization.
+ * The concern is to minimize/avoid conflicts between data type names as much as possible
+ * Also, this will keep function names as short as possible.
+ */
 namespace router { 
 
 struct t_heap_prev {

@@ -1,3 +1,4 @@
+/* Standard header files required go first */
 #include <cstdio>
 #include <ctime>
 #include <cmath>
@@ -6,8 +7,6 @@
 #include <iostream>
 
 using namespace std;
-
-/* Standard header files required go first */
 
 /* EXTERNAL library header files go second*/
 #include "vtr_assert.h"
@@ -24,7 +23,8 @@ using namespace std;
 #include "stats.h"
 #include "router_common.h"
 #include "router_export.h"
-#include "router_timing.h"
+#include "timing_driven_route_tree_timing.h"
+#include "timing_driven_route_timing.h"
 #include "router_breadth_first.h"
 #include "place_and_route.h"
 #include "rr_graph.h"
@@ -33,7 +33,7 @@ using namespace std;
 #include "draw.h"
 #include "echo_files.h"
 
-#include "route_profiling.h"
+#include "router_profiling.h"
 
 #include "timing_util.h"
 #include "RoutingDelayCalculator.h"
@@ -49,6 +49,14 @@ using namespace std;
 #include "globals.h"
 
 /* use a namespace for the shared functions used by routers */
+/* All the routers should be placed in the namespace of router
+ * A specific router may have it own namespace under the router namespace
+ * To call a function in a router, function need a prefix of router::<your_router_namespace>::
+ * This will ease the development in modularization.
+ * The concern is to minimize/avoid conflicts between data type names as much as possible
+ * Also, this will keep function names as short as possible.
+ */
+
 namespace router {
 
 /**************** Types local to route_common.c ******************/
@@ -129,7 +137,7 @@ namespace heap_ {
   size_t size();
   void expand_heap_if_full();
 
-  void sift_down(size_t hole);
+  //void sift_down(size_t hole);
 } /* end of namespace heap_*/
 
 void save_routing(vtr::vector<ClusterNetId, t_trace *> &best_routing,
@@ -352,7 +360,7 @@ bool try_route(int width_fac,
 
   if (router_opts.router_algorithm == BREADTH_FIRST) {
     VTR_LOG("Confirming router algorithm: BREADTH_FIRST.\n");
-    success = try_breadth_first_route(router_opts);
+    success = router::breadth_first::try_breadth_first_route(router_opts);
   } else { /* TIMING_DRIVEN route */
     VTR_LOG("Confirming router algorithm: TIMING_DRIVEN.\n");
 
@@ -360,7 +368,7 @@ bool try_route(int width_fac,
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
 
 
-    success = try_timing_driven_route(router_opts,
+    success = router::timing_driven::try_timing_driven_route(router_opts,
             analysis_opts,
             net_delay,
             netlist_pin_lookup,
@@ -707,7 +715,9 @@ static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_
 }
 
 //Recursive helper function for add_trace_non_configurable()
-static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& trace_nodes, int depth) {
+static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, 
+                                                                      std::unordered_set<int>& trace_nodes, 
+                                                                      int depth) {
   t_trace* head = nullptr;
   t_trace* tail = nullptr;
 
@@ -720,7 +730,7 @@ static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, 
   std::vector<RREdgeId> unvisited_non_configurable_edges;
   auto& device_ctx = g_vpr_ctx.device();
   for (RREdgeId iedge : device_ctx.rr_graph.node_non_configurable_out_edges(node_id)) {
-    VTR_ASSERT_SAFE(!device_ctx.rr_graph.edge_is_configurable(iedge));
+    VTR_ASSERT_SAFE(device_ctx.rr_graph.edge_is_non_configurable(iedge));
 
     RRNodeId to_node_id = device_ctx.rr_graph.edge_sink_node(iedge);
     int to_node = size_t(to_node_id);
@@ -747,15 +757,16 @@ static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, 
     //Recursive case: intermediate node with non-configurable edges
     for (RREdgeId iedge : unvisited_non_configurable_edges) {
       RRNodeId to_node_id = device_ctx.rr_graph.edge_sink_node(iedge);
+      int to_node = size_t(to_node_id);
       short iswitch = size_t(device_ctx.rr_graph.edge_switch(iedge));
 
-      VTR_ASSERT(!trace_nodes.count(size_t(to_node_id)));
+      VTR_ASSERT(!trace_nodes.count(to_node));
       trace_nodes.insert(node);
 
       //Recurse
       t_trace* subtree_head = nullptr;
       t_trace* subtree_tail = nullptr;
-      std::tie(subtree_head, subtree_tail) = add_trace_non_configurable_recurr(size_t(to_node_id), trace_nodes, depth + 1);
+      std::tie(subtree_head, subtree_tail) = add_trace_non_configurable_recurr(to_node, trace_nodes, depth + 1);
 
       if (subtree_head && subtree_tail) {
         //Add the non-empty sub-tree
@@ -1556,9 +1567,9 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
   t_heap *heap_head_ptr;
   t_type_ptr type;
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& device_ctx = g_vpr_ctx.device();
+  auto& cluster_ctx = g_vpr_ctx.clustering();
+  auto& route_ctx = g_vpr_ctx.mutable_routing();
+  auto& device_ctx = g_vpr_ctx.device();
 
   if (rip_up_local_opins) {
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
@@ -1596,7 +1607,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
       /* FIXME: the node id conversion will be removed 
        * when upstream functions are adapted to RRNodeId 
        */
-      RRNodeId from_node_id = RRNodeId(from_node_id);
+      RRNodeId from_node_id = RRNodeId(from_node);
       for (auto edge : device_ctx.rr_graph.node_out_edges(from_node_id)) {
         RRNodeId to_node_id = device_ctx.rr_graph.edge_sink_node(edge);
 

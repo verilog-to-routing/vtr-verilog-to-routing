@@ -29,14 +29,24 @@ See Section 3.2.4 in Oleg Petelin's MASc thesis (2016) for more discussion.
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
-#include "router_lookahead_map.h"
+#include "timing_driven_router_lookahead_map.h"
 #include "rr_graph_fwd.h"
 
 /* Finally we include global variables */
 #include "globals.h"
 
+
+/* All the routers should be placed in the namespace of router
+ * A specific router may have it own namespace under the router namespace
+ * To call a function in a router, function need a prefix of router::<your_router_namespace>::
+ * This will ease the development in modularization.
+ * The concern is to minimize/avoid conflicts between data type names as much as possible
+ * Also, this will keep function names as short as possible.
+ */
 /* Categorize all the functions in the specific name space of this router */
 namespace router {
+
+namespace timing_driven {
 
 /* the cost map is computed by running a Dijkstra search from channel segment rr nodes at the specified reference coordinate */
 #define REF_X 3
@@ -740,4 +750,6 @@ static RRNodeId get_chan_start_node_id(short start_x, short start_y,
   return result;
 }
 
-}// end namespace timing_driven_router
+}// end namespace timing_driven
+
+}// end namespace router

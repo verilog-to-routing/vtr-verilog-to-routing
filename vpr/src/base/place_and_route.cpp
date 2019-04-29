@@ -32,6 +32,7 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "echo_files.h"
 #include "route_common.h"
+#include "router_export.h" /* TODO: remove old router when router using RRGraph Obj is stable */
 #include "place_macro.h"
 #include "power.h"
 
@@ -185,7 +186,8 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 #endif
                     arch->Directs, arch->num_directs);
         }
-        success = try_route(current,
+        //success = try_route(current,
+        success = router::try_route(current,
                 router_opts,
                 analysis_opts,
                 det_routing_arch, segment_inf,

@@ -1,17 +1,42 @@
-#pragma once
+/* IMPORTANT:
+ * The following preprocessing flags are added to 
+ * avoid compilation error when this headers are included in more than 1 times 
+ */
+#ifndef TIMING_DRIVEN_ROUTE_TIMING_H
+#define TIMING_DRIVEN_ROUTE_TIMING_H
+
+/*
+ * Notes in include header files in a head file 
+ * Only include the neccessary header files 
+ * that is required by the data types in the function/class declarations!
+ */
+/* Header files should be included in a sequence */
+/* Standard header files required go first */
+
 #include <unordered_map>
 #include <vector>
-#include "connection_based_routing.h"
+
+#include "timing_driven_connection_based_routing.h"
 #include "vpr_types.h"
 
 #include "vpr_utils.h"
 #include "timing_info_fwd.h"
-#include "route_budgets.h"
+#include "timing_driven_route_budgets.h"
 #include "router_common.h"
 #include "router_stats.h"
-#include "router_lookahead.h"
+#include "timing_driven_router_lookahead.h"
 
-namespace router {
+/* Namespace declaration */
+/* All the routers should be placed in the namespace of router
+ * A specific router may have it own namespace under the router namespace
+ * To call a function in a router, function need a prefix of router::<your_router_namespace>::
+ * This will ease the development in modularization.
+ * The concern is to minimize/avoid conflicts between data type names as much as possible
+ * Also, this will keep function names as short as possible.
+ */
+namespace router { 
+
+namespace timing_driven { 
 
 int get_max_pins_per_net();
 
@@ -34,7 +59,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
         RouterStats& connections_routed,
 		float* pin_criticality,
 		t_rt_node** rt_node_of_sink, vtr::vector<ClusterNetId, float *> &net_delay,
-        const router::RouterLookahead& router_lookahead,
+        const RouterLookahead& router_lookahead,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<SetupTimingInfo> timing_info, route_budgets &budgeting_inf);
 
@@ -45,7 +70,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
 		float *pin_criticality,
         t_rt_node ** rt_node_of_sink,
 		float *net_delay,
-        const router::RouterLookahead& router_lookahead,
+        const RouterLookahead& router_lookahead,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets &budgeting_inf);
 
@@ -81,7 +106,7 @@ struct t_conn_cost_params {
 t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root, int sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
-        const router::RouterLookahead& router_lookahead,
+        const RouterLookahead& router_lookahead,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats);
 
@@ -103,4 +128,9 @@ struct timing_driven_route_structs {
 };
 
 void update_rr_base_costs(int fanout);
-} //end of namespace router 
+
+} /* end of namespace timing_driven */
+
+} /* end of namespace router */
+
+#endif

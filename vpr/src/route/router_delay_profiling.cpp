@@ -43,7 +43,7 @@ bool calculate_delay(int source_node, int sink_node,
 
     std::vector<int> modified_rr_node_inf;
     RouterStats router_stats;
-    auto router_lookahead = router::make_router_lookahead(router_opts.lookahead_type);
+    auto router_lookahead = make_router_lookahead(router_opts.lookahead_type);
     t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, *router_lookahead, modified_rr_node_inf, router_stats);
 
     bool found_path = (cheapest != nullptr);
