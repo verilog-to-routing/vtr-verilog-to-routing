@@ -27,6 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <string.h>
 #include "odin_types.h"
+#include "ast_util.h"
 #include "parse_making_ast.h"
 
 #define PARSE {printf("here\n");}
@@ -65,9 +66,9 @@ int yylex(void);
 %token vOUTPUT vPARAMETER vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER
-%token vPLUS_COLON vMINUS_COLON
+%token vPLUS_COLON vMINUS_COLON vSPECPARAM
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
-%token vSPECPARAM
+%token vNOT_SUPPORT 
 
 %right '?' ':'
 %left voOROR
@@ -404,7 +405,7 @@ list_of_specify_items:
 
 specify_item:
 	specify_pal_connect_declaration            							{$$ = newList(SPECIFY_PAL_CONNECT_LIST, $1);}
-	| specparam_declaration            						        	{$$ = cleanup_specify_items($1);}
+	| specparam_declaration            						        	{$$ = free_whole_tree($1);}
 	;
 
 specify_pal_connect_declaration:
