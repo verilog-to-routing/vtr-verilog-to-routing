@@ -1028,26 +1028,19 @@ static t_pack_molecule *get_free_molecule_with_most_ext_inputs_for_cluster(
 	 * TODO: Analyze if this function is useful in more detail, also, should probably not include clock in input count
 	 */
 
-	int ext_inps;
-	int i, j;
-	t_pack_molecule *molecule;
-
 	int inputs_avail = 0;
 
-	for (i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
-		for (j = 0; j < cur_pb->pb_graph_node->input_pin_class_size[i]; j++) {
-			if (cur_pb->pb_stats->input_pins_used[i][j])
-				inputs_avail++;
-		}
+	for (int i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
+        inputs_avail += cur_pb->pb_stats->input_pins_used[i].size();
 	}
 
-	molecule = nullptr;
+	t_pack_molecule* molecule = nullptr;
 
 	if (inputs_avail >= unclustered_list_head_size) {
 		inputs_avail = unclustered_list_head_size - 1;
 	}
 
-	for (ext_inps = inputs_avail; ext_inps >= 0; ext_inps--) {
+	for (int ext_inps = inputs_avail; ext_inps >= 0; ext_inps--) {
 		molecule = get_molecule_by_num_ext_inputs(
 				ext_inps, LEAVE_CLUSTERED, cluster_placement_stats_ptr);
 		if (molecule != nullptr) {
@@ -1063,8 +1056,6 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 	/* Call this routine when starting to fill up a new cluster.  It resets *
 	 * the gain vector, etc.                                                */
 
-	int i;
-
 	pb->pb_stats = new t_pb_stats;
 
 	/* If statement below is for speed.  If nets are reasonably low-fanout,  *
@@ -1072,21 +1063,14 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 	 * only those atom block structures will be fastest.  If almost all blocks    *
 	 * have been touched it should be faster to just run through them all    *
 	 * in order (less addressing and better cache locality).                 */
-	pb->pb_stats->input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
-	pb->pb_stats->output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
+	pb->pb_stats->input_pins_used = std::vector<std::unordered_set<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
+	pb->pb_stats->output_pins_used = std::vector<std::unordered_set<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
 	pb->pb_stats->lookahead_input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
 	pb->pb_stats->lookahead_output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
 	pb->pb_stats->num_feasible_blocks = NOT_VALID;
 	pb->pb_stats->feasible_blocks = (t_pack_molecule**) vtr::calloc(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, sizeof(t_pack_molecule *));
 
 	pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID();
-	for (i = 0; i < pb->pb_graph_node->num_input_pin_class; i++) {
-		pb->pb_stats->input_pins_used[i] = std::vector<AtomNetId>(pb->pb_graph_node->input_pin_class_size[i]);
-	}
-
-	for (i = 0; i < pb->pb_graph_node->num_output_pin_class; i++) {
-		pb->pb_stats->output_pins_used[i] = std::vector<AtomNetId>(pb->pb_graph_node->output_pin_class_size[i]);
-	}
 
 	pb->pb_stats->gain.clear();
 	pb->pb_stats->timinggain.clear();
@@ -2978,36 +2962,30 @@ static bool check_lookahead_pins_used(t_pb *cur_pb, t_ext_pin_util max_external_
 
 /* Speculation successful, commit input/output pins used */
 static void commit_lookahead_pins_used(t_pb *cur_pb) {
-	int i, j;
-	int ipin;
+
 	const t_pb_type *pb_type = cur_pb->pb_graph_node->pb_type;
 
 	if (pb_type->num_modes > 0 && cur_pb->name != nullptr) {
-		for (i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
-			ipin = 0;
+		for (int i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
 			VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[i].size() <= (unsigned int)cur_pb->pb_graph_node->input_pin_class_size[i]);
-			for (j = 0; j < (int) cur_pb->pb_stats->lookahead_input_pins_used[i].size(); j++) {
+			for (size_t j = 0; j < cur_pb->pb_stats->lookahead_input_pins_used[i].size(); j++) {
 				VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[i][j]);
-				cur_pb->pb_stats->input_pins_used[i][ipin] = cur_pb->pb_stats->lookahead_input_pins_used[i][j];
-				ipin++;
+				cur_pb->pb_stats->input_pins_used[i].insert(cur_pb->pb_stats->lookahead_input_pins_used[i][j]);
 			}
 		}
 
-		for (i = 0; i < cur_pb->pb_graph_node->num_output_pin_class; i++) {
-			ipin = 0;
+		for (int i = 0; i < cur_pb->pb_graph_node->num_output_pin_class; i++) {
 			VTR_ASSERT(cur_pb->pb_stats->lookahead_output_pins_used[i].size() <= (unsigned int)cur_pb->pb_graph_node->output_pin_class_size[i]);
-			for (j = 0; j < (int) cur_pb->pb_stats->lookahead_output_pins_used[i].size(); j++) {
+			for (size_t j = 0; j < cur_pb->pb_stats->lookahead_output_pins_used[i].size(); j++) {
 				VTR_ASSERT(cur_pb->pb_stats->lookahead_output_pins_used[i][j]);
-				cur_pb->pb_stats->output_pins_used[i][ipin] = cur_pb->pb_stats->lookahead_output_pins_used[i][j];
-				ipin++;
+				cur_pb->pb_stats->output_pins_used[i].insert(cur_pb->pb_stats->lookahead_output_pins_used[i][j]);
 			}
 		}
 
 		if (cur_pb->child_pbs != nullptr) {
-			for (i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children;
-					i++) {
+			for (int i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
 				if (cur_pb->child_pbs[i] != nullptr) {
-					for (j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
+					for (int j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
 						commit_lookahead_pins_used(&cur_pb->child_pbs[i][j]);
 					}
 				}
