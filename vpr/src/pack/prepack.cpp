@@ -1810,7 +1810,8 @@ static void init_molecule_chain_info(const AtomBlockId blk_id, t_pack_molecule* 
     if (!driver_atom_id || itr == atom_molecules.end()) {
         // allocate chain info
         molecule->chain_info = std::make_shared<t_chain_info>();
-        // this is not the first molecule to be created for this chain
+        molecule->chain_info->chain_id = 0;
+    // this is not the first molecule to be created for this chain
     } else {
         // molecule driving blk_id
         auto prev_molecule = itr->second;
