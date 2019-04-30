@@ -1845,7 +1845,8 @@ static int get_forced_chain_id(t_pack_molecule* molecule, const t_pack_molecule*
             const auto& pin = driver_pb_graph_node->output_pins[iport][ipin];
             if (pin.port->model_port == cout_port_model) {
                 for (size_t chain_id = 0; chain_id < chain_exit_pins.size(); chain_id++) {
-                    if (&pin == chain_exit_pins[chain_id])
+                    // architecture specific hack
+                    if (pin.parent_node->placement_index == chain_exit_pins[chain_id]->parent_node->placement_index)
                         return chain_id;
                 }
             }
