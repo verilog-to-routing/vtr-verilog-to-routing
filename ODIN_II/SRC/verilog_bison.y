@@ -377,6 +377,7 @@ module_parameter:
 // 5 Behavioral Statements	{$$ = NULL;}
 always:
 	vALWAYS delay_control statement 					{$$ = newAlways($2, $3, yylineno);}
+	| vALWAYS statement									{$$ = newAlways(NULL, $2, yylineno);}
 	;
 
 function_statement:
