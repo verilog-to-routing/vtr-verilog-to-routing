@@ -115,7 +115,6 @@ my @forwarded_vpr_args;   # VPR arguments that pass through the script
 my $verify_rr_graph         = 0;
 my $check_route             = 0;
 my $check_place             = 0;
-my $use_old_abc             = 0;
 my $use_old_abc_script      = 0;
 my $abc_use_dc2             = 1;
 my $run_name = "";
@@ -178,8 +177,6 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
             $check_route = 1;
     } elsif ( $token eq "-check_place" ){
             $check_place = 1;
-    } elsif ( $token eq "-use_old_abc"){
-            $use_old_abc = 1;
     } elsif ( $token eq "-use_old_abc_script"){
             $use_old_abc_script = 1;
     } elsif ( $token eq "-abc_use_dc2"){
@@ -314,18 +311,9 @@ my $abc_path;
 my $abc_rc_path;
 if ( $stage_idx_abc >= $starting_stage or $stage_idx_vpr <= $ending_stage ) {
 	#Need ABC for either synthesis or post-VPR verification
-	if ($use_old_abc)
-	{
-		my $abc_dir_path = "$vtr_flow_path/../abc_with_bb_support";
-		$abc_path = "$abc_dir_path/oldabc";
-		$abc_rc_path = "$abc_dir_path/abc.rc";
-	}
-	else
-	{
-		my $abc_dir_path = "$vtr_flow_path/../abc";
-		$abc_path = "$abc_dir_path/abc";
-		$abc_rc_path = "$abc_dir_path/abc.rc";
-	}
+    my $abc_dir_path = "$vtr_flow_path/../abc";
+    $abc_path = "$abc_dir_path/abc";
+    $abc_rc_path = "$abc_dir_path/abc.rc";
 
 	( -e $abc_path or -e "${abc_path}.exe" )
 	  or die "Cannot find ABC executable ($abc_path)";
@@ -669,19 +657,7 @@ if (    $starting_stage <= $stage_idx_abc
 		time;
 		";
 
-		if ($use_old_abc) {
-			#Legacy ABC script
-			$abc_commands="
-			read $pre_abc_blif;
-			time;
-			resyn;
-			resyn2;
-			if -K $lut_size;
-			time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; 
-			write_hie ${pre_abc_blif} ${post_abc_raw_blif};
-			print_stats;
-			";
-		} elsif ($use_old_abc_script) {
+		if ($use_old_abc_script) {
 			#Legacy ABC script adapted for new ABC by moving scleanup before if
 			$abc_commands="
 			read $pre_abc_blif; 
