@@ -251,6 +251,38 @@ short RRGraph::node_num_non_configurable_out_edges(RRNodeId node) const {
   return iedge;
 }
 
+/* Get the edge id that connects two nodes */
+RREdgeId RRGraph::get_node_to_node_edge(RRNodeId from_node, RRNodeId to_node) const {
+  /* Make sure we will access a valid node */
+  VTR_ASSERT_SAFE(valid_node_id(from_node));
+  VTR_ASSERT_SAFE(valid_node_id(to_node));
+
+  /* check the output edges of from_node  */
+  for (auto edge : node_out_edges(from_node)) {
+    /* Check if the sink node of the edge is the to_node */
+    if (to_node == edge_sink_node(edge)) { 
+      return edge; /* we find it return here */
+    } 
+  } 
+  /* We find nothing, return an OPEN ID */
+  return OPEN_EDGE_ID;
+}
+
+/* Get the switch id that connects two nodes */
+RRSwitchId RRGraph::get_node_to_node_switch(RRNodeId from_node, RRNodeId to_node) const {
+  /* Make sure we will access a valid node */
+  VTR_ASSERT_SAFE(valid_node_id(from_node));
+  VTR_ASSERT_SAFE(valid_node_id(to_node));
+
+  RREdgeId edge = get_node_to_node_edge(from_node, to_node);
+  if (OPEN_EDGE_ID == edge) {
+    /* edge is open, we return an OPEN_ID*/
+    return OPEN_SWITCH_ID;
+  } else {
+    return edge_switch(edge); 
+  }
+}
+
 /* Get the list of configurable edges from the input edges of a given node 
  * And return the range(iterators) of the list 
  */
@@ -1052,6 +1084,7 @@ RRNodeId RRGraph::create_node(t_rr_type type) {
 RREdgeId RRGraph::create_edge(RRNodeId source, RRNodeId sink, RRSwitchId switch_id) {
   VTR_ASSERT(valid_node_id(source));
   VTR_ASSERT(valid_node_id(sink));
+  VTR_ASSERT(valid_switch_id(switch_id));
 
   //Allocate an ID
   RREdgeId edge_id = RREdgeId(edge_ids_.size());

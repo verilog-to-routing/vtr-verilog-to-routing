@@ -37,6 +37,8 @@
 #include "vtr_util.h"
 #include "vtr_flat_map.h"
 
+#include "rr_graph_fwd.h"
+
 /*******************************************************************************
  * Global data types and constants
  ******************************************************************************/
@@ -1119,7 +1121,8 @@ struct t_trace {
  * occ:        The current occupancy of the associated rr node              */
 struct t_rr_node_route_inf {
 	int prev_node;
-	short prev_edge;
+	int prev_edge; /* TODO: to be replaced by RREdgeId */
+	RREdgeId prev_edge_id; /* TODO: to be replaced by RREdgeId */
 
 	float pres_cost;
 	float acc_cost;

@@ -21,7 +21,7 @@
 
 /* VPR header files go second*/
 #include "clustered_netlist.h"
-#include "rr_graph_fwd.h"
+#include "rr_graph_obj.h"
 
 /* use a namespace for the functions */
 /* Namespace declaration */
@@ -35,11 +35,11 @@
 namespace router { 
 
 struct t_heap_prev {
-    t_heap_prev(int to, int from, short edge)
+    t_heap_prev(int to, int from, RREdgeId edge)
         : to_node(to), from_node(from), from_edge(edge) {}
     int to_node = NO_PREVIOUS; //The target node
     int from_node = NO_PREVIOUS; //The previous node used to connect to 'to_node'
-    short from_edge = NO_PREVIOUS; //The edge used to connect from 'from_node' to 'to_node'
+    RREdgeId from_edge = OPEN_EDGE_ID; //The edge used to connect from 'from_node' to 'to_node'
 };
 
 
@@ -106,7 +106,7 @@ void mark_remaining_ends(const std::vector<int>& remaining_sinks);
 
 void add_to_heap(t_heap *hptr);
 t_heap *alloc_heap_data();
-void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
+void node_to_heap(int inode, float cost, int prev_node, RREdgeId prev_edge,
 		float backward_path_cost, float R_upstream);
 
 bool is_empty_heap();
@@ -138,7 +138,7 @@ void build_heap();
 void sift_down(size_t hole);
 void sift_up(size_t tail, t_heap* const hptr);
 void push_back(t_heap* const hptr);
-void push_back_node(int inode, float total_cost, int prev_node, int prev_edge,
+void push_back_node(int inode, float total_cost, int prev_node, RREdgeId prev_edge,
 float backward_path_cost, float R_upstream);
 bool is_valid();
 void pop_heap();

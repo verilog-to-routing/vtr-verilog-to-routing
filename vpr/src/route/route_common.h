@@ -6,11 +6,11 @@
 
 
 struct t_heap_prev {
-    t_heap_prev(int to, int from, short edge)
+    t_heap_prev(int to, int from, int edge) /* IMPORTANT: using short type will not satisfy the number of edges as we flatten edges in rr_graph now */
         : to_node(to), from_node(from), from_edge(edge) {}
     int to_node = NO_PREVIOUS; //The target node
     int from_node = NO_PREVIOUS; //The previous node used to connect to 'to_node'
-    short from_edge = NO_PREVIOUS; //The edge used to connect from 'from_node' to 'to_node'
+    int from_edge = NO_PREVIOUS; //The edge used to connect from 'from_node' to 'to_node'
 };
 
 

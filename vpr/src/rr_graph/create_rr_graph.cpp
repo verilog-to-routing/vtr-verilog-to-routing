@@ -121,10 +121,8 @@ void convert_rr_graph() {
   bool check_pass =  device_ctx.rr_graph.check();
   if (false == check_pass) {
     /* Error out if check rr_graph fails */
-    /*
     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
               "Fail in checking rr_graph!\n");
-     */
   }
 
   return;

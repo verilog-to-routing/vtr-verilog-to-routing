@@ -51,7 +51,7 @@ namespace timing_driven {
 /* Array below allows mapping from any rr_node to any rt_node currently in
  * the rt_tree.                                */
 
-static std::vector<t_rt_node *> rr_node_to_rt_node; /* [0..device_ctx.rr_nodes.size()-1] */
+static std::vector<t_rt_node *> rr_node_to_rt_node; /* [0..device_ctx.rr_graph.nodes().size()-1] */
 
 
 /* Frees lists for fast addition and deletion of nodes and edges. */
@@ -300,7 +300,8 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
    * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
 
   int inode;
-  short iedge, iswitch = -1;
+  RREdgeId iedge; 
+  short iswitch = -1;
   t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
   t_linked_rt_edge *linked_rt_edge;
 
@@ -309,10 +310,10 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
   inode = hptr->index;
 
-  //if (device_ctx.rr_nodes[inode].type() != SINK) {
+  //if (device_ctx.rr_graph.node_type(RRNodeId(inode]) != SINK) {
   //vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
     //"in add_subtree_to_route_tree. Expected type = SINK (%d).\n"
-    //"Got type = %d.",  SINK, device_ctx.rr_nodes[inode].type());
+    //"Got type = %d.",  SINK, device_ctx.rr_graph.node_type(RRNodeId(inode));
   //}
 
   sink_rt_node = alloc_rt_node();
@@ -372,13 +373,12 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
       }
 
       downstream_rt_node = rt_node;
-      iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
+      iedge = route_ctx.rr_node_route_inf[inode].prev_edge_id;
       inode = route_ctx.rr_node_route_inf[inode].prev_node;
       /* FIXME convert to NodeID, 
        * to be removed when update all relevant data structures to use NodeId
        */
-      iedge_id = RREdgeId(iedge);
-      iswitch = size_t(device_ctx.rr_graph.edge_switch(iedge_id));
+      iswitch = size_t(device_ctx.rr_graph.edge_switch(iedge));
     }
   }
 
@@ -525,7 +525,7 @@ float load_new_subtree_C_downstream(t_rt_node* rt_node) {
   if (rt_node) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    C_downstream += device_ctx.rr_nodes[rt_node->inode].C();
+    C_downstream += device_ctx.rr_graph.node_C(RRNodeId(rt_node->inode));
     for (t_linked_rt_edge* edge = rt_node->u.child_list; edge != nullptr; edge = edge->next) {
 
       float C_downstream_child = load_new_subtree_C_downstream(edge->child);
@@ -644,7 +644,7 @@ void load_route_tree_rr_route_inf(t_rt_node* root) {
   for (;;) {
   int inode = root->inode;
   route_ctx.rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
-  route_ctx.rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
+  route_ctx.rr_node_route_inf[inode].prev_edge_id = OPEN_EDGE_ID;
   // path cost should be unset
   VTR_ASSERT(std::isinf(route_ctx.rr_node_route_inf[inode].path_cost));
   VTR_ASSERT(std::isinf(route_ctx.rr_node_route_inf[inode].backward_path_cost));

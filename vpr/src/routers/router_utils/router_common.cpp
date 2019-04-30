@@ -394,8 +394,8 @@ bool feasible_routing() {
    * That is, are all rr_node capacity limitations respected?  It assumes    *
    * that the occupancy arrays are up to date when it is called.             */
 
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
+  auto& device_ctx = g_vpr_ctx.device();
+  auto& route_ctx = g_vpr_ctx.routing();
 
   for (auto inode_id : device_ctx.rr_graph.nodes()) {
     if (route_ctx.rr_node_route_inf[size_t(inode_id)].occ() 
@@ -628,7 +628,7 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
   auto& device_ctx = g_vpr_ctx.device();
   auto& route_ctx = g_vpr_ctx.routing();
 
-  auto rr_type = device_ctx.rr_nodes[node].type();
+  auto rr_type = device_ctx.rr_graph.node_type(RRNodeId(node));
   if (rr_type != SINK) {
     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
       "in traceback_branch: Expected type = SINK (%d).\n");
@@ -649,19 +649,14 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
 
   for (t_heap_prev prev : nodes) {
     int inode = prev.from_node;
-    int iedge = prev.from_edge;
+    RREdgeId iedge = prev.from_edge;
 
     while (inode != NO_PREVIOUS) {
-
-      /* FIXME: the node id conversion will be removed 
-       * when upstream functions are adapted to RRNodeId 
-       */
-      RREdgeId iedge_id = RREdgeId(iedge);
 
       //Add the current node to the head of traceback
       t_trace* prev_ptr = alloc_trace_data();
       prev_ptr->index = inode;
-      prev_ptr->iswitch = size_t(device_ctx.rr_graph.edge_switch(iedge_id));
+      prev_ptr->iswitch = size_t(device_ctx.rr_graph.edge_switch(RREdgeId(iedge)));
       prev_ptr->next = branch_head;
       branch_head = prev_ptr;
 
@@ -672,7 +667,7 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
       trace_nodes.insert(inode); //Record this node as visited
       new_nodes_added_to_traceback.push_back(inode);
 
-      iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
+      iedge = route_ctx.rr_node_route_inf[inode].prev_edge_id;
       inode = route_ctx.rr_node_route_inf[inode].prev_node;
     }
   }
@@ -758,7 +753,7 @@ static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node,
     for (RREdgeId iedge : unvisited_non_configurable_edges) {
       RRNodeId to_node_id = device_ctx.rr_graph.edge_sink_node(iedge);
       int to_node = size_t(to_node_id);
-      short iswitch = size_t(device_ctx.rr_graph.edge_switch(iedge));
+      int iswitch = size_t(device_ctx.rr_graph.edge_switch(iedge));
 
       VTR_ASSERT(!trace_nodes.count(to_node));
       trace_nodes.insert(node);
@@ -805,7 +800,7 @@ void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].prev_node = NO_PREVIOUS;;
-        route_ctx.rr_node_route_inf[node].prev_edge = NO_PREVIOUS;;
+        route_ctx.rr_node_route_inf[node].prev_edge_id = OPEN_EDGE_ID;;
     }
 
 }
@@ -855,7 +850,7 @@ void mark_remaining_ends(const vector<int>& remaining_sinks) {
     ++route_ctx.rr_node_route_inf[sink_node].target_flag;
 }
 
-void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
+void node_to_heap(int inode, float total_cost, int prev_node, RREdgeId prev_edge,
     float backward_path_cost, float R_upstream) {
 
   /* Puts an rr_node on the heap, if the new cost given is lower than the     *
@@ -865,7 +860,7 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
    * easy.  The backward_path_cost and R_upstream values are used only by the *
    * timing-driven router -- the breadth-first router ignores them.           */
 
-    auto& route_ctx = g_vpr_ctx.routing();
+  auto& route_ctx = g_vpr_ctx.routing();
 
   if (total_cost >= route_ctx.rr_node_route_inf[inode].path_cost)
     return;
@@ -873,7 +868,7 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
   t_heap* hptr = alloc_heap_data();
   hptr->index = inode;
   hptr->cost = total_cost;
-    VTR_ASSERT(hptr->nodes.empty());
+  VTR_ASSERT(hptr->nodes.empty());
   hptr->nodes.emplace_back(inode, prev_node, prev_edge);
   hptr->backward_path_cost = backward_path_cost;
   hptr->R_upstream = R_upstream;
@@ -1081,7 +1076,7 @@ void reset_rr_node_route_structs() {
 
   for (size_t inode = 0; inode < device_ctx.rr_graph.nodes().size(); inode++) {
     route_ctx.rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
-    route_ctx.rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
+    route_ctx.rr_node_route_inf[inode].prev_edge_id = OPEN_EDGE_ID;
     route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
     route_ctx.rr_node_route_inf[inode].acc_cost = 1.0;
     route_ctx.rr_node_route_inf[inode].path_cost = std::numeric_limits<float>::infinity();
@@ -1615,7 +1610,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
         //Add the OPIN to the heap according to it's congestion cost
         cost = get_rr_cong_cost(size_t(to_node_id));
-        node_to_heap(size_t(to_node_id), cost, OPEN, OPEN, 0., 0.);
+        node_to_heap(size_t(to_node_id), cost, OPEN, OPEN_EDGE_ID, 0., 0.);
       }
 
       for (ipin = 0; ipin < num_local_opin; ipin++) {
@@ -1624,7 +1619,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
         heap_head_ptr = get_heap_head();
         inode = heap_head_ptr->index;
 
-        RRNodeId inode_id = RRNodeId(inode_id);
+        RRNodeId inode_id = RRNodeId(inode);
         VTR_ASSERT(device_ctx.rr_graph.node_type(inode_id) == OPIN);
 
         adjust_one_rr_occ_and_apcost(inode, 1, pres_fac, acc_fac);
@@ -1649,7 +1644,7 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
   /* FIXME: the node id conversion will be removed 
    * when upstream functions are adapted to RRNodeId 
    */
-  RRNodeId inode_id = RRNodeId(inode_id);
+  RRNodeId inode_id = RRNodeId(inode);
 
   int new_occ = route_ctx.rr_node_route_inf[inode].occ() + add_or_sub;
   int capacity = device_ctx.rr_graph.node_capacity(inode_id);
@@ -1837,16 +1832,14 @@ void print_rr_node_route_inf() {
   for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
     if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
       int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
-      int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
-      VTR_LOG("rr_node: %d prev_node: %d prev_edge: %d",
+      RREdgeId prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge_id;
+      VTR_LOG("rr_node: %d prev_node: %d prev_edge: %ld",
               inode, prev_node, prev_edge);
 
       /* FIXME: the node id conversion will be removed 
        * when upstream functions are adapted to RRNodeId 
        */
-      RREdgeId prev_edge_id = RREdgeId(prev_node);
-      
-      if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_graph.edge_is_configurable(prev_edge_id)) {
+      if (prev_node != OPEN && prev_edge != OPEN_EDGE_ID && !device_ctx.rr_graph.edge_is_configurable(prev_edge)) {
           VTR_LOG("*");
       }
 
@@ -1881,15 +1874,14 @@ void print_rr_node_route_inf_dot() {
     if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
 
       int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
-      int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
+      RREdgeId prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge_id;
 
-      if (prev_node != OPEN && prev_edge != OPEN) {
+      if (prev_node != OPEN && prev_edge != OPEN_EDGE_ID) {
         VTR_LOG("\tnode%d -> node%zu [", prev_node, inode);
         /* FIXME: the node id conversion will be removed 
          * when upstream functions are adapted to RRNodeId 
          */
-        RREdgeId prev_edge_id = RREdgeId(prev_edge);
-        if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_graph.edge_is_configurable(prev_edge_id)) {
+        if (prev_node != OPEN && prev_edge != OPEN_EDGE_ID && !device_ctx.rr_graph.edge_is_configurable(prev_edge)) {
           VTR_LOG("label=\"*\"");
         }
 
@@ -1993,7 +1985,7 @@ namespace heap_ {
   }
 
 
-  void push_back_node(int inode, float total_cost, int prev_node, int prev_edge,
+  void push_back_node(int inode, float total_cost, int prev_node, RREdgeId prev_edge,
     float backward_path_cost, float R_upstream) {
 
     /* Puts an rr_node on the heap with the same condition as node_to_heap,
