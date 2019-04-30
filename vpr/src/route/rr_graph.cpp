@@ -344,7 +344,7 @@ void create_rr_graph(
         }
     }
     /* Convert to rr_graph Object */
-    convert_rr_graph();
+    convert_rr_graph(segment_inf);
 
     /* Build the lookahead for rr_graph object */
     if (router_lookahead_type == e_router_lookahead::MAP) {

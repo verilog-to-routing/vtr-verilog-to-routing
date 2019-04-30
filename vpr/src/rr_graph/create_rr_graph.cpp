@@ -16,7 +16,11 @@
  * This function will convert an existing rr_graph in device_ctx to the RRGraph object
  * This function is used to test our RRGraph if it is acceptable in downstream routers  
  */
-void convert_rr_graph() {
+void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
+  /* IMPORTANT: to build clock tree,
+   * vpr added segments to the original arch segments  
+   * This is why to use vpr_segments as an inputs!!!
+   */
   auto& device_ctx = g_vpr_ctx.mutable_device();
 
   /* TODO: make sure we have a clean empty rr_graph */
@@ -35,10 +39,10 @@ void convert_rr_graph() {
   }
 
   /* The number of segments are in general small, reserve segments may not bring significant memory efficiency */
-  device_ctx.rr_graph.reserve_segments(device_ctx.arch->Segments.size());
+  device_ctx.rr_graph.reserve_segments(vpr_segments.size());
   //Create the segments
-  for (size_t iseg = 0; iseg < device_ctx.arch->Segments.size(); ++iseg) {
-    device_ctx.rr_graph.create_segment(device_ctx.arch->Segments[iseg]);
+  for (size_t iseg = 0; iseg < vpr_segments.size(); ++iseg) {
+    device_ctx.rr_graph.create_segment(vpr_segments[iseg]);
   }
 
   /* Reserve list of nodes to be memory efficient */

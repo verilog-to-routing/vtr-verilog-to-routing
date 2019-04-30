@@ -8,6 +8,10 @@
  */
 #include "rr_graph_obj.h"
 
-void convert_rr_graph();
+/* IMPORTANT: to build clock tree,
+ * vpr added segments to the original arch segments  
+ * This is why to use vpr_segments as an inputs!!!
+ */
+void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments);
 
 #endif 
