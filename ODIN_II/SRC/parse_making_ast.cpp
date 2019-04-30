@@ -274,11 +274,6 @@ void clean_up_parser_for_file()
 
 }
 
-ast_node_t * cleanup_specify_items(ast_node_t *root)
-{
-	return free_whole_tree(root);
-}
-
 /*---------------------------------------------------------------------------------------------
  * (function: next_parsed_verilog_file)
  *-------------------------------------------------------------------------------------------*/
