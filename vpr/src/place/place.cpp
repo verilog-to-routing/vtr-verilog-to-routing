@@ -356,7 +356,6 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
                                                const SetupTimingInfo& timing_info,
                                                const PlacementDelayCalculator& delay_calc);
-static void update_screen_debug();
 
 /*****************************************************************************/
 void try_place(t_placer_opts placer_opts,
@@ -3534,6 +3533,13 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
     timing_reporter.report_timing_setup(placer_opts.post_place_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }
 
+#if 0
+static void update_screen_debug();
+
+//Performs a major (i.e. interactive) placement screen update.
+//This function with no arguments is useful for calling from a debugger to
+//look at the intermediate implemetnation state.
 static void update_screen_debug() {
     update_screen(ScreenUpdatePriority::MAJOR, "DEBUG", PLACEMENT, nullptr);
 }
+#endif
