@@ -121,6 +121,8 @@ static int get_forced_chain_id(t_pack_molecule* molecule, const t_pack_molecule*
 
 static AtomBlockId get_adder_driver_block(const AtomBlockId block_id, const t_pack_patterns* pack_pattern,
                                           const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
+
+static bool molecule_is_hierarchical(const t_pack_molecule* molecule);
 /*****************************************/
 /*Function Definitions					 */
 /*****************************************/
@@ -1086,7 +1088,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
         }
     }
 
-    if (!has_second_level && molecule->pack_pattern->num_blocks > 40) {
+    if (!has_second_level && molecule_is_hierarchical(molecule)) {
         return false;
     }
 
@@ -1931,4 +1933,30 @@ static t_pb_graph_pin* find_chain_exit_pin(t_pb_graph_pin* input_pin, int patter
     // Exit chain pin should be found
     VTR_ASSERT(false);
     return nullptr;
+}
+
+/**
+ * This function returns true is this molecule is a packed molecule
+ * that has hierarchical structure. For example, an adder that is feeding
+ * another adder throught the sumout port.
+ */
+static bool molecule_is_hierarchical(const t_pack_molecule* molecule) {
+
+    // assume that only chained molecules can be hierarchical
+    if (!molecule->pack_pattern->is_chain)
+        return false;
+
+    const auto cout_pin_model = molecule->pack_pattern->chain_exit_pins[0]->port->model_port;
+    const auto root_block = molecule->pack_pattern->root_block;
+    auto connection = root_block->connections;
+
+    while (connection) {
+        if (connection->from_block == root_block &&
+            connection->from_pin->port->model_port != cout_pin_model &&
+            connection->from_pin->parent_node->pb_type == connection->to_pin->parent_node->pb_type)
+            return true;
+        connection = connection->next;
+    }
+
+    return false;
 }
