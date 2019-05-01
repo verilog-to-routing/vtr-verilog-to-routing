@@ -1535,7 +1535,7 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
                         // that is part of a long chain. If so, check if this molecule
                         // have modified the chain_id value based on the stale packing
                         // then reset the chain id and the first packed molecule pointer
-                        // this is packing is being reseted
+                        // this is packing is being reset
                         if (cur_molecule->type == MOLECULE_FORCED_PACK &&
                             cur_molecule->pack_pattern->is_chain &&
                             cur_molecule->chain_info->is_long_chain &&
@@ -1567,9 +1567,9 @@ void free_pb_stats(t_pb *pb) {
         if(pb->pb_stats->feasible_blocks) {
             free(pb->pb_stats->feasible_blocks);
         }
-        if(pb->pb_stats->transitive_fanout_candidates != nullptr) {
-            delete pb->pb_stats->transitive_fanout_candidates;
-        };
+        if(!pb->parent_pb) {
+            pb->pb_stats->transitive_fanout_candidates.clear();
+        }
         delete pb->pb_stats;
         pb->pb_stats = nullptr;
     }

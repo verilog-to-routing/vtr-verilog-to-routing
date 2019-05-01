@@ -72,7 +72,7 @@ using namespace std;
 #define AAPACK_MAX_NET_SINKS_IGNORE 64				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10			/* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
 #define AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE 4		/* When investigating transitive fanout connections in packing, this is the highest fanout net that will be explored */
-#define AAPACK_MAX_TRANSITIVE_EXPLORE 4				/* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less tahn AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
+#define AAPACK_MAX_TRANSITIVE_EXPLORE 40			/* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
 
 //Constant allowing all cluster pins to be used
 const t_ext_pin_util FULL_EXTERNAL_PIN_UTIL(1., 1.);
@@ -573,17 +573,18 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 							clb_inter_blk_nets,
 							clb_index, packer_opts.pack_verbosity);
 					continue;
-				} else {
-					/* Continue packing by filling smallest cluster */
-                    if (verbosity > 2) {
-                        VTR_LOG("\tPASSED: '%s' (%s)", blk_name.c_str(), blk_model->name);
-                        VTR_LOGV(next_molecule->pack_pattern, " molecule %s molecule_size %zu",
-                                 next_molecule->pack_pattern->name, next_molecule->atom_block_ids.size());
-                        VTR_LOG("\n");
-                    }
-                    VTR_LOGV(verbosity == 2, ".");
-					fflush(stdout);
 				}
+
+                /* Continue packing by filling smallest cluster */
+                if (verbosity > 2) {
+                    VTR_LOG("\tPASSED: '%s' (%s)", blk_name.c_str(), blk_model->name);
+                    VTR_LOGV(next_molecule->pack_pattern, " molecule %s molecule_size %zu",
+                             next_molecule->pack_pattern->name, next_molecule->atom_block_ids.size());
+                    VTR_LOG("\n");
+                }
+                VTR_LOGV(verbosity == 2, ".");
+                fflush(stdout);
+
 				update_cluster_stats(next_molecule, clb_index,
                         is_clock, //Set of all clocks
                         is_clock, //Set of all global signals (currently clocks)
@@ -617,6 +618,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 			} else {
 				is_cluster_legal = true;
 			}
+
 			if (is_cluster_legal) {
 				intra_lb_routing.push_back(router_data->saved_lb_nets);
 				VTR_ASSERT((int)intra_lb_routing.size() == num_clb);
@@ -1077,13 +1079,13 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 	pb->pb_stats->connectiongain.clear();
 	pb->pb_stats->sharinggain.clear();
 	pb->pb_stats->hillgain.clear();
+    pb->pb_stats->transitive_fanout_candidates.clear();
 
 	pb->pb_stats->num_pins_of_net_in_pb.clear();
 
 	pb->pb_stats->num_child_blocks_in_pb = 0;
 
 	pb->pb_stats->explore_transitive_fanout = true;
-	pb->pb_stats->transitive_fanout_candidates = nullptr;
 }
 /*****************************************/
 
@@ -1732,11 +1734,11 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 		cur_pb = atom_ctx.lookup.atom_pb(blk_id)->parent_pb;
 		while (cur_pb) {
 			/* reset list of feasible blocks */
-			cur_pb->pb_stats->num_feasible_blocks = NOT_VALID;
-			cur_pb->pb_stats->num_child_blocks_in_pb++;
 			if (cur_pb->parent_pb == nullptr) {
 				cb = cur_pb;
 			}
+			cur_pb->pb_stats->num_feasible_blocks = NOT_VALID;
+			cur_pb->pb_stats->num_child_blocks_in_pb++;
 			cur_pb = cur_pb->parent_pb;
 		}
 
@@ -1789,6 +1791,10 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 
 		commit_lookahead_pins_used(cb);
 	}
+
+    // if this molecule came from the transitive fanout candidates remove it
+    cb->pb_stats->transitive_fanout_candidates.erase(molecule->atom_block_ids[molecule->root]);
+    cb->pb_stats->explore_transitive_fanout = true;
 }
 
 static void start_new_cluster(
@@ -1966,8 +1972,7 @@ static t_pack_molecule *get_highest_gain_molecule(
     }
 
 	// 2. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
-	if(cur_pb->pb_stats->num_feasible_blocks == 0 &&
-	   cur_pb->pb_stats->explore_transitive_fanout == true) {
+	if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->explore_transitive_fanout) {
         add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets, cluster_index);
 	}
 
@@ -1979,13 +1984,11 @@ static t_pack_molecule *get_highest_gain_molecule(
 	/* Grab highest gain molecule */
 	t_pack_molecule* molecule = nullptr;
 	for (int j = 0; j < cur_pb->pb_stats->num_feasible_blocks; j++) {
-		if (cur_pb->pb_stats->num_feasible_blocks != 0) {
-			cur_pb->pb_stats->num_feasible_blocks--;
-			int index = cur_pb->pb_stats->num_feasible_blocks;
-			molecule = cur_pb->pb_stats->feasible_blocks[index];
-			VTR_ASSERT(molecule->valid == true);
-			return molecule;
-		}
+        cur_pb->pb_stats->num_feasible_blocks--;
+        int index = cur_pb->pb_stats->num_feasible_blocks;
+        molecule = cur_pb->pb_stats->feasible_blocks[index];
+        VTR_ASSERT(molecule->valid == true);
+        return molecule;
 	}
 
 	return molecule;
@@ -2094,42 +2097,35 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
 
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    if(cur_pb->pb_stats->transitive_fanout_candidates == nullptr) {
-        /* First time finding transitive fanout candidates therefore alloc and load them */
-        cur_pb->pb_stats->transitive_fanout_candidates = new vector<t_pack_molecule *>;
-        load_transitive_fanout_candidates(cluster_index,
-                                          atom_molecules,
-                                          cur_pb->pb_stats,
-                                          clb_inter_blk_nets);
+    cur_pb->pb_stats->explore_transitive_fanout = false;
 
-        /* Only consider candidates that pass a very simple legality check */
-        for(int i = 0; i < (int) cur_pb->pb_stats->transitive_fanout_candidates->size(); i++) {
-            t_pack_molecule* molecule = (*cur_pb->pb_stats->transitive_fanout_candidates)[i];
-            if (molecule->valid) {
-                bool success = true;
-                for (int j = 0; j < get_array_size_of_molecule(molecule); j++) {
-                    if (molecule->atom_block_ids[j]) {
-                        VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[j]) == ClusterBlockId::INVALID());
-                        auto blk_id = molecule->atom_block_ids[j];
-                        if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id)) {
-                            /* TODO: debating whether to check if placement exists for molecule (more
-                             * robust) or individual atom blocks (faster) */
-                            success = false;
-                            break;
-                        }
+    /* First time finding transitive fanout candidates therefore alloc and load them */
+    load_transitive_fanout_candidates(cluster_index,
+                                      atom_molecules,
+                                      cur_pb->pb_stats,
+                                      clb_inter_blk_nets);
+    /* Only consider candidates that pass a very simple legality check */
+    for(const auto& transitive_candidate : cur_pb->pb_stats->transitive_fanout_candidates) {
+        t_pack_molecule* molecule = transitive_candidate.second;
+        if (molecule->valid) {
+            bool success = true;
+            for (int j = 0; j < get_array_size_of_molecule(molecule); j++) {
+                if (molecule->atom_block_ids[j]) {
+                    VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[j]) == ClusterBlockId::INVALID());
+                    auto blk_id = molecule->atom_block_ids[j];
+                    if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id)) {
+                        /* TODO: debating whether to check if placement exists for molecule (more
+                         * robust) or individual atom blocks (faster) */
+                        success = false;
+                        break;
                     }
                 }
-                if (success) {
-                    add_molecule_to_pb_stats_candidates(molecule,
-                            cur_pb->pb_stats->gain, cur_pb, min(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE,AAPACK_MAX_TRANSITIVE_EXPLORE));
-                }
+            }
+            if (success) {
+                add_molecule_to_pb_stats_candidates(molecule,
+                        cur_pb->pb_stats->gain, cur_pb, min(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, AAPACK_MAX_TRANSITIVE_EXPLORE));
             }
         }
-    } else {
-        /* Clean up, no more candidates in transitive fanout to consider */
-        delete cur_pb->pb_stats->transitive_fanout_candidates;
-        cur_pb->pb_stats->transitive_fanout_candidates = nullptr;
-        cur_pb->pb_stats->explore_transitive_fanout = false;
     }
 }
 
@@ -2149,11 +2145,11 @@ static t_pack_molecule *get_molecule_for_cluster(
 	 * passed in.  If no suitable block is found it returns ClusterBlockId::INVALID().
 	 */
 
-	t_pack_molecule *best_molecule;
+    VTR_ASSERT(!cur_pb->parent_pb);
 
 	/* If cannot pack into primitive, try packing into cluster */
 
-	best_molecule = get_highest_gain_molecule(cur_pb, atom_molecules,
+	auto best_molecule = get_highest_gain_molecule(cur_pb, atom_molecules,
 			NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets, cluster_index);
 
 	/* If no blocks have any gain to the current cluster, the code above      *
@@ -3009,26 +3005,38 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 	}
 }
 
-/* Score unclustered atoms that are two hops away from current cluster */
+/**
+ * Score unclustered atoms that are two hops away from current cluster
+ * For example, consider a cluster that has a FF feeding an adder in another
+ * cluster. Since this FF is feeding an adder that is packed in another cluster
+ * this function should find other FFs that are feeding other inputs of this adder
+ * since they are two hops away from the FF packed in this cluster
+ */
 static void load_transitive_fanout_candidates(ClusterBlockId clb_index,
                                               const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 											  t_pb_stats *pb_stats,
 											  vtr::vector<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
+    // iterate over all the nets that have pins in this cluster
     for(const auto net_id : pb_stats->marked_nets) {
+        // only consider small nets to constrain runtime
 		if(atom_ctx.nlist.net_pins(net_id).size() < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE + 1) {
+            // iterate over all the pins of the net
             for(const auto pin_id : atom_ctx.nlist.net_pins(net_id)) {
                 AtomBlockId atom_blk_id = atom_ctx.nlist.pin_block(pin_id);
-				ClusterBlockId tclb = atom_ctx.lookup.atom_clb(atom_blk_id); //The transitive CLB
+                // get the transitive cluster
+				ClusterBlockId tclb = atom_ctx.lookup.atom_clb(atom_blk_id);
+                // if the block connected to this pin is packed in another cluster
 				if(tclb != clb_index && tclb != ClusterBlockId::INVALID()) {
-					/* Explore transitive connections from already packed cluster */
+					// explore transitive nets from already packed cluster
 					for(AtomNetId tnet : clb_inter_blk_nets[tclb]) {
+                        // iterate over all the pins of the net
                         for(AtomPinId tpin : atom_ctx.nlist.net_pins(tnet)) {
                             auto blk_id = atom_ctx.nlist.pin_block(tpin);
+                            // This transitive atom is not packed, score and add
 							if(atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
-								/* This transitive atom is not packed, score and add */
-								std::vector<t_pack_molecule *> &transitive_fanout_candidates = *(pb_stats->transitive_fanout_candidates);
+								auto& transitive_fanout_candidates = pb_stats->transitive_fanout_candidates;
 
 								if(pb_stats->gain.count(blk_id) == 0) {
 									pb_stats->gain[blk_id] = 0.001;
@@ -3039,19 +3047,7 @@ static void load_transitive_fanout_candidates(ClusterBlockId clb_index,
                                 for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
                                     t_pack_molecule* molecule = kv.second;
 									if (molecule->valid) {
-										unsigned int imol = 0;
-
-										/* The number of potential molecules is heavily bounded so
-                                         * this O(N) operation should be safe since N is small */
-										for(imol = 0; imol < transitive_fanout_candidates.size(); imol++) {
-											if(molecule == transitive_fanout_candidates[imol]) {
-												break;
-											}
-										}
-										if(imol == transitive_fanout_candidates.size()) {
-											/* not in candidate list, add to list */
-											transitive_fanout_candidates.push_back(molecule);
-										}
+                                        transitive_fanout_candidates.insert({molecule->atom_block_ids[molecule->root], molecule});
 									}
                                 }
 							}
