@@ -1063,8 +1063,8 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 	 * only those atom block structures will be fastest.  If almost all blocks    *
 	 * have been touched it should be faster to just run through them all    *
 	 * in order (less addressing and better cache locality).                 */
-	pb->pb_stats->input_pins_used = std::vector<std::unordered_set<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
-	pb->pb_stats->output_pins_used = std::vector<std::unordered_set<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
+	pb->pb_stats->input_pins_used = std::vector<std::unordered_map<size_t, AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
+	pb->pb_stats->output_pins_used = std::vector<std::unordered_map<size_t, AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
 	pb->pb_stats->lookahead_input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
 	pb->pb_stats->lookahead_output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
 	pb->pb_stats->num_feasible_blocks = NOT_VALID;
@@ -2918,46 +2918,61 @@ static bool check_lookahead_pins_used(t_pb *cur_pb, t_ext_pin_util max_external_
 
 	const t_pb_type *pb_type = cur_pb->pb_graph_node->pb_type;
 
-	bool success = true;
-
-	if (pb_type->num_modes > 0 && cur_pb->name != nullptr) {
-		for (int i = 0; i < cur_pb->pb_graph_node->num_input_pin_class && success; i++) {
+	if (pb_type->num_modes > 0 && cur_pb->name) {
+		for (int i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
             size_t class_size = cur_pb->pb_graph_node->input_pin_class_size[i];
+
             if (cur_pb->is_root()) {
-                //Scale the class size by the specified utilization.
-                //We clip to 1 to prevent class sizes of one from being scaled to zero.
-                class_size = std::max<size_t>(1, max_external_pin_util.input_pin_util * class_size);
+                // Scale the class size by the maximum external pin utilization factor
+                // Use ceil to avoid classes of size 1 from being scaled to zero
+                class_size = std::ceil(max_external_pin_util.input_pin_util * class_size);
+                // if the number of pins already used is larger than class size, then the number of
+                // cluster inputs already used should be our constraint. Why is this needed? This is
+                // needed since when packing the seed block the maximum external pin utilization is
+                // used as 1.0 allowing molecules that are using up to all the cluster inputs to be
+                // packed legally. Therefore, if the seed block is already using more inputs than
+                // the allowed maximum utilization, this should become the new maximum pin utilization.
+                class_size = std::max<size_t>(class_size, cur_pb->pb_stats->input_pins_used[i].size());
             }
 
 			if (cur_pb->pb_stats->lookahead_input_pins_used[i].size() > class_size) {
-				success = false;
+				return false;
 			}
 		}
 
-		for (int i = 0; i < cur_pb->pb_graph_node->num_output_pin_class && success; i++) {
+		for (int i = 0; i < cur_pb->pb_graph_node->num_output_pin_class; i++) {
             size_t class_size = cur_pb->pb_graph_node->output_pin_class_size[i];
             if (cur_pb->is_root()) {
-                //Scale the class size by the specified utilization.
-                //We clip to 1 to prevent class sizes of one from being scaled to zero.
-                class_size = std::max<size_t>(1, max_external_pin_util.output_pin_util * class_size);
+                // Scale the class size by the maximum external pin utilization factor
+                // Use ceil to avoid classes of size 1 from being scaled to zero
+                class_size = std::ceil(max_external_pin_util.output_pin_util * class_size);
+                // if the number of pins already used is larger than class size, then the number of
+                // cluster outputs already used should be our constraint. Why is this needed? This is
+                // needed since when packing the seed block the maximum external pin utilization is
+                // used as 1.0 allowing molecules that are using up to all the cluster inputs to be
+                // packed legally. Therefore, if the seed block is already using more inputs than
+                // the allowed maximum utilization, this should become the new maximum pin utilization.
+                class_size = std::max<size_t>(class_size, cur_pb->pb_stats->output_pins_used[i].size());
             }
 
 			if (cur_pb->pb_stats->lookahead_output_pins_used[i].size() > class_size) {
-				success = false;
+				return false;
 			}
 		}
 
-		if (success && cur_pb->child_pbs != nullptr) {
-			for (int i = 0; success && i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
-				if (cur_pb->child_pbs[i] != nullptr) {
-					for (int j = 0; success && j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
-						success = check_lookahead_pins_used(&cur_pb->child_pbs[i][j], max_external_pin_util);
+		if (cur_pb->child_pbs) {
+			for (int i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
+				if (cur_pb->child_pbs[i]) {
+					for (int j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
+						if (!check_lookahead_pins_used(&cur_pb->child_pbs[i][j], max_external_pin_util))
+                            return false;
 					}
 				}
 			}
 		}
 	}
-	return success;
+
+	return true;
 }
 
 /* Speculation successful, commit input/output pins used */
@@ -2965,12 +2980,12 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 
 	const t_pb_type *pb_type = cur_pb->pb_graph_node->pb_type;
 
-	if (pb_type->num_modes > 0 && cur_pb->name != nullptr) {
+	if (pb_type->num_modes > 0 && cur_pb->name) {
 		for (int i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
 			VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[i].size() <= (unsigned int)cur_pb->pb_graph_node->input_pin_class_size[i]);
 			for (size_t j = 0; j < cur_pb->pb_stats->lookahead_input_pins_used[i].size(); j++) {
 				VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[i][j]);
-				cur_pb->pb_stats->input_pins_used[i].insert(cur_pb->pb_stats->lookahead_input_pins_used[i][j]);
+				cur_pb->pb_stats->input_pins_used[i].insert({j, cur_pb->pb_stats->lookahead_input_pins_used[i][j]});
 			}
 		}
 
@@ -2978,13 +2993,13 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 			VTR_ASSERT(cur_pb->pb_stats->lookahead_output_pins_used[i].size() <= (unsigned int)cur_pb->pb_graph_node->output_pin_class_size[i]);
 			for (size_t j = 0; j < cur_pb->pb_stats->lookahead_output_pins_used[i].size(); j++) {
 				VTR_ASSERT(cur_pb->pb_stats->lookahead_output_pins_used[i][j]);
-				cur_pb->pb_stats->output_pins_used[i].insert(cur_pb->pb_stats->lookahead_output_pins_used[i][j]);
+				cur_pb->pb_stats->output_pins_used[i].insert({j, cur_pb->pb_stats->lookahead_output_pins_used[i][j]});
 			}
 		}
 
-		if (cur_pb->child_pbs != nullptr) {
+		if (cur_pb->child_pbs) {
 			for (int i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
-				if (cur_pb->child_pbs[i] != nullptr) {
+				if (cur_pb->child_pbs[i]) {
 					for (int j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
 						commit_lookahead_pins_used(&cur_pb->child_pbs[i][j]);
 					}

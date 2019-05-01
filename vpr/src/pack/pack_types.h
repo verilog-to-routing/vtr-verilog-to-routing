@@ -7,7 +7,7 @@
  * Defines core data structures used in packing
  */
 #include <map>
-#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 #include "arch_types.h"
@@ -66,8 +66,8 @@ struct t_pb_stats {
 	std::map<AtomNetId, int> num_pins_of_net_in_pb;
 
 	/* Record of pins of class used */
-    std::vector<std::unordered_set<AtomNetId>> input_pins_used; /* [0..pb_graph_node->num_pin_classes-1] nets using this input pin class */
-	std::vector<std::unordered_set<AtomNetId>> output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] nets using this output pin class */
+    std::vector<std::unordered_map<size_t, AtomNetId>> input_pins_used; /* [0..pb_graph_node->num_pin_classes-1] nets using this input pin class */
+	std::vector<std::unordered_map<size_t, AtomNetId>> output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] nets using this output pin class */
 
 	/* Use vector because array size is expected to be small so runtime should be faster using vector than map despite the O(N) vs O(log(n)) behaviour.*/
     std::vector<std::vector<AtomNetId>> lookahead_input_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
