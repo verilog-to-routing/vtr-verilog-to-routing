@@ -27,7 +27,6 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "globals.h"
 #include "atom_netlist.h"
-#include "hash.h"
 #include "prepack.h"
 #include "vpr_utils.h"
 #include "echo_files.h"
@@ -35,19 +34,14 @@ using namespace std;
 /*****************************************/
 /*Local Function Declaration			 */
 /*****************************************/
-static int add_pattern_name_to_hash(t_hash **nhash,
-		const char *pattern_name, int *ncount);
-
 static void discover_pattern_names_in_pb_graph_node(
-		t_pb_graph_node *pb_graph_node, t_hash **nhash,
-		int *ncount);
+		t_pb_graph_node *pb_graph_node, std::unordered_map<std::string, int>& pattern_names);
 
 static void forward_infer_pattern(t_pb_graph_pin *pb_graph_pin);
 
 static void backward_infer_pattern(t_pb_graph_pin *pb_graph_pin);
 
-static t_pack_patterns *alloc_and_init_pattern_list_from_hash(const int ncount,
-		t_hash **nhash);
+static t_pack_patterns *alloc_and_init_pattern_list_from_hash(std::unordered_map<std::string, int> pattern_names);
 
 static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 		const t_pb_graph_node *pb_graph_node);
@@ -122,29 +116,26 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id, const t_model_p
  * If this limitation is too constraining, code is designed so that this limitation can be removed.
  */
 t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
-	int i, j, ncount, k;
+
 	int L_num_blocks;
-	t_hash **nhash;
 	t_pack_patterns *list_of_packing_patterns;
 	t_pb_graph_edge *expansion_edge;
     auto& device_ctx = g_vpr_ctx.device();
 
 	/* alloc and initialize array of packing patterns based on architecture complex blocks */
-	nhash = alloc_hash_table();
-	ncount = 0;
-	for (i = 0; i < device_ctx.num_block_types; i++) {
-		discover_pattern_names_in_pb_graph_node(
-				device_ctx.block_types[i].pb_graph_head, nhash, &ncount);
+    std::unordered_map<std::string, int> pattern_names;
+	for (int i = 0; i < device_ctx.num_block_types; i++) {
+		discover_pattern_names_in_pb_graph_node(device_ctx.block_types[i].pb_graph_head, pattern_names);
 	}
 
-	list_of_packing_patterns = alloc_and_init_pattern_list_from_hash(ncount, nhash);
+	list_of_packing_patterns = alloc_and_init_pattern_list_from_hash(pattern_names);
 
 	/* load packing patterns by traversing the edges to find edges belonging to pattern */
-	for (i = 0; i < ncount; i++) {
-		for (j = 0; j < device_ctx.num_block_types; j++) {
+	for (size_t i = 0; i < pattern_names.size(); i++) {
+		for (int j = 0; j < device_ctx.num_block_types; j++) {
             // find an edge that belongs to this pattern
 			expansion_edge = find_expansion_edge_of_pattern(i, device_ctx.block_types[j].pb_graph_head);
-			if (expansion_edge == nullptr) {
+			if (!expansion_edge) {
 				continue;
 			}
 
@@ -162,7 +153,7 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
              * of size, it is optional whether or not an atom in a netlist matches any
              * particular block inside the chain */
 			list_of_packing_patterns[i].is_block_optional = (bool*) vtr::malloc(L_num_blocks * sizeof(bool));
-			for(k = 0; k < L_num_blocks; k++) {
+			for(int k = 0; k < L_num_blocks; k++) {
 				list_of_packing_patterns[i].is_block_optional[k] = false;
 				if(list_of_packing_patterns[i].is_chain && list_of_packing_patterns[i].root_block->block_id != k) {
 					list_of_packing_patterns[i].is_block_optional[k] = true;
@@ -181,34 +172,18 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 	}
 
     //Sanity check, every pattern should have a root block
-    for(i = 0; i < ncount; ++i) {
+    for(size_t i = 0; i < pattern_names.size(); ++i) {
         if(list_of_packing_patterns[i].root_block == nullptr) {
             VPR_THROW(VPR_ERROR_ARCH, "Failed to find root block for pack pattern %s", list_of_packing_patterns[i].name);
         }
     }
 
-	free_hash_table(nhash);
-
-	*num_packing_patterns = ncount;
+	*num_packing_patterns = pattern_names.size();
 
 
 	return list_of_packing_patterns;
 }
 
-/**
- * Adds pack pattern name to hashtable of pack pattern names.
- */
-static int add_pattern_name_to_hash(t_hash **nhash,
-		const char *pattern_name, int *ncount) {
-	t_hash *hash_value;
-
-	hash_value = insert_in_hash_table(nhash, pattern_name, *ncount);
-	if (hash_value->count == 1) {
-		VTR_ASSERT(*ncount == hash_value->index);
-		(*ncount)++;
-	}
-	return hash_value->index;
-}
 
 /**
  * Locate all pattern names
@@ -216,14 +191,10 @@ static int add_pattern_name_to_hash(t_hash **nhash,
  *				For cases where a pattern inference is "obvious", mark it as obvious.
  */
 static void discover_pattern_names_in_pb_graph_node(
-		t_pb_graph_node *pb_graph_node, t_hash **nhash,
-		int *ncount) {
-	int i, j, k, m;
-	int index;
-	bool hasPattern;
+		t_pb_graph_node *pb_graph_node, std::unordered_map<std::string, int>& pattern_names) {
+
 	/* Iterate over all edges to discover if an edge in current physical block belongs to a pattern
-	 If edge does, then record the name of the pattern in a hash table
-	 */
+       If edge does, then record the name of the pattern in a hash table */
 
 	if (pb_graph_node == nullptr) {
 		return;
@@ -231,23 +202,25 @@ static void discover_pattern_names_in_pb_graph_node(
 
 	pb_graph_node->temp_scratch_pad = nullptr;
 
-	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
-		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-			hasPattern = false;
-			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; k++) {
-				for (m = 0; m < pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
+	for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
+		for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
+			bool hasPattern = false;
+			for (int k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; k++) {
+                auto output_edge = pb_graph_node->input_pins[i][j].output_edges[k];
+				for (int m = 0; m < output_edge->num_pack_patterns; m++) {
 					hasPattern = true;
-					index = add_pattern_name_to_hash(nhash,
-                                pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_names[m], ncount);
-					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices == nullptr) {
-						pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices =
-                            (int*) vtr::malloc(pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns
-                                                    * sizeof(int));
+                    // insert the found pattern name to the hash table. If this pattern is inserted
+                    // for the first time, then its index is the current size of the hash table
+                    // otherwise the insert function will return an iterator of the previously
+                    // inserted element with the index given to that pattern
+                    std::string pattern_name(output_edge->pack_pattern_names[m]);
+                    int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
+					if (!output_edge->pack_pattern_indices) {
+						output_edge->pack_pattern_indices = (int*) vtr::malloc(output_edge->num_pack_patterns * sizeof(int));
 					}
-					pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
+					output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
                     // all its output pins to check if you need to infer pattern for direct connections
-                    auto& output_edge = pb_graph_node->input_pins[i][j].output_edges[k];
                     for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {
                          forward_infer_pattern(output_edge->output_pins[ipin]);
                     }
@@ -256,29 +229,31 @@ static void discover_pattern_names_in_pb_graph_node(
             // if the output edge to this pin is annotated with a pack pattern
             // trace the inputs to this pin and mark them to infer pattern
             // if they are direct connections (num_input_edges == 1)
-			if (hasPattern == true) {
+			if (hasPattern) {
 				backward_infer_pattern(&pb_graph_node->input_pins[i][j]);
 			}
 		}
 	}
 
-	for (i = 0; i < pb_graph_node->num_output_ports; i++) {
-		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-			hasPattern = false;
-			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; k++) {
-				for (m = 0; m < pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
+	for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
+		for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
+			bool hasPattern = false;
+			for (int k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; k++) {
+                auto output_edge = pb_graph_node->output_pins[i][j].output_edges[k];
+				for (int m = 0; m < output_edge->num_pack_patterns; m++) {
 					hasPattern = true;
-					index = add_pattern_name_to_hash(nhash,
-							    pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_names[m], ncount);
-					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices == nullptr) {
-						pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices =
-                            (int*) vtr::malloc(pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns
-                                                * sizeof(int));
+                    // insert the found pattern name to the hash table. If this pattern is inserted
+                    // for the first time, then its index is the current size of the hash table
+                    // otherwise the insert function will return an iterator of the previously
+                    // inserted element with the index given to that pattern
+                    std::string pattern_name(output_edge->pack_pattern_names[m]);
+                    int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
+					if (!output_edge->pack_pattern_indices) {
+						output_edge->pack_pattern_indices = (int*) vtr::malloc(output_edge->num_pack_patterns * sizeof(int));
 					}
-					pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
+					output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
                     // all its output pins to check if you need to infer pattern for direct connections
-                    auto& output_edge = pb_graph_node->output_pins[i][j].output_edges[k];
                     for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {
                          forward_infer_pattern(output_edge->output_pins[ipin]);
                     }
@@ -287,29 +262,31 @@ static void discover_pattern_names_in_pb_graph_node(
             // if the output edge to this pin is annotated with a pack pattern
             // trace the inputs to this pin and mark them to infer pattern
             // if they are direct connections (num_input_edges == 1)
-			if (hasPattern == true) {
+			if (hasPattern) {
 				backward_infer_pattern(&pb_graph_node->output_pins[i][j]);
 			}
 		}
 	}
 
-	for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
-		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-			hasPattern = false;
-			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; k++) {
-				for (m = 0; m < pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
+	for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
+		for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
+			bool hasPattern = false;
+			for (int k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; k++) {
+                auto& output_edge = pb_graph_node->clock_pins[i][j].output_edges[k];
+				for (int m = 0; m < output_edge->num_pack_patterns; m++) {
 					hasPattern = true;
-					index = add_pattern_name_to_hash(nhash,
-					            pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_names[m], ncount);
-					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices == nullptr) {
-						pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices =
-                            (int*) vtr::malloc(pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns
-                                                * sizeof(int));
+                    // insert the found pattern name to the hash table. If this pattern is inserted
+                    // for the first time, then its index is the current size of the hash table
+                    // otherwise the insert function will return an iterator of the previously
+                    // inserted element with the index given to that pattern
+                    std::string pattern_name(output_edge->pack_pattern_names[m]);
+                    int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
+					if (output_edge->pack_pattern_indices == nullptr) {
+						output_edge->pack_pattern_indices = (int*) vtr::malloc(output_edge->num_pack_patterns * sizeof(int));
 					}
-					pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
+					output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
                     // all its output pins to check if you need to infer pattern for direct connections
-                    auto& output_edge = pb_graph_node->clock_pins[i][j].output_edges[k];
                     for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {
                          forward_infer_pattern(output_edge->output_pins[ipin]);
                     }
@@ -318,17 +295,17 @@ static void discover_pattern_names_in_pb_graph_node(
             // if the output edge to this pin is annotated with a pack pattern
             // trace the inputs to this pin and mark them to infer pattern
             // if they are direct connections (num_input_edges == 1)
-			if (hasPattern == true) {
+			if (hasPattern) {
 				backward_infer_pattern(&pb_graph_node->clock_pins[i][j]);
 			}
 		}
 	}
 
-	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-			for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
+	for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
+		for (int j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+			for (int k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
 				discover_pattern_names_in_pb_graph_node(
-				    &pb_graph_node->child_pb_graph_nodes[i][j][k], nhash, ncount);
+				    &pb_graph_node->child_pb_graph_nodes[i][j][k], pattern_names);
 			}
 		}
 	}
@@ -358,24 +335,18 @@ static void backward_infer_pattern(t_pb_graph_pin *pb_graph_pin) {
  * Allocates memory for models and loads the name of the packing pattern
  * so that it can be identified and loaded with more complete information later
  */
-static t_pack_patterns *alloc_and_init_pattern_list_from_hash(const int ncount,
-		t_hash **nhash) {
-	t_pack_patterns *nlist;
-	t_hash_iterator hash_iter;
-	t_hash *curr_pattern;
+static t_pack_patterns *alloc_and_init_pattern_list_from_hash(std::unordered_map<std::string, int> pattern_names) {
 
-    nlist = new t_pack_patterns[ncount];
+    t_pack_patterns* nlist = new t_pack_patterns[pattern_names.size()];
 
-	hash_iter = start_hash_table_iterator();
-	curr_pattern = get_next_hash(nhash, &hash_iter);
-	while (curr_pattern != nullptr) {
-		VTR_ASSERT(nlist[curr_pattern->index].name == nullptr);
-		nlist[curr_pattern->index].name = vtr::strdup(curr_pattern->name);
-		nlist[curr_pattern->index].root_block = nullptr;
-		nlist[curr_pattern->index].is_chain = false;
-		nlist[curr_pattern->index].index = curr_pattern->index;
-		curr_pattern = get_next_hash(nhash, &hash_iter);
+	for (const auto& curr_pattern : pattern_names) {
+		VTR_ASSERT(nlist[curr_pattern.second].name == nullptr);
+		nlist[curr_pattern.second].name = vtr::strdup(curr_pattern.first.c_str());
+		nlist[curr_pattern.second].root_block = nullptr;
+		nlist[curr_pattern.second].is_chain = false;
+		nlist[curr_pattern.second].index = curr_pattern.second;
 	}
+
 	return nlist;
 }
 
