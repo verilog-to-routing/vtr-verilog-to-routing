@@ -327,7 +327,7 @@ std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, i
 	 * The placement macro array is freed by the caller(s).            */
 
 	/* Declaration of local variables */
-	int imacro, imember, num_macro;
+	int num_macro;
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* Allocate maximum memory for temporary variables. */
@@ -335,8 +335,6 @@ std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, i
 	std::vector<int> pl_macro_num_members(cluster_ctx.clb_nlist.blocks().size());
 	std::vector<std::vector<ClusterBlockId>> pl_macro_member_blk_num(cluster_ctx.clb_nlist.blocks().size());
 	std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk(cluster_ctx.clb_nlist.blocks().size());
-
-	t_pl_macro * macro = nullptr;
 
 	/* Sets up the required variables. */
 	alloc_and_load_idirect_from_blk_pin(directs, num_directs,
@@ -358,16 +356,15 @@ std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, i
 
 	/* Allocate the memories for the chain members.             *
 	 * Load the values from the temporary data structures.      */
-	for (imacro = 0; imacro < num_macro; imacro++) {
-		macro[imacro].num_blocks = pl_macro_num_members[imacro];
-		macro[imacro].members = (t_pl_macro_member *) vtr::malloc(macro[imacro].num_blocks * sizeof(t_pl_macro_member));
+	for (int imacro = 0; imacro < num_macro; imacro++) {
+        macros[imacro].members = std::vector<t_pl_macro_member>(pl_macro_num_members[imacro]);
 
 		/* Load the values for each member of the macro */
-		for (imember = 0; imember < macro[imacro].num_blocks; imember++) {
-			macro[imacro].members[imember].x_offset = imember * directs[pl_macro_idirect[imacro]].x_offset;
-			macro[imacro].members[imember].y_offset = imember * directs[pl_macro_idirect[imacro]].y_offset;
-			macro[imacro].members[imember].z_offset = directs[pl_macro_idirect[imacro]].z_offset;
-			macro[imacro].members[imember].blk_index = pl_macro_member_blk_num[imacro][imember];
+		for (size_t imember = 0; imember < macros[imacro].members.size(); imember++) {
+			macros[imacro].members[imember].x_offset = imember * directs[pl_macro_idirect[imacro]].x_offset;
+			macros[imacro].members[imember].y_offset = imember * directs[pl_macro_idirect[imacro]].y_offset;
+			macros[imacro].members[imember].z_offset = directs[pl_macro_idirect[imacro]].z_offset;
+			macros[imacro].members[imember].blk_index = pl_macro_member_blk_num[imacro][imember];
 		}
 	}
 
@@ -415,7 +412,7 @@ static void alloc_and_load_imacro_from_iblk(const std::vector<t_pl_macro>& macro
 
 	/* Load the values */
 	for (size_t imacro = 0; imacro < macros.size(); imacro++) {
-		for (int imember = 0; imember < macros[imacro].num_blocks; imember++) {
+		for (size_t imember = 0; imember < macros[imacro].members.size(); imember++) {
 			ClusterBlockId blk_id = macros[imacro].members[imember].blk_index;
 			f_imacro_from_iblk.insert(blk_id, imacro);
 		}
@@ -456,9 +453,9 @@ static void write_place_macros(std::string filename, const std::vector<t_pl_macr
     fprintf(f, "Num_Macros: %zu\n", macros.size());
     for (size_t imacro = 0; imacro < macros.size(); ++imacro) {
         const t_pl_macro* macro = &macros[imacro];
-        fprintf(f, "Macro_Id: %zu, Num_Blocks: %d\n", imacro, macro->num_blocks);
+        fprintf(f, "Macro_Id: %zu, Num_Blocks: %zu\n", imacro, macro->members.size());
         fprintf(f, "------------------------------------------------------\n");
-        for (int imember = 0; imember < macro->num_blocks; ++imember) {
+        for (size_t imember = 0; imember < macro->members.size(); ++imember) {
             const t_pl_macro_member* macro_memb = &macro->members[imember];
             fprintf(f, "Block_Id: %zu (%s), x_offset: %d, y_offset: %d, z_offset: %d\n",
                     size_t(macro_memb->blk_index),
@@ -522,7 +519,7 @@ static void validate_macros(const std::vector<t_pl_macro>& macros) {
     //Verify that blocks only appear in a single macro
     std::multimap<ClusterBlockId,int> block_to_macro;
     for (size_t imacro = 0; imacro < macros.size(); ++imacro) {
-        for (int imember = 0; imember < macros[imacro].num_blocks; ++imember) {
+        for (size_t imember = 0; imember < macros[imacro].members.size(); ++imember) {
             ClusterBlockId iblk = macros[imacro].members[imember].blk_index;
 
             block_to_macro.emplace(iblk, imacro);

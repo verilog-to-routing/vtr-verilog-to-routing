@@ -3787,7 +3787,7 @@ static void draw_placement_macros() {
 
         int x_root = OPEN;
         int y_root = OPEN;
-        for (int imember = 0; imember < pl_macro->num_blocks; ++imember) {
+        for (size_t imember = 0; imember < pl_macro->members.size(); ++imember) {
             const t_pl_macro_member* member = &pl_macro->members[imember];
 
             ClusterBlockId blk = member->blk_index;

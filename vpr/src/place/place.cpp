@@ -1253,7 +1253,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 	 * Returns abort_swap. */
     VTR_ASSERT_SAFE(b_from);
 
-	int imacro_from, imember_from;
+	int imacro_from;
 	int x_swap_offset, y_swap_offset, z_swap_offset, x_from, y_from, z_from;
 	ClusterBlockId curr_b_from;
 	int curr_x_from, curr_y_from, curr_z_from, curr_x_to, curr_y_to, curr_z_to;
@@ -1276,7 +1276,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 		y_swap_offset = y_to - y_from;
 		z_swap_offset = z_to - z_from;
 
-		for (imember_from = 0; imember_from < pl_macros[imacro_from].num_blocks && abort_swap == false; imember_from++) {
+		for (int imember_from = 0; imember_from < int(pl_macros[imacro_from].members.size()) && abort_swap == false; imember_from++) {
 
 			// Gets the new from and to info for every block in the macro
 			// cannot use the old from and to info
@@ -1383,7 +1383,7 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
     //
     //NOTE: We mutate imember_from so the outer from macro walking loop moves in lock-step
     int imember_to = 0;
-    for (; imember_from < place_ctx.pl_macros[imacro_from].num_blocks && imember_to < place_ctx.pl_macros[imacro_to].num_blocks;
+    for (; imember_from < int(place_ctx.pl_macros[imacro_from].members.size()) && imember_to < int(place_ctx.pl_macros[imacro_to].members.size());
            ++imember_from, ++imember_to) {
 
         //Check that both macros have the same shape while they overlap
@@ -1429,7 +1429,7 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
         record_single_block_swap(b_to, curr_x_from, curr_y_from, curr_z_from);
     }
 #else
-    if (imember_to < place_ctx.pl_macros[imacro_to].num_blocks) {
+    if (imember_to < int(place_ctx.pl_macros[imacro_to].members.size())) {
         //The to macro extends beyond the from macro (not yet supported)
         return true; //Abort
     }
@@ -1447,7 +1447,7 @@ static bool record_macro_self_swaps(const int imacro, int x_swap_offset, int y_s
     std::set<std::tuple<int,int,int>> filled_locations; //Locations which are filed due to macro shifting
     std::vector<ClusterBlockId> blocks_to_wrap; //Blocks which need to be wrapped around the macro
 
-    for (int imember = 0; imember < place_ctx.pl_macros[imacro].num_blocks; ++imember) {
+    for (size_t imember = 0; imember < place_ctx.pl_macros[imacro].members.size(); ++imember) {
 
         ClusterBlockId blk = place_ctx.pl_macros[imacro].members[imember].blk_index;
 
@@ -2256,8 +2256,6 @@ static void free_placement_structs(t_placer_opts placer_opts) {
 	free_placement_macros_structs();
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-	for (size_t imacro = 0; imacro < place_ctx.pl_macros.size(); imacro++)
-		free(place_ctx.pl_macros[imacro].members);
 
 	/* Defensive coding. */
 	place_ctx.pl_macros.clear();
@@ -2879,7 +2877,6 @@ static void free_legal_placements() {
 
 static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z) {
 
-	int imember;
 	size_t member_x, member_y, member_z;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -2891,7 +2888,7 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
     auto& pl_macros = place_ctx.pl_macros;
 
 	// Check whether all the members can be placed
-	for (imember = 0; imember < pl_macros[imacro].num_blocks; imember++) {
+	for (size_t imember = 0; imember < pl_macros[imacro].members.size(); imember++) {
 		member_x = x + pl_macros[imacro].members[imember].x_offset;
 		member_y = y + pl_macros[imacro].members[imember].y_offset;
 		member_z = z + pl_macros[imacro].members[imember].z_offset;
@@ -2918,7 +2915,7 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 
 static int try_place_macro(int itype, int ipos, int imacro){
 
-	int x, y, z, member_x, member_y, member_z, imember;
+	int x, y, z, member_x, member_y, member_z;
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -2942,7 +2939,7 @@ static int try_place_macro(int itype, int ipos, int imacro){
 
 		// Place down the macro
 		macro_placed = true;
-		for (imember = 0; imember < pl_macros[imacro].num_blocks; imember++) {
+		for (size_t imember = 0; imember < pl_macros[imacro].members.size(); imember++) {
 
 			member_x = x + pl_macros[imacro].members[imember].x_offset;
 			member_y = y + pl_macros[imacro].members[imember].y_offset;
@@ -2990,12 +2987,12 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 		// Assume that all the blocks in the macro are of the same type
 		blk_id = pl_macros[imacro].members[0].blk_index;
 		itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
-		if (free_locations[itype] < pl_macros[imacro].num_blocks) {
+		if (free_locations[itype] < int(pl_macros[imacro].members.size())) {
 			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 					"Initial placement failed.\n"
-					"Could not place macro length %d with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
+					"Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
 					"VPR cannot auto-size for your circuit, please resize the FPGA manually.\n",
-					pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
+					pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
 		}
 
 		// Try to place the macro first, if can be placed - place them, otherwise try again
@@ -3030,9 +3027,9 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 				// Error out
 				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 						"Initial placement failed.\n"
-						"Could not place macro length %d with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
+						"Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
 						"Please manually size the FPGA because VPR can't do this yet.\n",
-						pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
+						pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
 			}
 
 		} else {
@@ -3434,7 +3431,7 @@ int check_macro_placement_consistency() {
 
 		auto head_iblk = pl_macros[imacro].members[0].blk_index;
 
-		for (int imember = 0; imember < pl_macros[imacro].num_blocks; imember++) {
+		for (size_t imember = 0; imember < pl_macros[imacro].members.size(); imember++) {
 
 			auto member_iblk = pl_macros[imacro].members[imember].blk_index;
 

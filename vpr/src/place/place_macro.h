@@ -159,8 +159,7 @@ struct t_pl_macro_member{
  * idirect: The direct index as specified in the arch file
  */
 struct t_pl_macro {
-	int num_blocks;
-	t_pl_macro_member* members;
+    std::vector<t_pl_macro_member> members;
 };
 
 /* These are the function declarations. */
