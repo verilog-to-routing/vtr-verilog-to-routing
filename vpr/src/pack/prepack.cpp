@@ -482,7 +482,7 @@ static void forward_expand_pack_pattern_from_edge(
     // iterate over the expansion edge output pins
 	for (i = 0; i < expansion_edge->num_output_pins; i++) {
         // check if expansion_edge parent node is a primitive (i.e num_nodes = 0)
-		if (expansion_edge->output_pins[i]->parent_node->pb_type->num_modes == 0) {
+		if (expansion_edge->output_pins[i]->is_primitive_pin()) {
 			destination_pb_graph_node = expansion_edge->output_pins[i]->parent_node;
 			VTR_ASSERT(found == false);
 			/* Check assumption that each forced net has only one fan-out */
@@ -627,8 +627,8 @@ static void backward_expand_pack_pattern_from_edge(
 	found = false;
     // iterate over all the drivers of this edge
 	for (i = 0; i < expansion_edge->num_input_pins; i++) {
-        // check if the expansion_edge parent node is a primitive (i.e num_modes == 0)
-		if (expansion_edge->input_pins[i]->parent_node->pb_type->num_modes == 0) {
+        // check if the expansion_edge parent node is a primitive
+		if (expansion_edge->input_pins[i]->is_primitive_pin()) {
 			source_pb_graph_node = expansion_edge->input_pins[i]->parent_node;
 			VTR_ASSERT(found == false);
 			/* Check assumption that each forced net has only one fan-out */

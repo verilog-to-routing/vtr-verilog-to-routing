@@ -412,7 +412,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
 	pb_type = pb->pb_graph_node->pb_type;
 
 	//Create the ports in the clb_nlist for the top-level pb
-	if (pb->parent_pb == nullptr) {
+	if (pb->is_root()) {
 		VTR_ASSERT(num_in_ports <= num_out_ports);
 
 		for (i = 0; i < num_in_ports; i++) {
@@ -513,7 +513,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
                         found = true;
                     }
                 }
-                if (!found && pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes != 0) {
+                if (!found && !pb->child_pbs[i][pb_index].is_primitive()) {
                     vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                             "Unknown mode %s for cb %s #%d.\n", mode.value(),
                             pb->child_pbs[i][pb_index].name, pb_index);
@@ -539,7 +539,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
                             found = true;
                         }
                     }
-                    if (!found && pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes != 0) {
+                    if (!found && !pb->child_pbs[i][pb_index].is_primitive()) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                                 "Unknown mode %s for cb %s #%d.\n", mode.value(),
                                 pb->child_pbs[i][pb_index].name, pb_index);
@@ -648,7 +648,7 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
 
         //Process the input and clock ports
         if (0 == strcmp(Parent.name(), "inputs") || 0 == strcmp(Parent.name(), "clocks")) {
-            if (pb->parent_pb == nullptr) {
+            if (pb->is_root()) {
                 //We are processing a top-level pb, so these pins connect to inter-block nets
                 for (i = 0; i < num_tokens; i++) {
                     //Set rr_node_index to the pb_route for the appropriate port
@@ -738,7 +738,7 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
         }
 
         if (0 == strcmp(Parent.name(), "outputs")) {
-            if (pb->pb_graph_node->pb_type->num_modes == 0) {
+            if (pb->pb_graph_node->is_primitive()) {
                 /* primitives are drivers of nets */
                 for (i = 0; i < num_tokens; i++) {
                     const t_pb_graph_pin* pb_gpin = &pb->pb_graph_node->output_pins[out_port][i];

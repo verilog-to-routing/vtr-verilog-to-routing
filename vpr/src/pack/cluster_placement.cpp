@@ -154,8 +154,7 @@ bool get_next_primitive_list(
 					break;
 				}
 				/* try place molecule at root location cur */
-				cost = try_place_molecule(molecule, cur->pb_graph_node,
-						primitives_list);
+				cost = try_place_molecule(molecule, cur->pb_graph_node, primitives_list);
 				if (cost < lowest_cost) {
 					lowest_cost = cost;
 					best = cur;
@@ -378,7 +377,7 @@ void commit_primitive(t_cluster_placement_stats *cluster_placement_stats,
 
 	pb_graph_node = cur->pb_graph_node;
 	/* walk up pb_graph_node and update primitives of children */
-	while (pb_graph_node->parent_pb_graph_node != nullptr) {
+	while (!pb_graph_node->is_root()) {
 		skip = pb_graph_node; /* do not traverse stuff that's already traversed */
 		valid_mode = pb_graph_node->pb_type->parent_mode->index;
 		pb_graph_node = pb_graph_node->parent_pb_graph_node;
@@ -421,7 +420,7 @@ static void update_primitive_cost_or_status(const t_pb_graph_node *pb_graph_node
 		const float incremental_cost, const bool valid) {
 	int i, j, k;
 	t_cluster_placement_primitive *placement_primitive;
-	if (pb_graph_node->pb_type->num_modes == 0) {
+	if (pb_graph_node->is_primitive()) {
 		/* is primitive */
 		placement_primitive =
 				(t_cluster_placement_primitive*) pb_graph_node->cluster_placement_primitive;

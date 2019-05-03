@@ -1541,7 +1541,7 @@ static void echo_pb_pins(t_pb_graph_pin **pb_graph_pins, const int num_ports,
 					pb_graph_pins[i][j].parent_node->pb_type->name,
 					pb_graph_pins[i][j].parent_node->placement_index);
 			print_tabs(fp, level + 2);
-			if (pb_graph_pins[i][j].parent_node->pb_type->num_modes == 0) {
+			if (pb_graph_pins[i][j].is_primitive_pin()) {
 				fprintf(fp, "pin class (depth, pin class): ");
 				for (k = 0; k < pb_graph_pins[i][j].parent_node->pb_type->depth; k++) {
 					fprintf(fp, "(%d %d), ", k,

@@ -187,7 +187,8 @@ typedef vtr::flat_map2<int,t_pb_route> t_pb_routes;
  * t_pb (in combination with t_pb_route) implement the mapping from the netlist elements to architectural
  * instances.
  */
-struct t_pb {
+class t_pb {
+public:
 	char *name = nullptr; /* Name of this physical block */
 	t_pb_graph_node *pb_graph_node = nullptr; /* pointer to pb_graph_node this pb corresponds to */
 
@@ -205,14 +206,21 @@ struct t_pb {
 
 	int clock_net = 0; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
 
+    // Member functions
+
+    //Returns true if this block has not parent pb block
+    bool is_root() const { return parent_pb == nullptr; }
+
+    //Returns true if this pb corresponds to a primitive block (i.e. LUT, FF, etc.)
+    bool is_primitive() const { return child_pbs == nullptr; }
 
 	int get_num_child_types() const;
-    
+
 	int get_num_children_of_type(int type_index) const;
 
 	t_mode* get_mode() const;
 
-	bool has_modes() const; 
+	bool has_modes() const;
 
     //Returns the t_pb associated with the specified gnode which is contained
     //within the current pb
@@ -223,14 +231,9 @@ struct t_pb {
     //Returns the root pb containing this pb
     const t_pb* root_pb() const;
 
-    bool is_root() const;
-
-    //Returns true if this pb corresponds to a primitive block (i.e. in the AtomNetlist)
-    bool is_primitive() const; 
-   
     // Returns a string containing the hierarchical type name of a physical block
     // Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
-    std::string hierarchical_type_name() const; 
+    std::string hierarchical_type_name() const;
 
     //Returns the bit index into the AtomPort for the specified primitive
     //pb_graph_pin, considering any pin rotations which have been applied to logically

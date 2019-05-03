@@ -51,7 +51,7 @@ t_mode* t_pb::get_mode() const {
     }
 }
 
-bool t_pb::has_modes() const {
+inline bool t_pb::has_modes() const {
     return pb_graph_node->pb_type->num_modes > 0;
 }
 
@@ -118,21 +118,12 @@ const t_pb* t_pb::root_pb() const {
     return curr_pb;
 }
 
-bool t_pb::is_root() const {
-    return parent_pb == nullptr;
-}
-
-//Returns true if this pb corresponds to a primitive block (i.e. in the AtomNetlist)
-bool t_pb::is_primitive() const {
-    return child_pbs == nullptr;
-}
-
 std::string t_pb::hierarchical_type_name() const {
     std::vector<std::string> names;
 
     for (const t_pb* curr = this; curr != nullptr; curr = curr->parent_pb) {
         std::string type_name;
-       
+
         //get name and type of physical block
         if (curr->pb_graph_node) {
             type_name = curr->pb_graph_node->pb_type->name;

@@ -1,5 +1,6 @@
 #include "physical_types.h"
 #include "vtr_math.h"
+#include "vtr_util.h"
 
 static bool switch_type_is_buffered(SwitchType type);
 static bool switch_type_is_configurable(SwitchType type);
@@ -141,20 +142,61 @@ std::vector<int> t_type_descriptor::get_clock_pins_indices () const {
     return indices;
 }
 
+/**
+ * t_pb_graph_node
+ */
+
+int t_pb_graph_node::num_pins() const {
+
+    int npins = 0;
+
+    for(int iport = 0; iport < num_input_ports; ++iport) {
+        npins += num_input_pins[iport];
+    }
+
+    for(int iport = 0; iport < num_output_ports; ++iport) {
+        npins += num_output_pins[iport];
+    }
+
+    for(int iport = 0; iport < num_clock_ports; ++iport) {
+        npins += num_clock_pins[iport];
+    }
+
+    return npins;
+}
+
+std::string t_pb_graph_node::hierarchical_type_name() const {
+
+    std::vector<std::string> names;
+    std::string child_mode_name;
+
+    for (auto curr_node = this; curr_node != nullptr; curr_node = curr_node->parent_pb_graph_node) {
+        std::string type_name;
+
+        //get name and type of physical block
+        type_name = curr_node->pb_type->name;
+        type_name += "[" + std::to_string(curr_node->placement_index) + "]";
+
+        if(!curr_node->is_primitive()) {
+            // primitives have no modes
+            type_name += "[" + child_mode_name + "]";
+        }
+
+        if (!curr_node->is_root()) {
+            // get the mode of this child
+            child_mode_name = curr_node->pb_type->parent_mode->name;
+        }
+
+        names.push_back(type_name);
+    }
+
+    //We walked up from the leaf to root, so we join in reverse order
+    return vtr::join(names.rbegin(), names.rend(), "/");
+}
 
 /**
  * t_pb_graph_pin
  */
-
-bool t_pb_graph_pin::is_primitive_pin() const {
-    // only primitives have no modes
-    return this->parent_node->pb_type->num_modes == 0;
-}
-
-bool t_pb_graph_pin::is_root_block_pin() const {
-    // a root block has no parent mode
-    return this->parent_node->pb_type->parent_mode == nullptr;
-}
 
 std::string t_pb_graph_pin::to_string() const {
 

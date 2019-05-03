@@ -867,7 +867,8 @@ struct t_pin_to_pin_annotation {
  *      child_pb_graph_nodes: array of children pb graph nodes organized into modes
  *      parent_pb_graph_node: parent pb graph node
  */
-struct t_pb_graph_node {
+class t_pb_graph_node {
+public:
 	t_pb_type *pb_type;
 
 	int placement_index;
@@ -903,25 +904,18 @@ struct t_pb_graph_node {
 	t_pb_graph_node_power * pb_node_power;
 	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 
+    // Returns true if this pb_graph_node represents a primitive type (primitives have 0 modes)
+    bool is_primitive() const { return this->pb_type->num_modes == 0; }
+
+    // Returns true if this pb_graph_node represents a root graph node (ex. clb)
+    bool is_root() const { return this->parent_pb_graph_node == nullptr; }
+
     //Returns the number of pins on this graph node
-    //  Note this is the total for all ports on this node exluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
-    int num_pins() {
-        int npins = 0;
-
-        for(int iport = 0; iport < num_input_ports; ++iport) {
-            npins += num_input_pins[iport];
-        }
-
-        for(int iport = 0; iport < num_output_ports; ++iport) {
-            npins += num_output_pins[iport];
-        }
-
-        for(int iport = 0; iport < num_clock_ports; ++iport) {
-            npins += num_clock_pins[iport];
-        }
-
-        return npins;
-    }
+    //  Note this is the total for all ports on this node excluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
+    int num_pins() const;
+    // Returns a string containing the hierarchical type name of the pb_graph_node
+    // Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
+    std::string hierarchical_type_name() const;
 };
 
 
@@ -995,12 +989,14 @@ public:
 public:
     // Returns true if this pin belongs to a primitive block like
     // a LUT or FF, instead of a cluster-level block like a CLB.
-    bool is_primitive_pin() const;
-
+    bool is_primitive_pin() const {
+        return this->parent_node->is_primitive();
+    }
     // Returns true if this pin belongs to a root pb_block which is a pb_block
     // that has no parent block. For example, pins of a CLB, IO, DSP, etc.
-    bool is_root_block_pin() const;
-
+    bool is_root_block_pin() const {
+        return this->parent_node->is_root();
+    }
     // This function returns a string that contains the name of the pin
     // and the entire sequence of pb_types in the hierarchy from the block
     // of this pin back to the cluster-level (top-level) pb_type in the

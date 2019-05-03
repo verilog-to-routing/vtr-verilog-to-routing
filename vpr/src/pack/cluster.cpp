@@ -840,7 +840,7 @@ static void free_pb_stats_recursive(t_pb *pb) {
 	/* Releases all the memory used by clustering data structures.   */
 	if (pb) {
 		if (pb->pb_graph_node != nullptr) {
-			if (pb->pb_graph_node->pb_type->num_modes != 0) {
+			if (!pb->pb_graph_node->is_primitive()) {
 				for (i = 0; i < pb->pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children; i++) {
 					for (j = 0; j < pb->pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
 						if (pb->child_pbs && pb->child_pbs[i]) {
@@ -1733,7 +1733,7 @@ static void update_cluster_stats(t_pack_molecule *molecule,
 		cur_pb = atom_ctx.lookup.atom_pb(blk_id)->parent_pb;
 		while (cur_pb) {
 			/* reset list of feasible blocks */
-			if (cur_pb->parent_pb == nullptr) {
+			if (cur_pb->is_root()) {
 				cb = cur_pb;
 			}
 			cur_pb->pb_stats->num_feasible_blocks = NOT_VALID;
@@ -2092,6 +2092,7 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 vtr::vector<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
                                                                 const ClusterBlockId cluster_index) {
 
+
     //TODO: For now, only done by fan-out; should also consider fan-in
 
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -2144,7 +2145,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 	 * passed in.  If no suitable block is found it returns ClusterBlockId::INVALID().
 	 */
 
-    VTR_ASSERT(!cur_pb->parent_pb);
+    VTR_ASSERT(cur_pb->is_root());
 
 	/* If cannot pack into primitive, try packing into cluster */
 

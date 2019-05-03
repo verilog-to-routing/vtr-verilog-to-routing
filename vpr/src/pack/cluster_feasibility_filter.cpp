@@ -94,7 +94,7 @@ static void alloc_pin_classes_in_pb_graph_node(
 	int i, j, k;
 
 	/* If primitive, allocate space, else go to primitive */
-	if (pb_graph_node->pb_type->num_modes == 0) {
+	if (pb_graph_node->is_primitive()) {
 		/* allocate space */
 		for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 			for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
@@ -145,7 +145,7 @@ static int get_max_depth_of_pb_graph_node(const t_pb_graph_node *pb_graph_node) 
 	max_depth = 0;
 
 	/* If primitive, allocate space, else go to primitive */
-	if (pb_graph_node->pb_type->num_modes == 0) {
+	if (pb_graph_node->is_primitive()) {
 		return pb_graph_node->pb_type->depth;
 	} else {
 		for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
@@ -197,7 +197,7 @@ static void load_pin_class_by_depth(t_pb_graph_node *pb_graph_node,
 		const int depth, int *input_count, int *output_count) {
 	int i, j, k;
 
-	if (pb_graph_node->pb_type->num_modes == 0) {
+	if (pb_graph_node->is_primitive()) {
 		if (pb_graph_node->pb_type->depth > depth) {
 			/* At primitive, determine which pin class each of its pins belong to */
 			for (i = 0; i < pb_graph_node->num_input_ports; i++) {
@@ -267,7 +267,7 @@ static void load_pin_class_by_depth(t_pb_graph_node *pb_graph_node,
 		}
 	}
 
-	if (pb_graph_node->pb_type->depth == depth && pb_graph_node->pb_type->num_modes != 0) {
+	if (pb_graph_node->pb_type->depth == depth && !pb_graph_node->is_primitive()) {
 		/* Record pin class information for cluster */
 		pb_graph_node->num_input_pin_class = *input_count + 1; /* number of input pin classes discovered + 1 for primitive inputs not reachable from cluster input pins */
 		pb_graph_node->input_pin_class_size = (int*) vtr::calloc(*input_count + 1, sizeof(int));
@@ -285,7 +285,7 @@ static void load_list_of_connectable_input_pin_ptrs(
 		t_pb_graph_node *pb_graph_node) {
 	int i, j, k;
 
-	if (pb_graph_node->pb_type->num_modes == 0) {
+	if (pb_graph_node->is_primitive()) {
 		/* If this is a primitive, discover what input pins the output pins can connect to */
 		for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 			for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
@@ -326,7 +326,7 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(
 					current_pb_graph_pin->output_edges[i]->output_pins[0],
 					reference_pin, depth);
 		}
-		if (current_pb_graph_pin->parent_node->pb_type->num_modes == 0
+		if (current_pb_graph_pin->is_primitive_pin()
 				&& current_pb_graph_pin->port->type == IN_PORT) {
 			reference_pin->num_connectable_primitive_input_pins[depth]++;
 			reference_pin->list_of_connectable_input_pin_ptrs[depth] =
@@ -373,11 +373,11 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(
 		marker = -10 - *output_count;
 		active_pin_class = *output_count;
 	}
-	VTR_ASSERT(reference_pb_graph_pin->parent_node->pb_type->num_modes == 0);
+	VTR_ASSERT(reference_pb_graph_pin->is_primitive_pin());
 	VTR_ASSERT(current_pb_graph_pin->parent_node->pb_type->depth >= depth);
 	VTR_ASSERT(current_pb_graph_pin->port->type != INOUT_PORT);
 	if (current_pb_graph_pin->scratch_pad != marker) {
-		if (current_pb_graph_pin->parent_node->pb_type->num_modes == 0) {
+		if (current_pb_graph_pin->is_primitive_pin()) {
 			current_pb_graph_pin->scratch_pad = marker;
 			/* This is a primitive, determine what pins cans share the same pin class as the reference pin */
 			if (current_pb_graph_pin->parent_pin_class[depth] == OPEN
@@ -507,7 +507,7 @@ static void discover_all_forced_connections(t_pb_graph_node *pb_graph_node) {
 	int i, j, k;
 
 	/* If primitive, allocate space, else go to primitive */
-	if (pb_graph_node->pb_type->num_modes == 0) {
+	if (pb_graph_node->is_primitive()) {
 		for(i = 0; i < pb_graph_node->num_output_ports; i++) {
 			for(j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
 				pb_graph_node->output_pins[i][j].is_forced_connection = is_forced_connection(&pb_graph_node->output_pins[i][j]);
@@ -532,7 +532,7 @@ static bool is_forced_connection(const t_pb_graph_pin *pb_graph_pin) {
 		return false;
 	}
 	if(pb_graph_pin->num_output_edges == 0) {
-		if(pb_graph_pin->parent_node->pb_type->num_modes == 0) {
+		if(pb_graph_pin->is_primitive_pin()) {
 			/* Check that this pin belongs to a primitive */
 			return true;
 		} else {
