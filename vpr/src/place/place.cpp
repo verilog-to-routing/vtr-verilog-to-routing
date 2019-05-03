@@ -78,6 +78,17 @@ enum e_swap_result {
 	REJECTED, ACCEPTED, ABORTED
 };
 
+enum class e_move_result {
+    VALID, //Move successful
+    ABORT, //Unable to perform move
+};
+
+enum class e_find_affected_blocks_result {
+    VALID, //Move successful
+    ABORT, //Unable to perform move
+    INVERT //Try move again but with from/to inverted
+};
+
 struct t_placer_statistics {
 	double av_cost, av_bb_cost, av_timing_cost,
 	       sum_of_squares, av_delay_cost;
@@ -239,16 +250,17 @@ static float comp_bb_cost(e_cost_methods method);
 static void apply_block_swap();
 static void revert_block_swap();
 static void commit_block_swap();
-static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to);
+static void record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 static void record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to);
 
-static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to);
+static e_move_result record_move(ClusterBlockId b_from, int x_to, int y_to, int z_to);
+static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 
-static bool record_macro_block_swaps(const int imacro_from, int& imember_from, 
+static e_find_affected_blocks_result record_macro_block_swaps(const int imacro_from, int& imember_from, 
                                         const int imacro_to,
                                         ClusterBlockId blk_to, int x_to, int y_to, int z_to);
 
-static bool record_macro_self_swaps(const int imacro, int x_swap_offset, int y_swap_offset, int z_swap_offset);
+static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, int x_swap_offset, int y_swap_offset, int z_swap_offset);
 
 bool is_legal_swap_to_location(ClusterBlockId blk, int x_to, int y_to, int z_to);
 
@@ -1220,14 +1232,12 @@ static void record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to) 
     blocks_affected.num_moved_blocks ++;
 }
 
-static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
+static void record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
 
 	/* Find all the blocks affected when b_from is swapped with b_to.
 	 * Returns abort_swap.                  */
 
     VTR_ASSERT_SAFE(b_from);
-
-	int abort_swap = false;
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -1252,12 +1262,38 @@ static int record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, i
         record_block_move(b_to, x_from, y_from, z_from);
 
 	} // Finish swapping the blocks and setting up blocks_affected
-
-	return (abort_swap);
-
 }
 
-static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
+static e_move_result record_move(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
+
+    e_find_affected_blocks_result outcome = find_affected_blocks(b_from, x_to, y_to, z_to);
+
+    if (outcome == e_find_affected_blocks_result::INVERT) {
+        //Try inverting the swap direction
+
+        auto& place_ctx = g_vpr_ctx.placement();
+        ClusterBlockId b_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
+        int x_from = place_ctx.block_locs[b_from].x;
+        int y_from = place_ctx.block_locs[b_from].y;
+        int z_from = place_ctx.block_locs[b_from].z;
+
+        outcome = find_affected_blocks(b_to, x_from, y_from, z_from);
+
+        if (outcome == e_find_affected_blocks_result::INVERT) {
+            log_move_abort("inverted move recurrsion");
+            outcome = e_find_affected_blocks_result::ABORT;
+        }
+    }
+
+    if (outcome == e_find_affected_blocks_result::VALID) {
+        return e_move_result::VALID;
+    } else {
+        VTR_ASSERT_SAFE(outcome == e_find_affected_blocks_result::ABORT);
+        return e_move_result::ABORT;
+    }
+}
+
+static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
 
 	/* Finds and set ups the affected_blocks array.
 	 * Returns abort_swap. */
@@ -1267,7 +1303,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 	int x_swap_offset, y_swap_offset, z_swap_offset, x_from, y_from, z_from;
 	ClusterBlockId curr_b_from;
 	int curr_x_from, curr_y_from, curr_z_from, curr_x_to, curr_y_to, curr_z_to;
-	int abort_swap = false;
+    e_find_affected_blocks_result outcome = e_find_affected_blocks_result::VALID;
 
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -1286,7 +1322,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 		y_swap_offset = y_to - y_from;
 		z_swap_offset = z_to - z_from;
 
-		for (int imember_from = 0; imember_from < int(pl_macros[imacro_from].members.size()) && abort_swap == false; imember_from++) {
+		for (int imember_from = 0; imember_from < int(pl_macros[imacro_from].members.size()) && outcome == e_find_affected_blocks_result::VALID ; imember_from++) {
 
 			// Gets the new from and to info for every block in the macro
 			// cannot use the old from and to info
@@ -1309,7 +1345,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
             //(neccessarily) translationally invariant for an arbitrary macro
             if (!is_legal_swap_to_location(curr_b_from, curr_x_to, curr_y_to, curr_z_to)) {
                 log_move_abort("macro_from swap to location illegal");
-				abort_swap = true;
+				outcome = e_find_affected_blocks_result::ABORT;
 			} else {
 
                 ClusterBlockId b_to = place_ctx.grid_blocks[curr_x_to][curr_y_to].blocks[curr_z_to];
@@ -1320,16 +1356,16 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
                     //To block is a macro
 
                     if (imacro_from == imacro_to) {
-                        abort_swap = record_macro_self_swaps(imacro_from, x_swap_offset, y_swap_offset, z_swap_offset);
+                        outcome = record_macro_self_swaps(imacro_from, x_swap_offset, y_swap_offset, z_swap_offset);
                         break; //record_macro_self_swaps() handles this case completely, so we don't need to continue the loop
                     } else {
-                        abort_swap = record_macro_block_swaps(imacro_from, imember_from, imacro_to, b_to,
+                        outcome = record_macro_block_swaps(imacro_from, imember_from, imacro_to, b_to,
                                                                   x_swap_offset, y_swap_offset, z_swap_offset);
                         imember_from -= 1; //record_macro_block_swaps() will have already advanced the original imember_from
                     }
                 } else {
                     //To block is not a macro
-                    abort_swap = record_single_block_swap(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
+                    record_single_block_swap(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
                 }
 			}
 		} // Finish going through all the blocks in the macro
@@ -1345,19 +1381,19 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
             //
             //Since we support swapping a macro as 'from' to a single 'to' block,
             //just invert the swap direction (which is equivalent)
-            abort_swap = find_affected_blocks(b_to, x_from, y_from, z_from);
+            outcome = e_find_affected_blocks_result::INVERT;
         } else {
             // This is not a macro - I could use the from and to info from before
-            abort_swap = record_single_block_swap(b_from, x_to, y_to, z_to);
+            record_single_block_swap(b_from, x_to, y_to, z_to);
         }
 
 	} // Finish handling cases for blocks in macro and otherwise
 
-	return (abort_swap);
+	return outcome;
 
 }
 
-static bool record_macro_block_swaps(const int imacro_from, int& imember_from, 
+static e_find_affected_blocks_result record_macro_block_swaps(const int imacro_from, int& imember_from, 
                                         const int imacro_to,
                                         ClusterBlockId blk_to, int x_swap_offset, int y_swap_offset, int z_swap_offset) {
 
@@ -1377,7 +1413,7 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
     //allow these blocks to swap)
     if (place_ctx.pl_macros[imacro_to].members[0].blk_index != blk_to) {
         log_move_abort("to_macro block not first macro element");
-        return true; //Abort
+        return e_find_affected_blocks_result::ABORT; 
     }
 
     ClusterBlockId blk_from = place_ctx.pl_macros[imacro_from].members[imember_from].blk_index;
@@ -1403,7 +1439,7 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
             || place_ctx.pl_macros[imacro_from].members[imember_from].y_offset != place_ctx.pl_macros[imacro_to].members[imember_to].y_offset
             || place_ctx.pl_macros[imacro_from].members[imember_from].z_offset != place_ctx.pl_macros[imacro_to].members[imember_to].z_offset) {
             log_move_abort("macro shapes disagree");
-            return true; //Abort
+            return e_find_affected_blocks_result::ABORT; 
         }
 
         ClusterBlockId b_from = place_ctx.pl_macros[imacro_from].members[imember_from].blk_index;
@@ -1419,7 +1455,7 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
 
         if (!is_legal_swap_to_location(b_from, curr_x_to, curr_y_to, curr_z_to)) {
             log_move_abort("macro_from swap to location illegal");
-            return true; //Abort
+            return e_find_affected_blocks_result::ABORT; 
         }
 
         record_single_block_swap(b_from, curr_x_to, curr_y_to, curr_z_to);
@@ -1446,14 +1482,14 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
     if (imember_to < int(place_ctx.pl_macros[imacro_to].members.size())) {
         //The to macro extends beyond the from macro (not yet supported)
         log_move_abort("to_macro extends beyond from_macro");
-        return true; //Abort
+        return e_find_affected_blocks_result::ABORT; 
     }
 #endif
 
-    return false; //Success
+    return e_find_affected_blocks_result::VALID; 
 }
 
-static bool record_macro_self_swaps(const int imacro, int x_swap_offset, int y_swap_offset, int z_swap_offset) {
+static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, int x_swap_offset, int y_swap_offset, int z_swap_offset) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     blocks_affected.num_moved_blocks = 0; //Reset
@@ -1476,7 +1512,7 @@ static bool record_macro_self_swaps(const int imacro, int x_swap_offset, int y_s
 
         if (!is_legal_swap_to_location(blk, x_to, y_to, z_to)) {
             log_move_abort("self-macro swap to location illegal");
-            return true; //Abort
+            return e_find_affected_blocks_result::ABORT; 
         }
 
         ClusterBlockId blk_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
@@ -1507,7 +1543,7 @@ static bool record_macro_self_swaps(const int imacro, int x_swap_offset, int y_s
             //
             //TODO: could extend with call record_macro_block_swaps()
             log_move_abort("self-macro swap overlaps another macro");
-            return true; //Abort
+            return e_find_affected_blocks_result::ABORT; 
         }
     }
 
@@ -1530,7 +1566,7 @@ static bool record_macro_self_swaps(const int imacro, int x_swap_offset, int y_s
     }
 
 
-    return false; //Success
+    return e_find_affected_blocks_result::VALID; 
 }
 
 bool is_legal_swap_to_location(ClusterBlockId blk, int x_to, int y_to, int z_to) {
@@ -1624,9 +1660,9 @@ static e_swap_result try_swap(float t,
 	 * of the blocks. Abort the swap if the to_block is part of a  *
 	 * macro (not supported yet).                                  */
 
-	bool abort_swap = find_affected_blocks(b_from, x_to, y_to, z_to);
+	e_move_result move_outcome = record_move(b_from, x_to, y_to, z_to);
 
-	if (abort_swap == false) {
+	if (move_outcome == e_move_result::VALID) {
 
         //Swap the blocks
         apply_block_swap();
@@ -1680,6 +1716,7 @@ static e_swap_result try_swap(float t,
             commit_block_swap();
 
 		} else { /* Move was rejected.  */
+            VTR_ASSERT_SAFE(move_outcome == e_move_result::ABORT);
 
 			/* Reset the net cost function flags first. */
 			for (int inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
