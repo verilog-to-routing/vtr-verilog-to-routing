@@ -102,6 +102,9 @@ which avoids multiplying by a gigantic prev_inverse.timing_cost when auto-normal
 The exact value of this cost has relatively little impact, but should not be
 large enough to be on the order of timing costs for normal constraints. */
 
+//Define to print debug info about aborted moves
+#define DEBUG_ABORTED_MOVES
+
 /********************** Variables local to place.c ***************************/
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
@@ -191,6 +194,8 @@ static const float cross_count[50] = { /* [0..49] */1.0, 1.0, 1.0, 1.0828, 1.153
 		2.7410, 2.7671, 2.7933 };
 
 extern vtr::vector<ClusterNetId, float *> f_timing_place_crit; //TODO: encapsulate better
+
+static std::map<std::string,size_t> f_move_abort_reasons;
 
 /********************* Static subroutines local to place.c *******************/
 #ifdef VERBOSE
@@ -356,6 +361,9 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
                                                const SetupTimingInfo& timing_info,
                                                const PlacementDelayCalculator& delay_calc);
+
+static void log_move_abort(std::string reason);
+static void report_aborted_moves();
 
 /*****************************************************************************/
 void try_place(t_placer_opts placer_opts,
@@ -779,6 +787,8 @@ void try_place(t_placer_opts placer_opts,
 	VTR_LOG("\tSwaps accepted: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_accepted, 100*accept_rate);
 	VTR_LOG("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_rejected, 100*reject_rate);
 	VTR_LOG("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100*abort_rate);
+
+    report_aborted_moves();
 
 	free_placement_structs(placer_opts);
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -1298,6 +1308,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
             //Note that we need to explicitly check that the types match, since the device floorplan is not
             //(neccessarily) translationally invariant for an arbitrary macro
             if (!is_legal_swap_to_location(curr_b_from, curr_x_to, curr_y_to, curr_z_to)) {
+                log_move_abort("macro_from swap to location illegal");
 				abort_swap = true;
 			} else {
 
@@ -1365,6 +1376,7 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
     //below the other (not a big limitation since swapping in the oppostie direction would
     //allow these blocks to swap)
     if (place_ctx.pl_macros[imacro_to].members[0].blk_index != blk_to) {
+        log_move_abort("to_macro block not first macro element");
         return true; //Abort
     }
 
@@ -1390,6 +1402,7 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
         if (place_ctx.pl_macros[imacro_from].members[imember_from].x_offset != place_ctx.pl_macros[imacro_to].members[imember_to].x_offset
             || place_ctx.pl_macros[imacro_from].members[imember_from].y_offset != place_ctx.pl_macros[imacro_to].members[imember_to].y_offset
             || place_ctx.pl_macros[imacro_from].members[imember_from].z_offset != place_ctx.pl_macros[imacro_to].members[imember_to].z_offset) {
+            log_move_abort("macro shapes disagree");
             return true; //Abort
         }
 
@@ -1405,6 +1418,7 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
         VTR_ASSERT_SAFE(curr_z_to == place_ctx.block_locs[b_to].z);
 
         if (!is_legal_swap_to_location(b_from, curr_x_to, curr_y_to, curr_z_to)) {
+            log_move_abort("macro_from swap to location illegal");
             return true; //Abort
         }
 
@@ -1431,6 +1445,7 @@ static bool record_macro_block_swaps(const int imacro_from, int& imember_from,
 #else
     if (imember_to < int(place_ctx.pl_macros[imacro_to].members.size())) {
         //The to macro extends beyond the from macro (not yet supported)
+        log_move_abort("to_macro extends beyond from_macro");
         return true; //Abort
     }
 #endif
@@ -1460,6 +1475,7 @@ static bool record_macro_self_swaps(const int imacro, int x_swap_offset, int y_s
         int z_to = z_from + z_swap_offset;
 
         if (!is_legal_swap_to_location(blk, x_to, y_to, z_to)) {
+            log_move_abort("self-macro swap to location illegal");
             return true; //Abort
         }
 
@@ -1490,6 +1506,7 @@ static bool record_macro_self_swaps(const int imacro, int x_swap_offset, int y_s
             //Another macro
             //
             //TODO: could extend with call record_macro_block_swaps()
+            log_move_abort("self-macro swap overlaps another macro");
             return true; //Abort
         }
     }
@@ -1581,8 +1598,9 @@ static e_swap_result try_swap(float t,
     auto grid_from_type = g_vpr_ctx.device().grid[x_from][y_from].type;
     VTR_ASSERT(cluster_from_type == grid_from_type);
 
-	if (!find_to(cluster_ctx.clb_nlist.block_type(b_from), rlim, x_from, y_from, &x_to, &y_to, &z_to))
-		return REJECTED;
+	if (!find_to(cluster_ctx.clb_nlist.block_type(b_from), rlim, x_from, y_from, &x_to, &y_to, &z_to)) {
+		return ABORTED;
+    }
 
 #if 0
     auto& grid = g_vpr_ctx.device().grid;
@@ -1913,6 +1931,7 @@ static bool find_to(t_type_ptr type, float rlim,
 		/* Limit the number of tries when searching for an alternative position */
 		if(num_tries >= 2 * min(active_area / (type->width * type->height), num_legal_pos[itype]) + 10) {
 			/* Tried randomly searching for a suitable position */
+            log_move_abort("gave up searching for valid swap to location");
 			return false;
 		} else {
 			num_tries++;
@@ -3528,3 +3547,19 @@ static void update_screen_debug() {
     update_screen(ScreenUpdatePriority::MAJOR, "DEBUG", PLACEMENT, nullptr);
 }
 #endif
+
+static void log_move_abort(std::string reason) {
+#ifdef DEBUG_ABORTED_MOVES
+    ++f_move_abort_reasons[reason];
+#endif
+}
+
+static void report_aborted_moves() {
+#ifdef DEBUG_ABORTED_MOVES
+    VTR_LOG("\n");
+    VTR_LOG("Aborted Move Reasons:\n");
+    for (auto kv : f_move_abort_reasons) {
+        VTR_LOG("  %s: %zu\n", kv.first.c_str(), kv.second);
+    }
+#endif
+}
