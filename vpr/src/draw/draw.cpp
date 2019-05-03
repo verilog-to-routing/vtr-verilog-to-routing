@@ -426,7 +426,8 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 			create_button("Window", "Toggle Nets", toggle_nets);
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
 			create_button("Blk Internal", "Blk Pin Util", toggle_block_pin_util);
-			create_button("Blk Pin Util", "Toggle RR", toggle_rr);
+			create_button("Blk Pin Util", "Place Macros", toggle_placement_macros);
+			create_button("Place Macros", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 			create_button("Congestion", "Cong. Cost", toggle_routing_congestion_cost);
 			create_button("Cong. Cost", "Route BB", toggle_routing_bounding_box);
@@ -544,8 +545,6 @@ static void redraw_screen() {
 			break;
 		}
 
-        draw_placement_macros();
-
 	} else { /* ROUTING on screen */
 
 		switch (draw_state->show_nets) {
@@ -569,6 +568,8 @@ static void redraw_screen() {
 
         draw_routing_bb();
 	}
+
+    draw_placement_macros();
 
     draw_crit_path();
 
