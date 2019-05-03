@@ -24,7 +24,7 @@ void t_ext_pin_util_targets::set_default_pin_util(t_ext_pin_util default_target)
 
 
 /*
- * t_pb structure function definitions 
+ * t_pb structure function definitions
  */
 
 int t_pb::get_num_child_types() const {
@@ -111,11 +111,10 @@ const t_pb* t_pb::find_pb_for_model(const std::string& blif_model) const {
 const t_pb* t_pb::root_pb() const {
 
     const t_pb* curr_pb = this;
-    while(!is_root()) {
+    while(!curr_pb->is_root()) {
         curr_pb = curr_pb->parent_pb;
     }
 
-    VTR_ASSERT(curr_pb->parent_pb == nullptr);
     return curr_pb;
 }
 
