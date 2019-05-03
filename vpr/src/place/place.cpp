@@ -257,7 +257,7 @@ static void record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to);
 static e_create_move create_move(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 
-static e_find_affected_blocks_result record_macro_block_swaps(const int imacro_from, int& imember_from, 
+static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_from, int& imember_from, 
                                         const int imacro_to,
                                         ClusterBlockId blk_to, int x_to, int y_to, int z_to);
 
@@ -1360,9 +1360,9 @@ static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from,
                         outcome = record_macro_self_swaps(imacro_from, x_swap_offset, y_swap_offset, z_swap_offset);
                         break; //record_macro_self_swaps() handles this case completely, so we don't need to continue the loop
                     } else {
-                        outcome = record_macro_block_swaps(imacro_from, imember_from, imacro_to, b_to,
+                        outcome = record_macro_macro_swaps(imacro_from, imember_from, imacro_to, b_to,
                                                                   x_swap_offset, y_swap_offset, z_swap_offset);
-                        imember_from -= 1; //record_macro_block_swaps() will have already advanced the original imember_from
+                        imember_from -= 1; //record_macro_macro_swaps() will have already advanced the original imember_from
                     }
                 } else {
                     //To block is not a macro
@@ -1394,7 +1394,7 @@ static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from,
 
 }
 
-static e_find_affected_blocks_result record_macro_block_swaps(const int imacro_from, int& imember_from, 
+static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_from, int& imember_from, 
                                         const int imacro_to,
                                         ClusterBlockId blk_to, int x_swap_offset, int y_swap_offset, int z_swap_offset) {
 
@@ -1570,7 +1570,7 @@ static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, i
         } else {
             //Another macro
             //
-            //TODO: could extend with call record_macro_block_swaps()
+            //TODO: could extend with call record_macro_macro_swaps()
             log_move_abort("self-macro swap overlaps another macro");
             return e_find_affected_blocks_result::ABORT; 
         }
