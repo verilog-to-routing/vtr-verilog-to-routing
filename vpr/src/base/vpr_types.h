@@ -214,13 +214,14 @@ public:
     //Returns true if this pb corresponds to a primitive block (i.e. LUT, FF, etc.)
     bool is_primitive() const { return child_pbs == nullptr; }
 
+    //Returns true if this pb has modes
+	bool has_modes() const { return this->pb_graph_node->pb_type->num_modes > 0; }
+
 	int get_num_child_types() const;
 
 	int get_num_children_of_type(int type_index) const;
 
 	t_mode* get_mode() const;
-
-	bool has_modes() const;
 
     //Returns the t_pb associated with the specified gnode which is contained
     //within the current pb

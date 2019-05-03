@@ -51,10 +51,6 @@ t_mode* t_pb::get_mode() const {
     }
 }
 
-inline bool t_pb::has_modes() const {
-    return pb_graph_node->pb_type->num_modes > 0;
-}
-
 //Returns the t_pb associated with the specified gnode which is contained
 //within the current pb
 const t_pb* t_pb::find_pb(const t_pb_graph_node* gnode) const {
