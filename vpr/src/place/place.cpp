@@ -2255,11 +2255,6 @@ static void free_placement_structs(t_placer_opts placer_opts) {
 
 	free_placement_macros_structs();
 
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-	/* Defensive coding. */
-	place_ctx.pl_macros.clear();
-
 	/* Frees up all the data structure used in vpr_utils. */
 	free_port_pin_from_blk_pin();
 	free_blk_pin_from_port_pin();
