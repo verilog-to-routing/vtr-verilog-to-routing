@@ -317,11 +317,13 @@ namespace BitSpace {
             return this->bits.size();
         }
 
+
+
+    public:
+
         VerilogBits()
         {
         }
-
-    public:
 
         VerilogBits(size_t data_size, bit_value_t value_in)
         {
@@ -332,9 +334,20 @@ namespace BitSpace {
             );
         }
 
+        VerilogBits(VerilogBits *other)
+        {
+            this->bit_size = other->size();
+            this->bits = other->get_internal_bitvector();
+        }
+
         size_t size()
         {
             return bit_size;
+        }
+
+        std::vector<BitFields<veri_internal_bits_t>> get_internal_bitvector()
+        {
+            return this->bits;
         }
 
         BitFields<veri_internal_bits_t> *get_bitfield(size_t index)
@@ -404,7 +417,7 @@ namespace BitSpace {
          * Unary Reduction operations
          * This is Msb to Lsb on purpose, as per specs
          */
-        VerilogBits *bitwise_reduce(const bit_value_t lut[4][4])
+        VerilogBits bitwise_reduce(const bit_value_t lut[4][4])
         {
 
             bit_value_t result = this->get_bit(this->size()-1);
@@ -413,29 +426,29 @@ namespace BitSpace {
                 result = lut[result][this->get_bit(i)];
             }
 
-            return new VerilogBits(1, result);
+            return VerilogBits(1, result);
         }
 
-        VerilogBits *invert()
+        VerilogBits invert()
         {
-            VerilogBits *other = new VerilogBits(this->bit_size, _0);
+            VerilogBits other(this->bit_size, _0);
 
             for(size_t i=0; i<this->size(); i++)
-                other->set_bit(i, BitSpace::l_not[this->get_bit(i)]);
+                other.set_bit(i, BitSpace::l_not[this->get_bit(i)]);
                         
             return other;
         }
 
-        VerilogBits *twos_complement()
+        VerilogBits twos_complement()
         {
             BitSpace::bit_value_t previous_carry = BitSpace::_1;
-            VerilogBits *other = new VerilogBits(this->bit_size, _0);
+            VerilogBits other(this->bit_size, _0);
 
             for(size_t i=0; i<this->size(); i++)
             {
                 BitSpace::bit_value_t not_bit_i = BitSpace::l_not[this->get_bit(i)];
 
-                other->set_bit(i,BitSpace::l_half_sum[previous_carry][not_bit_i]);
+                other.set_bit(i,BitSpace::l_half_sum[previous_carry][not_bit_i]);
                 previous_carry = BitSpace::l_half_carry[previous_carry][not_bit_i];
             }
                         
@@ -448,27 +461,17 @@ class VNumber
 {
 private:
     bool sign;
-    BitSpace::VerilogBits *bitstring = nullptr;
+    BitSpace::VerilogBits bitstring;
 
-    VNumber(BitSpace::VerilogBits *other_bitstring, bool other_sign)
+    VNumber(BitSpace::VerilogBits other_bitstring, bool other_sign)
     {
-        bitstring = other_bitstring;
+        bitstring = BitSpace::VerilogBits(other_bitstring);
         sign = other_sign;
     }
-
-
 
 public:
 
     VNumber(){}
-
-    ~VNumber()
-    {
-
-        
-        delete bitstring;
-
-    }
 
     VNumber(VNumber&&) = default;
     VNumber& operator=(VNumber&&) = default;
@@ -476,10 +479,9 @@ public:
 
     VNumber(const VNumber& other)
     {
-
+        
         this->sign = other.sign;
-        this->bitstring = new BitSpace::VerilogBits(*other.bitstring);
-
+        this->bitstring = other.bitstring;
     }
 
     VNumber(const std::string& verilog_string)
@@ -510,13 +512,13 @@ public:
     int64_t get_value()
     {
         
-        assert_Werr( (! this->bitstring->has_unknowns() ) ,
-                    "Invalid Number contains dont care values. number: " + this->bitstring->to_string(false)
+        assert_Werr( (! this->bitstring.has_unknowns() ) ,
+                    "Invalid Number contains dont care values. number: " + this->bitstring.to_string(false)
         );
 
         // We need to accomodate for signed values
-        assert_Werr( (this->bitstring->size() < BitSpace::BitFields<veri_internal_bits_t>::size()),
-                    "Invalid Number. Too large to be converted. number size: " + std::to_string(this->bitstring->size())
+        assert_Werr( (this->bitstring.size() < BitSpace::BitFields<veri_internal_bits_t>::size()),
+                    "Invalid Number. Too large to be converted. number size: " + std::to_string(this->bitstring.size())
         );      
 
         int64_t result = 0;
@@ -525,7 +527,7 @@ public:
         {
             int64_t current_bit = pad;
             if(bit_index < this->size())
-                current_bit = this->bitstring->get_bit(bit_index);
+                current_bit = this->bitstring.get_bit(bit_index);
 
             result |= (current_bit << bit_index);
         }
@@ -537,8 +539,8 @@ public:
     // convert lsb_msb bitstring to verilog
     std::string to_string()
     {
-        std::string out = this->bitstring->to_string(false);
-        size_t len = this->bitstring->size();
+        std::string out = this->bitstring.to_string(false);
+        size_t len = this->bitstring.size();
 
         return std::to_string(len) + ((this->is_signed())? "\'sb": "\'b") + out;
     }
@@ -613,14 +615,11 @@ public:
                 temp_bitstring.erase(0, 1);
         }
 
-        if(this->bitstring)
-            delete this->bitstring;
-
         // convert the bits to the internal data struct (bit at index 0 in string is msb since string go from msb to lsb)
         this->bitstring = new BitSpace::VerilogBits(bitsize, BitSpace::_0);
         size_t counter = bitsize-1;
         for(char in: temp_bitstring)
-            this->bitstring->set_bit(counter--,BitSpace::c_to_bit(in));
+            this->bitstring.set_bit(counter--,BitSpace::c_to_bit(in));
     }
 
     void set_value(int64_t in)
@@ -630,7 +629,7 @@ public:
 
     size_t msb_index()
     {
-        return this->bitstring->size()-1;
+        return this->bitstring.size()-1;
     }
 
     /****
@@ -638,22 +637,22 @@ public:
      */
     BitSpace::bit_value_t get_bit_from_msb(size_t index)
     {
-        return this->bitstring->get_bit(msb_index()-index);
+        return this->bitstring.get_bit(msb_index()-index);
     }
 
     BitSpace::bit_value_t get_bit_from_lsb(size_t index)
     {
-        return this->bitstring->get_bit(index);
+        return this->bitstring.get_bit(index);
     }
 
     void set_bit_from_msb(size_t index, BitSpace::bit_value_t val)
     {
-        this->bitstring->set_bit(msb_index()-index, val);
+        this->bitstring.set_bit(msb_index()-index, val);
     }
 
     void set_bit_from_lsb(size_t index, BitSpace::bit_value_t val)
     {
-        this->bitstring->set_bit(index, val);
+        this->bitstring.set_bit(index, val);
     }
 
     /***
@@ -661,7 +660,7 @@ public:
      */
     size_t size()
     {
-        return this->bitstring->size();
+        return this->bitstring.size();
     }
 
     bool is_signed() const
@@ -681,22 +680,22 @@ public:
 
     bool is_dont_care_string()
     {
-        return this->bitstring->has_unknowns();
+        return this->bitstring.has_unknowns();
     }
 
     VNumber twos_complement()
     {
-        return VNumber(this->bitstring->twos_complement(),this->sign);
+        return VNumber(this->bitstring.twos_complement(),this->sign);
     }
 
     VNumber invert()
     {
-        return VNumber(this->bitstring->invert(),this->sign);
+        return VNumber(this->bitstring.invert(),this->sign);
     }
 
     VNumber bitwise_reduce(const BitSpace::bit_value_t lut[4][4])
     {
-        return VNumber(this->bitstring->bitwise_reduce(lut),false);
+        return VNumber(this->bitstring.bitwise_reduce(lut),false);
     }
 
     /**

@@ -18,9 +18,7 @@
 #endif
 
 #ifndef ERR_MSG
-#define ERR_MSG(errMsg) {\
-    std::cout << std::endl << "ERROR: " << FILE_NAME << ":" << __LINE__ << " " << __func__ << "()" << ": " << errMsg << "!" << std::endl << std::endl;\
-    }
+#define ERR_MSG(errMsg) std::cout << std::endl << "ERROR: " << FILE_NAME << ":" << __LINE__ << " " << __func__ << "()" << ": " << errMsg << "!" << std::endl << std::endl
 #endif
 
 
