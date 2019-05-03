@@ -78,8 +78,8 @@ enum e_swap_result {
 	REJECTED, ACCEPTED, ABORTED
 };
 
-enum class e_move_result {
-    VALID, //Move successful
+enum class e_create_move {
+    VALID, //Move successful and legal
     ABORT, //Unable to perform move
 };
 
@@ -254,7 +254,7 @@ static void commit_move();
 static void record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 static void record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to);
 
-static e_move_result record_move(ClusterBlockId b_from, int x_to, int y_to, int z_to);
+static e_create_move create_move(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 
 static e_find_affected_blocks_result record_macro_block_swaps(const int imacro_from, int& imember_from, 
@@ -1265,7 +1265,7 @@ static void record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, 
 	} // Finish swapping the blocks and setting up blocks_affected
 }
 
-static e_move_result record_move(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
+static e_create_move create_move(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
 
     e_find_affected_blocks_result outcome = find_affected_blocks(b_from, x_to, y_to, z_to);
 
@@ -1287,10 +1287,10 @@ static e_move_result record_move(ClusterBlockId b_from, int x_to, int y_to, int 
     }
 
     if (outcome == e_find_affected_blocks_result::VALID) {
-        return e_move_result::VALID;
+        return e_create_move::VALID;
     } else {
         VTR_ASSERT_SAFE(outcome == e_find_affected_blocks_result::ABORT);
-        return e_move_result::ABORT;
+        return e_create_move::ABORT;
     }
 }
 
@@ -1661,9 +1661,9 @@ static e_swap_result try_swap(float t,
 	 * of the blocks. Abort the swap if the to_block is part of a  *
 	 * macro (not supported yet).                                  */
 
-	e_move_result move_outcome = record_move(b_from, x_to, y_to, z_to);
+	e_create_move move_outcome = create_move(b_from, x_to, y_to, z_to);
 
-	if (move_outcome == e_move_result::VALID) {
+	if (move_outcome == e_create_move::VALID) {
 
         //Swap the blocks
         apply_move();
@@ -1717,7 +1717,7 @@ static e_swap_result try_swap(float t,
             commit_move();
 
 		} else { /* Move was rejected.  */
-            VTR_ASSERT_SAFE(move_outcome == e_move_result::ABORT);
+            VTR_ASSERT_SAFE(move_outcome == e_create_move::ABORT);
 
 			/* Reset the net cost function flags first. */
 			for (int inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
