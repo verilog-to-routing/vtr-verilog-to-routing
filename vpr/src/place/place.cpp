@@ -114,7 +114,7 @@ The exact value of this cost has relatively little impact, but should not be
 large enough to be on the order of timing costs for normal constraints. */
 
 //Define to print debug info about aborted moves
-#define DEBUG_ABORTED_MOVES
+//#define DEBUG_ABORTED_MOVES
 
 /********************** Variables local to place.c ***************************/
 
@@ -1413,10 +1413,23 @@ static e_find_affected_blocks_result record_macro_block_swaps(const int imacro_f
     //below the other (not a big limitation since swapping in the oppostie direction would
     //allow these blocks to swap)
     if (place_ctx.pl_macros[imacro_to].members[0].blk_index != blk_to) {
+#ifdef DEBUG_ABORTED_MOVES
+        int imember_to = 0;
+        for (;imember_to < int(place_ctx.pl_macros[imacro_to].members.size()); ++imember_to) {
+            if (place_ctx.pl_macros[imacro_to].members[imember_to].blk_index == blk_to) {
+                break;
+            }
+        }
+        VTR_ASSERT_MSG(imember_to < int(place_ctx.pl_macros[imacro_to].members.size()), "Block must have been part of to_macro");
+        VTR_LOG("From macro %d member %d; To macro %d member %d (to_block was not root of to_macro)\n",
+                imacro_from, imember_from,
+                imacro_to, imember_to);
+#endif
         log_move_abort("to_macro block not first macro element");
         return e_find_affected_blocks_result::ABORT; 
     }
 
+    //From/To blocks should be exactly the swap offset appart
     ClusterBlockId blk_from = place_ctx.pl_macros[imacro_from].members[imember_from].blk_index;
     VTR_ASSERT_SAFE(place_ctx.block_locs[blk_from].x + x_swap_offset == place_ctx.block_locs[blk_to].x);
     VTR_ASSERT_SAFE(place_ctx.block_locs[blk_from].y + y_swap_offset == place_ctx.block_locs[blk_to].y);
@@ -1430,15 +1443,30 @@ static e_find_affected_blocks_result record_macro_block_swaps(const int imacro_f
     //we just abort in any other cases (if these types of macros become more common in
     //the future this could be updated).
     //
+    //Unless the two macros have thier root blocks aligned (i.e. the mutual overlap starts
+    //at imember_from == 0), then theree will be a fixed offset between the macros' relative
+    //position. We record this as from_to_macro_*_offset which is used to verify the shape
+    //of the macros is consistent.
+    //
     //NOTE: We mutate imember_from so the outer from macro walking loop moves in lock-step
     int imember_to = 0;
+    int from_to_macro_x_offset = place_ctx.pl_macros[imacro_from].members[imember_from].x_offset;
+    int from_to_macro_y_offset = place_ctx.pl_macros[imacro_from].members[imember_from].y_offset;
+    int from_to_macro_z_offset = place_ctx.pl_macros[imacro_from].members[imember_from].z_offset;
     for (; imember_from < int(place_ctx.pl_macros[imacro_from].members.size()) && imember_to < int(place_ctx.pl_macros[imacro_to].members.size());
            ++imember_from, ++imember_to) {
 
         //Check that both macros have the same shape while they overlap
-        if (place_ctx.pl_macros[imacro_from].members[imember_from].x_offset != place_ctx.pl_macros[imacro_to].members[imember_to].x_offset
-            || place_ctx.pl_macros[imacro_from].members[imember_from].y_offset != place_ctx.pl_macros[imacro_to].members[imember_to].y_offset
-            || place_ctx.pl_macros[imacro_from].members[imember_from].z_offset != place_ctx.pl_macros[imacro_to].members[imember_to].z_offset) {
+        if (place_ctx.pl_macros[imacro_from].members[imember_from].x_offset != place_ctx.pl_macros[imacro_to].members[imember_to].x_offset + from_to_macro_x_offset
+            || place_ctx.pl_macros[imacro_from].members[imember_from].y_offset != place_ctx.pl_macros[imacro_to].members[imember_to].y_offset + from_to_macro_y_offset
+            || place_ctx.pl_macros[imacro_from].members[imember_from].z_offset != place_ctx.pl_macros[imacro_to].members[imember_to].z_offset + from_to_macro_z_offset) {
+#ifdef DEBUG_ABORTED_MOVES
+            VTR_LOG("From macro %d member %d offset (%d,%d,%d); To macro %d member %d offset (%d,%d,%d)\n",
+                    imacro_from, imember_from,
+                    place_ctx.pl_macros[imacro_from].members[imember_from].x_offset, place_ctx.pl_macros[imacro_from].members[imember_from].y_offset, place_ctx.pl_macros[imacro_from].members[imember_from].z_offset,
+                    imacro_to, imember_to,
+                    place_ctx.pl_macros[imacro_to].members[imember_to].x_offset, place_ctx.pl_macros[imacro_to].members[imember_to].y_offset, place_ctx.pl_macros[imacro_to].members[imember_to].z_offset);
+#endif
             log_move_abort("macro shapes disagree");
             return e_find_affected_blocks_result::ABORT; 
         }
@@ -3586,9 +3614,11 @@ static void update_screen_debug() {
 }
 #endif
 
-static void log_move_abort(std::string reason) {
 #ifdef DEBUG_ABORTED_MOVES
+static void log_move_abort(std::string reason) {
     ++f_move_abort_reasons[reason];
+#else
+static void log_move_abort(std::string /*reason*/) {
 #endif
 }
 
