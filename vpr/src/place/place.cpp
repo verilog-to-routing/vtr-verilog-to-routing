@@ -247,9 +247,10 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 static float comp_bb_cost(e_cost_methods method);
 
-static void apply_block_swap();
-static void revert_block_swap();
-static void commit_block_swap();
+static void apply_move();
+static void revert_move();
+static void commit_move();
+
 static void record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 static void record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to);
 
@@ -1141,7 +1142,7 @@ static float starting_t(t_placer_costs* costs,
 }
 
 //Moves the blocks in blocks_affected to their new locations
-static void apply_block_swap() {
+static void apply_move() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     //Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
@@ -1158,7 +1159,7 @@ static void apply_block_swap() {
 
 //Commits the blocks in blocks_affected to their new locations (updates inverse
 //lookups via place_ctx.grid_blocks)
-static void commit_block_swap() {
+static void commit_move() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     /* Swap physical location */
@@ -1191,7 +1192,7 @@ static void commit_block_swap() {
 }
 
 //Moves the blocks in blocks_affected to their old locations
-static void revert_block_swap() {
+static void revert_move() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     // Swap the blocks back, nets not yet swapped they don't need to be changed
@@ -1665,7 +1666,7 @@ static e_swap_result try_swap(float t,
 	if (move_outcome == e_move_result::VALID) {
 
         //Swap the blocks
-        apply_block_swap();
+        apply_move();
 
 		// Find all the nets affected by this swap and update thier bounding box
 		int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm, delay_model, bb_delta_c, timing_delta_c, delay_delta_c);
@@ -1713,7 +1714,7 @@ static e_swap_result try_swap(float t,
 			}
 
 			/* Update clb data structures since we kept the move. */
-            commit_block_swap();
+            commit_move();
 
 		} else { /* Move was rejected.  */
             VTR_ASSERT_SAFE(move_outcome == e_move_result::ABORT);
@@ -1726,7 +1727,7 @@ static e_swap_result try_swap(float t,
 			}
 
 			/* Restore the place_ctx.block_locs data structures to their state before the move. */
-            revert_block_swap();
+            revert_move();
 		}
 
 		/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
