@@ -134,6 +134,9 @@
 
 #ifndef PLACE_MACRO_H
 #define PLACE_MACRO_H
+#include <vector>
+
+#include "physical_types.h"
 
 /* These are the placement macro structure.
  * It is in the form of array of structs instead of
@@ -161,8 +164,8 @@ struct t_pl_macro {
 };
 
 /* These are the function declarations. */
-int alloc_and_load_placement_macros(t_direct_inf* directs, int num_segments, t_pl_macro*&  chains);
-void get_imacro_from_iblk(int * imacro, ClusterBlockId iblk, t_pl_macro * macros, int num_macros);
+std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs);
+void get_imacro_from_iblk(int *imacro, ClusterBlockId iblk, const std::vector<t_pl_macro>& macros);
 void free_placement_macros_structs();
 
 #endif

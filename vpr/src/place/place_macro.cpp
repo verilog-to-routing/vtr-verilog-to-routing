@@ -47,15 +47,15 @@ static vtr::vector_map<ClusterBlockId, int> f_imacro_from_iblk;
 static void find_all_the_macro (int * num_of_macro, std::vector<ClusterBlockId> &pl_macro_member_blk_num_of_this_blk,
 		std::vector<int> &pl_macro_idirect, std::vector<int> &pl_macro_num_members, std::vector<std::vector<ClusterBlockId>> &pl_macro_member_blk_num);
 
-static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros);
+static void alloc_and_load_imacro_from_iblk(const std::vector<t_pl_macro>& macros);
 
-static void write_place_macros(std::string filename, const t_pl_macro* macros, int num_macros);
+static void write_place_macros(std::string filename, const std::vector<t_pl_macro>& macros);
 
 static bool is_constant_clb_net(ClusterNetId clb_net);
 
 static bool net_is_driven_by_direct(ClusterNetId clb_net);
 
-static void validate_macros(t_pl_macro* macros, int num_macro);
+static void validate_macros(const std::vector<t_pl_macro>& macros);
 
 static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>> &pl_macro_member_blk_num, int matching_macro, int latest_macro);
 /******************** Subroutine definitions *********************************/
@@ -305,7 +305,7 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>> &pl_macr
     return true;
 }
 
-int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl_macro*& macros){
+std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs) {
 
 	/* This function allocates and loads the macros placement macros   *
 	 * and returns the total number of macros in 2 steps.              *
@@ -354,7 +354,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 			pl_macro_idirect, pl_macro_num_members, pl_macro_member_blk_num);
 
 	/* Allocate the memories for the macro. */
-	macro = (t_pl_macro *) vtr::malloc (num_macro * sizeof(t_pl_macro));
+    std::vector<t_pl_macro> macros(num_macro);
 
 	/* Allocate the memories for the chain members.             *
 	 * Load the values from the temporary data structures.      */
@@ -371,19 +371,16 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 		}
 	}
 
-	/* Returns the pointer to the macro by reference. */
-	macros = macro;
-
     if(isEchoFileEnabled(E_ECHO_PLACE_MACROS)) {
-        write_place_macros(getEchoFileName(E_ECHO_PLACE_MACROS), macros, num_macro);
+        write_place_macros(getEchoFileName(E_ECHO_PLACE_MACROS), macros);
     }
 
-    validate_macros(macros, num_macro);
+    validate_macros(macros);
 
-	return (num_macro);
+	return macros;
 }
 
-void get_imacro_from_iblk(int *imacro, ClusterBlockId iblk, t_pl_macro *macros, int num_macros) {
+void get_imacro_from_iblk(int *imacro, ClusterBlockId iblk, const std::vector<t_pl_macro>& macros) {
 
 	/* This mapping is needed for fast lookup's whether the block with index *
 	 * iblk belongs to a placement macro or not.                             *
@@ -393,7 +390,7 @@ void get_imacro_from_iblk(int *imacro, ClusterBlockId iblk, t_pl_macro *macros, 
 
 	/* If the array is not allocated and loaded, allocate it.                */
 	if (f_imacro_from_iblk.size() == 0) {
-		alloc_and_load_imacro_from_iblk(macros, num_macros);
+		alloc_and_load_imacro_from_iblk(macros);
 	}
 
     if (iblk) {
@@ -406,8 +403,7 @@ void get_imacro_from_iblk(int *imacro, ClusterBlockId iblk, t_pl_macro *macros, 
 }
 
 /* Allocates and loads imacro_from_iblk array. */
-static void alloc_and_load_imacro_from_iblk(t_pl_macro *macros, int num_macros) {
-	int imacro, imember;
+static void alloc_and_load_imacro_from_iblk(const std::vector<t_pl_macro>& macros) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	f_imacro_from_iblk.resize(cluster_ctx.clb_nlist.blocks().size());
@@ -418,8 +414,8 @@ static void alloc_and_load_imacro_from_iblk(t_pl_macro *macros, int num_macros) 
 	}
 
 	/* Load the values */
-	for (imacro = 0; imacro < num_macros; imacro++) {
-		for (imember = 0; imember < macros[imacro].num_blocks; imember++) {
+	for (size_t imacro = 0; imacro < macros.size(); imacro++) {
+		for (int imember = 0; imember < macros[imacro].num_blocks; imember++) {
 			ClusterBlockId blk_id = macros[imacro].members[imember].blk_index;
 			f_imacro_from_iblk.insert(blk_id, imacro);
 		}
@@ -450,17 +446,17 @@ void free_placement_macros_structs() {
 	}
 }
 
-static void write_place_macros(std::string filename, const t_pl_macro *macros, int num_macros) {
+static void write_place_macros(std::string filename, const std::vector<t_pl_macro>& macros) {
 
     FILE* f = vtr::fopen(filename.c_str(), "w");
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     fprintf(f, "#Identified Placement macros\n");
-    fprintf(f, "Num_Macros: %d\n", num_macros);
-    for (int imacro = 0; imacro < num_macros; ++imacro) {
+    fprintf(f, "Num_Macros: %zu\n", macros.size());
+    for (size_t imacro = 0; imacro < macros.size(); ++imacro) {
         const t_pl_macro* macro = &macros[imacro];
-        fprintf(f, "Macro_Id: %d, Num_Blocks: %d\n", imacro, macro->num_blocks);
+        fprintf(f, "Macro_Id: %zu, Num_Blocks: %d\n", imacro, macro->num_blocks);
         fprintf(f, "------------------------------------------------------\n");
         for (int imember = 0; imember < macro->num_blocks; ++imember) {
             const t_pl_macro_member* macro_memb = &macro->members[imember];
@@ -519,13 +515,13 @@ static bool net_is_driven_by_direct(ClusterNetId clb_net) {
     return direct != OPEN;
 }
 
-static void validate_macros(t_pl_macro* macros, int num_macros) {
+static void validate_macros(const std::vector<t_pl_macro>& macros) {
     //Perform sanity checks on macros
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //Verify that blocks only appear in a single macro
     std::multimap<ClusterBlockId,int> block_to_macro;
-    for (int imacro = 0; imacro < num_macros; ++imacro) {
+    for (size_t imacro = 0; imacro < macros.size(); ++imacro) {
         for (int imember = 0; imember < macros[imacro].num_blocks; ++imember) {
             ClusterBlockId iblk = macros[imacro].members[imember].blk_index;
 

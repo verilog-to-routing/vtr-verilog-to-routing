@@ -1266,9 +1266,8 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 	z_from = place_ctx.block_locs[b_from].z;
 
     auto& pl_macros = place_ctx.pl_macros;
-    auto& num_pl_macros = place_ctx.num_pl_macros;
 
-	get_imacro_from_iblk(&imacro_from, b_from, pl_macros, num_pl_macros);
+	get_imacro_from_iblk(&imacro_from, b_from, pl_macros);
 	if ( imacro_from != -1) {
 		// b_from is part of a macro, I need to swap the whole macro
 
@@ -1304,7 +1303,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 
                 ClusterBlockId b_to = place_ctx.grid_blocks[curr_x_to][curr_y_to].blocks[curr_z_to];
                 int imacro_to = -1;
-                get_imacro_from_iblk(&imacro_to, b_to, pl_macros, num_pl_macros);
+                get_imacro_from_iblk(&imacro_to, b_to, pl_macros);
 
                 if (imacro_to != -1) {
                     //To block is a macro
@@ -1328,7 +1327,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 
         ClusterBlockId b_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
         int imacro_to = -1;
-        get_imacro_from_iblk(&imacro_to, b_to, pl_macros, num_pl_macros);
+        get_imacro_from_iblk(&imacro_to, b_to, pl_macros);
 
         if (imacro_to != -1) {
             //To block is a macro but from is a single block.
@@ -1467,7 +1466,7 @@ static bool record_macro_self_swaps(const int imacro, int x_swap_offset, int y_s
         ClusterBlockId blk_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
 
         int imacro_to = -1;
-        get_imacro_from_iblk(&imacro_to, blk_to, place_ctx.pl_macros, place_ctx.num_pl_macros);
+        get_imacro_from_iblk(&imacro_to, blk_to, place_ctx.pl_macros);
 
         if (blk_to) {
             filled_locations.emplace(x_to, y_to, z_to);
@@ -2223,8 +2222,6 @@ static float comp_bb_cost(e_cost_methods method) {
 /* Frees the major structures needed by the placer (and not needed       *
 * elsewhere).   */
 static void free_placement_structs(t_placer_opts placer_opts) {
-	int imacro;
-
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	free_legal_placements();
@@ -2259,13 +2256,11 @@ static void free_placement_structs(t_placer_opts placer_opts) {
 	free_placement_macros_structs();
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-	for (imacro = 0; imacro < place_ctx.num_pl_macros; imacro++)
+	for (size_t imacro = 0; imacro < place_ctx.pl_macros.size(); imacro++)
 		free(place_ctx.pl_macros[imacro].members);
-	free(place_ctx.pl_macros);
 
 	/* Defensive coding. */
-	place_ctx.pl_macros = nullptr;
-	place_ctx.num_pl_macros = 0;
+	place_ctx.pl_macros.clear();
 
 	/* Frees up all the data structure used in vpr_utils. */
 	free_port_pin_from_blk_pin();
@@ -2348,7 +2343,7 @@ static void alloc_and_load_placement_structs(
 
 	alloc_and_load_try_swap_structs();
 
-	place_ctx.num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, place_ctx.pl_macros);
+	place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
 }
 
 /* Allocates and loads net_pin_indices array, this array allows us to quickly   *
@@ -2977,7 +2972,7 @@ static int try_place_macro(int itype, int ipos, int imacro){
 static void initial_placement_pl_macros(int macros_max_num_tries, int * free_locations) {
 
 	int macro_placed;
-	int imacro, itype, itry, ipos;
+	int itype, itry, ipos;
 	ClusterBlockId blk_id;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -2985,10 +2980,9 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
     auto& place_ctx = g_vpr_ctx.placement();
 
     auto& pl_macros = place_ctx.pl_macros;
-    auto& num_pl_macros = place_ctx.num_pl_macros;
 
 	/* Macros are harder to place.  Do them first */
-	for (imacro = 0; imacro < num_pl_macros; imacro++) {
+	for (size_t imacro = 0; imacro < place_ctx.pl_macros.size(); imacro++) {
 
 		// Every macro are not placed in the beginnning
 		macro_placed = false;
@@ -3434,10 +3428,9 @@ int check_macro_placement_consistency() {
     auto& place_ctx = g_vpr_ctx.placement();
 
     auto& pl_macros = place_ctx.pl_macros;
-    auto& num_pl_macros = place_ctx.num_pl_macros;
 
 	/* Check the pl_macro placement are legal - blocks are in the proper relative position. */
-	for (int imacro = 0; imacro < num_pl_macros; imacro++) {
+	for (size_t imacro = 0; imacro < place_ctx.pl_macros.size(); imacro++) {
 
 		auto head_iblk = pl_macros[imacro].members[0].blk_index;
 
@@ -3455,7 +3448,7 @@ int check_macro_placement_consistency() {
 					|| place_ctx.block_locs[member_iblk].y != member_y
 					|| place_ctx.block_locs[member_iblk].z != member_z) {
 				VTR_LOG_ERROR(
-						"Block %zu in pl_macro #%d is not placed in the proper orientation.\n",
+						"Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
 						size_t(member_iblk), imacro);
 				error++;
 			}
@@ -3463,7 +3456,7 @@ int check_macro_placement_consistency() {
 			// Then check the place_ctx.grid data structure
 			if (place_ctx.grid_blocks[member_x][member_y].blocks[member_z] != member_iblk) {
 				VTR_LOG_ERROR(
-						"Block %zu in pl_macro #%d is not placed in the proper orientation.\n",
+						"Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
 						size_t(member_iblk), imacro);
 				error++;
 			}

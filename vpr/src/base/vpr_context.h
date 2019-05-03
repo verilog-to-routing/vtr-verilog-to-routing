@@ -234,10 +234,8 @@ struct PlacementContext : public Context {
     //Clustered block associated with each grid location (i.e. inverse of block_locs)
     vtr::Matrix<t_grid_blocks> grid_blocks; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.width()-1]
 
-    /* The pl_macros array stores all the carry chains placement macros.   *
-     * [0...num_pl_macros-1]                                               */
-    t_pl_macro* pl_macros = nullptr;
-    int num_pl_macros = 0;
+    // The pl_macros array stores all the placement macros (usually carry chains). 
+    std::vector<t_pl_macro> pl_macros;
 
     //SHA256 digest of the .place file (used for unique identification and consistency checking)
     std::string placement_id;
