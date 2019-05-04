@@ -331,6 +331,17 @@ static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 				pb_graph_node->child_pb_graph_nodes[i], &pb_type->modes[i],
 				load_power_structures);
 	}
+
+    // update the total number of primitives of that type
+    if (pb_graph_node->is_primitive()) {
+        int total_count = 1;
+        auto pb_node = pb_graph_node;
+        while(!pb_node->is_root()) {
+            total_count *= pb_node->pb_type->num_pb;
+            pb_node = pb_node->parent_pb_graph_node;
+        }
+        pb_graph_node->total_primitive_count = total_count;
+    }
 }
 
 void free_pb_graph_edges() {
