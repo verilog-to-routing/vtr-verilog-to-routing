@@ -1789,7 +1789,7 @@ static e_swap_result try_swap(float t,
 
         clear_move();
 
-        VTR_ASSERT(check_macro_placement_consistency() == 0);
+        //VTR_ASSERT(check_macro_placement_consistency() == 0);
 #if 0
         //Check that each accepted swap yields a valid placement
         check_place(*costs, delay_model, place_algorithm);
@@ -3623,7 +3623,7 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
     timing_reporter.report_timing_setup(placer_opts.post_place_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }
 
-#if 1
+#if 0
 static void update_screen_debug();
 
 //Performs a major (i.e. interactive) placement screen update.
