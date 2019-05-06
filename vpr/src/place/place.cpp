@@ -250,6 +250,7 @@ static float comp_bb_cost(e_cost_methods method);
 static void apply_move();
 static void revert_move();
 static void commit_move();
+static void clear_move();
 
 static void record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 static void record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to);
@@ -1214,6 +1215,13 @@ static void revert_move() {
     }
 }
 
+//Clears the current move so a new move can be proposed
+static void clear_move() {
+    //For run-time we just reset num_moved_blocks to zero, but do not free the blocks_affected
+    //array to avoid memory allocation
+    blocks_affected.num_moved_blocks = 0;
+}
+
 static void record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -1545,7 +1553,7 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
 static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, int x_swap_offset, int y_swap_offset, int z_swap_offset) {
     auto& place_ctx = g_vpr_ctx.placement();
 
-    blocks_affected.num_moved_blocks = 0; //Reset
+    clear_move();
 
     std::set<std::tuple<int,int,int>> emptied_locations; //Locations which are empty/holes due to macro shifting
     std::set<std::tuple<int,int,int>> filled_locations; //Locations which are filed due to macro shifting
@@ -1787,9 +1795,7 @@ static e_swap_result try_swap(float t,
             revert_move();
 		}
 
-		/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
-		blocks_affected.num_moved_blocks = 0;
-
+        clear_move();
 #if 0
         VTR_ASSERT_SAFE(check_macro_placement_consistency() == 0);
 
@@ -1801,18 +1807,7 @@ static e_swap_result try_swap(float t,
 	} else {
         VTR_ASSERT_SAFE(move_outcome == e_create_move::ABORT);
 
-
-		/* Restore the place_ctx.block_locs data structures to their state before the move. */
-		for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
-			b_from = blocks_affected.moved_blocks[iblk].block_num;
-
-			place_ctx.block_locs[b_from].x = blocks_affected.moved_blocks[iblk].xold;
-			place_ctx.block_locs[b_from].y = blocks_affected.moved_blocks[iblk].yold;
-			place_ctx.block_locs[b_from].z = blocks_affected.moved_blocks[iblk].zold;
-		}
-
-		/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
-		blocks_affected.num_moved_blocks = 0;
+        clear_move();
 
 		return ABORTED;
 	}
