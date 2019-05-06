@@ -1219,6 +1219,7 @@ static void revert_move() {
 static void clear_move() {
     //Reset moved flags
     blocks_affected.moved_to.clear();
+    blocks_affected.moved_from.clear();
 
     //For run-time we just reset num_moved_blocks to zero, but do not free the blocks_affected
     //array to avoid memory allocation
@@ -1238,6 +1239,12 @@ static e_find_affected_blocks_result record_block_move(ClusterBlockId blk, int x
 	int x_from = place_ctx.block_locs[blk].x;
 	int y_from = place_ctx.block_locs[blk].y;
 	int z_from = place_ctx.block_locs[blk].z;
+
+    auto res2 = blocks_affected.moved_from.emplace(x_from, y_from, z_from);
+    if (!res2.second) {
+        log_move_abort("duplicate block move from location");
+        return e_find_affected_blocks_result::ABORT;
+    }
 
     VTR_ASSERT_SAFE(z_to < int(place_ctx.grid_blocks[x_to][y_to].blocks.size()));
 
