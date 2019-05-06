@@ -275,13 +275,6 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 										sc_spot = sc_add_string(local_param_table_sc, temp_string);
 										local_param_table_sc->data[sc_spot] = (void *)node;
 									}
-									else
-									{
-										ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
-										oassert(node->type == NUMBERS);
-										sc_spot = sc_add_string(local_param_table_sc, temp_string);
-										local_param_table_sc->data[sc_spot] = (void *)node;
-									}
 								}
 								vtr::free(temp_string);
 							}
