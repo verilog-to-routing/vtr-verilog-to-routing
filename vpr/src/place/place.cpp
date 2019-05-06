@@ -1505,13 +1505,6 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
         if (place_ctx.pl_macros[imacro_from].members[imember_from].x_offset != place_ctx.pl_macros[imacro_to].members[imember_to].x_offset + from_to_macro_x_offset
             || place_ctx.pl_macros[imacro_from].members[imember_from].y_offset != place_ctx.pl_macros[imacro_to].members[imember_to].y_offset + from_to_macro_y_offset
             || place_ctx.pl_macros[imacro_from].members[imember_from].z_offset != place_ctx.pl_macros[imacro_to].members[imember_to].z_offset + from_to_macro_z_offset) {
-#ifdef DEBUG_ABORTED_MOVES
-            VTR_LOG("From macro %d member %d offset (%d,%d,%d); To macro %d member %d offset (%d,%d,%d)\n",
-                    imacro_from, imember_from,
-                    place_ctx.pl_macros[imacro_from].members[imember_from].x_offset, place_ctx.pl_macros[imacro_from].members[imember_from].y_offset, place_ctx.pl_macros[imacro_from].members[imember_from].z_offset,
-                    imacro_to, imember_to,
-                    place_ctx.pl_macros[imacro_to].members[imember_to].x_offset, place_ctx.pl_macros[imacro_to].members[imember_to].y_offset, place_ctx.pl_macros[imacro_to].members[imember_to].z_offset);
-#endif
             log_move_abort("macro shapes disagree");
             return e_find_affected_blocks_result::ABORT; 
         }
