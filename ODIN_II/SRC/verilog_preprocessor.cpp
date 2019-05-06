@@ -383,7 +383,6 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 	FILE *source = remove_comments(original_source);
 
 	source = format_verilog_file(source);
-
 	int line_number = 1;
 	veri_flag_stack *skip = (veri_flag_stack *)vtr::calloc(1, sizeof(veri_flag_stack));;
 	char line[MaxLine];
@@ -676,151 +675,152 @@ void push(veri_flag_stack *stack, int flag)
 FILE *format_verilog_file(FILE *source)
 {
 	FILE *destination = tmpfile();
-	char searchString [4][7]= {"input","output","reg","wire"};
-	char tempLine[MaxLine] = { 0 };
-	char *line = tempLine;
-	char checkerLine[MaxLine] = { 0 };
-	char *checker = checkerLine;
-	char ch;
-	unsigned i = 0;
-	unsigned j = 0;
-	unsigned k = 0;
-	int pos;
-	char temp[10];
-	static const char *pattern = "\\binput\\b|\\boutput\\b|\\breg\\b|\\bwire\\b";
+	char buf[MaxLine] = { 0 }; // Temporary input buffer
+	char dec[MaxLine] = { 0 }; // Module declaration buffer
+	char postDec[MaxLine] = { 0 }; // Post-declaration buffer
+	char IOTypeDec[MaxLine] = { 0 }; // Register and wire re-declaration buffer
+	char * bufPtr = buf;
+	char * decPtr = dec;
+	char * postDecPtr = postDec;
+	char * IOTypeDecPtr = IOTypeDec;
+	char * token, * subtoken, * temp = NULL;
+	int pos = 0;
+	unsigned i, j, k = 0;
+	bool directionDefined = false;
 
-	/* Pass through file line-by-line until module declaration begins */
-	while(fgets(checker, MaxLine, source))
+	while(fgets(buf, MaxLine, source)) // Scan through original file line-by-line
 	{
-		std::string s(checker);
-		pos = s.find_first_not_of(" ");
-		if(s.find("module") == pos || s.find("macromodule") == pos)
+		std::string str(buf);
+		pos = str.find_first_not_of(" ");
+		// Beginning of module declaration
+		if(str.find("module ") == pos || str.find("macromodule ") == pos || str.find("module(") == pos || str.find("macromodule(") == pos)
 		{
-			/* "module" found at line start -- copy first part of module declaration into "line" */
-			while(checker[k] != '\n' && checker[k] != ';')
-			{
-				line[k] = checker[k];
-				k++;
-			}
-			if(checker[k] == '\n')
-			{
-				/* Not a one-line declaration */
-				line[k++] = '\n';
-				while( (ch = getc(source) ) != ';')
+			do { // Copy module declaration into temp buffer
+				while(buf[i] != '\n' && buf[i] != ')')
 				{
-					line[k++] = ch;
+					i++;
 				}
-			}
-			line[k++] = ';';
-			break;
-		}
-		/* Else, move current line to destination */
-		fputs(checker,destination);
-	}
-
-	line[k] = '\0';
-	std::string sub_line = find_substring(line,"module",2);
-	sprintf(line,"%s",sub_line.c_str());
-	line = search_replace(line,"\n","",2);
-
-	if (! validate_string_regex(line, pattern))
-	{
-		free(line);
-	 	rewind(source);
-		return source;
-	}
-	for (i = 0; i < 4; i++)
-	{
-		char *line_cpy = vtr::strdup(line);
-		free(line);
-		line = search_replace(line_cpy,searchString[i],"",2);
-		vtr::free(line_cpy);
-	}
-	i = 0;
-	while (i < strnlen(line, MaxLine))
-	{
-		if(line[i] == '[')
-		{
-			j = 0;
-			while(line[i] != ']')
-			{
-				temp[j++] = line[i];
+				if(buf[i] == ')')
+				{
+					break;
+				}
 				i++;
-			}
-			temp[j++] = line[i];
-			temp[j] = '\0';
-			line = search_replace(line,temp,"",2);
+			} while (fgets(&buf[i], MaxLine - i, source));
+
 			i = 0;
+			/* ----- At this point, an entire module declaration is in the temp buffer ----- */
+			token = std::strtok(buf, "(");
+			while(*token != '\0') // Copy part before ( to dec buffer
+			{
+				dec[i++] = *token;
+				token++;
+			}
+			dec[i++] = '(';
+			dec[i++] = '\n';
+
+			token = std::strtok(NULL, ")");
+			subtoken = std::strtok(token, ",");
+			while(subtoken != NULL) // Move through module declaration variable-by-variable
+			{
+				subtoken = trim(subtoken);
+				std::string str(subtoken);
+				// I/O direction
+				if(str.find("input ") == 0 || str.find("output ") == 0 || str.find("inout ") == 0)
+				{
+					directionDefined = true;
+					while(*subtoken != ' ')
+					{
+						postDec[j++] = *subtoken;
+						subtoken++;
+					}
+					postDec[j++] = ' ';
+					subtoken++;
+					std::string str(subtoken);
+					// I/O type
+					if(str.find("reg[") == 0 || str.find("reg ") == 0 || str.find("wire[") == 0 || str.find("wire ") == 0)
+					{
+						temp = subtoken;
+						// Move subtoken pointer past reg or wire
+						do { 
+							subtoken++;
+						} while (*subtoken != ' ' && *subtoken != '[');
+						if(*subtoken == ' ')
+						{
+							subtoken++;
+						}
+						do {
+							IOTypeDec[k++] = *temp;
+							temp++;
+						} while (*temp != '\0');
+						IOTypeDec[k++] = ';';
+						IOTypeDec[k++] = '\n';
+					}
+					// I/O size
+					if(*subtoken == '[')
+					{
+						while(*subtoken != ']')
+						{
+							postDec[j++] = *subtoken;
+							subtoken++;
+						}
+						postDec[j++] = ']';
+						subtoken++;
+					}
+				}
+				else
+				{
+					directionDefined = false;
+				}
+				if(*subtoken == ' ') // Don't copy leading space
+				{
+					subtoken++;
+				}
+				// Variable name
+				while(*subtoken != NULL)
+				{
+					if(directionDefined) // Copy to postDec unnecessary if variable name is by itself
+					{
+						postDec[j++] = *subtoken;
+					}
+					dec[i++] = *subtoken;
+					subtoken++;
+				}
+				if(directionDefined)
+				{
+					postDec[j++] = ';';
+					postDec[j++] = '\n';
+				}
+				subtoken = std::strtok(NULL, ",");
+				if(subtoken == NULL) // Module declaration ending
+				{
+					dec[i++] = ')';
+					dec[i++] = ';';
+				}
+				else
+				{
+					dec[i++] = ',';
+				}
+				dec[i++] = '\n';
+			}
+			/* ----- End of module declaration reached at this point ----- */
+			dec[i] = '\0';
+			postDec[j] = '\0';
+			IOTypeDec[k] = '\0';
+			fputs(decPtr,destination);
+			fputs(postDecPtr,destination);
+			fputs(IOTypeDecPtr,destination);
+			i = 0;
+			j = 0;
+			k = 0;
+			IOTypeDec[k] = '\0';
 		}
 		else
-			i++;
+		{
+			fputs(bufPtr,destination);
+		}
 	}
-	fputs(line, destination);
-	vtr::free(line);
-	rewind(source);
-	destination = format_verilog_variable(source,destination);
 	rewind(destination);
 	return destination;
 }
 
-FILE *format_verilog_variable(FILE * src, FILE *dest)
-{
-	char ch;
-	int i;
-	char line[MaxLine];
-	char *tempLine;
-	char *pos;
-	while( (ch = getc(src) ) != ';')
-	{
-		if(ch == '(')
-		{
-			i = 0;
-			while( (ch = getc(src) ) != ')')
-			{
-				if (ch == ',')
-				{
-					line[i++] = ';';
-					line[i] = '\0';
-					pos = strstr(line,"reg");
-					if (pos != NULL)
-					{
-						tempLine = search_replace(line,"reg","",2);
-						fputs(tempLine,dest);
-						tempLine = search_replace(line,"output","",2);
-						fputs(tempLine,dest);
-					}
-					else
-					{
-						fputs(line, dest);
-					}
-					i = 0;
-				}
-				else
-					line[i++] = ch;
-			}
-			line[i-1] = ';';
-			line[i] = '\0';
-			pos = strstr(line,"reg");
-			if (pos != NULL)
-			{
-				tempLine = search_replace(line,"reg","",2);
-				fputs(tempLine,dest);
-				tempLine = search_replace(line,"output","",2);
-				fputs(tempLine,dest);
-			}
-			else
-			{
-				fputs(line, dest);
-			}
-		}
-	}
-	while( (ch = getc(src) ) != EOF)
-	{
-		fputc(ch, dest);
-	}
-	return dest;
-}
-
 /* ------------------------------------------------------------------------- */
-
-
