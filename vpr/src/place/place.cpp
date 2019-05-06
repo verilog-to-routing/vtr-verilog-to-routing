@@ -114,7 +114,7 @@ The exact value of this cost has relatively little impact, but should not be
 large enough to be on the order of timing costs for normal constraints. */
 
 //Define to log and print debug info about aborted moves
-#define DEBUG_ABORTED_MOVES
+//#define DEBUG_ABORTED_MOVES
 
 /********************** Variables local to place.c ***************************/
 
@@ -1284,15 +1284,22 @@ static e_create_move create_move(ClusterBlockId b_from, int x_to, int y_to, int 
 
         auto& place_ctx = g_vpr_ctx.placement();
         ClusterBlockId b_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
-        int x_from = place_ctx.block_locs[b_from].x;
-        int y_from = place_ctx.block_locs[b_from].y;
-        int z_from = place_ctx.block_locs[b_from].z;
 
-        outcome = find_affected_blocks(b_to, x_from, y_from, z_from);
-
-        if (outcome == e_find_affected_blocks_result::INVERT) {
-            log_move_abort("inverted move recurrsion");
+        if (!b_to) {
+            log_move_abort("inverted move no to block");
             outcome = e_find_affected_blocks_result::ABORT;
+        } else {
+
+            int x_from = place_ctx.block_locs[b_from].x;
+            int y_from = place_ctx.block_locs[b_from].y;
+            int z_from = place_ctx.block_locs[b_from].z;
+
+            outcome = find_affected_blocks(b_to, x_from, y_from, z_from);
+
+            if (outcome == e_find_affected_blocks_result::INVERT) {
+                log_move_abort("inverted move recurrsion");
+                outcome = e_find_affected_blocks_result::ABORT;
+            }
         }
     }
 
@@ -1442,20 +1449,7 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
     //below the other (not a big limitation since swapping in the oppostie direction would
     //allow these blocks to swap)
     if (place_ctx.pl_macros[imacro_to].members[0].blk_index != blk_to) {
-#ifdef DEBUG_ABORTED_MOVES
-        int imember_to = 0;
-        for (;imember_to < int(place_ctx.pl_macros[imacro_to].members.size()); ++imember_to) {
-            if (place_ctx.pl_macros[imacro_to].members[imember_to].blk_index == blk_to) {
-                break;
-            }
-        }
-        VTR_ASSERT_MSG(imember_to < int(place_ctx.pl_macros[imacro_to].members.size()), "Block must have been part of to_macro");
-        VTR_LOG("From macro %d member %d; To macro %d member %d (to_block was not root of to_macro)\n",
-                imacro_from, imember_from,
-                imacro_to, imember_to);
-#endif
-        log_move_abort("to_macro block not first macro element");
-        return e_find_affected_blocks_result::ABORT; 
+        return e_find_affected_blocks_result::INVERT; 
     }
 
     //From/To blocks should be exactly the swap offset appart
@@ -1779,9 +1773,8 @@ static e_swap_result try_swap(float t,
 		}
 
         clear_move();
-#if 0
-        VTR_ASSERT_SAFE(check_macro_placement_consistency() == 0);
 
+#if 0
         //Check that each accepted swap yields a valid placement
         check_place(*costs, delay_model, place_algorithm);
 #endif
