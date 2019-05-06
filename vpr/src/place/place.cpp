@@ -113,8 +113,8 @@ which avoids multiplying by a gigantic prev_inverse.timing_cost when auto-normal
 The exact value of this cost has relatively little impact, but should not be
 large enough to be on the order of timing costs for normal constraints. */
 
-//Define to print debug info about aborted moves
-//#define DEBUG_ABORTED_MOVES
+//Define to log and print debug info about aborted moves
+#define DEBUG_ABORTED_MOVES
 
 /********************** Variables local to place.c ***************************/
 
@@ -1519,30 +1519,13 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
         record_single_block_swap(b_from, curr_x_to, curr_y_to, curr_z_to);
     }
 
-#if 0
-    //We may have finished the 'from' macro but still have part of the 'to' macro left, continue walking it
-    //FIXME: Doesn't handle if the from is part of a macro
-    for (; imember_to < place_ctx.pl_macros[imacro_to].num_blocks; ++imember_to) {
-        ClusterBlockId b_to = place_ctx.pl_macros[imacro_to].members[imember_to].blk_index;
-
-        int curr_x_from = place_ctx.block_locs[b_to].x - x_swap_offset;
-        int curr_y_from = place_ctx.block_locs[b_to].y - y_swap_offset;
-        int curr_z_from = place_ctx.block_locs[b_to].z - z_swap_offset;
-
-        if (!is_legal_swap_to_location(b_to, curr_x_from, curr_y_from, curr_z_from)) {
-            return true; //Abort
-        }
-
-        //Note that here we use an inverted swap to allow the from location to be empty
-        record_single_block_swap(b_to, curr_x_from, curr_y_from, curr_z_from);
-    }
-#else
     if (imember_to < int(place_ctx.pl_macros[imacro_to].members.size())) {
-        //The to macro extends beyond the from macro (not yet supported)
-        log_move_abort("to_macro extends beyond from_macro");
-        return e_find_affected_blocks_result::ABORT; 
+        //The to macro extends beyond the from macro.
+        //
+        //Swap the remainder of the 'to' macro to locations after the 'from' macro.
+        //Note that we are swapping in the opposite direction so the swap offsets are inverted.
+        return record_macro_swaps(imacro_to, imember_to, -x_swap_offset, -y_swap_offset, -z_swap_offset);
     }
-#endif
 
     return e_find_affected_blocks_result::VALID; 
 }
