@@ -672,6 +672,80 @@ void push(veri_flag_stack *stack, int flag)
 	}
 }
 
+/*
+* Prints out different parts of port declaration to buffers
+* defined in format_verilog_file().
+* Format: [input|output|inout [reg|wire] [size]] <variable_name>
+*/
+void format_port_declaration(char **subtoken, char *dec, char *postDec, char *IOTypeDec, unsigned *i, unsigned *j, unsigned *k)
+{
+	bool directionDefined = false;
+	*subtoken = trim(*subtoken);
+	std::string str(*subtoken);
+	// I/O direction
+	if(str.find("input ") == 0 || str.find("output ") == 0 || str.find("inout ") == 0)
+	{
+		directionDefined = true;
+		char * temp = NULL;
+		while(**subtoken != ' ')
+		{
+			postDec[(*j)++] = **subtoken;
+			(*subtoken)++;
+		}
+		postDec[(*j)++] = ' ';
+		(*subtoken)++;
+		std::string str(*subtoken);
+		// I/O type
+		if(str.find("reg[") == 0 || str.find("reg ") == 0 || str.find("wire[") == 0 || str.find("wire ") == 0)
+		{
+			temp = *subtoken;
+			do { 
+				(*subtoken)++;
+			} while (**subtoken != ' ' && **subtoken != '[');
+			if(**subtoken == ' ')
+			{
+				(*subtoken)++;
+			}
+			do {
+				IOTypeDec[(*k)++] = *temp;
+				temp++;
+			} while (*temp != '\0');
+			IOTypeDec[(*k)++] = ';';
+			IOTypeDec[(*k)++] = '\n';
+		}
+		// I/O size
+		if(**subtoken == '[')
+		{
+			while(**subtoken != ']')
+			{
+				postDec[(*j)++] = **subtoken;
+				(*subtoken)++;
+			}
+			postDec[(*j)++] = ']';
+			(*subtoken)++;
+		}
+	}
+	if(**subtoken == ' ')
+	{
+		(*subtoken)++;
+	}
+	// Variable name
+	while(**subtoken != NULL)
+	{
+		if(directionDefined)
+		{
+			postDec[(*j)++] = **subtoken;
+		}
+		dec[(*i)++] = **subtoken;
+		(*subtoken)++;
+	}
+	if(directionDefined)
+	{
+		postDec[(*j)++] = ';';
+		postDec[(*j)++] = '\n';
+	}
+}
+
 FILE *format_verilog_file(FILE *source)
 {
 	FILE *destination = tmpfile();
@@ -683,19 +757,17 @@ FILE *format_verilog_file(FILE *source)
 	char * decPtr = dec;
 	char * postDecPtr = postDec;
 	char * IOTypeDecPtr = IOTypeDec;
-	char * token, * subtoken, * temp = NULL;
+	char * token, * subtoken = NULL;
 	int pos = 0;
 	unsigned i, j, k = 0;
-	bool directionDefined = false;
 
-	while(fgets(buf, MaxLine, source)) // Scan through original file line-by-line
+	while(fgets(buf, MaxLine, source))
 	{
 		std::string str(buf);
 		pos = str.find_first_not_of(" ");
-		// Beginning of module declaration
 		if(str.find("module ") == pos || str.find("macromodule ") == pos || str.find("module(") == pos || str.find("macromodule(") == pos)
 		{
-			do { // Copy module declaration into temp buffer
+			do {
 				while(buf[i] != '\n' && buf[i] != ')')
 				{
 					i++;
@@ -710,7 +782,7 @@ FILE *format_verilog_file(FILE *source)
 			i = 0;
 			/* ----- At this point, an entire module declaration is in the temp buffer ----- */
 			token = std::strtok(buf, "(");
-			while(*token != '\0') // Copy part before ( to dec buffer
+			while(*token != '\0')
 			{
 				dec[i++] = *token;
 				token++;
@@ -720,78 +792,11 @@ FILE *format_verilog_file(FILE *source)
 
 			token = std::strtok(NULL, ")");
 			subtoken = std::strtok(token, ",");
-			while(subtoken != NULL) // Move through module declaration variable-by-variable
+			while(subtoken != NULL)
 			{
-				subtoken = trim(subtoken);
-				std::string str(subtoken);
-				// I/O direction
-				if(str.find("input ") == 0 || str.find("output ") == 0 || str.find("inout ") == 0)
-				{
-					directionDefined = true;
-					while(*subtoken != ' ')
-					{
-						postDec[j++] = *subtoken;
-						subtoken++;
-					}
-					postDec[j++] = ' ';
-					subtoken++;
-					std::string str(subtoken);
-					// I/O type
-					if(str.find("reg[") == 0 || str.find("reg ") == 0 || str.find("wire[") == 0 || str.find("wire ") == 0)
-					{
-						temp = subtoken;
-						// Move subtoken pointer past reg or wire
-						do { 
-							subtoken++;
-						} while (*subtoken != ' ' && *subtoken != '[');
-						if(*subtoken == ' ')
-						{
-							subtoken++;
-						}
-						do {
-							IOTypeDec[k++] = *temp;
-							temp++;
-						} while (*temp != '\0');
-						IOTypeDec[k++] = ';';
-						IOTypeDec[k++] = '\n';
-					}
-					// I/O size
-					if(*subtoken == '[')
-					{
-						while(*subtoken != ']')
-						{
-							postDec[j++] = *subtoken;
-							subtoken++;
-						}
-						postDec[j++] = ']';
-						subtoken++;
-					}
-				}
-				else
-				{
-					directionDefined = false;
-				}
-				if(*subtoken == ' ') // Don't copy leading space
-				{
-					subtoken++;
-				}
-				// Variable name
-				while(*subtoken != NULL)
-				{
-					if(directionDefined) // Copy to postDec unnecessary if variable name is by itself
-					{
-						postDec[j++] = *subtoken;
-					}
-					dec[i++] = *subtoken;
-					subtoken++;
-				}
-				if(directionDefined)
-				{
-					postDec[j++] = ';';
-					postDec[j++] = '\n';
-				}
+				format_port_declaration(&subtoken, dec, postDec, IOTypeDec, &i, &j, &k);
 				subtoken = std::strtok(NULL, ",");
-				if(subtoken == NULL) // Module declaration ending
+				if(subtoken == NULL)
 				{
 					dec[i++] = ')';
 					dec[i++] = ';';
@@ -802,7 +807,7 @@ FILE *format_verilog_file(FILE *source)
 				}
 				dec[i++] = '\n';
 			}
-			/* ----- End of module declaration reached at this point ----- */
+			/* ----- End of module declaration reached ----- */
 			dec[i] = '\0';
 			postDec[j] = '\0';
 			IOTypeDec[k] = '\0';
