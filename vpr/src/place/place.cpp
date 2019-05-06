@@ -114,7 +114,7 @@ The exact value of this cost has relatively little impact, but should not be
 large enough to be on the order of timing costs for normal constraints. */
 
 //Define to log and print debug info about aborted moves
-//#define DEBUG_ABORTED_MOVES
+#define DEBUG_ABORTED_MOVES
 
 /********************** Variables local to place.c ***************************/
 
@@ -252,8 +252,8 @@ static void revert_move();
 static void commit_move();
 static void clear_move();
 
-static void record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to);
-static void record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to);
+static e_find_affected_blocks_result record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to);
+static e_find_affected_blocks_result record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to);
 
 static e_create_move create_move(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to);
@@ -1217,12 +1217,25 @@ static void revert_move() {
 
 //Clears the current move so a new move can be proposed
 static void clear_move() {
+    //Reset moved flags
+    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
+        blocks_affected.is_block_moved[blocks_affected.moved_blocks[iblk].block_num] = false;
+    }
+
     //For run-time we just reset num_moved_blocks to zero, but do not free the blocks_affected
     //array to avoid memory allocation
     blocks_affected.num_moved_blocks = 0;
 }
 
-static void record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to) {
+static e_find_affected_blocks_result record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to) {
+
+    if (blocks_affected.is_block_moved[blk]) {
+        //Block already moved
+        log_move_abort("duplicate block in move");
+        return e_find_affected_blocks_result::ABORT;
+    }
+    blocks_affected.is_block_moved[blk] = true;
+
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	int x_from = place_ctx.block_locs[blk].x;
@@ -1240,10 +1253,12 @@ static void record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to) 
     blocks_affected.moved_blocks[imoved_blk].ynew = y_to;
     blocks_affected.moved_blocks[imoved_blk].zold = z_from;
     blocks_affected.moved_blocks[imoved_blk].znew = z_to;
-    blocks_affected.num_moved_blocks ++;
+    blocks_affected.num_moved_blocks++;
+
+    return e_find_affected_blocks_result::VALID;
 }
 
-static void record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
+static e_find_affected_blocks_result record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
 
 	/* Find all the blocks affected when b_from is swapped with b_to.
 	 * Returns abort_swap.                  */
@@ -1256,23 +1271,31 @@ static void record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, 
 
 	ClusterBlockId b_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
 
+    e_find_affected_blocks_result outcome = e_find_affected_blocks_result::VALID;
+
 	// Check whether the to_location is empty
 	if (b_to == EMPTY_BLOCK_ID) {
 
 		// Sets up the blocks moved
-        record_block_move(b_from, x_to, y_to, z_to);
+        outcome = record_block_move(b_from, x_to, y_to, z_to);
 
 	} else if (b_to != INVALID_BLOCK_ID) {
 
 		// Sets up the blocks moved
-        record_block_move(b_from, x_to, y_to, z_to);
+        outcome = record_block_move(b_from, x_to, y_to, z_to);
+
+        if (outcome != e_find_affected_blocks_result::VALID) {
+            return outcome;
+        }
 
         int x_from = place_ctx.block_locs[b_from].x;
         int y_from = place_ctx.block_locs[b_from].y;
         int z_from = place_ctx.block_locs[b_from].z;
-        record_block_move(b_to, x_from, y_from, z_from);
+        outcome = record_block_move(b_to, x_from, y_from, z_from);
 
 	} // Finish swapping the blocks and setting up blocks_affected
+
+    return outcome;
 }
 
 static e_create_move create_move(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
@@ -1357,13 +1380,12 @@ static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from,
             outcome = e_find_affected_blocks_result::INVERT;
         } else {
             // This is not a macro - I could use the from and to info from before
-            record_single_block_swap(b_from, x_to, y_to, z_to);
+            outcome = record_single_block_swap(b_from, x_to, y_to, z_to);
         }
 
 	} // Finish handling cases for blocks in macro and otherwise
 
 	return outcome;
-
 }
 
 //Records all the block movements required to move the macro imacro_from starting at member imember_from
@@ -1420,7 +1442,7 @@ static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, i
                 }
             } else {
                 //To block is not a macro
-                record_single_block_swap(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
+                outcome = record_single_block_swap(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
             }
         }
     } // Finish going through all the blocks in the macro
@@ -1510,7 +1532,10 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
             return e_find_affected_blocks_result::ABORT; 
         }
 
-        record_single_block_swap(b_from, curr_x_to, curr_y_to, curr_z_to);
+        auto outcome = record_single_block_swap(b_from, curr_x_to, curr_y_to, curr_z_to);
+        if (outcome != e_find_affected_blocks_result::VALID) {
+            return outcome;
+        }
     }
 
     if (imember_to < int(place_ctx.pl_macros[imacro_to].members.size())) {
@@ -1774,6 +1799,7 @@ static e_swap_result try_swap(float t,
 
         clear_move();
 
+        VTR_ASSERT(check_macro_placement_consistency() == 0);
 #if 0
         //Check that each accepted swap yields a valid placement
         check_place(*costs, delay_model, place_algorithm);
@@ -2476,6 +2502,7 @@ static void alloc_and_load_try_swap_structs() {
 	/* Allocate with size cluster_ctx.clb_nlist.blocks().size() for any number of moved blocks. */
 	blocks_affected.moved_blocks = (t_pl_moved_block*) vtr::calloc((int) cluster_ctx.clb_nlist.blocks().size(), sizeof(t_pl_moved_block));
 	blocks_affected.num_moved_blocks = 0;
+	blocks_affected.is_block_moved = vtr::vector<ClusterBlockId,bool>(cluster_ctx.clb_nlist.blocks().size(), false);
 
 }
 
@@ -3607,7 +3634,7 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
     timing_reporter.report_timing_setup(placer_opts.post_place_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }
 
-#if 0
+#if 1
 static void update_screen_debug();
 
 //Performs a major (i.e. interactive) placement screen update.

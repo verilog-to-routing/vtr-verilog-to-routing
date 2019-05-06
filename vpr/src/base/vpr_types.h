@@ -450,6 +450,7 @@ struct t_pl_moved_block {
 struct t_pl_blocks_to_be_moved {
 	int num_moved_blocks;
 	t_pl_moved_block * moved_blocks;
+    vtr::vector<ClusterBlockId,bool> is_block_moved;
 };
 
 /* legal positions for type */
