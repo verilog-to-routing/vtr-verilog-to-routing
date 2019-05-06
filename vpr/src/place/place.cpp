@@ -1218,9 +1218,7 @@ static void revert_move() {
 //Clears the current move so a new move can be proposed
 static void clear_move() {
     //Reset moved flags
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
-        blocks_affected.is_block_moved[blocks_affected.moved_blocks[iblk].block_num] = false;
-    }
+    blocks_affected.moved_to.clear();
 
     //For run-time we just reset num_moved_blocks to zero, but do not free the blocks_affected
     //array to avoid memory allocation
@@ -1229,12 +1227,11 @@ static void clear_move() {
 
 static e_find_affected_blocks_result record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to) {
 
-    if (blocks_affected.is_block_moved[blk]) {
-        //Block already moved
-        log_move_abort("duplicate block in move");
+    auto res = blocks_affected.moved_to.emplace(x_to, y_to, z_to);
+    if (!res.second) {
+        log_move_abort("duplicate block move to location");
         return e_find_affected_blocks_result::ABORT;
     }
-    blocks_affected.is_block_moved[blk] = true;
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -2495,7 +2492,6 @@ static void alloc_and_load_try_swap_structs() {
 	/* Allocate with size cluster_ctx.clb_nlist.blocks().size() for any number of moved blocks. */
 	blocks_affected.moved_blocks = (t_pl_moved_block*) vtr::calloc((int) cluster_ctx.clb_nlist.blocks().size(), sizeof(t_pl_moved_block));
 	blocks_affected.num_moved_blocks = 0;
-	blocks_affected.is_block_moved = vtr::vector<ClusterBlockId,bool>(cluster_ctx.clb_nlist.blocks().size(), false);
 
 }
 

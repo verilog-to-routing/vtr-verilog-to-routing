@@ -25,6 +25,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
@@ -413,6 +414,42 @@ struct t_bb {
 	int ymax = 0;
 };
 
+struct t_place_loc {
+
+    t_place_loc(int xloc, int yloc, int zloc)
+        : x(xloc), y(yloc), z(zloc) {}
+
+	int x = -1;
+	int y = -1;
+	int z = -1;
+
+    friend bool operator<(const t_place_loc& lhs, const t_place_loc& rhs) {
+        return std::tie(lhs.x, lhs.y, lhs.z) < std::tie(rhs.x, rhs.y, rhs.z);
+    }
+
+    friend bool operator==(const t_place_loc& lhs, const t_place_loc& rhs) {
+        return std::tie(lhs.x, lhs.y, lhs.z) == std::tie(rhs.x, rhs.y, rhs.z);
+    }
+
+    friend bool operator!=(const t_place_loc& lhs, const t_place_loc& rhs) {
+        return !(lhs == rhs);
+    }
+
+
+};
+
+namespace std {
+    template <>
+    struct hash<t_place_loc> {
+        std::size_t operator()(const t_place_loc& v) const noexcept {
+            std::size_t seed = std::hash<int>{}(v.x);
+            vtr::hash_combine(seed, v.y);
+            vtr::hash_combine(seed, v.z);
+            return seed;
+        }
+    };
+}
+
 /* capacity:   Capacity of this region, in tracks.               *
  * occupancy:  Expected number of tracks that will be occupied.  *
  * cost:       Current cost of this usage.                       */
@@ -450,7 +487,7 @@ struct t_pl_moved_block {
 struct t_pl_blocks_to_be_moved {
 	int num_moved_blocks;
 	t_pl_moved_block * moved_blocks;
-    vtr::vector<ClusterBlockId,bool> is_block_moved;
+    std::unordered_set<t_place_loc> moved_to;
 };
 
 /* legal positions for type */
