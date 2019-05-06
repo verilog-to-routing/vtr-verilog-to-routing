@@ -320,12 +320,16 @@ static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::st
         //For relatively high pin utilizations (e.g. > 70%) this has little-to-no
         //impact on the number of clusters required. As a result we set a default 
         //input pin utilization target which is high, but less than 100%.
-        constexpr float LOGIC_BLOCK_TYPE_AUTO_INPUT_UTIL = 0.8;
-        constexpr float LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL = 1.0;
+        if (logic_block_type != nullptr) {
+            constexpr float LOGIC_BLOCK_TYPE_AUTO_INPUT_UTIL = 0.8;
+            constexpr float LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL = 1.0;
 
-        t_ext_pin_util logic_block_ext_pin_util(LOGIC_BLOCK_TYPE_AUTO_INPUT_UTIL , LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL);
+            t_ext_pin_util logic_block_ext_pin_util(LOGIC_BLOCK_TYPE_AUTO_INPUT_UTIL , LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL);
 
-        targets.set_block_pin_util(logic_block_type->name, logic_block_ext_pin_util);
+            targets.set_block_pin_util(logic_block_type->name, logic_block_ext_pin_util);
+        } else {
+            VTR_LOG_WARN("Unable to identify logic block type to apply default pin utilization targets to; this may result in denser packing than desired\n");
+        }
 
     } else {
         //Process user specified overrides

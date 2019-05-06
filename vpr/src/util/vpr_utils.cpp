@@ -752,7 +752,11 @@ t_type_ptr infer_logic_block_type(const DeviceGrid& grid) {
         return logic_block_candidates.front();
     } else {
         //Otherwise assume it is the most common block type
-        return find_most_common_block_type(grid);
+        auto most_common_type = find_most_common_block_type(grid);
+        if (most_common_type == nullptr) {
+            VTR_LOG_WARN("Unable to infer which block type is a logic block\n");
+        }
+        return most_common_type;
     }
 }
 
@@ -771,7 +775,9 @@ t_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
         }
     }
 
-    VTR_ASSERT(max_type);
+    if (max_type == nullptr) {
+        VTR_LOG_WARN("Unable to determine most common block type (perhaps the device grid was empty?)\n");    
+    }
     return max_type;
 }
 
