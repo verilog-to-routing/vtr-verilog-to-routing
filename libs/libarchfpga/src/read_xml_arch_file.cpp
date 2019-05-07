@@ -3161,6 +3161,8 @@ static void ProcessSwitches(pugi::xml_node Parent,
 
 		ReqOpt COUT_REQD = TIMING_ENABLE_REQD;
 		ReqOpt CIN_REQD = TIMING_ENABLE_REQD;
+        ReqOpt CINTERNAL_REQD = OPTIONAL; //defined the parameter 
+
         if (arch_switch.type() == SwitchType::SHORT) {
             //Cin/Cout are optional on shorts, since they really only have one capacitance
             CIN_REQD = OPTIONAL;
@@ -3168,6 +3170,7 @@ static void ProcessSwitches(pugi::xml_node Parent,
         }
 		arch_switch.Cin = get_attribute(Node, "Cin", loc_data, CIN_REQD).as_float(0);
         arch_switch.Cout = get_attribute(Node, "Cout", loc_data, COUT_REQD).as_float(0);
+        arch_switch.Cinternal = get_attribute(Node, "Cinternal", loc_data, CINTERNAL_REQD).as_float(0); // retrieve the optional parameter
 
         if (arch_switch.type() == SwitchType::MUX) {
             //Only muxes have mux transistors
