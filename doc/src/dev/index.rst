@@ -9,3 +9,4 @@ Developer Guide
     building
     contributing
     developing
+    tutorial
