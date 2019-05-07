@@ -86,7 +86,8 @@ enum class e_create_move {
 enum class e_find_affected_blocks_result {
     VALID, //Move successful
     ABORT, //Unable to perform move
-    INVERT //Try move again but with from/to inverted
+    INVERT, //Try move again but with from/to inverted
+    INVERT_VALID //Completed inverted move
 };
 
 struct t_placer_statistics {
@@ -1330,7 +1331,8 @@ static e_create_move create_move(ClusterBlockId b_from, int x_to, int y_to, int 
         }
     }
 
-    if (outcome == e_find_affected_blocks_result::VALID) {
+    if (outcome == e_find_affected_blocks_result::VALID
+        || outcome == e_find_affected_blocks_result::INVERT_VALID) {
         return e_create_move::VALID;
     } else {
         VTR_ASSERT_SAFE(outcome == e_find_affected_blocks_result::ABORT);
@@ -1442,6 +1444,9 @@ static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, i
                 } else {
                     outcome = record_macro_macro_swaps(imacro_from, imember_from, imacro_to, b_to,
                                                               x_swap_offset, y_swap_offset, z_swap_offset);
+                    if (outcome == e_find_affected_blocks_result::INVERT_VALID) {
+                        break;
+                    }
                     imember_from -= 1; //record_macro_macro_swaps() will have already advanced the original imember_from
                 }
             } else {
@@ -1475,7 +1480,17 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
     //below the other (not a big limitation since swapping in the oppostie direction would
     //allow these blocks to swap)
     if (place_ctx.pl_macros[imacro_to].members[0].blk_index != blk_to) {
-        return e_find_affected_blocks_result::INVERT; 
+        int imember_to = 0;
+        //TODO: we build the correct inverted swap but then continue after returning... need to call at top level after indicating inversion required!
+        auto outcome = record_macro_swaps(imacro_to, imember_to,
+                                          -x_swap_offset, -y_swap_offset, -z_swap_offset);
+        if (outcome == e_find_affected_blocks_result::INVERT) {
+            log_move_abort("invert recursion2");
+            outcome = e_find_affected_blocks_result::ABORT; 
+        } else if (outcome == e_find_affected_blocks_result::VALID) {
+            outcome = e_find_affected_blocks_result::INVERT_VALID; 
+        }
+        return outcome;
     }
 
     //From/To blocks should be exactly the swap offset appart
@@ -3630,7 +3645,7 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
     timing_reporter.report_timing_setup(placer_opts.post_place_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }
 
-#if 0
+#if 1
 static void update_screen_debug();
 
 //Performs a major (i.e. interactive) placement screen update.
