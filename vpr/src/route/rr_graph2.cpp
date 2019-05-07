@@ -703,7 +703,7 @@ int get_bidir_opin_connections(
         chan = ((to_type == CHANX) ? tr_j : tr_i);
         seg = ((to_type == CHANX) ? tr_i : tr_j);
 
-        bool vert = ((side == TOP) || (side == BOTTOM));
+        bool vert = !((side == TOP) || (side == BOTTOM));
 
         /* Don't connect where no tracks on fringes */
         if ((tr_i < 0) || (tr_i > int(device_ctx.grid.width() - 2))) { //-2 for no perimeter channels
