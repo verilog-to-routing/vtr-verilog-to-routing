@@ -157,8 +157,9 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node);
 void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name)
 {
 	/* with the top module we need to visit the entire ast tree */
-	long i, j, k;
+	long i, j;
 	char *temp_string;
+	char **temp_parameter_list = NULL;
 	long sc_spot;
 	oassert(module_items->type == MODULE_ITEMS || module_items->type == FUNCTION_ITEMS);
 	int parameter_num = 0;
@@ -202,8 +203,15 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 						oassert(node->type == NUMBERS);
 						sc_spot = sc_add_string(local_param_table_sc, temp_string);
 						local_param_table_sc->data[sc_spot] = (void *)node;
+
+						/* add parameter name to list */
+						if (parameter_num == 1)
+							temp_parameter_list = (char**) vtr::calloc(parameter_num, sizeof(char*));
+						else
+							temp_parameter_list = (char**) vtr::realloc(temp_parameter_list, sizeof(char*)*parameter_num);
+						
+						temp_parameter_list[parameter_num-1] = temp_string;
 					}
-					vtr::free(temp_string);
 				}
 			}
 
@@ -211,7 +219,7 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 
 		if(parent_parameter_list)
 		{
-			// defparam before calling instance
+			/* 	defparam before calling instance; these overrides must be done first */
 			for(i = 0; i < parent_parameter_list->num_children; i ++)
 			{
 				if(parent_parameter_list->children[i]->children[0] && parent_parameter_list->children[i]->shared_node == FALSE)
@@ -219,14 +227,21 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 					ast_node_t *var_declare = parent_parameter_list->children[i];
 					ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
 					oassert(node->type == NUMBERS);
-					sc_spot = sc_add_string(local_param_table_sc, var_declare->children[0]->types.identifier);
+					sc_spot = sc_lookup_string(local_param_table_sc, var_declare->children[0]->types.identifier);
+					if(sc_spot == -1)
+					{
+						error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
+								"Can't find parameter name %s in module %s\n",
+								var_declare->children[0]->types.identifier,
+								module_name);
+					}
 					local_param_table_sc->data[sc_spot] = (void *)node;
 				}
 			}
 
 			for(i = 0; i < parent_parameter_list->num_children; i ++)
 			{
-				//using defparam to override parameter, after calling instance
+				// defparam after calling instance, or override with name during instantiation
 				if(parent_parameter_list->children[i]->children[0])
 				{
 					if(parent_parameter_list->children[i]->shared_node == TRUE)
@@ -234,53 +249,30 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 						ast_node_t *var_declare = parent_parameter_list->children[i];
 						ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
 						oassert(node->type == NUMBERS);
-						sc_spot = sc_add_string(local_param_table_sc, var_declare->children[0]->types.identifier);
+						sc_spot = sc_lookup_string(local_param_table_sc, var_declare->children[0]->types.identifier);
+						if(sc_spot == -1)
+						{
+							error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
+									"Can't find parameter name %s in module %s\n",
+									var_declare->children[0]->types.identifier,
+									module_name);
+						}
 						local_param_table_sc->data[sc_spot] = (void *)node;
 					}
 				}
 				else
 				{
-					parameter_count++;
-					int parameter_idx = 0;
-					for(k = 0; k < module_items->num_children; k++)
+					// override without name during module instantiation; use name from temp_parameter_list 
+					if (parameter_count <= parameter_num) 
 					{
-						/* go through the vars in this declare list, resolves the missing identifiers node */
-						if(module_items->children[k]->type == VAR_DECLARE_LIST)
-						{
-							for(j = 0; j < module_items->children[k]->num_children; j++)
-							{
-								ast_node_t *var_declare = module_items->children[k]->children[j];
-
-								if ((var_declare->types.variable.is_input) ||
-									(var_declare->types.variable.is_output) ||
-									(var_declare->types.variable.is_reg) || (var_declare->types.variable.is_integer) ||
-									(var_declare->types.variable.is_wire)) continue;
-
-								oassert(module_items->children[k]->children[j]->type == VAR_DECLARE);
-								oassert(var_declare->types.variable.is_parameter);
-
-								parameter_idx++;
-
-								/* make the string to add to the string cache */
-								temp_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, -1);
-
-								if (var_declare->types.variable.is_parameter)
-								{
-									//parameter_num++;
-									if(parameter_idx == parameter_count)
-									{
-										var_declare = parent_parameter_list->children[i];
-										ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
-										oassert(node->type == NUMBERS);
-										sc_spot = sc_add_string(local_param_table_sc, temp_string);
-										local_param_table_sc->data[sc_spot] = (void *)node;
-									}
-								}
-								vtr::free(temp_string);
-							}
-						}
+						ast_node_t *var_declare = parent_parameter_list->children[i];
+						ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
+						oassert(node->type == NUMBERS);
+						sc_spot = sc_lookup_string(local_param_table_sc, temp_parameter_list[parameter_count++]);
+						local_param_table_sc->data[sc_spot] = (void *)node;
 					}
-					if(parameter_idx == 0)
+
+					if(parameter_num == 0)
 					{
 						error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
 								"There is no parameters in %s !",
@@ -306,6 +298,14 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 						parameter_count, module_name, parameter_num);
 			}
 		}
+	}
+
+	/* clean up */
+	if (temp_parameter_list) {
+		for (i = 0; i < parameter_num; i++) {
+			vtr::free(temp_parameter_list[i]);
+		}
+		vtr::free(temp_parameter_list);
 	}
 }
 
