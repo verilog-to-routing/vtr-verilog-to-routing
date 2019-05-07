@@ -135,6 +135,7 @@ struct t_options {
     argparse::ArgValue<e_router_algorithm> RouterAlgorithm;
     argparse::ArgValue<int> min_incremental_reroute_fanout;
     argparse::ArgValue<bool> read_rr_edge_metadata;
+    argparse::ArgValue<bool> disable_check_route;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;
