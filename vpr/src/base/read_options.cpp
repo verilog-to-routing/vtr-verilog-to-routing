@@ -1720,6 +1720,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.disable_check_route, "--disable_check_route")
+        .help("Disables check_route once routing step has finished or when routing file is loaded")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_debug_net, "--router_debug_net")
         .help(
             "Controls when router debugging is enabled for nets.\n"

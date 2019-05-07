@@ -983,6 +983,7 @@ struct t_router_opts {
     std::string read_router_lookahead;
 
     e_heap_type router_heap;
+    bool disable_check_route;
 };
 
 struct t_analysis_opts {
