@@ -32,6 +32,7 @@ char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_n
 
 ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char *module_name, ast_node_t *node);
 ast_node_t *node_is_constant(ast_node_t *node);
+ast_node_t *node_is_ast_constant(ast_node_t *node);
 ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_list op_id);
 ast_node_t *fold_unary(ast_node_t *child_0, operation_list op_id);
 int get_range2D(ast_node_t* first_node);

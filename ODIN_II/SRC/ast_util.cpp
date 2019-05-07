@@ -1353,6 +1353,16 @@ ast_node_t *node_is_constant(ast_node_t *node){
 	return NULL;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: node_is_ast_constant)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *node_is_ast_constant(ast_node_t *node){
+	if (node && (node_is_constant(node) || (node->types.variable.is_parameter == TRUE))) {
+		return node;
+	}
+	return NULL;
+}
+
 /*---------------------------------------------------------------------------
  * (function: initial_node)
  *-------------------------------------------------------------------------*/
