@@ -24,6 +24,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <algorithm>
 #include "odin_types.h"
 #include "node_creation_library.h"
 #include "multipliers.h"
@@ -126,7 +127,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 		}
 	}
 
-	/* generate the coneections to the AND gates */
+	/* generate the connections to the AND gates */
 	for (i = 0; i < multiplicand_width; i++)
 	{
 		for (j = 0; j < multiplier_width; j++)
@@ -139,7 +140,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 			}
 			else
 			{
-				/* ELSE - this needs to be a new ouput of the multiplicand port */
+				/* ELSE - this needs to be a new output of the multiplicand port */
 				add_input_pin_to_node(partial_products[i][j], copy_input_npin(partial_products[i][0]->input_pins[0]), 0);
 			}
 
@@ -151,7 +152,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 			}
 			else
 			{
-				/* ELSE - this needs to be a new ouput of the multiplier port */
+				/* ELSE - this needs to be a new output of the multiplier port */
 				add_input_pin_to_node(partial_products[i][j], copy_input_npin(partial_products[0][j]->input_pins[1]), 1);
 			}
 		}
@@ -229,12 +230,12 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 	/* soft map the adders if they need to be mapped */
 	for (i = 0; i < multiplicand_width - 1; i++)
 	{
-		instantiate_add_w_carry(adders_for_partial_products[i], mark, netlist);
+        instantiate_add_w_carry(adders_for_partial_products[i], mark, netlist);
 	}
 
 	/* Cleanup everything */
 	if (adders_for_partial_products != NULL)
-	{		
+	{
 		for (i = 0; i < multiplicand_width-1; i++) {
 			free_nnode(adders_for_partial_products[i]);
 		}
@@ -254,7 +255,6 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 		vtr::free(partial_products);
 	}
 }
-
 
 /*---------------------------------------------------------------------------
  * (function: init_mult_distribution)
@@ -1077,6 +1077,8 @@ void pad_multiplier(nnode_t *node, netlist_t *netlist)
  *	fit into a basic hard multiplier block that exists on the FPGA.
  *	If the proper option is set, then it will be expanded as well
  *	to just use a fixed size hard multiplier.
+ * Note: This function will ignore multipliers that are smaller than
+ * the minimum hard multiplier size
  *-----------------------------------------------------------------------*/
 void iterate_multipliers(netlist_t *netlist)
 {
@@ -1112,6 +1114,7 @@ void iterate_multipliers(netlist_t *netlist)
 
 		mula = node->input_port_sizes[0];
 		mulb = node->input_port_sizes[1];
+        int mult_size = std::max<int>(mula, mulb);
 		if (mula < mulb)
 		{
 			swap = sizea;
@@ -1140,7 +1143,9 @@ void iterate_multipliers(netlist_t *netlist)
 			b0 = mulb - sizeb;
 			split_multiplier_b(node, mula, b1, b0);
 		}
-		else if ((sizea >= min_mult) && (sizeb >= min_mult))
+        // if either of the multiplicands is larger than the
+        // minimum hard multiplier size, use hard multiplier
+		else if (mult_size >= min_mult)
 		{
 			/* Check to ensure IF mult needs to be exact size */
 			if(configuration.fixed_hard_multiplier != 0)
