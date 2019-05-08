@@ -1598,17 +1598,17 @@ static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, i
         int imacro_to = -1;
         get_imacro_from_iblk(&imacro_to, blk_to, place_ctx.pl_macros);
 
-        if (blk_to) {
-            filled_locations.emplace(x_to, y_to, z_to);
-        }
-        emptied_locations.emplace(x_from, y_from, z_from);
-
         record_block_move(blk, x_to, y_to, z_to);
+
+        filled_locations.emplace(x_to, y_to, z_to);
+        emptied_locations.emplace(x_from, y_from, z_from);
 
         if (imacro_to == -1) {
             //non-macro block
 
             if (blk_to) {
+                //If there was a 'to' block record it so
+                //it gets re-placed appropriately
                 blocks_to_wrap.push_back(blk_to);
             }
         } else if (imacro_to != imacro) {
