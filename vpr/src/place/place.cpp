@@ -1445,7 +1445,7 @@ static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, i
                     outcome = record_macro_macro_swaps(imacro_from, imember_from, imacro_to, b_to,
                                                               x_swap_offset, y_swap_offset, z_swap_offset);
                     if (outcome == e_find_affected_blocks_result::INVERT_VALID) {
-                        break;
+                        break; //The move was inverted and successfully proposed, don't need to continue the loop
                     }
                     imember_from -= 1; //record_macro_macro_swaps() will have already advanced the original imember_from
                 }
@@ -2039,7 +2039,9 @@ static bool find_to(t_type_ptr type, float rlim,
 		/* Limit the number of tries when searching for an alternative position */
 		if(num_tries >= 2 * min(active_area / (type->width * type->height), num_legal_pos[itype]) + 10) {
 			/* Tried randomly searching for a suitable position */
-            log_move_abort("gave up searching for valid swap to location");
+            std::string msg = "gave up searching for valid swap to location for ";
+            msg += type->name; 
+            log_move_abort(msg.c_str());
 			return false;
 		} else {
 			num_tries++;
