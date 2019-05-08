@@ -1178,7 +1178,7 @@ enum class BufferSize {
  * R:  Equivalent resistance of the buffer/switch.                           *
  * Cin:  Input capacitance.                                                  *
  * Cout:  Output capacitance.                                                *
- * Cinternal: Internal capacitance in a buffer.                              *
+ * Cinternal: Internal capacitance in a buffer with fanout.                  *
  * Tdel_map: A map where the key is the number of inputs and the entry       *
  *           is the corresponding delay. If there is only one entry at key   *
  *           UNDEFINED, then delay is a constant (doesn't vary with fan-in). *
