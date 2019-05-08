@@ -1616,6 +1616,8 @@ static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, i
 
             //Record the affected macro for later fix-up
             macros_to_wrap.insert(imacro_to);
+        } else {
+            VTR_ASSERT_SAFE_MSG(imacro_to == imacro, "Self-swap within same macro");
         }
     }
 
