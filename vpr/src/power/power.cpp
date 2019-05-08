@@ -467,7 +467,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 		estimate_multiplexers = false;
 	}
 
-	if (pb_node->pb_type->num_modes == 0) {
+	if (pb_node->is_primitive()) {
 		/* This is a leaf node, which is a primitive (lut, ff, etc) */
 		if (estimate_primitives) {
 			VTR_ASSERT(pb_node->pb_type->blif_model);

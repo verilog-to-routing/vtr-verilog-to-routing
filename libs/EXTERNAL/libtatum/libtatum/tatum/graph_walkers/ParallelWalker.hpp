@@ -1,6 +1,5 @@
 #pragma once
 
-//ParallelWalker is an alias for ParallelLevelizedCilkWalker 
 #include "tatum/graph_walkers_fwd.hpp"
 
 

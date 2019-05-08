@@ -1,19 +1,17 @@
-#ifndef READ_SDC_H
-#define READ_SDC_H
+#ifndef VPR_READ_SDC_H
+#define VPR_READ_SDC_H
 #include <memory>
 
 #include "tatum/TimingConstraintsFwd.hpp"
 #include "tatum/TimingGraphFwd.hpp"
 
-/*********************** Externally-accessible variables **************************/
+#include "atom_netlist_fwd.h"
+#include "atom_lookup_fwd.h"
+#include "vpr_types.h"
 
-/*************************** Function declarations ********************************/
-
-void read_sdc(t_timing_inf timing_inf);
-void free_sdc_related_structs();
-void free_override_constraint(t_override_constraint *& constraint_array, int num_constraints);
-const char * get_sdc_file_name(); /* Accessor function for getting SDC file name */
-
-std::unique_ptr<tatum::TimingConstraints> create_timing_constraints(const AtomNetlist& netlist, const AtomLookup& atom_lookup, t_timing_inf timing_inf);
+std::unique_ptr<tatum::TimingConstraints> read_sdc(const t_timing_inf& timing_inf,
+                                                   const AtomNetlist& netlist,
+                                                   const AtomLookup& lookup,
+                                                   tatum::TimingGraph& timing_graph);
 
 #endif

@@ -5,7 +5,6 @@
 using namespace std;
 
 #include "vtr_assert.h"
-#include "vtr_matrix.h"
 #include "vtr_log.h"
 #include "vtr_math.h"
 #include "vtr_ndmatrix.h"
@@ -20,10 +19,8 @@ using namespace std;
 #include "channel_stats.h"
 #include "stats.h"
 #include "net_delay.h"
-#include "path_delay.h"
 #include "read_xml_arch_file.h"
 #include "echo_files.h"
-#include "endpoint_timing.h"
 
 #include "timing_info.h"
 #include "RoutingDelayCalculator.h"
@@ -45,13 +42,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		std::vector<t_segment_inf>& segment_inf,
 		float R_minW_nmos, float R_minW_pmos,
         float grid_logic_tile_area,
-		enum e_directionality directionality, int wire_to_ipin_switch,
-		bool timing_analysis_enabled
-#ifdef ENABLE_CLASSIC_VPR_STA
-		, vtr::vector<ClusterNetId, float *> &net_delay
-        , t_slack * slacks, const t_timing_inf &timing_inf
-#endif
-        ) {
+		enum e_directionality directionality, int wire_to_ipin_switch) {
 
 	/* Prints out various statistics about the current routing.  Both a routing *
 	 * and an rr_graph must exist when you call this routine.                   */
@@ -106,44 +97,6 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		get_segment_usage_stats(segment_inf);
 
 	}
-
-    if (timing_analysis_enabled) {
-#ifdef ENABLE_CLASSIC_VPR_STA
-        auto& atom_ctx = g_vpr_ctx.atom();
-        //TODO: These calls to the modern timing analyzer are here to remain comparible to the classic analyzer
-        //      They should ultimately be removed, since we don't produce any of the classic timing echo files,
-        //      and timing reports are now generated from the analysis stage
-        load_net_delay_from_routing(net_delay);
-
-        //Tatum-based analyzer
-        auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
-
-        std::shared_ptr<SetupTimingInfo> timing_info = make_setup_timing_info(routing_delay_calc);
-        timing_info->update();
-
-        //Classic Analyzer
-        load_timing_graph_net_delays(net_delay);
-        do_timing_analysis(slacks, timing_inf, false, true);
-
-        if (getEchoEnabled()) {
-            print_timing_graph("routing_stats.timing_graph.classic.echo");
-            if (isEchoFileEnabled(E_ECHO_NET_DELAY))
-                print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
-        }
-
-        print_slack(slacks->slack, true, getOutputFileName(E_SLACK_FILE));
-        print_critical_path(getOutputFileName(E_CRIT_PATH_FILE), timing_inf);
-
-        if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ENDPOINT_TIMING)) {
-            print_endpoint_timing(getEchoFileName(E_ECHO_ENDPOINT_TIMING));
-        }
-
-        VTR_LOG("Classic Timing Stats\n");
-        VTR_LOG("====================\n");
-        print_timing_stats();
-#endif
-
-    }
 
 	if (full_stats == true)
 		print_wirelen_prob_dist();

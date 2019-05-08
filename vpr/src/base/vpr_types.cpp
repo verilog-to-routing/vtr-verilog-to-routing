@@ -24,7 +24,7 @@ void t_ext_pin_util_targets::set_default_pin_util(t_ext_pin_util default_target)
 
 
 /*
- * t_pb structure function definitions 
+ * t_pb structure function definitions
  */
 
 int t_pb::get_num_child_types() const {
@@ -49,10 +49,6 @@ t_mode* t_pb::get_mode() const {
     } else {
         return nullptr;
     }
-}
-
-bool t_pb::has_modes() const {
-    return pb_graph_node->pb_type->num_modes > 0;
 }
 
 //Returns the t_pb associated with the specified gnode which is contained
@@ -111,21 +107,11 @@ const t_pb* t_pb::find_pb_for_model(const std::string& blif_model) const {
 const t_pb* t_pb::root_pb() const {
 
     const t_pb* curr_pb = this;
-    while(!is_root()) {
+    while(!curr_pb->is_root()) {
         curr_pb = curr_pb->parent_pb;
     }
 
-    VTR_ASSERT(curr_pb->parent_pb == nullptr);
     return curr_pb;
-}
-
-bool t_pb::is_root() const {
-    return parent_pb == nullptr;
-}
-
-//Returns true if this pb corresponds to a primitive block (i.e. in the AtomNetlist)
-bool t_pb::is_primitive() const {
-    return child_pbs == nullptr;
 }
 
 std::string t_pb::hierarchical_type_name() const {
@@ -133,7 +119,7 @@ std::string t_pb::hierarchical_type_name() const {
 
     for (const t_pb* curr = this; curr != nullptr; curr = curr->parent_pb) {
         std::string type_name;
-       
+
         //get name and type of physical block
         if (curr->pb_graph_node) {
             type_name = curr->pb_graph_node->pb_type->name;
@@ -177,4 +163,3 @@ BitIndex t_pb::atom_pin_bit_index(const t_pb_graph_pin* gpin) const {
 void t_pb::set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_idx) {
     pin_rotations_[gpin] = atom_pin_bit_idx;
 }
-

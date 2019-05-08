@@ -20,7 +20,6 @@
 #include "router_common.h"
 #include "timing_driven_route_tree_timing.h"
 #include "timing_driven_route_timing.h"
-#include "path_delay.h"
 #include "net_delay.h"
 #include "stats.h"
 #include "echo_files.h"

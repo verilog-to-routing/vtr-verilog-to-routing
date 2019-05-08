@@ -21,7 +21,6 @@
 using namespace std;
 
 #include "vtr_assert.h"
-#include "vtr_matrix.h"
 #include "vtr_ndoffsetmatrix.h"
 #include "vtr_memory.h"
 #include "vtr_log.h"
@@ -32,7 +31,6 @@ using namespace std;
 
 #include "globals.h"
 #include "graphics.h"
-#include "path_delay.h"
 #include "draw.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
@@ -60,9 +58,7 @@ using namespace std;
 
 #include "rr_graph.h"
 #include "route_util.h"
-
-/* TODO: router_utils.h will fully replace route_util.h */
-#include "router_utils.h"
+#include "place_macro.h"
 
 /****************************** Define Macros *******************************/
 
@@ -265,6 +261,10 @@ const std::vector<color_types> block_type_colors = {
     ALICEBLUE,
 };
 
+//FIXME: ugly hack
+extern t_pl_macro* pl_macros;
+extern int num_pl_macros;
+
 /************************** File Scope Variables ****************************/
 
 std::string rr_highlight_message;
@@ -280,6 +280,7 @@ static void toggle_routing_util(void (*drawscreen_ptr)());
 static void toggle_crit_path(void (*drawscreen_ptr)());
 static void toggle_block_pin_util(void (*drawscreen_ptr)());
 static void toggle_router_rr_costs(void (*drawscreen_ptr)());
+static void toggle_placement_macros(void (*drawscreen_ptr)());
 
 static void drawscreen();
 static void redraw_screen();
@@ -291,6 +292,7 @@ static void draw_routing_costs();
 static void draw_routing_bb();
 static void draw_routing_util();
 static void draw_crit_path();
+static void draw_placement_macros();
 
 static void highlight_blocks(float x, float y, t_event_buttonPressed button_info);
 static void act_on_mouse_over(float x, float y);
@@ -396,8 +398,9 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 			create_button("Window", "Toggle Nets", toggle_nets);
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
 			create_button("Blk Internal", "Blk Pin Util", toggle_block_pin_util);
+			create_button("Blk Pin Util", "Place Macros", toggle_placement_macros);
             if(setup_timing_info) {
-                create_button("Blk Pin Util", "Crit. Path", toggle_crit_path);
+                create_button("Place Macros", "Crit. Path", toggle_crit_path);
             }
 		} else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
             //Routing, opening after placement
@@ -423,7 +426,8 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 			create_button("Window", "Toggle Nets", toggle_nets);
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
 			create_button("Blk Internal", "Blk Pin Util", toggle_block_pin_util);
-			create_button("Blk Pin Util", "Toggle RR", toggle_rr);
+			create_button("Blk Pin Util", "Place Macros", toggle_placement_macros);
+			create_button("Place Macros", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 			create_button("Congestion", "Cong. Cost", toggle_routing_congestion_cost);
 			create_button("Cong. Cost", "Route BB", toggle_routing_bounding_box);
@@ -564,6 +568,8 @@ static void redraw_screen() {
 
         draw_routing_bb();
 	}
+
+    draw_placement_macros();
 
     draw_crit_path();
 
@@ -719,6 +725,17 @@ static void toggle_block_pin_util(void (*drawscreen_ptr)()) {
         draw_reset_blk_colors();
 		update_message(draw_state->default_message);
     }
+    drawscreen_ptr();
+}
+
+static void toggle_placement_macros(void (*drawscreen_ptr)()) {
+	t_draw_state *draw_state = get_draw_state_vars();
+
+	e_draw_placement_macros new_state = (enum e_draw_placement_macros) (((int)draw_state->show_placement_macros + 1)
+														  % ((int)DRAW_PLACEMENT_MACROS_MAX));
+
+    draw_state->show_placement_macros = new_state;
+
     drawscreen_ptr();
 }
 
@@ -952,7 +969,8 @@ static void drawplace() {
 				/* Draw text if the space has parts of the netlist */
 				if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
-					drawtext_in(abs_clb_bbox, cluster_ctx.clb_nlist.block_name(bnum));
+                    std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
+					drawtext_in(abs_clb_bbox, name.c_str());
 				}
 
 				/* Draw text for block type so that user knows what block */
@@ -1239,7 +1257,6 @@ static void draw_routing_bb() {
     fillrect(draw_xlow, draw_ylow, draw_xhigh, draw_yhigh);
     
     draw_routed_net(net_id);
-
 
     std::string msg;;
     msg += "Showing BB";
@@ -3520,18 +3537,18 @@ static void draw_routing_util() {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_usage = router::calculate_routing_usage(CHANX);
-    auto chany_usage = router::calculate_routing_usage(CHANY);
+    auto chanx_usage = calculate_routing_usage(CHANX);
+    auto chany_usage = calculate_routing_usage(CHANY);
 
-    auto chanx_avail = router::calculate_routing_avail(CHANX);
-    auto chany_avail = router::calculate_routing_avail(CHANY);
+    auto chanx_avail = calculate_routing_avail(CHANX);
+    auto chany_avail = calculate_routing_avail(CHANY);
 
     float min_util = 0.;
     float max_util = -std::numeric_limits<float>::infinity();
     for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
         for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
-            max_util = std::max(max_util, router::routing_util(chanx_usage[x][y], chanx_avail[x][y]));
-            max_util = std::max(max_util, router::routing_util(chany_usage[x][y], chany_avail[x][y]));
+            max_util = std::max(max_util, routing_util(chanx_usage[x][y], chanx_avail[x][y]));
+            max_util = std::max(max_util, routing_util(chany_usage[x][y], chany_avail[x][y]));
         }
     }
     max_util = std::max(max_util, 1.f);
@@ -3555,7 +3572,7 @@ static void draw_routing_util() {
             float chany_util = 0;
             int chan_count = 0;
             if (x > 0) {
-                chanx_util = router::routing_util(chanx_usage[x][y], chanx_avail[x][y]);
+                chanx_util = routing_util(chanx_usage[x][y], chanx_avail[x][y]);
                 t_color chanx_color = to_t_color(cmap->color(chanx_util));
                 chanx_color.alpha *= ALPHA;
                 setcolor(chanx_color);
@@ -3575,7 +3592,7 @@ static void draw_routing_util() {
             }
 
             if (y > 0) {
-                chany_util = router::routing_util(chany_usage[x][y], chany_avail[x][y]);
+                chany_util = routing_util(chany_usage[x][y], chany_avail[x][y]);
                 t_color chany_color = to_t_color(cmap->color(chany_util));
                 chany_color.alpha *= ALPHA;
                 setcolor(chany_color);
@@ -3596,9 +3613,9 @@ static void draw_routing_util() {
 
             //For now SB util is just average of surrounding channels
             //TODO: calculate actual usage
-            sb_util += router::routing_util(chanx_usage[x+1][y], chanx_avail[x+1][y]);
+            sb_util += routing_util(chanx_usage[x+1][y], chanx_avail[x+1][y]);
             chan_count += 1;
-            sb_util += router::routing_util(chany_usage[x][y+1], chany_avail[x][y+1]);
+            sb_util += routing_util(chany_usage[x][y+1], chany_avail[x][y+1]);
             chan_count += 1;
 
             VTR_ASSERT(chan_count > 0);
@@ -3748,3 +3765,61 @@ static void draw_rr_costs(const std::vector<float>& rr_costs, bool lowest_cost_f
 
     draw_state->color_map = std::move(cmap);
 }
+
+static void draw_placement_macros() {
+	t_draw_state* draw_state = get_draw_state_vars();
+
+    if (draw_state->show_placement_macros == DRAW_NO_PLACEMENT_MACROS) {
+        return;
+    }
+
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    for (size_t imacro = 0; imacro < place_ctx.pl_macros.size(); ++imacro) {
+        const t_pl_macro* pl_macro = &place_ctx.pl_macros[imacro];
+
+        //TODO: for now we just draw the bounding box of the macro, which is incorrect for non-rectangular macros...
+        int xlow = std::numeric_limits<int>::max();
+        int ylow = std::numeric_limits<int>::max();
+        int xhigh = std::numeric_limits<int>::min();
+        int yhigh = std::numeric_limits<int>::min();
+
+        int x_root = OPEN;
+        int y_root = OPEN;
+        for (size_t imember = 0; imember < pl_macro->members.size(); ++imember) {
+            const t_pl_macro_member* member = &pl_macro->members[imember];
+
+            ClusterBlockId blk = member->blk_index;
+
+            if (imember == 0) {
+                x_root = place_ctx.block_locs[blk].x;
+                y_root = place_ctx.block_locs[blk].y;
+            }
+
+            int x = x_root + member->x_offset;
+            int y = y_root + member->y_offset;
+
+            xlow = std::min(xlow, x);
+            ylow = std::min(ylow, y);
+            xhigh = std::max(xhigh, x + cluster_ctx.clb_nlist.block_type(blk)->width);
+            yhigh = std::max(yhigh, y + cluster_ctx.clb_nlist.block_type(blk)->height);
+        }
+
+        int draw_xlow = draw_coords->tile_x[xlow];
+        int draw_ylow = draw_coords->tile_y[ylow];
+        int draw_xhigh = draw_coords->tile_x[xhigh];
+        int draw_yhigh = draw_coords->tile_y[yhigh];
+
+        setcolor(RED);
+        drawrect(draw_xlow, draw_ylow, draw_xhigh, draw_yhigh);
+
+        t_color fill = SKYBLUE;
+        fill.alpha *= 0.3;
+        setcolor(fill);
+        fillrect(draw_xlow, draw_ylow, draw_xhigh, draw_yhigh);
+
+    }
+}
+

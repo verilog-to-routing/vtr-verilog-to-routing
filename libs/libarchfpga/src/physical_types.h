@@ -659,7 +659,6 @@ struct t_pb_type {
 	t_mode *parent_mode = nullptr;
 	int depth = 0; /* depth of pb_type */
 
-	float max_internal_delay = -1; //TODO: remove when VPR's classic timing analyzer is removed
 	t_pin_to_pin_annotation *annotations = nullptr; /* [0..num_annotations-1] */
 	int num_annotations = 0;
 
@@ -862,13 +861,15 @@ struct t_pin_to_pin_annotation {
  *  accessible from each position may be different).
  *
  *  Data members:
- *      pb_type: Pointer to the type of pb graph node this belongs to
- *      mode: parent mode of operation
- *      placement_index: there are a certain number of pbs available, this gives the index of the node
- *      child_pb_graph_nodes: array of children pb graph nodes organized into modes
- *      parent_pb_graph_node: parent pb graph node
+ *      pb_type               : Pointer to the type of pb graph node this belongs to
+ *      placement_index       : there are a certain number of pbs available, this gives the index of the node
+ *      child_pb_graph_nodes  : array of children pb graph nodes organized into modes
+ *      parent_pb_graph_node  : parent pb graph node
+ *      total_primitive_count : Total number of this primitive type in the cluster. If there are 10 ALMs per cluster
+ *                              and 2 FFs per ALM (given the mode of the parent of this primitive) then the total is 20.
  */
-struct t_pb_graph_node {
+class t_pb_graph_node {
+public:
 	t_pb_type *pb_type;
 
 	int placement_index;
@@ -898,31 +899,26 @@ struct t_pb_graph_node {
 	int *output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
 	int num_output_pin_class; /* number of output pin classes that this pb_graph_node has */
 
+    int total_primitive_count; /* total number of this primitive type in the cluster */
+
 	/* Interconnect instances for this pb
 	 * Only used for power
 	 */
 	t_pb_graph_node_power * pb_node_power;
 	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 
+    // Returns true if this pb_graph_node represents a primitive type (primitives have 0 modes)
+    bool is_primitive() const { return this->pb_type->num_modes == 0; }
+
+    // Returns true if this pb_graph_node represents a root graph node (ex. clb)
+    bool is_root() const { return this->parent_pb_graph_node == nullptr; }
+
     //Returns the number of pins on this graph node
-    //  Note this is the total for all ports on this node exluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
-    int num_pins() {
-        int npins = 0;
-
-        for(int iport = 0; iport < num_input_ports; ++iport) {
-            npins += num_input_pins[iport];
-        }
-
-        for(int iport = 0; iport < num_output_ports; ++iport) {
-            npins += num_output_pins[iport];
-        }
-
-        for(int iport = 0; iport < num_clock_ports; ++iport) {
-            npins += num_clock_pins[iport];
-        }
-
-        return npins;
-    }
+    //  Note this is the total for all ports on this node excluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
+    int num_pins() const;
+    // Returns a string containing the hierarchical type name of the pb_graph_node
+    // Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
+    std::string hierarchical_type_name() const;
 };
 
 
@@ -948,7 +944,8 @@ enum e_pb_graph_pin_type {
  *      parent_node: parent pb_graph_node
  *      pin_count_in_cluster: Unique number for pin inside cluster
  */
-struct t_pb_graph_pin {
+class t_pb_graph_pin {
+public:
 	t_port *port = nullptr;
 	int pin_number = 0;
 	t_pb_graph_edge** input_edges = nullptr; /* [0..num_input_edges] */
@@ -990,6 +987,25 @@ struct t_pb_graph_pin {
 	bool is_forced_connection = false; /* This output pin connects to one and only one input pin */
 
 	t_pb_graph_pin_power* pin_power = nullptr;
+
+// class member functions
+public:
+    // Returns true if this pin belongs to a primitive block like
+    // a LUT or FF, instead of a cluster-level block like a CLB.
+    bool is_primitive_pin() const {
+        return this->parent_node->is_primitive();
+    }
+    // Returns true if this pin belongs to a root pb_block which is a pb_block
+    // that has no parent block. For example, pins of a CLB, IO, DSP, etc.
+    bool is_root_block_pin() const {
+        return this->parent_node->is_root();
+    }
+    // This function returns a string that contains the name of the pin
+    // and the entire sequence of pb_types in the hierarchy from the block
+    // of this pin back to the cluster-level (top-level) pb_type in the
+    // following format: clb[0]/lab[0]/fle[3]/ble6[0]/lut6[0].in[0]
+    std::string to_string() const;
+
 };
 
 
@@ -1002,8 +1018,18 @@ struct t_pb_graph_pin {
  *      num_input_pins: Number of input pins entering this edge
  *      output_pins: array of pb_type graph output pins ptrs exiting this edge
  *      num_output_pins: Number of output pins exiting this edge
+ *
+ *      num_pack_patterns: number of pack patterns this edge belongs to
+ *      pack_pattern_names: [0..num_pack_patterns-1] name of each pack pattern
+ *      pack_pattern_indices: [0..num_pack_patterns-1] id of each pack pattern
+ *      infer_pattern: if true, pattern of this edge could be inferred by checking
+ *                     input/output edges. This is true when the edge is a single
+ *                     fanout edge and is driven or driving another edge which is
+ *                     annotated with a pack pattern.
  */
-struct t_pb_graph_edge {
+class t_pb_graph_edge {
+public:
+    /* edge connectivity */
 	t_pb_graph_pin **input_pins;
 	int num_input_pins;
 	t_pb_graph_pin **output_pins;
@@ -1020,10 +1046,22 @@ struct t_pb_graph_edge {
 	int driver_pin;
 
 	/* pack pattern info */
-	const char **pack_pattern_names; /*[0..num_pack_patterns(of_edge)-1]*/
-	int *pack_pattern_indices; /*[0..num_pack_patterns(of_edge)-1]*/
 	int num_pack_patterns;
-	bool infer_pattern; /*If true, infer pattern based on patterns connected to it*/
+	const char **pack_pattern_names;
+	int *pack_pattern_indices;
+	bool infer_pattern;
+
+// class member functions
+public:
+    // Returns true is this edge is annotated with the given pattern_index
+    //  pattern_index : index of the packing pattern
+    bool annotated_with_pattern(int pattern_index) const;
+
+    // Returns true is this edge is annotated with pattern_index or its pattern
+    // is inferred and a connected output edge is annotated with pattern_index
+    //   pattern_index : index of the packing pattern
+    bool belongs_to_pattern(int pattern_index) const;
+
 };
 
 struct t_pb_graph_node_power {

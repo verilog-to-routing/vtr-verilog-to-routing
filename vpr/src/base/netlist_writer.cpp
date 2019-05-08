@@ -23,7 +23,6 @@
 #include "netlist_writer.h"
 
 #include "globals.h"
-#include "path_delay.h"
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
 #include "logic_vec.h"

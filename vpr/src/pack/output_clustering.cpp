@@ -150,8 +150,7 @@ static std::string clustering_xml_interconnect_text(t_type_ptr type, int inode, 
 		/* No previous driver implies that this is either a top-level input pin or a primitive output pin */
 		t_pb_graph_pin *cur_pin = pb_graph_pin_lookup_from_index_by_type[type->index][inode];
 		VTR_ASSERT(cur_pin->parent_node->pb_type->parent_mode == nullptr ||
-				(cur_pin->parent_node->pb_type->num_modes == 0 && cur_pin->port->type == OUT_PORT)
-				);
+				(cur_pin->is_primitive_pin() && cur_pin->port->type == OUT_PORT));
 		return clustering_xml_net_text(pb_route[inode].atom_net_id);
 	} else {
 		t_pb_graph_pin *cur_pin = pb_graph_pin_lookup_from_index_by_type[type->index][inode];

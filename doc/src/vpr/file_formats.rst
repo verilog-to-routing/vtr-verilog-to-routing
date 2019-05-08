@@ -819,13 +819,13 @@ An example of what a generated routing resource graph file would look like is sh
             <y_list index="2" info="5"/>
         </channels>
         <switches>
-            <switch id="0" name="my_switch" buffered="1"/>
+            <switch id="0" name="my_switch" buffered="1">
                 <timing R="100" Cin="1233-12" Cout="123e-12" Tdel="1e-9"/>
                 <sizing mux_trans_size="2.32" buf_size="23.54"/>
             </switch>
         </switches>
         <segments>
-            <segment id="0" name="L4"/>
+            <segment id="0" name="L4">
                 <timing R_per_meter="201.7" C_per_meter="18.110e-15"/>
             </segment>
         </segments>

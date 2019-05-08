@@ -70,7 +70,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 
 
-#define DEFAULT_OUTPUT "temp"
+#define DEFAULT_OUTPUT "."
 
 int current_parse_file;
 t_arch Arch;
@@ -418,6 +418,12 @@ void get_options(int argc, char** argv) {
 			.metavar("INPUT_FILE")
 			;
 
+    other_grp.add_argument(global_args.adder_cin_global, "--adder_cin_global")
+            .help("Defines if the first cin of an adder/subtractor is connected to a global gnd/vdd instead of a dummy adder generating a gnd/vdd.")
+            .default_value("false")
+            .action(argparse::Action::STORE_TRUE)
+            ;
+
 	auto& rand_sim_grp = parser.add_argument_group("random simulation options");
 
 	rand_sim_grp.add_argument(global_args.sim_num_test_vectors, "-g")
@@ -573,6 +579,10 @@ void get_options(int argc, char** argv) {
 		configuration.output_ast_graphs = global_args.write_ast_as_dot;
 	}
 
+    if (global_args.adder_cin_global.provenance() == argparse::Provenance::SPECIFIED) {
+        configuration.adder_cin_global = global_args.adder_cin_global;
+    }
+
 	if (configuration.debug_output_path == DEFAULT_OUTPUT) {
 		configuration.debug_output_path = std::string(global_args.sim_directory);
 	}
@@ -601,6 +611,8 @@ void set_default_config()
 
 	configuration.split_memory_width = 0;
 	configuration.split_memory_depth = 0;
+
+    configuration.adder_cin_global = false;
 
 	/*
 	* Soft logic cutoffs. If a memory or a memory resulting from a split

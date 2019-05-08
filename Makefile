@@ -16,7 +16,7 @@
 #    release_pgo	#Perform a 2-stage build with profile-guided compiler optimization
 #    release		#Build with compiler optimization
 #    debug			#Build with debug info and no compiler optimization
-BUILD_TYPE ?= debug
+BUILD_TYPE ?= release
 
 #Convert to lower case for consistency
 BUILD_TYPE := $(shell echo $(BUILD_TYPE) | tr '[:upper:]' '[:lower:]')

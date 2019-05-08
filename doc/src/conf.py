@@ -56,6 +56,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx.ext.graphviz',
+    'sphinx_markdown_tables',
     'sdcdomain',
     'archdomain',
     'rrgraphdomain',
@@ -329,6 +330,8 @@ def setup(app):
     app.add_config_value(
         'recommonmark_config', {
             'github_code_repo': 'https://github.com/verilog-to-routing/vtr-verilog-to-routing',
+            'enable_math': True,
+            'enable_inline_math': True,
         }, True)
     app.add_transform(MarkdownCodeSymlinks)
     app.add_stylesheet('css/vtr.css')

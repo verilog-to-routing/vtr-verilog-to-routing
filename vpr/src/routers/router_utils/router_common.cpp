@@ -40,8 +40,6 @@ using namespace std;
 #include "timing_info.h"
 #include "tatum/echo_writer.hpp"
 
-#include "path_delay.h"
-
 #include "rr_graph_fwd.h"
 
 

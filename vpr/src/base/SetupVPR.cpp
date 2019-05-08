@@ -35,9 +35,7 @@ static void SetupAnnealSched(const t_options& Options,
 		t_annealing_sched *AnnealSched);
 static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts);
 static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch *RoutingArch);
-static void SetupTiming(const t_options& Options, const t_arch& Arch,
-		const bool TimingEnabled,
-		t_timing_inf * Timing);
+static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf * Timing);
 static void SetupSwitches(const t_arch& Arch,
 		t_det_routing_arch *RoutingArch,
 		const t_arch_switch_inf *ArchSwitches, int NumArchSwitches);
@@ -142,7 +140,7 @@ void SetupVPR(t_options *Options,
 
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
-	SetupTiming(*Options, *Arch, TimingEnabled, Timing);
+	SetupTiming(*Options, TimingEnabled, Timing);
 	SetupPackerOpts(*Options, PackerOpts);
 	RoutingArch->write_rr_graph_filename = Options->write_rr_graph_file;
     RoutingArch->read_rr_graph_filename = Options->read_rr_graph_file;
@@ -227,9 +225,7 @@ void SetupVPR(t_options *Options,
 
 }
 
-static void SetupTiming(const t_options& Options, const t_arch& Arch,
-		const bool TimingEnabled,
-		t_timing_inf * Timing) {
+static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf * Timing) {
 
 	/* Don't do anything if they don't want timing */
 	if (false == TimingEnabled) {
@@ -237,19 +233,8 @@ static void SetupTiming(const t_options& Options, const t_arch& Arch,
 		return;
 	}
 
-    int ipin_cblock_switch_index = find_ipin_cblock_switch_index(Arch);
-
-	Timing->C_ipin_cblock = Arch.Switches[ipin_cblock_switch_index].Cin;
-	Timing->T_ipin_cblock = Arch.Switches[ipin_cblock_switch_index].Tdel();
 	Timing->timing_analysis_enabled = TimingEnabled;
     Timing->SDCFile = Options.SDCFile;
-    Timing->slack_definition = Options.SlackDefinition;
-
-#ifdef ENABLE_CLASSIC_VPR_STA
-    VTR_ASSERT(Timing->slack_definition == std::string("R") || Timing->slack_definition == std::string("I") ||
-           Timing->slack_definition == std::string("S") || Timing->slack_definition == std::string("G") ||
-           Timing->slack_definition == std::string("C") || Timing->slack_definition == std::string("N"));
-#endif
 }
 
 /* This loads up VPR's arch_switch_inf data by combining the switches from
@@ -435,8 +420,6 @@ void SetupPackerOpts(const t_options& Options,
 	PackerOpts->packer_algorithm = PACK_GREEDY; /* DEFAULT */
 
     PackerOpts->device_layout = Options.device_layout;
-
-	PackerOpts->hmetis_input_file = Options.hmetis_input_file;
 }
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {

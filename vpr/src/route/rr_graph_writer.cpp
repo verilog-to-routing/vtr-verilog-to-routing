@@ -24,7 +24,6 @@ using namespace std;
  * float -> string -> float conversions */
 constexpr int FLOAT_PRECISION = std::numeric_limits<float>::max_digits10;
 /*********************** Subroutines local to this module *******************/
-void add_metadata_to_xml(fstream &fp, const char *tab_prefix, const t_metadata_dict & meta);
 void write_rr_channel(fstream &fp);
 void write_rr_node(fstream &fp);
 void write_rr_switches(fstream &fp);
@@ -32,6 +31,7 @@ void write_rr_grid(fstream &fp);
 void write_rr_edges(fstream &fp);
 void write_rr_block_types(fstream &fp);
 void write_rr_segments(fstream &fp, const std::vector<t_segment_inf>& segment_inf);
+void add_metadata_to_xml(fstream &fp, const char *tab_prefix, const t_metadata_dict & meta);
 
 /************************ Subroutine definitions ****************************/
 

@@ -135,10 +135,10 @@ foreach my $cur_arg (@ARGV)
 	}
 }
 
-#default is vanilla all latches
+#default is blackbox all latches
 if(!$vanilla && !$has_clk_list && !$has_restore_clk)
 {
-	$vanilla = 1;
+	print "blackboxing all latches in file\n";
 }
 
 if(!$has_output && ($has_restore_clk || $has_clk_list))
@@ -178,24 +178,29 @@ if(! $has_input )
 my $skip = 0;
 my $lineNum = 0;
 my %clocks_in_model = ();
-my $line_to_parse;
+my $parsed_line = "";
 while( (my $cur_line = <$InFile>) )
 {
 	#######################
 	# chomp the line
 	$lineNum += 1;
 
-	#truncate duplicate whitespace and new line
-	$cur_line =~ s/\h+|\n$/ /g;
-	#remove leading and trailing whitespace
-	$cur_line=~ s/^\s+|\s+$//g; 
-
-	PARSE_LINE: {
-		$line_to_parse .= " ".$cur_line;
-
+	# if is terminated by a backslash
+	$parsed_line .= $cur_line;
+	if ( $parsed_line =~ /\\\n$/ )
+	{
+		$parsed_line =~ s/\\\n$//g;
+	}
+	else
+	{
 		#dump line to parse
-		my $line = $line_to_parse;
-		$line_to_parse = "";
+		my $line = $parsed_line;
+		$parsed_line = "";
+
+		#truncate duplicate whitespace
+		$line =~ s/\s{2,}/ /g;
+		#remove leading and trailing whitespace
+		$line =~ s/^\s+|\s+$//g; 
 
 		########################
 		# check if we need to skip this line
@@ -232,7 +237,8 @@ while( (my $cur_line = <$InFile>) )
 		###########################
 		if ( not $skip_this_line )
 		{
-			
+			# print "current line: <$line>\n";
+
 			if ($line =~ /^\.end/)
 			{
 				if ( $has_output
@@ -276,7 +282,7 @@ while( (my $cur_line = <$InFile>) )
 						$line .= $line_tok." ";
 					}  
 				}
-					
+
 				if( $has_restore_clk )
 				{
 					my @latch_clk_tokens;
@@ -372,12 +378,28 @@ while( (my $cur_line = <$InFile>) )
 			}
 
 			# if we have an output file, print the line to it
-			if($has_output) {
-				if($line =~ /"^\."/)
+			if($has_output) 
+			{
+				# max line length is 256 chars to make sure it fits in most reader buffer
+				my $shrunk_text = "";
+				# add some spacing before items
+				if($line =~ /^\./)
 				{
-					$line = "\n".$line;
+					$shrunk_text = "\n";
 				}
-				print $OutFile $line."\n";
+
+				my @line_tokenized = split(/[\s]+/,$line);
+				foreach my $string_token (@line_tokenized)
+				{
+					if ( length( $shrunk_text.$string_token." " ) >= 128 )
+					{
+						print $OutFile $shrunk_text."\\\n";
+						$shrunk_text = " ";
+					}
+
+					$shrunk_text .= $string_token." ";
+				}
+				print $OutFile $shrunk_text."\n";
 			}
 		}
 	}

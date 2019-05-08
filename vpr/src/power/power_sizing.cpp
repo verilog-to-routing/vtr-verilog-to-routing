@@ -702,7 +702,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 	this_pb_interc_sidelength = sqrt(
 			power_transistor_area(
 					pin->parent_node->pb_node_power->transistor_cnt_interc));
-	if (pin->parent_node->parent_pb_graph_node == nullptr) {
+	if (pin->is_root_block_pin()) {
 		top_level_pb = true;
 		parent_pb_interc_sidelength = 0.;
 	} else {

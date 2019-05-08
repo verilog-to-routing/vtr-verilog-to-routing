@@ -28,7 +28,6 @@ using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
-#include "vtr_list.h"
 #include "vtr_log.h"
 #include "vtr_logic.h"
 #include "vtr_time.h"

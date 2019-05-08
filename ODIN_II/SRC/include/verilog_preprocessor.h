@@ -3,6 +3,7 @@
 
 #define DefaultSize 20
 #define MaxLine	4096
+#include <stdio.h>
 
 //#define BLOCK_EMPTY_DEFINES
 
@@ -80,7 +81,9 @@ void push(veri_flag_stack *stack, int flag);
 
 
 /* General Utility methods ------------------------------------------------- */
-char* trim(char *string);
+bool is_whitespace(const char in);
+char *trim(char *input_str);
+char* trim(char *input_string, size_t n);
 
 /* ------------------------------------------------------------------------- */
 

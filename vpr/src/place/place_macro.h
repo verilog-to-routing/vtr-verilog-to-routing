@@ -134,14 +134,18 @@
 
 #ifndef PLACE_MACRO_H
 #define PLACE_MACRO_H
+#include <vector>
+
+#include "physical_types.h"
 
 /* These are the placement macro structure.
  * It is in the form of array of structs instead of
  * structs of arrays for cache efficiency.
  * Could have more data members for other macro type.
  * blk_index: The cluster_ctx.blocks index of this block.
- * x_offset: The x_offset of the previous block to this cluster_ctx.blocks.
- * y_offset: The y_offset of the previous block to this cluster_ctx.blocks.
+ * x_offset: The x_offset from the first macro member to this member
+ * y_offset: The y_offset from the first macro member to this member
+ * z_offset: The z_offset from the first macro member to this member
  */
 struct t_pl_macro_member{
 	ClusterBlockId blk_index;
@@ -155,13 +159,12 @@ struct t_pl_macro_member{
  * idirect: The direct index as specified in the arch file
  */
 struct t_pl_macro {
-	int num_blocks;
-	t_pl_macro_member* members;
+    std::vector<t_pl_macro_member> members;
 };
 
 /* These are the function declarations. */
-int alloc_and_load_placement_macros(t_direct_inf* directs, int num_segments, t_pl_macro ** chains);
-void get_imacro_from_iblk(int * imacro, ClusterBlockId iblk, t_pl_macro * macros, int num_macros);
+std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs);
+void get_imacro_from_iblk(int *imacro, ClusterBlockId iblk, const std::vector<t_pl_macro>& macros);
 void free_placement_macros_structs();
 
 #endif

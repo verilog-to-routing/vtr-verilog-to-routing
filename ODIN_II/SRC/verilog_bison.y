@@ -27,6 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <string.h>
 #include "odin_types.h"
+#include "ast_util.h"
 #include "parse_making_ast.h"
 
 #define PARSE {printf("here\n");}
@@ -65,7 +66,7 @@ int yylex(void);
 %token vOUTPUT vPARAMETER vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER
-%token vPLUS_COLON vMINUS_COLON
+%token vPLUS_COLON vMINUS_COLON vSPECPARAM
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
 %token vNOT_SUPPORT 
 
@@ -114,7 +115,9 @@ int yylex(void);
 %type <node> non_blocking_assignment case_item_list case_items seq_block
 %type <node> stmt_list delay_control event_expression_list event_expression
 %type <node> expression primary probable_expression_list expression_list module_parameter
-%type <node> list_of_module_parameters specify_block list_of_specify_statement specify_statement
+%type <node> list_of_module_parameters
+%type <node> specify_block list_of_specify_items specify_item specparam_declaration
+%type <node> specify_pal_connect_declaration
 %type <node> initial_block parallel_connection list_of_blocking_assignment
 
 %%
@@ -187,7 +190,7 @@ initial_block:
 	;
 
 specify_block:
-    vSPECIFY list_of_specify_statement vENDSPECIFY            			{$$ = $2;}
+    vSPECIFY list_of_specify_items vENDSPECIFY            				{$$ = $2;}
 	;
 
 list_of_function_items:
@@ -395,13 +398,22 @@ statement:
 	| ';'																						{$$ = NULL;}
 	;
 
-list_of_specify_statement:
-	list_of_specify_statement specify_statement 						{$$ = newList_entry($1, $2);}
-	| specify_statement							                        {$$ = newList(SPECIFY_PAL_CONNECT_LIST, $1);}
+list_of_specify_items:
+	list_of_specify_items specify_item 									{$$ = newList_entry($1, $2);}
+	| specify_item														{$$ = newList(SPECIFY_ITEMS, $1);}
     ;
 
-specify_statement:
-    '(' parallel_connection ')' '=' primary ';'							{$$ = newParallelConnection($2, $5, yylineno);}
+specify_item:
+	specify_pal_connect_declaration            							{$$ = newList(SPECIFY_PAL_CONNECT_LIST, $1);}
+	| specparam_declaration            						        	{$$ = free_whole_tree($1);}
+	;
+
+specify_pal_connect_declaration:
+	'(' parallel_connection ')' '=' primary ';'							{$$ = newParallelConnection($2, $5, yylineno);}
+	;
+
+specparam_declaration:
+	vSPECPARAM variable_list ';'										{$$ = $2;}
 	;
 
 blocking_assignment:
@@ -430,6 +442,7 @@ case_items:
 
 seq_block:
 	vBEGIN stmt_list vEND 									{$$ = $2;}
+	| vBEGIN ':' vSYMBOL_ID stmt_list vEND					{$$ = $4;}
 	;
 
 stmt_list:

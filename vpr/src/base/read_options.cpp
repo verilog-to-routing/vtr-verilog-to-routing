@@ -428,6 +428,39 @@ struct ParseUnrelatedClustering {
     }
 };
 
+struct ParseBalanceBlockTypeUtil {
+    ConvertedValue<e_balance_block_type_util> from_str(std::string str) {
+        ConvertedValue<e_balance_block_type_util> conv_value;
+        if      (str == "on") conv_value.set_value(e_balance_block_type_util::ON);
+        else if (str == "off") conv_value.set_value(e_balance_block_type_util::OFF);
+        else if (str == "auto") conv_value.set_value(e_balance_block_type_util::AUTO);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '"
+                << str
+                << "' to e_balance_block_type_util (expected one of: "
+                << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_balance_block_type_util val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_balance_block_type_util::ON) conv_value.set_value("on");
+        else if (val == e_balance_block_type_util::OFF) conv_value.set_value("off");
+        else {
+            VTR_ASSERT(val == e_balance_block_type_util::AUTO);
+            conv_value.set_value("auto");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"on", "off", "auto"};
+    }
+};
+
 struct ParseConstGenInference{
     ConvertedValue<e_const_gen_inference> from_str(std::string str) {
         ConvertedValue<e_const_gen_inference> conv_value;
@@ -741,14 +774,6 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("Controls whether timing analysis (and timing driven optimizations) are enabled.")
             .default_value("on");
 
-#ifdef ENABLE_CLASSIC_VPR_STA
-    gen_grp.add_argument(args.SlackDefinition, "--slack_definition")
-            .help("Sets the slack definition used by the classic timing analyzer")
-            .default_value("R")
-            .choices({"R", "I", "S", "G", "C", "N"})
-            .show_in(argparse::ShowIn::HELP_ONLY);
-#endif
-
     gen_grp.add_argument<bool,ParseOnOff>(args.CreateEchoFile, "--echo_file")
             .help("Generate echo files of key internal data structures."
                   " Useful for debugging VPR, and typically end in .echo")
@@ -836,10 +861,6 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("Writes the routing resource graph to the specified file")
             .metavar("RR_GRAPH_FILE")
             .show_in(argparse::ShowIn::HELP_ONLY);
-
-	file_grp.add_argument(args.hmetis_input_file, "--hmetis_input_file")
-			.help("Reads in a filename to write packing stats for input to hmetis")
-			.show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.out_file_prefix, "--outfile_prefix")
             .help("Prefix for output files")
@@ -943,10 +964,13 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("on")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument<bool,ParseOnOff>(args.balance_block_type_utilization, "--balance_block_type_utilization")
-            .help("If enabled, when a primitive can potentially be mapped to multiple block types the packer will "
-                  "pick the block type which (currently) has lower utilization.")
-            .default_value("on")
+    pack_grp.add_argument<e_balance_block_type_util,ParseBalanceBlockTypeUtil>(args.balance_block_type_utilization, "--balance_block_type_utilization")
+            .help("If enabled, when a primitive can potentially be mapped to multiple block types the packer will\n"
+                  "pick the block type which (currently) has the lowest utilization.\n"
+                  " * on  : Try to balance block type utilization\n"
+                  " * off : Do not try to balance block type utilization\n"
+                  " * auto: Dynamically enabled/disabled (based on density)\n")
+            .default_value("auto")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.target_external_pin_util, "--target_ext_pin_util")
@@ -1080,7 +1104,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   "Valid options:\n"
                   " * 'delta' uses differences in position only\n"
                   " * 'delta_override' uses differences in position with overrides for direct connects\n")
-            .default_value("delta_override")
+            .default_value("delta")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument<e_reducer,ParseReducer>(args.place_delay_model_reducer, "--place_delay_model_reducer")

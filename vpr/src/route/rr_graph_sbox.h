@@ -2,7 +2,6 @@
 #define RR_GRAPH_SBOX_H
 
 #include <vector>
-#include "vtr_matrix.h"
 
 std::vector<int> get_switch_box_tracks(const int from_i,
 		const int from_j,

@@ -18,15 +18,20 @@
 #   -ending_stage <stage>: End the VTR flow at the specified stage. Acceptable
 #								values: odin, abc, script, vpr. Default value is
 #								vpr.
-# 	-keep_intermediate_files: Do not delete the intermediate files.
-#   -keep_result_files: Do not delete the result files (.net, .place, .route)
-#   -track_memory_usage: Print out memory usage for each stage (NOT fully portable)
-#   -limit_memory_usage: Kill benchmark if it is taking up too much memory to avoid
-#                       slow disk swaps.
-#   -timeout: Maximum amount of time to spend on a single stage of a task in seconds;
-#               default is 14 days.
-#
-#   -temp_dir <dir>: Directory used for all temporary files
+# 	-delete_intermediate_files : Deletes the intermediate files (.xml, .v, .dot, .rc, ...)
+#   -delete_result_files       : Deletes the result files (.net, .place, .route)
+#   -track_memory_usage        : Print out memory usage for each stage (NOT fully portable)
+#   -limit_memory_usage        : Kill benchmark if it is taking up too much memory to avoid
+#                                slow disk swaps.
+#   -timeout                   : Maximum amount of time to spend on a single stage of a task in seconds;
+#                                default is 14 days.
+#   -temp_dir <dir>            : Directory used for all temporary files
+#   -valgrind                  : Runs the flow with valgrind with the following options (--leak-check=full,
+#                                --errors-for-leak-kinds=none, --error-exitcode=1, --track-origins=yes)
+#   -min_hard_mult_size        : Tells ODIN II what is the minimum multiplier size that should be synthesized using hard
+#                                multipliers (Default = 3)
+#   -min_hard_adder_size       : Tells ODIN II what is the minimum adder size that should be synthesizes
+#                                using hard adders (Default = 1)
 #
 #   Any unrecognized arguments are forwarded to VPR.
 ###################################################################################
@@ -56,7 +61,7 @@ if ( $number_arguments < 2 ) {
 	exit(-1);
 }
 
-# Get Absoluate Path of 'vtr_flow
+# Get Absolute Path of 'vtr_flow
 Cwd::abs_path($0) =~ m/(.*\/vtr_flow)\//;
 my $vtr_flow_path = $1;
 # my $vtr_flow_path = "./vtr_flow";
@@ -103,20 +108,20 @@ my $memory_tracker          = "/usr/bin/env";
 my @memory_tracker_args     = ("time", "-v");
 my $limit_memory_usage      = -1;
 my $timeout                 = 14 * 24 * 60 * 60;         # 14 day execution timeout
-my $valgrind 		    = 0;
-my @valgrind_args	    = ("--leak-check=full", "--errors-for-leak-kinds=none", "--error-exitcode=1", "--track-origins=yes");
+my $valgrind 		        = 0;
+my @valgrind_args	        = ("--leak-check=full", "--errors-for-leak-kinds=none", "--error-exitcode=1", "--track-origins=yes");
 my $abc_quote_addition      = 0;
 my @forwarded_vpr_args;   # VPR arguments that pass through the script
 my $verify_rr_graph         = 0;
 my $check_route             = 0;
 my $check_place             = 0;
-my $use_old_abc             = 0;
 my $use_old_abc_script      = 0;
 my $abc_use_dc2             = 1;
 my $run_name = "";
 my $expect_fail = 0;
 my $verbosity = 0;
 my $odin_adder_config_path = "default";
+my $odin_adder_cin_global = "";
 my $use_odin_xml_config = 1;
 my $relax_W_factor = 1.3;
 my $crit_path_router_iterations = undef;
@@ -172,8 +177,6 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
             $check_route = 1;
     } elsif ( $token eq "-check_place" ){
             $check_place = 1;
-    } elsif ( $token eq "-use_old_abc"){
-            $use_old_abc = 1;
     } elsif ( $token eq "-use_old_abc_script"){
             $use_old_abc_script = 1;
     } elsif ( $token eq "-abc_use_dc2"){
@@ -198,14 +201,23 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	elsif ( $token eq "-use_odin_simulation" ){
 		$odin_run_simulation = 1;
 	}
+    elsif ( $token eq "-adder_cin_global" ){
+        $odin_adder_cin_global = "--adder_cin_global";
+    }
 	elsif ( $token eq "-use_new_latches_restoration_script" ){
 		$use_new_latches_restoration_script = 1;
 	}
 	elsif ( $token eq "-iterative_bb" ){
 		$flow_type = 2;
+		$use_new_latches_restoration_script = 1;
 	}
 	elsif ( $token eq "-once_bb" ){
 		$flow_type = 1;
+		$use_new_latches_restoration_script = 1;
+	}
+	elsif ( $token eq "-blanket_bb" ){
+		$flow_type = 3;
+		$use_new_latches_restoration_script = 1;
 	}
 	elsif ( $token eq "-relax_W_factor" ){
 		$relax_W_factor = shift(@ARGV);
@@ -276,7 +288,7 @@ if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) {
 
 #odin is now necessary for simulation
 my $odin2_path; my $odin_config_file_name; my $odin_config_file_path;
-if (    $stage_idx_abc >= $starting_stage 
+if (    $stage_idx_abc >= $starting_stage
 	and $stage_idx_odin <= $ending_stage )
 {
 	$odin2_path = exe_for_platform("$vtr_flow_path/../ODIN_II/odin_II");
@@ -299,18 +311,9 @@ my $abc_path;
 my $abc_rc_path;
 if ( $stage_idx_abc >= $starting_stage or $stage_idx_vpr <= $ending_stage ) {
 	#Need ABC for either synthesis or post-VPR verification
-	if ($use_old_abc) 
-	{
-		my $abc_dir_path = "$vtr_flow_path/../abc_with_bb_support";
-		$abc_path = "$abc_dir_path/oldabc";
-		$abc_rc_path = "$abc_dir_path/abc.rc";
-	}
-	else 
-	{
-		my $abc_dir_path = "$vtr_flow_path/../abc";
-		$abc_path = "$abc_dir_path/abc";
-		$abc_rc_path = "$abc_dir_path/abc.rc";
-	}
+    my $abc_dir_path = "$vtr_flow_path/../abc";
+    $abc_path = "$abc_dir_path/abc";
+    $abc_rc_path = "$abc_dir_path/abc.rc";
 
 	( -e $abc_path or -e "${abc_path}.exe" )
 	  or die "Cannot find ABC executable ($abc_path)";
@@ -450,6 +453,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 			$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
 				"-c", $odin_config_file_name, 
 				"--adder_type", $odin_adder_config_path,
+                $odin_adder_cin_global,
 				"-U0");
 		} else {
 			$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
@@ -457,6 +461,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 				"-a", $temp_dir . $architecture_file_name,
 				"-V", $temp_dir . $circuit_file_name,
 				"-o", $temp_dir . $odin_output_file_name,
+                $odin_adder_cin_global,
 				"-U0");
 		}
 
@@ -481,7 +486,6 @@ if (    $starting_stage <= $stage_idx_abc
 		system "mkdir simulation_init";
 
 		$q = &system_with_timeout( "$odin2_path", "sim_produce_vector.out", $timeout, $temp_dir,
-			"-E",
 			"-b", $temp_dir . $odin_output_file_name,
 			"-a", $temp_dir . $architecture_file_name,
 			"-sim_dir", $temp_dir."simulation_init/",
@@ -560,8 +564,19 @@ if (    $starting_stage <= $stage_idx_abc
 		my $post_abc_raw_blif = $domain_itter."_".$abc_raw_output_file_name;
 		my $post_abc_blif = $domain_itter."_".$abc_output_file_name;
 
+		if( $flow_type == 3 )
+		{
+			# black box latches
+			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
+					"--input", $input_blif, "--output", $pre_abc_blif);	
 
-		if ( exists  $clock_list[$domain_itter] )
+			if ($q ne "success") {
+				$error_status = "failed: to black box the clocks for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
+				$error_code = 1;
+				last ABC_OPTIMIZATION;
+			}	
+		}
+		elsif ( exists  $clock_list[$domain_itter] )
 		{
 			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
@@ -642,19 +657,19 @@ if (    $starting_stage <= $stage_idx_abc
 		time;
 		";
 
-		if ($use_old_abc) {
-			#Legacy ABC script
+		if ($use_old_abc_script) {
+			#Legacy ABC script adapted for new ABC by moving scleanup before if
 			$abc_commands="
 			read $pre_abc_blif; 
 			time; 
 			resyn; 
 			resyn2; 
-			if -K $lut_size; 
 			time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; 
+			if -K $lut_size; 
 			write_hie ${pre_abc_blif} ${post_abc_raw_blif}; 
 			print_stats;
 			";
-		}
+        }
 
 		$abc_commands =~ s/\R/ /g; #Convert new-lines to spaces
 
@@ -681,17 +696,17 @@ if (    $starting_stage <= $stage_idx_abc
 		#restore the current valgrind flag
 		$valgrind = $skip_valgrind;
 
-		if ( exists  $clock_list[$domain_itter] )
+		if ( $flow_type != 3 and exists  $clock_list[$domain_itter] )
 		{
 			# restore latches with the clock
 			$q = &system_with_timeout($blackbox_latches_script, "restore_latch".$domain_itter.".out", $timeout, $temp_dir,
-					"--restore", $clock_list[$domain_itter], "--input", $post_abc_raw_blif, "--output", $post_abc_blif);	
+					"--restore", $clock_list[$domain_itter], "--input", $post_abc_raw_blif, "--output", $post_abc_blif);
 
 			if ($q ne "success") {
 				$error_status = "failed: to restore latches to their clocks <".$clock_list[$domain_itter]."> for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
 				$error_code = 1;
 				last ABC_OPTIMIZATION;
-			}	
+			}
 		}
 		else
 		{
@@ -707,7 +722,7 @@ if (    $starting_stage <= $stage_idx_abc
 		}
 
 		$input_blif = $post_abc_blif;
-		
+
 		if ( $flow_type != 2 )
 		{
 			last ABC_OPTIMIZATION;
@@ -715,8 +730,8 @@ if (    $starting_stage <= $stage_idx_abc
 	}
 
 	################
-	#	POST-ABC 
-	
+	#	POST-ABC
+
 	#return all clocks to vanilla clocks
 	$q = &system_with_timeout($blackbox_latches_script, "vanilla_restore_clocks.out", $timeout, $temp_dir,
 			"--input", $input_blif, "--output", $abc_output_file_name, "--vanilla");
@@ -725,7 +740,7 @@ if (    $starting_stage <= $stage_idx_abc
 		$error_status = "failed: to return to vanilla.\n";
 		$error_code = 1;
 	}
-	
+
 
 	################
 	#	Cleanup
@@ -749,11 +764,10 @@ if (    $starting_stage <= $stage_idx_abc
 	and !$error_code )
 {
 	if($odin_run_simulation)  {
-		
+
 		system "mkdir simulation_test";
 
 		$q = &system_with_timeout( "$odin2_path", "odin_simulation.out", $timeout, $temp_dir,
-			"-E",
 			"-b", $temp_dir . $abc_output_file_name,
 			"-a", $temp_dir . $architecture_file_name,
 			"-t", $temp_dir . "simulation_init/input_vectors",
@@ -766,7 +780,7 @@ if (    $starting_stage <= $stage_idx_abc
 		}
 
 		if ( !$error_code
-		and !$keep_intermediate_files ) 
+		and !$keep_intermediate_files )
 		{
 				system "rm -Rf ${temp_dir}simulation_test";
 				system "rm -Rf ${temp_dir}simulation_init";

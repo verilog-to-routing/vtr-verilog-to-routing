@@ -90,6 +90,8 @@ char* standardize_number(const char* input);
 <INITIAL>"xnor"				{ MP; return vXNOR;}
 <INITIAL>"xor"				{ MP; return vXOR;}
 <INITIAL>"macromodule"		{ MP; return vMODULE;}
+<INITIAL>"specparam"		{ MP; return vSPECPARAM;}
+
 
 	/*	unsupported Keywords	*/
 <INITIAL>"automatic"		{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
@@ -100,7 +102,6 @@ char* standardize_number(const char* input);
 <INITIAL>"edge"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"endtask"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"scalared"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
-<INITIAL>"specparam"		{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"bufif0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"bufif1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"cmos"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}

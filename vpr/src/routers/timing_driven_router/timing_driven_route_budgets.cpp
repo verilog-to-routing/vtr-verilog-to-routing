@@ -55,7 +55,6 @@
 #include "vpr_error.h"
 #include "timing_driven_route_timing.h"
 #include "timing_info.h"
-#include "path_delay.h"
 #include "net_delay.h"
 #include "timing_driven_route_budgets.h"
 

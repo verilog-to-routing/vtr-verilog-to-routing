@@ -10,7 +10,6 @@ using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_memory.h"
-#include "vtr_matrix.h"
 #include "vtr_math.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
@@ -39,6 +38,7 @@ using namespace std;
 
 #include "rr_types.h"
 
+/* Create RRGraph and writer */
 #include "timing_driven_router_lookahead_map.h"
 #include "create_rr_graph.h"
 #include "rr_graph_obj_writer.h"
@@ -80,6 +80,8 @@ typedef std::vector<std::map<int,int>> t_arch_switch_fanin;
 
 
 /********************* Subroutines local to this module. *******************/
+void print_rr_graph_stats();
+
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed);
 
 static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
@@ -296,7 +298,7 @@ void create_rr_graph(
     if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
         //No change in channel width, so skip re-building RR graph
         VTR_LOG("RR graph channel widths unchanged, skipping RR graph rebuild\n");
-        return;
+        return;    
     }
 
     free_rr_graph();
@@ -343,10 +345,12 @@ void create_rr_graph(
                 base_cost_type);
         }
     }
+
+    print_rr_graph_stats();
+
     /* Convert to rr_graph Object */
     convert_rr_graph(segment_inf);
 
-    /* Build the lookahead for rr_graph object */
     if (router_lookahead_type == e_router_lookahead::MAP) {
         compute_router_lookahead(segment_inf.size());
         router::timing_driven::compute_router_lookahead(segment_inf.size());
@@ -355,13 +359,24 @@ void create_rr_graph(
     //Write out rr graph file if needed
     if (!det_routing_arch->write_rr_graph_filename.empty()) {
         write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str(), segment_inf);
+
         /* Just to test the writer of rr_graph_obj, give a filename in a fixed style*/
         std::string rr_graph_obj_filename(det_routing_arch->write_rr_graph_filename);
         rr_graph_obj_filename.append(".obj");
         write_rr_graph_obj_to_xml(rr_graph_obj_filename.c_str(), device_ctx.rr_graph);
     }
+}
 
-    return; 
+void print_rr_graph_stats() {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    size_t num_rr_edges = 0;
+    for (auto& rr_node : device_ctx.rr_nodes) {
+        num_rr_edges += rr_node.edges().size();
+    }
+
+    VTR_LOG("  RR Graph Nodes: %zu\n", device_ctx.rr_nodes.size());
+    VTR_LOG("  RR Graph Edges: %zu\n", num_rr_edges);
 }
 
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed) {
@@ -2262,7 +2277,10 @@ static void load_uniform_connection_block_pattern(
                     int max_num_unassigned_tracks = 0;
 
                     /* Across all potential track assignments, determine the maximum number of recently
-                     * unassigned tracks that can be assigned this iteration.
+                     * unassigned tracks that can be assigned this iteration. offset_increment is used to
+                     * increment through the potential track assignments. The nested loops inside the
+                     * offset_increment loop, iterate through all the tracks associated with a particular
+                     * track assignment.
                      */
 
                     for (int offset_increment = 0; offset_increment < num_phys_pins; offset_increment++) {

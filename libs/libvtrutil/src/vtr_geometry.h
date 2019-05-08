@@ -64,7 +64,8 @@ class Rect {
     public: //Constructors
         Rect(T left_val, T bottom_val, T right_val, T top_val);
         Rect(Point<T> bottom_left_val, Point<T> top_right_val);
-        Rect();
+        Rect(); /* For RRGraph obj */
+
     public: //Accessors
         //Co-ordinates
         T xmin() const;

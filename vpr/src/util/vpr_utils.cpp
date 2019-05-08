@@ -11,7 +11,6 @@ using namespace std;
 #include "vpr_error.h"
 
 #include "physical_types.h"
-#include "path_delay.h"
 #include "globals.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
@@ -753,7 +752,11 @@ t_type_ptr infer_logic_block_type(const DeviceGrid& grid) {
         return logic_block_candidates.front();
     } else {
         //Otherwise assume it is the most common block type
-        return find_most_common_block_type(grid);
+        auto most_common_type = find_most_common_block_type(grid);
+        if (most_common_type == nullptr) {
+            VTR_LOG_WARN("Unable to infer which block type is a logic block\n");
+        }
+        return most_common_type;
     }
 }
 
@@ -772,7 +775,9 @@ t_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
         }
     }
 
-    VTR_ASSERT(max_type);
+    if (max_type == nullptr) {
+        VTR_LOG_WARN("Unable to determine most common block type (perhaps the device grid was empty?)\n");    
+    }
     return max_type;
 }
 
@@ -1003,7 +1008,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_t
         return false;
     }
 
-    VTR_ASSERT_MSG(atom_ctx.nlist.is_compressed(), "This function assumes a compresssed/non-dirty netlist");
+    VTR_ASSERT_MSG(atom_ctx.nlist.is_compressed(), "This function assumes a compressed/non-dirty netlist");
 
 
     //Keep track of how many atom ports were checked.
@@ -1040,7 +1045,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_t
         }
     }
 
-    //Similarily to pins, only in-use ports are stored in the compressed
+    //Similarly to pins, only in-use ports are stored in the compressed
     //atom netlist, so we can figure out how many ports should have been
     //checked directly
     size_t atom_ports = atom_ctx.nlist.block_ports(blk_id).size();
@@ -1386,9 +1391,9 @@ static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapp
 	}
 }
 
-/*
-* free pin_index_to_pb_mapping lookup table
-*/
+/**
+ * free pin_index_to_pb_mapping lookup table
+ */
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
@@ -1401,7 +1406,7 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb **> &pin_id_to_p
 
 /**
  * Determine cost for using primitive within a complex block, should use primitives of low cost before selecting primitives of high cost
- For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more
+ * For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more
  */
 float compute_primitive_base_cost(const t_pb_graph_node *primitive) {
 
@@ -1413,8 +1418,8 @@ float compute_primitive_base_cost(const t_pb_graph_node *primitive) {
 int num_ext_inputs_atom_block(AtomBlockId blk_id) {
 
 	/* Returns the number of input pins on this atom block that must be hooked *
-	 * up through external interconnect.  That is, the number of input    *
-	 * pins used - the number which connect (internally) to the outputs.   */
+	 * up through external interconnect. That is, the number of input          *
+	 * pins used - the number which connect (internally) to the outputs.       */
 
 	int ext_inps = 0;
 
@@ -1532,6 +1537,18 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
                     /* All atom blocks are open for this molecule, place back in queue */
                     if (i == get_array_size_of_molecule(cur_molecule)) {
                         cur_molecule->valid = true;
+                        // when invalidating a molecule check if it's a chain molecule
+                        // that is part of a long chain. If so, check if this molecule
+                        // have modified the chain_id value based on the stale packing
+                        // then reset the chain id and the first packed molecule pointer
+                        // this is packing is being reset
+                        if (cur_molecule->type == MOLECULE_FORCED_PACK &&
+                            cur_molecule->pack_pattern->is_chain &&
+                            cur_molecule->chain_info->is_long_chain &&
+                            cur_molecule->chain_info->first_packed_molecule == cur_molecule) {
+                            cur_molecule->chain_info->first_packed_molecule = nullptr;
+                            cur_molecule->chain_info->chain_id = -1;
+                        }
                     }
                 }
             }
@@ -1556,9 +1573,9 @@ void free_pb_stats(t_pb *pb) {
         if(pb->pb_stats->feasible_blocks) {
             free(pb->pb_stats->feasible_blocks);
         }
-        if(pb->pb_stats->transitive_fanout_candidates != nullptr) {
-            delete pb->pb_stats->transitive_fanout_candidates;
-        };
+        if(!pb->parent_pb) {
+            pb->pb_stats->transitive_fanout_candidates.clear();
+        }
         delete pb->pb_stats;
         pb->pb_stats = nullptr;
     }
@@ -2225,43 +2242,6 @@ void print_usage_by_wire_length() {
     total_wire_count.clear();
 }
 */
-
-AtomBlockId find_tnode_atom_block(int inode) {
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& timing_ctx = g_vpr_ctx.timing();
-
-    AtomBlockId blk_id;
-    AtomPinId pin_id;
-    auto type = timing_ctx.tnodes[inode].type;
-    if(type == TN_INPAD_SOURCE || type == TN_FF_SOURCE) {
-        //A source does not map directly to a netlist pin,
-        //so we walk to it's assoicated OPIN
-        VTR_ASSERT_MSG(timing_ctx.tnodes[inode].num_edges == 1, "Source nodes must have a single output edge");
-        int i_opin_node = timing_ctx.tnodes[inode].out_edges[0].to_node;
-
-        VTR_ASSERT(timing_ctx.tnodes[i_opin_node].type == TN_INPAD_OPIN ||timing_ctx.tnodes[i_opin_node].type == TN_FF_OPIN);
-
-        pin_id = atom_ctx.lookup.classic_tnode_atom_pin(i_opin_node);
-
-    } else if (type == TN_OUTPAD_SINK || type == TN_FF_SINK) {
-        //A sink does not map directly to a netlist pin,
-        //so we go back to its input pin
-
-        //By convention the sink pin is at one index before the sink itself
-        int i_ipin_node = inode - 1;
-        VTR_ASSERT(timing_ctx.tnodes[i_ipin_node].type == TN_OUTPAD_IPIN || timing_ctx.tnodes[i_ipin_node].type == TN_FF_IPIN);
-        VTR_ASSERT(timing_ctx.tnodes[i_ipin_node].num_edges == 1);
-        VTR_ASSERT(timing_ctx.tnodes[i_ipin_node].out_edges[0].to_node == inode);
-
-        pin_id = atom_ctx.lookup.classic_tnode_atom_pin(i_ipin_node);
-    } else {
-        pin_id = atom_ctx.lookup.classic_tnode_atom_pin(inode);
-    }
-
-    blk_id = atom_ctx.nlist.pin_block(pin_id);
-
-    return blk_id;
-}
 
 void place_sync_external_block_connections(ClusterBlockId iblk) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
