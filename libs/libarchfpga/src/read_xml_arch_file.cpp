@@ -3138,7 +3138,7 @@ static void ProcessSwitches(pugi::xml_node Parent,
 
 		} else if (0 == strcmp(type_name, "buffer")) {
 			type = SwitchType::BUFFER;
-            expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Cinternal", "Tdel", "buf_size", "power_buf_size"}, " with type '"s + type_name + "'"s, loc_data); // buffered switch should have a Cinternal element
+            expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Tdel", "buf_size", "power_buf_size"}, " with type '"s + type_name + "'"s, loc_data); // buffer should not have a Cinternal element
 
 
 		} else if (0 == strcmp(type_name, "pass_gate")) {
