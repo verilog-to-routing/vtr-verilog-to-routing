@@ -486,7 +486,7 @@ struct t_pl_moved_block {
  *               [0...num_moved_blocks-1]                       */
 struct t_pl_blocks_to_be_moved {
 	int num_moved_blocks;
-	t_pl_moved_block * moved_blocks;
+    std::vector<t_pl_moved_block> moved_blocks;
     std::unordered_set<t_place_loc> moved_from;
     std::unordered_set<t_place_loc> moved_to;
 };
