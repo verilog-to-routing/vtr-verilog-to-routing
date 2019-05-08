@@ -199,10 +199,8 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 
 					if (var_declare->types.variable.is_parameter)
 					{
-						ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
-						oassert(node->type == NUMBERS);
 						sc_spot = sc_add_string(local_param_table_sc, temp_string);
-						local_param_table_sc->data[sc_spot] = (void *)node;
+						local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
 
 						/* add parameter name to list */
 						if (parameter_num == 1)
@@ -225,8 +223,6 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 				if(parent_parameter_list->children[i]->children[0] && parent_parameter_list->children[i]->shared_node == FALSE)
 				{
 					ast_node_t *var_declare = parent_parameter_list->children[i];
-					ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
-					oassert(node->type == NUMBERS);
 					sc_spot = sc_lookup_string(local_param_table_sc, var_declare->children[0]->types.identifier);
 					if(sc_spot == -1)
 					{
@@ -235,7 +231,7 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 								var_declare->children[0]->types.identifier,
 								module_name);
 					}
-					local_param_table_sc->data[sc_spot] = (void *)node;
+					local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
 				}
 			}
 
@@ -247,8 +243,6 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 					if(parent_parameter_list->children[i]->shared_node == TRUE)
 					{
 						ast_node_t *var_declare = parent_parameter_list->children[i];
-						ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
-						oassert(node->type == NUMBERS);
 						sc_spot = sc_lookup_string(local_param_table_sc, var_declare->children[0]->types.identifier);
 						if(sc_spot == -1)
 						{
@@ -257,7 +251,7 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 									var_declare->children[0]->types.identifier,
 									module_name);
 						}
-						local_param_table_sc->data[sc_spot] = (void *)node;
+						local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
 					}
 				}
 				else
@@ -266,10 +260,8 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 					if (parameter_count <= parameter_num) 
 					{
 						ast_node_t *var_declare = parent_parameter_list->children[i];
-						ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
-						oassert(node->type == NUMBERS);
 						sc_spot = sc_lookup_string(local_param_table_sc, temp_parameter_list[parameter_count++]);
-						local_param_table_sc->data[sc_spot] = (void *)node;
+						local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
 					}
 
 					if(parameter_num == 0)
@@ -298,6 +290,15 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 						parameter_count, module_name, parameter_num);
 			}
 		}
+	}
+
+	/* now that parameters are all updated, resolve them */
+	for (i = 0; i < parameter_num; i++) {
+		sc_spot = sc_lookup_string(local_param_table_sc, temp_parameter_list[i]);
+		ast_node_t *node = (ast_node_t *)local_param_table_sc->data[sc_spot];
+		node = resolve_node(NULL, FALSE, module_name, node);
+		oassert(node->type == NUMBERS);
+		local_param_table_sc->data[sc_spot] = (void *)node;
 	}
 
 	/* clean up */
