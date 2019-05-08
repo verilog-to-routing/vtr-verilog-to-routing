@@ -2,6 +2,7 @@
 
 void add_tag_data();
 
+ast_node_t* create_node_w_type_no_count(ids id, int line_number, int file_number);
 ast_node_t* create_node_w_type(ids id, int line_number, int file_number);
 ast_node_t* create_tree_node_id(char* string, int line_number, int file_number);
 ast_node_t *create_tree_node_long_number(long number, int constant_bit_size, int line_number, int file_number);
@@ -31,6 +32,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix);
 char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_name_prefix);
 
 ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char *module_name, ast_node_t *node);
+ast_node_t *resolve_ast_node(STRING_CACHE *local_param_table_sc, short initial, char *module_name, ast_node_t *node);
 ast_node_t *node_is_constant(ast_node_t *node);
 ast_node_t *node_is_ast_constant(ast_node_t *node);
 ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_list op_id);

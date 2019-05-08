@@ -1282,7 +1282,20 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 						{
 							ast_node_t *node_max = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[1]);
 							ast_node_t *node_min = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
+							
 							oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
+							if(node_min->types.number.value > node_max->types.number.value)
+							{
+								error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+										"Odin doesn't support arrays declared [m:n] where m is less than n.");
+							}	
+							//ODIN doesn't support negative number in index now.
+							if(node_min->types.number.value < 0 || node_max->types.number.value < 0)
+							{
+								warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+										"Odin doesn't support negative number in index.");
+							}
+
 							/* assume digit 1 is largest */
 							for (k = node_min->types.number.value; k <= node_max->types.number.value; k++)
 							{
@@ -1381,7 +1394,18 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		ast_node_t *node_min = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
 
 		/* FOR array driver  since sport 3 and 4 are NULL */
-		oassert((node_max->type == NUMBERS) && (node_min->type == NUMBERS));
+		oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
+		if(node_min->types.number.value > node_max->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min->types.number.value < 0 || node_max->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
 
 		/* Check if this array driver should have an initial value */
 		long initial_value = 0;
@@ -1428,8 +1452,31 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		ast_node_t *node_max2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[3]);
 		ast_node_t *node_min2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[4]);
 
-		oassert((node_max1->type == NUMBERS) && (node_min1->type == NUMBERS));
-		oassert((node_max2->type == NUMBERS) && (node_min2->type == NUMBERS));
+		oassert(node_min1->type == NUMBERS && node_max1->type == NUMBERS);
+		if(node_min1->types.number.value > node_max1->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min1->types.number.value < 0 || node_max1->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
+
+		oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);
+		if(node_min2->types.number.value > node_max2->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min2->types.number.value < 0 || node_max2->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
 
 		char *name = var_declare->children[0]->types.identifier;
 
@@ -1467,9 +1514,44 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		ast_node_t *node_max3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[5]);
 		ast_node_t *node_min3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[6]);
 
-		oassert((node_max1->type == NUMBERS) && (node_min1->type == NUMBERS));
-		oassert((node_max2->type == NUMBERS) && (node_min2->type == NUMBERS));
-		oassert((node_max3->type == NUMBERS) && (node_min3->type == NUMBERS));
+		oassert(node_min1->type == NUMBERS && node_max1->type == NUMBERS);
+		if(node_min1->types.number.value > node_max1->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min1->types.number.value < 0 || node_max1->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
+
+		oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);
+		if(node_min2->types.number.value > node_max2->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min2->types.number.value < 0 || node_max2->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
+
+		oassert(node_min3->type == NUMBERS && node_max3->type == NUMBERS);
+		if(node_min3->types.number.value > node_max3->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min3->types.number.value < 0 || node_max3->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
 
 		char *name = var_declare->children[0]->types.identifier;
 
@@ -1561,7 +1643,19 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 		/* FOR array driver  since sport 3 and 4 are NULL */
 		ast_node_t *node_max = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[1]);
 		ast_node_t *node_min = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
-		oassert((node_max->type == NUMBERS) && (node_min->type == NUMBERS)) ;
+		
+		oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
+		if(node_min->types.number.value > node_max->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min->types.number.value < 0 || node_max->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
 
 		/* assume digit 1 is largest */
 		for (i = node_min->types.number.value; i <= node_max->types.number.value; i++)

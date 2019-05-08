@@ -93,14 +93,19 @@ void update_tree_tag(ast_node_t *node, int cases, int tagged);
 /*---------------------------------------------------------------------------
  * (function: create_node_w_type)
  *-------------------------------------------------------------------------*/
-ast_node_t* create_node_w_type(ids id, int line_number, int file_number)
+static ast_node_t* create_node_w_type(ids id, int line_number, int file_number, bool update_unique_count)
 {
+	oassert(id != NO_ID);
+
 	static long unique_count = 0;
 
 	ast_node_t* new_node;
 
 	new_node = (ast_node_t*)vtr::calloc(1, sizeof(ast_node_t));
 	oassert(new_node != NULL);
+
+	initial_node(new_node, id, line_number, file_number, unique_count);
+
 	new_node->type = id;
 
 	new_node->children = NULL;
@@ -108,12 +113,28 @@ ast_node_t* create_node_w_type(ids id, int line_number, int file_number)
 
 	new_node->line_number = line_number;
 	new_node->file_number = file_number;
-	new_node->unique_count = unique_count++;
+	new_node->unique_count = unique_count;
+
+	if(update_unique_count)
+		unique_count += 1;
 
 	new_node->far_tag = 0;
 	new_node->high_number = 0;
 
 	return new_node;
+}
+
+ast_node_t* create_node_w_type_no_count(ids id, int line_number, int file_number)
+{
+	return create_node_w_type(id, line_number, file_number, false);
+}
+
+/*---------------------------------------------------------------------------
+ * (function: create_node_w_type)
+ *-------------------------------------------------------------------------*/
+ast_node_t* create_node_w_type(ids id, int line_number, int file_number)
+{
+	return create_node_w_type(id, line_number, file_number, true);
 }
 
 /*---------------------------------------------------------------------------
@@ -368,6 +389,7 @@ void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child)
 }
 /*---------------------------------------------------------------------------------------------
  * (function: get_range)
+ * 	TODO Alex
  *  Check the node range is legal. Will return the range if it's legal.
  *  Node should have three children. Second and Third children's type should be NUMBERS.
  *-------------------------------------------------------------------------------------------*/
@@ -907,6 +929,7 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 {
 	if (node)
 	{
+		oassert(node->type != NO_ID);
 		ast_node_t *node_copy;
 		node_copy = (ast_node_t *)vtr::calloc(1,sizeof(ast_node_t));
 		memcpy(node_copy, node, sizeof(ast_node_t));
@@ -951,6 +974,63 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 		}
 
 		if (node_is_constant(newNode)){
+			newNode->shared_node = node->shared_node;
+
+			// /* clean up */
+			// if (node->type != IDENTIFIERS) {
+			// 	node = free_whole_tree(node);
+			// }
+			
+			node = newNode;
+		}
+
+		vtr::free(node_copy->children);
+		vtr::free(node_copy);
+	}
+	return node;
+}
+
+/*----------------------------------------------------------------------------
+ * (function: resolve_ast_node)
+ *--------------------------------------------------------------------------*/
+/**
+ * Recursively resolves an IDENTIFIER to a parameter into its actual value,
+ * by looking it up in the global_param_table_sc
+ * Also try and fold any BINARY_OPERATIONs now that an IDENTIFIER has been
+ * resolved
+ */
+
+ast_node_t *resolve_ast_node(STRING_CACHE *local_param_table_sc, short initial, char *module_name, ast_node_t *node)
+{
+	if (node)
+	{
+		ast_node_t *node_copy;
+		node_copy = (ast_node_t *)vtr::calloc(1,sizeof(ast_node_t));
+		memcpy(node_copy, node, sizeof(ast_node_t));
+		node_copy->children = (ast_node_t **)vtr::calloc(node_copy->num_children,sizeof(ast_node_t*));
+
+		long i;
+		for (i = 0; i < node->num_children; i++){
+			node_copy->children[i] = resolve_ast_node(local_param_table_sc, initial, module_name, node->children[i]);
+		}
+		ast_node_t *newNode = NULL;
+		switch (node->type){
+
+			case UNARY_OPERATION:
+				if(initial){
+					newNode = fold_unary(node_copy->children[0],node_copy->types.operation.op);
+				}
+				break;
+
+			case BINARY_OPERATION:
+				newNode = fold_binary(node_copy->children[0], node_copy->children[1], node_copy->types.operation.op);
+				break;
+
+			default:
+				break;
+		}
+
+		if (node_is_ast_constant(newNode)){
 			newNode->shared_node = node->shared_node;
 
 			/* clean up */
@@ -1380,10 +1460,10 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->hb_port = 0;
 	new_node->net_node = 0;
 	new_node->is_read_write = 0;
-
 }
 /*---------------------------------------------------------------------------------------------
  * (function: get_range) for 2D Array
+ * 	TODO Alex 
  *  Check the node range is legal. Will return the range if it's legal.
  *  Node should have three children. Second, Third, Forth, and Fifth children's type should be NUMBERS.
  *-------------------------------------------------------------------------------------------*/
