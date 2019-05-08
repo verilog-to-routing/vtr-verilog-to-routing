@@ -75,7 +75,7 @@ ast_node_t* reduce_binary_operation(ast_node_t* node, Environment& env)
 {
 	oassert(node);
 	oassert(node->type == BINARY_OPERATION);
-	ast_node_t* to_return;
+	ast_node_t* to_return = ast_node_deep_copy(node->children[0]);
 	switch(node->types.operation.op){
 		//These _should_ always be removed by the time we get 
 		//to net list generation; so don't worry about some sort
@@ -85,60 +85,61 @@ ast_node_t* reduce_binary_operation(ast_node_t* node, Environment& env)
 		//TODO: Do not assume that all numbers are the same format
 		//in the future, this is temporary for prototyping
 		case LT:
-			to_return = ast_node_deep_copy(node->children[0]);
 			to_return->types.number.value = 
 				node->children[0]->types.number.value < node->children[1]->types.number.value;
+			break;
 		case GT:
-			to_return = ast_node_deep_copy(node->children[0]);
 			to_return->types.number.value = 
 				node->children[0]->types.number.value > node->children[1]->types.number.value;
+			break;
 		case LTE:
-			to_return = ast_node_deep_copy(node->children[0]);
 			to_return->types.number.value = 
 				node->children[0]->types.number.value <= node->children[1]->types.number.value;
+			break;
 		case GTE:
-			to_return = ast_node_deep_copy(node->children[0]);
 			to_return->types.number.value = 
 				node->children[0]->types.number.value >= node->children[1]->types.number.value;
+			break;
 		case NOT_EQUAL:
-			to_return = ast_node_deep_copy(node->children[0]);
 			to_return->types.number.value = 
 				node->children[0]->types.number.value != node->children[1]->types.number.value;
+			break;
 		case LOGICAL_EQUAL:
-			to_return = ast_node_deep_copy(node->children[0]);
 			to_return->types.number.value = 
 				node->children[0]->types.number.value == node->children[1]->types.number.value;
+			break;
 		case LOGICAL_OR:
-			to_return = ast_node_deep_copy(node->children[0]);
 			to_return->types.number.value = 
 				(node->children[0]->types.number.value)? 
 				(node->children[0]->types.number.value): 
 				(node->children[1]->types.number.value);
+			break;
 		case LOGICAL AND:
-			to_return = ast_node_deep_copy(node->children[0]);
 			//Forgive me for this formating, I just don't know what to do
 			//to make this clean without adding more uinitialized variables
 			//outside the switch statement.
 			to_return->types.number.value = 
 				(node->children[0]->types.number.value &&
 				 node->children[1]->types.number.value) ? 0 : 1;
+			break;
 		case LOGICAL_NOT:
-			to_return = ast_node_deep_copy(node->children[0]);
 			to_return->types.number.value = 
 				(node->children[0]->types.number.value) ? 0 : 1;
+			break;
 		case ADD:
-			to_return = ast_node_deep_copy(node->children[0]);
 			to_return->types.number.value += node->children[1]->types.number.value;
+			break;
 		case MINUS:
-			to_return = ast_node_deep_copy(node->children[0]);
 			to_return->types.number.value -= node->children[1]->types.number.value;
+			break;
 		case MULTIPLY:
-			to_return = ast_node_deep_copy(node->children[0]);
 			to_return->types.number.value *= node->children[1]->types.number.value;
+			break;
 		case DIVIDE:
-			to_return = ast_node_deep_copy(node->children[0]);
 			to_return->types.number.value /= node->children[1]->types.number.value;
+			break;
 		default:
+			//Shouldn't have missed any cases but this is here to catch it if we do
 			oassert(0);
 	}
 	return to_return;
@@ -179,6 +180,8 @@ ast_node_t* evaluate_node(ast_node_t* node, Environment& env)
 				free_whole_tree(*v);
 			}
 			break;
+		case WHILE:
+
 		default:
 			to_return = node;
 			break;
