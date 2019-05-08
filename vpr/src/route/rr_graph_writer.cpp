@@ -198,6 +198,7 @@ void write_rr_switches(fstream &fp) {
         fp << "\t\t\t<timing R=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.R <<
                 "\" Cin=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.Cin <<
                 "\" Cout=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.Cout <<
+                "\" Cinternal=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.Cinternal << //will print display the value of Cinternal
                 "\" Tdel=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.Tdel << "\"/>" << endl;
         fp << "\t\t\t<sizing mux_trans_size=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.mux_trans_size <<
                 "\" buf_size=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.buf_size << "\"/>" << endl;
