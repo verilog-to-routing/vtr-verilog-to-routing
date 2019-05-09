@@ -3798,8 +3798,8 @@ static void draw_placement_macros() {
                 y_root = place_ctx.block_locs[blk].loc.y;
             }
 
-            int x = x_root + member->x_offset;
-            int y = y_root + member->y_offset;
+            int x = x_root + member->offset.x;
+            int y = y_root + member->offset.y;
 
             xlow = std::min(xlow, x);
             ylow = std::min(ylow, y);

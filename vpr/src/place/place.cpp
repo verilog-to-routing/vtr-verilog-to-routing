@@ -1527,16 +1527,12 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
     //
     //NOTE: We mutate imember_from so the outer from macro walking loop moves in lock-step
     int imember_to = 0;
-    int from_to_macro_x_offset = place_ctx.pl_macros[imacro_from].members[imember_from].x_offset;
-    int from_to_macro_y_offset = place_ctx.pl_macros[imacro_from].members[imember_from].y_offset;
-    int from_to_macro_z_offset = place_ctx.pl_macros[imacro_from].members[imember_from].z_offset;
+    t_place_loc from_to_macro_offset = place_ctx.pl_macros[imacro_from].members[imember_from].offset;
     for (; imember_from < int(place_ctx.pl_macros[imacro_from].members.size()) && imember_to < int(place_ctx.pl_macros[imacro_to].members.size());
            ++imember_from, ++imember_to) {
 
         //Check that both macros have the same shape while they overlap
-        if (place_ctx.pl_macros[imacro_from].members[imember_from].x_offset != place_ctx.pl_macros[imacro_to].members[imember_to].x_offset + from_to_macro_x_offset
-            || place_ctx.pl_macros[imacro_from].members[imember_from].y_offset != place_ctx.pl_macros[imacro_to].members[imember_to].y_offset + from_to_macro_y_offset
-            || place_ctx.pl_macros[imacro_from].members[imember_from].z_offset != place_ctx.pl_macros[imacro_to].members[imember_to].z_offset + from_to_macro_z_offset) {
+        if (place_ctx.pl_macros[imacro_from].members[imember_from].offset != place_ctx.pl_macros[imacro_to].members[imember_to].offset + from_to_macro_offset) {
             log_move_abort("macro shapes disagree");
             return e_find_affected_blocks_result::ABORT; 
         }
@@ -3060,8 +3056,6 @@ static void free_legal_placements() {
 
 static int check_macro_can_be_placed(int imacro, int itype, t_place_loc head_pos) {
 
-	size_t member_x, member_y, member_z;
-
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -3072,17 +3066,15 @@ static int check_macro_can_be_placed(int imacro, int itype, t_place_loc head_pos
 
 	// Check whether all the members can be placed
 	for (size_t imember = 0; imember < pl_macros[imacro].members.size(); imember++) {
-		member_x = head_pos.x + pl_macros[imacro].members[imember].x_offset;
-		member_y = head_pos.y + pl_macros[imacro].members[imember].y_offset;
-		member_z = head_pos.z + pl_macros[imacro].members[imember].z_offset;
+		t_place_loc member_pos = head_pos + pl_macros[imacro].members[imember].offset;
 
 		// Check whether the location could accept block of this type
 		// Then check whether the location could still accomodate more blocks
 		// Also check whether the member position is valid, that is the member's location
 		// still within the chip's dimemsion and the member_z is allowed at that location on the grid
-		if (member_x < device_ctx.grid.width() && member_y < device_ctx.grid.height()
-				&& device_ctx.grid[member_x][member_y].type->index == itype
-				&& place_ctx.grid_blocks[member_x][member_y].blocks[member_z] == EMPTY_BLOCK_ID) {
+		if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
+				&& device_ctx.grid[member_pos.x][member_pos.y].type->index == itype
+				&& place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.z] == EMPTY_BLOCK_ID) {
 			// Can still accomodate blocks here, check the next position
 			continue;
 		} else {
@@ -3097,8 +3089,6 @@ static int check_macro_can_be_placed(int imacro, int itype, t_place_loc head_pos
 
 
 static int try_place_macro(int itype, int ipos, int imacro){
-
-	int member_x, member_y, member_z;
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -3122,17 +3112,13 @@ static int try_place_macro(int itype, int ipos, int imacro){
 		macro_placed = true;
 		for (size_t imember = 0; imember < pl_macros[imacro].members.size(); imember++) {
 
-			member_x = head_pos.x + pl_macros[imacro].members[imember].x_offset;
-			member_y = head_pos.y + pl_macros[imacro].members[imember].y_offset;
-			member_z = head_pos.z + pl_macros[imacro].members[imember].z_offset;
+			t_place_loc member_pos = head_pos + pl_macros[imacro].members[imember].offset;
 
             ClusterBlockId iblk = pl_macros[imacro].members[imember].blk_index;
-			place_ctx.block_locs[iblk].loc.x = member_x;
-			place_ctx.block_locs[iblk].loc.y = member_y;
-			place_ctx.block_locs[iblk].loc.z = member_z;
+			place_ctx.block_locs[iblk].loc = member_pos;
 
-			place_ctx.grid_blocks[member_x][member_y].blocks[member_z] = pl_macros[imacro].members[imember].blk_index;
-			place_ctx.grid_blocks[member_x][member_y].usage++;
+			place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.z] = pl_macros[imacro].members[imember].blk_index;
+			place_ctx.grid_blocks[member_pos.x][member_pos.y].usage++;
 
 			// Could not ensure that the randomiser would not pick this location again
 			// So, would have to do a lazy removal - whenever I come across a block that could not be placed,
@@ -3617,14 +3603,10 @@ int check_macro_placement_consistency() {
 			auto member_iblk = pl_macros[imacro].members[imember].blk_index;
 
 			// Compute the suppossed member's x,y,z location
-			int member_x = place_ctx.block_locs[head_iblk].loc.x + pl_macros[imacro].members[imember].x_offset;
-			int member_y = place_ctx.block_locs[head_iblk].loc.y + pl_macros[imacro].members[imember].y_offset;
-			int member_z = place_ctx.block_locs[head_iblk].loc.z + pl_macros[imacro].members[imember].z_offset;
+			t_place_loc member_pos = place_ctx.block_locs[head_iblk].loc + pl_macros[imacro].members[imember].offset;
 
 			// Check the place_ctx.block_locs data structure first
-			if (place_ctx.block_locs[member_iblk].loc.x != member_x
-					|| place_ctx.block_locs[member_iblk].loc.y != member_y
-					|| place_ctx.block_locs[member_iblk].loc.z != member_z) {
+			if (place_ctx.block_locs[member_iblk].loc != member_pos) {
 				VTR_LOG_ERROR(
 						"Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
 						size_t(member_iblk), imacro);
@@ -3632,7 +3614,7 @@ int check_macro_placement_consistency() {
 			}
 
 			// Then check the place_ctx.grid data structure
-			if (place_ctx.grid_blocks[member_x][member_y].blocks[member_z] != member_iblk) {
+			if (place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.z] != member_iblk) {
 				VTR_LOG_ERROR(
 						"Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
 						size_t(member_iblk), imacro);
