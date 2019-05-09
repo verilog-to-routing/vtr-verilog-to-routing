@@ -253,6 +253,9 @@ static void revert_move();
 static void commit_move();
 static void clear_move();
 
+static void update_move_nets(int num_nets_affected);
+static void reset_move_nets(int num_nets_affected);
+
 static e_find_affected_blocks_result record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 static e_find_affected_blocks_result record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to);
 
@@ -1234,6 +1237,34 @@ static void clear_move() {
     blocks_affected.num_moved_blocks = 0;
 }
 
+
+static void update_move_nets(int num_nets_affected) {
+    /* update net cost functions and reset flags. */
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    for (int inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
+        ClusterNetId net_id = ts_nets_to_update[inet_affected];
+
+        bb_coords[net_id] = ts_bb_coord_new[net_id];
+        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET)
+            bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
+
+        net_cost[net_id] = temp_net_cost[net_id];
+
+        /* negative temp_net_cost value is acting as a flag. */
+        temp_net_cost[net_id] =	-1;
+        bb_updated_before[net_id] = NOT_UPDATED_YET;
+    }
+}
+
+static void reset_move_nets(int num_nets_affected) {
+    /* Reset the net cost function flags first. */
+    for (int inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
+        ClusterNetId net_id = ts_nets_to_update[inet_affected];
+        temp_net_cost[net_id] = -1;
+        bb_updated_before[net_id] = NOT_UPDATED_YET;
+    }
+}
+
 static e_find_affected_blocks_result record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to) {
 
     auto res = blocks_affected.moved_to.emplace(x_to, y_to, z_to);
@@ -1877,30 +1908,14 @@ static e_swap_result try_swap(float t,
 			}
 
 			/* update net cost functions and reset flags. */
-			for (int inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
-				ClusterNetId net_id = ts_nets_to_update[inet_affected];
-
-				bb_coords[net_id] = ts_bb_coord_new[net_id];
-				if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET)
-					bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
-
-				net_cost[net_id] = temp_net_cost[net_id];
-
-				/* negative temp_net_cost value is acting as a flag. */
-				temp_net_cost[net_id] =	-1;
-				bb_updated_before[net_id] = NOT_UPDATED_YET;
-			}
+            update_move_nets(num_nets_affected);
 
 			/* Update clb data structures since we kept the move. */
             commit_move();
 
 		} else { /* Move was rejected.  */
 			/* Reset the net cost function flags first. */
-			for (int inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
-				ClusterNetId net_id = ts_nets_to_update[inet_affected];
-				temp_net_cost[net_id] = -1;
-				bb_updated_before[net_id] = NOT_UPDATED_YET;
-			}
+            reset_move_nets(num_nets_affected);
 
 			/* Restore the place_ctx.block_locs data structures to their state before the move. */
             revert_move();
