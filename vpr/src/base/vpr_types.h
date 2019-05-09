@@ -582,12 +582,8 @@ struct t_place_region {
  * xnew: the x_coord that the block is moved to                 */
 struct t_pl_moved_block {
 	ClusterBlockId block_num;
-	int xold;
-	int xnew;
-	int yold;
-	int ynew;
-	int zold;
-	int znew;
+    t_pl_loc old_loc;
+    t_pl_loc new_loc;
 };
 
 /* Stores the list of blocks to be moved in a swap during       *

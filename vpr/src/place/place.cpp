@@ -1160,9 +1160,7 @@ static void apply_move_blocks() {
 
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
         
-		place_ctx.block_locs[blk].loc.x = blocks_affected.moved_blocks[iblk].xnew;
-		place_ctx.block_locs[blk].loc.y = blocks_affected.moved_blocks[iblk].ynew;
-		place_ctx.block_locs[blk].loc.z = blocks_affected.moved_blocks[iblk].znew;
+		place_ctx.block_locs[blk].loc = blocks_affected.moved_blocks[iblk].new_loc;
     }
 }
 
@@ -1176,26 +1174,22 @@ static void commit_move_blocks() {
 
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
         
-        int x_to = blocks_affected.moved_blocks[iblk].xnew;
-        int y_to = blocks_affected.moved_blocks[iblk].ynew;
-        int z_to = blocks_affected.moved_blocks[iblk].znew;
+        t_pl_loc to = blocks_affected.moved_blocks[iblk].new_loc;
 
-        int x_from = blocks_affected.moved_blocks[iblk].xold;
-        int y_from = blocks_affected.moved_blocks[iblk].yold;
-        int z_from = blocks_affected.moved_blocks[iblk].zold;
+        t_pl_loc from = blocks_affected.moved_blocks[iblk].old_loc;
 
         //Remove from old location only if it hasn't already been updated by a previous block update
-        if (place_ctx.grid_blocks[x_from][y_from].blocks[z_from] == blk) {;
-            place_ctx.grid_blocks[x_from][y_from].blocks[z_from] = EMPTY_BLOCK_ID;
-            --place_ctx.grid_blocks[x_from][y_from].usage;
+        if (place_ctx.grid_blocks[from.x][from.y].blocks[from.z] == blk) {;
+            place_ctx.grid_blocks[from.x][from.y].blocks[from.z] = EMPTY_BLOCK_ID;
+            --place_ctx.grid_blocks[from.x][from.y].usage;
         }
 
         //Add to new location
-        if (place_ctx.grid_blocks[x_to][y_to].blocks[z_to] == EMPTY_BLOCK_ID) {;
+        if (place_ctx.grid_blocks[to.x][to.y].blocks[to.z] == EMPTY_BLOCK_ID) {;
             //Only need to increase usage if previously unused
-            ++place_ctx.grid_blocks[x_to][y_to].usage;
+            ++place_ctx.grid_blocks[to.x][to.y].usage;
         }
-        place_ctx.grid_blocks[x_to][y_to].blocks[z_to] = blk;
+        place_ctx.grid_blocks[to.x][to.y].blocks[to.z] = blk;
 
     } // Finish updating clb for all blocks
 }
@@ -1209,15 +1203,11 @@ static void revert_move_blocks() {
 
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
-		int xold = blocks_affected.moved_blocks[iblk].xold;
-		int yold = blocks_affected.moved_blocks[iblk].yold;
-		int zold = blocks_affected.moved_blocks[iblk].zold;
+		t_pl_loc old = blocks_affected.moved_blocks[iblk].old_loc;
 
-		place_ctx.block_locs[blk].loc.x = xold;
-		place_ctx.block_locs[blk].loc.y = yold;
-		place_ctx.block_locs[blk].loc.z = zold;
+		place_ctx.block_locs[blk].loc = old;
 
-        VTR_ASSERT_SAFE_MSG(place_ctx.grid_blocks[xold][yold].blocks[zold] = blk, "Grid blocks should only have been updated if swap commited (not reverted)");
+        VTR_ASSERT_SAFE_MSG(place_ctx.grid_blocks[old.x][old.y].blocks[old.z] = blk, "Grid blocks should only have been updated if swap commited (not reverted)");
     }
 }
 
@@ -1283,12 +1273,8 @@ static e_find_affected_blocks_result record_block_move(ClusterBlockId blk, t_pl_
     // Sets up the blocks moved
     int imoved_blk = blocks_affected.num_moved_blocks;
     blocks_affected.moved_blocks[imoved_blk].block_num = blk;
-    blocks_affected.moved_blocks[imoved_blk].xold = from.x;
-    blocks_affected.moved_blocks[imoved_blk].xnew = to.x;
-    blocks_affected.moved_blocks[imoved_blk].yold = from.y;
-    blocks_affected.moved_blocks[imoved_blk].ynew = to.y;
-    blocks_affected.moved_blocks[imoved_blk].zold = from.z;
-    blocks_affected.moved_blocks[imoved_blk].znew = to.z;
+    blocks_affected.moved_blocks[imoved_blk].old_loc = from;
+    blocks_affected.moved_blocks[imoved_blk].new_loc = to;
     blocks_affected.num_moved_blocks++;
 
     return e_find_affected_blocks_result::VALID;
@@ -1483,7 +1469,7 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
                                         ClusterBlockId blk_to, t_pl_offset swap_offset) {
 
     //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to it's
-    //new 'x_to', 'y_to', 'z_to' position.
+    //new position.
     //
     //This function is only called when both the main swap's from/to blocks are placement macros.
     //The position in the from macro ('imacro_from') is specified by 'imember_from', and the relevant
@@ -1724,14 +1710,10 @@ std::set<t_pl_loc> determine_locations_emptied_by_move() {
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
 
         //When a block is moved it's old location becomes free
-        moved_from.emplace(blocks_affected.moved_blocks[iblk].xold,
-                           blocks_affected.moved_blocks[iblk].yold,
-                           blocks_affected.moved_blocks[iblk].zold);
+        moved_from.emplace(blocks_affected.moved_blocks[iblk].old_loc);
 
         //But any block later moved to a position fills it
-        moved_to.emplace(blocks_affected.moved_blocks[iblk].xnew,
-                         blocks_affected.moved_blocks[iblk].ynew,
-                         blocks_affected.moved_blocks[iblk].znew);
+        moved_to.emplace(blocks_affected.moved_blocks[iblk].new_loc);
     }
 
     std::set<t_pl_loc> empty_locs;
@@ -1788,7 +1770,7 @@ static e_swap_result try_swap(float t,
 
 #if 0
     auto& grid = g_vpr_ctx.device().grid;
-	ClusterBlockId b_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
+	ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
 	VTR_LOG( "swap [%d][%d][%d] %s block %zu \"%s\" <=> [%d][%d][%d] %s block ",
 		from.x, from.y, from.z, grid[from.x][from.y].type->name, size_t(b_from), (b_from ? cluster_ctx.clb_nlist.block_name(b_from).c_str() : ""),
 		to.x, to.y, to.z, grid[to.x][to.y].type->name);
@@ -2003,10 +1985,10 @@ static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId
         //Incremental bounding box update
         update_bb(net, &ts_bb_coord_new[net],
                 &ts_bb_edge_new[net],
-                blocks_affected.moved_blocks[iblk].xold + pin_width_offset,
-                blocks_affected.moved_blocks[iblk].yold + pin_height_offset,
-                blocks_affected.moved_blocks[iblk].xnew + pin_width_offset,
-                blocks_affected.moved_blocks[iblk].ynew + pin_height_offset);
+                blocks_affected.moved_blocks[iblk].old_loc.x + pin_width_offset,
+                blocks_affected.moved_blocks[iblk].old_loc.y + pin_height_offset,
+                blocks_affected.moved_blocks[iblk].new_loc.x + pin_width_offset,
+                blocks_affected.moved_blocks[iblk].new_loc.y + pin_height_offset);
     }
 
 }
