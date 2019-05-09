@@ -265,6 +265,11 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
                                         const int imacro_to,
                                         ClusterBlockId blk_to, int x_to, int y_to, int z_to);
 
+static e_find_affected_blocks_result record_macro_move(std::vector<ClusterBlockId>& displaced_blocks,
+                                                       const int imacro,
+                                                       int x_swap_offset, int y_swap_offset, int z_swap_offset);
+static e_find_affected_blocks_result identify_macro_self_swap_affected_macros(std::vector<int>& macros, const int imacro,
+                                                                              int x_swap_offset, int y_swap_offset, int z_swap_offset);
 static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, int x_swap_offset, int y_swap_offset, int z_swap_offset);
 
 bool is_legal_swap_to_location(ClusterBlockId blk, int x_to, int y_to, int z_to);
@@ -1563,20 +1568,15 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
     return e_find_affected_blocks_result::VALID; 
 }
 
-//Records all the block movements required to move the macro imacro from its current position to
-//a new position offset by x/y/z_swap_offset. This function requires that the new location overlaps
-//the same macro.
-static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, int x_swap_offset, int y_swap_offset, int z_swap_offset) {
+//Returns the set of macros affected by moving imacro by the specified offset
+//
+//The resulting 'macros' may contain duplicates
+static e_find_affected_blocks_result identify_macro_self_swap_affected_macros(std::vector<int>& macros, const int imacro,
+                                                                              int x_swap_offset, int y_swap_offset, int z_swap_offset) {
+    e_find_affected_blocks_result outcome = e_find_affected_blocks_result::VALID;
     auto& place_ctx = g_vpr_ctx.placement();
 
-    clear_move();
-
-    std::set<std::tuple<int,int,int>> emptied_locations; //Locations which are empty/holes due to macro shifting
-    std::set<std::tuple<int,int,int>> filled_locations; //Locations which are filed due to macro shifting
-    std::vector<ClusterBlockId> blocks_to_wrap; //Blocks which need to be wrapped around the macro
-    std::set<int> macros_to_wrap;
-
-    for (size_t imember = 0; imember < place_ctx.pl_macros[imacro].members.size(); ++imember) {
+    for (size_t imember = 0; imember < place_ctx.pl_macros[imacro].members.size() && outcome == e_find_affected_blocks_result::VALID; ++imember) {
 
         ClusterBlockId blk = place_ctx.pl_macros[imacro].members[imember].blk_index;
 
@@ -1589,7 +1589,7 @@ static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, i
         int z_to = z_from + z_swap_offset;
 
         if (!is_legal_swap_to_location(blk, x_to, y_to, z_to)) {
-            log_move_abort("self-macro swap to location illegal");
+            log_move_abort("macro move to location illegal");
             return e_find_affected_blocks_result::ABORT; 
         }
 
@@ -1598,136 +1598,116 @@ static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, i
         int imacro_to = -1;
         get_imacro_from_iblk(&imacro_to, blk_to, place_ctx.pl_macros);
 
-        record_block_move(blk, x_to, y_to, z_to);
-
-        filled_locations.emplace(x_to, y_to, z_to);
-        emptied_locations.emplace(x_from, y_from, z_from);
-
-        if (imacro_to == -1) {
-            //non-macro block
-
-            if (blk_to) {
-                //If there was a 'to' block record it so
-                //it gets re-placed appropriately
-                blocks_to_wrap.push_back(blk_to);
-            }
-        } else if (imacro_to != imacro) {
-            //Another macro
-
-            //Record the affected macro for later fix-up
-            macros_to_wrap.insert(imacro_to);
-        } else {
-            VTR_ASSERT_SAFE_MSG(imacro_to == imacro, "Self-swap within same macro");
-        }
-    }
-
-    //First, try to shift any overlapped macros down by the offset
-    for (int imacro_covered : macros_to_wrap) {
-
-        //Save the move generated so far, in case we can't do the swap for
-        //this covered macro, in which case we'll revert any changes made
-        //by record_macro_swap using this copy
-        auto temp_blocks_affected = blocks_affected;
-
-        int imember_covered = 0;
-        auto outcome = record_macro_swaps(imacro_covered, imember_covered,
-                          x_swap_offset, y_swap_offset, z_swap_offset);
-        
-        if (outcome == e_find_affected_blocks_result::VALID) {
-            //Successfully shifted
-            macros_to_wrap.erase(imacro_covered);
-        } else {
-            //Unable to swap, revert changes to move
-            blocks_affected = temp_blocks_affected;
-        }
-    }
-
-    //If we were unable to shift the overlapped macros, we can try wrapping them around the main macro
-    //
-    //Walk through the overlapped macros and record their locations as empty
-    for (int imacro_covered : macros_to_wrap) {
-        for (size_t imember_covered = 0; imember_covered < place_ctx.pl_macros[imacro_covered].members.size(); ++imember_covered) {
-            ClusterBlockId blk = place_ctx.pl_macros[imacro_covered].members[imember_covered].blk_index;
-
-            int x_from = place_ctx.block_locs[blk].x;
-            int y_from = place_ctx.block_locs[blk].y;
-            int z_from = place_ctx.block_locs[blk].z;
-            emptied_locations.emplace(x_from, y_from, z_from);
-        }
-    }
-
-    //Any blocks which were overwritten by the macro shift need to be wrapped
-    //around the macro, filling holes created by shifting the macro
-    //
-    //To do this, we fist determine the locations which are currently empty
-    std::set<std::tuple<int,int,int>> currently_empty_locations;
-    std::set_difference(emptied_locations.begin(), emptied_locations.end(),
-                        filled_locations.begin(), filled_locations.end(),
-                        std::inserter(currently_empty_locations, currently_empty_locations.begin()));
-
-    VTR_ASSERT_SAFE(blocks_to_wrap.size() <= currently_empty_locations.size());
-
-    //Try to wrap any macros first since they are larger and have more restrictions
-    for (int imacro_covered : macros_to_wrap) {
-
-        //Perform a linear search through the current empty locations in search
-        //of a valid root location for the macro
-        bool placed = false;
-        for (auto loc : currently_empty_locations) {
-            int x = std::get<0>(loc);
-            int y = std::get<1>(loc);
-            int z = std::get<2>(loc);
-
-            //Check all required locations are empty
-            bool valid_start_loc = true;
-            for (size_t imember_covered = 0; imember_covered < place_ctx.pl_macros[imacro_covered].members.size(); ++imember_covered) {
-                int x_to = x + place_ctx.pl_macros[imacro_covered].members[imember_covered].x_offset;
-                int y_to = y + place_ctx.pl_macros[imacro_covered].members[imember_covered].y_offset;
-                int z_to = z + place_ctx.pl_macros[imacro_covered].members[imember_covered].z_offset;
-
-                if (!currently_empty_locations.count(std::make_tuple(x_to, y_to, z_to))) {
-                    valid_start_loc = false;
-                    break;
-                }
-            }
-
-            //If its legal, move the whole macro
-            if (valid_start_loc) {
-                for (size_t imember_covered = 0; imember_covered < place_ctx.pl_macros[imacro_covered].members.size(); ++imember_covered) {
-                    ClusterBlockId blk = place_ctx.pl_macros[imacro_covered].members[imember_covered].blk_index;
-
-                    int x_to = x + place_ctx.pl_macros[imacro_covered].members[imember_covered].x_offset;
-                    int y_to = y + place_ctx.pl_macros[imacro_covered].members[imember_covered].y_offset;
-                    int z_to = z + place_ctx.pl_macros[imacro_covered].members[imember_covered].z_offset;
-
-                    VTR_ASSERT_SAFE(currently_empty_locations.count(std::make_tuple(x_to, y_to, z_to)));
-
-                    record_block_move(blk, x_to, y_to, z_to);
-                    currently_empty_locations.erase(std::make_tuple(x_to, y_to, z_to));
-                }
-                placed = true;
-                break;
+        if (imacro_to != -1) {
+            auto itr = std::find(macros.begin(), macros.end(), imacro_to);
+            if (itr == macros.end()) {
+                macros.push_back(imacro_to);
+                outcome = identify_macro_self_swap_affected_macros(macros, imacro_to,
+                                                                   x_swap_offset, y_swap_offset, z_swap_offset);
             }
         }
-        if (!placed) {
-            log_move_abort("self-macro swap could not wrap other overlapped macro");
+    }
+    return e_find_affected_blocks_result::VALID; 
+}
+
+//Moves the macro imacro by the specified offset
+//
+//Records the block movements in block_moves, the other blocks displaced in displaced_blocks,
+//and any generated empty locations in empty_locations.
+//
+//This function moves a single macro and does not check for overlap with other macros!
+static e_find_affected_blocks_result record_macro_move(std::vector<ClusterBlockId>& displaced_blocks,
+                                                       const int imacro,
+                                                       int x_swap_offset, int y_swap_offset, int z_swap_offset) {
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    for (const t_pl_macro_member& member : place_ctx.pl_macros[imacro].members) {
+        int x_from = place_ctx.block_locs[member.blk_index].x;
+        int y_from = place_ctx.block_locs[member.blk_index].y;
+        int z_from = place_ctx.block_locs[member.blk_index].z;
+
+        int x_to = x_from + x_swap_offset;
+        int y_to = y_from + y_swap_offset;
+        int z_to = z_from + z_swap_offset;
+
+        if (!is_legal_swap_to_location(member.blk_index, x_to, y_to, z_to)) {
+            log_move_abort("macro move to location illegal");
             return e_find_affected_blocks_result::ABORT; 
         }
+
+        ClusterBlockId blk_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
+
+        record_block_move(member.blk_index,
+                          x_to, y_to, z_to);
+                          
+        int imacro_to = -1;
+        get_imacro_from_iblk(&imacro_to, blk_to, place_ctx.pl_macros);
+        if (blk_to && imacro_to != imacro) { //Block displaced only if exists and not part of current macro
+            displaced_blocks.push_back(blk_to);
+        }
     }
-
-    VTR_ASSERT_SAFE(blocks_to_wrap.size() <= currently_empty_locations.size());
-
-    //Finally wrap any non-macro blocks around the main macro
-    for (int iblk = 0; iblk < int(blocks_to_wrap.size()); ++iblk) {
-        auto itr = currently_empty_locations.begin();
-        VTR_ASSERT_SAFE(itr != currently_empty_locations.end());
-
-        record_block_move(blocks_to_wrap[iblk], std::get<0>(*itr), std::get<1>(*itr), std::get<2>(*itr));
-
-        currently_empty_locations.erase(itr);
-    }
-
     return e_find_affected_blocks_result::VALID; 
+}
+
+static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, int x_swap_offset, int y_swap_offset, int z_swap_offset) {
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    //Reset any paritao move
+    clear_move(); 
+
+    //Collect the macros affected
+    std::vector<int> affected_macros;
+    auto outcome = identify_macro_self_swap_affected_macros(affected_macros, imacro,
+                                                            x_swap_offset, y_swap_offset, z_swap_offset);
+
+    if (outcome != e_find_affected_blocks_result::VALID) {
+        return outcome;
+    }
+
+    //Remove any duplicate macros
+    affected_macros.resize(std::distance(affected_macros.begin(), std::unique(affected_macros.begin(), affected_macros.end())));
+
+    std::vector<ClusterBlockId> displaced_blocks;
+
+    //Move all the affected macros by the offset
+    for (int imacro_affected : affected_macros) {
+
+        outcome = record_macro_move(displaced_blocks,
+                                    imacro_affected, x_swap_offset, y_swap_offset, z_swap_offset);
+
+        if (outcome != e_find_affected_blocks_result::VALID) {
+            return outcome;
+        }
+    }
+
+    auto is_non_macro_block = [&](ClusterBlockId blk) {
+        int imacro_blk = -1;
+        get_imacro_from_iblk(&imacro_blk, blk, place_ctx.pl_macros);
+
+        if (std::find(affected_macros.begin(), affected_macros.end(), imacro_blk) != affected_macros.end()) {
+            return false;
+        }
+        return true;
+    };
+
+    std::vector<ClusterBlockId> non_macro_displaced_blocks;
+    std::copy_if(displaced_blocks.begin(), displaced_blocks.end(), std::back_inserter(non_macro_displaced_blocks), is_non_macro_block);
+
+    //Based on the currently queued block moves, find the empty 'holes' left behind
+    auto empty_locs = determine_locations_emptied_by_move();
+
+    VTR_ASSERT_SAFE(empty_locs.size() >= non_macro_displaced_blocks.size());
+
+    //Fit the displaced blocks into the empty locations
+    auto loc_itr = empty_locs.begin();
+    for (auto blk : non_macro_displaced_blocks) {
+
+        outcome = record_block_move(blk,
+                                    loc_itr->x, loc_itr->y, loc_itr->z);
+        ++loc_itr;
+    }
+
+    return outcome;
 }
 
 bool is_legal_swap_to_location(ClusterBlockId blk, int x_to, int y_to, int z_to) {
@@ -1763,15 +1743,12 @@ std::set<t_place_loc> determine_locations_emptied_by_move() {
                            blocks_affected.moved_blocks[iblk].yold,
                            blocks_affected.moved_blocks[iblk].zold);
 
-        //But any block later moved to a position fill it
+        //But any block later moved to a position fills it
         moved_to.emplace(blocks_affected.moved_blocks[iblk].xnew,
                          blocks_affected.moved_blocks[iblk].ynew,
                          blocks_affected.moved_blocks[iblk].znew);
     }
 
-
-    //Any blocks which were overwritten by the macro shift need to be wrapped
-    //around the macro, filling holes created by shifting the macro
     std::set<t_place_loc> empty_locs;
     std::set_difference(moved_from.begin(), moved_from.end(),
                         moved_to.begin(), moved_to.end(),
@@ -1931,7 +1908,7 @@ static e_swap_result try_swap(float t,
 
         clear_move();
 
-        VTR_ASSERT(check_macro_placement_consistency() == 0);
+        //VTR_ASSERT(check_macro_placement_consistency() == 0);
 #if 0
         //Check that each accepted swap yields a valid placement
         check_place(*costs, delay_model, place_algorithm);
