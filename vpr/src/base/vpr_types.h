@@ -414,6 +414,11 @@ struct t_bb {
 	int ymax = 0;
 };
 
+//An offset between placement locations (t_pl_loc)
+//
+// x: x-offset
+// y: y-offset
+// z: z-offset
 struct t_pl_offset {
 
     t_pl_offset() = default;
@@ -481,6 +486,14 @@ namespace std {
 }
 
 
+//A placement location coordinate
+//
+// x: x-coordinate
+// y: y-coordinate
+// z: z-coordinate (capacity postion)
+//
+//Note that t_pl_offset should be used to represent an
+//offset between t_pl_loc.
 struct t_pl_loc {
 
     t_pl_loc() = default;
