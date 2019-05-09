@@ -240,8 +240,7 @@ static int try_place_macro(int itype, int ipos, int imacro);
 static void initial_placement_pl_macros(int macros_max_num_tries, int * free_locations);
 
 static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type pad_loc_type);
-static void initial_placement_location(int * free_locations, ClusterBlockId blk_id,
-		int *pipos, int *px, int *py, int *pz);
+static void initial_placement_location(const int* free_locations, ClusterBlockId blk_id, int& pipos, t_pl_loc& to);
 
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		const char *pad_loc_file);
@@ -3191,7 +3190,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 /* Place blocks that are NOT a part of any macro.
 * We'll randomly place each block in the clustered netlist, one by one. */
 static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type pad_loc_type) {
-	int itype, ipos, x, y, z;
+	int itype, ipos;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& device_ctx = g_vpr_ctx.device();
@@ -3219,17 +3218,16 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 						cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
 			}
 
-			initial_placement_location(free_locations, blk_id, &ipos, &x, &y, &z);
+            t_pl_loc to;
+			initial_placement_location(free_locations, blk_id, ipos, to);
 
 			// Make sure that the position is EMPTY_BLOCK before placing the block down
-			VTR_ASSERT(place_ctx.grid_blocks[x][y].blocks[z] == EMPTY_BLOCK_ID);
+			VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.z] == EMPTY_BLOCK_ID);
 
-			place_ctx.grid_blocks[x][y].blocks[z] = blk_id;
-			place_ctx.grid_blocks[x][y].usage++;
+			place_ctx.grid_blocks[to.x][to.y].blocks[to.z] = blk_id;
+			place_ctx.grid_blocks[to.x][to.y].usage++;
 
-			place_ctx.block_locs[blk_id].loc.x = x;
-			place_ctx.block_locs[blk_id].loc.y = y;
-			place_ctx.block_locs[blk_id].loc.z = z;
+			place_ctx.block_locs[blk_id].loc = to;
 
             //Mark IOs as fixed if specifying a (fixed) random placement
             if(is_io_type(cluster_ctx.clb_nlist.block_type(blk_id)) && pad_loc_type == RANDOM) {
@@ -3247,17 +3245,14 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 	}
 }
 
-static void initial_placement_location(int * free_locations, ClusterBlockId blk_id,
-		int *pipos, int *px_to, int *py_to, int *pz_to) {
+static void initial_placement_location(const int* free_locations, ClusterBlockId blk_id, int& ipos, t_pl_loc& to) {
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	int itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
 
-	*pipos = vtr::irand(free_locations[itype] - 1);
-	*px_to = legal_pos[itype][*pipos].x;
-	*py_to = legal_pos[itype][*pipos].y;
-	*pz_to = legal_pos[itype][*pipos].z;
+	ipos = vtr::irand(free_locations[itype] - 1);
+	to = legal_pos[itype][ipos];
 }
 
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
@@ -3268,7 +3263,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	 * array that gives every legal value of (x,y,z) that can accomodate a block.
 	 * The number of such locations is given by num_legal_pos[itype].
 	 */
-	int itype, x, y, z, ipos;
+	int itype, ipos;
 	int *free_locations; /* [0..device_ctx.num_block_types-1].
 						  * Stores how many locations there are for this type that *might* still be free.
 						  * That is, this stores the number of entries in legal_pos[itype] that are worth considering
@@ -3300,9 +3295,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 	/* Similarly, mark all blocks as not being placed yet. */
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-		place_ctx.block_locs[blk_id].loc.x = OPEN;
-		place_ctx.block_locs[blk_id].loc.y = OPEN;
-		place_ctx.block_locs[blk_id].loc.z = OPEN;
+		place_ctx.block_locs[blk_id].loc = t_pl_loc();
 	}
 
 	initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
@@ -3311,12 +3304,10 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	for (itype = 0; itype < device_ctx.num_block_types; itype++) {
 		VTR_ASSERT(free_locations[itype] >= 0);
 		for (ipos = 0; ipos < free_locations[itype]; ipos++) {
-			x = legal_pos[itype][ipos].x;
-			y = legal_pos[itype][ipos].y;
-			z = legal_pos[itype][ipos].z;
+			t_pl_loc pos = legal_pos[itype][ipos];
 
 			// Check if that location is occupied.  If it is, remove from legal_pos
-			if (place_ctx.grid_blocks[x][y].blocks[z] != EMPTY_BLOCK_ID && place_ctx.grid_blocks[x][y].blocks[z] != INVALID_BLOCK_ID) {
+			if (place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.z] != EMPTY_BLOCK_ID && place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.z] != INVALID_BLOCK_ID) {
 				legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1];
 				free_locations[itype]--;
 

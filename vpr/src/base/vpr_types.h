@@ -425,9 +425,9 @@ struct t_pl_offset {
     t_pl_offset(int xoffset, int yoffset, int zoffset)
         : x(xoffset), y(yoffset), z(zoffset) {}
 
-	int x = -1;
-	int y = -1;
-	int z = -1;
+	int x = 0;
+	int y = 0;
+	int z = 0;
 
     t_pl_offset& operator+=(const t_pl_offset& rhs) {
         x += rhs.x;
@@ -500,9 +500,9 @@ struct t_pl_loc {
     t_pl_loc(int xloc, int yloc, int zloc)
         : x(xloc), y(yloc), z(zloc) {}
 
-	int x = -1;
-	int y = -1;
-	int z = -1;
+	int x = OPEN;
+	int y = OPEN;
+	int z = OPEN;
 
     t_pl_loc& operator+=(const t_pl_offset& rhs) {
         x += rhs.x;
