@@ -149,7 +149,7 @@
  */
 struct t_pl_macro_member{
 	ClusterBlockId blk_index;
-    t_place_loc offset;
+    t_place_offset offset;
 };
 
 /* num_blocks: The number of blocks this macro contains.

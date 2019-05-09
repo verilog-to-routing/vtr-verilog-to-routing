@@ -414,6 +414,73 @@ struct t_bb {
 	int ymax = 0;
 };
 
+struct t_place_offset {
+
+    t_place_offset() = default;
+    t_place_offset(int xoffset, int yoffset, int zoffset)
+        : x(xoffset), y(yoffset), z(zoffset) {}
+
+	int x = -1;
+	int y = -1;
+	int z = -1;
+
+    t_place_offset& operator+=(const t_place_offset& rhs) {
+        x += rhs.x;
+        y += rhs.y;
+        z += rhs.z;
+        return *this;
+    }
+
+    t_place_offset& operator-=(const t_place_offset& rhs) {
+        x -= rhs.x;
+        y -= rhs.y;
+        z -= rhs.z;
+        return *this;
+    }
+
+    friend t_place_offset operator+(t_place_offset lhs, const t_place_offset& rhs) {
+        lhs += rhs;
+        return lhs;
+    }
+
+    friend t_place_offset operator-(t_place_offset lhs, const t_place_offset& rhs) {
+        lhs -= rhs;
+        return lhs;
+    }
+
+    friend t_place_offset operator-(const t_place_offset& other) {
+        return t_place_offset(-other.x, -other.y, -other.z);
+    }
+    friend t_place_offset operator+(const t_place_offset& other) {
+        return t_place_offset(+other.x, +other.y, +other.z);
+    }
+
+    friend bool operator<(const t_place_offset& lhs, const t_place_offset& rhs) {
+        return std::tie(lhs.x, lhs.y, lhs.z) < std::tie(rhs.x, rhs.y, rhs.z);
+    }
+
+    friend bool operator==(const t_place_offset& lhs, const t_place_offset& rhs) {
+        return std::tie(lhs.x, lhs.y, lhs.z) == std::tie(rhs.x, rhs.y, rhs.z);
+    }
+
+    friend bool operator!=(const t_place_offset& lhs, const t_place_offset& rhs) {
+        return !(lhs == rhs);
+    }
+};
+
+namespace std {
+    template <>
+    struct hash<t_place_offset> {
+        std::size_t operator()(const t_place_offset& v) const noexcept {
+            std::size_t seed = std::hash<int>{}(v.x);
+            vtr::hash_combine(seed, v.y);
+            vtr::hash_combine(seed, v.z);
+            return seed;
+        }
+    };
+}
+
+
 struct t_place_loc {
 
     t_place_loc() = default;
@@ -424,37 +491,38 @@ struct t_place_loc {
 	int y = -1;
 	int z = -1;
 
-
-    t_place_loc& operator+=(const t_place_loc& rhs) {
+    t_place_loc& operator+=(const t_place_offset& rhs) {
         x += rhs.x;
         y += rhs.y;
         z += rhs.z;
         return *this;
     }
 
-    t_place_loc& operator-=(const t_place_loc& rhs) {
+    t_place_loc& operator-=(const t_place_offset& rhs) {
         x -= rhs.x;
         y -= rhs.y;
         z -= rhs.z;
         return *this;
     }
     
-    friend t_place_loc operator+(t_place_loc lhs, const t_place_loc& rhs) {
+    friend t_place_loc operator+(t_place_loc lhs, const t_place_offset& rhs) {
         lhs += rhs;
         return lhs;
     }
+    friend t_place_loc operator+(t_place_offset lhs, const t_place_loc& rhs) {
+        return rhs + lhs;
+    }
 
-    friend t_place_loc operator-(t_place_loc lhs, const t_place_loc& rhs) {
+    friend t_place_loc operator-(t_place_loc lhs, const t_place_offset& rhs) {
         lhs -= rhs;
         return lhs;
     }
-
-    friend t_place_loc operator-(const t_place_loc& other) {
-        return t_place_loc(-other.x, -other.y, -other.z);
+    friend t_place_loc operator-(t_place_offset lhs, const t_place_loc& rhs) {
+        return rhs - lhs;
     }
 
-    friend t_place_loc operator+(const t_place_loc& other) {
-        return t_place_loc(+other.x, +other.y, +other.z);
+    friend t_place_offset operator-(const t_place_loc& lhs, const t_place_loc& rhs) {
+        return t_place_offset(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z);
     }
 
     friend bool operator<(const t_place_loc& lhs, const t_place_loc& rhs) {

@@ -262,17 +262,17 @@ static e_find_affected_blocks_result record_block_move(ClusterBlockId blk, t_pla
 static e_propose_move propose_move(ClusterBlockId b_from, t_place_loc to);
 static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from, t_place_loc to);
 
-static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, int& imember_from, t_place_loc swap_offset);
+static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, int& imember_from, t_place_offset swap_offset);
 static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_from, int& imember_from, 
                                         const int imacro_to,
-                                        ClusterBlockId blk_to, t_place_loc to);
+                                        ClusterBlockId blk_to, t_place_offset swap_offset);
 
 static e_find_affected_blocks_result record_macro_move(std::vector<ClusterBlockId>& displaced_blocks,
                                                        const int imacro,
-                                                       t_place_loc swap_offset);
+                                                       t_place_offset swap_offset);
 static e_find_affected_blocks_result identify_macro_self_swap_affected_macros(std::vector<int>& macros, const int imacro,
-                                                                              t_place_loc swap_offset);
-static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, t_place_loc swap_offset);
+                                                                              t_place_offset swap_offset);
+static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, t_place_offset swap_offset);
 
 bool is_legal_swap_to_location(ClusterBlockId blk, t_place_loc to);
 
@@ -1388,7 +1388,7 @@ static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from,
 		// b_from is part of a macro, I need to swap the whole macro
 
 		// Record down the relative position of the swap
-        t_place_loc swap_offset = to - from;
+        t_place_offset swap_offset = to - from;
 
         int imember_from = 0;
         outcome = record_macro_swaps(imacro_from, imember_from, swap_offset);
@@ -1417,10 +1417,10 @@ static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from,
 }
 
 //Records all the block movements required to move the macro imacro_from starting at member imember_from
-//to a new position offset from its current position by x/y/z_swap_offset. The new location may be a
+//to a new position offset from its current position by swap_offset. The new location may be a
 //single (non-macro) block, or another macro.
 static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, int& imember_from,
-                                                        t_place_loc swap_offset) {
+                                                        t_place_offset swap_offset) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& pl_macros = place_ctx.pl_macros;
 
@@ -1480,7 +1480,7 @@ static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, i
 //blk_to is located and blk_to must be part of imacro_to.
 static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_from, int& imember_from, 
                                         const int imacro_to,
-                                        ClusterBlockId blk_to, t_place_loc swap_offset) {
+                                        ClusterBlockId blk_to, t_place_offset swap_offset) {
 
     //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to it's
     //new 'x_to', 'y_to', 'z_to' position.
@@ -1527,7 +1527,7 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
     //
     //NOTE: We mutate imember_from so the outer from macro walking loop moves in lock-step
     int imember_to = 0;
-    t_place_loc from_to_macro_offset = place_ctx.pl_macros[imacro_from].members[imember_from].offset;
+    t_place_offset from_to_macro_offset = place_ctx.pl_macros[imacro_from].members[imember_from].offset;
     for (; imember_from < int(place_ctx.pl_macros[imacro_from].members.size()) && imember_to < int(place_ctx.pl_macros[imacro_to].members.size());
            ++imember_from, ++imember_to) {
 
@@ -1570,7 +1570,7 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
 //
 //The resulting 'macros' may contain duplicates
 static e_find_affected_blocks_result identify_macro_self_swap_affected_macros(std::vector<int>& macros, const int imacro,
-                                                                              t_place_loc swap_offset) {
+                                                                              t_place_offset swap_offset) {
     e_find_affected_blocks_result outcome = e_find_affected_blocks_result::VALID;
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -1610,7 +1610,7 @@ static e_find_affected_blocks_result identify_macro_self_swap_affected_macros(st
 //This function moves a single macro and does not check for overlap with other macros!
 static e_find_affected_blocks_result record_macro_move(std::vector<ClusterBlockId>& displaced_blocks,
                                                        const int imacro,
-                                                       t_place_loc swap_offset) {
+                                                       t_place_offset swap_offset) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     for (const t_pl_macro_member& member : place_ctx.pl_macros[imacro].members) {
@@ -1636,7 +1636,7 @@ static e_find_affected_blocks_result record_macro_move(std::vector<ClusterBlockI
     return e_find_affected_blocks_result::VALID; 
 }
 
-static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, t_place_loc swap_offset) {
+static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, t_place_offset swap_offset) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     //Reset any paritao move
