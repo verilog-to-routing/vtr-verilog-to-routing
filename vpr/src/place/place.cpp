@@ -122,7 +122,7 @@ large enough to be on the order of timing costs for normal constraints. */
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
 static vtr::vector<ClusterNetId, float> net_cost, temp_net_cost;
 
-static t_legal_pos **legal_pos = nullptr; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1] */
+static t_place_loc **legal_pos = nullptr; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1] */
 static int *num_legal_pos = nullptr; /* [0..num_legal_pos-1] */
 
 /* [0...cluster_ctx.clb_nlist.nets().size()-1]                                               *
@@ -2995,7 +2995,7 @@ static void alloc_legal_placements() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-	legal_pos = (t_legal_pos **) vtr::malloc(device_ctx.num_block_types * sizeof(t_legal_pos *));
+	legal_pos = new t_place_loc*[device_ctx.num_block_types];
 	num_legal_pos = (int *) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
 	/* Initialize all occupancy to zero. */
@@ -3017,7 +3017,7 @@ static void alloc_legal_placements() {
 	}
 
 	for (int i = 0; i < device_ctx.num_block_types; i++) {
-		legal_pos[i] = (t_legal_pos *) vtr::malloc(num_legal_pos[i] * sizeof(t_legal_pos));
+		legal_pos[i] = new t_place_loc[num_legal_pos[i]];
 	}
 }
 
@@ -3050,9 +3050,9 @@ static void free_legal_placements() {
     auto& device_ctx = g_vpr_ctx.device();
 
 	for (int i = 0; i < device_ctx.num_block_types; i++) {
-		free(legal_pos[i]);
+		delete[] legal_pos[i];
 	}
-	free(legal_pos); /* Free the mapping list */
+	delete[] legal_pos; /* Free the mapping list */
 	free(num_legal_pos);
 }
 
