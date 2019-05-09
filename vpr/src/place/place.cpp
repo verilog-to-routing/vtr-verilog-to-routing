@@ -248,10 +248,10 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 static float comp_bb_cost(e_cost_methods method);
 
-static void apply_move();
-static void revert_move();
-static void commit_move();
-static void clear_move();
+static void apply_move_blocks();
+static void revert_move_blocks();
+static void commit_move_blocks();
+static void clear_move_blocks();
 
 static void update_move_nets(int num_nets_affected);
 static void reset_move_nets(int num_nets_affected);
@@ -1156,7 +1156,7 @@ static float starting_t(t_placer_costs* costs,
 }
 
 //Moves the blocks in blocks_affected to their new locations
-static void apply_move() {
+static void apply_move_blocks() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     //Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
@@ -1173,7 +1173,7 @@ static void apply_move() {
 
 //Commits the blocks in blocks_affected to their new locations (updates inverse
 //lookups via place_ctx.grid_blocks)
-static void commit_move() {
+static void commit_move_blocks() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     /* Swap physical location */
@@ -1206,7 +1206,7 @@ static void commit_move() {
 }
 
 //Moves the blocks in blocks_affected to their old locations
-static void revert_move() {
+static void revert_move_blocks() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     // Swap the blocks back, nets not yet swapped they don't need to be changed
@@ -1227,7 +1227,7 @@ static void revert_move() {
 }
 
 //Clears the current move so a new move can be proposed
-static void clear_move() {
+static void clear_move_blocks() {
     //Reset moved flags
     blocks_affected.moved_to.clear();
     blocks_affected.moved_from.clear();
@@ -1684,7 +1684,7 @@ static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, i
     auto& place_ctx = g_vpr_ctx.placement();
 
     //Reset any paritao move
-    clear_move(); 
+    clear_move_blocks(); 
 
     //Collect the macros affected
     std::vector<int> affected_macros;
@@ -1875,7 +1875,7 @@ static e_swap_result try_swap(float t,
 	if (move_outcome == e_propose_move::VALID) {
 
         //Swap the blocks
-        apply_move();
+        apply_move_blocks();
 
 		// Find all the nets affected by this swap and update thier bounding box
 		int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm, delay_model, bb_delta_c, timing_delta_c, delay_delta_c);
@@ -1911,17 +1911,17 @@ static e_swap_result try_swap(float t,
             update_move_nets(num_nets_affected);
 
 			/* Update clb data structures since we kept the move. */
-            commit_move();
+            commit_move_blocks();
 
 		} else { /* Move was rejected.  */
 			/* Reset the net cost function flags first. */
             reset_move_nets(num_nets_affected);
 
 			/* Restore the place_ctx.block_locs data structures to their state before the move. */
-            revert_move();
+            revert_move_blocks();
 		}
 
-        clear_move();
+        clear_move_blocks();
 
         //VTR_ASSERT(check_macro_placement_consistency() == 0);
 #if 0
@@ -1933,7 +1933,7 @@ static e_swap_result try_swap(float t,
 	} else {
         VTR_ASSERT_SAFE(move_outcome == e_propose_move::ABORT);
 
-        clear_move();
+        clear_move_blocks();
 
 		return ABORTED;
 	}
