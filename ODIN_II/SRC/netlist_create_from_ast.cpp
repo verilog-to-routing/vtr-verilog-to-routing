@@ -359,10 +359,9 @@ void create_netlist()
 		oassert(ast_modules[i]->type == MODULE);
 	}
 
-	/* we will reduce the parameters and the assignment expressions*/
-	/* Simplify the AST by reducing complex statements - for loops */
+
+	// TODO Alex - unroll_loops() needs to be moved to simplify_ast_module()
 	simplify_ast();
-	reduce_assignment_expression();
 
 	/* we will find the top module */
 	top_module = find_top_module();
@@ -560,6 +559,8 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 				((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2],
 				temp_instance_name);
 
+			simplify_ast_module(current_module);
+
 			/* recursive call point */
 			convert_ast_to_netlist_recursing_via_modules(((ast_node_t*)module_names_to_idx->data[sc_spot]), temp_instance_name, level+1);
 
@@ -593,6 +594,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 				((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2],
 				temp_instance_name);
 
+			simplify_ast_module(current_module);
 
 			/* recursive call point */
 			convert_ast_to_netlist_recursing_via_modules(((ast_node_t*)module_names_to_idx->data[sc_spot]), temp_instance_name, level+1);
@@ -3240,6 +3242,10 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	}
 	else
 	{
+		// TODO Alex - this is temporary
+		if (right->type == BINARY_OPERATION || right->type == UNARY_OPERATION)
+			right = resolve_node(NULL, FALSE, instance_name_prefix, right);
+
 		in_1 = netlist_expand_ast_of_module(right, instance_name_prefix);
 		oassert(in_1 != NULL);
 	}

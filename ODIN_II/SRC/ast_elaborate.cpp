@@ -61,12 +61,22 @@ int simplify_ast()
 {
 	/* for loop support */
 	unroll_loops();
+
+	//ast_node_t *top = find_top_module();
+
+	return 1;
+}
+
+int simplify_ast_module(ast_node_t *ast_module)
+{
+	/* for loop support */
+	//unroll_loops(ast_module);
 	/* reduce parameters with their values if they have been set */
-	reduce_parameter();
+	reduce_parameter(ast_module);
 	/* simplify assignment expressions */
-	reduce_assignment_expression();
+	reduce_assignment_expression(ast_module);
 	/* find multiply or divide operation that can be replaced with shift operation */
-	shift_operation();
+	shift_operation(ast_module);
 
 	//ast_node_t *top = find_top_module();
 
@@ -210,8 +220,7 @@ void record_expression(ast_node_t *node, std::vector<std::string> expressions, b
 		if(node->num_children > 0)
 			record_expression(node->children[0], expressions, found_statement);
 
-
-		if(!(*found_statement) && (/*node->type == BLOCKING_STATEMENT || */node->type == BLOCKING_STATEMENT)){
+		if(!(*found_statement) && (node->type == NON_BLOCKING_STATEMENT || node->type == BLOCKING_STATEMENT)){
 			*found_statement = TRUE;
 
 		}else if(*found_statement){
@@ -437,7 +446,7 @@ ast_node_t *search_marked_node(ast_node_t *node, int is, std::string temp)
  * (function: reduce_assignment_expression)
  * reduce the number nodes which can be calculated to optimize the AST
  *-------------------------------------------------------------------------*/
-void reduce_assignment_expression()
+void reduce_assignment_expression(ast_node_t *ast_module)
 {
 	head = NULL;
 	p = NULL;
@@ -445,33 +454,31 @@ void reduce_assignment_expression()
 
 
 	// find out most unique_count prepared for new AST nodes
-	for (long i = 0; i < num_modules; i++)
-		if (count_id < ast_modules[i]->unique_count)
-			count_id = ast_modules[i]->unique_count;
+	//for (long i = 0; i < num_modules; i++)
 
-	for (long i = 0; i < num_modules; i++)
+	if (count_id < ast_module->unique_count)
+		count_id = ast_module->unique_count;
+
+	count_assign = 0;
+	std::vector<ast_node_t *> list_assign;
+	find_assign_node(ast_module, list_assign);
+	for (long j = 0; j < count_assign; j++)
 	{
-		count_assign = 0;
-		std::vector<ast_node_t *> list_assign;
-		find_assign_node(ast_modules[i], list_assign);
-		for (long j = 0; j < count_assign; j++)
+		if (check_tree_operation(list_assign[j]->children[1]) && (list_assign[j]->children[1]->num_children > 0))
 		{
-			if (check_tree_operation(list_assign[j]->children[1]) && (list_assign[j]->children[1]->num_children > 0))
-			{
-				store_exp_list(list_assign[j]->children[1]);
-				if (deal_with_bracket(list_assign[j]->children[1])) // there are multiple brackets multiplying -- ()*(), stop expanding brackets which may not simplify AST but make it mroe complex
-					return;
+			store_exp_list(list_assign[j]->children[1]);
+			if (deal_with_bracket(list_assign[j]->children[1])) // there are multiple brackets multiplying -- ()*(), stop expanding brackets which may not simplify AST but make it mroe complex
+				return;
 
-				if (simplify_expression())
-				{
-					enode *tail = find_tail(head);
-					free_whole_tree(list_assign[j]->children[1]);
-					T = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
-					construct_new_tree(tail, T, list_assign[j]->line_number, list_assign[j]->file_number);
-					list_assign[j]->children[1] = T;
-				}
-				free_exp_list();
+			if (simplify_expression())
+			{
+				enode *tail = find_tail(head);
+				free_whole_tree(list_assign[j]->children[1]);
+				T = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
+				construct_new_tree(tail, T, list_assign[j]->line_number, list_assign[j]->file_number);
+				list_assign[j]->children[1] = T;
 			}
+			free_exp_list();
 		}
 	}
 }
@@ -1426,16 +1433,13 @@ void check_operation(enode *begin, enode *end)
  * (function: reduce_parameter)
  * replace parameters with their values in the AST
  *-------------------------------------------------------------------------*/
-void reduce_parameter()
+void reduce_parameter(ast_node_t *ast_module)
 {
-	for (long i = 0; i < num_modules; i++)
-	{
-		std::vector<ast_node_t *>para;
-		find_parameter(ast_modules[i], para);
-		if (ast_modules[i]->types.module.is_instantiated == 0 && !para.empty())
-			remove_para_node(ast_modules[i], para);
+	std::vector<ast_node_t *>para;
+	find_parameter(ast_module, para);
+	if (ast_module->types.module.is_instantiated == 0 && !para.empty())
+		remove_para_node(ast_module, para);
 
-	}
 
 }
 
@@ -1497,13 +1501,10 @@ void change_para_node(ast_node_t *node, std::string name, long value)
  * (function: copy_tree)
  * find multiply or divide operation that can be replaced with shift operation
  *-------------------------------------------------------------------------*/
-void shift_operation()
+void shift_operation(ast_node_t *ast_module)
 {
-	long i;
-	if(ast_modules){
-		for (i = 0; i < num_modules; i++){
-			search_certain_operation(ast_modules[i]);
-		}
+	if(ast_module){
+		search_certain_operation(ast_module);
 	}
 
 }

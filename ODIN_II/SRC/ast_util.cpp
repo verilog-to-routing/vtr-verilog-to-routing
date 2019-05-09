@@ -387,38 +387,6 @@ void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child)
     node->children[0] = child;
 
 }
-/*---------------------------------------------------------------------------------------------
- * (function: get_range)
- * 	TODO Alex
- *  Check the node range is legal. Will return the range if it's legal.
- *  Node should have three children. Second and Third children's type should be NUMBERS.
- *-------------------------------------------------------------------------------------------*/
-int get_range(ast_node_t* first_node)
-{
-	long temp_value;
-
-	/* look at the first item to see if it has a range */
-
-	if (first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS && first_node->children[2] != NULL && first_node->children[2]->type == NUMBERS)
-	{
-		/* IF the first element in the list has a second element...that is the range */
-		//oassert(first_node->children[2] != NULL); // the third element should be a value
-		//oassert((first_node->children[1]->type == NUMBERS) && (first_node->children[2]->type == NUMBERS)); // should be numbers
-		if(first_node->children[1]->types.number.value < first_node->children[2]->types.number.value)
-		{
-			// Reversing the indicies doesn't produce correct code. We need to actually handle these correctly.
-			error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
-
-			// swap them around
-			temp_value = first_node->children[1]->types.number.value;
-			first_node->children[1]->types.number.value = first_node->children[2]->types.number.value;
-			first_node->children[2]->types.number.value = temp_value;
-		}
-
-		return abs(first_node->children[1]->types.number.value - first_node->children[2]->types.number.value) + 1; // 1:0 is 2 spots
-	}
-	return -1; // indicates no range
-}
 
 /*---------------------------------------------------------------------------------------------
  * (function: make_concat_into_list_of_strings)
@@ -1015,7 +983,7 @@ ast_node_t *resolve_ast_node(STRING_CACHE *local_param_table_sc, short initial, 
 		}
 		ast_node_t *newNode = NULL;
 		switch (node->type){
-
+			
 			case UNARY_OPERATION:
 				if(initial){
 					newNode = fold_unary(node_copy->children[0],node_copy->types.operation.op);
@@ -1034,9 +1002,9 @@ ast_node_t *resolve_ast_node(STRING_CACHE *local_param_table_sc, short initial, 
 			newNode->shared_node = node->shared_node;
 
 			/* clean up */
-			if (node->type != IDENTIFIERS) {
-				node = free_whole_tree(node);
-			}
+			// if (node->type != IDENTIFIERS) {
+			// 	node = free_whole_tree(node);
+			// }
 			
 			node = newNode;
 		}
@@ -1460,49 +1428,4 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->hb_port = 0;
 	new_node->net_node = 0;
 	new_node->is_read_write = 0;
-}
-/*---------------------------------------------------------------------------------------------
- * (function: get_range) for 2D Array
- * 	TODO Alex 
- *  Check the node range is legal. Will return the range if it's legal.
- *  Node should have three children. Second, Third, Forth, and Fifth children's type should be NUMBERS.
- *-------------------------------------------------------------------------------------------*/
-int get_range2D(ast_node_t* first_node)
-{
-	long temp_value;
-	/* look at the first item to see if it has a range */
-	if ((first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS) &&
-		(first_node->children[2] != NULL && first_node->children[2]->type == NUMBERS) &&
-		(first_node->children[3] != NULL && first_node->children[3]->type == NUMBERS) &&
-		(first_node->children[4] != NULL && first_node->children[4]->type == NUMBERS)
-	   )
-	{
-		/* IF the first element in the list has a second element...that is the range */
-		//oassert(first_node->children[2] != NULL); // the third element should be a value
-		//oassert((first_node->children[1]->type == NUMBERS) && (first_node->children[2]->type == NUMBERS)); // should be numbers
-		if(first_node->children[1]->types.number.value < first_node->children[2]->types.number.value)
-		{
-			// Reversing the indicies doesn't produce correct code. We need to actually handle these correctly.
-			error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
-
-			// swap them around
-			temp_value = first_node->children[1]->types.number.value;
-			first_node->children[1]->types.number.value = first_node->children[2]->types.number.value;
-			first_node->children[2]->types.number.value = temp_value;
-		}
-
-		if(first_node->children[3]->types.number.value < first_node->children[4]->types.number.value)
-		{
-			// Reversing the indicies doesn't produce correct code. We need to actually handle these correctly.
-			error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
-
-			// swap them around
-			temp_value = first_node->children[3]->types.number.value;
-			first_node->children[3]->types.number.value = first_node->children[4]->types.number.value;
-			first_node->children[4]->types.number.value = temp_value;
-		}
-
-		return abs(first_node->children[1]->types.number.value * first_node->children[3]->types.number.value) - 1; // 1:0 is 2 spots
-	}
-	return -1; // indicates no range
 }

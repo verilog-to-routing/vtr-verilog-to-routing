@@ -29,6 +29,17 @@ void unroll_loops()
 }
 
 /*
+ *  (function: unroll_loops)
+ */
+void unroll_loops(ast_node_t *ast_module)
+{
+    ast_node_t* module = for_preprocessor(ast_module);
+    if(module != ast_module)
+        free_whole_tree(ast_module);
+    ast_module = module;
+}
+
+/*
  *  (function: for_preprocessor)
  */
 ast_node_t* for_preprocessor(ast_node_t* node)
