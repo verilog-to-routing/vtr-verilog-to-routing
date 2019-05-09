@@ -416,12 +416,46 @@ struct t_bb {
 
 struct t_place_loc {
 
+    t_place_loc() = default;
     t_place_loc(int xloc, int yloc, int zloc)
         : x(xloc), y(yloc), z(zloc) {}
 
 	int x = -1;
 	int y = -1;
 	int z = -1;
+
+
+    t_place_loc& operator+=(const t_place_loc& rhs) {
+        x += rhs.x;
+        y += rhs.y;
+        z += rhs.z;
+        return *this;
+    }
+
+    t_place_loc& operator-=(const t_place_loc& rhs) {
+        x -= rhs.x;
+        y -= rhs.y;
+        z -= rhs.z;
+        return *this;
+    }
+    
+    friend t_place_loc operator+(t_place_loc lhs, const t_place_loc& rhs) {
+        lhs += rhs;
+        return lhs;
+    }
+
+    friend t_place_loc operator-(t_place_loc lhs, const t_place_loc& rhs) {
+        lhs -= rhs;
+        return lhs;
+    }
+
+    friend t_place_loc operator-(const t_place_loc& other) {
+        return t_place_loc(-other.x, -other.y, -other.z);
+    }
+
+    friend t_place_loc operator+(const t_place_loc& other) {
+        return t_place_loc(+other.x, +other.y, +other.z);
+    }
 
     friend bool operator<(const t_place_loc& lhs, const t_place_loc& rhs) {
         return std::tie(lhs.x, lhs.y, lhs.z) < std::tie(rhs.x, rhs.y, rhs.z);
@@ -434,8 +468,6 @@ struct t_place_loc {
     friend bool operator!=(const t_place_loc& lhs, const t_place_loc& rhs) {
         return !(lhs == rhs);
     }
-
-
 };
 
 namespace std {
@@ -505,9 +537,7 @@ struct t_legal_pos {
  * is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing
  * nets_and_pins_synced_to_z_coordinate: true if the associated clb's pins have been synced to the z location (i.e. after placement) */
 struct t_block_loc {
-    int x = OPEN;
-    int y = OPEN;
-    int z = OPEN;
+    t_place_loc loc;
 
 	bool is_fixed = false;
     bool nets_and_pins_synced_to_z_coordinate = false;

@@ -1165,9 +1165,9 @@ static void apply_move_blocks() {
 
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
         
-		place_ctx.block_locs[blk].x = blocks_affected.moved_blocks[iblk].xnew;
-		place_ctx.block_locs[blk].y = blocks_affected.moved_blocks[iblk].ynew;
-		place_ctx.block_locs[blk].z = blocks_affected.moved_blocks[iblk].znew;
+		place_ctx.block_locs[blk].loc.x = blocks_affected.moved_blocks[iblk].xnew;
+		place_ctx.block_locs[blk].loc.y = blocks_affected.moved_blocks[iblk].ynew;
+		place_ctx.block_locs[blk].loc.z = blocks_affected.moved_blocks[iblk].znew;
     }
 }
 
@@ -1218,9 +1218,9 @@ static void revert_move_blocks() {
 		int yold = blocks_affected.moved_blocks[iblk].yold;
 		int zold = blocks_affected.moved_blocks[iblk].zold;
 
-		place_ctx.block_locs[blk].x = xold;
-		place_ctx.block_locs[blk].y = yold;
-		place_ctx.block_locs[blk].z = zold;
+		place_ctx.block_locs[blk].loc.x = xold;
+		place_ctx.block_locs[blk].loc.y = yold;
+		place_ctx.block_locs[blk].loc.z = zold;
 
         VTR_ASSERT_SAFE_MSG(place_ctx.grid_blocks[xold][yold].blocks[zold] = blk, "Grid blocks should only have been updated if swap commited (not reverted)");
     }
@@ -1275,9 +1275,9 @@ static e_find_affected_blocks_result record_block_move(ClusterBlockId blk, int x
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-	int x_from = place_ctx.block_locs[blk].x;
-	int y_from = place_ctx.block_locs[blk].y;
-	int z_from = place_ctx.block_locs[blk].z;
+	int x_from = place_ctx.block_locs[blk].loc.x;
+	int y_from = place_ctx.block_locs[blk].loc.y;
+	int z_from = place_ctx.block_locs[blk].loc.z;
 
     auto res2 = blocks_affected.moved_from.emplace(x_from, y_from, z_from);
     if (!res2.second) {
@@ -1331,9 +1331,9 @@ static e_find_affected_blocks_result record_single_block_swap(ClusterBlockId b_f
             return outcome;
         }
 
-        int x_from = place_ctx.block_locs[b_from].x;
-        int y_from = place_ctx.block_locs[b_from].y;
-        int z_from = place_ctx.block_locs[b_from].z;
+        int x_from = place_ctx.block_locs[b_from].loc.x;
+        int y_from = place_ctx.block_locs[b_from].loc.y;
+        int z_from = place_ctx.block_locs[b_from].loc.z;
         outcome = record_block_move(b_to, x_from, y_from, z_from);
 
 	} // Finish swapping the blocks and setting up blocks_affected
@@ -1356,9 +1356,9 @@ static e_propose_move propose_move(ClusterBlockId b_from, int x_to, int y_to, in
             outcome = e_find_affected_blocks_result::ABORT;
         } else {
 
-            int x_from = place_ctx.block_locs[b_from].x;
-            int y_from = place_ctx.block_locs[b_from].y;
-            int z_from = place_ctx.block_locs[b_from].z;
+            int x_from = place_ctx.block_locs[b_from].loc.x;
+            int y_from = place_ctx.block_locs[b_from].loc.y;
+            int z_from = place_ctx.block_locs[b_from].loc.z;
 
             outcome = find_affected_blocks(b_to, x_from, y_from, z_from);
 
@@ -1391,9 +1391,9 @@ static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from,
 
     auto& place_ctx = g_vpr_ctx.placement();
 
-	x_from = place_ctx.block_locs[b_from].x;
-	y_from = place_ctx.block_locs[b_from].y;
-	z_from = place_ctx.block_locs[b_from].z;
+	x_from = place_ctx.block_locs[b_from].loc.x;
+	y_from = place_ctx.block_locs[b_from].loc.y;
+	z_from = place_ctx.block_locs[b_from].loc.z;
 
     auto& pl_macros = place_ctx.pl_macros;
 
@@ -1448,9 +1448,9 @@ static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, i
         // cannot use the old from and to info
         ClusterBlockId curr_b_from = pl_macros[imacro_from].members[imember_from].blk_index;
 
-        int curr_x_from = place_ctx.block_locs[curr_b_from].x;
-        int curr_y_from = place_ctx.block_locs[curr_b_from].y;
-        int curr_z_from = place_ctx.block_locs[curr_b_from].z;
+        int curr_x_from = place_ctx.block_locs[curr_b_from].loc.x;
+        int curr_y_from = place_ctx.block_locs[curr_b_from].loc.y;
+        int curr_z_from = place_ctx.block_locs[curr_b_from].loc.z;
 
         int curr_x_to = curr_x_from + x_swap_offset;
         int curr_y_to = curr_y_from + y_swap_offset;
@@ -1519,7 +1519,6 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
     //allow these blocks to swap)
     if (place_ctx.pl_macros[imacro_to].members[0].blk_index != blk_to) {
         int imember_to = 0;
-        //TODO: we build the correct inverted swap but then continue after returning... need to call at top level after indicating inversion required!
         auto outcome = record_macro_swaps(imacro_to, imember_to,
                                           -x_swap_offset, -y_swap_offset, -z_swap_offset);
         if (outcome == e_find_affected_blocks_result::INVERT) {
@@ -1533,9 +1532,9 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
 
     //From/To blocks should be exactly the swap offset appart
     ClusterBlockId blk_from = place_ctx.pl_macros[imacro_from].members[imember_from].blk_index;
-    VTR_ASSERT_SAFE(place_ctx.block_locs[blk_from].x + x_swap_offset == place_ctx.block_locs[blk_to].x);
-    VTR_ASSERT_SAFE(place_ctx.block_locs[blk_from].y + y_swap_offset == place_ctx.block_locs[blk_to].y);
-    VTR_ASSERT_SAFE(place_ctx.block_locs[blk_from].z + z_swap_offset == place_ctx.block_locs[blk_to].z);
+    VTR_ASSERT_SAFE(place_ctx.block_locs[blk_from].loc.x + x_swap_offset == place_ctx.block_locs[blk_to].loc.x);
+    VTR_ASSERT_SAFE(place_ctx.block_locs[blk_from].loc.y + y_swap_offset == place_ctx.block_locs[blk_to].loc.y);
+    VTR_ASSERT_SAFE(place_ctx.block_locs[blk_from].loc.z + z_swap_offset == place_ctx.block_locs[blk_to].loc.z);
 
     //Continue walking along the overlapping parts of the from and to macros, recording
     //each block swap.
@@ -1568,14 +1567,14 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
 
         ClusterBlockId b_from = place_ctx.pl_macros[imacro_from].members[imember_from].blk_index;
 
-        int curr_x_to = place_ctx.block_locs[b_from].x + x_swap_offset;
-        int curr_y_to = place_ctx.block_locs[b_from].y + y_swap_offset;
-        int curr_z_to = place_ctx.block_locs[b_from].z + z_swap_offset;
+        int curr_x_to = place_ctx.block_locs[b_from].loc.x + x_swap_offset;
+        int curr_y_to = place_ctx.block_locs[b_from].loc.y + y_swap_offset;
+        int curr_z_to = place_ctx.block_locs[b_from].loc.z + z_swap_offset;
 
         ClusterBlockId b_to = place_ctx.pl_macros[imacro_to].members[imember_to].blk_index;
-        VTR_ASSERT_SAFE(curr_x_to == place_ctx.block_locs[b_to].x);
-        VTR_ASSERT_SAFE(curr_y_to == place_ctx.block_locs[b_to].y);
-        VTR_ASSERT_SAFE(curr_z_to == place_ctx.block_locs[b_to].z);
+        VTR_ASSERT_SAFE(curr_x_to == place_ctx.block_locs[b_to].loc.x);
+        VTR_ASSERT_SAFE(curr_y_to == place_ctx.block_locs[b_to].loc.y);
+        VTR_ASSERT_SAFE(curr_z_to == place_ctx.block_locs[b_to].loc.z);
 
         if (!is_legal_swap_to_location(b_from, curr_x_to, curr_y_to, curr_z_to)) {
             log_move_abort("macro_from swap to location illegal");
@@ -1611,9 +1610,9 @@ static e_find_affected_blocks_result identify_macro_self_swap_affected_macros(st
 
         ClusterBlockId blk = place_ctx.pl_macros[imacro].members[imember].blk_index;
 
-        int x_from = place_ctx.block_locs[blk].x;
-        int y_from = place_ctx.block_locs[blk].y;
-        int z_from = place_ctx.block_locs[blk].z;
+        int x_from = place_ctx.block_locs[blk].loc.x;
+        int y_from = place_ctx.block_locs[blk].loc.y;
+        int z_from = place_ctx.block_locs[blk].loc.z;
 
         int x_to = x_from + x_swap_offset;
         int y_to = y_from + y_swap_offset;
@@ -1653,9 +1652,9 @@ static e_find_affected_blocks_result record_macro_move(std::vector<ClusterBlockI
     auto& place_ctx = g_vpr_ctx.placement();
 
     for (const t_pl_macro_member& member : place_ctx.pl_macros[imacro].members) {
-        int x_from = place_ctx.block_locs[member.blk_index].x;
-        int y_from = place_ctx.block_locs[member.blk_index].y;
-        int z_from = place_ctx.block_locs[member.blk_index].z;
+        int x_from = place_ctx.block_locs[member.blk_index].loc.x;
+        int y_from = place_ctx.block_locs[member.blk_index].loc.y;
+        int z_from = place_ctx.block_locs[member.blk_index].loc.z;
 
         int x_to = x_from + x_swap_offset;
         int y_to = y_from + y_swap_offset;
@@ -1822,8 +1821,8 @@ static e_swap_result try_swap(float t,
         return ABORTED; //No movable block found
     }
 
-	int x_from = place_ctx.block_locs[b_from].x;
-	int y_from = place_ctx.block_locs[b_from].y;
+	int x_from = place_ctx.block_locs[b_from].loc.x;
+	int y_from = place_ctx.block_locs[b_from].loc.y;
 
     int x_to = OPEN;
     int y_to = OPEN;
@@ -2282,10 +2281,10 @@ static float comp_td_point_to_point_delay(const PlaceDelayModel& delay_model, Cl
         int source_block_ipin = cluster_ctx.clb_nlist.pin_physical_index(source_pin);
         int sink_block_ipin = cluster_ctx.clb_nlist.pin_physical_index(sink_pin);
 
-        int source_x = place_ctx.block_locs[source_block].x;
-        int source_y = place_ctx.block_locs[source_block].y;
-        int sink_x = place_ctx.block_locs[sink_block].x;
-        int sink_y = place_ctx.block_locs[sink_block].y;
+        int source_x = place_ctx.block_locs[source_block].loc.x;
+        int source_y = place_ctx.block_locs[source_block].loc.y;
+        int sink_x = place_ctx.block_locs[sink_block].loc.x;
+        int sink_y = place_ctx.block_locs[sink_block].loc.y;
 
         /* Note: This heuristic only considers delta_x and delta_y, a much better heuristic
          *       would be to to create a more comprehensive lookup table.
@@ -2643,8 +2642,8 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb *coords,
 
 	ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
 	pnum = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
-	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
-	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
+	x = place_ctx.block_locs[bnum].loc.x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
+	y = place_ctx.block_locs[bnum].loc.y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 
 	x = max(min<int>(x, grid.width() - 2), 1);
 	y = max(min<int>(y, grid.height() - 2), 1);
@@ -2661,8 +2660,8 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb *coords,
 	for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 		bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
 		pnum = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
-		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
-		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
+		x = place_ctx.block_locs[bnum].loc.x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
+		y = place_ctx.block_locs[bnum].loc.y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 
 		/* Code below counts IO blocks as being within the 1..grid.width()-2, 1..grid.height()-2 clb array. *
 		 * This is because channels do not go out of the 0..grid.width()-2, 0..grid.height()-2 range, and   *
@@ -2807,8 +2806,8 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new) {
 
 	ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
 	pnum = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
-	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
-	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
+	x = place_ctx.block_locs[bnum].loc.x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
+	y = place_ctx.block_locs[bnum].loc.y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 
 	xmin = x;
 	ymin = y;
@@ -2818,8 +2817,8 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new) {
 	for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 		bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
 		pnum = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
-		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
-		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
+		x = place_ctx.block_locs[bnum].loc.x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
+		y = place_ctx.block_locs[bnum].loc.y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 
 		if (x < xmin) {
 			xmin = x;
@@ -3178,9 +3177,9 @@ static int try_place_macro(int itype, int ipos, int imacro){
 			member_z = z + pl_macros[imacro].members[imember].z_offset;
 
             ClusterBlockId iblk = pl_macros[imacro].members[imember].blk_index;
-			place_ctx.block_locs[iblk].x = member_x;
-			place_ctx.block_locs[iblk].y = member_y;
-			place_ctx.block_locs[iblk].z = member_z;
+			place_ctx.block_locs[iblk].loc.x = member_x;
+			place_ctx.block_locs[iblk].loc.y = member_y;
+			place_ctx.block_locs[iblk].loc.z = member_z;
 
 			place_ctx.grid_blocks[member_x][member_y].blocks[member_z] = pl_macros[imacro].members[imember].blk_index;
 			place_ctx.grid_blocks[member_x][member_y].usage++;
@@ -3280,7 +3279,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
     auto& device_ctx = g_vpr_ctx.device();
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-		if (place_ctx.block_locs[blk_id].x != -1) { // -1 is a sentinel for an empty block
+		if (place_ctx.block_locs[blk_id].loc.x != -1) { // -1 is a sentinel for an empty block
 			// block placed.
 			continue;
 		}
@@ -3310,9 +3309,9 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			place_ctx.grid_blocks[x][y].blocks[z] = blk_id;
 			place_ctx.grid_blocks[x][y].usage++;
 
-			place_ctx.block_locs[blk_id].x = x;
-			place_ctx.block_locs[blk_id].y = y;
-			place_ctx.block_locs[blk_id].z = z;
+			place_ctx.block_locs[blk_id].loc.x = x;
+			place_ctx.block_locs[blk_id].loc.y = y;
+			place_ctx.block_locs[blk_id].loc.z = z;
 
             //Mark IOs as fixed if specifying a (fixed) random placement
             if(is_io_type(cluster_ctx.clb_nlist.block_type(blk_id)) && pad_loc_type == RANDOM) {
@@ -3383,9 +3382,9 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 	/* Similarly, mark all blocks as not being placed yet. */
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-		place_ctx.block_locs[blk_id].x = OPEN;
-		place_ctx.block_locs[blk_id].y = OPEN;
-		place_ctx.block_locs[blk_id].z = OPEN;
+		place_ctx.block_locs[blk_id].loc.x = OPEN;
+		place_ctx.block_locs[blk_id].loc.y = OPEN;
+		place_ctx.block_locs[blk_id].loc.z = OPEN;
 	}
 
 	initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
@@ -3622,10 +3621,10 @@ static int check_block_placement_consistency() {
 							size_t(bnum), cluster_ctx.clb_nlist.block_type(bnum)->name, i, j, device_ctx.grid[i][j].type->name);
 					error++;
 				}
-				if ((place_ctx.block_locs[bnum].x != int(i)) || (place_ctx.block_locs[bnum].y != int(j))) {
+				if ((place_ctx.block_locs[bnum].loc.x != int(i)) || (place_ctx.block_locs[bnum].loc.y != int(j))) {
 					VTR_LOG_ERROR(
 							"Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d).\n",
-							size_t(bnum), place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y, place_ctx.block_locs[bnum].z,
+							size_t(bnum), place_ctx.block_locs[bnum].loc.x, place_ctx.block_locs[bnum].loc.y, place_ctx.block_locs[bnum].loc.z,
                             i, j, k);
 					error++;
 				}
@@ -3668,14 +3667,14 @@ int check_macro_placement_consistency() {
 			auto member_iblk = pl_macros[imacro].members[imember].blk_index;
 
 			// Compute the suppossed member's x,y,z location
-			int member_x = place_ctx.block_locs[head_iblk].x + pl_macros[imacro].members[imember].x_offset;
-			int member_y = place_ctx.block_locs[head_iblk].y + pl_macros[imacro].members[imember].y_offset;
-			int member_z = place_ctx.block_locs[head_iblk].z + pl_macros[imacro].members[imember].z_offset;
+			int member_x = place_ctx.block_locs[head_iblk].loc.x + pl_macros[imacro].members[imember].x_offset;
+			int member_y = place_ctx.block_locs[head_iblk].loc.y + pl_macros[imacro].members[imember].y_offset;
+			int member_z = place_ctx.block_locs[head_iblk].loc.z + pl_macros[imacro].members[imember].z_offset;
 
 			// Check the place_ctx.block_locs data structure first
-			if (place_ctx.block_locs[member_iblk].x != member_x
-					|| place_ctx.block_locs[member_iblk].y != member_y
-					|| place_ctx.block_locs[member_iblk].z != member_z) {
+			if (place_ctx.block_locs[member_iblk].loc.x != member_x
+					|| place_ctx.block_locs[member_iblk].loc.y != member_y
+					|| place_ctx.block_locs[member_iblk].loc.z != member_z) {
 				VTR_LOG_ERROR(
 						"Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
 						size_t(member_iblk), imacro);
