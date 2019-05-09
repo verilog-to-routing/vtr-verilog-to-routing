@@ -1866,10 +1866,6 @@ static e_swap_result try_swap(float t,
 	 * of the blocks. Abort the swap if the to_block is part of a  *
 	 * macro (not supported yet).                                  */
 
-    if (b_from == ClusterBlockId(98) && x_to == 23 && y_to == 11 && z_to == 0) {
-        VTR_LOG("FOUND\n");
-    }
-
 	e_propose_move move_outcome = propose_move(b_from, x_to, y_to, z_to);
 
 	if (move_outcome == e_propose_move::VALID) {
@@ -3755,7 +3751,7 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
     timing_reporter.report_timing_setup(placer_opts.post_place_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }
 
-#if 1
+#if 0
 static void update_screen_debug();
 
 //Performs a major (i.e. interactive) placement screen update.
