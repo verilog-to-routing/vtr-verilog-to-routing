@@ -78,7 +78,7 @@ enum e_swap_result {
 	REJECTED, ACCEPTED, ABORTED
 };
 
-enum class e_create_move {
+enum class e_propose_move {
     VALID, //Move successful and legal
     ABORT, //Unable to perform move
 };
@@ -256,7 +256,7 @@ static void clear_move();
 static e_find_affected_blocks_result record_single_block_swap(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 static e_find_affected_blocks_result record_block_move(ClusterBlockId blk, int x_to, int y_to, int z_to);
 
-static e_create_move create_move(ClusterBlockId b_from, int x_to, int y_to, int z_to);
+static e_propose_move propose_move(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 
 static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, int& imember_from,
@@ -1310,7 +1310,7 @@ static e_find_affected_blocks_result record_single_block_swap(ClusterBlockId b_f
     return outcome;
 }
 
-static e_create_move create_move(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
+static e_propose_move propose_move(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
 
     e_find_affected_blocks_result outcome = find_affected_blocks(b_from, x_to, y_to, z_to);
 
@@ -1340,10 +1340,10 @@ static e_create_move create_move(ClusterBlockId b_from, int x_to, int y_to, int 
 
     if (outcome == e_find_affected_blocks_result::VALID
         || outcome == e_find_affected_blocks_result::INVERT_VALID) {
-        return e_create_move::VALID;
+        return e_propose_move::VALID;
     } else {
         VTR_ASSERT_SAFE(outcome == e_find_affected_blocks_result::ABORT);
-        return e_create_move::ABORT;
+        return e_propose_move::ABORT;
     }
 }
 
@@ -1839,9 +1839,9 @@ static e_swap_result try_swap(float t,
         VTR_LOG("FOUND\n");
     }
 
-	e_create_move move_outcome = create_move(b_from, x_to, y_to, z_to);
+	e_propose_move move_outcome = propose_move(b_from, x_to, y_to, z_to);
 
-	if (move_outcome == e_create_move::VALID) {
+	if (move_outcome == e_propose_move::VALID) {
 
         //Swap the blocks
         apply_move();
@@ -1916,7 +1916,7 @@ static e_swap_result try_swap(float t,
 
 		return (keep_switch);
 	} else {
-        VTR_ASSERT_SAFE(move_outcome == e_create_move::ABORT);
+        VTR_ASSERT_SAFE(move_outcome == e_propose_move::ABORT);
 
         clear_move();
 
