@@ -600,13 +600,6 @@ struct t_pl_blocks_to_be_moved {
     std::unordered_set<t_pl_loc> moved_to;
 };
 
-/* legal positions for type */
-struct t_legal_pos {
-	int x;
-	int y;
-	int z;
-};
-
 /* Represents the placement location of a clustered block
  * x: x-coordinate
  * y: y-coordinate
