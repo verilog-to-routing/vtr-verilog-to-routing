@@ -233,7 +233,7 @@ static void load_legal_placements();
 
 static void free_legal_placements();
 
-static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z);
+static int check_macro_can_be_placed(int imacro, int itype, t_place_loc head_pos);
 
 static int try_place_macro(int itype, int ipos, int imacro);
 
@@ -3058,7 +3058,7 @@ static void free_legal_placements() {
 
 
 
-static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z) {
+static int check_macro_can_be_placed(int imacro, int itype, t_place_loc head_pos) {
 
 	size_t member_x, member_y, member_z;
 
@@ -3072,9 +3072,9 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 
 	// Check whether all the members can be placed
 	for (size_t imember = 0; imember < pl_macros[imacro].members.size(); imember++) {
-		member_x = x + pl_macros[imacro].members[imember].x_offset;
-		member_y = y + pl_macros[imacro].members[imember].y_offset;
-		member_z = z + pl_macros[imacro].members[imember].z_offset;
+		member_x = head_pos.x + pl_macros[imacro].members[imember].x_offset;
+		member_y = head_pos.y + pl_macros[imacro].members[imember].y_offset;
+		member_z = head_pos.z + pl_macros[imacro].members[imember].z_offset;
 
 		// Check whether the location could accept block of this type
 		// Then check whether the location could still accomodate more blocks
@@ -3098,23 +3098,21 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 
 static int try_place_macro(int itype, int ipos, int imacro){
 
-	int x, y, z, member_x, member_y, member_z;
+	int member_x, member_y, member_z;
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	int macro_placed = false;
 
 	// Choose a random position for the head
-	x = legal_pos[itype][ipos].x;
-	y = legal_pos[itype][ipos].y;
-	z = legal_pos[itype][ipos].z;
+	t_place_loc head_pos = legal_pos[itype][ipos];
 
 	// If that location is occupied, do nothing.
-	if (place_ctx.grid_blocks[x][y].blocks[z] != EMPTY_BLOCK_ID) {
+	if (place_ctx.grid_blocks[head_pos.x][head_pos.y].blocks[head_pos.z] != EMPTY_BLOCK_ID) {
 		return (macro_placed);
 	}
 
-	int macro_can_be_placed = check_macro_can_be_placed(imacro, itype, x, y, z);
+	int macro_can_be_placed = check_macro_can_be_placed(imacro, itype, head_pos);
 
 	if (macro_can_be_placed) {
 
@@ -3124,9 +3122,9 @@ static int try_place_macro(int itype, int ipos, int imacro){
 		macro_placed = true;
 		for (size_t imember = 0; imember < pl_macros[imacro].members.size(); imember++) {
 
-			member_x = x + pl_macros[imacro].members[imember].x_offset;
-			member_y = y + pl_macros[imacro].members[imember].y_offset;
-			member_z = z + pl_macros[imacro].members[imember].z_offset;
+			member_x = head_pos.x + pl_macros[imacro].members[imember].x_offset;
+			member_y = head_pos.y + pl_macros[imacro].members[imember].y_offset;
+			member_z = head_pos.z + pl_macros[imacro].members[imember].z_offset;
 
             ClusterBlockId iblk = pl_macros[imacro].members[imember].blk_index;
 			place_ctx.block_locs[iblk].loc.x = member_x;
