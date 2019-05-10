@@ -1792,8 +1792,10 @@ static void update_cluster_stats(t_pack_molecule *molecule,
 	}
 
     // if this molecule came from the transitive fanout candidates remove it
-    cb->pb_stats->transitive_fanout_candidates.erase(molecule);
-    cb->pb_stats->explore_transitive_fanout = true;
+    if (cb) {
+        cb->pb_stats->transitive_fanout_candidates.erase(molecule);
+        cb->pb_stats->explore_transitive_fanout = true;
+    }
 }
 
 static void start_new_cluster(
