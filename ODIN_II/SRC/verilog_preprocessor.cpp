@@ -705,7 +705,7 @@ void push(veri_flag_stack *stack, int flag)
 * defined in format_verilog_file().
 * Format: [input|output|inout [reg|wire] [size]] <variable_name>
 */
-void format_port_declaration(char **subtoken, char *dec, char *postDec, char *IOTypeDec, unsigned *i, unsigned *j, unsigned *k)
+void format_port_declaration(char **subtoken, char *dec, char *postDec, char *IOTypeDec, size_t *i, size_t *j, size_t *k)
 {
 	bool directionDefined = false;
 	*subtoken = trim(*subtoken);
@@ -774,82 +774,124 @@ void format_port_declaration(char **subtoken, char *dec, char *postDec, char *IO
 	}
 }
 
+/*
+* Tokenizes a module declaration repeatedly, passing tokens to
+* format_port_declaration() for formatting.
+*/
+void format_module_declaration(FILE *destination, char *buf, char *dec, char *postDec, char *IOTypeDec, char *decPtr, char *postDecPtr, char *IOTypeDecPtr, size_t *i, size_t *j, size_t *k)
+{
+	char * token = NULL;
+	char * subtoken = NULL;
+	*i = 0;
+	token = std::strtok(buf, "(");
+	while(*token != '\0')
+	{
+		dec[(*i)++] = *token;
+		(token)++;
+	}
+	dec[(*i)++] = '(';
+	dec[(*i)++] = '\n';
+
+	token = std::strtok(NULL, ")");
+	subtoken = std::strtok(token, ",");
+	while(subtoken != NULL)
+	{
+		format_port_declaration(&subtoken, dec, postDec, IOTypeDec, i, j, k);
+		subtoken = std::strtok(NULL, ",");
+		if(subtoken == NULL)
+		{
+			dec[(*i)++] = ')';
+			dec[(*i)++] = ';';
+		}
+		else
+		{
+			dec[(*i)++] = ',';
+		}
+		dec[(*i)++] = '\n';
+	}
+	dec[*i] = '\0';
+	postDec[*j] = '\0';
+	IOTypeDec[*k] = '\0';
+	fputs(decPtr,destination);
+	fputs(postDecPtr,destination);
+	fputs(IOTypeDecPtr,destination);
+	*i = 0;
+	*j = 0;
+	*k = 0;
+	IOTypeDec[*k] = '\0';
+}
+
 FILE *format_verilog_file(FILE *source)
 {
+	typedef enum State {
+		LINE_PROCESSING,
+		MODULE_SETUP,
+		MODULE_REFORMATTING
+	} State;
+	State currentState = LINE_PROCESSING;
 	FILE *destination = tmpfile();
-	char buf[MaxLine] = { 0 }; // Temporary input buffer
-	char dec[MaxLine] = { 0 }; // Module declaration buffer
-	char postDec[MaxLine] = { 0 }; // Post-declaration buffer
-	char IOTypeDec[MaxLine] = { 0 }; // Register and wire re-declaration buffer
+	char buf[UPPER_BUFFER_LIMIT] = { 0 }; // Temporary input buffer
+	char dec[UPPER_BUFFER_LIMIT] = { 0 }; // Module declaration buffer
+	char postDec[UPPER_BUFFER_LIMIT] = { 0 }; // Post-declaration buffer
+	char IOTypeDec[UPPER_BUFFER_LIMIT] = { 0 }; // Register and wire re-declaration buffer
 	char * bufPtr = buf;
 	char * decPtr = dec;
 	char * postDecPtr = postDec;
 	char * IOTypeDecPtr = IOTypeDec;
-	char * token, * subtoken = NULL;
+	size_t i, j, k = 0;
+	bool getNextLine = true;
+	char * exitFlag = fgets(buf, UPPER_BUFFER_LIMIT, source);
 	int pos = 0;
-	unsigned i, j, k = 0;
 
-	while(fgets(buf, MaxLine, source))
+	while(exitFlag != NULL)
 	{
-		std::string str(buf);
-		pos = str.find_first_not_of(" ");
-		if(str.find("module ") == pos || str.find("macromodule ") == pos || str.find("module(") == pos || str.find("macromodule(") == pos)
-		{
-			do {
+		switch(currentState) {
+			case LINE_PROCESSING: 
+			{
+				std::string str(buf);
+				pos = str.find_first_not_of(" ");
+				if((str.find("module") == pos && isspace(buf[pos+6])) || (str.find("macromodule") == pos && isspace(buf[pos+11])))
+				{
+					currentState = MODULE_SETUP;
+					getNextLine = false;
+				}
+				else
+				{
+					fputs(bufPtr,destination);
+				}
+				break;
+			}
+			case MODULE_SETUP: 
+			{
 				while(buf[i] != '\n' && buf[i] != ')')
 				{
 					i++;
 				}
 				if(buf[i] == ')')
 				{
-					break;
-				}
-				i++;
-			} while (fgets(&buf[i], MaxLine - i, source));
-
-			i = 0;
-			/* ----- At this point, an entire module declaration is in the temp buffer ----- */
-			token = std::strtok(buf, "(");
-			while(*token != '\0')
-			{
-				dec[i++] = *token;
-				token++;
-			}
-			dec[i++] = '(';
-			dec[i++] = '\n';
-
-			token = std::strtok(NULL, ")");
-			subtoken = std::strtok(token, ",");
-			while(subtoken != NULL)
-			{
-				format_port_declaration(&subtoken, dec, postDec, IOTypeDec, &i, &j, &k);
-				subtoken = std::strtok(NULL, ",");
-				if(subtoken == NULL)
-				{
-					dec[i++] = ')';
-					dec[i++] = ';';
+					getNextLine = false;
+					currentState = MODULE_REFORMATTING;
 				}
 				else
 				{
-					dec[i++] = ',';
+					i++;
 				}
-				dec[i++] = '\n';
+				break;
 			}
-			/* ----- End of module declaration reached ----- */
-			dec[i] = '\0';
-			postDec[j] = '\0';
-			IOTypeDec[k] = '\0';
-			fputs(decPtr,destination);
-			fputs(postDecPtr,destination);
-			fputs(IOTypeDecPtr,destination);
-			i = 0;
-			j = 0;
-			k = 0;
-			IOTypeDec[k] = '\0';
+			case MODULE_REFORMATTING: 
+			{
+				format_module_declaration(destination, buf, dec, postDec, IOTypeDec, decPtr, postDecPtr, IOTypeDecPtr, &i, &j, &k);
+				currentState = LINE_PROCESSING;
+				break;
+			}
+		}
+		if(getNextLine)
+		{
+			exitFlag = fgets(&buf[i], UPPER_BUFFER_LIMIT - i, source);
 		}
 		else
 		{
-			fputs(bufPtr,destination);
+			getNextLine = true;
 		}
 	}
 	rewind(destination);
