@@ -2206,9 +2206,9 @@ static bool find_to(t_type_ptr type, float rlim,
     to.z = vtr::irand(type->capacity - 1);
 
     auto& device_ctx = g_vpr_ctx.device();
-    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.x].type == type, "Type must match");
-    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.x].width_offset == 0, "Should be at block base location");
-    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.x].height_offset == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].type == type, "Type must match");
+    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].width_offset == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].height_offset == 0, "Should be at block base location");
 
     return true;
 }
