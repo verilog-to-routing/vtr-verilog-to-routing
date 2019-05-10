@@ -923,7 +923,8 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 				}
 				sc_spot = sc_lookup_string(local_param_table_sc, node->types.identifier);
 				if (sc_spot != -1){
-					newNode = (ast_node_t *)local_param_table_sc->data[sc_spot];
+					newNode = (ast_node_t *)vtr::calloc(1,sizeof(ast_node_t));
+					memcpy(newNode, (ast_node_t *)local_param_table_sc->data[sc_spot], sizeof(ast_node_t));
 				}
 			break;
 
@@ -998,7 +999,7 @@ ast_node_t *resolve_ast_node(STRING_CACHE *local_param_table_sc, short initial, 
 				break;
 		}
 
-		if (node_is_ast_constant(newNode)){
+		if (node_is_ast_constant(newNode, local_param_table_sc)){
 			newNode->shared_node = node->shared_node;
 
 			/* clean up */
@@ -1022,7 +1023,7 @@ ast_node_t *resolve_ast_node(STRING_CACHE *local_param_table_sc, short initial, 
  * Make a unique name for a module based on its parameter list
  * e.g. for a "mod #(0,1,2,3) a(b,c,d)" instantiation you get name___0_1_2_3
  */
-char *make_module_param_name(ast_node_t *module_param_list, char *module_name)
+char *make_module_param_name(STRING_CACHE *defines_for_module_sc, ast_node_t *module_param_list, char *module_name)
 {
 	char *module_param_name = (char*)vtr::malloc((strlen(module_name)+1024) * sizeof(char));
 	strcpy(module_param_name, module_name);
@@ -1034,9 +1035,12 @@ char *make_module_param_name(ast_node_t *module_param_list, char *module_name)
 		strcat(module_param_name, "___");
 		for (i = 0; i < module_param_list->num_children; i++)
 		{
-			oassert(module_param_list->children[i]->children[5]->type == NUMBERS);
-
-			odin_sprintf(module_param_name, "%s_%ld", module_param_name, module_param_list->children[i]->children[5]->types.number.value);
+			if (module_param_list->children[i]->children[5]) 
+			{
+				ast_node_t *node = resolve_node(defines_for_module_sc, TRUE, module_name, module_param_list->children[i]->children[5]);
+				oassert(node->type == NUMBERS);
+				odin_sprintf(module_param_name, "%s_%ld", module_param_name, module_param_list->children[i]->children[5]->types.number.value);
+			}
 		}
 	}
 
@@ -1405,8 +1409,32 @@ ast_node_t *node_is_constant(ast_node_t *node){
  * (function: node_is_ast_constant)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *node_is_ast_constant(ast_node_t *node){
-	if (node && (node_is_constant(node) || (node->types.variable.is_parameter == TRUE))) {
+	if (node && 
+		(node_is_constant(node) 
+		|| (node->types.variable.is_parameter == TRUE)
+		|| (node->type == UNARY_OPERATION && node_is_ast_constant(node->children[0]))
+		|| (node->type == BINARY_OPERATION && node_is_ast_constant(node->children[0]) && node_is_ast_constant(node->children[1]))))
+	{
 		return node;
+	}
+	return NULL;
+}
+
+ast_node_t *node_is_ast_constant(ast_node_t *node, STRING_CACHE *defines_for_module_sc){
+	if (node && (node_is_constant(node) 
+		|| (node->types.variable.is_parameter == TRUE)
+		|| (node->type == UNARY_OPERATION && node_is_ast_constant(node->children[0], defines_for_module_sc))
+		|| (node->type == BINARY_OPERATION && node_is_ast_constant(node->children[0], defines_for_module_sc) && node_is_ast_constant(node->children[1], defines_for_module_sc))))
+	{
+		return node;
+	}
+	else if (node && node->type == IDENTIFIERS) {
+		int sc_spot;
+		if ((sc_spot = sc_lookup_string(defines_for_module_sc, node->types.identifier)) != -1
+			&& node_is_ast_constant((ast_node_t *)defines_for_module_sc->data[sc_spot]))
+		{
+			return node;
+		}
 	}
 	return NULL;
 }

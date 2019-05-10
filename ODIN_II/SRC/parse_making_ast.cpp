@@ -531,6 +531,15 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					            symbol_list->children[i]->children[0]->types.identifier,
 					            ((ast_node_t*)(defines_for_module_sc[num_modules]->data[sc_spot]))->line_number);
 			            }
+						
+						ast_node_t *value = symbol_list->children[i]->children[5];
+
+						/* make sure that the parameter value is constant */
+						if (!node_is_ast_constant(value, defines_for_module_sc[num_modules]))
+						{
+							error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Parameter value must be constant\n");
+						}
+
 			            symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
 			            defines_for_module_sc[num_modules]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
 			            /* mark the node as shared so we don't delete it */
@@ -688,7 +697,16 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						        symbol_list->children[i]->children[0]->types.identifier,
 						        ((ast_node_t*)(defines_for_function_sc[num_functions]->data[sc_spot]))->line_number);
 				        }
-				        symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
+						
+						ast_node_t *value = symbol_list->children[i]->children[5];
+
+						/* make sure that the parameter value is constant */
+						if (!node_is_ast_constant(value, defines_for_module_sc[num_modules]))
+						{
+							error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Parameter value must be constant\n");
+						}
+
+			            symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
 				        defines_for_function_sc[num_functions]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
 				        /* mark the node as shared so we don't delete it */
 				        symbol_list->children[i]->children[5]->shared_node = TRUE;
@@ -1143,9 +1161,9 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
 		symbol_node = NULL;
 	}
 
-	if (expression->type != NUMBERS)
+	if (expression && !node_is_ast_constant(expression, defines_for_module_sc[num_modules]))
 	{
-		error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "Parameter value must be of type NUMBERS!\n");
+		error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "Parameter value must be constant\n");
 	}
 
 	/* allocate child nodes to this node */
@@ -1238,7 +1256,7 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 
 	// make a unique module name based on its parameter list
     ast_node_t *module_param_list = module_named_instance->children[i]->children[2];
-	char *module_param_name = make_module_param_name(module_param_list, module_ref_name);
+	char *module_param_name = make_module_param_name(defines_for_module_sc[num_modules], module_param_list, module_ref_name);
 	ast_node_t *symbol_node = newSymbolNode(module_param_name, line_number);
 
 	// if this is a parameterised instantiation
@@ -1298,7 +1316,7 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
 	// make a unique module name based on its parameter list
 	ast_node_t *function_param_list = function_named_instance->children[2];
 
-	char *function_param_name = make_module_param_name(function_param_list, function_ref_name);
+	char *function_param_name = make_module_param_name(defines_for_module_sc[num_modules], function_param_list, function_ref_name);
 	ast_node_t *symbol_node = newSymbolNode(function_param_name, line_number);
 
     /* create a node for this array reference */
@@ -1672,6 +1690,11 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 				}
 			}
 			new_node = val->children[(val->num_children - 1)];
+			if (!node_is_ast_constant(new_node->children[5], defines_for_module_sc[num_modules])) 
+			{
+				error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "Parameter value must be constant\n");
+			}
+
 			new_node->type = MODULE_PARAMETER;
 			new_node->types.variable.is_parameter = TRUE;
 			new_node->shared_node = TRUE;

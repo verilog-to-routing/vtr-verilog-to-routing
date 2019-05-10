@@ -266,9 +266,8 @@ variable:
 	| '[' expression ':' expression ']' vSYMBOL_ID										{$$ = newVarDeclare($6, $2, $4, NULL, NULL, NULL, yylineno);}
 	| '[' expression ':' expression ']' vSYMBOL_ID '[' expression ':' expression ']'	{$$ = newVarDeclare($6, $2, $4, $8, $10, NULL, yylineno);}
 	| '[' expression ':' expression ']' vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newVarDeclare2D($6, $2, $4, $8, $10,$13,$15, NULL, yylineno);}
-//  | '[' expression ':' expression ']' vSYMBOL_ID '=' primary							{$$ = newVarDeclare($6, $2, $4, NULL, NULL, $8, yylineno);}
 	| '[' expression ':' expression ']' vSYMBOL_ID '=' expression						{$$ = newVarDeclare($6, $2, $4, NULL, NULL, $8, yylineno);}
-	| vSYMBOL_ID '=' primary		 													{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, $3, yylineno);}
+	| vSYMBOL_ID '=' expression															{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, $3, yylineno);}
 	;
 
 integer_type_variable:
@@ -374,6 +373,7 @@ list_of_module_parameters:
 
 module_parameter:
 	'.' vSYMBOL_ID '(' expression ')'					{$$ = newModuleParameter($2, $4, yylineno);}
+	| '.' vSYMBOL_ID '(' ')'							{$$ = newModuleParameter($2, NULL, yylineno);}
 	| expression										{$$ = newModuleParameter(NULL, $1, yylineno);}
 	;
 

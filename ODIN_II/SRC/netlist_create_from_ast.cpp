@@ -87,7 +87,7 @@ int type_of_circuit;
 
 
 /* PROTOTYPES */
-void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name);
+void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name, char *parent_module);
 
 void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, char *instance_name, int level);
 signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_name_prefix);
@@ -154,7 +154,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node);
  * for all parameters in this instantiation, taking into account if they
  * are being overridden by their parent
  */
-void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name)
+void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name, char *parent_module)
 {
 	/* with the top module we need to visit the entire ast tree */
 	long i, j;
@@ -231,13 +231,15 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 								var_declare->children[0]->types.identifier,
 								module_name);
 					}
-					local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
+
+					if (var_declare->children[5])
+						local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
 				}
 			}
 
 			for(i = 0; i < parent_parameter_list->num_children; i ++)
 			{
-				// defparam after calling instance, or override with name during instantiation
+				// defparam after calling instance
 				if(parent_parameter_list->children[i]->children[0])
 				{
 					if(parent_parameter_list->children[i]->shared_node == TRUE)
@@ -251,8 +253,10 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 									var_declare->children[0]->types.identifier,
 									module_name);
 						}
-						local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
-					}
+
+						if (var_declare->children[5])
+							local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
+					} 
 				}
 				else
 				{
@@ -296,7 +300,9 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 	for (i = 0; i < parameter_num; i++) {
 		sc_spot = sc_lookup_string(local_param_table_sc, temp_parameter_list[i]);
 		ast_node_t *node = (ast_node_t *)local_param_table_sc->data[sc_spot];
+		oassert(node);
 		node = resolve_node(NULL, FALSE, module_name, node);
+		if (node->type != NUMBERS) node = resolve_node(NULL, FALSE, parent_module, node); // may contain parameters from parent
 		oassert(node->type == NUMBERS);
 		local_param_table_sc->data[sc_spot] = (void *)node;
 	}
@@ -380,7 +386,7 @@ void create_netlist()
 	verilog_netlist = allocate_netlist();
 
 	// create the parameter table for the top module
-	create_param_table_for_module(NULL, top_module->children[2], top_string);
+	create_param_table_for_module(NULL, top_module->children[2], top_string, NULL);
 
 	/* now recursively parse the modules by going through the tree of modules starting at top */
 	create_top_driver_nets(top_module, top_string);
@@ -557,7 +563,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 			create_param_table_for_module(parent_parameter_list,
 				/* module_items */
 				((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2],
-				temp_instance_name);
+				temp_instance_name, current_module->children[0]->types.identifier);
 
 			simplify_ast_module(current_module);
 
@@ -592,7 +598,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 			create_param_table_for_module(parent_parameter_list,
 				/* module_items */
 				((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2],
-				temp_instance_name);
+				temp_instance_name, current_module->children[0]->types.identifier);
 
 			simplify_ast_module(current_module);
 
