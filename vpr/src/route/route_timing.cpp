@@ -18,7 +18,6 @@
 #include "route_common.h"
 #include "route_tree_timing.h"
 #include "route_timing.h"
-#include "path_delay.h"
 #include "net_delay.h"
 #include "stats.h"
 #include "echo_files.h"
@@ -301,10 +300,6 @@ bool try_timing_driven_route(
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
         std::shared_ptr<RoutingDelayCalculator> delay_calc, 
-#ifdef ENABLE_CLASSIC_VPR_STA
-        t_slack * slacks,
-        const t_timing_inf &timing_inf,
-#endif
         ScreenUpdatePriority first_iteration_priority) {
 
     /* Timing-driven routing algorithm.  The timing graph (includes slack)   *
@@ -470,26 +465,11 @@ bool try_timing_driven_route(
         if (timing_info) {
             //Update timing based on the new routing
             //Note that the net delays have already been updated by timing_driven_route_net
-#ifdef ENABLE_CLASSIC_VPR_STA
-            load_timing_graph_net_delays(net_delay);
-
-            do_timing_analysis(slacks, timing_inf, false, true);
-#endif
-
             timing_info->update();
             timing_info->set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during routing
 
             critical_path = timing_info->least_slack_critical_path();
 
-#ifdef ENABLE_CLASSIC_VPR_STA
-            float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9 * critical_path.delay());
-            if (cpd_diff_ns > 0.01) {
-                print_classic_cpds();
-                print_tatum_cpds(timing_info->critical_paths());
-
-                vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9 * critical_path.delay());
-            }
-#endif
             VTR_ASSERT_SAFE(timing_driven_check_net_delays(net_delay));
 
             if (itry == 1) {
@@ -717,9 +697,6 @@ bool try_timing_driven_route(
 
             for (auto net_id : cluster_ctx.clb_nlist.nets()) {
                 for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
-#ifdef ENABLE_CLASSIC_VPR_STA
-                    slacks->timing_criticality[(size_t)net_id][ipin] = 0.;
-#endif
                     net_delay[net_id][ipin] = 0.;
                 }
             }

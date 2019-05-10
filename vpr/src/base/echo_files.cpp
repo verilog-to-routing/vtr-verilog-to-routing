@@ -89,7 +89,7 @@ void alloc_and_load_echo_file_info() {
     setEchoFileName(E_ECHO_FINAL_PLACEMENT_SLACK, "final_placement_slack.echo");
     setEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY, "final_placement_criticality.echo");
     setEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH, "placement_crit_path.echo");
-    setEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL, "placement_delta_delay_model.%s.echo");
+    setEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL, "placement_delta_delay_model.echo");
     setEchoFileName(E_ECHO_PB_GRAPH, "pb_graph.echo");
     setEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH, "lb_type_rr_graph.echo");
     setEchoFileName(E_ECHO_ARCH, "arch.echo");

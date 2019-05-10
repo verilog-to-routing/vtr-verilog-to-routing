@@ -7,15 +7,13 @@ using namespace std;
 
 #include "hash.h"
 
-t_hash **
-alloc_hash_table() {
+t_hash ** alloc_hash_table() {
 
 	/* Creates a hash table with HASHSIZE different locations (hash values).   */
 
 	t_hash **hash_table;
 
-	hash_table = (t_hash **) vtr::calloc(sizeof(t_hash *),
-			HASHSIZE);
+	hash_table = (t_hash **) vtr::calloc(sizeof(t_hash *), HASHSIZE);
 	return (hash_table);
 }
 
@@ -51,8 +49,7 @@ t_hash_iterator start_hash_table_iterator() {
 	return (hash_iterator);
 }
 
-t_hash *
-get_next_hash(t_hash **hash_table, t_hash_iterator *hash_iterator) {
+t_hash * get_next_hash(t_hash **hash_table, t_hash_iterator *hash_iterator) {
 
 	/* Returns the next occupied hash entry, and moves the iterator structure    *
 	 * forward so the next call gets the next entry.                             */
@@ -76,8 +73,7 @@ get_next_hash(t_hash **hash_table, t_hash_iterator *hash_iterator) {
 	return (h_ptr);
 }
 
-t_hash *
-insert_in_hash_table(t_hash **hash_table, const char *name,
+t_hash * insert_in_hash_table(t_hash **hash_table, const char *name,
 		int next_free_index) {
 
 	/* Adds the string pointed to by name to the hash table, and returns the    *
@@ -119,8 +115,7 @@ insert_in_hash_table(t_hash **hash_table, const char *name,
 	return (h_ptr);
 }
 
-t_hash *
-get_hash_entry(t_hash **hash_table, const char *name) {
+t_hash * get_hash_entry(t_hash **hash_table, const char *name) {
 
 	/* Returns the hash entry with this name, or NULL if there is no            *
 	 * corresponding entry.                                                     */

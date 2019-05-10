@@ -28,7 +28,8 @@ Prerequisites
 Build
 ===========
 
-To build ODIN, run "make odin_II" from the vtr root directory.
+To build you may use the Makefile wrapper in the ODIN_ROOT ``make build``
+To build with debug symbols you may use the Makefile wrapper in the ODIN_ROOT ``make debug``
 
 .. note::
 	ODIN uses CMake as it's build system. CMake provides a protable cross-platform build systems with many useful features.
@@ -36,8 +37,8 @@ To build ODIN, run "make odin_II" from the vtr root directory.
 	but calls CMake behind the scenes.
 
 .. warning::
-	After you build Odin, please run the included verify_microbenchmarks.sh script. This will automatically compile, simulate,
-	and verify all of the included microbenchmark circuits to ensure that Odin is working correctly on your system.
+	After you build Odin, please run from the ODIN_ROOT ``make test``
+This will simulate, and verify all of the included microbenchmark circuits to ensure that Odin is working correctly on your system.
 
 
 
@@ -243,11 +244,11 @@ Verilog Synthesizable Keyword Support:
 +-------------------+------------------+---------------------+--------------------+
 | assign            | forever          | **                  |                    |
 +-------------------+------------------+---------------------+--------------------+
-| case              | repeat           | ^~                  |                    |
+| case              | task    	       | ^~                  |                    |
 +-------------------+------------------+---------------------+--------------------+
-| defparam          | signed           | <<<                 |                    |
+| defparam          | repeat           | <<<                 |                    |
 +-------------------+------------------+---------------------+--------------------+
-| end               | specparam        | \>=                 |                    |
+| end               | signed           | \>=                 |                    |
 +-------------------+------------------+---------------------+--------------------+
 | endfunction       | task             | ||                  |                    |
 +-------------------+------------------+---------------------+--------------------+
@@ -309,7 +310,10 @@ Verilog Synthesizable Keyword Support:
 +-------------------+------------------+---------------------+--------------------+
 | macromodule       |                  |                     |                    |
 +-------------------+------------------+---------------------+--------------------+
-
+| +:                |                  |                     |                    |
++-------------------+------------------+---------------------+--------------------+
+| -:                |                  |                     |                    |
++-------------------+------------------+---------------------+--------------------+
 
 Verilog NON-Synthesizable Keyword Support:
 *********************************
@@ -319,7 +323,7 @@ Verilog NON-Synthesizable Keyword Support:
 +-------------------+------------------+---------------------+--------------------+
 | initial           | casex            |                     | &&&                |
 +-------------------+------------------+---------------------+--------------------+
-|                   | casez            |                     |                    |
+| specparam         | casez            |                     |                    |
 +-------------------+------------------+---------------------+--------------------+
 |                   | endprimitive     |                     |                    |
 +-------------------+------------------+---------------------+--------------------+
@@ -457,14 +461,13 @@ the print_usage() function within odin_ii.c before checking in the changes.
 TESTING ODIN II
 ***************
 
-The verify_microbenchmarks.sh and verify_regression_tests.sh scripts
-compile and simulate the microbenchmarks and a larger set of benchmark
+The verify_odin.sh scripts simulate the microbenchmarks and a larger set of benchmark
 circuits. These scripts use simulation results which have been verified
 against ModelSim.
 
-After you build Odin II, run verify_microbenchmarks.sh to ensure that
+After you build Odin II, run verify_odin.sh to ensure that
 everything is working correctly on your system. Unlike the
-verify_regression_tests.sh script, verify_microbenchmarks.sh also
+verify_regression_tests.sh script, verify_odin.sh also
 simulates the blif output, as well as simulating the verilog with and
 without the architecture file.
 
@@ -488,8 +491,7 @@ ModelSim may be installed as part of the Quartus II Web Edition IDE. Load
 the Verilog circuit into a new project in ModelSim. Compile the circuit,
 and load the resulting library for simulation.
 
-Simulate the circuit in Odin II using the -E option to ensure that Odin II
-outputs both edges of the clock. You may use random vectors via the -g option,
+You may use random vectors via the -g option,
 or specify your own input vectors using the -t option. When simulation is
 complete, load the resulting test.do file into your ModelSim project and
 execute it. You may now directly compare the vectors in the output_vectors

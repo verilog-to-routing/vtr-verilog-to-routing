@@ -122,6 +122,9 @@ struct global_args_t_t
 
     argparse::ArgValue<bool> black_box_latches; //Weather or not to treat and output latches as black boxes
 	argparse::ArgValue<char*> adder_def; //carry skip adder skip size
+    // defines if the first cin of an adder/subtractor is connected to a global gnd/vdd
+    // or generated using a dummy adder with both inputs set to gnd/vdd
+    argparse::ArgValue<bool> adder_cin_global;
 
 	/////////////////////
 	// For simulation.
@@ -271,6 +274,7 @@ typedef enum
 	/* top level things */
 	FILE_ITEMS,
 	MODULE,
+	SPECIFY,
 	/* VARIABLES */
 	INPUT,
 	OUTPUT,
@@ -306,6 +310,9 @@ typedef enum
 	/* Function instances*/
 	FUNCTION_NAMED_INSTANCE,
 	FUNCTION_INSTANCE,
+	/* Specify Items */
+	SPECIFY_ITEMS,
+	SPECIFY_PARAMETER,
 	SPECIFY_PAL_CONNECTION_STATEMENT,
 	SPECIFY_PAL_CONNECT_LIST,
 	/* statements */

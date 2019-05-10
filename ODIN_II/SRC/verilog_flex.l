@@ -34,7 +34,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "string.h"
 
 /* the define below helps with watching the parser go token by token */
-#define MP {if (to_view_parse) {printf("%d %s\n", yylineno, yytext);}}
+#define PRINT_TOKEN {printf("%d %s\n", yylineno, yytext);}
+#define UNSUPPORTED_TOKEN {printf("Unsuported token::"); PRINT_TOKEN }
+#define MP {if (to_view_parse) PRINT_TOKEN}
 char* standardize_number(const char* input);
 
 %}
@@ -88,73 +90,73 @@ char* standardize_number(const char* input);
 <INITIAL>"xnor"				{ MP; return vXNOR;}
 <INITIAL>"xor"				{ MP; return vXOR;}
 <INITIAL>"macromodule"		{ MP; return vMODULE;}
+<INITIAL>"specparam"		{ MP; return vSPECPARAM;}
+
 
 	/*	unsupported Keywords	*/
-<INITIAL>"automatic"		{ MP; return vNOT_SUPPORT;}
-<INITIAL>"buf"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"casex"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"casez"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"disable"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"edge"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"endtask"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"scalared"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"specparam"		{ MP; return vNOT_SUPPORT;}
-<INITIAL>"bufif0"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"bufif1"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"cmos"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"deassign"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"endprimitive"		{ MP; return vNOT_SUPPORT;}
-<INITIAL>"endtable"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"event"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"force"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"forever"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"fork"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"highz0"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"highz1"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"join"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"large"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"medium"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"nmos"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"notif0"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"notif1"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"pmos"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"primitive"		{ MP; return vNOT_SUPPORT;}
-<INITIAL>"pull0"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"pull1"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"pulldown"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"pullup"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"rcmos"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"release"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"repeat"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"rnmos"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"rpmos"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"rtran"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"rtranif0"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"rtranif1"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"small"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"signed"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"strong0"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"strong1"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"supply0"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"supply1"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"table"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"task"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"time"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"tran"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"tranif0"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"tranif1"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"tri"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"tri0"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"tri1"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"triand"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"trior"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"vectored"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"wait"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"wand"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"weak0"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"weak1"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"wor"				{ MP; return vNOT_SUPPORT;}
-
+<INITIAL>"automatic"		{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"buf"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"casex"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"casez"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"disable"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"edge"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"endtask"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"scalared"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"bufif0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"bufif1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"cmos"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"deassign"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"endprimitive"		{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"endtable"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"event"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"force"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"forever"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"fork"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"highz0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"highz1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"join"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"large"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"medium"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"nmos"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"notif0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"notif1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"pmos"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"primitive"		{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"pull0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"pull1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"pulldown"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"pullup"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"rcmos"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"release"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"repeat"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"rnmos"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"rpmos"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"rtran"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"rtranif0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"rtranif1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"small"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"signed"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"strong0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"strong1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"supply0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"supply1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"table"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"task"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"time"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"tran"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"tranif0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"tranif1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"tri"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"tri0"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"tri1"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"triand"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"trior"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"vectored"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"wait"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"wand"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"weak0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"weak1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+<INITIAL>"wor"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 
 	/* Operators */
 <INITIAL>"**"				{ MP; return voPOWER;}
@@ -175,11 +177,12 @@ char* standardize_number(const char* input);
 <INITIAL>"~^"				{ MP; return voXNOR;}
 <INITIAL>"~&"				{ MP; return voNAND;}
 <INITIAL>"~|"				{ MP; return voNOR;}
+<INITIAL>"+:"				{ MP; return vPLUS_COLON;}
+<INITIAL>"-:"				{ MP; return vMINUS_COLON;}
 
 	/*	unsupported Operators	*/
-<INITIAL>"&&&"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"+:"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"-:"				{ MP; return vNOT_SUPPORT;}
+<INITIAL>"&&&"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
+
 
 
 	/*	operands	*/

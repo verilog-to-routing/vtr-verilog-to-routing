@@ -6,7 +6,6 @@
 #include <csignal> //for sig_atomic_t
 
 #include "vpr_types.h"
-#include "vtr_matrix.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 #include "atom_netlist.h"
@@ -20,6 +19,7 @@
 #include "clock_network_builders.h"
 #include "clock_connection_builders.h"
 #include "route_traceback.h"
+#include "place_macro.h"
 
 
 //A Context is collection of state relating to a particular part of VPR
@@ -93,19 +93,6 @@ struct TimingContext : public Context {
         size_t num_old_sta_full_updates = 0;
     };
     timing_analysis_profile_info stats;
-
-
-    //Legacy timing analyzer globals (TODO: remove)
-    t_timing_constraints* sdc;
-    int num_tnodes; /* Number of nodes (pins) in the timing graph */
-    t_tnode* tnodes; /* [0..num_tnodes - 1] nodes in the timing graph */
-    int num_tnode_levels; /* Number of levels in the timing graph. */
-    std::vector<std::vector<int>> tnodes_at_level; /* [0..num__tnode_levels - 1].  Count and list of tnodes at each level of
-                                   * the timing graph, to make topological searches easier. Level-0 nodes are
-                                   * sources to the timing graph (types TN_FF_SOURCE, TN_INPAD_SOURCE
-                                   * and TN_CONSTANT_GEN_SOURCE). Level-N nodes are in the immediate fanout of
-                                   * nodes with level at most N-1. */
-
 };
 
 namespace std {
@@ -201,13 +188,6 @@ struct DeviceContext : public Context {
      Clock Network
      ********************************************************************/
     t_clock_arch * clock_arch;
-
-    /*******************************************************************
-     Timing related
-     ********************************************************************/
-    //TODO: Remove these max_internal_delay globals when the classic timing analyzer is removed
-    float pb_max_internal_delay = UNDEFINED; /* biggest internal delay of block */
-    const t_pb_type *pbtype_max_internal_delay; /* block type with highest internal delay */
 };
 
 //State relating to power analysis
@@ -253,6 +233,9 @@ struct PlacementContext : public Context {
 
     //Clustered block associated with each grid location (i.e. inverse of block_locs)
     vtr::Matrix<t_grid_blocks> grid_blocks; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.width()-1]
+
+    // The pl_macros array stores all the placement macros (usually carry chains). 
+    std::vector<t_pl_macro> pl_macros;
 
     //SHA256 digest of the .place file (used for unique identification and consistency checking)
     std::string placement_id;

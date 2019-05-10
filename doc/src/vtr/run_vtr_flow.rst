@@ -57,7 +57,7 @@ For example::
 
    run_vtr_flow.pl my_circuit.v my_arch.xml -track_memory_usage --pack --place
 
-will run the VTR flow to map the circuit ``my_circuit.v`` onto the archtiecture ``my_arch.xml``; the arguments ``--pack`` and ``--place`` will be passed to VPR (since they are unrecognized arguments to ``run_vtr_flow.pl``).
+will run the VTR flow to map the circuit ``my_circuit.v`` onto the architecture ``my_arch.xml``; the arguments ``--pack`` and ``--place`` will be passed to VPR (since they are unrecognized arguments to ``run_vtr_flow.pl``).
 They will cause VPR to perform only :ref:`packing and placement <general_options>`.
 
 Detailed Command-line Options
@@ -104,13 +104,13 @@ Detailed Command-line Options
 
     See :ref:`power_technology_properties`
 
-.. option:: -keep_intermediate_files
+.. option:: -delete_intermediate_files
 
-    Do not delete intermediate files.
+    Delete intermediate files (i.e. ``.dot``, ``.xml``, ``.rc``, etc)
 
-.. option:: -keep_result_files
+.. option:: -delete_result_files
 
-    Do not delete the result files (i.e. VPR's ``.net``, ``.place``, ``.route`` outputs)
+    Delete result files (i.e. VPR's ``.net``, ``.place``, ``.route`` outputs)
 
 .. option:: -track_memory_usage
 
@@ -141,3 +141,35 @@ Detailed Command-line Options
     The script will automatically create this directory if necessary.
 
     **Default:** ``./temp``
+
+.. option:: -valgrind
+
+    Run the flow with valgrind while using the following valgrind
+    options:
+
+        * --leak-check=full
+        * --errors-for-leak-kinds=none
+        * --error-exitcode=1
+        * --track-origins=yes
+
+.. option:: -min_hard_mult_size <int>
+
+    Tells ODIN II the minimum multiplier size that should be implemented
+    using hard multiplier (if available). Smaller multipliers will be
+    implemented using soft logic.
+
+    **Default:** 3
+
+.. option:: -min_hard_adder_size <int>
+
+    Tells ODIN II the minimum adder size that should be implemented
+    using hard adders (if available). Smaller adders will be
+    implemented using soft logic.
+
+    **Default:** 1
+
+.. option:: -adder_cin_global
+
+    Tells ODIN II to connect the first cin in an adder/subtractor chain
+    to a global gnd/vdd net. Instead of creating a dummy adder to generate
+    the input signal of the first cin port of the chain.

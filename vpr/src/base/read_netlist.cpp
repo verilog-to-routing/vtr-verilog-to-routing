@@ -56,9 +56,9 @@ static void load_internal_to_block_net_nums(const t_type_ptr type, t_pb_routes& 
 
 static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin);
 
-static void mark_constant_generators(const ClusteredNetlist& clb_nlist);
+static void mark_constant_generators(const ClusteredNetlist& clb_nlist, int verbosity);
 
-static void mark_constant_generators_rec(const t_pb *pb, const t_pb_routes& pb_route);
+static size_t mark_constant_generators_rec(const t_pb *pb, const t_pb_routes& pb_route, int verbosity);
 
 static t_pb_routes alloc_pb_route(t_pb_graph_node *pb_graph_node);
 
@@ -71,7 +71,8 @@ static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBl
  */
 ClusteredNetlist read_netlist(const char *net_file,
                               const t_arch* arch,
-                              bool verify_file_digests) {
+                              bool verify_file_digests,
+                              int verbosity) {
 	clock_t begin = clock();
 	size_t bcount = 0;
 	std::vector<std::string> circuit_inputs, circuit_outputs, circuit_clocks;
@@ -206,7 +207,7 @@ ClusteredNetlist read_netlist(const char *net_file,
             }
         }
         /* TODO: Add additional check to make sure net connections match */
-		mark_constant_generators(clb_nlist);
+		mark_constant_generators(clb_nlist, verbosity);
 
         load_external_nets_and_cb(clb_nlist);
     } catch(pugiutil::XmlError& e) {
@@ -411,7 +412,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
 	pb_type = pb->pb_graph_node->pb_type;
 
 	//Create the ports in the clb_nlist for the top-level pb
-	if (pb->parent_pb == nullptr) {
+	if (pb->is_root()) {
 		VTR_ASSERT(num_in_ports <= num_out_ports);
 
 		for (i = 0; i < num_in_ports; i++) {
@@ -512,7 +513,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
                         found = true;
                     }
                 }
-                if (!found && pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes != 0) {
+                if (!found && !pb->child_pbs[i][pb_index].is_primitive()) {
                     vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                             "Unknown mode %s for cb %s #%d.\n", mode.value(),
                             pb->child_pbs[i][pb_index].name, pb_index);
@@ -538,7 +539,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
                             found = true;
                         }
                     }
-                    if (!found && pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes != 0) {
+                    if (!found && !pb->child_pbs[i][pb_index].is_primitive()) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                                 "Unknown mode %s for cb %s #%d.\n", mode.value(),
                                 pb->child_pbs[i][pb_index].name, pb_index);
@@ -647,7 +648,7 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
 
         //Process the input and clock ports
         if (0 == strcmp(Parent.name(), "inputs") || 0 == strcmp(Parent.name(), "clocks")) {
-            if (pb->parent_pb == nullptr) {
+            if (pb->is_root()) {
                 //We are processing a top-level pb, so these pins connect to inter-block nets
                 for (i = 0; i < num_tokens; i++) {
                     //Set rr_node_index to the pb_route for the appropriate port
@@ -737,7 +738,7 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
         }
 
         if (0 == strcmp(Parent.name(), "outputs")) {
-            if (pb->pb_graph_node->pb_type->num_modes == 0) {
+            if (pb->pb_graph_node->is_primitive()) {
                 /* primitives are drivers of nets */
                 for (i = 0; i < num_tokens; i++) {
                     const t_pb_graph_pin* pb_gpin = &pb->pb_graph_node->output_pins[out_port][i];
@@ -1015,16 +1016,20 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 	free_hash_table(ext_nhash);
 }
 
-static void mark_constant_generators(const ClusteredNetlist& clb_nlist) {
+static void mark_constant_generators(const ClusteredNetlist& clb_nlist, int verbosity) {
+    size_t const_gen_count = 0;
 	for(auto blk_id : clb_nlist.blocks()) {
-		mark_constant_generators_rec(clb_nlist.block_pb(blk_id), clb_nlist.block_pb(blk_id)->pb_route);
+		const_gen_count += mark_constant_generators_rec(clb_nlist.block_pb(blk_id), clb_nlist.block_pb(blk_id)->pb_route, verbosity);
 	}
+
+    VTR_LOG("Detected %zu constant generators (to see names run with higher pack verbosity)\n", const_gen_count);
 }
 
-static void mark_constant_generators_rec(const t_pb *pb, const t_pb_routes& pb_route) {
+static size_t mark_constant_generators_rec(const t_pb *pb, const t_pb_routes& pb_route, int verbosity) {
 	int i, j;
 	t_pb_type *pb_type;
 	bool const_gen;
+    size_t const_gen_count = 0;
 
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -1034,7 +1039,7 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_routes& pb_r
 			pb_type = &(pb->pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i]);
 			for (j = 0; j < pb_type->num_pb; j++) {
 				if (pb->child_pbs[i][j].name != nullptr) {
-					mark_constant_generators_rec(&(pb->child_pbs[i][j]), pb_route);
+					const_gen_count += mark_constant_generators_rec(&(pb->child_pbs[i][j]), pb_route, verbosity);
 				}
 			}
 		}
@@ -1059,7 +1064,8 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_routes& pb_r
 			}
 		}
 		if (const_gen == true) {
-			VTR_LOG("%s is a constant generator.\n", pb->name);
+			VTR_LOGV(verbosity > 2, "%s is a constant generator.\n", pb->name);
+            ++const_gen_count;
 			for (i = 0; i < pb->pb_graph_node->num_output_ports; i++) {
 				for (j = 0; j < pb->pb_graph_node->num_output_pins[i]; j++) {
                     int cluster_pin_idx = pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster;
@@ -1073,6 +1079,7 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_routes& pb_r
 			}
 		}
 	}
+    return const_gen_count;
 }
 
 static t_pb_routes alloc_pb_route(t_pb_graph_node* /*pb_graph_node*/) {

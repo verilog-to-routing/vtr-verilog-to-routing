@@ -14,9 +14,6 @@ matrix:
         - env: TESTS="basic mcnc20" TATUM_EXECUTION_ENGINE=tbb MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
           addons: { apt: { packages: ["cmake", "g++-5", "libtbb-dev"], sources: ["ubuntu-toolchain-r-test"] } }
 
-        - env: TESTS="basic mcnc20" TATUM_EXECUTION_ENGINE=cilk MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
-          addons: { apt: { packages: ["cmake", "g++-5", "libtbb-dev"], sources: ["ubuntu-toolchain-r-test"] } }
-
         #Simple testing for other compilers
         - env: TESTS="basic" TATUM_EXECUTION_ENGINE=auto MATRIX_EVAL="CC=gcc-8 CXX=g++-8"
           addons: { apt: { packages: ["cmake", "g++-8", "libtbb-dev"], sources: ["ubuntu-toolchain-r-test"] } }

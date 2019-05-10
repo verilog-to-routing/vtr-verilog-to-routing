@@ -27,6 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <string.h>
 #include "odin_types.h"
+#include "ast_util.h"
 #include "parse_making_ast.h"
 
 #define PARSE {printf("here\n");}
@@ -35,7 +36,7 @@ extern int yylineno;
 	#define YYLINENO yylineno
 #endif
 
-void yyerror(const char *str){	fprintf(stderr,"error in parsing: %s - on line number %d\n",str, yylineno);	exit(-1);}
+void yyerror(const char *str){	fprintf(stderr,"error in parsing: (%s)::%d\n",str, yylineno-1);	exit(-1);}
 int yywrap(){	return 1;}
 int yyparse();
 int yylex(void);
@@ -65,8 +66,9 @@ int yylex(void);
 %token vOUTPUT vPARAMETER vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER
-%token vNOT_SUPPORT
+%token vPLUS_COLON vMINUS_COLON vSPECPARAM
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
+%token vNOT_SUPPORT 
 
 %right '?' ':'
 %left voOROR
@@ -113,7 +115,9 @@ int yylex(void);
 %type <node> non_blocking_assignment case_item_list case_items seq_block
 %type <node> stmt_list delay_control event_expression_list event_expression
 %type <node> expression primary probable_expression_list expression_list module_parameter
-%type <node> list_of_module_parameters specify_block list_of_specify_statement specify_statement
+%type <node> list_of_module_parameters
+%type <node> specify_block list_of_specify_items specify_item specparam_declaration
+%type <node> specify_pal_connect_declaration
 %type <node> initial_block parallel_connection list_of_blocking_assignment
 
 %%
@@ -131,21 +135,21 @@ items:
 	;
 
 define:
-	vDEFINE vSYMBOL_ID vINTEGRAL				             {$$ = NULL; newConstant($2, newNumberNode($3, LONG, UNSIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vUNSIGNED_DECIMAL				   {$$ = NULL; newConstant($2, newNumberNode($3, DEC, UNSIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vUNSIGNED_OCTAL				     {$$ = NULL; newConstant($2, newNumberNode($3, OCT, UNSIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vUNSIGNED_HEXADECIMAL			 {$$ = NULL; newConstant($2, newNumberNode($3, HEX, UNSIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vUNSIGNED_BINARY				     {$$ = NULL; newConstant($2, newNumberNode($3, BIN, UNSIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vSIGNED_DECIMAL				   {$$ = NULL; newConstant($2, newNumberNode($3, DEC, SIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vSIGNED_OCTAL				     {$$ = NULL; newConstant($2, newNumberNode($3, OCT, SIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vSIGNED_HEXADECIMAL			 {$$ = NULL; newConstant($2, newNumberNode($3, HEX, SIGNED, yylineno), yylineno);}
-  | vDEFINE vSYMBOL_ID vSIGNED_BINARY				     {$$ = NULL; newConstant($2, newNumberNode($3, BIN, SIGNED, yylineno), yylineno);}
+	vDEFINE vSYMBOL_ID vINTEGRAL							{$$ = NULL; newConstant($2, newNumberNode($3, LONG, UNSIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vUNSIGNED_DECIMAL					{$$ = NULL; newConstant($2, newNumberNode($3, DEC, UNSIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vUNSIGNED_OCTAL					{$$ = NULL; newConstant($2, newNumberNode($3, OCT, UNSIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vUNSIGNED_HEXADECIMAL				{$$ = NULL; newConstant($2, newNumberNode($3, HEX, UNSIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vUNSIGNED_BINARY					{$$ = NULL; newConstant($2, newNumberNode($3, BIN, UNSIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vSIGNED_DECIMAL					{$$ = NULL; newConstant($2, newNumberNode($3, DEC, SIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vSIGNED_OCTAL						{$$ = NULL; newConstant($2, newNumberNode($3, OCT, SIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vSIGNED_HEXADECIMAL				{$$ = NULL; newConstant($2, newNumberNode($3, HEX, SIGNED, yylineno), yylineno);}
+	| vDEFINE vSYMBOL_ID vSIGNED_BINARY						{$$ = NULL; newConstant($2, newNumberNode($3, BIN, SIGNED, yylineno), yylineno);}
 	;
 
 
 module:
 	vMODULE vSYMBOL_ID '(' variable_define_list ')' ';' list_of_module_items vENDMODULE				{$$ = newModule($2, $4, $7, yylineno);}
-	| vMODULE vSYMBOL_ID '(' variable_define_list ',' ')' ';' list_of_module_items vENDMODULE		{$$ = newModule($2, $4, $8, yylineno);} //TODO this is supported?? not in standards
+	| vMODULE vSYMBOL_ID '(' variable_define_list ',' ')' ';' list_of_module_items vENDMODULE		{$$ = newModule($2, $4, $8, yylineno);}
 	| vMODULE vSYMBOL_ID '(' ')' ';' list_of_module_items vENDMODULE								{$$ = newModule($2, NULL, $6, yylineno);}
 	;
 
@@ -186,7 +190,7 @@ initial_block:
 	;
 
 specify_block:
-    vSPECIFY list_of_specify_statement vENDSPECIFY            			{$$ = $2;}
+    vSPECIFY list_of_specify_items vENDSPECIFY            				{$$ = $2;}
 	;
 
 list_of_function_items:
@@ -194,7 +198,8 @@ list_of_function_items:
 	| function_item              										{$$ = newList(FUNCTION_ITEMS, $1);}
 	;
 
-function_item: parameter_declaration	        						{$$ = $1;}
+function_item: 
+	parameter_declaration	        									{$$ = $1;}
 	| function_input_declaration			    						{$$ = $1;}
 	| net_declaration													{$$ = $1;}
 	| integer_declaration                       						{$$ = $1;}
@@ -393,13 +398,22 @@ statement:
 	| ';'																						{$$ = NULL;}
 	;
 
-list_of_specify_statement:
-	list_of_specify_statement specify_statement 						{$$ = newList_entry($1, $2);}
-	| specify_statement							                        {$$ = newList(SPECIFY_PAL_CONNECT_LIST, $1);}
+list_of_specify_items:
+	list_of_specify_items specify_item 									{$$ = newList_entry($1, $2);}
+	| specify_item														{$$ = newList(SPECIFY_ITEMS, $1);}
     ;
 
-specify_statement:
-    '(' parallel_connection ')' '=' primary ';'							{$$ = newParallelConnection($2, $5, yylineno);}
+specify_item:
+	specify_pal_connect_declaration            							{$$ = newList(SPECIFY_PAL_CONNECT_LIST, $1);}
+	| specparam_declaration            						        	{$$ = free_whole_tree($1);}
+	;
+
+specify_pal_connect_declaration:
+	'(' parallel_connection ')' '=' primary ';'							{$$ = newParallelConnection($2, $5, yylineno);}
+	;
+
+specparam_declaration:
+	vSPECPARAM variable_list ';'										{$$ = $2;}
 	;
 
 blocking_assignment:
@@ -428,6 +442,7 @@ case_items:
 
 seq_block:
 	vBEGIN stmt_list vEND 									{$$ = $2;}
+	| vBEGIN ':' vSYMBOL_ID stmt_list vEND					{$$ = $4;}
 	;
 
 stmt_list:
@@ -498,21 +513,23 @@ expression:
 	;
 
 primary:
-  vINTEGRAL				                  {$$ = newNumberNode($1, LONG, UNSIGNED, yylineno);}
-  | vUNSIGNED_DECIMAL				        {$$ = newNumberNode($1, DEC, UNSIGNED, yylineno);}
-  | vUNSIGNED_OCTAL				          {$$ = newNumberNode($1, OCT, UNSIGNED, yylineno);}
-  | vUNSIGNED_HEXADECIMAL			      {$$ = newNumberNode($1, HEX, UNSIGNED, yylineno);}
-  | vUNSIGNED_BINARY				        {$$ = newNumberNode($1, BIN, UNSIGNED, yylineno);}
-  | vSIGNED_DECIMAL				        {$$ = newNumberNode($1, DEC, SIGNED, yylineno);}
-  | vSIGNED_OCTAL				          {$$ = newNumberNode($1, OCT, SIGNED, yylineno);}
-  | vSIGNED_HEXADECIMAL			      {$$ = newNumberNode($1, HEX, SIGNED, yylineno);}
-  | vSIGNED_BINARY				        {$$ = newNumberNode($1, BIN, SIGNED, yylineno);}
-	| vSYMBOL_ID											{$$ = newSymbolNode($1, yylineno);}
-	| vSYMBOL_ID '[' expression ']'							{$$ = newArrayRef($1, $3, yylineno);}
-	| vSYMBOL_ID '[' expression ']' '[' expression ']'		{$$ = newArrayRef2D($1, $3, $6, yylineno);}
-	| vSYMBOL_ID '[' expression ':' expression ']'			{$$ = newRangeRef($1, $3, $5, yylineno);}
+	vINTEGRAL								{$$ = newNumberNode($1, LONG, UNSIGNED, yylineno);}
+	| vUNSIGNED_DECIMAL						{$$ = newNumberNode($1, DEC, UNSIGNED, yylineno);}
+	| vUNSIGNED_OCTAL						{$$ = newNumberNode($1, OCT, UNSIGNED, yylineno);}
+	| vUNSIGNED_HEXADECIMAL					{$$ = newNumberNode($1, HEX, UNSIGNED, yylineno);}
+	| vUNSIGNED_BINARY						{$$ = newNumberNode($1, BIN, UNSIGNED, yylineno);}
+	| vSIGNED_DECIMAL						{$$ = newNumberNode($1, DEC, SIGNED, yylineno);}
+	| vSIGNED_OCTAL							{$$ = newNumberNode($1, OCT, SIGNED, yylineno);}
+	| vSIGNED_HEXADECIMAL					{$$ = newNumberNode($1, HEX, SIGNED, yylineno);}
+	| vSIGNED_BINARY						{$$ = newNumberNode($1, BIN, SIGNED, yylineno);}
+	| vSYMBOL_ID																		{$$ = newSymbolNode($1, yylineno);}
+	| vSYMBOL_ID '[' expression ']'														{$$ = newArrayRef($1, $3, yylineno);}
+	| vSYMBOL_ID '[' expression ']' '[' expression ']'									{$$ = newArrayRef2D($1, $3, $6, yylineno);}
+	| vSYMBOL_ID '[' expression vPLUS_COLON expression ']'								{$$ = newPartSelectRangeRef($1, $3, $5, 1, yylineno);}
+	| vSYMBOL_ID '[' expression vMINUS_COLON expression ']'								{$$ = newPartSelectRangeRef($1, $3, $5, -1, yylineno);}
+	| vSYMBOL_ID '[' expression ':' expression ']'										{$$ = newRangeRef($1, $3, $5, yylineno);}
 	| vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newRangeRef2D($1, $3, $5, $8, $10, yylineno);}
-	| '{' probable_expression_list '}' 						{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
+	| '{' probable_expression_list '}'													{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
 	;
 
 probable_expression_list:

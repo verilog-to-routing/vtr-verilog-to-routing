@@ -8,6 +8,6 @@ enum e_constant_net_method {
     CONSTANT_NET_ROUTE   //Treat constant nets a non-globals (i.e. routed)
 };
 
-void process_constant_nets(ClusteredNetlist& nlist, e_constant_net_method method);
+void process_constant_nets(ClusteredNetlist& nlist, e_constant_net_method method, int verbosity);
 
 #endif

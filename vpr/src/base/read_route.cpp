@@ -379,10 +379,10 @@ static void process_global_blocks(ifstream &fp, ClusterNetId inet, const char* f
                         "Block %s for block number %lu specified in the routing file does not match given %s",
                         tokens[1].c_str(), size_t(bnum), cluster_ctx.clb_nlist.block_name(bnum).c_str());
             }
-            if (place_ctx.block_locs[bnum].x != x || place_ctx.block_locs[bnum].y != y) {
+            if (place_ctx.block_locs[bnum].loc.x != x || place_ctx.block_locs[bnum].loc.y != y) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                         "The placement coordinates (%d, %d) of %d block does not match given (%d, %d)",
-                        x, y, place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y);
+                        x, y, place_ctx.block_locs[bnum].loc.x, place_ctx.block_locs[bnum].loc.y);
             }
 
 			int pin_index = cluster_ctx.clb_nlist.net_pin_physical_index(inet, pin_counter);

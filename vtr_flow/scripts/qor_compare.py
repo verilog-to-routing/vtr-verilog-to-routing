@@ -5,23 +5,24 @@ from collections import OrderedDict
 import openpyxl #Excel spreadsheet manipulation library
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.worksheet.cell_range import CellRange
-
+import os
 import pandas as pd
 
 DEFAULT_METRICS = [
-    'num_pre_packed_blocks',        
-    'num_post_packed_blocks',        
-    'min_chan_width',        
-    'crit_path_routed_wirelength',        
-    'critical_path_delay',        
-    'device_grid_tiles',        
+    'num_pre_packed_blocks',
+    'num_post_packed_blocks',
+    'num_clb',
+    'min_chan_width',
+    'crit_path_routed_wirelength',
+    'critical_path_delay',
+    'device_grid_tiles',
 
-    'vtr_flow_elapsed_time',        
-    'pack_time',        
-    'place_time',        
-    'min_chan_width_route_time',        
-    'crit_path_route_time',        
-    'max_vpr_mem',        
+    'vtr_flow_elapsed_time',
+    'pack_time',
+    'place_time',
+    'min_chan_width_route_time',
+    'crit_path_route_time',
+    'max_vpr_mem',
 ]
 
 DEFAULT_KEYS = [
@@ -34,7 +35,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Utility script to generate spreadsheets comparing VTR metric files")
 
     parser.add_argument("parse_result_files",
-                        nargs="+",
+                        nargs="*",
                         metavar="PARSE_RESULT.TXT",
                         help="Set of metric files to compare")
 
@@ -56,9 +57,20 @@ def parse_args():
     parser.add_argument("--keys",
                         nargs="+",
                         default=DEFAULT_KEYS,
-                        help="Default keys to identify individiual experiments (default: %(default)s)")
+                        help="Default keys to identify individual experiments (default: %(default)s)")
+
+    parser.add_argument("-t", "--task",
+                        metavar="task_name",
+                        default="",
+                        help="Compare the latest result of a task to its golden results")
 
     args = parser.parse_args()
+
+    if (args.task):
+        args.parse_result_files = get_task_result_files(args.task)
+
+    if (not args.task and len(args.parse_result_files) == 0):
+        raise RuntimeError("No parse result files or task name provided")
 
     if not args.result_names or len(args.result_names) == 0:
         args.result_names = args.parse_result_files
@@ -131,7 +143,7 @@ def make_summary(summary_sheet, ratio_sheet, ratio_ranges, keys):
                     dest_col += 1
             dest_row += 1
             dest_col = 1 #Reset for next row
-        
+
         #
         #Data
         #
@@ -208,7 +220,7 @@ def fill_ratio(ws, raw_sheet, ref_sheet, dest_row, dest_col, keys, metrics):
 
             dest_cell = ws.cell(row=dest_row + row_offset, column=dest_col + col_offset)
 
-            
+
             if ref_header_name in keys:
                 assert ref_cell.value == raw_cell.value, "Key value must match"
 
@@ -284,7 +296,29 @@ def safe_sheet_title(raw_title):
     for bad_char in ['/']:
         safe_title = safe_title.replace(bad_char, '_')
 
+    if (len(safe_title) > 31):
+        safe_title = safe_title[-31:]
+
     return safe_title
+
+def get_task_result_files(task_name):
+
+    task_path = os.path.join("..", "tasks", task_name)
+    if (not os.path.isdir(task_path)):
+        raise RuntimeError("Task is not found at {}".format(task_path))
+
+    task_result_files = []
+    task_result_files.append(os.path.join("..", "tasks", task_name, "config", "golden_results.txt"))
+    task_result_files.append(os.path.join("..", "tasks", task_name, "latest", "parse_results.txt"))
+
+    if (not os.path.isfile(task_result_files[0])):
+        raise RuntimeError("Golden results of task \"{}\" doesn't exist".format(task_result_files[0]))
+
+    if (not os.path.isfile(task_result_files[1])):
+        raise RuntimeError("Latest parse results of task \"{}\" doesn't exist".format(task_result_files[1]))
+
+    return task_result_files
+
 
 if __name__ == "__main__":
     main()

@@ -49,9 +49,9 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
 
     root_clb_ = clb->pb_graph_node;
 
-    int x = place_ctx.block_locs[blk_id].x;
-    int y = place_ctx.block_locs[blk_id].y;
-    int z = place_ctx.block_locs[blk_id].z;
+    int x = place_ctx.block_locs[blk_id].loc.x;
+    int y = place_ctx.block_locs[blk_id].loc.y;
+    int z = place_ctx.block_locs[blk_id].loc.z;
     auto &grid_loc = device_ctx.grid[x][y];
     blk_type_ = grid_loc.type;
 

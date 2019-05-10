@@ -6,9 +6,6 @@
  *
  * Defines core data structures used in packing
  */
-#include <map>
-#include <vector>
-
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
 
@@ -58,19 +55,15 @@ struct t_pb_stats {
                                             this high fanout net to determine the
                                             next candidate atom */
 	bool explore_transitive_fanout; /* If no marked candidate molecules and no high fanout nets to determine next candidate molecule then explore molecules on transitive fanout */
-	std::vector<t_pack_molecule *> *transitive_fanout_candidates;
+	std::unordered_set<t_pack_molecule *> transitive_fanout_candidates; // Holding trasitive fanout candidates key: root block id of the molecule, value: pointer to the molecule
 
 	/* How many pins of each atom net are contained in the *
 	 * currently open pb?                                  */
 	std::map<AtomNetId, int> num_pins_of_net_in_pb;
 
-	/* Record of pins of class used
-     * TODO: Jason Luu: Should really be using hash table for this for speed,
-     *       too lazy to write one now, performance isn't too bad since I'm at
-     *       most iterating over the number of pins of a pb which is effectively
-     *       a constant for reasonable architectures */
-    std::vector<std::vector<AtomNetId>> input_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of input pins of this class that are used */
-	std::vector<std::vector<AtomNetId>> output_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of output pins of this class that are used */
+	/* Record of pins of class used */
+    std::vector<std::unordered_map<size_t, AtomNetId>> input_pins_used; /* [0..pb_graph_node->num_pin_classes-1] nets using this input pin class */
+	std::vector<std::unordered_map<size_t, AtomNetId>> output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] nets using this output pin class */
 
 	/* Use vector because array size is expected to be small so runtime should be faster using vector than map despite the O(N) vs O(log(n)) behaviour.*/
     std::vector<std::vector<AtomNetId>> lookahead_input_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */

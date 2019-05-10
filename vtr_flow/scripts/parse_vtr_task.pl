@@ -342,8 +342,13 @@ sub summarize_qor {
 	my $first = 1;
 	
 	my $task = @tasks[0];
-	(my $task_path = "$vtr_flow_path/tasks/$task") =~ s/\s+$//;
-	
+	(my $task_path = $task) =~ s/\s+$//;
+
+    # first see if task_name is the task path
+	if (! -e "$task_path/config/config.txt") {
+	    ($task_path = "$vtr_flow_path/tasks/$task") =~ s/\s+$//;
+    }
+
 	my $output_path = $task_path;
 	my $exp_id = last_exp_id($task_path);
 
@@ -363,7 +368,12 @@ sub summarize_qor {
 
 	foreach my $task (@tasks) {
 		chomp($task);
-		($task_path = "$vtr_flow_path/tasks/$task") =~ s/\s+$//;
+        ($task_path = $task) =~ s/\s+$//;
+
+        # first see if task_name is the task path
+        if (! -e "$task_path/config/config.txt") {
+            ($task_path = "$vtr_flow_path/tasks/$task") =~ s/\s+$//;
+        }
 		$exp_id = last_exp_id($task_path);
 		(my $run_path = "$task_path/${run_prefix}${exp_id}") =~ s/\s+$//;
 
@@ -392,8 +402,12 @@ sub calc_geomean {
 	my $first = 0;
 
 	my $task = @tasks[0];
-	(my $task_path = "$vtr_flow_path/tasks/$task") =~ s/\s+$//;
-	
+	(my $task_path = $task) =~ s/\s+$//;
+
+    # first see if task_name is the task path
+	if (! -e "$task_path/config/config.txt") {
+	    ($task_path = "$vtr_flow_path/tasks/$task") =~ s/\s+$//;
+    }
 	my $output_path = $task_path;
 	my $exp_id = last_exp_id($task_path);
 

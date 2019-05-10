@@ -173,8 +173,8 @@ static int check_clb_internal_nets(ClusterBlockId iblk) {
         VTR_ASSERT(pb_route.count(i));
 
 		if (pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id != OPEN) {
-			if ((pb_graph_pin_lookup[i]->port->type == IN_PORT && pb_graph_pin_lookup[i]->parent_node->parent_pb_graph_node == nullptr) ||
-				(pb_graph_pin_lookup[i]->port->type == OUT_PORT && pb_graph_pin_lookup[i]->parent_node->pb_type->num_modes == 0)
+			if ((pb_graph_pin_lookup[i]->port->type == IN_PORT && pb_graph_pin_lookup[i]->is_root_block_pin()) ||
+				(pb_graph_pin_lookup[i]->port->type == OUT_PORT && pb_graph_pin_lookup[i]->parent_node->is_primitive())
 				) {
 				if (pb_route[i].driver_pb_pin_id != OPEN) {
 					VTR_LOG_ERROR(

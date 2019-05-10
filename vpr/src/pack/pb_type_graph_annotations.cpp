@@ -309,7 +309,7 @@ static void load_delay_annotations(const int line_num,
 	} else {
         VTR_ASSERT(   delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX
                    || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MIN);
-		if (pb_graph_node->pb_type->num_modes != 0) {
+		if (!pb_graph_node->is_primitive()) {
 			/* Not a primitive, annotate pb interconnect delay */
 
             //Fast look-up for out pin membership

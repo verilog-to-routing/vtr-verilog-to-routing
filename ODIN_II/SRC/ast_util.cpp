@@ -526,22 +526,33 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
  *-------------------------------------------------------------------------*/
 void change_to_number_node(ast_node_t *node, long value)
 {
-	//free_assignement_of_node_keep_tree(node);
+	char *temp_ident = NULL;
+	if (node->types.identifier != NULL) 
+	{
+		temp_ident = strdup(node->types.identifier);
+	}
+	free_assignement_of_node_keep_tree(node);
+	
 	long len = snprintf(NULL,0,"%ld", value);
 	char *number = (char *)vtr::calloc(len+1,sizeof(char));
 	odin_sprintf(number, "%ld", value);
 
+	node->type = NUMBERS;
+	node->types.identifier = temp_ident;
 	node->types.number.base = DEC;
 	node->types.number.size = len;
 	node->types.number.number = number;
+	node->types.number.value = value;
 
-	if (value == 0){
+	if (value == 0)
+	{
 		node->types.number.binary_size = 1;
-	}else{
+	}
+	else
+	{
 		node->types.number.binary_size = ceil((log(convert_dec_string_of_size_to_long(node->types.number.number, node->types.number.size)+1))/log(2));
 	}
-
-	node->types.number.value = value;
+	
 	node->types.number.binary_string = convert_long_to_bit_string(value, node->types.number.binary_size);
 
 }

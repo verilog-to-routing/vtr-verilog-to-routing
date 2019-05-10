@@ -1,148 +1,73 @@
-#include <cstdio>
-#include <cstring>
-#include <cstdlib>
-#include <climits>
-#include <cmath>
-#include <cstdarg>
-using namespace std;
+#include "read_sdc.h"
 
+#include <regex>
+
+#include "vtr_log.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
-#include "vtr_log.h"
-#include "vtr_memory.h"
 #include "vtr_math.h"
 
-#include "vpr_types.h"
-#include "vpr_error.h"
-
-#include "globals.h"
-#include "atom_netlist.h"
-#include "read_sdc.h"
-#include "read_blif.h"
-#include "path_delay.h"
-#include "path_delay2.h"
-#include "slre.h"
+#include "tatum/TimingGraph.hpp"
+#include "tatum/TimingConstraints.hpp"
 #include "sdcparse.hpp"
 
-/***************************** Summary **********************************/
+#include "vpr_error.h"
+#include "atom_netlist.h"
+#include "atom_netlist_utils.h"
+#include "atom_lookup.h"
 
-/* Author: Michael Wainberg
+void apply_default_timing_constraints(const AtomNetlist& netlist,
+                                      const AtomLookup& lookup,
+                                      tatum::TimingConstraints& timing_constraints);
 
-Looks for an SDC (Synopsys Design Constraints) file called <circuitname>.sdc
-(unless overridden with --sdc_file <filename.sdc> on the command-line, in which
-case it looks for that filename), and parses the timing constraints in that file.
-If it doesn't find a file with that name, it uses default timing constraints
-(which differ depending on whether the circuit has 0, 1, or multiple clocks).
+void apply_combinational_default_timing_constraints(const AtomNetlist& netlist,
+                                                    const AtomLookup& lookup,
+                                                    tatum::TimingConstraints& timing_constraints);
 
-The primary routine, read_sdc, populates a container structure, timing_ctx.sdc.
-One of the two key output data structures within is timing_ctx.sdc->constrained_clocks, which
-associates each clock given a timing constraint with a name, fanout and whether
-it is a netlist or virtual (external) clock.  From this point on, the only clocks
-we care about are the ones in this array. During timing analysis and data output,
-clocks are accessed using the indexing of this array.
+void apply_single_clock_default_timing_constraints(const AtomNetlist& netlist,
+                                                   const AtomLookup& lookup,
+                                                   const AtomPinId clock_driver,
+                                                   tatum::TimingConstraints& timing_constraints);
 
-The other key data structure is the "constraint matrix" timing_ctx.sdc->domain_constraint, which
-has a timing constraint for each pair (source and sink) of clock domains. These
-generally come from finding the smallest difference between the posedges of the
-two clocks over the LCM clock period ("edge counting" - see calculate_constraint()).
+void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
+                                                  const AtomLookup& lookup,
+                                                  const std::set<AtomPinId>& clock_drivers,
+                                                  tatum::TimingConstraints& timing_constraints);
 
-Alternatively, entries in timing_ctx.sdc->domain_constraint can come from a special-case, "override
-constraint" (so named because it overrides the default behaviour of edge counting).
-Override constraints can cut paths (set_clock_groups, set_false_path commands),
-create a multicycle (set_multicycle_path) or even override a constraint with a user-
-specified one (set_max_delay). These entries are stored temporarily in timing_ctx.sdc->cc_constraints
-(cc = clock to clock), which is freed once the timing_constraints echo file is
-created during process_constraints().
+void mark_constant_generators(const AtomNetlist& netlist,
+                              const AtomLookup& lookup,
+                              tatum::TimingConstraints& tc);
 
-Flip-flop-level override constraints also exist and are stored in timing_ctx.sdc->cf_constraints,
-timing_ctx.sdc->fc_constraints and timing_ctx.sdc->ff_constraints (depending on whether the source, sink or neither
-of the two is a clock domain).Unlike timing_ctx.sdc->cc_constraints, they are placed on the timing
-graph during timing analysis instead of going into timing_ctx.sdc->domain_constraint, and are not
-freed until the end of VPR's execution.
+void constrain_all_ios(const AtomNetlist& netlist,
+                       const AtomLookup& lookup,
+                       tatum::TimingConstraints& tc,
+                       tatum::DomainId input_domain,
+                       tatum::DomainId output_domain,
+                       tatum::Time input_delay,
+                       tatum::Time output_delay);
 
-I/O constraints from set_input_delay and set_output_delay are stored in constrained_
-inputs and timing_ctx.sdc->constrained_outputs. These associate each I/O in the netlist given a
-constraint with the clock (often virtual, but could be in the netlist) it was
-constrained on, and the delay through the I/O in that constraint.
+std::map<std::string,AtomPinId> find_netlist_primary_ios(const AtomNetlist& netlist);
+std::string orig_blif_name(std::string name);
 
-The remaining data structures are temporary and local to this file: netlist_clocks,
-netlist_inputs and netlist_outputs, which are used to match names of clocks and I/Os
-in the SDC file to those in the netlist; sdc_clocks, which stores info on clock periods
-and offsets from create_clock commands and is the raw info used in edge counting; and
-exclusive_groups, used when parsing set_clock_groups commands into timing_ctx.sdc->cc_constraints. */
+std::regex glob_pattern_to_regex(const std::string& glob_pattern);
 
-/****************** Types local to this module **************************/
-
-struct t_sdc_clock {
-	char * name;
-	float period;
-	float rising_edge;
-	float falling_edge;
-};
-/* Stores the name, period and offset of each constrained clock. */
-
-struct t_sdc_exclusive_group {
-	char ** clock_names;
-	int num_clock_names;
-};
-/* Used to temporarily separate clock names into exclusive groups when parsing the
-command set_clock_groups -exclusive. */
-
-/****************** Variables local to this module **************************/
-
-static FILE *sdc;
-t_sdc_clock * sdc_clocks = nullptr; /* List of clock periods and offsets from create_clock commands */
-
-int num_netlist_clocks = 0; /* number of clocks in netlist */
-char ** netlist_clocks; /* [0..num_netlist_clocks - 1] array of names of clocks in netlist */
-
-int num_netlist_ios = 0; /* number of clocks in netlist */
-char ** netlist_ios; /* [0..num_netlist_clocks - 1] array of names of ios in netlist */
-
-static std::string sdc_file_name = "<default_SDC>.sdc"; /* Name of SDC file */
-
-/***************** Subroutines local to this module *************************/
-
-static void alloc_and_load_netlist_clocks_and_ios();
-static void use_default_timing_constraints();
-static void count_netlist_clocks_as_constrained_clocks();
-static void add_clock(std::string net_name);
-static int find_constrained_clock(char * ptr);
-static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain);
-static void add_override_constraint(char ** from_list, int num_from, char ** to_list, int num_to,
-	float constraint, int num_multicycles, bool domain_level_from, bool domain_level_to,
-	bool make_copies);
-static int find_cc_constraint(char * source_clock_domain, char * sink_clock_domain);
-static bool regex_match (const char *string, const char *pattern);
-static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_delay);
-static void free_io_constraint(t_io *& io_array, int num_ios);
-static void free_clock_constraint(t_clock *& clock_array, int num_clocks);
-
-static bool apply_create_clock(const sdcparse::CreateClock& sdc_create_clock, int lineno);
-static bool apply_set_clock_groups(const sdcparse::SetClockGroups& sdc_set_clock_groups, int lineno);
-static bool apply_set_false_path(const sdcparse::SetFalsePath& sdc_set_false_path);
-static bool apply_set_min_max_delay(const sdcparse::SetMinMaxDelay& sdc_set_min_max_delay);
-static bool apply_set_multicycle_path(const sdcparse::SetMulticyclePath& sdc_set_multicycle_path);
-static bool apply_set_io_delay(const sdcparse::SetIoDelay& sdc_set_io_delay, int lineno);
-
-//TODO
-//static bool apply_set_clock_uncertainty(const sdcparse::SetClockUncertainty& sdc_set_clock_uncertainty);
-//static bool apply_set_clock_latency(const sdcparse::SetClockLatency& sdc_set_clock_latency);
-//static bool apply_set_timing_derate(const sdcparse::SetTimingDerate& sdc_set_timing_derate);
-
-static bool is_valid_clock_name(const char* clock_name);
-static bool build_from_to_lists(char ***from_list, int *num_from, bool* domain_level_from,
-                            char ***to_list, int *num_to, bool* domain_level_to,
-                            const sdcparse::StringGroup& from_group, const sdcparse::StringGroup& to_group);
-
-void vpr_sdc_error(const int line_number, const std::string& near_text, const std::string& msg);
-
-/********************* Class definitions *******************************/
-
-class SdcCallback : public sdcparse::Callback {
+class SdcParseCallback : public sdcparse::Callback {
+    public:
+        SdcParseCallback(const AtomNetlist& netlist,
+                          const AtomLookup& lookup,
+                          tatum::TimingConstraints& timing_constraints,
+                          tatum::TimingGraph& tg)
+            : netlist_(netlist)
+            , lookup_(lookup)
+            , tc_(timing_constraints)
+            , tg_(tg)
+            {}
     public: //sdcparse::Callback interface
         //Start of parsing
-        void start_parse() override {}
+        void start_parse() override {
+            netlist_clock_drivers_ = find_netlist_logical_clock_drivers(netlist_);
+            netlist_primary_ios_ = find_netlist_primary_ios(netlist_);
+        }
 
         //Sets current filename
         void filename(std::string fname) override { fname_ = fname; }
@@ -152,1084 +77,1137 @@ class SdcCallback : public sdcparse::Callback {
 
         //Individual commands
         void create_clock(const sdcparse::CreateClock& cmd) override {
-            got_commands_ = true;
-            apply_create_clock(cmd, lineno_);
+            ++num_commands_;
+
+            if(cmd.is_virtual) {
+                //Create a virtual clock
+                tatum::DomainId virtual_clk = tc_.create_clock_domain(cmd.name);
+
+                if(sdc_clocks_.count(virtual_clk)) {
+                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                              "Found duplicate virtual clock definition for clock '%s'",
+                              cmd.name.c_str());
+                }
+
+                //Virtual clocks should have no targets
+                if(!cmd.targets.strings.empty()) {
+                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                              "Virtual clock definition (i.e. with '-name') should not have targets");
+                }
+
+                //Save the mapping to the sdc clock info
+                sdc_clocks_[virtual_clk] = cmd;
+            } else {
+                //Create a netlist clock for every matching netlist clock
+                for(const std::string& clock_name_glob_pattern : cmd.targets.strings) {
+                    bool found = false;
+
+                    //We interpret each SDC target as glob-style pattern matches, which we
+                    //convert to a regex
+                    auto clock_name_regex = glob_pattern_to_regex(clock_name_glob_pattern);
+
+                    //Look for matching netlist clocks
+                    for(AtomPinId clock_pin : netlist_clock_drivers_) {
+                        AtomNetId clock_net = netlist_.pin_net(clock_pin);
+                        const auto& clock_name = netlist_.net_name(clock_net);
+
+                        if(std::regex_match(clock_name, clock_name_regex)) {
+                            found = true;
+                            //Create netlist clock
+                            tatum::DomainId netlist_clk = tc_.create_clock_domain(clock_name);
+
+                            if(sdc_clocks_.count(netlist_clk)) {
+                                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                                          "Found duplicate netlist clock definition for clock '%s' matching target pattern '%s'",
+                                          clock_name.c_str(), clock_name_glob_pattern.c_str());
+                            }
+
+                            //Set the clock source
+                            AtomPinId clock_driver = netlist_.net_driver(clock_net);
+                            tatum::NodeId clock_source = lookup_.atom_pin_tnode(clock_driver);
+                            VTR_ASSERT(clock_source);
+                            tc_.set_clock_domain_source(clock_source, netlist_clk);
+
+
+                            //Save the mapping to the clock info
+                            sdc_clocks_[netlist_clk] = cmd;
+                        }
+                    }
+
+                    if(!found) {
+                        vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                                  "Clock name or pattern '%s' does not correspond to any nets."
+                                  " To create a virtual clock, use the '-name' option.",
+                                  clock_name_glob_pattern.c_str());
+                    }
+                }
+            }
         }
+
         void set_io_delay(const sdcparse::SetIoDelay& cmd) override {
-            got_commands_ = true;
-            apply_set_io_delay(cmd, lineno_);
+            ++num_commands_;
+
+            tatum::DomainId domain;
+
+            if (cmd.clock_name == "*") {
+                if(netlist_clock_drivers_.size() == 1) {
+                    //Support non-standard wildcard clock name for set_input_delay/set_output_delay
+                    //commands, provided it is unambiguous (i.e. there is only one netlist clock)
+
+                    AtomNetId clock_net = netlist_.pin_net(*netlist_clock_drivers_.begin());
+                    std::string clock_name = netlist_.net_name(clock_net);
+                    domain = tc_.find_clock_domain(clock_name);
+                } else {
+                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                              "Wildcard clock domain '%s' is ambiguous in multi-clock circuits, explicitly specify the target clock",
+                              cmd.clock_name.c_str());
+                }
+            } else {
+                //Regular look-up
+                domain = tc_.find_clock_domain(cmd.clock_name);
+            }
+
+            //Error checks
+            if (!domain) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "Failed to find clock domain '%s' for I/O constraint",
+                          cmd.clock_name.c_str());
+            }
+
+            //Find all matching I/Os
+            auto io_pins = get_ports(cmd.target_ports);
+
+            if(io_pins.empty()) {
+                //We treat this as a warning, since the primary I/Os in the target may have been swept away
+                VTR_LOGF_WARN( fname_.c_str(), lineno_,
+                          "Found no matching primary inputs or primary outputs for %s\n",
+                          (cmd.type == sdcparse::IoDelayType::INPUT) ? "set_input_delay" : "set_output_delay");
+            }
+
+            bool is_max = cmd.is_max;
+            bool is_min = cmd.is_min;
+            if (!is_max && !is_min) {
+                //Unspecified implies both
+                is_max = true;
+                is_min = true;
+            }
+
+            float delay = sdc_units_to_seconds(cmd.delay);
+
+            for(AtomPinId pin : io_pins) {
+                tatum::NodeId tnode = lookup_.atom_pin_tnode(pin);
+                VTR_ASSERT(tnode);
+
+                //Set i/o constraint
+                if (cmd.type == sdcparse::IoDelayType::INPUT) {
+
+
+                    if(netlist_.pin_type(pin) == PinType::DRIVER) {
+                        if (is_max) {
+                            tc_.set_input_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay));
+                        }
+                        if (is_min) {
+                            tc_.set_input_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(delay));
+                        }
+                    } else {
+                        VTR_ASSERT(netlist_.pin_type(pin) == PinType::SINK);
+
+                        AtomBlockId blk = netlist_.pin_block(pin);
+                        std::string io_name = orig_blif_name(netlist_.block_name(blk));
+
+                        VTR_LOGF_WARN(fname_.c_str(), lineno_,
+                                            "set_input_delay command matched but was not applied to primary output '%s'\n",
+                                            io_name.c_str());
+                    }
+                } else {
+                    VTR_ASSERT(cmd.type == sdcparse::IoDelayType::OUTPUT);
+
+                    if(netlist_.pin_type(pin) == PinType::SINK) {
+                        if (is_max) {
+                            tc_.set_output_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay));
+                        }
+                        if (is_min) {
+                            tc_.set_output_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(delay));
+                        }
+
+                    } else {
+                        VTR_ASSERT(netlist_.pin_type(pin) == PinType::DRIVER);
+                        AtomBlockId blk = netlist_.pin_block(pin);
+                        std::string io_name = orig_blif_name(netlist_.block_name(blk));
+
+                        VTR_LOGF_WARN(fname_.c_str(), lineno_,
+                                            "set_output_delay command matched but was not applied to primary input '%s'\n",
+                                            io_name.c_str());
+                    }
+                }
+            }
         }
+
         void set_clock_groups(const sdcparse::SetClockGroups& cmd) override {
-            got_commands_ = true;
-            apply_set_clock_groups(cmd, lineno_);
+            ++num_commands_;
+
+            if (cmd.type != sdcparse::ClockGroupsType::EXCLUSIVE) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                        "set_clock_groups only supports -exclusive groups");
+            }
+
+            //FIXME: more efficient to collect per-group clocks once instead of at each iteration
+
+            //Disable timing between each group of clock domains
+            for (size_t src_group = 0; src_group < cmd.clock_groups.size(); ++src_group) {
+                auto src_clocks = get_clocks(cmd.clock_groups[src_group]);
+
+                for (size_t sink_group = 0; sink_group < cmd.clock_groups.size(); ++sink_group) {
+                    if (src_group == sink_group) continue;
+
+                    auto sink_clocks = get_clocks(cmd.clock_groups[sink_group]);
+
+                    for (auto src_clock : src_clocks) {
+                        for (auto sink_clock : sink_clocks) {
+                            //Mark this pair of domains to be disabled
+                            disabled_domain_pairs_.insert({src_clock, sink_clock});
+                        }
+                    }
+                }
+            }
         }
+
         void set_false_path(const sdcparse::SetFalsePath& cmd) override {
-            got_commands_ = true;
-            apply_set_false_path(cmd);
+            ++num_commands_;
+
+            auto from_clocks = get_clocks(cmd.from);
+            auto to_clocks = get_clocks(cmd.to);
+
+            if (from_clocks.empty() && to_clocks.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                        "set_false_path must specify at least one -from or -to clock");
+            }
+
+            if (from_clocks.empty()) {
+                from_clocks = get_all_clocks();
+            }
+
+            if (to_clocks.empty()) {
+                to_clocks = get_all_clocks();
+            }
+
+            for (auto from_clock : from_clocks) {
+                for (auto to_clock : to_clocks) {
+                    //Mark this domain pair to be disabled
+                    disabled_domain_pairs_.insert({from_clock, to_clock});
+                }
+            }
         }
+
         void set_min_max_delay(const sdcparse::SetMinMaxDelay& cmd) override {
-            got_commands_ = true;
-            apply_set_min_max_delay(cmd);
+            ++num_commands_;
+
+            auto from_clocks = get_clocks(cmd.from);
+            auto to_clocks = get_clocks(cmd.to);
+
+            if(from_clocks.empty() && to_clocks.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                        "set_max_path must specify at least one -from or -to clock");
+            }
+
+            if (from_clocks.empty()) {
+                from_clocks = get_all_clocks();
+            }
+
+            if (to_clocks.empty()) {
+                to_clocks = get_all_clocks();
+            }
+
+            float constraint = cmd.value;
+
+            for (auto from_clock : from_clocks) {
+                for (auto to_clock : to_clocks) {
+                    //Mark this domain pair to be disabled
+                    auto key = std::make_pair(from_clock, to_clock);
+
+                    if(cmd.type == sdcparse::MinMaxType::MAX) {
+                        setup_override_constraints_[key] = constraint;
+                    } else {
+                        VTR_ASSERT(cmd.type == sdcparse::MinMaxType::MIN);
+                        hold_override_constraints_[key] = constraint;
+                    }
+                }
+            }
         }
+
         void set_multicycle_path(const sdcparse::SetMulticyclePath& cmd) override {
-            got_commands_ = true;
-            apply_set_multicycle_path(cmd);
+            ++num_commands_;
+
+            auto from_clocks = get_clocks(cmd.from);
+            auto to_clocks = get_clocks(cmd.to);
+
+            if(from_clocks.empty() && to_clocks.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                        "set_multicycle_path must specify at least one -from or -to clock");
+            }
+
+            if (from_clocks.empty()) {
+                from_clocks = get_all_clocks();
+            }
+
+            if (to_clocks.empty()) {
+                to_clocks = get_all_clocks();
+            }
+
+            int setup_mcp = cmd.mcp_value;
+            int hold_mcp = cmd.mcp_value;
+
+            bool is_setup = cmd.is_setup;
+            bool is_hold = cmd.is_hold || is_setup; //Specifying a setup mcp also modifies hold
+            if (!is_hold && !is_setup) {
+                //Unspecified implicitly sets the setup mcp to the target value,
+                //and the hold mcp to zero
+                is_setup = true;
+                is_hold = true;
+
+                VTR_ASSERT(setup_mcp == cmd.mcp_value);
+                hold_mcp = 0; //Default hold check is 0
+            }
+
+            for(auto from_clock : from_clocks) {
+                for(auto to_clock : to_clocks) {
+                    auto domain_pair = std::make_pair(from_clock, to_clock);
+
+                    if(is_setup) {
+                        setup_mcp_overrides_[domain_pair] = setup_mcp;
+                    }
+
+                    if (is_hold) {
+                        hold_mcp_overrides_[domain_pair] = hold_mcp;
+                    }
+                }
+            }
+
         }
-        void set_clock_uncertainty(const sdcparse::SetClockUncertainty& /*cmd*/) override {
-            got_commands_ = true;
-            vpr_sdc_error(lineno_, "", "set_clock_uncertainty currently unsupported");
+
+        void set_clock_uncertainty(const sdcparse::SetClockUncertainty& cmd) override {
+            ++num_commands_;
+
+            auto from_clocks = get_clocks(cmd.from);
+            auto to_clocks = get_clocks(cmd.to);
+
+            if (from_clocks.empty()) {
+                from_clocks = get_all_clocks();
+            }
+
+            if (to_clocks.empty()) {
+                to_clocks = get_all_clocks();
+            }
+
+            float uncertainty = sdc_units_to_seconds(cmd.value);
+
+            bool is_setup = cmd.is_setup;
+            bool is_hold = cmd.is_hold;
+            if (!is_hold && !is_setup) {
+                //Unspecified is implicitly both setup and hold
+                is_setup = true;
+                is_hold = true;
+            }
+
+            for (auto from_clock : from_clocks) {
+                for (auto to_clock : to_clocks) {
+
+                    if (is_setup) {
+                        tc_.set_setup_clock_uncertainty(from_clock, to_clock, tatum::Time(uncertainty));
+                    }
+
+                    if (is_hold) {
+                        tc_.set_hold_clock_uncertainty(from_clock, to_clock, tatum::Time(uncertainty));
+                    }
+                }
+            }
         }
-        void set_clock_latency(const sdcparse::SetClockLatency& /*cmd*/) override {
-            got_commands_ = true;
-            vpr_sdc_error(lineno_, "", "set_clock_latency currently unsupported");
+
+        void set_clock_latency(const sdcparse::SetClockLatency& cmd) override {
+            ++num_commands_;
+
+            if (cmd.type != sdcparse::ClockLatencyType::SOURCE) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_latency only supports specifying -source latency");
+            }
+
+            auto clocks = get_clocks(cmd.target_clocks);
+            if (clocks.empty()) {
+                clocks = get_all_clocks();
+            }
+
+            bool is_early = cmd.is_early;
+            bool is_late = cmd.is_late;
+            if (!is_early && !is_late) {
+                //Unspecified is implicitly both early and late
+                is_early = true;
+                is_late = true;
+            }
+
+            float latency = sdc_units_to_seconds(cmd.value);
+
+            for (auto clock : clocks) {
+                if (is_early) {
+                    tc_.set_source_latency(clock, tatum::ArrivalType::EARLY, tatum::Time(latency));
+                }
+                if (is_late) {
+                    tc_.set_source_latency(clock, tatum::ArrivalType::LATE, tatum::Time(latency));
+                }
+            }
         }
-        void set_disable_timing(const sdcparse::SetDisableTiming& /*cmd*/) override {
-            got_commands_ = true;
-            vpr_sdc_error(lineno_, "", "set_disable_timing currently unsupported");
+
+        void set_disable_timing(const sdcparse::SetDisableTiming& cmd) override {
+            ++num_commands_;
+
+            //Collect the specified pins
+            auto from_pins = get_pins(cmd.from);
+            auto to_pins = get_pins(cmd.to);
+
+            if (from_pins.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "Found no matching -from pins");
+            }
+
+            if (to_pins.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "Found no matching -to pins");
+            }
+
+            //Disable any edges between the from and to sets
+            for (auto from_pin : from_pins) {
+                for (auto to_pin : from_pins) {
+                    tatum::NodeId from_tnode = lookup_.atom_pin_tnode(from_pin);
+                    VTR_ASSERT(from_tnode);
+
+                    tatum::NodeId to_tnode = lookup_.atom_pin_tnode(to_pin);
+                    VTR_ASSERT(to_tnode);
+
+                    //Find the edge matching these nodes
+                    tatum::EdgeId edge = tg_.find_edge(from_tnode, to_tnode);
+
+                    if (!edge) {
+                        const auto& from_pin_name = netlist_.pin_name(from_pin);
+                        const auto& to_pin_name = netlist_.pin_name(to_pin);
+
+                        VTR_LOGF_WARN(fname_.c_str(), lineno_,
+                                            "set_disable_timing no timing edge found from pin '%s' to pin '%s'\n",
+                                            from_pin_name.c_str(), to_pin_name.c_str());
+                    }
+
+                    //Mark the edge in the timing graph as disabled
+                    tg_.disable_edge(edge);
+                }
+            }
         }
+
         void set_timing_derate(const sdcparse::SetTimingDerate& /*cmd*/) override {
-            got_commands_ = true;
-            vpr_sdc_error(lineno_, "", "set_timing_derate currently unsupported");
+            ++num_commands_;
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_timing_derate currently unsupported");
         }
 
         //End of parsing
-        void finish_parse() override {}
+        void finish_parse() override {
+            //Mark constant generator timing nodes
+            mark_constant_generators(netlist_, lookup_, tc_);
 
-        //Error during parsing
-        void parse_error(const int curr_lineno, const std::string& near_text, const std::string& msg) override {
-            vpr_sdc_error(curr_lineno, near_text, msg);
+            //Determine the final clock constraints
+            resolve_clock_constraints();
+
+            //Re-levelize if needed (e.g. due to set_disable_timing)
+            tg_.levelize();
         }
 
+        //Error during parsing
+        void parse_error(const int /*curr_lineno*/, const std::string& near_text, const std::string& msg) override {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "%s near '%s'", msg.c_str(), near_text.c_str());
+        }
 
     public:
-        bool got_commands() { return got_commands_; }
+        size_t num_commands() { return num_commands_; }
     private:
-        bool got_commands_ = false;
+        void resolve_clock_constraints() {
+            //Set the clock constraints
+            for(tatum::DomainId launch_clock : tc_.clock_domains()) {
+                for(tatum::DomainId capture_clock : tc_.clock_domains()) {
+
+                    auto domain_pair = std::make_pair(launch_clock, capture_clock);
+
+                    if(disabled_domain_pairs_.count(domain_pair)) continue;
+
+                    //Setup
+                    tatum::Time setup_constraint = calculate_setup_constraint(launch_clock, capture_clock);
+                    VTR_ASSERT(setup_constraint.valid());
+
+                    tc_.set_setup_constraint(launch_clock, capture_clock, setup_constraint);
+
+                    //Hold
+                    tatum::Time hold_constraint = calculate_hold_constraint(launch_clock, capture_clock);
+                    VTR_ASSERT(hold_constraint.valid());
+
+                    tc_.set_hold_constraint(launch_clock, capture_clock, hold_constraint);
+                }
+            }
+        }
+
+        //Returns the setup constraint in seconds
+        tatum::Time calculate_setup_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
+            //Calculate the period-based constraint, including the effect of multi-cycle paths
+            float min_launch_to_capture_time = calculate_min_launch_to_capture_edge_time(launch_domain, capture_domain);
+
+            auto iter = sdc_clocks_.find(capture_domain);
+            VTR_ASSERT(iter != sdc_clocks_.end());
+            float capture_period = iter->second.period;
+
+            //The period based constraint is the minimum launch to capture edge time + the capture period * (extra_cycles)
+            //
+            // Since min_launch_to_capture_time is the minimum time to the first capture edge after a launch edge, it already
+            // implicitly includes one capture cycle. As a result we subtract 1 from the setup capture cycle value to determine
+            // how many extra capture cycles need to be added to the constraint.
+            //
+            // By default the setup capture cycle 1, specifying a capture 1 cycle after launch
+            int extra_cycles = setup_capture_cycle(launch_domain, capture_domain) - 1;
+            float period_based_setup_constraint = min_launch_to_capture_time + capture_period * extra_cycles;
+
+            //Warn the user if we added negative cycles
+            if (extra_cycles < 0) {
+                VTR_LOG_WARN(
+                                    "Added negative (%d) additional capture clock cycles to setup constraint"
+                                    " for clock '%s' to clock '%s' transfers; check your set_multicycle_path specifications\n",
+                                    extra_cycles, tc_.clock_domain_name(launch_domain).c_str(), tc_.clock_domain_name(capture_domain).c_str());
+            }
+
+            //By default the period-based constraint is the constraint
+            float setup_constraint = period_based_setup_constraint;
+
+            //See if we have any other override constraints
+            auto domain_pair = std::make_pair(launch_domain, capture_domain);
+            auto override_iter = setup_override_constraints_.find(domain_pair);
+            if (override_iter != setup_override_constraints_.end()) {
+                float override_setup_constraint = override_iter->second;
+
+                if (setup_constraint > override_setup_constraint) {
+                    VTR_LOG_WARN(
+                                        "Override setup constraint (%g) overrides a tighter default period-based constraint (%g)"
+                                        " for transfers from clock '%s' to clock '%s'\n",
+                                        override_setup_constraint, setup_constraint,
+                                        tc_.clock_domain_name(launch_domain).c_str(),
+                                        tc_.clock_domain_name(capture_domain).c_str());
+                }
+
+                //Override the constarint
+                setup_constraint = override_setup_constraint;
+            }
+
+            setup_constraint = sdc_units_to_seconds(setup_constraint);
+
+            if (setup_constraint < 0.) {
+                VPR_THROW(VPR_ERROR_SDC, "Setup constraint %g for transfers from clock '%s' to clock '%s' is negative."
+                                         " Requires data to arrive before launch edge (No time travelling allowed!)",
+                                         setup_constraint,
+                                         tc_.clock_domain_name(launch_domain).c_str(),
+                                         tc_.clock_domain_name(capture_domain).c_str());
+            }
+
+            return tatum::Time(setup_constraint);
+        }
+
+        //Returns the hold constraint in seconds
+        tatum::Time calculate_hold_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
+            float min_launch_to_capture_time = calculate_min_launch_to_capture_edge_time(launch_domain, capture_domain);
+
+            auto iter = sdc_clocks_.find(capture_domain);
+            VTR_ASSERT(iter != sdc_clocks_.end());
+            float capture_period = iter->second.period;
+
+            //The period based constraint is the minimum launch to capture edge time + the capture period * extra_cycles
+            //
+            // Since min_launch_to_capture_time is the minimum time to the first capture edge *after* a launch edge, it already
+            // implicitly includes one capture cycle. As a result we subtract 1 from the hold capture cycle value to determine
+            // how many extra capture cycles need to be added to the constraint.
+            //
+            // For the default hold check is one cycle before the setup check
+            // For the default setup check (1) this means extra_cycles is -1 (i.e. the hold capture check occurs against
+            // the capture edge *before* the launch edge)
+            int extra_cycles = hold_capture_cycle(launch_domain, capture_domain) - 1;
+            float period_based_hold_constraint = min_launch_to_capture_time + capture_period * extra_cycles;
+
+            //By default the period-based constraint is the constraint
+            float hold_constraint = period_based_hold_constraint;
+
+            //See if we have any other override constraints
+            auto domain_pair = std::make_pair(launch_domain, capture_domain);
+            auto override_iter = hold_override_constraints_.find(domain_pair);
+            if(override_iter != hold_override_constraints_.end()) {
+                float override_hold_constraint = override_iter->second;
+
+                if (hold_constraint < override_hold_constraint) {
+                    VTR_LOG_WARN(
+                                        "Override hold constraint (%g) overrides tighter default period-based constraint (%g)"
+                                        " for transfers from clock '%s' to clock '%s'\n",
+                                        override_hold_constraint, hold_constraint,
+                                        tc_.clock_domain_name(launch_domain).c_str(),
+                                        tc_.clock_domain_name(capture_domain).c_str());
+                }
+
+                //Override the constarint
+                hold_constraint = override_hold_constraint;
+            }
+
+            hold_constraint = sdc_units_to_seconds(hold_constraint);
+
+            return tatum::Time(hold_constraint);
+        }
+
+        //Determine the minumum time (in SDC units) between the edges of the launch and capture clocks
+        float calculate_min_launch_to_capture_edge_time(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
+            constexpr int CLOCK_SCALE = 1000;
+
+            auto launch_iter = sdc_clocks_.find(launch_domain);
+            VTR_ASSERT(launch_iter != sdc_clocks_.end());
+            const sdcparse::CreateClock& launch_clock = launch_iter->second;
+
+            auto capture_iter = sdc_clocks_.find(capture_domain);
+            VTR_ASSERT(capture_iter != sdc_clocks_.end());
+            const sdcparse::CreateClock& capture_clock = capture_iter->second;
+
+            VTR_ASSERT_MSG(launch_clock.period >= 0., "Clock period must be positive");
+            VTR_ASSERT_MSG(capture_clock.period >= 0., "Clock period must be positive");
+
+            float constraint = std::numeric_limits<float>::quiet_NaN();
+
+            if (std::fabs(launch_clock.period - capture_clock.period) < EPSILON &&
+                std::fabs(launch_clock.rise_edge - capture_clock.rise_edge) < EPSILON &&
+                std::fabs(launch_clock.fall_edge - capture_clock.fall_edge) < EPSILON) {
+                //The source and sink domains have the same period and edges, the constraint is the common clock period.
+
+                constraint = launch_clock.period;
+
+            } else if (launch_clock.period < EPSILON || capture_clock.period < EPSILON) {
+                //If either period is 0, the constraint is 0
+                constraint = 0.;
+
+            } else {
+                /*
+                 * Use edge counting to find the minimum launch to capture edge time
+                 */
+
+                //Multiply periods and edges by CLOCK_SCALE and round down to the nearest
+                //integer, to avoid messy decimals.
+                int launch_period = static_cast<int>(launch_clock.period * CLOCK_SCALE);
+                int capture_period = static_cast<int>(capture_clock.period * CLOCK_SCALE);
+                int launch_rise_edge = static_cast<int>(launch_clock.rise_edge * CLOCK_SCALE);
+                int capture_rise_edge = static_cast<int>(capture_clock.rise_edge * CLOCK_SCALE);
+
+                //Find the LCM of the two periods. This determines how long it takes before
+                //the pattern of the two clock's edges starts repeating.
+                int lcm_period = vtr::lcm(launch_period, capture_period);
+
+                //Create arrays of positive edges for each clock over one LCM clock period.
+
+                //Launch edges
+                int launch_rise_time = launch_rise_edge;
+                std::vector<int> launch_edges;
+                int num_launch_edges = lcm_period/launch_period + 1;
+                for(int i = 0; i < num_launch_edges; ++i) {
+                    launch_edges.push_back(launch_rise_time);
+                    launch_rise_time += launch_period;
+                }
+
+                //Capture edges
+                int capture_rise_time = capture_rise_edge;
+                int num_capture_edges = lcm_period/capture_period + 1;
+                std::vector<int> capture_edges;
+                for(int i = 0; i < num_capture_edges; ++i) {
+                    capture_edges.push_back(capture_rise_time);
+                    capture_rise_time += capture_period;
+                }
+
+                //Compare every edge in source_edges with every edge in sink_edges.
+                //The lowest STRICTLY POSITIVE difference between a sink edge and a
+                //source edge yeilds the setup time constraint.
+                int scaled_constraint = std::numeric_limits<int>::max(); //Initialize to +inf, so any constraint will be less
+
+                for(int launch_edge : launch_edges) {
+                    for(int capture_edge : capture_edges) {
+                        if(capture_edge >= launch_edge) { //Postive only
+                            int edge_diff = capture_edge - launch_edge;
+                            VTR_ASSERT(edge_diff >= 0.);
+
+                            scaled_constraint = std::min(scaled_constraint, edge_diff);
+                        }
+                    }
+                }
+
+                //Rescale the constraint back to a float
+                constraint = float(scaled_constraint) / CLOCK_SCALE;
+            }
+
+            return constraint;
+        }
+
+        //Returns the cycle number (after launch) where the setup check occurs
+        int setup_capture_cycle(tatum::DomainId from, tatum::DomainId to) const {
+            //Default: capture one cycle after launch
+            int setup_path_mult = 1;
+
+            //Any overrides
+            auto key = std::make_pair(from, to);
+            auto iter = setup_mcp_overrides_.find(key);
+            if(iter != setup_mcp_overrides_.end()) {
+                setup_path_mult = iter->second;
+            }
+
+            //The setup capture cycle is the setup mcp value
+            return setup_path_mult;
+        }
+
+        //Returns the cycle number (after launch) where the hold check occurs
+        int hold_capture_cycle(tatum::DomainId from, tatum::DomainId to) const {
+            //Default: hold captures the cycle before setup is captured
+            //For the default setup mcp this implies capturing the same
+            //cycle as launch
+            int hold_offset = 1;
+
+            //Any overrides?
+            auto key = std::make_pair(from, to);
+            auto iter = hold_mcp_overrides_.find(key);
+            if(iter != hold_mcp_overrides_.end()) {
+                //Note that we add the override to the default hold_mcp of 1 to match
+                //the standard SDC behaviour (e.g. N - 1) of hold multicycles.
+                //
+                //For details see section 8.3 'Multicycle paths' in:
+                //  J. Bhasker, R. Chadha, "Static Timing Analysis for Nanometer
+                //      Designs A Practical Approach", Springer, 2009
+                hold_offset += iter->second;
+            }
+
+            //The hold capture cycle is the setup capture cycle minus the hold mcp value
+            return setup_capture_cycle(from, to) - hold_offset;
+        }
+
+        std::set<AtomPinId> get_ports(const sdcparse::StringGroup& port_group) {
+            if(port_group.type != sdcparse::StringGroupType::PORT) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                         "Expected port collection via get_ports");
+            }
+
+            std::set<AtomPinId> pins;
+            for (const auto& port_pattern : port_group.strings) {
+                std::regex port_regex = glob_pattern_to_regex(port_pattern);
+
+                bool found = false;
+                for(const auto& kv : netlist_primary_ios_) {
+
+                    const std::string& io_name = kv.first;
+                    if(std::regex_match(io_name, port_regex)) {
+                        found = true;
+
+                        AtomPinId pin = kv.second;
+
+                        pins.insert(pin);
+                    }
+                }
+
+                if(!found) {
+                    VTR_LOGF_WARN(fname_.c_str(), lineno_,
+                                        "get_ports target name or pattern '%s' matched no ports\n",
+                                        port_pattern.c_str());
+                }
+            }
+            return pins;
+        }
+
+        std::set<tatum::DomainId> get_clocks(const sdcparse::StringGroup& clock_group) {
+            std::set<tatum::DomainId> domains;
+
+            if(clock_group.strings.empty()) {
+                return domains;
+            }
+
+            if(clock_group.type != sdcparse::StringGroupType::CLOCK
+               && clock_group.type != sdcparse::StringGroupType::STRING) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                         "Expected clock names or collection via get_clocks");
+            }
+
+            for (const auto& clock_glob_pattern : clock_group.strings) {
+                std::regex clock_regex = glob_pattern_to_regex(clock_glob_pattern);
+
+                bool found = false;
+                for(tatum::DomainId domain : tc_.clock_domains()) {
+
+                    const std::string& clock_name = tc_.clock_domain_name(domain);
+                    if(std::regex_match(clock_name, clock_regex)) {
+                        found = true;
+
+                        domains.insert(domain);
+                    }
+                }
+
+                if(!found) {
+                    VTR_LOGF_WARN(fname_.c_str(), lineno_,
+                                        "get_clocks target name or pattern '%s' matched no clocks\n",
+                                        clock_glob_pattern.c_str());
+                }
+            }
+
+            return domains;
+        }
+
+        std::set<AtomPinId> get_pins(const sdcparse::StringGroup& pin_group) {
+            std::set<AtomPinId> pins;
+
+            if(pin_group.strings.empty()) {
+                return pins;
+            }
+
+            if(pin_group.type != sdcparse::StringGroupType::PIN) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                         "Expected pin collection via get_pins");
+            }
+
+            for (const auto& pin_pattern : pin_group.strings) {
+                std::regex pin_regex = glob_pattern_to_regex(pin_pattern);
+
+                bool found = false;
+                for(AtomPinId pin : netlist_.pins()) {
+
+                    const std::string& pin_name = netlist_.pin_name(pin);
+
+                    if(std::regex_match(pin_name, pin_regex)) {
+                        found = true;
+
+                        pins.insert(pin);
+                    }
+                }
+
+                if(!found) {
+                    VTR_LOGF_WARN(fname_.c_str(), lineno_,
+                                        "get_pins target name or pattern '%s' matched no pins\n",
+                                        pin_pattern.c_str());
+                }
+            }
+
+            return pins;
+        }
+
+        std::set<tatum::DomainId> get_all_clocks() {
+            auto domains = tc_.clock_domains();
+            return std::set<tatum::DomainId>(domains.begin(), domains.end());
+        }
+
+        float sdc_units_to_seconds(float val) const {
+            return val * unit_scale_;
+        }
+
+        float seconds_to_sdc_units(float val) const {
+            return val / unit_scale_;
+        }
+
+    private:
+        const AtomNetlist& netlist_;
+        const AtomLookup& lookup_;
+        tatum::TimingConstraints& tc_;
+        tatum::TimingGraph& tg_;
+
+        size_t num_commands_ = 0;
         std::string fname_;
         int lineno_ = -1;
 
+        float unit_scale_ = 1e-9;
+
+        std::map<tatum::DomainId,sdcparse::CreateClock> sdc_clocks_;
+        std::set<AtomPinId> netlist_clock_drivers_;
+        std::map<std::string,AtomPinId> netlist_primary_ios_;
+
+        std::set<std::pair<tatum::DomainId,tatum::DomainId>> disabled_domain_pairs_;
+        std::map<std::pair<tatum::DomainId,tatum::DomainId>, float> setup_override_constraints_;
+        std::map<std::pair<tatum::DomainId,tatum::DomainId>, float> hold_override_constraints_;
+
+        std::map<std::pair<tatum::DomainId,tatum::DomainId>,int> setup_mcp_overrides_;
+        std::map<std::pair<tatum::DomainId,tatum::DomainId>,int> hold_mcp_overrides_;
 };
 
-/********************* Subroutine definitions *******************************/
+std::unique_ptr<tatum::TimingConstraints> read_sdc(const t_timing_inf& timing_inf,
+                                                   const AtomNetlist& netlist,
+                                                   const AtomLookup& lookup,
+                                                   tatum::TimingGraph& timing_graph) {
+    auto timing_constraints = std::make_unique<tatum::TimingConstraints>();
 
-void read_sdc(t_timing_inf timing_inf) {
-	int source_clock_domain, sink_clock_domain, iinput, ioutput, icc, isource, isink;
-
-    auto& timing_ctx = g_vpr_ctx.mutable_timing();
-
-	/* Make sure we haven't called this subroutine before. */
-	VTR_ASSERT(!timing_ctx.sdc);
-
-	/* Allocate container structure for SDC constraints. */
-	timing_ctx.sdc = (t_timing_constraints *) vtr::calloc(1, sizeof(t_timing_constraints));
-
-
-#ifndef ENABLE_CLASSIC_VPR_STA
-    return;
-#endif
-	/* If no SDC file is included or specified, or timing analysis is off,
-	use default behaviour of cutting paths between domains and optimizing each clock separately */
-
-	if (!timing_inf.timing_analysis_enabled) {
+    if (!timing_inf.timing_analysis_enabled) {
 		VTR_LOG("\n");
-		VTR_LOG("Timing analysis off; using default timing constraints.\n");
-		use_default_timing_constraints();
-		return;
-	}
-
-	if ((sdc = fopen(timing_inf.SDCFile.c_str(), "r")) == nullptr) {
-		VTR_LOG("\n");
-		VTR_LOG("SDC file '%s' blank or not found.\n", timing_inf.SDCFile.c_str());
-		use_default_timing_constraints();
-		return;
-	}
-
-	/* Now we have an SDC file. */
-
-	/* Save name of SDC file for error outputs */
-	sdc_file_name = timing_inf.SDCFile;
-
-	/* Count how many clocks and I/Os are in the netlist.
-	Store the names of each clock and each I/O in netlist_clocks and netlist_ios.
-	The only purpose of these two lists is to compare clock names in the SDC file against them.
-	As a result, they will be freed after the SDC file is parsed. */
-	alloc_and_load_netlist_clocks_and_ios();
-
-	/* Parse the file line-by-line. */
-    SdcCallback sdc_callback;
-    sdcparse::sdc_parse_file(sdc, sdc_callback, sdc_file_name.c_str());
-
-	if (!sdc_callback.got_commands()) { /* blank file or only comments found */
-		VTR_LOG("\n");
-		VTR_LOG("SDC file '%s' blank or not found.\n", timing_inf.SDCFile.c_str());
-		use_default_timing_constraints();
-		free(netlist_clocks);
-		free(netlist_ios);
-		return;
-	}
-
-	/* Make sure that all virtual clocks referenced in timing_ctx.sdc->constrained_inputs and timing_ctx.sdc->constrained_outputs have been constrained. */
-	for (iinput = 0; iinput < timing_ctx.sdc->num_constrained_inputs; iinput++) {
-		if ((find_constrained_clock(timing_ctx.sdc->constrained_inputs[iinput].clock_name)) == -1) {
-			vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), timing_ctx.sdc->constrained_inputs[iinput].file_line_number,
-					"Input %s is associated with an unconstrained clock %s.\n",
-					timing_ctx.sdc->constrained_inputs[iinput].name,
-					timing_ctx.sdc->constrained_inputs[iinput].clock_name);
-		}
-	}
-
-	for (ioutput = 0; ioutput < timing_ctx.sdc->num_constrained_outputs; ioutput++) {
-		if ((find_constrained_clock(timing_ctx.sdc->constrained_outputs[ioutput].clock_name)) == -1) {
-			vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), timing_ctx.sdc->constrained_inputs[iinput].file_line_number,
-					"Output %s is associated with an unconstrained clock %s.\n",
-					timing_ctx.sdc->constrained_outputs[ioutput].name,
-					timing_ctx.sdc->constrained_outputs[ioutput].clock_name);
-		}
-	}
-
-	/* Make sure that all clocks referenced in timing_ctx.sdc->cc_constraints have been constrained. */
-	for (icc = 0; icc < timing_ctx.sdc->num_cc_constraints; icc++) {
-		for (isource = 0; isource < timing_ctx.sdc->cc_constraints[icc].num_source; isource++) {
-			if ((find_constrained_clock(timing_ctx.sdc->cc_constraints[icc].source_list[isource])) == -1) {
-				vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), timing_ctx.sdc->cc_constraints[icc].file_line_number,
-						"Token %s is not a constrained clock.\n",
-						timing_ctx.sdc->cc_constraints[icc].source_list[isource]);
-			}
-		}
-		for (isink = 0; isink < timing_ctx.sdc->cc_constraints[icc].num_sink; isink++) {
-			if ((find_constrained_clock(timing_ctx.sdc->cc_constraints[icc].sink_list[isink])) == -1) {
-				vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), timing_ctx.sdc->cc_constraints[icc].file_line_number,
-						"Token %s is not a constrained clock.\n",
-						timing_ctx.sdc->cc_constraints[icc].sink_list[isink]);
-			}
-		}
-	}
-
-	/* Allocate matrix of timing constraints [0..timing_ctx.sdc->num_constrained_clocks-1][0..timing_ctx.sdc->num_constrained_clocks-1] and initialize to 0 */
-    size_t num_constrained_clocks = timing_ctx.sdc->num_constrained_clocks;
-	timing_ctx.sdc->domain_constraint = vtr::Matrix<float>({num_constrained_clocks, num_constrained_clocks});
-
-	/* Based on the information from sdc_clocks, calculate constraints for all paths except ones with an override constraint. */
-	for (source_clock_domain = 0; source_clock_domain < timing_ctx.sdc->num_constrained_clocks; source_clock_domain++) {
-		for (sink_clock_domain = 0; sink_clock_domain < timing_ctx.sdc->num_constrained_clocks; sink_clock_domain++) {
-			if ((icc = find_cc_constraint(timing_ctx.sdc->constrained_clocks[source_clock_domain].name, timing_ctx.sdc->constrained_clocks[sink_clock_domain].name)) != -1) {
-				if (timing_ctx.sdc->cc_constraints[icc].num_multicycles == 0) {
-					/* There's a special constraint from set_false_path, set_clock_groups
-					-exclusive or set_max_delay which overrides the default constraint. */
-					timing_ctx.sdc->domain_constraint[source_clock_domain][sink_clock_domain] = timing_ctx.sdc->cc_constraints[icc].constraint;
-				} else {
-					/* There's a special constraint from set_multicycle_path which overrides the default constraint.
-					This constraint = default constraint (obtained via edge counting) + (num_multicycles - 1) * period of sink clock domain. */
-					timing_ctx.sdc->domain_constraint[source_clock_domain][sink_clock_domain] =
-						calculate_constraint(sdc_clocks[source_clock_domain], sdc_clocks[sink_clock_domain])
-						+ (timing_ctx.sdc->cc_constraints[icc].num_multicycles - 1) * sdc_clocks[sink_clock_domain].period;
-				}
-			} else {
-				/* There's no special override constraint. */
-				/* Calculate the constraint between clock domains by finding the smallest positive
-				difference between a posedge in the source domain and one in the sink domain. */
-				timing_ctx.sdc->domain_constraint[source_clock_domain][sink_clock_domain] =
-					calculate_constraint(sdc_clocks[source_clock_domain], sdc_clocks[sink_clock_domain]);
-			}
-		}
-	}
-
-	VTR_LOG("\n");
-	VTR_LOG("SDC file '%s' parsed successfully.\n",
-			 timing_inf.SDCFile.c_str() );
-	VTR_LOG("%d clocks (including virtual clocks), %d inputs and %d outputs were constrained.\n",
-			 timing_ctx.sdc->num_constrained_clocks, timing_ctx.sdc->num_constrained_inputs, timing_ctx.sdc->num_constrained_outputs);
-	VTR_LOG("\n");
-
-	/* Since all the information we need is stored in timing_ctx.sdc->domain_constraint, timing_ctx.sdc->constrained_clocks,
-	and constrained_ios, free other data structures used in this routine */
-	for (int iclk = 0; iclk < timing_ctx.sdc->num_constrained_clocks; iclk++) {
-        free(sdc_clocks[iclk].name);
-    }
-	free(sdc_clocks);
-	free(netlist_clocks);
-    for(int i = 0; i < num_netlist_ios; ++i) {
-        free(netlist_ios[i]);
-    }
-	free(netlist_ios);
-
-    fclose(sdc);
-
-	return;
-}
-
-/*
- * Override the default error function in libsdcparse so that it throws
- * vpr style errors.
- */
-void vpr_sdc_error(const int line_number, const std::string& /*near_text*/, const std::string& msg) {
-    vpr_throw(VPR_ERROR_SDC, get_sdc_file_name(), line_number, msg.c_str());
-}
-
-static bool apply_create_clock(const sdcparse::CreateClock& sdc_create_clock, int lineno) {
-    bool found;
-
-    auto& timing_ctx = g_vpr_ctx.timing();
-
-    if(sdc_create_clock.is_virtual) {
-        /* Store the clock's name, period and edges in the local array sdc_clocks. */
-        sdc_clocks = (t_sdc_clock *) vtr::realloc(sdc_clocks, ++timing_ctx.sdc->num_constrained_clocks * sizeof(t_sdc_clock));
-        sdc_clocks[timing_ctx.sdc->num_constrained_clocks - 1].name = vtr::strdup(sdc_create_clock.name.c_str());
-        sdc_clocks[timing_ctx.sdc->num_constrained_clocks - 1].period = sdc_create_clock.period;
-        sdc_clocks[timing_ctx.sdc->num_constrained_clocks - 1].rising_edge = sdc_create_clock.rise_edge;
-        sdc_clocks[timing_ctx.sdc->num_constrained_clocks - 1].falling_edge = sdc_create_clock.fall_edge;
-
-        /* Also store the clock's name, and the fact that it is not a netlist clock, in timing_ctx.sdc->constrained_clocks. */
-        timing_ctx.sdc->constrained_clocks = (t_clock *) vtr::realloc (timing_ctx.sdc->constrained_clocks, timing_ctx.sdc->num_constrained_clocks * sizeof(t_clock));
-        timing_ctx.sdc->constrained_clocks[timing_ctx.sdc->num_constrained_clocks - 1].name = vtr::strdup(sdc_create_clock.name.c_str());
-        timing_ctx.sdc->constrained_clocks[timing_ctx.sdc->num_constrained_clocks - 1].is_netlist_clock = false;
+		VTR_LOG("Timing analysis off\n");
+        apply_default_timing_constraints(netlist, lookup, *timing_constraints);
     } else {
-        VTR_ASSERT(!sdc_create_clock.is_virtual);
+        FILE* sdc_file = fopen(timing_inf.SDCFile.c_str(), "r");
+        if (sdc_file == nullptr) {
+            //No SDC file
+            VTR_LOG("\n");
+            VTR_LOG("SDC file '%s' not found\n", timing_inf.SDCFile.c_str());
+            apply_default_timing_constraints(netlist, lookup, *timing_constraints);
+        } else {
 
-        for(size_t itarget = 0; itarget < sdc_create_clock.targets.strings.size(); itarget++) {
+            VTR_ASSERT(sdc_file != nullptr);
 
-            /* See if the regular expression stored in ptr is legal and matches at least one clock net.
-            If it is not legal, it will fail during regex_match.  We check for a match using bool found. */
-            found = false;
-            for (int iclock = 0; iclock < num_netlist_clocks; iclock++) {
-                if (regex_match(netlist_clocks[iclock], sdc_create_clock.targets.strings[itarget].c_str())) {
-                    /* We've found a new clock!  (Note that we can't store ptr as the clock's
-                    name since it could be a regex, unlike the virtual clock case).*/
-                    found = true;
+            //Parse the file
+            SdcParseCallback callback(netlist, lookup, *timing_constraints, timing_graph);
+            sdc_parse_file(sdc_file, callback, timing_inf.SDCFile.c_str());
+            fclose(sdc_file);
 
-                    /* Store the clock's name, period and edges in the local array sdc_clocks. */
-                    sdc_clocks = (t_sdc_clock *) vtr::realloc(sdc_clocks, ++timing_ctx.sdc->num_constrained_clocks * sizeof(t_sdc_clock));
-                    sdc_clocks[timing_ctx.sdc->num_constrained_clocks - 1].name = netlist_clocks[iclock];
-                    sdc_clocks[timing_ctx.sdc->num_constrained_clocks - 1].period = sdc_create_clock.period;
-                    sdc_clocks[timing_ctx.sdc->num_constrained_clocks - 1].rising_edge = sdc_create_clock.rise_edge;
-                    sdc_clocks[timing_ctx.sdc->num_constrained_clocks - 1].falling_edge = sdc_create_clock.fall_edge;
-
-                    /* Also store the clock's name, and the fact that it is a netlist clock, in timing_ctx.sdc->constrained_clocks. */
-                    timing_ctx.sdc->constrained_clocks = (t_clock *) vtr::realloc (timing_ctx.sdc->constrained_clocks, timing_ctx.sdc->num_constrained_clocks * sizeof(t_clock));
-                    timing_ctx.sdc->constrained_clocks[timing_ctx.sdc->num_constrained_clocks - 1].name = vtr::strdup(netlist_clocks[iclock]);
-                    timing_ctx.sdc->constrained_clocks[timing_ctx.sdc->num_constrained_clocks - 1].is_netlist_clock = true;
-                    /* Fanout will be filled out once the timing graph has been constructed. */
-                }
-            }
-
-            if (!found) {
-                vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), lineno,
-                        "Clock name or regular expression does not correspond to any nets.\n"
-                        "If you'd like to create a virtual clock, use the '-name' keyword.\n");
-                return false;
-            }
-        }
-
-    }
-    return true;
-}
-
-static bool apply_set_clock_groups(const sdcparse::SetClockGroups& sdc_set_clock_groups, int lineno) {
-    bool found;
-
-    int iclock;
-    int num_exclusive_groups = 0;
-	t_sdc_exclusive_group *exclusive_groups = nullptr;
-
-    VTR_ASSERT(sdc_set_clock_groups.clock_groups.size() >= 2); //Should have already been caught by parser
-    VTR_ASSERT(sdc_set_clock_groups.type == sdcparse::ClockGroupsType::EXCLUSIVE); //Currently only form supported
-
-    for(size_t igroup = 0; igroup < sdc_set_clock_groups.clock_groups.size(); igroup++) {
-        const sdcparse::StringGroup& clock_group = sdc_set_clock_groups.clock_groups[igroup];
-
-        /* Create a new entry in exclusive groups */
-        exclusive_groups = (t_sdc_exclusive_group *) vtr::realloc(
-            exclusive_groups, ++num_exclusive_groups * sizeof(t_sdc_exclusive_group));
-        exclusive_groups[num_exclusive_groups - 1].clock_names = nullptr;
-        exclusive_groups[num_exclusive_groups - 1].num_clock_names = 0;
-
-        for(size_t iclk_name = 0; iclk_name < clock_group.strings.size(); iclk_name++) {
-            const char* clk_name = clock_group.strings[iclk_name].c_str();
-
-            /* Check the regex clk_name against each netlist clock and add it to the clock_names list if it matches. */
-            found = false;
-            for (iclock = 0; iclock < num_netlist_clocks; iclock++) {
-                if (regex_match(netlist_clocks[iclock], clk_name)) {
-                    found = true;
-                    exclusive_groups[num_exclusive_groups - 1].clock_names = (char **) vtr::realloc(
-                        exclusive_groups[num_exclusive_groups - 1].clock_names, ++exclusive_groups[num_exclusive_groups - 1].num_clock_names * sizeof(char *));
-                    exclusive_groups[num_exclusive_groups - 1].clock_names
-                        [exclusive_groups[num_exclusive_groups - 1].num_clock_names - 1] =
-                        vtr::strdup(netlist_clocks[iclock]);
-                }
-            }
-            if (!found) {
-                if(!is_valid_clock_name(clk_name)) {
-                    vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), lineno,
-                            "Clock name '%s' does not match to any known clock.\n",
-                            clk_name);
-                } else {
-                    /* The clock_name is a valid non-netlist clock (i.e. a virtual clock), so add it to the list.  */
-                    exclusive_groups[num_exclusive_groups - 1].clock_names = (char **) vtr::realloc(
-                        exclusive_groups[num_exclusive_groups - 1].clock_names, ++exclusive_groups[num_exclusive_groups - 1].num_clock_names * sizeof(char *));
-                    exclusive_groups[num_exclusive_groups - 1].clock_names[exclusive_groups[num_exclusive_groups - 1].num_clock_names - 1] = vtr::strdup(clk_name);
-                }
-            }
-        }
-    }
-
-    /* Finally, create two DO_NOT_ANALYSE override constraints for each pair of entries
-    to cut paths bidirectionally between pairs of clock lists in different groups.
-    Set make_copies to true because we have to use the lists of names in multiple
-    override constraints, and it's impossible to free them from multiple places at the
-    end without a whole lot of trouble. */
-
-    for (int i = 0; i < num_exclusive_groups; i++) {
-        for (int j = 0; j < num_exclusive_groups; j++) {
-            if (i != j) {
-                add_override_constraint(exclusive_groups[i].clock_names, exclusive_groups[i].num_clock_names,
-                    exclusive_groups[j].clock_names, exclusive_groups[j].num_clock_names, DO_NOT_ANALYSE, 0, true, true, true);
-            }
-        }
-    }
-
-    /* Now that we've copied all the clock name lists
-    (2 * num_exlusive_groups - 1) times, free the original lists. */
-    for (int i = 0; i < num_exclusive_groups; i++) {
-        for (int j = 0; j < exclusive_groups[i].num_clock_names; j++) {
-            free(exclusive_groups[i].clock_names[j]);
-        }
-        free(exclusive_groups[i].clock_names);
-    }
-    free (exclusive_groups);
-
-    return true;
-}
-
-
-static bool apply_set_false_path(const sdcparse::SetFalsePath& sdc_set_false_path) {
-	bool domain_level_from = false, domain_level_to = false;
-    int num_from = 0, num_to = 0;
-    char **from_list = nullptr, **to_list = nullptr;
-
-    build_from_to_lists(&from_list, &num_from, &domain_level_from,
-                        &to_list, &num_to, &domain_level_to,
-                        sdc_set_false_path.from, sdc_set_false_path.to);
-
-    /* Create a constraint between each element in from_list and each element in to_list with value DO_NOT_ANALYSE.
-    Set make_copies to false since, as we only need to use from_list and to_list once, we can just have the
-    override constraint entry point to those lists. */
-    add_override_constraint(from_list, num_from, to_list, num_to, DO_NOT_ANALYSE, 0, domain_level_from, domain_level_to, false);
-
-    /* Finally, set from_list and to_list to NULL since they're both
-    being pointed to by the override constraint entry we just created. */
-    from_list = nullptr, to_list = nullptr;
-
-    return true;
-}
-
-static bool apply_set_min_max_delay(const sdcparse::SetMinMaxDelay& sdc_set_min_max_delay) {
-    /* Basically the same as apply_set_false_path, except we get a specific delay value for the constraint. */
-
-	bool domain_level_from = false, domain_level_to = false;
-    int num_from = 0, num_to = 0;
-    char **from_list = nullptr, **to_list = nullptr;
-
-    if(sdc_set_min_max_delay.type != sdcparse::MinMaxType::MAX) {
-        vpr_sdc_error(-1, "", "Only set_max_delay currently supported");
-    }
-
-    build_from_to_lists(&from_list, &num_from, &domain_level_from,
-                        &to_list, &num_to, &domain_level_to,
-                        sdc_set_min_max_delay.from, sdc_set_min_max_delay.to);
-
-    /* Create a constraint between each element in from_list and each element in to_list with value max_delay. */
-    add_override_constraint(from_list, num_from, to_list, num_to, sdc_set_min_max_delay.value,
-                            0, domain_level_from, domain_level_to, false);
-
-    /* Finally, set from_list and to_list to NULL since they're both
-    being pointed to by the override constraint entry we just created. */
-    from_list = nullptr, to_list = nullptr;
-
-    return true;
-}
-
-static bool apply_set_multicycle_path(const sdcparse::SetMulticyclePath& sdc_set_multicycle_path) {
-	bool domain_level_from = false, domain_level_to = false;
-    int num_from = 0, num_to = 0;
-    char **from_list = nullptr, **to_list = nullptr;
-
-    VTR_ASSERT(sdc_set_multicycle_path.is_setup && !sdc_set_multicycle_path.is_hold); //Currently only form supported
-
-    build_from_to_lists(&from_list, &num_from, &domain_level_from,
-                        &to_list, &num_to, &domain_level_to,
-                        sdc_set_multicycle_path.from, sdc_set_multicycle_path.to);
-
-    /* Create an override constraint between from and to. Unlike the previous two commands, set_multicycle_path requires
-    information about the periods and offsets of the clock domains which from and to, which we have to fill in at the end. */
-    add_override_constraint(from_list, num_from, to_list, num_to, HUGE_NEGATIVE_FLOAT /* irrelevant - never used */,
-        sdc_set_multicycle_path.mcp_value, domain_level_from, domain_level_to, false);
-
-    /* Finally, set from_list and to_list to NULL since they're both
-    being pointed to by the override constraint entry we just created. */
-    from_list = nullptr, to_list = nullptr;
-
-    return true;
-}
-
-static bool apply_set_io_delay(const sdcparse::SetIoDelay& sdc_set_io_delay, int lineno) {
-    bool found;
-    const char* io_type;
-
-    const char* clock_name = sdc_set_io_delay.clock_name.c_str();
-
-    //Support for non-standard wildcard clock name for set_input_delay/set_output_dealy
-    //commands, provided it is unambiguous (i.e. there is only one netlist clock)
-    if(num_netlist_clocks == 1 && strcmp(clock_name, "*") == 0) {
-        clock_name = netlist_clocks[0];
-    }
-
-    //Verify that the provided clock name is valid
-    if(!is_valid_clock_name(clock_name)) {
-        vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), lineno,
-                "Clock name '%s' does not match to any known clock.\n",
-                clock_name);
-    }
-
-    /*
-     * Add each regular expression match we find to the list of constrained
-     * inputs (outputs) and give each entry the appropraite clock name and
-     * max_delay
-     */
-
-    auto& timing_ctx = g_vpr_ctx.timing();
-
-    const sdcparse::StringGroup& port_group = sdc_set_io_delay.target_ports;
-    for (size_t iport = 0; iport < port_group.strings.size(); iport++) {
-
-        found = false;
-
-        for (int iio = 0; iio < num_netlist_ios; iio++) {
-            /* See if the regular expression  is legal and matches at least one input port.
-            If it is not legal, it will fail during regex_match.  We check for a match using bool found. */
-            if (regex_match(netlist_ios[iio], port_group.strings[iport].c_str())) {
-                if(sdc_set_io_delay.type == sdcparse::IoDelayType::INPUT) {
-                    /* We've found a new input! */
-                    timing_ctx.sdc->num_constrained_inputs++;
-                    found = true;
-
-                    /* Fill in input information in the permanent array timing_ctx.sdc->constrained_inputs. */
-                    timing_ctx.sdc->constrained_inputs = (t_io *) vtr::realloc (timing_ctx.sdc->constrained_inputs, timing_ctx.sdc->num_constrained_inputs * sizeof(t_io));
-                    timing_ctx.sdc->constrained_inputs[timing_ctx.sdc->num_constrained_inputs - 1].name = vtr::strdup(netlist_ios[iio]);
-                    timing_ctx.sdc->constrained_inputs[timing_ctx.sdc->num_constrained_inputs - 1].clock_name = vtr::strdup(clock_name);
-                    timing_ctx.sdc->constrained_inputs[timing_ctx.sdc->num_constrained_inputs - 1].delay = sdc_set_io_delay.delay;
-                    timing_ctx.sdc->constrained_inputs[timing_ctx.sdc->num_constrained_inputs - 1].file_line_number = lineno;
-                } else {
-                    VTR_ASSERT(sdc_set_io_delay.type == sdcparse::IoDelayType::OUTPUT);
-					/* We've found a new output! */
-					timing_ctx.sdc->num_constrained_outputs++;
-					found = true;
-
-					/* Fill in output information in the permanent array timing_ctx.sdc->constrained_outputs. */
-					timing_ctx.sdc->constrained_outputs = (t_io *) vtr::realloc (timing_ctx.sdc->constrained_outputs, timing_ctx.sdc->num_constrained_outputs * sizeof(t_io));
-					timing_ctx.sdc->constrained_outputs[timing_ctx.sdc->num_constrained_outputs - 1].name = vtr::strdup(netlist_ios[iio]);
-					timing_ctx.sdc->constrained_outputs[timing_ctx.sdc->num_constrained_outputs - 1].clock_name = vtr::strdup(clock_name);
-					timing_ctx.sdc->constrained_outputs[timing_ctx.sdc->num_constrained_outputs - 1].delay = sdc_set_io_delay.delay;
-					timing_ctx.sdc->constrained_outputs[timing_ctx.sdc->num_constrained_outputs - 1].file_line_number = lineno;
-                }
-            }
-        }
-
-        if (!found) {
-            if(sdc_set_io_delay.type == sdcparse::IoDelayType::INPUT) {
-                io_type = "Input";
+            if (callback.num_commands() == 0) {
+                VTR_LOG("\n");
+                VTR_LOG("SDC file '%s' contained no SDC commands\n", timing_inf.SDCFile.c_str());
+                apply_default_timing_constraints(netlist, lookup, *timing_constraints);
             } else {
-                VTR_ASSERT(sdc_set_io_delay.type == sdcparse::IoDelayType::OUTPUT);
-                io_type = "Output";
-            }
-
-            vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), lineno,
-                    "%s name or regular expression \"%s\" does not correspond to any nets.\n", io_type, port_group.strings[iport].c_str());
-            return false;
-        }
-    }
-    return true;
-}
-
-static bool is_valid_clock_name(const char* clock_name) {
-    auto& timing_ctx = g_vpr_ctx.timing();
-
-    bool found = false;
-    for(int iclk = 0; iclk < timing_ctx.sdc->num_constrained_clocks; iclk++) {
-        if(strcmp(timing_ctx.sdc->constrained_clocks[iclk].name, clock_name) == 0) {
-            found = true;
-            break;
-        }
-    }
-    return found;
-}
-
-static bool build_from_to_lists(char ***from_list, int *num_from, bool* domain_level_from,
-                            char ***to_list, int *num_to, bool* domain_level_to,
-                            const sdcparse::StringGroup& from_group, const sdcparse::StringGroup& to_group) {
-    /*
-     * Source 'from' objects/clocks
-     */
-
-    //Are we working with a set of clock domains?
-    if(from_group.type == sdcparse::StringGroupType::CLOCK) {
-        *domain_level_from = true;
-    }
-    for(size_t i = 0; i < from_group.strings.size(); i++) {
-        /* Keep adding clock names to from_list */
-        (*from_list) = (char **) vtr::realloc((*from_list), ++(*num_from) * sizeof(**from_list));
-        (*from_list)[(*num_from) - 1] = vtr::strdup(from_group.strings[i].c_str());
-    }
-
-    /*
-     * Target 'to' object/clocsk
-     */
-
-    //Are we working with a set of clock domains?
-
-    if(to_group.type == sdcparse::StringGroupType::CLOCK) {
-        *domain_level_to = true;
-    }
-    for(size_t i = 0; i < to_group.strings.size(); i++) {
-        /* Keep adding clock names to to_list */
-        (*to_list) = (char **) vtr::realloc((*to_list), ++(*num_to) * sizeof(**to_list));
-        (*to_list)[(*num_to) - 1] = vtr::strdup(to_group.strings[i].c_str());
-    }
-
-    return true;
-}
-
-static void use_default_timing_constraints() {
-
-	int source_clock_domain, sink_clock_domain;
-
-    auto& timing_ctx = g_vpr_ctx.timing();
-
-	/* Find all netlist clocks and add them as constrained clocks. */
-	count_netlist_clocks_as_constrained_clocks();
-
-	/* We'll use separate defaults for multi-clock and single-clock/combinational circuits. */
-
-	if (timing_ctx.sdc->num_constrained_clocks <= 1) {
-		/* Create one constrained clock with period 0... */
-		timing_ctx.sdc->domain_constraint = vtr::Matrix<float>({1,1});
-		timing_ctx.sdc->domain_constraint[0][0] = 0.;
-
-        VTR_LOG("\n");
-
-		if (timing_ctx.sdc->num_constrained_clocks == 0) {
-			/* We need to create a virtual clock to constrain I/Os on. */
-			timing_ctx.sdc->num_constrained_clocks = 1;
-			timing_ctx.sdc->constrained_clocks = (t_clock *) vtr::malloc(sizeof(t_clock));
-			timing_ctx.sdc->constrained_clocks[0].name = vtr::strdup("virtual_io_clock");
-			timing_ctx.sdc->constrained_clocks[0].is_netlist_clock = false;
-
-            /* Constrain all I/Os on the virtual clock, with I/O delay 0. */
-            count_netlist_ios_as_constrained_ios(timing_ctx.sdc->constrained_clocks[0].name, 0.);
-
-			VTR_LOG("Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock.\n",
-					timing_ctx.sdc->num_constrained_inputs, timing_ctx.sdc->num_constrained_outputs);
-			VTR_LOG("Optimize this virtual clock to run as fast as possible.\n");
-		} else {
-            /* Constrain all I/Os on the single netlist clock, with I/O delay 0. */
-            count_netlist_ios_as_constrained_ios(timing_ctx.sdc->constrained_clocks[0].name, 0.);
-
-			VTR_LOG("Defaulting to: constrain all %d inputs and %d outputs on the netlist clock.\n",
-					timing_ctx.sdc->num_constrained_inputs, timing_ctx.sdc->num_constrained_outputs);
-			VTR_LOG("Optimize this clock to run as fast as possible.\n");
-		}
-	} else { /* Multiclock circuit */
-
-		/* Constrain all I/Os on a separate virtual clock. Cut paths between all netlist
-		 clocks, but analyse all paths between the virtual I/O clock and netlist clocks
-		 and optimize all clocks to go as fast as possible. */
-
-		timing_ctx.sdc->constrained_clocks = (t_clock *) vtr::realloc (timing_ctx.sdc->constrained_clocks, ++timing_ctx.sdc->num_constrained_clocks * sizeof(t_clock));
-		timing_ctx.sdc->constrained_clocks[timing_ctx.sdc->num_constrained_clocks - 1].name = vtr::strdup("virtual_io_clock");
-		timing_ctx.sdc->constrained_clocks[timing_ctx.sdc->num_constrained_clocks - 1].is_netlist_clock = false;
-		count_netlist_ios_as_constrained_ios(timing_ctx.sdc->constrained_clocks[timing_ctx.sdc->num_constrained_clocks - 1].name, 0.);
-
-		/* Allocate matrix of timing constraints [0..timing_ctx.sdc->num_constrained_clocks-1][0..timing_ctx.sdc->num_constrained_clocks-1] */
-        size_t num_constrained_clocks = timing_ctx.sdc->num_constrained_clocks;
-		timing_ctx.sdc->domain_constraint = vtr::Matrix<float>({num_constrained_clocks, num_constrained_clocks});
-
-		for (source_clock_domain = 0; source_clock_domain < timing_ctx.sdc->num_constrained_clocks; source_clock_domain++) {
-			for (sink_clock_domain = 0; sink_clock_domain < timing_ctx.sdc->num_constrained_clocks; sink_clock_domain++) {
-				if (source_clock_domain == sink_clock_domain || source_clock_domain == timing_ctx.sdc->num_constrained_clocks - 1
-					|| sink_clock_domain == timing_ctx.sdc->num_constrained_clocks - 1) {
-					timing_ctx.sdc->domain_constraint[source_clock_domain][sink_clock_domain] = 0.;
-				} else {
-					timing_ctx.sdc->domain_constraint[source_clock_domain][sink_clock_domain] = DO_NOT_ANALYSE;
-				}
-			}
-		}
-
-		VTR_LOG("\n");
-		VTR_LOG("Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock;\n",
-				timing_ctx.sdc->num_constrained_inputs, timing_ctx.sdc->num_constrained_outputs);
-		VTR_LOG("\tcut paths between netlist clock domains; and\n");
-		VTR_LOG("\toptimize all clocks to run as fast as possible.\n");
-	}
-}
-
-static void alloc_and_load_netlist_clocks_and_ios() {
-    std::map<const t_model*,std::vector<const t_model_ports*>> clock_gen_ports; //Records info about clock generating ports
-
-	/* Count how many clocks and I/Os are in the netlist.
-	Store the names of each clock and each I/O in netlist_clocks and netlist_ios. */
-    auto& atom_ctx = g_vpr_ctx.atom();
-
-    for(auto blk_id : atom_ctx.nlist.blocks()) {
-
-        AtomBlockType type = atom_ctx.nlist.block_type(blk_id);
-        if(type == AtomBlockType::BLOCK) {
-
-            //Save any clock generating ports on this model type
-            const t_model* model = atom_ctx.nlist.block_model(blk_id);
-            VTR_ASSERT(model);
-            auto iter = clock_gen_ports.find(model);
-            if(iter == clock_gen_ports.end()) {
-                //First time seen, record any ports which could generate clocks
-                for(const t_model_ports* model_port = model->outputs; model_port; model_port = model_port->next) {
-                    VTR_ASSERT(model_port->dir == OUT_PORT);
-                    if(model_port->is_clock) {
-                        //Clock generator
-                        clock_gen_ports[model].push_back(model_port);
-                    }
-                }
-            }
-
-            //Look for connected input clocks
-            for(auto pin_id : atom_ctx.nlist.block_clock_pins(blk_id)) {
-                AtomNetId clk_net_id = atom_ctx.nlist.pin_net(pin_id);
-                VTR_ASSERT(clk_net_id);
-
-                std::string name = atom_ctx.nlist.net_name(clk_net_id);
-                /* Now that we've found a clock, let's see if we've counted it already */
-                bool found = false;
-                for (int i = 0; !found && i < num_netlist_clocks; i++) {
-                    if (netlist_clocks[i] == name) {
-                        found = true;
-                    }
-                }
-                if (!found) {
-                    /* If we get here, the clock is new and so we dynamically grow the array netlist_clocks by one. */
-                    netlist_clocks = (char **) vtr::realloc (netlist_clocks, ++num_netlist_clocks * sizeof(char *));
-                    netlist_clocks[num_netlist_clocks - 1] = vtr::strdup(name.c_str());
-                }
-            }
-
-            //Look for any generated clocks
-            if(clock_gen_ports.count(model)) {
-                //This is a clock generator
-
-                //Check all the clock generating ports
-                for(const t_model_ports* model_port : clock_gen_ports[model]) {
-                    AtomPortId clk_gen_port = atom_ctx.nlist.find_atom_port(blk_id, model_port);
-
-                    for(AtomPinId pin_id : atom_ctx.nlist.port_pins(clk_gen_port)) {
-                        AtomNetId clk_net_id = atom_ctx.nlist.pin_net(pin_id);
-                        VTR_ASSERT(clk_net_id);
-
-                        std::string name = atom_ctx.nlist.net_name(clk_net_id);
-                        /* Now that we've found a clock, let's see if we've counted it already */
-                        bool found = false;
-                        for (int i = 0; !found && i < num_netlist_clocks; i++) {
-                            if (netlist_clocks[i] == name) {
-                                found = true;
-                            }
-                        }
-                        if (!found) {
-                            /* If we get here, the clock is new and so we dynamically grow the array netlist_clocks by one. */
-                            netlist_clocks = (char **) vtr::realloc (netlist_clocks, ++num_netlist_clocks * sizeof(char *));
-                            netlist_clocks[num_netlist_clocks - 1] = vtr::strdup(name.c_str());
-                        }
-                    }
-                }
-            }
-		} else if (type == AtomBlockType::INPAD || type == AtomBlockType::OUTPAD) {
-
-            std::string name = atom_ctx.nlist.block_name(blk_id);
-			/* Now that we've found an I/O, let's see if we've counted it already */
-			bool found = false;
-			for (int i = 0; !found && i < num_netlist_ios; i++) {
-				if (netlist_ios[i] == name) {
-					found = true;
-				}
-			}
-			if (!found) {
-                const char* trimmed_name = (type == AtomBlockType::OUTPAD) ? name.c_str() + 4 : name.c_str();
-				/* the + 4 removes the prefix "out:" automatically prepended to outputs */
-
-				/* If we get here, the I/O is new and so we dynamically grow the array netlist_ios by one. */
-				netlist_ios = (char **) vtr::realloc (netlist_ios, ++num_netlist_ios * sizeof(char *));
-				netlist_ios[num_netlist_ios - 1] = vtr::strdup(trimmed_name);
-			}
-		}
-	}
-}
-
-static void count_netlist_clocks_as_constrained_clocks() {
-	/* Counts how many clocks are in the netlist, and adds them to the array timing_ctx.sdc->constrained_clocks. */
-    auto& timing_ctx = g_vpr_ctx.timing();
-    auto& atom_ctx = g_vpr_ctx.atom();
-
-	timing_ctx.sdc->num_constrained_clocks = 0;
-
-    for(auto blk_id : atom_ctx.nlist.blocks()) {
-        //Check for input clocks
-        for(auto pin_id : atom_ctx.nlist.block_clock_pins(blk_id)) {
-            AtomNetId clk_net_id = atom_ctx.nlist.pin_net(pin_id);
-            VTR_ASSERT(clk_net_id);
-
-            std::string name = atom_ctx.nlist.net_name(clk_net_id);
-            add_clock(name);
-        }
-
-        //Check for generated clocks
-        for(AtomPortId port : atom_ctx.nlist.block_output_ports(blk_id)) {
-            const t_model_ports* port_model = atom_ctx.nlist.port_model(port);
-            VTR_ASSERT(port_model->dir == OUT_PORT);
-
-            if(port_model->is_clock) {
-                //This is a clock generator
-                for(AtomPinId pin : atom_ctx.nlist.port_pins(port)) {
-                    AtomNetId net = atom_ctx.nlist.pin_net(pin);
-                    std::string net_name = atom_ctx.nlist.net_name(net);
-                    add_clock(net_name);
-                }
+                VTR_LOG("\n");
+                VTR_LOG("Applied %zu SDC commands from '%s'\n", callback.num_commands(), timing_inf.SDCFile.c_str());
             }
         }
-	}
-}
+    }
+    VTR_LOG("Timing constraints created %zu clocks\n", timing_constraints->clock_domains().size());
+    for (tatum::DomainId domain : timing_constraints->clock_domains()) {
 
-static void add_clock(std::string net_name) {
-    /* Now that we've found a clock, let's see if we've counted it already */
-    auto& timing_ctx = g_vpr_ctx.timing();
+        if (timing_constraints->is_virtual_clock(domain)) {
+            VTR_LOG("  Constrained Clock '%s' (Virtual Clock)\n", 
+                timing_constraints->clock_domain_name(domain).c_str());
+        } else {
 
-    bool found = false;
-    for (int i = 0; !found && i < timing_ctx.sdc->num_constrained_clocks; i++) {
-        if (timing_ctx.sdc->constrained_clocks[i].name == net_name) {
-            found = true;
+            tatum::NodeId src_tnode = timing_constraints->clock_domain_source_node(domain);
+            VTR_ASSERT(src_tnode);
+
+            AtomPinId src_pin = lookup.tnode_atom_pin(src_tnode);
+            VTR_ASSERT(src_pin);
+
+            VTR_LOG("  Constrained Clock '%s' Source: '%s'\n", 
+                timing_constraints->clock_domain_name(domain).c_str(),
+                netlist.pin_name(src_pin).c_str());
         }
     }
-    if (!found) {
-        /* If we get here, the clock is new and so we dynamically grow the array timing_ctx.sdc->constrained_clocks by one. */
-        timing_ctx.sdc->constrained_clocks = (t_clock *) vtr::realloc (timing_ctx.sdc->constrained_clocks, ++timing_ctx.sdc->num_constrained_clocks * sizeof(t_clock));
-        timing_ctx.sdc->constrained_clocks[timing_ctx.sdc->num_constrained_clocks - 1].name = vtr::strdup(net_name.c_str());
-        timing_ctx.sdc->constrained_clocks[timing_ctx.sdc->num_constrained_clocks - 1].is_netlist_clock = true;
-        /* Fanout will be filled out once the timing graph has been constructed. */
+
+    VTR_LOG("\n");
+
+    return timing_constraints;
+}
+
+//Apply the default timing constraints (i.e. if there are no user specified constraints)
+//appropriate to the type of circuit.
+void apply_default_timing_constraints(const AtomNetlist& netlist,
+                                      const AtomLookup& lookup,
+                                      tatum::TimingConstraints& tc) {
+    std::set<AtomPinId> netlist_clock_drivers = find_netlist_logical_clock_drivers(netlist);
+
+    if(netlist_clock_drivers.size() == 0) {
+        apply_combinational_default_timing_constraints(netlist, lookup, tc);
+
+    } else if (netlist_clock_drivers.size() == 1) {
+        apply_single_clock_default_timing_constraints(netlist, lookup, *netlist_clock_drivers.begin(), tc);
+
+    } else {
+        VTR_ASSERT(netlist_clock_drivers.size() > 1);
+
+        apply_multi_clock_default_timing_constraints(netlist, lookup, netlist_clock_drivers, tc);
+    }
+
+}
+
+//Apply the default timing constraints for purely combinational circuits which have
+//no explicit netlist clock
+void apply_combinational_default_timing_constraints(const AtomNetlist& netlist,
+                                                    const AtomLookup& lookup,
+                                                    tatum::TimingConstraints& tc) {
+    std::string clock_name = "virtual_io_clock";
+
+    VTR_LOG("Setting default timing constraints:\n");
+    VTR_LOG("   * constrain all primay inputs and primary outputs on a virtual external clock '%s'\n", clock_name.c_str());
+    VTR_LOG("   * optimize virtual clock to run as fast as possible\n");
+
+    //Create a virtual clock, with 0 period
+    tatum::DomainId domain = tc.create_clock_domain(clock_name);
+    tc.set_setup_constraint(domain, domain, tatum::Time(0.));
+    tc.set_hold_constraint(domain, domain, tatum::Time(0.));
+
+    //Constrain all I/Os with zero input/output delay
+    constrain_all_ios(netlist, lookup, tc, domain, domain, tatum::Time(0.), tatum::Time(0.));
+
+    //Mark constant generator timing nodes
+    mark_constant_generators(netlist, lookup, tc);
+}
+
+//Apply the default timing constraints for circuits with a single netlist clock
+void apply_single_clock_default_timing_constraints(const AtomNetlist& netlist,
+                                                   const AtomLookup& lookup,
+                                                   const AtomPinId clock_driver,
+                                                   tatum::TimingConstraints& tc) {
+    AtomNetId clock_net = netlist.pin_net(clock_driver);
+    std::string clock_name = netlist.net_name(clock_net);
+
+    VTR_LOG("Setting default timing constraints:\n");
+    VTR_LOG("   * constrain all primay inputs and primary outputs on netlist clock '%s'\n", clock_name.c_str());
+    VTR_LOG("   * optimize netlist clock to run as fast as possible\n");
+
+    //Create the netlist clock with period 0
+    tatum::DomainId domain = tc.create_clock_domain(clock_name);
+    tc.set_setup_constraint(domain, domain, tatum::Time(0.));
+    tc.set_hold_constraint(domain, domain, tatum::Time(0.));
+
+    //Mark the clock domain source
+    AtomPinId clock_driver_pin = netlist.net_driver(clock_net);
+    tatum::NodeId clock_source = lookup.atom_pin_tnode(clock_driver_pin);
+    VTR_ASSERT(clock_source);
+    tc.set_clock_domain_source(clock_source, domain);
+
+    //Constrain all I/Os with zero input/output delay
+    constrain_all_ios(netlist, lookup, tc, domain, domain, tatum::Time(0.), tatum::Time(0.));
+
+    //Mark constant generator timing nodes
+    mark_constant_generators(netlist, lookup, tc);
+}
+
+//Apply the default timing constraints for circuits with multiple netlist clocks
+void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
+                                                  const AtomLookup& lookup,
+                                                  const std::set<AtomPinId>& clock_drivers,
+                                                  tatum::TimingConstraints& tc) {
+    std::string virtual_clock_name = "virtual_io_clock";
+    VTR_LOG("Setting default timing constraints:\n");
+    VTR_LOG("   * constrain all primay inputs and primary outputs on a virtual external clock '%s'\n", virtual_clock_name.c_str());
+    VTR_LOG("   * optimize all netlist and virtual clocks to run as fast as possible\n");
+    VTR_LOG("   * ignore cross netlist clock domain timing paths\n");
+
+    //Create a virtual clock, with 0 period
+    tatum::DomainId virtual_clock = tc.create_clock_domain(virtual_clock_name);
+    tc.set_setup_constraint(virtual_clock, virtual_clock, tatum::Time(0.));
+    tc.set_hold_constraint(virtual_clock, virtual_clock, tatum::Time(0.));
+
+    //Constrain all I/Os with zero input/output delay t the virtual clock
+    constrain_all_ios(netlist, lookup, tc, virtual_clock, virtual_clock, tatum::Time(0.), tatum::Time(0.));
+
+    //Create each of the netlist clocks, and constrain it to period 0. Do not analyze cross-domain paths
+    for(AtomPinId clock_driver : clock_drivers) {
+        AtomNetId clock_net = netlist.pin_net(clock_driver);
+
+        //Create the clock
+        std::string clock_name = netlist.net_name(clock_net);
+        tatum::DomainId clock = tc.create_clock_domain(clock_name);
+
+        //Mark the clock domain source
+        tatum::NodeId clock_source = lookup.atom_pin_tnode(clock_driver);
+        VTR_ASSERT(clock_source);
+        tc.set_clock_domain_source(clock_source, clock);
+
+        //Do not analyze cross-domain timing paths (except to/from virtual clock)
+        tc.set_setup_constraint(clock, clock, tatum::Time(0.)); //Intra-domain
+        tc.set_setup_constraint(clock, virtual_clock, tatum::Time(0.)); //netlist to virtual
+        tc.set_setup_constraint(virtual_clock, clock, tatum::Time(0.)); //virtual to netlist
+
+        tc.set_hold_constraint(clock, clock, tatum::Time(0.)); //Intra-domain
+        tc.set_hold_constraint(clock, virtual_clock, tatum::Time(0.)); //netlist to virtual
+        tc.set_hold_constraint(virtual_clock, clock, tatum::Time(0.)); //virtual to netlist
+    }
+
+    //Mark constant generator timing nodes
+    mark_constant_generators(netlist, lookup, tc);
+}
+
+//Look through the netlist to find any constant generators, and mark them as
+//constant generators in the timing constraints
+void mark_constant_generators(const AtomNetlist& netlist,
+                              const AtomLookup& lookup,
+                              tatum::TimingConstraints& tc) {
+
+    for(AtomPinId pin : netlist.pins()) {
+        if(netlist.pin_is_constant(pin)) {
+            tatum::NodeId tnode = lookup.atom_pin_tnode(pin);
+            VTR_ASSERT(tnode);
+
+            tc.set_constant_generator(tnode);
+        }
     }
 }
 
-static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_delay) {
-	/* Count how many I/Os are in the netlist, adds them to the arrays timing_ctx.sdc->constrained_inputs/
-	timing_ctx.sdc->constrained_outputs with an I/O delay of 0 and constrains them to clock clock_name. */
 
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& timing_ctx = g_vpr_ctx.timing();
+//Constrain all primary inputs and primary outputs to the specifed clock domains and delays
+void constrain_all_ios(const AtomNetlist& netlist,
+                       const AtomLookup& lookup,
+                       tatum::TimingConstraints& tc,
+                       tatum::DomainId input_domain,
+                       tatum::DomainId output_domain,
+                       tatum::Time input_delay,
+                       tatum::Time output_delay) {
 
-    for(auto blk_id : atom_ctx.nlist.blocks()) {
-        AtomBlockType type = atom_ctx.nlist.block_type(blk_id);
+    for (AtomBlockId blk : netlist.blocks()) {
+        AtomBlockType type = netlist.block_type(blk);
 
-		if (type == AtomBlockType::INPAD) {
-            std::string name = atom_ctx.nlist.block_name(blk_id);
-			/* Now that we've found an I/O, let's see if we've counted it already */
-			bool found = false;
-			for (int iinput = 0; !found && iinput < timing_ctx.sdc->num_constrained_inputs; iinput++) {
-				if (timing_ctx.sdc->constrained_inputs[iinput].name == name) {
-					found = true;
-				}
-			}
-			if (!found) {
-				/* If we get here, the input is new and so we add it to timing_ctx.sdc->constrained_inputs. */
-				timing_ctx.sdc->constrained_inputs = (t_io *) vtr::realloc (timing_ctx.sdc->constrained_inputs, ++timing_ctx.sdc->num_constrained_inputs * sizeof(t_io));
-				timing_ctx.sdc->constrained_inputs[timing_ctx.sdc->num_constrained_inputs - 1].name = vtr::strdup(name.c_str());
-				timing_ctx.sdc->constrained_inputs[timing_ctx.sdc->num_constrained_inputs - 1].clock_name = vtr::strdup(clock_name);
-				timing_ctx.sdc->constrained_inputs[timing_ctx.sdc->num_constrained_inputs - 1].delay = io_delay;
-			}
-		} else if (type == AtomBlockType::OUTPAD) {
-            std::string name = atom_ctx.nlist.block_name(blk_id);
-			/* Now that we've found an I/O, let's see if we've counted it already */
-			bool found = false;
-			for (int ioutput = 0; !found && ioutput < timing_ctx.sdc->num_constrained_outputs; ioutput++) {
-				if (timing_ctx.sdc->constrained_outputs[ioutput].name == name) {
-					found = true;
-				}
-			}
-			if (!found) {
-				/* If we get here, the output is new and so we add it to timing_ctx.sdc->constrained_outputs. */
-				timing_ctx.sdc->constrained_outputs = (t_io *) vtr::realloc (timing_ctx.sdc->constrained_outputs, ++timing_ctx.sdc->num_constrained_outputs * sizeof(t_io));
-				timing_ctx.sdc->constrained_outputs[timing_ctx.sdc->num_constrained_outputs - 1].name = vtr::strdup(name.c_str() + 4);
-				/* the + 4 removes the prefix "out:" automatically prepended to outputs */
-				timing_ctx.sdc->constrained_outputs[timing_ctx.sdc->num_constrained_outputs - 1].clock_name = vtr::strdup(clock_name);
-				timing_ctx.sdc->constrained_outputs[timing_ctx.sdc->num_constrained_outputs - 1].delay = io_delay;
-			}
-		}
-	}
+        if (type == AtomBlockType::INPAD || type == AtomBlockType::OUTPAD) {
+            //Get the pin
+            if (netlist.block_pins(blk).size() == 1) {
+                AtomPinId pin = *netlist.block_pins(blk).begin();
+
+                //Find the associated tnode
+                tatum::NodeId tnode = lookup.atom_pin_tnode(pin);
+
+                //Constrain it
+                if (type == AtomBlockType::INPAD) {
+                    tc.set_input_constraint(tnode, input_domain, tatum::DelayType::MAX, input_delay);
+                    tc.set_input_constraint(tnode, input_domain, tatum::DelayType::MIN, input_delay);
+                } else {
+                    VTR_ASSERT(type == AtomBlockType::OUTPAD);
+                    tc.set_output_constraint(tnode, output_domain, tatum::DelayType::MAX, output_delay);
+                    tc.set_output_constraint(tnode, output_domain, tatum::DelayType::MIN, output_delay);
+                }
+            } else {
+                VTR_ASSERT_MSG(netlist.block_pins(blk).size() == 0, "Unconnected I/O");
+            }
+        }
+    }
 }
 
-static int find_constrained_clock(char * ptr) {
-/* Given a string ptr, find whether it's the name of a clock in the array timing_ctx.sdc->constrained_clocks.  *
- * if it is, return the clock's index in timing_ctx.sdc->constrained_clocks; if it's not, return -1. */
-    auto& timing_ctx = g_vpr_ctx.timing();
+std::map<std::string,AtomPinId> find_netlist_primary_ios(const AtomNetlist& netlist) {
+    std::map<std::string,AtomPinId> primary_inputs;
 
-	int index;
-	for (index = 0; index < timing_ctx.sdc->num_constrained_clocks; index++) {
-		if (strcmp(ptr, timing_ctx.sdc->constrained_clocks[index].name) == 0) {
-			return index;
-		}
-	}
-	return -1;
+    for(AtomBlockId blk : netlist.blocks()) {
+        auto type = netlist.block_type(blk);
+        if(type == AtomBlockType::INPAD || type == AtomBlockType::OUTPAD) {
+            VTR_ASSERT(netlist.block_pins(blk).size() == 1);
+            AtomPinId pin = *netlist.block_pins(blk).begin();
+
+            std::string orig_name = orig_blif_name(netlist.block_name(blk));
+
+            VTR_ASSERT(!primary_inputs.count(orig_name));
+
+            primary_inputs[orig_name] = pin;
+        }
+    }
+
+    return primary_inputs;
 }
 
-static int find_cc_constraint(char * source_clock_name, char * sink_clock_name) {
-	/* Given a pair of source and sink clock domains, find out if there's an override constraint between them.
-	If there is, return the index in timing_ctx.sdc->cc_constraints; if there is not, return -1. */
-    auto& timing_ctx = g_vpr_ctx.timing();
+//Trim off the prefix added to blif names to make outputs unique
+std::string orig_blif_name(std::string name) {
+    constexpr const char* BLIF_UNIQ_PREFIX = "out:";
 
-	int icc, isource, isink;
+    if(name.find(BLIF_UNIQ_PREFIX) == 0) { //Starts with prefix
+        name = vtr::replace_first(name, BLIF_UNIQ_PREFIX, ""); //Remove prefix
+    }
 
-	for (icc = 0; icc < timing_ctx.sdc->num_cc_constraints; icc++) {
-		for (isource = 0; isource < timing_ctx.sdc->cc_constraints[icc].num_source; isource++) {
-			if (strcmp(timing_ctx.sdc->cc_constraints[icc].source_list[isource], source_clock_name) == 0) {
-				for (isink = 0; isink < timing_ctx.sdc->cc_constraints[icc].num_sink; isink++) {
-					if (strcmp(timing_ctx.sdc->cc_constraints[icc].sink_list[isink], sink_clock_name) == 0) {
-						return icc;
-					}
-				}
-			}
-		}
-	}
-	return -1;
+    return name;
 }
 
-static void add_override_constraint(char ** from_list, int num_from, char ** to_list, int num_to,
-	float constraint, int num_multicycles, bool domain_level_from, bool domain_level_to,
-	bool make_copies) {
-	/* Add a special-case constraint to override the default, calculated timing constraint,
-	to one of four arrays depending on whether it's coming from/to a flip-flop or an entire clock domain.
+//Converts a glob pattern to a std::regex
+std::regex glob_pattern_to_regex(const std::string& glob_pattern) {
+    //In glob (i.e. unix-shell style):
+    //   '*' is a wildcard match of zero or more instances of any characters
+    //
+    //In regex:
+    //   '*' matches zero or more of the preceeding character
+    //   '.' matches any character
+    //
+    //To convert a glob to a regex we need to:
+    //   Convert '.' to "\.", so literal '.' in glob is treated as literal in the regex
+    //   Convert '*' to ".*" so literal '*' in glob matches any sequence
 
-	If make_copies is true, we make a copy of from_list and to_list for this override constraint entry;
-	if false, we just set the override constraint entry to point to the existing list. The latter is
-	more efficient, but it's almost impossible to free multiple identical pointers without freeing
-	the same thing twice and causing an error. */
-    auto& timing_ctx = g_vpr_ctx.timing();
+    std::string regex_str = vtr::replace_all(glob_pattern, ".", "\\.");
+    regex_str = vtr::replace_all(regex_str, "*", ".*");
 
-	t_override_constraint ** constraint_array;
-	/* Because we are reallocating the array and possibly changing
-	its	address, we need to modify it through a reference. */
-
-	int num_constraints, i;
-
-	if (domain_level_from) {
-		if (domain_level_to) { /* Clock-to-clock constraint */
-			constraint_array = &timing_ctx.sdc->cc_constraints;
-			num_constraints = ++timing_ctx.sdc->num_cc_constraints;
-		} else { /* Clock-to-flipflop constraint */
-			constraint_array = &timing_ctx.sdc->cf_constraints;
-			num_constraints = ++timing_ctx.sdc->num_cf_constraints;
-		}
-	} else {
-		if (domain_level_to) { /* Flipflop-to-clock constraint */
-			constraint_array = &timing_ctx.sdc->fc_constraints;
-			num_constraints = ++timing_ctx.sdc->num_fc_constraints;
-		} else { /* Flipflop-to-flipflop constraint */
-			constraint_array = &timing_ctx.sdc->ff_constraints;
-			num_constraints = ++timing_ctx.sdc->num_ff_constraints;
-		}
-	}
-
-	*constraint_array = (t_override_constraint *) vtr::realloc(*constraint_array, num_constraints * sizeof(t_override_constraint));
-
-	if (make_copies) {
-		/* Copy from_list and to_list to constraint_array[num_constraints - 1].source_list and .sink_list. */
-		(*constraint_array)[num_constraints - 1].source_list = (char **) vtr::malloc(num_from * sizeof(char *));
-		(*constraint_array)[num_constraints - 1].sink_list = (char **) vtr::malloc(num_to * sizeof(char *));
-		for (i = 0; i < num_from; i++) {
-			(*constraint_array)[num_constraints - 1].source_list[i] = vtr::strdup(from_list[i]);
-		}
-		for (i = 0; i < num_to; i++) {
-			(*constraint_array)[num_constraints - 1].sink_list[i] = vtr::strdup(to_list[i]);
-		}
-	} else {
-		/* Just set constraint array to point to from_list and to_list. */
-		(*constraint_array)[num_constraints - 1].source_list = from_list;
-		(*constraint_array)[num_constraints - 1].sink_list = to_list;
-	}
-	(*constraint_array)[num_constraints - 1].num_source = num_from;
-	(*constraint_array)[num_constraints - 1].num_sink = num_to;
-	(*constraint_array)[num_constraints - 1].constraint = constraint;
-	(*constraint_array)[num_constraints - 1].num_multicycles = num_multicycles;
-	(*constraint_array)[num_constraints - 1].file_line_number = vtr::get_file_line_number_of_last_opened_file(); /* global var */
-}
-
-static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain) {
-	/* Given information from the SDC file about the period and offset of two clocks, *
-	 * determine the implied setup-time constraint between them via edge counting.    */
-
-	int source_period, sink_period, source_rising_edge, sink_rising_edge, lcm_period, num_source_edges, num_sink_edges,
-		* source_edges, * sink_edges, i, j, time, constraint_as_int;
-	float constraint;
-
-	/* If the source and sink domains have the same period and edges, the constraint is just the common clock period. */
-	if (fabs(source_domain.period - sink_domain.period) < EPSILON &&
-		fabs(source_domain.rising_edge - sink_domain.rising_edge) < EPSILON &&
-		fabs(source_domain.falling_edge - sink_domain.falling_edge) < EPSILON) {
-		return source_domain.period; /* or, equivalently, sink_domain.period */
-	}
-
-	/* If either period is 0, the constraint is 0. */
-	if (source_domain.period < EPSILON || sink_domain.period < EPSILON) {
-		return 0.;
-	}
-
-	 /* Multiply periods and edges by 1000 and round down  *
-	  * to the nearest integer, to avoid messy decimals.   */
-
-	source_period = static_cast<int>(source_domain.period * 1000);
-	sink_period = static_cast<int>(sink_domain.period * 1000);
-	source_rising_edge = static_cast<int>(source_domain.rising_edge * 1000);
-	sink_rising_edge = static_cast<int>(sink_domain.rising_edge * 1000);
-
-	/* If we get here, we have to use edge counting.  Find the LCM of the two periods.		   *
-	* This determines how long it takes before the pattern of the two clocks starts repeating. */
-    lcm_period = vtr::lcm(source_period, sink_period);
-
-	/* Create an array of positive edges for each clock over one LCM clock period. */
-
-	num_source_edges = lcm_period/source_period + 1;
-	num_sink_edges = lcm_period/sink_period + 1;
-
-	source_edges = (int *) vtr::malloc((num_source_edges + 1) * sizeof(int));
-	sink_edges = (int *) vtr::malloc((num_sink_edges + 1) * sizeof(int));
-
-	for (i = 0, time = source_rising_edge; i < num_source_edges + 1; i++) {
-		source_edges[i] = time;
-		time += source_period;
-	}
-
-	for (i = 0, time = sink_rising_edge; i < num_sink_edges + 1; i++) {
-		sink_edges[i] = time;
-		time += sink_period;
-	}
-
-	/* Compare every edge in source_edges with every edge in sink_edges.			 *
-	 * The lowest STRICTLY POSITIVE difference between a sink edge and a source edge *
-	 * gives us the set-up time constraint.											 */
-
-	constraint_as_int = INT_MAX; /* constraint starts off at +ve infinity so that everything will be less than it */
-
-	for (i = 0; i < num_source_edges + 1; i++) {
-		for (j = 0; j < num_sink_edges + 1; j++) {
-			if (sink_edges[j] > source_edges[i]) {
-				constraint_as_int = min(constraint_as_int, sink_edges[j] - source_edges[i]);
-			}
-		}
-	}
-
-	/* Divide by 1000 again and turn the constraint back into a float, and clean up memory. */
-
-	constraint = constraint_as_int / 1000.;
-
-	free(source_edges);
-	free(sink_edges);
-
-	return constraint;
-}
-
-static bool regex_match (const char * string, const char * regular_expression) {
-	/* Given a string and a regular expression, return true if there's a match,
-	false if not. Print an error and exit if regular_expression is invalid. */
-
-	const char * error;
-
-	VTR_ASSERT(string && regular_expression);
-
-	/* The regex library reports a match if regular_expression is a substring of string
-	AND not equal to string. This is not appropriate for our purposes. For example,
-	we'd get both "clock" and "clock2" matching the regular expression "clock".
-	We have to manually return that there's no match in this special case. */
-	if (strstr(string, regular_expression) && strcmp(string, regular_expression) != 0)
-		return false;
-
-	if (strcmp(regular_expression, "*") == 0)
-		return true; /* The regex library hangs if it is fed "*" as a regular expression. */
-
-	error = slre_match((enum slre_option) 0, regular_expression, string, strlen(string));
-
-	if (!error)
-		return true;
-	else if (strcmp(error, "No match") == 0)
-		return false;
-	else {
-		vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), vtr::get_file_line_number_of_last_opened_file(),
-				"Error matching regular expression \"%s\".\n", regular_expression);
-		return false;
-	}
-}
-
-void free_sdc_related_structs() {
-    auto& timing_ctx = g_vpr_ctx.mutable_timing();
-
-	if (!timing_ctx.sdc) return;
-
-	free_override_constraint(timing_ctx.sdc->cc_constraints, timing_ctx.sdc->num_cc_constraints);
-	/* Should already have been freed in process_constraints() */
-
-	free_override_constraint(timing_ctx.sdc->cf_constraints, timing_ctx.sdc->num_cf_constraints);
-	free_override_constraint(timing_ctx.sdc->fc_constraints, timing_ctx.sdc->num_fc_constraints);
-	free_override_constraint(timing_ctx.sdc->ff_constraints, timing_ctx.sdc->num_ff_constraints);
-	free_io_constraint(timing_ctx.sdc->constrained_inputs, timing_ctx.sdc->num_constrained_inputs);
-	free_io_constraint(timing_ctx.sdc->constrained_outputs, timing_ctx.sdc->num_constrained_outputs);
-	free_clock_constraint(timing_ctx.sdc->constrained_clocks, timing_ctx.sdc->num_constrained_clocks);
-	free(timing_ctx.sdc);
-	timing_ctx.sdc = nullptr;
-}
-
-void free_override_constraint(t_override_constraint *& constraint_array, int num_constraints) {
-	int i, j;
-
-	if (!constraint_array) return;
-
-	for (i = 0; i < num_constraints; i++) {
-		for (j = 0; j < constraint_array[i].num_source; j++) {
-			free(constraint_array[i].source_list[j]);
-			constraint_array[i].source_list[j] = nullptr;
-		}
-		for (j = 0; j < constraint_array[i].num_sink; j++) {
-			free(constraint_array[i].sink_list[j]);
-			constraint_array[i].sink_list[j] = nullptr;
-		}
-		free(constraint_array[i].source_list);
-		free(constraint_array[i].sink_list);
-	}
-	free(constraint_array);
-	constraint_array = nullptr;
-}
-
-static void free_io_constraint(t_io *& io_array, int num_ios) {
-	int i;
-
-	for (i = 0; i < num_ios; i++) {
-		free(io_array[i].name);
-		free(io_array[i].clock_name);
-	}
-	free(io_array);
-	io_array = nullptr;
-}
-
-static void free_clock_constraint(t_clock *& clock_array, int num_clocks) {
-	int i;
-
-	for (i = 0; i < num_clocks; i++) {
-		free(clock_array[i].name);
-	}
-	free(clock_array);
-	clock_array = nullptr;
-}
-
-const char * get_sdc_file_name(){
-	return sdc_file_name.c_str();
+    return std::regex(regex_str);
 }
 

@@ -51,7 +51,7 @@ float t_draw_coords::get_tile_height() {
 
 t_bound_box t_draw_coords::get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode) {
     auto& place_ctx = g_vpr_ctx.placement();
-	return get_pb_bbox(place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y ,place_ctx.block_locs[clb_index].z, pb_gnode);
+	return get_pb_bbox(place_ctx.block_locs[clb_index].loc.x, place_ctx.block_locs[clb_index].loc.y ,place_ctx.block_locs[clb_index].loc.z, pb_gnode);
 }
 
 t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_pb_graph_node& pb_gnode) {
@@ -62,7 +62,7 @@ t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_ind
 	t_bound_box result = blk_type_info.get_pb_bbox(pb_gnode);
 
 	// if getting clb bbox, apply location info.
-	if (pb_gnode.parent_pb_graph_node == nullptr) {
+	if (pb_gnode.is_root()) {
 		float sub_blk_offset = this->tile_width * (sub_block_index/(float)device_ctx.grid[grid_x][grid_y].type->capacity);
 
 		result += t_point(this->tile_x[grid_x], this->tile_y[grid_y]);
@@ -79,7 +79,7 @@ t_bound_box t_draw_coords::get_absolute_pb_bbox(const ClusterBlockId clb_index, 
 
 	// go up the graph, adding the parent bboxes to the result,
 	// ie. make it relative to one level higher each time.
-	while (pb_gnode && pb_gnode->parent_pb_graph_node != nullptr) {
+	while (pb_gnode && !pb_gnode->is_root()) {
 		t_bound_box parents_bbox = this->get_pb_bbox(clb_index, *pb_gnode->parent_pb_graph_node);
 		result += parents_bbox.bottom_left();
 		pb_gnode = pb_gnode->parent_pb_graph_node;

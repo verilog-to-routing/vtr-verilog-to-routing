@@ -166,7 +166,6 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
 void print_switch_usage();
 void print_usage_by_wire_length();
 
-AtomBlockId find_tnode_atom_block(int inode);
 AtomBlockId find_memory_sibling(const t_pb* pb);
 
 void place_sync_external_block_connections(ClusterBlockId iblk);

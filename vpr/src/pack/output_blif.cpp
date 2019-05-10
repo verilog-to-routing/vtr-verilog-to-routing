@@ -371,20 +371,20 @@ void print_routing_in_clusters(FILE *fpout, ClusterBlockId clb_index) {
 			pb_graph_node_of_pin = pb_graph_pin_lookup[i]->parent_node;
 
 			/* Print interconnect */
-			if(pb_graph_node_of_pin->pb_type->num_modes != 0 && pb_route[i].driver_pb_pin_id == OPEN) {
+			if(!pb_graph_node_of_pin->is_primitive() && pb_route[i].driver_pb_pin_id == OPEN) {
 				/* Logic block input pin */
-				VTR_ASSERT(pb_graph_node_of_pin->parent_pb_graph_node == nullptr);
+				VTR_ASSERT(pb_graph_node_of_pin->is_root());
 				fprintf(fpout, ".names ");
 				print_net_name(pb_route[i].atom_net_id, &column, fpout);
 				fprintf(fpout, " clb_%zu_rr_node_%d\n", size_t(clb_index), i);
 				fprintf(fpout, "1 1\n\n");
-			} else if (pb_graph_node_of_pin->pb_type->num_modes != 0 && pb_graph_node_of_pin->parent_pb_graph_node == nullptr) {
+			} else if (!pb_graph_node_of_pin->is_primitive() && pb_graph_node_of_pin->is_root()) {
 				/* Logic block output pin */
 				fprintf(fpout, ".names clb_%zu_rr_node_%d ", size_t(clb_index), pb_route[i].driver_pb_pin_id);
 				print_net_name(pb_route[i].atom_net_id, &column, fpout);
 				fprintf(fpout, "\n");
 				fprintf(fpout, "1 1\n\n");
-			} else if (pb_graph_node_of_pin->pb_type->num_modes != 0 || pb_graph_pin_lookup[i]->port->type != OUT_PORT) {
+			} else if (!pb_graph_node_of_pin->is_primitive() || pb_graph_pin_lookup[i]->port->type != OUT_PORT) {
 				/* Logic block internal pin */
 				fprintf(fpout, ".names clb_%zu_rr_node_%d clb_%zu_rr_node_%d\n", size_t(clb_index), pb_route[i].driver_pb_pin_id, size_t(clb_index), i);
 				fprintf(fpout, "1 1\n\n");
