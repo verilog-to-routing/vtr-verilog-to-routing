@@ -340,13 +340,13 @@ ast_node_t *create_tree_node_number(std::string input_number, bases base, signed
  *-------------------------------------------------------------------------------------------*/
 void assign_child_to_node(ast_node_t* node, ast_node_t *child, unsigned int index)
 {
-	/* Handle case where we have an empty statement. */
-	if (child == NULL)
-		return;
 
 	/* allocate space for the children */
 	node->children[index] = child;
-	child->parent = node;
+
+	/* Handle case where we have an empty statement. */
+	if (child != NULL)
+		child->parent = node;
 }
 
 /*---------------------------------------------------------------------------

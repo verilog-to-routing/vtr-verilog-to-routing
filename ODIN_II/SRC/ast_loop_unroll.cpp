@@ -138,6 +138,8 @@ void while_preprocessor(ast_node_t* node, ast_node_t* module)
 
 	/* if this node is the parent of a while node, process this node */
 	for(int i=0; i<node->num_children; i++){
+		if(!node->children[i])
+			continue;
 		if(is_while_node(node->children[i])){
 			Environment environment(make_path(node, module));
 			new_node = evaluate_node(node, environment);
@@ -155,9 +157,12 @@ void while_preprocessor(ast_node_t* node, ast_node_t* module)
 	}
 
 	/* process next node */
-	for(int i=0; i<parent->num_children; i++){
-		if(parent->children[i] == node || parent->children[i] == new_node)
-			while_preprocessor(parent->children[i+1], module);
+	for(int i=1; i<parent->num_children; i++){
+		if(!parent->children[i])
+			continue;
+
+		if(parent->children[i-1] == node || parent->children[i-1] == new_node)
+			while_preprocessor(parent->children[i], module);
 	}
 
 	if(free_node)

@@ -1046,8 +1046,6 @@ ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int 
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 2, compare_expression, statement);
 
-	/* This needs to be removed once support is added */
-	error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "While statements are NOT supported");
 	return new_node;
 }
 
