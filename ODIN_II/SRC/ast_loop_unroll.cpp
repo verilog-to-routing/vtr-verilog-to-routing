@@ -1,7 +1,6 @@
 /* Standard libraries */
 #include <stdlib.h>
 #include <string.h>
-#include <unordered_map>
 
 /* Odin_II libraries */
 #include "odin_globals.h"
@@ -128,122 +127,42 @@ long find_module_instance(ast_node_t *ast_module, char *instance_name)
 /*
  *  (function: while_preprocessor)
  */
-ast_node_t* while_preprocessor(ast_node_t* node, ast_node_t* module)
+void while_preprocessor(ast_node_t* node, ast_node_t* module)
 {
-	if(!node)
-		return nullptr;
+	oassert(node);
 	oassert(!is_while_node(node));
-    
-    /* If this node has for loops as children, replace them */
-    bool while_loops = false;
-    for(int i=0; i<node->num_children && !while_loops; i++){
-        while_loops = is_while_node(node->children[i]);
-    }
-    ast_node_t* new_node = while_loops ? replace_whiles(node, module) : node;
-    
-    /* Run this function recursively on the children */
-    for(int i=0; i<new_node->num_children; i++){
-        ast_node_t* new_child = while_preprocessor(new_node->children[i], module);
+	
+	bool free_node = false;
+	ast_node_t* parent = node->parent;
+	ast_node_t* new_node = nullptr;
 
-        /* Cleanup replaced child */
-        if(new_node->children[i] != new_child){
-            free_whole_tree(new_node->children[i]);
-            assign_child_to_node(new_node, new_child, i);
-        }
-    }
-    return new_node;
-}
+	/* if this node is the parent of a while node, process this node */
+	for(int i=0; i<node->num_children; i++){
+		if(is_while_node(node->children[i])){
+			Environment environment(make_path(node, module));
+			new_node = evaluate_node(node, environment);
+			/* If this node wasn't an assignment to an integer
+			 * and was replaced, then update the parent node.
+			 */
+			if(new_node && new_node != node){
+				for(int j=0; j<parent->num_children; j++){
+					if(parent->children[j] == node)
+						assign_child_to_node(new_node, parent, j);
+				}
+				free_node = true;
+			}
+		}
+	}
 
-/*
- *  (function: replace_whiles)
- */
-ast_node_t* replace_whiles(ast_node_t* node, ast_node_t* module)
-{
-    oassert(!is_while_node(node));
-    oassert(node != nullptr);
+	/* process next node */
+	for(int i=0; i<parent->num_children; i++){
+		if(parent->children[i] == node || parent->children[i] == new_node)
+			while_preprocessor(parent->children[i+1], module);
+	}
 
-    ast_node_t* new_node = ast_node_deep_copy(node);
-    if(!new_node)
-        return nullptr;
-    /* Find the root scope and save the path to it */
-	std::vector<ast_node_t*> path;
-    if(path_to_root_scope(node, module, &path))
-    {
-        error_message(
-        	PARSE_ERROR, 
-        	pre->line_number, 
-        	pre->file_number, 
-        	"Unable to find initial condition for all variables"
-        );
-    }
+	if(free_node)
+		free_whole_tree(node);
 
-    /* process children one at a time */
-    for(int i=0; i<new_node->num_children; i++){
-        /* unroll `for` children */
-        if(is_while_node(new_node->children[i])){
-            ast_node_t* unrolled_while = 
-            	resolve_while(new_node->children[i], &state);
-            oassert(unrolled_while != nullptr);
-            free_whole_tree(new_node->children[i]);
-            assign_child_to_node(new_node, unrolled_while, i);
-        }
-    }
-    return new_node;
-}
-
-/*
- *  (function: resolve_while)
- */
-ast_node_t* resolve_while(ast_node_t* node, ast_node_t* module)
-{
-    oassert(is_for_node(node));
-    oassert(node != nullptr);
-    ast_node_t* body_parent = nullptr;
-
-	std::unordered_map<ast_node_t*,int> state;
-    ast_node_t* cond = node->children[0];
-    ast_node_t* body = node->children[1];
-
-    int error_code = 0;
-
-	Environment env(make_path(node, module));
-
-    if(error_code)
-    {
-        error_message(
-        	PARSE_ERROR, 
-        	cond->line_number, 
-        	cond->file_number, 
-        	"Unsupported condition node in for loop"
-        );
-    }
-
-    while(dup_body)
-    {
-        ast_node_t* new_body = dup_and_fill_body(
-        	body, 
-        	pre->children[0], 
-        	&state, 
-        	&error_code
-        );
-        if(error_code)
-        {
-            error_message(
-            	PARSE_ERROR, 
-            	pre->line_number, 
-            	pre->file_number, 
-            	"Unsupported pre-condition node in for loop"
-            );
-        }
-        value->types.number.value = post_func(value->types.number.value);
-        body_parent = 	body_parent ? 
-        				newList_entry(body_parent, new_body): 
-        				newList(BLOCK, new_body);
-
-        dup_body = cond_func(&state);
-    }
-
-    return body_parent;
 }
 
 
@@ -256,7 +175,6 @@ ast_node_t* for_preprocessor(ast_node_t *ast_module, ast_node_t* node, ast_node_
 		return nullptr;
 	/* If this is a for node, something has gone wrong */
 	oassert(!is_for_node(node));
-	
 	/* If this node has for loops as children, replace them */
 	bool for_loops = false;
 	for(int i=0; i<node->num_children && !for_loops; i++){
@@ -516,8 +434,8 @@ condition_function resolve_condition(ast_node_t* node, ast_node_t* symbol, int* 
 			case GTE:
 				return value >= node->children[1]->types.number.value; 
 			default:
-			   return false;
-	   }
+				return false;
+		}
 	};
 }
 

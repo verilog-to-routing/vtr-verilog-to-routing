@@ -90,7 +90,6 @@ int simplify_ast_module(ast_node_t **ast_module)
 	remove_generate(*ast_module);
 	/* find multiply or divide operation that can be replaced with shift operation */
 	shift_operation(*ast_module);
-
 	return 1;
 }
 
@@ -118,6 +117,7 @@ void reduce_assignment_expression(ast_node_t *ast_module)
 			if (deal_with_bracket(list_assign[j]->children[1])) // there are multiple brackets multiplying -- ()*(), stop expanding brackets which may not simplify AST but make it mroe complex
 				return;
 
+<<<<<<< HEAD
 			if (simplify_expression())
 			{
 				enode *tail = find_tail(head);
@@ -125,6 +125,17 @@ void reduce_assignment_expression(ast_node_t *ast_module)
 				T = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
 				construct_new_tree(tail, T, list_assign[j]->line_number, list_assign[j]->file_number);
 				assign_child_to_node(list_assign[j], T, 1);
+=======
+				if (simplify_expression())
+				{
+					enode *tail = find_tail(head);
+					free_whole_tree(list_assign[j]->children[1]);
+					T = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
+					construct_new_tree(tail, T, list_assign[j]->line_number, list_assign[j]->file_number);
+					assign_child_to_node(list_assign[j], T, 1);
+				}
+				free_exp_list();
+>>>>>>> WIP changes to environment based unrolling, updated c++ standard to c++17, and fixed errors in original update to ussage of assign_child_to_node in place of direct assignment.
 			}
 			free_exp_list();
 		}

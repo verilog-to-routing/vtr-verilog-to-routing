@@ -41,6 +41,7 @@ bool is_unsupported_condition(ast_node_t* node, ast_node_t* symbol);
 ast_node_t* for_preprocessor(ast_node_t *ast_module, ast_node_t* node, ast_node_t ****instances, int *num_unrolled, int *num_original);
 ast_node_t* replace_fors(ast_node_t *ast_module, ast_node_t* node, ast_node_t ****instances, int *num_unrolled, int *num_original);
 ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, ast_node_t ****instances, int *num_unrolled, int *num_original);
+void while_preprocessor(ast_node_t* node, ast_node_t* module);
 int resolve_pre_condition(ast_node_t* node, ast_node_t** number);
 condition_function resolve_condition(ast_node_t* node, ast_node_t* symbol, int* error_code);
 post_condition_function resolve_binary_operation(ast_node_t* node);

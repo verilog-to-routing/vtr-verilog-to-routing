@@ -10,17 +10,20 @@
 #define UNKNOWN_SYMBOL 2
 #define KNOWN_SYMBOL 3
 
-using Value = std::optional<ast_node_t* node>;
+using Value = std::optional<ast_node_t*>;
 using Env = std::unordered_map<std::string, Value>;
-using Path = std::vector<const ast_node_t*>;
+using Path = std::vector<ast_node_t*>;
 
-Path make_path(const ast_node_t*, const ast_node_t*);
-ast_node_t* evaluate_node(ast_node_t*, Environment&);
+Path make_path(ast_node_t*, ast_node_t*);
+
+inline bool is_a_number_node(ast_node_t* node){
+	return node->type == NUMBERS;
+}
 
 inline bool children_are_numbers(ast_node_t* node, unsigned int children){
 	bool are_numbers = true;
 	for(unsigned int i = 0; are_numbers && i < children; i++)
-		are_numbers &= node->children[i]->type == NUMBERS;
+		are_numbers &= is_a_number_node(node->children[i]);
 	return are_numbers;
 }
 
@@ -41,6 +44,7 @@ class Environment{
 		int update_value(std::string, ast_node_t*);
 		Value get_value(std::string);
 		bool is_in_env(std::string);
-}
+};
 
+ast_node_t* evaluate_node(ast_node_t*, Environment&);
 #endif /* AST_ENVIRONMENT_HPP */

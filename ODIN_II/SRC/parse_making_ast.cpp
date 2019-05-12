@@ -619,7 +619,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 							symbol_list->children[i]->types.variable.is_input = TRUE;
 							free_whole_tree(symbol_list->children[i]->children[0]);
 							ast_node_t* io_node = (ast_node_t*)functions_inputs_sc->data[sc_spot];
-							assign_child_to_node(symbol_ist->children[i], io_node, 0);
+							assign_child_to_node(symbol_list->children[i], io_node, 0);
 				        }
 				        else if ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 				        {
