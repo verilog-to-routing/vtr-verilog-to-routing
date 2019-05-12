@@ -25,6 +25,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
@@ -413,6 +414,155 @@ struct t_bb {
 	int ymax = 0;
 };
 
+//An offset between placement locations (t_pl_loc)
+//
+// x: x-offset
+// y: y-offset
+// z: z-offset
+struct t_pl_offset {
+
+    t_pl_offset() = default;
+    t_pl_offset(int xoffset, int yoffset, int zoffset)
+        : x(xoffset), y(yoffset), z(zoffset) {}
+
+	int x = 0;
+	int y = 0;
+	int z = 0;
+
+    t_pl_offset& operator+=(const t_pl_offset& rhs) {
+        x += rhs.x;
+        y += rhs.y;
+        z += rhs.z;
+        return *this;
+    }
+
+    t_pl_offset& operator-=(const t_pl_offset& rhs) {
+        x -= rhs.x;
+        y -= rhs.y;
+        z -= rhs.z;
+        return *this;
+    }
+
+    friend t_pl_offset operator+(t_pl_offset lhs, const t_pl_offset& rhs) {
+        lhs += rhs;
+        return lhs;
+    }
+
+    friend t_pl_offset operator-(t_pl_offset lhs, const t_pl_offset& rhs) {
+        lhs -= rhs;
+        return lhs;
+    }
+
+    friend t_pl_offset operator-(const t_pl_offset& other) {
+        return t_pl_offset(-other.x, -other.y, -other.z);
+    }
+    friend t_pl_offset operator+(const t_pl_offset& other) {
+        return t_pl_offset(+other.x, +other.y, +other.z);
+    }
+
+    friend bool operator<(const t_pl_offset& lhs, const t_pl_offset& rhs) {
+        return std::tie(lhs.x, lhs.y, lhs.z) < std::tie(rhs.x, rhs.y, rhs.z);
+    }
+
+    friend bool operator==(const t_pl_offset& lhs, const t_pl_offset& rhs) {
+        return std::tie(lhs.x, lhs.y, lhs.z) == std::tie(rhs.x, rhs.y, rhs.z);
+    }
+
+    friend bool operator!=(const t_pl_offset& lhs, const t_pl_offset& rhs) {
+        return !(lhs == rhs);
+    }
+};
+
+namespace std {
+    template <>
+    struct hash<t_pl_offset> {
+        std::size_t operator()(const t_pl_offset& v) const noexcept {
+            std::size_t seed = std::hash<int>{}(v.x);
+            vtr::hash_combine(seed, v.y);
+            vtr::hash_combine(seed, v.z);
+            return seed;
+        }
+    };
+}
+
+
+//A placement location coordinate
+//
+// x: x-coordinate
+// y: y-coordinate
+// z: z-coordinate (capacity postion)
+//
+//Note that t_pl_offset should be used to represent an
+//offset between t_pl_loc.
+struct t_pl_loc {
+
+    t_pl_loc() = default;
+    t_pl_loc(int xloc, int yloc, int zloc)
+        : x(xloc), y(yloc), z(zloc) {}
+
+	int x = OPEN;
+	int y = OPEN;
+	int z = OPEN;
+
+    t_pl_loc& operator+=(const t_pl_offset& rhs) {
+        x += rhs.x;
+        y += rhs.y;
+        z += rhs.z;
+        return *this;
+    }
+
+    t_pl_loc& operator-=(const t_pl_offset& rhs) {
+        x -= rhs.x;
+        y -= rhs.y;
+        z -= rhs.z;
+        return *this;
+    }
+    
+    friend t_pl_loc operator+(t_pl_loc lhs, const t_pl_offset& rhs) {
+        lhs += rhs;
+        return lhs;
+    }
+    friend t_pl_loc operator+(t_pl_offset lhs, const t_pl_loc& rhs) {
+        return rhs + lhs;
+    }
+
+    friend t_pl_loc operator-(t_pl_loc lhs, const t_pl_offset& rhs) {
+        lhs -= rhs;
+        return lhs;
+    }
+    friend t_pl_loc operator-(t_pl_offset lhs, const t_pl_loc& rhs) {
+        return rhs - lhs;
+    }
+
+    friend t_pl_offset operator-(const t_pl_loc& lhs, const t_pl_loc& rhs) {
+        return t_pl_offset(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z);
+    }
+
+    friend bool operator<(const t_pl_loc& lhs, const t_pl_loc& rhs) {
+        return std::tie(lhs.x, lhs.y, lhs.z) < std::tie(rhs.x, rhs.y, rhs.z);
+    }
+
+    friend bool operator==(const t_pl_loc& lhs, const t_pl_loc& rhs) {
+        return std::tie(lhs.x, lhs.y, lhs.z) == std::tie(rhs.x, rhs.y, rhs.z);
+    }
+
+    friend bool operator!=(const t_pl_loc& lhs, const t_pl_loc& rhs) {
+        return !(lhs == rhs);
+    }
+};
+
+namespace std {
+    template <>
+    struct hash<t_pl_loc> {
+        std::size_t operator()(const t_pl_loc& v) const noexcept {
+            std::size_t seed = std::hash<int>{}(v.x);
+            vtr::hash_combine(seed, v.y);
+            vtr::hash_combine(seed, v.z);
+            return seed;
+        }
+    };
+}
+
 /* capacity:   Capacity of this region, in tracks.               *
  * occupancy:  Expected number of tracks that will be occupied.  *
  * cost:       Current cost of this usage.                       */
@@ -432,12 +582,8 @@ struct t_place_region {
  * xnew: the x_coord that the block is moved to                 */
 struct t_pl_moved_block {
 	ClusterBlockId block_num;
-	int xold;
-	int xnew;
-	int yold;
-	int ynew;
-	int zold;
-	int znew;
+    t_pl_loc old_loc;
+    t_pl_loc new_loc;
 };
 
 /* Stores the list of blocks to be moved in a swap during       *
@@ -449,14 +595,9 @@ struct t_pl_moved_block {
  *               [0...num_moved_blocks-1]                       */
 struct t_pl_blocks_to_be_moved {
 	int num_moved_blocks;
-	t_pl_moved_block * moved_blocks;
-};
-
-/* legal positions for type */
-struct t_legal_pos {
-	int x;
-	int y;
-	int z;
+    std::vector<t_pl_moved_block> moved_blocks;
+    std::unordered_set<t_pl_loc> moved_from;
+    std::unordered_set<t_pl_loc> moved_to;
 };
 
 /* Represents the placement location of a clustered block
@@ -466,9 +607,7 @@ struct t_legal_pos {
  * is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing
  * nets_and_pins_synced_to_z_coordinate: true if the associated clb's pins have been synced to the z location (i.e. after placement) */
 struct t_block_loc {
-    int x = OPEN;
-    int y = OPEN;
-    int z = OPEN;
+    t_pl_loc loc;
 
 	bool is_fixed = false;
     bool nets_and_pins_synced_to_z_coordinate = false;

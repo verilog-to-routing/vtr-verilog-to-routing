@@ -51,7 +51,7 @@ float t_draw_coords::get_tile_height() {
 
 t_bound_box t_draw_coords::get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode) {
     auto& place_ctx = g_vpr_ctx.placement();
-	return get_pb_bbox(place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y ,place_ctx.block_locs[clb_index].z, pb_gnode);
+	return get_pb_bbox(place_ctx.block_locs[clb_index].loc.x, place_ctx.block_locs[clb_index].loc.y ,place_ctx.block_locs[clb_index].loc.z, pb_gnode);
 }
 
 t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_pb_graph_node& pb_gnode) {

@@ -861,11 +861,12 @@ struct t_pin_to_pin_annotation {
  *  accessible from each position may be different).
  *
  *  Data members:
- *      pb_type: Pointer to the type of pb graph node this belongs to
- *      mode: parent mode of operation
- *      placement_index: there are a certain number of pbs available, this gives the index of the node
- *      child_pb_graph_nodes: array of children pb graph nodes organized into modes
- *      parent_pb_graph_node: parent pb graph node
+ *      pb_type               : Pointer to the type of pb graph node this belongs to
+ *      placement_index       : there are a certain number of pbs available, this gives the index of the node
+ *      child_pb_graph_nodes  : array of children pb graph nodes organized into modes
+ *      parent_pb_graph_node  : parent pb graph node
+ *      total_primitive_count : Total number of this primitive type in the cluster. If there are 10 ALMs per cluster
+ *                              and 2 FFs per ALM (given the mode of the parent of this primitive) then the total is 20.
  */
 class t_pb_graph_node {
 public:
@@ -897,6 +898,8 @@ public:
 	int num_input_pin_class; /* number of input pin classes that this pb_graph_node has */
 	int *output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
 	int num_output_pin_class; /* number of output pin classes that this pb_graph_node has */
+
+    int total_primitive_count; /* total number of this primitive type in the cluster */
 
 	/* Interconnect instances for this pb
 	 * Only used for power
