@@ -35,7 +35,7 @@ void mark_node_read(ast_node_t *node, std::vector<std::string> list);
 void remove_intermediate_variable(ast_node_t *node, std::vector<std::string> list, long virtual_value, std::string virtual_name);
 ast_node_t *search_marked_node(ast_node_t *node, int is, std::string temp);
 void reduce_assignment_expression();
-void find_assign_node(ast_node_t *t, std::vector<ast_node_t *>list);
+void find_assign_node(ast_node_t *t, std::vector<ast_node_t *> &list);
 ast_node_t *find_top_module();
 
 typedef struct exp_node
