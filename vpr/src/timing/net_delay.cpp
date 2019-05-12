@@ -342,8 +342,12 @@ static float load_rc_tree_C(t_rc_node * rc_node) {
 	while (linked_rc_edge != nullptr) { /* For all children */
 		iswitch = linked_rc_edge->iswitch;
 		child_node = linked_rc_edge->child;
+        /*This while loop traverses the entire rc tree, whose edges represent enabled switches.
+         * When switches such as multiplexers and tristate buffers are enabled, their fanout 
+         * produces an "internal capacitance". We account for this internal capacitance of the 
+         * switch by adding it to the total capacitance of the node.*/
+        C += device_ctx.rr_switch_inf[iswitch].Cinternal;
 		C_downstream = load_rc_tree_C(child_node);
-
 		if (!device_ctx.rr_switch_inf[iswitch].buffered())
 			C += C_downstream;
 
