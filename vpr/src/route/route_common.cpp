@@ -1041,8 +1041,8 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
 		int pin_count = 0;
 		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
 			auto block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-			i = place_ctx.block_locs[block_id].x;
-			j = place_ctx.block_locs[block_id].y;
+			i = place_ctx.block_locs[block_id].loc.x;
+			j = place_ctx.block_locs[block_id].loc.y;
             type = cluster_ctx.clb_nlist.block_type(block_id);
 
             /* In the routing graph, each (x, y) location has unique pins on it
@@ -1086,8 +1086,8 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
 		rr_blk_source[blk_id].resize(type->num_class);
         for (iclass = 0; iclass < type->num_class; iclass++) {
             if (iclass >= class_low && iclass <= class_high) {
-                i = place_ctx.block_locs[blk_id].x;
-                j = place_ctx.block_locs[blk_id].y;
+                i = place_ctx.block_locs[blk_id].loc.x;
+                j = place_ctx.block_locs[blk_id].loc.y;
 
                 if (type->class_inf[iclass].type == DRIVER)
                     rr_type = SOURCE;
@@ -1549,8 +1549,8 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId,t_traceback>& tracebac
 
                 fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
                     cluster_ctx.clb_nlist.block_name(block_id).c_str(), size_t(block_id),
-                    place_ctx.block_locs[block_id].x,
-                    place_ctx.block_locs[block_id].y,
+                    place_ctx.block_locs[block_id].loc.x,
+                    place_ctx.block_locs[block_id].loc.y,
                     iclass);
             }
         }

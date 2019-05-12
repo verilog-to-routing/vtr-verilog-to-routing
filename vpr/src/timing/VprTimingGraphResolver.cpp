@@ -29,8 +29,8 @@ std::string VprTimingGraphResolver::node_type_name(tatum::NodeId node) const {
         auto& place_ctx = g_vpr_ctx.placement();
         ClusterBlockId cb = atom_ctx.lookup.atom_clb(blk);
         if (cb && place_ctx.block_locs.count(cb)) {
-            int x = place_ctx.block_locs[cb].x;
-            int y = place_ctx.block_locs[cb].y;
+            int x = place_ctx.block_locs[cb].loc.x;
+            int y = place_ctx.block_locs[cb].loc.y;
             name += " at (" + std::to_string(x) + "," + std::to_string(y) + ")";
         }
     }

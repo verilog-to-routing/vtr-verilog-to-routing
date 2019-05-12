@@ -155,12 +155,15 @@ bool get_next_primitive_list(
 				}
 				/* try place molecule at root location cur */
 				cost = try_place_molecule(molecule, cur->pb_graph_node, primitives_list);
-				if (cost < lowest_cost) {
+                // if the cost is lower than the best, or is equal to the best but this
+                // primitive is more available in the cluster mark it as the best primitive
+				if (cost < lowest_cost || (best && cost == lowest_cost
+                    && cur->pb_graph_node->total_primitive_count > best->pb_graph_node->total_primitive_count)) {
 					lowest_cost = cost;
 					best = cur;
 					before_best = prev;
 				}
-				prev = cur;
+                prev = cur;
 				cur = cur->next_primitive;
 			}
 		}
@@ -688,7 +691,6 @@ static void flush_intermediate_queues(
 /* Determine max index + 1 of molecule */
 int get_array_size_of_molecule(const t_pack_molecule *molecule) {
 	if (molecule->type == MOLECULE_FORCED_PACK) {
-        VTR_ASSERT(molecule->pack_pattern->num_blocks == molecule->num_blocks);
 		return molecule->pack_pattern->num_blocks;
 	} else {
 		return molecule->num_blocks;

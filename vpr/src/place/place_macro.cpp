@@ -361,9 +361,9 @@ std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, i
 
 		/* Load the values for each member of the macro */
 		for (size_t imember = 0; imember < macros[imacro].members.size(); imember++) {
-			macros[imacro].members[imember].x_offset = imember * directs[pl_macro_idirect[imacro]].x_offset;
-			macros[imacro].members[imember].y_offset = imember * directs[pl_macro_idirect[imacro]].y_offset;
-			macros[imacro].members[imember].z_offset = directs[pl_macro_idirect[imacro]].z_offset;
+			macros[imacro].members[imember].offset.x = imember * directs[pl_macro_idirect[imacro]].x_offset;
+			macros[imacro].members[imember].offset.y = imember * directs[pl_macro_idirect[imacro]].y_offset;
+			macros[imacro].members[imember].offset.z = directs[pl_macro_idirect[imacro]].z_offset;
 			macros[imacro].members[imember].blk_index = pl_macro_member_blk_num[imacro][imember];
 		}
 	}
@@ -460,9 +460,9 @@ static void write_place_macros(std::string filename, const std::vector<t_pl_macr
             fprintf(f, "Block_Id: %zu (%s), x_offset: %d, y_offset: %d, z_offset: %d\n",
                     size_t(macro_memb->blk_index),
                     cluster_ctx.clb_nlist.block_name(macro_memb->blk_index).c_str(),
-                    macro_memb->x_offset,
-                    macro_memb->y_offset,
-                    macro_memb->z_offset);
+                    macro_memb->offset.x,
+                    macro_memb->offset.y,
+                    macro_memb->offset.z);
         }
         fprintf(f, "\n");
     }

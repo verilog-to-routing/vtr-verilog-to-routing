@@ -268,7 +268,7 @@ static void check_source(int inode, ClusterNetId net_id) {
 	blk_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
 	type = device_ctx.grid[i][j].type;
 
-	if (place_ctx.block_locs[blk_id].x != i || place_ctx.block_locs[blk_id].y != j) {
+	if (place_ctx.block_locs[blk_id].loc.x != i || place_ctx.block_locs[blk_id].loc.y != j) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
 				"in check_source: net SOURCE is in wrong location (%d,%d).\n", i, j);
 	}
