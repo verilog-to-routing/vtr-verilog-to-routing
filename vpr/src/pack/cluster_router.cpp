@@ -78,7 +78,9 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 
 static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data);
 
-static void commit_remove_rt(t_lb_trace *rt, t_lb_router_data *router_data, e_commit_remove op);
+static void commit_remove_rt(t_lb_trace *rt, t_lb_router_data *router_data, e_commit_remove op,
+		std::unordered_map<const t_pb_graph_node *, const t_mode *> *mode_map,
+		bool *is_mode_conflict);
 static bool is_skip_route_net(t_lb_trace *rt, t_lb_router_data *router_data);
 static void add_source_to_rt(t_lb_router_data *router_data, int inet);
 static void expand_rt(t_lb_router_data *router_data, int inet, reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net);
@@ -209,53 +211,10 @@ static bool check_edge_for_route_conflicts(
 
 			// If the number of illegal modes equals the number of available mode for a specific pb_graph_node it means that no cluster can be generated. This resuts
 			// in a fatal error.
-			if (pb_graph_node->illegal_modes.size() >= pb_graph_node->pb_type->num_modes) {
+			if ((int) pb_graph_node->illegal_modes.size() >= pb_graph_node->pb_type->num_modes) {
 				VPR_THROW(VPR_ERROR_PACK, "There are no more available modes to be used. Routing Failed!");
 			}
 
-			return true;
-		}
-	}
-
-	return false;
-}
-
-// Walk one net and either add the pb_type modes to mode_map, or if they already
-// exist, ensure that the edges in the net are not in conflict.
-static bool check_net_for_route_conflicts(
-		std::unordered_map<const t_pb_graph_node *, const t_mode *> *mode_map,
-		const t_lb_trace *driver, const t_lb_router_data *router_data) {
-	VTR_ASSERT(driver != nullptr);
-
-	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
-	auto &driver_node = lb_type_graph[driver->current_node];
-	auto *driver_pin = driver_node.pb_graph_pin;
-
-	// Check each driver_pin -> pin edge.
-	if(driver_pin != nullptr) {
-		for (const auto &next_node : driver->next_nodes) {
-			auto &node = lb_type_graph[next_node.current_node];
-			if(check_edge_for_route_conflicts(mode_map, driver_pin, node.pb_graph_pin)) {
-				return true;
-			}
-		}
-	}
-
-	// Walk the rest of the net.
-	for (const auto &next_node : driver->next_nodes) {
-		if (check_net_for_route_conflicts(mode_map, &next_node, router_data)) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-// Walk nets and check if each pb_type has the same mode.
-static bool check_for_route_conflicts(const vector <t_intra_lb_net> &lb_nets, const t_lb_router_data *router_data) {
-	std::unordered_map<const t_pb_graph_node *, const t_mode *> mode_map;
-	for(const auto &net : lb_nets) {
-		if(check_net_for_route_conflicts(&mode_map, net.rt_tree, router_data)) {
 			return true;
 		}
 	}
@@ -388,6 +347,8 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 		router_data->lb_rr_node_stats[inode].occ = 0;
 	}
 
+	std::unordered_map<const t_pb_graph_node *, const t_mode *> mode_map;
+
 	/*	Iteratively remove congestion until a successful route is found.
 		Cap the total number of iterations tried so that if a solution does not exist, then the router won't run indefinitely */
 	router_data->pres_con_fac = router_data->params.pres_fac;
@@ -399,7 +360,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 			if (is_skip_route_net(lb_nets[idx].rt_tree, router_data)) {
 				continue;
 			}
-			commit_remove_rt(lb_nets[idx].rt_tree, router_data, RT_REMOVE);
+			commit_remove_rt(lb_nets[idx].rt_tree, router_data, RT_REMOVE, &mode_map, is_mode_conflict);
 			free_lb_net_rt(lb_nets[idx].rt_tree);
 			lb_nets[idx].rt_tree = nullptr;
 			add_source_to_rt(router_data, idx);
@@ -482,17 +443,10 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 				}
 			}
 
-			commit_remove_rt(lb_nets[idx].rt_tree, router_data, RT_COMMIT);
-		}
-
-		if(is_impossible == false) {
-			// We've checked that each net has no mode conflicts within the
-			// net via route_has_conflict, however this is in insufficient.
-			//
-			// All nets from each pb_type must not have a mode conflict between
-			// the nets.
-			is_impossible = check_for_route_conflicts(lb_nets, router_data);
-			*is_mode_conflict = is_impossible;
+			commit_remove_rt(lb_nets[idx].rt_tree, router_data, RT_COMMIT, &mode_map, is_mode_conflict);
+			if (*is_mode_conflict) {
+				is_impossible = true;
+			}
 		}
 
 		if(!is_impossible) {
@@ -983,7 +937,9 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data) {
 }
 
 /* Commit or remove route tree from currently routed solution */
-static void commit_remove_rt(t_lb_trace *rt, t_lb_router_data *router_data, e_commit_remove op) {
+static void commit_remove_rt(t_lb_trace *rt, t_lb_router_data *router_data, e_commit_remove op,
+		std::unordered_map<const t_pb_graph_node *, const t_mode *> *mode_map,
+		bool *is_mode_conflict) {
 	t_lb_rr_node_stats *lb_rr_node_stats;
 	t_explored_node_tb *explored_node_tb;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
@@ -999,6 +955,7 @@ static void commit_remove_rt(t_lb_trace *rt, t_lb_router_data *router_data, e_co
 
 	inode = rt->current_node;
 
+
 	/* Determine if node is being used or removed */
 	if (op == RT_COMMIT) {
 		incr = 1;
@@ -1013,9 +970,24 @@ static void commit_remove_rt(t_lb_trace *rt, t_lb_router_data *router_data, e_co
 	lb_rr_node_stats[inode].occ += incr;
 	VTR_ASSERT(lb_rr_node_stats[inode].occ >= 0);
 
+	auto &driver_node = lb_type_graph[inode];
+	auto *driver_pin = driver_node.pb_graph_pin;
+
 	/* Recursively update route tree */
 	for(unsigned int i = 0; i < rt->next_nodes.size(); i++) {
-		commit_remove_rt(&rt->next_nodes[i], router_data, op);
+		// Check to see if there is no mode conflict between previous nets.
+		// A conflict is present if there are differing modes between a pb_graph_node
+		// and its children.
+		if (op == RT_COMMIT) {
+			auto &node = lb_type_graph[rt->next_nodes[i].current_node];
+			auto *pin = node.pb_graph_pin;
+
+			if (check_edge_for_route_conflicts(mode_map, driver_pin, pin)) {
+				*is_mode_conflict = true;
+			}
+		}
+
+		commit_remove_rt(&rt->next_nodes[i], router_data, op, mode_map, is_mode_conflict);
 	}
 }
 
@@ -1095,7 +1067,7 @@ static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *ex
 
 /* Expand all nodes found in route tree into priority queue */
 static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node,
-	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int net_fanout) {
+		reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int net_fanout) {
 
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	t_lb_rr_node_stats *lb_rr_node_stats = router_data->lb_rr_node_stats;
@@ -1172,7 +1144,7 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 				pq.push(enode);
 			}
 		}
-    }
+	}
 }
 
 
@@ -1274,7 +1246,7 @@ static void print_route(FILE *fp, t_lb_router_data *router_data) {
 /* Debug routine, print out trace of net */
 static void print_trace(FILE *fp, t_lb_trace *trace, t_lb_router_data *router_data) {
 	if(trace == NULL) {
-		fprintf(fp, " NULL");
+		fprintf(fp, "NULL");
 		return;
 	}
 	for(unsigned int ibranch = 0; ibranch < trace->next_nodes.size(); ibranch++) {
@@ -1391,10 +1363,10 @@ static std::string describe_lb_type_rr_node(int inode,
 }
 
 static std::vector<int> find_incoming_rr_nodes(int dst_node, const t_lb_router_data* router_data) {
-    std::vector<int> incoming_rr_nodes;
-    const auto& lb_rr_graph = *router_data->lb_type_graph;
-    for (size_t inode = 0; inode < lb_rr_graph.size(); ++inode) {
-        const t_lb_type_rr_node& rr_node = lb_rr_graph[inode];
+	std::vector<int> incoming_rr_nodes;
+	const auto& lb_rr_graph = *router_data->lb_type_graph;
+	for (size_t inode = 0; inode < lb_rr_graph.size(); ++inode) {
+		const t_lb_type_rr_node& rr_node = lb_rr_graph[inode];
 		for (int mode = 0; mode < rr_node.num_modes; mode++) {
 			for (int iedge = 0; iedge < rr_node.num_fanout[mode]; ++iedge) {
 				const t_lb_type_rr_node_edge& rr_edge = rr_node.outedges[mode][iedge];
@@ -1405,8 +1377,8 @@ static std::vector<int> find_incoming_rr_nodes(int dst_node, const t_lb_router_d
 				}
 			}
 		}
-    }
-    return incoming_rr_nodes;
+	}
+	return incoming_rr_nodes;
 }
 
 // TODO: move this function to be a member function of class pb_graph_pin
@@ -1479,4 +1451,15 @@ static std::string describe_congested_rr_nodes(const std::vector<int>& congested
     }
 
     return description;
+}
+
+void reset_intra_lb_route(t_lb_router_data *router_data) {
+    for(auto &node : *router_data->lb_type_graph) {
+        auto *pin = node.pb_graph_pin;
+        if(pin == nullptr) {
+            continue;
+        }
+        VTR_ASSERT(pin->parent_node != nullptr);
+        pin->parent_node->illegal_modes.clear();
+    }
 }
