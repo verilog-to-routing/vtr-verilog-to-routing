@@ -409,8 +409,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 {
 	long i;
 	long sc_spot;
-	long range_temp_max = 0;
-	long range_temp_min = 0;
 	ast_node_t *range_min = 0;
 	ast_node_t *range_max = 0;
 	ast_node_t *newNode = 0;
@@ -418,9 +416,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 
     for (i = 0; i < symbol_list->num_children; i++)
 	{
-		/* checks range is legal.  */
-
-        get_range(symbol_list->children[i]);
 
         if(top_type == MODULE) {
 
@@ -441,7 +436,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					    if (newNode->types.variable.is_parameter == TRUE)
 					    {
 						    range_max = symbol_list->children[0]->children[1];
-						    range_temp_max = newNode->types.number.value;
 					    }
 					    else
 						    error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
@@ -454,12 +448,10 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			    else if(symbol_list->children[0]->children[1]->type == NUMBERS)
 			    {
 				    range_max = symbol_list->children[0]->children[1];
-				    range_temp_max = range_max->types.number.value;
 			    }
 			    else if(symbol_list->children[0]->children[1]->type == BINARY_OPERATION)
 			    {
 				    range_max = symbol_list->children[0]->children[1];
-				    range_temp_max = calculate_operation(symbol_list->children[0]->children[1]);
 			    }
 
 			    if (symbol_list->children[0]->children[2]->type == IDENTIFIERS)
@@ -470,7 +462,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					    if (newNode->types.variable.is_parameter == TRUE)
 					    {
 						    range_min = symbol_list->children[0]->children[2];
-						    range_temp_min = newNode->types.number.value;
 					    }
 					    else
 						    error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
@@ -483,19 +474,15 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				    else if(symbol_list->children[0]->children[2]->type == NUMBERS)
 				    {
 					    range_min = symbol_list->children[0]->children[2];
-					    range_temp_min = range_min->types.number.value;
 				    }
 				    else if(symbol_list->children[0]->children[2]->type == BINARY_OPERATION)
 				    {
 					    range_min = symbol_list->children[0]->children[2];
-					    range_temp_min = calculate_operation(symbol_list->children[0]->children[2]);
 				    }
 
-			    if(range_temp_min > range_temp_max)
-				    error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
-			    //ODIN doesn't support negative number in index now.
-			    if(range_temp_min < 0 || range_temp_max < 0)
-				    warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support negative number in index.");
+			    // //ODIN doesn't support negative number in index now.
+			    // if(range_temp_min < 0 || range_temp_max < 0)
+				//     warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support negative number in index.");
 
                 }
 
@@ -537,28 +524,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 		            }
 		            case PARAMETER:
 		            {
-			            int binary_range = -1;
-			            if (i == 0)
-			            {
-				            binary_range = get_range(symbol_list->children[i]);
-			            }
-
-			            /* fifth spot in the children list holds a parameter value */
-			            if (binary_range != -1)
-			            {
-				            /* check that the parameter size matches the number included */
-				             if((symbol_list->children[i]->children[5]->types.number.size != 0)
-					            && (symbol_list->children[i]->children[5]->types.number.base == BIN)
-					            && (symbol_list->children[i]->children[5]->types.number.size != binary_range))
-				            {
-					            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %ld don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
-				            }
-				            else
-				            {
-					            symbol_list->children[i]->children[5]->types.number.size = binary_range; // assign the binary range
-				            }
-			            }
-
 			            /* create an entry in the symbol table for this parameter */
 			            if ((sc_spot = sc_add_string(defines_for_module_sc[num_modules], symbol_list->children[i]->children[0]->types.identifier)) == -1)
 			            {
@@ -566,6 +531,15 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					            symbol_list->children[i]->children[0]->types.identifier,
 					            ((ast_node_t*)(defines_for_module_sc[num_modules]->data[sc_spot]))->line_number);
 			            }
+						
+						ast_node_t *value = symbol_list->children[i]->children[5];
+
+						/* make sure that the parameter value is constant */
+						if (!node_is_ast_constant(value, defines_for_module_sc[num_modules]))
+						{
+							error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Parameter value must be constant\n");
+						}
+
 			            symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
 			            defines_for_module_sc[num_modules]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
 			            /* mark the node as shared so we don't delete it */
@@ -626,7 +600,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					        if (newNode->types.variable.is_parameter == TRUE)
 					        {
 						        range_max = symbol_list->children[0]->children[1];
-						        range_temp_max = newNode->types.number.value;
 					        }
 					        else
 						        error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
@@ -639,12 +612,10 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			        else if(symbol_list->children[0]->children[1]->type == NUMBERS)
 			        {
 				        range_max = symbol_list->children[0]->children[1];
-				        range_temp_max = range_max->types.number.value;
 			        }
 			        else if(symbol_list->children[0]->children[1]->type == BINARY_OPERATION)
 			        {
 				        range_max = symbol_list->children[0]->children[1];
-				        range_temp_max = calculate_operation(symbol_list->children[0]->children[1]);
 			        }
 
 			        if (symbol_list->children[0]->children[2]->type == IDENTIFIERS)
@@ -655,7 +626,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					        if (newNode->types.variable.is_parameter == TRUE)
 					        {
 						        range_min = symbol_list->children[0]->children[2];
-						        range_temp_min = newNode->types.number.value;
 					        }
 					        else
 						        error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
@@ -668,19 +638,15 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				        else if(symbol_list->children[0]->children[2]->type == NUMBERS)
 				        {
 					        range_min = symbol_list->children[0]->children[2];
-					        range_temp_min = range_min->types.number.value;
 				        }
 				        else if(symbol_list->children[0]->children[2]->type == BINARY_OPERATION)
 				        {
 					        range_min = symbol_list->children[0]->children[2];
-					        range_temp_min = calculate_operation(symbol_list->children[0]->children[2]);
 				        }
 
-			        if(range_temp_min > range_temp_max)
-				        error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
-			        //ODIN doesn't support negative number in index now.
-			        if(range_temp_min < 0 || range_temp_max < 0)
-				        warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support negative number in index.");
+					// //ODIN doesn't support negative number in index now.
+			        // if(range_temp_min < 0 || range_temp_max < 0)
+				    //     warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support negative number in index.");
                 }
 
 
@@ -724,28 +690,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			        }
 			        case PARAMETER:
 			        {
-				        int binary_range = -1;
-				        if (i == 0)
-				        {
-					        binary_range = get_range(symbol_list->children[i]);
-				        }
-
-				        /* fifth spot in the children list holds a parameter value */
-				        if (binary_range != -1)
-				        {
-					        /* check that the parameter size matches the number included */
-					         if((symbol_list->children[i]->children[5]->types.number.size != 0)
-						        && (symbol_list->children[i]->children[5]->types.number.base == BIN)
-						        && (symbol_list->children[i]->children[5]->types.number.size != binary_range))
-					        {
-						        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %ld don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
-					        }
-					        else
-					        {
-						        symbol_list->children[i]->children[5]->types.number.size = binary_range; // assign the binary range
-					        }
-				        }
-
 				        /* create an entry in the symbol table for this parameter */
 				        if ((sc_spot = sc_add_string(defines_for_function_sc[num_functions], symbol_list->children[i]->children[0]->types.identifier)) == -1)
 				        {
@@ -753,7 +697,16 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						        symbol_list->children[i]->children[0]->types.identifier,
 						        ((ast_node_t*)(defines_for_function_sc[num_functions]->data[sc_spot]))->line_number);
 				        }
-				        symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
+						
+						ast_node_t *value = symbol_list->children[i]->children[5];
+
+						/* make sure that the parameter value is constant */
+						if (!node_is_ast_constant(value, defines_for_module_sc[num_modules]))
+						{
+							error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Parameter value must be constant\n");
+						}
+
+			            symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
 				        defines_for_function_sc[num_functions]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
 				        /* mark the node as shared so we don't delete it */
 				        symbol_list->children[i]->children[5]->shared_node = TRUE;
@@ -829,8 +782,6 @@ ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expressio
 	ast_node_t* new_node = create_node_w_type(RANGE_REF, line_number, current_parse_file);
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 3, symbol_node, expression1, expression2);
-	/* swap the direction so in form [MSB:LSB] */
-	get_range(new_node);
 
 	return new_node;
 }
@@ -896,7 +847,8 @@ ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, as
 	allocate_children_to_node(new_node, 2, expression1, expression2);
 
 	/* see if this binary expression can have some constant folding */
-	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
+	new_node = resolve_ast_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
+
 	return new_node;
 }
 
@@ -938,7 +890,7 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 	error_message(NETLIST_ERROR, line_number, current_parse_file, "%s", "Operation not supported by Odin\n");
         }
 	/* see if this binary expression can have some constant folding */
-	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
+	new_node = resolve_ast_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
 
 	return new_node;
 }
@@ -955,7 +907,7 @@ ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int 
 	allocate_children_to_node(new_node, 1, expression);
 
 	/* see if this binary expression can have some constant folding */
-	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
+	new_node = resolve_ast_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
 
 	return new_node;
 }
@@ -1209,9 +1161,9 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
 		symbol_node = NULL;
 	}
 
-	if (expression->type != NUMBERS)
+	if (expression && !node_is_ast_constant(expression, defines_for_module_sc[num_modules]))
 	{
-		error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "Parameter value must be of type NUMBERS!\n");
+		error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "Parameter value must be constant\n");
 	}
 
 	/* allocate child nodes to this node */
@@ -1304,7 +1256,7 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 
 	// make a unique module name based on its parameter list
     ast_node_t *module_param_list = module_named_instance->children[i]->children[2];
-	char *module_param_name = make_module_param_name(module_param_list, module_ref_name);
+	char *module_param_name = make_module_param_name(defines_for_module_sc[num_modules], module_param_list, module_ref_name);
 	ast_node_t *symbol_node = newSymbolNode(module_param_name, line_number);
 
 	// if this is a parameterised instantiation
@@ -1364,7 +1316,7 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
 	// make a unique module name based on its parameter list
 	ast_node_t *function_param_list = function_named_instance->children[2];
 
-	char *function_param_name = make_module_param_name(function_param_list, function_ref_name);
+	char *function_param_name = make_module_param_name(defines_for_module_sc[num_modules], function_param_list, function_ref_name);
 	ast_node_t *symbol_node = newSymbolNode(function_param_name, line_number);
 
     /* create a node for this array reference */
@@ -1738,6 +1690,11 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 				}
 			}
 			new_node = val->children[(val->num_children - 1)];
+			if (!node_is_ast_constant(new_node->children[5], defines_for_module_sc[num_modules])) 
+			{
+				error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "Parameter value must be constant\n");
+			}
+
 			new_node->type = MODULE_PARAMETER;
 			new_node->types.variable.is_parameter = TRUE;
 			new_node->shared_node = TRUE;
@@ -1886,22 +1843,6 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 	}
 
 }
-
-long calculate_operation(ast_node_t *node){
-	node = resolve_node(defines_for_module_sc[num_modules], TRUE, NULL, node);
-	if(node_is_constant(node)){
-		long result = node->types.number.value;
-		if(result >= 0){
-			return (long)result;
-		}else{
-			error_message(PARSE_ERROR, node->line_number, current_parse_file, "%s", "Negative numbers are used in the range in ODIN II!");
-			return 0;
-		}
-	}else{
-		error_message(PARSE_ERROR, node->line_number, current_parse_file, "%s", "could not resolve parameter in range");
-		return 0;
-	}
-}
 /*---------------------------------------------------------------------------------------------
  * (function: newVarDeclare) for 2D Array
  *-------------------------------------------------------------------------------------------*/
@@ -1940,9 +1881,6 @@ ast_node_t *newRangeRef2D(char *id, ast_node_t *expression1, ast_node_t *express
 	ast_node_t* new_node = create_node_w_type(RANGE_REF, line_number, current_parse_file);
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 5, symbol_node, expression1, expression2, expression3, expression4);
-	/* swap the direction so in form [MSB:LSB] */
-	//get_range2D(new_node);
-	get_range2D(new_node);
 
 	return new_node;
 }

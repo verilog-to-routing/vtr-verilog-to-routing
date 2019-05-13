@@ -87,7 +87,7 @@ int type_of_circuit;
 
 
 /* PROTOTYPES */
-void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name);
+void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name, char *parent_module);
 
 void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, char *instance_name, int level);
 signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_name_prefix);
@@ -154,11 +154,12 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node);
  * for all parameters in this instantiation, taking into account if they
  * are being overridden by their parent
  */
-void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name)
+void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name, char *parent_module)
 {
 	/* with the top module we need to visit the entire ast tree */
-	long i, j, k;
+	long i, j;
 	char *temp_string;
+	char **temp_parameter_list = NULL;
 	long sc_spot;
 	oassert(module_items->type == MODULE_ITEMS || module_items->type == FUNCTION_ITEMS);
 	int parameter_num = 0;
@@ -198,12 +199,17 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 
 					if (var_declare->types.variable.is_parameter)
 					{
-						ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
-						oassert(node->type == NUMBERS);
 						sc_spot = sc_add_string(local_param_table_sc, temp_string);
-						local_param_table_sc->data[sc_spot] = (void *)node;
+						local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
+
+						/* add parameter name to list */
+						if (parameter_num == 1)
+							temp_parameter_list = (char**) vtr::calloc(parameter_num, sizeof(char*));
+						else
+							temp_parameter_list = (char**) vtr::realloc(temp_parameter_list, sizeof(char*)*parameter_num);
+						
+						temp_parameter_list[parameter_num-1] = temp_string;
 					}
-					vtr::free(temp_string);
 				}
 			}
 
@@ -211,83 +217,58 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 
 		if(parent_parameter_list)
 		{
-			// defparam before calling instance
+			/* 	defparam before calling instance; these overrides must be done first */
 			for(i = 0; i < parent_parameter_list->num_children; i ++)
 			{
 				if(parent_parameter_list->children[i]->children[0] && parent_parameter_list->children[i]->shared_node == FALSE)
 				{
 					ast_node_t *var_declare = parent_parameter_list->children[i];
-					ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
-					oassert(node->type == NUMBERS);
-					sc_spot = sc_add_string(local_param_table_sc, var_declare->children[0]->types.identifier);
-					local_param_table_sc->data[sc_spot] = (void *)node;
+					sc_spot = sc_lookup_string(local_param_table_sc, var_declare->children[0]->types.identifier);
+					if(sc_spot == -1)
+					{
+						error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
+								"Can't find parameter name %s in module %s\n",
+								var_declare->children[0]->types.identifier,
+								module_name);
+					}
+
+					if (var_declare->children[5])
+						local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
 				}
 			}
 
 			for(i = 0; i < parent_parameter_list->num_children; i ++)
 			{
-				//using defparam to override parameter, after calling instance
+				// defparam after calling instance
 				if(parent_parameter_list->children[i]->children[0])
 				{
 					if(parent_parameter_list->children[i]->shared_node == TRUE)
 					{
 						ast_node_t *var_declare = parent_parameter_list->children[i];
-						ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
-						oassert(node->type == NUMBERS);
-						sc_spot = sc_add_string(local_param_table_sc, var_declare->children[0]->types.identifier);
-						local_param_table_sc->data[sc_spot] = (void *)node;
-					}
+						sc_spot = sc_lookup_string(local_param_table_sc, var_declare->children[0]->types.identifier);
+						if(sc_spot == -1)
+						{
+							error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
+									"Can't find parameter name %s in module %s\n",
+									var_declare->children[0]->types.identifier,
+									module_name);
+						}
+
+						if (var_declare->children[5])
+							local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
+					} 
 				}
 				else
 				{
-					parameter_count++;
-					int parameter_idx = 0;
-					for(k = 0; k < module_items->num_children; k++)
+					// override without name during module instantiation; use name from temp_parameter_list 
+					if (parameter_count <= parameter_num) 
 					{
-						/* go through the vars in this declare list, resolves the missing identifiers node */
-						if(module_items->children[k]->type == VAR_DECLARE_LIST)
-						{
-							for(j = 0; j < module_items->children[k]->num_children; j++)
-							{
-								ast_node_t *var_declare = module_items->children[k]->children[j];
-
-								if ((var_declare->types.variable.is_input) ||
-									(var_declare->types.variable.is_output) ||
-									(var_declare->types.variable.is_reg) || (var_declare->types.variable.is_integer) ||
-									(var_declare->types.variable.is_wire)) continue;
-
-								oassert(module_items->children[k]->children[j]->type == VAR_DECLARE);
-								oassert(var_declare->types.variable.is_parameter);
-
-								parameter_idx++;
-
-								/* make the string to add to the string cache */
-								temp_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, -1);
-
-								if (var_declare->types.variable.is_parameter)
-								{
-									//parameter_num++;
-									if(parameter_idx == parameter_count)
-									{
-										var_declare = parent_parameter_list->children[i];
-										ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
-										oassert(node->type == NUMBERS);
-										sc_spot = sc_add_string(local_param_table_sc, temp_string);
-										local_param_table_sc->data[sc_spot] = (void *)node;
-									}
-									else
-									{
-										ast_node_t *node = resolve_node(NULL, FALSE, module_name, var_declare->children[5]);
-										oassert(node->type == NUMBERS);
-										sc_spot = sc_add_string(local_param_table_sc, temp_string);
-										local_param_table_sc->data[sc_spot] = (void *)node;
-									}
-								}
-								vtr::free(temp_string);
-							}
-						}
+						ast_node_t *var_declare = parent_parameter_list->children[i];
+						sc_spot = sc_lookup_string(local_param_table_sc, temp_parameter_list[parameter_count++]);
+						local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
 					}
-					if(parameter_idx == 0)
+
+					if(parameter_num == 0)
 					{
 						error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
 								"There is no parameters in %s !",
@@ -313,6 +294,25 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 						parameter_count, module_name, parameter_num);
 			}
 		}
+	}
+
+	/* now that parameters are all updated, resolve them */
+	for (i = 0; i < parameter_num; i++) {
+		sc_spot = sc_lookup_string(local_param_table_sc, temp_parameter_list[i]);
+		ast_node_t *node = (ast_node_t *)local_param_table_sc->data[sc_spot];
+		oassert(node);
+		node = resolve_node(NULL, FALSE, module_name, node);
+		if (node->type != NUMBERS) node = resolve_node(NULL, FALSE, parent_module, node); // may contain parameters from parent
+		oassert(node->type == NUMBERS);
+		local_param_table_sc->data[sc_spot] = (void *)node;
+	}
+
+	/* clean up */
+	if (temp_parameter_list) {
+		for (i = 0; i < parameter_num; i++) {
+			vtr::free(temp_parameter_list[i]);
+		}
+		vtr::free(temp_parameter_list);
 	}
 }
 
@@ -365,10 +365,9 @@ void create_netlist()
 		oassert(ast_modules[i]->type == MODULE);
 	}
 
-	/* we will reduce the parameters and the assignment expressions*/
-	/* Simplify the AST by reducing complex statements - for loops */
+
+	// TODO Alex - unroll_loops() needs to be moved to simplify_ast_module()
 	simplify_ast();
-	reduce_assignment_expression();
 
 	/* we will find the top module */
 	top_module = find_top_module();
@@ -387,7 +386,7 @@ void create_netlist()
 	verilog_netlist = allocate_netlist();
 
 	// create the parameter table for the top module
-	create_param_table_for_module(NULL, top_module->children[2], top_string);
+	create_param_table_for_module(NULL, top_module->children[2], top_string, NULL);
 
 	/* now recursively parse the modules by going through the tree of modules starting at top */
 	create_top_driver_nets(top_module, top_string);
@@ -564,7 +563,9 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 			create_param_table_for_module(parent_parameter_list,
 				/* module_items */
 				((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2],
-				temp_instance_name);
+				temp_instance_name, current_module->children[0]->types.identifier);
+
+			simplify_ast_module(current_module);
 
 			/* recursive call point */
 			convert_ast_to_netlist_recursing_via_modules(((ast_node_t*)module_names_to_idx->data[sc_spot]), temp_instance_name, level+1);
@@ -597,8 +598,9 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 			create_param_table_for_module(parent_parameter_list,
 				/* module_items */
 				((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2],
-				temp_instance_name);
+				temp_instance_name, current_module->children[0]->types.identifier);
 
+			simplify_ast_module(current_module);
 
 			/* recursive call point */
 			convert_ast_to_netlist_recursing_via_modules(((ast_node_t*)module_names_to_idx->data[sc_spot]), temp_instance_name, level+1);
@@ -1289,7 +1291,20 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 						{
 							ast_node_t *node_max = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[1]);
 							ast_node_t *node_min = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
+							
 							oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
+							if(node_min->types.number.value > node_max->types.number.value)
+							{
+								error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+										"Odin doesn't support arrays declared [m:n] where m is less than n.");
+							}	
+							//ODIN doesn't support negative number in index now.
+							if(node_min->types.number.value < 0 || node_max->types.number.value < 0)
+							{
+								warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+										"Odin doesn't support negative number in index.");
+							}
+
 							/* assume digit 1 is largest */
 							for (k = node_min->types.number.value; k <= node_max->types.number.value; k++)
 							{
@@ -1388,7 +1403,18 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		ast_node_t *node_min = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
 
 		/* FOR array driver  since sport 3 and 4 are NULL */
-		oassert((node_max->type == NUMBERS) && (node_min->type == NUMBERS));
+		oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
+		if(node_min->types.number.value > node_max->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min->types.number.value < 0 || node_max->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
 
 		/* Check if this array driver should have an initial value */
 		long initial_value = 0;
@@ -1435,8 +1461,31 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		ast_node_t *node_max2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[3]);
 		ast_node_t *node_min2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[4]);
 
-		oassert((node_max1->type == NUMBERS) && (node_min1->type == NUMBERS));
-		oassert((node_max2->type == NUMBERS) && (node_min2->type == NUMBERS));
+		oassert(node_min1->type == NUMBERS && node_max1->type == NUMBERS);
+		if(node_min1->types.number.value > node_max1->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min1->types.number.value < 0 || node_max1->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
+
+		oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);
+		if(node_min2->types.number.value > node_max2->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min2->types.number.value < 0 || node_max2->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
 
 		char *name = var_declare->children[0]->types.identifier;
 
@@ -1474,9 +1523,44 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		ast_node_t *node_max3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[5]);
 		ast_node_t *node_min3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[6]);
 
-		oassert((node_max1->type == NUMBERS) && (node_min1->type == NUMBERS));
-		oassert((node_max2->type == NUMBERS) && (node_min2->type == NUMBERS));
-		oassert((node_max3->type == NUMBERS) && (node_min3->type == NUMBERS));
+		oassert(node_min1->type == NUMBERS && node_max1->type == NUMBERS);
+		if(node_min1->types.number.value > node_max1->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min1->types.number.value < 0 || node_max1->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
+
+		oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);
+		if(node_min2->types.number.value > node_max2->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min2->types.number.value < 0 || node_max2->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
+
+		oassert(node_min3->type == NUMBERS && node_max3->type == NUMBERS);
+		if(node_min3->types.number.value > node_max3->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min3->types.number.value < 0 || node_max3->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
 
 		char *name = var_declare->children[0]->types.identifier;
 
@@ -1568,7 +1652,19 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 		/* FOR array driver  since sport 3 and 4 are NULL */
 		ast_node_t *node_max = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[1]);
 		ast_node_t *node_min = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
-		oassert((node_max->type == NUMBERS) && (node_min->type == NUMBERS)) ;
+		
+		oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
+		if(node_min->types.number.value > node_max->types.number.value)
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		//ODIN doesn't support negative number in index now.
+		if(node_min->types.number.value < 0 || node_max->types.number.value < 0)
+		{
+			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
 
 		/* assume digit 1 is largest */
 		for (i = node_min->types.number.value; i <= node_max->types.number.value; i++)
@@ -3152,6 +3248,10 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	}
 	else
 	{
+		// TODO Alex - this is temporary
+		if (right->type == BINARY_OPERATION || right->type == UNARY_OPERATION)
+			right = resolve_node(NULL, FALSE, instance_name_prefix, right);
+
 		in_1 = netlist_expand_ast_of_module(right, instance_name_prefix);
 		oassert(in_1 != NULL);
 	}
