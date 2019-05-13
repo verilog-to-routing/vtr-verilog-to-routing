@@ -165,9 +165,9 @@ void sync_grid_to_blocks() {
 	/* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        int blk_x = place_ctx.block_locs[blk_id].x;
-        int blk_y = place_ctx.block_locs[blk_id].y;
-        int blk_z = place_ctx.block_locs[blk_id].z;
+        int blk_x = place_ctx.block_locs[blk_id].loc.x;
+        int blk_y = place_ctx.block_locs[blk_id].loc.y;
+        int blk_z = place_ctx.block_locs[blk_id].loc.z;
 
 		/* Check range of block coords */
 		if (blk_x < 0 || blk_y < 0
@@ -561,7 +561,7 @@ int find_clb_pb_pin(ClusterBlockId clb, int clb_pin) {
         int num_basic_block_pins = type->num_pins / type->capacity;
         /* Logical location and physical location is offset by z * max_num_block_pins */
 
-        pb_pin = clb_pin - place_ctx.block_locs[clb].z * num_basic_block_pins;
+        pb_pin = clb_pin - place_ctx.block_locs[clb].loc.z * num_basic_block_pins;
     } else {
         //No offset
         pb_pin = clb_pin;
@@ -585,7 +585,7 @@ int find_pb_pin_clb_pin(ClusterBlockId clb, int pb_pin) {
         int num_basic_block_pins = type->num_pins / type->capacity;
         /* Logical location and physical location is offset by z * max_num_block_pins */
 
-        clb_pin = pb_pin + place_ctx.block_locs[clb].z * num_basic_block_pins;
+        clb_pin = pb_pin + place_ctx.block_locs[clb].loc.z * num_basic_block_pins;
     } else {
         //No offset
         clb_pin = pb_pin;
@@ -689,8 +689,8 @@ void get_class_range_for_block(const ClusterBlockId blk_id,
 
 	t_type_ptr type = cluster_ctx.clb_nlist.block_type(blk_id);
 	VTR_ASSERT(type->num_class % type->capacity == 0);
-	*class_low = place_ctx.block_locs[blk_id].z * (type->num_class / type->capacity);
-	*class_high = (place_ctx.block_locs[blk_id].z + 1) * (type->num_class / type->capacity) - 1;
+	*class_low = place_ctx.block_locs[blk_id].loc.z * (type->num_class / type->capacity);
+	*class_high = (place_ctx.block_locs[blk_id].loc.z + 1) * (type->num_class / type->capacity) - 1;
 }
 
 void get_pin_range_for_block(const ClusterBlockId blk_id,
@@ -703,8 +703,8 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
 
 	t_type_ptr type = cluster_ctx.clb_nlist.block_type(blk_id);
 	VTR_ASSERT(type->num_pins % type->capacity == 0);
-	*pin_low = place_ctx.block_locs[blk_id].z * (type->num_pins / type->capacity);
-	*pin_high = (place_ctx.block_locs[blk_id].z + 1) * (type->num_pins / type->capacity) - 1;
+	*pin_low = place_ctx.block_locs[blk_id].loc.z * (type->num_pins / type->capacity);
+	*pin_high = (place_ctx.block_locs[blk_id].loc.z + 1) * (type->num_pins / type->capacity) - 1;
 }
 
 t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* types, int num_types) {
@@ -2256,7 +2256,7 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
     auto& clb_nlist = cluster_ctx.clb_nlist;
     for (auto pin : clb_nlist.block_pins(iblk)) {
         int orig_phys_pin_index = clb_nlist.pin_physical_index(pin);
-        int new_phys_pin_index = orig_phys_pin_index + place_ctx.block_locs[iblk].z * max_num_block_pins;
+        int new_phys_pin_index = orig_phys_pin_index + place_ctx.block_locs[iblk].loc.z * max_num_block_pins;
         clb_nlist.set_pin_physical_index(pin, new_phys_pin_index);
     }
 

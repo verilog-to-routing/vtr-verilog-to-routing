@@ -2695,7 +2695,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	} else {
 		/* Highlight block and fan-in/fan-outs. */
 		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
-		sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
+		sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[clb_index].loc.x, place_ctx.block_locs[clb_index].loc.y);
 	}
 
 	update_message(msg);
@@ -3794,12 +3794,12 @@ static void draw_placement_macros() {
             ClusterBlockId blk = member->blk_index;
 
             if (imember == 0) {
-                x_root = place_ctx.block_locs[blk].x;
-                y_root = place_ctx.block_locs[blk].y;
+                x_root = place_ctx.block_locs[blk].loc.x;
+                y_root = place_ctx.block_locs[blk].loc.y;
             }
 
-            int x = x_root + member->x_offset;
-            int y = y_root + member->y_offset;
+            int x = x_root + member->offset.x;
+            int y = y_root + member->offset.y;
 
             xlow = std::min(xlow, x);
             ylow = std::min(ylow, y);

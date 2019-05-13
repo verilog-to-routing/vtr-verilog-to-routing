@@ -691,7 +691,6 @@ static void flush_intermediate_queues(
 /* Determine max index + 1 of molecule */
 int get_array_size_of_molecule(const t_pack_molecule *molecule) {
 	if (molecule->type == MOLECULE_FORCED_PACK) {
-        VTR_ASSERT(molecule->pack_pattern->num_blocks == molecule->num_blocks);
 		return molecule->pack_pattern->num_blocks;
 	} else {
 		return molecule->num_blocks;
