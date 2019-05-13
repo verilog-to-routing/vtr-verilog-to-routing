@@ -1181,7 +1181,25 @@ enum class BufferSize {
  * R:  Equivalent resistance of the buffer/switch.                           *
  * Cin:  Input capacitance.                                                  *
  * Cout:  Output capacitance.                                                *
- * Cinternal: Internal capacitance in a buffer with fanout.                  *
+ * Cinternal: Since multiplexers and tristate buffers are modeled as a       *
+ *            parallel stream of pass transistors feeding into a buffer,     *
+ *            we would expect an additional capacitance to arise when the    *
+ *            pass transistor is enabled and the signal must propogate to    *
+ *            the buffer. Below is a diagram of one stream:                  *
+ *                                                                           *   
+ *                  Pass Transistor                                          *
+ *                       |                                                   *
+ *                     -----                                                 *
+ *                     -----      Buffer                                     *   
+ *                    |     |       |\                                       *
+ *              ------       -------| \--------                              *
+ *                |             |   | /    |                                 *
+ *              =====         ===== |/   =====                               *
+ *              =====         =====      =====                               *
+ *                |             |          |                                 *
+ *             Input C    Internal C    Output C                             *
+ *                                                                           *
+ *                                                                           *
  * Tdel_map: A map where the key is the number of inputs and the entry       *
  *           is the corresponding delay. If there is only one entry at key   *
  *           UNDEFINED, then delay is a constant (doesn't vary with fan-in). *
@@ -1199,7 +1217,7 @@ struct t_arch_switch_inf {
         float R = 0.;
         float Cin = 0.;
         float Cout = 0.;
-        float Cinternal = 0.; // defined the property Cinternal 
+        float Cinternal = 0.;
         float mux_trans_size = 1.;
         BufferSize buf_size_type = BufferSize::AUTO;
         float buf_size = 0.;
@@ -1239,7 +1257,7 @@ struct t_arch_switch_inf {
  * by s_arch_switch_inf. This indirection allows us to vary properties of a  *
  * given switch, such as varying delay with switch fan-in.                   *
  * buffered:  Does this switch isolate it's input/output into separate       *
- *            DC-connected sub-circuits?
+ *            DC-connected sub-circuits?                                     *
  * configurable: Is this switch is configurable (i.e. can the switch can be  *
  *               turned on or off)?. This allows modelling of non-optional   *
  *               switches (e.g. fixed buffers, or shorted connections) which *
@@ -1248,7 +1266,24 @@ struct t_arch_switch_inf {
  * R:  Equivalent resistance of the buffer/switch.                           *
  * Cin:  Input capacitance.                                                  *
  * Cout:  Output capacitance.                                                *
- * Cinternal: Internal capacitance in a buffer.                              *
+ * Cinternal: Since multiplexers and tristate buffers are modeled as a       *
+ *            parallel stream of pass transistors feeding into a buffer,     *
+ *            we would expect an additional capacitance to arise when the    *
+ *            pass transistor is enabled and the signal must propogate to    *
+ *            the buffer. Below is a diagram of one stream:                  *
+ *                                                                           *
+ *                  Pass Transistor                                          *
+ *                       |                                                   *
+ *                     -----                                                 *
+ *                     -----      Buffer                                     *   
+ *                    |     |       |\                                       *
+ *              ------       -------| \--------                              *
+ *                |             |   | /    |                                 *
+ *              =====         ===== |/   =====                               *
+ *              =====         =====      =====                               *
+ *                |             |          |                                 *
+ *             Input C    Internal C    Output C                             *
+ *                                                                           *
  * Tdel:  Intrinsic delay.  The delay through an unloaded switch is          *
  *        Tdel + R * Cout.                                                   *
  * mux_trans_size:  The area of each transistor in the segment's driving mux *
@@ -1259,7 +1294,7 @@ struct t_rr_switch_inf {
 	float R = 0.;
 	float Cin = 0.;
 	float Cout = 0.;
-	float Cinternal = 0.; //defined the property Cinternal
+	float Cinternal = 0.; 
 	float Tdel = 0.;
 	float mux_trans_size = 0.;
 	float buf_size = 0.;
