@@ -838,7 +838,9 @@ FILE *format_verilog_file(FILE *source)
 	char * decPtr = dec;
 	char * postDecPtr = postDec;
 	char * IOTypeDecPtr = IOTypeDec;
-	size_t i, j, k = 0;
+	size_t i = 0;
+	size_t j = 0;
+	size_t k = 0;
 	bool getNextLine = true;
 	char * exitFlag = fgets(buf, UPPER_BUFFER_LIMIT, source);
 	int pos = 0;
@@ -887,6 +889,13 @@ FILE *format_verilog_file(FILE *source)
 		}
 		if(getNextLine)
 		{
+			if(i >= UPPER_BUFFER_LIMIT - 1)
+			{
+				// No space left in buffer -- quit
+				fprintf(stderr, "Buffer limit reached - returning destination FILE pointer\n\n");
+				rewind(destination);
+				return destination;
+			}
 			exitFlag = fgets(&buf[i], UPPER_BUFFER_LIMIT - i, source);
 		}
 		else
