@@ -1935,6 +1935,7 @@ static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timi
     bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered();
     float switch_R = device_ctx.rr_switch_inf[iswitch].R;
     float switch_Tdel = device_ctx.rr_switch_inf[iswitch].Tdel;
+    float switch_Cinternal = device_ctx.rr_switch_inf[iswitch].Cinternal;
 
     //Node info
     float node_C = device_ctx.rr_nodes[to_node].C();
@@ -1951,7 +1952,7 @@ static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timi
 
     //Calculate delay
     float Rdel = new_costs.R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
-    float Tdel = switch_Tdel + Rdel * node_C;
+    float Tdel = switch_Tdel + Rdel * (node_C + switch_Cinternal); //sum the node capcitance with internal capacitance
 
     //Update the backward cost
     new_costs.backward_cost = old_costs.backward_cost; //Back cost to 'from_node'
