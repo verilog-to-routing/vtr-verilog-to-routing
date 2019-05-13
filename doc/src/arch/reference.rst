@@ -660,7 +660,8 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
              we would expect an additional "internal capacitance" to arise when the    
              pass transistor is enabled and the signal must propogate to    
              the buffer.
-    .. note:: Only specify a value for multiplexers and tristate buffers.
+
+             Only specify a value for multiplexers and/or tristate buffers.
 
     :opt_param Tdel:
 
