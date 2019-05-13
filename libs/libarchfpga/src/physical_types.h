@@ -1183,9 +1183,9 @@ enum class BufferSize {
  * Cout:  Output capacitance.                                                *
  * Cinternal: Since multiplexers and tristate buffers are modeled as a       *
  *            parallel stream of pass transistors feeding into a buffer,     *
- *            we would expect an additional capacitance to arise when the    *
- *            pass transistor is enabled and the signal must propogate to    *
- *            the buffer. Below is a diagram of one stream:                  *
+ *            we would expect an additional "internal capacitance"           *
+ *            to arise when the pass transistor is enabled and the signal    *
+ *            must propogate to the buffer. See diagram of one stream below: *
  *                                                                           *   
  *                  Pass Transistor                                          *
  *                       |                                                   *
@@ -1198,7 +1198,6 @@ enum class BufferSize {
  *              =====         =====      =====                               *
  *                |             |          |                                 *
  *             Input C    Internal C    Output C                             *
- *                                                                           *
  *                                                                           *
  * Tdel_map: A map where the key is the number of inputs and the entry       *
  *           is the corresponding delay. If there is only one entry at key   *
@@ -1268,9 +1267,9 @@ struct t_arch_switch_inf {
  * Cout:  Output capacitance.                                                *
  * Cinternal: Since multiplexers and tristate buffers are modeled as a       *
  *            parallel stream of pass transistors feeding into a buffer,     *
- *            we would expect an additional capacitance to arise when the    *
- *            pass transistor is enabled and the signal must propogate to    *
- *            the buffer. Below is a diagram of one stream:                  *
+ *            we would expect an additional "internal capacitance"           *
+ *            to arise when the pass transistor is enabled and the signal    *
+ *            must propogate to the buffer. See diagram of one stream below: *
  *                                                                           *
  *                  Pass Transistor                                          *
  *                       |                                                   *
