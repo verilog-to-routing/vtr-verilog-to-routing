@@ -520,9 +520,10 @@ update_unbuffered_ancestors_C_downstream(t_rt_node * start_of_new_path_rt_node) 
 	C_downstream_addition = rt_node->C_downstream + device_ctx.rr_switch_inf[iswitch].Cinternal; 
 
     /* With the consideration of internal capacitance, we will evaluate the 
-     * capacitance of the parent separately from the lineage of ancestors.*/
+     * capacitance of the parent separately from the lineage of ancestors. 
+     * For the case that Cinternal is nonzero.*/
 
-    if (parent_rt_node != nullptr){
+    if (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].Cinternal != 0.){
 		rt_node = parent_rt_node;
         
         /* if the switch is a buffered switch, we will add only the internal capacitance.*/
