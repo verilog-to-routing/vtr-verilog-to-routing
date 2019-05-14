@@ -62,10 +62,10 @@ int yylex(void);
 %token <num_value> vSIGNED_BINARY
 %token <num_value> vDELAY_ID
 %token vALWAYS vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vDEFINE vELSE vEND vENDCASE
-%token vENDMODULE vENDSPECIFY vENDFUNCTION vIF vINOUT vINPUT vMODULE vFUNCTION vNAND vNEGEDGE vNOR vNOT vOR vFOR
-%token vOUTPUT vPARAMETER vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND
+%token vENDMODULE vENDSPECIFY vENDGENERATE vENDFUNCTION vIF vINOUT vINPUT vMODULE vGENERATE vFUNCTION
+%token vOUTPUT vPARAMETER vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND vNAND vNEGEDGE vNOR vNOT vOR vFOR
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
-%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vCLOG2
+%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vCLOG2 vGENVAR
 %token vPLUS_COLON vMINUS_COLON vSPECPARAM
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
 %token vNOT_SUPPORT 
@@ -105,14 +105,14 @@ int yylex(void);
 %type <node> function_input_declaration
 %type <node> inout_declaration variable_list function_output_variable function_id_and_output_variable
 %type <node> integer_type_variable_list variable integer_type_variable
-%type <node> net_declaration integer_declaration function_instantiation
+%type <node> net_declaration integer_declaration function_instantiation genvar_declaration
 %type <node> continuous_assign multiple_inputs_gate_instance list_of_single_input_gate_declaration_instance
 %type <node> list_of_multiple_inputs_gate_declaration_instance list_of_module_instance
 %type <node> gate_declaration single_input_gate_instance
 %type <node> module_instantiation module_instance function_instance list_of_module_connections list_of_function_connections
 %type <node> list_of_multiple_inputs_gate_connections
-%type <node> module_connection always statement function_statement blocking_assignment
-%type <node> non_blocking_assignment case_item_list case_items seq_block
+%type <node> module_connection always statement function_statement blocking_assignment generate
+%type <node> non_blocking_assignment case_item_list case_items seq_block generate_for
 %type <node> stmt_list delay_control event_expression_list event_expression
 %type <node> expression primary probable_expression_list expression_list module_parameter
 %type <node> list_of_module_parameters
@@ -170,6 +170,7 @@ module_item:
 	| output_declaration						{$$ = $1;}
 	| inout_declaration							{$$ = $1;}
 	| net_declaration							{$$ = $1;}
+	| genvar_declaration							{$$ = $1;}
 	| integer_declaration         				{$$ = $1;}
 	| continuous_assign							{$$ = $1;}
 	| gate_declaration							{$$ = $1;}
@@ -239,6 +240,10 @@ net_declaration:
 
 integer_declaration:
 	vINTEGER integer_type_variable_list ';' 	{$$ = markAndProcessSymbolListWith(MODULE,INTEGER, $2);}
+	;
+
+genvar_declaration:
+	vGENVAR integer_type_variable_list ';'		{$$ = markAndProcessSymbolListWith(MODULE,GENVAR, $2);}
 	;
 
 function_output_variable:
@@ -327,6 +332,7 @@ list_of_multiple_inputs_gate_connections: list_of_multiple_inputs_gate_connectio
 
 // 4 MOdule Instantiations	{$$ = NULL;}
 module_instantiation: vSYMBOL_ID list_of_module_instance ';' 		{$$ = newModuleInstance($1, $2, yylineno);}
+	|   generate generate_for 					{$$ = newGenerate($1, $2, yylineno);} 
 //	|   vSYMBOL_ID module_instance ',' module_instantiation ';'		{$$ = addNewModuleInstance($1, $2, yylineno);}
 	;
 
@@ -382,9 +388,16 @@ always:
 	vALWAYS delay_control statement 					{$$ = newAlways($2, $3, yylineno);}
 	;
 
+generate:
+	vGENERATE statement							{$$ = newGenerate($2, yylineno);}
+	;
+
 function_statement:
 	statement                               			{$$ = newAlways(NULL, $1, yylineno);}
 	;
+
+generate_for:
+	vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' list_of_module_instance 	{$$ = newFor($3, $5, $7, $9, yylineno);} 
 
 statement:
 	seq_block																					{$$ = $1;}

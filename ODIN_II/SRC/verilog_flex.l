@@ -64,6 +64,7 @@ char* standardize_number(const char* input);
 <INITIAL>"end"				{ MP; return vEND;}
 <INITIAL>"endcase"			{ MP; return vENDCASE;}
 <INITIAL>"endfunction"		{ MP; return vENDFUNCTION;}
+<INITIAL>"endgenerate"		{ MP; return vENDGENERATE;}
 <INITIAL>"endmodule"		{ MP; return vENDMODULE;}
 <INITIAL>"endspecify"		{ MP; return vENDSPECIFY;}
 <INITIAL>"for"				{ MP; return vFOR;}
@@ -72,6 +73,8 @@ char* standardize_number(const char* input);
 <INITIAL>"inout"			{ MP; return vINOUT;}
 <INITIAL>"input"			{ MP; return vINPUT;}
 <INITIAL>"integer"			{ MP; return vINTEGER;}
+<INITIAL>"generate"			{ MP; return vGENERATE;}
+<INITIAL>"genvar"			{ MP; return vGENVAR;}
 <INITIAL>"module"			{ MP; return vMODULE;}
 <INITIAL>"function"			{ MP; return vFUNCTION;}
 <INITIAL>"nand"				{ MP; return vNAND;}
