@@ -1478,7 +1478,7 @@ long clog2(long value_in, int length)
 
 	if (length > 32) 
 	{
-		uint64_t long unsigned_val = (uint64_t) value_in;
+		uint64_t unsigned_val = (uint64_t) value_in;
 		result = (long) ceil(log2((double) unsigned_val));
 	}
 	else
