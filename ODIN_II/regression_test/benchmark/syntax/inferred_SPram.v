@@ -18,8 +18,8 @@ module inferred_ram(
 
 	always @ (posedge clk )
 	begin
+		data_out <= data_in;
 		mregs[address] <= data_in;
-		data_out <= mregs[address];
 	end
 
 endmodule

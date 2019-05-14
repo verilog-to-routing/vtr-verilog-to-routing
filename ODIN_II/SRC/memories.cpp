@@ -170,7 +170,7 @@ void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, const ch
 		if (!strcmp(pin->mapping, port_name))
 		{
 			error_message(NETLIST_ERROR, -1, -1,
-					"Attempted to reassign output port %s to memory %s.", port_name, node->name);
+					"Attempted to reassign input port %s to memory %s.", port_name, node->name);
 		}
 	}
 
