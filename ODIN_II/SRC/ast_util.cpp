@@ -923,15 +923,12 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 				}
 				sc_spot = sc_lookup_string(local_param_table_sc, node->types.identifier);
 				if (sc_spot != -1){
-					newNode = (ast_node_t *)vtr::calloc(1,sizeof(ast_node_t));
-					memcpy(newNode, (ast_node_t *)local_param_table_sc->data[sc_spot], sizeof(ast_node_t));
+					newNode = ast_node_deep_copy((ast_node_t *)local_param_table_sc->data[sc_spot]);
 				}
 			break;
 
 			case UNARY_OPERATION:
-				if(initial){
-					newNode = fold_unary(node_copy->children[0],node_copy->types.operation.op);
-				}
+				newNode = fold_unary(node_copy->children[0],node_copy->types.operation.op);
 				break;
 
 			case BINARY_OPERATION:
@@ -986,9 +983,7 @@ ast_node_t *resolve_ast_node(STRING_CACHE *local_param_table_sc, short initial, 
 		switch (node->type){
 			
 			case UNARY_OPERATION:
-				if(initial){
-					newNode = fold_unary(node_copy->children[0],node_copy->types.operation.op);
-				}
+				newNode = fold_unary(node_copy->children[0],node_copy->types.operation.op);
 				break;
 
 			case BINARY_OPERATION:
