@@ -482,6 +482,12 @@ function run_all() {
 		sim ${BASE_DIR}/${test_dir} $(cat ${BASE_DIR}/${test_dir}/config.txt)
 	done
 }
+
+function run_vtr_reg() {
+	cd ..
+	/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC $1
+	cd ODIN_II
+}
 #########################################################
 #	START HERE
 
@@ -507,23 +513,34 @@ case $TEST_TYPE in
 		;;
 
 	"vtr_basic")
-		cd ..
-		/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC vtr_reg_basic
-		cd ODIN_II
+		run_vtr_reg vtr_reg_basic
 		;;
 
 	"vtr_strong")
-		cd ..
-		/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC vtr_reg_strong
-		cd ODIN_II
+		run_vtr_reg vtr_reg_strong
+		;;
+
+	"vtr_valgrind_small")
+		run_vtr_reg vtr_reg_valgrind_small
+		;;
+
+	"vtr_valgrind")
+		run_vtr_reg vtr_reg_valgrind
 		;;
 
 	"pre_commit")
 		run_all
-		cd ..
-		/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC vtr_reg_basic
-		/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC vtr_reg_strong
-		cd ODIN_II
+		run_vtr_reg vtr_reg_basic
+		run_vtr_reg vtr_reg_strong
+		run_vtr_reg vtr_reg_valgrind_small
+		;;
+
+	"pre_merge")
+		run_all
+		run_vtr_reg vtr_reg_basic
+		run_vtr_reg vtr_reg_strong
+		run_vtr_reg vtr_reg_valgrind_small
+		run_vtr_reg vtr_reg_valgrind
 		;;
 
 	*)
