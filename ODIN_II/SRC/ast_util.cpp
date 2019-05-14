@@ -1474,7 +1474,7 @@ long clog2(long value_in, int length)
 	long result;
 
 	/* negative numbers may be larger than they need to be */
-	if (value_in < 0 && value_in >= std::numeric_limits<int>::min()) return 32; 
+	if (value_in < 0 && value_in >= std::numeric_limits<int32_t>::min()) return 32; 
 
 	if (length > 32) 
 	{
