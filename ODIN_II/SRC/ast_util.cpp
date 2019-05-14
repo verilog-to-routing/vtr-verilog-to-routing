@@ -1003,9 +1003,9 @@ ast_node_t *resolve_ast_node(STRING_CACHE *local_param_table_sc, short initial, 
 			newNode->shared_node = node->shared_node;
 
 			/* clean up */
-			// if (node->type != IDENTIFIERS) {
-			// 	node = free_whole_tree(node);
-			// }
+			if (node->type != IDENTIFIERS) {
+				node = free_whole_tree(node);
+			}
 			
 			node = newNode;
 		}

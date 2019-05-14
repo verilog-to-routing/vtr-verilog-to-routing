@@ -480,10 +480,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					    range_min = symbol_list->children[0]->children[2];
 				    }
 
-			    // //ODIN doesn't support negative number in index now.
-			    // if(range_temp_min < 0 || range_temp_max < 0)
-				//     warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support negative number in index.");
-
                 }
 
 		        if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
@@ -644,9 +640,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					        range_min = symbol_list->children[0]->children[2];
 				        }
 
-					// //ODIN doesn't support negative number in index now.
-			        // if(range_temp_min < 0 || range_temp_max < 0)
-				    //     warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "%s", "Odin doesn't support negative number in index.");
                 }
 
 
