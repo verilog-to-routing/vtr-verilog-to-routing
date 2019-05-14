@@ -36,3 +36,5 @@ ast_node_t *node_is_ast_constant(ast_node_t *node);
 ast_node_t *node_is_ast_constant(ast_node_t *node, STRING_CACHE *defines_for_module_sc);
 ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_list op_id);
 ast_node_t *fold_unary(ast_node_t *child_0, operation_list op_id);
+
+long clog2(long value_in, int length);

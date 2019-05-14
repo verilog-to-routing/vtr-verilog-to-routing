@@ -265,6 +265,7 @@ typedef enum
 	HARD_IP,
 	GENERIC, /*added for the unknown node type */
 	FULLADDER,
+	CLOG2, // $clog2
 	operation_list_END
 } operation_list;
 
