@@ -377,7 +377,7 @@ my $in_mode;
 
 # Read arch XML
 my $tpp      = XML::TreePP->new();
-my $xml_tree = $tpp->parsefile($architecture_file_path);
+my $xml_tree = $tpp->parsefile("$architecture_file_path");
 
 # Get lut size if undefined
 if (!defined $lut_size) {
@@ -430,7 +430,8 @@ my $vpr_postsynthesis_netlist = "";
 #system "cp $odin2_base_config"
 
 my $architecture_file_path_new = "$temp_dir$architecture_file_name";
-copy( $architecture_file_path, $architecture_file_path_new );
+my $ret = `$vtr_flow_path/scripts/add_tiles.py --arch_xml $architecture_file_path > $architecture_file_path_new`;
+#copy( "$architecture_file_path", $architecture_file_path_new );
 $architecture_file_path = $architecture_file_path_new;
 
 my $circuit_file_path_new = "$temp_dir$benchmark_name" . file_ext_for_stage($starting_stage - 1, $circuit_suffix);
