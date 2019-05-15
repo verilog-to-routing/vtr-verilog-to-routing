@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<interface>
+    <object id="MainWindow" class="GtkWindow">
+        <!-- A GtkWindow can be customized with many properties.
+        To see all of them, check out Property Details at https://developer.gnome.org/gtk3/stable/GtkWindow.html -->
+
+        <!-- Give the window a title. -->
+        <property name="title">EZGL Example Application</property>
+
+        <!-- True to make the window visible on launch, false otherwise. -->
+        <property name="visible">True</property>
+
+        <!-- The width of the window when it is initially created. -->
+        <property name="default-width">800</property>
+        <!-- The height of the window when it is initially created. -->
+        <property name="default-height">600</property>
+
+        <!-- A GtkWindow can only have one child, so we need to use GtkGrid or GtkBox to manage multiple children. -->
+        <child>
+            <object class="GtkGrid" id="OuterGrid">
+                <property name="visible">True</property>
+
+                <child>
+                    <object id="MainCanvas" class="GtkDrawingArea">
+                        <property name="visible">True</property>
+
+                        <!-- Expand the size of the canvas to match what the GtkGrid gives us. -->
+                        <property name="hexpand">True</property>
+                        <property name="vexpand">True</property>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkGrid" id="InnerGrid">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+
+                        <child>
+                            <object id="UpButton" class="GtkButton">
+                                <property name="use_action_appearance">False</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                                <child>
+                                    <object class="GtkArrow">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="arrow_type">up</property>
+                                    </object>
+                                </child>
+                            </object>
+                            <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">0</property>
+                                <property name="width">1</property>
+                            </packing>
+                        </child>
+
+                        <child>
+                            <object id="DownButton" class="GtkButton">
+                                <property name="use_action_appearance">False</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                                <child>
+                                    <object class="GtkArrow">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="arrow_type">down</property>
+                                    </object>
+                                </child>
+                            </object>
+                            <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">2</property>
+                                <property name="width">1</property>
+                            </packing>
+                        </child>
+
+                        <child>
+                            <object id="LeftButton" class="GtkButton">
+                                <property name="use_action_appearance">False</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                                <child>
+                                    <object class="GtkArrow">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="arrow_type">left</property>
+                                    </object>
+                                </child>
+                            </object>
+                            <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">1</property>
+                                <property name="width">1</property>
+                            </packing>
+                        </child>
+
+                        <child>
+                            <object id="RightButton" class="GtkButton">
+                                <property name="use_action_appearance">False</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                                <child>
+                                    <object class="GtkArrow">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="arrow_type">right</property>
+                                    </object>
+                                </child>
+                            </object>
+                            <packing>
+                                <property name="left-attach">2</property>
+                                <property name="top-attach">1</property>
+                                <property name="width">1</property>
+                            </packing>
+                        </child>
+
+                        <child>
+                            <object id="ZoomInButton" class="GtkButton">
+                                <property name="label" translatable="yes">Zoom In</property>
+                                <property name="use_action_appearance">False</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                                <property name="use_action_appearance">False</property>
+                            </object>
+                            <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">3</property>
+                                <property name="width">3</property>
+                            </packing>
+                        </child>
+
+                        <child>
+                            <object id="ZoomOutButton" class="GtkButton">
+                                <property name="label" translatable="yes">Zoom Out</property>
+                                <property name="use_action_appearance">False</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                                <property name="use_action_appearance">False</property>
+                            </object>
+                            <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">4</property>
+                                <property name="width">3</property>
+                            </packing>
+                        </child>
+
+                        <child>
+                            <object id="ZoomFitButton" class="GtkButton">
+                                <property name="label" translatable="yes">Zoom Fit</property>
+                                <property name="use_action_appearance">False</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                                <property name="use_action_appearance">False</property>
+                            </object>
+                            <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">5</property>
+                                <property name="width">3</property>
+                            </packing>
+                        </child>
+
+                        <child>
+                            <object id="ProceedButton" class="GtkButton">
+                                <property name="label" translatable="yes">Proceed</property>
+                                <property name="use_action_appearance">False</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                                <property name="use_action_appearance">False</property>
+                            </object>
+                            <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">6</property>
+                                <property name="width">3</property>
+                            </packing>
+                        </child>
+
+                    </object>
+                </child>
+                <child>
+                    <object id="StatusBar" class="GtkStatusbar">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="margin_left">0</property>
+                        <property name="margin_right">0</property>
+                        <property name="margin_start">0</property>
+                        <property name="margin_end">0</property>
+                        <property name="margin_top">0</property>
+                        <property name="margin_bottom">0</property>
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">2</property>
+                    </object>
+                    <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">1</property>
+                        <property name="width">1</property>
+                    </packing>
+                </child>
+                <child>
+                    <object class="GtkSeparator">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="orientation">vertical</property>
+                    </object>
+                    <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">1</property>
+                    </packing>
+                </child>
+            </object>
+        </child>
+
+
+    </object>
+</interface>
