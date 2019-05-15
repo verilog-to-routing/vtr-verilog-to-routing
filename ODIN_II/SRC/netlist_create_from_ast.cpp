@@ -3078,77 +3078,72 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		signal_list_t* address = netlist_expand_ast_of_module(right->children[1], instance_name_prefix);
 		// Pad/shrink the address to the depth of the memory.
 		
-		if(address->count != right_memory->addr_width){
-			if(address->count > right_memory->addr_width)
+		if(address->count == 0)
+		{
+			warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+				"indexing into memory with %s has address of length 0, skipping memory read", instance_name_prefix);
+		}
+		else
+		{
+			if(address->count != right_memory->addr_width)
 			{
-				std::string unused_pins_name = "";
-				for(long i = right_memory->addr_width; i < address->count; i++)
+
+				if(address->count > right_memory->addr_width)
 				{
-					unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
+					std::string unused_pins_name = "";
+					for(long i = right_memory->addr_width; i < address->count; i++)
+					{
+						unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
+					}
+					warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+										"indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
 				}
-				warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
-									"indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
+				else
+				{
+					warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+										"indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
+				}
+
+				while(address->count < right_memory->addr_width)
+					add_pin_to_signal_list(address, get_zero_pin(verilog_netlist));
+
+				address->count = right_memory->addr_width;
 			}
-			else
+
+			add_input_port_to_implicit_memory(right_memory, address, "addr1");
+			// Right inputs are the inputs to the memory. This will contain the address only.
+			right_inputs = init_signal_list();
+			char *name = right->children[0]->types.identifier;
+			for (int i = 0; i < address->count; i++)
 			{
-				warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
-									"indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
+				npin_t *pin = address->pins[i];
+				if (pin->name)
+					vtr::free(pin->name);
+				pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, i);
+				add_pin_to_signal_list(right_inputs, pin);
 			}
+			free_signal_list(address);
 
-			while(address->count < right_memory->addr_width)
-				add_pin_to_signal_list(address, get_zero_pin(verilog_netlist));
-			address->count = right_memory->addr_width;
+			// Right outputs will be the outputs of the memory. They will be
+			// treated the same as the outputs from the RHS of any assignment.
+			right_outputs = init_signal_list();
+			signal_list_t *outputs = init_signal_list();
+			for (int i = 0; i < right_memory->data_width; i++)
+			{
+				npin_t *pin = allocate_npin();
+				add_pin_to_signal_list(outputs, pin);
+				pin->name = make_full_ref_name("", NULL, NULL, right_memory->node->name, i);
+				nnet_t *net = allocate_nnet();
+				add_driver_pin_to_net(net, pin);
+				pin = allocate_npin();
+				add_fanout_pin_to_net(net, pin);
+				//right_outputs->pins[i] = pin;
+				add_pin_to_signal_list(right_outputs, pin);
+			}
+			add_output_port_to_implicit_memory(right_memory, outputs, "out1");
+			free_signal_list(outputs);
 		}
 
-		add_input_port_to_implicit_memory(right_memory, address, "addr1");
-
-		// Zero the write enable.
-		signal_list_t *we = init_signal_list();
-		add_pin_to_signal_list(we, get_zero_pin(verilog_netlist));
-		add_input_port_to_implicit_memory(right_memory, we, "we1");
-
-		// Zero the data input.
-		signal_list_t *data = init_signal_list();
-		int i;
-		for (i = 0; i < right_memory->data_width; i++)
-			add_pin_to_signal_list(data, get_zero_pin(verilog_netlist));
-		add_input_port_to_implicit_memory(right_memory, data, "data1");
-
-
-		// Right inputs are the inputs to the memory. This will contain the address only.
-		right_inputs = init_signal_list();
-		char *name = right->children[0]->types.identifier;
-		for (i = 0; i < address->count; i++)
-		{
-			npin_t *pin = address->pins[i];
-			if (pin->name)
-				vtr::free(pin->name);
-			pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, i);
-			add_pin_to_signal_list(right_inputs, pin);
-		}
-
-		// Right outputs will be the outputs of the memory. They will be
-		// treated the same as the outputs from the RHS of any assignment.
-		right_outputs = init_signal_list();
-		signal_list_t *outputs = init_signal_list();
-		for (i = 0; i < right_memory->data_width; i++)
-		{
-			npin_t *pin = allocate_npin();
-			add_pin_to_signal_list(outputs, pin);
-			pin->name = make_full_ref_name("", NULL, NULL, right_memory->node->name, i);
-			nnet_t *net = allocate_nnet();
-			add_driver_pin_to_net(net, pin);
-			pin = allocate_npin();
-			add_fanout_pin_to_net(net, pin);
-			//right_outputs->pins[i] = pin;
-			add_pin_to_signal_list(right_outputs, pin);
-		}
-		add_output_port_to_implicit_memory(right_memory, outputs, "out1");
-		free_signal_list(outputs);
-
-		free_signal_list(address);
-		free_signal_list(we);
-		free_signal_list(data);
 	}
 	else
 	{
@@ -3182,84 +3177,93 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			signal_list_t* address = netlist_expand_ast_of_module(left->children[1], instance_name_prefix);
 
 			// Pad/shrink the address to the depth of the memory.
-			if(address->count != left_memory->addr_width){
-				if(address->count > left_memory->addr_width)
-				{
-					std::string unused_pins_name = "";
-					for(long i = left_memory->addr_width; i < address->count; i++)
-					{
-						unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
-					}
-					warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
-										"indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
-				}
-				else
-				{
-					warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
-										"indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
-				}
-
-				while(address->count < left_memory->addr_width)
-					add_pin_to_signal_list(address, get_zero_pin(verilog_netlist));
-				address->count = left_memory->addr_width;
-			}
-
-			add_input_port_to_implicit_memory(left_memory, address, "addr2");
-
-			signal_list_t *data;
-			if (right_memory)
-				data = right_outputs;
-			else
-				data = in_1;
-
-			// Pad/shrink the data to the width of the memory.
+			if(address->count == 0)
 			{
+				warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+					"indexing into memory with %s has address of length 0, skipping memory write", instance_name_prefix);
+			}
+			else
+			{
+				if(address->count != left_memory->addr_width)
+				{
+					if(address->count > left_memory->addr_width)
+					{
+						std::string unused_pins_name = "";
+						for(long i = left_memory->addr_width; i < address->count; i++)
+						{
+							unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
+						}
+						warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+											"indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
+					}
+					else
+					{
+						warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+											"indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
+					}
+
+					while(address->count < left_memory->addr_width)
+						add_pin_to_signal_list(address, get_zero_pin(verilog_netlist));
+
+					address->count = left_memory->addr_width;
+				}
+
+				add_input_port_to_implicit_memory(left_memory, address, "addr2");
+
+				signal_list_t *data;
+				if (right_memory)
+					data = right_outputs;
+				else
+					data = in_1;
+
+				// Pad/shrink the data to the width of the memory.
 				while(data->count < left_memory->data_width)
 					add_pin_to_signal_list(data, get_zero_pin(verilog_netlist));
+					
 				data->count = left_memory->data_width;
+
+				add_input_port_to_implicit_memory(left_memory, data, "data2");
+
+				signal_list_t *we = init_signal_list();
+				add_pin_to_signal_list(we, get_one_pin(verilog_netlist));
+				add_input_port_to_implicit_memory(left_memory, we, "we2");
+
+				in_1 = init_signal_list();
+				char *name = left->children[0]->types.identifier;
+				int i;
+				int pin_index = left_memory->data_width + left_memory->data_width + left_memory->addr_width + 2;
+				for (i = 0; i < address->count; i++)
+				{
+					npin_t *pin = address->pins[i];
+					if (pin->name) 
+						vtr::free(pin->name);
+					pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
+					add_pin_to_signal_list(in_1, pin);
+				}
+				free_signal_list(address);
+
+				for (i = 0; i < data->count; i++)
+				{
+					npin_t *pin = data->pins[i];
+					if (pin->name)
+						vtr::free(pin->name);
+					pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
+					add_pin_to_signal_list(in_1, pin);
+				}
+				free_signal_list(data);
+
+				for (i = 0; i < we->count; i++)
+				{
+					npin_t *pin = we->pins[i];
+					if (pin->name)
+						vtr::free(pin->name);
+					pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
+					add_pin_to_signal_list(in_1, pin);
+				}
+				free_signal_list(we);
+
+				out_list = NULL;
 			}
-
-			add_input_port_to_implicit_memory(left_memory, data, "data2");
-
-			signal_list_t *we = init_signal_list();
-			add_pin_to_signal_list(we, get_one_pin(verilog_netlist));
-			add_input_port_to_implicit_memory(left_memory, we, "we2");
-
-			in_1 = init_signal_list();
-			char *name = left->children[0]->types.identifier;
-			int i;
-			int pin_index = left_memory->data_width + left_memory->data_width + left_memory->addr_width + 2;
-			for (i = 0; i < address->count; i++)
-			{
-				npin_t *pin = address->pins[i];
-				if (pin->name) 
-					vtr::free(pin->name);
-				pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
-				add_pin_to_signal_list(in_1, pin);
-			}
-			free_signal_list(address);
-
-			for (i = 0; i < data->count; i++)
-			{
-				npin_t *pin = data->pins[i];
-				if (pin->name)
-					vtr::free(pin->name);
-				pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
-				add_pin_to_signal_list(in_1, pin);
-			}
-			free_signal_list(data);
-
-			for (i = 0; i < we->count; i++)
-			{
-				npin_t *pin = we->pins[i];
-				if (pin->name)
-					vtr::free(pin->name);
-				pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
-				add_pin_to_signal_list(in_1, pin);
-			}
-			free_signal_list(we);
-
-			out_list = NULL;
 		}
 	}
 	else
