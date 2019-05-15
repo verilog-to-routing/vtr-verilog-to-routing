@@ -39,7 +39,9 @@ files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 #Create the library
 add_library(libvpr STATIC
              ${LIB_HEADERS}
-             ${LIB_SOURCES})
+             ${LIB_SOURCES}
+)
+
 target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
@@ -49,7 +51,8 @@ target_link_libraries(libvpr
                         libarchfpga
                         libsdcparse
                         libblifparse
-                        libeasygl
+                       	ezgl
+			libeasygl
                         libtatum
                         libargparse
                         libpugixml)

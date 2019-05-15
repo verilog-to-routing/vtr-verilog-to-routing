@@ -5,6 +5,12 @@
 #include "graphics.h"
 #include "draw_global.h"
 
+//including ezgl files
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
+
+
 void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type pic_on_screen_val,
 		std::shared_ptr<SetupTimingInfo> timing_info);
 
