@@ -1180,12 +1180,20 @@ ast_node_t *fold_unary(ast_node_t *child_0, operation_list op_id){
 				success = TRUE;
 				break;
 
+			case CLOG2:
+				if(length > ODIN_STD_BITWIDTH)
+					warning_message(PARSE_ERROR, child_0->line_number, child_0->file_number, "argument is %ld-bits but ODIN limit is %lu-bits \n",length,ODIN_STD_BITWIDTH);
+
+				result = clog2(operand_0, length);
+				success = TRUE;
+				break;
+
 			default:
 				break;
 		}
 		vtr::free(binary_string);
 		if(success){
-			return create_tree_node_long_number(result, 128, child_0->line_number, child_0->file_number);
+			return create_tree_node_long_number(result, ODIN_STD_BITWIDTH, child_0->line_number, child_0->file_number);
 		}
 	}
 	return NULL;
@@ -1415,6 +1423,9 @@ ast_node_t *node_is_ast_constant(ast_node_t *node){
 	return NULL;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: node_is_ast_constant)
+ *-------------------------------------------------------------------------------------------*/
 ast_node_t *node_is_ast_constant(ast_node_t *node, STRING_CACHE *defines_for_module_sc){
 	if (node && (node_is_constant(node) 
 		|| (node->types.variable.is_parameter == TRUE)
@@ -1451,4 +1462,30 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->hb_port = 0;
 	new_node->net_node = 0;
 	new_node->is_read_write = 0;
+}
+
+/*---------------------------------------------------------------------------
+ * (function: clog2)
+ *-------------------------------------------------------------------------*/
+long clog2(long value_in, int length) 
+{
+	if (value_in == 0) return 0;
+
+	long result;
+
+	/* negative numbers may be larger than they need to be */
+	if (value_in < 0 && value_in >= std::numeric_limits<int32_t>::min()) return 32; 
+
+	if (length > 32) 
+	{
+		uint64_t unsigned_val = (uint64_t) value_in;
+		result = (long) ceil(log2((double) unsigned_val));
+	}
+	else
+	{
+		uint32_t unsigned_val = (uint32_t) value_in;
+		result = (long) ceil(log2((double) unsigned_val));
+	}
+
+	return result;
 }

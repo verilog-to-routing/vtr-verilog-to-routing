@@ -892,6 +892,10 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int line_number)
 {
+	// /* $clog2() argument must be a constant expression */
+	// if (op_id == CLOG2 && !node_is_ast_constant(expression, defines_for_module_sc[num_modules]))
+	// 	error_message(PARSE_ERROR, expression->line_number, current_parse_file, "%s", "Argument must be constant\n");
+
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(UNARY_OPERATION, line_number, current_parse_file);
 	/* store the operation type */

@@ -65,7 +65,7 @@ int yylex(void);
 %token vENDMODULE vENDSPECIFY vENDFUNCTION vIF vINOUT vINPUT vMODULE vFUNCTION vNAND vNEGEDGE vNOR vNOT vOR vFOR
 %token vOUTPUT vPARAMETER vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
-%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER
+%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vCLOG2
 %token vPLUS_COLON vMINUS_COLON vSPECPARAM
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
 %token vNOT_SUPPORT 
@@ -160,7 +160,7 @@ variable_define_list:
 	;
 
 list_of_module_items:
-	list_of_module_items module_item			{$$ = newList_entry($1, $2);}
+	module_item list_of_module_items 			{$$ = newList_entry($2, $1);}
 	| module_item								{$$ = newList(MODULE_ITEMS, $1);}
 	;
 
@@ -481,6 +481,7 @@ expression:
 	| voXNOR  expression %prec UXNOR						{$$ = newUnaryOperation(BITWISE_XNOR, $2, yylineno);}
 	| '!' expression %prec ULNOT							{$$ = newUnaryOperation(LOGICAL_NOT, $2, yylineno);}
 	| '^' expression %prec UXOR								{$$ = newUnaryOperation(BITWISE_XOR, $2, yylineno);}
+	| vCLOG2 '(' expression ')'								{$$ = newUnaryOperation(CLOG2, $3, yylineno);}
 	| expression '^' expression								{$$ = newBinaryOperation(BITWISE_XOR, $1, $3, yylineno);}
 	| expression voPOWER expression							{$$ = newExpandPower(MULTIPLY,$1, $3, yylineno);}
 	| expression '*' expression								{$$ = newBinaryOperation(MULTIPLY, $1, $3, yylineno);}
