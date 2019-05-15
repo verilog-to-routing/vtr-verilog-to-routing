@@ -65,6 +65,7 @@ ast_node_t **function_instantiations_instance_by_module;
 int size_function_instantiations_by_module;
 
 long num_modules;
+long num_instances;
 ast_node_t **ast_modules;
 
 int num_functions;
@@ -211,6 +212,7 @@ void init_parser()
 	defines_for_function_sc = NULL;
 	/* record of each of the individual modules */
 	num_modules = 0; // we're going to record all the modules in a list so we can build a tree of them later
+	num_instances = 0;
 	num_functions = 0;
 	ast_modules = NULL;
 	ast_functions = NULL;
@@ -430,9 +432,9 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 
 			    if (symbol_list->children[0]->children[1]->type == IDENTIFIERS)
 			    {
-				    if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[1]->types.identifier)) != -1)
+				    if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules-num_instances], symbol_list->children[0]->children[1]->types.identifier)) != -1)
 				    {
-					    newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
+					    newNode = (ast_node_t *)defines_for_module_sc[num_modules-num_instances]->data[sc_spot];
 					    if (newNode->types.variable.is_parameter == TRUE)
 					    {
 						    range_max = symbol_list->children[0]->children[1];
@@ -456,9 +458,9 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 
 			    if (symbol_list->children[0]->children[2]->type == IDENTIFIERS)
 			    {
-				    if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[2]->types.identifier)) != -1)
+				    if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules-num_instances], symbol_list->children[0]->children[2]->types.identifier)) != -1)
 				    {
-					    newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
+					    newNode = (ast_node_t *)defines_for_module_sc[num_modules-num_instances]->data[sc_spot];
 					    if (newNode->types.variable.is_parameter == TRUE)
 					    {
 						    range_min = symbol_list->children[0]->children[2];
@@ -521,23 +523,23 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 		            case PARAMETER:
 		            {
 			            /* create an entry in the symbol table for this parameter */
-			            if ((sc_spot = sc_add_string(defines_for_module_sc[num_modules], symbol_list->children[i]->children[0]->types.identifier)) == -1)
+			            if ((sc_spot = sc_add_string(defines_for_module_sc[num_modules-num_instances], symbol_list->children[i]->children[0]->types.identifier)) == -1)
 			            {
 				            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
 					            symbol_list->children[i]->children[0]->types.identifier,
-					            ((ast_node_t*)(defines_for_module_sc[num_modules]->data[sc_spot]))->line_number);
+					            ((ast_node_t*)(defines_for_module_sc[num_modules-num_instances]->data[sc_spot]))->line_number);
 			            }
 						
 						ast_node_t *value = symbol_list->children[i]->children[5];
 
 						/* make sure that the parameter value is constant */
-						if (!node_is_ast_constant(value, defines_for_module_sc[num_modules]))
+						if (!node_is_ast_constant(value, defines_for_module_sc[num_modules-num_instances]))
 						{
 							error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Parameter value must be constant\n");
 						}
 
 			            symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
-			            defines_for_module_sc[num_modules]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
+			            defines_for_module_sc[num_modules-num_instances]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
 			            /* mark the node as shared so we don't delete it */
 			            symbol_list->children[i]->children[5]->shared_node = TRUE;
 			            /* now do the mark */
@@ -694,7 +696,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						ast_node_t *value = symbol_list->children[i]->children[5];
 
 						/* make sure that the parameter value is constant */
-						if (!node_is_ast_constant(value, defines_for_module_sc[num_modules]))
+						if (!node_is_ast_constant(value, defines_for_function_sc[num_functions]))
 						{
 							error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Parameter value must be constant\n");
 						}
@@ -840,7 +842,7 @@ ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, as
 	allocate_children_to_node(new_node, 2, expression1, expression2);
 
 	/* see if this binary expression can have some constant folding */
-	new_node = resolve_ast_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
+	new_node = resolve_ast_node(defines_for_module_sc[num_modules-num_instances],TRUE,NULL,new_node);
 
 	return new_node;
 }
@@ -883,7 +885,7 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 	error_message(NETLIST_ERROR, line_number, current_parse_file, "%s", "Operation not supported by Odin\n");
         }
 	/* see if this binary expression can have some constant folding */
-	new_node = resolve_ast_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
+	new_node = resolve_ast_node(defines_for_module_sc[num_modules-num_instances],TRUE,NULL,new_node);
 
 	return new_node;
 }
@@ -892,9 +894,9 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int line_number)
 {
-	// /* $clog2() argument must be a constant expression */
-	// if (op_id == CLOG2 && !node_is_ast_constant(expression, defines_for_module_sc[num_modules]))
-	// 	error_message(PARSE_ERROR, expression->line_number, current_parse_file, "%s", "Argument must be constant\n");
+	/* $clog2() argument must be a constant expression */
+	if (op_id == CLOG2 && !node_is_ast_constant(expression, defines_for_module_sc[num_modules-num_instances]))
+		error_message(PARSE_ERROR, expression->line_number, current_parse_file, "%s", "Argument must be constant\n");
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(UNARY_OPERATION, line_number, current_parse_file);
@@ -904,7 +906,7 @@ ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int 
 	allocate_children_to_node(new_node, 1, expression);
 
 	/* see if this binary expression can have some constant folding */
-	new_node = resolve_ast_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
+	new_node = resolve_ast_node(defines_for_module_sc[num_modules-num_instances],TRUE,NULL,new_node);
 
 	return new_node;
 }
@@ -1158,7 +1160,7 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
 		symbol_node = NULL;
 	}
 
-	if (expression && !node_is_ast_constant(expression, defines_for_module_sc[num_modules]))
+	if (expression && !node_is_ast_constant(expression, defines_for_module_sc[num_modules-num_instances]))
 	{
 		error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "Parameter value must be constant\n");
 	}
@@ -1241,52 +1243,53 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	/* create a node for this array reference */
 	ast_node_t* new_master_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
 	for(i = 0; i < module_named_instance->num_children; i++){
-	if
-	(
-		   sc_lookup_string(hard_block_names, module_ref_name) != -1
-		|| !strcmp(module_ref_name, SINGLE_PORT_RAM_string)
-		|| !strcmp(module_ref_name, DUAL_PORT_RAM_string)
-	)
-	{
-		return newHardBlockInstance(module_ref_name, module_named_instance->children[i], line_number);
-	}
-
-	// make a unique module name based on its parameter list
-    ast_node_t *module_param_list = module_named_instance->children[i]->children[2];
-	char *module_param_name = make_module_param_name(defines_for_module_sc[num_modules], module_param_list, module_ref_name);
-	ast_node_t *symbol_node = newSymbolNode(module_param_name, line_number);
-
-	// if this is a parameterised instantiation
-	if (module_param_list)
-	{
-		// which doesn't exist in ast_modules yet
-		long sc_spot;
-		if ((sc_spot = sc_lookup_string(module_names_to_idx, module_param_name)) == -1)
+		if
+		(
+			sc_lookup_string(hard_block_names, module_ref_name) != -1
+			|| !strcmp(module_ref_name, SINGLE_PORT_RAM_string)
+			|| !strcmp(module_ref_name, DUAL_PORT_RAM_string)
+		)
 		{
-			// then add it, but set it to the symbol_node, because the
-			// module in question may not have been parsed yet
-			// later, we convert this symbol node back into a module node
-			ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
-			ast_modules[num_modules] = symbol_node;
-			num_modules++;
-			sc_spot = sc_add_string(module_names_to_idx, module_param_name);
-			module_names_to_idx->data[sc_spot] = symbol_node;
-			defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
-			defines_for_module_sc[num_modules] = NULL;
+			return newHardBlockInstance(module_ref_name, module_named_instance->children[i], line_number);
 		}
-	}
 
-	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
-	/* allocate child nodes to this node */
-	    allocate_children_to_node(new_node, 2, symbol_node, module_named_instance->children[i]);
-        if(i == 0) allocate_children_to_node(new_master_node, 1, new_node);
-        else add_child_to_node(new_master_node,new_node);
+		// make a unique module name based on its parameter list
+		ast_node_t *module_param_list = module_named_instance->children[i]->children[2];
+		char *module_param_name = make_module_param_name(defines_for_module_sc[num_modules-num_instances], module_param_list, module_ref_name);
+		ast_node_t *symbol_node = newSymbolNode(module_param_name, line_number);
 
-	/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
-	module_instantiations_instance = (ast_node_t **)vtr::realloc(module_instantiations_instance, sizeof(ast_node_t*)*(size_module_instantiations+1));
-	module_instantiations_instance[size_module_instantiations] = new_node;
-	size_module_instantiations++;
+		// if this is a parameterised instantiation
+		if (module_param_list)
+		{
+			// which doesn't exist in ast_modules yet
+			long sc_spot;
+			if ((sc_spot = sc_lookup_string(module_names_to_idx, module_param_name)) == -1)
+			{
+				// then add it, but set it to the symbol_node, because the
+				// module in question may not have been parsed yet
+				// later, we convert this symbol node back into a module node
+				ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
+				ast_modules[num_modules] = symbol_node;
+				num_modules++;
+				num_instances++;
+				sc_spot = sc_add_string(module_names_to_idx, module_param_name);
+				module_names_to_idx->data[sc_spot] = symbol_node;
+				defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
+				defines_for_module_sc[num_modules] = NULL;
+			}
+		}
+
+		/* create a node for this array reference */
+		ast_node_t* new_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
+		/* allocate child nodes to this node */
+			allocate_children_to_node(new_node, 2, symbol_node, module_named_instance->children[i]);
+			if(i == 0) allocate_children_to_node(new_master_node, 1, new_node);
+			else add_child_to_node(new_master_node,new_node);
+
+		/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
+		module_instantiations_instance = (ast_node_t **)vtr::realloc(module_instantiations_instance, sizeof(ast_node_t*)*(size_module_instantiations+1));
+		module_instantiations_instance[size_module_instantiations] = new_node;
+		size_module_instantiations++;
 
     }
 	//TODO: free_whole_tree ??
@@ -1313,7 +1316,7 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
 	// make a unique module name based on its parameter list
 	ast_node_t *function_param_list = function_named_instance->children[2];
 
-	char *function_param_name = make_module_param_name(defines_for_module_sc[num_modules], function_param_list, function_ref_name);
+	char *function_param_name = make_module_param_name(defines_for_module_sc[num_modules-num_instances], function_param_list, function_ref_name);
 	ast_node_t *symbol_node = newSymbolNode(function_param_name, line_number);
 
     /* create a node for this array reference */
@@ -1635,6 +1638,7 @@ void next_function()
 void next_module()
 {
 	num_modules ++;
+	num_instances = 0;
     num_functions = 0;
 
 	/* define the string cache for the next module */
@@ -1687,7 +1691,7 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 				}
 			}
 			new_node = val->children[(val->num_children - 1)];
-			if (!node_is_ast_constant(new_node->children[5], defines_for_module_sc[num_modules])) 
+			if (!node_is_ast_constant(new_node->children[5], defines_for_module_sc[num_modules-num_instances])) 
 			{
 				error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "Parameter value must be constant\n");
 			}
