@@ -160,7 +160,7 @@ variable_define_list:
 	;
 
 list_of_module_items:
-	module_item list_of_module_items 			{$$ = newList_entry($2, $1);}
+	list_of_module_items module_item			{$$ = newList_entry($1, $2);}
 	| module_item								{$$ = newList(MODULE_ITEMS, $1);}
 	;
 
