@@ -1304,15 +1304,16 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 		module_instantiations_instance[size_module_instantiations] = new_node;
 		size_module_instantiations++;
 
-    }
+	}
 	//TODO: free_whole_tree ??
 	vtr::free(module_named_instance->children);
-    vtr::free(module_named_instance);
+	vtr::free(module_named_instance);
 	vtr::free(module_ref_name);
 	return new_master_node;
 }
+
 /*-------------------------------------------------------------------------
- * (function: newModuleInstance)
+ * (function: newFunctionInstance)
  *-----------------------------------------------------------------------*/
 ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_named_instance, int line_number)
 {
