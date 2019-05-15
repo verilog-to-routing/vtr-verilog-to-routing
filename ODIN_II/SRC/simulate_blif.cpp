@@ -470,6 +470,7 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	if (!verify_lines(sim_data->output_lines))
 		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Output lines could not be assigned.");
 
+
 	sim_data->in = NULL;
 	sim_data->input_vector_file = NULL;
 	// Passed via the -t option. Input vectors can either come from a file 

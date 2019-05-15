@@ -1041,6 +1041,19 @@ ast_node_t *newAlways(ast_node_t *delay_control, ast_node_t *statement, int line
 }
 
 /*---------------------------------------------------------------------------------------------
+ * (function: newGenerate)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newGenerate(ast_node_t *instantiations, int line_number)
+{
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(GENERATE, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 1, instantiations);
+
+	return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
  * (function: newModuleConnection)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newModuleConnection(char* id, ast_node_t *expression, int line_number)
