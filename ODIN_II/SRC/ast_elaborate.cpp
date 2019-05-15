@@ -137,6 +137,9 @@ void simplify_pc_assignments() {
         {
             //TODO: Check info is complete
             auto second = info.second;
+            if (second.pc == nullptr)
+                continue;
+
             auto ifQ_node = newIfQuestion(second.condition->children[0], second.pc->children[1], second.p->children[1], 0);
             ast_node_t *node = nullptr;
             if (second.p->type == BLOCKING_STATEMENT)
