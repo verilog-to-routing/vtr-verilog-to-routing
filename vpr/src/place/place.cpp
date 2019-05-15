@@ -369,7 +369,6 @@ static void comp_td_costs(const PlaceDelayModel& delay_model, float *timing_cost
 static e_swap_result assess_swap(float delta_c, float t);
 
 static bool find_to(t_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& to);
-static void find_to_location(t_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& to);
 
 static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new);
 
@@ -2211,41 +2210,6 @@ static bool find_to(t_type_ptr type, float rlim,
     VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].height_offset == 0, "Should be at block base location");
 
     return true;
-}
-
-static void find_to_location(t_type_ptr type, float rlim,
-        const t_pl_loc from,
-        t_pl_loc& to) {
-
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& grid = device_ctx.grid;
-
-	int itype = type->index;
-
-
-	int rlx = min<float>(grid.width() - 1, rlim);
-	int rly = min<float>(grid.height() - 1, rlim); /* Added rly for aspect_ratio != 1 case. */
-	int active_area = 4 * rlx * rly;
-
-	int min_x = max<float>(0, from.x - rlx);
-	int max_x = min<float>(grid.width() - 1, from.x + rlx);
-	int min_y = max<float>(0, from.y - rly);
-	int max_y = min<float>(grid.height() - 1, from.y + rly);
-
-	to.z = 0;
-	if (int(grid.width() / 4) < rlx || int(grid.height() / 4) < rly || num_legal_pos[itype] < active_area) {
-		int ipos = vtr::irand(num_legal_pos[itype] - 1);
-		to.x = legal_pos[itype][ipos].x;
-		to.y = legal_pos[itype][ipos].y;
-		to.z = legal_pos[itype][ipos].z;
-	} else {
-		int x_rel = vtr::irand(max(0, max_x - min_x));
-		int y_rel = vtr::irand(max(0, max_y - min_y));
-		to.x = min_x + x_rel;
-		to.y = min_y + y_rel;
-		to.x = (to.x) - grid[to.x][to.y].width_offset; /* align it */
-		to.y = (to.y) - grid[to.x][to.y].height_offset; /* align it */
-	}
 }
 
 static e_swap_result assess_swap(float delta_c, float t) {
