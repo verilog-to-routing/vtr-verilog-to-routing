@@ -157,7 +157,7 @@ class flat_map {
         iterator insert(const_iterator position, const value_type& value) {
             //In a legal position
             VTR_ASSERT(position == begin() || value_comp()(*(position - 1), value));
-            VTR_ASSERT(position == --end() || position == end() || !value_comp()(*(position + 1), value));
+            VTR_ASSERT((size() > 0 && position == --end()) || position == end() || !value_comp()(*(position + 1), value));
 
             iterator iter = vec_.insert(position, value);
 
