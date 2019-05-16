@@ -15,8 +15,7 @@
 typedef std::function<bool(long)> condition_function;
 typedef std::function<long(long)> post_condition_function;
 
-void unroll_loops();
-void unroll_loops(ast_node_t *ast_module);
+void unroll_loops(ast_node_t **ast_module);
 
 inline bool is_for_node(ast_node_t* node)
 {

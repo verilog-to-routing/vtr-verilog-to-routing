@@ -57,28 +57,17 @@ long count;
 long count_write;
 enode *head, *p;
 
-int simplify_ast()
+
+int simplify_ast_module(ast_node_t **ast_module)
 {
 	/* for loop support */
-	unroll_loops();
-
-	//ast_node_t *top = find_top_module();
-
-	return 1;
-}
-
-int simplify_ast_module(ast_node_t *ast_module)
-{
-	/* for loop support */
-	//unroll_loops(ast_module);
+	unroll_loops(ast_module);
 	/* reduce parameters with their values if they have been set */
-	reduce_parameter(ast_module);
+	reduce_parameter(*ast_module);
 	/* simplify assignment expressions */
-	reduce_assignment_expression(ast_module);
+	reduce_assignment_expression(*ast_module);
 	/* find multiply or divide operation that can be replaced with shift operation */
-	shift_operation(ast_module);
-
-	//ast_node_t *top = find_top_module();
+	shift_operation(*ast_module);
 
 	return 1;
 }
