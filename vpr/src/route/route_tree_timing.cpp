@@ -521,23 +521,14 @@ update_unbuffered_ancestors_C_downstream(t_rt_node * start_of_new_path_rt_node) 
 
     /* With the consideration of internal capacitance, we will evaluate the 
      * capacitance of the parent separately from the lineage of ancestors. 
-     * For the case that Cinternal is nonzero.*/
+     * For the case that the parent switch is buffered.*/
 
-    if (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].Cinternal != 0.){
+	if (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered == true){
 		rt_node = parent_rt_node;
-        
-        /* if the switch is a buffered switch, we will add only the internal capacitance.*/
-        if (device_ctx.rr_switch_inf[iswitch].buffered() == true){
-            
-		    rt_node->C_downstream += device_ctx.rr_switch_inf[iswitch].Cinternal;
-        }
-        /* else it is unbuffered, so we add the downstream capacitance.*/
-        else{
-		    rt_node->C_downstream += C_downstream_addition;
-        }
+		rt_node->C_downstream += device_ctx.rr_switch_inf[iswitch].Cinternal;
 		parent_rt_node = rt_node->parent_node;
 		iswitch = rt_node->parent_switch; 
-    }
+	}
 
     /* By accounting for the internal capacitance in the parent, we now must update the capacitance 
      * for all unbuffered switches. */

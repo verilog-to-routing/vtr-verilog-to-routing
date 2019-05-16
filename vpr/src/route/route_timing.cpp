@@ -1930,16 +1930,20 @@ static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timi
 
     t_timing_driven_node_costs new_costs;
 
-    //Switch info
+    //Info for the switch connecting from_node to_node 
     int iswitch = device_ctx.rr_nodes[from_node].edge_switch(iconn);
     bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered();
     float switch_R = device_ctx.rr_switch_inf[iswitch].R;
     float switch_Tdel = device_ctx.rr_switch_inf[iswitch].Tdel;
     float switch_Cinternal = device_ctx.rr_switch_inf[iswitch].Cinternal;
 
-    //Node info
+    //To node info
     float node_C = device_ctx.rr_nodes[to_node].C();
     float node_R = device_ctx.rr_nodes[to_node].R();
+    
+    //From node info
+    float from_node_C = device_ctx.rr_from_nodes[from_node].C();
+    float from_node_R = device_ctx.rr_from_nodes[from_node].R();
 
     //Update R_upstream
     if (switch_buffered) {
@@ -1952,12 +1956,14 @@ static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timi
 
     //Calculate delay
     float Rdel = new_costs.R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
-    float Tdel = switch_Tdel + Rdel * (node_C + switch_Cinternal); //sum the node capcitance with internal capacitance
-
+    float Tdel = switch_Tdel + Rdel * node_C; //sum the node capcitance with internal capacitance
+    
+    float old_Rdel = old_costs.R_upstream - 0.5 * from_node_R;
+    	
     //Update the backward cost
     new_costs.backward_cost = old_costs.backward_cost; //Back cost to 'from_node'
     new_costs.backward_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
-    new_costs.backward_cost += cost_params.criticality * Tdel; //Delay cost
+    new_costs.backward_cost += cost_params.criticality * (Tdel + old_Rdel * switch_Cinternal); //Delay cost accounting for Cinternal
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();

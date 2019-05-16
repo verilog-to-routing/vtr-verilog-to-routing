@@ -69,7 +69,7 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         device_ctx.rr_indexed_data[i].C_load = OPEN;
     }
     device_ctx.rr_indexed_data[IPIN_COST_INDEX].T_linear =
-            device_ctx.rr_switch_inf[wire_to_ipin_switch].Tdel;
+            device_ctx.rr_switch_inf[wire_to_ipin_switch].Tdel + device_ctx.rr_switch_inf[wire_to_ipin_switch].Cinternal * device_ctx.rr_switch_inf[wire_to_ipin_switch].R;
 
     /* X-directed segments. */
     for (iseg = 0; iseg < num_segment; iseg++) {
