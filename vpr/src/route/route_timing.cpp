@@ -637,7 +637,11 @@ bool try_timing_driven_route(
                 //
                 //Note that we increase the BB factor slowly to try and minimize 
                 //the bounding box size (since larger bounding boxes slow the router down).
-                bb_fac *= BB_SCALE_FACTOR;
+                auto& grid = g_vpr_ctx.device().grid;
+                int max_grid_dim = std::max(grid.width(), grid.height());
+
+                //Scale by BB_SCALE_FACTOR but clip to grid size to avoid overflow
+                bb_fac = std::min<int>(max_grid_dim, bb_fac * BB_SCALE_FACTOR);
 
                 route_ctx.route_bb = load_route_bb(bb_fac);
             }
