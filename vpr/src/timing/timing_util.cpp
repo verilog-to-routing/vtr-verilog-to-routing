@@ -16,6 +16,55 @@ double sec_to_mhz(double seconds) {
     return (1. / seconds) / 1e6;
 }
 
+static void check_timing_graph(
+        const tatum::TimingGraph& timing_graph,
+        const tatum::TimingConstraints& constraints,
+        const tatum::SetupTimingAnalyzer& setup_analyzer) {
+    const auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    // Examine all nodes that will be used in find_critical_paths, can
+    // provide diagnostics on paths that fail analysis.
+    for(tatum::NodeId node : timing_graph.logical_outputs()) {
+        for(tatum::TimingTag slack_tag : setup_analyzer.setup_slacks(node)) {
+            tatum::Time slack = slack_tag.time();
+            if(!slack.valid()) {
+                AtomPinId pin = atom_ctx.lookup.tnode_atom_pin(node);
+                AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
+                ClusterBlockId clb_idx = atom_ctx.lookup.atom_clb(blk);
+                const t_pb_graph_pin* gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(pin);
+                const t_pb *pb = cluster_ctx.clb_nlist.block_pb(clb_idx);
+
+                VPR_THROW(VPR_ERROR_TIMING,
+                    "Slack for %d/%s for block %s in cluster %s is not valid",
+                    (size_t)node, gpin->to_string().c_str(),
+                    atom_ctx.nlist.block_name(blk).c_str(),
+                    pb->name
+                    );
+            }
+
+            tatum::Time constraint = tatum::Time(
+                    constraints.setup_constraint(
+                        slack_tag.launch_clock_domain(),
+                        slack_tag.capture_clock_domain()));
+            if(!constraint.valid()) {
+                AtomPinId pin = atom_ctx.lookup.tnode_atom_pin(node);
+                AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
+                ClusterBlockId clb_idx = atom_ctx.lookup.atom_clb(blk);
+                const t_pb_graph_pin* gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(pin);
+                const t_pb *pb = cluster_ctx.clb_nlist.block_pb(clb_idx);
+
+                VPR_THROW(VPR_ERROR_TIMING,
+                    "Constraint on slack for %d/%s for block %s in cluster %s is not valid",
+                    (size_t)node, gpin->to_string().c_str(),
+                    atom_ctx.nlist.block_name(blk).c_str(),
+                    pb->name
+                    );
+            }
+        }
+    }
+}
+
 /*
  * Setup-time related
  */
@@ -24,6 +73,7 @@ tatum::TimingPathInfo find_longest_critical_path_delay(const tatum::TimingConstr
 
     auto& timing_ctx = g_vpr_ctx.timing();
 
+    check_timing_graph(*timing_ctx.graph, constraints, setup_analyzer);
     auto cpds = tatum::find_critical_paths(*timing_ctx.graph, constraints, setup_analyzer);
 
     //Record the maximum critical path accross all domain pairs
@@ -41,6 +91,7 @@ tatum::TimingPathInfo find_least_slack_critical_path_delay(const tatum::TimingCo
 
     auto& timing_ctx = g_vpr_ctx.timing();
 
+    check_timing_graph(*timing_ctx.graph, constraints, setup_analyzer);
     auto cpds = tatum::find_critical_paths(*timing_ctx.graph, constraints, setup_analyzer);
 
     //Record the maximum critical path accross all domain pairs
@@ -153,6 +204,7 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
+    check_timing_graph(*timing_ctx.graph, constraints, setup_analyzer);
     auto crit_paths = tatum::find_critical_paths(*timing_ctx.graph, constraints, setup_analyzer);
 
     auto least_slack_cpd = find_least_slack_critical_path_delay(constraints, setup_analyzer);
