@@ -163,22 +163,20 @@ static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry)
 static VNumber shift_op(VNumber& a, int64_t b, bool sign_shift)
 {
 	VNumber to_return;
-	if(b < static_cast<int64_t>(a.size()))
-		b = 0;
 
-	//if b is negative than shift right
 	if(b==0)
 	{
 		to_return = a;
 	}
+	//if b is negative than shift right
 	else if(b < 0)
 	{
 		size_t u_b = static_cast<size_t>(-b);
 		bit_value_t pad = ( sign_shift ) ? a.get_padding_bit(): BitSpace::_0;
 		to_return = VNumber(a.size(), pad, sign_shift);
-		for(size_t i=0; i < (a.size() + u_b); i++)
+		for(size_t i=0; i < (a.size() - u_b); i++)
 		{
-			to_return.set_bit_from_lsb(i, a.get_bit_from_lsb(i-u_b));
+			to_return.set_bit_from_lsb(i, a.get_bit_from_lsb(i+u_b));
 		}
 	}
 	else
@@ -196,7 +194,15 @@ static VNumber shift_op(VNumber& a, int64_t b, bool sign_shift)
 
 bool V_TRUE(VNumber& a)
 {
-	return (a.bitwise_reduce(l_or).get_value());
+	VNumber result = a.bitwise_reduce(l_or);
+	if(result.is_dont_care_string())
+	{
+		return false;
+	}
+	else
+	{
+		return result.get_value();
+	}	
 }
 
 /***
@@ -322,16 +328,20 @@ VNumber V_CASE_NOT_EQUAL(VNumber& a, VNumber& b)
 
 VNumber V_LOGICAL_AND(VNumber& a, VNumber& b)
 {
-	VNumber test = a.bitwise(b,l_or);
-	VNumber to_return = a.bitwise_reduce(l_and);
+	VNumber reduxA = a.bitwise_reduce(l_or);
+	VNumber reduxB = b.bitwise_reduce(l_or);
+
+	VNumber to_return = reduxA.bitwise(reduxB, l_and);
 
 	return to_return;
 }
 
 VNumber V_LOGICAL_OR(VNumber& a, VNumber& b)
 {
-	VNumber test = a.bitwise(b,l_or);
-	VNumber to_return = a.bitwise_reduce(l_or);
+	VNumber reduxA = a.bitwise_reduce(l_or);
+	VNumber reduxB = b.bitwise_reduce(l_or);
+
+	VNumber to_return = reduxA.bitwise(reduxB, l_or);
 
 	return to_return;
 }

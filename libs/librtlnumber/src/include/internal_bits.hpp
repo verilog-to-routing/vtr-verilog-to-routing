@@ -588,7 +588,7 @@ public:
 
         //remove underscores
         std::string v_value_str = verilog_string.substr(loc+2+sign);
-        verilog_string.erase(std::remove(v_value_str.begin(), v_value_str.end(), '_'), v_value_str.end());
+        v_value_str.erase(std::remove(v_value_str.begin(), v_value_str.end(), '_'), v_value_str.end());
 
         //little endian bitstring string
         std::string temp_bitstring = string_of_radix_to_bitstring(v_value_str, radix);

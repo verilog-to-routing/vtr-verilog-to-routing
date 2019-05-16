@@ -6,57 +6,72 @@
 #    Univerity of New Brunswick in Fredericton, New Brunswick, Canada
 #####################
 
+# truth test
+simple_true,    is_true, 1'b1, pass
+simple_fail,    is_true, 1'b0, fail
+decimal_true,    is_true, 1, pass
+decimal_fail,    is_true, 0, fail
+complex_true,    is_true, 2'b1x, pass
+complex_fail,    is_true, 2'b0x, fail
+unknown_x,    is_true, 1'bx, fail
+large_number_pass,    is_true, 128'h8000_0000_0000_0000, pass
+
+# base conversions
+# TODO: Test Hex, Base 10 etc. Conversions
+
 # Sign modifier
 Sign_minus,		        -,  10'b1010101010,	'b0101010110
 Sign_plus,			    +,  4'b1010,	'b1010
 
 # Reduction
-Reduction-and,			&,  4'b1010,	0
-#Reduction-or,			|,  4'b1010,	1
-Reduction-xor,			^,  4'b1010,	0
-#Reduction-nand,			~&,	4'b1010,	1
-#Reduction-nor,			~|,	4'b1010,	1
-#Reduction-xnor,			~^,	4'b1010,	1
+Reduction-and,			&,  4'b1010,	1'b0
+Reduction-or,			|,  4'b1010,	1'b1
+Reduction-xor,			^,  4'b1010,	1'b0
+Reduction-nand,			~&,	4'b1010,	1'b1
+Reduction-nor,			~|,	4'b1010,	1'b1
+Reduction-xnor,			~^,	4'b1010,	1'b1
 
 # bitwise
 Bitwise-Not,	            ~,  4'b1010,	'b0101
 Bitwise-And,	4'b1010,	&,  4'b1000,	'b1000
 Bitwise-Or,		5'b1010,	|,  5'b1000,	'b1010
-#Bitwise-Nor,	5'b1010,	~|, 5'b1000,	5
-#Bitwise-Nand,   5'b1010,	~&, 5'b1000,	7
-#Bitwise-Xnor,   5'b1010,	~^, 5'b1000,	4'b1101
-#Bitwise-Xor,	5'b1010,	^,  5'b1000,	2
+Bitwise-Nor,	5'b1010,	~|, 5'b1000,	5'b10101
+Bitwise-Nand,   5'b1010,	~&, 5'b1000,	5'b10111
+Bitwise-Xnor,   5'b1010,	~^, 5'b1000,	5'b11101
+Bitwise-Xor,	5'b1010,	^,  5'b1000,	2'b10
 
 # case equivalence
-#Case-eq,		4'b1x10,	===,  4'b1x10,	1
-#Case-ne,		4'b1x11,	!==,  4'b1x10,	1
-Case-ne,		4'b1x10,	!==,  4'b1x10,	0
-Case-eq,		4'b1x11,	===,  4'b1x10,	0
+Case-eq,		4'b1x10,	===,  4'b1x10,	1'b1
+Case-ne,		4'b1x11,	!==,  4'b1x10,	1'b1
+Case-ne,		4'b1x10,	!==,  4'b1x10,	1'b0
+Case-eq,		4'b1x11,	===,  4'b1x10,	1'b0
 
 # logical operation
-Logical-Not,	                    !,  4'b1010,	'b0
-#Logical-And,			4'b1010,	&&, 4'b1000,	'b1
-Logical-Or,				4'b1010,	||, 4'b1000,	'b1
-#Logical-Or,				4'b0000,	||, 4'b1000,	'b1
-Logical-Or,				4'b0000,	||, 4'b0000,	'b0	
-Logical-less,			4'b0000,	<,	4'b0001,	'b1
-Logical-greater,		4'b0000,	>,	4'b0001,	'b0	
-Logical-greater-equal,	4'b0000,	>=, 4'b0000,	'b1	
-Logical-less-equal,		4'b0000,	<=, 4'b0000,	'b1	
-Logical-equal,			4'b0000,	==, 4'b0000,	'b1	
-Logical-not-equal,		4'b0000,	!=,	4'b0001,	'b1
+Logical-Not,	                    !,  4'b1010,	1'b0
+Logical-And,			4'b1010,	&&, 4'b1000,	1'b1
+Logical-Or,				4'b1010,	||, 4'b1000,	1'b1
+Logical-Or,				4'b0000,	||, 4'b1000,	1'b1
+Logical-Or,				4'b0000,	||, 4'b0000,	1'b0	
+Logical-less,			4'b0000,	<,	4'b0001,	1'b1
+Logical-greater,		4'b0000,	>,	4'b0001,	1'b0	
+Logical-greater-equal,	4'b0000,	>=, 4'b0000,	1'b1	
+Logical-less-equal,		4'b0000,	<=, 4'b0000,	1'b1	
+# TODO: Test other bases (base 10 etc.)
+Logical-equal,			4'b0000,	==, 4'b0000,	1'b1	
+Logical-not-equal,		4'b0000,	!=,	4'b0001,	1'b1
 
 # shift operation
-#Shift-left,				2,	<<,	    3,	5'b10000
-#Shift-right, 			5'b00100,	>>,		2'b10,	'b1
-#Signed-shift-left,		5'b00100,	<<<,	2'b10,	5'b10000
-#Signed-shift-right,		5'b10100,	>>>,	2'b10,	'b11101
+Shift-left,				5'b00100,	<<,	    2'b10,	5'b10000
+Shift-right, 			5'b00100,	>>,		2'b10,	1'b1
+Signed-shift-left,		5'b00100,	<<<,	2'b10,	5'b10000
+Unsigned-Signed-shift-right,		5'b10100,	>>>,	2'b10,	5'b00101
+Signed-shift-right,		5'sb10100,	>>>,	2'b10,	5'sb11101
 
 # arithmetic
-#Addition,			4'b0110,    +,  4'b0011,  'b1001
-#Subtraction,		4'b0100,    -,  4'b0010,  'b10
+Addition,			4'b0110,    +,  4'b0011,  'b1001
+Subtraction,		4'b0100,    -,  4'b0010,  'b10
 #Division,			4'b1010,    /,  4'b0010,  'b10
-#Multiplication,	    4'b0010,    *,  4'b0010,  'b100
+Multiplication,	    4'b0010,    *,  4'b0010,  'b100
 #Modulo,			    4'b1011,    %,  4'b0010,  'b1
 #Power,              4'b0010,    **, 4'b0000,  'b1
 

@@ -98,6 +98,10 @@ for INPUT in ${0%/*}/regression_tests/*.csv; do
 
 			echo -e "-X- FAILED == $TEST_LABEL\t  ./rtl_number ${RTL_CMD_IN}\t sOutput:<$OUTPUT_AND_RESULT> != <$EXPECTED_RESULT>"
 
+		elif [ "${OUTPUT_AND_RESULT}" == "${EXPECTED_RESULT}" ]
+		then
+			echo "--- PASSED == $TEST_LABEL"
+
 		elif [ "pass" == "$(${0%/*}/rtl_number is_true $(${0%/*}/rtl_number ${OUTPUT_AND_RESULT} == ${EXPECTED_RESULT}))" ]
 		then
 			echo "--- PASSED == $TEST_LABEL"
