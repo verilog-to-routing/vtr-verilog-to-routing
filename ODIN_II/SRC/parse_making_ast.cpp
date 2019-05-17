@@ -577,6 +577,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			            symbol_list->children[i]->types.variable.is_reg = TRUE;
 			            break;
 		            case INTEGER:
+			    case GENVAR:			
 			            symbol_list->children[i]->types.variable.is_integer = TRUE;
 			            break;
 		            default:

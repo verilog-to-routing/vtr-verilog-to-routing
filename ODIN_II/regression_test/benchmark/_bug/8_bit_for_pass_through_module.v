@@ -6,7 +6,7 @@ genvar i;
 generate
 	for(i=0; i<8; i = i+1)
 	begin
-		pass_through pass_wire_7(a[i], c[i], clk, rst);
+		pass_through pass_wire(a[i], c[i], clk, rst);
 	end	
 endgenerate
 endmodule
