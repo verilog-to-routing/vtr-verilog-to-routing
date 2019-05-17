@@ -26,6 +26,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
@@ -1155,6 +1156,27 @@ struct t_net_routing_status {
     bool is_fixed = false; //Whether the net is fixed (i.e. not to be re-routed)
 };
 
+
+struct t_node_edge {
+    t_node_edge(int fnode, int tnode) {
+        from_node = fnode;
+        to_node = tnode;
+    }
+
+    int from_node;
+    int to_node;
+
+    //For std::set
+    friend bool operator<(const t_node_edge& lhs, const t_node_edge& rhs) {
+        return std::tie(lhs.from_node, lhs.to_node) < std::tie(rhs.from_node, rhs.to_node);
+    }
+};
+
+//Non-configurably connected nodes and edges in the RR graph
+struct t_non_configurable_rr_sets {
+    std::set<std::set<int>> node_sets;
+    std::set<std::set<t_node_edge>> edge_sets;
+};
 
 
 #define NO_PREVIOUS -1

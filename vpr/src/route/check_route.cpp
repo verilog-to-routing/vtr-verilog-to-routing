@@ -15,27 +15,6 @@ using namespace std;
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
 
-struct t_node_edge {
-    t_node_edge(int fnode, int tnode) {
-        from_node = fnode;
-        to_node = tnode;
-    }
-
-    int from_node;
-    int to_node;
-
-    //For std::set
-    friend bool operator<(const t_node_edge& lhs, const t_node_edge& rhs) {
-        return std::tie(lhs.from_node, lhs.to_node) < std::tie(rhs.from_node, rhs.to_node);
-    }
-};
-
-struct t_non_configurable_rr_sets {
-
-    std::set<std::set<int>> node_sets;
-    std::set<std::set<t_node_edge>> edge_sets;
-};
-
 /******************** Subroutines local to this module **********************/
 static void check_node_and_range(int inode, enum e_route_type route_type);
 static void check_source(int inode, ClusterNetId net_id);
@@ -47,8 +26,6 @@ static void reset_flags(ClusterNetId inet, bool * connected_to_route);
 static void check_locally_used_clb_opins(const t_clb_opins_used&  clb_opins_used_locally,
 		enum e_route_type route_type);
 
-static t_non_configurable_rr_sets identify_non_configurable_rr_sets();
-static void expand_non_configurable(int inode, std::set<t_node_edge>& edge_set);
 static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets);
 
 /************************ Subroutine definitions ****************************/
@@ -662,67 +639,6 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
 				"in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_nodes.size() - 1);
 	}
 	check_rr_node(inode, route_type, device_ctx);
-}
-
-//Collects the sets of connected non-configurable edges in the RR graph
-static t_non_configurable_rr_sets identify_non_configurable_rr_sets() {
-    std::set<std::set<t_node_edge>> edge_sets;
-
-    //Walk through the RR graph and recursively expand non-configurable edges
-    //to collect the sets of non-configurably connected nodes
-    auto& device_ctx = g_vpr_ctx.device();
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        std::set<t_node_edge> edge_set;
-
-        expand_non_configurable(inode, edge_set);
-
-        if (!edge_set.empty()) {
-            edge_sets.insert(edge_set);
-        }
-    }
-
-    std::set<std::set<int>> node_sets;
-    for (auto& edge_set : edge_sets) {
-        std::set<int> node_set;
-
-        for (const auto& edge : edge_set) {
-            node_set.insert(edge.from_node);
-            node_set.insert(edge.to_node);
-        }
-
-        VTR_ASSERT(!node_set.empty());
-
-        node_sets.insert(node_set);
-    }
-
-    t_non_configurable_rr_sets non_configurable_rr_sets;
-    non_configurable_rr_sets.edge_sets = edge_sets;
-    non_configurable_rr_sets.node_sets = node_sets;
-
-    return non_configurable_rr_sets;
-}
-
-//Builds a set of non-configurably connected RR graph edges
-static void expand_non_configurable(int inode, std::set<t_node_edge>& edge_set) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    for (int iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); ++iedge) {
-        bool edge_non_configurable = !device_ctx.rr_nodes[inode].edge_is_configurable(iedge);
-
-        if (edge_non_configurable) {
-            int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
-
-            t_node_edge edge = {inode, to_node};
-
-            if (edge_set.count(edge)) {
-                continue; //Already seen don't re-expand to avoid loops
-            }
-
-            edge_set.emplace(edge);
-
-            expand_non_configurable(to_node, edge_set);
-        }
-    }
 }
 
 //Checks that the specified routing is legal with respect to non-configurable edges
