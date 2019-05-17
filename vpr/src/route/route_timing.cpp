@@ -117,12 +117,6 @@ private:
     size_t worst_overuse_;
 };
 
-struct t_timing_driven_node_costs {
-    float backward_cost = 0.;
-    float total_cost = 0.;
-    float R_upstream = 0.;
-};
-
 struct RoutingMetrics {
     size_t used_wirelength = 0;
 
@@ -231,13 +225,7 @@ static void timing_driven_expand_node(const t_conn_cost_params cost_params,
         const RouterLookahead& router_lookahead,
         t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node);
 
-static void timing_driven_expand_node_non_configurable_recurr(
-        const t_conn_cost_params cost_params,
-        const RouterLookahead& router_lookahead,
-        t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node,
-        std::set<int>& visited);
-
-static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driven_node_costs old_costs,
+static void evaluate_timing_driven_node_costs(t_heap* from,
         const t_conn_cost_params cost_params,
         const RouterLookahead& router_lookahead,
         const int from_node, const int to_node, const int iconn, const int target_node);
@@ -1810,30 +1798,9 @@ static void timing_driven_add_to_heap(
     next->backward_path_cost = current->backward_path_cost;
     next->R_upstream = current->R_upstream;
 
-    auto& device_ctx = g_vpr_ctx.device();
-    if (device_ctx.rr_nodes[to_node].num_non_configurable_edges() == 0) {
-        //The common case where there are no non-configurable edges
-        timing_driven_expand_node(cost_params,
-                router_lookahead,
-                next, from_node, to_node, iconn, target_node);
-    } else {
-        //The 'to_node' which we just expanded to has non-configurable
-        //out-going edges which must also be expanded.
-        //
-        //Note that we only call the recursive version if there *are* non-configurable
-        //edges since creating/destroying the 'visited' tracker is very expensive (since
-        //it is in the router's inner loop). Since non-configurable edges are relatively
-        //rare this is reasonable.
-        //
-        //TODO: use a more efficient method of tracking visited nodes (e.g. if
-        //      non-configurable edges become more common)
-        std::set<int> visited;
-        timing_driven_expand_node_non_configurable_recurr(
-                cost_params,
-                router_lookahead,
-                next, from_node, to_node, iconn, target_node,
-                visited);
-    }
+    timing_driven_expand_node(cost_params,
+            router_lookahead,
+            next, from_node, to_node, iconn, target_node);
 
     add_to_heap(next);
     ++router_stats.heap_pushes;
@@ -1858,67 +1825,17 @@ static void timing_driven_expand_node(const t_conn_cost_params cost_params,
     }
 #endif
 
-    t_timing_driven_node_costs old_costs;
-    old_costs.backward_cost = current->backward_path_cost;
-    old_costs.total_cost = current->cost;
-    old_costs.R_upstream = current->R_upstream;
-
-    auto new_costs = evaluate_timing_driven_node_costs(old_costs,
+    evaluate_timing_driven_node_costs(current,
                         cost_params,
                         router_lookahead,
                         from_node, to_node, iconn, target_node);
 
     //Record how we reached this node
     current->nodes.emplace_back(to_node, from_node, iconn);
-
-    //Since this heap element may represent multiple (non-configurably connected) nodes,
-    //keep the minimum cost to the target
-    if (new_costs.total_cost < current->cost) {
-        current->cost = new_costs.total_cost;
-        current->backward_path_cost = new_costs.backward_cost;
-        current->R_upstream = new_costs.R_upstream;
-        current->index = to_node;
-    }
-}
-
-//Updates current (path stage and costs) to account for the step taken to reach to_node,
-//and any of it's non-configurably connected nodes
-static void timing_driven_expand_node_non_configurable_recurr(
-        const t_conn_cost_params cost_params,
-        const RouterLookahead& router_lookahead,
-        t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node,
-        std::set<int>& visited) {
-
-    VTR_ASSERT(current);
-
-    if (visited.count(to_node)) {
-        return;
-    }
-
-    visited.insert(to_node);
-
-    auto& device_ctx = g_vpr_ctx.device();
-
-    timing_driven_expand_node(
-            cost_params,
-            router_lookahead,
-            current, from_node, to_node, iconn, target_node);
-
-    //Consider any non-configurable edges which must be expanded for correctness
-    for (int iconn_next : device_ctx.rr_nodes[to_node].non_configurable_edges()) {
-        VTR_ASSERT_SAFE(!device_ctx.rr_nodes[to_node].edge_is_configurable(iconn_next)); //Forced expansion
-
-        int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
-
-        timing_driven_expand_node_non_configurable_recurr(
-                cost_params,
-                router_lookahead,
-                current, to_node, to_to_node, iconn_next, target_node, visited);
-    }
 }
 
 //Calculates the cost of reaching to_node
-static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driven_node_costs old_costs,
+static void evaluate_timing_driven_node_costs(t_heap* to,
     const t_conn_cost_params cost_params,
     const RouterLookahead& router_lookahead,
     const int from_node, const int to_node, const int iconn, const int target_node) {
@@ -1932,8 +1849,6 @@ static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timi
      */
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_timing_driven_node_costs new_costs;
-
     //Switch info
     int iswitch = device_ctx.rr_nodes[from_node].edge_switch(iconn);
     bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered();
@@ -1946,29 +1861,30 @@ static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timi
 
     //Update R_upstream
     if (switch_buffered) {
-        new_costs.R_upstream = 0.; //No upstream resistance
+        to->R_upstream = 0.; //No upstream resistance
     } else {
-        new_costs.R_upstream = old_costs.R_upstream; //Upstream resistance
+        //R_Upstream already initialized
     }
-    new_costs.R_upstream += switch_R; //Switch resistance
-    new_costs.R_upstream += node_R; //Node resistance
+
+    to->R_upstream += switch_R; //Switch resistance
+    to->R_upstream += node_R; //Node resistance
 
     //Calculate delay
-    float Rdel = new_costs.R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
+    float Rdel = to->R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
     float Tdel = switch_Tdel + Rdel * node_C;
 
-    //Update the backward cost
-    new_costs.backward_cost = old_costs.backward_cost; //Back cost to 'from_node'
-    new_costs.backward_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
-    new_costs.backward_cost += cost_params.criticality * Tdel; //Delay cost
+    //Update the backward cost (upstream already included)
+    to->backward_path_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
+    to->backward_path_cost += cost_params.criticality * Tdel; //Delay cost
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
         if ((from_type == CHANX && to_type == CHANY) || (from_type == CHANY && to_type == CHANX)) {
-            new_costs.backward_cost += cost_params.bend_cost; //Bend cost
+            to->backward_path_cost += cost_params.bend_cost; //Bend cost
         }
     }
 
+    float total_cost = 0.;
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
     if (delay_budget) {
         //If budgets specified calculate cost as described by RCV paper:
@@ -1977,16 +1893,16 @@ static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timi
         //     Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.
 
         //TODO: Since these targets are delays, shouldn't we be using Tdel instead of new_costs.total_cost on RHS?
-        new_costs.total_cost += (delay_budget->short_path_criticality + cost_params.criticality) * max(0.f, delay_budget->target_delay - new_costs.total_cost);
-        new_costs.total_cost += pow(max(0.f, new_costs.total_cost - delay_budget->max_delay), 2) / 100e-12;
-        new_costs.total_cost += pow(max(0.f, delay_budget->min_delay - new_costs.total_cost), 2) / 100e-12;
+        total_cost += (delay_budget->short_path_criticality + cost_params.criticality) * max(0.f, delay_budget->target_delay - total_cost);
+        total_cost += pow(max(0.f, total_cost - delay_budget->max_delay), 2) / 100e-12;
+        total_cost += pow(max(0.f, delay_budget->min_delay - total_cost), 2) / 100e-12;
     }
 
     //Update total cost
-    float expected_cost = router_lookahead.get_expected_cost(to_node, target_node, cost_params, new_costs.R_upstream);
-    new_costs.total_cost = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
+    float expected_cost = router_lookahead.get_expected_cost(to_node, target_node, cost_params, to->R_upstream);
+    total_cost = to->backward_path_cost + cost_params.astar_fac * expected_cost;
 
-    return new_costs;
+    to->cost = total_cost;
 }
 
 void update_rr_base_costs(int fanout) {

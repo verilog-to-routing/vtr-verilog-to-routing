@@ -107,6 +107,8 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 
 bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
 static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes);
+static float get_single_rr_cong_cost(int inode);
+
 /************************** Subroutine definitions ***************************/
 
 void save_routing(vtr::vector<ClusterNetId, t_trace *> &best_routing,
@@ -744,18 +746,36 @@ void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
 
 /* Returns the *congestion* cost of using this rr_node. */
 float get_rr_cong_cost(int inode) {
-	short cost_index;
-	float cost;
+    auto& device_ctx = g_vpr_ctx.device();
 
+	float cost = get_single_rr_cong_cost(inode);
+
+    auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
+    if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
+        for (int node : device_ctx.rr_non_config_node_sets[itr->second]) {
+            if (node != inode)  {
+                continue; //Already included above
+            }
+
+            cost += get_single_rr_cong_cost(node);
+        }
+    }
+	return (cost);
+}
+
+/* Returns the congestion cost of using this rr_node, *ignoring* 
+ * non-configurable edges */
+static float get_single_rr_cong_cost(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	cost_index = device_ctx.rr_nodes[inode].cost_index();
-	cost = device_ctx.rr_indexed_data[cost_index].base_cost
-			* route_ctx.rr_node_route_inf[inode].acc_cost
-			* route_ctx.rr_node_route_inf[inode].pres_cost;
-	return (cost);
+	auto cost_index = device_ctx.rr_nodes[inode].cost_index();
+	float cost = device_ctx.rr_indexed_data[cost_index].base_cost
+                 * route_ctx.rr_node_route_inf[inode].acc_cost
+                 * route_ctx.rr_node_route_inf[inode].pres_cost;
+    return cost;
 }
+
 
 /* Mark all the SINKs of this net as targets by setting their target flags  *
 * to the number of times the net must connect to each SINK.  Note that     *
