@@ -1364,7 +1364,56 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 	long sc_spot;
 	nnet_t *new_net = NULL;
 
+	// pack 2d array into 1d
+	if (var_declare->children[5] != NULL && var_declare->type != BLOCKING_STATEMENT)
+	{
+		ast_node_t *node_max2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[3]);
+		ast_node_t *node_min2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[4]);
 
+		ast_node_t *node_max3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[5]);
+		ast_node_t *node_min3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[6]);
+
+
+		oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);		
+		oassert(node_min3->type == NUMBERS && node_max3->type == NUMBERS);
+
+		if((node_min2->types.number.value > node_max2->types.number.value)
+		||(node_min3->types.number.value > node_max3->types.number.value))
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		else if((node_min2->types.number.value < 0 || node_max2->types.number.value < 0)
+		||(node_min3->types.number.value < 0 || node_max3->types.number.value < 0))
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
+
+		char *name = var_declare->children[0]->types.identifier;
+
+		long addr_min = node_min2->types.number.value;
+		long addr_max = node_max2->types.number.value;
+
+		long addr_min1= node_min3->types.number.value;
+		long addr_max1= node_max3->types.number.value;
+
+		if (addr_min != 0 || addr_min1 != 0)
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+					"%s: right memory address index must be zero\n", name);
+
+		long addr_chunk_size = (addr_max1 - addr_min1 + 1);
+
+		long new_adress_max = (addr_max - addr_min + 1)*addr_chunk_size -1;
+
+		change_to_number_node(var_declare->children[3], new_adress_max);
+		change_to_number_node(var_declare->children[4], 0);
+
+		free_whole_tree(var_declare->children[5]);
+		free_whole_tree(var_declare->children[6]);
+
+		var_declare->num_children -= 2;
+	}
 
 	if (var_declare->children[1] == NULL || var_declare->type == BLOCKING_STATEMENT)
 	{
@@ -1504,88 +1553,10 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		oassert(addr_min <= addr_max);
 
-		int data_width = data_max - data_min + 1;
-		long words = addr_max - addr_min + 1;
+		long data_width = data_max - data_min + 1;
+		long adress_width = addr_max - addr_min + 1;
 
-		create_implicit_memory_block(data_width, words, name, instance_name_prefix);
-	}
-	else if (var_declare->children[5] != NULL)
-	{
-		ast_node_t *node_max1 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[1]);
-		ast_node_t *node_min1 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
-
-		ast_node_t *node_max2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[3]);
-		ast_node_t *node_min2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[4]);
-
-		ast_node_t *node_max3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[5]);
-		ast_node_t *node_min3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[6]);
-
-		oassert(node_min1->type == NUMBERS && node_max1->type == NUMBERS);
-		if(node_min1->types.number.value > node_max1->types.number.value)
-		{
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support arrays declared [m:n] where m is less than n.");
-		}	
-		//ODIN doesn't support negative number in index now.
-		if(node_min1->types.number.value < 0 || node_max1->types.number.value < 0)
-		{
-			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support negative number in index.");
-		}
-
-		oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);
-		if(node_min2->types.number.value > node_max2->types.number.value)
-		{
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support arrays declared [m:n] where m is less than n.");
-		}	
-		//ODIN doesn't support negative number in index now.
-		if(node_min2->types.number.value < 0 || node_max2->types.number.value < 0)
-		{
-			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support negative number in index.");
-		}
-
-		oassert(node_min3->type == NUMBERS && node_max3->type == NUMBERS);
-		if(node_min3->types.number.value > node_max3->types.number.value)
-		{
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support arrays declared [m:n] where m is less than n.");
-		}	
-		//ODIN doesn't support negative number in index now.
-		if(node_min3->types.number.value < 0 || node_max3->types.number.value < 0)
-		{
-			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support negative number in index.");
-		}
-
-		char *name = var_declare->children[0]->types.identifier;
-
-		long data_min = node_min1->types.number.value;
-		long data_max = node_max1->types.number.value;
-
-		if (data_min != 0)
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
-					"%s: right memory index must be zero\n", name);
-
-		oassert(data_min <= data_max);
-
-		long addr_min = node_min2->types.number.value;
-		long addr_max = node_max2->types.number.value;
-
-		long addr_min1= node_min3->types.number.value;
-		long addr_max1= node_max3->types.number.value;
-
-		if (addr_min != 0)
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
-					"%s: right memory address index must be zero\n", name);
-
-		oassert(addr_min <= addr_max);
-
-		int data_width = data_max - data_min + 1;
-		long words = (addr_max - addr_min + 1)*(addr_max1 - addr_min1 + 1)  - 1;
-
-		create_implicit_memory_block(data_width, words, name, instance_name_prefix);
+		create_implicit_memory_block(data_width, adress_width, name, instance_name_prefix);
 	}
 
 	return new_net;
