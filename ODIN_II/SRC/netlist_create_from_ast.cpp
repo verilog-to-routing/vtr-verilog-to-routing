@@ -3180,7 +3180,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 					std::string unused_pins_name = "";
 					for(long i = right_memory->addr_width; i < address->count; i++)
 					{
-						unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
+						if (address->pins && address->pins[i] && address->pins[i]->name)
+							unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
 					}
 					warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
 										"indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
@@ -3282,7 +3283,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 						std::string unused_pins_name = "";
 						for(long i = left_memory->addr_width; i < address->count; i++)
 						{
-							unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
+							if (address->pins && address->pins[i] && address->pins[i]->name)
+								unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
 						}
 						warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
 											"indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());

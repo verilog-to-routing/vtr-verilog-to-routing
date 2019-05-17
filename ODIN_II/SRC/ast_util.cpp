@@ -187,10 +187,11 @@ void free_all_children(ast_node_t *node)
 	if (node){
 		for (i = 0; i < node->num_children; i++)
 			node->children[i] = free_whole_tree(node->children[i]);
+		vtr::free(node->children);
+		node->children = NULL;
+		node->num_children = 0;
 	}
-	vtr::free(node->children);
-	node->children = NULL;
-	node->num_children = 0;
+	
 }
 
 /*---------------------------------------------------------------------------
