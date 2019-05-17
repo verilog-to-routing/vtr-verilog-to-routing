@@ -69,7 +69,7 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         device_ctx.rr_indexed_data[i].C_load = OPEN;
     }
     device_ctx.rr_indexed_data[IPIN_COST_INDEX].T_linear =
-            device_ctx.rr_switch_inf[wire_to_ipin_switch].Tdel + device_ctx.rr_switch_inf[wire_to_ipin_switch].Cinternal * device_ctx.rr_switch_inf[wire_to_ipin_switch].R;
+            device_ctx.rr_switch_inf[wire_to_ipin_switch].Tdel;
 
     /* X-directed segments. */
     for (iseg = 0; iseg < num_segment; iseg++) {
@@ -287,10 +287,10 @@ static void load_rr_indexed_data_T_values(int index_start,
 
     int itrack, inode, cost_index;
     float *C_total, *R_total; /* [0..device_ctx.rr_indexed_data.size() - 1] */
-    double *switch_R_total, *switch_T_total; /* [0..device_ctx.rr_indexed_data.size() - 1] */
+    double *switch_R_total, *switch_T_total, *switch_Cinternal_total; /* [0..device_ctx.rr_indexed_data.size() - 1] */
     short *switches_buffered;
     int *num_nodes_of_index; /* [0..device_ctx.rr_indexed_data.size() - 1] */
-    float Rnode, Cnode, Rsw, Tsw;
+    float Rnode, Cnode, Rsw, Tsw, Cinternalsw;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -306,6 +306,7 @@ static void load_rr_indexed_data_T_values(int index_start,
        (second for loop below) */
     switch_R_total = (double *) vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof (double));
     switch_T_total = (double *) vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof (double));
+    switch_Cinternal_total = (double *) vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof (double));
     switches_buffered = (short *) vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof (short));
 
     /* initialize switches_buffered array */
@@ -330,6 +331,7 @@ static void load_rr_indexed_data_T_values(int index_start,
         int num_edges = device_ctx.rr_nodes[inode].num_edges();
         double avg_switch_R = 0;
         double avg_switch_T = 0;
+        double avg_switch_Cinternal = 0;
         int num_switches = 0;
         short buffered = UNDEFINED;
         for (int iedge = 0; iedge < num_edges; iedge++) {
@@ -339,6 +341,7 @@ static void load_rr_indexed_data_T_values(int index_start,
                 int switch_index = device_ctx.rr_nodes[inode].edge_switch(iedge);
                 avg_switch_R += device_ctx.rr_switch_inf[switch_index].R;
                 avg_switch_T += device_ctx.rr_switch_inf[switch_index].Tdel;
+                avg_switch_Cinternal += device_ctx.rr_switch_inf[switch_index].Cinternal;
 
                 num_switches++;
             }
@@ -352,9 +355,10 @@ static void load_rr_indexed_data_T_values(int index_start,
 
         avg_switch_R /= num_switches;
         avg_switch_T /= num_switches;
+        avg_switch_Cinternal /= num_switches;
         switch_R_total[cost_index] += avg_switch_R;
         switch_T_total[cost_index] += avg_switch_T;
-
+        switch_Cinternal_total[cost_index] += avg_switch_Cinternal;
         if (buffered == UNDEFINED) {
             /* this segment does not have any outgoing edges to other general routing wires */
             continue;
@@ -383,10 +387,11 @@ static void load_rr_indexed_data_T_values(int index_start,
             Cnode = C_total[cost_index] / num_nodes_of_index[cost_index];
             Rsw = (float) switch_R_total[cost_index] / num_nodes_of_index[cost_index];
             Tsw = (float) switch_T_total[cost_index] / num_nodes_of_index[cost_index];
+            Cinternalsw = (float) switch_Cinternal_total[cost_index] / num_nodes_of_index[cost_index];
 
             if (switches_buffered[cost_index]) {
-                device_ctx.rr_indexed_data[cost_index].T_linear = Tsw + Rsw * Cnode
-                        + 0.5 * Rnode * Cnode;
+                device_ctx.rr_indexed_data[cost_index].T_linear = Tsw + Rsw * (Cinternalsw + Cnode)
+                        + 0.5 * Rnode * (Cnode + Cinternalsw);
                 device_ctx.rr_indexed_data[cost_index].T_quadratic = 0.;
                 device_ctx.rr_indexed_data[cost_index].C_load = 0.;
             } else { /* Pass transistor */

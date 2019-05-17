@@ -1942,8 +1942,7 @@ static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timi
     float node_R = device_ctx.rr_nodes[to_node].R();
     
     //From node info
-    float from_node_C = device_ctx.rr_from_nodes[from_node].C();
-    float from_node_R = device_ctx.rr_from_nodes[from_node].R();
+    float from_node_R = device_ctx.rr_nodes[from_node].R();
 
     //Update R_upstream
     if (switch_buffered) {

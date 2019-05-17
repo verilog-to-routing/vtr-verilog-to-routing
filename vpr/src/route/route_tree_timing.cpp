@@ -523,7 +523,7 @@ update_unbuffered_ancestors_C_downstream(t_rt_node * start_of_new_path_rt_node) 
      * capacitance of the parent separately from the lineage of ancestors. 
      * For the case that the parent switch is buffered.*/
 
-	if (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered == true){
+	if (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered() == true){
 		rt_node = parent_rt_node;
 		rt_node->C_downstream += device_ctx.rr_switch_inf[iswitch].Cinternal;
 		parent_rt_node = rt_node->parent_node;
