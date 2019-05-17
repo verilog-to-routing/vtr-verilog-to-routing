@@ -4,6 +4,7 @@
 #include "tatum/TimingConstraints.hpp"
 #include "tatum/report/TimingReportTagRetriever.hpp"
 #include "tatum/report/timing_path_tracing.hpp"
+#include "tatum/error.hpp"
 
 namespace tatum {
 
@@ -42,13 +43,19 @@ std::vector<TimingPathInfo> find_critical_paths(const TimingGraph& timing_graph,
         //Look at each data arrival
         for(TimingTag slack_tag : setup_analyzer.setup_slacks(node)) {
             Time slack = slack_tag.time();
-            TATUM_ASSERT(slack.valid());
+            if(!slack.valid()) {
+                throw Error("slack is not valid", node);
+            }
 
             Time constraint = Time(timing_constraints.setup_constraint(slack_tag.launch_clock_domain(), slack_tag.capture_clock_domain()));
-            TATUM_ASSERT(constraint.valid());
+            if(!constraint.valid()) {
+                throw Error("constraint is not valid", node);
+            }
 
             Time cpd = Time(constraint) - slack;
-            TATUM_ASSERT(slack.valid());
+            if(!cpd.valid()) {
+                throw Error("cpd is not valid", node);
+            }
 
             //Record the path info
             TimingPathInfo path(TimingType::SETUP,
