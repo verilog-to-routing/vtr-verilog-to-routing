@@ -17,8 +17,9 @@ struct veri_Defines veri_defines;
 /* Function declarations */
 FILE* open_source_file(char* filename, std::string parent_path);
 FILE *remove_comments(FILE *source);
+void format_port_declaration(char **subtoken, char *dec, char *postDec, char *IOTypeDec, size_t *i, size_t *j, size_t *k);
+void format_module_declaration(FILE *destination, char *buf, char *dec, char *postDec, char *IOTypeDec, char *decPtr, char *postDecPtr, char *IOTypeDecPtr, size_t *i, size_t *j, size_t *k);
 FILE *format_verilog_file(FILE *source);
-FILE *format_verilog_variable(FILE * src, FILE *dest);
 /*
  * Initialize the preprocessor by allocating sufficient memory and setting sane values
  */
@@ -709,9 +710,9 @@ void format_port_declaration(char **subtoken, char *dec, char *postDec, char *IO
 {
 	bool directionDefined = false;
 	*subtoken = trim(*subtoken);
-	std::string str(*subtoken);
+	std::string firstTok(*subtoken);
 	// I/O direction
-	if(str.find("input ") == 0 || str.find("output ") == 0 || str.find("inout ") == 0)
+	if(firstTok.find("input ") == 0 || firstTok.find("output ") == 0 || firstTok.find("inout ") == 0)
 	{
 		directionDefined = true;
 		char * temp = NULL;
@@ -722,9 +723,9 @@ void format_port_declaration(char **subtoken, char *dec, char *postDec, char *IO
 		}
 		postDec[(*j)++] = ' ';
 		(*subtoken)++;
-		std::string str(*subtoken);
+		std::string secondTok(*subtoken);
 		// I/O type
-		if(str.find("reg[") == 0 || str.find("reg ") == 0 || str.find("wire[") == 0 || str.find("wire ") == 0)
+		if(secondTok.find("reg[") == 0 || secondTok.find("reg ") == 0 || secondTok.find("wire[") == 0 || secondTok.find("wire ") == 0)
 		{
 			temp = *subtoken;
 			do { 
@@ -758,7 +759,7 @@ void format_port_declaration(char **subtoken, char *dec, char *postDec, char *IO
 		(*subtoken)++;
 	}
 	// Variable name
-	while(**subtoken != NULL)
+	while(**subtoken != '\0')
 	{
 		if(directionDefined)
 		{
@@ -823,11 +824,11 @@ void format_module_declaration(FILE *destination, char *buf, char *dec, char *po
 
 FILE *format_verilog_file(FILE *source)
 {
-	typedef enum State {
+	enum State {
 		LINE_PROCESSING,
 		MODULE_SETUP,
 		MODULE_REFORMATTING
-	} State;
+	};
 	State currentState = LINE_PROCESSING;
 	FILE *destination = tmpfile();
 	char buf[UPPER_BUFFER_LIMIT] = { 0 }; // Temporary input buffer
@@ -841,9 +842,9 @@ FILE *format_verilog_file(FILE *source)
 	size_t i = 0;
 	size_t j = 0;
 	size_t k = 0;
+	size_t pos = 0;
 	bool getNextLine = true;
 	char * exitFlag = fgets(buf, UPPER_BUFFER_LIMIT, source);
-	int pos = 0;
 
 	while(exitFlag != NULL)
 	{
@@ -884,6 +885,11 @@ FILE *format_verilog_file(FILE *source)
 			{
 				format_module_declaration(destination, buf, dec, postDec, IOTypeDec, decPtr, postDecPtr, IOTypeDecPtr, &i, &j, &k);
 				currentState = LINE_PROCESSING;
+				break;
+			}
+			default:
+			{
+				// Not reachable
 				break;
 			}
 		}
