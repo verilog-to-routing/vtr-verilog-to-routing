@@ -1367,7 +1367,9 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 	nnet_t *new_net = NULL;
 
 	// pack 2d array into 1d
-	if (var_declare->children[5] != NULL && var_declare->type != BLOCKING_STATEMENT)
+	if (var_declare->num_children == 8 
+	&& var_declare->children[5] 
+	&& var_declare->children[6])
 	{
 		ast_node_t *node_max2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[3]);
 		ast_node_t *node_min2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[4]);
@@ -1427,8 +1429,11 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		change_to_number_node(var_declare->children[3], new_address_max);
 		change_to_number_node(var_declare->children[4], 0);
 
-		free_whole_tree(var_declare->children[5]);
-		free_whole_tree(var_declare->children[6]);
+		var_declare->children[5] = free_whole_tree(var_declare->children[5]);
+		var_declare->children[6] = free_whole_tree(var_declare->children[6]);
+
+		var_declare->children[5] = var_declare->children[7];
+		var_declare->children[7] = NULL; 
 
 		var_declare->num_children -= 2;
 	}
