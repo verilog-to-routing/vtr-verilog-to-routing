@@ -234,7 +234,7 @@ If you are unsure of what level of QoR evaluation is neccessary for your changes
 ## General QoR Evaluation Principles
 The goal of performing a QoR evaluation is to measure precisely the impact of a set of code/architecture/benchmark changes on both the quality of VTR's design implemenation (i.e. the result of VTR's optimizations), and on tool run-time and memory usage.
 
-This process is made more challenging by the fact that many of VTR's optimization algorithms are based heuristics (some of which depend on randomization).
+This process is made more challenging by the fact that many of VTR's optimization algorithms are based on heuristics (some of which depend on randomization).
 This means that VTR's implementation results are dependent upon:
  * The initial conditions (e.g. input architecture & netlist, random number generator seed), and
  * The precise optimization algorithms used.
