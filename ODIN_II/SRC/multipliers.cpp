@@ -48,8 +48,8 @@ int min_mult = 0;
 int *mults = NULL;
 
 void record_mult_distribution(nnode_t *node);
-void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b);
 void init_cascade_adder(nnode_t *node, nnode_t *a, int b);
+void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b, nnode_t *node_a, nnode_t *node_b);
 void split_multiplier_a(nnode_t *node, int a0, int a1, int b);
 void split_multiplier_b(nnode_t *node, int a, int b1, int b0);
 void pad_multiplier(nnode_t *node, netlist_t *netlist);
@@ -601,7 +601,7 @@ void define_mult_function(nnode_t *node, FILE *out)
  *	to original pins, output pins are set to NULL for later connecting
  *	with temp pins to connect cascading multipliers/adders.
  *---------------------------------------------------------------------*/
-void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b)
+void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b, nnode_t *node_a, nnode_t *node_b)
 {
 	int i;
 
@@ -625,13 +625,18 @@ void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int off
 	ptr->input_pins = (npin_t**)vtr::malloc(sizeof(void *) * (a + b));
 	for (i = 0; i < a; i++)
 	{
-		ptr->input_pins[i] = node->input_pins[i+offa];
-		ptr->input_pins[i]->node = ptr;
+        if (node_a)
+            add_input_pin_to_node(ptr, copy_input_npin(node_a->input_pins[i]), i);
+        else
+            remap_pin_to_new_node(node->input_pins[i+offa], ptr, i);
 	}
+
 	for (i = 0; i < b; i++)
 	{
-		ptr->input_pins[i+a] = node->input_pins[i + offa + a + offb];
-		ptr->input_pins[i+a]->node = ptr;
+        if (node_b)
+            add_input_pin_to_node(ptr, copy_input_npin(node_b->input_pins[i + node_b->input_port_sizes[0]]), i + a);
+        else
+            remap_pin_to_new_node(node->input_pins[i + node->input_port_sizes[0] + offb], ptr, i + a);
 	}
 
 	/* Prep output pins for connecting to cascaded multipliers */
@@ -727,7 +732,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 	a0b0->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a0b0->name, node->name);
 	strcat(a0b0->name, "-0");
-	init_split_multiplier(node, a0b0, 0, a0, 0, b0);
+	init_split_multiplier(node, a0b0, 0, a0, 0, b0, nullptr, nullptr);
 	mult_list = insert_in_vptr_list(mult_list, a0b0);
 
 	/* New node for big multiply */
@@ -735,7 +740,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 	a1b1->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a1b1->name, node->name);
 	strcat(a1b1->name, "-3");
-	init_split_multiplier(node, a1b1, a0, a1, b0, b1);
+	init_split_multiplier(node, a1b1, a0, a1, b0, b1, nullptr, nullptr);
 	mult_list = insert_in_vptr_list(mult_list, a1b1);
 
 	/* New node for 2nd multiply */
@@ -743,7 +748,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 	a0b1->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a0b1->name, node->name);
 	strcat(a0b1->name, "-1");
-	init_split_multiplier(node, a0b1, 0, a0, b0, b1);
+	init_split_multiplier(node, a0b1, 0, a0, b0, b1, a0b0, a1b1);
 	mult_list = insert_in_vptr_list(mult_list, a0b1);
 
 	/* New node for 3rd multiply */
@@ -751,7 +756,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 	a1b0->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a1b0->name, node->name);
 	strcat(a1b0->name, "-2");
-	init_split_multiplier(node, a1b0, a0, a1, 0, b0);
+	init_split_multiplier(node, a1b0, a0, a1, 0, b0, a1b1, a0b0);
 	mult_list = insert_in_vptr_list(mult_list, a1b0);
 
 	/* New node for the initial add */
@@ -833,7 +838,7 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 	a0b->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a0b->name, node->name);
 	strcat(a0b->name, "-0");
-	init_split_multiplier(node, a0b, 0, a0, 0, b);
+	init_split_multiplier(node, a0b, 0, a0, 0, b, nullptr, nullptr);
 	mult_list = insert_in_vptr_list(mult_list, a0b);
 
 	/* New node for a1b multiply */
@@ -841,7 +846,7 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 	a1b->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a1b->name, node->name);
 	strcat(a1b->name, "-1");
-	init_split_multiplier(node, a1b, a0, a1, 0, b);
+	init_split_multiplier(node, a1b, a0, a1, 0, b, nullptr, a0b);
 	mult_list = insert_in_vptr_list(mult_list, a1b);
 
 	/* New node for the add */
@@ -909,7 +914,7 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 	ab0->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(ab0->name, node->name);
 	strcat(ab0->name, "-0");
-	init_split_multiplier(node, ab0, 0, a, 0, b0);
+	init_split_multiplier(node, ab0, 0, a, 0, b0, nullptr, nullptr);
 	mult_list = insert_in_vptr_list(mult_list, ab0);
 
 	/* New node for ab1 multiply */
@@ -917,7 +922,7 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 	ab1->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(ab1->name, node->name);
 	strcat(ab1->name, "-1");
-	init_split_multiplier(node, ab1, 0, a, b0, b1);
+	init_split_multiplier(node, ab1, 0, a, b0, b1, ab0, nullptr);
 	mult_list = insert_in_vptr_list(mult_list, ab1);
 
 	/* New node for the add */
