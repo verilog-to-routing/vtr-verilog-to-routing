@@ -24,6 +24,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <algorithm>
+#include <cmath>
 #include "odin_types.h"
 #include "node_creation_library.h"
 #include "multipliers.h"
