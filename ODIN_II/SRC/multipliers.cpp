@@ -1166,9 +1166,7 @@ void iterate_multipliers(netlist_t *netlist)
 		}
         // if either of the multiplicands is larger than the
         // minimum hard multiplier size, use hard multiplier
-        // TODO: implement multipliers where one of the operands is
-        // 1 bit wide using soft logic
-		else if (mult_size >= min_mult || mula == 1 || mulb == 1)
+		else if (mult_size >= min_mult)
 		{
 			/* Check to ensure IF mult needs to be exact size */
 			if(configuration.fixed_hard_multiplier != 0)
