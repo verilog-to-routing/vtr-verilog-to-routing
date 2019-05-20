@@ -117,6 +117,7 @@ struct t_molecule_stats {
     int num_used_ext_outputs = 0;  //Number of *used external* output pins across all primitives in molecule
 };
 
+
 /* Keeps a linked list of the unclustered blocks to speed up looking for *
  * unclustered blocks with a certain number of *external* inputs.        *
  * [0..lut_size].  Unclustered_list_head[i] points to the head of the    *
@@ -613,11 +614,10 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 				 * If the value is TRUE the cluster has to be repacked, and its internal pb_graph_nodes will have more restrict choices
 				 * for what regards the mode that has to be selected
 				 */
-				bool is_mode_conflict;
-				reset_intra_lb_route(router_data);
-				is_cluster_legal = try_intra_lb_route(router_data, packer_opts.pack_verbosity, &is_mode_conflict);
-				if (is_cluster_legal == true) {
-                    VTR_LOGV(packer_opts.pack_verbosity > 2, "\tPassed route at end.\n");
+				t_mode_selection_status mode_status;
+				is_cluster_legal = try_intra_lb_route(router_data, packer_opts.pack_verbosity, &mode_status);
+				if (is_cluster_legal) {
+                    VTR_LOGV(verbosity > 2, "\tPassed route at end.\n");
 				} else {
 					VTR_LOGV(verbosity > 0, "Failed route at end, repack cluster trying detailed routing at each stage.\n");
 				}
@@ -1195,12 +1195,14 @@ static enum e_block_pack_status try_pack_molecule(
 				 *
 				 * is_mode_conflict is initially set to TRUE, and, unless a mode conflict is found, it is set to false in `try_intra_lb_route`.
 				 */
-				bool is_mode_conflict = true;
+				t_mode_selection_status mode_status;
 				bool is_routed = false;
 				bool do_detailed_routing_stage = detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM;
-				reset_intra_lb_route(router_data);
-				while (do_detailed_routing_stage && is_mode_conflict) {
-					is_routed = try_intra_lb_route(router_data, verbosity, &is_mode_conflict);
+				if (do_detailed_routing_stage) {
+					do {
+						reset_intra_lb_route(router_data);
+						is_routed = try_intra_lb_route(router_data, verbosity, &mode_status);
+					} while (do_detailed_routing_stage && mode_status.is_mode_issue());
 				}
 
 				if (do_detailed_routing_stage && is_routed == false) {

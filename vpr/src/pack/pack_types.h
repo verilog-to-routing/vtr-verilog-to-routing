@@ -272,4 +272,16 @@ struct t_lb_router_data {
 	}
 };
 
+/* Stores status of mode selection during clustering */
+struct t_mode_selection_status {
+    bool is_mode_conflict = false;
+    bool try_expand_all_modes = false;
+    bool expand_all_modes = false;
+
+    bool is_mode_issue() {
+        return is_mode_conflict || try_expand_all_modes;
+    }
+};
+
+
 #endif
