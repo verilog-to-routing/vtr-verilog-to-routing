@@ -337,6 +337,7 @@ void set_reset_pb_modes(t_lb_router_data *router_data, const t_pb *pb, const boo
 	}
 }
 
+/* Expand all the nodes for a given lb_net */
 static bool try_expand_nodes(t_lb_router_data *router_data,
 		t_intra_lb_net * lb_net,
 		t_expansion_node * exp_node,
@@ -399,7 +400,7 @@ static bool try_expand_nodes(t_lb_router_data *router_data,
 */
 bool try_intra_lb_route(t_lb_router_data *router_data,
                         int verbosity,
-						t_mode_selection_status * mode_status) {
+                        t_mode_selection_status * mode_status) {
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	bool is_routed = false;
@@ -1113,6 +1114,7 @@ static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *ex
 	}
 }
 
+/* Expand all edges of an expantion node */
 static void expand_edges(t_lb_router_data *router_data,
 		int mode,
 		int cur_inode,
@@ -1188,7 +1190,7 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 		expand_edges(router_data, mode, cur_node, cur_cost, net_fanout, pq);
 }
 
-/* Expand all nodes found in route tree into priority queue */
+/* Expand all nodes using all possible modes found in route tree into priority queue */
 static void expand_node_all_modes(t_lb_router_data *router_data, t_expansion_node exp_node,
 		reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int net_fanout) {
 
