@@ -1183,6 +1183,10 @@ static enum e_block_pack_status try_pack_molecule(
 				 *	- E_DETAILED_ROUTE_FOR_EACH_ATOM: Try to route if heuristic is to route for every atom. If the clusterer arrives at this stage,
 				 *	                                  it means that more checks have to be performed as the previous stage failed to generate a new cluster.
 				 *
+				 * mode_status is a data structure containing the status of the mode selection. Its members are:
+				 *  - bool is_mode_conflict
+				 *  - bool try_expand_all_modes
+				 *  - bool expand_all_modes
 				 *
 				 * is_mode_conflict affects this stage. Its value determines whether the cluster failed to pack after a mode conflict issue.
 				 * It holds a flag that is used to verify whether try_intra_lb_route ended in a mode conflict issue.
@@ -1194,6 +1198,11 @@ static enum e_block_pack_status try_pack_molecule(
 				 * for what regards the mode that has to be selected.
 				 *
 				 * is_mode_conflict is initially set to TRUE, and, unless a mode conflict is found, it is set to false in `try_intra_lb_route`.
+				 *
+				 * try_expand_all_modes is set if the node expansion failed to find a valid routing path. The clusterer tries to find another route
+				 * by using all the modes during node expansion.
+				 *
+				 * expand_all_modes is used to enable the expansion of all the nodes using all the possible modes.
 				 */
 				t_mode_selection_status mode_status;
 				bool is_routed = false;
