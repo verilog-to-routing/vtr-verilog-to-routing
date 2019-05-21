@@ -818,10 +818,10 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
 	t_heap* hptr = alloc_heap_data();
 	hptr->index = inode;
 	hptr->cost = total_cost;
-    VTR_ASSERT_SAFE(hptr->prev_node == NO_PREVIOUS);
-    VTR_ASSERT_SAFE(hptr->prev_edge == NO_PREVIOUS);
-    hptr->prev_node = prev_node;
-    hptr->prev_edge = prev_edge;
+    VTR_ASSERT_SAFE(hptr->u.prev.node == NO_PREVIOUS);
+    VTR_ASSERT_SAFE(hptr->u.prev.edge == NO_PREVIOUS);
+    hptr->u.prev.node = prev_node;
+    hptr->u.prev.edge = prev_edge;
 	hptr->backward_path_cost = backward_path_cost;
 	hptr->R_upstream = R_upstream;
 	add_to_heap(hptr);
@@ -978,7 +978,7 @@ void free_route_structs() {
         t_heap* curr = heap_free_head;
         while(curr) {
             t_heap* tmp = curr;
-            curr = curr->next;
+            curr = curr->u.next;
 
             vtr::chunk_delete(tmp, &heap_ch);
         }
@@ -1299,8 +1299,8 @@ namespace heap_ {
 		t_heap* hptr = alloc_heap_data();
 		hptr->index = inode;
 		hptr->cost = total_cost;
-        hptr->prev_node = prev_node;
-        hptr->prev_edge = prev_edge;
+        hptr->u.prev.node = prev_node;
+        hptr->u.prev.edge = prev_edge;
 		hptr->backward_path_cost = backward_path_cost;
 		hptr->R_upstream = R_upstream;
 		push_back(hptr);
@@ -1412,23 +1412,23 @@ alloc_heap_data() {
 
     //Extract the head
 	t_heap* temp_ptr = heap_free_head;
-	heap_free_head = heap_free_head->next;
+	heap_free_head = heap_free_head->u.next;
 
 	num_heap_allocated++;
 
     //Reset
-    temp_ptr->next = nullptr;
+    temp_ptr->u.next = nullptr;
     temp_ptr->cost = 0.;
     temp_ptr->backward_path_cost = 0.;
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = OPEN;
-    temp_ptr->prev_node = NO_PREVIOUS;
-    temp_ptr->prev_edge = NO_PREVIOUS;
+    temp_ptr->u.prev.node = NO_PREVIOUS;
+    temp_ptr->u.prev.edge = NO_PREVIOUS;
 	return (temp_ptr);
 }
 
 void free_heap_data(t_heap *hptr) {
-	hptr->next = heap_free_head;
+	hptr->u.next = heap_free_head;
 	heap_free_head = hptr;
 	num_heap_allocated--;
 }
@@ -1441,7 +1441,7 @@ void invalidate_heap_entries(int sink_node, int ipin_node) {
 
 	for (int i = 1; i < heap_tail; i++) {
 		if (heap[i]->index == sink_node) {
-            if (heap[i]->prev_node == ipin_node) {
+            if (heap[i]->u.prev.node == ipin_node) {
                 heap[i]->index = OPEN; /* Invalid. */
                 break;
             }

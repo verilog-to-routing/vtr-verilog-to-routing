@@ -305,8 +305,8 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	downstream_rt_node = sink_rt_node;
 
     std::unordered_set<int> main_branch_visited;
-    inode = hptr->prev_node;
-    iedge = hptr->prev_edge;
+    inode = hptr->u.prev.node;
+    iedge = hptr->u.prev.edge;
     iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
 
     /* For all "new" nodes in the main path */

@@ -1073,8 +1073,8 @@ static bool timing_driven_route_sink(ClusterNetId net_id, unsigned itarget, int 
         //Record final link to target
         add_to_mod_list(cheapest->index, modified_rr_node_inf);
 
-        route_ctx.rr_node_route_inf[cheapest->index].prev_node = cheapest->prev_node;
-        route_ctx.rr_node_route_inf[cheapest->index].prev_edge = cheapest->prev_edge;
+        route_ctx.rr_node_route_inf[cheapest->index].prev_node = cheapest->u.prev.node;
+        route_ctx.rr_node_route_inf[cheapest->index].prev_edge = cheapest->u.prev.edge;
         route_ctx.rr_node_route_inf[cheapest->index].path_cost = cheapest->cost;
         route_ctx.rr_node_route_inf[cheapest->index].backward_path_cost = cheapest->backward_path_cost;
     }
@@ -1378,12 +1378,12 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
     if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
 
         VTR_LOGV_DEBUG(f_router_debug, "    Better cost to %d\n", inode);
-        VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for assicated node %d (from %d edge %d)\n", cheapest->index, cheapest->prev_node, cheapest->prev_edge);
+        VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for assicated node %d (from %d edge %d)\n", cheapest->index, cheapest->u.prev.node, cheapest->u.prev.edge);
 
         add_to_mod_list(cheapest->index, modified_rr_node_inf);
 
-        route_ctx.rr_node_route_inf[cheapest->index].prev_node = cheapest->prev_node;
-        route_ctx.rr_node_route_inf[cheapest->index].prev_edge = cheapest->prev_edge;
+        route_ctx.rr_node_route_inf[cheapest->index].prev_node = cheapest->u.prev.node;
+        route_ctx.rr_node_route_inf[cheapest->index].prev_edge = cheapest->u.prev.edge;
         route_ctx.rr_node_route_inf[cheapest->index].path_cost = new_total_cost;
         route_ctx.rr_node_route_inf[cheapest->index].backward_path_cost = new_back_cost;
 
@@ -1837,8 +1837,8 @@ static void timing_driven_expand_node(const t_conn_cost_params cost_params,
 
     //Record how we reached this node
     current->index = to_node;
-    current->prev_edge = iconn;
-    current->prev_node = from_node;
+    current->u.prev.edge = iconn;
+    current->u.prev.node = from_node;
 }
 
 //Calculates the cost of reaching to_node

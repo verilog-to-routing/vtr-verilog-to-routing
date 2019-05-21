@@ -207,8 +207,8 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
                 add_to_mod_list(current->index, modified_rr_node_inf);
 
                 route_ctx.rr_node_route_inf[current->index].path_cost = new_pcost;
-                route_ctx.rr_node_route_inf[current->index].prev_node = current->prev_node;
-                route_ctx.rr_node_route_inf[current->index].prev_edge = current->prev_edge;
+                route_ctx.rr_node_route_inf[current->index].prev_node = current->u.prev.node;
+                route_ctx.rr_node_route_inf[current->index].prev_edge = current->u.prev.edge;
 
 #ifdef ROUTER_DEBUG
                 VTR_LOG("    Expanding node %d neighbours\n", inode);
@@ -242,8 +242,8 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
             add_to_mod_list(current->index, modified_rr_node_inf);
 
             route_ctx.rr_node_route_inf[current->index].path_cost = current->cost;
-            route_ctx.rr_node_route_inf[current->index].prev_node = current->prev_node;
-            route_ctx.rr_node_route_inf[current->index].prev_edge = current->prev_edge;
+            route_ctx.rr_node_route_inf[current->index].prev_node = current->u.prev.node;
+            route_ctx.rr_node_route_inf[current->index].prev_edge = current->u.prev.edge;
         }
 
 		route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
@@ -405,8 +405,8 @@ static void breadth_first_add_to_heap(const float path_cost, const float bend_co
 
     //Record how we reached this node
     next->index = to_node;
-    next->prev_edge = iconn;
-    next->prev_node = from_node;
+    next->u.prev.edge = iconn;
+    next->u.prev.node = from_node;
 
     add_to_heap(next);
 }
