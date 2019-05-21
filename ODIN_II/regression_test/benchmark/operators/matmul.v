@@ -8,6 +8,7 @@
 
 module matrix_multiplication (
 	input clk, 
+	input rst,
 	output [`WORD_SIZE-1:0] data_out,
 	output direction,
 	output [`ADDR_SIZE-1:0] addr
@@ -24,18 +25,26 @@ module matrix_multiplication (
 
 	always @(posedge clk)  
 	begin  
-		direction_tmp = ~direction_tmp;
-		if( direction_tmp )
+		if (rst)
 		begin
-			if(addr_tmp < (`RAM_DEPTH-1) )
-				addr_tmp = addr_tmp + 1;  
-			else
-				addr_tmp = 0;  
-			data_out = matrixA[ addr_tmp / `COL_SIZE ][ addr_tmp - ((addr_tmp / `COL_SIZE)*`COL_SIZE) ];
+			addr_tmp <= 0;
+			direction_tmp <= 0;
 		end
 		else
 		begin
-			matrixA[ addr_tmp / `COL_SIZE ][ addr_tmp - ((addr_tmp / `COL_SIZE)*`COL_SIZE) ] = addr_tmp;
+			direction_tmp = ~direction_tmp;
+			if( direction_tmp )
+			begin
+				if(addr_tmp < (`RAM_DEPTH-1) )
+					addr_tmp = addr_tmp + 1;  
+				else
+					addr_tmp = 0;  
+				data_out = matrixA[ addr_tmp / `COL_SIZE ][ addr_tmp - ((addr_tmp / `COL_SIZE)*`COL_SIZE) ];
+			end
+			else
+			begin
+				matrixA[ addr_tmp / `COL_SIZE ][ addr_tmp - ((addr_tmp / `COL_SIZE)*`COL_SIZE) ] = addr_tmp;
+			end
 		end
 	end  
 			 

@@ -1522,7 +1522,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		}
 	}
 	/* Implicit memory */
-	else if ((var_declare->children[3] != NULL) && (var_declare->children[5] == NULL))
+	else if (var_declare->children[3] != NULL)
 	{
 		ast_node_t *node_max1 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[1]);
 		ast_node_t *node_min1 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
@@ -5920,8 +5920,8 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 void convert_multi_to_single_dimentional_array(ast_node_t *node, char *instance_name_prefix)
 {
 	char *array_name = NULL;
-	ast_node_t *array_row = NULL; // long array_row = 0;
-	ast_node_t *array_col = NULL; // long array_column = 0;
+	ast_node_t *array_row = NULL;
+	ast_node_t *array_col = NULL;
 	ast_node_t *array_size = NULL;
 
 	ast_node_t *new_node_1 = NULL;
@@ -5929,8 +5929,8 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node, char *instance_
 
 	array_name = make_full_ref_name(NULL, NULL, NULL, node->children[0]->types.identifier, -1);
 	array_size = get_chunk_size_node(instance_name_prefix, array_name);
-	array_row = node->children[1]; //->types.number.value;
-	array_col = node->children[2]; //->types.number.value;
+	array_row = node->children[1];
+	array_col = node->children[2];
 
 	// build the new AST
 	new_node_1 = newBinaryOperation(MULTIPLY, array_row, array_size, node->children[0]->line_number);
