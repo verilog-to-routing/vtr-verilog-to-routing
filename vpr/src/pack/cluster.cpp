@@ -69,7 +69,6 @@ using namespace std;
 #include "tatum/report/graphviz_dot_writer.hpp"
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
-#define AAPACK_MAX_NET_SINKS_IGNORE 64				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10			/* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
 #define AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE 4		/* When investigating transitive fanout connections in packing, this is the highest fanout net that will be explored */
 #define AAPACK_MAX_TRANSITIVE_EXPLORE 40			/* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
@@ -218,7 +217,8 @@ static void mark_and_update_partial_gain(const AtomNetId inet, enum e_gain_updat
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block,
         const SetupTimingInfo& timing_info,
-        const std::unordered_set<AtomNetId>& is_global);
+        const std::unordered_set<AtomNetId>& is_global,
+        const int high_fanout_net_threshold);
 
 static void update_total_gain(float alpha, float beta, bool timing_driven,
 		bool connection_driven, t_pb *pb);
@@ -230,6 +230,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
 		const bool connection_driven,
+        const int high_fanout_net_threshold,
         const SetupTimingInfo& timing_info);
 
 static void start_new_cluster(
@@ -258,7 +259,8 @@ static t_pack_molecule* get_highest_gain_molecule(
 		const enum e_gain_type gain_mode,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
 		vtr::vector<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
-		const ClusterBlockId cluster_index);
+		const ClusterBlockId cluster_index,
+        bool prioritize_transitive_connectivity);
 
 void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
                                                                 t_cluster_placement_stats *cluster_placement_stats_ptr,
@@ -278,6 +280,7 @@ static t_pack_molecule* get_molecule_for_cluster(
 		t_pb *cur_pb,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const bool allow_unrelated_clustering,
+		const bool prioritize_transitive_connectivity,
 		int *num_unrelated_clustering_attempts,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
 		vtr::vector<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
@@ -509,6 +512,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
                     packer_opts.global_clocks,
                     packer_opts.alpha, packer_opts.beta,
                     packer_opts.timing_driven, packer_opts.connection_driven,
+                    packer_opts.high_fanout_threshold,
                     *timing_info);
 			num_clb++;
 
@@ -523,6 +527,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 					cluster_ctx.clb_nlist.block_pb(clb_index),
                     atom_molecules,
                     allow_unrelated_clustering,
+                    packer_opts.prioritize_transitive_connectivity,
 					&num_unrelated_clustering_attempts,
 					cur_cluster_placement_stats_ptr,
 					clb_inter_blk_nets,
@@ -567,6 +572,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 							cluster_ctx.clb_nlist.block_pb(clb_index),
                             atom_molecules,
                             allow_unrelated_clustering,
+                            packer_opts.prioritize_transitive_connectivity,
 							&num_unrelated_clustering_attempts,
 							cur_cluster_placement_stats_ptr,
 							clb_inter_blk_nets,
@@ -589,6 +595,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
                         is_clock, //Set of all global signals (currently clocks)
 						packer_opts.global_clocks, packer_opts.alpha, packer_opts.beta, packer_opts.timing_driven,
 						packer_opts.connection_driven,
+                        packer_opts.high_fanout_threshold,
                         *timing_info);
 				num_unrelated_clustering_attempts = 0;
 
@@ -599,6 +606,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 						cluster_ctx.clb_nlist.block_pb(clb_index),
                         atom_molecules,
                         allow_unrelated_clustering,
+                        packer_opts.prioritize_transitive_connectivity,
 						&num_unrelated_clustering_attempts,
 						cur_cluster_placement_stats_ptr,
 						clb_inter_blk_nets,
@@ -1592,7 +1600,8 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block,
         const SetupTimingInfo& timing_info,
-        const std::unordered_set<AtomNetId>& is_global) {
+        const std::unordered_set<AtomNetId>& is_global,
+        const int high_fanout_net_threshold) {
 
 	/* Updates the marked data structures, and if gain_flag is GAIN,  *
 	 * the gain when an atom block is added to a cluster.  The        *
@@ -1605,7 +1614,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
     auto& atom_ctx = g_vpr_ctx.atom();
 	t_pb* cur_pb = atom_ctx.lookup.atom_pb(clustered_blk_id)->parent_pb;
 
-	if (atom_ctx.nlist.net_sinks(net_id).size() > AAPACK_MAX_NET_SINKS_IGNORE) {
+	if (int(atom_ctx.nlist.net_sinks(net_id).size()) > high_fanout_net_threshold) {
 		/* Optimization: It can be too runtime costly for marking all sinks for
          * a high fanout-net that probably has no hope of ever getting packed,
          * thus ignore those high fanout nets */
@@ -1740,6 +1749,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
 		const bool connection_driven,
+        const int high_fanout_net_threshold,
         const SetupTimingInfo& timing_info) {
 
 	/* Updates cluster stats such as gain, used pins, and clock structures.  */
@@ -1792,13 +1802,15 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
                         timing_driven,
                         connection_driven, OUTPUT,
                         timing_info,
-                        is_global);
+                        is_global,
+                        high_fanout_net_threshold);
             } else {
                 mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
                         timing_driven,
                         connection_driven, OUTPUT,
                         timing_info,
-                        is_global);
+                        is_global,
+                        high_fanout_net_threshold);
             }
         }
 
@@ -1809,7 +1821,8 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
                     timing_driven, connection_driven,
                     INPUT,
                     timing_info,
-                    is_global);
+                    is_global,
+                    high_fanout_net_threshold);
         }
 
         /* Finally Clocks */
@@ -1819,12 +1832,14 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
                 mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
                         timing_driven, connection_driven, INPUT,
                         timing_info,
-                        is_global);
+                        is_global,
+                        high_fanout_net_threshold);
             } else {
                 mark_and_update_partial_gain(net_id, GAIN, blk_id,
                         timing_driven, connection_driven, INPUT,
                         timing_info,
-                        is_global);
+                        is_global,
+                        high_fanout_net_threshold);
             }
         }
 
@@ -1998,7 +2013,8 @@ static t_pack_molecule *get_highest_gain_molecule(
 		const enum e_gain_type gain_mode,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
 		vtr::vector<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
-		const ClusterBlockId cluster_index) {
+		const ClusterBlockId cluster_index,
+        bool prioritize_transitive_connectivity) {
 
 	/* This routine populates a list of feasible blocks outside the cluster then returns the best one for the list    *
 	 * not currently in a cluster and satisfies the feasibility     *
@@ -2015,15 +2031,27 @@ static t_pack_molecule *get_highest_gain_molecule(
         add_cluster_molecule_candidates_by_connectivity_and_timing(cur_pb, cluster_placement_stats_ptr, atom_molecules);
     }
 
-	// 2. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
-	if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->explore_transitive_fanout) {
-        add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets, cluster_index);
-	}
+    if (prioritize_transitive_connectivity) {
+        // 2. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
+        if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->explore_transitive_fanout) {
+            add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets, cluster_index);
+        }
 
-	// 3. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
-	if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
-        add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules);
-	}
+        // 3. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
+        if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
+            add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules);
+        }
+    } else { //Reverse order
+        // 3. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
+        if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
+            add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules);
+        }
+
+        // 2. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
+        if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->explore_transitive_fanout) {
+            add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets, cluster_index);
+        }
+    }
 
 	/* Grab highest gain molecule */
 	t_pack_molecule* molecule = nullptr;
@@ -2179,6 +2207,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 		t_pb *cur_pb,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const bool allow_unrelated_clustering,
+		const bool prioritize_transitive_connectivity,
 		int *num_unrelated_clustering_attempts,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
 		vtr::vector<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
@@ -2195,7 +2224,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 	/* If cannot pack into primitive, try packing into cluster */
 
 	auto best_molecule = get_highest_gain_molecule(cur_pb, atom_molecules,
-			NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets, cluster_index);
+			NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets, cluster_index, prioritize_transitive_connectivity);
 
 	/* If no blocks have any gain to the current cluster, the code above      *
 	 * will not find anything.  However, another atom block with no inputs in *

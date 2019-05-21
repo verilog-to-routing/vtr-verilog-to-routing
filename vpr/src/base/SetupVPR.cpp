@@ -413,6 +413,8 @@ void SetupPackerOpts(const t_options& Options,
 	PackerOpts->balance_block_type_utilization = Options.balance_block_type_utilization;
 	PackerOpts->target_external_pin_util = Options.target_external_pin_util;
     PackerOpts->target_device_utilization = Options.target_device_utilization;
+    PackerOpts->prioritize_transitive_connectivity = Options.pack_prioritize_transitive_connectivity;
+    PackerOpts->high_fanout_threshold = Options.pack_high_fanout_threshold;
 
     //TODO: document?
 	PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */

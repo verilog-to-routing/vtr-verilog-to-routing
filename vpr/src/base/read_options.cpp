@@ -1008,6 +1008,16 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value({"auto"})
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument<bool,ParseOnOff>(args.pack_prioritize_transitive_connectivity, "--pack_prioritize_transitive_connectivity")
+            .help("Whether transitive connectivity is prioritized over high-fanout connectivity during packing")
+            .default_value("on")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    pack_grp.add_argument(args.pack_high_fanout_threshold, "--pack_high_fanout_threshold")
+            .help("Packer high fanout threshold")
+            .default_value("64")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
             .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
             .default_value("2")

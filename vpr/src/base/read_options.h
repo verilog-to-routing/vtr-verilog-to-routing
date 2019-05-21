@@ -69,6 +69,8 @@ struct t_options {
     argparse::ArgValue<bool> enable_clustering_pin_feasibility_filter;
     argparse::ArgValue<e_balance_block_type_util> balance_block_type_utilization;
     argparse::ArgValue<std::vector<std::string>> target_external_pin_util;
+    argparse::ArgValue<bool> pack_prioritize_transitive_connectivity;
+    argparse::ArgValue<int> pack_high_fanout_threshold;
     argparse::ArgValue<int> pack_verbosity;
 
     /* Placement options */
