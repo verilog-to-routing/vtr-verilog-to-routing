@@ -525,6 +525,7 @@ class BlackBoxInst : public Instance {
         BlackBoxInst(std::string type_name, //Instance type
                      std::string inst_name, //Instance name
                      std::map<std::string,std::string> params, //Verilog parameters: Dictonary of <param_name,value>
+                     std::map<std::string,std::string> attrs, //Instance attributes: Dictonary of <attr_name,value>
                      std::map<std::string,std::vector<std::string>> input_port_conns, //Port connections: Dictionary of <port,nets>
                      std::map<std::string,std::vector<std::string>> output_port_conns, //Port connections: Dictionary of <port,nets>
                      std::vector<Arc> timing_arcs, //Combinational timing arcs
@@ -533,6 +534,7 @@ class BlackBoxInst : public Instance {
             : type_name_(type_name)
             , inst_name_(inst_name)
             , params_(params)
+            , attrs_(attrs)
             , input_port_conns_(input_port_conns)
             , output_port_conns_(output_port_conns)
             , timing_arcs_(timing_arcs)
@@ -570,6 +572,11 @@ class BlackBoxInst : public Instance {
             // Params
             for(auto iter = params_.begin(); iter != params_.end(); ++iter) {
                 os << ".param " << iter->first << " " << iter->second << "\n";
+            }
+
+            // Attrs
+            for(auto iter = attrs_.begin(); iter != attrs_.end(); ++iter) {
+                os << ".attr " << iter->first << " " << iter->second << "\n";
             }
 
             os << "\n";
@@ -708,6 +715,7 @@ class BlackBoxInst : public Instance {
         std::string type_name_;
         std::string inst_name_;
         std::map<std::string,std::string> params_;
+        std::map<std::string,std::string> attrs_;
         std::map<std::string,std::vector<std::string>> input_port_conns_;
         std::map<std::string,std::vector<std::string>> output_port_conns_;
         std::vector<Arc> timing_arcs_;
@@ -1234,6 +1242,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::string type = pb_type->model->name;
             std::string inst_name = join_identifier(type, atom->name);
             std::map<std::string,std::string> params;
+            std::map<std::string,std::string> attrs;
             std::map<std::string,std::vector<std::string>> input_port_conns;
             std::map<std::string,std::vector<std::string>> output_port_conns;
             std::vector<Arc> timing_arcs;
@@ -1364,7 +1373,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 }
             }
 
-            return std::make_shared<BlackBoxInst>(type, inst_name, params, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
+            return std::make_shared<BlackBoxInst>(type, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
         }
 
         //Returns an Instance object representing a Multiplier
@@ -1378,6 +1387,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::string type_name = pb_type->model->name;
             std::string inst_name = join_identifier(type_name, atom->name);
             std::map<std::string,std::string> params;
+            std::map<std::string,std::string> attrs;
             std::map<std::string,std::vector<std::string>> input_port_conns;
             std::map<std::string,std::vector<std::string>> output_port_conns;
             std::vector<Arc> timing_arcs;
@@ -1461,7 +1471,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             VTR_ASSERT(pb_graph_node->num_clock_ports == 0); //No clocks
 
-            return std::make_shared<BlackBoxInst>(type_name, inst_name, params, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
+            return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
         }
 
         //Returns an Instance object representing an Adder
@@ -1475,6 +1485,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::string type_name = pb_type->model->name;
             std::string inst_name = join_identifier(type_name, atom->name);
             std::map<std::string,std::string> params;
+            std::map<std::string,std::string> attrs;
             std::map<std::string,std::vector<std::string>> input_port_conns;
             std::map<std::string,std::vector<std::string>> output_port_conns;
             std::vector<Arc> timing_arcs;
@@ -1561,7 +1572,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 }
             }
 
-            return std::make_shared<BlackBoxInst>(type_name, inst_name, params, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
+            return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
         }
 
         std::shared_ptr<Instance> make_blackbox_instance(const t_pb* atom)  {
@@ -1574,6 +1585,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::string type_name = pb_type->model->name;
             std::string inst_name = join_identifier(type_name, atom->name);
             std::map<std::string,std::string> params;
+            std::map<std::string,std::string> attrs;
             std::map<std::string,std::vector<std::string>> input_port_conns;
             std::map<std::string,std::vector<std::string>> output_port_conns;
             std::vector<Arc> timing_arcs;
@@ -1663,7 +1675,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 params[param.first] = param.second;
             }
 
-            return std::make_shared<BlackBoxInst>(type_name, inst_name, params, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
+            for (auto attr: atom_ctx.nlist.block_attrs(blk_id)) {
+                attrs[attr.first] = attr.second;
+            }
+
+            return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
         }
 
         //Returns the top level pb_route associated with the given pb
