@@ -1962,6 +1962,13 @@ static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timi
     //Update the backward cost
     new_costs.backward_cost = old_costs.backward_cost; //Back cost to 'from_node'
     new_costs.backward_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
+
+    // In calculating the backward_cost of to_node, we must evaluate the effect of the potential
+    // internal capacitance which arises by connecting from_node to to_node. To achieve this, we update
+    // the backward_cost of to_node by accounting for the corresponding increase in the time delay.
+    // This time delay is found by multiplying the resistance of from_node with the internal capacitance
+    // of this new connection.
+
     new_costs.backward_cost += cost_params.criticality * (Tdel + old_Rdel * switch_Cinternal); //Delay cost accounting for Cinternal
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();

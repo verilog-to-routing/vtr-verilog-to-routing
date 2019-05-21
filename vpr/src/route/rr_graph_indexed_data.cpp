@@ -279,11 +279,12 @@ static void load_rr_indexed_data_T_values(int index_start,
         int num_indices_to_load, t_rr_type rr_type, int nodes_per_chan,
         const t_rr_node_indices& L_rr_node_indices) {
 
-    /* Loads the average propagation times through segments of each index type  *
-     * for either all CHANX segment types or all CHANY segment types.  It does  *
-     * this by looking at all the segments in one channel in the middle of the  *
-     * array and averaging the R and C values of all segments of the same type  *
-     * and using them to compute average delay values for this type of segment. */
+    /* Loads the average propagation times through segments of each index type   *
+     * for either all CHANX segment types or all CHANY segment types.  It does   *
+     * this by looking at all the segments in one channel in the middle of the   *
+     * array and averaging the R, C, and Cinternal values of all segments of the *
+     * same type and using them to compute average delay values for this type of *
+     * segment. */
 
     int itrack, inode, cost_index;
     float *C_total, *R_total; /* [0..device_ctx.rr_indexed_data.size() - 1] */
@@ -301,8 +302,8 @@ static void load_rr_indexed_data_T_values(int index_start,
     /* August 2014: Not all wire-to-wire switches connecting from some wire segment will
        necessarily have the same delay. i.e. a mux with less inputs will have smaller delay
        than a mux with a greater number of inputs. So to account for these differences we will
-       get the average R/Tdel values by first averaging them for a single wire segment (first
-       for loop below), and then by averaging this value over all wire segments in the channel
+       get the average R/Tdel/Cinternal values by first averaging them for a single wire segment
+       (first for loop below), and then by averaging this value over all wire segments in the channel
        (second for loop below) */
     switch_R_total = (double *) vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof (double));
     switch_T_total = (double *) vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof (double));
@@ -336,7 +337,7 @@ static void load_rr_indexed_data_T_values(int index_start,
         short buffered = UNDEFINED;
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int to_node_index = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
-            /* want to get C/R/Tdel of switches that connect this track segment to other track segments */
+            /* want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments */
             if (device_ctx.rr_nodes[to_node_index].type() == CHANX || device_ctx.rr_nodes[to_node_index].type() == CHANY) {
                 int switch_index = device_ctx.rr_nodes[inode].edge_switch(iedge);
                 avg_switch_R += device_ctx.rr_switch_inf[switch_index].R;
@@ -390,11 +391,13 @@ static void load_rr_indexed_data_T_values(int index_start,
             Cinternalsw = (float) switch_Cinternal_total[cost_index] / num_nodes_of_index[cost_index];
 
             if (switches_buffered[cost_index]) {
+                // Now we account for the time delay that arises from the potential internal capacitance
+                // of a connection.
                 device_ctx.rr_indexed_data[cost_index].T_linear = Tsw + Rsw * (Cinternalsw + Cnode)
                         + 0.5 * Rnode * (Cnode + Cinternalsw);
                 device_ctx.rr_indexed_data[cost_index].T_quadratic = 0.;
                 device_ctx.rr_indexed_data[cost_index].C_load = 0.;
-            } else { /* Pass transistor */
+            } else { /* Pass transistor, does not have an internal capacitance*/
                 device_ctx.rr_indexed_data[cost_index].C_load = Cnode;
 
                 /* See Dec. 23, 1997 notes for deriviation of formulae. */
