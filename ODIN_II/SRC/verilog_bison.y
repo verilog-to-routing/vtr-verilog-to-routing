@@ -65,7 +65,7 @@ int yylex(void);
 %token vENDMODULE vENDSPECIFY vENDFUNCTION vIF vINOUT vINPUT vMODULE vFUNCTION vNAND vNEGEDGE vNOR vNOT vOR vFOR
 %token vOUTPUT vPARAMETER vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
-%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER
+%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vCLOG2
 %token vPLUS_COLON vMINUS_COLON vSPECPARAM
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
 %token vNOT_SUPPORT 
@@ -266,9 +266,8 @@ variable:
 	| '[' expression ':' expression ']' vSYMBOL_ID										{$$ = newVarDeclare($6, $2, $4, NULL, NULL, NULL, yylineno);}
 	| '[' expression ':' expression ']' vSYMBOL_ID '[' expression ':' expression ']'	{$$ = newVarDeclare($6, $2, $4, $8, $10, NULL, yylineno);}
 	| '[' expression ':' expression ']' vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newVarDeclare2D($6, $2, $4, $8, $10,$13,$15, NULL, yylineno);}
-//  | '[' expression ':' expression ']' vSYMBOL_ID '=' primary							{$$ = newVarDeclare($6, $2, $4, NULL, NULL, $8, yylineno);}
 	| '[' expression ':' expression ']' vSYMBOL_ID '=' expression						{$$ = newVarDeclare($6, $2, $4, NULL, NULL, $8, yylineno);}
-	| vSYMBOL_ID '=' primary		 													{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, $3, yylineno);}
+	| vSYMBOL_ID '=' expression															{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, $3, yylineno);}
 	;
 
 integer_type_variable:
@@ -374,6 +373,7 @@ list_of_module_parameters:
 
 module_parameter:
 	'.' vSYMBOL_ID '(' expression ')'					{$$ = newModuleParameter($2, $4, yylineno);}
+	| '.' vSYMBOL_ID '(' ')'							{$$ = newModuleParameter($2, NULL, yylineno);}
 	| expression										{$$ = newModuleParameter(NULL, $1, yylineno);}
 	;
 
@@ -481,6 +481,7 @@ expression:
 	| voXNOR  expression %prec UXNOR						{$$ = newUnaryOperation(BITWISE_XNOR, $2, yylineno);}
 	| '!' expression %prec ULNOT							{$$ = newUnaryOperation(LOGICAL_NOT, $2, yylineno);}
 	| '^' expression %prec UXOR								{$$ = newUnaryOperation(BITWISE_XOR, $2, yylineno);}
+	| vCLOG2 '(' expression ')'								{$$ = newUnaryOperation(CLOG2, $3, yylineno);}
 	| expression '^' expression								{$$ = newBinaryOperation(BITWISE_XOR, $1, $3, yylineno);}
 	| expression voPOWER expression							{$$ = newExpandPower(MULTIPLY,$1, $3, yylineno);}
 	| expression '*' expression								{$$ = newBinaryOperation(MULTIPLY, $1, $3, yylineno);}

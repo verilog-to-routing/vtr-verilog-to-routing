@@ -93,14 +93,19 @@ void update_tree_tag(ast_node_t *node, int cases, int tagged);
 /*---------------------------------------------------------------------------
  * (function: create_node_w_type)
  *-------------------------------------------------------------------------*/
-ast_node_t* create_node_w_type(ids id, int line_number, int file_number)
+static ast_node_t* create_node_w_type(ids id, int line_number, int file_number, bool update_unique_count)
 {
+	oassert(id != NO_ID);
+
 	static long unique_count = 0;
 
 	ast_node_t* new_node;
 
 	new_node = (ast_node_t*)vtr::calloc(1, sizeof(ast_node_t));
 	oassert(new_node != NULL);
+
+	initial_node(new_node, id, line_number, file_number, unique_count);
+
 	new_node->type = id;
 
 	new_node->children = NULL;
@@ -108,12 +113,28 @@ ast_node_t* create_node_w_type(ids id, int line_number, int file_number)
 
 	new_node->line_number = line_number;
 	new_node->file_number = file_number;
-	new_node->unique_count = unique_count++;
+	new_node->unique_count = unique_count;
+
+	if(update_unique_count)
+		unique_count += 1;
 
 	new_node->far_tag = 0;
 	new_node->high_number = 0;
 
 	return new_node;
+}
+
+ast_node_t* create_node_w_type_no_count(ids id, int line_number, int file_number)
+{
+	return create_node_w_type(id, line_number, file_number, false);
+}
+
+/*---------------------------------------------------------------------------
+ * (function: create_node_w_type)
+ *-------------------------------------------------------------------------*/
+ast_node_t* create_node_w_type(ids id, int line_number, int file_number)
+{
+	return create_node_w_type(id, line_number, file_number, true);
 }
 
 /*---------------------------------------------------------------------------
@@ -365,37 +386,6 @@ void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child)
 
     node->children[0] = child;
 
-}
-/*---------------------------------------------------------------------------------------------
- * (function: get_range)
- *  Check the node range is legal. Will return the range if it's legal.
- *  Node should have three children. Second and Third children's type should be NUMBERS.
- *-------------------------------------------------------------------------------------------*/
-int get_range(ast_node_t* first_node)
-{
-	long temp_value;
-
-	/* look at the first item to see if it has a range */
-
-	if (first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS && first_node->children[2] != NULL && first_node->children[2]->type == NUMBERS)
-	{
-		/* IF the first element in the list has a second element...that is the range */
-		//oassert(first_node->children[2] != NULL); // the third element should be a value
-		//oassert((first_node->children[1]->type == NUMBERS) && (first_node->children[2]->type == NUMBERS)); // should be numbers
-		if(first_node->children[1]->types.number.value < first_node->children[2]->types.number.value)
-		{
-			// Reversing the indicies doesn't produce correct code. We need to actually handle these correctly.
-			error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
-
-			// swap them around
-			temp_value = first_node->children[1]->types.number.value;
-			first_node->children[1]->types.number.value = first_node->children[2]->types.number.value;
-			first_node->children[2]->types.number.value = temp_value;
-		}
-
-		return abs(first_node->children[1]->types.number.value - first_node->children[2]->types.number.value) + 1; // 1:0 is 2 spots
-	}
-	return -1; // indicates no range
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -907,6 +897,7 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 {
 	if (node)
 	{
+		oassert(node->type != NO_ID);
 		ast_node_t *node_copy;
 		node_copy = (ast_node_t *)vtr::calloc(1,sizeof(ast_node_t));
 		memcpy(node_copy, node, sizeof(ast_node_t));
@@ -932,14 +923,12 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 				}
 				sc_spot = sc_lookup_string(local_param_table_sc, node->types.identifier);
 				if (sc_spot != -1){
-					newNode = (ast_node_t *)local_param_table_sc->data[sc_spot];
+					newNode = ast_node_deep_copy((ast_node_t *)local_param_table_sc->data[sc_spot]);
 				}
 			break;
 
 			case UNARY_OPERATION:
-				if(initial){
-					newNode = fold_unary(node_copy->children[0],node_copy->types.operation.op);
-				}
+				newNode = fold_unary(node_copy->children[0],node_copy->types.operation.op);
 				break;
 
 			case BINARY_OPERATION:
@@ -951,6 +940,61 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 		}
 
 		if (node_is_constant(newNode)){
+			newNode->shared_node = node->shared_node;
+
+			// /* clean up */
+			// if (node->type != IDENTIFIERS) {
+			// 	node = free_whole_tree(node);
+			// }
+			
+			node = newNode;
+		}
+
+		vtr::free(node_copy->children);
+		vtr::free(node_copy);
+	}
+	return node;
+}
+
+/*----------------------------------------------------------------------------
+ * (function: resolve_ast_node)
+ *--------------------------------------------------------------------------*/
+/**
+ * Recursively resolves an IDENTIFIER to a parameter into its actual value,
+ * by looking it up in the global_param_table_sc
+ * Also try and fold any BINARY_OPERATIONs now that an IDENTIFIER has been
+ * resolved
+ */
+
+ast_node_t *resolve_ast_node(STRING_CACHE *local_param_table_sc, short initial, char *module_name, ast_node_t *node)
+{
+	if (node)
+	{
+		ast_node_t *node_copy;
+		node_copy = (ast_node_t *)vtr::calloc(1,sizeof(ast_node_t));
+		memcpy(node_copy, node, sizeof(ast_node_t));
+		node_copy->children = (ast_node_t **)vtr::calloc(node_copy->num_children,sizeof(ast_node_t*));
+
+		long i;
+		for (i = 0; i < node->num_children; i++){
+			node_copy->children[i] = resolve_ast_node(local_param_table_sc, initial, module_name, node->children[i]);
+		}
+		ast_node_t *newNode = NULL;
+		switch (node->type){
+			
+			case UNARY_OPERATION:
+				newNode = fold_unary(node_copy->children[0],node_copy->types.operation.op);
+				break;
+
+			case BINARY_OPERATION:
+				newNode = fold_binary(node_copy->children[0], node_copy->children[1], node_copy->types.operation.op);
+				break;
+
+			default:
+				break;
+		}
+
+		if (node_is_ast_constant(newNode, local_param_table_sc)){
 			newNode->shared_node = node->shared_node;
 
 			/* clean up */
@@ -974,7 +1018,7 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
  * Make a unique name for a module based on its parameter list
  * e.g. for a "mod #(0,1,2,3) a(b,c,d)" instantiation you get name___0_1_2_3
  */
-char *make_module_param_name(ast_node_t *module_param_list, char *module_name)
+char *make_module_param_name(STRING_CACHE *defines_for_module_sc, ast_node_t *module_param_list, char *module_name)
 {
 	char *module_param_name = (char*)vtr::malloc((strlen(module_name)+1024) * sizeof(char));
 	strcpy(module_param_name, module_name);
@@ -986,9 +1030,12 @@ char *make_module_param_name(ast_node_t *module_param_list, char *module_name)
 		strcat(module_param_name, "___");
 		for (i = 0; i < module_param_list->num_children; i++)
 		{
-			oassert(module_param_list->children[i]->children[5]->type == NUMBERS);
-
-			odin_sprintf(module_param_name, "%s_%ld", module_param_name, module_param_list->children[i]->children[5]->types.number.value);
+			if (module_param_list->children[i]->children[5]) 
+			{
+				ast_node_t *node = resolve_node(defines_for_module_sc, TRUE, module_name, module_param_list->children[i]->children[5]);
+				oassert(node->type == NUMBERS);
+				odin_sprintf(module_param_name, "%s_%ld", module_param_name, module_param_list->children[i]->children[5]->types.number.value);
+			}
 		}
 	}
 
@@ -1133,12 +1180,20 @@ ast_node_t *fold_unary(ast_node_t *child_0, operation_list op_id){
 				success = TRUE;
 				break;
 
+			case CLOG2:
+				if(length > ODIN_STD_BITWIDTH)
+					warning_message(PARSE_ERROR, child_0->line_number, child_0->file_number, "argument is %ld-bits but ODIN limit is %lu-bits \n",length,ODIN_STD_BITWIDTH);
+
+				result = clog2(operand_0, length);
+				success = TRUE;
+				break;
+
 			default:
 				break;
 		}
 		vtr::free(binary_string);
 		if(success){
-			return create_tree_node_long_number(result, 128, child_0->line_number, child_0->file_number);
+			return create_tree_node_long_number(result, ODIN_STD_BITWIDTH, child_0->line_number, child_0->file_number);
 		}
 	}
 	return NULL;
@@ -1353,6 +1408,43 @@ ast_node_t *node_is_constant(ast_node_t *node){
 	return NULL;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: node_is_ast_constant)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *node_is_ast_constant(ast_node_t *node){
+	if (node && 
+		(node_is_constant(node) 
+		|| (node->types.variable.is_parameter == TRUE)
+		|| (node->type == UNARY_OPERATION && node_is_ast_constant(node->children[0]))
+		|| (node->type == BINARY_OPERATION && node_is_ast_constant(node->children[0]) && node_is_ast_constant(node->children[1]))))
+	{
+		return node;
+	}
+	return NULL;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: node_is_ast_constant)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *node_is_ast_constant(ast_node_t *node, STRING_CACHE *defines_for_module_sc){
+	if (node && (node_is_constant(node) 
+		|| (node->types.variable.is_parameter == TRUE)
+		|| (node->type == UNARY_OPERATION && node_is_ast_constant(node->children[0], defines_for_module_sc))
+		|| (node->type == BINARY_OPERATION && node_is_ast_constant(node->children[0], defines_for_module_sc) && node_is_ast_constant(node->children[1], defines_for_module_sc))))
+	{
+		return node;
+	}
+	else if (node && node->type == IDENTIFIERS) {
+		int sc_spot;
+		if ((sc_spot = sc_lookup_string(defines_for_module_sc, node->types.identifier)) != -1
+			&& node_is_ast_constant((ast_node_t *)defines_for_module_sc->data[sc_spot]))
+		{
+			return node;
+		}
+	}
+	return NULL;
+}
+
 /*---------------------------------------------------------------------------
  * (function: initial_node)
  *-------------------------------------------------------------------------*/
@@ -1370,49 +1462,30 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->hb_port = 0;
 	new_node->net_node = 0;
 	new_node->is_read_write = 0;
-
 }
-/*---------------------------------------------------------------------------------------------
- * (function: get_range) for 2D Array
- *  Check the node range is legal. Will return the range if it's legal.
- *  Node should have three children. Second, Third, Forth, and Fifth children's type should be NUMBERS.
- *-------------------------------------------------------------------------------------------*/
-int get_range2D(ast_node_t* first_node)
+
+/*---------------------------------------------------------------------------
+ * (function: clog2)
+ *-------------------------------------------------------------------------*/
+long clog2(long value_in, int length) 
 {
-	long temp_value;
-	/* look at the first item to see if it has a range */
-	if ((first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS) &&
-		(first_node->children[2] != NULL && first_node->children[2]->type == NUMBERS) &&
-		(first_node->children[3] != NULL && first_node->children[3]->type == NUMBERS) &&
-		(first_node->children[4] != NULL && first_node->children[4]->type == NUMBERS)
-	   )
+	if (value_in == 0) return 0;
+
+	long result;
+
+	/* negative numbers may be larger than they need to be */
+	if (value_in < 0 && value_in >= std::numeric_limits<int32_t>::min()) return 32; 
+
+	if (length > 32) 
 	{
-		/* IF the first element in the list has a second element...that is the range */
-		//oassert(first_node->children[2] != NULL); // the third element should be a value
-		//oassert((first_node->children[1]->type == NUMBERS) && (first_node->children[2]->type == NUMBERS)); // should be numbers
-		if(first_node->children[1]->types.number.value < first_node->children[2]->types.number.value)
-		{
-			// Reversing the indicies doesn't produce correct code. We need to actually handle these correctly.
-			error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
-
-			// swap them around
-			temp_value = first_node->children[1]->types.number.value;
-			first_node->children[1]->types.number.value = first_node->children[2]->types.number.value;
-			first_node->children[2]->types.number.value = temp_value;
-		}
-
-		if(first_node->children[3]->types.number.value < first_node->children[4]->types.number.value)
-		{
-			// Reversing the indicies doesn't produce correct code. We need to actually handle these correctly.
-			error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "%s", "Odin doesn't support arrays declared [m:n] where m is less than n.");
-
-			// swap them around
-			temp_value = first_node->children[3]->types.number.value;
-			first_node->children[3]->types.number.value = first_node->children[4]->types.number.value;
-			first_node->children[4]->types.number.value = temp_value;
-		}
-
-		return abs(first_node->children[1]->types.number.value * first_node->children[3]->types.number.value) - 1; // 1:0 is 2 spots
+		uint64_t unsigned_val = (uint64_t) value_in;
+		result = (long) ceil(log2((double) unsigned_val));
 	}
-	return -1; // indicates no range
+	else
+	{
+		uint32_t unsigned_val = (uint32_t) value_in;
+		result = (long) ceil(log2((double) unsigned_val));
+	}
+
+	return result;
 }

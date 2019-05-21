@@ -324,6 +324,13 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
 
         fprintf(f, "\n");
 
+        for (auto param : netlist.block_params(blk_id)) {
+            fprintf(f, ".param %s %s\n", param.first.c_str(), param.second.c_str());
+        }
+        for (auto attr : netlist.block_attrs(blk_id)) {
+            fprintf(f, ".attr %s %s\n", attr.first.c_str(), attr.second.c_str());
+        }
+
         fprintf(f, "\n");
     }
 

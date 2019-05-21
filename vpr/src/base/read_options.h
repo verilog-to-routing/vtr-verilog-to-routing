@@ -82,6 +82,7 @@ struct t_options {
     argparse::ArgValue<e_place_algorithm> PlaceAlgorithm;
     argparse::ArgValue<e_pad_loc_type> pad_loc_type;
     argparse::ArgValue<int> PlaceChanWidth;
+    argparse::ArgValue<float> place_rlim_escape_fraction;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;

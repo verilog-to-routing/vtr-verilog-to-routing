@@ -23,6 +23,7 @@ For the VPR GUI you need:
  * FreeType
  * Xft (libXft + libX11)
  * fontconfig
+ * libgtk-3-dev
 
 For the [regression testing and benchmarking](README.developers.md#running-tests) you will need:
  * Perl + List::MoreUtils

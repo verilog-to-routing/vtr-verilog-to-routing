@@ -3163,37 +3163,39 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(
     const auto& chain_root_pins = molecule->pack_pattern->chain_root_pins;
 
     t_model_ports *root_port = chain_root_pins[0]->port->model_port;
+    AtomNetId chain_net_id;
     auto port_id = atom_ctx.nlist.find_atom_port(blk_id, root_port);
 
     if (port_id) {
-        auto chain_net_id = atom_ctx.nlist.port_net(port_id, chain_root_pins[0]->pin_number);
-        // if this block is part of a long chain or it is driven by a cluster
-        // input pin we need to check the placement legality of this block
-        // For some architectures (titan) even small chains that can fit within one
-        // cluster still need to start at the top of the cluster since their input is
-        // driven by a global gnd or vdd. Therefore even if this is not a long chain
-        // but its input pin is driven by a net, the placement legality is checked.
-        if (is_long_chain || chain_net_id) {
+        chain_net_id = atom_ctx.nlist.port_net(port_id, chain_root_pins[0]->pin_number);
+    }
 
-            auto chain_id = molecule->chain_info->chain_id;
-            // if this chain has a chain id assigned to it
-            if (chain_id != -1) {
-                // the chosen primitive should be a valid starting point for the chain
-                if (pb_graph_node != chain_root_pins[chain_id]->parent_node) {
-                    block_pack_status = BLK_FAILED_FEASIBLE;
-                }
-            // the chain doesn't have an assigned chain_id yet
-            } else {
+    // if this block is part of a long chain or it is driven by a cluster
+    // input pin we need to check the placement legality of this block
+    // For some architectures (titan) even small chains that can fit within one
+    // cluster still need to start at the top of the cluster since their input is
+    // driven by a global gnd or vdd. Therefore even if this is not a long chain
+    // but its input pin is driven by a net, the placement legality is checked.
+    if (is_long_chain || chain_net_id) {
+
+        auto chain_id = molecule->chain_info->chain_id;
+        // if this chain has a chain id assigned to it
+        if (chain_id != -1) {
+            // the chosen primitive should be a valid starting point for the chain
+            if (pb_graph_node != chain_root_pins[chain_id]->parent_node) {
                 block_pack_status = BLK_FAILED_FEASIBLE;
-                for (const auto& chain_root_pin: chain_root_pins) {
-                    // check if this chosen primitive is one of the possible
-                    // starting points for this chain.
-                    if(pb_graph_node == chain_root_pin->parent_node) {
-                        // this location matches with the one of the dedicated chain
-                        // input from outside logic block, therefore it is feasible
-                        block_pack_status = BLK_PASSED;
-                        break;
-                    }
+            }
+        // the chain doesn't have an assigned chain_id yet
+        } else {
+            block_pack_status = BLK_FAILED_FEASIBLE;
+            for (const auto& chain_root_pin: chain_root_pins) {
+                // check if this chosen primitive is one of the possible
+                // starting points for this chain.
+                if(pb_graph_node == chain_root_pin->parent_node) {
+                    // this location matches with the one of the dedicated chain
+                    // input from outside logic block, therefore it is feasible
+                    block_pack_status = BLK_PASSED;
+                    break;
                 }
             }
         }

@@ -184,6 +184,8 @@ char* standardize_number(const char* input);
 <INITIAL>"&&&"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 
 
+	/*	C functions	*/
+<INITIAL>"$clog2"			{MP; return vCLOG2;}
 
 	/*	operands	*/
 <INITIAL>`?[a-zA-Z_][a-zA-Z0-9_]*				{ MP; yylval.id_name = vtr::strdup(yytext); return vSYMBOL_ID; }

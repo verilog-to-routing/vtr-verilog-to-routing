@@ -41,3 +41,4 @@ regression_tests/vtr_reg_strong/strong_target_pin_util
 regression_tests/vtr_reg_strong/strong_clock_modeling
 regression_tests/vtr_reg_strong/strong_unroute_analysis
 regression_tests/vtr_reg_strong/strong_router_lookahead
+regression_tests/vtr_reg_strong/strong_eblif_vpr_write

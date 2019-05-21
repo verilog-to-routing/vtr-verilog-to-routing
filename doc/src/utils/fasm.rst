@@ -1,12 +1,13 @@
 FPGA Assembly (FASM) Output Support
 ===================================
 
-After VPR has generated a place and routed design, the ``genfasm`` utility can
-emit a FASM_ file to represent design via FASM metadata encoded in the VPR
-architecture definition and routing graph.  The output FASM file can then be
-converted into the target architecture via architecture specific tooling.
+After VPR has generated a placed and routed design, the ``genfasm`` utility can
+emit a FASM_ file to represent the design at a level detailed enough to allow generation of a bitstream to program a device. This FASM output file is enabled by FASM metadata encoded in the VPR
+architecture definition and routing graph.  The output FASM file can be
+converted into a bitstream format suitable to program the target architecture via architecture specific tooling. Current devices that can be programmed using the vpr + fasm flow include Lattice iCE40 and Xilinx Artix-7 devices, with work on more devices underway. More information on supported devices is available from the Symbiflow_ website.
 
 .. _FASM: https://github.com/SymbiFlow/fasm
+.. _Symbiflow: https://symbiflow.github.io
 
 FASM metadata
 -------------
