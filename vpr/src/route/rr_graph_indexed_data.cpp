@@ -391,8 +391,12 @@ static void load_rr_indexed_data_T_values(int index_start,
             Cinternalsw = (float) switch_Cinternal_total[cost_index] / num_nodes_of_index[cost_index];
 
             if (switches_buffered[cost_index]) {
-                // Now we account for the time delay that arises from the potential internal capacitance
-                // of a connection.
+                // Here, we are computing the linear time delay for buffered switches. Tlinear is
+                // the sum of the intrinsic time delay of the switch and the two transient responses.
+                // The first transient response is the product between the resistance of the switch with 
+                // the combined capacitance of the node and internal capacitance of the switch. The 
+                // second transient response is the result of the Rnode being distributed halfway along a 
+                // wire segment's length times the total capacitance. 
                 device_ctx.rr_indexed_data[cost_index].T_linear = Tsw + Rsw * (Cinternalsw + Cnode)
                         + 0.5 * Rnode * (Cnode + Cinternalsw);
                 device_ctx.rr_indexed_data[cost_index].T_quadratic = 0.;

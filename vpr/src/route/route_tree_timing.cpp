@@ -533,14 +533,14 @@ update_unbuffered_ancestors_C_downstream(t_rt_node * start_of_new_path_rt_node) 
 
 
 	if (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered() == true){
+		C_downstream_addition = device_ctx.rr_switch_inf[iswitch].Cinternal;
 		rt_node = parent_rt_node;
-		rt_node->C_downstream += device_ctx.rr_switch_inf[iswitch].Cinternal;
+		rt_node->C_downstream += C_downstream_addition;
 		parent_rt_node = rt_node->parent_node;
 		iswitch = rt_node->parent_switch; 
 	}
 
 	while (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered() == false) {
-		C_downstream_addition = device_ctx.rr_switch_inf[iswitch].Cinternal;
         rt_node = parent_rt_node;
 		rt_node->C_downstream += C_downstream_addition;
 		parent_rt_node = rt_node->parent_node;
