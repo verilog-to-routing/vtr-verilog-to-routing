@@ -1078,7 +1078,13 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
                     has_second_level = true;
                 }
                 // add this driver block id with its corresponding pattern block to the queue
-                pattern_block_queue.push(std::make_pair(block_connection->from_block, driver_blk_id));
+                // only if it's driving the cin port. To avoid adding blocks by tracking the adder
+                // inputs port which will result in a molecule that cannot be placed
+                if (molecule->type == MOLECULE_FORCED_PACK &&
+                    molecule->pack_pattern->is_chain &&
+                    port_model == molecule->pack_pattern->chain_root_pins[0]->port->model_port) {
+                    pattern_block_queue.push(std::make_pair(block_connection->from_block, driver_blk_id));
+                }
             }
 
             // this block should be either driving or driven by the connection
