@@ -204,17 +204,14 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
                 VTR_LOG("    New best cost %g\n", new_pcost);
 #endif
 
-                for (t_heap_prev prev : current->nodes) {
 #ifdef ROUTER_DEBUG
-                    VTR_LOG("    Setting routing paths for associated node %d\n", prev.to_node);
+                VTR_LOG("    Setting routing paths for associated node %d\n", current->index);
 #endif
-                    add_to_mod_list(prev.to_node, modified_rr_node_inf);
+                add_to_mod_list(current->index, modified_rr_node_inf);
 
-                    route_ctx.rr_node_route_inf[prev.to_node].path_cost = new_pcost;
-                    route_ctx.rr_node_route_inf[prev.to_node].prev_node = prev.from_node;
-                    route_ctx.rr_node_route_inf[prev.to_node].prev_edge = prev.from_edge;
-
-                }
+                route_ctx.rr_node_route_inf[current->index].path_cost = new_pcost;
+                route_ctx.rr_node_route_inf[current->index].prev_node = current->prev_node;
+                route_ctx.rr_node_route_inf[current->index].prev_edge = current->prev_edge;
 
 #ifdef ROUTER_DEBUG
                 VTR_LOG("    Expanding node %d neighbours\n", inode);
@@ -420,7 +417,9 @@ static void breadth_first_expand_non_configurable_recurr(const float path_cost, 
         current->cost = std::min(current->cost, new_path_cost);
 
         //Record how we reached this node
-        current->nodes.emplace_back(to_node, from_node, iconn);
+        current->index = to_node;
+        current->prev_edge = iconn;
+        current->prev_node = from_node;
 
         //Consider any non-configurable edges which must be expanded for correctness
         auto& device_ctx = g_vpr_ctx.device();

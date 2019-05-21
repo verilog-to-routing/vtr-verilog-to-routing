@@ -1069,9 +1069,18 @@ static bool timing_driven_route_sink(ClusterNetId net_id, unsigned itarget, int 
             update_screen(ScreenUpdatePriority::MAJOR, "Unable to route connection.", ROUTING, nullptr);
         }
         return false;
+    } else {
+        //Record final link to target
+        add_to_mod_list(cheapest->index, modified_rr_node_inf);
+
+        route_ctx.rr_node_route_inf[cheapest->index].prev_node = cheapest->prev_node;
+        route_ctx.rr_node_route_inf[cheapest->index].prev_edge = cheapest->prev_edge;
+        route_ctx.rr_node_route_inf[cheapest->index].path_cost = cheapest->cost;
+        route_ctx.rr_node_route_inf[cheapest->index].backward_path_cost = cheapest->backward_path_cost;
     }
 
     profiling::sink_criticality_end(cost_params.criticality);
+
 
     /* NB:  In the code below I keep two records of the partial routing:  the   *
      * traceback and the route_tree.  The route_tree enables fast recomputation *
@@ -1369,16 +1378,14 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
     if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
 
         VTR_LOGV_DEBUG(f_router_debug, "    Better cost to %d\n", inode);
-        for (t_heap_prev prev : cheapest->nodes) {
-            VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for assicated node %d (from %d edge %d)\n", prev.to_node, prev.from_node, prev.from_edge);
+        VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for assicated node %d (from %d edge %d)\n", cheapest->index, cheapest->prev_node, cheapest->prev_edge);
 
-            add_to_mod_list(prev.to_node, modified_rr_node_inf);
+        add_to_mod_list(cheapest->index, modified_rr_node_inf);
 
-            route_ctx.rr_node_route_inf[prev.to_node].prev_node = prev.from_node;
-            route_ctx.rr_node_route_inf[prev.to_node].prev_edge = prev.from_edge;
-            route_ctx.rr_node_route_inf[prev.to_node].path_cost = new_total_cost;
-            route_ctx.rr_node_route_inf[prev.to_node].backward_path_cost = new_back_cost;
-        }
+        route_ctx.rr_node_route_inf[cheapest->index].prev_node = cheapest->prev_node;
+        route_ctx.rr_node_route_inf[cheapest->index].prev_edge = cheapest->prev_edge;
+        route_ctx.rr_node_route_inf[cheapest->index].path_cost = new_total_cost;
+        route_ctx.rr_node_route_inf[cheapest->index].backward_path_cost = new_back_cost;
 
         timing_driven_expand_neighbours(cheapest, cost_params, bounding_box,
                 router_lookahead,
@@ -1712,19 +1719,17 @@ static void timing_driven_expand_neighbours(t_heap *current,
     }
 
     //For each node associated with the current heap element, expand all of it's neighbours
-    for (const t_heap_prev& prev : current->nodes) {
-        int num_edges = device_ctx.rr_nodes[prev.to_node].num_edges();
-        for (int iconn = 0; iconn < num_edges; iconn++) {
-            int to_node = device_ctx.rr_nodes[prev.to_node].edge_sink_node(iconn);
-            timing_driven_expand_neighbour(current,
-                                           prev.to_node, iconn, to_node,
-                                           cost_params,
-                                           bounding_box,
-                                           router_lookahead,
-                                           target_node,
-                                           target_bb,
-                                           router_stats);
-        }
+    int num_edges = device_ctx.rr_nodes[current->index].num_edges();
+    for (int iconn = 0; iconn < num_edges; iconn++) {
+        int to_node = device_ctx.rr_nodes[current->index].edge_sink_node(iconn);
+        timing_driven_expand_neighbour(current,
+                                       current->index, iconn, to_node,
+                                       cost_params,
+                                       bounding_box,
+                                       router_lookahead,
+                                       target_node,
+                                       target_bb,
+                                       router_stats);
     }
 }
 
@@ -1831,7 +1836,9 @@ static void timing_driven_expand_node(const t_conn_cost_params cost_params,
                         from_node, to_node, iconn, target_node);
 
     //Record how we reached this node
-    current->nodes.emplace_back(to_node, from_node, iconn);
+    current->index = to_node;
+    current->prev_edge = iconn;
+    current->prev_node = from_node;
 }
 
 //Calculates the cost of reaching to_node

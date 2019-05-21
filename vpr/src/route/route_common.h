@@ -51,7 +51,8 @@ struct t_heap {
 	float R_upstream = 0.;
 
 	int index = OPEN;
-    std::vector<t_heap_prev> nodes;
+    int prev_node = NO_PREVIOUS;
+    int prev_edge = NO_PREVIOUS;
 };
 
 /******* Subroutines in route_common used only by other router modules ******/
