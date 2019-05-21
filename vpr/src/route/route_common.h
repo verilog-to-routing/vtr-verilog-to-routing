@@ -5,15 +5,6 @@
 #include "vtr_vector.h"
 
 
-struct t_heap_prev {
-    t_heap_prev(int to, int from, short edge)
-        : to_node(to), from_node(from), from_edge(edge) {}
-    int to_node = NO_PREVIOUS; //The target node
-    int from_node = NO_PREVIOUS; //The previous node used to connect to 'to_node'
-    short from_edge = NO_PREVIOUS; //The edge used to connect from 'from_node' to 'to_node'
-};
-
-
 /* Used by the heap as its fundamental data structure.
  * Each heap element represents a partial route.
  *
