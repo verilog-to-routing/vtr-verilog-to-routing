@@ -49,8 +49,8 @@ int min_mult = 0;
 int *mults = NULL;
 
 void record_mult_distribution(nnode_t *node);
-void init_cascade_adder(nnode_t *node, nnode_t *a, int b);
 void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b, nnode_t *node_a, nnode_t *node_b);
+void init_multiplier_adder(nnode_t *node, nnode_t *parent, int a, int b);
 void split_multiplier_a(nnode_t *node, int a0, int a1, int b);
 void split_multiplier_b(nnode_t *node, int a, int b1, int b0);
 void pad_multiplier(nnode_t *node, netlist_t *netlist);
@@ -650,38 +650,37 @@ void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int off
 }
 
 /*-------------------------------------------------------------------------
- * (function: init_cascade_adder)
+ * (function: init_multiplier_adder)
  *
  * This function is used to initialize an adder that is within
  *	a split multiplier.
  *-----------------------------------------------------------------------*/
-void init_cascade_adder(nnode_t *node, nnode_t *a, int b)
-{
+void init_multiplier_adder(nnode_t *node, nnode_t *parent, int a, int b) {
+
 	int i, size;
 
 	node->type = ADD;
-	node->related_ast_node = a->related_ast_node;
-	node->traverse_visited = a->traverse_visited;
+	node->related_ast_node = parent->related_ast_node;
+	node->traverse_visited = parent->traverse_visited;
 	node->node_data = NULL;
 
 	/* Set size to be the maximum input size */
-	size = a->output_port_sizes[0];
+	size = a;
 	size = (size < b) ? b : size;
 
 	/* Set new port sizes and parameters */
 	node->num_input_port_sizes = 2;
 	node->input_port_sizes = (int *)vtr::malloc(2 * sizeof(int));
-	node->input_port_sizes[0] = a->output_port_sizes[0];
+	node->input_port_sizes[0] = a;
 	node->input_port_sizes[1] = b;
 	node->num_output_port_sizes = 1;
 	node->output_port_sizes = (int *)vtr::malloc(sizeof(int));
 	node->output_port_sizes[0] = size;
 
 	/* Set the number of input pins and clear pin entries */
-	node->num_input_pins = a->output_port_sizes[0] + b;
-	node->input_pins = (npin_t**)vtr::malloc(sizeof(void *) *
-		(a->output_port_sizes[0] + b));
-	for (i = 0; i < a->output_port_sizes[0] + b; i++)
+	node->num_input_pins = a + b;
+	node->input_pins = (npin_t**)vtr::malloc(sizeof(void *) * (a + b));
+	for (i = 0; i < a + b; i++)
 		node->input_pins[i] = NULL;
 
 	/* Set the number of output pins and clear pin entries */
@@ -719,7 +718,7 @@ void init_cascade_adder(nnode_t *node, nnode_t *a, int b)
  * extending NOT contracting.
  *
  *-----------------------------------------------------------------------*/
-void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
+void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *netlist)
 {
 	nnode_t *a0b0, *a0b1, *a1b0, *a1b1, *addsmall, *addbig;
 	int i, size;
@@ -765,35 +764,46 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 	addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
-	init_cascade_adder(addsmall, a1b0, a0b1->output_port_sizes[0]);
+    // this addition will have a carry out in the worst case, add to input pins and connect then to gnd
+	init_multiplier_adder(addsmall, a1b0, a1b0->num_output_pins + 1, a0b1->num_output_pins + 1);
 
 	/* New node for the BIG add */
 	addbig = allocate_nnode();
 	addbig->name = (char *)vtr::malloc(strlen(node->name) + 6);
 	strcpy(addbig->name, node->name);
 	strcat(addbig->name, "-add1");
-	init_cascade_adder(addbig, addsmall,
-		a0b0->output_port_sizes[0] + a1b1->output_port_sizes[0]);
+	init_multiplier_adder(addbig, addsmall, addsmall->num_output_pins, a0b0->num_output_pins - b0 + a1b1->num_output_pins);
 
-	/* Insert temporary pins for addsmall */
-	for (i = 0; i < a0b1->output_port_sizes[0]; i++)
-		connect_nodes(a0b1, i, addsmall, i);
-	for (i = 0; i < a1b0->output_port_sizes[0]; i++)
-		connect_nodes(a1b0, i, addsmall, i+a0b1->output_port_sizes[0]);
+    // connect inputs to port a of addsmall
+	for (i = 0; i < a1b0->num_output_pins; i++)
+		connect_nodes(a1b0, i, addsmall, i);
+    add_input_pin_to_node(addsmall, get_zero_pin(netlist), a1b0->num_output_pins);
+    // connect inputs to port b of addsmall
+	for (i = 0; i < a0b1->num_output_pins; i++)
+		connect_nodes(a0b1, i, addsmall, i + addsmall->input_port_sizes[0]);
+    add_input_pin_to_node(addsmall, get_zero_pin(netlist), a0b1->num_output_pins + addsmall->input_port_sizes[0]);
 
-	/* Insert temporary pins for addbig */
-	size = addsmall->output_port_sizes[0];
+    // connect inputs to port a of addbig
+	size = addsmall->num_output_pins;
 	for (i = 0; i < size; i++)
 		connect_nodes(addsmall, i, addbig, i);
+
+    // connect inputs to port b of addbig
+	for (i = b0; i < a0b0->output_port_sizes[0]; i++)
+		connect_nodes(a0b0, i, addbig, i - b0 + size);
+	size = size + a0b0->output_port_sizes[0] - b0;
 	for (i = 0; i < a1b1->output_port_sizes[0]; i++)
 		connect_nodes(a1b1, i, addbig, i + size);
-	size = size + a1b1->output_port_sizes[0];
-	for (i = 0; i < a0b0->output_port_sizes[0]; i++)
-		connect_nodes(a0b0, i, addbig, i + size);
 
-	/* Move original output pins for multiply to addbig */
-	for (i = 0; i < addbig->num_output_pins; i++)
-		remap_pin_to_new_node(node->output_pins[i], addbig, i);
+    // remap the multiplier outputs coming directly from a0b0
+    for (i = 0; i < b0; i++) {
+        remap_pin_to_new_node(node->output_pins[i], a0b0, i);
+    }
+
+    // remap the multiplier outputs coming from addbig
+	for (i = 0; i < addbig->num_output_pins; i++) {
+		remap_pin_to_new_node(node->output_pins[i+b0], addbig, i);
+    }
 
 	/* Probably more to do here in freeing the old node! */
 	vtr::free(node->name);
@@ -855,22 +865,20 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 	addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
-	init_cascade_adder(addsmall, a1b, a1 + b);
+	init_multiplier_adder(addsmall, a0b, b,  a1b->num_output_pins);
 
 	/* Connect pins for addsmall */
-	for (i = a0; i < a0b->output_port_sizes[0]; i++)
+	for (i = a0; i < a0b->num_output_pins; i++)
 		connect_nodes(a0b, i, addsmall, i-a0);
-	for (i = a0b->output_port_sizes[0] - a0; i < a1+b; i++) /* Sign extend */
-		connect_nodes(a0b, a0b->output_port_sizes[0]-1, addsmall, i);
-	for (i = b+a1; i < (2 * (a1 + b)); i++)
-		connect_nodes(a1b, i-(b+a1), addsmall, i);
+	for (i = 0; i < a1b->num_output_pins; i++)
+		connect_nodes(a1b, i, addsmall, i + addsmall->input_port_sizes[0]);
 
 	/* Move original output pins for multiply to new outputs */
 	for (i = 0; i < a0; i++)
 		remap_pin_to_new_node(node->output_pins[i], a0b, i);
 
-	for (i = a0; i < node->num_output_pins; i++)
-		remap_pin_to_new_node(node->output_pins[i], addsmall, i-a0);
+	for (i = 0; i < addsmall->num_output_pins; i++)
+		remap_pin_to_new_node(node->output_pins[i+a0], addsmall, i);
 
 	/* Probably more to do here in freeing the old node! */
 	vtr::free(node->name);
@@ -931,7 +939,7 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 	addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
-	init_cascade_adder(addsmall, ab1, a + b1);
+	init_multiplier_adder(addsmall, ab1, ab1->num_output_pins, a + b1);
 
 	/* Connect pins for addsmall */
 	for (i = b0; i < ab0->output_port_sizes[0]; i++)
@@ -1135,7 +1143,7 @@ void iterate_multipliers(netlist_t *netlist)
 			a1 = mula - sizea;
 			b0 = sizeb;
 			b1 = mulb - sizeb;
-			split_multiplier(node, a0, b0, a1, b1);
+			split_multiplier(node, a0, b0, a1, b1, netlist);
 		}
 		else if (mula > sizea) /* split multiplier on a input? */
 		{
