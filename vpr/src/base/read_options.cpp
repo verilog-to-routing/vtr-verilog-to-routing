@@ -1066,6 +1066,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("100")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.place_rlim_escape_fraction, "--place_rlim_escape")
+            .help("The fraction of moves which are allowed to ignore the region limit."
+                  " For example, a value of 0.1 means 10%% of moves are allowed to ignore the region limit.")
+            .default_value("0.0")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
 
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 

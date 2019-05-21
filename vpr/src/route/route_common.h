@@ -5,53 +5,50 @@
 #include "vtr_vector.h"
 
 
-struct t_heap_prev {
-    t_heap_prev(int to, int from, short edge)
-        : to_node(to), from_node(from), from_edge(edge) {}
-    int to_node = NO_PREVIOUS; //The target node
-    int from_node = NO_PREVIOUS; //The previous node used to connect to 'to_node'
-    short from_edge = NO_PREVIOUS; //The edge used to connect from 'from_node' to 'to_node'
-};
-
-
 /* Used by the heap as its fundamental data structure.
  * Each heap element represents a partial route.
- *
- * next:    pointer to the next s_heap structure in the free
- *          linked list.  Not used when on the heap.
  *
  * cost:    The cost used to sort heap.
  *          For the timing-driven router this is the backward_path_cost +
  *          expected cost to the target.
  *          For the breadth-first router it is the node cost to reach this
  *          point.
+ *
  * backward_path_cost:  Used only by the timing-driven router.  The "known"
  *                      cost of the path up to and including this node.
  *                      In this case, the .cost member contains not only
  *                      the known backward cost but also an expected cost
  *                      to the target.
+ *
  * R_upstream: Used only by the timing-driven router.  Stores the upstream 
  *             resistance to ground from this node, including the
  *             resistance of the node itself (device_ctx.rr_nodes[index].R).
  *
  * index: The RR node index associated with the costs/R_upstream values
- * nodes: The set of nodes represented by this heap element.
- *        Usually this contains a single element corresponding to index.
- *        However in some cases (e.g. non-configurable edges) multiple RR 
- *        nodes may be required to be used together. In such cases each
- *        node will be inclued in 'nodes' and 'cost', 'backward_path_cost',
- *        R_upstream will be those associated with the lowest cost node (who's
- *        index is stored in 'index' for reference).
+ *
+ * u.prev.node: The previous node used to reach the current 'index' node
+ * u.prev.next: The edge from u.prev.node used to reach the current 'index' node
+ *
+ * u.next:  pointer to the next s_heap structure in the free
+ *          linked list.  Not used when on the heap.
+ *
  */
 struct t_heap {
-    t_heap *next = nullptr;
-
 	float cost = 0.;
 	float backward_path_cost = 0.;
 	float R_upstream = 0.;
 
 	int index = OPEN;
-    std::vector<t_heap_prev> nodes;
+
+    struct t_prev {
+        int node;
+        int edge;
+    };
+
+    union {
+        t_heap* next;
+        t_prev prev;
+    } u;
 };
 
 /******* Subroutines in route_common used only by other router modules ******/

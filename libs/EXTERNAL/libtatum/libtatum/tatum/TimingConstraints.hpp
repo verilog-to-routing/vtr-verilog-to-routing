@@ -24,7 +24,7 @@ class TimingConstraints {
         typedef tatum::util::linear_map<DomainId,DomainId>::const_iterator domain_iterator;
         typedef std::map<DomainPair,Time>::const_iterator clock_constraint_iterator;
         typedef std::map<DomainPair,Time>::const_iterator clock_uncertainty_iterator;
-        typedef std::map<NodeId,IoConstraint>::const_iterator io_constraint_iterator;
+        typedef std::multimap<NodeId,IoConstraint>::const_iterator io_constraint_iterator;
         typedef std::map<DomainId,Time>::const_iterator source_latency_iterator;
         typedef std::unordered_set<NodeId>::const_iterator constant_generator_iterator;
 
@@ -156,7 +156,7 @@ class TimingConstraints {
         void remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_map);
 
     private:
-        typedef std::map<NodeId,IoConstraint>::iterator mutable_io_constraint_iterator;
+        typedef std::multimap<NodeId,IoConstraint>::iterator mutable_io_constraint_iterator;
     private:
         ///\returns A valid domain id if the node is a clock source
         DomainId find_node_source_clock_domain(const NodeId node_id) const;

@@ -144,6 +144,12 @@ struct DeviceContext : public Context {
     //Fly-weighted Resistance/Capacitance data for RR Nodes
     std::vector<t_rr_rc_data> rr_rc_data;
 
+    //Sets of non-configurably connected nodes
+    std::vector<std::vector<int>> rr_non_config_node_sets;
+
+    //Reverse look-up from RR node to non-configurably connected node set (index into rr_nonconf_node_sets)
+    std::unordered_map<int,int> rr_node_to_non_config_node_set;
+
     //The indicies of rr nodes of a given type at a specific x,y grid location
     t_rr_node_indices rr_node_indices; //[0..NUM_RR_TYPES-1][0..grid.width()-1][0..grid.width()-1][0..size-1]
 

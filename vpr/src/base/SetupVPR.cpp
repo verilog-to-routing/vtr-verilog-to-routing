@@ -476,6 +476,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts *PlacerOpts)
 	PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */
 
     PlacerOpts->post_place_timing_report_file = Options.post_place_timing_report_file;
+
+    PlacerOpts->rlim_escape_fraction = Options.place_rlim_escape_fraction;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

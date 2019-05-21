@@ -86,3 +86,67 @@ Each stage between primitive pins is shown in a different colour.
 Cliking the **Crit. Path** button again will toggle through the various visualizations:
 * During placement the critical path is shown only as flylines.
 * During routing the critical path can be shown as both flylines and routed net connections.
+
+Button Description Table
+------------------------
++-------------------+-------------------+------------------------------+------------------------------+
+|      Buttons      |      Stages       |        Functionalities       |     Detailed Descriptions    |
++-------------------+-------------------+------------------------------+------------------------------+
+| Blk Internal      | Placement/Routing | Controls depth of sub-blocks | Click multiple times to show |
+|                   |                   | shown                        | more details; Click to reset |
+|                   |                   |                              | when reached maximum level   |
+|                   |                   |                              | of detail                    |
++-------------------+-------------------+------------------------------+------------------------------+
+| Blk Pin Util      | Placement/Routing | Visualizes block pin         | Click multiple times to      |
+|                   |                   | utilization                  | visualize all block pin      |
+|                   |                   |                              | utilization, input block pin |
+|                   |                   |                              | utilization, or output block |
+|                   |                   |                              | pin utilization              |
++-------------------+-------------------+------------------------------+------------------------------+
+| Cong. Cost        | Routing           | Visualizes the congestion    |                              |
+|                   |                   | costs of routing resouces    |                              |
+|                   |                   |                              |                              |
+|                   |                   |                              |                              |
++-------------------+-------------------+------------------------------+------------------------------+
+| Congestion        | Routing           | Visualizes a heat map of     |                              |
+|                   |                   | overused routing resources   |                              |
+|                   |                   |                              |                              |
+|                   |                   |                              |                              |
++-------------------+-------------------+------------------------------+------------------------------+
+| Crit. Path        | Placement/Routing | Visualizes the critical path |                              |
+|                   |                   | of the circuit               |                              |
+|                   |                   |                              |                              |
+|                   |                   |                              |                              |
++-------------------+-------------------+------------------------------+------------------------------+
+| Place Macros      | Placement/Routing | Visualizes placement macros  |                              |
+|                   |                   |                              |                              |
+|                   |                   |                              |                              |
+|                   |                   |                              |                              |
++-------------------+-------------------+------------------------------+------------------------------+
+| Route BB          | Routing    	| Visualizes net bounding      | Click multiple times to      |
+|                   |                   | boxes one by one             | sequence through the net     |
+|                   |                   |                              | being shown                  |
+|                   |                   |                              |                              |
++-------------------+-------------------+------------------------------+------------------------------+
+| Router Cost       | Routing           | Visualizes the router costs  |                              |
+|                   |                   | of different routing         |                              |
+|                   |                   | resources                    |                              |
+|                   |                   |                              |                              |
++-------------------+-------------------+------------------------------+------------------------------+
+| Routing Util      | Routing           | Visualizes routing channel   |                              |
+|                   |                   | utilization with colors      |                              |
+|                   |                   | indicating the fraction of   |                              |
+|                   |                   | wires used within a channel  |                              |
++-------------------+-------------------+------------------------------+------------------------------+
+| Toggle Nets       | Placement/Routing | Visualizes the nets in the   | Click multiple times to      |
+|                   |                   | circuit                      | set the nets to be visible / |
+|                   |                   |                              | invisible                    |
+|                   |                   |                              |                              |
++-------------------+-------------------+------------------------------+------------------------------+
+| Toggle RR         | Placement/Routing | Visualizes different views   | Click multiple times to      |
+|                   |                   | of the routing resources     | switch between routing       |
+|                   |                   |                              | resources available in the   |
+|                   |                   |                              | FPGA                         |
++-------------------+-------------------+------------------------------+------------------------------+
+
+

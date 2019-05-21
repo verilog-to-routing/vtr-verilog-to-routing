@@ -157,7 +157,7 @@ class flat_map {
         iterator insert(const_iterator position, const value_type& value) {
             //In a legal position
             VTR_ASSERT(position == begin() || value_comp()(*(position - 1), value));
-            VTR_ASSERT(position == --end() || position == end() || !value_comp()(*(position + 1), value));
+            VTR_ASSERT((size() > 0 && position == --end()) || position == end() || !value_comp()(*(position + 1), value));
 
             iterator iter = vec_.insert(position, value);
 
@@ -253,7 +253,7 @@ class flat_map {
         }
 
         const_iterator upper_bound(const key_type& key) const {
-            return std::upper_bound(begin(), end(), key, key_compare());
+            return std::upper_bound(begin(), end(), key, value_comp());
         }
 
         std::pair<iterator,iterator> equal_range(const key_type& key) {
@@ -338,6 +338,9 @@ class flat_map<K,T,Compare>::value_compare {
         //For std::lower_bound/std::upper_bound
         bool operator() (const value_type& x, const key_type& y) const {
             return comp(x.first, y);
+        }
+        bool operator() (const key_type& x, const value_type& y) const {
+            return comp(x, y.first);
         }
     private:
         value_compare(Compare c) : comp(c) {}

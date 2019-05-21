@@ -246,6 +246,9 @@ static int pick_best_direct_connect_target_rr_node(
         int from_rr,
         const std::vector<int>& candidate_rr_nodes);
 
+static void expand_non_configurable(int inode, std::set<t_node_edge>& edge_set);
+static void process_non_config_sets(const t_non_configurable_rr_sets& non_config_rr_sets);
+
 static void build_rr_graph(
         const t_graph_type graph_type,
         const int L_num_types,
@@ -340,6 +343,9 @@ void create_rr_graph(
                 base_cost_type);
         }
     }
+
+    auto non_config_rr_sets = identify_non_configurable_rr_sets();
+    process_non_config_sets(non_config_rr_sets);
 
     print_rr_graph_stats();
 
@@ -3092,4 +3098,84 @@ static int pick_best_direct_connect_target_rr_node(
     VTR_ASSERT(best_rr != OPEN);
 
     return best_rr;
+}
+
+//Collects the sets of connected non-configurable edges in the RR graph
+t_non_configurable_rr_sets identify_non_configurable_rr_sets() {
+    std::set<std::set<t_node_edge>> edge_sets;
+
+    //Walk through the RR graph and recursively expand non-configurable edges
+    //to collect the sets of non-configurably connected nodes
+    auto& device_ctx = g_vpr_ctx.device();
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
+        std::set<t_node_edge> edge_set;
+
+        expand_non_configurable(inode, edge_set);
+
+        if (!edge_set.empty()) {
+            edge_sets.insert(edge_set);
+        }
+    }
+
+    std::set<std::set<int>> node_sets;
+    for (auto& edge_set : edge_sets) {
+        std::set<int> node_set;
+
+        for (const auto& edge : edge_set) {
+            node_set.insert(edge.from_node);
+            node_set.insert(edge.to_node);
+        }
+
+        VTR_ASSERT(!node_set.empty());
+
+        node_sets.insert(node_set);
+    }
+
+    t_non_configurable_rr_sets non_configurable_rr_sets;
+    non_configurable_rr_sets.edge_sets = edge_sets;
+    non_configurable_rr_sets.node_sets = node_sets;
+
+    return non_configurable_rr_sets;
+}
+
+//Builds a set of non-configurably connected RR graph edges
+static void expand_non_configurable(int inode, std::set<t_node_edge>& edge_set) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    for (int iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); ++iedge) {
+        bool edge_non_configurable = !device_ctx.rr_nodes[inode].edge_is_configurable(iedge);
+
+        if (edge_non_configurable) {
+            int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+
+            t_node_edge edge = {inode, to_node};
+
+            if (edge_set.count(edge)) {
+                continue; //Already seen don't re-expand to avoid loops
+            }
+
+            edge_set.emplace(edge);
+
+            expand_non_configurable(to_node, edge_set);
+        }
+    }
+}
+
+static void process_non_config_sets(const t_non_configurable_rr_sets& non_config_rr_sets) {
+    std::vector<std::vector<int>> non_config_rr_node_sets;
+    std::unordered_map<int,int> rr_node_non_config_node_set;
+
+    for (const auto& node_set : non_config_rr_sets.node_sets) {
+        //Convert node sets to vectors
+        non_config_rr_node_sets.push_back(std::vector<int>(node_set.begin(), node_set.end()));
+
+        //Record reverse look-ups
+        for (int inode : node_set) {
+            rr_node_non_config_node_set.emplace(inode, non_config_rr_node_sets.size() - 1);
+        }
+    }
+
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    device_ctx.rr_non_config_node_sets = std::move(non_config_rr_node_sets);
+    device_ctx.rr_node_to_non_config_node_set = std::move(rr_node_non_config_node_set);
 }
