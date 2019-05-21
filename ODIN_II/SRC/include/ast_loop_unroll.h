@@ -16,6 +16,7 @@ typedef std::function<bool(long)> condition_function;
 typedef std::function<long(long)> post_condition_function;
 
 void unroll_loops(ast_node_t **ast_module);
+long find_module_instance(ast_node_t *ast_module, char *instance_name);
 
 inline bool is_for_node(ast_node_t* node)
 {
@@ -41,5 +42,7 @@ condition_function resolve_condition(ast_node_t* node, ast_node_t* symbol, int* 
 post_condition_function resolve_binary_operation(ast_node_t* node);
 post_condition_function resolve_post_condition(ast_node_t* assignment, ast_node_t* symbol, int* error_code);
 ast_node_t* dup_and_fill_body(ast_node_t* body, ast_node_t* symbol, ast_node_t** value, int* error_code);
+long int power_of_ten(long int);
+ast_node_t *replace_named_module(ast_node_t* module, ast_node_t* symbol, ast_node_t** value, int* error_code);
 
 #endif

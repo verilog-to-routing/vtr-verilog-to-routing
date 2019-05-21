@@ -9,9 +9,15 @@
 #include "parse_making_ast.h"
 #include "odin_util.h"
 #include "vtr_memory.h"
+#include "vtr_util.h"
 
 /* This files header */
 #include "ast_loop_unroll.h"
+
+void update_module_instantiations(ast_node_t *ast_module);
+
+ast_node_t **unrolled_module_instances;
+int num_unrolled_module_instances;
 
 /*
  *  (function: unroll_loops)
@@ -22,6 +28,84 @@ void unroll_loops(ast_node_t **ast_module)
 	if(module != *ast_module)
 		free_whole_tree(*ast_module);
 	*ast_module = module;
+
+	// add unrolled instances to module->types.module.module_instantiations_instance
+	if (num_unrolled_module_instances > 1)
+	{
+		update_module_instantiations((*ast_module));
+	}
+}
+
+void update_module_instantiations(ast_node_t *ast_module)
+{
+	long idx;
+	ast_node_t **module_instantiations = ast_module->types.module.module_instantiations_instance;
+	int original_size = ast_module->types.module.size_module_instantiations;
+	int new_size = original_size + (num_unrolled_module_instances-2);
+
+	/* first: find and free/replace original instance 
+	in *ast_module->types.module.module_instantiations_instance */
+	char *instance_name = make_full_ref_name(ast_module->children[0]->types.identifier,
+			unrolled_module_instances[0]->children[0]->types.identifier,
+			unrolled_module_instances[0]->children[1]->children[0]->types.identifier,
+			NULL, -1);
+
+	if ((idx = find_module_instance(ast_module, instance_name)) != -1)
+	{
+		expand_node_list_at(module_instantiations, original_size, num_unrolled_module_instances-2, idx + 1);
+		ast_module->types.module.size_module_instantiations = new_size;
+
+		//free_whole_tree(module_instantiations[idx]);
+
+		/* second: realloc to add each new instance from unrolled_module_instances */
+		for (long i = 1; i < num_unrolled_module_instances; i++)
+		{
+			module_instantiations[idx++] = unrolled_module_instances[i];
+
+			// add new instance to module_names_to_idx
+			char *new_instance_name = make_full_ref_name(ast_module->children[0]->types.identifier,
+				unrolled_module_instances[i]->children[0]->types.identifier,
+				unrolled_module_instances[i]->children[1]->children[0]->types.identifier,
+				NULL, -1);
+
+			long sc_spot = sc_add_string(module_names_to_idx, new_instance_name);
+			oassert(sc_spot != -1);
+		}
+	}
+	else 
+	{
+		error_message(NETLIST_ERROR, ast_module->line_number, ast_module->file_number,
+					"Can't find module name %s\n", instance_name);
+	}
+
+	vtr::free(instance_name);
+	vtr::free(unrolled_module_instances);
+}
+
+/*
+*	(function: find_module_instance)
+*/
+long find_module_instance(ast_node_t *ast_module, char *instance_name)
+{
+	long i;
+	for (i = 0; i < ast_module->types.module.size_module_instantiations; i++)
+	{
+		ast_node_t *module_instance = ast_module->types.module.module_instantiations_instance[i];
+		char *original_name = make_full_ref_name(ast_module->children[0]->types.identifier,
+				module_instance->children[0]->types.identifier,
+				module_instance->children[1]->children[0]->types.identifier,
+				NULL, -1);
+		
+		int result = strcmp(instance_name, original_name);
+		vtr::free(original_name);
+
+		if(result == 0)
+		{	
+			return i;
+		}
+	}
+
+	return -1;
 }
 
 /*
@@ -387,14 +471,19 @@ long int power_of_ten(long int value){
 ast_node_t* replace_named_module(ast_node_t* module, ast_node_t* symbol, ast_node_t** value, int* error_code)
 {
 	ast_node_t* copy = ast_node_deep_copy(module);
+
+	oassert( value  && "Value node reference is NULL");
+	oassert( *value && "Value node is NULL");
+	oassert( (*value)->type == NUMBERS  && "Value node type is not a NUMBER");
+
 	long int val = (*value)->types.number.value;
-	char* old_name = copy->children[0]->types.identifier;
-	char* new_name = (char*)vtr::malloc(strlen(old_name) + 3 + power_of_ten(val));
-	strcpy(new_name, old_name);
-	strcat(new_name, "[\0");
-	strcat(new_name, std::to_string(val).c_str());
-	strcat(new_name, "]\0");
-	copy->children[0]->types.identifier = new_name;
+	std::string concat_string(copy->children[0]->types.identifier);
+	concat_string = concat_string + "[" + std::to_string(val) + "]";
+
+	vtr::free(copy->children[0]->types.identifier);
+
+	copy->children[0]->types.identifier = vtr::strdup(concat_string.c_str());
+
 	return copy;
 }
 
@@ -410,10 +499,23 @@ ast_node_t* dup_and_fill_body(ast_node_t* body, ast_node_t* symbol, ast_node_t**
 				free_whole_tree(child);
 				copy->children[i] = new_num;
 			}
-		} else if(child->type == MODULE_NAMED_INSTANCE){
-			copy->children[i] = replace_named_module(child, symbol, value, error_code);
-			oassert(copy->children[i]);
-			free_whole_tree(child);
+		} else if(child->type == MODULE_INSTANCE){
+
+			if (num_unrolled_module_instances == 0)
+			{
+				unrolled_module_instances = (ast_node_t**)vtr::malloc(sizeof(ast_node_t*)*2);
+				num_unrolled_module_instances = 1;
+				// first space will be original instance, everything after that will be new instances
+				unrolled_module_instances[0] = ast_node_deep_copy(child);
+			}
+
+			copy->children[i]->children[1] = replace_named_module(child->children[1], symbol, value, error_code);
+			oassert(copy->children[i]->children[1]);
+
+			unrolled_module_instances = (ast_node_t**)vtr::realloc(unrolled_module_instances, sizeof(ast_node_t*)*(num_unrolled_module_instances+1));
+			unrolled_module_instances[num_unrolled_module_instances++] = ast_node_deep_copy(copy->children[i]);
+
+			//free_whole_tree(child);
 		} else if(child->num_children > 0){
 			copy->children[i] = dup_and_fill_body(child, symbol, value, error_code);
 			oassert(copy->children[i]);
