@@ -4,7 +4,7 @@
 #include "parse_making_ast.h"
 #include "ast_util.h"
 
-static ast_node_t* pop_and_grab_back(Path path)
+static ast_node_t* pop_and_grab_back(Path& path)
 {
 	ast_node_t* back = path.back();
 	path.pop_back();
@@ -17,7 +17,7 @@ Path make_path(ast_node_t* node, ast_node_t* module)
 	ast_node_t* current = node;
 	while(current != module){
 		path.push_back(current);
-		current = node->parent;
+		current = current->parent;
 	}
 	path.push_back(module);
 	return path;
@@ -25,45 +25,33 @@ Path make_path(ast_node_t* node, ast_node_t* module)
 
 static bool is_integer_decl(ast_node_t* node)
 {
-	/* 
-	 * Per the C++ standard, `&=` 
-	 * is safe to use as `logical and` for bool
-	 * See sections 4.7.4 and 4.12.1 
-	 */
 	bool is_int_decl = node; 
-	is_int_decl &= node->type == VAR_DECLARE;
-	is_int_decl &= node->num_children == 2;
-	is_int_decl &= node->children[0]->type == INTEGER;
+	is_int_decl = is_int_decl && node->type == VAR_DECLARE;
+	is_int_decl = is_int_decl && node->num_children == 2;
+	is_int_decl = is_int_decl && node->children[0] != nullptr;
+	is_int_decl = is_int_decl && node->children[0]->type == INTEGER;
 	return is_int_decl;
 }
 
 static bool is_integer_decl_list(ast_node_t* node)
 {
-	/* 
-	 * Per the C++ standard, `&=` 
-	 * is safe to use as `logical and` for bool
-	 * See sections 4.7.4 and 4.12.1 
-	 */
 	bool is_int_decl = node; 
-	is_int_decl &= node->type == VAR_DECLARE_LIST;
-	is_int_decl &= node->num_children >= 3;
-	is_int_decl &= node->children[0]->type == INTEGER;
+	is_int_decl = is_int_decl && node->type == VAR_DECLARE_LIST;
+	is_int_decl = is_int_decl && node->num_children >= 3;
+	is_int_decl = is_int_decl && node->children[0] != nullptr;
+	is_int_decl = is_int_decl && node->children[0]->type == INTEGER;
 	return is_int_decl;
 }
 
 static bool is_integer_assign(ast_node_t* node, Env env)
 {
-	/* 
-	 * Per the C++ standard, `&=` 
-	 * is safe to use as `logical and` for bool
-	 * See sections 4.7.4 and 4.12.1 
-	 */
 	bool is_int_assign = node && node->type == BLOCKING_STATEMENT;
-	is_int_assign &= node->children[0] && node->children[0]->type == IDENTIFIERS;
+	is_int_assign = is_int_assign && node->children[0] != nullptr;
+	is_int_assign = is_int_assign && node->children[0]->type == IDENTIFIERS;
 
 	if(is_int_assign){
 		std::string id = std::string(node->children[0]->types.identifier);
-		is_int_assign &= (env.find(id) == env.end());	
+		is_int_assign = is_int_assign && (env.find(id) == env.end());	
 	}
 	return is_int_assign;
 }
@@ -77,28 +65,31 @@ Environment::Environment(Path path)
 	ast_node_t* top = pop_and_grab_back(path);
 
 	/* While there are still scopes to search */
-	while(top != nullptr){
+	while(!path.empty()){
 
 		/* Check all children upto (but not including) the next scope level */
-		ast_node_t* child = top->children[0]; //Don't need to check as this must be non-null
-		while(child != path.back()){
+		ast_node_t* child = top->children[0];
+		for(int i = 1; child != path.back() && i<top->num_children; i++){
 			
 			/* 
 			 * If there is an integer declaration, add it to the Environment
 			 * Else if there is an assignment to an integer, update value in Environment 
 			 */
 			if(is_integer_decl(child)) {
-				env[child->children[1]->types.identifier] = std::nullopt;
+				env[std::string(child->children[1]->types.identifier)] 
+					= std::nullopt;
 			} else if(is_integer_decl_list(child)) {
-				for(int i=1; i<child->num_children; i++){
-					env[child->children[i]->types.identifier] = std::nullopt;
+				for(int j=1; i<child->num_children; i++){
+					env[std::string(child->children[j]->types.identifier)] 
+						= std::nullopt;
 				}
 			} else if(is_integer_assign(child, env)) {
-				env[child->children[0]->types.identifier] = 
-					ast_node_deep_copy(child->children[1]);
+				env[std::string(child->children[0]->types.identifier)] 
+					= ast_node_deep_copy(child->children[1]);
 			}
-
+			child = top->children[i];
 		}
+		top = pop_and_grab_back(path);
 
 	}
 	is_init = true;
@@ -228,10 +219,11 @@ ast_node_t* evaluate_node(ast_node_t* node, Environment& env)
 	ast_node_t* temp = nullptr;
 	ast_node_t* child_node =nullptr ;
 	ast_node_t* body_parent = nullptr;
+	int loop_index;
 	std::string symbol;
 	switch(node->type){
 		case IDENTIFIERS:
-			v = env.get_value(node->types.identifier);
+			v = env.get_value(std::string(node->types.identifier));
 			to_return = (v != std::nullopt) ? ast_node_deep_copy(*v) : node;
 			break;
 		case BINARY_OPERATION:
@@ -249,9 +241,9 @@ ast_node_t* evaluate_node(ast_node_t* node, Environment& env)
 			}
 			break;
 		case BLOCKING_STATEMENT:
-			v = env.get_value(node->types.identifier);
+			v = env.get_value(node->children[0]->types.identifier);
 			to_return = (v != std::nullopt) ? nullptr : node;
-			symbol = node->types.identifier;
+			symbol = node->children[0]->types.identifier;
 			if(env.is_in_env(symbol)){
 				env.update_value(symbol, evaluate_node(to_return->children[1], env));
 				free_whole_tree(*v);
@@ -279,6 +271,14 @@ ast_node_t* evaluate_node(ast_node_t* node, Environment& env)
 				}
 
 				temp = evaluate_node(to_return->children[0], env);
+			}
+		case BLOCK:
+			to_return = ast_node_deep_copy(node);
+			for(loop_index = 0; loop_index < to_return->num_children; loop_index++){
+				temp = evaluate_node(to_return->children[loop_index], env);
+				if(temp != to_return->children[loop_index]){
+					assign_child_to_node(to_return, temp, loop_index);
+				}
 			}
 		default:
 			to_return = node;

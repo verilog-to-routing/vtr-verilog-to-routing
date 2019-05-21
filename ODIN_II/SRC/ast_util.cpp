@@ -1028,7 +1028,13 @@ ast_node_t *resolve_ast_node(STRING_CACHE *local_param_table_sc, short initial, 
 
 		long i;
 		for (i = 0; i < node->num_children; i++){
-			node_copy->children[i] = resolve_ast_node(local_param_table_sc, initial, module_name, node->children[i]);
+			ast_node_t* new_resolved_node = resolve_ast_node(
+				local_param_table_sc, 
+				initial, 
+				module_name, 
+				node->children[i]
+			);
+			assign_child_to_node(node_copy, new_resolved_node, i);
 		}
 		ast_node_t *newNode = NULL;
 		switch (node->type){

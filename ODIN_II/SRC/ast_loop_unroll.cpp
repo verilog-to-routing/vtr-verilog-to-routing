@@ -27,10 +27,10 @@ void unroll_loops(ast_node_t **ast_module)
 	int num_unrolled_module_instances = 0;
 	int num_original_module_instances = 0;
 
-	ast_node_t* module = while_preprocessor(ast_module, ast_module);
-	if(module != ast_module)
-		free_whole_tree(ast_module);
-	ast_modules[i] = module;
+	ast_node_t* module = while_preprocessor(*ast_module, *ast_module);
+	if(module != *ast_module)
+		free_whole_tree(*ast_module);
+	*ast_module = module;
 	module = for_preprocessor((*ast_module), (*ast_module), &unrolled_module_instances, &num_unrolled_module_instances, &num_original_module_instances);
 	if(module != *ast_module)
 		free_whole_tree(*ast_module);
@@ -141,7 +141,7 @@ void while_preprocessor(ast_node_t* node, ast_node_t* module)
 		if(!node->children[i])
 			continue;
 		if(is_while_node(node->children[i])){
-			Environment environment(make_path(node, module));
+			Environment environment(make_path(node->children[i], module));
 			new_node = evaluate_node(node, environment);
 			/* If this node wasn't an assignment to an integer
 			 * and was replaced, then update the parent node.
@@ -153,18 +153,10 @@ void while_preprocessor(ast_node_t* node, ast_node_t* module)
 				}
 				free_node = true;
 			}
+		} else {
+			while_preprocessor(node->children[i], module);
 		}
-	}
-
-	/* process next node */
-	for(int i=1; i<parent->num_children; i++){
-		if(!parent->children[i])
-			continue;
-
-		if(parent->children[i-1] == node || parent->children[i-1] == new_node)
-			while_preprocessor(parent->children[i], module);
-	}
-
+	}	
 	if(free_node)
 		free_whole_tree(node);
 
