@@ -1856,8 +1856,6 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
      */
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_timing_driven_node_costs new_costs;
-
     //Info for the switch connecting from_node to_node 
     int iswitch = device_ctx.rr_nodes[from_node].edge_switch(iconn);
     bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered();
@@ -1871,6 +1869,7 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     
     //From node info
     float from_node_R = device_ctx.rr_nodes[from_node].R();
+    float from_R_upstream = to->R_upstream;
 
     //Update R_upstream
     if (switch_buffered) {
@@ -1883,15 +1882,15 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     to->R_upstream += node_R; //Node resistance
 
     //Calculate delay
-<<<<<<< HEAD
-    float Rdel = new_costs.R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
+    float Rdel = to->R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
     float Tdel = switch_Tdel + Rdel * node_C; //sum the node capcitance with internal capacitance
     
-    float old_Rdel = old_costs.R_upstream - 0.5 * from_node_R;
+    //Update the potential time delay increase due to the internal capacitance.
+    //Need to find the value of Rdel when this function was called to evaluate the cost of from node.
+    float old_Rdel = from_R_upstream - 0.5 * from_node_R; 
     	
-    //Update the backward cost
-    new_costs.backward_cost = old_costs.backward_cost; //Back cost to 'from_node'
-    new_costs.backward_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
+    //Update the backward cost (upstream already included)
+    to->backward_path_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
 
     // In calculating the backward_cost of to_node, we must evaluate the effect of the potential
     // internal capacitance which arises by connecting from_node to to_node. To achieve this, we update
@@ -1899,15 +1898,7 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     // This time delay is found by multiplying the resistance of from_node with the internal capacitance
     // of this new connection.
 
-    new_costs.backward_cost += cost_params.criticality * (Tdel + old_Rdel * switch_Cinternal); //Delay cost accounting for Cinternal
-=======
-    float Rdel = to->R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
-    float Tdel = switch_Tdel + Rdel * node_C;
-
-    //Update the backward cost (upstream already included)
-    to->backward_path_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
-    to->backward_path_cost += cost_params.criticality * Tdel; //Delay cost
->>>>>>> master
+     to->backward_path_cost += cost_params.criticality * (Tdel + old_Rdel * switch_Cinternal); //Delay cost accounting for Cinternal
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
