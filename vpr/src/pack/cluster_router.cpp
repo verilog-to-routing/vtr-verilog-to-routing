@@ -776,6 +776,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 	}
 }
 
+
 //It is possible that a net may connect multiple times to a logically equivalent set of primitive pins.
 //The cluster router will only route one connection for a particular net to the common sink of the
 //equivalent pins.
