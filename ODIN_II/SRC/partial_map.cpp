@@ -24,6 +24,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <algorithm>
 #include "odin_types.h"
 #include "odin_globals.h"
 
@@ -253,13 +254,15 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			instantiate_multi_port_mux(node, traverse_number, netlist);
 			break;
 		case MULTIPLY:
-			if (hard_multipliers && (node->input_port_sizes[0] + node->input_port_sizes[1]) > min_mult){
-					instantiate_hard_multiplier(node, traverse_number, netlist);
-			}else{
+        {
+            int mult_size = std::max<int>(node->input_port_sizes[0], node->input_port_sizes[1]);
+			if (hard_multipliers && mult_size >= min_mult) {
+                instantiate_hard_multiplier(node, traverse_number, netlist);
+            } else if (!hard_adders) {
 				instantiate_simple_soft_multiplier(node, traverse_number, netlist);
 			}
 			break;
-
+        }
 		case MEMORY:
 		{
 			ast_node_t *ast_node = node->related_ast_node;
