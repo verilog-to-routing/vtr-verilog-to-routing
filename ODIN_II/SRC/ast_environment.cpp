@@ -4,32 +4,11 @@
 #include "parse_making_ast.h"
 #include "ast_util.h"
 
-static ast_node_t* pop_and_grab_back(Path& path)
-{
-	ast_node_t* back = path.back();
-	path.pop_back();
-	return back;
-}
-
-Path make_path(ast_node_t* node, ast_node_t* module)
-{
-	Path path;
-	ast_node_t* current = node;
-	while(current != module){
-		path.push_back(current);
-		current = current->parent;
-	}
-	path.push_back(module);
-	return path;
-}
-
 static bool is_integer_decl(ast_node_t* node)
 {
 	bool is_int_decl = node; 
 	is_int_decl = is_int_decl && node->type == VAR_DECLARE;
-	is_int_decl = is_int_decl && node->num_children == 2;
-	is_int_decl = is_int_decl && node->children[0] != nullptr;
-	is_int_decl = is_int_decl && node->children[0]->type == INTEGER;
+	is_int_decl = is_int_decl && node->types.variable.is_integer;
 	return is_int_decl;
 }
 
@@ -37,61 +16,38 @@ static bool is_integer_decl_list(ast_node_t* node)
 {
 	bool is_int_decl = node; 
 	is_int_decl = is_int_decl && node->type == VAR_DECLARE_LIST;
-	is_int_decl = is_int_decl && node->num_children >= 3;
-	is_int_decl = is_int_decl && node->children[0] != nullptr;
-	is_int_decl = is_int_decl && node->children[0]->type == INTEGER;
+	for(int i=0; i<node->num_children; i++){
+		is_int_decl = is_int_decl && is_integer_decl(node->children[i]);
+	}
 	return is_int_decl;
 }
 
-static bool is_integer_assign(ast_node_t* node, Env env)
+static void add_int_to_env(ast_node_t* node, Env& env)
 {
-	bool is_int_assign = node && node->type == BLOCKING_STATEMENT;
-	is_int_assign = is_int_assign && node->children[0] != nullptr;
-	is_int_assign = is_int_assign && node->children[0]->type == IDENTIFIERS;
-
-	if(is_int_assign){
-		std::string id = std::string(node->children[0]->types.identifier);
-		is_int_assign = is_int_assign && (env.find(id) == env.end());	
+	if(!node)
+		return;
+	if(is_integer_decl(node)) {
+		env[std::string(node->children[0]->types.identifier)] 
+			= std::nullopt;
+		remove_ast_node(node->parent, node);
+	} else if(is_integer_decl_list(node)) {
+		for(int i=0; i<node->num_children; i++){
+			env[std::string(node->children[i]->children[0]->types.identifier)] 
+				= std::nullopt;
+		}
+		remove_ast_node(node->parent, node);
+	} else {
+		for(int i=0; i<node->num_children; i++){	
+			add_int_to_env(node->children[i], env);
+		}
 	}
-	return is_int_assign;
 }
 
-/* Construct from Path */
-Environment::Environment(Path path)
+Environment::Environment(ast_node_t* module)
 	:env(Env())
 	, is_init(false)
 {
-	/* Get the top unsearched scope of the Environment */
-	ast_node_t* top = pop_and_grab_back(path);
-
-	/* While there are still scopes to search */
-	while(!path.empty()){
-
-		/* Check all children upto (but not including) the next scope level */
-		ast_node_t* child = top->children[0];
-		for(int i = 1; child != path.back() && i<top->num_children; i++){
-			
-			/* 
-			 * If there is an integer declaration, add it to the Environment
-			 * Else if there is an assignment to an integer, update value in Environment 
-			 */
-			if(is_integer_decl(child)) {
-				env[std::string(child->children[1]->types.identifier)] 
-					= std::nullopt;
-			} else if(is_integer_decl_list(child)) {
-				for(int j=1; i<child->num_children; i++){
-					env[std::string(child->children[j]->types.identifier)] 
-						= std::nullopt;
-				}
-			} else if(is_integer_assign(child, env)) {
-				env[std::string(child->children[0]->types.identifier)] 
-					= ast_node_deep_copy(child->children[1]);
-			}
-			child = top->children[i];
-		}
-		top = pop_and_grab_back(path);
-
-	}
+	add_int_to_env(module, env);
 	is_init = true;
 }
 
@@ -109,7 +65,7 @@ Environment::~Environment()
 
 /* (function: update_value) */
 int Environment::update_value(std::string symbol, ast_node_t* new_value){
-	if(env.find(symbol) == env.end())
+	if(!is_in_env(symbol))
 		return UNKNOWN_SYMBOL;
 	env[symbol] = new_value;
 	return SUCCESS;
@@ -117,12 +73,17 @@ int Environment::update_value(std::string symbol, ast_node_t* new_value){
 
 /* (function: get_value) */
 Value Environment::get_value(std::string symbol){
+	if(!is_in_env(symbol))
+		return std::nullopt;
 	return env[symbol];
 }
 
 /* (function: is_in_env) */
 bool Environment::is_in_env(std::string symbol){
-	return env.find(symbol) == env.end();
+	bool contains_symbol = false;
+	for(auto it = env.begin(); it != env.end() && !contains_symbol; ++it)
+		contains_symbol = (it->first == symbol);
+	return contains_symbol;
 }
 
 static ast_node_t* reduce_binary_operation(ast_node_t* node)
@@ -213,13 +174,13 @@ static ast_node_t* reduce_binary_operation(ast_node_t* node)
  */
 ast_node_t* evaluate_node(ast_node_t* node, Environment& env)
 {
-	oassert(node);
+	if(!node)
+		return nullptr;
 	ast_node_t* to_return = nullptr;
-	Value v;
+	Value v = std::nullopt;
 	ast_node_t* temp = nullptr;
 	ast_node_t* child_node =nullptr ;
 	ast_node_t* body_parent = nullptr;
-	int loop_index;
 	std::string symbol;
 	switch(node->type){
 		case IDENTIFIERS:
@@ -229,11 +190,9 @@ ast_node_t* evaluate_node(ast_node_t* node, Environment& env)
 		case BINARY_OPERATION:
 			to_return = ast_node_deep_copy(node);
 			temp = to_return->children[0];
-			assign_child_to_node(evaluate_node(to_return->children[0], env), to_return, 0);
-			free_whole_tree(temp);
+			assign_child_to_node(to_return, evaluate_node(ast_node_deep_copy(to_return->children[0]), env), 0);
 			temp = to_return->children[1];
-			assign_child_to_node(evaluate_node(to_return->children[1], env), to_return, 1);
-			free_whole_tree(temp);
+			assign_child_to_node(to_return, evaluate_node(ast_node_deep_copy(to_return->children[1]), env), 1);
 			if(children_are_numbers(to_return, to_return->num_children)){
 				temp = reduce_binary_operation(to_return);
 				free_whole_tree(to_return);
@@ -241,47 +200,58 @@ ast_node_t* evaluate_node(ast_node_t* node, Environment& env)
 			}
 			break;
 		case BLOCKING_STATEMENT:
-			v = env.get_value(node->children[0]->types.identifier);
-			to_return = (v != std::nullopt) ? nullptr : node;
-			symbol = node->children[0]->types.identifier;
-			if(env.is_in_env(symbol)){
-				env.update_value(symbol, evaluate_node(to_return->children[1], env));
-				free_whole_tree(*v);
+			if(node->children[0]->type == IDENTIFIERS) {
+				if(env.is_in_env(std::string(node->children[0]->types.identifier))){
+					env.update_value(
+						node->children[0]->types.identifier, 
+						evaluate_node(ast_node_deep_copy(node->children[1]), env));
+					free_whole_tree(*v);
+				} else {
+					goto default_case; //forgive me father for I have sinned
+				}
+			} else {
+				goto default_case; //forgive me father for I have sinned
 			}
 			break;
 		case WHILE:
 			to_return = ast_node_deep_copy(node);
-			temp = evaluate_node(to_return->children[0], env);
+			temp = evaluate_node(ast_node_deep_copy(to_return->children[0]), env);
 			if(!is_a_number_node(temp)){
 				error_message(
 					PARSE_ERROR, 
-					temp->line_number, 
-					temp->file_number,
+					node->line_number, 
+					node->file_number,
 					"%s",
 					"Unable to simplify condition of while loop at compile time."
 				);
 			}
 			while(temp->types.number.value){
-				free_whole_tree(temp);
 				for(int i=0; i<to_return->children[1]->num_children; i++){
-					child_node = evaluate_node(to_return->children[1]->children[i], env);
-					body_parent = body_parent ? 
-						newList_entry(body_parent, child_node):
-						newList(BLOCK, child_node);
+					child_node = evaluate_node(ast_node_deep_copy(to_return->children[1]->children[i]), env);
+					if(child_node) {
+						body_parent = body_parent ? 
+							newList_entry(body_parent, child_node):
+							newList(BLOCK, child_node);
+					}
 				}
-
-				temp = evaluate_node(to_return->children[0], env);
+				free_whole_tree(temp);
+				temp = evaluate_node(ast_node_deep_copy(to_return->children[0]), env);
 			}
-		case BLOCK:
-			to_return = ast_node_deep_copy(node);
-			for(loop_index = 0; loop_index < to_return->num_children; loop_index++){
-				temp = evaluate_node(to_return->children[loop_index], env);
-				if(temp != to_return->children[loop_index]){
-					assign_child_to_node(to_return, temp, loop_index);
-				}
-			}
+			free_whole_tree(to_return);
+			to_return = body_parent;
+			break;
 		default:
-			to_return = node;
+		default_case:
+			to_return = ast_node_deep_copy(node);
+			for(int i=0; i<to_return->num_children; i++){
+				child_node = evaluate_node(ast_node_deep_copy(to_return->children[i]), env);
+				if(child_node){
+					assign_child_to_node(to_return, child_node, i);
+				} else if(to_return->children[i]){
+					remove_ast_node(to_return, to_return->children[i]);
+					i--;
+				}
+			}
 			break;
 	}
 	if(node != to_return)

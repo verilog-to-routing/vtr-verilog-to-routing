@@ -12,9 +12,6 @@
 
 using Value = std::optional<ast_node_t*>;
 using Env = std::unordered_map<std::string, Value>;
-using Path = std::vector<ast_node_t*>;
-
-Path make_path(ast_node_t*, ast_node_t*);
 
 inline bool is_a_number_node(ast_node_t* node){
 	return node->type == NUMBERS;
@@ -34,8 +31,8 @@ class Environment{
 
 	public:
 		/* Constructors */
-		Environment() = delete; // Always build Environments from paths or other Environments
-		Environment(Path path);
+		Environment() = delete; // Always build Environments from modules
+		Environment(ast_node_t* module);
 		Environment(Environment&& to_move) = delete; // Don't move Environments, there is no need.
 		Environment(const Environment& to_copy);
 		~Environment();

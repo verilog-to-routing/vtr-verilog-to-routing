@@ -127,39 +127,27 @@ long find_module_instance(ast_node_t *ast_module, char *instance_name)
 /*
  *  (function: while_preprocessor)
  */
-void while_preprocessor(ast_node_t* node, ast_node_t* module)
+bool while_preprocessor(ast_node_t* node, ast_node_t* module)
 {
 	oassert(node);
 	oassert(!is_while_node(node));
-	
-	bool free_node = false;
-	ast_node_t* parent = node->parent;
-	ast_node_t* new_node = nullptr;
 
+	bool replaced_nodes = false;
+	
 	/* if this node is the parent of a while node, process this node */
-	for(int i=0; i<node->num_children; i++){
+	for(int i=0; i<node->num_children && !replaced_nodes; i++){
 		if(!node->children[i])
 			continue;
 		if(is_while_node(node->children[i])){
-			Environment environment(make_path(node->children[i], module));
-			new_node = evaluate_node(node, environment);
-			/* If this node wasn't an assignment to an integer
-			 * and was replaced, then update the parent node.
-			 */
-			if(new_node && new_node != node){
-				for(int j=0; j<parent->num_children; j++){
-					if(parent->children[j] == node)
-						assign_child_to_node(new_node, parent, j);
-				}
-				free_node = true;
-			}
+			Environment environment(module);
+			ast_node_t* new_module_items = evaluate_node(ast_node_deep_copy(module->children[2]), environment);
+			assign_child_to_node(module, new_module_items, 2);
+			return true;
 		} else {
-			while_preprocessor(node->children[i], module);
+			replaced_nodes = while_preprocessor(node->children[i], module);
 		}
-	}	
-	if(free_node)
-		free_whole_tree(node);
-
+	}
+	return replaced_nodes;
 }
 
 

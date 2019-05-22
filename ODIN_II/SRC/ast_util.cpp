@@ -40,6 +40,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 char **get_name_of_pins_number(ast_node_t *var_node, int start, int width);
 void update_tree_tag(ast_node_t *node, int cases, int tagged);
 
+//Unique count used for IDing nodes
+static long unique_count = 0;
+
 // HIGH LEVEL AST TAG
 	static int high_level_id;
 
@@ -96,8 +99,6 @@ void update_tree_tag(ast_node_t *node, int cases, int tagged);
 static ast_node_t* create_node_w_type(ids id, int line_number, int file_number, bool update_unique_count)
 {
 	oassert(id != NO_ID);
-
-	static long unique_count = 0;
 
 	ast_node_t* new_node;
 
@@ -1170,13 +1171,16 @@ ast_node_t *ast_node_deep_copy(ast_node_t *node){
 	node_copy->types.number.number = vtr::strdup(node->types.number.number);
 	node_copy->types.number.binary_string = vtr::strdup(node->types.number.binary_string);
 
-    //Create a new child list
-    node_copy->children = (ast_node_t**)vtr::malloc(sizeof(ast_node_t*)*node_copy->num_children);
+	//Create a new child list
+	node_copy->children = (ast_node_t**)vtr::malloc(sizeof(ast_node_t*)*node_copy->num_children);
 
 	//Recursively copy its children
 	for(i = 0; i < node->num_children; i++){
 		assign_child_to_node(node_copy, ast_node_deep_copy(node->children[i]), i);
 	}
+
+	//Update unique count
+	node_copy->unique_count = unique_count++;	
 
 	return node_copy;
 }
