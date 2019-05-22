@@ -119,20 +119,12 @@ canvas::~canvas()
 
 int canvas::width() const
 {
-#ifdef EZGL_USE_X11
-  return cairo_xlib_surface_get_width(m_surface);
-#else
-  return cairo_image_surface_get_width(m_surface);
-#endif
+  return gtk_widget_get_allocated_width(m_drawing_area);
 }
 
 int canvas::height() const
 {
-#ifdef EZGL_USE_X11
-  return cairo_xlib_surface_get_height(m_surface);
-#else
-  return cairo_image_surface_get_height(m_surface);
-#endif
+  return gtk_widget_get_allocated_height(m_drawing_area);
 }
 
 void canvas::initialize(GtkWidget *drawing_area)

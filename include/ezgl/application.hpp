@@ -80,7 +80,7 @@ public:
    */
   struct settings {
     /**
-     * The file path that contains the XML file, which describes the GUI.
+     * The resource path that contains the XML file, which describes the GUI.
      */
     std::string main_ui_resource;
 
@@ -103,7 +103,23 @@ public:
      *
      * @see application::get_object
      */
-    connect_g_objects_fn setup_callbacks = nullptr;
+    connect_g_objects_fn setup_callbacks;
+
+    /**
+     * Create the settings structure with default values
+     */
+    settings()
+    : main_ui_resource("/ezgl/main.ui"), window_identifier("MainWindow"), canvas_identifier("MainCanvas"), setup_callbacks(nullptr)
+    {
+    }
+
+    /**
+     * Create the settings structure with user-defined values
+     */
+    settings(std::string m_resource, std::string w_identifier, std::string c_identifier, connect_g_objects_fn s_callbacks = nullptr)
+    : main_ui_resource(m_resource), window_identifier(w_identifier), canvas_identifier(c_identifier), setup_callbacks(s_callbacks)
+    {
+    }
   };
 
 public:
@@ -123,7 +139,7 @@ public:
    * @param draw_callback The function to call that draws to this canvas.
    * @param coordinate_system The initial coordinate system of this canvas.
    *
-   * @return A pointer to the newly created cavas.
+   * @return A pointer to the newly created canvas.
    */
   canvas *add_canvas(std::string const &canvas_id,
       draw_canvas_fn draw_callback,
@@ -179,6 +195,14 @@ public:
    * @param message The message that will be displayed on the status bar
    */
   void update_message(std::string const &message);
+
+  /**
+   * Change the coordinate system of a created canvas
+   *
+   * @param canvas_id The id of the GtkDrawingArea in the XML file.
+   * @param coordinate_system The new coordinate system of this canvas.
+   */
+  void change_canvas_world_coordinates(std::string const &canvas_id, rectangle coordinate_system);
 
   /**
    * redraw the main canvas
@@ -344,7 +368,6 @@ public:
   // The user-defined callback function for handling keyboard press
   key_callback_fn key_press_callback;
 };
-}
 
 /**
  * Set the disable_event_loop flag to new_setting
@@ -354,5 +377,6 @@ public:
  * @param new_setting The new state of disable_event_loop flag
  */
 void set_disable_event_loop(bool new_setting);
+}
 
 #endif //EZGL_APPLICATION_HPP

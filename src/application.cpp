@@ -18,10 +18,9 @@
 
 #include "ezgl/application.hpp"
 
+namespace ezgl {
 // A flag to disable event loop (default is false)
 bool disable_event_loop = false;
-
-namespace ezgl {
 
 void application::startup(GtkApplication *, gpointer user_data)
 {
@@ -32,7 +31,7 @@ void application::startup(GtkApplication *, gpointer user_data)
 
   // Build the main user interface from the XML resource.
   GError *error = nullptr;
-  if(gtk_builder_add_from_file(ezgl_app->m_builder, main_ui_resource, &error) == 0) {
+  if(gtk_builder_add_from_resource(ezgl_app->m_builder, main_ui_resource, &error) == 0) {
     g_error("%s.", error->message);
   }
 
@@ -70,7 +69,7 @@ application::application(application::settings s)
     : m_main_ui(s.main_ui_resource)
     , m_window_id(s.window_identifier)
     , m_canvas_id(s.canvas_identifier)
-    , m_application(gtk_application_new("edu.toronto.eecg.ezgl.app", G_APPLICATION_FLAGS_NONE))
+    , m_application(gtk_application_new("ezgl.app", G_APPLICATION_FLAGS_NONE))
     , m_builder(gtk_builder_new())
     , m_register_callbacks(s.setup_callbacks)
 {
@@ -372,6 +371,18 @@ void application::change_button_text(const char *button_text, const char *new_bu
   }
 }
 
+void application::change_canvas_world_coordinates(std::string const &canvas_id,
+    rectangle coordinate_system)
+{
+  // get the canvas
+  canvas *cnv = get_canvas(canvas_id);
+
+  // reset the camera system with the new coordinates
+  if (cnv != nullptr) {
+    cnv->get_camera().reset_world(coordinate_system);
+  }
+}
+
 void application::refresh_drawing()
 {
   // get the main canvas
@@ -398,9 +409,8 @@ renderer application::get_renderer()
   return cnv->create_temporary_renderer();
 }
 
-}
-
 void set_disable_event_loop(bool new_setting)
 {
   disable_event_loop = new_setting;
+}
 }

@@ -57,8 +57,9 @@ int main(int argc, char **argv)
 {
   ezgl::application::settings settings;
 
-  // Path to the "main.ui" file that contains an XML description of the UI.
-  settings.main_ui_resource = "main.ui";
+  // Path to the resource that contains an XML description of the UI.
+  // Note: this is not a file path, it is a resource path.
+  settings.main_ui_resource = "/ezgl/main.ui";
 
   // Note: the "main.ui" file has a GtkWindow called "MainWindow".
   settings.window_identifier = "MainWindow";

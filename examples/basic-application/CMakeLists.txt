@@ -30,7 +30,7 @@ compile_gresources(
     resources.C
   # specify the resource prefix (used in the code)
   PREFIX
-    /edu/toronto/eecg/ezgl/ece297/cd000
+    /ezgl
   # input: specify the list of files to compile into resources
   RESOURCES
     ${RESOURCE_LIST}

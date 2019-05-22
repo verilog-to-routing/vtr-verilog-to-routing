@@ -118,6 +118,17 @@ void camera::set_world(rectangle new_world)
   update_scale_factors();
 }
 
+void camera::reset_world(rectangle new_world)
+{
+  // Change the coordinates to the new bounds
+  m_world = new_world;
+  m_screen = new_world;
+  m_initial_world = new_world;
+
+  m_screen = maintain_aspect_ratio(m_screen, m_widget.width(), m_widget.height());
+  update_scale_factors();
+}
+
 void camera::update_widget(int width, int height)
 {
   m_widget = rectangle{{0, 0}, static_cast<double>(width), static_cast<double>(height)};
