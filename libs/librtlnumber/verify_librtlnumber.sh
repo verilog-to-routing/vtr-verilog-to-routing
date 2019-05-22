@@ -96,7 +96,7 @@ for INPUT in ${0%/*}/regression_tests/*.csv; do
 
 			echo -e "\nERROR: Non-Zero Exit Code from ${0%/*}/rtl_number (on $INPUT:$LINE)\n"
 
-			echo -e "-X- FAILED == $TEST_LABEL\t  ./rtl_number ${RTL_CMD_IN}\t sOutput:<$OUTPUT_AND_RESULT> != <$EXPECTED_RESULT>"
+			echo -e "-X- FAILED == $TEST_LABEL\t  ./rtl_number ${RTL_CMD_IN}\t Output:<$OUTPUT_AND_RESULT> != Expected:<$EXPECTED_RESULT>"
 
 		elif [ "${OUTPUT_AND_RESULT}" == "${EXPECTED_RESULT}" ]
 		then
@@ -113,7 +113,7 @@ for INPUT in ${0%/*}/regression_tests/*.csv; do
 
 			echo -e "\nERROR: Expected Result Didn't match what we got back from ${0%/*}/rtl_number (on $INPUT:$LINE)\n"
 
-			echo -e "-X- FAILED == $TEST_LABEL\t  ./rtl_number ${RTL_CMD_IN}\t sOutput:<$OUTPUT_AND_RESULT> != <$EXPECTED_RESULT>"
+			echo -e "-X- FAILED == $TEST_LABEL\t  ./rtl_number ${RTL_CMD_IN}\t Output:<$OUTPUT_AND_RESULT> != Expected:<$EXPECTED_RESULT>"
 
 		fi
 

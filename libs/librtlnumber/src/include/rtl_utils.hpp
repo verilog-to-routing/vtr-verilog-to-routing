@@ -17,6 +17,16 @@
 #define FILE_NAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
 
+/* Enable Debug Messages for libRTLNumber: Un-Comment to Enable Debug Messages:
+ *                                          Comment-out to Disable Debug Messages: */
+// #define ENABLE_DEBUG_MESSAGES
+
+#ifdef ENABLE_DEBUG_MESSAGES
+#define DEBUG_MSG(debugMsg) std::cerr << "DEBUG: " << FILE_NAME << ":" << __LINE__ << " " << __func__ << "()" << ": " << debugMsg << std::endl
+#else
+#define DEBUG_MSG(debugMsg) /* No-Op */
+#endif
+
 #ifndef ERR_MSG
 #define ERR_MSG(errMsg) std::cout << std::endl << "ERROR: " << FILE_NAME << ":" << __LINE__ << " " << __func__ << "()" << ": " << errMsg << "!" << std::endl << std::endl
 #endif

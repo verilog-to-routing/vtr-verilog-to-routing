@@ -68,12 +68,12 @@ Unsigned-Signed-shift-right,		5'b10100,	>>>,	2'b10,	5'b00101
 Signed-shift-right,		5'sb10100,	>>>,	2'b10,	5'sb11101
 
 # arithmetic
-Addition,			4'b0110,    +,  4'b0011,  'b1001
-Subtraction,		4'b0100,    -,  4'b0010,  'b10
-#Division,			4'b1010,    /,  4'b0010,  'b10
-Multiplication,	    4'b0010,    *,  4'b0010,  'b100
-#Modulo,			    4'b1011,    %,  4'b0010,  'b1
-#Power,              4'b0010,    **, 4'b0000,  'b1
+# TODO: Addition,			4'b0110,    +,  4'b0011,  'b1001
+# TODO: Subtraction,		4'b0100,    -,  4'b0010,  'b10
+# TODO: Division,			4'b1010,    /,  4'b0010,  'b10
+# TODO: Multiplication,	    4'b0010,    *,  4'b0010,  'b100
+# TODO: Modulo,			    4'b1011,    %,  4'b0010,  'b1
+# TODO: Power,              4'b0010,    **, 4'b0000,  'b1
 
 # Ternary operations
 Ternary,			1'b1,   ?,  2'b01,  :,  2'b10,  2'b01
