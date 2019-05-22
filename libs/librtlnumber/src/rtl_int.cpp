@@ -125,9 +125,9 @@ static compare_bit eval_op(VNumber a,int64_t b)
 /**
  * Addition operations
  */
-static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry)
+static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry, bool is_twos_compliment_subtraction)
 {
-	DEBUG_MSG("a: '" << a.to_string() << "' + b: '" << b.to_string() << "' (initial_carry: '" << initial_carry << "')");
+	DEBUG_MSG("a: '" << a.to_string() << "' + b: '" << b.to_string() << "' (initial_carry: '" << (unsigned(initial_carry)) << "', is_twos_compliment_subtraction: '" << ((true == is_twos_compliment_subtraction) ? ("true") : ("false")) << "')");
 
 	assert_Werr( a.size() ,
 		"empty 1st bit string" 
@@ -138,19 +138,19 @@ static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry)
 	);
 
 	size_t std_length = std::max(a.size(), b.size());
-	size_t new_length = std_length + 1;
+	size_t new_length = ((true == is_twos_compliment_subtraction) ? (std_length) : (std_length + 1));
 	const bit_value_t pad_a = a.get_padding_bit();
 	const bit_value_t pad_b = b.get_padding_bit();
 
 	DEBUG_MSG("std_length: '" << std_length << "'");
 	DEBUG_MSG("new_length: '" << new_length << "'");
-	DEBUG_MSG("pad_a: '" << pad_a << "'");
-	DEBUG_MSG("pad_b: '" << pad_b << "'");
+	DEBUG_MSG("pad_a: '" << (unsigned(pad_a)) << "'");
+	DEBUG_MSG("pad_b: '" << (unsigned(pad_b)) << "'");
 
 	bit_value_t previous_carry = initial_carry;
 	VNumber result(new_length, _x, false);
 
-	DEBUG_MSG("previous_carry: '" << previous_carry << "'");
+	DEBUG_MSG("previous_carry: '" << (unsigned(previous_carry)) << "'");
 	DEBUG_MSG("result: '" << result.to_string() << "'");
 
 	for(size_t i = 0; i < new_length; i++)
@@ -167,13 +167,13 @@ static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry)
 			bit_b = b.get_bit_from_lsb(i);
 		}
 
-		DEBUG_MSG("bit_a: '" << bit_a << "'");
-		DEBUG_MSG("bit_b: '" << bit_b << "'");
+		DEBUG_MSG("bit_a: '" << (unsigned(bit_a)) << "'");
+		DEBUG_MSG("bit_b: '" << (unsigned(bit_b)) << "'");
 
 		result.set_bit_from_lsb(i, l_sum[previous_carry][bit_a][bit_b]);
 		previous_carry = l_carry[previous_carry][bit_a][bit_b];
 
-		DEBUG_MSG("previous_carry: '" << previous_carry << "'");
+		DEBUG_MSG("previous_carry: '" << (unsigned(previous_carry)) << "'");
 		DEBUG_MSG("result: '" << result.to_string() << "'");
 	}
 
@@ -253,6 +253,7 @@ VNumber V_ADD(VNumber& a)
 
 VNumber V_MINUS(VNumber& a)
 {
+	DEBUG_MSG("a: '" << a.to_string() << "': a.twos_complement(): '" << a.twos_complement().to_string() << "'");
 	return a.twos_complement();
 }
 
@@ -450,13 +451,17 @@ VNumber V_SHIFT_RIGHT(VNumber& a, VNumber& b)
 
 VNumber V_ADD(VNumber& a, VNumber& b)
 {
-	return sum_op(a, b, _0);
+	DEBUG_MSG("a: '" << a.to_string() << "' + b: '" << b.to_string() << "'");
+	return sum_op(a, b, _0, /* is_twos_compliment_subtraction */ false);
 }
 
 VNumber V_MINUS(VNumber& a, VNumber& b)
 {
+	DEBUG_MSG("a: '" << a.to_string() << "' - b: '" << b.to_string() << "'");
 	VNumber complement = V_MINUS(b);
-	return sum_op(a, complement, _1);
+	DEBUG_MSG("complement: '" << complement.to_string() << "'");
+	DEBUG_MSG("a: '" << a.to_string() << "' + complement: '" << complement.to_string() << "'");
+	return sum_op(a, complement, _0, /* is_twos_compliment_subtraction */ true);
 }
 
 VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
