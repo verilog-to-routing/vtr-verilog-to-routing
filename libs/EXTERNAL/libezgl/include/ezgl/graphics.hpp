@@ -25,12 +25,15 @@
 #include "ezgl/camera.hpp"
 
 #include <cairo.h>
+#include <gdk/gdk.h>
 
 #ifdef CAIRO_HAS_XLIB_SURFACE
+#ifdef GDK_WINDOWING_X11
 #include <cairo-xlib.h>
 
 // Speed up draw calls by using X11 instead of cairo wherever possible.
 #define EZGL_USE_X11
+#endif
 #endif
 
 #include <functional>
@@ -170,9 +173,23 @@ public:
   void set_coordinate_system(t_coordinate_system new_coordinate_system);
 
   /**
+   * Set the visible bounds of the world
+   *
+   * The function preserves the aspect ratio of the initial world
+   *
+   * @param new_world The new visible bounds of the world
+   */
+  void set_visible_world(rectangle new_world);
+
+  /**
    * Get the current visible bounds of the world
    */
   rectangle get_visible_world();
+
+  /**
+   * Get the current visible bounds of the screen
+   */
+  rectangle get_visible_screen();
 
   /**** Functions to set graphics attributes (for all subsequent drawing calls). ****/
 
@@ -465,7 +482,7 @@ private:
   Drawable x11_drawable;
 
   // The x11 display
-  Display *x11_display;
+  Display *x11_display = nullptr;
 
   // The x11 context
   GC x11_context;

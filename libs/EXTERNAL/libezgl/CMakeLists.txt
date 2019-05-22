@@ -10,8 +10,12 @@ project(
 
 # we rely on GTK3 for the GUI, so make sure the system has it
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+pkg_check_modules(GTK3 QUIET gtk+-3.0)
 pkg_check_modules(X11 QUIET x11)
+
+if(NOT GTK3_FOUND)
+  message(WARNING "EZGL: Failed to find required GTK3 library (on debian/ubuntu try 'sudo apt-get install libgtk-3-dev' to install)")
+endif()
 
 # we also rely on glib to compile the GTK resource files
 # a set of macros has been developed by Makman2 on GitHub to help with this
