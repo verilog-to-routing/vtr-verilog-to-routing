@@ -20,7 +20,7 @@ class Parameters {
       std::string feature;
   };
 
-  std::unordered_map<std::string, FeatureParameter> features_;
+  std::unordered_multimap<std::string, FeatureParameter> features_;
 
   size_t FeatureWidth(const std::string &feature) const;
 };
