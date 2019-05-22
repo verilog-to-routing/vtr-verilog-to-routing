@@ -127,6 +127,8 @@ static compare_bit eval_op(VNumber a,int64_t b)
  */
 static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry)
 {
+	DEBUG_MSG("a: '" << a.to_string() << "' + b: '" << b.to_string() << "' (initial_carry: '" << initial_carry << "')");
+
 	assert_Werr( a.size() ,
 		"empty 1st bit string" 
 	);
@@ -136,27 +138,46 @@ static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry)
 	);
 
 	size_t std_length = std::max(a.size(), b.size());
+	size_t new_length = std_length + 1;
 	const bit_value_t pad_a = a.get_padding_bit();
 	const bit_value_t pad_b = b.get_padding_bit();
 
-	bit_value_t previous_carry = initial_carry;
-	VNumber result(std_length+1, _x, false);
+	DEBUG_MSG("std_length: '" << std_length << "'");
+	DEBUG_MSG("new_length: '" << new_length << "'");
+	DEBUG_MSG("pad_a: '" << pad_a << "'");
+	DEBUG_MSG("pad_b: '" << pad_b << "'");
 
-	for(size_t i=0; i < std_length-1; i++)
+	bit_value_t previous_carry = initial_carry;
+	VNumber result(new_length, _x, false);
+
+	DEBUG_MSG("previous_carry: '" << previous_carry << "'");
+	DEBUG_MSG("result: '" << result.to_string() << "'");
+
+	for(size_t i = 0; i < new_length; i++)
 	{
 		bit_value_t bit_a = pad_a;
 		if(i < a.size())
+		{
 			bit_a = a.get_bit_from_lsb(i);
+		}
 
 		bit_value_t bit_b = pad_b;
 		if(i < b.size())
+		{
 			bit_b = b.get_bit_from_lsb(i);
+		}
+
+		DEBUG_MSG("bit_a: '" << bit_a << "'");
+		DEBUG_MSG("bit_b: '" << bit_b << "'");
 
 		result.set_bit_from_lsb(i, l_sum[previous_carry][bit_a][bit_b]);
 		previous_carry = l_carry[previous_carry][bit_a][bit_b];
-	}
-	result.set_bit_from_lsb(std_length-1, previous_carry);
 
+		DEBUG_MSG("previous_carry: '" << previous_carry << "'");
+		DEBUG_MSG("result: '" << result.to_string() << "'");
+	}
+
+	DEBUG_MSG("result: '" << result.to_string() << "'");
 	return result;
 }
 
