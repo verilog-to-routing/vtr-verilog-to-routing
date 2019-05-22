@@ -407,95 +407,87 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 
 	return new_node;
 }
+
+
+static ast_node_t *resolve_symbol_node(ids top_type, ast_node_t *symbol_node)
+{
+	ast_node_t *to_return = NULL;
+
+	switch(symbol_node->type)
+	{
+		case IDENTIFIERS:
+		{
+			ast_node_t *newNode = NULL;
+			if(top_type == MODULE) 
+			{
+				long sc_spot = sc_lookup_string(defines_for_module_sc[num_modules-num_instances], symbol_node->types.identifier);
+				if(sc_spot != -1)
+					newNode = (ast_node_t *)defines_for_module_sc[num_modules-num_instances]->data[sc_spot];
+			}
+       		else if(top_type == FUNCTION) 
+			{
+				long sc_spot = sc_lookup_string(defines_for_function_sc[num_functions], symbol_node->types.identifier);
+				if (sc_spot != -1)
+					newNode = (ast_node_t *)defines_for_function_sc[num_functions]->data[sc_spot];
+			}
+
+			if (newNode && newNode->types.variable.is_parameter == TRUE)
+			{
+				to_return = symbol_node;
+			}
+			else
+			{
+				error_message(PARSE_ERROR, symbol_node->line_number, current_parse_file,
+					"no match for parameter %s\n", symbol_node->types.identifier);
+			}
+			break;
+		}
+		case NUMBERS:
+		case BINARY_OPERATION:
+		case UNARY_OPERATION:
+		{
+			to_return = symbol_node;
+			break;
+		}
+		default:
+		{
+			to_return = NULL;
+			break;
+		}
+	}
+
+	return to_return;
+}
+
 ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list)
 {
 	long i;
 	long sc_spot;
 	ast_node_t *range_min = 0;
 	ast_node_t *range_max = 0;
-	ast_node_t *newNode = 0;
 
+
+	if(symbol_list && symbol_list->children[0] && symbol_list->children[0]->children[1])
+	{
+		range_max = resolve_symbol_node(top_type, symbol_list->children[0]->children[1]);
+		range_min = resolve_symbol_node(top_type, symbol_list->children[0]->children[2]);
+	}
 
     for (i = 0; i < symbol_list->num_children; i++)
 	{
 
+		if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
+		{
+			symbol_list->children[i]->children[1] = range_max;
+			symbol_list->children[i]->children[2] = range_min;
+		}
+		
         if(top_type == MODULE) {
-
-		    if ((i == 0) && (symbol_list->children[0]->children[1] != NULL) && (symbol_list->children[0]->children[2] != NULL)
-						    && ((symbol_list->children[0]->children[1]->type == NUMBERS) || (symbol_list->children[0]->children[1]->type == IDENTIFIERS) || (symbol_list->children[0]->children[1]->type == BINARY_OPERATION))
-						    && ((symbol_list->children[0]->children[2]->type == NUMBERS) || (symbol_list->children[0]->children[2]->type == IDENTIFIERS)|| (symbol_list->children[0]->children[2]->type == BINARY_OPERATION)))
-		    {
-			/* Do lookup in sc_add_string */
-			/* Verify node->type.variables.is_parameter == TRUE */
-			/* If type is BINARY_OPERATION, Calculate it*/
-			/* ELSE REPORT ERROR */
-
-			    if (symbol_list->children[0]->children[1]->type == IDENTIFIERS)
-			    {
-				    if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules-num_instances], symbol_list->children[0]->children[1]->types.identifier)) != -1)
-				    {
-					    newNode = (ast_node_t *)defines_for_module_sc[num_modules-num_instances]->data[sc_spot];
-					    if (newNode->types.variable.is_parameter == TRUE)
-					    {
-						    range_max = symbol_list->children[0]->children[1];
-					    }
-					    else
-						    error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
-								    "parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
-				    }
-				    else
-					    error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
-								    "parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
-			    }
-			    else if(symbol_list->children[0]->children[1]->type == NUMBERS)
-			    {
-				    range_max = symbol_list->children[0]->children[1];
-			    }
-			    else if(symbol_list->children[0]->children[1]->type == BINARY_OPERATION)
-			    {
-				    range_max = symbol_list->children[0]->children[1];
-			    }
-
-			    if (symbol_list->children[0]->children[2]->type == IDENTIFIERS)
-			    {
-				    if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules-num_instances], symbol_list->children[0]->children[2]->types.identifier)) != -1)
-				    {
-					    newNode = (ast_node_t *)defines_for_module_sc[num_modules-num_instances]->data[sc_spot];
-					    if (newNode->types.variable.is_parameter == TRUE)
-					    {
-						    range_min = symbol_list->children[0]->children[2];
-					    }
-					    else
-						    error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
-								    "parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
-					    }
-					    else
-						    error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
-								    "parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
-				    }
-				    else if(symbol_list->children[0]->children[2]->type == NUMBERS)
-				    {
-					    range_min = symbol_list->children[0]->children[2];
-				    }
-				    else if(symbol_list->children[0]->children[2]->type == BINARY_OPERATION)
-				    {
-					    range_min = symbol_list->children[0]->children[2];
-				    }
-
-                }
-
-		        if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
-		        {
-			        symbol_list->children[i]->children[1] = range_max;
-			        symbol_list->children[i]->children[2] = range_min;
-		        }
 
                 switch(id)
 	            {
 		            case PORT:
 		            {
-			            short found_match = FALSE;
-
 			            symbol_list->children[i]->types.variable.is_port = TRUE;
 
                         /* find the related INPUT or OUTPUT definition and store that instead */
@@ -504,20 +496,18 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				            symbol_list->children[i]->types.variable.is_input = TRUE;
 							free_whole_tree(symbol_list->children[i]->children[0]);
 				            symbol_list->children[i]->children[0] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
-				            found_match = TRUE;
 			            }
-			            if ((found_match == FALSE) && ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1))
+			            else if ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 			            {
 				            symbol_list->children[i]->types.variable.is_output = TRUE;
 							free_whole_tree(symbol_list->children[i]->children[0]);
 				            symbol_list->children[i]->children[0] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
-				            found_match = TRUE;
 			            }
-
-			            if (found_match == FALSE)
-			            {
+						else
+						{
 				            error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching input declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
 			            }
+
 			            break;
 		            }
 		            case PARAMETER:
@@ -585,79 +575,12 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
         }
         else if(top_type == FUNCTION) {
 
-            if ((i == 0) && (symbol_list->children[0]->children[1] != NULL) && (symbol_list->children[0]->children[2] != NULL)
-						    && ((symbol_list->children[0]->children[1]->type == NUMBERS) || (symbol_list->children[0]->children[1]->type == IDENTIFIERS) || (symbol_list->children[0]->children[1]->type == BINARY_OPERATION))
-						    && ((symbol_list->children[0]->children[2]->type == NUMBERS) || (symbol_list->children[0]->children[2]->type == IDENTIFIERS)|| (symbol_list->children[0]->children[2]->type == BINARY_OPERATION)))
-		    {
 
-                	if (symbol_list->children[0]->children[1]->type == IDENTIFIERS)
-			        {
-				        if ((sc_spot = sc_lookup_string(defines_for_function_sc[num_functions], symbol_list->children[0]->children[1]->types.identifier)) != -1)
-				        {
-					        newNode = (ast_node_t *)defines_for_function_sc[num_functions]->data[sc_spot];
-					        if (newNode->types.variable.is_parameter == TRUE)
-					        {
-						        range_max = symbol_list->children[0]->children[1];
-					        }
-					        else
-						        error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
-								        "parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
-				        }
-				        else
-					        error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
-								        "parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
-			        }
-			        else if(symbol_list->children[0]->children[1]->type == NUMBERS)
-			        {
-				        range_max = symbol_list->children[0]->children[1];
-			        }
-			        else if(symbol_list->children[0]->children[1]->type == BINARY_OPERATION)
-			        {
-				        range_max = symbol_list->children[0]->children[1];
-			        }
-
-			        if (symbol_list->children[0]->children[2]->type == IDENTIFIERS)
-			        {
-				        if ((sc_spot = sc_lookup_string(defines_for_function_sc[num_functions], symbol_list->children[0]->children[2]->types.identifier)) != -1)
-				        {
-					        newNode = (ast_node_t *)defines_for_function_sc[num_functions]->data[sc_spot];
-					        if (newNode->types.variable.is_parameter == TRUE)
-					        {
-						        range_min = symbol_list->children[0]->children[2];
-					        }
-					        else
-						        error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
-								        "parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
-					        }
-					        else
-						        error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
-								        "parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
-				        }
-				        else if(symbol_list->children[0]->children[2]->type == NUMBERS)
-				        {
-					        range_min = symbol_list->children[0]->children[2];
-				        }
-				        else if(symbol_list->children[0]->children[2]->type == BINARY_OPERATION)
-				        {
-					        range_min = symbol_list->children[0]->children[2];
-				        }
-
-                }
-
-
-
-		        if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
-		        {
-			        symbol_list->children[i]->children[1] = range_max;
-			        symbol_list->children[i]->children[2] = range_min;
-		        }
 
                 switch(id)
 		        {
 			        case PORT:
 			        {
-				        short found_match = FALSE;
-
 				        symbol_list->children[i]->types.variable.is_port = TRUE;
 
                         /* find the related INPUT or OUTPUT definition and store that instead */
@@ -666,21 +589,18 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					        symbol_list->children[i]->types.variable.is_input = TRUE;
 							free_whole_tree(symbol_list->children[i]->children[0]);
 					        symbol_list->children[i]->children[0] = (ast_node_t*)functions_inputs_sc->data[sc_spot];
-					        found_match = TRUE;
 				        }
-
-				        if ((found_match == FALSE) && ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1))
+				        else if ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 				        {
                             symbol_list->children[i]->types.variable.is_output = TRUE;
 							free_whole_tree(symbol_list->children[i]->children[0]);
 					        symbol_list->children[i]->children[0] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
-					        found_match = TRUE;
 				        }
-
-				        if (found_match == FALSE)
+				        else
 				        {
 					        error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching input declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
 				        }
+
 				        break;
 			        }
 			        case PARAMETER:

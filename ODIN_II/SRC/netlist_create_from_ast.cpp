@@ -144,7 +144,9 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 
 void look_for_clocks(netlist_t *netlist);
 
-void convert_multi_to_single_dimentional_array(ast_node_t *node);
+void convert_multi_to_single_dimentional_array(ast_node_t *node, char *instance_name_prefix);
+char *make_chunk_size_name(char *instance_name_prefix, char *array_name);
+ast_node_t *get_chunk_size_node(char *instance_name_prefix, char *array_name);
 
 /*----------------------------------------------------------------------------
  * (function: create_param_table_for_module)
@@ -1360,7 +1362,77 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 	long sc_spot;
 	nnet_t *new_net = NULL;
 
+	// pack 2d array into 1d
+	if (var_declare->num_children == 8 
+	&& var_declare->children[5] 
+	&& var_declare->children[6])
+	{
+		ast_node_t *node_max2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[3]);
+		ast_node_t *node_min2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[4]);
 
+		ast_node_t *node_max3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[5]);
+		ast_node_t *node_min3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[6]);
+
+
+		oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);		
+		oassert(node_min3->type == NUMBERS && node_max3->type == NUMBERS);
+
+		if((node_min2->types.number.value > node_max2->types.number.value)
+		||(node_min3->types.number.value > node_max3->types.number.value))
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support arrays declared [m:n] where m is less than n.");
+		}	
+		else if((node_min2->types.number.value < 0 || node_max2->types.number.value < 0)
+		||(node_min3->types.number.value < 0 || node_max3->types.number.value < 0))
+		{
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+					"Odin doesn't support negative number in index.");
+		}
+
+		char *name = var_declare->children[0]->types.identifier;
+
+		long addr_min = node_min2->types.number.value;
+		long addr_max = node_max2->types.number.value;
+
+		long addr_min1= node_min3->types.number.value;
+		long addr_max1= node_max3->types.number.value;
+
+		if (addr_min != 0 || addr_min1 != 0)
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+					"%s: right memory address index must be zero\n", name);
+
+		long addr_chunk_size = (addr_max1 - addr_min1 + 1);
+		ast_node_t *new_node = create_tree_node_long_number(addr_chunk_size, ODIN_STD_BITWIDTH, var_declare->children[0]->line_number, var_declare->children[0]->file_number);
+
+		STRING_CACHE *local_param_table_sc;
+		sc_spot = sc_lookup_string(global_param_table_sc, instance_name_prefix);
+		oassert(sc_spot != -1);
+		if (sc_spot != -1){
+			local_param_table_sc = (STRING_CACHE *)global_param_table_sc->data[sc_spot];
+		}
+
+		temp_string = make_chunk_size_name(instance_name_prefix, name);
+
+		if ((sc_spot = sc_add_string(local_param_table_sc, temp_string)) == -1)
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+					"%s: name conflicts with Odin internal reference\n", temp_string);
+
+		local_param_table_sc->data[sc_spot] = (void *)new_node;
+
+		long new_address_max = (addr_max - addr_min + 1)*addr_chunk_size -1;
+
+		change_to_number_node(var_declare->children[3], new_address_max);
+		change_to_number_node(var_declare->children[4], 0);
+
+		var_declare->children[5] = free_whole_tree(var_declare->children[5]);
+		var_declare->children[6] = free_whole_tree(var_declare->children[6]);
+
+		var_declare->children[5] = var_declare->children[7];
+		var_declare->children[7] = NULL; 
+
+		var_declare->num_children -= 2;
+	}
 
 	if (var_declare->children[1] == NULL || var_declare->type == BLOCKING_STATEMENT)
 	{
@@ -1446,7 +1518,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		}
 	}
 	/* Implicit memory */
-	else if ((var_declare->children[3] != NULL) && (var_declare->children[5] == NULL))
+	else if (var_declare->children[3] != NULL)
 	{
 		ast_node_t *node_max1 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[1]);
 		ast_node_t *node_min1 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
@@ -1500,88 +1572,10 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		oassert(addr_min <= addr_max);
 
-		int data_width = data_max - data_min + 1;
-		long words = addr_max - addr_min + 1;
+		long data_width = data_max - data_min + 1;
+		long address_width = addr_max - addr_min + 1;
 
-		create_implicit_memory_block(data_width, words, name, instance_name_prefix);
-	}
-	else if (var_declare->children[5] != NULL)
-	{
-		ast_node_t *node_max1 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[1]);
-		ast_node_t *node_min1 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
-
-		ast_node_t *node_max2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[3]);
-		ast_node_t *node_min2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[4]);
-
-		ast_node_t *node_max3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[5]);
-		ast_node_t *node_min3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[6]);
-
-		oassert(node_min1->type == NUMBERS && node_max1->type == NUMBERS);
-		if(node_min1->types.number.value > node_max1->types.number.value)
-		{
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support arrays declared [m:n] where m is less than n.");
-		}	
-		//ODIN doesn't support negative number in index now.
-		if(node_min1->types.number.value < 0 || node_max1->types.number.value < 0)
-		{
-			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support negative number in index.");
-		}
-
-		oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);
-		if(node_min2->types.number.value > node_max2->types.number.value)
-		{
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support arrays declared [m:n] where m is less than n.");
-		}	
-		//ODIN doesn't support negative number in index now.
-		if(node_min2->types.number.value < 0 || node_max2->types.number.value < 0)
-		{
-			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support negative number in index.");
-		}
-
-		oassert(node_min3->type == NUMBERS && node_max3->type == NUMBERS);
-		if(node_min3->types.number.value > node_max3->types.number.value)
-		{
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support arrays declared [m:n] where m is less than n.");
-		}	
-		//ODIN doesn't support negative number in index now.
-		if(node_min3->types.number.value < 0 || node_max3->types.number.value < 0)
-		{
-			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support negative number in index.");
-		}
-
-		char *name = var_declare->children[0]->types.identifier;
-
-		long data_min = node_min1->types.number.value;
-		long data_max = node_max1->types.number.value;
-
-		if (data_min != 0)
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
-					"%s: right memory index must be zero\n", name);
-
-		oassert(data_min <= data_max);
-
-		long addr_min = node_min2->types.number.value;
-		long addr_max = node_max2->types.number.value;
-
-		long addr_min1= node_min3->types.number.value;
-		long addr_max1= node_max3->types.number.value;
-
-		if (addr_min != 0)
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
-					"%s: right memory address index must be zero\n", name);
-
-		oassert(addr_min <= addr_max);
-
-		int data_width = data_max - data_min + 1;
-		long words = (addr_max - addr_min + 1)*(addr_max1 - addr_min1 + 1)  - 1;
-
-		create_implicit_memory_block(data_width, words, name, instance_name_prefix);
+		create_implicit_memory_block(data_width, address_width, name, instance_name_prefix);
 	}
 
 	return new_net;
@@ -3161,7 +3155,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 
 		if(right->num_children > 2 && right->children[2] != NULL)
 		{
-			convert_multi_to_single_dimentional_array(right);
+			convert_multi_to_single_dimentional_array(right, instance_name_prefix);
 		}
 
 		signal_list_t* address = netlist_expand_ast_of_module(right->children[1], instance_name_prefix);
@@ -3182,7 +3176,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 					std::string unused_pins_name = "";
 					for(long i = right_memory->addr_width; i < address->count; i++)
 					{
-						unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
+						if (address->pins && address->pins[i] && address->pins[i]->name)
+							unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
 					}
 					warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
 										"indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
@@ -3263,7 +3258,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		{
 			if(left->num_children > 2 && left->children[2] != NULL)
 			{
-				convert_multi_to_single_dimentional_array(left);
+				convert_multi_to_single_dimentional_array(left, instance_name_prefix);
 			}
 
 			// Make sure the memory is addressed.
@@ -3284,7 +3279,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 						std::string unused_pins_name = "";
 						for(long i = left_memory->addr_width; i < address->count; i++)
 						{
-							unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
+							if (address->pins && address->pins[i] && address->pins[i]->name)
+								unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
 						}
 						warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
 											"indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
@@ -5917,64 +5913,81 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 	return return_list;
 }
 
-void convert_multi_to_single_dimentional_array(ast_node_t *node)
+void convert_multi_to_single_dimentional_array(ast_node_t *node, char *instance_name_prefix)
 {
-	long array_row = 0;
-	long array_column = 0;
-	char number[1024] = {0};
-	long array_index = 0;
-	long sc_spot = 0;
-	char *temp_string = NULL;
-	long array_size = 0;
+	char *array_name = NULL;
+	ast_node_t *array_row = NULL;
+	ast_node_t *array_col = NULL;
+	ast_node_t *array_size = NULL;
 
-	temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[0]->types.identifier, -1);
-	sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
-	array_size = local_symbol_table[sc_spot]->types.variable.initial_value;
+	ast_node_t *new_node_1 = NULL;
+	ast_node_t *new_node_2 = NULL;
 
+	array_name = make_full_ref_name(NULL, NULL, NULL, node->children[0]->types.identifier, -1);
+	array_size = get_chunk_size_node(instance_name_prefix, array_name);
+	array_row = node->children[1];
+	array_col = node->children[2];
 
-	if ((node->children[1]->type == NUMBERS) && (node->children[2]->type == NUMBERS))
+	// build the new AST
+	new_node_1 = newBinaryOperation(MULTIPLY, array_row, array_size, node->children[0]->line_number);
+	new_node_2 = newBinaryOperation(ADD, new_node_1, array_col, node->children[0]->line_number);
+
+	node->children[1] = new_node_2;
+	node->children[2] = NULL;
+	node->num_children -= 1;
+
+	// see if this operation can be resolved
+	if (new_node_2->type != NUMBERS)
 	{
-		array_row = node->children[1]->types.number.value;
-		array_column = node->children[2]->types.number.value;
-		array_index = array_row * array_size + array_column;
-		odin_sprintf(number, "%ld", array_index);
-		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long(number,sizeof(number)));
-
+		new_node_2 = resolve_node(NULL, FALSE, instance_name_prefix, new_node_2);
 	}
-	else if ((node->children[1]->type == NUMBERS) && (node->children[2]->type == IDENTIFIERS))
-	{
-		array_row = node->children[1]->types.number.value;
-		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[2]->types.identifier, -1);
-		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
-		array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
-		array_index = array_row * array_size + array_column;
-		odin_sprintf(number, "%ld", array_index);
-		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long(number,sizeof(number)));
 
-	}
-	else if ((node->children[1]->type == IDENTIFIERS) && (node->children[2]->type == NUMBERS))
-	{
-		array_column = node->children[2]->types.number.value;
-		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[1]->types.identifier, -1);
-		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
-		array_row = local_symbol_table[sc_spot]->types.variable.initial_value;
-		array_index = array_row * array_size + array_column;
-		odin_sprintf(number, "%ld", array_index);
-		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long(number,sizeof(number)));
-	}
-	else
-	{
-		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[1]->types.identifier, -1);
-		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
-		array_row = local_symbol_table[sc_spot]->types.variable.initial_value;
-
-		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[2]->types.identifier, -1);
-		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
-		array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
-		array_index = array_row * array_size + array_column;
-
-		odin_sprintf(number, "%ld", array_index);
-		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long(number,sizeof(number)));
-	}
 	return;
+}
+
+/*--------------------------------------------------------------------------
+ * (function: make_chunk_size_name)
+ * 	This function creates a string to reference a 2D array chunk size for
+ * 	1D array indexing.
+ *------------------------------------------------------------------------*/
+char *make_chunk_size_name(char *instance_name_prefix, char *array_name)
+{
+	std::string to_return(instance_name_prefix);
+	to_return += "__";
+	to_return += array_name;
+	to_return += "_____CHUNK_SIZE_DEFINE";
+	return vtr::strdup(to_return.c_str());
+}
+
+/*--------------------------------------------------------------------------
+ * (function: get_chunk_size_node)
+ * 	This function gets the chunk size node for a 2D array, to be used for
+ *	1D array indexing.
+ *------------------------------------------------------------------------*/
+ast_node_t *get_chunk_size_node(char *instance_name_prefix, char *array_name)
+{
+	ast_node_t *array_size = NULL;
+	long sc_spot;
+	STRING_CACHE *local_param_table_sc;
+	char *temp_string = NULL;
+
+	temp_string = make_chunk_size_name(instance_name_prefix, array_name);
+
+	// look up local param table
+	sc_spot = sc_lookup_string(global_param_table_sc, instance_name_prefix);
+	oassert(sc_spot != -1);
+	if (sc_spot != -1)
+	{
+		local_param_table_sc = (STRING_CACHE *)global_param_table_sc->data[sc_spot];
+	}
+
+	// look up chunk size
+	sc_spot = sc_lookup_string(local_param_table_sc, temp_string);
+	oassert(sc_spot != -1);
+	if (sc_spot != -1)
+	{
+		array_size = (ast_node_t *)local_param_table_sc->data[sc_spot];
+	}
+
+	return array_size;
 }
