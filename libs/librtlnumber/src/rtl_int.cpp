@@ -40,6 +40,7 @@ public:
 
 static compare_bit eval_op(VNumber& a_in, VNumber& b_in)
 {
+	DEBUG_MSG("a_in: '" << a_in.to_string() << "' == b_in: '" << b_in.to_string() << "'");
 
 	assert_Werr( a_in.size() ,
 		"empty 1st bit string" 
@@ -52,6 +53,8 @@ static compare_bit eval_op(VNumber& a_in, VNumber& b_in)
 	bool neg_a = (a_in.is_negative());
 	bool neg_b = (b_in.is_negative());
 
+	DEBUG_MSG("neg_a: '" << ((true == neg_a) ? ("true") : ("false")) << "'");
+	DEBUG_MSG("neg_b: '" << ((true == neg_b) ? ("true") : ("false")) << "'");
 
 	if(neg_a && !neg_b)
 	{
@@ -64,51 +67,73 @@ static compare_bit eval_op(VNumber& a_in, VNumber& b_in)
 
 	VNumber a;
 	VNumber b;
-
-
 	bool invert_result = (neg_a && neg_b);
 
+	DEBUG_MSG("invert_result: '" << ((true == invert_result) ? ("true") : ("false")) << "'");
 
 	if(invert_result)
 	{
 		a = a_in.twos_complement();
 		b = b_in.twos_complement();
-
 	}
 	else
 	{
 		a = a_in;
 		b = b_in;
-
 	}
 
+	DEBUG_MSG("a: '" << a.to_string() << "'");
+	DEBUG_MSG("b: '" << b.to_string() << "'");
 
 	size_t std_length = std::max(a.size(), b.size());
 	bit_value_t pad_a = a.get_padding_bit();
 	bit_value_t pad_b = b.get_padding_bit();
 
+	DEBUG_MSG("std_length: '" << std_length << "'");
+	DEBUG_MSG("pad_a: '" << (unsigned(pad_a)) << "'");
+	DEBUG_MSG("pad_b: '" << (unsigned(pad_b)) << "'");
 
 	for(size_t i=std_length-1; i < std_length ; i--)
 	{
 		bit_value_t bit_a = pad_a;
 		if(i < a.size())
+		{
+			DEBUG_MSG("bit_a = a.get_bit_from_lsb(i: '" << i << "'): '" << (unsigned(a.get_bit_from_lsb(i))) << "'");
 			bit_a = a.get_bit_from_lsb(i);
+		}
 
 		bit_value_t bit_b = pad_b;
 		if(i < b.size())
+		{
+			DEBUG_MSG("bit_b = b.get_bit_from_lsb(i: '" << i << "'): '" << (unsigned(b.get_bit_from_lsb(i))) << "'");
 			bit_b = b.get_bit_from_lsb(i);
+		}
+		
+		DEBUG_MSG("bit_a: '" << (unsigned(bit_a)) << "'");
+		DEBUG_MSG("bit_b: '" << (unsigned(bit_b)) << "'");
 
-		if	(bit_a == BitSpace::_x || bit_b == BitSpace::_x)	
+		if(bit_a == BitSpace::_x || bit_b == BitSpace::_x)
+		{
+			DEBUG_MSG("return UNK_EVAL");
+
 			return UNK_EVAL;
+		}
 		else if(bit_a != bit_b)
 		{
 			if(bit_a == BitSpace::_1)
+			{
+				DEBUG_MSG("return " << ((true == invert_result) ? ("LT_EVAL") : ("GT_EVAL")));
 				return (invert_result)? LT_EVAL: GT_EVAL;
+			}
 			else
+			{
+				DEBUG_MSG("return " << ((true == invert_result) ? ("GT_EVAL") : ("LT_EVAL")));
 				return (invert_result)? GT_EVAL: LT_EVAL;
+			}
 		}
 	}
 
+	DEBUG_MSG("return EQ_EVAL");
 
 	return EQ_EVAL;
 }
@@ -386,10 +411,12 @@ VNumber V_GT(VNumber& a, VNumber& b)
 
 VNumber V_EQUAL(VNumber& a, VNumber& b)
 {
-
+	DEBUG_MSG("a: '" << a.to_string() << "' == b: '" << b.to_string() << "'");
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_eq()? BitSpace::_1: BitSpace::_0;
+	DEBUG_MSG("result: '" << (unsigned(result)) << "'");
 	VNumber to_return(1, result, false);
+	DEBUG_MSG("to_return: '" << to_return.to_string() << "'");
 	return to_return;
 }
 

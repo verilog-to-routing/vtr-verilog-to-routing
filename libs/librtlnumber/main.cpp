@@ -30,6 +30,8 @@ inline static std::string _bad_ops(std::string test, const char *FUNCT, int LINE
 
 static std::string arithmetic(std::string op, std::string a_in)
 {
+	DEBUG_MSG("Unary: Op: '" << op << "' a_in: '" << a_in << "'");
+
 	VNumber a(a_in);
 
 	DEBUG_MSG("Unary: Op: '" << op << "' a: '" << a.to_string() << "'");
@@ -53,6 +55,8 @@ static std::string arithmetic(std::string op, std::string a_in)
 
 static std::string arithmetic(std::string a_in, std::string op, std::string b_in)
 {
+	DEBUG_MSG("Binary: a_in: '" << a_in << "' Op: '" << op << "' b_in: '" << b_in << "'");
+
 	VNumber a(a_in);
 	VNumber b(b_in);
 
@@ -98,6 +102,7 @@ static std::string arithmetic(std::string a_in, std::string op, std::string b_in
 
 static std::string arithmetic(std::string a_in, std::string op1 ,std::string b_in, std::string op2, std::string c_in)
 {
+	DEBUG_MSG("Ternary: a_in: '" << a_in << "' Op1: '" << op1 << "' b_in: '" << b_in << "' Op2: '" << op2 << "' c_in: '" << c_in << "'");
 
 	VNumber a(a_in);
 	VNumber b(b_in);

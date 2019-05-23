@@ -557,29 +557,53 @@ public:
      */
     void set_value(const std::string& input)
     {
+        DEBUG_MSG("input: '" << input << "'");
 
         std::string verilog_string(input);
+
+        DEBUG_MSG("verilog_string: '" << verilog_string << "'");
+
         if(!verilog_string.size())
+        {
+            DEBUG_MSG("return Empty/NULL VNumber");
             return;
+        }
 
         size_t loc = verilog_string.find("\'");
+
+        DEBUG_MSG("loc: '" << loc << "'");
+
         if(loc == std::string::npos)
         {
             verilog_string.insert(0, "\'sd");
             loc = 0;
         }
 
+        DEBUG_MSG("verilog_string: '" << verilog_string << "'");
+        DEBUG_MSG("loc: '" << loc << "'");
+
         size_t bitsize = 0;
         if(loc != 0)
         {
-            bitsize = strtoul(verilog_string.substr(0,loc).c_str(), nullptr, 10);
+            std::string bit_length_char = verilog_string.substr(0, loc);
+            DEBUG_MSG("bit_length_char = verilog_string.substr(0, loc: '" << loc << "').c_str(): '" << bit_length_char << "'");
+            bitsize = strtoul(bit_length_char.c_str(), nullptr, 10);
         }
+
+        DEBUG_MSG("bitsize: '" << bitsize << "'");
 
         this->sign = false;
         if(std::tolower(verilog_string[loc+1]) == 's')
+        {
             this->sign = true;
+        }
+
+        DEBUG_MSG("this->sign: '" << ((true == this->sign) ? ("true") : ("false")) << "'");
 
         char base = static_cast<char>(std::tolower(verilog_string[loc+1+sign]));
+
+        DEBUG_MSG("base: '" << base << "'");
+
         uint8_t radix = 0;
         switch(base){
             case 'b':   radix = 2;  break;
@@ -593,40 +617,71 @@ public:
                 break;
         }
 
+        DEBUG_MSG("radix: '" << (unsigned(radix)) << "'");
+
         //remove underscores
         std::string v_value_str = verilog_string.substr(loc+2+sign);
         v_value_str.erase(std::remove(v_value_str.begin(), v_value_str.end(), '_'), v_value_str.end());
 
+        DEBUG_MSG("v_value_str: '" << v_value_str << "'");
+
         //little endian bitstring string
         std::string temp_bitstring = string_of_radix_to_bitstring(v_value_str, radix);
 
+        DEBUG_MSG("temp_bitstring: '" << temp_bitstring << "'");
+
+        char pad = temp_bitstring[0];
+
+        DEBUG_MSG("pad: '" << pad << "'");
+
+        if(!this->sign && pad == '1')
+        {
+            pad = '0';
+        }
+
+        DEBUG_MSG("pad: '" << pad << "'");
+
         if(bitsize <= 0)
         {
-            while(temp_bitstring.size() && temp_bitstring[0] == temp_bitstring[1])
+            // TODO: @JP: WHy do this deletion/reduction? This turns "b1110" into "2'b10" Incorrectly! (These are not Two's Complement!)
+            // TODO: @JP: This makes "4'b1110" == "'b1110" turn into "4'b1110" == "2'b10" which is, correctley, false at that point!
+            while((temp_bitstring.size()) && (temp_bitstring[0] == temp_bitstring[1]) && (temp_bitstring[0] == pad))
+            {
                 temp_bitstring.erase(0, 1);
+                DEBUG_MSG("temp_bitstring: '" << temp_bitstring << "'");
+            }
 
             bitsize = temp_bitstring.size();
+            DEBUG_MSG("bitsize: '" << bitsize << "'");
         }
         else if(bitsize > temp_bitstring.length())
         {
-            char pad = temp_bitstring[0];
-            if(!this->sign && pad == '1')
-                pad = '0';
-
             while(bitsize != temp_bitstring.length())
-                temp_bitstring.insert(temp_bitstring.begin(),pad);
+            {
+                temp_bitstring.insert(temp_bitstring.begin(), pad);
+                DEBUG_MSG("temp_bitstring: '" << temp_bitstring << "'");
+            }
         }
         else if(bitsize < temp_bitstring.length())
         {
             while(bitsize != temp_bitstring.length())
+            {
                 temp_bitstring.erase(0, 1);
+                DEBUG_MSG("temp_bitstring: '" << temp_bitstring << "'");
+            }
         }
+
+        DEBUG_MSG("temp_bitstring: '" << temp_bitstring << "'");
 
         // convert the bits to the internal data struct (bit at index 0 in string is msb since string go from msb to lsb)
         this->bitstring = new BitSpace::VerilogBits(bitsize, BitSpace::_0);
         size_t counter = bitsize-1;
+        DEBUG_MSG("counter: '" << counter << "'");
         for(char in: temp_bitstring)
+        {
             this->bitstring.set_bit(counter--,BitSpace::c_to_bit(in));
+            // DEBUG_MSG("temp_bitstring: '" << (unsigned()) << "'");
+        }
     }
 
     void set_value(int64_t in)

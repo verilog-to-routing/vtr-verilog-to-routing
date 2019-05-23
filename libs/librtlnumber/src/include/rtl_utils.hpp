@@ -27,6 +27,10 @@
 #define DEBUG_MSG(debugMsg) /* No-Op */
 #endif
 
+#ifndef WARN_MSG
+#define WARN_MSG(warnMSG) std::cout << "WARNING: " << FILE_NAME << ":" << __LINE__ << " " << __func__ << "()" << ": " << warnMSG << "!" << std::endl
+#endif
+
 #ifndef ERR_MSG
 #define ERR_MSG(errMsg) std::cout << std::endl << "ERROR: " << FILE_NAME << ":" << __LINE__ << " " << __func__ << "()" << ": " << errMsg << "!" << std::endl << std::endl
 #endif

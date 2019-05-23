@@ -57,7 +57,8 @@ Logical-greater,		4'b0000,	>,	4'b0001,	1'b0
 Logical-greater-equal,	4'b0000,	>=, 4'b0000,	1'b1	
 Logical-less-equal,		4'b0000,	<=, 4'b0000,	1'b1	
 # TODO: Test other bases (base 10 etc.)
-Logical-equal,			4'b0000,	==, 4'b0000,	1'b1	
+Logical-equal,			4'b0000,	==, 4'b0000,	1'b1
+Logical-bits,			'b1110,	==, 4'b1110,	1'b1	
 Logical-not-equal,		4'b0000,	!=,	4'b0001,	1'b1
 
 # shift operation
@@ -69,9 +70,9 @@ Signed-shift-right,		5'sb10100,	>>>,	2'b10,	5'sb11101
 
 # arithmetic
 Addition,			4'b0110,    +,  4'b0011,  'b1001
+# TODO: Addition-Base-10,			2,    +,  2,  4
 Subtraction,		4'b0100,    -,  4'b0010,  'b10
 Subtraction-Smaller-Larger,		4'b0010,    -,  4'b0100,  4'b1110
-# TODO: Check is_true for whay this fails: Subtraction-Smaller-Larger,		4'b0010,    -,  4'b0100,  'b1110
 # TODO: Division,			4'b1010,    /,  4'b0010,  'b10
 # TODO: Multiplication,	    4'b0010,    *,  4'b0010,  'b100
 # TODO: Modulo,			    4'b1011,    %,  4'b0010,  'b1
