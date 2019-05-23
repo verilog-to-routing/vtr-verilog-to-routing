@@ -59,7 +59,7 @@ void split_soft_multiplier(nnode_t *node, netlist_t *netlist);
 // data structure representing a row of bits an adder tree
 struct AdderTreeRow {
     // the shift of this row from the least significant bit of the multiplier output
-    int shift = 0;
+    int shift;
     // array representing the bits in the row, each bit is a node
     // pointer and the index of this bit in this node output array.
     std::vector<std::pair<nnode_t*, int>> bits;
