@@ -97,7 +97,7 @@ static bool try_expand_nodes(t_lb_router_data *router_data,
 static void expand_edges(t_lb_router_data *router_data,
 		int mode,
 		int cur_inode,
-		int cur_cost,
+		float cur_cost,
 		int net_fanout,
 		reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq);
 
@@ -1118,23 +1118,25 @@ static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *ex
 static void expand_edges(t_lb_router_data *router_data,
 		int mode,
 		int cur_inode,
-		int cur_cost,
+		float cur_cost,
 		int net_fanout,
 		reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq) {
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	t_lb_rr_node_stats *lb_rr_node_stats = router_data->lb_rr_node_stats;
 	t_lb_router_params params = router_data->params;
+	t_expansion_node enode;
+	int usage;
+	float incr_cost;
 
 	for(int iedge = 0; iedge < lb_type_graph[cur_inode].num_fanout[mode]; iedge++) {
 		/* Init new expansion node */
-		t_expansion_node enode;
 		enode.prev_index = cur_inode;
 		enode.node_index = lb_type_graph[cur_inode].outedges[mode][iedge].node_index;
 		enode.cost = cur_cost;
 
 		/* Determine incremental cost of using expansion node */
-		auto usage = lb_rr_node_stats[enode.node_index].occ + 1 - lb_type_graph[enode.node_index].capacity;
-		auto incr_cost = lb_type_graph[enode.node_index].intrinsic_cost;
+		usage = lb_rr_node_stats[enode.node_index].occ + 1 - lb_type_graph[enode.node_index].capacity;
+		incr_cost = lb_type_graph[enode.node_index].intrinsic_cost;
 		incr_cost += lb_type_graph[cur_inode].outedges[mode][iedge].intrinsic_cost;
 		incr_cost += params.hist_fac * lb_rr_node_stats[enode.node_index].historical_usage;
 		if(usage > 0) {
@@ -1174,20 +1176,20 @@ static void expand_edges(t_lb_router_data *router_data,
 static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node,
         reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int net_fanout) {
 
-        int cur_node;
-        float cur_cost;
-        int mode;
-        t_expansion_node enode;
-        t_lb_rr_node_stats *lb_rr_node_stats = router_data->lb_rr_node_stats;
+	int cur_node;
+	float cur_cost;
+	int mode;
+	t_expansion_node enode;
+	t_lb_rr_node_stats *lb_rr_node_stats = router_data->lb_rr_node_stats;
 
-        cur_node = exp_node.node_index;
-        cur_cost = exp_node.cost;
-        mode = lb_rr_node_stats[cur_node].mode;
-		if (mode == -1) {
-			mode = 0;
-		}
+	cur_node = exp_node.node_index;
+	cur_cost = exp_node.cost;
+	mode = lb_rr_node_stats[cur_node].mode;
+	if (mode == -1) {
+		mode = 0;
+	}
 
-		expand_edges(router_data, mode, cur_node, cur_cost, net_fanout, pq);
+	expand_edges(router_data, mode, cur_node, cur_cost, net_fanout, pq);
 }
 
 /* Expand all nodes using all possible modes found in route tree into priority queue */
@@ -1197,9 +1199,9 @@ static void expand_node_all_modes(t_lb_router_data *router_data, t_expansion_nod
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	t_lb_rr_node_stats *lb_rr_node_stats = router_data->lb_rr_node_stats;
 
-	auto cur_inode = exp_node.node_index;
-	auto cur_cost = exp_node.cost;
-	auto cur_mode = lb_rr_node_stats[cur_inode].mode;
+	int cur_inode = exp_node.node_index;
+	float cur_cost = exp_node.cost;
+	int cur_mode = lb_rr_node_stats[cur_inode].mode;
 	auto &node = lb_type_graph[cur_inode];
 	auto *pin = node.pb_graph_pin;
 
