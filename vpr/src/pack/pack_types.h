@@ -60,6 +60,7 @@ struct t_pb_stats {
                                             next candidate atom */
 	bool explore_transitive_fanout; /* If no marked candidate molecules and no high fanout nets to determine next candidate molecule then explore molecules on transitive fanout */
 	std::unordered_map<AtomBlockId, t_pack_molecule *> transitive_fanout_candidates; // Holding trasitive fanout candidates key: root block id of the molecule, value: pointer to the molecule
+    std::unordered_set<ClusterBlockId> transitive_explored_clusters; // Holding the CLBs that are already explored while packing the current cluster. To avoid exploring them more than once.
 
 	/* How many pins of each atom net are contained in the *
 	 * currently open pb?                                  */

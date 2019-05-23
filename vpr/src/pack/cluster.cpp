@@ -71,7 +71,7 @@ using namespace std;
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 #define AAPACK_MAX_NET_SINKS_IGNORE 64				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10			/* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
-#define AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE 4		/* When investigating transitive fanout connections in packing, this is the highest fanout net that will be explored */
+#define AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE 2		/* When investigating transitive fanout connections in packing, this is the highest fanout net that will be explored */
 #define AAPACK_MAX_TRANSITIVE_EXPLORE 40			/* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
 
 //Constant allowing all cluster pins to be used
@@ -311,6 +311,11 @@ static void load_transitive_fanout_candidates(ClusterBlockId cluster_index,
                                               const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 											  t_pb_stats *pb_stats,
 											  vtr::vector<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets);
+
+static void explore_and_add_transitive_molecules(ClusterBlockId tclb,
+                                                 const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+                                                 t_pb_stats *pb_stats,
+                                                 vtr::vector<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets);
 
 static std::map<const t_model*,std::vector<t_type_ptr>> identify_primitive_candidate_block_types();
 
@@ -637,8 +642,8 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 				t_pb_stats *pb_stats = cluster_ctx.clb_nlist.block_pb(clb_index)->pb_stats;
 				for(const AtomNetId mnet_id : pb_stats->marked_nets) {
 					int external_terminals = atom_ctx.nlist.net_pins(mnet_id).size() - pb_stats->num_pins_of_net_in_pb[mnet_id];
-					/* Check if external terminals of net is within the fanout limit and that there exists external terminals */
-					if(external_terminals < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE && external_terminals > 0) {
+					/* Check if that there exists external terminals */
+					if(external_terminals > 0) {
 						clb_inter_blk_nets[clb_index].push_back(mnet_id);
 					}
 				}
@@ -1080,6 +1085,7 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 	pb->pb_stats->sharinggain.clear();
 	pb->pb_stats->hillgain.clear();
     pb->pb_stats->transitive_fanout_candidates.clear();
+    pb->pb_stats->transitive_explored_clusters.clear();
 
 	pb->pb_stats->num_pins_of_net_in_pb.clear();
 
@@ -3020,46 +3026,76 @@ static void load_transitive_fanout_candidates(ClusterBlockId clb_index,
 											  t_pb_stats *pb_stats,
 											  vtr::vector<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets) {
     auto& atom_ctx = g_vpr_ctx.atom();
+    // add the current cluster to the hash table of explored clusters
+    pb_stats->transitive_explored_clusters.insert(clb_index);
 
-    // iterate over all the nets that have pins in this cluster
+    // iterate over all the nets that have pins in this cluster and pins outside
     for(const auto net_id : pb_stats->marked_nets) {
-        // only consider small nets to constrain runtime
-		if(atom_ctx.nlist.net_pins(net_id).size() < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE + 1) {
-            // iterate over all the pins of the net
-            for(const auto pin_id : atom_ctx.nlist.net_pins(net_id)) {
-                AtomBlockId atom_blk_id = atom_ctx.nlist.pin_block(pin_id);
-                // get the transitive cluster
-				ClusterBlockId tclb = atom_ctx.lookup.atom_clb(atom_blk_id);
-                // if the block connected to this pin is packed in another cluster
-				if(tclb != clb_index && tclb != ClusterBlockId::INVALID()) {
-					// explore transitive nets from already packed cluster
-					for(AtomNetId tnet : clb_inter_blk_nets[tclb]) {
-                        // iterate over all the pins of the net
-                        for(AtomPinId tpin : atom_ctx.nlist.net_pins(tnet)) {
-                            auto blk_id = atom_ctx.nlist.pin_block(tpin);
-                            // This transitive atom is not packed, score and add
-							if(atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
-								auto& transitive_fanout_candidates = pb_stats->transitive_fanout_candidates;
-
-								if(pb_stats->gain.count(blk_id) == 0) {
-									pb_stats->gain[blk_id] = 0.001;
-								} else {
-									pb_stats->gain[blk_id] += 0.001;
-								}
-                                auto rng = atom_molecules.equal_range(blk_id);
-                                for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
-                                    t_pack_molecule* molecule = kv.second;
-									if (molecule->valid) {
-                                        transitive_fanout_candidates.insert({molecule->atom_block_ids[molecule->root], molecule});
-									}
-                                }
-							}
-						}
-					}
-				}
-			}
-		}
+        // find how many pins from the net are still outside the cluster
+        int inter_clb_net_pins = atom_ctx.nlist.net_pins(net_id).size() - pb_stats->num_pins_of_net_in_pb[net_id];
+        // if this net is completely absorbed into the cluster skip it
+        if (inter_clb_net_pins == 0) continue;
+        // count the number of clbs explored through this net
+        size_t num_clbs = 0;
+        // iterate over all the pins of the net
+        // TODO: instead of iterating over all the pins in the net, cache the pins
+        // of each net that are not absorbed in this cluster
+        for(const auto pin_id : atom_ctx.nlist.net_pins(net_id)) {
+            // get the block id of the atom having this pin
+            AtomBlockId atom_blk_id = atom_ctx.nlist.pin_block(pin_id);
+            // get the transitive cluster
+            ClusterBlockId tclb = atom_ctx.lookup.atom_clb(atom_blk_id);
+            // if the block connected to this pin is packed in another cluster
+            auto it = pb_stats->transitive_explored_clusters.find(tclb);
+            // if this is a valid clb and it wasn't explored before while packing this cluster
+            if(it == pb_stats->transitive_explored_clusters.end() && tclb != ClusterBlockId::INVALID()) {
+                // explore a limited number of clbs from each net to constraint runtime
+                if (num_clbs > AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE)
+                    break;
+                // add tclb to the set of explored clusters to avoid exploring it more than once
+                pb_stats->transitive_explored_clusters.insert(tclb);
+                // explore all the nets inside tclb and add transitive molecules
+                explore_and_add_transitive_molecules(tclb, atom_molecules, pb_stats, clb_inter_blk_nets);
+                num_clbs++;
+            }
+        }
 	}
+}
+
+/**
+ * This function tasks a clb index and explores all the nets in the clb to find net pins that aren't packed into
+ * a cluster yet. The blocks of those pins are then added to the transitive fanout candidates array as candidates
+ * to be considered for packing into this cluster.
+ */
+static void explore_and_add_transitive_molecules(ClusterBlockId tclb,
+                                                 const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+											     t_pb_stats *pb_stats,
+											     vtr::vector<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets) {
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+    // explore transitive nets from already packed cluster
+    for(AtomNetId tnet : clb_inter_blk_nets[tclb]) {
+        // iterate over all the pins of the net
+        for(AtomPinId tpin : atom_ctx.nlist.net_pins(tnet)) {
+            auto blk_id = atom_ctx.nlist.pin_block(tpin);
+            // This transitive atom is not packed, score and add
+            if(atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
+                if(pb_stats->gain.count(blk_id) == 0) {
+                    pb_stats->gain[blk_id] = 0.001;
+                } else {
+                    pb_stats->gain[blk_id] += 0.001;
+                }
+                auto rng = atom_molecules.equal_range(blk_id);
+                for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
+                    t_pack_molecule* molecule = kv.second;
+                    if (molecule->valid) {
+                        // a hash table is used so a molecule will only be added once
+                        pb_stats->transitive_fanout_candidates.insert({molecule->atom_block_ids[molecule->root], molecule});
+                    }
+                }
+            }
+        }
+    }
 }
 
 static std::map<const t_model*,std::vector<t_type_ptr>> identify_primitive_candidate_block_types() {
