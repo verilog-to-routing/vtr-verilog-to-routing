@@ -125,9 +125,9 @@ static compare_bit eval_op(VNumber a,int64_t b)
 /**
  * Addition operations
  */
-static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry, bool is_twos_compliment_subtraction)
+static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry, bool is_twos_complement_subtraction)
 {
-	DEBUG_MSG("a: '" << a.to_string() << "' + b: '" << b.to_string() << "' (initial_carry: '" << (unsigned(initial_carry)) << "', is_twos_compliment_subtraction: '" << ((true == is_twos_compliment_subtraction) ? ("true") : ("false")) << "')");
+	DEBUG_MSG("a: '" << a.to_string() << "' + b: '" << b.to_string() << "' (initial_carry: '" << (unsigned(initial_carry)) << "', is_twos_complement_subtraction: '" << ((true == is_twos_complement_subtraction) ? ("true") : ("false")) << "')");
 
 	assert_Werr( a.size() ,
 		"empty 1st bit string" 
@@ -138,7 +138,7 @@ static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry, 
 	);
 
 	size_t std_length = std::max(a.size(), b.size());
-	size_t new_length = ((true == is_twos_compliment_subtraction) ? (std_length) : (std_length + 1));
+	size_t new_length = ((true == is_twos_complement_subtraction) ? (std_length) : (std_length + 1));
 	const bit_value_t pad_a = a.get_padding_bit();
 	const bit_value_t pad_b = b.get_padding_bit();
 
@@ -452,7 +452,7 @@ VNumber V_SHIFT_RIGHT(VNumber& a, VNumber& b)
 VNumber V_ADD(VNumber& a, VNumber& b)
 {
 	DEBUG_MSG("a: '" << a.to_string() << "' + b: '" << b.to_string() << "'");
-	return sum_op(a, b, _0, /* is_twos_compliment_subtraction */ false);
+	return sum_op(a, b, _0, /* is_twos_complement_subtraction */ false);
 }
 
 VNumber V_MINUS(VNumber& a, VNumber& b)
@@ -461,7 +461,7 @@ VNumber V_MINUS(VNumber& a, VNumber& b)
 	VNumber complement = V_MINUS(b);
 	DEBUG_MSG("complement: '" << complement.to_string() << "'");
 	DEBUG_MSG("a: '" << a.to_string() << "' + complement: '" << complement.to_string() << "'");
-	return sum_op(a, complement, _0, /* is_twos_compliment_subtraction */ true);
+	return sum_op(a, complement, _0, /* is_twos_complement_subtraction */ true);
 }
 
 VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
