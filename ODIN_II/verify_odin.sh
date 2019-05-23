@@ -471,6 +471,7 @@ RUN_LIST=(
 "operators"
 "arch"
 "other"
+"fir_filters"
 "micro"
 "syntax"
 "full"
