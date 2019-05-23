@@ -14,6 +14,10 @@
 #include "route_tree_timing.h"
 #include <unordered_set>
 
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
+
 struct t_selected_sub_block_info {
 	struct clb_pin_tuple {
 		ClusterBlockId clb_index;
@@ -87,7 +91,7 @@ public:
  * the maximum level of sub-blocks that exists in the pb_graph, internals drawing
  * will be disabled.
  */
-void toggle_blk_internal(void (*drawscreen_ptr)());
+void toggle_blk_internal(GtkWidget *widget, ezgl::application *app);
 
 /* This function pre-allocates space to store bounding boxes for all sub-blocks. Each
  * sub-block is identified by its descriptor_type and a unique pin ID in the type.
