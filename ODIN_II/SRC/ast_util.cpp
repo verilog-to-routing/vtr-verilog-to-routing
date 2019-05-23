@@ -178,16 +178,28 @@ ast_node_t *free_single_node(ast_node_t *node)
 }
 
 /*---------------------------------------------------------------------------
- * (function: free_whole_tree)
+ * (function: free_all_children)
  *-------------------------------------------------------------------------*/
-ast_node_t *free_whole_tree(ast_node_t *node)
+void free_all_children(ast_node_t *node)
 {
 	long i;
 
 	if (node){
 		for (i = 0; i < node->num_children; i++)
 			node->children[i] = free_whole_tree(node->children[i]);
+		vtr::free(node->children);
+		node->children = NULL;
+		node->num_children = 0;
 	}
+	
+}
+
+/*---------------------------------------------------------------------------
+ * (function: free_whole_tree)
+ *-------------------------------------------------------------------------*/
+ast_node_t *free_whole_tree(ast_node_t *node)
+{
+	free_all_children(node);
 	return free_single_node(node);
 }
 
@@ -522,6 +534,7 @@ void change_to_number_node(ast_node_t *node, long value)
 		temp_ident = strdup(node->types.identifier);
 	}
 	free_assignement_of_node_keep_tree(node);
+	free_all_children(node);
 	
 	long len = snprintf(NULL,0,"%ld", value);
 	char *number = (char *)vtr::calloc(len+1,sizeof(char));

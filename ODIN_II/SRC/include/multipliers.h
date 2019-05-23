@@ -45,7 +45,7 @@ extern void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlis
 extern void find_hard_multipliers();
 extern void add_the_blackbox_for_mults(FILE *out);
 extern void define_mult_function(nnode_t *node, FILE *out);
-extern void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1);
+extern void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *netlist);
 extern void iterate_multipliers(netlist_t *netlist);
 extern void clean_multipliers();
 
