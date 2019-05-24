@@ -372,7 +372,7 @@ void get_options(int argc, char** argv) {
 
 	output_grp.add_argument(global_args.output_file, "-o")
 			.help("Output file path")
-			.default_value("temp/default_out.blif")
+			.default_value("default_out.blif")
 			.metavar("OUTPUT_FILE_PATH")
 			;
 
@@ -406,12 +406,6 @@ void get_options(int argc, char** argv) {
 			.action(argparse::Action::STORE_TRUE)
 			;
 
-	other_grp.add_argument(global_args.black_box_latches, "--black_box_latches")
-			.help("Output all Latches as Black Boxes")
-			.default_value("false")
-			.action(argparse::Action::STORE_TRUE)
-			;
-
 	other_grp.add_argument(global_args.adder_def, "--adder_type")
 			.help("input file defining adder_type, default is to use \"optimized\" values, use \"ripple\" to fall back onto simple ripple adder")
 			.default_value("default")
@@ -422,6 +416,11 @@ void get_options(int argc, char** argv) {
             .help("Defines if the first cin of an adder/subtractor is connected to a global gnd/vdd instead of a dummy adder generating a gnd/vdd.")
             .default_value("false")
             .action(argparse::Action::STORE_TRUE)
+            ;
+
+    other_grp.add_argument(global_args.top_level_module_name, "--top_module")
+            .help("Allow to overwrite the top level module that odin would use")
+			.metavar("TOP_LEVEL_MODULE_NAME")
             ;
 
 	auto& rand_sim_grp = parser.add_argument_group("random simulation options");

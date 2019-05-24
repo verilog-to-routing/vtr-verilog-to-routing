@@ -25,6 +25,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <string>
+
 #include "odin_types.h"
 #include "odin_globals.h"
 
@@ -424,6 +426,8 @@ ast_node_t *find_top_module()
 	int j;
 	long sc_spot;
 	int found_top = -1;
+	long number_of_top_modules = 0;
+
 
 	/* go through all the instantiations for each module and mark them if they've be instantiated */
 	for (i = 0; i < num_modules; i++)
@@ -453,25 +457,65 @@ ast_node_t *find_top_module()
 	}
 
 	/* now check for which module wasn't marked...this one will be the top */
-	for (i = 0; i < num_modules; i++)
+	std::string module_name_list("");
+	std::string desired_module("");
+	bool found_desired_module = false;
+
+	if ( global_args.top_level_module_name )
 	{
-		if ((ast_modules[i]->types.module.is_instantiated == FALSE) && (found_top == -1))
-		{
-			found_top = i;
+		desired_module = global_args.top_level_module_name;
+		printf("Using Top Level Module: %s\n", desired_module.c_str());
+	}
+
+	for (i = 0; i < num_modules ; i++)
+	{
+		std::string current_module = "";
+
+		if( ast_modules[i]->children[0]->types.identifier )
+		{	
+			current_module = ast_modules[i]->children[0]->types.identifier;
 		}
-		else if ((ast_modules[i]->types.module.is_instantiated == FALSE) && (found_top != -1))
+
+		if( desired_module != "" && current_module == desired_module)
 		{
-			error_message(NETLIST_ERROR, ast_modules[i]->line_number, ast_modules[i]->file_number, "%s",
-					"Two top level modules - Odin II cannot deal with these types of designs\n");
+			// append the name
+			module_name_list = std::string("\t") + current_module;
+			found_top = i;
+			found_desired_module = true;
+			break;
+		}
+		else if ((ast_modules[i]->types.module.is_instantiated == FALSE))
+		{
+			// append the name
+			module_name_list += std::string("\t") + current_module;
+
+			if(number_of_top_modules > 0)
+				module_name_list += "\n";
+
+			number_of_top_modules += 1;
+			found_top = i;
 		}
 	}
 
 	/* check atleast one module is top ... and only one */
-	if (found_top == -1)
+	if(!found_desired_module && desired_module != "")
+	{
+		warning_message(NETLIST_ERROR, -1, -1, "Could not find the desired top level module: %s\n", desired_module.c_str());
+	}
+
+	if (number_of_top_modules < 1)
 	{
 		error_message(NETLIST_ERROR, -1, -1, "%s", "Could not find a top level module\n");
 	}
-
+	else if(number_of_top_modules > 1)
+	{
+		error_message(NETLIST_ERROR, -1, -1, "Found multiple top level modules\n%s", module_name_list.c_str());
+	}
+	else
+	{
+		printf("==========================\nDetected Top Level Module: %s\n==========================\n", module_name_list.c_str());
+	}
+	
 	return ast_modules[found_top];
 }
 
