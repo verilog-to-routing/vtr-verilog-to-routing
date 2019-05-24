@@ -73,30 +73,16 @@ void update_module_instantiations(ast_node_t *ast_module, ast_node_t ***instance
 
 			long sc_spot = sc_add_string(module_names_to_idx, new_instance_name);
 			oassert(sc_spot != -1);
-		}
-
-		/* third: update the instances in the tree */
-		// printf("\nlooking for: %s\n\n", instance_name);
-		// ast_node_t **master_node = find_ast_instance(ast_module, instance_name, ast_module->children[0]->types.identifier);
-		// if (master_node == NULL) 
-		// {
-		// 	//error_message: could not find instance in ast
-		// 	printf("NODE NOT FOUND\n");
-		// 	oassert(false);
-		// }
-		// else
-		// {
-		// 	printf("NODE FOUND\n");
-		// 	oassert(false);
-		// }
-		
+		}		
 	}
 	else 
 	{
 		error_message(NETLIST_ERROR, ast_module->line_number, ast_module->file_number,
 					"Can't find module name %s\n", instance_name);
 	}
+
 	vtr::free(instance_name);
+	//vtr::free(unrolled_module_instances);
 }
 
 /*
