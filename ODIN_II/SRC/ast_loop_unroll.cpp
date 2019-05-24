@@ -477,14 +477,6 @@ post_condition_function resolve_post_condition(ast_node_t* assignment, ast_node_
 	return resolve_binary_operation(node);
 }
 
-long int power_of_ten(long int value){
-	long int digits;
-	for(long int i=value; i>10; i = i/10){
-		digits++;
-	}
-	return digits;
-}
-
 ast_node_t* replace_named_module(ast_node_t* module, ast_node_t** value)
 {
 	ast_node_t* copy = ast_node_deep_copy(module);
