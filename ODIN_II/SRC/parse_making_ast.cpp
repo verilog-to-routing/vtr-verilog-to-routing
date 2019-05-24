@@ -567,6 +567,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			            symbol_list->children[i]->types.variable.is_reg = TRUE;
 			            break;
 		            case INTEGER:
+			    case GENVAR:			
 			            symbol_list->children[i]->types.variable.is_integer = TRUE;
 			            break;
 		            default:
@@ -1041,6 +1042,19 @@ ast_node_t *newAlways(ast_node_t *delay_control, ast_node_t *statement, int line
 }
 
 /*---------------------------------------------------------------------------------------------
+ * (function: newGenerate)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newGenerate(ast_node_t *instantiations, int line_number)
+{
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(GENERATE, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 1, instantiations);
+
+	return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
  * (function: newModuleConnection)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newModuleConnection(char* id, ast_node_t *expression, int line_number)
@@ -1208,18 +1222,19 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 
 		/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
 		module_instantiations_instance = (ast_node_t **)vtr::realloc(module_instantiations_instance, sizeof(ast_node_t*)*(size_module_instantiations+1));
-		module_instantiations_instance[size_module_instantiations] = new_node;
+		module_instantiations_instance[size_module_instantiations] = ast_node_deep_copy(new_node);
 		size_module_instantiations++;
 
-    }
+	}
 	//TODO: free_whole_tree ??
 	vtr::free(module_named_instance->children);
-    vtr::free(module_named_instance);
+	vtr::free(module_named_instance);
 	vtr::free(module_ref_name);
 	return new_master_node;
 }
+
 /*-------------------------------------------------------------------------
- * (function: newModuleInstance)
+ * (function: newFunctionInstance)
  *-----------------------------------------------------------------------*/
 ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_named_instance, int line_number)
 {

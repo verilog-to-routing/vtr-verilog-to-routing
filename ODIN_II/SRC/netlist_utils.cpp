@@ -631,12 +631,17 @@ signal_list_t *combine_lists(signal_list_t **signal_lists, int num_signal_lists)
 {
 	int i;
 	for (i = 1; i < num_signal_lists; i++)
-	{
-		int j;
-		for (j = 0; j < signal_lists[i]->count; j++)
-			add_pin_to_signal_list(signal_lists[0], signal_lists[i]->pins[j]);
+	{		
+		if (signal_lists[i])
+		{
+			int j;
+			for (j = 0; j < signal_lists[i]->count; j++)
+			{
+				add_pin_to_signal_list(signal_lists[0], signal_lists[i]->pins[j]);
+			}
 
-		free_signal_list(signal_lists[i]);
+			free_signal_list(signal_lists[i]);
+		}
 	}
 
 	return signal_lists[0];

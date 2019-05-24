@@ -57,15 +57,37 @@ long count;
 long count_write;
 enode *head, *p;
 
+void remove_generate(ast_node_t *node)
+{
+	for(int i=0; i<node->num_children; i++){
+		if(!node->children[i])
+			continue;
+		ast_node_t* candidate = node->children[i];
+		ast_node_t* body_parent = nullptr;
+
+		if(candidate->type == GENERATE){
+			for(int j = 0; j<candidate->num_children; j++){
+				ast_node_t* new_child = ast_node_deep_copy(candidate->children[j]);
+				body_parent = body_parent ? newList_entry(body_parent, new_child) : newList(BLOCK, new_child);
+			}
+			node->children[i] = body_parent;
+			free_whole_tree(candidate);
+		} else {
+			remove_generate(candidate);
+		}
+	}
+}
 
 int simplify_ast_module(ast_node_t **ast_module)
 {
-	/* for loop support */
-	unroll_loops(ast_module);
 	/* reduce parameters with their values if they have been set */
 	reduce_parameter(*ast_module);
 	/* simplify assignment expressions */
 	reduce_assignment_expression(*ast_module);
+	/* for loop support */
+	unroll_loops(ast_module);
+	/* remove unused node preventing module instantiation */
+	remove_generate(*ast_module);
 	/* find multiply or divide operation that can be replaced with shift operation */
 	shift_operation(*ast_module);
 

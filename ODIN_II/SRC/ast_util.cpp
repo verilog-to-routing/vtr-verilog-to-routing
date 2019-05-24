@@ -401,6 +401,26 @@ void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child)
 }
 
 /*---------------------------------------------------------------------------------------------
+ * (function: expand_node_list_at)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t **expand_node_list_at(ast_node_t **list, long old_size, long to_add, long start_idx)
+{
+	if (list)
+	{
+		long new_size = old_size + to_add;
+		list = (ast_node_t **)vtr::realloc(list, sizeof(ast_node_t*) * new_size);
+
+		long i;
+		for (i = new_size-1; i >= (start_idx + to_add); i--)
+		{
+			list[i] = list[i-to_add];
+		}
+		return list;
+	}
+	return NULL;
+}
+
+/*---------------------------------------------------------------------------------------------
  * (function: make_concat_into_list_of_strings)
  * 	0th idx will be the MSbit
  *-------------------------------------------------------------------------------------------*/

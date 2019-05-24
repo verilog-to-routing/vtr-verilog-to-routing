@@ -109,6 +109,7 @@ const char *ids_STR []=
 	/* top level things */
 	"FILE_ITEMS",
 	"MODULE",
+	"SPECIFY",
 	/* VARIABLES */
 	"INPUT",
 	"OUTPUT",
@@ -116,6 +117,7 @@ const char *ids_STR []=
 	"WIRE",
 	"REG",
 	"INTEGER",
+	"GENVAR",
 	"PARAMETER",
 	"INITIALS",
 	"PORT",
@@ -144,6 +146,9 @@ const char *ids_STR []=
 	/* Function instances*/
 	"FUNCTION_NAMED_INSTANCE",
 	"FUNCTION_INSTANCE",
+	/* Specify Items */
+	"SPECIFY_ITEMS",
+	"SPECIFY_PARAMETER",
 	"SPECIFY_PAL_CONNECTION_STATEMENT",
 	"SPECIFY_PAL_CONNECT_LIST",
 	/* statements */
@@ -156,6 +161,7 @@ const char *ids_STR []=
 	"CASE_ITEM",
 	"CASE_DEFAULT",
 	"ALWAYS",
+	"GENERATE",
 	"IF",
 	"IF_Q",
 	"FOR",
@@ -180,5 +186,6 @@ const char *ids_STR []=
 	"HARD_BLOCK_CONNECT_LIST",
 	"HARD_BLOCK_CONNECT",
 	// EDDIE: new enum value for ids to replace MEMORY from operation_t
-	"RAM"
+	"RAM",
+	"ids_END"
 };

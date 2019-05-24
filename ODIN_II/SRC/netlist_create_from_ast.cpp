@@ -711,6 +711,28 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 					}
 				}
 				break;
+			case BLOCK:
+				if (node->num_children > 0)
+				{
+					for (i = 0; i < node->num_children; i++)
+					{
+						if (node->children[i]->type == MODULE_INSTANCE)
+						{
+							
+                            /* we deal with instantiations of modules twice to alias input and output nets.  In this
+							 * pass we are looking for any drivers emerging from a module */
+                            long j;
+                            for(j = 0; j < node->children[i]->num_children; j++){
+							    /* make the aliases for all the drivers as they're passed through modules */
+							    connect_module_instantiation_and_alias(INSTANTIATE_DRIVERS, node->children[i]->children[j], instance_name_prefix);
+                            }
+
+                            /* is a call site for another module.  Alias names to nets and pins */
+							child_skip_list[i] = TRUE;
+						}
+					}
+				}
+				break;
             case VAR_DECLARE_LIST:
                 for(i = 0; i < node->num_children; i++) {
                     if(node->children[i]->types.variable.is_parameter == 1 || !node->children[i]->children[5]){
@@ -958,6 +980,19 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				return_sig_list = create_operation_node(node, children_signal_list, node->num_children, instance_name_prefix);
 				break;
 			case BLOCK:
+				if (node->num_children > 0)
+				{
+					for (i = 0; i < node->num_children; i++)
+					{
+						if (node->children[i]->type == MODULE_INSTANCE){
+							long j;
+							for(j = 0; j < node->children[i]->num_children; j++){
+							/* make the aliases for all the drivers as they're passed through modules */
+							connect_module_instantiation_and_alias(ALIAS_INPUTS, node->children[i]->children[j], instance_name_prefix);
+							}
+						}
+					}
+				}
 				return_sig_list = combine_lists(children_signal_list, node->num_children);
 				break;
 			case RAM:
@@ -1810,7 +1845,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 					vtr::free(temp_string);
 				}
 			}
-		if(module_items->children[i]->type == ASSIGN)
+			if(module_items->children[i]->type == ASSIGN)
 			{
 				if((module_items->children[i]->children[0]) && (module_items->children[i]->children[0]->type == BLOCKING_STATEMENT))
 				{
@@ -2104,6 +2139,7 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefi
 					{
 						/* already exists so we'll join the nets */
 						combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], verilog_netlist);
+						input_nets_sc->data[sc_spot_input_old] = NULL;
 					}
 				}
 				else
@@ -2117,6 +2153,7 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefi
 					   then join the inputs and output */
 					in_net->name = net->name;
 					combine_nets(net, in_net, verilog_netlist);
+					net = NULL;
 
 					/* since the driver net is deleted,
 					   copy the spot of the in_net over */
@@ -2255,6 +2292,7 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_p
 					{
 						/* already exists so we'll join the nets */
 						combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], verilog_netlist);
+						input_nets_sc->data[sc_spot_input_old] = NULL;
 					}
 				}
 				else
@@ -2271,6 +2309,7 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_p
 					{
 						in_net->name = net->name;
 						combine_nets(net, in_net, verilog_netlist);
+						net = NULL;
 
 
 						/* since the driver net is deleted,
@@ -2497,6 +2536,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 					{
 						/* already exists so we'll join the nets */
 						combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], verilog_netlist);
+						input_nets_sc->data[sc_spot_input_old] = NULL;
 					}
 				}
 				else
@@ -2509,7 +2549,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 					{
 						/* if they haven't been combined already, then join the inputs and output */
 						join_nets(net, in_net);
-						free_nnet(in_net);
+						in_net = free_nnet(in_net);
 						/* since the driver net is deleted, copy the spot of the in_net over */
 						input_nets_sc->data[sc_spot_input_old] = (void*)net;
 					}
@@ -2517,6 +2557,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 					{
 						/* if they haven't been combined already, then join the inputs and output */
 						combine_nets(net, in_net, verilog_netlist);
+						net = NULL;
 						/* since the driver net is deleted, copy the spot of the in_net over */
 						output_nets_sc->data[sc_spot_output] = (void*)in_net;
 					}
@@ -2608,7 +2649,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 
 				/* clean up input_new_net */
 				if (!(input_new_net) || !(input_new_net->driver_pin))
-					free_nnet(input_new_net);
+					input_new_net = free_nnet(input_new_net);
 
 				/* add this alias for the net */
 				output_nets_sc->data[sc_spot_input_new] = output_nets_sc->data[sc_spot_output];
@@ -2832,6 +2873,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 					    {
 						    /* already exists so we'll join the nets */
 						    combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], verilog_netlist);
+					   		input_nets_sc->data[sc_spot_input_old] = NULL;
 					    }
 				    }
 				    else
@@ -2844,7 +2886,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 					    {
 						    /* if they haven't been combined already, then join the inputs and output */
 						    join_nets(net, in_net);
-							free_nnet(in_net);
+							in_net = free_nnet(in_net);
 						    /* since the driver net is deleted, copy the spot of the in_net over */
 						    input_nets_sc->data[sc_spot_input_old] = (void*)net;
 					    }
@@ -2852,6 +2894,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 					    {
 						    /* if they haven't been combined already, then join the inputs and output */
 						    combine_nets(net, in_net, verilog_netlist);
+							net = NULL;
 						    /* since the driver net is deleted, copy the spot of the in_net over */
 						    output_nets_sc->data[sc_spot_output] = (void*)in_net;
 					    }
@@ -2959,7 +3002,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				
 				/* clean up input_new_net */
 				if (!(input_new_net) || !(input_new_net->driver_pin))
-					free_nnet(input_new_net);
+					input_new_net = free_nnet(input_new_net);
 
 				/* add this alias for the net */
 				output_nets_sc->data[sc_spot_input_new] = output_nets_sc->data[sc_spot_output];
@@ -3074,6 +3117,7 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 					/* IF - the input and output nets don't match, then they need to be joined */
 
 					combine_nets(net, (nnet_t*)input_nets_sc->data[sc_spot], verilog_netlist);
+					net = NULL;
 					/* since the driver net is deleted, copy the spot of the in_net over */
 					output_nets_sc->data[sc_spot_output] = (void*)input_nets_sc->data[sc_spot];
 				}
@@ -5032,7 +5076,7 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 					block->children[1]->children[0]->types.identifier,
 					ip_name, -1);
 
-			t_memory_port_sizes *ps = (t_memory_port_sizes *)vtr::malloc(sizeof(t_memory_port_sizes));
+			t_memory_port_sizes *ps = (t_memory_port_sizes *)vtr::calloc(1, sizeof(t_memory_port_sizes));
 			ps->size = out_port_size;
 			ps->name = alias_name;
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
@@ -5219,7 +5263,7 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 					block->children[1]->children[0]->types.identifier,
 					ip_name, -1
 			);
-			t_memory_port_sizes *ps = (t_memory_port_sizes *)vtr::malloc(sizeof(t_memory_port_sizes));
+			t_memory_port_sizes *ps = (t_memory_port_sizes *)vtr::calloc(1, sizeof(t_memory_port_sizes));
 			ps->size = out_port_size;
 			ps->name = alias_name;
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
@@ -5356,7 +5400,7 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 					block->children[1]->children[0]->types.identifier,
 					block_connect->types.identifier, -1
 			);
-			t_memory_port_sizes *ps = (t_memory_port_sizes *)vtr::malloc(sizeof(t_memory_port_sizes));
+			t_memory_port_sizes *ps = (t_memory_port_sizes *)vtr::calloc(1, sizeof(t_memory_port_sizes));
 			ps->size = out_port_size;
 			ps->name = alias_name;
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
@@ -5522,7 +5566,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 			allocate_more_output_pins(block_node, port_size);
 			add_output_port_information(block_node, port_size);
 
-			t_memory_port_sizes *ps = (t_memory_port_sizes *)vtr::malloc(sizeof(t_memory_port_sizes));
+			t_memory_port_sizes *ps = (t_memory_port_sizes *)vtr::calloc(1, sizeof(t_memory_port_sizes));
 			ps->size = port_size;
 			ps->name = vtr::strdup(alias_name);
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
