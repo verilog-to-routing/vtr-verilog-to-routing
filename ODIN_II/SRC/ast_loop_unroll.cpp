@@ -14,7 +14,7 @@
 /* This files header */
 #include "ast_loop_unroll.h"
 
-void update_module_instantiations(ast_node_t *ast_module, ast_node_t ***instances, int *num_instances);
+void update_module_instantiations(ast_node_t *ast_module, ast_node_t ****instances, int *num_unrolled, int *num_original);
 long find_module_instance(ast_node_t *ast_module, char *instance_name);
 
 /*
@@ -22,65 +22,74 @@ long find_module_instance(ast_node_t *ast_module, char *instance_name);
  */
 void unroll_loops(ast_node_t **ast_module)
 {
-	ast_node_t **unrolled_module_instances = NULL;
+	ast_node_t ***unrolled_module_instances = NULL;
 	int num_unrolled_module_instances = 0;
+	int num_original_module_instances = 0;
 
-	ast_node_t* module = for_preprocessor((*ast_module), &unrolled_module_instances, &num_unrolled_module_instances);
+	ast_node_t* module = for_preprocessor((*ast_module), (*ast_module), &unrolled_module_instances, &num_unrolled_module_instances, &num_original_module_instances);
 	if(module != *ast_module)
 		free_whole_tree(*ast_module);
 	*ast_module = module;
 
 	if (num_unrolled_module_instances > 1)
 	{
-		update_module_instantiations((*ast_module), &unrolled_module_instances, &num_unrolled_module_instances);
+		update_module_instantiations((*ast_module), &unrolled_module_instances, &num_unrolled_module_instances, &num_original_module_instances);
+		
+		for (int i = 0; i < num_original_module_instances; i++)
+		{
+			vtr::free(unrolled_module_instances[i]);
+		}
 		vtr::free(unrolled_module_instances);
 	}
 }
 
-void update_module_instantiations(ast_node_t *ast_module, ast_node_t ***instances, int *num_instances)
+void update_module_instantiations(ast_node_t *ast_module, ast_node_t ****instances, int *num_unrolled, int *num_original)
 {
 	long idx;
 	ast_node_t ***module_instantiations = &(ast_module->types.module.module_instantiations_instance);
 	int *module_instantiations_size = &(ast_module->types.module.size_module_instantiations);
-	int new_size = *module_instantiations_size + ((*num_instances)-2);
-
-	/* first: find and free original instance 
-	in *ast_module->types.module.module_instantiations_instance */
-	char *instance_name = make_full_ref_name(ast_module->children[0]->types.identifier,
-			(*instances)[0]->children[0]->types.identifier,
-			(*instances)[0]->children[1]->children[0]->types.identifier,
-			NULL, -1);
-
-	if ((idx = find_module_instance(ast_module, instance_name)) != -1)
+	for (long i = 0; i < (*num_original); i++)
 	{
-		*module_instantiations = expand_node_list_at(*module_instantiations, *module_instantiations_size, (*num_instances)-2, idx + 1);
-		*module_instantiations_size = new_size;
-
-		//free_whole_tree(*module_instantiations[idx]);
-
-		/* second: add each new instance from unrolled_module_instances */
-		for (long i = 1; i < (*num_instances); i++)
-		{
-			(*module_instantiations)[idx++] = (*instances)[i];
-
-			// add new instance to module_names_to_idx
-			char *new_instance_name = make_full_ref_name(ast_module->children[0]->types.identifier,
-				(*instances)[i]->children[0]->types.identifier,
-				(*instances)[i]->children[1]->children[0]->types.identifier,
+		char *instance_name = make_full_ref_name(ast_module->children[0]->types.identifier,
+				(*instances)[i][0]->children[0]->types.identifier,
+				(*instances)[i][0]->children[1]->children[0]->types.identifier,
 				NULL, -1);
+				
+		if ((idx = find_module_instance(ast_module, instance_name)) != -1)
+		{
+			(*module_instantiations) = expand_node_list_at(*module_instantiations, *module_instantiations_size, (*num_unrolled)-1, idx + 1);
+			(*module_instantiations_size) = (*module_instantiations_size) + (*num_unrolled-1);
 
-			long sc_spot = sc_add_string(module_names_to_idx, new_instance_name);
-			oassert(sc_spot != -1);
-		}		
-	}
-	else 
-	{
-		error_message(NETLIST_ERROR, ast_module->line_number, ast_module->file_number,
-					"Can't find module name %s\n", instance_name);
-	}
+			/* free the "template" instance */
+			free_whole_tree(*module_instantiations[idx]);
+			free_whole_tree((*instances)[i][0]);
 
-	vtr::free(instance_name);
-	//vtr::free(unrolled_module_instances);
+			for (long j = 1; j < (*num_unrolled)+1; j++)
+			{
+				(*module_instantiations)[idx] = (*instances)[i][j];
+				idx++;
+
+				/* add new instance to module_names_to_idx */
+				char *new_instance_name = make_full_ref_name(ast_module->children[0]->types.identifier,
+					(*instances)[i][j]->children[0]->types.identifier,
+					(*instances)[i][j]->children[1]->children[0]->types.identifier,
+					NULL, -1);
+
+				long sc_spot = sc_add_string(module_names_to_idx, new_instance_name);
+				oassert(sc_spot != -1);
+
+				vtr::free(new_instance_name);
+			}		
+		}
+		else 
+		{
+			error_message(NETLIST_ERROR, ast_module->line_number, ast_module->file_number,
+						"Can't find module name %s\n", instance_name);
+		}
+
+		vtr::free(instance_name);
+	}
+	
 }
 
 /*
@@ -112,7 +121,7 @@ long find_module_instance(ast_node_t *ast_module, char *instance_name)
 /*
  *  (function: for_preprocessor)
  */
-ast_node_t* for_preprocessor(ast_node_t* node, ast_node_t ***instances, int *num_instances)
+ast_node_t* for_preprocessor(ast_node_t *ast_module, ast_node_t* node, ast_node_t ****instances, int *num_unrolled, int *num_original)
 {
 	if(!node)
 		return nullptr;
@@ -125,11 +134,11 @@ ast_node_t* for_preprocessor(ast_node_t* node, ast_node_t ***instances, int *num
 		for_loops = is_for_node(node->children[i]);
 	}
 
-	ast_node_t* new_node = for_loops ? replace_fors(node, instances, num_instances) : node;
+	ast_node_t* new_node = for_loops ? replace_fors(ast_module, node, instances, num_unrolled, num_original) : node;
 
 	/* Run this function recursively on the children */
 	for(int i=0; i<new_node->num_children; i++){
-		ast_node_t* new_child = for_preprocessor(new_node->children[i], instances, num_instances);
+		ast_node_t* new_child = for_preprocessor(ast_module, new_node->children[i], instances, num_unrolled, num_original);
 
 		/* Cleanup replaced child */
 		if(new_node->children[i] != new_child){
@@ -143,7 +152,7 @@ ast_node_t* for_preprocessor(ast_node_t* node, ast_node_t ***instances, int *num
 /*
  *  (function: replace_fors)
  */
-ast_node_t* replace_fors(ast_node_t* node, ast_node_t ***instances, int *num_instances)
+ast_node_t* replace_fors(ast_node_t *ast_module, ast_node_t* node, ast_node_t ****instances, int *num_unrolled, int *num_original)
 {
 	oassert(!is_for_node(node));
 	oassert(node != nullptr);
@@ -156,7 +165,7 @@ ast_node_t* replace_fors(ast_node_t* node, ast_node_t ***instances, int *num_ins
 	for(int i=0; i<new_node->num_children; i++){
 		/* unroll `for` children */
 		if(is_for_node(new_node->children[i])){
-			ast_node_t* unrolled_for = resolve_for(new_node->children[i], instances, num_instances);
+			ast_node_t* unrolled_for = resolve_for(ast_module, new_node->children[i], instances, num_unrolled, num_original);
 			oassert(unrolled_for != nullptr);
 			free_whole_tree(new_node->children[i]);
 			new_node->children[i] = unrolled_for;
@@ -168,7 +177,7 @@ ast_node_t* replace_fors(ast_node_t* node, ast_node_t ***instances, int *num_ins
 /*
  *  (function: resolve_for)
  */
-ast_node_t* resolve_for(ast_node_t* node, ast_node_t ***instances, int *num_instances)
+ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, ast_node_t ****instances, int *num_unrolled, int *num_original)
 {
 	oassert(is_for_node(node));
 	oassert(node != nullptr);
@@ -200,7 +209,7 @@ ast_node_t* resolve_for(ast_node_t* node, ast_node_t ***instances, int *num_inst
 	bool dup_body = cond_func(value->types.number.value);
 	while(dup_body)
 	{
-		ast_node_t* new_body = dup_and_fill_body(body, pre->children[0], &value, &error_code, instances, num_instances);
+		ast_node_t* new_body = dup_and_fill_body(ast_module, body, pre, &value, &error_code, instances, num_unrolled, num_original);
 		if(error_code)
 		{
 			error_message(PARSE_ERROR, pre->line_number, pre->file_number, "%s", "Unsupported pre-condition node in for loop");
@@ -208,6 +217,11 @@ ast_node_t* resolve_for(ast_node_t* node, ast_node_t ***instances, int *num_inst
 		value->types.number.value = post_func(value->types.number.value);
 		body_parent = body_parent ? newList_entry(body_parent, new_body) : newList(BLOCK, new_body);
 		dup_body = cond_func(value->types.number.value);
+
+		if (*instances)
+		{
+			(*num_unrolled)++;
+		}
 	}
 
 	free_whole_tree(value);
@@ -471,7 +485,7 @@ long int power_of_ten(long int value){
 	return digits;
 }
 
-ast_node_t* replace_named_module(ast_node_t* module, ast_node_t* symbol, ast_node_t** value, int* error_code)
+ast_node_t* replace_named_module(ast_node_t* module, ast_node_t** value)
 {
 	ast_node_t* copy = ast_node_deep_copy(module);
 
@@ -486,48 +500,96 @@ ast_node_t* replace_named_module(ast_node_t* module, ast_node_t* symbol, ast_nod
 	vtr::free(copy->children[0]->types.identifier);
 	copy->children[0]->types.identifier = vtr::strdup(concat_string.c_str());
 
+	free_whole_tree(module);
 	return copy;
 }
 
-ast_node_t* dup_and_fill_body(ast_node_t* body, ast_node_t* symbol, ast_node_t** value, int* error_code, ast_node_t ***instances, int *num_instances)
+ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node_t* pre, ast_node_t** value, int* error_code, ast_node_t ****instances, int *num_unrolled, int *num_original)
 {
 	ast_node_t* copy = ast_node_deep_copy(body);
-	for(int i = 0; i<copy->num_children; i++)
+	for(long i = 0; i<copy->num_children; i++)
 	{
 		ast_node_t* child = copy->children[i];
 		if (child) {
 			if(child->type == IDENTIFIERS)
 			{
-				if(!strcmp(child->types.identifier, symbol->types.identifier))
+				if(!strcmp(child->types.identifier, pre->children[0]->types.identifier))
 				{
 					ast_node_t* new_num = ast_node_deep_copy(*value);
-					free_whole_tree(child);
+					child = free_whole_tree(child);
 					copy->children[i] = new_num;
 				}
 			} 
-			else if(child->type == MODULE_INSTANCE) // TODO ALEX LOOK FOR SYMBOL IN PARAM OR CONN LIST
+			else if(child->type == MODULE_INSTANCE)
 			{
-				// TODO ALEX change to check if this is the first iteration
-				// (although i'll need to pass in pre->children[1] to know the initial value)
-				if ((*num_instances) == 0)
+				long idx = -1;
+
+				/* if this is the first iteration */
+				if ((*value)->types.number.value == pre->children[1]->types.number.value) 
 				{
-					(*instances) = (ast_node_t**)vtr::malloc(sizeof(ast_node_t*));
-					(*num_instances) = 1;
-					// first space will be original instance, everything after that will be new instances
-					(*instances)[0] = ast_node_deep_copy(child);
+					/* add this instance to the table */
+					if (!(*instances))
+					{
+						(*instances) = (ast_node_t***)vtr::malloc(sizeof(ast_node_t**));
+					}
+					else{
+						(*instances) = (ast_node_t***)vtr::realloc((*instances), sizeof(ast_node_t**)*(*num_original+1));
+					}
+
+					(*instances)[(*num_original)] = (ast_node_t **) vtr::malloc(sizeof(ast_node_t*));
+					(*instances)[(*num_original)][0] = ast_node_deep_copy(child);
+					idx = (*num_original);
+					(*num_original)++;
+				}
+				else
+				{
+					long j;
+					/* find the correct instance in the table */
+					bool found = false;
+					char *instance_name = make_full_ref_name(ast_module->children[0]->types.identifier,
+							child->children[0]->types.identifier,
+							child->children[1]->children[0]->types.identifier,
+							NULL, -1);
+
+					char *temp_instance_name = NULL;
+
+					for (j = 0; !found && j < (*num_original); j++)
+					{
+						// make full ref name of this original 
+						temp_instance_name = make_full_ref_name(ast_module->children[0]->types.identifier,
+							(*instances)[j][0]->children[0]->types.identifier,
+							(*instances)[j][0]->children[1]->children[0]->types.identifier,
+							NULL, -1);
+
+						// if they match, found = true and this_instance = j
+						if (!strcmp(instance_name, temp_instance_name))
+						{
+							found = true;
+							idx = j;
+						}
+
+						vtr::free(temp_instance_name);
+					}
+					oassert(found);
+					vtr::free(instance_name);
 				}
 
-				copy->children[i]->children[1] = replace_named_module(child->children[1], symbol, value, error_code);
+				/* give this unrolled instance a unique name */
+				copy->children[i]->children[1] = replace_named_module(child->children[1], value);
 				oassert(copy->children[i]->children[1]);
 
-				(*instances) = (ast_node_t**)vtr::realloc((*instances), sizeof(ast_node_t*)*((*num_instances)+1));
-				(*instances)[(*num_instances)] = ast_node_deep_copy(copy->children[i]);
-				(*num_instances)++;
-				//free_whole_tree(child->children[1]);
+				/* then add it to the table of unrolled instances */
+				(*instances)[idx] = (ast_node_t**)vtr::realloc((*instances)[idx], sizeof(ast_node_t*)*((*num_unrolled)+2));
+				(*instances)[idx][(*num_unrolled)+1] = ast_node_deep_copy(copy->children[i]);
 			} 
-			if(child->num_children > 0){
-				copy->children[i] = dup_and_fill_body(child, symbol, value, error_code, instances, num_instances);
-				//oassert(copy->children[i]);
+
+			if(child && child->num_children > 0)
+			{
+				for (int j = 0; j < copy->children[i]->num_children; j++)
+				{
+					if (copy->children[i]->children[j] != child->children[j]) free_whole_tree(copy->children[i]->children[j]);
+				}
+				copy->children[i] = dup_and_fill_body(ast_module, child, pre, value, error_code, instances, num_unrolled, num_original);
 				free_whole_tree(child);
 			}
 		}
