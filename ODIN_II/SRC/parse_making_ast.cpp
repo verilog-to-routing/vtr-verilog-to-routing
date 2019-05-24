@@ -1173,6 +1173,12 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
  *-----------------------------------------------------------------------*/
 ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number)
 {
+	if(sc_remove_string(hard_block_names, module_ref_name))
+	{
+		warning_message(PARSE_ERROR, line_number, current_parse_file, 
+			"hard block name collision with module of the same name -> %s, using the module defined in the file\n", module_ref_name);		
+	}
+
 	long i;
 	/* create a node for this array reference */
 	ast_node_t* new_master_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
@@ -1410,6 +1416,12 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 	long j, k;
 	long sc_spot;
 	ast_node_t *symbol_node = newSymbolNode(module_name, line_number);
+
+	if(sc_remove_string(hard_block_names, module_name))
+	{
+		warning_message(PARSE_ERROR, line_number, current_parse_file, 
+			"hard block name collision with module of the same name -> %s, using the module defined in the file\n", module_name);		
+	}
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(MODULE, line_number, current_parse_file);

@@ -203,12 +203,12 @@ function mv_failed() {
 
 	if [ -e ${log_file} ]
 	then
-		echo "Failed benchmark have been move to ${failed_dir}"
+		echo "Failed benchmark have been linked to ${failed_dir}"
 		for failed_benchmark in $(cat ${log_file})
 		do
 			parent_dir=$(dirname ${failed_dir}/${failed_benchmark})
 			mkdir -p ${parent_dir}
-			mv ${NEW_RUN_DIR}/${failed_benchmark} ${parent_dir}
+			ln -s ${NEW_RUN_DIR}/${failed_benchmark} ${parent_dir}
 			FAILURE=$(( ${FAILURE} + 1 ))
 		done
 		cat ${log_file} >> ${NEW_RUN_DIR}/test_failures.log
