@@ -5,7 +5,6 @@
 #include "graphics.h"
 #include "draw_global.h"
 
-//including ezgl files
 #include "ezgl/point.hpp"
 #include "ezgl/application.hpp"
 #include "ezgl/graphics.hpp"
@@ -28,13 +27,13 @@ void free_draw_structs();
 void draw_get_rr_pin_coords(int inode, float *xcen, float *ycen);
 void draw_get_rr_pin_coords(const t_rr_node* node, float *xcen, float *ycen);
 
-void draw_triangle_along_line(t_point start, t_point end, float relative_position=1., float arrow_size=DEFAULT_ARROW_SIZE);
-void draw_triangle_along_line(t_point loc, t_point start, t_point end, float arrow_size=DEFAULT_ARROW_SIZE);
-void draw_triangle_along_line(float xend, float yend, float x1 ,float x2, float y1, float y2, float arrow_size=DEFAULT_ARROW_SIZE);
+void draw_triangle_along_line(ezgl::renderer &g, t_point start, t_point end, float relative_position=1., float arrow_size=DEFAULT_ARROW_SIZE);
+void draw_triangle_along_line(ezgl::renderer &g, t_point loc, t_point start, t_point end, float arrow_size=DEFAULT_ARROW_SIZE);
+void draw_triangle_along_line(ezgl::renderer &g, float xend, float yend, float x1 ,float x2, float y1, float y2, float arrow_size=DEFAULT_ARROW_SIZE);
 
-const color_types SELECTED_COLOR = GREEN;
-const color_types DRIVES_IT_COLOR = RED;
-const color_types DRIVEN_BY_IT_COLOR = LIGHTMEDIUMBLUE;
+const ezgl::color SELECTED_COLOR = ezgl::GREEN;
+const ezgl::color DRIVES_IT_COLOR = ezgl::RED;
+const ezgl::color DRIVEN_BY_IT_COLOR = ezgl::LIGHT_MEDIUM_BLUE;
 
 const float WIRE_DRAWING_WIDTH = 0.5;
 
@@ -47,6 +46,9 @@ t_point tnode_draw_coord(tatum::NodeId node);
 void annotate_draw_rr_node_costs(ClusterNetId net, int sink_rr_node);
 void clear_draw_rr_annotations();
 
+ezgl::color to_ezgl_color(vtr::Color<float> color);
+ezgl::color to_ezgl_color(t_color color);
+ezgl::color to_ezgl_color(color_types color_enum);
 
 //ezgl functions
 void draw_screen();

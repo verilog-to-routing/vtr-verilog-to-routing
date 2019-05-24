@@ -7,8 +7,8 @@
  and whether any of the menu buttons has been triggered. As a note, looks into draw_global.c
  for understanding the data structures associated with drawing.
  
- Authors: Vaughn Betz, Long Yu (Mike) Wang
- Last updated: August 2013
+ Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang
+ Last updated: May 2019
  */
 
 #include <cstdio>
@@ -62,7 +62,7 @@ using namespace std;
 
 /****************************** Define Macros *******************************/
 
-#define DEFAULT_RR_NODE_COLOR BLACK
+#define DEFAULT_RR_NODE_COLOR ezgl::BLACK
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 //The arrow head position for turning/straight-thru connections in a switch box
@@ -75,29 +75,29 @@ constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.10;
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
 //We use these to highlight a relatively small number of things (e.g. stages in a critical path,
 //a subset of selected net) where it is important for them to be visually distinct.
-const std::vector<t_color> kelly_max_contrast_colors = {
-    //t_color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
-    t_color( 34,  34,  34), //black
-    t_color(243, 195,   0), //yellow
-    t_color(135,  86, 146), //purple
-    t_color(243, 132,   0), //orange
-    t_color(161, 202, 241), //light blue
-    t_color(190,   0,  50), //red
-    t_color(194, 178, 128), //buf
-    t_color(132, 132, 130), //gray
-    t_color(  0, 136,  86), //green
-    t_color(230, 143, 172), //purplish pink
-    t_color(  0, 103, 165), //blue
-    t_color(249, 147, 121), //yellowish pink
-    t_color( 96,  78, 151), //violet
-    t_color(246, 166,   0), //orange yellow
-    t_color(179,  68, 108), //purplish red
-    t_color(220, 211,   0), //greenish yellow
-    t_color(136,  45,  23), //redish brown
-    t_color(141, 182,   0), //yellow green
-    t_color(101,  69,  34), //yellowish brown
-    t_color(226,  88,  34), //reddish orange
-    t_color( 43,  61,  38)  //olive green
+const std::vector<ezgl::color> kelly_max_contrast_colors = {
+    //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
+    ezgl::color( 34,  34,  34), //black
+    ezgl::color(243, 195,   0), //yellow
+    ezgl::color(135,  86, 146), //purple
+    ezgl::color(243, 132,   0), //orange
+    ezgl::color(161, 202, 241), //light blue
+    ezgl::color(190,   0,  50), //red
+    ezgl::color(194, 178, 128), //buf
+    ezgl::color(132, 132, 130), //gray
+    ezgl::color(  0, 136,  86), //green
+    ezgl::color(230, 143, 172), //purplish pink
+    ezgl::color(  0, 103, 165), //blue
+    ezgl::color(249, 147, 121), //yellowish pink
+    ezgl::color( 96,  78, 151), //violet
+    ezgl::color(246, 166,   0), //orange yellow
+    ezgl::color(179,  68, 108), //purplish red
+    ezgl::color(220, 211,   0), //greenish yellow
+    ezgl::color(136,  45,  23), //redish brown
+    ezgl::color(141, 182,   0), //yellow green
+    ezgl::color(101,  69,  34), //yellowish brown
+    ezgl::color(226,  88,  34), //reddish orange
+    ezgl::color( 43,  61,  38)  //olive green
 };
 
 //The colours used to draw block types
@@ -309,9 +309,9 @@ static void draw_routed_net(ClusterNetId net, ezgl::renderer &g);
 void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer &g);
 static void draw_rr(ezgl::renderer &g);
 static void draw_rr_edges(int from_node, ezgl::renderer &g);
-static void draw_rr_pin(int inode, const t_color& color, ezgl::renderer &g);
-static void draw_rr_chan(int inode, const t_color color, ezgl::renderer &g);
-static void draw_rr_src_sink(int inode, t_color color, ezgl::renderer &g);
+static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer &g);
+static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g);
+static void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer &g);
 static t_bound_box draw_get_rr_chan_bbox(int inode);
 static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer &g);
 static void draw_x(float x, float y, float size, ezgl::renderer &g);
@@ -346,17 +346,17 @@ static inline t_bound_box draw_mux(t_point origin, e_side orientation, float hei
 static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height, float width, float height_scale, ezgl::renderer &g);
 
 static void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay, ezgl::renderer &g);
-static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, t_color color, ezgl::renderer &g);
-static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color, ezgl::renderer &g);
+static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, ezgl::color color, ezgl::renderer &g);
+static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, ezgl::color color, ezgl::renderer &g);
 static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_id, const int driver_pin, const int sink_pin);
 static bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path);
 static int find_edge(int prev_inode, int inode);
 
-t_color to_t_color(vtr::Color<float> color);
+
 static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer &g);
 
-t_color get_block_type_color(t_type_ptr type);
-t_color lighten_color(t_color color, float amount);
+ezgl::color get_block_type_color(t_type_ptr type);
+ezgl::color lighten_color(ezgl::color color, float amount);
 
 static void draw_block_pin_util();
 
@@ -574,7 +574,7 @@ static void redraw_screen(ezgl::renderer &g) {
     
     drawplace(g);
     
-    draw_internal_draw_subblk();
+    draw_internal_draw_subblk(g);
     
     if (draw_state->pic_on_screen == PLACEMENT) {
         switch (draw_state->show_nets) {
@@ -615,7 +615,7 @@ static void redraw_screen(ezgl::renderer &g) {
     
     draw_crit_path(g);
     
-    draw_logical_connections();
+    draw_logical_connections(g);
     
     if (draw_state->color_map) {
         draw_color_map_legend(*draw_state->color_map, g);
@@ -845,11 +845,24 @@ void alloc_draw_structs(const t_arch* arch) {
     draw_coords->tile_y = (float *) vtr::malloc(device_ctx.grid.height() * sizeof(float));
     
     /* For sub-block drawings inside clbs */
+    ezgl::renderer g = application.get_renderer();
     draw_internal_alloc_blk();
     
-    draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size());
     
-    draw_state->block_color.resize(cluster_ctx.clb_nlist.blocks().size());
+    //debugging:
+    //these two lines work fine
+//    unsigned net_size = cluster_ctx.clb_nlist.nets().size();
+//    unsigned block_size = cluster_ctx.clb_nlist.blocks().size();
+   //these two cause errors
+//    draw_state->net_color.resize(net_size);
+//    draw_state->block_color.resize(block_size);
+    
+    
+    
+    //cannot run the two lines below, fix later!!
+//    draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size());
+//    
+//    draw_state->block_color.resize(cluster_ctx.clb_nlist.blocks().size());
     
     /* Space is allocated for draw_rr_node but not initialized because we do *
      * not yet know information about the routing resources.				  */
@@ -982,14 +995,14 @@ static void drawplace(ezgl::renderer &g) {
                 if (bnum == INVALID_BLOCK_ID) continue;
                 
                 //Determine the block color
-                t_color block_color;
+                ezgl::color block_color(0,0,0);
                 if (bnum != EMPTY_BLOCK_ID) {
                     block_color = draw_state->block_color[bnum];
                 } else {
                     block_color = get_block_type_color(device_ctx.grid[i][j].type);
                     block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
                 }
-                setcolor(block_color);
+                g.set_color(block_color);
                 
                 /* Get coords of current sub_tile */
                 t_bound_box abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
@@ -1048,8 +1061,8 @@ static void drawnets(ezgl::renderer &g) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue; /* Don't draw */
         
-        t_color netcolor = draw_state->net_color[net_id];
-        g.set_color(netcolor.red, netcolor.green, netcolor.blue, netcolor.alpha);
+        ezgl::color netcolor = draw_state->net_color[net_id];
+        g.set_color(netcolor);
         
         b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
         t_point driver_center = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).get_center();
@@ -1126,7 +1139,7 @@ static void draw_congestion(ezgl::renderer &g) {
         
         for (int inode : congested_rr_nodes) {
             for (ClusterNetId net : rr_node_nets[inode]) {
-                t_color color = kelly_max_contrast_colors[size_t(net) % kelly_max_contrast_colors.size()];
+                ezgl::color color = kelly_max_contrast_colors[size_t(net) % kelly_max_contrast_colors.size()];
                 draw_state->net_color[net] = color;
             }
         }
@@ -1153,7 +1166,7 @@ static void draw_congestion(ezgl::renderer &g) {
         bool node_congested = (occ > capacity);
         VTR_ASSERT(node_congested);
         
-        t_color color = to_t_color(cmap->color(congestion_ratio));
+        ezgl::color color = to_ezgl_color(cmap->color(congestion_ratio));
         
         switch (device_ctx.rr_nodes[inode].type()) {
             case CHANX: //fallthrough
@@ -1298,9 +1311,9 @@ static void draw_routing_bb(ezgl::renderer &g) {
     g.set_color(ezgl::RED);
     g.fill_rectangle({draw_xlow, draw_ylow}, {draw_xhigh,draw_yhigh});
     
-    t_color fill = SKYBLUE;
+    ezgl::color fill = to_ezgl_color(SKYBLUE);
     fill.alpha *= 0.3;
-    g.set_color(fill.red, fill.green, fill.blue, fill.alpha);
+    g.set_color(fill);
     g.fill_rectangle({draw_xlow, draw_ylow}, {draw_xhigh,draw_yhigh});
     
     draw_routed_net(net_id, g);
@@ -1339,10 +1352,10 @@ void draw_rr(ezgl::renderer &g) {
                     draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
                     break;
                 case OPIN:
-                    draw_state->draw_rr_node[inode].color = PINK;
+                    draw_state->draw_rr_node[inode].color = ezgl::PINK;
                     break;
                 case IPIN:
-                    draw_state->draw_rr_node[inode].color = LIGHTSKYBLUE;
+                    draw_state->draw_rr_node[inode].color = to_ezgl_color(LIGHTSKYBLUE);
                     break;
                 default:
                     break;
@@ -1384,7 +1397,7 @@ void draw_rr(ezgl::renderer &g) {
     drawroute(HIGHLIGHTED, g);
 }
 
-static void draw_rr_chan(int inode, const t_color color, ezgl::renderer &g) {
+static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g) {
     auto& device_ctx = g_vpr_ctx.device();
     
     t_rr_type type = device_ctx.rr_nodes[inode].type();
@@ -1401,7 +1414,7 @@ static void draw_rr_chan(int inode, const t_color color, ezgl::renderer &g) {
         std::swap(start, end);
     }
     
-    g.set_color(color.red, color.green, color.blue, color.alpha);
+    g.set_color(color);
     if (color != DEFAULT_RR_NODE_COLOR) {
         // If wire is highlighted, then draw with thicker linewidth.
         g.set_line_width(3);
@@ -1445,8 +1458,8 @@ static void draw_rr_chan(int inode, const t_color color, ezgl::renderer &g) {
     //with the corresponding switch point (see build_switchblocks.c for a description of switch points)
     t_draw_coords* draw_coords = get_draw_coords_vars();
     float arrow_offset = DEFAULT_ARROW_SIZE / 2;
-    t_color arrow_color = LIGHTGREY;
-    t_color text_color = BLACK;
+    ezgl::color arrow_color = to_ezgl_color(LIGHTGREY);
+    ezgl::color text_color = ezgl::BLACK;
     for(int k = coord_min; k <= coord_max; ++k) {
         
         int switchpoint_min = -1;
@@ -1487,10 +1500,10 @@ static void draw_rr_chan(int inode, const t_color color, ezgl::renderer &g) {
                 std::swap(arrow_color, text_color);
             }
             
-            g.set_color(arrow_color.red, arrow_color.green, arrow_color.blue, arrow_color.alpha);
-            draw_triangle_along_line(arrow_loc_min, start, end);
+            g.set_color(arrow_color);
+            draw_triangle_along_line(g, arrow_loc_min, start, end);
             
-            g.set_color(text_color.red, text_color.green, text_color.blue, text_color.alpha);
+            g.set_color(text_color);
             t_bound_box bbox(t_point(arrow_loc_min.x - DEFAULT_ARROW_SIZE/2, arrow_loc_min.y - DEFAULT_ARROW_SIZE / 4),
                     t_point(arrow_loc_min.x + DEFAULT_ARROW_SIZE/2, arrow_loc_min.y + DEFAULT_ARROW_SIZE / 4));
             ezgl::point2d center(arrow_loc_min.x, arrow_loc_min.y);
@@ -1514,10 +1527,10 @@ static void draw_rr_chan(int inode, const t_color color, ezgl::renderer &g) {
             }
             
             
-            g.set_color(arrow_color.red, arrow_color.green, arrow_color.blue, arrow_color.alpha);
-            draw_triangle_along_line(arrow_loc_max, start, end);
+            g.set_color(arrow_color);
+            draw_triangle_along_line(g, arrow_loc_max, start, end);
             
-            g.set_color(text_color.red, text_color.green, text_color.blue, text_color.alpha);
+            g.set_color(text_color);
             t_bound_box bbox(t_point(arrow_loc_max.x - DEFAULT_ARROW_SIZE/2, arrow_loc_max.y - DEFAULT_ARROW_SIZE / 4),
                     t_point(arrow_loc_max.x + DEFAULT_ARROW_SIZE/2, arrow_loc_max.y + DEFAULT_ARROW_SIZE / 4));
             ezgl::point2d center(arrow_loc_max.x, arrow_loc_max.y);
@@ -1529,7 +1542,7 @@ static void draw_rr_chan(int inode, const t_color color, ezgl::renderer &g) {
             }
         }
     }
-    g.set_color(color.red, color.green, color.blue, color.alpha); //Ensure color is still set correctly if we drew any arrows/text
+    g.set_color(color); //Ensure color is still set correctly if we drew any arrows/text
 }
 
 static void draw_rr_edges(int inode, ezgl::renderer &g) {
@@ -1564,26 +1577,26 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                 switch (to_type) {
                     case CHANX:
                     case CHANY:
-                        if (draw_state->draw_rr_node[inode].color == MAGENTA) {
+                        if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
                             // If OPIN was clicked on, set color to fan-out
-                            t_color color = draw_state->draw_rr_node[to_node].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
-                        } else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[to_node].color;
+                            g.set_color(color);
+                        } else if (draw_state->draw_rr_node[to_node].color == ezgl::MAGENTA) {
                             // If CHANX or CHANY got clicked, set color to fan-in
-                            t_color color = draw_state->draw_rr_node[inode].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
+                            ezgl::color color = draw_state->draw_rr_node[inode].color;
+                            g.set_color(color);
                         } else {
                             g.set_color(ezgl::PINK);
                         }
                         draw_pin_to_chan_edge(inode, to_node, g);
                         break;
                     case IPIN:
-                        if (draw_state->draw_rr_node[inode].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[to_node].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
-                        } else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[inode].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
+                        if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[to_node].color;
+                            g.set_color(color);
+                        } else if (draw_state->draw_rr_node[to_node].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[inode].color;
+                            g.set_color(color);
                         } else {
                             g.set_color(ezgl::MEDIUM_PURPLE);
                         }
@@ -1613,12 +1626,12 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                             break;
                         }
                         
-                        if (draw_state->draw_rr_node[inode].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[to_node].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
-                        } else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[inode].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
+                        if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[to_node].color;
+                            g.set_color(color);
+                        } else if (draw_state->draw_rr_node[to_node].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[inode].color;
+                            g.set_color(color);
                         } else {
                             g.set_color(ezgl::LIGHT_SKY_BLUE);
                         }
@@ -1626,15 +1639,15 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                         break;
                         
                     case CHANX:
-                        if (draw_state->draw_rr_node[inode].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[to_node].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
-                        } else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[inode].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
+                        if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[to_node].color;
+                            g.set_color(color);
+                        } else if (draw_state->draw_rr_node[to_node].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[inode].color;
+                            g.set_color(color);
                         } else if (!edge_configurable) {
-                            t_color color = {169, 169, 169, 0}; // got this color online since ezgl doesn't have predefined DarkGrey
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
+                            ezgl::color color = to_ezgl_color(DARKGREY);
+                            g.set_color(color);
                         } else {
                             g.set_color(ezgl::DARK_GREEN);
                         }
@@ -1644,15 +1657,15 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                         break;
                         
                     case CHANY:
-                        if (draw_state->draw_rr_node[inode].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[to_node].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
-                        } else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[inode].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
+                        if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[to_node].color;
+                            g.set_color(color);
+                        } else if (draw_state->draw_rr_node[to_node].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[inode].color;
+                            g.set_color(color);
                         } else if (!edge_configurable) {
-                            t_color color = {169, 169, 169, 0}; // got this color online since ezgl doesn't have predefined DarkGrey
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
+                            ezgl::color color = to_ezgl_color(DARKGREY);
+                            g.set_color(color);
                         } else {
                             g.set_color(ezgl::DARK_GREEN);
                         }
@@ -1685,12 +1698,12 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                             break;
                         }
                         
-                        if (draw_state->draw_rr_node[inode].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[to_node].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
-                        } else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[inode].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
+                        if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[to_node].color;
+                            g.set_color(color);
+                        } else if (draw_state->draw_rr_node[to_node].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[inode].color;
+                            g.set_color(color);
                         } else {
                             g.set_color(ezgl::LIGHT_SKY_BLUE);
                         }
@@ -1698,15 +1711,15 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                         break;
                         
                     case CHANX:
-                        if (draw_state->draw_rr_node[inode].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[to_node].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
-                        } else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[inode].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
+                        if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[to_node].color;
+                            g.set_color(color);
+                        } else if (draw_state->draw_rr_node[to_node].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[inode].color;
+                            g.set_color(color);
                         } else if (!edge_configurable) {
-                            t_color color = {169, 169, 169, 0}; // got this color online since ezgl doesn't have predefined DarkGrey
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
+                            ezgl::color color = to_ezgl_color(DARKGREY);
+                            g.set_color(color);
                         } else {
                             g.set_color(ezgl::DARK_GREEN);
                         }
@@ -1716,15 +1729,15 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                         break;
                         
                     case CHANY:
-                        if (draw_state->draw_rr_node[inode].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[to_node].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
-                        } else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
-                            t_color color = draw_state->draw_rr_node[inode].color;
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
+                        if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[to_node].color;
+                            g.set_color(color);
+                        } else if (draw_state->draw_rr_node[to_node].color == ezgl::MAGENTA) {
+                            ezgl::color color = draw_state->draw_rr_node[inode].color;
+                            g.set_color(color);
                         } else if (!edge_configurable) {
-                            t_color color = {169, 169, 169, 0}; // got this color online since ezgl doesn't have predefined DarkGrey
-                            g.set_color(color.red, color.green, color.blue, color.alpha);
+                            ezgl::color color = to_ezgl_color(DARKGREY);
+                            g.set_color(color);
                         } else {
                             g.set_color(ezgl::DARK_GREEN);
                         }
@@ -2068,15 +2081,15 @@ static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, b
     } else { /* Buffer */
         if(from_x == to_x || from_y == to_y) {
             //Straight connection
-            draw_triangle_along_line(t_point(from_x, from_y), t_point(to_x, to_y), SB_EDGE_STRAIGHT_ARROW_POSITION);
+            draw_triangle_along_line(g, t_point(from_x, from_y), t_point(to_x, to_y), SB_EDGE_STRAIGHT_ARROW_POSITION);
         } else {
             //Turn connection
-            draw_triangle_along_line(t_point(from_x, from_y), t_point(to_x, to_y), SB_EDGE_TURN_ARROW_POSITION);
+            draw_triangle_along_line(g, t_point(from_x, from_y), t_point(to_x, to_y), SB_EDGE_TURN_ARROW_POSITION);
         }
     }
 }
 
-static void draw_rr_pin(int inode, const t_color& color, ezgl::renderer &g) {
+static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer &g) {
     
     /* Draws an IPIN or OPIN rr_node.  Note that the pin can appear on more    *
      * than one side of a clb.  Also note that this routine can change the     *
@@ -2096,7 +2109,7 @@ static void draw_rr_pin(int inode, const t_color& color, ezgl::renderer &g) {
     
     int ipin = device_ctx.rr_nodes[inode].ptc_num();
     
-    g.set_color(color.red, color.green, color.blue, color.alpha);
+    g.set_color(color);
     
     /* TODO: This is where we can hide fringe physical pins and also identify globals (hide, color, show) */
     draw_get_rr_pin_coords(inode, &xcen, &ycen);
@@ -2105,7 +2118,7 @@ static void draw_rr_pin(int inode, const t_color& color, ezgl::renderer &g) {
     sprintf(str, "%d", ipin);
     g.set_color(ezgl::BLACK);
     g.draw_text({xcen, ycen}, str, 2 * draw_coords->pin_size, 2 * draw_coords->pin_size);
-    g.set_color(color.red, color.green, color.blue, color.alpha);
+    g.set_color(color);
 }
 
 /* Returns the coordinates at which the center of this pin should be drawn. *
@@ -2172,7 +2185,7 @@ void draw_get_rr_pin_coords(const t_rr_node* node, float *xcen, float *ycen) {
     *ycen = yc;
 }
 
-static void draw_rr_src_sink(int inode, t_color color, ezgl::renderer &g) {
+static void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer &g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     
     auto& device_ctx = g_vpr_ctx.device();
@@ -2182,7 +2195,7 @@ static void draw_rr_src_sink(int inode, t_color color, ezgl::renderer &g) {
     int xhigh = device_ctx.rr_nodes[inode].xhigh();
     int yhigh = device_ctx.rr_nodes[inode].yhigh();
     
-    g.set_color(color.red, color.green, color.blue, color.alpha);
+    g.set_color(color);
     
     g.fill_rectangle({draw_coords->get_tile_width() * xlow, draw_coords->get_tile_height() * ylow},
             {draw_coords->get_tile_width() * xhigh, draw_coords->get_tile_height() * yhigh});
@@ -2203,7 +2216,7 @@ static void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer &g) {
     /* Now draw each net, one by one.      */
     
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (draw_net_type == HIGHLIGHTED && draw_state->net_color[net_id] == BLACK)
+        if (draw_net_type == HIGHLIGHTED && draw_state->net_color[net_id] == ezgl::BLACK)
             continue;
         
         draw_routed_net(net_id, g);
@@ -2452,7 +2465,7 @@ static void highlight_nets(char *message, int hit_node) {
     
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         for (tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
-            if (draw_state->draw_rr_node[tptr->index].color == MAGENTA) {
+            if (draw_state->draw_rr_node[tptr->index].color == ezgl::MAGENTA) {
                 draw_state->net_color[net_id] = draw_state->draw_rr_node[tptr->index].color;
                 if (tptr->index == hit_node) {
                     std::string orig_msg(message);
@@ -2460,9 +2473,9 @@ static void highlight_nets(char *message, int hit_node) {
                             cluster_ctx.clb_nlist.net_name(net_id).c_str());
                 }
             }
-            else if (draw_state->draw_rr_node[tptr->index].color == WHITE) {
+            else if (draw_state->draw_rr_node[tptr->index].color == ezgl::WHITE) {
                 // If node is de-selected.
-                draw_state->net_color[net_id] = BLACK;
+                draw_state->net_color[net_id] = ezgl::BLACK;
                 break;
             }
         }
@@ -2486,11 +2499,11 @@ static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
         for (int iedge = 0, l = device_ctx.rr_nodes[node].num_edges(); iedge < l; iedge++) {
             int fanout_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
             
-            if (draw_state->draw_rr_node[node].color == MAGENTA && draw_state->draw_rr_node[fanout_node].color != MAGENTA) {
+            if (draw_state->draw_rr_node[node].color == ezgl::MAGENTA && draw_state->draw_rr_node[fanout_node].color != ezgl::MAGENTA) {
                 // If node is highlighted, highlight its fanout
                 draw_state->draw_rr_node[fanout_node].color = DRIVES_IT_COLOR;
                 draw_state->draw_rr_node[fanout_node].node_highlighted = true;
-            } else if (draw_state->draw_rr_node[node].color == WHITE) {
+            } else if (draw_state->draw_rr_node[node].color == ezgl::WHITE) {
                 // If node is de-highlighted, de-highlight its fanout
                 draw_state->draw_rr_node[fanout_node].color = DEFAULT_RR_NODE_COLOR;
                 draw_state->draw_rr_node[fanout_node].node_highlighted = false;
@@ -2502,12 +2515,12 @@ static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
             for (int iedge = 0, l = device_ctx.rr_nodes[inode].num_edges(); iedge < l; iedge++) {
                 int fanout_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
                 if (fanout_node == node) {
-                    if (draw_state->draw_rr_node[node].color == MAGENTA && draw_state->draw_rr_node[inode].color != MAGENTA) {
+                    if (draw_state->draw_rr_node[node].color == ezgl::MAGENTA && draw_state->draw_rr_node[inode].color != ezgl::MAGENTA) {
                         // If node is highlighted, highlight its fanin
-                        draw_state->draw_rr_node[inode].color = BLUE;
+                        draw_state->draw_rr_node[inode].color = ezgl::BLUE;
                         draw_state->draw_rr_node[inode].node_highlighted = true;
                     }
-                    else if (draw_state->draw_rr_node[node].color == WHITE) {
+                    else if (draw_state->draw_rr_node[node].color == ezgl::WHITE) {
                         // If node is de-highlighted, de-highlight its fanin
                         draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
                         draw_state->draw_rr_node[inode].node_highlighted = false;
@@ -2634,17 +2647,17 @@ static bool highlight_rr_nodes(float x, float y) {
         auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
         for (auto node : nodes) {
             
-            if (draw_state->draw_rr_node[node].color != MAGENTA) {
+            if (draw_state->draw_rr_node[node].color != ezgl::MAGENTA) {
                 /* If the node hasn't been clicked on before, highlight it
                  * in magenta.
                  */
-                draw_state->draw_rr_node[node].color = MAGENTA;
+                draw_state->draw_rr_node[node].color = ezgl::MAGENTA;
                 draw_state->draw_rr_node[node].node_highlighted = true;
                 
             } else {
                 //Using white color to represent de-highlighting (or
                 //de-selecting) of node.
-                draw_state->draw_rr_node[node].color = WHITE;
+                draw_state->draw_rr_node[node].color = ezgl::WHITE;
                 draw_state->draw_rr_node[node].node_highlighted = false;
             }
             
@@ -2874,7 +2887,7 @@ static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) 
         if (type->class_inf[iclass].type == DRIVER) { /* Fanout */
             if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanout. (the deselect case)*/
-                draw_state->net_color[net_id] = BLACK;
+                draw_state->net_color[net_id] = ezgl::BLACK;
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                     fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
                     draw_reset_blk_color(fanblk);
@@ -2892,7 +2905,7 @@ static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) 
         else { /* This net is fanin to the block. */
             if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanin. (the deselect case)*/
-                draw_state->net_color[net_id] = BLACK;
+                draw_state->net_color[net_id] = ezgl::BLACK;
                 fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
                 draw_reset_blk_color(fanblk);
             }
@@ -2931,7 +2944,7 @@ static void deselect_all() {
     }
     
     for (auto net_id : cluster_ctx.clb_nlist.nets())
-        draw_state->net_color[net_id] = BLACK;
+        draw_state->net_color[net_id] = ezgl::BLACK;
     
     for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
         draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
@@ -2960,7 +2973,7 @@ static void draw_reset_blk_color(ClusterBlockId blk_id) {
  * A 'relative_position' of 1. draws the triangle centered at 'end'.
  * Fractional values draw the triangle along the line
  */
-void draw_triangle_along_line(t_point start, t_point end, float relative_position, float arrow_size) {
+void draw_triangle_along_line(ezgl::renderer &g, t_point start, t_point end, float relative_position, float arrow_size) {
     VTR_ASSERT(relative_position >= 0. && relative_position <= 1.);
     float xdelta = end.x - start.x;
     float ydelta = end.y - start.y;
@@ -2968,15 +2981,15 @@ void draw_triangle_along_line(t_point start, t_point end, float relative_positio
     float xtri = start.x + xdelta * relative_position;
     float ytri = start.y + ydelta * relative_position;
     
-    draw_triangle_along_line(xtri, ytri, start.x, end.x, start.y, end.y, arrow_size);
+    draw_triangle_along_line(g, xtri, ytri, start.x, end.x, start.y, end.y, arrow_size);
 }
 
 /* Draws a trangle with it's center at loc, and of length & width
  * arrow_size, rotated such that it points in the direction
  * of the directed line segment start -> end.
  */
-void draw_triangle_along_line(t_point loc, t_point start, t_point end, float arrow_size) {
-    draw_triangle_along_line(loc.x, loc.y, start.x, end.x, start.y, end.y, arrow_size);
+void draw_triangle_along_line(ezgl::renderer &g, t_point loc, t_point start, t_point end, float arrow_size) {
+    draw_triangle_along_line(g, loc.x, loc.y, start.x, end.x, start.y, end.y, arrow_size);
 }
 
 /**
@@ -2986,7 +2999,7 @@ void draw_triangle_along_line(t_point loc, t_point start, t_point end, float arr
  *
  * Note that the parameters are in a strange order
  */
-void draw_triangle_along_line(float xend, float yend, float x1, float x2, float y1, float y2, float arrow_size) {
+void draw_triangle_along_line(ezgl::renderer &g, float xend, float yend, float x1, float x2, float y1, float y2, float arrow_size) {
     float switch_rad = arrow_size/2;
     float xdelta, ydelta;
     float magnitude;
@@ -3007,7 +3020,6 @@ void draw_triangle_along_line(float xend, float yend, float x1, float x2, float 
     poly.push_back({xbaseline + yunit * switch_rad, ybaseline - xunit * switch_rad});
     poly.push_back({xbaseline - yunit * switch_rad, ybaseline + xunit * switch_rad});
     
-    ezgl::renderer g = application.get_renderer();
     g.fill_poly(poly);
 }
 
@@ -3115,7 +3127,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer &g
         if (default_triangle_LOD_screen_area_test() == true) {
             float xend = x2 + (x1 - x2) / 10.;
             float yend = y2 + (y1 - y2) / 10.;
-            draw_triangle_along_line(xend, yend, x1, x2, y1, y2);
+            draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
         }
     }
 }
@@ -3139,7 +3151,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer &g) {
     if (default_triangle_LOD_screen_area_test() == true) {
         float xend = x2 + (x1 - x2) / 10.;
         float yend = y2 + (y1 - y2) / 10.;
-        draw_triangle_along_line(xend, yend, x1, x2, y1, y2);
+        draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
     }
 }
 
@@ -3277,11 +3289,11 @@ static void draw_crit_path(ezgl::renderer &g) {
             //any routing which corresponds to the edge
             //
             //We pick colors from the kelly max-contrast list, for long paths there may be repeats
-            t_color color = kelly_max_contrast_colors[i++ % kelly_max_contrast_colors.size()];
+            ezgl::color color = kelly_max_contrast_colors[i++ % kelly_max_contrast_colors.size()];
             
             float delay = arr_time - prev_arr_time;
             if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES || draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
-                g.set_color(color.red, color.green, color.blue, color.alpha);
+                g.set_color(color);
                 g.set_line_dash(ezgl::line_dash::none);
                 draw_flyline_timing_edge(tnode_draw_coord(prev_node), tnode_draw_coord(node), delay, g);
             } else {
@@ -3298,8 +3310,8 @@ static void draw_crit_path(ezgl::renderer &g) {
 //editing here
 static void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay, ezgl::renderer &g) {
     drawline(start, end);
-    draw_triangle_along_line(start, end, 0.95, 40*DEFAULT_ARROW_SIZE);
-    draw_triangle_along_line(start, end, 0.05, 40*DEFAULT_ARROW_SIZE);
+    draw_triangle_along_line(g, start, end, 0.95, 40*DEFAULT_ARROW_SIZE);
+    draw_triangle_along_line(g, start, end, 0.05, 40*DEFAULT_ARROW_SIZE);
     
     
     bool draw_delays = (get_draw_state_vars()->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS
@@ -3339,13 +3351,13 @@ static void draw_flyline_timing_edge(t_point start, t_point end, float incr_dela
     }
 }
 
-static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, t_color color, ezgl::renderer &g){
+static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, ezgl::color color, ezgl::renderer &g){
     
     draw_routed_timing_edge_connection(start_tnode, end_tnode, color, g);
     
     g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
     g.set_line_width(3);
-    g.set_color(color.red, color.green, color.blue, color.alpha);
+    g.set_color(color);
     
     draw_flyline_timing_edge((t_point) tnode_draw_coord(start_tnode), (t_point) tnode_draw_coord(end_tnode), (float) incr_delay, (ezgl::renderer&) g);
     
@@ -3354,7 +3366,7 @@ static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end
 }
 //editing here
 //Collect all the drawing locations associated with the timing edge between start and end
-static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color, ezgl::renderer &g) {
+static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, ezgl::color color, ezgl::renderer &g) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& timing_ctx = g_vpr_ctx.timing();
@@ -3483,9 +3495,19 @@ static int find_edge(int prev_inode, int inode) {
     return OPEN;
 }
 
-t_color to_t_color(vtr::Color<float> color) {
-    return t_color(color.r*255, color.g*255, color.b*255);
+ezgl::color to_ezgl_color(vtr::Color<float> color) {
+    return ezgl::color(color.r*255, color.g*255, color.b*255);
 }
+
+ezgl::color to_ezgl_color(t_color color) {
+    return ezgl::color(color.red, color.green, color.blue, color.alpha);
+}
+
+ezgl::color to_ezgl_color(color_types color_enum) {
+    t_color color = color_enum;
+    return to_ezgl_color(color);
+}
+
 //editing here
 static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer &g) {
     constexpr float LEGEND_WIDTH_FAC = 0.075;
@@ -3508,10 +3530,10 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer &g) 
     for (size_t i = 0; i < NUM_COLOR_POINTS; ++i) {
         
         float val = cmap.min() + (float(i) / NUM_COLOR_POINTS) * range;
-        t_color color = to_t_color(cmap.color(val));
+        ezgl::color color = to_ezgl_color(cmap.color(val));
         
         
-        g.set_color(color.red, color.green, color.blue, color.alpha);
+        g.set_color(color);
         g.fill_rectangle({legend.left(), legend.bottom() + i * height_incr},
         {legend.right(), legend.bottom() + (i+1) * height_incr});
         
@@ -3537,24 +3559,24 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer &g) 
     g.set_coordinate_system(ezgl::WORLD);
 }
 
-t_color get_block_type_color(t_type_ptr type) {
+ezgl::color get_block_type_color(t_type_ptr type) {
     
     //Wrap around if there are too many blocks
     // This ensures we support an arbitrary number of types,
     // although the colours may repeat
-    t_color color = block_type_colors[type->index % block_type_colors.size()];
+    ezgl::color color = to_ezgl_color(block_type_colors[type->index % block_type_colors.size()]);
     
     return color;
 }
 
 //Lightens a color's luminance [0, 1] by an aboslute 'amount'
-t_color lighten_color(t_color color, float amount) {
+ezgl::color lighten_color(ezgl::color color, float amount) {
     constexpr double MAX_LUMINANCE = 0.95; //Clip luminance so it doesn't go full white
-    auto hsl = color2hsl(color);
+    auto hsl = color2hsl(t_color(color.red, color.green, color.blue, color.alpha));
     
     hsl.l = std::max(0., std::min(MAX_LUMINANCE, hsl.l + amount));
     
-    return hsl2color(hsl);
+    return to_ezgl_color(hsl2color(hsl));
 }
 
 static void draw_block_pin_util() {
@@ -3599,7 +3621,7 @@ static void draw_block_pin_util() {
     
     for (auto blk : blks) {
         
-        t_color color = to_t_color(cmap->color(pin_util[blk]));
+        ezgl::color color = to_ezgl_color(cmap->color(pin_util[blk]));
         draw_state->block_color[blk] = color;
     }
     
@@ -3670,9 +3692,9 @@ static void draw_routing_util(ezgl::renderer &g) {
             int chan_count = 0;
             if (x > 0) {
                 chanx_util = routing_util(chanx_usage[x][y], chanx_avail[x][y]);
-                t_color chanx_color = to_t_color(cmap->color(chanx_util));
+                ezgl::color chanx_color = to_ezgl_color(cmap->color(chanx_util));
                 chanx_color.alpha *= ALPHA;
-                g.set_color(chanx_color.red, chanx_color.green, chanx_color.blue, chanx_color.alpha);
+                g.set_color(chanx_color);
                 ezgl::rectangle bb({draw_coords->tile_x[x], draw_coords->tile_y[y] + 1*tile_height},
                         {draw_coords->tile_x[x] + 1*tile_width, draw_coords->tile_y[y+1]});
                 g.fill_rectangle(bb);
@@ -3690,14 +3712,14 @@ static void draw_routing_util(ezgl::renderer &g) {
             
             if (y > 0) {
                 chany_util = routing_util(chany_usage[x][y], chany_avail[x][y]);
-                t_color chany_color = to_t_color(cmap->color(chany_util));
+                ezgl::color chany_color = to_ezgl_color(cmap->color(chany_util));
                 chany_color.alpha *= ALPHA;
-                g.set_color(chany_color.red, chany_color.green, chany_color.blue, chany_color.alpha);
+                g.set_color(chany_color);
                 ezgl::rectangle bb({draw_coords->tile_x[x] + 1*tile_width, draw_coords->tile_y[y]},
                         {draw_coords->tile_x[x+1], draw_coords->tile_y[y] + 1*tile_height});
                 g.fill_rectangle(bb);
                 
-                setcolor(BLACK);
+                g.set_color(ezgl::BLACK);
                 if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE) {
                     g.draw_text(bb.center(), vtr::string_fmt("%.2f", chany_util).c_str());
                 } else if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_FORMULA) {
@@ -3717,9 +3739,9 @@ static void draw_routing_util(ezgl::renderer &g) {
             
             VTR_ASSERT(chan_count > 0);
             sb_util /= chan_count;
-            t_color sb_color = to_t_color(cmap->color(sb_util));
+            ezgl::color sb_color = to_ezgl_color(cmap->color(sb_util));
             sb_color.alpha *= ALPHA;
-            g.set_color(sb_color.red, sb_color.green, sb_color.blue, sb_color.alpha);
+            g.set_color(sb_color);
             ezgl::rectangle bb({draw_coords->tile_x[x] + 1*tile_width, draw_coords->tile_y[y] + 1*tile_height},
                 {draw_coords->tile_x[x+1], draw_coords->tile_y[y+1]});
             g.fill_rectangle(bb);
@@ -3833,7 +3855,7 @@ static void draw_rr_costs(ezgl::renderer &g, const std::vector<float>& rr_costs,
         float cost = rr_costs[inode];
         if (std::isnan(cost)) continue;
         
-        t_color color = to_t_color(cmap->color(cost));
+        ezgl::color color = to_ezgl_color(cmap->color(cost));
         
         switch (device_ctx.rr_nodes[inode].type()) {
             case CHANX: //fallthrough
@@ -3911,9 +3933,9 @@ static void draw_placement_macros(ezgl::renderer &g) {
         g.set_color(ezgl::RED);
         g.draw_rectangle({draw_xlow, draw_ylow}, {draw_xhigh, draw_yhigh});
         
-        t_color fill = SKYBLUE;
+        ezgl::color fill = to_ezgl_color(SKYBLUE);
         fill.alpha *= 0.3;
-        g.set_color(fill.red, fill.green, fill.blue, fill.alpha);
+        g.set_color(fill);
         g.fill_rectangle({draw_xlow, draw_ylow}, {draw_xhigh, draw_yhigh});
         
     }

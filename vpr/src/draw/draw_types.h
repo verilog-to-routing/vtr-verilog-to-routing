@@ -26,6 +26,12 @@
 #include "vtr_color_map.h"
 #include "vtr_vector.h"
 
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
+#include "ezgl/color.hpp"
+
+
 enum e_draw_crit_path {
       DRAW_NO_CRIT_PATH
     , DRAW_CRIT_PATH_FLYLINES
@@ -120,7 +126,7 @@ enum e_edge_dir {
  *					 highlighting routing resources on rr_graph
  */
 typedef struct {
-	t_color color;
+	ezgl::color color;
 	bool node_highlighted;
 } t_draw_rr_node;
 
@@ -171,8 +177,8 @@ struct t_draw_state {
 	int gr_automode = 0;
 	e_route_type draw_route_type = GLOBAL;
 	char default_message[vtr::bufsize];
-	vtr::vector<ClusterNetId, t_color> net_color;
-	vtr::vector<ClusterBlockId, t_color> block_color;
+	vtr::vector<ClusterNetId, ezgl::color> net_color;
+	vtr::vector<ClusterBlockId, ezgl::color> block_color;
 	t_draw_rr_node *draw_rr_node = nullptr;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
