@@ -16,7 +16,6 @@ typedef std::function<bool(long)> condition_function;
 typedef std::function<long(long)> post_condition_function;
 
 void unroll_loops(ast_node_t **ast_module);
-long find_module_instance(ast_node_t *ast_module, char *instance_name);
 
 inline bool is_for_node(ast_node_t* node)
 {

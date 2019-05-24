@@ -16,7 +16,6 @@
 
 void update_module_instantiations(ast_node_t *ast_module, ast_node_t ***instances, int *num_instances);
 long find_module_instance(ast_node_t *ast_module, char *instance_name);
-ast_node_t **find_ast_instance(ast_node_t *node, char *instance_name, char *module_ref_name);
 
 /*
  *  (function: unroll_loops)
@@ -31,7 +30,6 @@ void unroll_loops(ast_node_t **ast_module)
 		free_whole_tree(*ast_module);
 	*ast_module = module;
 
-	// add unrolled instances to module->types.module.module_instantiations_instance
 	if (num_unrolled_module_instances > 1)
 	{
 		update_module_instantiations((*ast_module), &unrolled_module_instances, &num_unrolled_module_instances);
@@ -109,42 +107,6 @@ long find_module_instance(ast_node_t *ast_module, char *instance_name)
 	}
 
 	return -1;
-}
-
-/*
-*	(function: find_ast_instance)
-*/
-ast_node_t **find_ast_instance(ast_node_t *node, char *instance_name, char *module_ref_name)
-{
-	long i;
-	ast_node_t **ast_instance;
-	if (node) {
-		for (i = 0; i < node->num_children; i++)
-		{
-			if (node->children[i] && node->children[i]->type == MODULE_INSTANCE)
-			{
-				ast_node_t *current_instance = node->children[i];
-				if (current_instance->num_children == 2 && current_instance->children[0]->type == IDENTIFIERS)
-				{
-					// check the name of this instance
-					char *temp_string = make_full_ref_name(module_ref_name,
-							current_instance->children[0]->types.identifier,
-							current_instance->children[1]->children[0]->types.identifier,
-							NULL, -1);
-
-					printf("found: %s\n", temp_string);
-
-					if (!strcmp(temp_string, instance_name))
-					{
-						return &(node->children[i]);
-					}
-				}
-			}
-			// recursive call
-			ast_instance = find_ast_instance(node->children[i], instance_name, module_ref_name);
-		}
-	}
-	return NULL;
 }
 
 /*
@@ -557,9 +519,6 @@ ast_node_t* dup_and_fill_body(ast_node_t* body, ast_node_t* symbol, ast_node_t**
 
 				copy->children[i]->children[1] = replace_named_module(child->children[1], symbol, value, error_code);
 				oassert(copy->children[i]->children[1]);
-
-				// // check parameters and ports for the symbol
-				// copy->children[i]->children[1] = dup_and_fill_body(child->children[1], symbol, value, error_code, instances, num_instances);
 
 				(*instances) = (ast_node_t**)vtr::realloc((*instances), sizeof(ast_node_t*)*((*num_instances)+1));
 				(*instances)[(*num_instances)] = ast_node_deep_copy(copy->children[i]);
