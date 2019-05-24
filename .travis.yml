@@ -1,13 +1,17 @@
 language: minimal
 
-dist: xenial
+dist: trusty
 
 os: linux
 addons:
   apt:
+    sources:
+     # PPA for clang-format 8
+     - llvm-toolchain-trusty
+     # PPA for a more recent libstdc++
+     - ubuntu-toolchain-r-test
     packages:
-      - clang-5.0
-      - clang-format-5.0
+      - clang-format-8
 
 script:
         ./.github/travis/check-format.py
