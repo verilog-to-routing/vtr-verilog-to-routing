@@ -481,6 +481,13 @@ void get_options(int argc, char** argv) {
 			.metavar("PARALEL NODE COUNT")
 			;
 
+	other_sim_grp.add_argument(global_args.parralelized_simulation_in_batch, "--batch")
+			.help("use batch mode simultation")
+			.default_value("false")
+			.action(argparse::Action::STORE_TRUE)
+			.metavar("BATCH FLAG")
+			;
+
 	other_sim_grp.add_argument(global_args.sim_directory, "-sim_dir")
 			.help("Directory output for simulation")
 			.default_value(DEFAULT_OUTPUT)
@@ -551,10 +558,22 @@ void get_options(int argc, char** argv) {
 	//adjust thread count
 	int thread_requested = global_args.parralelized_simulation;
 	int max_thread = std::thread::hardware_concurrency();
-	global_args.parralelized_simulation.set(
-			std::min( 	std::min(CONCURENCY_LIMIT, max_thread) , 
-						std::max(1, thread_requested))
-		,argparse::Provenance::SPECIFIED);
+
+	// the old multithreaded mode can only use as many thread as the buffer size
+	if (!global_args.parralelized_simulation_in_batch)
+	{
+		global_args.parralelized_simulation.set(
+			std::max(1, std::min( thread_requested, std::min( CONCURENCY_LIMIT, max_thread )))
+			,argparse::Provenance::SPECIFIED
+		);
+	}
+	else
+	{
+		global_args.parralelized_simulation.set(
+			std::max(1, std::min( thread_requested, max_thread) )
+			,argparse::Provenance::SPECIFIED
+		);
+	}
 
 	//Allow some config values to be overriden from command line
 	if (!global_args.verilog_files.value().empty())

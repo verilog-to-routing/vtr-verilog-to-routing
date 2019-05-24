@@ -155,6 +155,7 @@ struct global_args_t_t
 	argparse::ArgValue<bool> sim_achieve_best;
 
 	argparse::ArgValue<int> parralelized_simulation;
+	argparse::ArgValue<bool> parralelized_simulation_in_batch;
 	argparse::ArgValue<int> sim_initial_value;
 	// The seed for creating random simulation vector
     argparse::ArgValue<int> sim_random_seed;
