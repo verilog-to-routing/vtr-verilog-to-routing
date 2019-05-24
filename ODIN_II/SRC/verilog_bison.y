@@ -326,7 +326,7 @@ list_of_multiple_inputs_gate_connections: list_of_multiple_inputs_gate_connectio
 	| expression											{$$ = newModuleConnection(NULL, $1, yylineno);}
 	;
 
-// 4 MOdule Instantiations	{$$ = NULL;}
+// 4 MOdule Instantiations
 module_instantiation: 
 	vSYMBOL_ID list_of_module_instance ';' 							{$$ = newModuleInstance($1, $2, yylineno);}
 	;
@@ -336,7 +336,7 @@ list_of_module_instance:
 	|module_instance                                                {$$ = newList(ONE_MODULE_INSTANCE, $1);}
 	;
 
-// 4 Function Instantiations	{$$ = NULL;}
+// 4 Function Instantiations
 	function_instantiation: 
 	vSYMBOL_ID function_instance 									{$$ = newFunctionInstance($1, $2, yylineno);}
 	;
