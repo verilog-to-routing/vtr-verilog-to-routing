@@ -333,23 +333,30 @@ void finalize_implicit_memory(implicit_memory *memory)
 	if (!has_port1 || !has_port2)
 		collapse_implicit_memory_to_single_port_ram(memory);
 
-	/*
-	 *  If this hard block is supported, register it globally and mark
-	 *  it as used. (For splitting and BLIF output.)
-	 *
-	 *  If it isn't supported, it will be automagically blown out
-	 *  into soft logic during the partial map.
-	 */
-	ast_node_t *ast_node = node->related_ast_node;
-	char *hard_block_identifier = ast_node->children[0]->types.identifier;
-	t_model *hb_model = find_hard_block(hard_block_identifier);
-	if (hb_model)
+	if (!has_port1 && !has_port2)
 	{
-		hb_model->used = 1;
-		if (!strcmp(hard_block_identifier, SINGLE_PORT_RAM_string))
-			sp_memory_list = insert_in_vptr_list(sp_memory_list, node);
-		else
-			dp_memory_list = insert_in_vptr_list(dp_memory_list, node);
+		warning_message(NETLIST_ERROR, -1, -1, "Implicit memory %s has no ports...", memory->name);
+	}
+	else
+	{
+		/*
+		*  If this hard block is supported, register it globally and mark
+		*  it as used. (For splitting and BLIF output.)
+		*
+		*  If it isn't supported, it will be automagically blown out
+		*  into soft logic during the partial map.
+		*/
+		ast_node_t *ast_node = node->related_ast_node;
+		char *hard_block_identifier = ast_node->children[0]->types.identifier;
+		t_model *hb_model = find_hard_block(hard_block_identifier);
+		if (hb_model)
+		{
+			hb_model->used = 1;
+			if (!strcmp(hard_block_identifier, SINGLE_PORT_RAM_string))
+				sp_memory_list = insert_in_vptr_list(sp_memory_list, node);
+			else
+				dp_memory_list = insert_in_vptr_list(dp_memory_list, node);
+		}
 	}
 }
 
