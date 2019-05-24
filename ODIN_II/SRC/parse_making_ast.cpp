@@ -1191,7 +1191,6 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 		ast_node_t *module_param_list = module_named_instance->children[i]->children[2];
 		char *module_param_name = make_module_param_name(defines_for_module_sc[num_modules-num_instances], module_param_list, module_ref_name);
 		ast_node_t *symbol_node = newSymbolNode(module_param_name, line_number);
-		printf("created: %s\n", module_param_name);
 
 		// if this is a parameterised instantiation
 		if (module_param_list)

@@ -87,7 +87,7 @@ int simplify_ast_module(ast_node_t **ast_module)
 	/* for loop support */
 	unroll_loops(ast_module);
 	/* remove unused node preventing module instantiation */
-	//remove_generate(*ast_module);
+	remove_generate(*ast_module);
 	/* find multiply or divide operation that can be replaced with shift operation */
 	shift_operation(*ast_module);
 
