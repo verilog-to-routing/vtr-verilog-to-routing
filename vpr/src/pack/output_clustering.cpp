@@ -23,6 +23,7 @@ using namespace std;
 #include "atom_netlist.h"
 #include "pack_types.h"
 #include "cluster_router.h"
+#include "pb_type_graph.h"
 #include "output_clustering.h"
 #include "read_xml_arch_file.h"
 #include "vpr_utils.h"
@@ -192,7 +193,7 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 	int i, j, k, m;
 	const t_pb_type * pb_type, *child_pb_type;
 	t_mode * mode = nullptr;
-	int prev_edge, prev_node;
+	int prev_node;
 	int mode_of_edge, port_index, node_index;
 
 	mode_of_edge = UNDEFINED;
@@ -202,6 +203,7 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 	pugi::xml_node block_node = parent_node.append_child("block");
 	block_node.append_attribute("name") = "open";
 	block_node.append_attribute("instance") = vtr::string_fmt("%s[%d]", pb_graph_node->pb_type->name, pb_index).c_str();
+	std::vector<std::string> block_modes;
 
 	if (is_used) {
 		/* Determine mode if applicable */
@@ -210,20 +212,23 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 			if (pb_type->ports[i].type == OUT_PORT) {
 				VTR_ASSERT(!pb_type->ports[i].is_clock);
 				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-					node_index = pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
+					const t_pb_graph_pin * pin  = &pb_graph_node->output_pins[port_index][j];
+					node_index = pin->pin_count_in_cluster;
 					if (pb_type->num_modes > 0 && pb_route.count(node_index) && pb_route[node_index].atom_net_id) {
 						prev_node = pb_route[node_index].driver_pb_pin_id;
-						t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
-						for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
-							VTR_ASSERT(prev_pin->output_edges[prev_edge]->num_output_pins == 1);
-							if(prev_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster == node_index) {
-								break;
+						const t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
+						const t_pb_graph_edge *edge = get_edge_between_pins(prev_pin, pin);
+
+						VTR_ASSERT(edge != nullptr);
+						mode_of_edge = edge->interconnect->parent_mode_index;
+						if (mode != nullptr && &pb_type->modes[mode_of_edge] != mode) {
+							vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+								"Differing modes for block.  Got %s previously and %s for edge %d (interconnect %s).",
+								mode->name, pb_type->modes[mode_of_edge].name,
+								port_index,
+								edge->interconnect->name);
 							}
-						}
-						VTR_ASSERT(prev_edge < prev_pin->num_output_edges);
-						mode_of_edge = prev_pin->output_edges[prev_edge]->interconnect->parent_mode_index;
 						VTR_ASSERT(mode == nullptr || &pb_type->modes[mode_of_edge] == mode);
-						VTR_ASSERT(mode_of_edge == 0); /* for now, unused blocks must always default to use mode 0 */
 						mode = &pb_type->modes[mode_of_edge];
 					}
 				}

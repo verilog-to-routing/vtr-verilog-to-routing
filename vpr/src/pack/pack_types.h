@@ -95,6 +95,7 @@ struct t_lb_type_rr_node_edge {
 /* Describes a routing resource node within a logic cluster_ctx.blocks type */
 struct t_lb_type_rr_node {
 	short capacity;			/* Number of nets that can simultaneously use this node */
+	int num_modes;
 	short *num_fanout;		/* [0..num_modes - 1] Mode dependant fanout */
 	enum e_lb_rr_type type;	/* Type of logic cluster_ctx.blocks resource node */
 
@@ -105,6 +106,7 @@ struct t_lb_type_rr_node {
 
 	t_lb_type_rr_node() {
 		capacity = 0;
+		num_modes = 0;
 		num_fanout = nullptr;
 		type = NUM_LB_RR_TYPES;
 		outedges = nullptr;
@@ -141,7 +143,7 @@ struct t_lb_rr_node_stats {
 
 	t_lb_rr_node_stats() {
 		occ = 0;
-		mode = 0;
+		mode = -1;
 		historical_usage = 0;
 	}
 };
@@ -269,5 +271,17 @@ struct t_lb_router_data {
 		pres_con_fac = 1;
 	}
 };
+
+/* Stores status of mode selection during clustering */
+struct t_mode_selection_status {
+    bool is_mode_conflict = false;
+    bool try_expand_all_modes = false;
+    bool expand_all_modes = false;
+
+    bool is_mode_issue() {
+        return is_mode_conflict || try_expand_all_modes;
+    }
+};
+
 
 #endif

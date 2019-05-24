@@ -3,6 +3,9 @@
 #include "vtr_small_vector.h"
 #include <vector>
 
+namespace vtr {
+
+//Must be delcared in namespace for argument dependent lookup to work with clang
 template<class T>
 bool operator==(const std::vector<T>& lhs, const vtr::small_vector<T>& rhs) {
     if (lhs.size() != rhs.size()) return false;
@@ -12,6 +15,8 @@ bool operator==(const std::vector<T>& lhs, const vtr::small_vector<T>& rhs) {
     }
     return true;
 }
+
+} //namespace
 
 TEST_CASE("Basic", "[vtr_small_vector]") {
 
