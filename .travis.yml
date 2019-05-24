@@ -1,12 +1,12 @@
 language: cpp
 
-#dist: trusty
-sudo: false
+dist: trusty
 addons:
   apt:
     sources:
     - ubuntu-toolchain-r-test # For newer GCC
     - george-edison55-precise-backports # For cmake
+    - llvm-toolchain-trusty-7
     packages:
     - autoconf
     - automake
@@ -40,6 +40,7 @@ addons:
     - valgrind
     - zip
     - qt5-default
+    - clang-format-7
 
 before_install:
  - source .travis/common.sh
