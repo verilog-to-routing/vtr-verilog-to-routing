@@ -103,7 +103,7 @@ printf "Called program with $INPUT
 
 	OPTIONS:
 		-h|--help                       $(_prt_cur_arg off) print this
-		-t|--test < test name >         $(_prt_cur_arg ${_TEST}) Test name is one of ( ${TEST_DIR_LIST}heavy_suite light_suite full_suite vtr_basic vtr_strong pre_commit )
+		-t|--test < test name >         $(_prt_cur_arg ${_TEST}) Test name is one of ( ${TEST_DIR_LIST} heavy_suite light_suite full_suite vtr_basic vtr_strong pre_commit )
 		-j|--nb_of_process < N >        $(_prt_cur_arg ${_NUMBER_OF_PROCESS}) Number of process requested to be used
 		-s|--sim_threads < N >          $(_prt_cur_arg ${_SIM_THREADS}) Use multithreaded simulation using N threads
 		-V|--vectors < N >              $(_prt_cur_arg ${_VECTORS}) Use N vectors to generate per simulation
@@ -121,7 +121,7 @@ printf "Called program with $INPUT
 		-B|--best_coverage_off          $(_prt_cur_arg ${_BEST_COVERAGE_OFF}) Generate N vectors from --vector size batches until best node coverage is achieved
 		-b|--batch_sim                  $(_prt_cur_arg ${_BATCH_SIM}) Use Batch mode multithreaded simulation
 		-p|--perf                       $(_prt_cur_arg ${_USE_PERF}) Use Perf for monitoring execution
-		-f|--force_simulate             $(_prt_cur_arg ${_FORCE_SIM}) Use Perf for monitoring execution
+		-f|--force_simulate             $(_prt_cur_arg ${_FORCE_SIM}) Force the simulation to be executed regardless of the config
 
 "
 }
@@ -687,26 +687,43 @@ LIGHT_LIST=(
 	"syntax"
 )
 
+function run_sim_on_directory() {
+	test_dir=$1
+
+	if [ ! -d ${BENCHMARK_DIR}/${test_dir} ]
+	then
+		echo "${BENCHMARK_DIR}/${test_dir} Not Found! Skipping this test"
+	elif [ ! -f ${BENCHMARK_DIR}/${test_dir}/config.txt ]
+	then
+		echo "no config file found in the directory ${BENCHMARK_DIR}/${test_dir}"
+		echo "please make sure a config.txt exist"
+		config_help
+	else
+		sim ${BENCHMARK_DIR}/${test_dir} $(cat ${BENCHMARK_DIR}/${test_dir}/config.txt)
+	fi
+}
+
 function run_light_suite() {
 	for test_dir in ${LIGHT_LIST[@]}; do
-		sim ${BENCHMARK_DIR}/${test_dir} $(cat ${BENCHMARK_DIR}/${test_dir}/config.txt)
+		run_sim_on_directory ${test_dir}
 	done
 }
 
-function run_vtr_reg() {
-	cd ${VTR_ROOT_DIR}
-	/usr/bin/perl run_reg_test.pl -j ${_NUMBER_OF_PROCESS} $1
-	cd ${ODIN_ROOT_DIR}
-}
 function run_heavy_suite() {
 	for test_dir in ${HEAVY_LIST[@]}; do
-		sim ${BENCHMARK_DIR}/${test_dir} $(cat ${BENCHMARK_DIR}/${test_dir}/config.txt)
+		run_sim_on_directory ${test_dir}
 	done
 }
 
 function run_all() {
 	run_light_suite
 	run_heavy_suite
+}
+
+function run_vtr_reg() {
+	cd ${VTR_ROOT_DIR}
+	/usr/bin/perl run_reg_test.pl -j ${_NUMBER_OF_PROCESS} $1
+	cd ${ODIN_ROOT_DIR}
 }
 
 #########################################################
@@ -727,44 +744,31 @@ fi
 
 init_temp
 echo "Benchmark is: ${_TEST}"
-case "${_TEST}" in
+case ${_TEST} in
 
-	"full_suite")
+	full_suite)
 		run_all
 		;;	
 		
-	"heavy_suite")
+	heavy_suite)
 		run_heavy_suite
 		;;
 
-	"light_suite")
+	light_suite)
 		run_light_suite
 		;;
 
-	"vtr_basic")
-		run_vtr_reg vtr_reg_basic
+	vtr_reg_*)
+		run_vtr_reg ${_TEST}
 		;;
 
-	"vtr_strong")
-		run_vtr_reg vtr_reg_strong
-		;;
-
-	"vtr_valgrind_small")
-		run_vtr_reg vtr_reg_valgrind_small
-		;;
-
-	"vtr_valgrind")
-		run_vtr_reg vtr_reg_valgrind
-		;;
-
-	"pre_commit")
+	pre_commit)
 		run_all
 		run_vtr_reg vtr_reg_basic
-		run_vtr_reg vtr_reg_strong
 		run_vtr_reg vtr_reg_valgrind_small
 		;;
 
-	"pre_merge")
+	pre_merge)
 		run_all
 		run_vtr_reg vtr_reg_basic
 		run_vtr_reg vtr_reg_strong
