@@ -1,0 +1,13 @@
+language: minimal
+
+dist: xenial
+
+os: linux
+addons:
+  apt:
+    packages:
+      - clang-5.0
+      - clang-format-5.0
+
+script:
+        ./.github/travis/check-format.py
