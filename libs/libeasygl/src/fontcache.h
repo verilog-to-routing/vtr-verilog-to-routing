@@ -17,24 +17,24 @@
 
 // Set X11 by default, if neither NO_GRAPHICS NOR WIN32 are defined
 #ifndef NO_GRAPHICS
-#ifndef WIN32
-#ifndef X11
-#define X11
-#endif
-#endif // !WIN32
-#endif // ~NO_GRAPHICS
+#    ifndef WIN32
+#        ifndef X11
+#            define X11
+#        endif
+#    endif // !WIN32
+#endif     // ~NO_GRAPHICS
 
 #ifdef X11
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xos.h>
-#include <X11/Xatom.h>
-#include <X11/Xft/Xft.h>
+#    include <X11/Xlib.h>
+#    include <X11/Xutil.h>
+#    include <X11/Xos.h>
+#    include <X11/Xatom.h>
+#    include <X11/Xft/Xft.h>
 #endif
 
 #ifdef WIN32
-#include <windows.h>
-#include <windowsx.h>
+#    include <windows.h>
+#    include <windowsx.h>
 #endif
 
 /**
@@ -89,13 +89,12 @@ typedef void* font_ptr;
  * a tremendous number of possible font rotations.
  */
 class FontCache {
-public:
-
+  public:
     FontCache()
-    : order_zeros()
-    , descriptor2font_zeros()
-    , order_rotated()
-    , descriptor2font_rotated() {
+        : order_zeros()
+        , descriptor2font_zeros()
+        , order_rotated()
+        , descriptor2font_rotated() {
     }
 
     /**
@@ -111,11 +110,10 @@ public:
      */
     void clear();
 
-private:
+  private:
     typedef std::pair<size_t, int> font_descriptor;
 
     struct fontdesc_hasher {
-
         inline std::size_t operator()(const font_descriptor& v) const {
             std::hash<size_t> sizet_hasher;
             std::hash<int> int_hasher;
@@ -132,8 +130,11 @@ private:
     // looks/creates in the given map and queue.
     template<class queue_type, class map_type>
     static font_ptr get_font_info(
-            size_t pointsize, int degrees,
-            queue_type& orderqueue, map_type& descr2font_map, size_t max_size);
+        size_t pointsize,
+        int degrees,
+        queue_type& orderqueue,
+        map_type& descr2font_map,
+        size_t max_size);
 
     typedef std::unordered_map<font_descriptor, font_ptr, fontdesc_hasher> font_lookup;
     typedef std::deque<font_descriptor> font_queue;

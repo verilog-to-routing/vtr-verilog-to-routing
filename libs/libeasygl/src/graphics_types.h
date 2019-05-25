@@ -13,7 +13,7 @@
  * An (x,y) point data type.
  */
 class t_point {
-public:
+  public:
     float x = 0;
     float y = 0;
 
@@ -43,18 +43,16 @@ public:
     t_point();
     t_point(const t_point& src);
     t_point(float x, float y);
-
 };
 
 t_point operator*(float lhs, const t_point& rhs);
-
 
 /**
  * Represents a rectangle from x=left to x=right and from y=bottom to y=top.
  * Can be used in some graphics calls, and as a bounding box.
  */
 class t_bound_box {
-public:
+  public:
     /**
      * These return their respective edge/point's location
      */
@@ -128,19 +126,19 @@ public:
     t_bound_box(float left, float bottom, float right, float top);
     t_bound_box(const t_point& bottomleft, const t_point& topright);
     t_bound_box(const t_point& bottomleft, float width, float height);
-private:
+
+  private:
     t_point bottomleft;
     t_point topright;
 };
-
 
 /**
  * A datatype that holds an RGB (red,green,blue) triplet; it is used in this
  * graphics library for specifying and holding colours.
  */
 class t_color {
-public:
-    uint_fast8_t red = 0;   // 8-bits per colour component
+  public:
+    uint_fast8_t red = 0; // 8-bits per colour component
     uint_fast8_t green = 0;
     uint_fast8_t blue = 0;
     uint_fast8_t alpha = 255;
@@ -163,8 +161,7 @@ public:
     bool operator==(color_types rhs) const;
     bool operator!=(color_types rhs) const;
 
-    static const std::array<t_color,NUM_COLOR> predef_colors;
+    static const std::array<t_color, NUM_COLOR> predef_colors;
 };
 
 #endif /* GRAPHICS_TYPES_H */
-

@@ -21,18 +21,17 @@ std::string format_tatum_error(const tatum::Error& error) {
             msg += "Netlist Pin: '" + atom_ctx.nlist.pin_name(pin) + "', ";
 
             const t_pb_graph_pin* gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(pin);
-            if(gpin) {
+            if (gpin) {
                 msg += "Graph node pin: '" + gpin->to_string() + "', ";
             }
 
             AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
-            if(blk) {
-                msg += "Netlist Block: '" +
-                    atom_ctx.nlist.block_name(blk) + "', ";
+            if (blk) {
+                msg += "Netlist Block: '" + atom_ctx.nlist.block_name(blk) + "', ";
                 ClusterBlockId clb_idx = atom_ctx.lookup.atom_clb(blk);
-                if(clb_idx) {
-                    const t_pb *pb = cluster_ctx.clb_nlist.block_pb(clb_idx);
-                    if(pb) {
+                if (clb_idx) {
+                    const t_pb* pb = cluster_ctx.clb_nlist.block_pb(clb_idx);
+                    if (pb) {
                         msg += "Cluster: '" + std::string(pb->name) + "', ";
                     }
                 }

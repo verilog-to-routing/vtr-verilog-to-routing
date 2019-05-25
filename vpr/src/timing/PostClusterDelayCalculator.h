@@ -16,9 +16,8 @@
 class VprTimingGraphResolver; //Forward declaration
 
 class PostClusterDelayCalculator : public tatum::DelayCalculator {
-
-public:
-    PostClusterDelayCalculator(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, vtr::vector<ClusterNetId, float *> &net_delay);
+  public:
+    PostClusterDelayCalculator(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, vtr::vector<ClusterNetId, float*>& net_delay);
 
     tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
     tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
@@ -31,7 +30,7 @@ public:
     void set_tsu_margin_relative(float val);
     void set_tsu_margin_absolute(float val);
 
-private:
+  private:
     friend VprTimingGraphResolver;
 
     //Returns the generic edge delay
@@ -44,7 +43,7 @@ private:
     tatum::Time atom_setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
     tatum::Time atom_hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
 
-	float inter_cluster_delay(ClusterNetId net_id, const int driver_net_pin_index, const int sink_net_pin_index) const;
+    float inter_cluster_delay(ClusterNetId net_id, const int driver_net_pin_index, const int sink_net_pin_index) const;
 
     tatum::Time get_cached_delay(tatum::EdgeId edge, DelayType delay_type) const;
     void set_cached_delay(tatum::EdgeId edge, DelayType delay_type, tatum::Time delay) const;
@@ -61,12 +60,13 @@ private:
     tatum::Time get_cached_hold_time(tatum::EdgeId edge) const;
     void set_cached_hold_time(tatum::EdgeId edge, tatum::Time hold) const;
 
-    std::pair<ClusterPinId,ClusterPinId> get_cached_pins(tatum::EdgeId edge, DelayType delay_type) const;
+    std::pair<ClusterPinId, ClusterPinId> get_cached_pins(tatum::EdgeId edge, DelayType delay_type) const;
     void set_cached_pins(tatum::EdgeId edge, DelayType delay_type, ClusterPinId src_pin, ClusterPinId sink_pin) const;
-private:
+
+  private:
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
-	vtr::vector<ClusterNetId, float *> net_delay_;
+    vtr::vector<ClusterNetId, float*> net_delay_;
 
     ClbDelayCalc clb_delay_calc_;
     AtomDelayCalc atom_delay_calc_;
@@ -74,14 +74,14 @@ private:
     float tsu_margin_rel_ = 1.0;
     float tsu_margin_abs_ = 0.0e-12;
 
-    mutable vtr::vector<tatum::EdgeId,tatum::Time> edge_min_delay_cache_;
-    mutable vtr::vector<tatum::EdgeId,tatum::Time> edge_max_delay_cache_;
-    mutable vtr::vector<tatum::EdgeId,tatum::Time> driver_clb_min_delay_cache_;
-    mutable vtr::vector<tatum::EdgeId,tatum::Time> driver_clb_max_delay_cache_;
-    mutable vtr::vector<tatum::EdgeId,tatum::Time> sink_clb_min_delay_cache_;
-    mutable vtr::vector<tatum::EdgeId,tatum::Time> sink_clb_max_delay_cache_;
-	mutable vtr::vector<tatum::EdgeId,std::pair<ClusterPinId,ClusterPinId>> pin_cache_min_;
-	mutable vtr::vector<tatum::EdgeId,std::pair<ClusterPinId,ClusterPinId>> pin_cache_max_;
+    mutable vtr::vector<tatum::EdgeId, tatum::Time> edge_min_delay_cache_;
+    mutable vtr::vector<tatum::EdgeId, tatum::Time> edge_max_delay_cache_;
+    mutable vtr::vector<tatum::EdgeId, tatum::Time> driver_clb_min_delay_cache_;
+    mutable vtr::vector<tatum::EdgeId, tatum::Time> driver_clb_max_delay_cache_;
+    mutable vtr::vector<tatum::EdgeId, tatum::Time> sink_clb_min_delay_cache_;
+    mutable vtr::vector<tatum::EdgeId, tatum::Time> sink_clb_max_delay_cache_;
+    mutable vtr::vector<tatum::EdgeId, std::pair<ClusterPinId, ClusterPinId>> pin_cache_min_;
+    mutable vtr::vector<tatum::EdgeId, std::pair<ClusterPinId, ClusterPinId>> pin_cache_max_;
 };
 
 #include "PostClusterDelayCalculator.tpp"

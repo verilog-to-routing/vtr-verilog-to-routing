@@ -33,7 +33,7 @@ t_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) const {
 ClusterNetId ClusteredNetlist::block_net(const ClusterBlockId blk_id, const int phys_pin_index) const {
     auto pin_id = block_pin(blk_id, phys_pin_index);
 
-    if(pin_id) {
+    if (pin_id) {
         return pin_net(pin_id);
     }
 
@@ -59,14 +59,14 @@ ClusterPinId ClusteredNetlist::block_pin(const ClusterBlockId blk, const int phy
 
 bool ClusteredNetlist::block_contains_primary_input(const ClusterBlockId blk) const {
     const t_pb* pb = block_pb(blk);
-    const t_pb* primary_input_pb =  pb->find_pb_for_model(".input");
+    const t_pb* primary_input_pb = pb->find_pb_for_model(".input");
     return primary_input_pb != nullptr;
 }
 
 //Returns true if the specified block contains a primary output (e.g. BLIF .output primitive)
 bool ClusteredNetlist::block_contains_primary_output(const ClusterBlockId blk) const {
     const t_pb* pb = block_pb(blk);
-    const t_pb* primary_output_pb =  pb->find_pb_for_model(".output");
+    const t_pb* primary_output_pb = pb->find_pb_for_model(".output");
     return primary_output_pb != nullptr;
 }
 
@@ -113,7 +113,7 @@ bool ClusteredNetlist::net_is_global(const ClusterNetId id) const {
  * Mutators
  *
  */
-ClusterBlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type_ptr type) {
+ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_type_ptr type) {
     ClusterBlockId blk_id = find_block(name);
     if (blk_id == ClusterBlockId::INVALID()) {
         blk_id = Netlist::create_block(name);
@@ -141,14 +141,12 @@ void ClusteredNetlist::set_pin_physical_index(const ClusterPinId pin, const int 
 
     int old_phys_pin_index = pin_physical_index(pin);
 
-
     //Invalidate old mapping
     block_logical_pins_[blk][old_phys_pin_index] = ClusterPinId::INVALID();
 
     //Update mappings
     pin_physical_index_[pin] = phys_pin_index;
     block_logical_pins_[blk][phys_pin_index] = pin;
-
 }
 
 ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType type) {
@@ -231,7 +229,6 @@ void ClusteredNetlist::remove_net_impl(const ClusterNetId net_id) {
     VTR_ASSERT(net_id);
 }
 
-
 void ClusteredNetlist::clean_blocks_impl(const vtr::vector_map<ClusterBlockId, ClusterBlockId>& block_id_map) {
     //Update all the block values
     block_pbs_ = clean_and_reorder_values(block_pbs_, block_id_map);
@@ -293,12 +290,11 @@ void ClusteredNetlist::shrink_to_fit_impl() {
     net_is_global_.shrink_to_fit();
 }
 
-
 /*
-*
-* Sanity Checks
-*
-*/
+ *
+ * Sanity Checks
+ *
+ */
 bool ClusteredNetlist::validate_block_sizes_impl(size_t num_blocks) const {
     if (block_pbs_.size() != num_blocks
         || block_types_.size() != num_blocks

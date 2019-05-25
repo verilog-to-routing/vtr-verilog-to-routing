@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 #include <cstdint>
-#include <cfloat>  // For FLT_MAX
+#include <cfloat> // For FLT_MAX
 
 #include "easygl_constants.h"
 #include "graphics_types.h"
@@ -11,12 +11,12 @@
 
 // Set X11 by default, if neither NO_GRAPHICS nor WIN32 are defined
 #ifndef NO_GRAPHICS
-#ifndef WIN32
-#ifndef X11
-#define X11
-#endif
-#endif // !WIN32
-#endif // !NO_GRAPHICS
+#    ifndef WIN32
+#        ifndef X11
+#            define X11
+#        endif
+#    endif // !WIN32
+#endif     // !NO_GRAPHICS
 
 #define PI 3.141592654
 
@@ -46,17 +46,17 @@
  * structure that stores which buttons was pressed and if Shift or Ctrl was
  * held down, etc.
  */
-void event_loop(void (*act_on_mousebutton) (float x, float y, t_event_buttonPressed button_info),
-        void (*act_on_mousemove) (float x, float y),
-        void (*act_on_keypress) (char key_pressed, int keysym),
-        void (*drawscreen) ());
+void event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed button_info),
+                void (*act_on_mousemove)(float x, float y),
+                void (*act_on_keypress)(char key_pressed, int keysym),
+                void (*drawscreen)());
 
 /* Opens up the graphics; the window will have the UTF-8 string window_name
  * in its title bar and have the specified background colour.
  */
 void init_graphics(const std::string& window_name, int cindex_background);
 void init_graphics(const std::string& window_name, const t_color& background);
-void change_graphics_background(const t_color& background);	// <Addition/Mod: Charles>
+void change_graphics_background(const t_color& background); // <Addition/Mod: Charles>
 
 /* Sets world coordinates of the graphics window so that the
  * lower-left corner of the screen has world coordinate (xl, yb) and the
@@ -72,7 +72,6 @@ void change_graphics_background(const t_color& background);	// <Addition/Mod: Ch
  */
 void set_visible_world(float xl, float yb, float xr, float yt);
 void set_visible_world(const t_bound_box& bounds);
-
 
 /**
  * Returns a rectangle with the bounds of the drawn world -- i.e. what are
@@ -90,10 +89,8 @@ t_bound_box get_visible_world();
  */
 t_bound_box get_visible_screen();
 
-
 /* Closes the graphics windows, frees all its memory and so on. */
 void close_graphics();
-
 
 /************************* USER INTERACTION FUNCTIONS ******************/
 
@@ -109,13 +106,12 @@ void update_message(const std::string& msg);
  * an argument; this argument is set to the drawscreen routine
  * as passed into the event loop.
  */
-void create_button(const char *prev_button_text, const char *button_text,
-        void (*button_func) (void (*drawscreen) ()));
+void create_button(const char* prev_button_text, const char* button_text, void (*button_func)(void (*drawscreen)()));
 
 /* Destroys the button with the given text; i.e. removes it from
  * the display.
  */
-void destroy_button(const char *button_text);
+void destroy_button(const char* button_text);
 
 /* Control what buttons are active (default:  all enabled) and
  * whether mouse movements and keyboard presses are sent to callback
@@ -219,7 +215,6 @@ void settextattrs(int pointsize, int degrees);
 void drawline(float x1, float y1, float x2, float y2);
 void drawline(const t_point& p1, const t_point& p2);
 
-
 /* Draws the rectangle with diagonally-opposite corners
  * at (x1, y1) and (x2, y2) or bottomleft and upperright points, or
  * the bound_box rect. All 3 functions are equivalent (use whichever is most
@@ -229,39 +224,41 @@ void drawrect(float x1, float y1, float x2, float y2);
 void drawrect(const t_point& bottomleft, const t_point& upperright);
 void drawrect(const t_bound_box& rect);
 
-
-
 /* Draws a filled rectangle with the specified corners. */
 void fillrect(float x1, float y1, float x2, float y2);
 void fillrect(const t_point& bottomleft, const t_point& upperright);
 void fillrect(const t_bound_box& rect);
 
-
-
 /* Draws a filled polygon with the specified points as its boundary.
  * The first and last points passed in are connected to close the polygon.
  */
-void fillpoly(t_point *points, int npoints);
+void fillpoly(t_point* points, int npoints);
 
 /* Draw or fill a circular arc or elliptical arc.  Angles in degrees.
  * startang is measured from positive x-axis of Window.
  * A positive angextent means a counterclockwise arc; a negative
  * angextent means clockwise.
  */
-void drawarc(float xcen, float ycen, float rad, float startang,
-        float angextent);
+void drawarc(float xcen, float ycen, float rad, float startang, float angextent);
 void fillarc(const t_point& center, float rad, float startang, float angextent);
-void fillarc(float xcen, float ycen, float rad, float startang,
-        float angextent);
+void fillarc(float xcen, float ycen, float rad, float startang, float angextent);
 
 void drawellipticarc(
-        float xc, float yc, float radx, float rady, float startang, float angextent);
+    float xc,
+    float yc,
+    float radx,
+    float rady,
+    float startang,
+    float angextent);
 void drawellipticarc(
-        const t_point& center, float radx, float rady, float startang, float angextent);
+    const t_point& center,
+    float radx,
+    float rady,
+    float startang,
+    float angextent);
 
 void fillellipticarc(float xc, float yc, float radx, float rady, float startang, float angextent);
 void fillellipticarc(const t_point& center, float radx, float rady, float startang, float angextent);
-
 
 /*
  * These functions all draw UTF-8 text within some sort of bounding box;
@@ -308,11 +305,11 @@ void fillellipticarc(const t_point& center, float radx, float rady, float starta
  * in drawtext(..) in graphics.c .
  */
 
-void drawtext(float xc, float yc, const std::string& text, float boundx=FLT_MAX, float boundy=FLT_MAX);
-float gettextwidth(const std::string& text);	// In the coodirnate system current drawing at // <Addition/Mod: Charles>
-void drawtextleftaligned(float xc, float yc, const std::string& text, float boundx = FLT_MAX, float boundy = FLT_MAX);	// <Addition/Mod: Charles>
-void drawtextrightaligned(float xc, float yc, const std::string& text, float boundx = FLT_MAX, float boundy = FLT_MAX);	// <Addition/Mod: Charles>
-void drawtext(const t_point& text_center, const std::string& text, float boundx=FLT_MAX, float boundy=FLT_MAX);
+void drawtext(float xc, float yc, const std::string& text, float boundx = FLT_MAX, float boundy = FLT_MAX);
+float gettextwidth(const std::string& text);                                                                            // In the coodirnate system current drawing at // <Addition/Mod: Charles>
+void drawtextleftaligned(float xc, float yc, const std::string& text, float boundx = FLT_MAX, float boundy = FLT_MAX);  // <Addition/Mod: Charles>
+void drawtextrightaligned(float xc, float yc, const std::string& text, float boundx = FLT_MAX, float boundy = FLT_MAX); // <Addition/Mod: Charles>
+void drawtext(const t_point& text_center, const std::string& text, float boundx = FLT_MAX, float boundy = FLT_MAX);
 void drawtext(const t_point& text_center, const std::string& text, const t_bound_box& bounds);
 void drawtext(const t_point& text_center, const std::string& text, const t_bound_box& bounds, float tolerance);
 void drawtext_in(const t_bound_box& bbox, const std::string& text);
@@ -339,7 +336,7 @@ void set_draw_mode(enum e_draw_mode draw_mode);
 /**
  * Change the text on a button. Both strings are UTF-8.
  */
-void change_button_text(const char *button_text, const char *new_button_text);
+void change_button_text(const char* button_text, const char* new_button_text);
 
 /* Normal users shouldn't have to use draw_message.  Should only be
  * useful if using non-interactive graphics and you want to redraw
@@ -416,12 +413,10 @@ bool LOD_min_dim_test(float dim_threshold);
  */
 bool LOD_screen_area_test(t_bound_box test, float screen_area_threshold);
 
-
 /**
  * returns the screen coordinates (i.e. pixel location) of the world coordinate 'point'
  */
 t_point world_to_scrn(const t_point& point);
-
 
 /**
  * returns the screen coordinates (i.e. pixel locations) of the world coordinate bounding box
@@ -454,7 +449,7 @@ t_bound_box scrn_to_world(const t_bound_box& box);
  *
  * Warning: not all UTF-8 filenames will work on Windows (this uses fopen)
  */
-int init_postscript(const char *fname); /* Returns 1 if successful */
+int init_postscript(const char* fname); /* Returns 1 if successful */
 
 /* Closes file and directs output to screen again.       */
 void close_postscript();
@@ -477,10 +472,8 @@ typedef struct {
     int top_width, top_height;
 } t_report;
 
-
 /* For debugging only.  Get window size etc. */
 void get_report_structure(t_report*);
-
 
 /**************** Extra functions available only in WIN32 (and Cygwin). *******/
 #if defined(WIN32) || defined(CYGWIN)
@@ -491,8 +484,8 @@ void get_report_structure(t_report*);
 /* Draw beizer curve. Currently not used, but saving for possible use
  * in the future.
  */
-void win32_drawcurve(t_point *points, int npoints);
-void win32_fillcurve(t_point *points, int npoints);
+void win32_drawcurve(t_point* points, int npoints);
+void win32_fillcurve(t_point* points, int npoints);
 
 /* Error message reporter */
 void WIN32_DELETE_ERROR();

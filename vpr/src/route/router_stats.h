@@ -6,4 +6,3 @@ struct RouterStats {
     size_t heap_pushes = 0;
     size_t heap_pops = 0;
 };
-

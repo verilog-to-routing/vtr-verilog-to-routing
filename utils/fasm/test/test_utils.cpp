@@ -5,8 +5,8 @@
 namespace fasm {
 namespace {
 
-using Catch::Matchers::Equals;
 using Catch::Matchers::Contains;
+using Catch::Matchers::Equals;
 
 TEST_CASE("parse_names", "[fasm]") {
     std::string name;

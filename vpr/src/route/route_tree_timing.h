@@ -12,17 +12,19 @@ bool alloc_route_tree_timing_structs(bool exists_ok = false);
 
 void free_route_tree_timing_structs();
 
-t_rt_node *init_route_tree_to_source(ClusterNetId inet);
+t_rt_node* init_route_tree_to_source(ClusterNetId inet);
 
-void free_route_tree(t_rt_node * rt_node);
-void print_route_tree(const t_rt_node* rt_node, int depth=0);
+void free_route_tree(t_rt_node* rt_node);
+void print_route_tree(const t_rt_node* rt_node, int depth = 0);
 
-t_rt_node *update_route_tree(t_heap *hptr, SpatialRouteTreeLookup* spatial_rt_lookup);
+t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lookup);
 
-void update_net_delays_from_route_tree(float *net_delay,
-		const t_rt_node* const * rt_node_of_sink, ClusterNetId inet);
+void update_net_delays_from_route_tree(float* net_delay,
+                                       const t_rt_node* const* rt_node_of_sink,
+                                       ClusterNetId inet);
 void update_remaining_net_delays_from_route_tree(float* net_delay,
-		const t_rt_node* const * rt_node_of_sink, const std::vector<int>& remaining_sinks);
+                                                 const t_rt_node* const* rt_node_of_sink,
+                                                 const std::vector<int>& remaining_sinks);
 
 void load_route_tree_Tdel(t_rt_node* rt_root, float Tarrival);
 void load_route_tree_rr_route_inf(t_rt_node* root);

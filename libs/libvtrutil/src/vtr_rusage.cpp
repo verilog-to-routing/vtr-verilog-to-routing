@@ -1,8 +1,8 @@
 #include "vtr_rusage.h"
 
 #ifdef __unix__
-# include <sys/time.h>
-# include <sys/resource.h>
+#    include <sys/time.h>
+#    include <sys/resource.h>
 #endif
 
 namespace vtr {
@@ -26,4 +26,4 @@ size_t get_max_rss() {
     return max_rss;
 }
 
-} //namespace
+} // namespace vtr

@@ -1,7 +1,7 @@
 #pragma once
 /* optional profiling for developers on the breakdown of time spent and other quantities
-   profiling mostly focuses on per-fanout, but also has per-type (SINK, IPIN, ...) and
-   per-criticality */
+ * profiling mostly focuses on per-fanout, but also has per-type (SINK, IPIN, ...) and
+ * per-criticality */
 
 //Uncomment to enable profiling
 //#define PROFILE
@@ -24,7 +24,6 @@ void net_rebuild_end(unsigned net_fanout, unsigned sinks_left_to_route);
 
 void net_fanout_start();
 void net_fanout_end(unsigned net_fanout);
-
 
 // analysis functions for printing out the profiling data for an iteration
 void congestion_analysis();

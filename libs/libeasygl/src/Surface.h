@@ -14,26 +14,25 @@ class SurfaceImpl;
 // data representing the surface only when the last copy is destroyed.
 
 class Surface {
-    public:
-        Surface();
-        Surface(const char* filePath);
-        ~Surface();
-        Surface& operator=(Surface rhs); // assignment operator
-        Surface(const Surface& surface);
+  public:
+    Surface();
+    Surface(const char* filePath);
+    ~Surface();
+    Surface& operator=(Surface rhs); // assignment operator
+    Surface(const Surface& surface);
 
-        void setSurface(const char* filePath);
+    void setSurface(const char* filePath);
 
-    private:
-        //Requires access to the underlying cairo surface object
-        friend void draw_surface(const Surface& surface, float x, float y);
+  private:
+    //Requires access to the underlying cairo surface object
+    friend void draw_surface(const Surface& surface, float x, float y);
 
-        friend void swap(Surface& lhs, Surface& rhs);
+    friend void swap(Surface& lhs, Surface& rhs);
 
-
-        //We use the PIMPL idiom to avoid the main graphics.h
-        //interface becoming dependant on cario headers, which
-        //may not be availabe if graphics is disabled
-        std::unique_ptr<SurfaceImpl> impl_;
+    //We use the PIMPL idiom to avoid the main graphics.h
+    //interface becoming dependant on cario headers, which
+    //may not be availabe if graphics is disabled
+    std::unique_ptr<SurfaceImpl> impl_;
 };
 
 #endif

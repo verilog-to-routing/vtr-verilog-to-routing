@@ -5,7 +5,7 @@
 using namespace std;
 
 // Predefined colours
-const std::array<t_color,NUM_COLOR> t_color::predef_colors = {
+const std::array<t_color, NUM_COLOR> t_color::predef_colors = {
     t_color(0xFF, 0xFF, 0xFF), // "White"
     t_color(0x00, 0x00, 0x00), // "Black"
 
@@ -161,7 +161,6 @@ const std::array<t_color,NUM_COLOR> t_color::predef_colors = {
     t_color(0x9A, 0xCD, 0x32), // "YellowGreen"
 };
 
-
 /****************** begin definition of data structure members *********************/
 
 /******************************************
@@ -215,7 +214,9 @@ t_point::t_point() = default;
 
 t_point::t_point(const t_point&) = default;
 
-t_point::t_point(float _x, float _y) : x(_x), y(_y) {
+t_point::t_point(float _x, float _y)
+    : x(_x)
+    , y(_y) {
 }
 
 /******************************************
@@ -344,24 +345,29 @@ t_bound_box& t_bound_box::operator=(const t_bound_box& src) {
     return *this;
 }
 
-t_bound_box::t_bound_box() :
-bottomleft(), topright() {
+t_bound_box::t_bound_box()
+    : bottomleft()
+    , topright() {
 }
 
-t_bound_box::t_bound_box(const t_bound_box& src) :
-bottomleft(src.bottom_left()), topright(src.top_right()) {
+t_bound_box::t_bound_box(const t_bound_box& src)
+    : bottomleft(src.bottom_left())
+    , topright(src.top_right()) {
 }
 
-t_bound_box::t_bound_box(float _left, float _bottom, float _right, float _top) :
-bottomleft(_left, _bottom), topright(_right, _top) {
+t_bound_box::t_bound_box(float _left, float _bottom, float _right, float _top)
+    : bottomleft(_left, _bottom)
+    , topright(_right, _top) {
 }
 
-t_bound_box::t_bound_box(const t_point& _bottomleft, const t_point& _topright) :
-bottomleft(_bottomleft), topright(_topright) {
+t_bound_box::t_bound_box(const t_point& _bottomleft, const t_point& _topright)
+    : bottomleft(_bottomleft)
+    , topright(_topright) {
 }
 
-t_bound_box::t_bound_box(const t_point& _bottomleft, float width, float height) :
-bottomleft(_bottomleft), topright(_bottomleft) {
+t_bound_box::t_bound_box(const t_point& _bottomleft, float width, float height)
+    : bottomleft(_bottomleft)
+    , topright(_bottomleft) {
     topright.offset(width, height);
 }
 
@@ -369,12 +375,11 @@ bottomleft(_bottomleft), topright(_bottomleft) {
  * begin t_color function definitions *
  ******************************************/
 
-t_color::t_color(uint_fast8_t r, uint_fast8_t g, uint_fast8_t b, uint_fast8_t a) :
-        red(r),
-        green(g),
-        blue(b),
-        alpha(a)
-{}
+t_color::t_color(uint_fast8_t r, uint_fast8_t g, uint_fast8_t b, uint_fast8_t a)
+    : red(r)
+    , green(g)
+    , blue(b)
+    , alpha(a) {}
 
 t_color::t_color(const t_color&) = default;
 
@@ -386,15 +391,14 @@ t_color::t_color(color_types src) {
 
 bool t_color::operator==(const t_color& rhs) const {
     return red == rhs.red
-        && green == rhs.green
-        && blue == rhs.blue
-        && alpha == rhs.alpha;
+           && green == rhs.green
+           && blue == rhs.blue
+           && alpha == rhs.alpha;
 }
 
 bool t_color::operator!=(const t_color& rhs) const {
     return !(*this == rhs);
 }
-
 
 #ifndef NO_GRAPHICS
 

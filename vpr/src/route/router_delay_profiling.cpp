@@ -9,9 +9,7 @@
 
 static t_rt_node* setup_routing_resources_no_net(int source_node);
 
-bool calculate_delay(int source_node, int sink_node,
-        const t_router_opts& router_opts, float *net_delay) {
-
+bool calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -37,7 +35,6 @@ bool calculate_delay(int source_node, int sink_node,
     cost_params.bend_cost = router_opts.bend_cost;
 
     route_budgets budgeting_inf;
-
 
     init_heap(device_ctx.grid);
 
@@ -67,7 +64,6 @@ bool calculate_delay(int source_node, int sink_node,
     return found_path;
 }
 
-
 //Returns the shortest path delay from src_node to all RR nodes in the RR graph, or NaN if no path exists
 std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -93,23 +89,22 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
     init_heap(device_ctx.grid);
 
     std::vector<t_heap> shortest_paths = timing_driven_find_all_shortest_paths_from_route_tree(rt_root,
-                                                                                                cost_params,
-                                                                                                bounding_box,
-                                                                                                modified_rr_node_inf,
-                                                                                                router_stats);
+                                                                                               cost_params,
+                                                                                               bounding_box,
+                                                                                               modified_rr_node_inf,
+                                                                                               router_stats);
 
     free_route_tree(rt_root);
 
     VTR_ASSERT(shortest_paths.size() == device_ctx.rr_nodes.size());
-    for (int sink_rr_node = 0; sink_rr_node < (int) device_ctx.rr_nodes.size(); ++sink_rr_node) {
-
+    for (int sink_rr_node = 0; sink_rr_node < (int)device_ctx.rr_nodes.size(); ++sink_rr_node) {
         if (sink_rr_node == src_rr_node) {
             path_delays_to[sink_rr_node] = 0.;
         } else {
             if (shortest_paths[sink_rr_node].index == OPEN) continue;
 
             VTR_ASSERT(shortest_paths[sink_rr_node].index == sink_rr_node);
-            
+
             //Build the routing tree to get the delay
             rt_root = setup_routing_resources_no_net(src_rr_node);
             t_rt_node* rt_node_of_sink = update_route_tree(&shortest_paths[sink_rr_node], nullptr);
@@ -154,7 +149,6 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
 }
 
 static t_rt_node* setup_routing_resources_no_net(int source_node) {
-
     /* Build and return a partial route tree from the legal connections from last iteration.
      * along the way do:
      * 	update pathfinder costs to be accurate to the partial route tree
@@ -169,12 +163,12 @@ static t_rt_node* setup_routing_resources_no_net(int source_node) {
 }
 
 void alloc_routing_structs(
-        t_chan_width chan_width,
-        t_router_opts router_opts,
-        t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
-        const t_direct_inf *directs,
-        const int num_directs) {
-
+    t_chan_width chan_width,
+    t_router_opts router_opts,
+    t_det_routing_arch* det_routing_arch,
+    std::vector<t_segment_inf>& segment_inf,
+    const t_direct_inf* directs,
+    const int num_directs) {
     int warnings;
     t_graph_type graph_type;
 
@@ -183,24 +177,23 @@ void alloc_routing_structs(
     if (router_opts.route_type == GLOBAL) {
         graph_type = GRAPH_GLOBAL;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ?
-                GRAPH_BIDIR : GRAPH_UNIDIR);
+        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
     create_rr_graph(graph_type,
-            device_ctx.num_block_types, device_ctx.block_types,
-            device_ctx.grid,
-            chan_width,
-            device_ctx.num_arch_switches,
-            det_routing_arch,
-            segment_inf,
-            router_opts.base_cost_type,
-            router_opts.trim_empty_channels,
-            router_opts.trim_obs_channels,
-            router_opts.clock_modeling,
-            router_opts.lookahead_type,
-            directs, num_directs,
-            &warnings);
+                    device_ctx.num_block_types, device_ctx.block_types,
+                    device_ctx.grid,
+                    chan_width,
+                    device_ctx.num_arch_switches,
+                    det_routing_arch,
+                    segment_inf,
+                    router_opts.base_cost_type,
+                    router_opts.trim_empty_channels,
+                    router_opts.trim_obs_channels,
+                    router_opts.clock_modeling,
+                    router_opts.lookahead_type,
+                    directs, num_directs,
+                    &warnings);
 
     alloc_and_load_rr_node_route_structs();
 
@@ -208,10 +201,8 @@ void alloc_routing_structs(
 }
 
 void free_routing_structs() {
-
     free_route_structs();
     free_trace_structs();
 
     free_route_tree_timing_structs();
 }
-

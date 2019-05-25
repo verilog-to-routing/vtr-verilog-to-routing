@@ -21,7 +21,7 @@ constexpr float DEFAULT_ARROW_SIZE = 0.3;
 // used for level of detail culling
 #define MIN_VISIBLE_AREA 3.0
 
-t_draw_coords *get_draw_coords_vars();
-t_draw_state *get_draw_state_vars();
+t_draw_coords* get_draw_coords_vars();
+t_draw_state* get_draw_state_vars();
 
 #endif

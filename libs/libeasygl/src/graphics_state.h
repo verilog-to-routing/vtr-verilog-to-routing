@@ -21,26 +21,26 @@
 
 // Set X11 by default, if neither NO_GRAPHICS nor WIN32 are defined
 #ifndef NO_GRAPHICS
-#ifndef WIN32
-#ifndef X11
-#define X11
-#endif
-#endif // !WIN32
-#endif // !NO_GRAPHICS
+#    ifndef WIN32
+#        ifndef X11
+#            define X11
+#        endif
+#    endif // !WIN32
+#endif     // !NO_GRAPHICS
 
 #ifdef X11
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xos.h>
-#include <X11/Xatom.h>
-#include <X11/Xft/Xft.h>
-#include <cairo.h>
-#include <cairo-xlib.h>
+#    include <X11/Xlib.h>
+#    include <X11/Xutil.h>
+#    include <X11/Xos.h>
+#    include <X11/Xatom.h>
+#    include <X11/Xft/Xft.h>
+#    include <cairo.h>
+#    include <cairo-xlib.h>
 #endif
 
 #if defined(WIN32) || defined(CYGWIN)
-#include <windows.h>
-#include <windowsx.h>
+#    include <windows.h>
+#    include <windowsx.h>
 #endif
 
 #define BUFSIZE 1000
@@ -69,11 +69,11 @@
  *                   sync with gl_state.foreground_color
  */
 class t_x11_state {
-public:
+  public:
     t_x11_state();
     ~t_x11_state();
 
-    Display *display = nullptr;
+    Display* display = nullptr;
     int screen_num;
     Window toplevel, menu, textarea;
     GC gc_normal, gc_xor, gc_menus, current_gc;
@@ -95,13 +95,14 @@ public:
     XWindowAttributes attributes;
 
     // Cairo related things
-    cairo_surface_t *cairo_surface = nullptr;
-    cairo_t *ctx = nullptr;
+    cairo_surface_t* cairo_surface = nullptr;
+    cairo_t* ctx = nullptr;
 
-    static t_x11_state *getInstance();
-private:
+    static t_x11_state* getInstance();
+
+  private:
     // Pointer to the most recently constructed state. Is set to NULL upon any destruction
-    static t_x11_state *instance;
+    static t_x11_state* instance;
 };
 
 #elif defined(WIN32)
@@ -143,9 +144,9 @@ typedef enum {
  *				and hGrayBrush for filling the background of the status message and menu areas)
  */
 class t_win32_state {
-public:
-	t_win32_state();
-	t_win32_state(bool, t_window_button_state, int);
+  public:
+    t_win32_state();
+    t_win32_state(bool, t_window_button_state, int);
     ~t_win32_state();
 
     bool InEventLoop;
@@ -153,22 +154,21 @@ public:
     int adjustButton;
     RECT adjustRect;
     HWND hMainWnd, hGraphicsWnd, hButtonsWnd, hStatusWnd; // <Addition/Mod: Charles>
-    HDC hGraphicsDC;	// Current Active Drawing buffer // <Addition/Mod: Charles>
-	HDC hGraphicsDCPassive;	// Front Buffer for display purpose // <Addition/Mod: Charles>
-	HGDIOBJ hGraphicsPassive;	// Backup of old drawing context object, usage see set_drawing_buffer() // <Addition/Mod: Charles>
+    HDC hGraphicsDC;                                      // Current Active Drawing buffer // <Addition/Mod: Charles>
+    HDC hGraphicsDCPassive;                               // Front Buffer for display purpose // <Addition/Mod: Charles>
+    HGDIOBJ hGraphicsPassive;                             // Backup of old drawing context object, usage see set_drawing_buffer() // <Addition/Mod: Charles>
     HPEN hGraphicsPen;
     HBRUSH hGraphicsBrush, hGrayBrush;
     HFONT hGraphicsFont;
 
-    static t_win32_state *getInstance();
+    static t_win32_state* getInstance();
 
-private:
+  private:
     // Pointer to the most recently constructed state. Is set to NULL upon any destruction
-    static t_win32_state *instance;
+    static t_win32_state* instance;
 };
 
 #endif // WIN32
-
 
 /*************************************************************
  * Operating System Independent                              *
@@ -228,7 +228,7 @@ struct t_gl_state {
     t_coordinate_system currentcoordinatesystem = GL_WORLD;
     t_draw_to current_draw_to = ON_SCREEN;
     e_draw_mode current_draw_mode = DRAW_NORMAL;
-    FILE *ps = nullptr;
+    FILE* ps = nullptr;
     bool ProceedPressed = false;
     char statusMessage[BUFSIZE] = "";
     FontCache font_info;

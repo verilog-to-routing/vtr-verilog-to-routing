@@ -26,25 +26,25 @@ using namespace std;
  * Exit codes to signal success/failure to scripts
  * calling vpr
  */
-constexpr int SUCCESS_EXIT_CODE = 0; //Everything OK
-constexpr int ERROR_EXIT_CODE = 1; //Something went wrong internally
+constexpr int SUCCESS_EXIT_CODE = 0;         //Everything OK
+constexpr int ERROR_EXIT_CODE = 1;           //Something went wrong internally
 constexpr int UNIMPLEMENTABLE_EXIT_CODE = 2; //Could not implement (e.g. unroutable)
-constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g. SIGINT/ctr-C)
+constexpr int INTERRUPTED_EXIT_CODE = 3;     //VPR was interrupted by the user (e.g. SIGINT/ctr-C)
 
 /*
  * Writes FASM file based on the netlist name by walking the netlist.
  */
 static bool write_fasm() {
-  auto& atom_ctx = g_vpr_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
-  std::string fasm_filename = atom_ctx.nlist.netlist_name() + ".fasm";
-  vtr::printf("Writing Implementation FASM: %s\n", fasm_filename.c_str());
-  std::ofstream fasm_os(fasm_filename);
-  fasm::FasmWriterVisitor visitor(fasm_os);
-  NetlistWalker nl_walker(visitor);
-  nl_walker.walk();
+    std::string fasm_filename = atom_ctx.nlist.netlist_name() + ".fasm";
+    vtr::printf("Writing Implementation FASM: %s\n", fasm_filename.c_str());
+    std::ofstream fasm_os(fasm_filename);
+    fasm::FasmWriterVisitor visitor(fasm_os);
+    NetlistWalker nl_walker(visitor);
+    nl_walker.walk();
 
-  return true;
+    return true;
 }
 
 /*
@@ -55,7 +55,7 @@ static bool write_fasm() {
  * 3. Cleans up and exits.
  *
  */
-int main(int argc, const char **argv) {
+int main(int argc, const char** argv) {
     t_options Options = t_options();
     t_arch Arch = t_arch();
     t_vpr_setup vpr_setup = t_vpr_setup();
@@ -69,9 +69,9 @@ int main(int argc, const char **argv) {
         /* Read options, architecture, and circuit netlist */
         vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
 
-        vpr_setup.PackerOpts.doPacking    = STAGE_LOAD;
-        vpr_setup.PlacerOpts.doPlacement  = STAGE_LOAD;
-        vpr_setup.RouterOpts.doRouting    = STAGE_LOAD;
+        vpr_setup.PackerOpts.doPacking = STAGE_LOAD;
+        vpr_setup.PlacerOpts.doPlacement = STAGE_LOAD;
+        vpr_setup.RouterOpts.doRouting = STAGE_LOAD;
         vpr_setup.AnalysisOpts.doAnalysis = STAGE_SKIP;
 
         bool flow_succeeded = false;
@@ -86,7 +86,7 @@ int main(int argc, const char **argv) {
         entire_flow_end = clock();
 
         vtr::printf_info("The entire flow of VPR took %g seconds.\n",
-                (float) (entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
+                         (float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 
         /* free data structures */
         vpr_free_all(Arch, vpr_setup);

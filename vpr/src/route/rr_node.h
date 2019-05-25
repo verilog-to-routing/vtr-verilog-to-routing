@@ -43,148 +43,158 @@
  *       otherwise.                                                          */
 
 class t_rr_node {
-    public: //Types
+  public: //Types
+    //An iterator that dereferences to an edge index
+    //
+    //Used inconjunction with vtr::Range to return ranges of edge indices
+    class edge_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, short> {
+      public:
+        edge_idx_iterator(value_type init)
+            : value_(init) {}
+        iterator operator++() {
+            value_ += 1;
+            return *this;
+        }
+        iterator operator--() {
+            value_ -= 1;
+            return *this;
+        }
+        reference operator*() { return value_; }
+        pointer operator->() { return &value_; }
 
-        //An iterator that dereferences to an edge index
-        //
-        //Used inconjunction with vtr::Range to return ranges of edge indices
-        class edge_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, short> {
-            public:
-            edge_idx_iterator(value_type init): value_(init) {}
-            iterator operator++() { value_ += 1; return *this; }
-            iterator operator--() { value_ -= 1; return *this; }
-            reference operator*() { return value_; }
-            pointer operator->() { return &value_; }
+        friend bool operator==(const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return lhs.value_ == rhs.value_; }
+        friend bool operator!=(const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return !(lhs == rhs); }
 
-            friend bool operator== (const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return lhs.value_ == rhs.value_; }
-            friend bool operator!= (const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return !(lhs == rhs); }
+      private:
+        value_type value_;
+    };
 
-            private:
-                value_type value_;
-        };
+    typedef vtr::Range<edge_idx_iterator> edge_idx_range;
 
-        typedef vtr::Range<edge_idx_iterator> edge_idx_range;
-    public: //Accessors
-        t_rr_type type() const { return type_; }
-        const char *type_string() const; /* Retrieve type as a string */
+  public: //Accessors
+    t_rr_type type() const { return type_; }
+    const char* type_string() const; /* Retrieve type as a string */
 
-        edge_idx_range edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges())); }
-        edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges() - num_non_configurable_edges())); }
-        edge_idx_range non_configurable_edges() const { return vtr::make_range(edge_idx_iterator(num_edges() - num_non_configurable_edges()), edge_idx_iterator(num_edges())); }
+    edge_idx_range edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges())); }
+    edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges() - num_non_configurable_edges())); }
+    edge_idx_range non_configurable_edges() const { return vtr::make_range(edge_idx_iterator(num_edges() - num_non_configurable_edges()), edge_idx_iterator(num_edges())); }
 
-        short num_edges() const { return num_edges_; }
-        short num_configurable_edges() const { return num_edges() - num_non_configurable_edges(); }
-        short num_non_configurable_edges() const { return num_non_configurable_edges_; }
+    short num_edges() const { return num_edges_; }
+    short num_configurable_edges() const { return num_edges() - num_non_configurable_edges(); }
+    short num_non_configurable_edges() const { return num_non_configurable_edges_; }
 
-        int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
-        short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_id; }
+    int edge_sink_node(short iedge) const {
+        VTR_ASSERT_SAFE(iedge < num_edges());
+        return edges_[iedge].sink_node;
+    }
+    short edge_switch(short iedge) const {
+        VTR_ASSERT_SAFE(iedge < num_edges());
+        return edges_[iedge].switch_id;
+    }
 
-        bool edge_is_configurable(short iedge) const;
-        short fan_in() const;
+    bool edge_is_configurable(short iedge) const;
+    short fan_in() const;
 
-        short xlow() const;
-        short ylow() const;
-        short xhigh() const;
-        short yhigh() const;
-        signed short length() const;
+    short xlow() const;
+    short ylow() const;
+    short xhigh() const;
+    short yhigh() const;
+    signed short length() const;
 
-        short capacity() const;
+    short capacity() const;
 
-        short ptc_num() const;
-        short pin_num() const; //Same as ptc_num() but checks that type() is consistent
-        short track_num() const; //Same as ptc_num() but checks that type() is consistent
-        short class_num() const; //Same as ptc_num() but checks that type() is consistent
+    short ptc_num() const;
+    short pin_num() const;   //Same as ptc_num() but checks that type() is consistent
+    short track_num() const; //Same as ptc_num() but checks that type() is consistent
+    short class_num() const; //Same as ptc_num() but checks that type() is consistent
 
-        short cost_index() const;
-        short rc_index() const;
-        e_direction direction() const;
-        const char *direction_string() const;
+    short cost_index() const;
+    short rc_index() const;
+    e_direction direction() const;
+    const char* direction_string() const;
 
-        e_side side() const;
-        const char *side_string() const;
+    e_side side() const;
+    const char* side_string() const;
 
-        float R() const;
-        float C() const;
+    float R() const;
+    float C() const;
 
-        bool validate() const;
+    bool validate() const;
 
-    public: //Mutators
-        void set_type(t_rr_type new_type);
+  public: //Mutators
+    void set_type(t_rr_type new_type);
 
-        short add_edge(int sink_node, int iswitch);
+    short add_edge(int sink_node, int iswitch);
 
-        void shrink_to_fit();
+    void shrink_to_fit();
 
-        //Partitions all edges so that configurable and non-configurable edges
-        //are organized for efficient access.
-        //
-        //Must be called before configurable_edges(), non_configurable_edges(),
-        //num_configurable_edges(), num_non_configurable_edges() to ensure they
-        //are correct.
-        void partition_edges();
+    //Partitions all edges so that configurable and non-configurable edges
+    //are organized for efficient access.
+    //
+    //Must be called before configurable_edges(), non_configurable_edges(),
+    //num_configurable_edges(), num_non_configurable_edges() to ensure they
+    //are correct.
+    void partition_edges();
 
+    void set_num_edges(short); //Note will remove any previous edges
+    void set_edge_sink_node(short iedge, int sink_node);
+    void set_edge_switch(short iedge, short switch_index);
 
-        void set_num_edges(short); //Note will remove any previous edges
-        void set_edge_sink_node(short iedge, int sink_node);
-        void set_edge_switch(short iedge, short switch_index);
+    void set_fan_in(short);
 
-        void set_fan_in(short);
+    void set_coordinates(short x1, short y1, short x2, short y2);
 
-        void set_coordinates(short x1, short y1, short x2, short y2);
+    void set_capacity(short);
 
-        void set_capacity(short);
+    void set_ptc_num(short);
+    void set_pin_num(short);   //Same as set_ptc_num() by checks type() is consistent
+    void set_track_num(short); //Same as set_ptc_num() by checks type() is consistent
+    void set_class_num(short); //Same as set_ptc_num() by checks type() is consistent
 
-        void set_ptc_num(short);
-        void set_pin_num(short); //Same as set_ptc_num() by checks type() is consistent
-        void set_track_num(short); //Same as set_ptc_num() by checks type() is consistent
-        void set_class_num(short); //Same as set_ptc_num() by checks type() is consistent
+    void set_cost_index(size_t);
+    void set_rc_index(short);
 
+    void set_direction(e_direction);
+    void set_side(e_side);
 
-        void set_cost_index(size_t);
-        void set_rc_index(short);
+  private: //Types
+    //The edge information is stored in a structure to economize on the number of pointers held
+    //by t_rr_node (to save memory), and is not exposed externally
+    struct t_rr_edge {
+        int sink_node = -1;   //The ID of the sink RR node associated with this edge
+        short switch_id = -1; //The ID of the switch type this edge represents
+    };
 
-        void set_direction(e_direction);
-        void set_side(e_side);
+  private: //Data
+    //Note: we use a plain array and use small types for sizes to save space vs std::vector
+    //      (using std::vector's nearly doubles the size of the class)
+    std::unique_ptr<t_rr_edge[]> edges_ = nullptr;
+    uint16_t num_edges_ = 0;
+    uint16_t edges_capacity_ = 0;
+    uint8_t num_non_configurable_edges_ = 0;
 
-    private: //Types
-        //The edge information is stored in a structure to economize on the number of pointers held
-        //by t_rr_node (to save memory), and is not exposed externally
-        struct t_rr_edge {
-            int sink_node = -1; //The ID of the sink RR node associated with this edge
-            short switch_id = -1; //The ID of the switch type this edge represents
-        };
+    int8_t cost_index_ = -1;
+    int16_t rc_index_ = -1;
 
-    private: //Data
-        //Note: we use a plain array and use small types for sizes to save space vs std::vector
-        //      (using std::vector's nearly doubles the size of the class)
-        std::unique_ptr<t_rr_edge[]> edges_ = nullptr;
-        uint16_t num_edges_ = 0;
-        uint16_t edges_capacity_ = 0;
-        uint8_t num_non_configurable_edges_ = 0;
+    int16_t xlow_ = -1;
+    int16_t ylow_ = -1;
+    int16_t xhigh_ = -1;
+    int16_t yhigh_ = -1;
 
-        int8_t cost_index_ = -1;
-        int16_t rc_index_ = -1;
+    t_rr_type type_ = NUM_RR_TYPES;
+    union {
+        e_direction direction; //Valid only for CHANX/CHANY
+        e_side side;           //Valid only for IPINs/OPINs
+    } dir_side_;
 
-        int16_t xlow_ = -1;
-        int16_t ylow_ = -1;
-        int16_t xhigh_ = -1;
-        int16_t yhigh_ = -1;
-
-        t_rr_type type_ = NUM_RR_TYPES;
-        union {
-            e_direction direction; //Valid only for CHANX/CHANY
-            e_side side; //Valid only for IPINs/OPINs
-        } dir_side_;
-
-        union {
-            int16_t pin_num;
-            int16_t track_num;
-            int16_t class_num;
-        } ptc_;
-        uint16_t fan_in_ = 0;
-        uint16_t capacity_ = 0;
+    union {
+        int16_t pin_num;
+        int16_t track_num;
+        int16_t class_num;
+    } ptc_;
+    uint16_t fan_in_ = 0;
+    uint16_t capacity_ = 0;
 };
-
 
 /* Data that is pointed to by the .cost_index member of t_rr_node.  It's     *
  * purpose is to store the base_cost so that it can be quickly changed       *
@@ -209,14 +219,14 @@ class t_rr_node {
  *          the chain driven by the driver.  0 for buffered segments.        */
 
 struct t_rr_indexed_data {
-	float base_cost;
-	float saved_base_cost;
-	int ortho_cost_index;
-	int seg_index;
-	float inv_length;
-	float T_linear;
-	float T_quadratic;
-	float C_load;
+    float base_cost;
+    float saved_base_cost;
+    int ortho_cost_index;
+    int seg_index;
+    float inv_length;
+    float T_linear;
+    float T_quadratic;
+    float C_load;
 };
 
 /*
