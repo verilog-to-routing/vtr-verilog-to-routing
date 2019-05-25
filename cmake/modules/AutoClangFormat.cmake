@@ -8,6 +8,9 @@ endif()
 # ----------------------- Code format --------------------------
 #
 
+set(CLANG_FORMAT_BIN "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/AutoClangFormat/bin/clang-format-${CMAKE_HOST_SYSTEM_NAME}${CMAKE_EXECUTABLE_SUFFIX}")
+set(CLANG_FORMAT_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/AutoClangFormat/scripts/")
+
 set(FIND_TO_FORMAT_CPP
     -name '*.cpp' -print -o -name '*.h' -print
     -o -name '*.tpp' -print -o -name '*.hpp' -print)
@@ -25,7 +28,7 @@ add_custom_target(format-cpp-files
 #
 add_custom_target(format-cpp
     COMMAND find ${DIRS_TO_FORMAT_CPP} ${FIND_TO_FORMAT_CPP} |
-    xargs -P ${CPU_COUNT} clang-format-8 -style=file -i)
+    xargs -P ${CPU_COUNT} ${CLANG_FORMAT_BIN} -style=file -i)
 
 #
 # Use simple python script for fixing C like boxed comments
@@ -33,7 +36,7 @@ add_custom_target(format-cpp
 add_custom_target(format-cpp-fix-comments DEPENDS format-cpp
     COMMAND find ${DIRS_TO_FORMAT_CPP} ${FIND_TO_FORMAT_CPP} |
         xargs -L 1 -P ${CPU_COUNT}
-        python3 ${PROJECT_SOURCE_DIR}/scripts/format.py --inplace --fix-comments --input)
+        python3 ${CLANG_FORMAT_SCRIPTS}/format-helper.py --inplace --fix-comments --input)
 
 #
 # Use simple python script for fixing template brackets e.g. <<>
@@ -41,6 +44,6 @@ add_custom_target(format-cpp-fix-comments DEPENDS format-cpp
 add_custom_target(format-cpp-fix-template-operators DEPENDS format-cpp
     COMMAND find ${DIRS_TO_FORMAT_CPP} ${FIND_TO_FORMAT_CPP} |
         xargs -L 1 -P ${CPU_COUNT}
-        python3 ${PROJECT_SOURCE_DIR}/scripts/format.py --inplace --fix-template-operators --input)
+        python3 ${CLANG_FORMAT_SCRIPTS}/format-helper.py --inplace --fix-template-operators --input)
 
 add_custom_target(format DEPENDS format-cpp-fix-comments format-cpp-fix-template-operators)
