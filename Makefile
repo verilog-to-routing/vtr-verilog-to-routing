@@ -116,4 +116,3 @@ endif
 	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. "
 	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. 
 	@+$(MAKE) -C $(BUILD_DIR) clean 
-

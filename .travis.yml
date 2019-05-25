@@ -49,6 +49,7 @@ install:
 
 script:
   - ./.travis/script.sh
+  - ./.github/travis/check-format.py
 
 after_failure:
   - ./.travis/after_failure.sh
