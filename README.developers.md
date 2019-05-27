@@ -47,6 +47,20 @@ We have some guidelines in place to help catch most of these problems:
 
 Whatever system that we come up with will not be foolproof so be conscientious about how your changes will effect other developers.
 
+# Code Formatting
+
+Some parts of the VTR code base (e.g. VPR, libarchfpga, libvtrutil) have code formatting requirements which are checked automatically by regression tests.
+If your code changes are not compliant with the formatting, you can run:
+```shell
+make format
+```
+from the root of the VTR source tree.
+This will automatically reformat your code to be compliant with formatting requirements (this requires the `clang-format` tool to be available on your system).
+
+## Large Scale Reformatting
+
+For large scale reformatting (should only be performed by VTR maintainers) the script `dev/autoformat.py` can be used to reformat the code and commit it as 'VTR Robot', which  keeps the revision history clearer and records metadata about reformatting commits (which allows `git hyper-blame` to skip such commits).
+
 # Running Tests
 
 VTR has a variety of tests which are used to check for correctness, performance and Quality of Result (QoR).
