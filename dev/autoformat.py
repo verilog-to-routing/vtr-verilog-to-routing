@@ -45,8 +45,8 @@ I'm an auto code reformatting bot. Beep boop...
 
         with open(".git-blame-ignore-revs", "a+") as bf:
             bf.write("""\
-            # Autoformat run on {}
-            {}
+# Autoformat run on {}
+{}
             """.format(now, format_hash))
 
         subprocess.check_call("git add .git-blame-ignore-revs", shell=True)
