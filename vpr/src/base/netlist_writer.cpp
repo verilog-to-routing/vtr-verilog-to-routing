@@ -1579,8 +1579,6 @@ class NetlistWriterVisitor : public NetlistVisitor {
     }
 
     std::shared_ptr<Instance> make_blackbox_instance(const t_pb* atom) {
-        auto& timing_ctx = g_vpr_ctx.timing();
-
         const auto& top_pb_route = find_top_pb_route(atom);
         const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
         const t_pb_type* pb_type = pb_graph_node->pb_type;
