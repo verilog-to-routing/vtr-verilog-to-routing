@@ -11,35 +11,35 @@ struct Color {
     T b;
 };
 
-
 class ColorMap {
-    public:
-        ColorMap(float min, float max, const std::vector<Color<float>>& color_data);
-        virtual ~ColorMap() = default;
-        Color<float> color(float value) const;
-        float min() const;
-        float max() const;
-        float range() const;
-    private:
-        float min_;
-        float max_;
-        std::vector<Color<float>> color_data_;
+  public:
+    ColorMap(float min, float max, const std::vector<Color<float>>& color_data);
+    virtual ~ColorMap() = default;
+    Color<float> color(float value) const;
+    float min() const;
+    float max() const;
+    float range() const;
+
+  private:
+    float min_;
+    float max_;
+    std::vector<Color<float>> color_data_;
 };
 
 class InfernoColorMap : public ColorMap {
-    public:
-        InfernoColorMap(float min, float max);
+  public:
+    InfernoColorMap(float min, float max);
 };
 
 class PlasmaColorMap : public ColorMap {
-    public:
-        PlasmaColorMap(float min, float max);
+  public:
+    PlasmaColorMap(float min, float max);
 };
 
 class ViridisColorMap : public ColorMap {
-    public:
-        ViridisColorMap(float min, float max);
+  public:
+    ViridisColorMap(float min, float max);
 };
 
-} //namespace
+} // namespace vtr
 #endif

@@ -34,7 +34,7 @@ ScopedActionTimer::~ScopedActionTimer() {
 }
 
 void ScopedActionTimer::quiet(bool value) {
-    quiet_ = value; 
+    quiet_ = value;
 }
 
 bool ScopedActionTimer::quiet() const {
@@ -55,7 +55,6 @@ std::string ScopedActionTimer::pad() const {
 int ScopedActionTimer::depth() const {
     return depth_;
 }
-
 
 ScopedFinishTimer::ScopedFinishTimer(std::string action_str)
     : ScopedActionTimer(action_str) {
@@ -82,4 +81,4 @@ ScopedStartFinishTimer::~ScopedStartFinishTimer() {
     }
 }
 
-} //namespace
+} // namespace vtr

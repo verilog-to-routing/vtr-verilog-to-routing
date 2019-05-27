@@ -7,8 +7,8 @@
 #include "vtr_log.h"
 
 #if defined(VPR_USE_TBB)
-# include <tbb/task_group.h>
-# include <tbb/parallel_for_each.h>
+#    include <tbb/task_group.h>
+#    include <tbb/parallel_for_each.h>
 #endif
 /*
  * SetupSlackCrit
@@ -33,8 +33,8 @@ float SetupSlackCrit::setup_pin_criticality(AtomPinId pin) const { return pin_cr
 void SetupSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {
 #if defined(VPR_USE_TBB)
     tbb::task_group g;
-    g.run([&]{ update_slacks(analyzer); });
-    g.run([&]{ update_criticalities(timing_graph, analyzer); });
+    g.run([&] { update_slacks(analyzer); });
+    g.run([&] { update_criticalities(timing_graph, analyzer); });
     g.wait();
 #else
     update_slacks(analyzer);
@@ -49,7 +49,7 @@ void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
         update_pin_slack(pin, analyzer);
     });
 #else
-    for(auto pin : pins) {
+    for (auto pin : pins) {
         update_pin_slack(pin, analyzer);
     }
 #endif
@@ -63,7 +63,7 @@ void SetupSlackCrit::update_pin_slack(const AtomPinId pin, const tatum::SetupTim
     //Find the worst (least) slack at this node
     auto tags = analyzer.setup_slacks(node);
     auto min_tag_iter = find_minimum_tag(tags);
-    if(min_tag_iter != tags.end()) {
+    if (min_tag_iter != tags.end()) {
         pin_slacks_[pin] = min_tag_iter->time().value();
     } else {
         //No tags (e.g. driven by constant generator)
@@ -73,24 +73,23 @@ void SetupSlackCrit::update_pin_slack(const AtomPinId pin, const tatum::SetupTim
 
 void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {
     //Record the maximum required time, and wost slack per domain pair
-    std::map<DomainPair,float> max_req;
-    std::map<DomainPair,float> worst_slack;
-    for(tatum::NodeId node : timing_graph.logical_outputs()) {
-
-        for(auto& tag : analyzer.setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
+    std::map<DomainPair, float> max_req;
+    std::map<DomainPair, float> worst_slack;
+    for (tatum::NodeId node : timing_graph.logical_outputs()) {
+        for (auto& tag : analyzer.setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
             auto domain_pair = DomainPair(tag.launch_clock_domain(), tag.capture_clock_domain());
 
             float req = tag.time().value();
-            if(!max_req.count(domain_pair) || max_req[domain_pair] < req) {
+            if (!max_req.count(domain_pair) || max_req[domain_pair] < req) {
                 max_req[domain_pair] = req;
             }
         }
 
-        for(auto& tag : analyzer.setup_slacks(node)) {
+        for (auto& tag : analyzer.setup_slacks(node)) {
             auto domain_pair = DomainPair(tag.launch_clock_domain(), tag.capture_clock_domain());
 
             float slack = tag.time().value();
-            if(!worst_slack.count(domain_pair) || slack < worst_slack[domain_pair]) {
+            if (!worst_slack.count(domain_pair) || slack < worst_slack[domain_pair]) {
                 worst_slack[domain_pair] = slack;
             }
         }
@@ -103,16 +102,16 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         pin_criticalities_[pin] = calc_pin_criticality(pin, analyzer, max_req, worst_slack);
     });
 #else
-    for(auto pin : pins) {
+    for (auto pin : pins) {
         pin_criticalities_[pin] = calc_pin_criticality(pin, analyzer, max_req, worst_slack);
     }
 #endif
 }
 
 float SetupSlackCrit::calc_pin_criticality(AtomPinId pin,
-                                            const tatum::SetupTimingAnalyzer& analyzer,
-                                            const std::map<DomainPair,float>& max_req,
-                                            const std::map<DomainPair,float>& worst_slack) {
+                                           const tatum::SetupTimingAnalyzer& analyzer,
+                                           const std::map<DomainPair, float>& max_req,
+                                           const std::map<DomainPair, float>& worst_slack) {
     tatum::NodeId node = netlist_lookup_.atom_pin_tnode(pin);
     VTR_ASSERT(node);
 
@@ -143,8 +142,8 @@ float HoldSlackCrit::hold_pin_criticality(AtomPinId pin) const { return pin_crit
 void HoldSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph, const tatum::HoldTimingAnalyzer& analyzer) {
 #if defined(VPR_USE_TBB)
     tbb::task_group g;
-    g.run([&]{ update_slacks(analyzer); });
-    g.run([&]{ update_criticalities(timing_graph, analyzer); });
+    g.run([&] { update_slacks(analyzer); });
+    g.run([&] { update_criticalities(timing_graph, analyzer); });
     g.wait();
 #else
     update_slacks(analyzer);
@@ -153,7 +152,7 @@ void HoldSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& ti
 }
 
 void HoldSlackCrit::update_slacks(const tatum::HoldTimingAnalyzer& analyzer) {
-    for(AtomPinId pin : netlist_.pins()) {
+    for (AtomPinId pin : netlist_.pins()) {
         update_pin_slack(pin, analyzer);
     }
 }
@@ -166,7 +165,7 @@ void HoldSlackCrit::update_pin_slack(const AtomPinId pin, const tatum::HoldTimin
     //Find the worst (least) slack at this node
     auto tags = analyzer.hold_slacks(node);
     auto min_tag_iter = find_minimum_tag(tags);
-    if(min_tag_iter != tags.end()) {
+    if (min_tag_iter != tags.end()) {
         pin_slacks_[pin] = min_tag_iter->time().value();
     } else {
         //No tags (e.g. driven by constant generator)
@@ -179,8 +178,8 @@ void HoldSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph,
     //right approach (e.g. should we use a more intellegent method like the one used by setup slack?)
     float worst_slack = std::numeric_limits<float>::infinity();
     float best_slack = -std::numeric_limits<float>::infinity();
-    for(tatum::NodeId node : timing_graph.nodes()) {
-        for(auto& tag : analyzer.hold_slacks(node)) {
+    for (tatum::NodeId node : timing_graph.nodes()) {
+        for (auto& tag : analyzer.hold_slacks(node)) {
             float slack = tag.time().value();
             worst_slack = std::min(worst_slack, slack);
             best_slack = std::max(best_slack, slack);
@@ -200,25 +199,25 @@ void HoldSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph,
         pin_criticalities_[pin] = calc_pin_criticality(pin, analyzer, scale, shift);
     });
 #else
-    for(auto pin : pins) {
+    for (auto pin : pins) {
         pin_criticalities_[pin] = calc_pin_criticality(pin, analyzer, scale, shift);
     }
 #endif
 }
 
 float HoldSlackCrit::calc_pin_criticality(AtomPinId pin,
-                                            const tatum::HoldTimingAnalyzer& analyzer,
-                                            const float scale,
-                                            const float shift) {
+                                          const tatum::HoldTimingAnalyzer& analyzer,
+                                          const float scale,
+                                          const float shift) {
     tatum::NodeId node = netlist_lookup_.atom_pin_tnode(pin);
     VTR_ASSERT(node);
 
     float criticality = 0.;
 
-    for(auto tag : analyzer.hold_slacks(node)) {
+    for (auto tag : analyzer.hold_slacks(node)) {
         float slack = tag.time().value();
 
-        float tag_criticality = 1. - scale*(slack + shift);
+        float tag_criticality = 1. - scale * (slack + shift);
 
         criticality = std::max(criticality, tag_criticality);
     }

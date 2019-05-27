@@ -38,8 +38,7 @@ NetId NetlistIdRemapper<BlockId, PortId, PinId, NetId>::new_net_id(NetId old_id)
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 Netlist<BlockId, PortId, PinId, NetId>::Netlist(std::string name, std::string id)
     : netlist_name_(name)
-    , netlist_id_(id) 
-    {}
+    , netlist_id_(id) {}
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 Netlist<BlockId, PortId, PinId, NetId>::~Netlist() = default;
@@ -144,8 +143,8 @@ typename Netlist<BlockId, PortId, PinId, NetId>::pin_range Netlist<BlockId, Port
     VTR_ASSERT_SAFE(valid_block_id(blk_id));
 
     auto begin = block_pins_[blk_id].begin()
-        + block_num_input_pins_[blk_id]
-        + block_num_output_pins_[blk_id];
+                 + block_num_input_pins_[blk_id]
+                 + block_num_output_pins_[blk_id];
 
     auto end = begin + block_num_clock_pins_[blk_id];
 
@@ -188,8 +187,8 @@ typename Netlist<BlockId, PortId, PinId, NetId>::port_range Netlist<BlockId, Por
     VTR_ASSERT_SAFE(valid_block_id(blk_id));
 
     auto begin = block_ports_[blk_id].begin()
-        + block_num_input_ports_[blk_id]
-        + block_num_output_ports_[blk_id];
+                 + block_num_input_ports_[blk_id]
+                 + block_num_output_ports_[blk_id];
 
     auto end = begin + block_num_clock_ports_[blk_id];
 
@@ -233,15 +232,14 @@ PinId Netlist<BlockId, PortId, PinId, NetId>::port_pin(const PortId port_id, con
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 NetId Netlist<BlockId, PortId, PinId, NetId>::port_net(const PortId port_id, const BitIndex port_bit) const {
-    //port_pin() will validate that port_bit and port_id are valid so don't 
+    //port_pin() will validate that port_bit and port_id are valid so don't
     //check redundently here
 
     //Convenience look-up bypassing port and pin
     PinId pin_id = port_pin(port_id, port_bit);
     if (pin_id) {
         return pin_net(pin_id);
-    }
-    else {
+    } else {
         return NetId::INVALID();
     }
 }
@@ -259,7 +257,6 @@ PortType Netlist<BlockId, PortId, PinId, NetId>::port_type(const PortId port_id)
 
     return port_types_[port_id];
 }
-
 
 /*
  *
@@ -281,9 +278,14 @@ PinType Netlist<BlockId, PortId, PinId, NetId>::pin_type(const PinId pin_id) con
     PinType type = PinType::OPEN;
     switch (port_type(port_id)) {
         case PortType::INPUT: /*fallthrough */;
-        case PortType::CLOCK: type = PinType::SINK; break;
-        case PortType::OUTPUT: type = PinType::DRIVER; break;
-        default: VTR_ASSERT_OPT_MSG(false, "Valid port type");
+        case PortType::CLOCK:
+            type = PinType::SINK;
+            break;
+        case PortType::OUTPUT:
+            type = PinType::DRIVER;
+            break;
+        default:
+            VTR_ASSERT_OPT_MSG(false, "Valid port type");
     }
     return type;
 }
@@ -331,7 +333,6 @@ PortType Netlist<BlockId, PortId, PinId, NetId>::pin_port_type(const PinId pin_i
 
     return port_type(port_id);
 }
-
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::pin_is_constant(const PinId pin_id) const {
@@ -416,8 +417,6 @@ bool Netlist<BlockId, PortId, PinId, NetId>::net_is_constant(const NetId net_id)
     //No valid driver so can't be const
     return false;
 }
-
-
 
 /*
  *
@@ -550,11 +549,11 @@ template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::verify_refs() const {
     bool valid = true;
     valid &= validate_block_port_refs();
-    valid &= validate_port_pin_refs(); 
+    valid &= validate_port_pin_refs();
     valid &= validate_block_pin_refs();
     valid &= validate_net_pin_refs();
     valid &= validate_string_refs();
-    
+
     return valid;
 }
 
@@ -605,7 +604,6 @@ bool Netlist<BlockId, PortId, PinId, NetId>::verify_lookups() const {
     }
     return true;
 }
-
 
 /*
  *
@@ -781,8 +779,8 @@ NetId Netlist<BlockId, PortId, PinId, NetId>::add_net(const std::string name, Pi
     auto& dest_pins = net_pins_[net_id];
     dest_pins[0] = driver;
     dest_pins.insert(dest_pins.end(),
-        std::make_move_iterator(sinks.begin()),
-        std::make_move_iterator(sinks.end()));
+                     std::make_move_iterator(sinks.begin()),
+                     std::make_move_iterator(sinks.end()));
 
     //Associate each pin with the net
     int net_index = 0;
@@ -808,8 +806,7 @@ void Netlist<BlockId, PortId, PinId, NetId>::set_pin_net(const PinId pin, PinTyp
     VTR_ASSERT(valid_pin_id(pin));
 
     VTR_ASSERT((type == PinType::DRIVER && pin_port_type(pin) == PortType::OUTPUT)
-                || (type == PinType::SINK && (pin_port_type(pin) == PortType::INPUT
-                || pin_port_type(pin) == PortType::CLOCK)));
+               || (type == PinType::SINK && (pin_port_type(pin) == PortType::INPUT || pin_port_type(pin) == PortType::CLOCK)));
 
     NetId orig_net = pin_net(pin);
     if (orig_net) {
@@ -825,7 +822,6 @@ void Netlist<BlockId, PortId, PinId, NetId>::set_pin_net(const PinId pin, PinTyp
 
     //Save the pin's index within the net
     pin_net_indices_[pin] = pins_net_index;
-
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
@@ -836,9 +832,9 @@ void Netlist<BlockId, PortId, PinId, NetId>::set_block_name(const BlockId blk_id
     BlockId existing_blk_id = find_block(new_name);
     if (existing_blk_id) {
         VPR_THROW(VPR_ERROR_NETLIST, "Can not re-name block '%s' to '%s' (a block named '%s' already exists).",
-                    block_name(blk_id).c_str(), 
-                    new_name.c_str(),
-                    new_name.c_str());
+                  block_name(blk_id).c_str(),
+                  new_name.c_str(),
+                  new_name.c_str());
     }
 
     //Remove old name-look-up
@@ -856,14 +852,14 @@ void Netlist<BlockId, PortId, PinId, NetId>::set_block_name(const BlockId blk_id
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void Netlist<BlockId, PortId, PinId, NetId>::set_block_attr(const BlockId blk_id, const std::string &name, const std::string &value) {
+void Netlist<BlockId, PortId, PinId, NetId>::set_block_attr(const BlockId blk_id, const std::string& name, const std::string& value) {
     VTR_ASSERT(valid_block_id(blk_id));
 
     block_attrs_[blk_id][name] = value;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void Netlist<BlockId, PortId, PinId, NetId>::set_block_param(const BlockId blk_id, const std::string &name, const std::string &value) {
+void Netlist<BlockId, PortId, PinId, NetId>::set_block_param(const BlockId blk_id, const std::string& name, const std::string& value) {
     VTR_ASSERT(valid_block_id(blk_id));
 
     block_params_[blk_id][name] = value;
@@ -878,34 +874,31 @@ void Netlist<BlockId, PortId, PinId, NetId>::merge_nets(const NetId driver_net, 
     PinId sink_driver = net_driver(sink_net);
     if (sink_driver) {
         VPR_THROW(VPR_ERROR_NETLIST, "Can not merge nets '%s' and '%s' (sink net '%s' should have no driver, but is driven by pin '%s')",
-                net_name(driver_net).c_str(),
-                net_name(sink_net).c_str(),
-                net_name(sink_net).c_str(),
-                pin_name(sink_driver).c_str());
+                  net_name(driver_net).c_str(),
+                  net_name(sink_net).c_str(),
+                  net_name(sink_net).c_str(),
+                  pin_name(sink_driver).c_str());
     }
 
     //We allow the driver net to (potentially) have no driver yet,
     //so we don't check to ensure it exists
-    
+
     //
     //Merge the nets
     //
 
     //Move the sinks to the driver net
     for (PinId sink_pin : net_sinks(sink_net)) {
-
         //Update pin -> net references, also adds pins to driver_net
         set_pin_net(sink_pin, pin_type(sink_pin), driver_net);
     }
 
-
     //Remove the sink net
     // Note that we drop the sink net's pin references first,
-    // this ensures remove_net() will only clean-up the net 
+    // this ensures remove_net() will only clean-up the net
     // data, and will not modify the (already moved) pins
     net_pins_[sink_net].clear(); //Drop sink_net's pin references
     remove_net(sink_net);
-
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
@@ -1012,8 +1005,7 @@ void Netlist<BlockId, PortId, PinId, NetId>::remove_net_pin(const NetId net_id, 
         if (net_driver(net_id) == pin_id) {
             //Mark no driver
             net_pins_[net_id][0] = PinId::INVALID();
-        }
-        else {
+        } else {
             //Remove sink
             net_pins_[net_id].erase(iter); //Linear remove
         }
@@ -1061,12 +1053,12 @@ typename Netlist<BlockId, PortId, PinId, NetId>::IdRemapper Netlist<BlockId, Por
     //TODO: iterative cleaning?
 
     //Now we re-build all the cross references
-    // Note: net references must be rebuilt (to remove pins) before 
+    // Note: net references must be rebuilt (to remove pins) before
     //       the pin references can be rebuilt (to account for index changes
     //       due to pins being removed from the net)
     rebuild_block_refs(id_remapper.pin_id_map_, id_remapper.port_id_map_);
     rebuild_port_refs(id_remapper.block_id_map_, id_remapper.pin_id_map_);
-    rebuild_net_refs(id_remapper.pin_id_map_); 
+    rebuild_net_refs(id_remapper.pin_id_map_);
     rebuild_pin_refs(id_remapper.port_id_map_, id_remapper.net_id_map_);
 
     //Re-build the lookups
@@ -1194,7 +1186,7 @@ void Netlist<BlockId, PortId, PinId, NetId>::clean_pins(const vtr::vector_map<Pi
     pin_nets_ = clean_and_reorder_values(pin_nets_, pin_id_map);
 
     //Note that clean and re-order serves only to resize pin_net_indices_, the
-    //actual net references are wrong (since net size may have changed during 
+    //actual net references are wrong (since net size may have changed during
     //cleaning). They will be updated in rebuild_pin_refs()
     pin_net_indices_ = clean_and_reorder_values(pin_net_indices_, pin_id_map);
     pin_is_constant_ = clean_and_reorder_values(pin_is_constant_, pin_id_map);
@@ -1242,10 +1234,9 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_lookups() {
     }
 }
 
-
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 void Netlist<BlockId, PortId, PinId, NetId>::rebuild_block_refs(const vtr::vector_map<PinId, PinId>& pin_id_map,
-    const vtr::vector_map<PortId, PortId>& port_id_map) {
+                                                                const vtr::vector_map<PortId, PortId>& port_id_map) {
     //Update the pin id references held by blocks
     for (auto blk_id : blocks()) {
         //Before update the references, we need to know how many are valid,
@@ -1266,9 +1257,7 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_block_refs(const vtr::vecto
         block_num_clock_pins_[blk_id] = num_clock_pins;
 
         VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All Ids should be valid");
-        VTR_ASSERT(pin_collection.size() == size_t(block_num_input_pins_[blk_id]
-            + block_num_output_pins_[blk_id]
-            + block_num_clock_pins_[blk_id]));
+        VTR_ASSERT(pin_collection.size() == size_t(block_num_input_pins_[blk_id] + block_num_output_pins_[blk_id] + block_num_clock_pins_[blk_id]));
 
         //Similarily for ports
         size_t num_input_ports = count_valid_refs(block_input_ports(blk_id), port_id_map);
@@ -1283,9 +1272,7 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_block_refs(const vtr::vecto
         block_num_clock_ports_[blk_id] = num_clock_ports;
 
         VTR_ASSERT_SAFE_MSG(all_valid(blk_ports), "All Ids should be valid");
-        VTR_ASSERT(blk_ports.size() == size_t(block_num_input_ports_[blk_id]
-            + block_num_output_ports_[blk_id]
-            + block_num_clock_ports_[blk_id]));
+        VTR_ASSERT(blk_ports.size() == size_t(block_num_input_ports_[blk_id] + block_num_output_ports_[blk_id] + block_num_clock_ports_[blk_id]));
     }
 
     rebuild_block_refs_impl(pin_id_map, port_id_map);
@@ -1295,7 +1282,7 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_block_refs(const vtr::vecto
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 void Netlist<BlockId, PortId, PinId, NetId>::rebuild_port_refs(const vtr::vector_map<BlockId, BlockId>& block_id_map,
-    const vtr::vector_map<PinId, PinId>& pin_id_map) {
+                                                               const vtr::vector_map<PinId, PinId>& pin_id_map) {
     //Update block and pin references held by ports
     port_blocks_ = update_valid_refs(port_blocks_, block_id_map);
     VTR_ASSERT_SAFE_MSG(all_valid(port_blocks_), "All Ids should be valid");
@@ -1314,7 +1301,7 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_port_refs(const vtr::vector
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 void Netlist<BlockId, PortId, PinId, NetId>::rebuild_pin_refs(const vtr::vector_map<PortId, PortId>& port_id_map,
-    const vtr::vector_map<NetId, NetId>& net_id_map) {
+                                                              const vtr::vector_map<NetId, NetId>& net_id_map) {
     //Update port and net references held by pins
     pin_ports_ = update_all_refs(pin_ports_, port_id_map);
     VTR_ASSERT_SAFE_MSG(all_valid(pin_ports_), "All Ids should be valid");
@@ -1326,7 +1313,7 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_pin_refs(const vtr::vector_
     VTR_ASSERT_SAFE_MSG(all_valid(pin_nets_), "All Ids should be valid");
 
     //We must carefully re-build the pin net indices from scratch, since cleaning
-    //may have changed the index of the pin within the net (e.g. if invalid pins 
+    //may have changed the index of the pin within the net (e.g. if invalid pins
     //were removed)
     //
     //Note that for this to work correctly, the net references must have already been re-built!
@@ -1414,7 +1401,6 @@ void Netlist<BlockId, PortId, PinId, NetId>::shrink_to_fit() {
     VTR_ASSERT(validate_string_sizes());
 }
 
-
 /*
  *
  * Sanity Checks
@@ -1424,7 +1410,7 @@ template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::valid_block_id(BlockId block_id) const {
     if (block_id == BlockId::INVALID()
         || !block_ids_.contains(block_id)
-        || block_ids_[block_id] != block_id) { 
+        || block_ids_[block_id] != block_id) {
         return false;
     }
     return true;
@@ -1481,7 +1467,7 @@ bool Netlist<BlockId, PortId, PinId, NetId>::valid_string_id(typename Netlist<Bl
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::validate_block_sizes() const {
-    size_t num_blocks = blocks().size(); 
+    size_t num_blocks = blocks().size();
     if (block_names_.size() != num_blocks
         || block_pins_.size() != num_blocks
         || block_num_input_pins_.size() != num_blocks
@@ -1548,7 +1534,7 @@ template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::validate_block_port_refs() const {
     //Verify that all block <-> port references are consistent
 
-    //Track how many times we've seen each port from the blocks 
+    //Track how many times we've seen each port from the blocks
     vtr::vector_map<PortId, unsigned> seen_port_ids(port_ids_.size());
 
     for (auto blk_id : blocks()) {
@@ -1572,7 +1558,7 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_block_port_refs() const {
         }
     }
 
-    //Check that we have neither orphaned ports (i.e. that aren't referenced by a block) 
+    //Check that we have neither orphaned ports (i.e. that aren't referenced by a block)
     //nor shared ports (i.e. referenced by multiple blocks)
     auto is_one = [](unsigned val) {
         return val == 1;
@@ -1590,10 +1576,9 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_block_port_refs() const {
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::validate_block_pin_refs() const {
-    //Verify that block pin refs are consistent 
+    //Verify that block pin refs are consistent
     //(e.g. inputs are inputs, outputs are outputs etc.)
     for (auto blk_id : blocks()) {
-
         //Check that only input pins are found when iterating through inputs
         for (auto pin_id : block_input_pins(blk_id)) {
             auto port_id = pin_port(pin_id);
@@ -1665,7 +1650,7 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_port_pin_refs() const {
         }
     }
 
-    //Check that we have neither orphaned pins (i.e. that aren't referenced by a port) 
+    //Check that we have neither orphaned pins (i.e. that aren't referenced by a port)
     //nor shared pins (i.e. referenced by multiple ports)
     auto is_one = [](unsigned val) {
         return val == 1;
@@ -1730,7 +1715,7 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_net_pin_refs() const {
         }
     }
 
-    //Check that we have neither orphaned pins (i.e. that aren't referenced by a port) 
+    //Check that we have neither orphaned pins (i.e. that aren't referenced by a port)
     //nor shared pins (i.e. referenced by multiple ports)
     auto is_one = [](unsigned val) {
         return val == 1;
@@ -1783,16 +1768,15 @@ bool Netlist<BlockId, PortId, PinId, NetId>::verify_block_invariants() const {
             //Non-sequential types must not have a clock
             if (clk_net_id) {
                 VPR_THROW(VPR_ERROR_NETLIST, "Block '%s' is a non-sequential type but has a clock '%s'",
-                    block_name(blk_id).c_str(), net_name(clk_net_id).c_str());
+                          block_name(blk_id).c_str(), net_name(clk_net_id).c_str());
             }
 
         } else {
             //Sequential types must have a clock
             if (!clk_net_id) {
                 VPR_THROW(VPR_ERROR_NETLIST, "Block '%s' is sequential type but has no clock",
-                    block_name(blk_id).c_str());
+                          block_name(blk_id).c_str());
             }
-
         }
 
         //Check that block pins and ports are consistent (i.e. same number of pins)
@@ -1805,14 +1789,12 @@ bool Netlist<BlockId, PortId, PinId, NetId>::verify_block_invariants() const {
 
         if (num_block_pins != total_block_port_pins) {
             VPR_THROW(VPR_ERROR_NETLIST, "Block pins and port pins do not match on block '%s'",
-                block_name(blk_id).c_str());
+                      block_name(blk_id).c_str());
         }
     }
 
     return true;
 }
-
-
 
 /*
  *
@@ -1855,7 +1837,6 @@ BlockId Netlist<BlockId, PortId, PinId, NetId>::find_block(const typename Netlis
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 void Netlist<BlockId, PortId, PinId, NetId>::associate_pin_with_block(const PinId pin_id, const PortType type, const BlockId blk_id) {
-
     //Get an interator pointing to where we want to insert
     pin_iterator iter;
     if (type == PortType::INPUT) {
@@ -1909,12 +1890,12 @@ int Netlist<BlockId, PortId, PinId, NetId>::associate_pin_with_net(const PinId p
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 void Netlist<BlockId, PortId, PinId, NetId>::associate_pin_with_port(const PinId pin_id, const PortId port_id) {
     //A ports pins are stored in ascending order of port bit index, to allow for fast look-ups.
-    //As a result we need to ensure that even if pins are created out-of-order (with respect 
+    //As a result we need to ensure that even if pins are created out-of-order (with respect
     //to port bit) they are still inserted in the port in sorted order.
     //
     //As a result we find the correct position using std::lower_bound and insert there.
-    //Note that in the typical case (when port pins are created in order) this will be 
-    //the end of the port's pins and the insertion will be efficient. Only in the (more 
+    //Note that in the typical case (when port pins are created in order) this will be
+    //the end of the port's pins and the insertion will be efficient. Only in the (more
     //unusual) case where the pins are created out-of-order will we need to do a slow
     //insert in the middle of the vector.
     auto port_bit_cmp = [&](const PinId pin, BitIndex bit_index) {

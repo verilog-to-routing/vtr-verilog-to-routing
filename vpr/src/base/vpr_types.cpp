@@ -22,7 +22,6 @@ void t_ext_pin_util_targets::set_default_pin_util(t_ext_pin_util default_target)
     defaults_ = default_target;
 }
 
-
 /*
  * t_pb structure function definitions
  */
@@ -55,21 +54,19 @@ t_mode* t_pb::get_mode() const {
 //within the current pb
 const t_pb* t_pb::find_pb(const t_pb_graph_node* gnode) const {
     //Base case
-    if(pb_graph_node == gnode) {
+    if (pb_graph_node == gnode) {
         return this;
     }
 
     //Search recursively
-    for(int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
+    for (int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
+        if (child_pbs[ichild_type] == nullptr) continue;
 
-        if(child_pbs[ichild_type] == nullptr) continue;
-
-        for(int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
-
+        for (int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
             const t_pb* child_pb = &child_pbs[ichild_type][ipb];
 
             const t_pb* found_pb = child_pb->find_pb(gnode);
-            if(found_pb != nullptr) {
+            if (found_pb != nullptr) {
                 VTR_ASSERT(found_pb->pb_graph_node == gnode);
                 return found_pb; //Found
             }
@@ -86,12 +83,10 @@ const t_pb* t_pb::find_pb_for_model(const std::string& blif_model) const {
     }
 
     //Search recursively
-    for(int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
+    for (int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
+        if (child_pbs[ichild_type] == nullptr) continue;
 
-        if(child_pbs[ichild_type] == nullptr) continue;
-
-        for(int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
-
+        for (int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
             const t_pb* child_pb = &child_pbs[ichild_type][ipb];
 
             const t_pb* matching_pb = child_pb->find_pb_for_model(blif_model);
@@ -105,9 +100,8 @@ const t_pb* t_pb::find_pb_for_model(const std::string& blif_model) const {
 
 //Returns the root pb containing this pb
 const t_pb* t_pb::root_pb() const {
-
     const t_pb* curr_pb = this;
-    while(!curr_pb->is_root()) {
+    while (!curr_pb->is_root()) {
         curr_pb = curr_pb->parent_pb;
     }
 
@@ -127,7 +121,7 @@ std::string t_pb::hierarchical_type_name() const {
 
             //get the mode of the physical block
             if (!curr->is_primitive()) {
-                // primitives have no modes 
+                // primitives have no modes
                 std::string mode_name = curr->pb_graph_node->pb_type->modes[curr->mode].name;
                 type_name += "[" + mode_name + "]";
             }
@@ -148,7 +142,7 @@ BitIndex t_pb::atom_pin_bit_index(const t_pb_graph_pin* gpin) const {
 
     auto iter = pin_rotations_.find(gpin);
 
-    if(iter != pin_rotations_.end()) {
+    if (iter != pin_rotations_.end()) {
         //Return the original atom pin index
         return iter->second;
     } else {

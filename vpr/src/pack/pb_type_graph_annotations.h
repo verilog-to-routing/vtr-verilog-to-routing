@@ -7,6 +7,6 @@
 #ifndef PB_TYPE_GRAPH_ANNOTATIONS_H
 #define PB_TYPE_GRAPH_ANNOTATIONS_H
 
-void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node);
+void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node);
 
 #endif

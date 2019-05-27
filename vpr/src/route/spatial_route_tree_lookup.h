@@ -7,7 +7,6 @@
 #include "clustered_netlist_fwd.h"
 #include "route_tree_type.h"
 
-
 typedef vtr::Matrix<std::vector<t_rt_node*>> SpatialRouteTreeLookup;
 
 SpatialRouteTreeLookup build_route_tree_spatial_lookup(ClusterNetId net, t_rt_node* rt_root);

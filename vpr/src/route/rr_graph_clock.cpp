@@ -12,12 +12,11 @@
 #include "vpr_error.h"
 
 void ClockRRGraphBuilder::create_and_append_clock_rr_graph(
-        std::vector<t_segment_inf>& segment_inf,
-        const float R_minW_nmos,
-        const float R_minW_pmos,
-        int wire_to_rr_ipin_switch,
-        const enum e_base_cost_type base_cost_type)
-{
+    std::vector<t_segment_inf>& segment_inf,
+    const float R_minW_nmos,
+    const float R_minW_pmos,
+    int wire_to_rr_ipin_switch,
+    const enum e_base_cost_type base_cost_type) {
     vtr::printf_info("Starting clock network routing resource graph generation...\n");
     clock_t begin = clock();
 
@@ -42,17 +41,16 @@ void ClockRRGraphBuilder::create_and_append_clock_rr_graph(
     partition_rr_graph_edges(device_ctx);
 
     alloc_and_load_rr_indexed_data(segment_inf, device_ctx.rr_node_indices,
-            chan_width->max, wire_to_rr_ipin_switch, base_cost_type);
+                                   chan_width->max, wire_to_rr_ipin_switch, base_cost_type);
 
-    float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
+    float elapsed_time = (float)(clock() - begin) / CLOCKS_PER_SEC;
     vtr::printf_info("Building clock network resource graph took %g seconds\n", elapsed_time);
 }
 
 // Clock network information comes from the arch file
 void ClockRRGraphBuilder::create_clock_networks_wires(
-        std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
-        int num_segments)
-{
+    std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
+    int num_segments) {
     // Add rr_nodes for each clock network wire
     for (auto& clock_network : clock_networks) {
         clock_network->create_rr_nodes_for_clock_network_wires(*this, num_segments);
@@ -65,18 +63,16 @@ void ClockRRGraphBuilder::create_clock_networks_wires(
 
 // Clock switch information comes from the arch file
 void ClockRRGraphBuilder::create_clock_networks_switches(
-        std::vector<std::unique_ptr<ClockConnection>>& clock_connections)
-{
-    for(auto& clock_connection: clock_connections) {
+    std::vector<std::unique_ptr<ClockConnection>>& clock_connections) {
+    for (auto& clock_connection : clock_connections) {
         clock_connection->create_switches(*this);
     }
 }
 
 void ClockRRGraphBuilder::add_rr_switches_and_map_to_nodes(
-        size_t node_start_idx,
-        const float R_minW_nmos,
-        const float R_minW_pmos)
-{
+    size_t node_start_idx,
+    const float R_minW_nmos,
+    const float R_minW_pmos) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_nodes = device_ctx.rr_nodes;
 
@@ -86,14 +82,14 @@ void ClockRRGraphBuilder::add_rr_switches_and_map_to_nodes(
     std::unordered_map<int, int> arch_switch_to_rr_switch;
 
     // The following assumes that arch_switch was specified earlier when the edges where added
-    for(size_t node_idx = node_start_idx; node_idx < rr_nodes.size(); node_idx++) {
+    for (size_t node_idx = node_start_idx; node_idx < rr_nodes.size(); node_idx++) {
         auto& from_node = rr_nodes[node_idx];
-        for(int edge_idx = 0; edge_idx < from_node.num_edges(); edge_idx++) {
+        for (int edge_idx = 0; edge_idx < from_node.num_edges(); edge_idx++) {
             int arch_switch_idx = from_node.edge_switch(edge_idx);
 
             int rr_switch_idx;
             auto itter = arch_switch_to_rr_switch.find(arch_switch_idx);
-            if(itter == arch_switch_to_rr_switch.end()) {
+            if (itter == arch_switch_to_rr_switch.end()) {
                 rr_switch_idx = add_rr_switch_from_arch_switch_inf(
                     arch_switch_idx,
                     R_minW_nmos,
@@ -111,10 +107,9 @@ void ClockRRGraphBuilder::add_rr_switches_and_map_to_nodes(
 }
 
 int ClockRRGraphBuilder::add_rr_switch_from_arch_switch_inf(
-        int arch_switch_idx,
-        const float R_minW_nmos,
-        const float R_minW_pmos)
-{
+    int arch_switch_idx,
+    const float R_minW_nmos,
+    const float R_minW_pmos) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_switch_inf = device_ctx.rr_switch_inf;
     auto& arch_switch_inf = device_ctx.arch_switch_inf;
@@ -133,12 +128,11 @@ int ClockRRGraphBuilder::add_rr_switch_from_arch_switch_inf(
 }
 
 void ClockRRGraphBuilder::add_switch_location(
-        std::string clock_name,
-        std::string switch_point_name,
-        int x,
-        int y,
-        int node_index)
-{
+    std::string clock_name,
+    std::string switch_point_name,
+    int x,
+    int y,
+    int node_index) {
     // Note use of operator[] will automatically insert clock name if it doesn't exist
     clock_name_to_switch_points[clock_name].insert_switch_node_idx(switch_point_name, x, y, node_index);
 }
@@ -160,15 +154,14 @@ void SwitchPoint::insert_node_idx(int x, int y, int node_idx) {
 
     // insert node_idx at location
     rr_node_indices[x][y].push_back(node_idx);
-    locations.insert({x,y});
+    locations.insert({x, y});
 }
 
 std::vector<int> ClockRRGraphBuilder::get_rr_node_indices_at_switch_location(
     std::string clock_name,
     std::string switch_point_name,
     int x,
-    int y) const
-{
+    int y) const {
     auto itter = clock_name_to_switch_points.find(clock_name);
 
     // assert that clock name exists in map
@@ -181,8 +174,7 @@ std::vector<int> ClockRRGraphBuilder::get_rr_node_indices_at_switch_location(
 std::vector<int> SwitchPoints::get_rr_node_indices_at_location(
     std::string switch_point_name,
     int x,
-    int y) const
-{
+    int y) const {
     auto itter = switch_point_name_to_switch_location.find(switch_point_name);
 
     // assert that switch name exists in map
@@ -194,7 +186,6 @@ std::vector<int> SwitchPoints::get_rr_node_indices_at_location(
 }
 
 std::vector<int> SwitchPoint::get_rr_node_indices_at_location(int x, int y) const {
-
     // assert that switch is connected to nodes at the location
     VTR_ASSERT(!rr_node_indices[x][y].empty());
 
@@ -203,8 +194,7 @@ std::vector<int> SwitchPoint::get_rr_node_indices_at_location(int x, int y) cons
 
 std::set<std::pair<int, int>> ClockRRGraphBuilder::get_switch_locations(
     std::string clock_name,
-    std::string switch_point_name) const
-{
+    std::string switch_point_name) const {
     auto itter = clock_name_to_switch_points.find(clock_name);
 
     // assert that clock name exists in map
@@ -215,7 +205,6 @@ std::set<std::pair<int, int>> ClockRRGraphBuilder::get_switch_locations(
 }
 
 std::set<std::pair<int, int>> SwitchPoints::get_switch_locations(std::string switch_point_name) const {
-
     auto itter = switch_point_name_to_switch_location.find(switch_point_name);
 
     // assert that switch name exists in map
@@ -226,16 +215,13 @@ std::set<std::pair<int, int>> SwitchPoints::get_switch_locations(std::string swi
 }
 
 std::set<std::pair<int, int>> SwitchPoint::get_switch_locations() const {
-
     // assert that switch is connected to nodes at the location
     VTR_ASSERT(!locations.empty());
 
     return locations;
 }
 
-
 int ClockRRGraphBuilder::get_and_increment_chanx_ptc_num() {
-
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& grid = device_ctx.grid;
     auto* channel_width = &device_ctx.chan_width;
@@ -255,7 +241,6 @@ int ClockRRGraphBuilder::get_and_increment_chanx_ptc_num() {
 }
 
 int ClockRRGraphBuilder::get_and_increment_chany_ptc_num() {
-
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& grid = device_ctx.grid;
     auto* channel_width = &device_ctx.chan_width;
@@ -273,4 +258,3 @@ int ClockRRGraphBuilder::get_and_increment_chany_ptc_num() {
 
     return ptc_num;
 }
-

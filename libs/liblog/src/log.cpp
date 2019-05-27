@@ -5,7 +5,6 @@
  * Date: Sept 5, 2014
  */
 
-
 #include <stdio.h>
 #include <stdarg.h> /* Allows for variable arguments, necessary for wrapping printf */
 #include "log.h"
@@ -14,44 +13,42 @@
 
 static int log_warning = 0;
 static int log_error = 0;
-FILE *log_stream = nullptr;
-
+FILE* log_stream = nullptr;
 
 static void check_init();
 
 /* Set the output file of logger.
-   If different than current log file, close current log file and reopen to new log file
-*/
-void log_set_output_file(const char *filename) {
-	if(log_stream != nullptr) {
-		fclose(log_stream);
-	}
+ * If different than current log file, close current log file and reopen to new log file
+ */
+void log_set_output_file(const char* filename) {
+    if (log_stream != nullptr) {
+        fclose(log_stream);
+    }
 
     if (filename == nullptr) {
         log_stream = nullptr;
     } else {
-
         log_stream = fopen(filename, "w");
-        if(log_stream == nullptr) {
+        if (log_stream == nullptr) {
             printf("Error writing to file %s\n\n", filename);
         }
     }
 }
 
 void log_print_direct(const char* message, ...) {
-	va_list args;
-	va_start(args, message);
-	vprintf(message, args);
-	va_end(args);
+    va_list args;
+    va_start(args, message);
+    vprintf(message, args);
+    va_end(args);
 }
 
 void log_print_info(const char* message, ...) {
-	check_init(); /* Check if output log file setup, if not, then this function also sets it up */
+    check_init(); /* Check if output log file setup, if not, then this function also sets it up */
 
-	va_list args;
-	va_start(args, message);
-	vprintf(message, args);
-	va_end(args);
+    va_list args;
+    va_start(args, message);
+    vprintf(message, args);
+    va_end(args);
 
     if (log_stream) {
         va_start(args, message); /* Must reset variable arguments so that they can be read again */
@@ -63,15 +60,15 @@ void log_print_info(const char* message, ...) {
 }
 
 void log_print_warning(const char* /*filename*/, unsigned int /*line_num*/, const char* message, ...) {
-	check_init(); /* Check if output log file setup, if not, then this function also sets it up */
+    check_init(); /* Check if output log file setup, if not, then this function also sets it up */
 
-	va_list args;
-	va_start(args, message);
-	log_warning++;
+    va_list args;
+    va_start(args, message);
+    log_warning++;
 
-	printf("Warning %d: ", log_warning);
-	vprintf(message, args);
-	va_end(args);
+    printf("Warning %d: ", log_warning);
+    vprintf(message, args);
+    va_end(args);
 
     if (log_stream) {
         va_start(args, message); /* Must reset variable arguments so that they can be read again */
@@ -84,16 +81,16 @@ void log_print_warning(const char* /*filename*/, unsigned int /*line_num*/, cons
 }
 
 void log_print_error(const char* /*filename*/, unsigned int /*line_num*/, const char* message, ...) {
-	check_init(); /* Check if output log file setup, if not, then this function also sets it up */
+    check_init(); /* Check if output log file setup, if not, then this function also sets it up */
 
-	va_list args;
-	va_start(args, message);
-	log_error++;
+    va_list args;
+    va_start(args, message);
+    log_error++;
 
-	check_init();
-	fprintf(stderr, "Error %d: ", log_error);
-	vfprintf(stderr, message, args);
-	va_end(args);
+    check_init();
+    fprintf(stderr, "Error %d: ", log_error);
+    vfprintf(stderr, message, args);
+    va_end(args);
 
     if (log_stream) {
         va_start(args, message); /* Must reset variable arguments so that they can be read again */
@@ -112,7 +109,6 @@ void log_print_error(const char* /*filename*/, unsigned int /*line_num*/, const 
 static void check_init() {
     //We now allow a nullptr log_stream (i.e. no log file) so nothing to do here
 }
-
 
 void log_close() {
     if (log_stream) {

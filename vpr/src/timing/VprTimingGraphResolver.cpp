@@ -2,9 +2,7 @@
 #include "atom_netlist.h"
 #include "atom_lookup.h"
 
-
-VprTimingGraphResolver::VprTimingGraphResolver(const AtomNetlist& netlist, const AtomLookup& netlist_lookup,
-                                               const tatum::TimingGraph& timing_graph, const AnalysisDelayCalculator& delay_calc)
+VprTimingGraphResolver::VprTimingGraphResolver(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const tatum::TimingGraph& timing_graph, const AnalysisDelayCalculator& delay_calc)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
     , timing_graph_(timing_graph)
@@ -19,7 +17,6 @@ std::string VprTimingGraphResolver::node_name(tatum::NodeId node) const {
 std::string VprTimingGraphResolver::node_type_name(tatum::NodeId node) const {
     AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
     AtomBlockId blk = netlist_.pin_block(pin);
-
 
     std::string name = netlist_.block_model(blk)->name;
 
@@ -80,7 +77,6 @@ tatum::EdgeDelayBreakdown VprTimingGraphResolver::edge_delay_breakdown(tatum::Ed
                     component.delay = delay_calc_.min_edge_delay(timing_graph_, edge);
                 }
             } else if (edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
-
                 if (delay_type == DelayType::MAX) {
                     component.type_name += " Tcq_max";
                     component.delay = delay_calc_.max_edge_delay(timing_graph_, edge);
@@ -92,7 +88,7 @@ tatum::EdgeDelayBreakdown VprTimingGraphResolver::edge_delay_breakdown(tatum::Ed
 
             } else {
                 VTR_ASSERT(edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_CAPTURE);
-                
+
                 if (delay_type == DelayType::MAX) {
                     component.type_name += " Tsu";
                     component.delay = delay_calc_.setup_time(timing_graph_, edge);
@@ -117,7 +113,7 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
 
     //We assume that the delay calculator has already cached all of the relevant delays,
     //we just retrieve the cached values. This assumption greatly simplifies the calculation
-    //process and avoids us duplicating the complex delay calculation logic from the delay 
+    //process and avoids us duplicating the complex delay calculation logic from the delay
     //calcualtor.
     //
     //However note that this does couple this code tightly with the delay calculator implementation.
@@ -160,9 +156,9 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
 
         ClusterNetId src_net = cluster_ctx.clb_nlist.pin_net(src_pin);
         VTR_ASSERT(src_net == cluster_ctx.clb_nlist.pin_net(sink_pin));
-        tatum::Time net_delay = tatum::Time(delay_calc_.inter_cluster_delay(src_net, 
-                                                                0, 
-                                                                cluster_ctx.clb_nlist.pin_net_index(sink_pin)));
+        tatum::Time net_delay = tatum::Time(delay_calc_.inter_cluster_delay(src_net,
+                                                                            0,
+                                                                            cluster_ctx.clb_nlist.pin_net_index(sink_pin)));
 
         VTR_ASSERT(driver_clb_delay.valid());
         VTR_ASSERT(net_delay.valid());

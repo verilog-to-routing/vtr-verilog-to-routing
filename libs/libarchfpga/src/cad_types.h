@@ -1,5 +1,5 @@
 /*
- Data types used to give architectural hints for the CAD algorithm
+ * Data types used to give architectural hints for the CAD algorithm
  */
 #ifndef CAD_TYPES_H
 #define CAD_TYPES_H
@@ -25,10 +25,10 @@ struct t_pack_pattern_connections;
  *                      vector in the t_pack_molecule data structure.
  */
 struct t_pack_pattern_block {
-	int pattern_index;
-	const t_pb_type *pb_type;
-	t_pack_pattern_connections *connections;
-	int block_id;
+    int pattern_index;
+    const t_pb_type* pb_type;
+    t_pack_pattern_connections* connections;
+    int block_id;
 };
 
 /**
@@ -42,15 +42,14 @@ struct t_pack_pattern_block {
  *      next       : next connection in the linked list
  */
 struct t_pack_pattern_connections {
-	t_pack_pattern_block *from_block;
-	t_pb_graph_pin *from_pin;
+    t_pack_pattern_block* from_block;
+    t_pb_graph_pin* from_pin;
 
-	t_pack_pattern_block *to_block;
-	t_pb_graph_pin *to_pin;
+    t_pack_pattern_block* to_block;
+    t_pb_graph_pin* to_pin;
 
-	t_pack_pattern_connections *next;
+    t_pack_pattern_connections* next;
 };
-
 
 /**
  * Describes a pack pattern defined in the architecture. A pack pattern is an
@@ -86,17 +85,17 @@ struct t_pack_pattern_connections {
  *                          have a pointer to each primitive pin that can represent a starting point for this chain.
  */
 struct t_pack_patterns {
-    char *name;
+    char* name;
     int index;
     float base_cost;
 
-    t_pack_pattern_block *root_block;
+    t_pack_pattern_block* root_block;
 
     int num_blocks;
-    bool *is_block_optional;
+    bool* is_block_optional;
 
     bool is_chain;
-    std::vector<t_pb_graph_pin *> chain_root_pins;
+    std::vector<t_pb_graph_pin*> chain_root_pins;
 
     // default constructor initializing to an invalid pack pattern
     t_pack_patterns() {
@@ -115,11 +114,11 @@ struct t_pack_patterns {
  * Linked list for easy insertion/deletion
  */
 struct t_cluster_placement_primitive {
-	t_pb_graph_node *pb_graph_node;
-	t_cluster_placement_primitive *next_primitive;
-	bool valid;
-	float base_cost; /* cost independent of current status of packing */
-	float incremental_cost; /* cost dependant on current status of packing */
+    t_pb_graph_node* pb_graph_node;
+    t_cluster_placement_primitive* next_primitive;
+    bool valid;
+    float base_cost;        /* cost independent of current status of packing */
+    float incremental_cost; /* cost dependant on current status of packing */
 };
 
 #endif

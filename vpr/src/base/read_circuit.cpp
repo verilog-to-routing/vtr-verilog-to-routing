@@ -32,7 +32,6 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
                                      bool should_sweep_dangling_blocks,
                                      bool should_sweep_constant_primary_outputs,
                                      int verbosity) {
-
     if (circuit_format == e_circuit_format::AUTO) {
         auto name_ext = vtr::split_ext(circuit_file);
 
@@ -42,7 +41,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
             circuit_format = e_circuit_format::EBLIF;
         } else {
             VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Failed to determine file format for '%s' expected .blif or .eblif extension",
-                    circuit_file);
+                      circuit_file);
         }
     }
 
@@ -61,7 +60,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
     }
 
     process_circuit(netlist,
-                    const_gen_inference, 
+                    const_gen_inference,
                     should_absorb_buffers,
                     should_sweep_dangling_primary_ios,
                     should_sweep_dangling_nets,
@@ -72,7 +71,6 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_CLEANED)) {
         print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED), netlist);
     }
-
 
     show_circuit_stats(netlist);
 
@@ -87,7 +85,6 @@ static void process_circuit(AtomNetlist& netlist,
                             bool should_sweep_dangling_blocks,
                             bool should_sweep_constant_primary_outputs,
                             int verbosity) {
-
     {
         vtr::ScopedStartFinishTimer t("Mark constant generators");
         mark_constant_generators(netlist, const_gen_inference_method, verbosity);
@@ -97,20 +94,20 @@ static void process_circuit(AtomNetlist& netlist,
         vtr::ScopedStartFinishTimer t("Clean circuit");
 
         //Clean-up lut buffers
-        if(should_absorb_buffers) {
+        if (should_absorb_buffers) {
             absorb_buffer_luts(netlist, verbosity);
         }
 
         //Remove the special 'unconn' net
         AtomNetId unconn_net_id = netlist.find_net("unconn");
-        if(unconn_net_id) {
+        if (unconn_net_id) {
             VTR_LOGV_WARN(verbosity > 1, "Removing special net 'unconn' (assumed it represented explicitly unconnected pins)\n");
             netlist.remove_net(unconn_net_id);
         }
 
         //Also remove the 'unconn' block driver, if it exists
         AtomBlockId unconn_blk_id = netlist.find_block("unconn");
-        if(unconn_blk_id) {
+        if (unconn_blk_id) {
             VTR_LOGV_WARN(verbosity > 1, "Removing special block 'unconn' (assumed it represented explicitly unconnected pins)\n");
             netlist.remove_block(unconn_blk_id);
         }
@@ -138,19 +135,18 @@ static void process_circuit(AtomNetlist& netlist,
 }
 
 static void show_circuit_stats(const AtomNetlist& netlist) {
-    std::map<std::string,size_t> block_type_counts;
+    std::map<std::string, size_t> block_type_counts;
 
     //Count the block statistics
-    for(auto blk_id : netlist.blocks()) {
-
+    for (auto blk_id : netlist.blocks()) {
         const t_model* blk_model = netlist.block_model(blk_id);
-        if(blk_model->name == std::string(MODEL_NAMES)) {
+        if (blk_model->name == std::string(MODEL_NAMES)) {
             //LUT
             size_t lut_size = 0;
             auto in_ports = netlist.block_input_ports(blk_id);
 
             //May have zero (no input LUT) or one input port
-            if(in_ports.size() == 1) {
+            if (in_ports.size() == 1) {
                 auto port_id = *in_ports.begin();
 
                 //Figure out the LUT size
@@ -167,13 +163,13 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
         }
     }
     //Count the net statistics
-    std::map<std::string,double> net_stats;
-    for(auto net_id : netlist.nets()) {
+    std::map<std::string, double> net_stats;
+    for (auto net_id : netlist.nets()) {
         double fanout = netlist.net_sinks(net_id).size();
 
         net_stats["Max Fanout"] = std::max(net_stats["Max Fanout"], fanout);
 
-        if(net_stats.count("Min Fanout")) {
+        if (net_stats.count("Min Fanout")) {
             net_stats["Min Fanout"] = std::min(net_stats["Min Fanout"], fanout);
         } else {
             net_stats["Min Fanout"] = fanout;
@@ -185,28 +181,27 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
 
     //Determine the maximum length of a type name for nice formatting
     size_t max_block_type_len = 0;
-    for(auto kv : block_type_counts) {
+    for (auto kv : block_type_counts) {
         max_block_type_len = std::max(max_block_type_len, kv.first.size());
     }
     size_t max_net_type_len = 0;
-    for(auto kv : net_stats) {
+    for (auto kv : net_stats) {
         max_net_type_len = std::max(max_net_type_len, kv.first.size());
     }
 
     //Print the statistics
     VTR_LOG("Circuit Statistics:\n");
     VTR_LOG("  Blocks: %zu\n", netlist.blocks().size());
-    for(auto kv : block_type_counts) {
+    for (auto kv : block_type_counts) {
         VTR_LOG("    %-*s: %7zu\n", max_block_type_len, kv.first.c_str(), kv.second);
     }
     VTR_LOG("  Nets  : %zu\n", netlist.nets().size());
-    for(auto kv : net_stats) {
+    for (auto kv : net_stats) {
         VTR_LOG("    %-*s: %7.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
     }
     VTR_LOG("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist).size());
 
     if (netlist.blocks().empty()) {
-        VTR_LOG_WARN( "Netlist contains no blocks\n");
+        VTR_LOG_WARN("Netlist contains no blocks\n");
     }
 }
-

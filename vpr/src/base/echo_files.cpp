@@ -12,13 +12,12 @@ using namespace std;
 #include "echo_files.h"
 #include "globals.h"
 
-
 static bool EchoEnabled;
 
-static bool *echoFileEnabled = nullptr;
-static char **echoFileNames = nullptr;
+static bool* echoFileEnabled = nullptr;
+static char** echoFileNames = nullptr;
 
-static char **outputFileNames = nullptr;
+static char** outputFileNames = nullptr;
 
 bool getEchoEnabled() {
     return EchoEnabled;
@@ -35,37 +34,37 @@ void setEchoEnabled(bool echo_enabled) {
 
 void setAllEchoFileEnabled(bool value) {
     int i;
-    for (i = 0; i < (int) E_ECHO_END_TOKEN; i++) {
+    for (i = 0; i < (int)E_ECHO_END_TOKEN; i++) {
         echoFileEnabled[i] = value;
     }
 }
 
 void setEchoFileEnabled(enum e_echo_files echo_option, bool value) {
-    echoFileEnabled[(int) echo_option] = value;
+    echoFileEnabled[(int)echo_option] = value;
 }
 
-void setEchoFileName(enum e_echo_files echo_option, const char *name) {
-    if (echoFileNames[(int) echo_option] != nullptr) {
-        free(echoFileNames[(int) echo_option]);
+void setEchoFileName(enum e_echo_files echo_option, const char* name) {
+    if (echoFileNames[(int)echo_option] != nullptr) {
+        free(echoFileNames[(int)echo_option]);
     }
-    echoFileNames[(int) echo_option] = vtr::strdup(name);
+    echoFileNames[(int)echo_option] = vtr::strdup(name);
 }
 
 bool isEchoFileEnabled(enum e_echo_files echo_option) {
     if (echoFileEnabled == nullptr) {
         return false;
     } else {
-        return echoFileEnabled[(int) echo_option];
+        return echoFileEnabled[(int)echo_option];
     }
 }
 
-char *getEchoFileName(enum e_echo_files echo_option) {
-    return echoFileNames[(int) echo_option];
+char* getEchoFileName(enum e_echo_files echo_option) {
+    return echoFileNames[(int)echo_option];
 }
 
 void alloc_and_load_echo_file_info() {
-    echoFileEnabled = (bool*)vtr::calloc((int) E_ECHO_END_TOKEN, sizeof (bool));
-    echoFileNames = (char**) vtr::calloc((int) E_ECHO_END_TOKEN, sizeof (char*));
+    echoFileEnabled = (bool*)vtr::calloc((int)E_ECHO_END_TOKEN, sizeof(bool));
+    echoFileNames = (char**)vtr::calloc((int)E_ECHO_END_TOKEN, sizeof(char*));
 
     setAllEchoFileEnabled(getEchoEnabled());
 
@@ -119,7 +118,7 @@ void alloc_and_load_echo_file_info() {
 void free_echo_file_info() {
     int i;
     if (echoFileEnabled != nullptr) {
-        for (i = 0; i < (int) E_ECHO_END_TOKEN; i++) {
+        for (i = 0; i < (int)E_ECHO_END_TOKEN; i++) {
             if (echoFileNames[i] != nullptr) {
                 free(echoFileNames[i]);
             }
@@ -131,28 +130,27 @@ void free_echo_file_info() {
     }
 }
 
-void setOutputFileName(enum e_output_files ename, const char *name, const char *default_name) {
+void setOutputFileName(enum e_output_files ename, const char* name, const char* default_name) {
     if (outputFileNames == nullptr) {
         alloc_and_load_output_file_names(default_name);
     }
-    if (outputFileNames[(int) ename] != nullptr) {
-        free(outputFileNames[(int) ename]);
+    if (outputFileNames[(int)ename] != nullptr) {
+        free(outputFileNames[(int)ename]);
     }
-    outputFileNames[(int) ename] = vtr::strdup(name);
+    outputFileNames[(int)ename] = vtr::strdup(name);
 }
 
-char *getOutputFileName(enum e_output_files ename) {
-    return outputFileNames[(int) ename];
+char* getOutputFileName(enum e_output_files ename) {
+    return outputFileNames[(int)ename];
 }
 
 void alloc_and_load_output_file_names(const std::string default_name) {
-    char *name;
+    char* name;
 
     if (outputFileNames == nullptr) {
+        outputFileNames = (char**)vtr::calloc((int)E_FILE_END_TOKEN, sizeof(char*));
 
-        outputFileNames = (char**) vtr::calloc((int) E_FILE_END_TOKEN, sizeof (char*));
-
-        name = (char*) vtr::malloc((strlen(default_name.c_str()) + 40) * sizeof (char));
+        name = (char*)vtr::malloc((strlen(default_name.c_str()) + 40) * sizeof(char));
         sprintf(name, "%s.critical_path.out", default_name.c_str());
         setOutputFileName(E_CRIT_PATH_FILE, name, default_name.c_str());
 
@@ -169,7 +167,7 @@ void alloc_and_load_output_file_names(const std::string default_name) {
 void free_output_file_names() {
     int i;
     if (outputFileNames != nullptr) {
-        for (i = 0; i < (int) E_FILE_END_TOKEN; i++) {
+        for (i = 0; i < (int)E_FILE_END_TOKEN; i++) {
             if (outputFileNames[i] != nullptr) {
                 free(outputFileNames[i]);
                 outputFileNames[i] = nullptr;

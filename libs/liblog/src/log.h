@@ -10,7 +10,7 @@
 #ifndef LOG_H
 #define LOG_H
 
-void log_set_output_file(const char *filename);
+void log_set_output_file(const char* filename);
 
 void log_print_direct(const char* message, ...);
 void log_print_info(const char* message, ...);

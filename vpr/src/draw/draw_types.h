@@ -27,17 +27,17 @@
 #include "vtr_vector.h"
 
 enum e_draw_crit_path {
-      DRAW_NO_CRIT_PATH
-    , DRAW_CRIT_PATH_FLYLINES
-    , DRAW_CRIT_PATH_FLYLINES_DELAYS
-    , DRAW_CRIT_PATH_ROUTING
-    , DRAW_CRIT_PATH_ROUTING_DELAYS
+    DRAW_NO_CRIT_PATH,
+    DRAW_CRIT_PATH_FLYLINES,
+    DRAW_CRIT_PATH_FLYLINES_DELAYS,
+    DRAW_CRIT_PATH_ROUTING,
+    DRAW_CRIT_PATH_ROUTING_DELAYS
 };
 
 enum e_draw_nets {
-	DRAW_NO_NETS = 0,
-	DRAW_NETS,
-	DRAW_LOGICAL_CONNECTIONS
+    DRAW_NO_NETS = 0,
+    DRAW_NETS,
+    DRAW_LOGICAL_CONNECTIONS
 };
 
 /* Draw rr_graph from less detailed to more detailed
@@ -45,20 +45,20 @@ enum e_draw_nets {
  * on for the first time.
  */
 enum e_draw_rr_toggle {
-	DRAW_NO_RR = 0,
-	DRAW_MOUSE_OVER_RR,
-	DRAW_NODES_RR,
-	DRAW_NODES_AND_SBOX_RR,
-	DRAW_ALL_BUT_BUFFERS_RR,
-	DRAW_ALL_RR,
-	DRAW_RR_TOGGLE_MAX
+    DRAW_NO_RR = 0,
+    DRAW_MOUSE_OVER_RR,
+    DRAW_NODES_RR,
+    DRAW_NODES_AND_SBOX_RR,
+    DRAW_ALL_BUT_BUFFERS_RR,
+    DRAW_ALL_RR,
+    DRAW_RR_TOGGLE_MAX
 };
 
 enum e_draw_congestion {
-	DRAW_NO_CONGEST = 0,
-	DRAW_CONGESTED,
-	DRAW_CONGESTED_WITH_NETS,
-	DRAW_CONGEST_MAX
+    DRAW_NO_CONGEST = 0,
+    DRAW_CONGESTED,
+    DRAW_CONGESTED_WITH_NETS,
+    DRAW_CONGEST_MAX
 };
 
 enum e_draw_routing_costs {
@@ -105,12 +105,14 @@ enum e_draw_placement_macros {
 };
 
 enum e_draw_net_type {
-	ALL_NETS, HIGHLIGHTED
+    ALL_NETS,
+    HIGHLIGHTED
 };
 
 /* Chanx to chany or vice versa? */
 enum e_edge_dir {
-	FROM_X_TO_Y, FROM_Y_TO_X
+    FROM_X_TO_Y,
+    FROM_Y_TO_X
 };
 
 /* Structure which stores state information of a rr_node. Used
@@ -120,8 +122,8 @@ enum e_edge_dir {
  *					 highlighting routing resources on rr_graph
  */
 typedef struct {
-	t_color color;
-	bool node_highlighted;
+    t_color color;
+    bool node_highlighted;
 } t_draw_rr_node;
 
 /* Structure used to store state variables that control drawing and
@@ -154,35 +156,35 @@ typedef struct {
  *				 [0..device_ctx.rr_nodes.size()-1]
  */
 struct t_draw_state {
-	pic_type pic_on_screen = NO_PICTURE;
-	e_draw_nets show_nets = DRAW_NO_NETS;
+    pic_type pic_on_screen = NO_PICTURE;
+    e_draw_nets show_nets = DRAW_NO_NETS;
     e_draw_crit_path show_crit_path = DRAW_NO_CRIT_PATH;
-	e_draw_congestion show_congestion = DRAW_NO_CONGEST;
-	e_draw_routing_costs show_routing_costs;
+    e_draw_congestion show_congestion = DRAW_NO_CONGEST;
+    e_draw_routing_costs show_routing_costs;
     e_draw_block_pin_util show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
     e_draw_router_rr_cost show_router_rr_cost = DRAW_NO_ROUTER_RR_COST;
     e_draw_placement_macros show_placement_macros = DRAW_NO_PLACEMENT_MACROS;
     int show_routing_bb = OPEN;
     e_draw_routing_util show_routing_util = DRAW_NO_ROUTING_UTIL;
-	e_draw_rr_toggle draw_rr_toggle = DRAW_NO_RR;
-	int max_sub_blk_lvl = 0;
-	int show_blk_internal = 0;
-	bool show_graphics = false;
-	int gr_automode = 0;
-	e_route_type draw_route_type = GLOBAL;
-	char default_message[vtr::bufsize];
-	vtr::vector<ClusterNetId, t_color> net_color;
-	vtr::vector<ClusterBlockId, t_color> block_color;
-	t_draw_rr_node *draw_rr_node = nullptr;
+    e_draw_rr_toggle draw_rr_toggle = DRAW_NO_RR;
+    int max_sub_blk_lvl = 0;
+    int show_blk_internal = 0;
+    bool show_graphics = false;
+    int gr_automode = 0;
+    e_route_type draw_route_type = GLOBAL;
+    char default_message[vtr::bufsize];
+    vtr::vector<ClusterNetId, t_color> net_color;
+    vtr::vector<ClusterBlockId, t_color> block_color;
+    t_draw_rr_node* draw_rr_node = nullptr;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
     std::unique_ptr<const vtr::ColorMap> color_map = nullptr;
 
-	t_draw_state() = default;
+    t_draw_state() = default;
 
-	void reset_nets_congestion_and_rr();
+    void reset_nets_congestion_and_rr();
 
-	bool showing_sub_blocks();
+    bool showing_sub_blocks();
 };
 
 /* For each cluster type, this structure stores drawing
@@ -191,8 +193,8 @@ struct t_draw_state {
 struct t_draw_pb_type_info {
     std::vector<t_bound_box> subblk_array;
 
-	t_bound_box get_pb_bbox(const t_pb_graph_node& pb_gnode);
-	t_bound_box& get_pb_bbox_ref(const t_pb_graph_node& pb_gnode);
+    t_bound_box get_pb_bbox(const t_pb_graph_node& pb_gnode);
+    t_bound_box& get_pb_bbox_ref(const t_pb_graph_node& pb_gnode);
 };
 
 /* Structure used to store coordinates and dimensions for
@@ -213,39 +215,39 @@ struct t_draw_pb_type_info {
  *           cluster_ctx.clb_nlist.block_type(block_id)->index
  */
 struct t_draw_coords {
-	float *tile_x, *tile_y;
-	float pin_size;
+    float *tile_x, *tile_y;
+    float pin_size;
 
     std::vector<t_draw_pb_type_info> blk_info;
 
-	t_draw_coords();
+    t_draw_coords();
 
-	float get_tile_width();
-	float get_tile_height();
+    float get_tile_width();
+    float get_tile_height();
 
-	/**
-	 * Retrieve the bounding box for the given pb in the given
-	 * clb, from this data structure
-	 */
-	t_bound_box get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode);
-	t_bound_box get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_pb_graph_node& pb_gnode);
+    /**
+     * Retrieve the bounding box for the given pb in the given
+     * clb, from this data structure
+     */
+    t_bound_box get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode);
+    t_bound_box get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_pb_graph_node& pb_gnode);
 
-	/**
-	 * Return a bounding box for the given pb in the given
-	 * clb with absolute coordinates, that can be directtly drawn.
-	 */
-	t_bound_box get_absolute_pb_bbox(const ClusterBlockId clb_index, const t_pb_graph_node* pb_gnode);
+    /**
+     * Return a bounding box for the given pb in the given
+     * clb with absolute coordinates, that can be directtly drawn.
+     */
+    t_bound_box get_absolute_pb_bbox(const ClusterBlockId clb_index, const t_pb_graph_node* pb_gnode);
 
-	/**
-	 * Return a bounding box for the clb at device_ctx.grid[grid_x][grid_y].blocks[sub_block_index],
-	 * even if it is empty.
-	 */
-	t_bound_box get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_type_ptr type);
-	t_bound_box get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index);
+    /**
+     * Return a bounding box for the clb at device_ctx.grid[grid_x][grid_y].blocks[sub_block_index],
+     * even if it is empty.
+     */
+    t_bound_box get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_type_ptr type);
+    t_bound_box get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index);
 
-private:
-	float tile_width;
-	friend void init_draw_coords(float);
+  private:
+    float tile_width;
+    friend void init_draw_coords(float);
 };
 
 #endif

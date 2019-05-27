@@ -1,7 +1,6 @@
 #include "route_util.h"
 #include "globals.h"
 
-
 vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
     VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
 
@@ -16,7 +15,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
     for (auto net : cluster_ctx.clb_nlist.nets()) {
         t_trace* tptr = route_ctx.trace[net].head;
         while (tptr != nullptr) {
-            int inode = tptr->index; 
+            int inode = tptr->index;
 
             if (device_ctx.rr_nodes[inode].type() == rr_type) {
                 rr_nodes.insert(inode);

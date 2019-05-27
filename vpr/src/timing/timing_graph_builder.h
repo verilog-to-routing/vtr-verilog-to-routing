@@ -5,39 +5,38 @@
 #include "atom_netlist_fwd.h"
 #include "atom_lookup.h"
 
-
 class TimingGraphBuilder {
-    public:
-        TimingGraphBuilder(const AtomNetlist& netlist,
-                           AtomLookup& netlist_lookup);
+  public:
+    TimingGraphBuilder(const AtomNetlist& netlist,
+                       AtomLookup& netlist_lookup);
 
-        std::unique_ptr<tatum::TimingGraph> timing_graph();
-    private:
-        void build();
-        void opt_memory_layout();
+    std::unique_ptr<tatum::TimingGraph> timing_graph();
 
-        void add_io_to_timing_graph(const AtomBlockId blk);
-        void add_block_to_timing_graph(const AtomBlockId blk);
-        void add_net_to_timing_graph(const AtomNetId net);
+  private:
+    void build();
+    void opt_memory_layout();
 
-        void fix_comb_loops();
-        tatum::EdgeId find_scc_edge_to_break(std::vector<tatum::NodeId> scc);
+    void add_io_to_timing_graph(const AtomBlockId blk);
+    void add_block_to_timing_graph(const AtomBlockId blk);
+    void add_net_to_timing_graph(const AtomNetId net);
 
-        void remap_ids(const tatum::GraphIdMaps& id_mapping);
+    void fix_comb_loops();
+    tatum::EdgeId find_scc_edge_to_break(std::vector<tatum::NodeId> scc);
 
-        const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin);
-        const t_pb_graph_pin* find_associated_clock_pin(const AtomPinId pin);
+    void remap_ids(const tatum::GraphIdMaps& id_mapping);
 
-        void mark_clustering_net_delays(float inter_cluster_net_delay);
+    const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin);
+    const t_pb_graph_pin* find_associated_clock_pin(const AtomPinId pin);
 
-        bool is_netlist_clock_source(const AtomPinId pin) const;
+    void mark_clustering_net_delays(float inter_cluster_net_delay);
 
-    private:
-        std::unique_ptr<tatum::TimingGraph> tg_;
+    bool is_netlist_clock_source(const AtomPinId pin) const;
 
-        const AtomNetlist& netlist_;
-        AtomLookup& netlist_lookup_;
+  private:
+    std::unique_ptr<tatum::TimingGraph> tg_;
 
-        std::set<AtomPinId> netlist_clock_drivers_;
+    const AtomNetlist& netlist_;
+    AtomLookup& netlist_lookup_;
+
+    std::set<AtomPinId> netlist_clock_drivers_;
 };
-
