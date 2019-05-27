@@ -606,6 +606,11 @@ VNumber V_DIV(VNumber& a_in, VNumber& b)
 	VNumber a(a_in);
 
 	VNumber result("0");
+
+	bool is_division_signed_operation = is_signed_operation(a, b);
+
+	DEBUG_MSG("is_division_signed_operation: '" << ((true == is_division_signed_operation) ? ("true") : ("false")) << "'");
+
 	while(eval_op(a, b).is_gt() )
 	{
 		VNumber  count("1");
@@ -614,8 +619,8 @@ VNumber V_DIV(VNumber& a_in, VNumber& b)
 		while(eval_op(tmp, a).is_lt())
 		{
 			sub_with = tmp;
-			shift_op(count, 1,_0);
-			shift_op(tmp, 1,_0);
+			count = shift_op(count, 1, is_division_signed_operation);
+			tmp = shift_op(tmp, 1, is_division_signed_operation);
 		}
 		a = V_MINUS(a, sub_with);
 		result = V_ADD(result, count);
