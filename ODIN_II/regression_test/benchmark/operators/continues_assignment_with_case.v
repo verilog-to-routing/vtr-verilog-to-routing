@@ -9,11 +9,10 @@ module mux_case(out,cntrl);
 always @ (*)
 	case (cntrl)
 
-		2'b00 : assign out = 0;
-		2'b01 : assign out = 1;
-		2'b10 : assign out = 0;
-
-		2'b11 : deassign out;
+		2'b00 : out = 0;
+		2'b01 : out = 1;
+		2'b10 : out = 0;
+		2'b11 : out = 1;
 
 	endcase
 
