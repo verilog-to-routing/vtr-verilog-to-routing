@@ -35,6 +35,7 @@ It is also recommended you install the following development tools:
  * ctags
  * gdb
  * valgrind
+ * clang-format-7
 
 For Docs generation you will need:
  * Doxygen
