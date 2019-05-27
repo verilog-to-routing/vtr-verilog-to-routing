@@ -74,7 +74,7 @@ Addition,			4'b0110,    +,  4'b0011,  'b1001
 Subtraction,		4'b0100,    -,  4'b0010,  'b10
 Subtraction-Smaller-Larger,		4'b0010,    -,  4'b0100,  4'b1110
 # TODO: Division,			4'b1010,    /,  4'b0010,  'b10
-# TODO: Multiplication,	    4'b0010,    *,  4'b0010,  'b100
+Multiplication,	    4'b0010,    *,  4'b0010,  'b100
 # TODO: Modulo,			    4'b1011,    %,  4'b0010,  'b1
 # TODO: Power,              4'b0010,    **, 4'b0000,  'b1
 

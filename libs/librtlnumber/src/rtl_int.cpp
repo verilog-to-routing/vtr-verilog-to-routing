@@ -510,40 +510,87 @@ VNumber V_MINUS(VNumber& a, VNumber& b)
 
 VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
 {
+	DEBUG_MSG("a_in: '" << a_in.to_string() << "' * b_in: '" << b_in.to_string() << "'");
+
 	if(a_in.is_dont_care_string() || b_in.is_dont_care_string())
 		return VNumber("x");
 
 	VNumber a;
 	VNumber b;
 
+	bool is_multiply_signed_operation = is_signed_operation(a_in, b_in);
 	bool neg_a = a_in.is_negative();
 	bool neg_b = b_in.is_negative();
-	
-	if(neg_a)	
-		a = V_MINUS(a_in);
-	else
-		a = a_in;
 
-	if(neg_b)	
-		b = V_MINUS(b_in);
+	DEBUG_MSG("is_multiply_signed_operation: '" << ((true == is_multiply_signed_operation) ? ("true") : ("false")) << "'");
+	DEBUG_MSG("neg_a: '" << ((true == neg_a) ? ("true") : ("false")) << "'");
+	DEBUG_MSG("neg_b: '" << ((true == neg_b) ? ("true") : ("false")) << "'");
+	
+	if(neg_a)
+	{
+		a = V_MINUS(a_in);
+		DEBUG_MSG("a = V_MINUS(a_in: '" << a_in.to_string() << "'): '" << a.to_string() << "'");
+	}
 	else
+	{
+		a = a_in;
+		DEBUG_MSG("a = a_in: '" << a_in.to_string() << "': '" << a.to_string() << "'");;
+	}
+
+	if(neg_b)
+	{
+		b = V_MINUS(b_in);
+		DEBUG_MSG("b = V_MINUS(b_in: '" << b_in.to_string() << "'): '" << b.to_string() << "'");
+	}
+	else
+	{
 		b = b_in;
+		DEBUG_MSG("b = b_in: '" << b_in.to_string() << "': '" << b.to_string() << "'");
+	}
+
+	DEBUG_MSG("a: '" << a.to_string() << "' * b: '" << b.to_string() << "'");
 		
 	bool invert_result = ((!neg_a && neg_b) || (neg_a && !neg_b));
+
+	DEBUG_MSG("invert_result: '" << ((true == invert_result) ? ("true") : ("false")) << "'");
 
 	VNumber result("0");
 	VNumber b_copy = b;
 
-	for(size_t i=0; i< a.size(); i++)
+	DEBUG_MSG("result: '" << result.to_string() << "'");
+	DEBUG_MSG("b_copy: '" << b_copy.to_string() << "'");
+
+	// TODO: Handle Multiplication with (a) Negative Number(s):
+
+	for(size_t i = 0; i < a.size(); i++)
 	{
 		bit_value_t bit_a = a.get_bit_from_lsb(i);
+
+		DEBUG_MSG("bit_a: '" << (unsigned(bit_a)) << "'");
+
 		if(bit_a == _1)
-			result = V_ADD(result,b);
-		shift_op(b_copy, 1, _0);
+		{
+			DEBUG_MSG("result = V_ADD(result: '" << result.to_string() << "', b_copy: '" << b_copy.to_string() << "')");
+			result = V_ADD(result, b_copy);
+		}
+
+		DEBUG_MSG("result: '" << result.to_string() << "'");
+		DEBUG_MSG("shift_op(b_copy: '" << b_copy.to_string() << "', 1, is_multiply_signed_operation: '" << ((true == is_multiply_signed_operation) ? ("true") : ("false")) << "')");
+
+		b_copy = shift_op(b_copy, 1, is_multiply_signed_operation);
+
+		DEBUG_MSG("b_copy: '" << b_copy.to_string() << "'");
 	}
 
-	if(invert_result)	
+	DEBUG_MSG("result: '" << result.to_string() << "'");
+
+	if(invert_result)
+	{
+		DEBUG_MSG("Invert result");
 		result = V_MINUS(result);
+	}
+
+	DEBUG_MSG("return result: '" << result.to_string() << "'");
 
 	return result;
 }
