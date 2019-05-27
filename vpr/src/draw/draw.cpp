@@ -312,7 +312,7 @@ static void draw_rr_edges(int from_node, ezgl::renderer &g);
 static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer &g);
 static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g);
 static void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer &g);
-static t_bound_box draw_get_rr_chan_bbox(int inode);
+static ezgl::rectangle draw_get_rr_chan_bbox(int inode);
 static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer &g);
 static void draw_x(float x, float y, float size, ezgl::renderer &g);
 static void draw_pin_to_pin(int opin, int ipin, ezgl::renderer &g);
@@ -341,11 +341,11 @@ static inline bool LOD_screen_area_test_square(float width, float screen_area_th
 static inline bool default_triangle_LOD_screen_area_test();
 static inline bool triangle_LOD_screen_area_test(float arrow_size);
 
-static inline void draw_mux_with_size(t_point origin, e_side orientation, float height, int size, ezgl::renderer &g);
-static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height, ezgl::renderer &g);
-static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height, float width, float height_scale, ezgl::renderer &g);
+static inline void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer &g);
+static inline ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height, ezgl::renderer &g);
+static inline ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height, float width, float height_scale, ezgl::renderer &g);
 
-static void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay, ezgl::renderer &g);
+static void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer &g);
 static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, ezgl::color color, ezgl::renderer &g);
 static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, ezgl::color color, ezgl::renderer &g);
 static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_id, const int driver_pin, const int sink_pin);
@@ -859,7 +859,7 @@ void alloc_draw_structs(const t_arch* arch) {
     
     
     
-    //cannot run the two lines below, fix later!!
+    //cannot run the two lines below due to having no defualt constructor for ezgl::color, fix later!!
 //    draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size());
 //    
 //    draw_state->block_color.resize(cluster_ctx.clb_nlist.blocks().size());
@@ -1005,22 +1005,16 @@ static void drawplace(ezgl::renderer &g) {
                 g.set_color(block_color);
                 
                 /* Get coords of current sub_tile */
-                t_bound_box abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
-                ezgl::point2d bottom_left = {abs_clb_bbox.bottom_left().x, abs_clb_bbox.bottom_left().y};
-                ezgl::point2d top_right =  {abs_clb_bbox.top_right().x, abs_clb_bbox.top_right().y};
+                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
+                ezgl::point2d center = abs_clb_bbox.center();
                 
-                double width = abs_clb_bbox.get_width();
-                double height = abs_clb_bbox.get_height();
-                ezgl::point2d origin = {bottom_left.x, top_right.y};
-                ezgl::point2d center = {origin.x + width/2, origin.y + height/2};
-                
-                g.fill_rectangle(origin, width, height);
+                g.fill_rectangle(abs_clb_bbox);
                 
                 g.set_color(ezgl::BLACK);
                 
                 //setlinestyle((EMPTY_BLOCK_ID == bnum) ? DASHED : SOLID);
                 g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
-                g.fill_rectangle(origin, width, height);
+                g.fill_rectangle(abs_clb_bbox);
                 
                 /* Draw text if the space has parts of the netlist */
                 if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
@@ -1033,8 +1027,8 @@ static void drawplace(ezgl::renderer &g) {
                 if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
                     std::string block_type_loc = device_ctx.grid[i][j].type->name;
                     block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
-                    g.draw_text(center - ezgl::point2d(0, height/4), block_type_loc.c_str(), width, height);
-
+                    g.draw_text(center - ezgl::point2d(0, abs_clb_bbox.height()/4), 
+                            block_type_loc.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
                 }
             }
         }
@@ -1065,14 +1059,12 @@ static void drawnets(ezgl::renderer &g) {
         g.set_color(netcolor);
         
         b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
-        t_point driver_center = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).get_center();
-        ezgl::point2d ezgl_driver_center (driver_center.x, driver_center.y);
+        ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).center();
         
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
-            t_point sink_center = draw_coords->get_absolute_clb_bbox(b2, cluster_ctx.clb_nlist.block_type(b2)).get_center();
-            ezgl::point2d ezgl_sink_center (sink_center.x, sink_center.y);
-            g.draw_line(ezgl_driver_center, ezgl_sink_center);
+            ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2, cluster_ctx.clb_nlist.block_type(b2)).center();
+            g.draw_line(driver_center, sink_center);
             
             /* Uncomment to draw a chain instead of a star. */
             /* driver_center = sink_center;  */
@@ -1404,12 +1396,12 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g) 
     
     VTR_ASSERT(type == CHANX || type == CHANY);
     
-    t_bound_box bound_box = draw_get_rr_chan_bbox(inode);
+    ezgl::rectangle bound_box = draw_get_rr_chan_bbox(inode);
     e_direction dir = device_ctx.rr_nodes[inode].direction();
     
     //We assume increasing direction, and swap if needed
-    t_point start = bound_box.bottom_left();
-    t_point end = bound_box.top_right();
+    ezgl::point2d start = bound_box.bottom_left();
+    ezgl::point2d end = bound_box.top_right();
     if (dir == DEC_DIRECTION) {
         std::swap(start, end);
     }
@@ -1420,7 +1412,7 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g) 
         g.set_line_width(3);
     }
     
-    g.draw_line({start.x, start.y}, {end.x, end.y});
+    g.draw_line(start, end);
     
     if (color != DEFAULT_RR_NODE_COLOR) {
         // Revert width change
@@ -1472,21 +1464,21 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g) 
             switchpoint_max = switchpoint_min - 1;
         }
         
-        t_point arrow_loc_min;
-        t_point arrow_loc_max;
+        ezgl::point2d arrow_loc_min(0, 0);
+        ezgl::point2d arrow_loc_max(0, 0);
         if (type == CHANX) {
             float sb_xmin = draw_coords->tile_x[k];
-            arrow_loc_min = t_point(sb_xmin + arrow_offset, start.y);
+            arrow_loc_min = {sb_xmin + arrow_offset, start.y};
             
             float sb_xmax = draw_coords->tile_x[k] + draw_coords->get_tile_width();
-            arrow_loc_max = t_point(sb_xmax - arrow_offset, start.y);
+            arrow_loc_max = {sb_xmax - arrow_offset, start.y};
             
         } else {
             float sb_ymin = draw_coords->tile_y[k];
-            arrow_loc_min = t_point(start.x, sb_ymin + arrow_offset);
+            arrow_loc_min = {start.x, sb_ymin + arrow_offset};
             
             float sb_ymax = draw_coords->tile_y[k] + draw_coords->get_tile_height();
-            arrow_loc_max = t_point(start.x, sb_ymax - arrow_offset);
+            arrow_loc_max = {start.x, sb_ymax - arrow_offset};
         }
         
         if (switchpoint_min == 0) {
@@ -1504,8 +1496,8 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g) 
             draw_triangle_along_line(g, arrow_loc_min, start, end);
             
             g.set_color(text_color);
-            t_bound_box bbox(t_point(arrow_loc_min.x - DEFAULT_ARROW_SIZE/2, arrow_loc_min.y - DEFAULT_ARROW_SIZE / 4),
-                    t_point(arrow_loc_min.x + DEFAULT_ARROW_SIZE/2, arrow_loc_min.y + DEFAULT_ARROW_SIZE / 4));
+            ezgl::rectangle bbox(ezgl::point2d(arrow_loc_min.x - DEFAULT_ARROW_SIZE/2, arrow_loc_min.y - DEFAULT_ARROW_SIZE / 4),
+                    ezgl::point2d(arrow_loc_min.x + DEFAULT_ARROW_SIZE/2, arrow_loc_min.y + DEFAULT_ARROW_SIZE / 4));
             ezgl::point2d center(arrow_loc_min.x, arrow_loc_min.y);
             g.draw_text(center, std::to_string(switchpoint_min));
             
@@ -1531,8 +1523,8 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g) 
             draw_triangle_along_line(g, arrow_loc_max, start, end);
             
             g.set_color(text_color);
-            t_bound_box bbox(t_point(arrow_loc_max.x - DEFAULT_ARROW_SIZE/2, arrow_loc_max.y - DEFAULT_ARROW_SIZE / 4),
-                    t_point(arrow_loc_max.x + DEFAULT_ARROW_SIZE/2, arrow_loc_max.y + DEFAULT_ARROW_SIZE / 4));
+            ezgl::rectangle bbox(ezgl::point2d(arrow_loc_max.x - DEFAULT_ARROW_SIZE/2, arrow_loc_max.y - DEFAULT_ARROW_SIZE / 4),
+                    ezgl::point2d(arrow_loc_max.x + DEFAULT_ARROW_SIZE/2, arrow_loc_max.y + DEFAULT_ARROW_SIZE / 4));
             ezgl::point2d center(arrow_loc_max.x, arrow_loc_max.y);
             g.draw_text(center, std::to_string(switchpoint_max));
             
@@ -1784,7 +1776,8 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
      * y-directed channel.                                                    */
     
     float x1, y1, x2, y2;
-    t_bound_box chanx_bbox, chany_bbox;
+    ezgl::rectangle chanx_bbox({0, 0}, 0, 0);
+    ezgl::rectangle chany_bbox({0, 0}, 0, 0);
     int chanx_xlow, chany_x, chany_ylow, chanx_y;
     
     /* Get the coordinates of the CHANX and CHANY segments. */
@@ -1857,7 +1850,8 @@ static void draw_chanx_to_chanx_edge(int from_node, int to_node,
     auto& device_ctx = g_vpr_ctx.device();
     
     float x1, x2, y1, y2;
-    t_bound_box from_chan, to_chan;
+    ezgl::rectangle from_chan({0,0}, 0, 0);
+    ezgl::rectangle to_chan({0,0}, 0, 0);
     int from_xlow, to_xlow, from_xhigh, to_xhigh;
     
     // Get the coordinates of the channel wires.
@@ -1944,7 +1938,8 @@ static void draw_chany_to_chany_edge(int from_node, int to_node,
      * drawing.                                                                 */
     
     float x1, x2, y1, y2;
-    t_bound_box from_chan, to_chan;
+    ezgl::rectangle from_chan({0,0}, 0, 0);
+    ezgl::rectangle to_chan({0,0}, 0, 0);
     int from_ylow, to_ylow, from_yhigh, to_yhigh;//, from_x, to_x;
     
     // Get the coordinates of the channel wires.
@@ -2023,7 +2018,7 @@ static void draw_chany_to_chany_edge(int from_node, int to_node,
  * wire has been clicked on by the user.
  * TODO: Fix this for global routing, currently for detailed only.
  */
-static t_bound_box draw_get_rr_chan_bbox (int inode) {
+static ezgl::rectangle draw_get_rr_chan_bbox (int inode) {
     t_bound_box bound_box;
     
     t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -2056,9 +2051,10 @@ static t_bound_box draw_get_rr_chan_bbox (int inode) {
             // a problem. leave at default value (ie. zeros)
             break;
     }
+    ezgl::rectangle ezgl_bound_box({bound_box.bottom_left().x, bound_box.bottom_left().y}, 
+            {bound_box.top_right().x, bound_box.top_right().y});
     
-    
-    return bound_box;
+    return ezgl_bound_box;
 }
 
 
@@ -2081,10 +2077,10 @@ static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, b
     } else { /* Buffer */
         if(from_x == to_x || from_y == to_y) {
             //Straight connection
-            draw_triangle_along_line(g, t_point(from_x, from_y), t_point(to_x, to_y), SB_EDGE_STRAIGHT_ARROW_POSITION);
+            draw_triangle_along_line(g, {from_x, from_y}, {to_x, to_y}, SB_EDGE_STRAIGHT_ARROW_POSITION);
         } else {
             //Turn connection
-            draw_triangle_along_line(g, t_point(from_x, from_y), t_point(to_x, to_y), SB_EDGE_TURN_ARROW_POSITION);
+            draw_triangle_along_line(g, {from_x, from_y}, {to_x, to_y}, SB_EDGE_TURN_ARROW_POSITION);
         }
     }
 }
@@ -2540,7 +2536,7 @@ static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
  */
 static int draw_check_rr_node_hit (float click_x, float click_y) {
     int hit_node = OPEN;
-    t_bound_box bound_box;
+    ezgl::rectangle bound_box({0,0}, {0,0});
     
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
@@ -2726,7 +2722,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
     
     
     /// determine block ///
-    t_bound_box clb_bbox(0,0,0,0);
+    ezgl::rectangle clb_bbox({0,0}, {0,0});
     
     // iterate over grid x
     for (size_t i = 0; i < device_ctx.grid.width(); ++i) {
@@ -2744,7 +2740,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
                 clb_index = place_ctx.grid_blocks[i][j].blocks[k];
                 if (clb_index != EMPTY_BLOCK_ID) {
                     clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index, cluster_ctx.clb_nlist.block_type(clb_index));
-                    if (clb_bbox.intersects(abs_x, abs_y)) {
+                    if (clb_bbox.contains({abs_x, abs_y})) {
                         break;
                     } else {
                         clb_index = EMPTY_BLOCK_ID;
@@ -2769,7 +2765,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
     
     // note: this will clear the selected sub-block if show_blk_internal is 0,
     // or if it doesn't find anything
-    t_point point_in_clb = t_point(abs_x, abs_y) - clb_bbox.bottom_left();
+    ezgl::point2d point_in_clb = ezgl::point2d(abs_x, abs_y) - clb_bbox.bottom_left();
     highlight_sub_block(point_in_clb, clb_index, cluster_ctx.clb_nlist.block_pb(clb_index));
     
     if (get_selected_sub_block_info().has_selection()) {
@@ -2973,7 +2969,7 @@ static void draw_reset_blk_color(ClusterBlockId blk_id) {
  * A 'relative_position' of 1. draws the triangle centered at 'end'.
  * Fractional values draw the triangle along the line
  */
-void draw_triangle_along_line(ezgl::renderer &g, t_point start, t_point end, float relative_position, float arrow_size) {
+void draw_triangle_along_line(ezgl::renderer &g, ezgl::point2d start, ezgl::point2d end, float relative_position, float arrow_size) {
     VTR_ASSERT(relative_position >= 0. && relative_position <= 1.);
     float xdelta = end.x - start.x;
     float ydelta = end.y - start.y;
@@ -2988,7 +2984,7 @@ void draw_triangle_along_line(ezgl::renderer &g, t_point start, t_point end, flo
  * arrow_size, rotated such that it points in the direction
  * of the directed line segment start -> end.
  */
-void draw_triangle_along_line(ezgl::renderer &g, t_point loc, t_point start, t_point end, float arrow_size) {
+void draw_triangle_along_line(ezgl::renderer &g, ezgl::point2d loc, ezgl::point2d start, ezgl::point2d end, float arrow_size) {
     draw_triangle_along_line(g, loc.x, loc.y, start.x, end.x, start.y, end.y, arrow_size);
 }
 
@@ -3037,9 +3033,10 @@ static inline bool LOD_screen_area_test_square(float width, float screen_area_th
     t_point upper_right = lower_left;
     upper_right.offset(width, width);
     
-    t_bound_box world_rect = t_bound_box(lower_left, upper_right);
+    t_bound_box world_rect(lower_left, upper_right);
     
-    return LOD_screen_area_test(world_rect, screen_area_threshold);
+    return LOD_screen_area_test(world_rect, screen_area_threshold); 
+    //could not find equivalent function to LOD_screen_area_test in EZGL, so left the same (using easygl)
 }
 
 static inline bool default_triangle_LOD_screen_area_test() {
@@ -3081,7 +3078,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer &g
     float x1 = 0, y1 = 0;
     draw_get_rr_pin_coords(pin_node, &x1, &y1);
     
-    t_bound_box chan_bbox = draw_get_rr_chan_bbox(chan_node);
+    ezgl::rectangle chan_bbox = draw_get_rr_chan_bbox(chan_node);
     
     float x2 = 0, y2 = 0;
     switch (chan_rr.type()) {
@@ -3155,23 +3152,21 @@ static void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer &g) {
     }
 }
 
-static inline void draw_mux_with_size(t_point origin, e_side orientation, float height, int size, ezgl::renderer &g) {
+static inline void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer &g) {
     g.set_color(ezgl::YELLOW);
     auto bounds = draw_mux(origin, orientation, height, g);
-    
-    ezgl::point2d center = {bounds.get_center().x, bounds.get_center().y};
-    
+
     g.set_color(ezgl::BLACK);
-    g.draw_text(center, std::to_string(size));
+    g.draw_text(bounds.center(), std::to_string(size));
 }
 
 //Draws a mux
-static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height, ezgl::renderer &g) {
+static inline ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height, ezgl::renderer &g) {
     return draw_mux(origin, orientation, height, 0.4*height, 0.6, g);
 }
 
 //Draws a mux, height/width define the bounding box, scale [0.,1.] controls the slope of the muxes sides
-static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height, float width, float scale, ezgl::renderer &g) {
+static inline ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height, float width, float scale, ezgl::renderer &g) {
     std::vector<ezgl::point2d> mux_polygon;
     
     switch(orientation) {
@@ -3210,8 +3205,8 @@ static inline t_bound_box draw_mux(t_point origin, e_side orientation, float hei
     
     g.fill_poly(mux_polygon);
     
-    t_point min((float)mux_polygon[0].x, (float)mux_polygon[0].y);
-    t_point max((float)mux_polygon[0].x, (float)mux_polygon[0].y);
+    ezgl::point2d min((float)mux_polygon[0].x, (float)mux_polygon[0].y);
+    ezgl::point2d max((float)mux_polygon[0].x, (float)mux_polygon[0].y);
     for(const auto& point : mux_polygon) {
         min.x = std::min((float)min.x, (float)point.x);
         min.y = std::min((float)min.y, (float)point.y);
@@ -3219,18 +3214,18 @@ static inline t_bound_box draw_mux(t_point origin, e_side orientation, float hei
         max.y = std::max((float)max.y, (float)point.y);
     }
     
-    return t_bound_box(min, max);
+    return ezgl::rectangle(min, max);
 }
 
 
-t_point tnode_draw_coord(tatum::NodeId node) {
+ezgl::point2d tnode_draw_coord(tatum::NodeId node) {
     auto& atom_ctx = g_vpr_ctx.atom();
     
     AtomPinId pin = atom_ctx.lookup.tnode_atom_pin(node);
     return atom_pin_draw_coord(pin);
 }
 
-t_point atom_pin_draw_coord(AtomPinId pin) {
+ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
     auto& atom_ctx = g_vpr_ctx.atom();
     
     AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
@@ -3238,21 +3233,21 @@ t_point atom_pin_draw_coord(AtomPinId pin) {
     const t_pb_graph_node* pg_gnode = atom_ctx.lookup.atom_pb_graph_node(blk);
     
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    t_bound_box pb_bbox = draw_coords->get_absolute_pb_bbox(clb_index, pg_gnode);
+    ezgl::rectangle pb_bbox = draw_coords->get_absolute_pb_bbox(clb_index, pg_gnode);
     
     //We place each atom pin inside it's pb bounding box
     //and distribute the pins along it's vertical centre line
     const float FRACTION_USABLE_WIDTH = 0.8;
-    float width =  pb_bbox.get_width();
+    float width =  pb_bbox.width();
     float usable_width =  width  * FRACTION_USABLE_WIDTH;
     float x_offset = pb_bbox.left() + width * (1 - FRACTION_USABLE_WIDTH)/2;
     
     int pin_index, pin_total;
     find_pin_index_at_model_scope(pin, blk, &pin_index, &pin_total);
     
-    const t_point point =  {
+    const ezgl::point2d point =  {
         x_offset + usable_width * pin_index / ((float)pin_total),
-        pb_bbox.get_ycenter()
+        pb_bbox.center_y()
     };
     
     return point;
@@ -3308,8 +3303,8 @@ static void draw_crit_path(ezgl::renderer &g) {
     }
 }
 //editing here
-static void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay, ezgl::renderer &g) {
-    drawline(start, end);
+static void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer &g) {
+    g.draw_line(start, end);
     draw_triangle_along_line(g, start, end, 0.95, 40*DEFAULT_ARROW_SIZE);
     draw_triangle_along_line(g, start, end, 0.05, 40*DEFAULT_ARROW_SIZE);
     
@@ -3339,15 +3334,14 @@ static void draw_flyline_timing_edge(t_point start, t_point end, float incr_dela
         //   * rotate to match edge
         //   * offset from line
         //   * track visible in window
-        t_bound_box text_bbox(min_x, min_y, max_x, max_y);
+        ezgl::rectangle text_bbox({min_x, min_y}, {max_x, max_y});
         
         std::stringstream ss;
         ss.precision(3);
         ss << 1e9*incr_delay; //In nanoseconds
         std::string incr_delay_str = ss.str();
         
-        ezgl::point2d center = {text_bbox.get_center().x, text_bbox.get_center().y};
-        g.draw_text(center, incr_delay_str.c_str());
+        g.draw_text(text_bbox.center(), incr_delay_str.c_str());
     }
 }
 
@@ -3359,7 +3353,7 @@ static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end
     g.set_line_width(3);
     g.set_color(color);
     
-    draw_flyline_timing_edge((t_point) tnode_draw_coord(start_tnode), (t_point) tnode_draw_coord(end_tnode), (float) incr_delay, (ezgl::renderer&) g);
+    draw_flyline_timing_edge((ezgl::point2d) tnode_draw_coord(start_tnode), (ezgl::point2d) tnode_draw_coord(end_tnode), (float) incr_delay, (ezgl::renderer&) g);
     
     g.set_line_width(0);
     g.set_line_dash(ezgl::line_dash::none);
@@ -3374,7 +3368,7 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
     AtomPinId atom_src_pin = atom_ctx.lookup.tnode_atom_pin(src_tnode);
     AtomPinId atom_sink_pin = atom_ctx.lookup.tnode_atom_pin(sink_tnode);
     
-    std::vector<t_point> points;
+    std::vector<ezgl::point2d> points;
     points.push_back(atom_pin_draw_coord(atom_src_pin));
     
     tatum::EdgeId tedge = timing_ctx.graph->find_edge(src_tnode, sink_tnode);
