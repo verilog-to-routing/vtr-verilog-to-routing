@@ -975,9 +975,13 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel& delay_model, t_placer_costs* costs) {
     float new_bb_cost = recompute_bb_cost();
     if (fabs(new_bb_cost - costs->bb_cost) > costs->bb_cost * ERROR_TOL) {
-        vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-                  "in recompute_costs_from_scratch: new_bb_cost = %g, old bb_cost = %g\n",
-                  new_bb_cost, costs->bb_cost);
+        std::string msg = vtr::string_fmt("in recompute_costs_from_scratch: new_bb_cost = %g, old bb_cost = %g\n",
+                                          new_bb_cost, costs->bb_cost);
+        if (placer_opts.strict_checks) {
+            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__, msg.c_str());
+        } else {
+            VTR_LOG_WARN(msg.c_str());
+        }
     }
     costs->bb_cost = new_bb_cost;
 
@@ -986,14 +990,22 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const
         float new_delay_cost = 0.;
         comp_td_costs(delay_model, &new_timing_cost, &new_delay_cost);
         if (fabs(new_timing_cost - costs->timing_cost) > costs->timing_cost * ERROR_TOL) {
-            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-                      "in recompute_costs_from_scratch: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
-                      new_timing_cost, costs->timing_cost, ERROR_TOL);
+            std::string msg = vtr::string_fmt("in recompute_costs_from_scratch: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
+                                              new_timing_cost, costs->timing_cost, ERROR_TOL);
+            if (placer_opts.strict_checks) {
+                vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__, msg.c_str());
+            } else {
+                VTR_LOG_WARN(msg.c_str());
+            }
         }
         if (fabs(new_delay_cost - costs->delay_cost) > costs->delay_cost * ERROR_TOL) {
-            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-                      "in recompute_costs_from_scratch: new_delay_cost = %g, old delay_cost = %g, ERROR_TOL = %g\n",
-                      new_delay_cost, costs->delay_cost, ERROR_TOL);
+            std::string msg = vtr::string_fmt("in recompute_costs_from_scratch: new_delay_cost = %g, old delay_cost = %g, ERROR_TOL = %g\n",
+                                              new_delay_cost, costs->delay_cost, ERROR_TOL);
+            if (placer_opts.strict_checks) {
+                vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__, msg.c_str());
+            } else {
+                VTR_LOG_WARN(msg.c_str());
+            }
         }
         costs->timing_cost = new_timing_cost;
     } else {

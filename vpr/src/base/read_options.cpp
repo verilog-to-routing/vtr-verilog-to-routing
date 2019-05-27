@@ -920,6 +920,17 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gen_grp.add_argument<bool, ParseOnOff>(args.strict_checks, "--strict_checks")
+        .help(
+            "Controls whether VPR enforces some consistency checks strictly (as errors) or treats them as warnings."
+            " Usually these checks indicate an issue with either the targetted architecture, or consistency issues"
+            " with VPR's internal data structures/algorithms (possibly harming optimization quality)."
+            " In specific circumstances on specific architectures these checks may be too restrictive and can be turned off."
+            " However exercise extreme caution when turning this option off -- be sure you completely understand why the issue"
+            " is being flagged, and why it is OK to treat as a warning instead of an error.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& file_grp = parser.add_argument_group("file options");
 
     file_grp.add_argument(args.BlifFile, "--circuit_file")

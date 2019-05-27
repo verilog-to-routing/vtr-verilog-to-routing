@@ -792,6 +792,8 @@ struct t_placer_opts {
     float tsu_abs_margin;
 
     std::string post_place_timing_report_file;
+
+    bool strict_checks;
 };
 
 /* All the parameters controlling the router's operation are in this        *
@@ -922,6 +924,7 @@ struct t_router_opts {
     int max_convergence_count;
     float reconvergence_cpd_threshold;
     std::string first_iteration_timing_report_file;
+    bool strict_checks;
 };
 
 struct t_analysis_opts {
