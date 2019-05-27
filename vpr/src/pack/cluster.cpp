@@ -3157,8 +3157,12 @@ static void update_molecule_chain_info(t_pack_molecule* chain_molecule, const t_
 
     auto chain_root_pins = chain_molecule->pack_pattern->chain_root_pins;
 
-    for (size_t chainId = 0; chainId < chain_root_pins.size(); chainId++) {
-        if (chain_root_pins[chainId]->parent_node == root_primitive) {
+    // long chains should only be placed at the beginning of the chain
+    // Since for long chains the molecule size is already equal to the
+    // total number of adders in the cluster. Therefore, it should
+    // always be placed at the very first adder in this cluster.
+    for(size_t chainId = 0; chainId < chain_root_pins.size(); chainId++) {
+        if (chain_root_pins[chainId][0]->parent_node == root_primitive) {
             chain_molecule->chain_info->chain_id = chainId;
             chain_molecule->chain_info->first_packed_molecule = chain_molecule;
             return;
@@ -3185,39 +3189,44 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(
 
     const auto& chain_root_pins = molecule->pack_pattern->chain_root_pins;
 
-    t_model_ports* root_port = chain_root_pins[0]->port->model_port;
+    t_model_ports *root_port = chain_root_pins[0][0]->port->model_port;
     AtomNetId chain_net_id;
     auto port_id = atom_ctx.nlist.find_atom_port(blk_id, root_port);
 
     if (port_id) {
-        chain_net_id = atom_ctx.nlist.port_net(port_id, chain_root_pins[0]->pin_number);
+        chain_net_id = atom_ctx.nlist.port_net(port_id, chain_root_pins[0][0]->pin_number);
     }
 
     // if this block is part of a long chain or it is driven by a cluster
     // input pin we need to check the placement legality of this block
-    // For some architectures (titan) even small chains that can fit within one
-    // cluster still need to start at the top of the cluster since their input is
+    // Depending on the logic synthesis even small chains that can fit within one
+    // cluster might need to start at the top of the cluster as their input can be
     // driven by a global gnd or vdd. Therefore even if this is not a long chain
     // but its input pin is driven by a net, the placement legality is checked.
     if (is_long_chain || chain_net_id) {
         auto chain_id = molecule->chain_info->chain_id;
-        // if this chain has a chain id assigned to it
+        // if this chain has a chain id assigned to it (implies is_long_chain too)
         if (chain_id != -1) {
             // the chosen primitive should be a valid starting point for the chain
-            if (pb_graph_node != chain_root_pins[chain_id]->parent_node) {
+            // long chains should only be placed at the top of the chain tieOff = 0
+            if (pb_graph_node != chain_root_pins[chain_id][0]->parent_node) {
                 block_pack_status = BLK_FAILED_FEASIBLE;
             }
             // the chain doesn't have an assigned chain_id yet
         } else {
             block_pack_status = BLK_FAILED_FEASIBLE;
-            for (const auto& chain_root_pin : chain_root_pins) {
-                // check if this chosen primitive is one of the possible
-                // starting points for this chain.
-                if (pb_graph_node == chain_root_pin->parent_node) {
-                    // this location matches with the one of the dedicated chain
-                    // input from outside logic block, therefore it is feasible
-                    block_pack_status = BLK_PASSED;
-                    break;
+            for (const auto& chain: chain_root_pins) {
+                for (size_t tieOff = 0; tieOff < chain.size(); tieOff++) {
+                    // check if this chosen primitive is one of the possible
+                    // starting points for this chain.
+                    if(pb_graph_node == chain[tieOff]->parent_node) {
+                        // this location matches with the one of the dedicated chain
+                        // input from outside logic block, therefore it is feasible
+                        block_pack_status = BLK_PASSED;
+                        break;
+                    }
+                    // long chains should only be placed at the top of the chain tieOff = 0
+                    if (is_long_chain) break;
                 }
             }
         }
