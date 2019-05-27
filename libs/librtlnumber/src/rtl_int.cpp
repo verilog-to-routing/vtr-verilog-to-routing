@@ -148,6 +148,21 @@ static compare_bit eval_op(VNumber a,int64_t b)
 }
 
 /**
+ * Check if the Operation Should be Signed by Checking if Both Operands Are Signed:
+ */
+static bool is_signed_operation(VNumber& a, VNumber& b)
+{
+	bool is_signed_operation = false;
+
+	if((true == a.is_signed()) && (true == b.is_signed()))
+	{
+		is_signed_operation = true;
+	}
+
+	return is_signed_operation;
+}
+
+/**
  * Addition operations
  */
 static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry, bool is_twos_complement_subtraction)
@@ -166,14 +181,16 @@ static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry, 
 	size_t new_length = ((true == is_twos_complement_subtraction) ? (std_length) : (std_length + 1));
 	const bit_value_t pad_a = a.get_padding_bit();
 	const bit_value_t pad_b = b.get_padding_bit();
+	bool is_addition_signed_operation = is_signed_operation(a, b);
 
 	DEBUG_MSG("std_length: '" << std_length << "'");
 	DEBUG_MSG("new_length: '" << new_length << "'");
 	DEBUG_MSG("pad_a: '" << (unsigned(pad_a)) << "'");
 	DEBUG_MSG("pad_b: '" << (unsigned(pad_b)) << "'");
+	DEBUG_MSG("is_addition_signed_operation: '" << ((true == is_addition_signed_operation) ? ("true") : ("false")) << "'");
 
 	bit_value_t previous_carry = initial_carry;
-	VNumber result(new_length, _x, false);
+	VNumber result(new_length, _x, is_addition_signed_operation);
 
 	DEBUG_MSG("previous_carry: '" << (unsigned(previous_carry)) << "'");
 	DEBUG_MSG("result: '" << result.to_string() << "'");
@@ -397,7 +414,7 @@ VNumber V_LT(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_lt()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, false);
+	VNumber to_return(1, result, is_signed_operation(a, b));
 	return to_return;
 }
 
@@ -405,7 +422,7 @@ VNumber V_GT(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_gt()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, false);
+	VNumber to_return(1, result, is_signed_operation(a, b));
 	return to_return;
 }
 
@@ -415,7 +432,7 @@ VNumber V_EQUAL(VNumber& a, VNumber& b)
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_eq()? BitSpace::_1: BitSpace::_0;
 	DEBUG_MSG("result: '" << (unsigned(result)) << "'");
-	VNumber to_return(1, result, false);
+	VNumber to_return(1, result, is_signed_operation(a, b));
 	DEBUG_MSG("to_return: '" << to_return.to_string() << "'");
 	return to_return;
 }
@@ -424,7 +441,7 @@ VNumber V_GE(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_ge()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, false);
+	VNumber to_return(1, result, is_signed_operation(a, b));
 	return to_return;
 }
 
@@ -432,7 +449,7 @@ VNumber V_LE(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_le()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, false);
+	VNumber to_return(1, result, is_signed_operation(a, b));
 	return to_return;
 }
 
@@ -440,7 +457,7 @@ VNumber V_NOT_EQUAL(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_ne()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, false);
+	VNumber to_return(1, result, is_signed_operation(a, b));
 	return to_return;
 }
 
