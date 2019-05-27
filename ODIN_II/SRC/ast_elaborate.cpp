@@ -57,115 +57,6 @@ long count;
 long count_write;
 enode *head, *p;
 
-/*---------------------------------------------------------------------------
- * (function: search_assign_node)
- * find the top of the assignment expression
- *-------------------------------------------------------------------------*/
-void find_proc_assign_nodes(ast_node_t *node, std::vector<ast_node_t *> &list)
-{
-    if (node && node->num_children>0
-        && (node->type == BLOCKING_STATEMENT
-            || node->type == NON_BLOCKING_STATEMENT
-            || node->type == PROCEDURAL_ASSIGN))
-        list.push_back(node);
-
-    for (long i = 0; node && i < node->num_children; i++)
-        find_proc_assign_nodes(node->children[i], list);
-}
-
-void find_children_by_type(ast_node_t *node, std::vector<ast_node_t *> &list, ids type) {
-    if (node && node->num_children>0 && (node->type == type))
-        list.push_back(node);
-
-    for (long i = 0; node && i < node->num_children; i++)
-        find_children_by_type(node->children[i], list, type);
-}
-
-void simplify_pc_assignments() {
-    struct assignment_info {
-        std::string name;
-        ast_node_t *id;
-        ast_node_t *pc;
-        ast_node_t *p;
-        ast_node_t *condition;
-        ast_node_t *p_always;
-        ast_node_t *pc_always;
-    };
-
-	for (long m = 0; m < num_modules; m++)
-	{
-        auto module = ast_modules[m];
-        std::map<std::string, assignment_info> assignments;
-
-        for (long i = 0; i < module->children[2]->num_children; i++) {
-            if (module->children[2]->children[i]->type != ALWAYS)
-                continue;
-
-            auto always = module->children[2]->children[i];
-            std::vector<ast_node_t *> list_assign;
-            find_proc_assign_nodes(always, list_assign);
-
-            for (auto assignment : list_assign) {
-                auto name = assignment->children[0]->types.identifier;
-                assignment_info info = assignment_info();
-
-                if (assignments[name].id != nullptr)
-                    info = assignments[name];
-
-                info.id = assignment->children[0];
-                if (assignment->type == PROCEDURAL_ASSIGN)
-                {
-                    info.pc = assignment;
-                    info.pc_always = always;
-                }
-                else
-                {
-                    info.p = assignment;
-                    info.p_always = always;
-                }
-
-                std::vector<ast_node_t*> if_statements;
-                find_children_by_type(always, if_statements, IF);
-                oassert(if_statements.size() <= 1);
-                if (!if_statements.empty())
-                    info.condition = if_statements[0];
-
-                assignments[name] = info;
-            }
-        }
-        for (auto &info: assignments)
-        {
-            //TODO: Check info is complete
-            auto second = info.second;
-            if (second.pc == nullptr)
-                continue;
-
-            auto ifQ_node = newIfQuestion(second.condition->children[0], second.pc->children[1], second.p->children[1], 0);
-            ast_node_t *node = nullptr;
-            if (second.p->type == BLOCKING_STATEMENT)
-                node = newBlocking(second.id, ifQ_node, 0);
-            else if (second.p->type == NON_BLOCKING_STATEMENT)
-                node = newNonBlocking(second.id, ifQ_node, 0);
-            else
-                throw;
-
-            //TODO: cleanup old assignment nodes **PROPERLY**
-            for (long i = 0; i < module->children[2]->num_children; i++)
-            {
-                if (module->children[2]->children[i] == second.pc_always)
-                {
-                    module->children[2]->children[i] = module->children[2]->children[i+1];
-                    break;
-                }
-            }
-            module->children[2]->num_children--;
-            second.p_always->children[1]->children[0] = node; //FIXME: leakage
-            second.p_always->children[1]->num_children = 1;
-        }
-        graphVizOutputAst("./temp",module);
-	}
-
-}
 
 int simplify_ast()
 {
@@ -1724,4 +1615,132 @@ void keep_all_branch(ast_node_t *temp_node, ast_node_t *for_parent, int mark)
 			for_parent->children[++index] = temp_node->children[i];
 		}
 	}
+}
+
+
+/*---------------------------------------------------------------------------
+ * (function: find_proc_assign_nodes)
+ * find a list of the assignment expressions recursively
+ *-------------------------------------------------------------------------*/
+void find_proc_assign_nodes(ast_node_t *node, std::vector<ast_node_t *> &list)
+{
+    if (node && node->num_children>0
+        && (node->type == BLOCKING_STATEMENT
+            || node->type == NON_BLOCKING_STATEMENT
+            || node->type == PROCEDURAL_ASSIGN))
+        list.push_back(node);
+
+    for (long i = 0; node && i < node->num_children; i++)
+        find_proc_assign_nodes(node->children[i], list);
+}
+
+/*---------------------------------------------------------------------------
+ * (function: find_children_by_type)
+ * Finds all children with the same type recursively
+ *-------------------------------------------------------------------------*/
+void find_children_by_type(ast_node_t *node, std::vector<ast_node_t *> &list, ids type) {
+    if (node && node->num_children>0 && (node->type == type))
+        list.push_back(node);
+
+    for (long i = 0; node && i < node->num_children; i++)
+        find_children_by_type(node->children[i], list, type);
+}
+
+/*---------------------------------------------------------------------------
+ * (function: find_children_by_type)
+ * Simplifies the procedural continuous assignments
+ *-------------------------------------------------------------------------*/
+void simplify_pc_assignments() {
+    struct assignment_info {
+        std::string name;
+        ast_node_t *id;
+        ast_node_t *pc;
+        ast_node_t *p;
+        ast_node_t *condition;
+        ast_node_t *p_always;
+        ast_node_t *pc_always;
+    };
+
+    for (long m = 0; m < num_modules; m++)
+    {
+        auto module = ast_modules[m];
+        std::map<std::string, assignment_info> assignments;
+
+        for (long i = 0; i < module->children[2]->num_children; i++) {
+            if (module->children[2]->children[i]->type != ALWAYS)
+                continue;
+
+            auto always = module->children[2]->children[i];
+            std::vector<ast_node_t *> list_assign;
+            find_proc_assign_nodes(always, list_assign);
+
+            for (auto assignment : list_assign) {
+                char * name;
+
+                switch (assignment->children[0]->type) {
+                    case IDENTIFIERS:
+                        name = assignment->children[0]->types.identifier;
+                        break;
+                    default:
+                        // Not implemented
+                        continue;
+                }
+
+                assignment_info info = assignment_info();
+                if (assignments[name].id != nullptr)
+                    info = assignments[name];
+
+                info.id = assignment->children[0];
+                if (assignment->type == PROCEDURAL_ASSIGN)
+                {
+                    info.pc = assignment;
+                    info.pc_always = always;
+                }
+                else
+                {
+                    info.p = assignment;
+                    info.p_always = always;
+                }
+
+                std::vector<ast_node_t*> if_statements;
+                find_children_by_type(always, if_statements, IF);
+                //oassert(if_statements.size() <= 1);
+                if (!if_statements.empty())
+                    info.condition = if_statements[0];
+
+                assignments[name] = info;
+            }
+        }
+        for (auto &info: assignments)
+        {
+            //TODO: Check info is complete
+            auto second = info.second;
+            if (second.pc == nullptr || second.p == nullptr || second.condition == nullptr)
+                continue;
+
+            auto ifQ_node = newIfQuestion(second.condition->children[0], second.pc->children[1], second.p->children[1], 0);
+            ast_node_t *node = nullptr;
+            if (second.p->type == BLOCKING_STATEMENT)
+                node = newBlocking(second.id, ifQ_node, 0);
+            else if (second.p->type == NON_BLOCKING_STATEMENT)
+                node = newNonBlocking(second.id, ifQ_node, 0);
+            else
+                throw;
+
+            //TODO: cleanup old assignment nodes **PROPERLY**
+            for (long i = 0; i < module->children[2]->num_children; i++)
+            {
+                if (module->children[2]->children[i] == second.pc_always)
+                {
+                    module->children[2]->children[i] = module->children[2]->children[i+1];
+                    break;
+                }
+            }
+            module->children[2]->num_children--;
+            second.p_always->children[1]->children[0] = node; //FIXME: leakage
+            second.p_always->children[1]->num_children = 1;
+        }
+        //graphVizOutputAst("./temp",module);
+    }
+
 }

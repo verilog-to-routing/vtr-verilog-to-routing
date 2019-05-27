@@ -22,6 +22,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 
 int simplify_ast();
+void simplify_pc_assignments(); 
 void optimize_for_tree();
 void search_for_node(ast_node_t *root, std::vector<ast_node_t *> list_for_node, std::vector<ast_node_t *> list_parent);
 ast_node_t *get_copy_tree(ast_node_t *node, long virtual_value, std::string virtual_name);
@@ -37,6 +38,8 @@ ast_node_t *search_marked_node(ast_node_t *node, int is, std::string temp);
 void reduce_assignment_expression();
 void find_assign_node(ast_node_t *t, std::vector<ast_node_t *> &list);
 ast_node_t *find_top_module();
+void find_children_by_type(ast_node_t *node, std::vector<ast_node_t *> &list, ids type); 
+void find_proc_assign_nodes(ast_node_t *node, std::vector<ast_node_t *> &list); 
 
 typedef struct exp_node
 {
