@@ -1,6 +1,6 @@
 module mux_case(out,cntrl);
 
-	input cntrl;
+	input cntrl;  //input should define as 2 bit input
 
 	output out;
 
