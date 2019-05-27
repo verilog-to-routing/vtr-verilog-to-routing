@@ -100,7 +100,8 @@ const char *operation_list_STR[][2] =
 	{"HARD_IP",         "HARD"},
 	{"GENERIC",         "GEN"}, /*added for the unknown node type */
 	{"FULLADDER",       "FlADD"},
-	{"CLOG2",			"CL2"} // $clog2
+	{"CLOG2",			"CL2"}, // $clog2
+	{"ERROR OOB",		"OOB"} // should not reach this
 };
 
 const char *ids_STR []= 

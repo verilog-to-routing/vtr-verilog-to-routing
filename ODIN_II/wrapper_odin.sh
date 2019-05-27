@@ -1,14 +1,27 @@
 #!/bin/bash
-#1
 trap ctrl_c INT SIGINT SIGTERM
 SHELL=/bin/bash
-
 QUIT=0
 
-TIME_EXEC=$($SHELL -c "which time") 
+##############################################
+# grab the input args
 INPUT=$@
 
+##############################################
+# grab the absolute Paths
+THIS_SCRIPT=$(readlink -f $0)
+THIS_SCRIPT_EXEC=$(basename ${THIS_SCRIPT})
+ODIN_ROOT_DIR=$(dirname ${THIS_SCRIPT})
+
+EXEC="${ODIN_ROOT_DIR}/odin_II"
+if [ ! -f ${EXEC} ]; then
+	echo "Unable to find the odin executable at ${EXEC}"
+	exit 120
+fi
+
+TIME_EXEC=$($SHELL -c "which time") 
 VALGRIND_EXEC=""
+PERF_EXEC=""
 LOG=""
 LOG_FILE=""
 TEST_NAME="odin"
@@ -17,13 +30,15 @@ EXIT_STATUS=3
 TIME_LIMIT="86400s" #default to a full day
 
 export TIME="\
-	elapsed: %E 
-	CPU:     %P
-	max:     %M KiB
-	swaps:   %s
+	Elapsed Time:      %e Seconds
+	CPU:               %P
+	Max Memory:        %M KiB
+	Average Memory:    %K KiB
+	Minor PF:          %R
+	Major PF:          %F
+	Context Switch:    %c+%w
 "
 
-EXEC="./odin_II"
 
 function help() {
 printf "
@@ -36,6 +51,7 @@ Usage: ./wrapper_odin.sh [options] CMD
 			--failure_log                           * output the display label to a file if there was a failure
 			--time_limit                            * stops Odin after X seconds
 			--limit_ressource						* limit ressource usage using ulimit -m (25% of hrdw memory) and nice value of 19
+			--perf <output_file>                    * Use perf stat record -d -d -d -o < output_file > 
 "
 }
 
@@ -61,15 +77,17 @@ function dump_log {
 }
 
 function ctrl_c() {
-	if [ "_${QUIT}" == "_0" ]
-	then
-		QUIT=1
+	trap '' INT SIGINT SIGTERM
+	QUIT=1
+
+	while [ "_${QUIT}" != "_0" ]
+	do
 		echo "** ODIN WRAPPER EXITED FORCEFULLY **"
 		jobs -p | xargs kill &> /dev/null
 		pkill odin_II &> /dev/null
 		#should be dead by now
 		exit 1
-	fi
+	done
 }
 
 #this hopefully will force to swap more
@@ -159,6 +177,10 @@ do
 			VALGRIND_EXEC="valgrind --leak-check=full"
 			;;
 
+		--perf)
+			PERF_EXEC="perf stat record -a -d -d -d -o $2 "
+			shift
+			;;
 		*) 
 			cmd=$@
 			cmd="${VALGRIND_EXEC} ${EXEC} ${cmd}"
@@ -168,9 +190,9 @@ do
 			display "running"
 
 			if [ "_${LOG_FILE}" != "_" ]; then 
-				timeout ${TIME_LIMIT} /bin/bash -c "${TIME_EXEC} --output=${LOG_FILE} --append ${cmd} &>> ${LOG_FILE}" &> /dev/null && EXIT_STATUS=0 || EXIT_STATUS=1 
+				timeout ${TIME_LIMIT} /bin/bash -c "${TIME_EXEC} --output=${LOG_FILE} --append ${PERF_EXEC} ${cmd} &>> ${LOG_FILE}" &> /dev/null && EXIT_STATUS=0 || EXIT_STATUS=1 
 			else
-				timeout ${TIME_LIMIT} /bin/bash -c "${TIME_EXEC} ${cmd}" && EXIT_STATUS=0 || EXIT_STATUS=1
+				timeout ${TIME_LIMIT} /bin/bash -c "${TIME_EXEC} ${PERF_EXEC} ${cmd}" && EXIT_STATUS=0 || EXIT_STATUS=1
 			fi
 			break
 			;;

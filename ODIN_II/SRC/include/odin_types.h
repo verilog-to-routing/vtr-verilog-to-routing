@@ -115,12 +115,13 @@ struct global_args_t_t
 
 	argparse::ArgValue<char*> high_level_block; //Legacy option, no longer used
 
+	argparse::ArgValue<char*> top_level_module_name; // force the name of the top level module desired
+
     argparse::ArgValue<bool> write_netlist_as_dot;
     argparse::ArgValue<bool> write_ast_as_dot;
     argparse::ArgValue<bool> all_warnings;
     argparse::ArgValue<bool> show_help;
 
-    argparse::ArgValue<bool> black_box_latches; //Weather or not to treat and output latches as black boxes
 	argparse::ArgValue<char*> adder_def; //carry skip adder skip size
     // defines if the first cin of an adder/subtractor is connected to a global gnd/vdd
     // or generated using a dummy adder with both inputs set to gnd/vdd
@@ -155,6 +156,7 @@ struct global_args_t_t
 	argparse::ArgValue<bool> sim_achieve_best;
 
 	argparse::ArgValue<int> parralelized_simulation;
+	argparse::ArgValue<bool> parralelized_simulation_in_batch;
 	argparse::ArgValue<int> sim_initial_value;
 	// The seed for creating random simulation vector
     argparse::ArgValue<int> sim_random_seed;

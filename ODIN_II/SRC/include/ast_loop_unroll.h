@@ -41,7 +41,6 @@ condition_function resolve_condition(ast_node_t* node, ast_node_t* symbol, int* 
 post_condition_function resolve_binary_operation(ast_node_t* node);
 post_condition_function resolve_post_condition(ast_node_t* assignment, ast_node_t* symbol, int* error_code);
 ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node_t* pre, ast_node_t** value, int* error_code, ast_node_t ****instances, int *num_unrolled, int *num_original);
-long int power_of_ten(long int);
 ast_node_t *replace_named_module(ast_node_t* module, ast_node_t** value);
 
 #endif
