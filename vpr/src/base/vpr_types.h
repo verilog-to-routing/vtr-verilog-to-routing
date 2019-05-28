@@ -705,6 +705,7 @@ struct t_packer_opts {
     std::vector<std::string> target_external_pin_util;
     bool prioritize_transitive_connectivity;
     int high_fanout_threshold;
+    int transitive_fanout_threshold;
     e_stage_action doPacking;
     enum e_packer_algorithm packer_algorithm;
     std::string device_layout;

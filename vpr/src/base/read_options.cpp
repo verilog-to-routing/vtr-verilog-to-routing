@@ -1142,6 +1142,11 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
         .default_value("64")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument(args.pack_transitive_fanout_threshold, "--pack_transitive_fanout_threshold")
+        .help("Packer transitive fanout threshold")
+        .default_value("4")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
         .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
         .default_value("2")
