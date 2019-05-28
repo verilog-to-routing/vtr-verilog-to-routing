@@ -577,7 +577,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			            /* add this output to the modules string cache */
 			            if ((sc_spot = sc_add_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
 			            {
-				            error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
+				            error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has output with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
 			            }
 			            /* store the data which is an idx here */
 			            modules_outputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
@@ -697,7 +697,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				        /* add this output to the modules string cache */
 				        if ((sc_spot = sc_add_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
 				        {
-					        error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
+					        error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has output with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
 				        }
 				        /* store the data which is an idx here */
 				        functions_outputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
