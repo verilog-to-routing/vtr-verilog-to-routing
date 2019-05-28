@@ -90,6 +90,9 @@ char* standardize_number(const char* input);
 <INITIAL>"specify"			{ MP; return vSPECIFY;}
 <INITIAL>"while"			{ MP; return vWHILE;}
 <INITIAL>"wire"				{ MP; return vWIRE;}
+<INITIAL>"tri"				{ MP; return vWIRE;}
+<INITIAL>"tri0"				{ MP; return vWIRE;}
+<INITIAL>"tri1"				{ MP; return vWIRE;}
 <INITIAL>"xnor"				{ MP; return vXNOR;}
 <INITIAL>"xor"				{ MP; return vXOR;}
 <INITIAL>"macromodule"		{ MP; return vMODULE;}
@@ -149,9 +152,6 @@ char* standardize_number(const char* input);
 <INITIAL>"tran"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"tranif0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"tranif1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
-<INITIAL>"tri"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
-<INITIAL>"tri0"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
-<INITIAL>"tri1"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"triand"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"trior"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"vectored"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
