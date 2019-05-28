@@ -1177,7 +1177,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
         .help(
             "Temperature scaling factor for manual annealing schedule."
             " Old temperature is multiplied by alpha_t")
-        .default_value("0.01")
+        .default_value("0.8")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.pad_loc_file, "--fix_pins")
@@ -1260,14 +1260,13 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
 
     place_timing_grp.add_argument(args.place_delay_offset, "--place_delay_offset")
         .help(
-            "A constant offset (in seconds) applied to the placer's delay model."
-            " Negative values disable the placer delay ramp.")
+            "A constant offset (in seconds) applied to the placer's delay model.")
         .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.place_delay_ramp_delta_threshold, "--place_delay_ramp_delta_threshold")
         .help(
-            "The delta distance beyond which --place_delay_ramp is applied. Negative values disable delay ramp."
+            "The delta distance beyond which --place_delay_ramp is applied."
             " Negative values disable the placer delay ramp.")
         .default_value("-1")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -1482,28 +1481,6 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
         .default_value("64")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    route_timing_grp.add_argument(args.router_debug_net, "--router_debug_net")
-        .help(
-            "Controls when router debugging is enabled.\n"
-            " * For values >= 0, the value is taken as the net ID for\n"
-            "   which to enable router debug output.\n"
-            " * For value == -1, router debug output is enabled for\n"
-            "   all nets.\n"
-            " * For values < -1, all net-sbased router debug output is disabled.\n"
-            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
-        .default_value("-2")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    route_timing_grp.add_argument(args.router_debug_sink_rr, "--router_debug_sink_rr")
-        .help(
-            "Controls when router debugging is enabled for the specified sink RR.\n"
-            " * For values >= 0, the value is taken as the sink RR Node ID for\n"
-            "   which to enable router debug output.\n"
-            " * For values < 0, sink-based router debug output is disabled.\n"
-            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
-        .default_value("-2")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     route_timing_grp.add_argument<e_router_lookahead, ParseRouterLookahead>(args.router_lookahead_type, "--router_lookahead")
         .help(
             "Controls what lookahead the router uses to calculate cost of completing a connection.\n"
@@ -1531,6 +1508,28 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
         .help("Name of the post first routing iteration timing report file (not generated if unspecfied)")
         .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.router_debug_net, "--router_debug_net")
+        .help(
+            "Controls when router debugging is enabled.\n"
+            " * For values >= 0, the value is taken as the net ID for\n"
+            "   which to enable router debug output.\n"
+            " * For value == -1, router debug output is enabled for\n"
+            "   all nets.\n"
+            " * For values < -1, all net-sbased router debug output is disabled.\n"
+            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+        .default_value("-2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.router_debug_sink_rr, "--router_debug_sink_rr")
+        .help(
+            "Controls when router debugging is enabled for the specified sink RR.\n"
+            " * For values >= 0, the value is taken as the sink RR Node ID for\n"
+            "   which to enable router debug output.\n"
+            " * For values < 0, sink-based router debug output is disabled.\n"
+            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+        .default_value("-2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& analysis_grp = parser.add_argument_group("analysis options");
