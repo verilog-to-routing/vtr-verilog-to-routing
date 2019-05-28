@@ -22,7 +22,7 @@ std::string secure_digest_stream(std::istream& is) {
     picosha2::hash256_one_by_one hasher;
 
     std::array<char, 1024> buf;
-    while(!is.eof()) {
+    while (!is.eof()) {
         //Process a chunk
         is.read(buf.data(), buf.size());
         hasher.process(buf.begin(), buf.begin() + is.gcount());
@@ -36,4 +36,4 @@ std::string secure_digest_stream(std::istream& is) {
     return "SHA256:" + picosha2::get_hash_hex_string(hasher);
 }
 
-} //namespace
+} // namespace vtr

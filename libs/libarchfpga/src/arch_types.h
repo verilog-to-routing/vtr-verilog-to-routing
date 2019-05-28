@@ -1,8 +1,8 @@
 /*
- Data types describing the FPGA architecture.
-
- Date: February 19, 2009
- Authors: Jason Luu and Kenneth Kent
+ * Data types describing the FPGA architecture.
+ *
+ * Date: February 19, 2009
+ * Authors: Jason Luu and Kenneth Kent
  */
 
 #ifndef ARCH_TYPES_H
@@ -27,4 +27,3 @@ constexpr const char* MODEL_LATCH = ".latch";
 constexpr const char* MODEL_INPUT = ".input";
 constexpr const char* MODEL_OUTPUT = ".output";
 #endif
-
