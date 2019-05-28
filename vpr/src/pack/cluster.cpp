@@ -3161,7 +3161,7 @@ static void update_molecule_chain_info(t_pack_molecule* chain_molecule, const t_
     // Since for long chains the molecule size is already equal to the
     // total number of adders in the cluster. Therefore, it should
     // always be placed at the very first adder in this cluster.
-    for(size_t chainId = 0; chainId < chain_root_pins.size(); chainId++) {
+    for (size_t chainId = 0; chainId < chain_root_pins.size(); chainId++) {
         if (chain_root_pins[chainId][0]->parent_node == root_primitive) {
             chain_molecule->chain_info->chain_id = chainId;
             chain_molecule->chain_info->first_packed_molecule = chain_molecule;
@@ -3189,7 +3189,7 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(
 
     const auto& chain_root_pins = molecule->pack_pattern->chain_root_pins;
 
-    t_model_ports *root_port = chain_root_pins[0][0]->port->model_port;
+    t_model_ports* root_port = chain_root_pins[0][0]->port->model_port;
     AtomNetId chain_net_id;
     auto port_id = atom_ctx.nlist.find_atom_port(blk_id, root_port);
 
@@ -3215,11 +3215,11 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(
             // the chain doesn't have an assigned chain_id yet
         } else {
             block_pack_status = BLK_FAILED_FEASIBLE;
-            for (const auto& chain: chain_root_pins) {
+            for (const auto& chain : chain_root_pins) {
                 for (size_t tieOff = 0; tieOff < chain.size(); tieOff++) {
                     // check if this chosen primitive is one of the possible
                     // starting points for this chain.
-                    if(pb_graph_node == chain[tieOff]->parent_node) {
+                    if (pb_graph_node == chain[tieOff]->parent_node) {
                         // this location matches with the one of the dedicated chain
                         // input from outside logic block, therefore it is feasible
                         block_pack_status = BLK_PASSED;

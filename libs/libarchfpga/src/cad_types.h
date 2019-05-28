@@ -101,7 +101,7 @@ struct t_pack_patterns {
     bool* is_block_optional;
 
     bool is_chain;
-    std::vector<std::vector<t_pb_graph_pin *>> chain_root_pins;
+    std::vector<std::vector<t_pb_graph_pin*>> chain_root_pins;
 
     // default constructor initializing to an invalid pack pattern
     t_pack_patterns() {
