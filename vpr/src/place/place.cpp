@@ -572,6 +572,11 @@ void try_place(t_placer_opts placer_opts,
         VTR_LOG("Initial placement estimated setup slack histogram:\n");
         print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
     }
+    size_t num_macro_members = 0;
+    for (auto& macro : g_vpr_ctx.placement().pl_macros) {
+        num_macro_members += macro.members.size();
+    }
+    VTR_LOG("Placement contains %zu placement macros involving %zu blocks (average macro size %f)\n", g_vpr_ctx.placement().pl_macros.size(), num_macro_members, float(num_macro_members) / g_vpr_ctx.placement().pl_macros.size());
     VTR_LOG("\n");
 
     //Table header
