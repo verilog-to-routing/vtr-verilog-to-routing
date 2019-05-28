@@ -461,19 +461,19 @@ bool try_intra_lb_route(t_lb_router_data* router_data,
                     is_impossible = add_to_rt(lb_nets[idx].rt_tree, exp_node.node_index, router_data, idx);
                 }
 
-                if (verbosity > 3) {
-                    vtr::printf("Routing finished\n");
-                    vtr::printf("\tS");
+                if (verbosity > 5) {
+                    VTR_LOG("Routing finished\n");
+                    VTR_LOG("\tS");
                     print_trace(stdout, lb_nets[idx].rt_tree, router_data);
-                    vtr::printf("\n");
+                    VTR_LOG("\n");
                 }
 
                 if (is_impossible) {
-                    vtr::printf("Routing was impossible!\n");
+                    VTR_LOG("Routing was impossible!\n");
                 } else if (mode_status->expand_all_modes) {
                     is_impossible = route_has_conflict(lb_nets[idx].rt_tree, router_data);
                     if (is_impossible) {
-                        vtr::printf("Routing was impossible due to modes!\n");
+                        VTR_LOG("Routing was impossible due to modes!\n");
                     }
                 }
 
