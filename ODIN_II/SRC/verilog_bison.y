@@ -216,6 +216,7 @@ function_input_declaration:
 
 parameter_declaration:
 	vPARAMETER variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $2);}
+	| vLOCALPARAM variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $2);}
 	;
 
 defparam_declaration:

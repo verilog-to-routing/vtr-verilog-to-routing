@@ -120,6 +120,7 @@ const char *ids_STR []=
 	"INTEGER",
 	"GENVAR",
 	"PARAMETER",
+	"LOCALPARAM",
 	"INITIALS",
 	"PORT",
 	/* OTHER MODULE ITEMS */
