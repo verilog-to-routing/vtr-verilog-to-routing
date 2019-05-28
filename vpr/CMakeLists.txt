@@ -25,10 +25,20 @@ option(VPR_IPO_BUILD "Should VPR be compiled with an interprocedural optimizatio
 set(VPR_PGO_CONFIG "none" CACHE STRING "Configure VPR Profile-Guided Optimization (PGO). prof_gen: built executable will produce profiling info, prof_use: built executable will be optimized based on generated profiling info, none: disable pgo")
 set_property(CACHE VPR_PGO_CONFIG PROPERTY STRINGS prof_gen prof_use none)
 
+set(
+  RESOURCE_LIST
+  # Strip all the whitespace characters from ui file
+  STRIPBLANKS main.ui
+)
+
+list(APPEND CMAKE_MODULE_PATH
+     ../GCR_CMake/macros)
+
 #
 # Build Configuration
 #
 include(CheckCXXSymbolExists)
+include(GlibCompileResourcesSupport)
 
 #Collect the source files
 file(GLOB_RECURSE EXEC_SOURCES src/main.cpp)
@@ -58,7 +68,7 @@ target_link_libraries(libvpr
                         libpugixml)
 
 #Create the executable
-add_executable(vpr ${EXEC_SOURCES})
+add_executable(vpr ${EXEC_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/resources.C)
 target_link_libraries(vpr
                         libvpr)
 
@@ -68,6 +78,31 @@ if (VPR_IPO_BUILD)
     set_property(TARGET vpr PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
+compile_gresources(
+  # input: the name of our resources
+  RESOURCE_FILE
+  # output: the filename of the generated XML file
+  XML_OUT
+  # generate C code to be compiled with our program
+  TYPE
+    EMBED_C
+  # specify the name of the C file that is generated
+  TARGET
+    resources.C
+  # specify the resource prefix (used in the code)
+  PREFIX
+    /ezgl
+  # input: specify the list of files to compile into resources
+  RESOURCES
+    ${RESOURCE_LIST}
+)
+
+
+add_custom_target(
+  resource ALL
+  DEPENDS
+    ${RESOURCE_FILE}
+)
 
 #
 # Profile Guilded Optimization Configuration
@@ -160,6 +195,7 @@ endif()
 
 install(TARGETS vpr libvpr DESTINATION bin)
 
+
 #
 # Unit Tests
 #
@@ -173,3 +209,6 @@ add_test(NAME test_vpr
     COMMAND test_vpr --use-colour=yes
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
     )
+
+
+message(STATUS "hi i am fine in vpr!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
