@@ -347,7 +347,18 @@ static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const Atom
 
 /*****************************************/
 /*globally accessible function*/
-std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts, const t_arch* arch, t_pack_molecule* molecule_head, int num_models, const std::unordered_set<AtomNetId>& is_clock, std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules, const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode, bool allow_unrelated_clustering, bool balance_block_type_utilization, std::vector<t_lb_type_rr_node>* lb_type_rr_graphs, const t_ext_pin_util_targets& ext_pin_util_targets) {
+std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
+                                           const t_arch* arch,
+                                           t_pack_molecule* molecule_head,
+                                           int num_models,
+                                           const std::unordered_set<AtomNetId>& is_clock,
+                                           std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                           const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
+                                           bool allow_unrelated_clustering,
+                                           bool balance_block_type_utilization,
+                                           std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                                           const t_ext_pin_util_targets& ext_pin_util_targets,
+                                           const t_pack_high_fanout_thresholds& high_fanout_thresholds) {
     /* Does the actual work of clustering multiple netlist blocks *
      * into clusters.                                                  */
 
@@ -513,13 +524,14 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts, con
             fflush(stdout);
 
             t_ext_pin_util target_ext_pin_util = ext_pin_util_targets.get_pin_util(cluster_ctx.clb_nlist.block_type(clb_index)->name);
+            int high_fanout_threshold = high_fanout_thresholds.get_threshold(cluster_ctx.clb_nlist.block_type(clb_index)->name);
             update_cluster_stats(istart, clb_index,
                                  is_clock, //Set of clock nets
                                  is_clock, //Set of global nets (currently all clocks)
                                  packer_opts.global_clocks,
                                  packer_opts.alpha, packer_opts.beta,
                                  packer_opts.timing_driven, packer_opts.connection_driven,
-                                 packer_opts.high_fanout_threshold,
+                                 high_fanout_threshold,
                                  *timing_info);
             num_clb++;
 
@@ -604,7 +616,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts, con
                                      is_clock, //Set of all global signals (currently clocks)
                                      packer_opts.global_clocks, packer_opts.alpha, packer_opts.beta, packer_opts.timing_driven,
                                      packer_opts.connection_driven,
-                                     packer_opts.high_fanout_threshold,
+                                     high_fanout_threshold,
                                      *timing_info);
                 num_unrelated_clustering_attempts = 0;
 

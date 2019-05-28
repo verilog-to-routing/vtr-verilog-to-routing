@@ -22,6 +22,25 @@ void t_ext_pin_util_targets::set_default_pin_util(t_ext_pin_util default_target)
     defaults_ = default_target;
 }
 
+t_pack_high_fanout_thresholds::t_pack_high_fanout_thresholds(int threshold)
+    : default_(threshold) {}
+
+void t_pack_high_fanout_thresholds::set_default(int threshold) {
+    default_ = threshold;
+}
+
+void t_pack_high_fanout_thresholds::set(std::string block_type_name, int threshold) {
+    overrides_[block_type_name] = threshold;
+}
+
+int t_pack_high_fanout_thresholds::get_threshold(std::string block_type_name) const {
+    auto itr = overrides_.find(block_type_name);
+    if (itr != overrides_.end()) {
+        return itr->second;
+    }
+    return default_;
+}
+
 /*
  * t_pb structure function definitions
  */

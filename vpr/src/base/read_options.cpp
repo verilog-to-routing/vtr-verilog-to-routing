@@ -1138,8 +1138,26 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.pack_high_fanout_threshold, "--pack_high_fanout_threshold")
-        .help("Packer high fanout threshold")
-        .default_value("64")
+        .help(
+            "Sets the high fanout threshold during clustering.\n"
+            "\n"
+            "Typically reducing the threshold reduces packing density\n"
+            "and improves routability."
+            "\n"
+            "This option can take multiple specifications in several\n"
+            "formats:\n"
+            "* auto (i.e. 'auto'): VPR will determine the target pin\n"
+            "                      utilizations automatically\n"
+            "* Single Value (e.g. '256'): the high fanout threshold\n"
+            "                             for all block types\n"
+            "* Block Value (e.g. 'clb:16'): the high fanout threshold\n"
+            "                               for a specific block type\n"
+            "These can be used in combination. For example:\n"
+            "   '--pack_high_fanout_threshold 256 clb:16'\n"
+            "would set the high fanout threshold for clb blocks to 16\n"
+            "and all other blocks to 256\n")
+        .nargs('+')
+        .default_value({"auto"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.pack_transitive_fanout_threshold, "--pack_transitive_fanout_threshold")

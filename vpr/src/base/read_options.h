@@ -72,7 +72,7 @@ struct t_options {
     argparse::ArgValue<std::vector<std::string>> target_external_pin_util;
     argparse::ArgValue<bool> pack_prioritize_transitive_connectivity;
     argparse::ArgValue<int> pack_transitive_fanout_threshold;
-    argparse::ArgValue<int> pack_high_fanout_threshold;
+    argparse::ArgValue<std::vector<std::string>> pack_high_fanout_threshold;
     argparse::ArgValue<int> pack_verbosity;
 
     /* Placement options */

@@ -180,6 +180,27 @@ class t_ext_pin_util_targets {
     std::map<std::string, t_ext_pin_util> overrides_;
 };
 
+class t_pack_high_fanout_thresholds {
+  public:
+    t_pack_high_fanout_thresholds() = default;
+    t_pack_high_fanout_thresholds(int threshold);
+
+    int get_threshold(std::string block_type_name) const;
+
+  public:
+    //Sets the pin util for the specified block type
+    //Returns true if non-default was previously set
+    void set(std::string block_type_name, int threshold);
+
+    //Sets the default pin util
+    //Returns true if a default was previously set
+    void set_default(int threshold);
+
+  private:
+    int default_;
+    std::map<std::string, int> overrides_;
+};
+
 /* these are defined later, but need to declare here because it is used */
 class t_rr_node;
 struct t_pack_molecule;
@@ -704,7 +725,7 @@ struct t_packer_opts {
     e_balance_block_type_util balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;
     bool prioritize_transitive_connectivity;
-    int high_fanout_threshold;
+    std::vector<std::string> high_fanout_threshold;
     int transitive_fanout_threshold;
     e_stage_action doPacking;
     enum e_packer_algorithm packer_algorithm;
