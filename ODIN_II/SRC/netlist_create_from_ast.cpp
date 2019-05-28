@@ -164,9 +164,11 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 	long i, j;
 	char *temp_string;
 	char **temp_parameter_list = NULL;
+	ast_node_t **temp_localparam_list = NULL;
 	long sc_spot;
 	oassert(module_items->type == MODULE_ITEMS || module_items->type == FUNCTION_ITEMS);
 	int parameter_num = 0;
+	int localparam_num = 0;
 	int parameter_count = 0;
 	STRING_CACHE *local_param_table_sc;
 
@@ -195,14 +197,14 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 						(var_declare->types.variable.is_wire)) continue;
 
 					oassert(module_items->children[i]->children[j]->type == VAR_DECLARE);
-					oassert(var_declare->types.variable.is_parameter);
+					oassert(var_declare->types.variable.is_parameter || var_declare->types.variable.is_localparam);
 
-					parameter_num++;
 					/* make the string to add to the string cache */
 					temp_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, -1);
 
 					if (var_declare->types.variable.is_parameter)
 					{
+						parameter_num++;
 						sc_spot = sc_add_string(local_param_table_sc, temp_string);
 						local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
 
@@ -213,6 +215,18 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 							temp_parameter_list = (char**) vtr::realloc(temp_parameter_list, sizeof(char*)*parameter_num);
 						
 						temp_parameter_list[parameter_num-1] = temp_string;
+					}
+					else if (var_declare->types.variable.is_localparam)
+					{
+						localparam_num++;
+
+						/* add to param table once all parameter overrides are dealt with */
+						if (localparam_num == 1)
+							temp_localparam_list = (ast_node_t**) vtr::calloc(localparam_num, sizeof(ast_node_t*));
+						else
+							temp_localparam_list = (ast_node_t**) vtr::realloc(temp_localparam_list, sizeof(ast_node_t*)*localparam_num);
+						
+						temp_localparam_list[localparam_num-1] = var_declare;
 					}
 				}
 			}
@@ -265,12 +279,14 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 				else
 				{
 					// override without name during module instantiation; use name from temp_parameter_list 
-					if (parameter_count <= parameter_num) 
+					if (parameter_count < parameter_num) 
 					{
 						ast_node_t *var_declare = parent_parameter_list->children[i];
-						sc_spot = sc_lookup_string(local_param_table_sc, temp_parameter_list[parameter_count++]);
+						sc_spot = sc_lookup_string(local_param_table_sc, temp_parameter_list[parameter_count]);
 						local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
 					}
+
+					parameter_count++;
 
 					if(parameter_num == 0)
 					{
@@ -298,6 +314,19 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 						parameter_count, module_name, parameter_num);
 			}
 		}
+	}
+
+	/* add localparams */
+	for (i = 0; i < localparam_num; i++) {
+		/* add to string cache */
+		temp_string = make_full_ref_name(NULL, NULL, NULL, temp_localparam_list[i]->children[0]->types.identifier, -1);
+		sc_spot = sc_add_string(local_param_table_sc, temp_string);
+		local_param_table_sc->data[sc_spot] = (void *)temp_localparam_list[i]->children[5];
+
+		/* add to temp param list */
+		parameter_num++;
+		temp_parameter_list = (char**) vtr::realloc(temp_parameter_list, sizeof(char*)*parameter_num);
+		temp_parameter_list[parameter_num-1] = temp_string;
 	}
 
 	/* now that parameters are all updated, resolve them */
@@ -1807,7 +1836,9 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 					ast_node_t *var_declare = module_items->children[i]->children[j];
 
 					/* parameters are already dealt with */
-					if (var_declare->types.variable.is_parameter)
+					if (var_declare->types.variable.is_parameter
+						|| var_declare->types.variable.is_localparam)
+						
 						continue;
 
 					oassert(module_items->children[i]->children[j]->type == VAR_DECLARE);

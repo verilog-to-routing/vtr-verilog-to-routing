@@ -84,7 +84,7 @@ char* standardize_number(const char* input);
 <INITIAL>"or"				{ MP; return vOR;}
 <INITIAL>"output"			{ MP; return vOUTPUT;}
 <INITIAL>"parameter"		{ MP; return vPARAMETER;}
-<INITIAL>"localparam"		{ MP; return vPARAMETER;}
+<INITIAL>"localparam"		{ MP; return vLOCALPARAM;}
 <INITIAL>"posedge"			{ MP; return vPOSEDGE;}
 <INITIAL>"reg"				{ MP; return vREG;}
 <INITIAL>"specify"			{ MP; return vSPECIFY;}

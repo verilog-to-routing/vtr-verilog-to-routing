@@ -536,6 +536,32 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			            symbol_list->children[i]->types.variable.is_parameter = TRUE;
 			            break;
 		            }
+					case LOCALPARAM:
+					{
+						 /* create an entry in the symbol table for this parameter */
+			            if ((sc_spot = sc_add_string(defines_for_module_sc[num_modules-num_instances], symbol_list->children[i]->children[0]->types.identifier)) == -1)
+			            {
+				            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
+					            symbol_list->children[i]->children[0]->types.identifier,
+					            ((ast_node_t*)(defines_for_module_sc[num_modules-num_instances]->data[sc_spot]))->line_number);
+			            }
+						
+						ast_node_t *value = symbol_list->children[i]->children[5];
+
+						/* make sure that the parameter value is constant */
+						if (!node_is_ast_constant(value, defines_for_module_sc[num_modules-num_instances]))
+						{
+							error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Localparam value must be constant\n");
+						}
+
+			            symbol_list->children[i]->children[5]->types.variable.is_localparam = TRUE;
+			            defines_for_module_sc[num_modules-num_instances]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
+			            /* mark the node as shared so we don't delete it */
+			            symbol_list->children[i]->children[5]->shared_node = TRUE;
+			            /* now do the mark */
+			            symbol_list->children[i]->types.variable.is_localparam = TRUE;
+			            break;
+					}
 		            case INPUT:
 			            symbol_list->children[i]->types.variable.is_input = TRUE;
 			            /* add this input to the modules string cache */
@@ -570,9 +596,9 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			    case GENVAR:			
 			            symbol_list->children[i]->types.variable.is_integer = TRUE;
 			            break;
-		            default:
-			            oassert(FALSE);
-	            }
+				default:
+					oassert(FALSE);
+			}
         }
         else if(top_type == FUNCTION) {
 
@@ -630,6 +656,32 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				        symbol_list->children[i]->types.variable.is_parameter = TRUE;
 				        break;
 			        }
+					case LOCALPARAM:
+					{
+						/* create an entry in the symbol table for this parameter */
+				        if ((sc_spot = sc_add_string(defines_for_function_sc[num_functions], symbol_list->children[i]->children[0]->types.identifier)) == -1)
+				        {
+					        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
+						        symbol_list->children[i]->children[0]->types.identifier,
+						        ((ast_node_t*)(defines_for_function_sc[num_functions]->data[sc_spot]))->line_number);
+				        }
+						
+						ast_node_t *value = symbol_list->children[i]->children[5];
+
+						/* make sure that the parameter value is constant */
+						if (!node_is_ast_constant(value, defines_for_function_sc[num_functions]))
+						{
+							error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Localparam value must be constant\n");
+						}
+
+			            symbol_list->children[i]->children[5]->types.variable.is_localparam = TRUE;
+				        defines_for_function_sc[num_functions]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
+				        /* mark the node as shared so we don't delete it */
+				        symbol_list->children[i]->children[5]->shared_node = TRUE;
+				        /* now do the mark */
+				        symbol_list->children[i]->types.variable.is_localparam = TRUE;
+				        break;
+					}
 			        case INPUT:
 				        symbol_list->children[i]->types.variable.is_input = TRUE;
 				        /* add this input to the modules string cache */

@@ -287,6 +287,7 @@ typedef enum
 	INTEGER,
 	GENVAR,
 	PARAMETER,
+	LOCALPARAM,
 	INITIALS,
 	PORT,
 	/* OTHER MODULE ITEMS */
@@ -380,6 +381,7 @@ struct typ_t
 	struct
 	{
 		short is_parameter;
+		short is_localparam;
 		short is_port;
 		short is_input;
 		short is_output;
