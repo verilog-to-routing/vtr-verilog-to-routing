@@ -209,6 +209,3 @@ add_test(NAME test_vpr
     COMMAND test_vpr --use-colour=yes
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
     )
-
-
-message(STATUS "hi i am fine in vpr!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
