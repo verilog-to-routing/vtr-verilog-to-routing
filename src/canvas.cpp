@@ -101,8 +101,9 @@ gboolean canvas::draw_surface(GtkWidget *, cairo_t *context, gpointer data)
   return FALSE;
 }
 
-canvas::canvas(std::string canvas_id, draw_canvas_fn draw_callback, rectangle coordinate_system)
-    : m_canvas_id(std::move(canvas_id)), m_draw_callback(draw_callback), m_camera(coordinate_system)
+canvas::canvas(std::string canvas_id, draw_canvas_fn draw_callback, rectangle coordinate_system, color background_color)
+    : m_canvas_id(std::move(canvas_id)), m_draw_callback(draw_callback), m_camera(coordinate_system),
+      m_background_color(background_color)
 {
 }
 
@@ -155,8 +156,9 @@ void canvas::initialize(GtkWidget *drawing_area)
 
 void canvas::redraw()
 {
-  // Clear the screen.
-  cairo_set_source_rgb(m_context, 1, 1, 1);
+  // Clear the screen and set the background color
+  cairo_set_source_rgb(m_context, m_background_color.red / 255.0,
+		       m_background_color.green / 255.0, m_background_color.blue / 255.0);
   cairo_paint(m_context);
 
   using namespace std::placeholders;

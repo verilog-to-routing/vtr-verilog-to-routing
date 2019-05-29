@@ -31,6 +31,13 @@ namespace ezgl {
 class rectangle {
 public:
   /**
+   * Default constructor: Create a zero-sized rectangle at {0,0}.
+   */
+  rectangle() : m_first({0, 0}), m_second({0, 0})
+  {
+  }
+
+  /**
    * Create a rectangle from two diagonally opposite points.
    */
   rectangle(point2d origin, point2d top_right) : m_first(origin), m_second(top_right)

@@ -30,6 +30,14 @@ namespace ezgl {
  */
 struct color {
   /**
+   * Default constructor: Create a black color.
+   */
+  constexpr color() noexcept
+      : red(0), green(0), blue(0), alpha(255)
+  {
+  }
+
+  /**
    * Create a color.
    *
    * @param r The amount of red.

@@ -22,6 +22,7 @@
 #include "ezgl/camera.hpp"
 #include "ezgl/rectangle.hpp"
 #include "ezgl/graphics.hpp"
+#include "ezgl/color.hpp"
 
 #include <cairo.h>
 #include <gtk/gtk.h>
@@ -110,7 +111,7 @@ protected:
   /**
    * Create a canvas that can be drawn to.
    */
-  canvas(std::string canvas_id, draw_canvas_fn draw_callback, rectangle coordinate_system);
+  canvas(std::string canvas_id, draw_canvas_fn draw_callback, rectangle coordinate_system, color background_color);
 
   /**
    * Lazy initialization of the canvas class.
@@ -129,6 +130,9 @@ private:
 
   // The transformations between the GUI and the world.
   camera m_camera;
+
+  // The background color of the drawing area
+  color m_background_color;
 
   // A non-owning pointer to the drawing area inside a GTK window.
   GtkWidget *m_drawing_area = nullptr;

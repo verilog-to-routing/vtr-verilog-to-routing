@@ -52,11 +52,14 @@ void application::activate(GtkApplication *, gpointer user_data)
   GObject *window = ezgl_app->get_object(ezgl_app->m_window_id.c_str());
   gtk_application_add_window(ezgl_app->m_application, GTK_WINDOW(window));
 
+  // Setup the default callbacks for the mouse and key events
+  register_default_events_callbacks(ezgl_app);
+
   if(ezgl_app->m_register_callbacks != nullptr) {
     ezgl_app->m_register_callbacks(ezgl_app);
   } else {
+    // Setup the default callbacks for the prebuilt buttons
     register_default_buttons_callbacks(ezgl_app);
-    register_default_events_callbacks(ezgl_app);
   }
 
   if(ezgl_app->initial_setup_callback != nullptr)
@@ -108,7 +111,8 @@ canvas *application::get_canvas(const std::string &canvas_id) const
 
 canvas *application::add_canvas(std::string const &canvas_id,
     draw_canvas_fn draw_callback,
-    rectangle coordinate_system)
+    rectangle coordinate_system,
+    color background_color)
 {
   if(draw_callback == nullptr) {
     // A NULL draw callback means the canvas will never render anything to the screen.
@@ -117,7 +121,7 @@ canvas *application::add_canvas(std::string const &canvas_id,
 
   // Can't use make_unique with protected constructor without fancy code that will confuse students, so we use new
   // instead.
-  std::unique_ptr<canvas> canvas_ptr(new canvas(canvas_id, draw_callback, coordinate_system));
+  std::unique_ptr<canvas> canvas_ptr(new canvas(canvas_id, draw_callback, coordinate_system, background_color));
   auto it = m_canvases.emplace(canvas_id, std::move(canvas_ptr));
 
   if(!it.second) {
@@ -326,12 +330,16 @@ bool application::destroy_button(const char *button_text_to_destroy)
         if(button_text == text_to_del) {
           // destroy the button (widget) and return true
           gtk_widget_destroy(widget);
+          // free the children list
+          g_list_free (children);
           return true;
         }
       }
     }
   }
 
+  // free the children list
+  g_list_free (children);
   // couldn't find the button with the label 'button_text_to_destroy'
   return false;
 }
@@ -369,6 +377,9 @@ void application::change_button_text(const char *button_text, const char *new_bu
       }
     }
   }
+
+  // free the children list
+  g_list_free (children);
 }
 
 void application::change_canvas_world_coordinates(std::string const &canvas_id,
