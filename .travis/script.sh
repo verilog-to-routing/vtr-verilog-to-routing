@@ -27,6 +27,12 @@ end_section "vtr.du"
 
 $SPACER
 
+start_section "vtr.test.0" "${GREEN}Testing..${NC} ${CYAN}C++ unit tests${NC}"
+make test
+end_section "vtr.test.0"
+
+$SPACER
+
 start_section "vtr.test.1" "${GREEN}Testing..${NC} ${CYAN}vtr_reg_basic${NC}"
 ./run_reg_test.pl vtr_reg_basic
 end_section "vtr.test.1"
