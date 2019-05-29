@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source .travis/common.sh
+source .github/travis/common.sh
 set -e
 
 # Close the after_success fold travis has created already.
