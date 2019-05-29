@@ -30,6 +30,7 @@ addons:
     - libfontconfig1-dev
     - liblist-moreutils-perl
     - libncurses5-dev
+    - libtbb-dev
     - libx11-dev
     - libxft-dev
     - libxml++2.6-dev
