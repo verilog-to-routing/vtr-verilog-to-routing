@@ -48,7 +48,7 @@ export CTEST_OUTPUT_ON_FAILURE=TRUE
 .PHONY: all distclean $(MAKECMDGOALS)
 
 #For an 'all' build with BUILD_TYPE containing 'pgo' this will perform a 2-stage compilation
-#with profile guided optimization. 
+#with profile guided optimization.
 #For a BUILD_TYPE without 'pgo', a single stage (non-pgo) compilation is performed.
 
 #Forward any targets that are not named 'distclean' or 'clean' to the generated Makefile
@@ -68,7 +68,7 @@ ifneq (,$(findstring pgo,$(BUILD_TYPE)))
 	#1st-stage build for profile generation
 	#
 	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_gen .. "
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_gen .. 
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_gen ..
 	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
 	#
 	#Run benchmarks to generate profiling data
@@ -82,14 +82,14 @@ ifneq (,$(findstring pgo,$(BUILD_TYPE)))
 	#Configure 2nd-stage build to use profiling data to guide compiler optimization
 	#
 	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_use .. "
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_use .. 
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_use ..
 else #BUILD_TYPE not containing 'pgo'
 	#
 	#Configure for standard build
 	#
 	@echo "Performing standard build..."
 	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. "
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. 
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) ..
 endif #BUILD_TYPE
 	#
 	#Final build
@@ -114,6 +114,6 @@ endif
 	#generated outside the build directory
 	@ mkdir -p $(BUILD_DIR)
 	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. "
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. 
-	@+$(MAKE) -C $(BUILD_DIR) clean 
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) ..
+	@+$(MAKE) -C $(BUILD_DIR) clean
 
