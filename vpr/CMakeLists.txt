@@ -51,7 +51,7 @@ target_link_libraries(vpr
 #
 # Profile Guilded Optimization Configuration
 #
-set(PROF_GEN_FLAGS_TO_CHECK 
+set(PROF_GEN_FLAGS_TO_CHECK
     #GCC-like
     "-fprofile-generate" #Build will generate profiling information
     )
@@ -101,13 +101,13 @@ else()
 
     if (VPR_EXECUTION_ENGINE STREQUAL "auto")
         if (TBB_FOUND)
-            set(VPR_USE_EXECUTION_ENGINE "tbb") 
+            set(VPR_USE_EXECUTION_ENGINE "tbb")
         else()
-            set(VPR_USE_EXECUTION_ENGINE "serial") 
+            set(VPR_USE_EXECUTION_ENGINE "serial")
         endif()
     elseif(VPR_EXECUTION_ENGINE STREQUAL "tbb")
         if (TBB_FOUND)
-            set(VPR_USE_EXECUTION_ENGINE "tbb") 
+            set(VPR_USE_EXECUTION_ENGINE "tbb")
         else()
             message(FATAL_ERROR "VPR: TBB requested but not found (on debian/ubuntu try 'sudo apt install libtbb-dev'")
         endif()

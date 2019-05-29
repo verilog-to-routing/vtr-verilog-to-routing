@@ -312,8 +312,8 @@ get_property(ABC_INCLUDE_DIRS TARGET libabc PROPERTY INCLUDE_DIRECTORIES)
 target_include_directories(libabc SYSTEM INTERFACE ${ABC_INCLUDE_DIRS})
 
 #PugiXml has some deliberate switch fallthrough cases (as indicated by comments), but they
-#are tagged as warnings with g++-7 (the comments don't match g++-7's suppression regexes). 
-#Since we don't want to change PugiXml (it is developed externally), we relax the warning 
+#are tagged as warnings with g++-7 (the comments don't match g++-7's suppression regexes).
+#Since we don't want to change PugiXml (it is developed externally), we relax the warning
 #level so no fallthrough warnings are generated
 CHECK_CXX_COMPILER_FLAG("-Wimplicit-fallthrough=0" CXX_COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
 if(CXX_COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
@@ -374,7 +374,7 @@ if(WITH_LIBRTLNUMBER)
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/librtlnumber"
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/librtlnumber")
 endif()
-set_target_properties(libabc abc 
+set_target_properties(libabc abc
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc"
