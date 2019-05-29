@@ -23,6 +23,7 @@
 #include "ezgl/control.hpp"
 #include "ezgl/callback.hpp"
 #include "ezgl/graphics.hpp"
+#include "ezgl/color.hpp"
 
 #include <map>
 #include <memory>
@@ -95,13 +96,15 @@ public:
     std::string canvas_identifier;
 
     /**
-     * Specficy the function that will connect GUI objects to user-defined callbacks.
+     * Specify the function that will connect GUI objects to user-defined callbacks.
      *
      * GUI objects (i.e., a GObject) can be retrieved from this application object. These objects can then be connected
      * to specific events using g_signal_connect. A list of signals that can be used to make these connections can be
      * found <a href = "https://developer.gnome.org/gtk3/stable/GtkWidget.html#GtkWidget.signals">here</a>.
      *
-     * @see application::get_object
+     * If not provided, application::register_default_buttons_callbacks function will be used, which assumes that the
+     * UI has GtkButton widgets named "ZoomFitButton", "ZoomInButton", "ZoomOutButton", "UpButton", "DownButton",
+     * "LeftButton", "RightButton", "ProceedButton"
      */
     connect_g_objects_fn setup_callbacks;
 
@@ -138,12 +141,14 @@ public:
    * @param canvas_id The id of the GtkDrawingArea in the XML file.
    * @param draw_callback The function to call that draws to this canvas.
    * @param coordinate_system The initial coordinate system of this canvas.
+   * @param background_color (OPTIONAL) The color of the canvas background. Default is WHITE.
    *
    * @return A pointer to the newly created canvas.
    */
   canvas *add_canvas(std::string const &canvas_id,
       draw_canvas_fn draw_callback,
-      rectangle coordinate_system);
+      rectangle coordinate_system,
+      color background_color = WHITE);
 
   /**
    * Add a button
@@ -154,6 +159,8 @@ public:
    * @param width the number of columns that the button will span
    * @param height the number of rows that the button will span
    * @param button_func callback function for the button
+   *
+   * The function assumes that the UI has a GtkGrid named "InnerGrid"
    */
   void create_button(const char *button_text,
       int left,
@@ -170,6 +177,8 @@ public:
    * @param button_text the new button text
    * @param insert_row the row in the right bar to insert the button
    * @param button_func callback function for the button
+   *
+   * The function assumes that the UI has a GtkGrid named "InnerGrid"
    */
   void create_button(const char *button_text, int insert_row, button_callback_fn button_func);
 
@@ -178,6 +187,8 @@ public:
    * 
    * @param the text of the button to delete
    * @return whether the button was found and deleted
+   *
+   * The function assumes that the UI has a GtkGrid named "InnerGrid"
    */
   bool destroy_button(const char *button_text_to_destroy);
 
@@ -186,6 +197,8 @@ public:
    *
    * @param button_text the old text of the button
    * @param new_button_text the new button text
+   *
+   * The function assumes that the UI has a GtkGrid named "InnerGrid"
    */
   void change_button_text(const char *button_text, const char *new_button_text);
 
@@ -193,6 +206,8 @@ public:
    * Update the message in the status bar
    *
    * @param message The message that will be displayed on the status bar
+   *
+   * The function assumes that the UI has a GtkStatusbar named "StatusBar"
    */
   void update_message(std::string const &message);
 
