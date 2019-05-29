@@ -9,6 +9,12 @@ if (${CMAKE_VERSION} VERSION_GREATER "3.8")
     # has no effect unless an Intel compiler is used
 endif()
 
+# Support ccache for faster builders.
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+endif()
+
 project("VTR")
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
