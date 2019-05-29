@@ -34,6 +34,7 @@ override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G 'Unix Makefil
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
 MAKEFLAGS := -s
 
+SOURCE_DIR := $(PWD)
 BUILD_DIR ?= build
 
 #Check for the cmake exectuable
@@ -55,6 +56,9 @@ export CTEST_OUTPUT_ON_FAILURE=TRUE
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),clean)
 all $(MAKECMDGOALS):
+ifneq ($(BUILD_DIR),build)
+	ln -sf $(BUILD_DIR) build
+endif
 ifeq ($(CMAKE),)
 	$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
 endif
@@ -67,8 +71,8 @@ ifneq (,$(findstring pgo,$(BUILD_TYPE)))
 	#
 	#1st-stage build for profile generation
 	#
-	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_gen .. "
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_gen ..
+	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_gen $(SOURCE_DIR)"
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_gen $(SOURCE_DIR)
 	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
 	#
 	#Run benchmarks to generate profiling data
@@ -81,15 +85,15 @@ ifneq (,$(findstring pgo,$(BUILD_TYPE)))
 	#
 	#Configure 2nd-stage build to use profiling data to guide compiler optimization
 	#
-	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_use .. "
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_use ..
+	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_use $(SOURCE_DIR)"
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_use $(SOURCE_DIR)
 else #BUILD_TYPE not containing 'pgo'
 	#
 	#Configure for standard build
 	#
 	@echo "Performing standard build..."
-	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. "
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) ..
+	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) $(SOURCE_DIR)"
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) $(SOURCE_DIR)
 endif #BUILD_TYPE
 	#
 	#Final build
@@ -113,7 +117,7 @@ endif
 	#We run cmake so we can use the generated Makefile to clean any executables
 	#generated outside the build directory
 	@ mkdir -p $(BUILD_DIR)
-	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. "
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) ..
+	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) $(SOURCE_DIR)"
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) $(SOURCE_DIR)
 	@+$(MAKE) -C $(BUILD_DIR) clean
 
