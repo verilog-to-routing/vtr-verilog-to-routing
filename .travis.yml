@@ -43,16 +43,16 @@ addons:
     - clang-format-7
 
 before_install:
- - source .travis/common.sh
+  - source ./.github/travis/common.sh
 
 install:
- - ./.travis/install.sh
+  - ./.github/travis/install.sh
 
 script:
-  - ./.travis/script.sh
+  - ./.github/travis/script.sh
 
 after_failure:
-  - ./.travis/after_failure.sh
+  - ./.github/travis/after_failure.sh
 
 after_success:
-  - ./.travis/after_success.sh
+  - ./.github/travis/after_success.sh
