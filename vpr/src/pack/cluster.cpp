@@ -2032,7 +2032,7 @@ static t_pack_molecule* get_highest_gain_molecule(
 
     /* Grab highest gain molecule */
     t_pack_molecule* molecule = nullptr;
-    for (int j = 0; j < cur_pb->pb_stats->num_feasible_blocks; j++) {
+    if (cur_pb->pb_stats->num_feasible_blocks > 0) {
         cur_pb->pb_stats->num_feasible_blocks--;
         int index = cur_pb->pb_stats->num_feasible_blocks;
         molecule = cur_pb->pb_stats->feasible_blocks[index];
