@@ -32,3 +32,4 @@ export CXX=g++-6
 
 export PREFIX=$HOME/vtr
 export CMAKE_PARAMS="-DCMAKE_INSTALL_PREFIX=$PREFIX"
+export BUILD_DIR=$HOME/vtr-build
