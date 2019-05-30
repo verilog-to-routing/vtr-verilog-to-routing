@@ -18,4 +18,9 @@ make version
 
 end_section "vtr.setup"
 
+start_section "vtr.ccache.1" "${GREEN}ccache info..${NC}"
+ccache --show-stats
+ccache --zero-stats
+end_section "vtr.ccache.1"
+
 $SPACER

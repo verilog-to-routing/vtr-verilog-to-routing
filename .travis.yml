@@ -92,5 +92,8 @@ before_script:
   - source .github/travis/common.sh
   - ./.github/travis/setup.sh
 
+after_script:
+  - ./.github/travis/setup.sh
+
 script:
   - true
