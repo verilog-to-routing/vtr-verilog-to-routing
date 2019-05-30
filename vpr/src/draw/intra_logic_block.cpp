@@ -85,6 +85,7 @@ void draw_internal_alloc_blk() {
          * the pb_graph of that type.
          */
         
+        // resize function not working here again!!!fix later
         draw_coords->blk_info.at(i).subblk_array.resize(pb_graph_head->total_pb_pins);
     }
 }

@@ -2,7 +2,7 @@
 
 float hue2rgb(float v1, float v2, float vH);
 
-hsl color2hsl(t_color color) {
+hsl color2hsl(ezgl::color color) {
 
     float r = color.red / 255.;
     float g = color.green / 255.;
@@ -45,7 +45,7 @@ hsl color2hsl(t_color color) {
     return val;
 }
 
-t_color hsl2color(hsl in) {
+ezgl::color hsl2color(hsl in) {
     float H = in.h;
     float S = in.s;
     float L = in.l;
@@ -67,7 +67,7 @@ t_color hsl2color(hsl in) {
         B = 255 * hue2rgb(var_1, var_2, H - (1. / 3.));
     }
 
-    return t_color(R, G, B);
+    return ezgl::color(R, G, B);
 }
 
 float hue2rgb(float v1, float v2, float vH) {

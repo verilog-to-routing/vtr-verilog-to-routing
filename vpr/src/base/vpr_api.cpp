@@ -320,24 +320,25 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     vpr_create_device(vpr_setup, arch);
 
     vpr_init_graphics(vpr_setup, arch);
-
+    std::cout << "no seg fault here 3" << std::endl;
     { //Place
         bool place_success = vpr_place_flow(vpr_setup, arch);
 
         if (!place_success) {
+            std::cout << "failed placement" << std::endl;
             return false; //Unimplementable
         }
     }
-
+    std::cout << "no seg fault here 4" << std::endl;
     RouteStatus route_status;
     { //Route
         route_status = vpr_route_flow(vpr_setup, arch);
     }
-
+    std::cout << "no seg fault here 5" << std::endl;
     { //Analysis
         vpr_analysis_flow(vpr_setup, arch, route_status);
     }
-
+    std::cout << "no seg fault here 6" << std::endl;
     vpr_close_graphics(vpr_setup);
 
     return route_status.success();
@@ -687,6 +688,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         }
 
         //Update interactive graphics
+        std::cout << "update vpr api" << std::endl;
         update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
 
         free_net_delay(net_delay, &net_delay_ch);
@@ -808,13 +810,25 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     /* Startup X graphics */
-    init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
-            vpr_setup.RouterOpts.route_type);
+        /* Call accessor functions to retrieve global variables. */
+    t_draw_state* draw_state = get_draw_state_vars();
+    
+    /* Sets the static show_graphics and gr_automode variables to the    *
+     * desired values.  They control if graphics are enabled and, if so, *
+     * how often the user is prompted for input.                         */
+    draw_state->show_graphics = vpr_setup.ShowGraphics;
+    draw_state->gr_automode = vpr_setup.GraphPause;
+    draw_state->draw_route_type = vpr_setup.RouterOpts.route_type;
+    
+    
+    
+//    init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
+//            vpr_setup.RouterOpts.route_type);
     if (vpr_setup.ShowGraphics) {
         std::stringstream msg;
         msg << "VPR: Versatile Place and Route for FPGAs";
         msg << " (" << vtr::getcwd() << ")";
-        init_graphics(msg.str().c_str(), WHITE);
+        //init_graphics(msg.str().c_str(), WHITE);
         alloc_draw_structs(&arch);
     }
 }

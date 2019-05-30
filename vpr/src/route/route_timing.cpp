@@ -486,6 +486,7 @@ bool try_timing_driven_route(
         prev_iter_cumm_time = iter_cumm_time;
 
         //Update graphics
+        std::cout << "update routing" << std::endl;
         if (itry == 1) {
             update_screen(first_iteration_priority, "Routing...", ROUTING, timing_info);
         } else {
@@ -1074,6 +1075,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id, unsigned itarget, int 
                     cluster_ctx.clb_nlist.net_name(net_id).c_str(),
                     size_t(net_id));
         if (f_router_debug) {
+            std::cout << "update routing" << std::endl;
             update_screen(ScreenUpdatePriority::MAJOR, "Unable to route connection.", ROUTING, nullptr);
         }
         return false;
@@ -1098,6 +1100,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id, unsigned itarget, int 
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
 
     if (f_router_debug) {
+        std::cout << "update routing" << std::endl;
         update_screen(ScreenUpdatePriority::MAJOR, "Routed connection successfully", ROUTING, nullptr);
     }
 
