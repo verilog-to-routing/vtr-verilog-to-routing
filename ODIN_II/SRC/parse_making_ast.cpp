@@ -1173,11 +1173,6 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
  *-----------------------------------------------------------------------*/
 ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number)
 {
-	// if(sc_remove_string(hard_block_names, module_ref_name))
-	// {
-	// 	warning_message(PARSE_ERROR, line_number, current_parse_file, 
-	// 		"hard block name collision with module of the same name -> %s, using the module defined in the file\n", module_ref_name);		
-	// }
 
 	long i;
 	/* create a node for this array reference */
@@ -1246,7 +1241,7 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
 {
 	if
 	(
-		   sc_lookup_string(hard_block_names, function_ref_name) != -1
+		sc_lookup_string(hard_block_names, function_ref_name) != -1
 		|| !strcmp(function_ref_name, SINGLE_PORT_RAM_string)
 		|| !strcmp(function_ref_name, DUAL_PORT_RAM_string)
 	)
@@ -1417,11 +1412,11 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 	long sc_spot;
 	ast_node_t *symbol_node = newSymbolNode(module_name, line_number);
 
-	// if(sc_remove_string(hard_block_names, module_name))
-	// {
-	// 	warning_message(PARSE_ERROR, line_number, current_parse_file, 
-	// 		"hard block name collision with module of the same name -> %s, using the module defined in the file\n", module_name);		
-	// }
+	if(sc_lookup_string(hard_block_names, module_name) != -1)
+	{
+		warning_message(PARSE_ERROR, line_number, current_parse_file, 
+			"Probable module name collision with hard block of the same name -> %s\n", module_name);		
+	}
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(MODULE, line_number, current_parse_file);

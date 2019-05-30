@@ -254,8 +254,9 @@ const char *edge_type_blif_str(nnode_t *node)
 		case ACTIVE_LOW_SENSITIVITY:	return "al";
 		case ASYNCHRONOUS_SENSITIVITY:	return "as";
 		default:	
-			oassert(false &&
-				"invalid sensitivity kind for flip flop");
+			error_message(NETLIST_ERROR, node->line_number, node->file_number,
+				"undefined sensitivity kind for flip flop %s", edge_type_e_STR[node->edge_type]);
+				
 			return NULL;
 	}
 }
@@ -270,8 +271,9 @@ edge_type_e edge_type_blif_enum(std::string edge_kind_str)
 	else if	(edge_kind_str == "as")	return ASYNCHRONOUS_SENSITIVITY;
 	else
 	{
-		oassert(false &&
-			"invalid sensitivity kind for flip flop");
+		error_message(NETLIST_ERROR, -1, -1,
+			"undefined sensitivity kind for flip flop %s", edge_kind_str.c_str());
+
 		return UNDEFINED_SENSITIVITY;
 	}
 }
