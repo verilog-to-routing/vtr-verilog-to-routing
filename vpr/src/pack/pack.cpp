@@ -422,7 +422,7 @@ static std::string target_external_pin_util_to_string(const t_ext_pin_util_targe
 }
 
 static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<std::string> specs) {
-    t_pack_high_fanout_thresholds high_fanout_thresholds(256);
+    t_pack_high_fanout_thresholds high_fanout_thresholds(128);
 
     if (specs.size() == 1 && specs[0] == "auto") {
         //No user-specified high fanout thresholds, infer them automatically.
@@ -443,7 +443,6 @@ static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<st
         } else {
             VTR_LOG_WARN("Unable to identify logic block type to apply default packer high fanout thresholds; this may result in denser packing than desired\n");
         }
-
     } else {
         //Process user specified overrides
 
