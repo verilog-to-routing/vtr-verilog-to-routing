@@ -4,9 +4,12 @@ dist: trusty
 addons:
   apt:
     sources:
-    - ubuntu-toolchain-r-test # For newer GCC
     - george-edison55-precise-backports # For cmake
-    - llvm-toolchain-trusty-7
+    - llvm-toolchain-precise-3.6
+    - llvm-toolchain-trusty-6.0
+    - llvm-toolchain-trusty-7 # For clang-format-7
+    - llvm-toolchain-trusty-8
+    - ubuntu-toolchain-r-test
     packages:
     - autoconf
     - automake
@@ -19,9 +22,6 @@ addons:
     - doxygen
     - flex
     - fontconfig
-    - gcc-6
-    - g++-6
-    - gcc-4.9
     - gdb
     - git
     - gperf
@@ -42,6 +42,20 @@ addons:
     - zip
     - qt5-default
     - clang-format-7
+    # All the compilers!
+    - g++-4.9
+    - gcc-4.9
+    - g++-5
+    - gcc-5
+    - g++-6
+    - gcc-6
+    - g++-8
+    - gcc-8
+    - g++-9
+    - gcc-9
+    - clang-3.6
+    - clang-6.0
+    - clang-8
 
 cache:
   ccache: true
@@ -49,9 +63,13 @@ cache:
     - /home/travis/vtr-build
     - /home/travis/vtr
 
+env:
+  - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+
 stages:
   - Build
   - Test
+  - Build Compatibility
 
 jobs:
   include:
@@ -87,6 +105,48 @@ jobs:
       name: "ODIN-II Operators Tests"
       script:
         - ./run_reg_test.pl odin_reg_operators -j2
+    - stage: Build Compatibility
+      name: "GCC 5 (Ubuntu Xenial - 16.04)"
+      env:
+         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "GCC 6 (Debian Stretch)"
+      env:
+         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "GCC 8 (Ubuntu Latest)"
+      env:
+         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "GCC 9 (Latest Release)"
+      env:
+         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "clang-3.6 (Earliest supported)"
+      env:
+         - MATRIX_EVAL="CC=clang-3.6 && CXX=clang++-3.6"
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "clang-6.0 (Debian + Ubuntu common)"
+      env:
+         - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "clang-8 (Latest Release)"
+      env:
+         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+      script:
+        - ./.github/travis/build.sh
 
 before_script:
   - source .github/travis/common.sh
