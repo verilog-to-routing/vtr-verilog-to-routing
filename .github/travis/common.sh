@@ -1,3 +1,7 @@
+eval "${MATRIX_EVAL}"
+export "CC=$CC"
+export "CXX=$CXX"
+
 # Some colors, use it like following;
 # echo -e "Hello ${YELLOW}yellow${NC}"
 GRAY='\033[0;30m'
@@ -26,9 +30,6 @@ function end_section() {
 	travis_time_finish
 	travis_fold end "$1"
 }
-
-export CC=gcc-6
-export CXX=g++-6
 
 export PREFIX=$HOME/vtr
 export CMAKE_PARAMS="-DCMAKE_INSTALL_PREFIX=$PREFIX"

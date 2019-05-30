@@ -8,11 +8,23 @@ $SPACER
 start_section "vtr.setup" "${GREEN}Setting up..${NC}"
 
 # Cleanup any cached build artifacts
-if [ "$TRAVIS_BUILD_STAGE_NAME" = "Build" ]; then
-	echo "Cleaning up any previous builds"
-	rm -rf $BUILD_DIR
-	rm -rf $PREFIX
-fi
+echo "Build Stage Name: $TRAVIS_BUILD_STAGE_NAME"
+case "$TRAVIS_BUILD_STAGE_NAME" in
+	Build*)
+		echo "Cleaning up any previous builds"
+		rm -rf $BUILD_DIR
+		rm -rf $PREFIX
+		echo "--"
+		echo "Using compiler C compiler '${CC}'"
+		${CC} --version
+		echo "--"
+		echo "Using compiler C++ compiler '${CXX}'"
+		${CXX} --version
+		echo "--"
+		;;
+	*)
+		;;
+esac
 
 make version
 
