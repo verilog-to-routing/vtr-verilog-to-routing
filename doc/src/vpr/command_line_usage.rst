@@ -467,11 +467,40 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``on``
 
-.. option:: --pack_high_fanout_threshold <int>
+.. option:: --pack_high_fanout_threshold {auto | <int> | <string>:<int>}
 
     Defines the threshold for high fanout nets within the packer.
+
+    This option can take several different types of values:
+
+    * ``auto`` VPR will automatically determine appropriate thresholds.
     
-    **Default:** ``64``
+    * ``<int>`` specifies the fanout threshold for all block types.
+
+        For example: 
+        
+          * ``64`` specifies that a threshold of 64 should be used for all blocks.
+
+    * ``<string>:<float>`` specifies the the threshold for a specific block type.
+
+        For example: 
+
+          * ``clb:16`` specifies that ``clb`` type blocks should use a threshold of 16.
+
+    This option can also take multiple space-separated values.
+    For example::
+
+        --pack_high_fanout_threshold 128 clb:16
+
+    would specify that ``clb`` blocks use a threshold of 16, while all other blocks (e.g. DSPs/RAMs) would use a threshold of 128.
+    
+    **Default:** ``auto``
+
+.. option::  --pack_transitive_fanout_threshold <int>
+
+    Packer transitive fanout threshold.
+    
+    **Default:** ``4``
 
 .. option:: --pack_verbosity <int>
 
