@@ -28,9 +28,12 @@ using namespace std;
 
 static std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks);
 static bool try_size_device_grid(const t_arch& arch, const std::map<t_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name);
+
 static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs);
 static std::string target_external_pin_util_to_string(const t_ext_pin_util_targets& ext_pin_utils);
+
 static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<std::string> specs);
+static std::string high_fanout_thresholds_to_string(const t_pack_high_fanout_thresholds& hf_thresholds);
 
 bool try_pack(t_packer_opts* packer_opts,
               const t_arch* arch,
@@ -98,6 +101,7 @@ bool try_pack(t_packer_opts* packer_opts,
     t_pack_high_fanout_thresholds high_fanout_thresholds = parse_high_fanout_thresholds(packer_opts->high_fanout_threshold);
 
     VTR_LOG("Packing with pin utilization targets: %s\n", target_external_pin_util_to_string(target_external_pin_util).c_str());
+    VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds_to_string(high_fanout_thresholds).c_str());
 
     bool allow_unrelated_clustering = false;
     if (packer_opts->allow_unrelated_clustering == e_unrelated_clustering::ON) {
@@ -489,4 +493,27 @@ static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<st
     }
 
     return high_fanout_thresholds;
+}
+
+static std::string high_fanout_thresholds_to_string(const t_pack_high_fanout_thresholds& hf_thresholds) {
+    std::stringstream ss;
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+        if (is_empty_type(&device_ctx.block_types[itype])) continue;
+
+        auto blk_name = device_ctx.block_types[itype].name;
+
+        ss << blk_name << ":";
+
+        auto threshold = hf_thresholds.get_threshold(blk_name);
+        ss << threshold;
+
+        if (itype != device_ctx.num_block_types - 1) {
+            ss << " ";
+        }
+    }
+
+    return ss.str();
 }
