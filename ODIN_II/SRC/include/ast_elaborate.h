@@ -23,21 +23,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 void remove_generate(ast_node_t *node);
 int simplify_ast_module(ast_node_t **ast_module);
-void optimize_for_tree();
-void search_for_node(ast_node_t *root, std::vector<ast_node_t *> list_for_node, std::vector<ast_node_t *> list_parent);
-ast_node_t *get_copy_tree(ast_node_t *node, long virtual_value, std::string virtual_name);
-void record_expression(ast_node_t *node, std::vector<std::string> expressions, bool *found_statement);
-long  calculation(std::vector<std::string> post_exp);
-void translate_expression(std::vector<std::string> infix_exp, std::vector<std::string> postfix_exp);
-void reallocate_node(ast_node_t *node, int idx);
-void find_most_unique_count();
-void mark_node_write(ast_node_t *node, std::vector<std::string> list);
-void mark_node_read(ast_node_t *node, std::vector<std::string> list);
-void remove_intermediate_variable(ast_node_t *node, std::vector<std::string> list, long virtual_value, std::string virtual_name);
-ast_node_t *search_marked_node(ast_node_t *node, int is, std::string temp);
 void reduce_assignment_expression();
 void reduce_assignment_expression(ast_node_t *ast_module);
-void find_assign_node(ast_node_t *t, std::vector<ast_node_t *>list);
+void find_assign_node(ast_node_t *node, std::vector<ast_node_t *> list, char *module_name);
 ast_node_t *find_top_module();
 
 typedef struct exp_node
@@ -96,5 +84,4 @@ void check_binary_operation(ast_node_t *node);
 void check_node_number(ast_node_t *parent, ast_node_t *child, int flag);
 bool check_mult_bracket(std::vector<int> list);
 short has_intermediate_variable(ast_node_t *node);
-void keep_all_branch(ast_node_t *temp_node, ast_node_t *for_parent, int mark);
 

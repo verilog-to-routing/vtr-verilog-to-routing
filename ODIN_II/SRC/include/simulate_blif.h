@@ -150,8 +150,8 @@ sim_data_t *init_simulation(netlist_t *netlist);
 sim_data_t *terminate_simulation(sim_data_t *sim_data);
 int single_step(sim_data_t *sim_data, int wave);
 //maria
-void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,int min_coverage);
-void simulate_steps_sequential(sim_data_t *sim_data,int min_coverage);
+void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,double min_coverage);
+void simulate_steps_sequential(sim_data_t *sim_data,double min_coverage);
 
 
 nnode_t **get_children_of(nnode_t *node, int *count);

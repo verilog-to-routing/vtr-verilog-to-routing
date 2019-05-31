@@ -433,28 +433,28 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	fflush(stdout);
 
 	// Open the output vector file.
-	char out_vec_file[128] = { 0 };
+	char out_vec_file[BUFFER_MAX_SIZE] = { 0 };
 	odin_sprintf(out_vec_file,"%s/%s",((char *)global_args.sim_directory),OUTPUT_VECTOR_FILE_NAME);
 	sim_data->out = fopen(out_vec_file, "w");
 	if (!sim_data->out)
 		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create output vector file.");
 
 	// Open the input vector file.
-	char in_vec_file[128] = { 0 };
+	char in_vec_file[BUFFER_MAX_SIZE] = { 0 };
 	odin_sprintf(in_vec_file,"%s/%s",((char *)global_args.sim_directory),INPUT_VECTOR_FILE_NAME);
 	sim_data->in_out = fopen(in_vec_file, "w+");
 	if (!sim_data->in_out)
 		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create input vector file.");
 
 	// Open the activity output file.
-	char act_file[128] = { 0 };
+	char act_file[BUFFER_MAX_SIZE] = { 0 };
 	odin_sprintf(act_file,"%s/%s",((char *)global_args.sim_directory),OUTPUT_ACTIVITY_FILE_NAME);
 	sim_data->act_out = fopen(act_file, "w");
 	if (!sim_data->act_out)
 		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create activity output file.");
 
 	// Open the modelsim vector file.
-	char test_file[128] = { 0 };
+	char test_file[BUFFER_MAX_SIZE] = { 0 };
 	odin_sprintf(test_file,"%s/%s",((char *)global_args.sim_directory),MODEL_SIM_FILE_NAME);
 	sim_data->modelsim_out = fopen(test_file, "w");
 	if (!sim_data->modelsim_out)
@@ -555,7 +555,7 @@ sim_data_t *terminate_simulation(sim_data_t *sim_data)
 }
 
 
-void simulate_steps_sequential(sim_data_t *sim_data,int min_coverage)
+void simulate_steps_sequential(sim_data_t *sim_data,double min_coverage)
 {
 	
 	printf("\n");
@@ -626,7 +626,7 @@ void simulate_steps_sequential(sim_data_t *sim_data,int min_coverage)
 
 
 
-void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,int min_coverage)
+void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,double min_coverage)
 {
 	// produce a wave of values at each iteration
 
@@ -4107,7 +4107,7 @@ static int verify_output_vectors(char* output_vector_file, int num_vectors)
 		if (!existing_out) error_message(SIMULATION_ERROR, 0, -1, "Could not open vector output file: %s", output_vector_file);
 
 		// Our current output vectors. (Just produced.)
-		char out_vec_file[128] = { 0 };
+		char out_vec_file[BUFFER_MAX_SIZE] = { 0 };
 		odin_sprintf(out_vec_file,"%s/%s",((char *)global_args.sim_directory),OUTPUT_VECTOR_FILE_NAME);
 		FILE *current_out  = fopen(out_vec_file, "r");
 		if (!current_out)

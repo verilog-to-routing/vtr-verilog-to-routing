@@ -63,6 +63,9 @@ function exit_program() {
 	if [ "_${FAILURE}" != "_0" ]
 	then
 		echo "Failed ${FAILURE} benchmarks"
+		echo ""
+		cat ${NEW_RUN_DIR}/test_failures.log
+		echo ""
 		echo "View Failure log in ${NEW_RUN_DIR}/test_failures.log"
 
 	else
@@ -103,7 +106,7 @@ printf "Called program with $INPUT
 
 	OPTIONS:
 		-h|--help                       $(_prt_cur_arg off) print this
-		-t|--test < test name >         $(_prt_cur_arg ${_TEST}) Test name is one of ( ${TEST_DIR_LIST} heavy_suite light_suite full_suite vtr_basic vtr_strong pre_commit )
+		-t|--test < test name >         $(_prt_cur_arg ${_TEST}) Test name is one of ( ${TEST_DIR_LIST} heavy_suite light_suite full_suite vtr_basic vtr_strong pre_commit failures debug_sim debug_synth)
 		-j|--nb_of_process < N >        $(_prt_cur_arg ${_NUMBER_OF_PROCESS}) Number of process requested to be used
 		-s|--sim_threads < N >          $(_prt_cur_arg ${_SIM_THREADS}) Use multithreaded simulation using N threads
 		-V|--vectors < N >              $(_prt_cur_arg ${_VECTORS}) Use N vectors to generate per simulation
@@ -177,10 +180,19 @@ function init_temp() {
 	fi
 
 	NEW_RUN_DIR=${OUTPUT_DIRECTORY}/run$(printf "%03d" $n)
-	echo "running benchmark @${NEW_RUN_DIR}"
-	mkdir -p ${NEW_RUN_DIR}
-	unlink regression_test/latest 
-	ln -s ${NEW_RUN_DIR} regression_test/latest
+}
+
+function create_temp() {
+	if [ ! -d ${NEW_RUN_DIR} ]; then
+		echo "running benchmark @${NEW_RUN_DIR}"
+		mkdir -p ${NEW_RUN_DIR}
+
+		if [ -d regression_test/latest ]; then
+			unlink regression_test/latest || /bin/true
+		fi
+
+		ln -s ${NEW_RUN_DIR} regression_test/latest
+	fi
 }
 
 function cleanup_temp() {
@@ -193,8 +205,12 @@ function cleanup_temp() {
 	for runs in ${OUTPUT_DIRECTORY}/run*
 	do 
 		rm -Rf ${runs}
-		unlink regression_test/latest || /bin/true
 	done
+
+	if [ -d regression_test/latest ]; then
+		unlink regression_test/latest || /bin/true
+	fi
+
 }
 
 function mv_failed() {
@@ -203,16 +219,18 @@ function mv_failed() {
 
 	if [ -e ${log_file} ]
 	then
-		echo "Failed benchmark have been linked to ${failed_dir}"
 		for failed_benchmark in $(cat ${log_file})
 		do
-			parent_dir=$(dirname ${failed_dir}/${failed_benchmark})
-			mkdir -p ${parent_dir}
-			ln -s ${NEW_RUN_DIR}/${failed_benchmark} ${parent_dir}
+			target_dir=$(dirname ${failed_dir}/${failed_benchmark})
+			target_link=$(basename ${failed_benchmark})
+
+			mkdir -p ${target_dir}
+			echo "Linking failed benchmark ${failed_benchmark} -> in failures ${target_link}"
+
+			ln -s ${NEW_RUN_DIR}/${failed_benchmark} ${target_dir}/${target_link}
 			FAILURE=$(( ${FAILURE} + 1 ))
 		done
 		cat ${log_file} >> ${NEW_RUN_DIR}/test_failures.log
-		rm -f ${log_file}
 	fi
 }
 
@@ -540,7 +558,6 @@ function sim() {
 			basename=""
 			case "${benchmark}" in
 				*.v)
-					# this is a blif file
 					_SYNTHESIS="on"
 					basename=${benchmark%.v}
 				;;
@@ -665,14 +682,129 @@ function sim() {
 					mv ${sim_log} "${sim_log}_${i}"
 				done
 
-				# move the failed runs
-				mv_failed ${global_simulation_failure}
 			done
+			
+			mkdir -p ${NEW_RUN_DIR}/${bench_type}/vectors
+
+			# move the vectors
+			for sim_input_vectors in $(find ${NEW_RUN_DIR}/${bench_type}/ -name "input_vectors")
+			do
+				BM_DIR=$(dirname ${sim_input_vectors})
+				BM_NAME="$(basename $(readlink -f ${BM_DIR}/..))_input"
+
+				cp ${sim_input_vectors} ${NEW_RUN_DIR}/${bench_type}/vectors/${BM_NAME}
+				mv ${sim_input_vectors} ${BM_DIR}/${BM_NAME}
+				
+			done
+
+
+			# move the vectors
+			for sim_output_vectors in $(find ${NEW_RUN_DIR}/${bench_type}/ -name "output_vectors")
+			do
+				BM_DIR=$(dirname ${sim_output_vectors})
+				BM_NAME="$(basename $(readlink -f ${BM_DIR}/..))_output"
+
+				cp ${sim_output_vectors} ${NEW_RUN_DIR}/${bench_type}/vectors/${BM_NAME}
+				mv ${sim_output_vectors} ${BM_DIR}/${BM_NAME}
+
+			done
+
+			# move the failed runs
+			mv_failed ${global_simulation_failure}
 		fi
 
 	fi
 }
 
+function run_failed() {
+	FAILED_RUN_DIR="regression_test/latest"
+
+	#synthesize the circuits
+	if [ -d ${FAILED_RUN_DIR}/synthesis_failures ]; then
+		echo " ========= Synthesizing Circuits"
+		find -L ${FAILED_RUN_DIR}/synthesis_failures/ -name cmd_param | xargs -n1 -I test_cmd ${SHELL} -c '$(cat test_cmd)'
+	fi
+
+	#run the simulation
+	if [ -d ${FAILED_RUN_DIR}/simulation_failures ]; then
+		echo " ========= Simulating Circuits"
+		find -L ${FAILED_RUN_DIR}/simulation_failures/ -name sim_param | xargs -n1 -I sim_cmd ${SHELL} -c '$(cat sim_cmd)'
+	fi
+}
+
+function debug_failures() {
+	FAILED_RUN_DIR="regression_test/latest"
+	FAILURE_LOG=""
+	CMD_FILE_NAME=""
+	FAILURES_LIST=""
+
+	case $1 in
+		simulation)
+			FAILURE_LOG="${FAILED_RUN_DIR}/simulation_failures.log"
+			CMD_FILE_NAME="sim_param"
+			;;
+		synthesis)
+			FAILURE_LOG="${FAILED_RUN_DIR}/synthesis_failures.log"
+			CMD_FILE_NAME="cmd_param"
+			;;
+		*)
+			echo "Wrong input"
+			exit 1
+			;;
+	esac
+
+
+	if [ ! -f ${FAILURE_LOG} ]
+	then
+		echo "Nothing to debug in ${FAILED_RUN_DIR}, Exiting"
+	else
+		FAILURES_LIST="$(cat ${FAILURE_LOG})"
+		echo "Entering interactive mode"
+		while /bin/true; do
+
+			echo "Which benchmark would you like to debug (type 'quit' or 'q' to exit)?"
+			echo "============"
+			echo "${FAILURES_LIST}"	
+			echo "============"
+			printf "enter a substring: "
+
+			read INPUT_BM
+			case ${INPUT_BM} in
+				quit|q)
+					echo "exiting"
+					break
+					;;
+				*)					
+					BM="${FAILED_RUN_DIR}/$(echo "${FAILURES_LIST}" | grep ${INPUT_BM} | tail -n 1)"
+
+					if [ "_${BM}" != "_" ] && [ -f "${BM}/${CMD_FILE_NAME}" ]
+					then
+						CMD_PARAMS="${WRAPPER_EXEC} --tool gdb"
+						START_REBUILD="off"
+						for tokens in $(cat ${BM}/${CMD_FILE_NAME}); do
+							case ${tokens} in
+								--adder_type)
+									START_REBUILD="on"
+									;;
+								*)
+									;;
+							esac
+							if [ "${START_REBUILD}" == "on" ];
+							then
+								CMD_PARAMS="${CMD_PARAMS} ${tokens}"
+							fi
+						done
+
+						echo " ---- Executing: ${CMD_PARAMS}"
+						/bin/bash -c "${CMD_PARAMS}"
+					else
+						echo " ---- Invalid input: ${INPUT_BM} where we did not find ${BM}"
+					fi
+					;;
+			esac
+		done
+	fi
+}
 
 HEAVY_LIST=(
 	"full"
@@ -685,6 +817,7 @@ LIGHT_LIST=(
 	"other"
 	"micro"	
 	"syntax"
+	"FIR"
 )
 
 function run_sim_on_directory() {
@@ -699,6 +832,7 @@ function run_sim_on_directory() {
 		echo "please make sure a config.txt exist"
 		config_help
 	else
+		create_temp
 		sim ${BENCHMARK_DIR}/${test_dir} $(cat ${BENCHMARK_DIR}/${test_dir}/config.txt)
 	fi
 }
@@ -731,6 +865,8 @@ function run_vtr_reg() {
 
 START=`get_current_time`
 
+init_temp
+
 parse_args $INPUT
 _set_flag
 
@@ -742,9 +878,20 @@ then
 	exit_program
 fi
 
-init_temp
 echo "Benchmark is: ${_TEST}"
 case ${_TEST} in
+
+	failures)
+		run_failed
+		;;
+
+	debug_sim)
+		debug_failures "simulation"
+		;;
+
+	debug_synth)
+		debug_failures "synthesis"
+		;;
 
 	full_suite)
 		run_all
@@ -777,22 +924,7 @@ case ${_TEST} in
 		;;
 
 	*)
-		if [ ! -e ${BENCHMARK_DIR}/${_TEST} ]
-		then
-			echo "${BENCHMARK_DIR}/${_TEST} Not Found! exiting."
-			config_help
-			ctrl_c
-		fi
-
-		if [ ! -e ${BENCHMARK_DIR}/${_TEST}/config.txt ]
-		then
-			echo "no config file found in the directory."
-			echo "please make sure a config.txt exist"
-			config_help
-			ctrl_c
-		fi
-
-		sim ${BENCHMARK_DIR}/${_TEST} $(cat ${BENCHMARK_DIR}/${_TEST}/config.txt)
+		run_sim_on_directory ${_TEST}
 		;;
 esac
 

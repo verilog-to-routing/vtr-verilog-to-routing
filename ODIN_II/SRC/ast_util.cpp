@@ -448,43 +448,43 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 		{
 			char *temp_string = make_full_ref_name(NULL, NULL, NULL, concat_top->children[i]->types.identifier, -1);
 			long sc_spot;
-			if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) != -1)
+			if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) == -1)
 			{
-				vtr::free(temp_string);
-
-			if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[1] == NULL)
-			{
-				concat_top->types.concat.num_bit_strings ++;
-				concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
-				concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], -1, instance_name_prefix);
+				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missssing declaration of this symbol %s\n", temp_string);
 			}
-			else if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[3] == NULL)
+			else
 			{
-				/* reverse thorugh the range since highest bit in index will be lower in the string indx */
-				rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[1]);
-				rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]);
-				oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
-
-				///TODO	WHats this?? comapreo bit string but usesd value ??? value is honestly not the right thing to look for...
-				// we should restrict ODIN to use binary representation only for easier support of 'x' and 'z' value..
-				// or at least it's the only thing that makes sense.
-				// also this gives us the ability to write our own math class for binary and ave better control of what is happening and better sense of it TO.
-				// this causes bugs.. theres a patchy workaround put in bit string but we need a better permannet fix.
-				for (j = rnode[1]->types.number.value - rnode[2]->types.number.value; j >= 0; j--)
+				if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[1] == NULL)
 				{
 					concat_top->types.concat.num_bit_strings ++;
 					concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
-					concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix);
+					concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], -1, instance_name_prefix);
+				}
+				else if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[3] == NULL)
+				{
+					/* reverse thorugh the range since highest bit in index will be lower in the string indx */
+					rnode[1] = resolve_node(NULL, instance_name_prefix, ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[1]);
+					rnode[2] = resolve_node(NULL, instance_name_prefix, ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]);
+					oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
+
+					///TODO	WHats this?? comapreo bit string but usesd value ??? value is honestly not the right thing to look for...
+					// we should restrict ODIN to use binary representation only for easier support of 'x' and 'z' value..
+					// or at least it's the only thing that makes sense.
+					// also this gives us the ability to write our own math class for binary and ave better control of what is happening and better sense of it TO.
+					// this causes bugs.. theres a patchy workaround put in bit string but we need a better permannet fix.
+					for (j = rnode[1]->types.number.value - rnode[2]->types.number.value; j >= 0; j--)
+					{
+						concat_top->types.concat.num_bit_strings ++;
+						concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
+						concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix);
+					}
+				}
+				else if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[3] != NULL)
+				{
+					oassert(FALSE);
 				}
 			}
-			else if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[3] != NULL)
-			{
-				oassert(FALSE);
-			}
-			}
-			else {
-				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missssing declaration of this symbol %s\n", temp_string);
-			}
+			vtr::free(temp_string);
 		}
 		else if (concat_top->children[i]->type == ARRAY_REF)
 		{
@@ -494,8 +494,8 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 		}
 		else if (concat_top->children[i]->type == RANGE_REF)
 		{
-			rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, concat_top->children[i]->children[1]);
-			rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, concat_top->children[i]->children[2]);
+			rnode[1] = resolve_node(NULL, instance_name_prefix, concat_top->children[i]->children[1]);
+			rnode[2] = resolve_node(NULL, instance_name_prefix, concat_top->children[i]->children[2]);
 			oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 			oassert(rnode[1]->types.number.value >= rnode[2]->types.number.value);
 			int width = abs(rnode[1]->types.number.value - rnode[2]->types.number.value) + 1;
@@ -627,8 +627,8 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	{		
 		oassert(bit >= 0);
 
-		rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[1]);
-		rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[2]);
+		rnode[1] = resolve_node(NULL, instance_name_prefix, var_node->children[1]);
+		rnode[2] = resolve_node(NULL, instance_name_prefix, var_node->children[2]);
 		oassert(var_node->children[0]->type == IDENTIFIERS);
 		oassert(rnode[1]->type == NUMBERS);
 		oassert(rnode[2]->type == NUMBERS);
@@ -645,11 +645,8 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		long sc_spot;
 		int pin_index;
 
-		if ((sc_spot = sc_lookup_string(local_symbol_table_sc, var_node->types.identifier)) > -1)
+		if ((sc_spot = sc_lookup_string(local_symbol_table_sc, var_node->types.identifier)) == -1)
 		{
-		}
-		else {
-			pin_index = 0;
 			error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", var_node->types.identifier);
 		}
 
@@ -766,16 +763,16 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 	{
 		width = 1;
 		return_string = (char**)vtr::malloc(sizeof(char*));
-		rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[1]);
+		rnode[1] = resolve_node(NULL, instance_name_prefix, var_node->children[1]);
 		oassert(rnode[1] && rnode[1]->type == NUMBERS);
 		oassert(var_node->children[0]->type == IDENTIFIERS);
 		return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[1]->types.number.value);
 	}
 	else if (var_node->type == RANGE_REF)
 	{
-		rnode[0] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[0]);
-		rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[1]);
-		rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[2]);
+		rnode[0] = resolve_node(NULL, instance_name_prefix, var_node->children[0]);
+		rnode[1] = resolve_node(NULL, instance_name_prefix, var_node->children[1]);
+		rnode[2] = resolve_node(NULL, instance_name_prefix, var_node->children[2]);
 		oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 		width = abs(rnode[1]->types.number.value - rnode[2]->types.number.value) + 1;
 		if (rnode[0]->type == IDENTIFIERS)
@@ -797,7 +794,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		ast_node_t *sym_node;
 
 		// try and resolve var_node
-		sym_node = resolve_node(NULL, FALSE, instance_name_prefix, var_node);
+		sym_node = resolve_node(NULL, instance_name_prefix, var_node);
 
 		if (sym_node == var_node)
 		{
@@ -811,9 +808,11 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 			{
                 sym_node = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
 			}
-            else {
+            else 
+			{
                 error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", temp_string);
             }
+			
 			vtr::free(temp_string);
 
 			if (sym_node->children[1] == NULL || sym_node->type == BLOCKING_STATEMENT)
@@ -825,8 +824,8 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 			else if (sym_node->children[3] == NULL)
 			{
 				int index = 0;
-				rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, sym_node->children[1]);
-				rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, sym_node->children[2]);
+				rnode[1] = resolve_node(NULL, instance_name_prefix, sym_node->children[1]);
+				rnode[2] = resolve_node(NULL, instance_name_prefix, sym_node->children[2]);
 				oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 				width = (rnode[1]->types.number.value - rnode[2]->types.number.value + 1);
 				return_string = (char**)vtr::malloc(sizeof(char*)*width);
@@ -840,11 +839,6 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 			else if (sym_node->children[3] != NULL)
 			{
 				oassert(FALSE);
-			}
-			else
-			{
-
-
 			}
 		}
 		else
@@ -926,8 +920,20 @@ char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_n
  * resolved
  */
 
-ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char *module_name, ast_node_t *node)
+ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, ast_node_t *node)
 {
+	long sc_spot = -1;
+
+	if(local_param_table_sc == NULL 
+	&& module_name != NULL)
+	{
+		sc_spot = sc_lookup_string(global_param_table_sc, module_name);
+		if (sc_spot != -1)
+		{
+			local_param_table_sc = (STRING_CACHE *)global_param_table_sc->data[sc_spot];
+		}
+	}
+
 	if (node)
 	{
 		oassert(node->type != NO_ID);
@@ -937,35 +943,32 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 		node_copy->children = (ast_node_t **)vtr::calloc(node_copy->num_children,sizeof(ast_node_t*));
 
 		long i;
-		for (i = 0; i < node->num_children; i++){
-			node_copy->children[i] = resolve_node(local_param_table_sc, initial, module_name, node->children[i]);
+		for (i = 0; i < node->num_children; i++)
+		{
+			node_copy->children[i] = resolve_node(local_param_table_sc, module_name, node->children[i]);
 		}
+
 		ast_node_t *newNode = NULL;
-		long sc_spot = -1;
 		switch (node->type){
 
 			case IDENTIFIERS:
-				if(!initial){
-					oassert(module_name);
-					sc_spot = sc_lookup_string(global_param_table_sc, module_name);
-					oassert(sc_spot != -1);
+			{
+				if(local_param_table_sc != NULL)
+				{
+					sc_spot = sc_lookup_string(local_param_table_sc, node->types.identifier);
 					if (sc_spot != -1){
-
-						local_param_table_sc = (STRING_CACHE *)global_param_table_sc->data[sc_spot];
+						newNode = ast_node_deep_copy((ast_node_t *)local_param_table_sc->data[sc_spot]);
 					}
 				}
-				sc_spot = sc_lookup_string(local_param_table_sc, node->types.identifier);
-				if (sc_spot != -1){
-					newNode = ast_node_deep_copy((ast_node_t *)local_param_table_sc->data[sc_spot]);
-				}
+			}
 			break;
 
 			case UNARY_OPERATION:
-				newNode = fold_unary(node_copy->children[0],node_copy->types.operation.op);
+				newNode = fold_unary(node_copy);
 				break;
 
 			case BINARY_OPERATION:
-				newNode = fold_binary(node_copy->children[0], node_copy->children[1], node_copy->types.operation.op);
+				newNode = fold_binary(node_copy);
 				break;
 
 			default:
@@ -1016,11 +1019,11 @@ ast_node_t *resolve_ast_node(STRING_CACHE *local_param_table_sc, short initial, 
 		switch (node->type){
 			
 			case UNARY_OPERATION:
-				newNode = fold_unary(node_copy->children[0],node_copy->types.operation.op);
+				newNode = fold_unary(node_copy);
 				break;
 
 			case BINARY_OPERATION:
-				newNode = fold_binary(node_copy->children[0], node_copy->children[1], node_copy->types.operation.op);
+				newNode = fold_binary(node_copy);
 				break;
 
 			default:
@@ -1065,7 +1068,7 @@ char *make_module_param_name(STRING_CACHE *defines_for_module_sc, ast_node_t *mo
 		{
 			if (module_param_list->children[i]->children[5]) 
 			{
-				ast_node_t *node = resolve_node(defines_for_module_sc, TRUE, module_name, module_param_list->children[i]->children[5]);
+				ast_node_t *node = resolve_node(defines_for_module_sc, module_name, module_param_list->children[i]->children[5]);
 				oassert(node->type == NUMBERS);
 				odin_sprintf(module_param_name, "%s_%ld", module_param_name, module_param_list->children[i]->children[5]->types.number.value);
 			}
@@ -1140,8 +1143,13 @@ ast_node_t *ast_node_deep_copy(ast_node_t *node){
  * we currently make it as small as possible(+1) such that d'00001 becomes (in bin) 01
  * so it would become 10, is that what is defined?
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *fold_unary(ast_node_t *child_0, operation_list op_id){
-	if(node_is_constant(child_0)){
+ast_node_t *fold_unary(ast_node_t *node)
+{
+	operation_list op_id = node->types.operation.op;
+	ast_node_t *child_0 = node->children[0];
+
+	if(node_is_constant(child_0))
+	{
 		long operand_0 = child_0->types.number.value;
 		short success = FALSE;
 		long result = 0;
@@ -1235,10 +1243,14 @@ ast_node_t *fold_unary(ast_node_t *child_0, operation_list op_id){
 /*---------------------------------------------------------------------------------------------
  * (function: calculate_binary)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_list op_id){
+ast_node_t * fold_binary(ast_node_t *node)
+{
+	operation_list op_id = node->types.operation.op;
+	ast_node_t *child_0 = node->children[0];
+	ast_node_t *child_1 = node->children[1];
 
-
-	if(node_is_constant(child_0) &&  node_is_constant(child_1)){
+	if(node_is_constant(child_0) &&  node_is_constant(child_1))
+	{
 		long operand_0 = child_0->types.number.value;
 		long operand_1 = child_1->types.number.value;
 		long result = 0;
