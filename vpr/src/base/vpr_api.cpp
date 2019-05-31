@@ -54,7 +54,6 @@ using namespace std;
 #include "power.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
-#include "output_blif.h"
 #include "read_activity.h"
 #include "net_delay.h"
 #include "AnalysisDelayCalculator.h"
@@ -439,13 +438,6 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
         /* Output the netlist stats to console. */
         printClusteredNetlistStats();
-
-        if (vpr_setup.gen_netlist_as_blif) {
-            char* name = (char*)vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName.c_str()) + 16) * sizeof(char));
-            sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName.c_str());
-            output_blif(&arch, name);
-            free(name);
-        }
     }
 
     return status;
