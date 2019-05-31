@@ -1174,6 +1174,31 @@ t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root,
                                                                 router_stats);
 
     if (cheapest == nullptr) {
+        //Found no path found within the current bounding box.
+        //Try again with no bounding box (i.e. a full device grid bounding box).
+        //
+        //Note that the additional run-time overhead of re-trying only occurs
+        //when we were otherwise going to give up -- the typical case (route
+        //found with the bounding box) remains fast and never re-tries .
+        VTR_LOG_WARN("No routing path for connection to sink_rr %d, retrying with full device bounding box\n", sink_node);
+
+        auto& device_ctx = g_vpr_ctx.device();
+
+        t_bb full_device_bounding_box;
+        full_device_bounding_box.xmin = 0;
+        full_device_bounding_box.ymin = 0;
+        full_device_bounding_box.xmax = device_ctx.grid.width() - 1;
+        full_device_bounding_box.ymax = device_ctx.grid.height() - 1;
+
+        cheapest = timing_driven_route_connection_from_heap(sink_node,
+                                                            cost_params,
+                                                            full_device_bounding_box,
+                                                            router_lookahead,
+                                                            modified_rr_node_inf,
+                                                            router_stats);
+    }
+
+    if (cheapest == nullptr) {
         VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
 
         free_route_tree(rt_root);
