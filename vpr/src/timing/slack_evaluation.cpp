@@ -45,7 +45,7 @@ void SetupSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& t
 void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
     auto pins = netlist_.pins();
 #if defined(VPR_USE_TBB)
-    tbb::parallel_for_each(pins.begin(), pins.end(), [&,this](auto pin) {
+    tbb::parallel_for_each(pins.begin(), pins.end(), [&, this](auto pin) {
         this->update_pin_slack(pin, analyzer);
     });
 #else
@@ -98,7 +98,7 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
     //Update the criticalities of each pin
     auto pins = netlist_.pins();
 #if defined(VPR_USE_TBB)
-    tbb::parallel_for_each(pins.begin(), pins.end(), [&,this](auto pin) {
+    tbb::parallel_for_each(pins.begin(), pins.end(), [&, this](auto pin) {
         this->pin_criticalities_[pin] = this->calc_pin_criticality(pin, analyzer, max_req, worst_slack);
     });
 #else
@@ -195,7 +195,7 @@ void HoldSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph,
     //Update the criticalities of each pin
     auto pins = netlist_.pins();
 #if defined(VPR_USE_TBB)
-    tbb::parallel_for_each(pins.begin(), pins.end(), [&,this](auto pin) {
+    tbb::parallel_for_each(pins.begin(), pins.end(), [&, this](auto pin) {
         this->pin_criticalities_[pin] = this->calc_pin_criticality(pin, analyzer, scale, shift);
     });
 #else
