@@ -95,9 +95,13 @@ void graphVizOutputPreproc(FILE *yyin)
 	FILE *fp = fopen(file_out.c_str(), "w");
 	oassert(fp);
 
-	char line[MaxLine];
-	while (fgets(line, MaxLine, yyin))
+	char *line = NULL;
+
+	while ((line = get_line(line, NULL, yyin)) != NULL)
+	{
 		fprintf(fp, "%s", line);
+		vtr::free(line);
+	}
 	fclose(fp);
 	rewind(yyin);
 }
