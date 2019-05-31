@@ -15,6 +15,10 @@ case "$TRAVIS_BUILD_STAGE_NAME" in
 		rm -rf $BUILD_DIR
 		rm -rf $PREFIX
 		echo "--"
+		echo "Using linker"
+		ld --version
+		gold --version
+		echo "--"
 		echo "Using compiler C compiler '${CC}'"
 		${CC} --version
 		echo "--"
