@@ -6,7 +6,7 @@ set -e
 $SPACER
 
 start_section "vtr.build" "${GREEN}Building..${NC}"
-make CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on" -j2
+make CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on" -j4
 end_section "vtr.build"
 
 $SPACER
