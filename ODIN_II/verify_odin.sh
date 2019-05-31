@@ -106,7 +106,7 @@ printf "Called program with $INPUT
 
 	OPTIONS:
 		-h|--help                       $(_prt_cur_arg off) print this
-		-t|--test < test name >         $(_prt_cur_arg ${_TEST}) Test name is one of ( ${TEST_DIR_LIST} heavy_suite light_suite full_suite vtr_basic vtr_strong pre_commit failures)
+		-t|--test < test name >         $(_prt_cur_arg ${_TEST}) Test name is one of ( ${TEST_DIR_LIST} heavy_suite light_suite full_suite vtr_basic vtr_strong pre_commit failures debug_sim debug_synth)
 		-j|--nb_of_process < N >        $(_prt_cur_arg ${_NUMBER_OF_PROCESS}) Number of process requested to be used
 		-s|--sim_threads < N >          $(_prt_cur_arg ${_SIM_THREADS}) Use multithreaded simulation using N threads
 		-V|--vectors < N >              $(_prt_cur_arg ${_VECTORS}) Use N vectors to generate per simulation
