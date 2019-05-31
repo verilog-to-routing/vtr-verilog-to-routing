@@ -178,10 +178,6 @@ void load_rr_file(const t_graph_type graph_type,
 
         device_ctx.chan_width = nodes_per_chan;
 
-        if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
-            dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
-        }
-
         check_rr_graph(graph_type, grid, device_ctx.block_types);
 
     } catch (XmlError& e) {

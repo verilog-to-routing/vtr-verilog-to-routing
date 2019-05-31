@@ -730,10 +730,6 @@ static void build_rr_graph(const t_graph_type graph_type,
     rr_graph_externals(segment_inf, max_chan_width,
                        *wire_to_rr_ipin_switch, base_cost_type);
 
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
-        dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
-    }
-
     check_rr_graph(graph_type, grid, types);
 
     /* Free all temp structs */
@@ -2510,60 +2506,6 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
     }
 
     return track_to_pin_lookup;
-}
-
-/* A utility routine to dump the contents of the routing resource graph   *
- * (everything -- connectivity, occupancy, cost, etc.) into a file.  Used *
- * only for debugging.                                                    */
-void dump_rr_graph(const char* file_name) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    FILE* fp = vtr::fopen(file_name, "w");
-
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        print_rr_node(fp, device_ctx.rr_nodes, inode);
-        fprintf(fp, "\n");
-    }
-
-    fclose(fp);
-}
-
-/* Prints all the data about node inode to file fp.                    */
-void print_rr_node(FILE* fp, const std::vector<t_rr_node>& L_rr_node, int inode) {
-    std::string info = describe_rr_node(inode);
-    fprintf(fp, "%s\n", info.c_str());
-
-    fprintf(fp, "%d edge(s):", L_rr_node[inode].num_edges());
-    for (int iconn = 0; iconn < L_rr_node[inode].num_edges(); ++iconn)
-        fprintf(fp, " %d", L_rr_node[inode].edge_sink_node(iconn));
-    fprintf(fp, "\n");
-
-    fprintf(fp, "Switch types:");
-    for (int iconn = 0; iconn < L_rr_node[inode].num_edges(); ++iconn)
-        fprintf(fp, " %d", L_rr_node[inode].edge_switch(iconn));
-    fprintf(fp, "\n");
-
-    fprintf(fp, "Capacity: %d\n", L_rr_node[inode].capacity());
-    fprintf(fp, "R: %g  C: %g\n", L_rr_node[inode].R(), L_rr_node[inode].C());
-    fprintf(fp, "Cost_index: %d\n", L_rr_node[inode].cost_index());
-}
-
-/* Prints all the device_ctx.rr_indexed_data of index to file fp.   */
-void print_rr_indexed_data(FILE* fp, int index) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    fprintf(fp, "Index: %d\n", index);
-
-    fprintf(fp, "ortho_cost_index: %d  ", device_ctx.rr_indexed_data[index].ortho_cost_index);
-    fprintf(fp, "base_cost: %g  ", device_ctx.rr_indexed_data[index].saved_base_cost);
-    fprintf(fp, "saved_base_cost: %g\n", device_ctx.rr_indexed_data[index].saved_base_cost);
-
-    fprintf(fp, "Seg_index: %d  ", device_ctx.rr_indexed_data[index].seg_index);
-    fprintf(fp, "inv_length: %g\n", device_ctx.rr_indexed_data[index].inv_length);
-
-    fprintf(fp, "T_linear: %g  ", device_ctx.rr_indexed_data[index].T_linear);
-    fprintf(fp, "T_quadratic: %g  ", device_ctx.rr_indexed_data[index].T_quadratic);
-    fprintf(fp, "C_load: %g\n", device_ctx.rr_indexed_data[index].C_load);
 }
 
 std::string describe_rr_node(int inode) {

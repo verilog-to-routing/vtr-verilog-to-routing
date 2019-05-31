@@ -2470,7 +2470,6 @@ static void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set
  */
 static bool highlight_rr_nodes(float x, float y) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
 
     char message[250] = "";
 
@@ -2501,7 +2500,7 @@ static bool highlight_rr_nodes(float x, float y) {
             }
 
             //Print info about all nodes to terminal
-            print_rr_node(stdout, device_ctx.rr_nodes, node);
+            VTR_LOG("%s\n", describe_rr_node(node).c_str());
         }
 
         //Show info about *only* hit node to graphics
