@@ -237,7 +237,7 @@ struct t_power_commonly_used {
     float INV_1X_C;
     float INV_2X_C;
 
-    /* Component Callibrations Array [0..POWER_CALLIB_COMPONENT_MAX-1] */
+    /* Component Callibrations Array [0..POWER_COMPONENT_MAX_NUM-1] */
     PowerSpicedComponent** component_callibration;
 
     /* Subthreshold leakages */

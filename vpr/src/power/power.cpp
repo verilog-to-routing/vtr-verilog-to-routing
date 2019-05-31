@@ -1386,19 +1386,18 @@ bool power_uninit() {
     for (std::map<float, t_power_mux_info*>::iterator it = power_ctx.commonly_used->mux_info.begin();
          it != power_ctx.commonly_used->mux_info.end(); it++) {
         t_power_mux_info* mux_info = it->second;
-        for (mux_size = 1; mux_size <= mux_info->mux_arch_max_size;
-             mux_size++) {
+        for (mux_size = 1; mux_size <= mux_info->mux_arch_max_size; mux_size++) {
             dealloc_mux_graph(mux_info->mux_arch[mux_size].mux_graph_head);
         }
+        free(mux_info->mux_arch);
         delete mux_info;
     }
     delete power_ctx.commonly_used;
 
+    /* Free logs */
     if (power_ctx.output->out) {
         fclose(power_ctx.output->out);
     }
-
-    /* Free logs */
     for (log_idx = 0; log_idx < power_ctx.output->num_logs; log_idx++) {
         for (msg_idx = 0; msg_idx < power_ctx.output->logs[log_idx].num_messages;
              msg_idx++) {
