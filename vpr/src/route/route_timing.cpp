@@ -1766,7 +1766,14 @@ static void timing_driven_expand_neighbour(t_heap* current,
         || to_xlow > bounding_box.xmax    //Strictly right of BB right-edge
         || to_yhigh < bounding_box.ymin   //Strictly below BB bottom-edge
         || to_ylow > bounding_box.ymax) { //Strictly above BB top-edge
-        return;                           /* Node is outside (expanded) bounding box. */
+        VTR_LOGV_DEBUG(f_router_debug,
+                       "      Pruned expansion of node %d edge %d -> %d"
+                       " (to node location %d,%dx%d,%d outside of expanded"
+                       " net bounding box %d,%dx%d,%d\n",
+                       from_node, from_edge, to_node,
+                       to_xlow, to_ylow, to_xhigh, to_yhigh,
+                       bounding_box.xmin, bounding_box.ymin, bounding_box.xmax, bounding_box.ymax);
+        return; /* Node is outside (expanded) bounding box. */
     }
 
     /* Prune away IPINs that lead to blocks other than the target one.  Avoids  *
@@ -1782,6 +1789,13 @@ static void timing_driven_expand_neighbour(t_heap* current,
                 || to_ylow < target_bb.ymin
                 || to_xhigh > target_bb.xmax
                 || to_yhigh > target_bb.ymax) {
+                VTR_LOGV_DEBUG(f_router_debug,
+                               "      Pruned expansion of node %d edge %d -> %d"
+                               " (to node is IPIN at (%d,%d)x(%d,%d) which does not"
+                               " lead to target block (%d,%d)x(%d,%d)\n",
+                               from_node, from_edge, to_node,
+                               to_xlow, to_ylow, to_xhigh, to_yhigh,
+                               target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
                 return;
             }
         }
