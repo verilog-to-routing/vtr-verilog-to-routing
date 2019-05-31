@@ -8,6 +8,7 @@
 #include "ezgl/point.hpp"
 #include "ezgl/application.hpp"
 #include "ezgl/graphics.hpp"
+#include "draw_color.h"
 
 
 void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type pic_on_screen_val,

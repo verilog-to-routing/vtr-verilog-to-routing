@@ -31,6 +31,7 @@ using namespace std;
 
 #include "globals.h"
 #include "graphics.h"
+#include "draw_color.h"
 #include "draw.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
@@ -100,170 +101,171 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
     ezgl::color( 43,  61,  38)  //olive green
 };
 
-//The colours used to draw block types
-const std::vector<color_types> block_type_colors = {
-    //This first set of colours is somewhat curated to yield
-    //a nice colour pallette
-    BISQUE, //EMPTY type is usually the type with index 0, so this colour
-    //usually unused
-    LIGHTGREY,
-    LIGHTSKYBLUE,
-    THISTLE,
-    KHAKI,
-    CORAL,
-    TURQUOISE,
-    MEDIUMPURPLE,
-    DARKSLATEBLUE,
-    DARKKHAKI,
-    LIGHTMEDIUMBLUE,
-    SADDLEBROWN,
-    FIREBRICK,
-    LIMEGREEN,
-    PLUM,
-    
-    //However, if we have lots of block types we just assign arbitrary HTML
-    //colours. Note that these are shuffled (instead of in alphabetical order)
-    //since some colours which are alphabetically close are also close in
-    //shade (making them difficult to distinguish)
-    DARKGREEN,
-    PALEVIOLETRED,
-    BLUE,
-    FORESTGREEN,
-    WHEAT,
-    GOLD,
-    MOCCASIN,
-    MEDIUMORCHID,
-    SKYBLUE,
-    WHITESMOKE,
-    LIME,
-    MEDIUMSLATEBLUE,
-    TOMATO,
-    CYAN,
-    OLIVE,
-    LIGHTGRAY,
-    STEELBLUE,
-    LIGHTCORAL,
-    IVORY,
-    MEDIUMVIOLETRED,
-    SNOW,
-    DARKGRAY,
-    GREY,
-    GRAY,
-    YELLOW,
-    REBECCAPURPLE,
-    DARKCYAN,
-    MIDNIGHTBLUE,
-    ROSYBROWN,
-    CORNSILK,
-    NAVAJOWHITE,
-    BLANCHEDALMOND,
-    ORCHID,
-    LIGHTGOLDENRODYELLOW,
-    MAROON,
-    GREENYELLOW,
-    SILVER,
-    PALEGOLDENROD,
-    LAWNGREEN,
-    DIMGREY,
-    DARKVIOLET,
-    DARKTURQUOISE,
-    INDIGO,
-    DARKORANGE,
-    PAPAYAWHIP,
-    MINTCREAM,
-    GREEN,
-    DARKMAGENTA,
-    MAGENTA,
-    LIGHTSLATEGRAY,
-    CHARTREUSE,
-    GHOSTWHITE,
-    LIGHTCYAN,
-    SIENNA,
-    GOLDENROD,
-    DARKSLATEGRAY,
-    OLDLACE,
-    SEASHELL,
-    SPRINGGREEN,
-    MEDIUMTURQUOISE,
-    LEMONCHIFFON,
-    MISTYROSE,
-    OLIVEDRAB,
-    LIGHTBLUE,
-    CHOCOLATE,
-    SEAGREEN,
-    DEEPPINK,
-    LIGHTSEAGREEN,
-    FLORALWHITE,
-    CADETBLUE,
-    AZURE,
-    BURLYWOOD,
-    AQUAMARINE,
-    BROWN,
-    POWDERBLUE,
-    HOTPINK,
-    MEDIUMBLUE,
-    BLUEVIOLET,
-    GREY75,
-    PURPLE,
-    TEAL,
-    ANTIQUEWHITE,
-    DEEPSKYBLUE,
-    SLATEGRAY,
-    SALMON,
-    SLATEBLUE,
-    DARKORCHID,
-    LIGHTPINK,
-    DARKBLUE,
-    PEACHPUFF,
-    PALEGREEN,
-    DARKSALMON,
-    DARKOLIVEGREEN,
-    DARKSEAGREEN,
-    VIOLET,
-    RED,
-    DARKSLATEGREY,
-    PALETURQUOISE,
-    DARKRED,
-    SLATEGREY,
-    HONEYDEW,
-    AQUA,
-    LIGHTSTEELBLUE,
-    DODGERBLUE,
-    MEDIUMSPRINGGREEN,
-    NAVY,
-    GAINSBORO,
-    LIGHTYELLOW,
-    CRIMSON,
-    FUCHSIA,
-    DARKGOLDENROD,
-    SANDYBROWN,
-    BEIGE,
-    LINEN,
-    ORANGERED,
-    ROYALBLUE,
-    LAVENDER,
-    TAN,
-    YELLOWGREEN,
-    CORNFLOWERBLUE,
-    LAVENDERBLUSH,
-    MEDIUMSEAGREEN,
-    PINK,
-    GREY55,
-    PERU,
-    LIGHTGREEN,
-    LIGHTSALMON,
-    INDIANRED,
-    DIMGRAY,
-    LIGHTSLATEGREY,
-    MEDIUMAQUAMARINE,
-    DARKGREY,
-    ORANGE,
-    ALICEBLUE,
-};
+////The colours used to draw block types
+//const std::vector<color_types> block_type_colors = {
+//    //This first set of colours is somewhat curated to yield
+//    //a nice colour pallette
+//    BISQUE, //EMPTY type is usually the type with index 0, so this colour
+//    //usually unused
+//    LIGHTGREY,
+//    LIGHTSKYBLUE,
+//    THISTLE,
+//    KHAKI,
+//    CORAL,
+//    TURQUOISE,
+//    MEDIUMPURPLE,
+//    DARKSLATEBLUE,
+//    DARKKHAKI,
+//    LIGHTMEDIUMBLUE,
+//    SADDLEBROWN,
+//    FIREBRICK,
+//    LIMEGREEN,
+//    PLUM,
+//    
+//    //However, if we have lots of block types we just assign arbitrary HTML
+//    //colours. Note that these are shuffled (instead of in alphabetical order)
+//    //since some colours which are alphabetically close are also close in
+//    //shade (making them difficult to distinguish)
+//    DARKGREEN,
+//    PALEVIOLETRED,
+//    BLUE,
+//    FORESTGREEN,
+//    WHEAT,
+//    GOLD,
+//    MOCCASIN,
+//    MEDIUMORCHID,
+//    SKYBLUE,
+//    WHITESMOKE,
+//    LIME,
+//    MEDIUMSLATEBLUE,
+//    TOMATO,
+//    CYAN,
+//    OLIVE,
+//    LIGHTGRAY,
+//    STEELBLUE,
+//    LIGHTCORAL,
+//    IVORY,
+//    MEDIUMVIOLETRED,
+//    SNOW,
+//    DARKGRAY,
+//    GREY,
+//    GRAY,
+//    YELLOW,
+//    REBECCAPURPLE,
+//    DARKCYAN,
+//    MIDNIGHTBLUE,
+//    ROSYBROWN,
+//    CORNSILK,
+//    NAVAJOWHITE,
+//    BLANCHEDALMOND,
+//    ORCHID,
+//    LIGHTGOLDENRODYELLOW,
+//    MAROON,
+//    GREENYELLOW,
+//    SILVER,
+//    PALEGOLDENROD,
+//    LAWNGREEN,
+//    DIMGREY,
+//    DARKVIOLET,
+//    DARKTURQUOISE,
+//    INDIGO,
+//    DARKORANGE,
+//    PAPAYAWHIP,
+//    MINTCREAM,
+//    GREEN,
+//    DARKMAGENTA,
+//    MAGENTA,
+//    LIGHTSLATEGRAY,
+//    CHARTREUSE,
+//    GHOSTWHITE,
+//    LIGHTCYAN,
+//    SIENNA,
+//    GOLDENROD,
+//    DARKSLATEGRAY,
+//    OLDLACE,
+//    SEASHELL,
+//    SPRINGGREEN,
+//    MEDIUMTURQUOISE,
+//    LEMONCHIFFON,
+//    MISTYROSE,
+//    OLIVEDRAB,
+//    LIGHTBLUE,
+//    CHOCOLATE,
+//    SEAGREEN,
+//    DEEPPINK,
+//    LIGHTSEAGREEN,
+//    FLORALWHITE,
+//    CADETBLUE,
+//    AZURE,
+//    BURLYWOOD,
+//    AQUAMARINE,
+//    BROWN,
+//    POWDERBLUE,
+//    HOTPINK,
+//    MEDIUMBLUE,
+//    BLUEVIOLET,
+//    GREY75,
+//    PURPLE,
+//    TEAL,
+//    ANTIQUEWHITE,
+//    DEEPSKYBLUE,
+//    SLATEGRAY,
+//    SALMON,
+//    SLATEBLUE,
+//    DARKORCHID,
+//    LIGHTPINK,
+//    DARKBLUE,
+//    PEACHPUFF,
+//    PALEGREEN,
+//    DARKSALMON,
+//    DARKOLIVEGREEN,
+//    DARKSEAGREEN,
+//    VIOLET,
+//    RED,
+//    DARKSLATEGREY,
+//    PALETURQUOISE,
+//    DARKRED,
+//    SLATEGREY,
+//    HONEYDEW,
+//    AQUA,
+//    LIGHTSTEELBLUE,
+//    DODGERBLUE,
+//    MEDIUMSPRINGGREEN,
+//    NAVY,
+//    GAINSBORO,
+//    LIGHTYELLOW,
+//    CRIMSON,
+//    FUCHSIA,
+//    DARKGOLDENROD,
+//    SANDYBROWN,
+//    BEIGE,
+//    LINEN,
+//    ORANGERED,
+//    ROYALBLUE,
+//    LAVENDER,
+//    TAN,
+//    YELLOWGREEN,
+//    CORNFLOWERBLUE,
+//    LAVENDERBLUSH,
+//    MEDIUMSEAGREEN,
+//    PINK,
+//    GREY55,
+//    PERU,
+//    LIGHTGREEN,
+//    LIGHTSALMON,
+//    INDIANRED,
+//    DIMGRAY,
+//    LIGHTSLATEGREY,
+//    MEDIUMAQUAMARINE,
+//    DARKGREY,
+//    ORANGE,
+//    ALICEBLUE,
+//};
 
 //FIXME: ugly hack
 extern t_pl_macro* pl_macros;
 extern int num_pl_macros;
+extern const std::vector<ezgl::color> block_colors;
 /************************** EZGL File Scope Variables ****************************/
 ezgl::application::settings settings;
 ezgl::application application(settings);
@@ -374,16 +376,7 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application *application);
 void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *application);
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application *application);
 
-
-
-//void zoom(GtkWidget *widget, ezgl::application *app);
-
 /********************** Subroutine definitions ******************************/
-
-//void zoom(GtkWidget *widget, ezgl::application *app){
-//    g.zoom_out(application.get_canvas(),10);
-//}
-
 
 
 void init_graphics_state(bool show_graphics_val, int gr_automode_val,
@@ -400,28 +393,6 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
     draw_state->gr_automode = gr_automode_val;
     draw_state->draw_route_type = route_type;
     
-    
-    
-    //ezgl::application::settings settings;
-    // Path to the "main.ui" file that contains an XML description of the UI.
-//    settings.main_ui_resource = "/ezgl/main.ui";
-//    // Note: the "main.ui" file has a GtkWindow called "MainWindow".
-//    settings.window_identifier = "MainWindow";
-//    // Note: the "main.ui" file has a GtkDrawingArea called "MainCanvas".
-//    settings.canvas_identifier = "MainCanvas";
-    
-    // Create EZGL application.	
-    //application(settings);
-    
-    // Set initial window
-//    const float rectangle_width = 50;
-//    const float rectangle_height = 50;
-//    const ezgl::point2d start_point(150, 30);
-//    static ezgl::rectangle initial_world = {start_point, rectangle_width, rectangle_height};
-    
-    //application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-    
-    
 }
 
 void draw_main_canvas(ezgl::renderer &g){
@@ -433,7 +404,13 @@ void draw_main_canvas(ezgl::renderer &g){
 //        return;
 //    }
     
+    g.set_font_size(14);
+    drawnets(g);
     drawplace(g);
+    draw_block_pin_util();
+    draw_internal_draw_subblk(g);
+    
+    drawroute(ALL_NETS, g);
     
     
 //    if(draw_state->pic_on_screen == NO_PICTURE){
@@ -1099,10 +1076,8 @@ static void drawplace(ezgl::renderer &g) {
                     block_color = draw_state->block_color[bnum];
                 } else {
                     block_color = get_block_type_color(device_ctx.grid[i][j].type);
-                    if(device_ctx.grid[i][j].type == nullptr) std::cout << "nullptr" << std::endl;
                     block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
                 }
-                std::cout << "color: " << block_color.red << " " << block_color.green << " " << block_color.blue << std::endl;
                 g.set_color(block_color);
                 /* Get coords of current sub_tile */
                 ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
@@ -1114,13 +1089,12 @@ static void drawplace(ezgl::renderer &g) {
                 
                 //setlinestyle((EMPTY_BLOCK_ID == bnum) ? DASHED : SOLID);
                 g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
-                g.fill_rectangle(abs_clb_bbox);
+                g.draw_rectangle(abs_clb_bbox);
                 
                 /* Draw text if the space has parts of the netlist */
                 if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
                     std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
-                    std::cout << "name: " << name << std::endl;
                     g.draw_text(center, name.c_str());
                 }
                 /* Draw text for block type so that user knows what block */
@@ -1157,6 +1131,7 @@ static void drawnets(ezgl::renderer &g) {
             continue; /* Don't draw */
         
         g.set_color(draw_state->net_color[net_id]);
+        ezgl::color netcolor = draw_state->net_color[net_id];
         b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
         ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).center();
 //        std::cout << "chosen driver" << driver_center.x << " " << driver_center.y << std::endl;
@@ -3653,13 +3628,14 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer &g) 
     g.set_coordinate_system(ezgl::WORLD);
 }
 
-ezgl::color get_block_type_color(t_type_ptr type) {
+ezgl::color get_block_type_color(t_type_ptr type) {   
     
     //Wrap around if there are too many blocks
     // This ensures we support an arbitrary number of types,
     // although the colours may repeat
-    ezgl::color color = to_ezgl_color(block_type_colors[type->index % block_type_colors.size()]);
-    
+//    ezgl::color color = block_colors[type->index % block_colors.size()];
+    ezgl::color color = ezgl::BLUE;
+//    std::cout << "color: " << color.red << " " << color.blue << " " << color. green << std::endl;//floating ?
     return color;
 }
 
@@ -3676,6 +3652,7 @@ ezgl::color lighten_color(ezgl::color color, float amount) {
 static void draw_block_pin_util() {
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->show_blk_pin_util == DRAW_NO_BLOCK_PIN_UTIL) {
+        std::cout << "draw no block pin util, returned" << std::endl;
         return;
     }
     

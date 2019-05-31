@@ -152,6 +152,7 @@ void draw_internal_draw_subblk(ezgl::renderer &g) {
     if (!draw_state->show_blk_internal) {
         return;
     }
+    std::cout << "draw_internal_draw_subblk triggered" << std::endl;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -342,13 +343,8 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
     
     t_pb_type* pb_type = pb->pb_graph_node->pb_type;
-    ezgl::rectangle abs_bbox({0,0},0,0);
-    ezgl::rectangle test = draw_coords->get_pb_bbox(clb_index, *pb->pb_graph_node);
-    abs_bbox = test + parent_bbox.bottom_left();
-    
-    ezgl::point2d bottom_left = abs_bbox.bottom_left();
-    ezgl::point2d top_right =  abs_bbox.top_right();
-    
+    ezgl::rectangle temp = draw_coords->get_pb_bbox(clb_index, *pb->pb_graph_node);
+    ezgl::rectangle abs_bbox = temp + parent_bbox.bottom_left();
     
     
     // if we've gone too far, don't draw anything
@@ -363,10 +359,10 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             // if this is a top level pb, and only if it isn't selected (ie. a funny colour),
             // overwrite it. (but stil draw the text)
             g.set_color(ezgl::WHITE);
-            g.fill_rectangle(bottom_left, top_right);//convert this!
+            g.fill_rectangle(abs_bbox);
             g.set_color(ezgl::BLACK);
             g.set_line_dash(ezgl::line_dash::none);
-            g.draw_rectangle(bottom_left, top_right);//convert this!
+            g.draw_rectangle(abs_bbox);
         }
     } else {
         if (pb->name != nullptr) {
@@ -402,9 +398,9 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             g.set_color(ezgl::WHITE);
         }
         
-        g.fill_rectangle(bottom_left, top_right);
+        g.fill_rectangle(abs_bbox);
         g.set_color(ezgl::BLACK);
-        g.draw_rectangle(bottom_left, top_right);
+        g.draw_rectangle(abs_bbox);
     }
     
     /// then draw text ///
@@ -423,7 +419,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             sprintf (blk_tag, "%s(%s)", pb_type->name, pb->name);
             
             g.draw_text(
-            ezgl::point2d(abs_bbox.center_x(), abs_bbox.center_y()),
+                    abs_bbox.center(),
                     blk_tag,
                     abs_bbox.width(),
                     abs_bbox.height()
@@ -434,10 +430,8 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             // else (ie. has chilren, and isn't at the lowest displayed level)
             // just label its type, and put it up at the top so we can see it
             g.draw_text(
-            ezgl::point2d(
-            abs_bbox.center_x(),
-                    abs_bbox.top() - (abs_bbox.height()) / 15.0
-            ),
+                    ezgl::point2d(abs_bbox.center_x(),
+                            abs_bbox.top() - (abs_bbox.height()) / 15.0),
                     pb_type->name,
                     abs_bbox.width(),
                     abs_bbox.height()
@@ -446,7 +440,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     } else {
         // If child block is not used, label it only by its type
         g.draw_text(
-        ezgl::point2d(abs_bbox.center_x(), abs_bbox.center_y()),
+                abs_bbox.center(),
                 pb_type->name,
                 abs_bbox.width(),
                 abs_bbox.height()
@@ -524,7 +518,7 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezg
             
             ezgl::point2d start = atom_pin_draw_coord(net_driver);
             ezgl::point2d end = atom_pin_draw_coord(ipin);
-            g.draw_line({start.x, start.y}, {end.x, end.y});
+            g.draw_line(start, end);
             draw_triangle_along_line(g, start, end, 0.95, 40*DEFAULT_ARROW_SIZE);
             draw_triangle_along_line(g, start, end, 0.05, 40*DEFAULT_ARROW_SIZE);
         }
@@ -543,7 +537,7 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezg
                 
                 ezgl::point2d start = atom_pin_draw_coord(opin);
                 ezgl::point2d end = atom_pin_draw_coord(net_sink);
-                g.draw_line({start.x, start.y}, {end.x, end.y});
+                g.draw_line(start, end);
                 draw_triangle_along_line(g, start, end, 0.95, 40*DEFAULT_ARROW_SIZE);
                 draw_triangle_along_line(g, start, end, 0.05, 40*DEFAULT_ARROW_SIZE);
             }
