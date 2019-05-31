@@ -619,7 +619,7 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
 
     .. code-block:: xml
 
-        <switch type="mux" name="my_awsome_mux" R="551" Cin=".77e-15" Cout="4e-15" Cinternal="5e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+        <switch type="mux" name="my_awesome_mux" R="551" Cin=".77e-15" Cout="4e-15" Cinternal="5e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
 
 
     :req_param type:
@@ -673,7 +673,7 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
                |             |          |                                 
              Input C    Internal C    Output C                             
 
-             Only specify a value for multiplexers and/or tristate buffers.
+             .. note:: Only specify a value for multiplexers and/or tristate buffers.
 
     :opt_param Tdel:
 
