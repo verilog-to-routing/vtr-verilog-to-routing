@@ -48,6 +48,7 @@ class PowerCallibInputs {
     bool sorted;
 
     PowerCallibInputs(PowerSpicedComponent* parent, float num_inputs);
+    ~PowerCallibInputs();
 
     void add_size(float transistor_size, float power = 0.);
     PowerCallibSize* get_entry_bound(bool lower, float transistor_size);
@@ -73,6 +74,7 @@ class PowerSpicedComponent {
 
     PowerSpicedComponent(std::string component_name,
                          float (*usage_fn)(int num_inputs, float transistor_size));
+    ~PowerSpicedComponent();
 
     void add_data_point(int num_inputs, float transistor_size, float power);
     float scale_factor(int num_inputs, float transistor_size);

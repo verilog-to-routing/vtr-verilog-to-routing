@@ -1392,6 +1392,12 @@ bool power_uninit() {
         free(mux_info->mux_arch);
         delete mux_info;
     }
+    /* Free components */
+    for (int i = 0; i < POWER_CALLIB_COMPONENT_MAX; ++i) {
+        delete power_ctx.commonly_used->component_callibration[i];
+    }
+    free(power_ctx.commonly_used->component_callibration);
+
     delete power_ctx.commonly_used;
 
     /* Free logs */

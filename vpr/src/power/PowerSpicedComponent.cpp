@@ -20,10 +20,16 @@ PowerCallibInputs::PowerCallibInputs(PowerSpicedComponent* parent_,
     : parent(parent_)
     , num_inputs(inputs)
     , sorted(false)
-    , done_callibration(false) {
+    , done_callibration( false) {
     /* Add min/max bounding entries */
     add_size(0);
     add_size(std::numeric_limits<float>::max());
+}
+
+PowerCallibInputs::~PowerCallibInputs() {
+    for (auto entry : entries) {
+        delete entry;
+    }
 }
 
 void PowerCallibInputs::add_size(float transistor_size, float power) {
@@ -90,6 +96,12 @@ PowerSpicedComponent::PowerSpicedComponent(std::string component_name,
 
     done_callibration = false;
     sorted = true;
+}
+
+PowerSpicedComponent::~PowerSpicedComponent() {
+    for (auto entry : entries) {
+        delete entry;
+    }
 }
 
 PowerCallibInputs* PowerSpicedComponent::add_entry(int num_inputs) {
