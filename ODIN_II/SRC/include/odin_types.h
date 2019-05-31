@@ -211,6 +211,13 @@ typedef enum
 
 typedef enum
 {
+	COMBINATIONAL,
+	SEQUENTIAL,
+	circuit_type_e_END
+} circuit_type_e;
+
+typedef enum
+{
 	NO_OP,
 	MULTI_PORT_MUX, // port 1 = control, port 2+ = mux options
 	FF_NODE,
@@ -531,6 +538,8 @@ struct npin_t_t
 	nnode_t *node;    // related node
 	int pin_node_idx; // pin on the node where we're located
 	char *mapping;    // name of mapped port from hard block
+
+	edge_type_e sensitivity;
 
 	////////////////////
 	// For simulation

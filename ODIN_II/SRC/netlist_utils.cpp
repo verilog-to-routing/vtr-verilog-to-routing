@@ -81,7 +81,7 @@ nnode_t* allocate_nnode() {
 	new_node->num_undriven_pins = 0;
 
 	new_node->ratio = 1;
-	new_node->edge_type = RISING_EDGE_SENSITIVITY;
+	new_node->edge_type = UNDEFINED_SENSITIVITY;
 
 	new_node->has_initial_value = FALSE;
 	new_node->initial_value = 0;
