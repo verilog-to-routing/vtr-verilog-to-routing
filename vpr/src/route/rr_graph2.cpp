@@ -20,114 +20,103 @@ constexpr short UN_SET = -1;
 
 /************************** Subroutines local to this module ****************/
 
-static void get_switch_type(
-    bool is_from_sb,
-    bool is_to_sb,
-    short from_node_switch,
-    short to_node_switch,
-    const int switch_override,
-    short switch_types[2]);
+static void get_switch_type(bool is_from_sb,
+                            bool is_to_sb,
+                            short from_node_switch,
+                            short to_node_switch,
+                            const int switch_override,
+                            short switch_types[2]);
 
-static void load_chan_rr_indices(
-    const int max_chan_width,
-    const int chan_len,
-    const int num_chans,
-    const t_rr_type type,
-    const t_chan_details& chan_details,
-    t_rr_node_indices& indices,
-    int* index);
+static void load_chan_rr_indices(const int max_chan_width,
+                                 const int chan_len,
+                                 const int num_chans,
+                                 const t_rr_type type,
+                                 const t_chan_details& chan_details,
+                                 t_rr_node_indices& indices,
+                                 int* index);
 
-static void load_block_rr_indices(
-    const DeviceGrid& grid,
-    t_rr_node_indices& indices,
-    int* index);
+static void load_block_rr_indices(const DeviceGrid& grid,
+                                  t_rr_node_indices& indices,
+                                  int* index);
 
-static int get_bidir_track_to_chan_seg(
-    const std::vector<int> conn_tracks,
-    const t_rr_node_indices& L_rr_node_indices,
-    const int to_chan,
-    const int to_seg,
-    const int to_sb,
-    const t_rr_type to_type,
-    const t_chan_seg_details* seg_details,
-    const bool from_is_sblock,
-    const int from_switch,
-    const int switch_override,
-    const enum e_directionality directionality,
-    const int from_rr_node,
-    t_rr_edge_info_set& rr_edges_to_create);
+static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
+                                       const t_rr_node_indices& L_rr_node_indices,
+                                       const int to_chan,
+                                       const int to_seg,
+                                       const int to_sb,
+                                       const t_rr_type to_type,
+                                       const t_chan_seg_details* seg_details,
+                                       const bool from_is_sblock,
+                                       const int from_switch,
+                                       const int switch_override,
+                                       const enum e_directionality directionality,
+                                       const int from_rr_node,
+                                       t_rr_edge_info_set& rr_edges_to_create);
 
-static int get_unidir_track_to_chan_seg(
-    const int from_track,
-    const int to_chan,
-    const int to_seg,
-    const int to_sb,
-    const t_rr_type to_type,
-    const int max_chan_width,
-    const DeviceGrid& grid,
-    const enum e_side from_side,
-    const enum e_side to_side,
-    const int Fs_per_side,
-    t_sblock_pattern& sblock_pattern,
-    const int switch_override,
-    const t_rr_node_indices& L_rr_node_indices,
-    const t_chan_seg_details* seg_details,
-    bool* Fs_clipped,
-    const int from_rr_node,
-    t_rr_edge_info_set& rr_edges_to_create);
+static int get_unidir_track_to_chan_seg(const int from_track,
+                                        const int to_chan,
+                                        const int to_seg,
+                                        const int to_sb,
+                                        const t_rr_type to_type,
+                                        const int max_chan_width,
+                                        const DeviceGrid& grid,
+                                        const enum e_side from_side,
+                                        const enum e_side to_side,
+                                        const int Fs_per_side,
+                                        t_sblock_pattern& sblock_pattern,
+                                        const int switch_override,
+                                        const t_rr_node_indices& L_rr_node_indices,
+                                        const t_chan_seg_details* seg_details,
+                                        bool* Fs_clipped,
+                                        const int from_rr_node,
+                                        t_rr_edge_info_set& rr_edges_to_create);
 
-static int get_track_to_chan_seg(
-    const int from_track,
-    const int to_chan,
-    const int to_seg,
-    const t_rr_type to_chan_type,
-    const e_side from_side,
-    const e_side to_side,
-    const int swtich_override,
-    const t_rr_node_indices& L_rr_node_indices,
-    t_sb_connection_map* sb_conn_map,
-    const int from_rr_node,
-    t_rr_edge_info_set& rr_edges_to_create);
+static int get_track_to_chan_seg(const int from_track,
+                                 const int to_chan,
+                                 const int to_seg,
+                                 const t_rr_type to_chan_type,
+                                 const e_side from_side,
+                                 const e_side to_side,
+                                 const int swtich_override,
+                                 const t_rr_node_indices& L_rr_node_indices,
+                                 t_sb_connection_map* sb_conn_map,
+                                 const int from_rr_node,
+                                 t_rr_edge_info_set& rr_edges_to_create);
 
-static int vpr_to_phy_track(
-    const int itrack,
-    const int chan_num,
-    const int seg_num,
-    const t_chan_seg_details* seg_details,
-    const enum e_directionality directionality);
+static int vpr_to_phy_track(const int itrack,
+                            const int chan_num,
+                            const int seg_num,
+                            const t_chan_seg_details* seg_details,
+                            const enum e_directionality directionality);
 
-static int* label_wire_muxes(
-    const int chan_num,
-    const int seg_num,
-    const t_chan_seg_details* seg_details,
-    const int seg_type_index,
-    const int max_len,
-    const enum e_direction dir,
-    const int max_chan_width,
-    const bool check_cb,
-    int* num_wire_muxes,
-    int* num_wire_muxes_cb_restricted);
+static int* label_wire_muxes(const int chan_num,
+                             const int seg_num,
+                             const t_chan_seg_details* seg_details,
+                             const int seg_type_index,
+                             const int max_len,
+                             const enum e_direction dir,
+                             const int max_chan_width,
+                             const bool check_cb,
+                             int* num_wire_muxes,
+                             int* num_wire_muxes_cb_restricted);
 
-static int* label_incoming_wires(
-    const int chan_num,
-    const int seg_num,
-    const int sb_seg,
-    const t_chan_seg_details* seg_details,
-    const int max_len,
-    const enum e_direction dir,
-    const int max_chan_width,
-    int* num_incoming_wires,
-    int* num_ending_wires);
+static int* label_incoming_wires(const int chan_num,
+                                 const int seg_num,
+                                 const int sb_seg,
+                                 const t_chan_seg_details* seg_details,
+                                 const int max_len,
+                                 const enum e_direction dir,
+                                 const int max_chan_width,
+                                 int* num_incoming_wires,
+                                 int* num_ending_wires);
 
-static int find_label_of_track(
-    int* wire_mux_on_track,
-    int num_wire_muxes,
-    int from_track);
+static int find_label_of_track(int* wire_mux_on_track,
+                               int num_wire_muxes,
+                               int from_track);
 
-void dump_seg_details(
-    t_seg_details* seg_details,
-    int max_chan_width,
-    const char* fname);
+void dump_seg_details(t_seg_details* seg_details,
+                      int max_chan_width,
+                      const char* fname);
 
 //Returns how the switch type for the switch block at the specified location should be created
 //  grid: The device grid
@@ -155,10 +144,9 @@ static bool should_apply_switch_override(int switch_override);
  * no longer less than the requested number of tracks. As a final
  * step, if we were closer to target before last more, undo it
  * and end up with a result that uses fewer tracks than given. */
-int* get_seg_track_counts(
-    const int num_sets,
-    const std::vector<t_segment_inf>& segment_inf,
-    const bool use_full_seg_groups) {
+int* get_seg_track_counts(const int num_sets,
+                          const std::vector<t_segment_inf>& segment_inf,
+                          const bool use_full_seg_groups) {
     int* result;
     double* demand;
     int imax, freq_sum, assigned, size;
@@ -222,14 +210,13 @@ int* get_seg_track_counts(
     return result;
 }
 
-t_seg_details* alloc_and_load_seg_details(
-    int* max_chan_width,
-    const int max_len,
-    const std::vector<t_segment_inf>& segment_inf,
-    const bool use_full_seg_groups,
-    const bool is_global_graph,
-    const enum e_directionality directionality,
-    int* num_seg_details) {
+t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
+                                          const int max_len,
+                                          const std::vector<t_segment_inf>& segment_inf,
+                                          const bool use_full_seg_groups,
+                                          const bool is_global_graph,
+                                          const enum e_directionality directionality,
+                                          int* num_seg_details) {
     /* Allocates and loads the seg_details data structure.  Max_len gives the   *
      * maximum length of a segment (dimension of array).  The code below tries  *
      * to:                                                                      *
@@ -383,15 +370,14 @@ t_seg_details* alloc_and_load_seg_details(
  * seg_details structures. This array is used to handle unique seg_details
  * (ie. channel segments) for each horizontal and vertical channel. */
 
-void alloc_and_load_chan_details(
-    const DeviceGrid& grid,
-    const t_chan_width* nodes_per_chan,
-    const bool trim_empty_channels,
-    const bool trim_obs_channels,
-    const int num_seg_details,
-    const t_seg_details* seg_details,
-    t_chan_details& chan_details_x,
-    t_chan_details& chan_details_y) {
+void alloc_and_load_chan_details(const DeviceGrid& grid,
+                                 const t_chan_width* nodes_per_chan,
+                                 const bool trim_empty_channels,
+                                 const bool trim_obs_channels,
+                                 const int num_seg_details,
+                                 const t_seg_details* seg_details,
+                                 t_chan_details& chan_details_x,
+                                 t_chan_details& chan_details_y) {
     chan_details_x = init_chan_details(grid, nodes_per_chan,
                                        num_seg_details, seg_details, SEG_DETAILS_X);
     chan_details_y = init_chan_details(grid, nodes_per_chan,
@@ -407,12 +393,11 @@ void alloc_and_load_chan_details(
                         chan_details_x, chan_details_y);
 }
 
-t_chan_details init_chan_details(
-    const DeviceGrid& grid,
-    const t_chan_width* nodes_per_chan,
-    const int num_seg_details,
-    const t_seg_details* seg_details,
-    const enum e_seg_details_type seg_details_type) {
+t_chan_details init_chan_details(const DeviceGrid& grid,
+                                 const t_chan_width* nodes_per_chan,
+                                 const int num_seg_details,
+                                 const t_seg_details* seg_details,
+                                 const enum e_seg_details_type seg_details_type) {
     VTR_ASSERT(num_seg_details <= nodes_per_chan->max);
 
     t_chan_details chan_details({grid.width(), grid.height(), size_t(num_seg_details)});
@@ -454,13 +439,12 @@ t_chan_details init_chan_details(
     return chan_details;
 }
 
-void obstruct_chan_details(
-    const DeviceGrid& grid,
-    const t_chan_width* nodes_per_chan,
-    const bool trim_empty_channels,
-    const bool trim_obs_channels,
-    t_chan_details& chan_details_x,
-    t_chan_details& chan_details_y) {
+void obstruct_chan_details(const DeviceGrid& grid,
+                           const t_chan_width* nodes_per_chan,
+                           const bool trim_empty_channels,
+                           const bool trim_obs_channels,
+                           t_chan_details& chan_details_x,
+                           t_chan_details& chan_details_y) {
     auto& device_ctx = g_vpr_ctx.device();
 
     /* Iterate grid to find and obstruct based on multi-width/height blocks */
@@ -533,11 +517,10 @@ void obstruct_chan_details(
     }
 }
 
-void adjust_chan_details(
-    const DeviceGrid& grid,
-    const t_chan_width* nodes_per_chan,
-    t_chan_details& chan_details_x,
-    t_chan_details& chan_details_y) {
+void adjust_chan_details(const DeviceGrid& grid,
+                         const t_chan_width* nodes_per_chan,
+                         t_chan_details& chan_details_x,
+                         t_chan_details& chan_details_y) {
     for (size_t y = 0; y <= grid.height() - 2; ++y) {    //-2 for no perim channels
         for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
 
@@ -563,13 +546,12 @@ void adjust_chan_details(
     }
 }
 
-void adjust_seg_details(
-    const int x,
-    const int y,
-    const DeviceGrid& grid,
-    const t_chan_width* nodes_per_chan,
-    t_chan_details& chan_details,
-    const enum e_seg_details_type seg_details_type) {
+void adjust_seg_details(const int x,
+                        const int y,
+                        const DeviceGrid& grid,
+                        const t_chan_width* nodes_per_chan,
+                        t_chan_details& chan_details,
+                        const enum e_seg_details_type seg_details_type) {
     int seg_index = (seg_details_type == SEG_DETAILS_X ? x : y);
 
     for (int track = 0; track < nodes_per_chan->max; ++track) {
@@ -603,20 +585,18 @@ void adjust_seg_details(
     }
 }
 
-void free_chan_details(
-    t_chan_details& chan_details_x,
-    t_chan_details& chan_details_y) {
+void free_chan_details(t_chan_details& chan_details_x,
+                       t_chan_details& chan_details_y) {
     chan_details_x.clear();
     chan_details_y.clear();
 }
 
 /* Returns the segment number at which the segment this track lies on        *
  * started.                                                                  */
-int get_seg_start(
-    const t_chan_seg_details* seg_details,
-    const int itrack,
-    const int chan_num,
-    const int seg_num) {
+int get_seg_start(const t_chan_seg_details* seg_details,
+                  const int itrack,
+                  const int chan_num,
+                  const int seg_num) {
     int seg_start = 0;
     if (seg_details[itrack].seg_start() >= 0) {
         seg_start = seg_details[itrack].seg_start();
@@ -682,16 +662,15 @@ int get_seg_end(const t_chan_seg_details* seg_details, const int itrack, const i
 
 /* Returns the number of tracks to which clb opin #ipin at (i,j) connects.   *
  * Also stores the nodes to which this pin connects in rr_edges_to_create    */
-int get_bidir_opin_connections(
-    const int i,
-    const int j,
-    const int ipin,
-    const int from_rr_node,
-    t_rr_edge_info_set& rr_edges_to_create,
-    const t_pin_to_track_lookup& opin_to_track_map,
-    const t_rr_node_indices& L_rr_node_indices,
-    const t_chan_details& chan_details_x,
-    const t_chan_details& chan_details_y) {
+int get_bidir_opin_connections(const int i,
+                               const int j,
+                               const int ipin,
+                               const int from_rr_node,
+                               t_rr_edge_info_set& rr_edges_to_create,
+                               const t_pin_to_track_lookup& opin_to_track_map,
+                               const t_rr_node_indices& L_rr_node_indices,
+                               const t_chan_details& chan_details_x,
+                               const t_chan_details& chan_details_y) {
     int num_conn, tr_i, tr_j, chan, seg;
     int to_switch, to_node;
     int is_connected_track;
@@ -763,20 +742,19 @@ int get_bidir_opin_connections(
     return num_conn;
 }
 
-int get_unidir_opin_connections(
-    const int chan,
-    const int seg,
-    int Fc,
-    const int seg_type_index,
-    const t_rr_type chan_type,
-    const t_chan_seg_details* seg_details,
-    const int from_rr_node,
-    t_rr_edge_info_set& rr_edges_to_create,
-    vtr::NdMatrix<int, 3>& Fc_ofs,
-    const int max_len,
-    const int max_chan_width,
-    const t_rr_node_indices& L_rr_node_indices,
-    bool* Fc_clipped) {
+int get_unidir_opin_connections(const int chan,
+                                const int seg,
+                                int Fc,
+                                const int seg_type_index,
+                                const t_rr_type chan_type,
+                                const t_chan_seg_details* seg_details,
+                                const int from_rr_node,
+                                t_rr_edge_info_set& rr_edges_to_create,
+                                vtr::NdMatrix<int, 3>& Fc_ofs,
+                                const int max_len,
+                                const int max_chan_width,
+                                const t_rr_node_indices& L_rr_node_indices,
+                                bool* Fc_clipped) {
     /* Gets a linked list of Fc nodes of specified seg_type_index to connect
      * to in given chan seg. Fc_ofs is used for the opin staggering pattern. */
 
@@ -871,10 +849,9 @@ bool is_cblock(const int chan, const int seg, const int track, const t_chan_seg_
     return seg_details[track].cb(ofs);
 }
 
-void dump_seg_details(
-    const t_chan_seg_details* seg_details,
-    int max_chan_width,
-    FILE* fp) {
+void dump_seg_details(const t_chan_seg_details* seg_details,
+                      int max_chan_width,
+                      FILE* fp) {
     for (int i = 0; i < max_chan_width; i++) {
         fprintf(fp, "track: %d\n", i);
         fprintf(fp, "length: %d  start: %d",
@@ -913,10 +890,9 @@ void dump_seg_details(
 
 /* Dumps out an array of seg_details structures to file fname.  Used only   *
  * for debugging.                                                           */
-void dump_seg_details(
-    const t_chan_seg_details* seg_details,
-    int max_chan_width,
-    const char* fname) {
+void dump_seg_details(const t_chan_seg_details* seg_details,
+                      int max_chan_width,
+                      const char* fname) {
     FILE* fp = vtr::fopen(fname, "w");
     dump_seg_details(seg_details, max_chan_width, fp);
     fclose(fp);
@@ -924,12 +900,11 @@ void dump_seg_details(
 
 /* Dumps out a 2D array of chan_details structures to file fname.  Used     *
  * only for debugging.                                                      */
-void dump_chan_details(
-    const t_chan_details& chan_details_x,
-    const t_chan_details& chan_details_y,
-    int max_chan_width,
-    const DeviceGrid& grid,
-    const char* fname) {
+void dump_chan_details(const t_chan_details& chan_details_x,
+                       const t_chan_details& chan_details_y,
+                       int max_chan_width,
+                       const DeviceGrid& grid,
+                       const char* fname) {
     FILE* fp = vtr::fopen(fname, "w");
     if (fp) {
         for (size_t y = 0; y <= grid.height() - 2; ++y) {    //-2 for no perim channels
@@ -960,11 +935,10 @@ void dump_chan_details(
 
 /* Dumps out a 2D array of switch block pattern structures to file fname. *
  * Used for debugging purposes only.                                      */
-void dump_sblock_pattern(
-    const t_sblock_pattern& sblock_pattern,
-    int max_chan_width,
-    const DeviceGrid& grid,
-    const char* fname) {
+void dump_sblock_pattern(const t_sblock_pattern& sblock_pattern,
+                         int max_chan_width,
+                         const DeviceGrid& grid,
+                         const char* fname) {
     FILE* fp = vtr::fopen(fname, "w");
     if (fp) {
         for (size_t y = 0; y <= grid.height() - 2; ++y) {
@@ -1042,14 +1016,13 @@ void dump_sblock_pattern(
     fclose(fp);
 }
 
-static void load_chan_rr_indices(
-    const int max_chan_width,
-    const int chan_len,
-    const int num_chans,
-    const t_rr_type type,
-    const t_chan_details& chan_details,
-    t_rr_node_indices& indices,
-    int* index) {
+static void load_chan_rr_indices(const int max_chan_width,
+                                 const int chan_len,
+                                 const int num_chans,
+                                 const t_rr_type type,
+                                 const t_chan_details& chan_details,
+                                 t_rr_node_indices& indices,
+                                 int* index) {
     VTR_ASSERT(indices[type].size() == size_t(num_chans));
     for (int chan = 0; chan < num_chans - 1; ++chan) {
         VTR_ASSERT(indices[type][chan].size() == size_t(chan_len));
@@ -1093,10 +1066,9 @@ static void load_chan_rr_indices(
     }
 }
 
-static void load_block_rr_indices(
-    const DeviceGrid& grid,
-    t_rr_node_indices& indices,
-    int* index) {
+static void load_block_rr_indices(const DeviceGrid& grid,
+                                  t_rr_node_indices& indices,
+                                  int* index) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
     for (size_t x = 0; x < grid.width(); x++) {
         for (size_t y = 0; y < grid.height(); y++) {
@@ -1182,12 +1154,11 @@ static void load_block_rr_indices(
     }
 }
 
-t_rr_node_indices alloc_and_load_rr_node_indices(
-    const int max_chan_width,
-    const DeviceGrid& grid,
-    int* index,
-    const t_chan_details& chan_details_x,
-    const t_chan_details& chan_details_y) {
+t_rr_node_indices alloc_and_load_rr_node_indices(const int max_chan_width,
+                                                 const DeviceGrid& grid,
+                                                 int* index,
+                                                 const t_chan_details& chan_details_x,
+                                                 const t_chan_details& chan_details_y) {
     /* Allocates and loads all the structures needed for fast lookups of the   *
      * index of an rr_node.  rr_node_indices is a matrix containing the index  *
      * of the *first* rr_node at a given (i,j) location.                       */
@@ -1227,11 +1198,10 @@ t_rr_node_indices alloc_and_load_rr_node_indices(
     return indices;
 }
 
-std::vector<int> get_rr_node_chan_wires_at_location(
-    const t_rr_node_indices& L_rr_node_indices,
-    t_rr_type rr_type,
-    int x,
-    int y) {
+std::vector<int> get_rr_node_chan_wires_at_location(const t_rr_node_indices& L_rr_node_indices,
+                                                    t_rr_type rr_type,
+                                                    int x,
+                                                    int y) {
     VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
 
     /* Currently need to swap x and y for CHANX because of chan, seg convention */
@@ -1363,12 +1333,11 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
     return ((unsigned)ptc < lookup.size() ? lookup[ptc] : -1);
 }
 
-int find_average_rr_node_index(
-    int device_width,
-    int device_height,
-    t_rr_type rr_type,
-    int ptc,
-    const t_rr_node_indices& L_rr_node_indices) {
+int find_average_rr_node_index(int device_width,
+                               int device_height,
+                               t_rr_type rr_type,
+                               int ptc,
+                               const t_rr_node_indices& L_rr_node_indices) {
     /* Find and return the index to a rr_node that is located at the "center" *
      * of the current grid array, if possible.  In the event the "center" of  *
      * the grid array is an EMPTY or IO node, then retry alterate locations.  *
@@ -1407,20 +1376,19 @@ int find_average_rr_node_index(
     return (inode);
 }
 
-int get_track_to_pins(
-    int seg,
-    int chan,
-    int track,
-    int tracks_per_chan,
-    int from_rr_node,
-    t_rr_edge_info_set& rr_edges_to_create,
-    const t_rr_node_indices& L_rr_node_indices,
-    const t_track_to_pin_lookup& track_to_pin_lookup,
-    const t_chan_seg_details* seg_details,
-    enum e_rr_type chan_type,
-    int chan_length,
-    int wire_to_ipin_switch,
-    enum e_directionality directionality) {
+int get_track_to_pins(int seg,
+                      int chan,
+                      int track,
+                      int tracks_per_chan,
+                      int from_rr_node,
+                      t_rr_edge_info_set& rr_edges_to_create,
+                      const t_rr_node_indices& L_rr_node_indices,
+                      const t_track_to_pin_lookup& track_to_pin_lookup,
+                      const t_chan_seg_details* seg_details,
+                      enum e_rr_type chan_type,
+                      int chan_length,
+                      int wire_to_ipin_switch,
+                      enum e_directionality directionality) {
     /*
      * Adds the fan-out edges from wire segment at (chan, seg, track) to adjacent
      * blocks along the wire's length
@@ -1503,27 +1471,26 @@ int get_track_to_pins(
  * switches are marked as being of the types of the larger (lower R) pass
  * transistor.
  */
-int get_track_to_tracks(
-    const int from_chan,
-    const int from_seg,
-    const int from_track,
-    const t_rr_type from_type,
-    const int to_seg,
-    const t_rr_type to_type,
-    const int chan_len,
-    const int max_chan_width,
-    const DeviceGrid& grid,
-    const int Fs_per_side,
-    t_sblock_pattern& sblock_pattern,
-    const int from_rr_node,
-    t_rr_edge_info_set& rr_edges_to_create,
-    const t_chan_seg_details* from_seg_details,
-    const t_chan_seg_details* to_seg_details,
-    const t_chan_details& to_chan_details,
-    const enum e_directionality directionality,
-    const t_rr_node_indices& L_rr_node_indices,
-    const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-    t_sb_connection_map* sb_conn_map) {
+int get_track_to_tracks(const int from_chan,
+                        const int from_seg,
+                        const int from_track,
+                        const t_rr_type from_type,
+                        const int to_seg,
+                        const t_rr_type to_type,
+                        const int chan_len,
+                        const int max_chan_width,
+                        const DeviceGrid& grid,
+                        const int Fs_per_side,
+                        t_sblock_pattern& sblock_pattern,
+                        const int from_rr_node,
+                        t_rr_edge_info_set& rr_edges_to_create,
+                        const t_chan_seg_details* from_seg_details,
+                        const t_chan_seg_details* to_seg_details,
+                        const t_chan_details& to_chan_details,
+                        const enum e_directionality directionality,
+                        const t_rr_node_indices& L_rr_node_indices,
+                        const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
+                        t_sb_connection_map* sb_conn_map) {
     int to_chan, to_sb;
     std::vector<int> conn_tracks;
     bool from_is_sblock, is_behind, Fs_clipped;
@@ -1673,14 +1640,13 @@ int get_track_to_tracks(
                     /* Also, we are connecting from the top or right of SB so it
                      * makes the most sense to only get there from DEC_DIRECTION wires. */
                     if ((from_is_sblock) && (DEC_DIRECTION == from_seg_details[from_track].direction())) {
-                        num_conn += get_unidir_track_to_chan_seg(
-                            from_track, to_chan,
-                            to_seg, to_sb, to_type, max_chan_width, grid,
-                            from_side_a, to_side, Fs_per_side,
-                            sblock_pattern,
-                            switch_override,
-                            L_rr_node_indices, to_seg_details,
-                            &Fs_clipped, from_rr_node, rr_edges_to_create);
+                        num_conn += get_unidir_track_to_chan_seg(from_track, to_chan,
+                                                                 to_seg, to_sb, to_type, max_chan_width, grid,
+                                                                 from_side_a, to_side, Fs_per_side,
+                                                                 sblock_pattern,
+                                                                 switch_override,
+                                                                 L_rr_node_indices, to_seg_details,
+                                                                 &Fs_clipped, from_rr_node, rr_edges_to_create);
                     }
                 }
             }
@@ -1714,14 +1680,13 @@ int get_track_to_tracks(
                      * makes the most sense to only get there from INC_DIRECTION wires. */
                     if ((from_is_sblock)
                         && (INC_DIRECTION == from_seg_details[from_track].direction())) {
-                        num_conn += get_unidir_track_to_chan_seg(
-                            from_track, to_chan,
-                            to_seg, to_sb, to_type, max_chan_width, grid,
-                            from_side_b, to_side, Fs_per_side,
-                            sblock_pattern,
-                            switch_override,
-                            L_rr_node_indices, to_seg_details,
-                            &Fs_clipped, from_rr_node, rr_edges_to_create);
+                        num_conn += get_unidir_track_to_chan_seg(from_track, to_chan,
+                                                                 to_seg, to_sb, to_type, max_chan_width, grid,
+                                                                 from_side_b, to_side, Fs_per_side,
+                                                                 sblock_pattern,
+                                                                 switch_override,
+                                                                 L_rr_node_indices, to_seg_details,
+                                                                 &Fs_clipped, from_rr_node, rr_edges_to_create);
                     }
                 }
             }
@@ -1731,20 +1696,19 @@ int get_track_to_tracks(
     return num_conn;
 }
 
-static int get_bidir_track_to_chan_seg(
-    const std::vector<int> conn_tracks,
-    const t_rr_node_indices& L_rr_node_indices,
-    const int to_chan,
-    const int to_seg,
-    const int to_sb,
-    const t_rr_type to_type,
-    const t_chan_seg_details* seg_details,
-    const bool from_is_sblock,
-    const int from_switch,
-    const int switch_override,
-    const enum e_directionality directionality,
-    const int from_rr_node,
-    t_rr_edge_info_set& rr_edges_to_create) {
+static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
+                                       const t_rr_node_indices& L_rr_node_indices,
+                                       const int to_chan,
+                                       const int to_seg,
+                                       const int to_sb,
+                                       const t_rr_type to_type,
+                                       const t_chan_seg_details* seg_details,
+                                       const bool from_is_sblock,
+                                       const int from_switch,
+                                       const int switch_override,
+                                       const enum e_directionality directionality,
+                                       const int from_rr_node,
+                                       t_rr_edge_info_set& rr_edges_to_create) {
     unsigned iconn;
     int to_track, to_node, to_switch, num_conn, to_x, to_y, i;
     bool to_is_sblock;
@@ -1796,18 +1760,17 @@ static int get_bidir_track_to_chan_seg(
  * edges added .
  * See route/build_switchblocks.c for a detailed description of how the switch block
  * connection map sb_conn_map is generated. */
-static int get_track_to_chan_seg(
-    const int from_wire,
-    const int to_chan,
-    const int to_seg,
-    const t_rr_type to_chan_type,
-    const e_side from_side,
-    const e_side to_side,
-    const int switch_override,
-    const t_rr_node_indices& L_rr_node_indices,
-    t_sb_connection_map* sb_conn_map,
-    const int from_rr_node,
-    t_rr_edge_info_set& rr_edges_to_create) {
+static int get_track_to_chan_seg(const int from_wire,
+                                 const int to_chan,
+                                 const int to_seg,
+                                 const t_rr_type to_chan_type,
+                                 const e_side from_side,
+                                 const e_side to_side,
+                                 const int switch_override,
+                                 const t_rr_node_indices& L_rr_node_indices,
+                                 t_sb_connection_map* sb_conn_map,
+                                 const int from_rr_node,
+                                 t_rr_edge_info_set& rr_edges_to_create) {
     int edge_count = 0;
     int to_x, to_y;
     int tile_x, tile_y;
@@ -1867,24 +1830,23 @@ static int get_track_to_chan_seg(
     return edge_count;
 }
 
-static int get_unidir_track_to_chan_seg(
-    const int from_track,
-    const int to_chan,
-    const int to_seg,
-    const int to_sb,
-    const t_rr_type to_type,
-    const int max_chan_width,
-    const DeviceGrid& grid,
-    const enum e_side from_side,
-    const enum e_side to_side,
-    const int Fs_per_side,
-    t_sblock_pattern& sblock_pattern,
-    const int switch_override,
-    const t_rr_node_indices& L_rr_node_indices,
-    const t_chan_seg_details* seg_details,
-    bool* Fs_clipped,
-    const int from_rr_node,
-    t_rr_edge_info_set& rr_edges_to_create) {
+static int get_unidir_track_to_chan_seg(const int from_track,
+                                        const int to_chan,
+                                        const int to_seg,
+                                        const int to_sb,
+                                        const t_rr_type to_type,
+                                        const int max_chan_width,
+                                        const DeviceGrid& grid,
+                                        const enum e_side from_side,
+                                        const enum e_side to_side,
+                                        const int Fs_per_side,
+                                        t_sblock_pattern& sblock_pattern,
+                                        const int switch_override,
+                                        const t_rr_node_indices& L_rr_node_indices,
+                                        const t_chan_seg_details* seg_details,
+                                        bool* Fs_clipped,
+                                        const int from_rr_node,
+                                        t_rr_edge_info_set& rr_edges_to_create) {
     int num_labels = 0;
     int* mux_labels = nullptr;
 
@@ -1994,13 +1956,12 @@ bool is_sblock(const int chan, int wire_seg, const int sb_seg, const int track, 
     return seg_details[track].sb(ofs);
 }
 
-static void get_switch_type(
-    bool is_from_sblock,
-    bool is_to_sblock,
-    short from_node_switch,
-    short to_node_switch,
-    const int switch_override,
-    short switch_types[2]) {
+static void get_switch_type(bool is_from_sblock,
+                            bool is_to_sblock,
+                            short from_node_switch,
+                            short to_node_switch,
+                            const int switch_override,
+                            short switch_types[2]) {
     /* This routine looks at whether the from_node and to_node want a switch,  *
      * and what type of switch is used to connect *to* each type of node       *
      * (from_node_switch and to_node_switch).  It decides what type of switch, *
@@ -2078,12 +2039,11 @@ static void get_switch_type(
     }
 }
 
-static int vpr_to_phy_track(
-    const int itrack,
-    const int chan_num,
-    const int seg_num,
-    const t_chan_seg_details* seg_details,
-    const enum e_directionality directionality) {
+static int vpr_to_phy_track(const int itrack,
+                            const int chan_num,
+                            const int seg_num,
+                            const t_chan_seg_details* seg_details,
+                            const enum e_directionality directionality) {
     int group_start, group_size;
     int vpr_offset_for_first_phy_track;
     int vpr_offset, phy_offset;
@@ -2109,9 +2069,8 @@ static int vpr_to_phy_track(
     return phy_track;
 }
 
-t_sblock_pattern alloc_sblock_pattern_lookup(
-    const DeviceGrid& grid,
-    const int max_chan_width) {
+t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
+                                             const int max_chan_width) {
     /* loading up the sblock connection pattern matrix. It's a huge matrix because
      * for nonquantized W, it's impossible to make simple permutations to figure out
      * where muxes are and how to connect to them such that their sizes are balanced */
@@ -2141,16 +2100,15 @@ t_sblock_pattern alloc_sblock_pattern_lookup(
     return sblock_pattern;
 }
 
-void load_sblock_pattern_lookup(
-    const int i,
-    const int j,
-    const DeviceGrid& grid,
-    const t_chan_width* nodes_per_chan,
-    const t_chan_details& chan_details_x,
-    const t_chan_details& chan_details_y,
-    const int /*Fs*/,
-    const enum e_switch_block_type switch_block_type,
-    t_sblock_pattern& sblock_pattern) {
+void load_sblock_pattern_lookup(const int i,
+                                const int j,
+                                const DeviceGrid& grid,
+                                const t_chan_width* nodes_per_chan,
+                                const t_chan_details& chan_details_x,
+                                const t_chan_details& chan_details_y,
+                                const int /*Fs*/,
+                                const enum e_switch_block_type switch_block_type,
+                                t_sblock_pattern& sblock_pattern) {
     /* This routine loads a lookup table for sblock topology. The lookup table is huge
      * because the sblock varies from location to location. The i, j means the owning
      * location of the sblock under investigation. */
@@ -2378,17 +2336,16 @@ void load_sblock_pattern_lookup(
     }
 }
 
-static int* label_wire_muxes(
-    const int chan_num,
-    const int seg_num,
-    const t_chan_seg_details* seg_details,
-    const int seg_type_index,
-    const int max_len,
-    const enum e_direction dir,
-    const int max_chan_width,
-    const bool check_cb,
-    int* num_wire_muxes,
-    int* num_wire_muxes_cb_restricted) {
+static int* label_wire_muxes(const int chan_num,
+                             const int seg_num,
+                             const t_chan_seg_details* seg_details,
+                             const int seg_type_index,
+                             const int max_len,
+                             const enum e_direction dir,
+                             const int max_chan_width,
+                             const bool check_cb,
+                             int* num_wire_muxes,
+                             int* num_wire_muxes_cb_restricted) {
     /* Labels the muxes on that side (seg_num, chan_num, direction). The returned array
      * maps a label to the actual track #: array[0] = <the track number of the first/lowest mux>
      * This routine orders wire muxes by their natural order, i.e. track #
@@ -2464,16 +2421,15 @@ static int* label_wire_muxes(
     return labels;
 }
 
-static int* label_incoming_wires(
-    const int chan_num,
-    const int seg_num,
-    const int sb_seg,
-    const t_chan_seg_details* seg_details,
-    const int max_len,
-    const enum e_direction dir,
-    const int max_chan_width,
-    int* num_incoming_wires,
-    int* num_ending_wires) {
+static int* label_incoming_wires(const int chan_num,
+                                 const int seg_num,
+                                 const int sb_seg,
+                                 const t_chan_seg_details* seg_details,
+                                 const int max_len,
+                                 const enum e_direction dir,
+                                 const int max_chan_width,
+                                 int* num_incoming_wires,
+                                 int* num_ending_wires) {
     /* Labels the incoming wires on that side (seg_num, chan_num, direction).
      * The returned array maps a track # to a label: array[0] = <the new hash value/label for track 0>,
      * the labels 0,1,2,.. identify consecutive incoming wires that have sblock (passing wires with sblock and ending wires) */
@@ -2541,10 +2497,9 @@ static int* label_incoming_wires(
     return labels;
 }
 
-static int find_label_of_track(
-    int* wire_mux_on_track,
-    int num_wire_muxes,
-    int from_track) {
+static int find_label_of_track(int* wire_mux_on_track,
+                               int num_wire_muxes,
+                               int from_track) {
     /* Returns the index/label in array wire_mux_on_track whose entry equals from_track. If none are
      * found, then returns the index of the entry whose value is the largest */
     int i_label = -1;

@@ -166,13 +166,11 @@ static void log_msg(t_log* log_ptr, const char* msg) {
 
     if (log_ptr->num_messages == (MAX_LOGS + 1)) {
         const char* full_msg = "\n***LOG IS FULL***\n";
-        log_ptr->messages[log_ptr->num_messages - 1] = (char*)vtr::calloc(
-            strlen(full_msg) + 1, sizeof(char));
+        log_ptr->messages[log_ptr->num_messages - 1] = (char*)vtr::calloc(strlen(full_msg) + 1, sizeof(char));
         strncpy(log_ptr->messages[log_ptr->num_messages - 1], full_msg,
                 strlen(full_msg));
     } else {
-        log_ptr->messages[log_ptr->num_messages - 1] = (char*)vtr::calloc(
-            strlen(msg) + 1, sizeof(char));
+        log_ptr->messages[log_ptr->num_messages - 1] = (char*)vtr::calloc(strlen(msg) + 1, sizeof(char));
         strncpy(log_ptr->messages[log_ptr->num_messages - 1], msg, strlen(msg));
     }
 }
@@ -443,8 +441,7 @@ static void alloc_and_load_mux_graph_recursive(t_mux_node* node,
     }
 }
 
-bool power_method_is_transistor_level(
-    e_power_estimation_method estimation_method) {
+bool power_method_is_transistor_level(e_power_estimation_method estimation_method) {
     switch (estimation_method) {
         case POWER_METHOD_AUTO_SIZES:
         case POWER_METHOD_SPECIFY_SIZES:

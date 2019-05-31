@@ -202,8 +202,7 @@ static double power_count_transistors_mux_node(t_mux_node* mux_node,
 
             /* Child MUX */
             if (mux_node->level != 0) {
-                transistor_cnt += power_count_transistors_mux_node(
-                    &mux_node->children[input_idx], transistor_size);
+                transistor_cnt += power_count_transistors_mux_node(&mux_node->children[input_idx], transistor_size);
             }
         }
     }
@@ -264,8 +263,7 @@ void power_sizing_init(const t_arch* arch) {
      *  - Assume min transistor size is Wx6L
      *  - Assume an overhead to space transistors
      */
-    power_ctx.commonly_used->tile_length = sqrt(
-        power_transistor_area(transistors_per_tile));
+    power_ctx.commonly_used->tile_length = sqrt(power_transistor_area(transistors_per_tile));
 }
 
 /**
@@ -333,8 +331,7 @@ static double power_count_transistors_pb_node(t_pb_graph_node* pb_node) {
             /* Count Interconnect Transistors */
             if (!ignore_interc) {
                 for (interc = 0; interc < mode->num_interconnect; interc++) {
-                    tc_interc += power_count_transistors_interc(
-                        &mode->interconnect[interc]);
+                    tc_interc += power_count_transistors_interc(&mode->interconnect[interc]);
                 }
             }
             tc_interc_max = max(tc_interc_max, tc_interc);
@@ -344,8 +341,7 @@ static double power_count_transistors_pb_node(t_pb_graph_node* pb_node) {
                 t_pb_type* child_type = &mode->pb_type_children[child];
 
                 for (pb_idx = 0; pb_idx < child_type->num_pb; pb_idx++) {
-                    tc_children += power_transistors_for_pb_node(
-                        &pb_node->child_pb_graph_nodes[mode_idx][child][pb_idx]);
+                    tc_children += power_transistors_for_pb_node(&pb_node->child_pb_graph_nodes[mode_idx][child][pb_idx]);
                 }
             }
 
@@ -552,8 +548,7 @@ static void power_size_pb_rec(t_pb_graph_node* pb_node) {
 
     auto type = find_most_common_block_type(device_ctx.grid);
 
-    if (!power_method_is_transistor_level(
-            pb_node->pb_type->pb_type_power->estimation_method)
+    if (!power_method_is_transistor_level(pb_node->pb_type->pb_type_power->estimation_method)
         && pb_node != type->pb_graph_head) {
         /* Area information is only needed for:
          *  1. Transistor-level estimation methods
@@ -570,8 +565,7 @@ static void power_size_pb_rec(t_pb_graph_node* pb_node) {
             int num_pb = mode->pb_type_children[type_idx].num_pb;
 
             for (pb_idx = 0; pb_idx < num_pb; pb_idx++) {
-                power_size_pb_rec(
-                    &pb_node->child_pb_graph_nodes[mode_idx][type_idx][pb_idx]);
+                power_size_pb_rec(&pb_node->child_pb_graph_nodes[mode_idx][type_idx][pb_idx]);
             }
         }
     }
@@ -587,8 +581,7 @@ static void power_size_pb_rec(t_pb_graph_node* pb_node) {
         size_buffers_and_wires = false;
     }
 
-    if (!power_method_is_transistor_level(
-            pb_node->pb_type->pb_type_power->estimation_method)) {
+    if (!power_method_is_transistor_level(pb_node->pb_type->pb_type_power->estimation_method)) {
         size_buffers_and_wires = false;
     }
 
@@ -597,24 +590,21 @@ static void power_size_pb_rec(t_pb_graph_node* pb_node) {
         for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
             for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
                  pin_idx++) {
-                power_size_pin_buffers_and_wires(
-                    &pb_node->input_pins[port_idx][pin_idx], true);
+                power_size_pin_buffers_and_wires(&pb_node->input_pins[port_idx][pin_idx], true);
             }
         }
 
         for (port_idx = 0; port_idx < pb_node->num_output_ports; port_idx++) {
             for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx];
                  pin_idx++) {
-                power_size_pin_buffers_and_wires(
-                    &pb_node->output_pins[port_idx][pin_idx], false);
+                power_size_pin_buffers_and_wires(&pb_node->output_pins[port_idx][pin_idx], false);
             }
         }
 
         for (port_idx = 0; port_idx < pb_node->num_clock_ports; port_idx++) {
             for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx];
                  pin_idx++) {
-                power_size_pin_buffers_and_wires(
-                    &pb_node->clock_pins[port_idx][pin_idx], true);
+                power_size_pin_buffers_and_wires(&pb_node->clock_pins[port_idx][pin_idx], true);
             }
         }
     }
@@ -865,8 +855,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
             C_load = pin->pin_power->C_wire
                      + (fanout)*power_ctx.commonly_used->INV_1X_C_in; //power_ctx.commonly_used->NMOS_1X_C_d;
             if (C_load > power_ctx.commonly_used->INV_1X_C_in) {
-                pin->pin_power->buffer_size = power_buffer_size_from_logical_effort(
-                    C_load);
+                pin->pin_power->buffer_size = power_buffer_size_from_logical_effort(C_load);
             } else {
                 pin->pin_power->buffer_size = 0.;
             }

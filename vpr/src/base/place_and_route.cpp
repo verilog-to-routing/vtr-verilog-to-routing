@@ -194,8 +194,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 
             /* If Fc_output is too high, set to full connectivity but warn the user */
             if (Fc_clipped) {
-                VTR_LOG_WARN(
-                    "Fc_output was too high and was clipped to full (maximum) connectivity.\n");
+                VTR_LOG_WARN("Fc_output was too high and was clipped to full (maximum) connectivity.\n");
             }
 
             /* Save routing in case it is best. */
@@ -361,8 +360,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
     restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
 
     if (Fc_clipped) {
-        VTR_LOG_WARN(
-            "Best routing Fc_output too high, clipped to full (maximum) connectivity.\n");
+        VTR_LOG_WARN("Best routing Fc_output too high, clipped to full (maximum) connectivity.\n");
     }
     VTR_LOG("Best routing used a channel width factor of %d.\n", final);
 

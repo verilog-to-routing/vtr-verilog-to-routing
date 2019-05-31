@@ -157,8 +157,7 @@ void power_print_spice_comparison() {
                 SRAM_bits[1] = '0';
             } else {
                 for (sram_idx = 0; sram_idx < (1 << (j - 1)); sram_idx++) {
-                    SRAM_bits[sram_idx + (1 << (j - 1))] = binary_not(
-                        SRAM_bits[sram_idx]);
+                    SRAM_bits[sram_idx + (1 << (j - 1))] = binary_not(SRAM_bits[sram_idx]);
                 }
             }
             SRAM_bits[1 << j] = '\0';
@@ -364,8 +363,7 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
             SRAM_bits[1] = '0';
         } else {
             for (int sram_idx = 0; sram_idx < (1 << (i - 1)); sram_idx++) {
-                SRAM_bits[sram_idx + (1 << (i - 1))] = binary_not(
-                    SRAM_bits[sram_idx]);
+                SRAM_bits[sram_idx + (1 << (i - 1))] = binary_not(SRAM_bits[sram_idx]);
             }
         }
         SRAM_bits[1 << i] = '\0';

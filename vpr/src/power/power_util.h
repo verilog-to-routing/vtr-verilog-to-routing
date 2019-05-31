@@ -59,10 +59,8 @@ t_mux_arch* power_get_mux_arch(int num_mux_inputs, float transistor_size);
 void mux_arch_fix_levels(t_mux_arch* mux_arch);
 
 /* Power Methods */
-bool power_method_is_transistor_level(
-    e_power_estimation_method estimation_method);
-bool power_method_is_recursive(
-    e_power_estimation_method method);
+bool power_method_is_transistor_level(e_power_estimation_method estimation_method);
+bool power_method_is_recursive(e_power_estimation_method method);
 
 const char* transistor_type_name(e_tx_type type);
 char* alloc_SRAM_values_from_truth_table(int LUT_size,

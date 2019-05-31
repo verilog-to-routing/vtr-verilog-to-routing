@@ -337,18 +337,16 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         // Start locations outside the device will never create block instances
         if (startx > grid_width - 1) {
             if (warn_out_of_range) {
-                VTR_LOG_WARN(
-                    "Block type '%s' grid location specification startx (%s = %d) falls outside device horizontal range [%d,%d]\n",
-                    type->name, xspec.start_expr.c_str(), startx, 0, grid_width - 1);
+                VTR_LOG_WARN("Block type '%s' grid location specification startx (%s = %d) falls outside device horizontal range [%d,%d]\n",
+                             type->name, xspec.start_expr.c_str(), startx, 0, grid_width - 1);
             }
             continue; //No instances will be created
         }
 
         if (starty > grid_height - 1) {
             if (warn_out_of_range) {
-                VTR_LOG_WARN(
-                    "Block type '%s' grid location specification starty (%s = %d) falls outside device vertical range [%d,%d]\n",
-                    type->name, yspec.start_expr.c_str(), starty, 0, grid_height - 1);
+                VTR_LOG_WARN("Block type '%s' grid location specification starty (%s = %d) falls outside device vertical range [%d,%d]\n",
+                             type->name, yspec.start_expr.c_str(), starty, 0, grid_height - 1);
             }
             continue; //No instances will be created
         }
@@ -356,17 +354,15 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         //Check end against the device dimensions
         if (endx > grid_width - 1) {
             if (warn_out_of_range) {
-                VTR_LOG_WARN(
-                    "Block type '%s' grid location specification endx (%s = %d) falls outside device horizontal range [%d,%d]\n",
-                    type->name, xspec.end_expr.c_str(), endx, 0, grid_width - 1);
+                VTR_LOG_WARN("Block type '%s' grid location specification endx (%s = %d) falls outside device horizontal range [%d,%d]\n",
+                             type->name, xspec.end_expr.c_str(), endx, 0, grid_width - 1);
             }
         }
 
         if (endy > grid_height - 1) {
             if (warn_out_of_range) {
-                VTR_LOG_WARN(
-                    "Block type '%s' grid location specification endy (%s = %d) falls outside device vertical range [%d,%d]\n",
-                    type->name, yspec.end_expr.c_str(), endy, 0, grid_height - 1);
+                VTR_LOG_WARN("Block type '%s' grid location specification endy (%s = %d) falls outside device vertical range [%d,%d]\n",
+                             type->name, yspec.end_expr.c_str(), endy, 0, grid_height - 1);
             }
         }
 
@@ -452,9 +448,8 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         if (type == empty_type) continue; //Don't worry if empty hasn't been specified
 
         if (!seen_types.count(type)) {
-            VTR_LOG_WARN(
-                "Block type '%s' was not specified in device grid layout\n",
-                type->name);
+            VTR_LOG_WARN("Block type '%s' was not specified in device grid layout\n",
+                         type->name);
         }
     }
 

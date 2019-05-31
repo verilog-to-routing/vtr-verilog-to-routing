@@ -347,9 +347,8 @@ void print_wirelen_prob_dist() {
             two_point_length = (float)length / (float)(num_sinks);
             index = (int)two_point_length;
             if (index >= prob_dist_size) {
-                VTR_LOG_WARN(
-                    "Index (%d) to prob_dist exceeds its allocated size (%d).\n",
-                    index, prob_dist_size);
+                VTR_LOG_WARN("Index (%d) to prob_dist exceeds its allocated size (%d).\n",
+                             index, prob_dist_size);
                 VTR_LOG("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
                 incr = index - prob_dist_size + 2;
                 prob_dist_size += incr;
@@ -361,9 +360,8 @@ void print_wirelen_prob_dist() {
 
             index++;
             if (index >= prob_dist_size) {
-                VTR_LOG_WARN(
-                    "Index (%d) to prob_dist exceeds its allocated size (%d).\n",
-                    index, prob_dist_size);
+                VTR_LOG_WARN("Index (%d) to prob_dist exceeds its allocated size (%d).\n",
+                             index, prob_dist_size);
                 VTR_LOG("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
                 incr = index - prob_dist_size + 2;
                 prob_dist_size += incr;

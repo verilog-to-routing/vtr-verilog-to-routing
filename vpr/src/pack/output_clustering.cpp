@@ -579,9 +579,8 @@ void output_clustering(const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_
                 break;
 
             default:
-                VTR_LOG_ERROR(
-                    "in output_netlist: Unexpected type %d for atom block %s.\n",
-                    type, atom_ctx.nlist.block_name(blk_id).c_str());
+                VTR_LOG_ERROR("in output_netlist: Unexpected type %d for atom block %s.\n",
+                              type, atom_ctx.nlist.block_name(blk_id).c_str());
         }
     }
 

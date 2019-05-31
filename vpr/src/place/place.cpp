@@ -251,11 +251,10 @@ static std::vector<t_compressed_block_grid> f_compressed_block_grids;
 static void print_clb_placement(const char* fname);
 #endif
 
-static void alloc_and_load_placement_structs(
-    float place_cost_exp,
-    t_placer_opts placer_opts,
-    t_direct_inf* directs,
-    int num_directs);
+static void alloc_and_load_placement_structs(float place_cost_exp,
+                                             t_placer_opts placer_opts,
+                                             t_direct_inf* directs,
+                                             int num_directs);
 
 static void alloc_and_load_net_pin_indices();
 
@@ -1165,8 +1164,7 @@ static float starting_t(t_placer_costs* costs,
     std_dev = get_std_dev(num_accepted, sum_of_squares, av);
 
     if (num_accepted != move_lim) {
-        VTR_LOG_WARN(
-            "Starting t: %d of %d configurations accepted.\n", num_accepted, move_lim);
+        VTR_LOG_WARN("Starting t: %d of %d configurations accepted.\n", num_accepted, move_lim);
     }
 
 #ifdef VERBOSE
@@ -2438,11 +2436,10 @@ static void free_placement_structs(t_placer_opts placer_opts) {
 
 /* Allocates the major structures needed only by the placer, primarily for *
  * computing costs quickly and such.                                       */
-static void alloc_and_load_placement_structs(
-    float place_cost_exp,
-    t_placer_opts placer_opts,
-    t_direct_inf* directs,
-    int num_directs) {
+static void alloc_and_load_placement_structs(float place_cost_exp,
+                                             t_placer_opts placer_opts,
+                                             t_direct_inf* directs,
+                                             int num_directs) {
     int max_pins_per_clb, i;
     unsigned int ipin;
 
@@ -3477,9 +3474,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
         for (size_t low = 0; low <= high; low++) {
             chanx_place_cost_fac[high][low] = (high - low + 1.)
                                               / chanx_place_cost_fac[high][low];
-            chanx_place_cost_fac[high][low] = pow(
-                (double)chanx_place_cost_fac[high][low],
-                (double)place_cost_exp);
+            chanx_place_cost_fac[high][low] = pow((double)chanx_place_cost_fac[high][low], (double)place_cost_exp);
         }
 
     /* Now do the same thing for the y-directed channels.  First get the  *
@@ -3501,9 +3496,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
         for (size_t low = 0; low <= high; low++) {
             chany_place_cost_fac[high][low] = (high - low + 1.)
                                               / chany_place_cost_fac[high][low];
-            chany_place_cost_fac[high][low] = pow(
-                (double)chany_place_cost_fac[high][low],
-                (double)place_cost_exp);
+            chany_place_cost_fac[high][low] = pow((double)chany_place_cost_fac[high][low], (double)place_cost_exp);
         }
 }
 
@@ -3542,9 +3535,8 @@ static int check_placement_costs(const t_placer_costs& costs,
 
     bb_cost_check = comp_bb_cost(CHECK);
     if (fabs(bb_cost_check - costs.bb_cost) > costs.bb_cost * ERROR_TOL) {
-        VTR_LOG_ERROR(
-            "bb_cost_check: %g and bb_cost: %g differ in check_place.\n",
-            bb_cost_check, costs.bb_cost);
+        VTR_LOG_ERROR("bb_cost_check: %g and bb_cost: %g differ in check_place.\n",
+                      bb_cost_check, costs.bb_cost);
         error++;
     }
 
@@ -3558,9 +3550,8 @@ static int check_placement_costs(const t_placer_costs& costs,
         }
         //VTR_LOG("delay_cost recomputed from scratch: %g\n", delay_cost_check);
         if (fabs(delay_cost_check - costs.delay_cost) > costs.delay_cost * ERROR_TOL) {
-            VTR_LOG_ERROR(
-                "delay_cost_check: %g and delay_cost: %g differ in check_place.\n",
-                delay_cost_check, costs.delay_cost);
+            VTR_LOG_ERROR("delay_cost_check: %g and delay_cost: %g differ in check_place.\n",
+                          delay_cost_check, costs.delay_cost);
             error++;
         }
     }
@@ -3584,9 +3575,8 @@ static int check_block_placement_consistency() {
     for (size_t i = 0; i < device_ctx.grid.width(); i++)
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
             if (place_ctx.grid_blocks[i][j].usage > device_ctx.grid[i][j].type->capacity) {
-                VTR_LOG_ERROR(
-                    "Block at grid location (%zu,%zu) overused. Usage is %d.\n",
-                    i, j, place_ctx.grid_blocks[i][j].usage);
+                VTR_LOG_ERROR("Block at grid location (%zu,%zu) overused. Usage is %d.\n",
+                              i, j, place_ctx.grid_blocks[i][j].usage);
                 error++;
             }
             int usage_check = 0;
@@ -3596,25 +3586,22 @@ static int check_block_placement_consistency() {
                     continue;
 
                 if (cluster_ctx.clb_nlist.block_type(bnum) != device_ctx.grid[i][j].type) {
-                    VTR_LOG_ERROR(
-                        "Block %zu type (%s) does not match grid location (%zu,%zu) type (%s).\n",
-                        size_t(bnum), cluster_ctx.clb_nlist.block_type(bnum)->name, i, j, device_ctx.grid[i][j].type->name);
+                    VTR_LOG_ERROR("Block %zu type (%s) does not match grid location (%zu,%zu) type (%s).\n",
+                                  size_t(bnum), cluster_ctx.clb_nlist.block_type(bnum)->name, i, j, device_ctx.grid[i][j].type->name);
                     error++;
                 }
                 if ((place_ctx.block_locs[bnum].loc.x != int(i)) || (place_ctx.block_locs[bnum].loc.y != int(j))) {
-                    VTR_LOG_ERROR(
-                        "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d).\n",
-                        size_t(bnum), place_ctx.block_locs[bnum].loc.x, place_ctx.block_locs[bnum].loc.y, place_ctx.block_locs[bnum].loc.z,
-                        i, j, k);
+                    VTR_LOG_ERROR("Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d).\n",
+                                  size_t(bnum), place_ctx.block_locs[bnum].loc.x, place_ctx.block_locs[bnum].loc.y, place_ctx.block_locs[bnum].loc.z,
+                                  i, j, k);
                     error++;
                 }
                 ++usage_check;
                 bdone[bnum]++;
             }
             if (usage_check != place_ctx.grid_blocks[i][j].usage) {
-                VTR_LOG_ERROR(
-                    "Location (%zu,%zu) usage is %d, but has actual usage %d.\n",
-                    i, j, place_ctx.grid_blocks[i][j].usage, usage_check);
+                VTR_LOG_ERROR("Location (%zu,%zu) usage is %d, but has actual usage %d.\n",
+                              i, j, place_ctx.grid_blocks[i][j].usage, usage_check);
                 error++;
             }
         }
@@ -3622,9 +3609,8 @@ static int check_block_placement_consistency() {
     /* Check that every block exists in the device_ctx.grid and cluster_ctx.blocks arrays somewhere. */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks())
         if (bdone[blk_id] != 1) {
-            VTR_LOG_ERROR(
-                "Block %zu listed %d times in data structures.\n",
-                size_t(blk_id), bdone[blk_id]);
+            VTR_LOG_ERROR("Block %zu listed %d times in data structures.\n",
+                          size_t(blk_id), bdone[blk_id]);
             error++;
         }
 
@@ -3649,17 +3635,15 @@ int check_macro_placement_consistency() {
 
             // Check the place_ctx.block_locs data structure first
             if (place_ctx.block_locs[member_iblk].loc != member_pos) {
-                VTR_LOG_ERROR(
-                    "Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
-                    size_t(member_iblk), imacro);
+                VTR_LOG_ERROR("Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
+                              size_t(member_iblk), imacro);
                 error++;
             }
 
             // Then check the place_ctx.grid data structure
             if (place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.z] != member_iblk) {
-                VTR_LOG_ERROR(
-                    "Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
-                    size_t(member_iblk), imacro);
+                VTR_LOG_ERROR("Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
+                              size_t(member_iblk), imacro);
                 error++;
             }
         } // Finish going through all the members

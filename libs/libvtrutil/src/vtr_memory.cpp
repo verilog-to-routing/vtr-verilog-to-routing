@@ -111,8 +111,7 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
             // #endif
 
             VTR_ASSERT(chunk_info != nullptr);
-            chunk_info->chunk_ptr_head = insert_in_vptr_list(
-                chunk_info->chunk_ptr_head, tmp_ptr);
+            chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
             return (tmp_ptr);
         }
 
@@ -120,8 +119,7 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
             chunk_info->next_mem_loc_ptr = (char*)vtr::malloc(CHUNK_SIZE);
             chunk_info->mem_avail = CHUNK_SIZE;
             VTR_ASSERT(chunk_info != nullptr);
-            chunk_info->chunk_ptr_head = insert_in_vptr_list(
-                chunk_info->chunk_ptr_head, chunk_info->next_mem_loc_ptr);
+            chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, chunk_info->next_mem_loc_ptr);
         }
 
         /* Execute else clause only when the chunk we want is pretty big,  *
@@ -131,8 +129,7 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
         else {
             tmp_ptr = (char*)vtr::malloc(size);
             VTR_ASSERT(chunk_info != nullptr);
-            chunk_info->chunk_ptr_head = insert_in_vptr_list(
-                chunk_info->chunk_ptr_head, tmp_ptr);
+            chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
             return (tmp_ptr);
         }
     }

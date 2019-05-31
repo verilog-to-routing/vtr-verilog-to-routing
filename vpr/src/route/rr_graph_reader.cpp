@@ -101,9 +101,8 @@ void load_rr_file(const t_graph_type graph_type,
         if (Prop != nullptr) {
             if (strcmp(Prop, vtr::VERSION) != 0) {
                 VTR_LOG("\n");
-                VTR_LOG_WARN(
-                    "This architecture version is for VPR %s while your current VPR version is %s compatability issues may arise\n",
-                    vtr::VERSION, Prop);
+                VTR_LOG_WARN("This architecture version is for VPR %s while your current VPR version is %s compatability issues may arise\n",
+                             vtr::VERSION, Prop);
                 VTR_LOG("\n");
             }
         }
@@ -113,8 +112,8 @@ void load_rr_file(const t_graph_type graph_type,
         if (Prop != nullptr) {
             if (Prop != correct_string) {
                 VTR_LOG("\n");
-                VTR_LOG_WARN(
-                    "This RR graph file is based on %s while your input architecture file is %s compatability issues may arise\n", get_arch_file_name(), Prop);
+                VTR_LOG_WARN("This RR graph file is based on %s while your input architecture file is %s compatability issues may arise\n",
+                             get_arch_file_name(), Prop);
                 VTR_LOG("\n");
             }
         }

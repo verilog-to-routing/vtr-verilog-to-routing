@@ -298,9 +298,8 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                         //Is the sink a clock generator?
                         if (sink_tnode && clock_generator_tnodes.count(sink_tnode)) {
                             //Do not create the edge
-                            VTR_LOG_WARN(
-                                "Timing edge from %s to %s will not be created since %s has been identified as a clock generator\n",
-                                netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(sink_pin).c_str(), netlist_.pin_name(sink_pin).c_str());
+                            VTR_LOG_WARN("Timing edge from %s to %s will not be created since %s has been identified as a clock generator\n",
+                                         netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(sink_pin).c_str(), netlist_.pin_name(sink_pin).c_str());
                         } else {
                             //Unknown
                             VPR_THROW(VPR_ERROR_TIMING, "Unable to find matching sink tnode for timing edge from %s to %s",

@@ -195,21 +195,19 @@ static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 5>& track
 static std::vector<bool> alloc_and_load_perturb_opins(const t_type_ptr type, const vtr::Matrix<int>& Fc_out, const int max_chan_width, const std::vector<t_segment_inf>& segment_inf);
 
 #ifdef ENABLE_CHECK_ALL_TRACKS
-static void check_all_tracks_reach_pins(
-    t_type_ptr type,
-    int***** tracks_connected_to_pin,
-    int max_chan_width,
-    int Fc,
-    enum e_pin_type ipin_or_opin);
+static void check_all_tracks_reach_pins(t_type_ptr type,
+                                        int***** tracks_connected_to_pin,
+                                        int max_chan_width,
+                                        int Fc,
+                                        enum e_pin_type ipin_or_opin);
 #endif
 
-static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(
-    const int L_num_types,
-    const int num_seg_types,
-    const int* sets_per_seg_type,
-    const std::vector<vtr::Matrix<int>>& Fc_in,
-    const std::vector<vtr::Matrix<int>>& Fc_out,
-    const enum e_directionality directionality);
+static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_num_types,
+                                                                   const int num_seg_types,
+                                                                   const int* sets_per_seg_type,
+                                                                   const std::vector<vtr::Matrix<int>>& Fc_in,
+                                                                   const std::vector<vtr::Matrix<int>>& Fc_out,
+                                                                   const enum e_directionality directionality);
 
 static void build_rr_sinks_sources(const int i,
                                    const int j,
@@ -256,11 +254,10 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
 
 static void alloc_rr_switch_inf(t_arch_switch_fanin& switch_fanin);
 
-static void rr_graph_externals(
-    const std::vector<t_segment_inf>& segment_inf,
-    int max_chan_width,
-    int wire_to_rr_ipin_switch,
-    enum e_base_cost_type base_cost_type);
+static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
+                               int max_chan_width,
+                               int wire_to_rr_ipin_switch,
+                               enum e_base_cost_type base_cost_type);
 
 static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs, const int num_directs, const int delayless_switch);
 
@@ -313,23 +310,22 @@ static void build_rr_graph(const t_graph_type graph_type,
 
 /******************* Subroutine definitions *******************************/
 
-void create_rr_graph(
-    const t_graph_type graph_type,
-    const int num_block_types,
-    const t_type_ptr block_types,
-    const DeviceGrid& grid,
-    const t_chan_width nodes_per_chan,
-    const int num_arch_switches,
-    t_det_routing_arch* det_routing_arch,
-    std::vector<t_segment_inf>& segment_inf,
-    const enum e_base_cost_type base_cost_type,
-    const bool trim_empty_channels,
-    const bool trim_obs_channels,
-    const enum e_clock_modeling clock_modeling,
-    const e_router_lookahead router_lookahead_type,
-    const t_direct_inf* directs,
-    const int num_directs,
-    int* Warnings) {
+void create_rr_graph(const t_graph_type graph_type,
+                     const int num_block_types,
+                     const t_type_ptr block_types,
+                     const DeviceGrid& grid,
+                     const t_chan_width nodes_per_chan,
+                     const int num_arch_switches,
+                     t_det_routing_arch* det_routing_arch,
+                     std::vector<t_segment_inf>& segment_inf,
+                     const enum e_base_cost_type base_cost_type,
+                     const bool trim_empty_channels,
+                     const bool trim_obs_channels,
+                     const enum e_clock_modeling clock_modeling,
+                     const e_router_lookahead router_lookahead_type,
+                     const t_direct_inf* directs,
+                     const int num_directs,
+                     int* Warnings) {
     const auto& device_ctx = g_vpr_ctx.device();
     if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
         //No change in channel width, so skip re-building RR graph
@@ -340,45 +336,42 @@ void create_rr_graph(
     free_rr_graph();
 
     if (!det_routing_arch->read_rr_graph_filename.empty()) {
-        load_rr_file(
-            graph_type,
-            grid,
-            nodes_per_chan,
-            segment_inf,
-            base_cost_type,
-            &det_routing_arch->wire_to_rr_ipin_switch,
-            det_routing_arch->read_rr_graph_filename.c_str());
+        load_rr_file(graph_type,
+                     grid,
+                     nodes_per_chan,
+                     segment_inf,
+                     base_cost_type,
+                     &det_routing_arch->wire_to_rr_ipin_switch,
+                     det_routing_arch->read_rr_graph_filename.c_str());
     } else {
-        build_rr_graph(
-            graph_type,
-            num_block_types,
-            block_types,
-            grid,
-            nodes_per_chan,
-            det_routing_arch->switch_block_type,
-            det_routing_arch->Fs,
-            det_routing_arch->switchblocks,
-            num_arch_switches,
-            segment_inf,
-            det_routing_arch->global_route_switch,
-            det_routing_arch->wire_to_arch_ipin_switch,
-            det_routing_arch->delayless_switch,
-            det_routing_arch->R_minW_nmos,
-            det_routing_arch->R_minW_pmos,
-            base_cost_type,
-            trim_empty_channels,
-            trim_obs_channels,
-            directs, num_directs,
-            &det_routing_arch->wire_to_rr_ipin_switch,
-            Warnings);
+        build_rr_graph(graph_type,
+                       num_block_types,
+                       block_types,
+                       grid,
+                       nodes_per_chan,
+                       det_routing_arch->switch_block_type,
+                       det_routing_arch->Fs,
+                       det_routing_arch->switchblocks,
+                       num_arch_switches,
+                       segment_inf,
+                       det_routing_arch->global_route_switch,
+                       det_routing_arch->wire_to_arch_ipin_switch,
+                       det_routing_arch->delayless_switch,
+                       det_routing_arch->R_minW_nmos,
+                       det_routing_arch->R_minW_pmos,
+                       base_cost_type,
+                       trim_empty_channels,
+                       trim_obs_channels,
+                       directs, num_directs,
+                       &det_routing_arch->wire_to_rr_ipin_switch,
+                       Warnings);
 
         if (clock_modeling == DEDICATED_NETWORK) {
-            ClockRRGraphBuilder::create_and_append_clock_rr_graph(
-                segment_inf,
-                det_routing_arch->R_minW_nmos,
-                det_routing_arch->R_minW_pmos,
-                det_routing_arch->wire_to_rr_ipin_switch,
-                base_cost_type);
+            ClockRRGraphBuilder::create_and_append_clock_rr_graph(segment_inf,
+                                                                  det_routing_arch->R_minW_nmos,
+                                                                  det_routing_arch->R_minW_pmos,
+                                                                  det_routing_arch->wire_to_rr_ipin_switch,
+                                                                  base_cost_type);
         }
     }
 
@@ -434,29 +427,28 @@ bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& p
     return true; //Identical
 }
 
-static void build_rr_graph(
-    const t_graph_type graph_type,
-    const int L_num_types,
-    const t_type_ptr types,
-    const DeviceGrid& grid,
-    t_chan_width nodes_per_chan,
-    const enum e_switch_block_type sb_type,
-    const int Fs,
-    const vector<t_switchblock_inf> switchblocks,
-    const int num_arch_switches,
-    const std::vector<t_segment_inf>& segment_inf,
-    const int global_route_switch,
-    const int wire_to_arch_ipin_switch,
-    const int delayless_switch,
-    const float R_minW_nmos,
-    const float R_minW_pmos,
-    const enum e_base_cost_type base_cost_type,
-    const bool trim_empty_channels,
-    const bool trim_obs_channels,
-    const t_direct_inf* directs,
-    const int num_directs,
-    int* wire_to_rr_ipin_switch,
-    int* Warnings) {
+static void build_rr_graph(const t_graph_type graph_type,
+                           const int L_num_types,
+                           const t_type_ptr types,
+                           const DeviceGrid& grid,
+                           t_chan_width nodes_per_chan,
+                           const enum e_switch_block_type sb_type,
+                           const int Fs,
+                           const vector<t_switchblock_inf> switchblocks,
+                           const int num_arch_switches,
+                           const std::vector<t_segment_inf>& segment_inf,
+                           const int global_route_switch,
+                           const int wire_to_arch_ipin_switch,
+                           const int delayless_switch,
+                           const float R_minW_nmos,
+                           const float R_minW_pmos,
+                           const enum e_base_cost_type base_cost_type,
+                           const bool trim_empty_channels,
+                           const bool trim_obs_channels,
+                           const t_direct_inf* directs,
+                           const int num_directs,
+                           int* wire_to_rr_ipin_switch,
+                           int* Warnings) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
 
     /* Reset warning flag */
@@ -487,8 +479,7 @@ static void build_rr_graph(
 
     if (is_global_graph) {
         /* Sets up a single unit length segment type for global routing. */
-        seg_details = alloc_and_load_global_route_seg_details(
-            global_route_switch, &num_seg_details);
+        seg_details = alloc_and_load_global_route_seg_details(global_route_switch, &num_seg_details);
     } else {
         /* Setup segments including distrubuting tracks and staggering.
          * If use_full_seg_groups is specified, max_chan_width may be
@@ -676,9 +667,8 @@ static void build_rr_graph(
                                                                    Fc_in[itype], &types[itype], perturb_ipins[itype], directionality,
                                                                    segment_inf.size(), sets_per_seg_type);
 
-        track_to_pin_lookup[itype] = alloc_and_load_track_to_pin_lookup(
-            ipin_to_track_map[itype], Fc_in[itype], types[itype].width, types[itype].height,
-            types[itype].num_pins, max_chan_width, segment_inf.size());
+        track_to_pin_lookup[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map[itype], Fc_in[itype], types[itype].width, types[itype].height,
+                                                                        types[itype].num_pins, max_chan_width, segment_inf.size());
     }
     /* END IPIN MAP */
 
@@ -824,8 +814,7 @@ static void alloc_and_load_rr_switch_inf(const int num_arch_switches, const floa
         //Instead of throwing an error we issue a warning. This means that check_rr_graph() etc. will run to give more information
         //and allow graphics to be brought up for users to debug their architectures.
         (*wire_to_rr_ipin_switch) = OPEN;
-        VTR_LOG_WARN(
-            "No switch found for the ipin cblock in RR graph. Check if there is an error in arch file, or if no connection blocks are being built in RR graph\n");
+        VTR_LOG_WARN("No switch found for the ipin cblock in RR graph. Check if there is an error in arch file, or if no connection blocks are being built in RR graph\n");
     }
 }
 
@@ -904,12 +893,11 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
     }
 }
 
-void load_rr_switch_from_arch_switch(
-    int arch_switch_idx,
-    int rr_switch_idx,
-    int fanin,
-    const float R_minW_nmos,
-    const float R_minW_pmos) {
+void load_rr_switch_from_arch_switch(int arch_switch_idx,
+                                     int rr_switch_idx,
+                                     int fanin,
+                                     const float R_minW_nmos,
+                                     const float R_minW_pmos) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
@@ -965,11 +953,10 @@ static void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin
     }
 }
 
-static void rr_graph_externals(
-    const std::vector<t_segment_inf>& segment_inf,
-    int max_chan_width,
-    int wire_to_rr_ipin_switch,
-    enum e_base_cost_type base_cost_type) {
+static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
+                               int max_chan_width,
+                               int wire_to_rr_ipin_switch,
+                               enum e_base_cost_type base_cost_type) {
     auto& device_ctx = g_vpr_ctx.device();
 
     add_rr_graph_C_from_switches(device_ctx.rr_switch_inf[wire_to_rr_ipin_switch].Cin);
@@ -2178,13 +2165,12 @@ static float pattern_fmod(float a, float b) {
     return raw_result;
 }
 
-static void load_uniform_connection_block_pattern(
-    vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
-    const std::vector<t_pin_loc>& pin_locations,
-    const int x_chan_width,
-    const int y_chan_width,
-    const int Fc,
-    enum e_directionality directionality) {
+static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
+                                                  const std::vector<t_pin_loc>& pin_locations,
+                                                  const int x_chan_width,
+                                                  const int y_chan_width,
+                                                  const int Fc,
+                                                  enum e_directionality directionality) {
     /* Loads the tracks_connected_to_pin array with an even distribution of     *
      * switches across the tracks for each pin.  For example, each pin connects *
      * to every 4.3rd track in a channel, with exactly which tracks a pin       *
@@ -2368,13 +2354,12 @@ static void load_uniform_connection_block_pattern(
     }
 }
 
-static void load_perturbed_connection_block_pattern(
-    vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
-    const std::vector<t_pin_loc>& pin_locations,
-    const int x_chan_width,
-    const int y_chan_width,
-    const int Fc,
-    enum e_directionality directionality) {
+static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
+                                                    const std::vector<t_pin_loc>& pin_locations,
+                                                    const int x_chan_width,
+                                                    const int y_chan_width,
+                                                    const int Fc,
+                                                    enum e_directionality directionality) {
     /* Loads the tracks_connected_to_pin array with an unevenly distributed     *
      * set of switches across the channel.  This is done for inputs when        *
      * Fc_input = Fc_output to avoid creating "pin domains" -- certain output   *
@@ -2462,9 +2447,8 @@ static void check_all_tracks_reach_pins(t_type_ptr type,
 
     for (int track = 0; track < max_chan_width; ++track) {
         if (num_conns_to_track[track] <= 0) {
-            VTR_LOG_ERROR(
-                "check_all_tracks_reach_pins: Track %d does not connect to any CLB %ss.\n",
-                track, (ipin_or_opin == DRIVER ? "OPIN" : "IPIN"));
+            VTR_LOG_ERROR("check_all_tracks_reach_pins: Track %d does not connect to any CLB %ss.\n",
+                          track, (ipin_or_opin == DRIVER ? "OPIN" : "IPIN"));
         }
     }
     free(num_conns_to_track);
@@ -2474,14 +2458,13 @@ static void check_all_tracks_reach_pins(t_type_ptr type,
 /* Allocates and loads the track to ipin lookup for each physical grid type. This
  * is the same information as the ipin_to_track map but accessed in a different way. */
 
-static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(
-    vtr::NdMatrix<std::vector<int>, 4> pin_to_track_map,
-    const vtr::Matrix<int>& Fc,
-    const int type_width,
-    const int type_height,
-    const int num_pins,
-    const int max_chan_width,
-    const int num_seg_types) {
+static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr::NdMatrix<std::vector<int>, 4> pin_to_track_map,
+                                                                             const vtr::Matrix<int>& Fc,
+                                                                             const int type_width,
+                                                                             const int type_height,
+                                                                             const int num_pins,
+                                                                             const int max_chan_width,
+                                                                             const int num_seg_types) {
     /* [0..max_chan_width-1][0..width][0..height][0..3].  For each track number
      * it stores a vector for each of the four sides.  x-directed channels will
      * use the TOP and   BOTTOM vectors to figure out what clb input pins they
@@ -3059,10 +3042,9 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_type_ptr type,
     return perturb_opins;
 }
 
-static int pick_best_direct_connect_target_rr_node(
-    const std::vector<t_rr_node>& rr_nodes,
-    int from_rr,
-    const std::vector<int>& candidate_rr_nodes) {
+static int pick_best_direct_connect_target_rr_node(const std::vector<t_rr_node>& rr_nodes,
+                                                   int from_rr,
+                                                   const std::vector<int>& candidate_rr_nodes) {
     //With physically equivalent pins there may be multiple candidate rr nodes (which are equivalent)
     //to connect the direct edge to.
     //As a result it does not matter (from a correctness standpoint) which is picked.

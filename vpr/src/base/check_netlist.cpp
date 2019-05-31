@@ -46,14 +46,13 @@ void check_netlist(int verbosity) {
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name(net_id).c_str(), size_t(net_id));
         if (h_net_ptr->count != 1) {
-            VTR_LOG_ERROR(
-                "Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name(net_id).c_str());
+            VTR_LOG_ERROR("Net %s has multiple drivers.\n",
+                          cluster_ctx.clb_nlist.net_name(net_id).c_str());
             error++;
         }
         global_to_non_global_connection_count += check_connections_to_global_clb_pins(net_id, verbosity);
         if (error >= ERROR_THRESHOLD) {
-            VTR_LOG_ERROR(
-                "Too many errors in netlist, exiting.\n");
+            VTR_LOG_ERROR("Too many errors in netlist, exiting.\n");
         }
     }
     free_hash_table(net_hash_table);
@@ -147,8 +146,8 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
      * just a redundant double check.                                    */
 
     if (num_conn > type->num_pins) {
-        VTR_LOG_ERROR(
-            "logic block #%d with output %s has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
+        VTR_LOG_ERROR("logic block #%d with output %s has %d pins.\n",
+                      iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
         error++;
     }
 
@@ -171,22 +170,29 @@ static int check_clb_internal_nets(ClusterBlockId iblk) {
         VTR_ASSERT(pb_route.count(i));
 
         if (pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id != OPEN) {
-            if ((pb_graph_pin_lookup[i]->port->type == IN_PORT && pb_graph_pin_lookup[i]->is_root_block_pin()) || (pb_graph_pin_lookup[i]->port->type == OUT_PORT && pb_graph_pin_lookup[i]->parent_node->is_primitive())) {
+            if ((pb_graph_pin_lookup[i]->port->type == IN_PORT && pb_graph_pin_lookup[i]->is_root_block_pin())
+                || (pb_graph_pin_lookup[i]->port->type == OUT_PORT && pb_graph_pin_lookup[i]->parent_node->is_primitive())) {
                 if (pb_route[i].driver_pb_pin_id != OPEN) {
                     VTR_LOG_ERROR(
-                        "Internal connectivity error in logic block #%d with output %s.  Internal node %d driven when it shouldn't be driven \n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), i);
+                        "Internal connectivity error in logic block #%d with output %s."
+                        " Internal node %d driven when it shouldn't be driven \n",
+                        iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), i);
                     error++;
                 }
             } else {
                 if (!pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id == OPEN) {
                     VTR_LOG_ERROR(
-                        "Internal connectivity error in logic block #%d with output %s.  Internal node %d dangling\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), i);
+                        "Internal connectivity error in logic block #%d with output %s."
+                        " Internal node %d dangling\n",
+                        iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), i);
                     error++;
                 } else {
                     int prev_pin = pb_route[i].driver_pb_pin_id;
                     if (pb_route[prev_pin].atom_net_id != pb_route[i].atom_net_id) {
                         VTR_LOG_ERROR(
-                            "Internal connectivity error in logic block #%d with output %s.  Internal node %d driven by different net than internal node %d\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), i, prev_pin);
+                            "Internal connectivity error in logic block #%d with output %s."
+                            " Internal node %d driven by different net than internal node %d\n",
+                            iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), i, prev_pin);
                         error++;
                     }
                 }
@@ -211,8 +217,8 @@ static int check_for_duplicated_names() {
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         clb_h_ptr = insert_in_hash_table(clb_hash_table, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), clb_count);
         if (clb_h_ptr->count > 1) {
-            VTR_LOG_ERROR(
-                "Block %s has duplicated name.\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
+            VTR_LOG_ERROR("Block %s has duplicated name.\n",
+                          cluster_ctx.clb_nlist.block_name(blk_id).c_str());
             error++;
         } else {
             clb_count++;

@@ -92,14 +92,13 @@ void vpr_setup_vpr(t_options* Options, const bool TimingEnabled, const bool read
 /* Check inputs are reasonable */
 void vpr_check_arch(const t_arch& Arch);
 /* Verify settings don't conflict or otherwise not make sense */
-void vpr_check_setup(
-    const t_packer_opts PackerOpts,
-    const t_placer_opts PlacerOpts,
-    const t_router_opts RouterOpts,
-    const t_det_routing_arch RoutingArch,
-    const std::vector<t_segment_inf>& Segments,
-    const t_timing_inf Timing,
-    const t_chan_width_dist Chans);
+void vpr_check_setup(const t_packer_opts PackerOpts,
+                     const t_placer_opts PlacerOpts,
+                     const t_router_opts RouterOpts,
+                     const t_det_routing_arch RoutingArch,
+                     const std::vector<t_segment_inf>& Segments,
+                     const t_timing_inf Timing,
+                     const t_chan_width_dist Chans);
 /* Show current setup */
 void vpr_show_setup(const t_vpr_setup& vpr_setup);
 void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info, const RouteStatus& route_status);

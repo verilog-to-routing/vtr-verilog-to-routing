@@ -23,9 +23,8 @@ int main(int argc, char** argv) {
         int numTypes;
 
         if (argc - 1 != 3) {
-            printf(
-                "Error: Unexpected # of arguments.  Expected 3 found %d arguments\n",
-                argc);
+            printf("Error: Unexpected # of arguments.  Expected 3 found %d arguments\n",
+                   argc);
             print_help();
             return 1;
         }

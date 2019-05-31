@@ -125,28 +125,24 @@ static void ProcessSwitches(pugi::xml_node Node,
                             const pugiutil::loc_data& loc_data);
 static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled, const int switch_index, t_arch_switch_inf* Switches, const pugiutil::loc_data& loc_data);
 static void ProcessDirects(pugi::xml_node Parent, t_direct_inf** Directs, int* NumDirects, const t_arch_switch_inf* Switches, const int NumSwitches, const pugiutil::loc_data& loc_data);
-static void ProcessClockMetalLayers(
-    pugi::xml_node parent,
-    std::unordered_map<std::string, t_metal_layer>& metal_layers,
-    pugiutil::loc_data& loc_data);
-static void ProcessClockNetworks(
-    pugi::xml_node parent,
-    std::vector<t_clock_network_arch>& clock_networks,
-    const t_arch_switch_inf* switches,
-    const int num_switches,
-    pugiutil::loc_data& loc_data);
-static void ProcessClockSwitchPoints(
-    pugi::xml_node parent,
-    t_clock_network_arch& clock_network,
-    const t_arch_switch_inf* switches,
-    const int num_switches,
-    pugiutil::loc_data& loc_data);
-static void ProcessClockRouting(
-    pugi::xml_node parent,
-    std::vector<t_clock_connection_arch>& clock_connections,
-    const t_arch_switch_inf* switches,
-    const int num_switches,
-    pugiutil::loc_data& loc_data);
+static void ProcessClockMetalLayers(pugi::xml_node parent,
+                                    std::unordered_map<std::string, t_metal_layer>& metal_layers,
+                                    pugiutil::loc_data& loc_data);
+static void ProcessClockNetworks(pugi::xml_node parent,
+                                 std::vector<t_clock_network_arch>& clock_networks,
+                                 const t_arch_switch_inf* switches,
+                                 const int num_switches,
+                                 pugiutil::loc_data& loc_data);
+static void ProcessClockSwitchPoints(pugi::xml_node parent,
+                                     t_clock_network_arch& clock_network,
+                                     const t_arch_switch_inf* switches,
+                                     const int num_switches,
+                                     pugiutil::loc_data& loc_data);
+static void ProcessClockRouting(pugi::xml_node parent,
+                                std::vector<t_clock_connection_arch>& clock_connections,
+                                const t_arch_switch_inf* switches,
+                                const int num_switches,
+                                pugiutil::loc_data& loc_data);
 static void ProcessSegments(pugi::xml_node Parent,
                             std::vector<t_segment_inf>& Segs,
                             const t_arch_switch_inf* Switches,
@@ -220,8 +216,7 @@ void XmlReadArch(const char* ArchFile, const bool timing_enabled, t_arch* arch, 
         char* Prop = get_attribute(architecture, "version", loc_data, OPTIONAL).as_string(NULL);
         if (Prop != NULL) {
             if (atof(Prop) > atof(VPR_VERSION)) {
-                VTR_LOG_WARN(
-                        "This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatability issues may arise\n",
+                VTR_LOG_WARN( "This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatability issues may arise\n",
                         atof(Prop));
             }
         }
@@ -278,18 +273,16 @@ void XmlReadArch(const char* ArchFile, const bool timing_enabled, t_arch* arch, 
             expect_only_children(Next, expected_children, loc_data);
 
             ProcessClockMetalLayers(Next, arch->clock_arch.clock_metal_layers, loc_data);
-            ProcessClockNetworks(
-                Next,
-                arch->clock_arch.clock_networks_arch,
-                arch->Switches,
-                arch->num_switches,
-                loc_data);
-            ProcessClockRouting(
-                Next,
-                arch->clock_arch.clock_connections_arch,
-                arch->Switches,
-                arch->num_switches,
-                loc_data);
+            ProcessClockNetworks(Next,
+                                 arch->clock_arch.clock_networks_arch,
+                                 arch->Switches,
+                                 arch->num_switches,
+                                 loc_data);
+            ProcessClockRouting(Next,
+                                arch->clock_arch.clock_connections_arch,
+                                arch->Switches,
+                                arch->num_switches,
+                                loc_data);
         }
 
         /* Process architecture power information */
@@ -591,8 +584,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
             for (k = 0; k < Type->pb_type->ports[j].num_pins; ++k) {
                 if (Type->pb_type->ports[j].equivalent == PortEquivalence::NONE) {
                     Type->class_inf[num_class].num_pins = 1;
-                    Type->class_inf[num_class].pinlist = (int*)vtr::malloc(
-                        sizeof(int) * 1);
+                    Type->class_inf[num_class].pinlist = (int*)vtr::malloc(sizeof(int) * 1);
                     Type->class_inf[num_class].pinlist[0] = pin_count;
                 } else {
                     Type->class_inf[num_class].pinlist[k] = pin_count;
@@ -711,8 +703,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 
         Prop = get_attribute(Parent, "out_port", loc_data, OPTIONAL).as_string(nullptr);
         annotation->output_pins = vtr::strdup(Prop);
-        VTR_ASSERT(
-            annotation->output_pins != nullptr || annotation->input_pins != nullptr);
+        VTR_ASSERT(annotation->output_pins != nullptr || annotation->input_pins != nullptr);
 
     } else if (0 == strcmp(Parent.name(), "C_matrix")) {
         annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
@@ -726,8 +717,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 
         Prop = get_attribute(Parent, "out_port", loc_data, OPTIONAL).as_string(nullptr);
         annotation->output_pins = vtr::strdup(Prop);
-        VTR_ASSERT(
-            annotation->output_pins != nullptr || annotation->input_pins != nullptr);
+        VTR_ASSERT(annotation->output_pins != nullptr || annotation->input_pins != nullptr);
 
     } else if (0 == strcmp(Parent.name(), "T_setup")) {
         annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
@@ -942,8 +932,7 @@ static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_ty
 
     if (!prop) {
         /* default method is auto-size */
-        pb_type->pb_type_power->estimation_method = power_method_inherited(
-            parent_power_method);
+        pb_type->pb_type_power->estimation_method = power_method_inherited(parent_power_method);
     } else if (strcmp(prop, "auto-size") == 0) {
         pb_type->pb_type_power->estimation_method = POWER_METHOD_AUTO_SIZES;
     } else if (strcmp(prop, "specify-size") == 0) {
@@ -1098,8 +1087,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type* pb_type, t_mode* mo
                                pb_type->pb_type_power->estimation_method, is_root_pb_type, loc_data);
 
             //Check port name duplicates
-            ret_pb_ports = pb_port_names.insert(
-                pair<string, int>(pb_type->ports[j].name, 0));
+            ret_pb_ports = pb_port_names.insert(pair<string, int>(pb_type->ports[j].name, 0));
             if (!ret_pb_ports.second) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                "Duplicate port names in pb_type '%s': port '%s'\n",
@@ -1124,9 +1112,8 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type* pb_type, t_mode* mo
         } else if (pb_type->ports[i].type == OUT_PORT) {
             pb_type->num_output_pins += pb_type->ports[i].num_pins;
         } else {
-            VTR_ASSERT(
-                pb_type->ports[i].is_clock
-                && pb_type->ports[i].type == IN_PORT);
+            VTR_ASSERT(pb_type->ports[i].is_clock
+                       && pb_type->ports[i].type == IN_PORT);
             pb_type->num_clock_pins += pb_type->ports[i].num_pins;
         }
     }
@@ -1159,8 +1146,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type* pb_type, t_mode* mo
         num_annotations = num_delay_constant + num_delay_matrix + num_C_constant
                           + num_C_matrix + num_T_setup + num_T_cq + num_T_hold;
 
-        pb_type->annotations = (t_pin_to_pin_annotation*)vtr::calloc(
-            num_annotations, sizeof(t_pin_to_pin_annotation));
+        pb_type->annotations = (t_pin_to_pin_annotation*)vtr::calloc(num_annotations, sizeof(t_pin_to_pin_annotation));
         pb_type->num_annotations = num_annotations;
 
         j = 0;
@@ -1229,8 +1215,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type* pb_type, t_mode* mo
                     pb_type->modes[i].index = i;
                     ProcessMode(Cur, &pb_type->modes[i], timing_enabled, arch, loc_data);
 
-                    ret_mode_names = mode_names.insert(
-                        pair<string, int>(pb_type->modes[i].name, 0));
+                    ret_mode_names = mode_names.insert(pair<string, int>(pb_type->modes[i].name, 0));
                     if (!ret_mode_names.second) {
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                        "Duplicate mode name: '%s' in pb_type '%s'.\n",
@@ -1540,8 +1525,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode* mode, const pugiu
             mode->interconnect[i].name = vtr::strdup(Prop);
             mode->interconnect[i].meta = ProcessMetadata(Cur, loc_data);
 
-            ret_interc_names = interc_names.insert(
-                pair<string, int>(mode->interconnect[i].name, 0));
+            ret_interc_names = interc_names.insert(pair<string, int>(mode->interconnect[i].name, 0));
             if (!ret_interc_names.second) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                "Duplicate interconnect name: '%s' in mode: '%s'.\n",
@@ -1626,8 +1610,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode* mode, const bool timing_e
             if (0 == strcmp(Cur.name(), "pb_type")) {
                 ProcessPb_Type(Cur, &mode->pb_type_children[i], mode, timing_enabled, arch, loc_data);
 
-                ret_pb_types = pb_type_names.insert(
-                    pair<string, int>(mode->pb_type_children[i].name, 0));
+                ret_pb_types = pb_type_names.insert(pair<string, int>(mode->pb_type_children[i].name, 0));
                 if (!ret_pb_types.second) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                    "Duplicate pb_type name: '%s' in mode: '%s'.\n",
@@ -2674,8 +2657,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
         /* Parses the properties fields of the type */
         ProcessComplexBlockProps(CurType, Type, loc_data);
 
-        ret_pb_type_descriptors = pb_type_descriptors.insert(
-            pair<string, int>(Type->name, 0));
+        ret_pb_type_descriptors = pb_type_descriptors.insert(pair<string, int>(Type->name, 0));
         if (!ret_pb_type_descriptors.second) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurType),
                            "Duplicate pb_type descriptor name: '%s'.\n", Type->name);
@@ -3250,8 +3232,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf** Directs, int* N
     /* Alloc direct list */
     *Directs = nullptr;
     if (*NumDirects > 0) {
-        *Directs = (t_direct_inf*)vtr::malloc(
-            *NumDirects * sizeof(t_direct_inf));
+        *Directs = (t_direct_inf*)vtr::malloc(*NumDirects * sizeof(t_direct_inf));
         memset(*Directs, 0, (*NumDirects * sizeof(t_direct_inf)));
     }
 
@@ -3329,10 +3310,9 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf** Directs, int* N
     }
 }
 
-static void ProcessClockMetalLayers(
-    pugi::xml_node parent,
-    std::unordered_map<std::string, t_metal_layer>& metal_layers,
-    pugiutil::loc_data& loc_data) {
+static void ProcessClockMetalLayers(pugi::xml_node parent,
+                                    std::unordered_map<std::string, t_metal_layer>& metal_layers,
+                                    pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_attributes = {"name", "Rmetal", "Cmetal"};
     std::vector<std::string> expected_children = {"metal_layer"};
 
@@ -3363,12 +3343,11 @@ static void ProcessClockMetalLayers(
     }
 }
 
-static void ProcessClockNetworks(
-    pugi::xml_node parent,
-    std::vector<t_clock_network_arch>& clock_networks,
-    const t_arch_switch_inf* switches,
-    const int num_switches,
-    pugiutil::loc_data& loc_data) {
+static void ProcessClockNetworks(pugi::xml_node parent,
+                                 std::vector<t_clock_network_arch>& clock_networks,
+                                 const t_arch_switch_inf* switches,
+                                 const int num_switches,
+                                 pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_spine_attributes = {"name", "num_inst", "metal_layer", "starty", "endy", "x", "repeatx", "repeaty"};
     std::vector<std::string> expected_rib_attributes = {"name", "num_inst", "metal_layer", "startx", "endx", "y", "repeatx", "repeaty"};
     std::vector<std::string> expected_children = {"rib", "spine"};
@@ -3475,12 +3454,11 @@ static void ProcessClockNetworks(
     }
 }
 
-static void ProcessClockSwitchPoints(
-    pugi::xml_node parent,
-    t_clock_network_arch& clock_network,
-    const t_arch_switch_inf* switches,
-    const int num_switches,
-    pugiutil::loc_data& loc_data) {
+static void ProcessClockSwitchPoints(pugi::xml_node parent,
+                                     t_clock_network_arch& clock_network,
+                                     const t_arch_switch_inf* switches,
+                                     const int num_switches,
+                                     pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_spine_drive_attributes = {"name", "type", "yoffset", "switch_name"};
     std::vector<std::string> expected_rib_drive_attributes = {"name", "type", "xoffset", "switch_name"};
     std::vector<std::string> expected_spine_tap_attributes = {"name", "type", "yoffset", "yincr"};
@@ -3564,12 +3542,11 @@ static void ProcessClockSwitchPoints(
     }
 }
 
-static void ProcessClockRouting(
-    pugi::xml_node parent,
-    std::vector<t_clock_connection_arch>& clock_connections,
-    const t_arch_switch_inf* switches,
-    const int num_switches,
-    pugiutil::loc_data& loc_data) {
+static void ProcessClockRouting(pugi::xml_node parent,
+                                std::vector<t_clock_connection_arch>& clock_connections,
+                                const t_arch_switch_inf* switches,
+                                const int num_switches,
+                                pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_attributes = {"from", "to", "switch", "fc_val", "locationx", "locationy"};
 
     pugi::xml_node clock_routing_parent = get_single_child(parent, "clock_routing", loc_data);
@@ -3681,8 +3658,7 @@ static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pug
     /* Alloc the clockdetails */
     clocks->clock_inf = nullptr;
     if (clocks->num_global_clocks > 0) {
-        clocks->clock_inf = (t_clock_network*)vtr::malloc(
-            clocks->num_global_clocks * sizeof(t_clock_network));
+        clocks->clock_inf = (t_clock_network*)vtr::malloc(clocks->num_global_clocks * sizeof(t_clock_network));
         memset(clocks->clock_inf, 0,
                clocks->num_global_clocks * sizeof(t_clock_network));
     }

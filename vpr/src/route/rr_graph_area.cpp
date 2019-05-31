@@ -488,8 +488,7 @@ static float get_cblock_trans(int* num_inputs_to_cblock, int wire_to_ipin_switch
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    trans_per_cblock = (float*)vtr::malloc(
-        (max_inputs_to_cblock + 1) * sizeof(float));
+    trans_per_cblock = (float*)vtr::malloc((max_inputs_to_cblock + 1) * sizeof(float));
 
     trans_per_cblock[0] = 0.; /* i.e., not an IPIN or no inputs */
 
@@ -638,8 +637,7 @@ static float trans_per_mux(int num_inputs, float trans_sram_bit, float pass_tran
          * to one lower level.                                                      */
         num_second_stage_trans = (int)floor((float)sqrt((float)num_inputs) + 0.00001);
         pass_trans = (num_inputs + num_second_stage_trans) * pass_trans_area;
-        sram_trans = (ceil(
-                          (float)num_inputs / num_second_stage_trans - 0.00001)
+        sram_trans = (ceil((float)num_inputs / num_second_stage_trans - 0.00001)
                       + num_second_stage_trans)
                      * trans_sram_bit;
         if (num_second_stage_trans == 2) {

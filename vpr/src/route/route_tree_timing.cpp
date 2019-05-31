@@ -54,8 +54,7 @@ static t_rt_node* add_subtree_to_route_tree(t_heap* hptr,
 
 static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited);
 
-static t_rt_node* update_unbuffered_ancestors_C_downstream(
-    t_rt_node* start_of_new_subtree_rt_node);
+static t_rt_node* update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_new_subtree_rt_node);
 
 bool verify_route_tree_recurr(t_rt_node* node, std::set<int>& seen_nodes);
 
@@ -162,8 +161,7 @@ alloc_linked_rt_edge() {
     if (linked_rt_edge != nullptr) {
         rt_edge_free_list = linked_rt_edge->next;
     } else {
-        linked_rt_edge = (t_linked_rt_edge*)vtr::malloc(
-            sizeof(t_linked_rt_edge));
+        linked_rt_edge = (t_linked_rt_edge*)vtr::malloc(sizeof(t_linked_rt_edge));
     }
 
     VTR_ASSERT(linked_rt_edge != nullptr);
@@ -224,8 +222,7 @@ t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lo
     load_new_subtree_C_downstream(start_of_new_subtree_rt_node);
 
     //Propagate C_downstream up from the subtree root
-    unbuffered_subtree_rt_root = update_unbuffered_ancestors_C_downstream(
-        start_of_new_subtree_rt_node);
+    unbuffered_subtree_rt_root = update_unbuffered_ancestors_C_downstream(start_of_new_subtree_rt_node);
 
     subtree_parent_rt_node = unbuffered_subtree_rt_root->parent_node;
 

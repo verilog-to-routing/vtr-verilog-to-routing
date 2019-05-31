@@ -254,14 +254,13 @@ static int adjust_formula_result(int dest_wire, int src_W, int dest_W, int conne
 
 /************ Function Definitions ************/
 /* allocate and build the switchblock permutation map */
-t_sb_connection_map* alloc_and_load_switchblock_permutations(
-    const t_chan_details& chan_details_x,
-    const t_chan_details& chan_details_y,
-    const DeviceGrid& grid,
-    vector<t_switchblock_inf> switchblocks,
-    t_chan_width* nodes_per_chan,
-    e_directionality directionality,
-    vtr::RandState& rand_state) {
+t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_details& chan_details_x,
+                                                             const t_chan_details& chan_details_y,
+                                                             const DeviceGrid& grid,
+                                                             vector<t_switchblock_inf> switchblocks,
+                                                             t_chan_width* nodes_per_chan,
+                                                             e_directionality directionality,
+                                                             vtr::RandState& rand_state) {
     /* get a single number for channel width */
     int channel_width = nodes_per_chan->max;
     if (nodes_per_chan->max != nodes_per_chan->x_min || nodes_per_chan->max != nodes_per_chan->y_min) {

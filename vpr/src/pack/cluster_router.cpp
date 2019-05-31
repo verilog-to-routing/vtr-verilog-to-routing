@@ -186,10 +186,9 @@ static bool route_has_conflict(t_lb_trace* rt, t_lb_router_data* router_data) {
 }
 
 // Check one edge for mode conflict.
-static bool check_edge_for_route_conflicts(
-    std::unordered_map<const t_pb_graph_node*, const t_mode*>* mode_map,
-    const t_pb_graph_pin* driver_pin,
-    const t_pb_graph_pin* pin) {
+static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_node*, const t_mode*>* mode_map,
+                                           const t_pb_graph_pin* driver_pin,
+                                           const t_pb_graph_pin* pin) {
     if (driver_pin == nullptr) {
         return false;
     }
@@ -209,14 +208,12 @@ static bool check_edge_for_route_conflicts(
     auto mode_of_edge = edge->interconnect->parent_mode_index;
     auto* mode = &pb_graph_node->pb_type->modes[mode_of_edge];
 
-    auto result = mode_map->insert(std::make_pair(
-        pb_graph_node, mode));
+    auto result = mode_map->insert(std::make_pair(pb_graph_node, mode));
     if (!result.second) {
         if (result.first->second != mode) {
-            std::cout << vtr::string_fmt(
-                             "Differing modes for block.  Got %s mode, while previously was %s for interconnect %s.",
-                             mode->name, result.first->second->name,
-                             edge->interconnect->name)
+            std::cout << vtr::string_fmt("Differing modes for block.  Got %s mode, while previously was %s for interconnect %s.",
+                                         mode->name, result.first->second->name,
+                                         edge->interconnect->name)
                       << std::endl;
 
             // The illegal mode is added to the pb_graph_node as it resulted in a conflict during atom-to-atom routing. This mode cannot be used in the consequent cluster

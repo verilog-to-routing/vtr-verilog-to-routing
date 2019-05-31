@@ -416,8 +416,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
         for (int imode = 0; imode < pb_type->num_modes; imode++) {
             for (int ipb_type = 0; ipb_type < pb_type->modes[imode].num_pb_type_children; ipb_type++) {
                 for (int ipb = 0; ipb < pb_type->modes[imode].pb_type_children[ipb_type].num_pb; ipb++) {
-                    alloc_and_load_lb_type_rr_graph_for_pb_graph_node(
-                        &pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb], lb_type_rr_node_graph, ext_rr_index);
+                    alloc_and_load_lb_type_rr_graph_for_pb_graph_node(&pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb], lb_type_rr_node_graph, ext_rr_index);
                 }
             }
         }

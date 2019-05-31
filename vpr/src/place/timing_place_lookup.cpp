@@ -113,14 +113,13 @@ static bool directconnect_exists(int src_rr_node, int sink_rr_node);
 
 /******* Globally Accessible Functions **********/
 
-std::unique_ptr<PlaceDelayModel> compute_place_delay_model(
-    t_placer_opts placer_opts,
-    t_router_opts router_opts,
-    t_det_routing_arch* det_routing_arch,
-    std::vector<t_segment_inf>& segment_inf,
-    t_chan_width_dist chan_width_dist,
-    const t_direct_inf* directs,
-    const int num_directs) {
+std::unique_ptr<PlaceDelayModel> compute_place_delay_model(t_placer_opts placer_opts,
+                                                           t_router_opts router_opts,
+                                                           t_det_routing_arch* det_routing_arch,
+                                                           std::vector<t_segment_inf>& segment_inf,
+                                                           t_chan_width_dist chan_width_dist,
+                                                           const t_direct_inf* directs,
+                                                           const int num_directs) {
     vtr::ScopedStartFinishTimer timer("Computing placement delta delay look-up");
 
     init_placement_context();
@@ -265,10 +264,9 @@ static float route_connection_delay(int source_x, int source_y, int sink_x, int 
 
             VTR_ASSERT(sink_rr_node != OPEN);
 
-            successfully_routed = calculate_delay(
-                source_rr_node, sink_rr_node,
-                router_opts,
-                &net_delay_value);
+            successfully_routed = calculate_delay(source_rr_node, sink_rr_node,
+                                                  router_opts,
+                                                  &net_delay_value);
 
             if (successfully_routed) break;
         }
@@ -276,9 +274,8 @@ static float route_connection_delay(int source_x, int source_y, int sink_x, int 
     }
 
     if (!successfully_routed) {
-        VTR_LOG_WARN(
-            "Unable to route between blocks at (%d,%d) and (%d,%d) to characterize delay (setting to %g)\n",
-            source_x, source_y, sink_x, sink_y, net_delay_value);
+        VTR_LOG_WARN("Unable to route between blocks at (%d,%d) and (%d,%d) to characterize delay (setting to %g)\n",
+                     source_x, source_y, sink_x, sink_y, net_delay_value);
     }
 
     return (net_delay_value);

@@ -225,8 +225,8 @@ void read_user_pad_loc(const char* pad_loc_file) {
 
         h_ptr = get_hash_entry(hash_table, bname);
         if (h_ptr == nullptr) {
-            VTR_LOG_WARN(
-                "[Line %d] Block %s invalid, no such IO pad.\n", vtr::get_file_line_number_of_last_opened_file(), bname);
+            VTR_LOG_WARN("[Line %d] Block %s invalid, no such IO pad.\n",
+                         vtr::get_file_line_number_of_last_opened_file(), bname);
             ptr = vtr::fgets(buf, vtr::bufsize, fp);
             continue;
         }

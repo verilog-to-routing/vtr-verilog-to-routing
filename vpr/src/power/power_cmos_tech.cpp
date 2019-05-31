@@ -240,8 +240,7 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
     num_nmos_sizes = count_children(parent, "nmos", loc_data);
     VTR_ASSERT(num_nmos_sizes > 0);
     power_ctx.tech->num_nmos_mux_info = num_nmos_sizes;
-    power_ctx.tech->nmos_mux_info = (t_power_nmos_mux_inf*)vtr::calloc(
-        num_nmos_sizes, sizeof(t_power_nmos_mux_inf));
+    power_ctx.tech->nmos_mux_info = (t_power_nmos_mux_inf*)vtr::calloc(num_nmos_sizes, sizeof(t_power_nmos_mux_inf));
 
     auto me = get_first_child(parent, "nmos", loc_data);
     nmos_idx = 0;
@@ -256,8 +255,7 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
          * they will never be used
          */
         nmos_inf->max_mux_sl_size = 1 + num_mux_sizes;
-        nmos_inf->mux_voltage_inf = (t_power_mux_volt_inf*)vtr::calloc(
-            nmos_inf->max_mux_sl_size + 1, sizeof(t_power_mux_volt_inf));
+        nmos_inf->mux_voltage_inf = (t_power_mux_volt_inf*)vtr::calloc(nmos_inf->max_mux_sl_size + 1, sizeof(t_power_mux_volt_inf));
 
         auto child = get_first_child(me, "multiplexer", loc_data);
         i = 1;
@@ -319,8 +317,7 @@ static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const p
     }
 
     /* Get long transistor information (W=1,L=2) */
-    trans_inf->long_trans_inf = (t_transistor_size_inf*)vtr::malloc(
-        sizeof(t_transistor_size_inf));
+    trans_inf->long_trans_inf = (t_transistor_size_inf*)vtr::malloc(sizeof(t_transistor_size_inf));
 
     auto child = get_single_child(parent, "long_size", loc_data);
     VTR_ASSERT(get_attribute(child, "L", loc_data).as_int(0) == 2);
@@ -336,8 +333,7 @@ static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const p
 
     /* Process all transistor sizes */
     trans_inf->num_size_entries = count_children(parent, "size", loc_data);
-    trans_inf->size_inf = (t_transistor_size_inf*)vtr::calloc(
-        trans_inf->num_size_entries, sizeof(t_transistor_size_inf));
+    trans_inf->size_inf = (t_transistor_size_inf*)vtr::calloc(trans_inf->num_size_entries, sizeof(t_transistor_size_inf));
 
     child = get_first_child(parent, "size", loc_data);
     i = 0;
@@ -422,10 +418,7 @@ bool power_find_transistor_info(t_transistor_size_inf** lower,
         *upper = found;
     } else if (size > max_size) {
         /* Too large */
-        VTR_ASSERT(
-            found
-            == &trans_info->size_inf[trans_info->num_size_entries
-                                     - 1]);
+        VTR_ASSERT(found == &trans_info->size_inf[trans_info->num_size_entries - 1]);
         sprintf(msg,
                 "Using %s transistor of size '%f', which is larger than the largest modeled transistor (%f) in the technology behavior file.",
                 transistor_type_name(type), size, max_size);
@@ -541,10 +534,7 @@ void power_find_buffer_sc_levr(t_power_buffer_sc_levr_inf** lower,
                    .mux_size;
     if (input_mux_size > max_size) {
         /* Input mux too large */
-        VTR_ASSERT(
-            found
-            == &buffer_strength->sc_levr_inf[buffer_strength->num_levr_entries
-                                             - 1]);
+        VTR_ASSERT(found == &buffer_strength->sc_levr_inf[buffer_strength->num_levr_entries - 1]);
         sprintf(msg,
                 "Using buffer driven by mux of size '%d', which is larger than the largest modeled size (%d) in the technology behavior file.",
                 input_mux_size, max_size);

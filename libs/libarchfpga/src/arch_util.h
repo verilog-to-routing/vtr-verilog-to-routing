@@ -54,8 +54,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type);
 
 void ProcessMemoryClass(t_pb_type* mem_pb_type);
 
-e_power_estimation_method power_method_inherited(
-    e_power_estimation_method parent_power_method);
+e_power_estimation_method power_method_inherited(e_power_estimation_method parent_power_method);
 
 void CreateModelLibrary(t_arch* arch);
 
@@ -68,9 +67,8 @@ void SyncModelsPbTypes_rec(t_arch* arch,
 
 void UpdateAndCheckModels(t_arch* arch);
 
-void primitives_annotation_clock_match(
-    t_pin_to_pin_annotation* annotation,
-    t_pb_type* parent_pb_type);
+void primitives_annotation_clock_match(t_pin_to_pin_annotation* annotation,
+                                       t_pb_type* parent_pb_type);
 
 bool segment_exists(const t_arch* arch, std::string name);
 const t_segment_inf* find_segment(const t_arch* arch, std::string name);

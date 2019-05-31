@@ -66,8 +66,7 @@ static t_rc_node* alloc_rc_node(t_rc_node** rc_node_free_list_ptr);
 static void free_rc_node(t_rc_node* rc_node,
                          t_rc_node** rc_node_free_list_ptr);
 
-static t_linked_rc_edge* alloc_linked_rc_edge(
-    t_linked_rc_edge** rc_edge_free_list_ptr);
+static t_linked_rc_edge* alloc_linked_rc_edge(t_linked_rc_edge** rc_edge_free_list_ptr);
 
 static void free_linked_rc_edge(t_linked_rc_edge* rc_edge,
                                 t_linked_rc_edge** rc_edge_free_list_ptr);
@@ -292,8 +291,7 @@ alloc_linked_rc_edge(t_linked_rc_edge** rc_edge_free_list_ptr) {
     if (linked_rc_edge != nullptr) {
         *rc_edge_free_list_ptr = linked_rc_edge->next;
     } else {
-        linked_rc_edge = (t_linked_rc_edge*)vtr::malloc(
-            sizeof(t_linked_rc_edge));
+        linked_rc_edge = (t_linked_rc_edge*)vtr::malloc(sizeof(t_linked_rc_edge));
     }
 
     return (linked_rc_edge);

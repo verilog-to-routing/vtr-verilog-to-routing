@@ -49,8 +49,7 @@ void power_components_init() {
     int i;
     auto& power_ctx = g_vpr_ctx.mutable_power();
 
-    power_ctx.by_component.components = (t_power_usage*)vtr::calloc(
-        POWER_COMPONENT_MAX_NUM, sizeof(t_power_usage));
+    power_ctx.by_component.components = (t_power_usage*)vtr::calloc(POWER_COMPONENT_MAX_NUM, sizeof(t_power_usage));
     for (i = 0; i < POWER_COMPONENT_MAX_NUM; i++) {
         power_zero_usage(&power_ctx.by_component.components[i]);
     }
@@ -438,10 +437,8 @@ void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interc
             /* Many-to-1, or Many-to-Many
              * Implemented as a multiplexer for each output
              * */
-            in_dens = (float*)vtr::calloc(
-                interc->interconnect_power->num_input_ports, sizeof(float));
-            in_prob = (float*)vtr::calloc(
-                interc->interconnect_power->num_input_ports, sizeof(float));
+            in_dens = (float*)vtr::calloc(interc->interconnect_power->num_input_ports, sizeof(float));
+            in_prob = (float*)vtr::calloc(interc->interconnect_power->num_input_ports, sizeof(float));
 
             for (out_port_idx = 0;
                  out_port_idx < interc->interconnect_power->num_output_ports;
@@ -494,9 +491,8 @@ void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interc
 
                     /* Calculate power of the multiplexer */
                     power_usage_mux_multilevel(&MUX_power,
-                                               power_get_mux_arch(
-                                                   interc_pins->interconnect->interconnect_power->num_input_ports,
-                                                   power_ctx.arch->mux_transistor_size),
+                                               power_get_mux_arch(interc_pins->interconnect->interconnect_power->num_input_ports,
+                                                                  power_ctx.arch->mux_transistor_size),
                                                in_prob,
                                                in_dens, selected_input, true, power_ctx.solution_inf.T_crit);
 
