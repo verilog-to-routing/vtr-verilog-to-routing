@@ -58,10 +58,23 @@ bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch);     //Perform, 
 void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch);          //Perform placement
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch); //Loads a previous placement
 
-RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch);                                                                                                                                                                                 //Perform, load or skip the routing stage
-RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, std::shared_ptr<RoutingDelayCalculator> delay_calc, vtr::vector<ClusterNetId, float*>& net_delay); //Perform routing at a fixed channel width)
-RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, std::shared_ptr<RoutingDelayCalculator> delay_calc, vtr::vector<ClusterNetId, float*>& net_delay);                            //Perform routing to find the minimum channel width
-RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float*>& net_delay);                                                      //Loads a previous routing
+RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the routing stage
+RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
+                              const t_arch& arch,
+                              int fixed_channel_width,
+                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
+                              std::shared_ptr<RoutingDelayCalculator> delay_calc,
+                              vtr::vector<ClusterNetId, float*>& net_delay); //Perform routing at a fixed channel width)
+RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
+                            const t_arch& arch,
+                            std::shared_ptr<SetupHoldTimingInfo> timing_info,
+                            std::shared_ptr<RoutingDelayCalculator> delay_calc,
+                            vtr::vector<ClusterNetId, float*>& net_delay); //Perform routing to find the minimum channel width
+RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
+                             const t_arch& arch,
+                             int fixed_channel_width,
+                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
+                             vtr::vector<ClusterNetId, float*>& net_delay); //Loads a previous routing
 
 bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status); //Perform or skips the analysis stage
 void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status);      //Perform post-implementation analysis
@@ -88,7 +101,27 @@ void vpr_print_args(int argc, const char** argv);
 /* Read in user options */
 void vpr_read_options(const int argc, const char** argv, t_options* options);
 /* Read in arch and circuit */
-void vpr_setup_vpr(t_options* Options, const bool TimingEnabled, const bool readArchFile, t_file_name_opts* FileNameOpts, t_arch* Arch, t_model** user_models, t_model** library_models, t_netlist_opts* NetlistOpts, t_packer_opts* PackerOpts, t_placer_opts* PlacerOpts, t_annealing_sched* AnnealSched, t_router_opts* RouterOpts, t_analysis_opts* AnalysisOpts, t_det_routing_arch* RoutingArch, std::vector<t_lb_type_rr_node>** PackerRRGraph, std::vector<t_segment_inf>& Segments, t_timing_inf* Timing, bool* ShowGraphics, int* GraphPause, t_power_opts* PowerOpts);
+void vpr_setup_vpr(t_options* Options,
+                   const bool TimingEnabled,
+                   const bool readArchFile,
+                   t_file_name_opts* FileNameOpts,
+                   t_arch* Arch,
+                   t_model** user_models,
+                   t_model** library_models,
+                   t_netlist_opts* NetlistOpts,
+                   t_packer_opts* PackerOpts,
+                   t_placer_opts* PlacerOpts,
+                   t_annealing_sched* AnnealSched,
+                   t_router_opts* RouterOpts,
+                   t_analysis_opts* AnalysisOpts,
+                   t_det_routing_arch* RoutingArch,
+                   std::vector<t_lb_type_rr_node>** PackerRRGraph,
+                   std::vector<t_segment_inf>& Segments,
+                   t_timing_inf* Timing,
+                   bool* ShowGraphics,
+                   int* GraphPause,
+                   t_power_opts* PowerOpts);
+
 /* Check inputs are reasonable */
 void vpr_check_arch(const t_arch& Arch);
 /* Verify settings don't conflict or otherwise not make sense */
@@ -101,7 +134,10 @@ void vpr_check_setup(const t_packer_opts PackerOpts,
                      const t_chan_width_dist Chans);
 /* Show current setup */
 void vpr_show_setup(const t_vpr_setup& vpr_setup);
-void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info, const RouteStatus& route_status);
+void vpr_power_estimation(const t_vpr_setup& vpr_setup,
+                          const t_arch& Arch,
+                          const SetupTimingInfo& timing_info,
+                          const RouteStatus& route_status);
 
 /* Output file names management */
 void vpr_alloc_and_load_output_file_names(const char* default_name);
