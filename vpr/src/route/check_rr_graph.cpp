@@ -502,7 +502,7 @@ static void check_unbuffered_edges(int from_node) {
         }
 
         if (trans_matched == false) {
-            vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+            VPR_THROW(VPR_ERROR_ROUTE,
                       "in check_unbuffered_edges:\n"
                       "connection from node %d to node %d uses an unbuffered switch (switch type %d '%s')\n"
                       "but there is no corresponding unbuffered switch edge in the other direction.\n",
