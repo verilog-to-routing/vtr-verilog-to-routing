@@ -817,6 +817,7 @@ LIGHT_LIST=(
 	"other"
 	"micro"	
 	"syntax"
+	"FIR"
 )
 
 function run_sim_on_directory() {
