@@ -683,6 +683,32 @@ function sim() {
 				done
 
 			done
+			
+			mkdir -p ${NEW_RUN_DIR}/${bench_type}/vectors
+
+			# move the vectors
+			for sim_input_vectors in $(find ${NEW_RUN_DIR}/${bench_type}/ -name "input_vectors")
+			do
+				BM_DIR=$(dirname ${sim_input_vectors})
+				BM_NAME="$(basename $(readlink -f ${BM_DIR}/..))_input"
+
+				cp ${sim_input_vectors} ${NEW_RUN_DIR}/${bench_type}/vectors/${BM_NAME}
+				mv ${sim_input_vectors} ${BM_DIR}/${BM_NAME}
+				
+			done
+
+
+			# move the vectors
+			for sim_output_vectors in $(find ${NEW_RUN_DIR}/${bench_type}/ -name "output_vectors")
+			do
+				BM_DIR=$(dirname ${sim_output_vectors})
+				BM_NAME="$(basename $(readlink -f ${BM_DIR}/..))_output"
+
+				cp ${sim_output_vectors} ${NEW_RUN_DIR}/${bench_type}/vectors/${BM_NAME}
+				mv ${sim_output_vectors} ${BM_DIR}/${BM_NAME}
+
+			done
+
 			# move the failed runs
 			mv_failed ${global_simulation_failure}
 		fi
