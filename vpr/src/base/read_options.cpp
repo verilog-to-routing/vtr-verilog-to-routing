@@ -931,6 +931,22 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gen_grp.add_argument<std::string>(args.disable_errors, "--disable_errors")
+        .help(
+            "Parses a list of functions for which the errors are going to be treated as warnings.\n"
+            "Each function in the list is delimited by `:`\n"
+            "This option should be only used for development purposes.")
+        .default_value("");
+
+    gen_grp.add_argument<std::string>(args.suppress_warnings, "--suppress_warnings")
+        .help(
+            "Parses a list of functions for which the warnings will be suppressed on stdout.\n"
+            "The first element of the list is the name of the output log file with the suppressed warnings.\n"
+            "The file name and the list of functions is separated by `,`\n"
+            "Each function in the list is delimited by `:`\n"
+            "This option should be only used for development purposes.")
+        .default_value("");
+
     auto& file_grp = parser.add_argument_group("file options");
 
     file_grp.add_argument(args.BlifFile, "--circuit_file")

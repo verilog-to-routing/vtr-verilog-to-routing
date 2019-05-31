@@ -1,6 +1,8 @@
 #include <cstring>
 #include <unordered_set>
 #include <regex>
+#include <algorithm>
+
 using namespace std;
 
 #include "vtr_assert.h"
@@ -18,7 +20,6 @@ using namespace std;
 #include "string.h"
 #include "pack_types.h"
 #include "device_grid.h"
-#include <algorithm>
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
