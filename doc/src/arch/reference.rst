@@ -655,13 +655,14 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
     :req_param Cin:  Input capacitance of the switch.
     :req_param Cout:  Output capacitance of the switch.
 
-    :opt_param Cinternal: Since multiplexers and tristate buffers are modeled as a       
-             parallel stream of pass transistors feeding into a buffer,     
-             we would expect an additional "internal capacitance" to arise when the    
-             pass transistor is enabled and the signal must propogate to    
-             the buffer. See diagram of one stream below:: 
-             
-             Pass Transistor                                          
+    :opt_param Cinternal: 
+        Since multiplexers and tristate buffers are modeled as a       
+        parallel stream of pass transistors feeding into a buffer,     
+        we would expect an additional "internal capacitance" to arise when the    
+        pass transistor is enabled and the signal must propogate to    
+        the buffer. See diagram of one stream below:: 
+        
+            Pass Transistor                                          
                       |                                                   
                     -----                                                 
                     -----      Buffer                                     
@@ -672,8 +673,8 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
              =====         =====      =====                               
                |             |          |                                 
              Input C    Internal C    Output C                             
-
-             .. note:: Only specify a value for multiplexers and/or tristate buffers.
+    
+        .. note:: Only specify a value for multiplexers and/or tristate switches.
 
     :opt_param Tdel:
 
