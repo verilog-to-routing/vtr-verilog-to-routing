@@ -1286,24 +1286,7 @@ struct t_arch_switch_inf {
  * R:  Equivalent resistance of the buffer/switch.                           *
  * Cin:  Input capacitance.                                                  *
  * Cout:  Output capacitance.                                                *
- * Cinternal: Since multiplexers and tristate buffers are modeled as a       *
- *            parallel stream of pass transistors feeding into a buffer,     *
- *            we would expect an additional "internal capacitance"           *
- *            to arise when the pass transistor is enabled and the signal    *
- *            must propogate to the buffer. See diagram of one stream below: *
- *                                                                           *
- *                  Pass Transistor                                          *
- *                       |                                                   *
- *                     -----                                                 *
- *                     -----      Buffer                                     *   
- *                    |     |       |\                                       *
- *              ------       -------| \--------                              *
- *                |             |   | /    |                                 *
- *              =====         ===== |/   =====                               *
- *              =====         =====      =====                               *
- *                |             |          |                                 *
- *             Input C    Internal C    Output C                             *
- *                                                                           *
+ * Cinternal: Internal capacitance, see the definition above.                *
  * Tdel:  Intrinsic delay.  The delay through an unloaded switch is          *
  *        Tdel + R * Cout.                                                   *
  * mux_trans_size:  The area of each transistor in the segment's driving mux *

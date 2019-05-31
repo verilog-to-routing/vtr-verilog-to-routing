@@ -1869,7 +1869,12 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     
     //From node info
     float from_node_R = device_ctx.rr_nodes[from_node].R();
-    float from_R_upstream = to->R_upstream;
+
+    //Once a connection has been made between from_node and to_node, depending on the switch, Tdel may increase due to the internal capacitance of that switch. Even though this delay physically affects from_node, we are making the adjustment on the to_node, because we know the connection used.
+
+    //To adjust for the time delay, we will need to compute the product of the Rdel that is associated with from_node and the internal capacitance of the switch. First, we will calculate Rdel_adjust. Just like in the computation for Rdel, we consider only half of from_node's resistance. 
+    
+    float Rdel_adjust = to->R_upstream - 0.5 * from_node_R; 
 
     //Update R_upstream
     if (switch_buffered) {
@@ -1883,22 +1888,16 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
 
     //Calculate delay
     float Rdel = to->R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
-    float Tdel = switch_Tdel + Rdel * node_C; //sum the node capcitance with internal capacitance
-    
-    //Update the potential time delay increase due to the internal capacitance.
-    //Need to find the value of Rdel when this function was called to evaluate the cost of from node.
-    float old_Rdel = from_R_upstream - 0.5 * from_node_R; 
+    float Tdel = switch_Tdel + Rdel * node_C; 
+     
+    //Now we will adjust the Tdel to account for the delay caused by the internal capacitance.
+    Tdel += Rdel_adjust * switch_Cinternal;
     	
+
     //Update the backward cost (upstream already included)
     to->backward_path_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
 
-    // In calculating the backward_cost of to_node, we must evaluate the effect of the potential
-    // internal capacitance which arises by connecting from_node to to_node. To achieve this, we update
-    // the backward_cost of to_node by accounting for the corresponding increase in the time delay.
-    // This time delay is found by multiplying the resistance of from_node with the internal capacitance
-    // of this new connection.
-
-     to->backward_path_cost += cost_params.criticality * (Tdel + old_Rdel * switch_Cinternal); //Delay cost accounting for Cinternal
+     to->backward_path_cost += cost_params.criticality * Tdel; //Delay cost 
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();

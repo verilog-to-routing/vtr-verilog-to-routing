@@ -659,7 +659,19 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
              parallel stream of pass transistors feeding into a buffer,     
              we would expect an additional "internal capacitance" to arise when the    
              pass transistor is enabled and the signal must propogate to    
-             the buffer.
+             the buffer. See diagram of one stream below:: 
+             
+             Pass Transistor                                          
+                      |                                                   
+                    -----                                                 
+                    -----      Buffer                                     
+                   |     |       |\                                       
+             ------       -------| \--------                              
+               |             |   | /    |                                 
+             =====         ===== |/   =====                               
+             =====         =====      =====                               
+               |             |          |                                 
+             Input C    Internal C    Output C                             
 
              Only specify a value for multiplexers and/or tristate buffers.
 
