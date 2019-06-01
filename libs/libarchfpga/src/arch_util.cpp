@@ -345,10 +345,6 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
         delete[] pb_graph_node->clock_pins[i];
     }
 
-    for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-        vtr::free(pb_graph_node->interconnect_pins[i]);
-    }
-    vtr::free(pb_graph_node->interconnect_pins);
 
     vtr::free(pb_graph_node->input_pins);
     vtr::free(pb_graph_node->output_pins);
@@ -360,6 +356,35 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
 
     vtr::free(pb_graph_node->input_pin_class_size);
     vtr::free(pb_graph_node->output_pin_class_size);
+
+    if (pb_graph_node->interconnect_pins) {
+        for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
+            if (pb_graph_node->interconnect_pins[i] == nullptr) continue;
+
+            t_mode* mode = &pb_graph_node->pb_type->modes[i];
+            
+            for (j = 0; j < mode->num_interconnect; ++j) {
+                //The interconnect_pins data structures are only initialized for power analysis and
+                //are bizarrely baroque...
+                t_interconnect* interconn = pb_graph_node->interconnect_pins[i][j].interconnect;
+                VTR_ASSERT(interconn == &mode->interconnect[j]);
+
+                t_interconnect_power* interconn_power = interconn->interconnect_power; 
+                for (int iport = 0; iport < interconn_power->num_input_ports; ++iport) {
+                    vtr::free(pb_graph_node->interconnect_pins[i][j].input_pins[iport]);
+                }
+                for (int iport = 0; iport < interconn_power->num_output_ports; ++iport) {
+                    vtr::free(pb_graph_node->interconnect_pins[i][j].output_pins[iport]);
+                }
+                vtr::free(pb_graph_node->interconnect_pins[i][j].input_pins);
+                vtr::free(pb_graph_node->interconnect_pins[i][j].output_pins);
+            }
+            vtr::free(pb_graph_node->interconnect_pins[i]);
+        }
+    }
+    vtr::free(pb_graph_node->interconnect_pins);
+    vtr::free(pb_graph_node->pb_node_power);
+
 
     for (i = 0; i < pb_type->num_modes; i++) {
         for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
