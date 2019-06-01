@@ -20,7 +20,7 @@ PowerCallibInputs::PowerCallibInputs(PowerSpicedComponent* parent_,
     : parent(parent_)
     , num_inputs(inputs)
     , sorted(false)
-    , done_callibration( false) {
+    , done_callibration(false) {
     /* Add min/max bounding entries */
     add_size(0);
     add_size(std::numeric_limits<float>::max());
