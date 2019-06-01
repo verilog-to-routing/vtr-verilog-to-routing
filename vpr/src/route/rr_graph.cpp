@@ -407,21 +407,10 @@ bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& p
         || current.x_max != proposed.x_max
         || current.y_max != proposed.y_max
         || current.x_min != proposed.x_min
-        || current.y_min != proposed.y_min) {
-        return false; //Different max width or grid size
-    }
-
-    //Check that each dimensions channels have the same width
-    for (int y = current.y_min; y < current.y_max; ++y) {
-        if (current.x_list[y] != proposed.x_list[y]) {
-            return false;
-        }
-    }
-
-    for (int x = current.x_min; x < current.x_max; ++x) {
-        if (current.y_list[x] != proposed.y_list[x]) {
-            return false;
-        }
+        || current.y_min != proposed.y_min
+        || current.x_list != proposed.x_list
+        || current.y_list != proposed.y_list) {
+        return false; //Different max/min or channel widths
     }
 
     return true; //Identical
