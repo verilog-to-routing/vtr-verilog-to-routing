@@ -464,7 +464,7 @@ VNumber V_NOT_EQUAL(VNumber& a, VNumber& b)
 VNumber V_SIGNED_SHIFT_LEFT(VNumber& a, VNumber& b)
 {
 	if(b.is_dont_care_string())	
-		return VNumber("x");
+		return VNumber("'bx");
 	
 	return shift_op(a, b.get_value(), true);
 }
@@ -472,7 +472,7 @@ VNumber V_SIGNED_SHIFT_LEFT(VNumber& a, VNumber& b)
 VNumber V_SHIFT_LEFT(VNumber& a, VNumber& b)
 {
 	if(b.is_dont_care_string())	
-		return VNumber("x");
+		return VNumber("'bx");
 	
 	return shift_op(a, b.get_value(), false);
 }
@@ -480,7 +480,7 @@ VNumber V_SHIFT_LEFT(VNumber& a, VNumber& b)
 VNumber V_SIGNED_SHIFT_RIGHT(VNumber& a, VNumber& b)
 {
 	if(b.is_dont_care_string())	
-		return VNumber("x");
+		return VNumber("'bx");
 	
 	return shift_op(a, -1* b.get_value(), true);
 }
@@ -488,7 +488,7 @@ VNumber V_SIGNED_SHIFT_RIGHT(VNumber& a, VNumber& b)
 VNumber V_SHIFT_RIGHT(VNumber& a, VNumber& b)
 {
 	if(b.is_dont_care_string())	
-		return VNumber("x");
+		return VNumber("'bx");
 	
 	return shift_op(a, -1* b.get_value(), false);
 }
@@ -513,7 +513,7 @@ VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
 	DEBUG_MSG("a_in: '" << a_in.to_string() << "' * b_in: '" << b_in.to_string() << "'");
 
 	if(a_in.is_dont_care_string() || b_in.is_dont_care_string())
-		return VNumber("x");
+		return VNumber("'bx");
 
 	VNumber a;
 	VNumber b;
@@ -598,7 +598,7 @@ VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
 VNumber V_POWER(VNumber& a, VNumber& b)
 {
 	if(a.is_dont_care_string() || b.is_dont_care_string())
-		return VNumber("'bx");
+		return VNumber("2'sbxx");
 	
 	compare_bit res_a = eval_op(a, 0);
 	short val_a = 	(res_a.is_eq()) 		? 	0: 
@@ -613,8 +613,8 @@ VNumber V_POWER(VNumber& a, VNumber& b)
 	//compute
 	if(val_b == 1 && (val_a < -1 || val_a > 1 ))
 	{
-		VNumber result("1");
-		VNumber one = VNumber("1");
+		VNumber result("2'sb01");
+		VNumber one = VNumber("2'sb01");
 		VNumber tmp_b = b;
 		while(eval_op(tmp_b,0).is_gt())
 		{
@@ -625,22 +625,22 @@ VNumber V_POWER(VNumber& a, VNumber& b)
 	}
 	if (val_b == 0 || val_a == 1)	
 	{
-		return VNumber("1000");
+		return VNumber("2'sb01");
 	}
 	else if(val_b == -1 && val_a == 0)
 	{
-		return VNumber("xxxx");
+		return VNumber("2'sbxx");
 	}
 	else if(val_a == -1)
 	{
 		if(a.is_negative()) 	// even
-			return VNumber("0111");
+			return VNumber("2'sb01");
 		else				//	odd
-			return VNumber("1000");
+			return VNumber("2'sb10");
 	}
 	else	
 	{
-		return VNumber("0000");
+		return VNumber("2'sb00");
 	}
 }
 
@@ -648,7 +648,7 @@ VNumber V_POWER(VNumber& a, VNumber& b)
 VNumber V_DIV(VNumber& a_in, VNumber& b)
 {
 	if(a_in.is_dont_care_string() || b.is_dont_care_string() || eval_op(b,0).is_eq())
-		return VNumber("x");
+		return VNumber("'bx");
 
 	VNumber a(a_in);
 
@@ -678,7 +678,7 @@ VNumber V_DIV(VNumber& a_in, VNumber& b)
 VNumber V_MOD(VNumber& a_in, VNumber& b)
 {
 	if(a_in.is_dont_care_string() || b.is_dont_care_string() || eval_op(b, 0).is_eq())
-		return VNumber("x");
+		return VNumber("'bx");
 
 	VNumber to_return(a_in);
 	while(eval_op(b, to_return).is_lt())
