@@ -534,7 +534,7 @@ VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
 	else
 	{
 		a = a_in;
-		DEBUG_MSG("a = a_in: '" << a_in.to_string() << "': '" << a.to_string() << "'");;
+		DEBUG_MSG("a = a_in: '" << a_in.to_string() << "': '" << a.to_string() << "'");
 	}
 
 	if(neg_b)
