@@ -75,8 +75,14 @@ Subtraction,		4'b0100,    -,  4'b0010,  'b10
 Subtraction-Smaller-Larger,		4'b0010,    -,  4'b0100,  4'b1110
 # TODO: Division,			4'b1010,    /,  4'b0010,  'b10
 Multiplication,	    4'b0010,    *,  4'b0010,  'b100
+# TODO: Multiplication with negative numbers 
 # TODO: Modulo,			    4'b1011,    %,  4'b0010,  'b1
-# TODO: Power,              4'b0010,    **, 4'b0000,  'b1
+# TODO: Power,              2'b10,    **, 2'b10,  4'b0100
+Power-Zero,              4'b0010,    **, 4'b0000,  'b1
+# TODO: Power-Unknown,              4'b0000,    **, 4'sb1110,  'bx
+Power-Neg-Even,              4'sb1111,    **, 2'b10,  'b1
+# Power-Neg-Odd,              4'sb1111,    **, 3'b011,  'b1
+# TODO: Other Power Cases
 
 # Ternary operations
-Ternary,			1'b1,   ?,  2'b01,  :,  2'b10,  2'b01
+# TODO: Ternary,			1'b1,   ?,  2'b01,  :,  2'b10,  2'b01

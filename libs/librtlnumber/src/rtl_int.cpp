@@ -595,11 +595,40 @@ VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
 	return result;
 }
 
+/*
+ * From Table 5-6 "Power operator rules" of IEEE Standard 1364-2005:
+ *  "Verilog Hardware Description Language"; on Page 46 (PDF Page 76):
+ *
+ * Table 5-6 — Power operator rules:
+ *
+ * |-----------------------------------------------------------------------------|
+ * | |  \ op1 is -> |               |                  |      |   |              |
+ * | \/   \         | negative < –1 | –1               | zero | 1 | positive > 1 |
+ * | op2 is \       |               |                  |      |   |              |
+ * |-----------------------------------------------------------------------------|
+ * |                |               |                  |      |   |              |
+ * | Positive       | op1 ** op2    | op2 is odd -> –1 | 0    | 1 | op1 ** op2   |
+ * |                |               | op2 is even -> 1 |      |   |              |
+ * |                |               |                  |      |   |              |
+ * |-----------------------------------------------------------------------------|
+ * |                |               |                  |      |   |              |
+ * | Zero           | 1             | 1                | 1    | 1 | 1            |
+ * |                |               |                  |      |   |              |
+ * |-----------------------------------------------------------------------------|
+ * |                |               |                  |      |   |              |
+ * | Negative       | 0             | op2 is odd -> –1 | 'bx  | 1 | 0            |
+ * |                |               | op2 is even -> 1 |      |   |              |
+ * |                |               |                  |      |   |              |
+ * |-----------------------------------------------------------------------------|
+ */
 VNumber V_POWER(VNumber& a, VNumber& b)
 {
 	if(a.is_dont_care_string() || b.is_dont_care_string())
+	{
+		DEBUG_MSG("Return VNumber(\"2'sbxx\"): '" << VNumber("2'sbxx").to_string() << "'");
 		return VNumber("2'sbxx");
-	
+	}
+
 	compare_bit res_a = eval_op(a, 0);
 	short val_a = 	(res_a.is_eq()) 		? 	0: 
 					(res_a.is_lt()) 		? 	(eval_op(a,-1).is_lt())	?	-2: -1:
@@ -610,36 +639,66 @@ VNumber V_POWER(VNumber& a, VNumber& b)
 					(res_b.is_lt()) 		? 	-1:
 					/* GREATHER_THAN */				1;
 
-	//compute
-	if(val_b == 1 && (val_a < -1 || val_a > 1 ))
+	DEBUG_MSG("val_a: '" << val_a << "'");
+	DEBUG_MSG("val_b: '" << val_b << "'");
+
+	// Compute: Case Where 'val_a <= -2' or 'val_a >= 2'; As-Per the Spec:
+	if(val_b > 0 && (val_a < -1 || val_a > 1 ))
 	{
 		VNumber result("2'sb01");
 		VNumber one = VNumber("2'sb01");
 		VNumber tmp_b = b;
-		while(eval_op(tmp_b,0).is_gt())
+
+		DEBUG_MSG("result: '" << result.to_string() << "'");
+		DEBUG_MSG("one: '" << one.to_string() << "'");
+		DEBUG_MSG("tmp_b: '" << tmp_b.to_string() << "'");
+
+		while(eval_op(tmp_b, 0).is_gt())
 		{
+			DEBUG_MSG("tmp_b = V_MINUS(tmp_b: '" << tmp_b.to_string() << "', one: '" << one.to_string() << "')");
+
 			tmp_b = V_MINUS(tmp_b, one);
+
+			DEBUG_MSG("tmp_b: '" << tmp_b.to_string() << "'");
+			DEBUG_MSG("result = V_MULTIPLY(result: '" << result.to_string() << "', a: '" << a.to_string() << "')");
+
 			result = V_MULTIPLY( result, a);
+
+			DEBUG_MSG("result: '" << result.to_string() << "'");
 		}
+
+		DEBUG_MSG("Return result: '" << result.to_string() << "'");
+
 		return result;
 	}
-	if (val_b == 0 || val_a == 1)	
+	else if (val_b == 0 || val_a == 1)	
 	{
+		DEBUG_MSG("Return VNumber(\"'sb01\"): '" << VNumber("'sb01").to_string() << "'");
 		return VNumber("2'sb01");
 	}
 	else if(val_b == -1 && val_a == 0)
 	{
+		DEBUG_MSG("Return VNumber(\"2'sbxx\"): '" << VNumber("2'sbxx").to_string() << "'");
 		return VNumber("2'sbxx");
 	}
 	else if(val_a == -1)
 	{
-		if(a.is_negative()) 	// even
+		// Even:
+		if(BitSpace::_0 == b.get_bit_from_lsb(0))
+		{
+			DEBUG_MSG("Return VNumber(\"2'sb01\"): '" << VNumber("2'sb01").to_string() << "'");
 			return VNumber("2'sb01");
-		else				//	odd
+		}
+		// Odd:
+		else
+		{
+			DEBUG_MSG("Return VNumber(\"2'sb10\"): '" << VNumber("2'sb10").to_string() << "'");
 			return VNumber("2'sb10");
+		}
 	}
 	else	
 	{
+		DEBUG_MSG("Return VNumber(\"2'sb00\"): '" << VNumber("2'sb00").to_string() << "'");
 		return VNumber("2'sb00");
 	}
 }
