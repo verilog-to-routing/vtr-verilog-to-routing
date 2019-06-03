@@ -6,16 +6,16 @@
  * resource type string by its index, which is defined by           *
  * "t_rr_type type".												*/
 
-const char *t_rr_node::type_string() const {
-	return rr_node_typename[type()];
+const char* t_rr_node::type_string() const {
+    return rr_node_typename[type()];
 }
 
 short t_rr_node::xlow() const {
-	return xlow_;
+    return xlow_;
 }
 
 short t_rr_node::ylow() const {
-	return ylow_;
+    return ylow_;
 }
 
 short t_rr_node::xhigh() const {
@@ -27,7 +27,7 @@ short t_rr_node::yhigh() const {
 }
 
 short t_rr_node::ptc_num() const {
-	return ptc_.pin_num; //TODO eventually remove
+    return ptc_.pin_num; //TODO eventually remove
 }
 
 short t_rr_node::pin_num() const {
@@ -52,38 +52,38 @@ short t_rr_node::class_num() const {
 }
 
 short t_rr_node::cost_index() const {
-	return cost_index_;
+    return cost_index_;
 }
 
 short t_rr_node::rc_index() const {
-	return rc_index_;
+    return rc_index_;
 }
 
 short t_rr_node::capacity() const {
-	return capacity_;
+    return capacity_;
 }
 
 short t_rr_node::fan_in() const {
-	return fan_in_;
+    return fan_in_;
 }
 
 e_direction t_rr_node::direction() const {
     if (type() != CHANX && type() != CHANY) {
         VPR_THROW(VPR_ERROR_ROUTE, "Attempted to access RR node 'direction' for non-channel type '%s'", type_string());
     }
-	return dir_side_.direction;
+    return dir_side_.direction;
 }
 
-const char* t_rr_node::direction_string() const{
-	if (direction() == INC_DIRECTION){
-		return "INC_DIR";
-	} else if (direction() == DEC_DIRECTION){
-		return "DEC_DIR";
-	} else if (direction() == BI_DIRECTION){
-		return "BI_DIR";
+const char* t_rr_node::direction_string() const {
+    if (direction() == INC_DIRECTION) {
+        return "INC_DIR";
+    } else if (direction() == DEC_DIRECTION) {
+        return "DEC_DIR";
+    } else if (direction() == BI_DIRECTION) {
+        return "BI_DIR";
     }
 
-	VTR_ASSERT(direction() == NO_DIRECTION);
+    VTR_ASSERT(direction() == NO_DIRECTION);
     return "NO_DIR";
 }
 
@@ -91,21 +91,20 @@ e_side t_rr_node::side() const {
     if (type() != IPIN && type() != OPIN) {
         VPR_THROW(VPR_ERROR_ROUTE, "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'", type_string());
     }
-	return dir_side_.side;
+    return dir_side_.side;
 }
 
 const char* t_rr_node::side_string() const {
     return SIDE_STRING[side()];
 }
 
-
 //Returns the max 'length' over the x or y direction
 short t_rr_node::length() const {
-	return std::max(yhigh_ - ylow_, xhigh_ - xlow_);
+    return std::max(yhigh_ - ylow_, xhigh_ - xlow_);
 }
 
 bool t_rr_node::edge_is_configurable(short iedge) const {
-    auto iswitch =  edge_switch(iedge);
+    auto iswitch = edge_switch(iedge);
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -155,29 +154,29 @@ void t_rr_node::set_type(t_rr_type new_type) {
 }
 
 /*
-	Pass in two coordinate variables describing location of node.
-	They do not have to be in any particular order.
-*/
+ * Pass in two coordinate variables describing location of node.
+ * They do not have to be in any particular order.
+ */
 void t_rr_node::set_coordinates(short x1, short y1, short x2, short y2) {
-	if (x1 < x2) {
-		xlow_ = x1;
+    if (x1 < x2) {
+        xlow_ = x1;
         xhigh_ = x2;
-	} else {
-		xlow_ = x2;
+    } else {
+        xlow_ = x2;
         xhigh_ = x1;
-	}
+    }
 
-	if (y1 < y2) {
-		ylow_ = y1;
+    if (y1 < y2) {
+        ylow_ = y1;
         yhigh_ = y2;
-	} else {
-		ylow_ = y2;
+    } else {
+        ylow_ = y2;
         yhigh_ = y1;
-	}
+    }
 }
 
 void t_rr_node::set_ptc_num(short new_ptc_num) {
-	ptc_.pin_num = new_ptc_num; //TODO: eventually remove
+    ptc_.pin_num = new_ptc_num; //TODO: eventually remove
 }
 
 void t_rr_node::set_pin_num(short new_pin_num) {
@@ -202,26 +201,25 @@ void t_rr_node::set_class_num(short new_class_num) {
 }
 
 void t_rr_node::set_cost_index(size_t new_cost_index) {
-	cost_index_ = new_cost_index;
+    cost_index_ = new_cost_index;
 }
 
 void t_rr_node::set_rc_index(short new_rc_index) {
-	rc_index_ = new_rc_index;
+    rc_index_ = new_rc_index;
 }
 
 void t_rr_node::set_capacity(short new_capacity) {
     VTR_ASSERT(new_capacity >= 0);
-	capacity_ = new_capacity;
+    capacity_ = new_capacity;
 }
 
 void t_rr_node::set_fan_in(short new_fan_in) {
     VTR_ASSERT(new_fan_in >= 0);
-	fan_in_ = new_fan_in;
+    fan_in_ = new_fan_in;
 }
 
 short t_rr_node::add_edge(int sink_node, int iswitch) {
     if (edges_capacity_ == num_edges_) {
-
         constexpr size_t MAX_EDGE_COUNT = std::numeric_limits<decltype(edges_capacity_)>::max();
         if (edges_capacity_ == MAX_EDGE_COUNT) {
             VPR_THROW(VPR_ERROR_ROUTE, "Maximum RR Node out-edge count (%zu) exceeded", MAX_EDGE_COUNT);
@@ -265,7 +263,7 @@ void t_rr_node::shrink_to_fit() {
 void t_rr_node::partition_edges() {
     auto& device_ctx = g_vpr_ctx.device();
     auto is_configurable = [&](const t_rr_edge& edge) {
-        auto iswitch =  edge.switch_id;
+        auto iswitch = edge.switch_id;
         return device_ctx.rr_switch_inf[iswitch].configurable();
     };
 
@@ -294,14 +292,14 @@ void t_rr_node::set_direction(e_direction new_direction) {
     if (type() != CHANX && type() != CHANY) {
         VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set RR node 'direction' for non-channel type '%s'", type_string());
     }
-	dir_side_.direction = new_direction;
+    dir_side_.direction = new_direction;
 }
 
 void t_rr_node::set_side(e_side new_side) {
     if (type() != IPIN && type() != OPIN) {
         VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", type_string());
     }
-	dir_side_.side = new_side;
+    dir_side_.side = new_side;
 }
 
 void t_rr_node::set_edge_sink_node(short iedge, int sink_node) {
@@ -318,16 +316,14 @@ void t_rr_node::set_edge_switch(short iedge, short switch_index) {
 
 t_rr_rc_data::t_rr_rc_data(float Rval, float Cval)
     : R(Rval)
-    , C(Cval)
-    {}
-
+    , C(Cval) {}
 
 short find_create_rr_rc_data(const float R, const float C) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     auto match = [&](const t_rr_rc_data& val) {
         return val.R == R
-            && val.C == C;
+               && val.C == C;
     };
 
     //Just a linear search for now

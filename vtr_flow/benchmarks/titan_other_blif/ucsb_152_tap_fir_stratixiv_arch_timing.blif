@@ -1,4 +1,4 @@
-#BLIF OUTPUT: titan_release_1.2.10/benchmarks/other_benchmarks/ucsb_152_tap_fir/netlists/ucsb_152_tap_fir_stratixiv_arch_timing.blif
+#BLIF OUTPUT: titan_release_dev/benchmarks/other_benchmarks/ucsb_152_tap_fir/netlists/ucsb_152_tap_fir_stratixiv_arch_timing.blif
 
 #MAIN MODEL
 

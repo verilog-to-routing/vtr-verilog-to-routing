@@ -14,4 +14,3 @@ void archfpga_throw(const char* filename, int line, const char* fmt, ...) {
 
     throw ArchFpgaError(msg, filename, line);
 }
-

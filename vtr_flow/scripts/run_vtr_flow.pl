@@ -116,7 +116,6 @@ my $verify_rr_graph         = 0;
 my $check_route             = 0;
 my $check_place             = 0;
 my $use_old_abc_script      = 0;
-my $abc_use_dc2             = 1;
 my $run_name = "";
 my $expect_fail = 0;
 my $verbosity = 0;
@@ -179,8 +178,6 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
             $check_place = 1;
     } elsif ( $token eq "-use_old_abc_script"){
             $use_old_abc_script = 1;
-    } elsif ( $token eq "-abc_use_dc2"){
-            $abc_use_dc2 = shift(@ARGV);
     } elsif ( $token eq "-name"){
             $run_name = shift(@ARGV);
     } elsif ( $token eq "-expect_fail"){

@@ -16,10 +16,9 @@ bool operator==(const std::vector<T>& lhs, const vtr::small_vector<T>& rhs) {
     return true;
 }
 
-} //namespace
+} // namespace vtr
 
 TEST_CASE("Basic", "[vtr_small_vector]") {
-
     std::vector<int> ref;
     vtr::small_vector<int> vec;
 
@@ -147,4 +146,3 @@ TEST_CASE("Basic", "[vtr_small_vector]") {
     REQUIRE(ref == vec);
     ++i;
 }
-

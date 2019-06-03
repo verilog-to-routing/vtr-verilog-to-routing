@@ -63,7 +63,6 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     vpr_init(sizeof(argv)/sizeof(argv[0]), argv,
               &options, &vpr_setup, &arch);
 
-    vpr_setup.gen_netlist_as_blif     = false;
     vpr_setup.PackerOpts.doPacking    = STAGE_LOAD;
     vpr_setup.PlacerOpts.doPlacement  = STAGE_LOAD;
     vpr_setup.RouterOpts.doRouting    = STAGE_LOAD;

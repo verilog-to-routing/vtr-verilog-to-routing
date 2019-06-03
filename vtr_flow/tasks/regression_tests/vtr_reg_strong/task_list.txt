@@ -1,3 +1,5 @@
+regression_tests/vtr_reg_strong/strong_cin_tie_off
+regression_tests/vtr_reg_strong/strong_soft_multipliers
 regression_tests/vtr_reg_strong/strong_two_chains
 regression_tests/vtr_reg_strong/strong_dedicated_clock
 regression_tests/vtr_reg_strong/strong_titan

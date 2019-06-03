@@ -4,8 +4,8 @@
 #include "rr_node.h"
 
 /*
-* StrongId's for the t_rr_node class
-*/
+ * StrongId's for the t_rr_node class
+ */
 
 //Forward declaration
 class t_rr_node;

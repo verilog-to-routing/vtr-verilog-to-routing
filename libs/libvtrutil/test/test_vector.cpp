@@ -16,13 +16,11 @@ std::ostream& operator<<(std::ostream& os, const TestId id) {
 }
 
 TEST_CASE("Basic Ops", "[vtr_vector]") {
-
-    vtr::vector<TestId,int> vec;
+    vtr::vector<TestId, int> vec;
 
     vec.push_back(1);
     vec.push_back(2);
     vec.push_back(3);
-
 
     REQUIRE(vec.size() == 3);
     REQUIRE(vec[TestId(0)] == 1);
@@ -39,8 +37,7 @@ TEST_CASE("Basic Ops", "[vtr_vector]") {
 }
 
 TEST_CASE("Key Access", "[vtr_vector]") {
-
-    vtr::vector<TestId,int> vec;
+    vtr::vector<TestId, int> vec;
 
     vec.push_back(1);
     vec.push_back(2);

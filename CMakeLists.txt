@@ -1,4 +1,13 @@
-cmake_minimum_required(VERSION 3.3.0)
+cmake_minimum_required(VERSION 3.9)
+
+if (${CMAKE_VERSION} VERSION_GREATER "3.8")
+    #For cmake >= 3.9 INTERPROCEDURAL_OPTIMIZATION behaviour we need to explicitly
+    #set the cmake policy version number
+    cmake_policy(VERSION 3.9)
+
+    # If we are using verison < 3.9 then setting INTERPROCEDURAL_OPTIMIZATION
+    # has no effect unless an Intel compiler is used
+endif()
 
 project("VTR")
 
@@ -12,6 +21,9 @@ endif()
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set (CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "default install path" FORCE)
 endif()
+
+set(VTR_IPO_BUILD "auto" CACHE STRING "Should VTR be compiled with interprocedural compiler optimizations?")
+set_property(CACHE VTR_IPO_BUILD PROPERTY STRINGS auto on off)
 
 #Allow the user to configure how much assertion checking should occur
 set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticable run-time overhead, 4: all assertions (including those with significant run-time cost)")
@@ -62,6 +74,31 @@ include(CheckCXXCompilerFlag)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF) #No compiler specific extensions
+
+#
+# Interprocedural optimization
+#
+#   Note that we manually clear the INTERPROCEDURAL_OPTIMIZATION flag on ABC later
+#   to avoid cmake warnings
+include(CheckIPOSupported)
+check_ipo_supported(RESULT IPO_SUPPORTED)
+if (VTR_IPO_BUILD STREQUAL "on")
+    if (IPO_SUPPORTED)
+        message(STATUS "Building with IPO: on")
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+    else()
+        message(ERROR "Building with IPO unsupported with this compiler!")
+    endif()
+elseif(VTR_IPO_BUILD STREQUAL "auto")
+    if (IPO_SUPPORTED)
+        message(STATUS "Building with IPO: on (auto)")
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+    else()
+        message(STATUS "Building with IPO: off (auto)")
+    endif()
+else()
+    message(STATUS "Building with IPO: off")
+endif()
 
 #
 # Warning flags
@@ -364,3 +401,20 @@ if(WITH_BLIFEXPLORER)
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/blifexplorer"
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/blifexplorer")
 endif()
+
+
+#We don't control the ABC cmake file, so we need to manually unset the IPO flags
+#to avoid cmake dev warnings due to it's old cmake version policy
+set_target_properties(abc libabc libabc-pic PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+
+#
+#
+# Code Autoformatting
+#
+#
+list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/vpr")
+list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/libarchfpga")
+list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/libvtrutil")
+list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/libpugiutil")
+list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/liblog")
+include(AutoClangFormat)

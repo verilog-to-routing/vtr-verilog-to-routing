@@ -372,7 +372,7 @@ void get_options(int argc, char** argv) {
 
 	output_grp.add_argument(global_args.output_file, "-o")
 			.help("Output file path")
-			.default_value("temp/default_out.blif")
+			.default_value("default_out.blif")
 			.metavar("OUTPUT_FILE_PATH")
 			;
 
@@ -406,12 +406,6 @@ void get_options(int argc, char** argv) {
 			.action(argparse::Action::STORE_TRUE)
 			;
 
-	other_grp.add_argument(global_args.black_box_latches, "--black_box_latches")
-			.help("Output all Latches as Black Boxes")
-			.default_value("false")
-			.action(argparse::Action::STORE_TRUE)
-			;
-
 	other_grp.add_argument(global_args.adder_def, "--adder_type")
 			.help("input file defining adder_type, default is to use \"optimized\" values, use \"ripple\" to fall back onto simple ripple adder")
 			.default_value("default")
@@ -422,6 +416,11 @@ void get_options(int argc, char** argv) {
             .help("Defines if the first cin of an adder/subtractor is connected to a global gnd/vdd instead of a dummy adder generating a gnd/vdd.")
             .default_value("false")
             .action(argparse::Action::STORE_TRUE)
+            ;
+
+    other_grp.add_argument(global_args.top_level_module_name, "--top_module")
+            .help("Allow to overwrite the top level module that odin would use")
+			.metavar("TOP_LEVEL_MODULE_NAME")
             ;
 
 	auto& rand_sim_grp = parser.add_argument_group("random simulation options");
@@ -479,6 +478,13 @@ void get_options(int argc, char** argv) {
 			.help("Number of threads allowed for simulator to use")
 			.default_value("1")
 			.metavar("PARALEL NODE COUNT")
+			;
+
+	other_sim_grp.add_argument(global_args.parralelized_simulation_in_batch, "--batch")
+			.help("use batch mode simultation")
+			.default_value("false")
+			.action(argparse::Action::STORE_TRUE)
+			.metavar("BATCH FLAG")
 			;
 
 	other_sim_grp.add_argument(global_args.sim_directory, "-sim_dir")
@@ -551,10 +557,22 @@ void get_options(int argc, char** argv) {
 	//adjust thread count
 	int thread_requested = global_args.parralelized_simulation;
 	int max_thread = std::thread::hardware_concurrency();
-	global_args.parralelized_simulation.set(
-			std::min( 	std::min(CONCURENCY_LIMIT, max_thread) , 
-						std::max(1, thread_requested))
-		,argparse::Provenance::SPECIFIED);
+
+	// the old multithreaded mode can only use as many thread as the buffer size
+	if (!global_args.parralelized_simulation_in_batch)
+	{
+		global_args.parralelized_simulation.set(
+			std::max(1, std::min( thread_requested, std::min( CONCURENCY_LIMIT, max_thread )))
+			,argparse::Provenance::SPECIFIED
+		);
+	}
+	else
+	{
+		global_args.parralelized_simulation.set(
+			std::max(1, std::min( thread_requested, max_thread) )
+			,argparse::Provenance::SPECIFIED
+		);
+	}
 
 	//Allow some config values to be overriden from command line
 	if (!global_args.verilog_files.value().empty())

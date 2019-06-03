@@ -56,3 +56,9 @@ start_section "vtr.test.5" "${GREEN}Testing..${NC} ${CYAN}odin_reg_operators${NC
 end_section "vtr.test.5"
 
 $SPACER
+
+start_section "vtr.test.6" "${GREEN}Checking..${NC} ${CYAN}code formatting${NC}"
+./dev/check-format.sh
+end_section "vtr.test.6"
+
+$SPACER

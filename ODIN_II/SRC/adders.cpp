@@ -1474,7 +1474,7 @@ nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t *previ
 		if (current_pin < width[1])
 		{
 			npin_t *temp_pin = node->input_pins[current_pin];
-			if(temp_pin->net->driver_pin->node->type == GND_NODE)
+			if(temp_pin->net->driver_pin == NULL || temp_pin->net->driver_pin->node->type == GND_NODE)
 			{
 				connect_nodes(netlist->gnd_node,0, new_funct, 0+is_three_port_gate);
 				remove_fanout_pins_from_net(temp_pin->net, temp_pin, temp_pin->pin_net_idx);
@@ -1499,7 +1499,7 @@ nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t *previ
 		{
 			//pin a is neighbor to pin b
 			npin_t *temp_pin = node->input_pins[current_pin+width[1]];
-			if(temp_pin->net->driver_pin->node->type == GND_NODE)
+			if(temp_pin->net->driver_pin == NULL || temp_pin->net->driver_pin->node->type == GND_NODE)
 			{
 				nnode_t* attach_to=(subtraction)? netlist->vcc_node: netlist->gnd_node;
 				connect_nodes(attach_to,0, new_funct, 1+is_three_port_gate);

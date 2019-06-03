@@ -13,15 +13,12 @@ struct HistogramBucket {
     float min_value = std::numeric_limits<float>::quiet_NaN();
     float max_value = std::numeric_limits<float>::quiet_NaN();
     size_t count = 0;
-
 };
 
-std::vector<HistogramBucket> build_histogram(std::vector<float> values, size_t num_bins,
-                                             float min_value=std::numeric_limits<float>::quiet_NaN(),
-                                             float max_value=std::numeric_limits<float>::quiet_NaN());
+std::vector<HistogramBucket> build_histogram(std::vector<float> values, size_t num_bins, float min_value = std::numeric_limits<float>::quiet_NaN(), float max_value = std::numeric_limits<float>::quiet_NaN());
 
 void print_histogram(std::vector<HistogramBucket> histogram);
 
-std::vector<std::string> format_histogram(std::vector<HistogramBucket> histogram, size_t width=80);
+std::vector<std::string> format_histogram(std::vector<HistogramBucket> histogram, size_t width = 80);
 
 #endif

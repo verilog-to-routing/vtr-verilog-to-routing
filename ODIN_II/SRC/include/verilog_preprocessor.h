@@ -2,7 +2,6 @@
 #define verilog_preprocessor_h
 
 #define DefaultSize 20
-#define MaxLine	4096
 #include <stdio.h>
 
 //#define BLOCK_EMPTY_DEFINES
@@ -49,8 +48,8 @@ void clean_veri_include(veri_include *current);
 
 /* Adding/Removing includes or defines */
 int add_veri_define(char *symbol, char *value, int line, veri_include *included_from);
-char* ret_veri_definedval(char *symbol);
-int veri_is_defined(char * symbol);
+char* ret_veri_definedval(const char *symbol);
+int veri_is_defined(const char * symbol);
 veri_include* add_veri_include(const char *path, int line, veri_include *included_from);
 
 /* Preprocessor ------------------------------------------------------------- */
@@ -84,6 +83,7 @@ void push(veri_flag_stack *stack, int flag);
 bool is_whitespace(const char in);
 char *trim(char *input_str);
 char* trim(char *input_string, size_t n);
+char *get_line(char *line, long *size, FILE *source);
 
 /* ------------------------------------------------------------------------- */
 

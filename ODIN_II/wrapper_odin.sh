@@ -1,41 +1,60 @@
 #!/bin/bash
-#1
 trap ctrl_c INT SIGINT SIGTERM
 SHELL=/bin/bash
-
 QUIT=0
 
-TIME_EXEC=$($SHELL -c "which time") 
+##############################################
+# grab the input args
 INPUT=$@
 
-VALGRIND_EXEC=""
+##############################################
+# grab the absolute Paths
+THIS_SCRIPT=$(readlink -f $0)
+THIS_SCRIPT_EXEC=$(basename ${THIS_SCRIPT})
+ODIN_ROOT_DIR=$(dirname ${THIS_SCRIPT})
+
+EXEC="${ODIN_ROOT_DIR}/odin_II"
+if [ ! -f ${EXEC} ]; then
+	echo "Unable to find the odin executable at ${EXEC}"
+	exit 120
+fi
+
+TIME_EXEC=$($SHELL -c "which time") 
+VALGRIND_EXEC="valgrind --leak-check=full"
+PERF_EXEC="perf stat record -a -d -d -d -o"
+GDB_EXEC="gdb --args"
 LOG=""
 LOG_FILE=""
 TEST_NAME="odin"
 FAILURE_FILE=""
 EXIT_STATUS=3
 TIME_LIMIT="86400s" #default to a full day
+TOOL_SPECIFIED="off"
+USE_TIMEOUT="on"
+CANCEL_LOGS="off"
 
 export TIME="\
-	elapsed: %E 
-	CPU:     %P
-	max:     %M KiB
-	swaps:   %s
+	Elapsed Time:      %e Seconds
+	CPU:               %P
+	Max Memory:        %M KiB
+	Average Memory:    %K KiB
+	Minor PF:          %R
+	Major PF:          %F
+	Context Switch:    %c+%w
 "
 
-EXEC="./odin_II"
 
 function help() {
 printf "
 Called program with $[INPUT]
 
 Usage: ./wrapper_odin.sh [options] CMD
-			--valgrind								* run with valgrind
-			--log_file                              * output status to a log file
-			--test_name                             * label the test for pretty print
-			--failure_log                           * output the display label to a file if there was a failure
-			--time_limit                            * stops Odin after X seconds
-			--limit_ressource						* limit ressource usage using ulimit -m (25% of hrdw memory) and nice value of 19
+			--tool [gdb, valgrind, perf <output_file>]	*run with one of the specified tool and only one
+			--log_file                                  * output status to a log file
+			--test_name                                 * label the test for pretty print
+			--failure_log                               * output the display label to a file if there was a failure
+			--time_limit                                * stops Odin after X seconds
+			--limit_ressource				            * limit ressource usage using ulimit -m (25% of hrdw memory) and nice value of 19
 "
 }
 
@@ -61,15 +80,17 @@ function dump_log {
 }
 
 function ctrl_c() {
-	if [ "_${QUIT}" == "_0" ]
-	then
-		QUIT=1
+	trap '' INT SIGINT SIGTERM
+	QUIT=1
+
+	while [ "_${QUIT}" != "_0" ]
+	do
 		echo "** ODIN WRAPPER EXITED FORCEFULLY **"
 		jobs -p | xargs kill &> /dev/null
 		pkill odin_II &> /dev/null
 		#should be dead by now
 		exit 1
-	fi
+	done
 }
 
 #this hopefully will force to swap more
@@ -87,8 +108,8 @@ function restrict_ressource {
 	renice -n ${NICE_VALUE}  -p $$ &> /dev/null
 
 	log_it "Setting Nice value to ${NICE_VALUE}\n"
-	log_it "Virtual Memory Limit:\t$(( $(ulimit -a | grep "virtual memory" | tr -s ' ' | cut -d ')' -f2) /1024 ))MB\n" 
-	log_it "Physical Memory Limit:\t$(( $(ulimit -a | grep "max memory size" | tr -s ' ' | cut -d ')' -f2) /1024 ))MB\n"
+	log_it "Virtual Memory Limit:\t$(ulimit -a | grep "virtual memory" | tr -s ' ' | cut -d ')' -f2)\n" 
+	log_it "Physical Memory Limit:\t$(ulimit -a | grep "max memory size" | tr -s ' ' | cut -d ')' -f2)\n"
 	dump_log
 }
 
@@ -155,28 +176,70 @@ do
 			restrict_ressource 
 			;;
 
-		--valgrind)
-			VALGRIND_EXEC="valgrind --leak-check=full"
-			;;
+		--tool)
+			USE_TIMEOUT="off"
 
+			if [ ${TOOL_SPECIFIED} == "on" ]; then
+				echo "can only run one tool at a time"
+				help
+				exit 99
+			else
+				case $2 in
+					valgrind)
+						EXEC="${VALGRIND_EXEC} ${EXEC}"
+						;;
+					gdb)
+						CANCEL_LOGS="on"
+						EXEC="${GDB_EXEC} ${EXEC}"
+						;;
+					perf)
+						if [ "_$3" == "_" ]; then
+							echo "You must pass an output file for perf to log"
+							help
+							exit 99
+						else
+							EXEC="${PERF_EXEC} $3 ${EXEC}"
+							shift
+						fi
+						;;
+					*)
+						echo "Invalid tool $2 passed in"
+						help
+						exit 99
+						;;
+				esac
+				TOOL_SPECIFIED="on"
+				shift
+			fi
+			;;
 		*) 
-			cmd=$@
-			cmd="${VALGRIND_EXEC} ${EXEC} ${cmd}"
-			log_it "Starting Odin with: $cmd"
+			ODIN_ARGS=$(echo $@)
+			log_it "Starting Odin with: ${ODIN_ARGS}"
 			dump_log
 
 			display "running"
-
-			if [ "_${LOG_FILE}" != "_" ]; then 
-				timeout ${TIME_LIMIT} /bin/bash -c "${TIME_EXEC} --output=${LOG_FILE} --append ${cmd} &>> ${LOG_FILE}" &> /dev/null && EXIT_STATUS=0 || EXIT_STATUS=1 
+			
+			if [ "${USE_TIMEOUT}" == "on" ]; then
+				if [ "${CANCEL_LOGS}" == "off" ] && [ "_${LOG_FILE}" != "_" ]; then 
+					timeout ${TIME_LIMIT} /bin/bash -c "${TIME_EXEC} --output=${LOG_FILE} --append ${EXEC} ${ODIN_ARGS} &>> ${LOG_FILE}" &> /dev/null && EXIT_STATUS=0 || EXIT_STATUS=1 
+				else
+					timeout ${TIME_LIMIT} /bin/bash -c "${TIME_EXEC} ${EXEC} ${ODIN_ARGS}" && EXIT_STATUS=0 || EXIT_STATUS=1
+				fi
 			else
-				timeout ${TIME_LIMIT} /bin/bash -c "${TIME_EXEC} ${cmd}" && EXIT_STATUS=0 || EXIT_STATUS=1
+				if [ "${CANCEL_LOGS}" == "off" ] && [ "_${LOG_FILE}" != "_" ]; then 
+					/bin/bash -c "${EXEC} ${ODIN_ARGS} &>> ${LOG_FILE}" &> /dev/null && EXIT_STATUS=0 || EXIT_STATUS=1 
+				else
+					/bin/bash -c "${EXEC} ${ODIN_ARGS}"
+				fi
 			fi
+
 			break
 			;;
 	esac 
 	shift 
 done
+
+
 
 if [ "_${EXIT_STATUS}" == "_0" ]
 then

@@ -4,7 +4,6 @@
 #include "clustered_netlist.h"
 #include "vtr_vector.h"
 
-
 /* Used by the heap as its fundamental data structure.
  * Each heap element represents a partial route.
  *
@@ -34,11 +33,11 @@
  *
  */
 struct t_heap {
-	float cost = 0.;
-	float backward_path_cost = 0.;
-	float R_upstream = 0.;
+    float cost = 0.;
+    float backward_path_cost = 0.;
+    float R_upstream = 0.;
 
-	int index = OPEN;
+    int index = OPEN;
 
     struct t_prev {
         int node;
@@ -57,13 +56,14 @@ vtr::vector<ClusterNetId, t_bb> load_route_bb(int bb_factor);
 
 t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor);
 
-void pathfinder_update_path_cost(t_trace *route_segment_start,
-		int add_or_sub, float pres_fac);
+void pathfinder_update_path_cost(t_trace* route_segment_start,
+                                 int add_or_sub,
+                                 float pres_fac);
 void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac);
 
 void pathfinder_update_cost(float pres_fac, float acc_fac);
 
-t_trace *update_traceback(t_heap *hptr, ClusterNetId net_id);
+t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id);
 
 void reset_path_costs(const std::vector<int>& visited_rr_nodes);
 
@@ -72,10 +72,9 @@ float get_rr_cong_cost(int inode);
 void mark_ends(ClusterNetId net_id);
 void mark_remaining_ends(const std::vector<int>& remaining_sinks);
 
-void add_to_heap(t_heap *hptr);
-t_heap *alloc_heap_data();
-void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
-		float backward_path_cost, float R_upstream);
+void add_to_heap(t_heap* hptr);
+t_heap* alloc_heap_data();
+void node_to_heap(int inode, float cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream);
 
 bool is_empty_heap();
 
@@ -85,23 +84,22 @@ void free_traceback(t_trace* tptr);
 void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);
 
 namespace heap_ {
-	void build_heap();
-	void sift_down(size_t hole);
-	void sift_up(size_t tail, t_heap* const hptr);
-	void push_back(t_heap* const hptr);
-	void push_back_node(int inode, float total_cost, int prev_node, int prev_edge,
-		float backward_path_cost, float R_upstream);
-	bool is_valid();
-	void pop_heap();
-	void print_heap();
-	void verify_extract_top();
-}
+void build_heap();
+void sift_down(size_t hole);
+void sift_up(size_t tail, t_heap* const hptr);
+void push_back(t_heap* const hptr);
+void push_back_node(int inode, float total_cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream);
+bool is_valid();
+void pop_heap();
+void print_heap();
+void verify_extract_top();
+} // namespace heap_
 
-t_heap *get_heap_head();
+t_heap* get_heap_head();
 
 void empty_heap();
 
-void free_heap_data(t_heap *hptr);
+void free_heap_data(t_heap* hptr);
 
 void invalidate_heap_entries(int sink_node, int ipin_node);
 
@@ -128,4 +126,3 @@ void print_invalid_routing_info();
 
 t_trace* alloc_trace_data();
 void free_trace_data(t_trace* trace);
-

@@ -6,7 +6,8 @@
 //A pair of clock domains
 struct DomainPair {
     DomainPair(tatum::DomainId l, tatum::DomainId c)
-        : launch(l), capture(c) {}
+        : launch(l)
+        , capture(c) {}
 
     tatum::DomainId launch;
     tatum::DomainId capture;

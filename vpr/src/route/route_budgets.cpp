@@ -64,7 +64,7 @@ route_budgets::~route_budgets() {
 
 void route_budgets::free_budgets() {
     /*Free associated budget memory if set
-      if not set, only free the chunk memory that wasn't used*/
+     * if not set, only free the chunk memory that wasn't used*/
     if (set) {
         free_net_delay(delay_min_budget, &min_budget_delay_ch);
         free_net_delay(delay_max_budget, &max_budget_delay_ch);
@@ -102,13 +102,13 @@ void route_budgets::load_initial_budgets() {
     }
 }
 
-void route_budgets::load_route_budgets(vtr::vector<ClusterNetId, float *> &net_delay,
-        std::shared_ptr<SetupTimingInfo> timing_info,
-        const ClusteredPinAtomPinsLookup& netlist_pin_lookup, t_router_opts router_opts) {
-
+void route_budgets::load_route_budgets(vtr::vector<ClusterNetId, float*>& net_delay,
+                                       std::shared_ptr<SetupTimingInfo> timing_info,
+                                       const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                       t_router_opts router_opts) {
     /*This function loads the routing budgets depending on the option selected by the user
-     the default is to use the minimax algorithm. Other options include disabling this feature
-     or scale the delay by the criticality*/
+     * the default is to use the minimax algorithm. Other options include disabling this feature
+     * or scale the delay by the criticality*/
     auto& cluster_ctx = g_vpr_ctx.clustering();
     num_times_congested.resize(cluster_ctx.clb_nlist.nets().size(), 0);
 
@@ -151,7 +151,7 @@ void route_budgets::calculate_delay_targets(ClusterNetId net_id, ClusterPinId pi
     delay_target[net_id][ipin] = min(0.5 * (delay_min_budget[net_id][ipin] + delay_max_budget[net_id][ipin]), delay_min_budget[net_id][ipin] + 0.1e-9);
 }
 
-void route_budgets::allocate_slack_using_weights(vtr::vector<ClusterNetId, float *> &net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
+void route_budgets::allocate_slack_using_weights(vtr::vector<ClusterNetId, float*>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
     /*The minimax PERT algorithm uses a weight based approach to allocate slack for each connection
      * The formula used where c is a connection is
      * slack_allocated(c) = (slack(c)*weight(c)/max_weight_of_all_path_through(c)).
@@ -163,7 +163,7 @@ void route_budgets::allocate_slack_using_weights(vtr::vector<ClusterNetId, float
     float max_budget_change;
 
     /*Preprocessing algorithm in order to consider short paths when setting initial maximum budgets.
-     Not necessary unless budgets are really hard to meet*/
+     * Not necessary unless budgets are really hard to meet*/
     //process_negative_slack_using_minimax();
 
     iteration = 0;
@@ -214,11 +214,11 @@ void route_budgets::allocate_slack_using_weights(vtr::vector<ClusterNetId, float
     keep_budget_above_value(delay_min_budget, bottom_range);
 }
 
-void route_budgets::process_negative_slack_using_minimax(vtr::vector<ClusterNetId, float *> &net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
+void route_budgets::process_negative_slack_using_minimax(vtr::vector<ClusterNetId, float*>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
     /*This function is an optional pre-processing for the maximum budgets.
-     This ensures that the short path slacks are also taken into account for the maximum budgets.
-     Ensures that maximum budgets will always be above minimum budgets.
-     Can be unnecessary for not so strict budgets*/
+     * This ensures that the short path slacks are also taken into account for the maximum budgets.
+     * Ensures that maximum budgets will always be above minimum budgets.
+     * Can be unnecessary for not so strict budgets*/
     unsigned iteration;
     float max_budget_change;
     std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
@@ -239,7 +239,7 @@ void route_budgets::process_negative_slack_using_minimax(vtr::vector<ClusterNetI
     }
 }
 
-void route_budgets::keep_budget_above_value(vtr::vector<ClusterNetId, float *> &temp_budgets, float bottom_range) {
+void route_budgets::keep_budget_above_value(vtr::vector<ClusterNetId, float*>& temp_budgets, float bottom_range) {
     /*In post processing the minimum delay can go below the lower bound*/
     auto& cluster_ctx = g_vpr_ctx.clustering();
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -250,7 +250,7 @@ void route_budgets::keep_budget_above_value(vtr::vector<ClusterNetId, float *> &
     }
 }
 
-void route_budgets::keep_budget_in_bounds(vtr::vector<ClusterNetId, float *> &temp_budgets) {
+void route_budgets::keep_budget_in_bounds(vtr::vector<ClusterNetId, float*>& temp_budgets) {
     /*Make sure the budget is between the lower and upper bounds*/
     auto& cluster_ctx = g_vpr_ctx.clustering();
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -260,7 +260,7 @@ void route_budgets::keep_budget_in_bounds(vtr::vector<ClusterNetId, float *> &te
     }
 }
 
-void route_budgets::keep_budget_in_bounds(vtr::vector<ClusterNetId, float *> &temp_budgets, ClusterNetId net_id, ClusterPinId pin_id) {
+void route_budgets::keep_budget_in_bounds(vtr::vector<ClusterNetId, float*>& temp_budgets, ClusterNetId net_id, ClusterPinId pin_id) {
     /*Make sure the budget is between the lower and upper bounds*/
     auto& cluster_ctx = g_vpr_ctx.clustering();
     int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
@@ -271,9 +271,9 @@ void route_budgets::keep_budget_in_bounds(vtr::vector<ClusterNetId, float *> &te
 
 void route_budgets::keep_min_below_max_budget() {
     /*Minimum budgets should always be below the maximum budgets.
-     Make them equal if minimum budget becomes bigger*/
+     * Make them equal if minimum budget becomes bigger*/
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
             if (delay_min_budget[net_id][ipin] > delay_max_budget[net_id][ipin]) {
@@ -293,11 +293,9 @@ void route_budgets::set_min_max_budgets_equal() {
     }
 }
 
-float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *> &temp_budgets,
-	vtr::vector<ClusterNetId, float *> &net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type analysis_type,
-        bool keep_in_bounds, slack_allocated_type slack_type) {
+float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float*>& temp_budgets, vtr::vector<ClusterNetId, float*>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type analysis_type, bool keep_in_bounds, slack_allocated_type slack_type) {
     /*This function uses weights to calculate how much slack to allocate to a connection.
-     The weights are deteremined by how much delay of the whole path is present in this connection*/
+     * The weights are deteremined by how much delay of the whole path is present in this connection*/
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -306,7 +304,7 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
     float total_path_delay = 0;
     float path_slack;
     float max_budget_change = 0;
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
             AtomPinId atom_pin;
@@ -326,10 +324,8 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
             }
 
             /*During hold analysis, increase the budgets when there is negative slack.
-             During setup analysis, decrease the budgets when there is negative slack*/
-            if ((slack_type == NEGATIVE && path_slack < 0) ||
-                    (slack_type == POSITIVE && path_slack > 0) ||
-                    slack_type == BOTH) {
+             * During setup analysis, decrease the budgets when there is negative slack*/
+            if ((slack_type == NEGATIVE && path_slack < 0) || (slack_type == POSITIVE && path_slack > 0) || slack_type == BOTH) {
                 if (analysis_type == HOLD) {
                     temp_budgets[net_id][ipin] += -1 * net_delay[net_id][ipin] * path_slack / total_path_delay;
                 } else {
@@ -342,16 +338,14 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
             if (keep_in_bounds) {
                 keep_budget_in_bounds(temp_budgets, net_id, pin_id);
             }
-
         }
     }
     return max_budget_change;
 }
 
-float route_budgets::calculate_clb_pin_slack(ClusterNetId net_id, int ipin, std::shared_ptr<SetupHoldTimingInfo> timing_info,
-        const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type type, AtomPinId &atom_pin) {
+float route_budgets::calculate_clb_pin_slack(ClusterNetId net_id, int ipin, std::shared_ptr<SetupHoldTimingInfo> timing_info, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type type, AtomPinId& atom_pin) {
     /*Calculates the slack for the specific clb pin. Takes the minimum slack. Keeps track of the pin
-     used in this calculation so it can be used again for getting the total path delay*/
+     * used in this calculation so it can be used again for getting the total path delay*/
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     auto clb_pin = cluster_ctx.clb_nlist.net_pin(net_id, ipin);
@@ -394,7 +388,8 @@ float route_budgets::calculate_clb_pin_slack(ClusterNetId net_id, int ipin, std:
 }
 
 float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer,
-        analysis_type analysis_type, tatum::NodeId timing_node) {
+                                          analysis_type analysis_type,
+                                          tatum::NodeId timing_node) {
     /*The total path delay through a connection is calculated using the arrival and required time
      * Arrival time describes how long it took to arrive at this node and thus is the value for the
      * delay before this node. The required time describes the time it should arrive this node.
@@ -402,7 +397,6 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
      * and subtract the required time of the current node from it. The combination of the past
      * and future path delays is the total path delay through this connection. Returns a value
      * of -1 if no total path is found*/
-
 
     auto arrival_tags = timing_analyzer->setup_tags(timing_node, tatum::TagType::DATA_ARRIVAL);
     auto required_tags = timing_analyzer->setup_tags(timing_node, tatum::TagType::DATA_REQUIRED);
@@ -446,10 +440,8 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
 
     auto max_sink_node_tag_iter = find_maximum_tag(sink_node_tags);
 
-
     if (min_required_tag_iter != required_tags.end() && max_arrival_tag_iter != arrival_tags.end()
-            && min_required_tag_iter != sink_node_tags.end()) {
-
+        && min_required_tag_iter != sink_node_tags.end()) {
         float final_required_time = max_sink_node_tag_iter->time().value();
 
         float future_path_delay = final_required_time - min_required_tag_iter->time().value();
@@ -461,13 +453,14 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
     }
 }
 
-void route_budgets::allocate_slack_using_delays_and_criticalities(vtr::vector<ClusterNetId, float *> &net_delay,
-        std::shared_ptr<SetupTimingInfo> timing_info,
-        const ClusteredPinAtomPinsLookup& netlist_pin_lookup, t_router_opts router_opts) {
+void route_budgets::allocate_slack_using_delays_and_criticalities(vtr::vector<ClusterNetId, float*>& net_delay,
+                                                                  std::shared_ptr<SetupTimingInfo> timing_info,
+                                                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                                                  t_router_opts router_opts) {
     /*Simplifies the budget calculation. The pin criticality describes 1-slack ratio
-     which is deemed a valid way to arrive at the delay budget for a connection. Thus
-     the maximum delay budget = delay through this connection / pin criticality.
-     The minimum delay budget is set to 0 to promote finding the fastest path*/
+     * which is deemed a valid way to arrive at the delay budget for a connection. Thus
+     * the maximum delay budget = delay through this connection / pin criticality.
+     * The minimum delay budget is set to 0 to promote finding the fastest path*/
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     float pin_criticality;
@@ -503,7 +496,7 @@ void route_budgets::allocate_slack_using_delays_and_criticalities(vtr::vector<Cl
             }
             check_if_budgets_in_bounds(net_id, pin_id);
             /*Use RCV algorithm for delay target
-            Tend towards minimum to consider short path timing delay more*/
+             * Tend towards minimum to consider short path timing delay more*/
             delay_target[net_id][ipin] = min(0.5 * (delay_min_budget[net_id][ipin] + delay_max_budget[net_id][ipin]), delay_min_budget[net_id][ipin] + 0.1e-9);
         }
     }
@@ -516,26 +509,25 @@ void route_budgets::check_if_budgets_in_bounds(ClusterNetId net_id, ClusterPinId
     int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
 
     VTR_ASSERT_MSG(delay_max_budget[net_id][ipin] >= delay_min_budget[net_id][ipin]
-            && delay_lower_bound[net_id][ipin] <= delay_min_budget[net_id][ipin]
-            && delay_upper_bound[net_id][ipin] >= delay_max_budget[net_id][ipin]
-            && delay_upper_bound[net_id][ipin] >= delay_lower_bound[net_id][ipin],
-            "Delay budgets do not fit in delay bounds");
+                       && delay_lower_bound[net_id][ipin] <= delay_min_budget[net_id][ipin]
+                       && delay_upper_bound[net_id][ipin] >= delay_max_budget[net_id][ipin]
+                       && delay_upper_bound[net_id][ipin] >= delay_lower_bound[net_id][ipin],
+                   "Delay budgets do not fit in delay bounds");
 }
 
 void route_budgets::check_if_budgets_in_bounds() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             check_if_budgets_in_bounds(net_id, pin_id);
         }
     }
 }
 
-std::shared_ptr<SetupHoldTimingInfo> route_budgets::perform_sta(vtr::vector<ClusterNetId, float *> &temp_budgets) {
+std::shared_ptr<SetupHoldTimingInfo> route_budgets::perform_sta(vtr::vector<ClusterNetId, float*>& temp_budgets) {
     auto& atom_ctx = g_vpr_ctx.atom();
     /*Perform static timing analysis to get the delay and path weights for slack allocation*/
-    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc =
-            std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, temp_budgets);
+    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, temp_budgets);
 
     std::shared_ptr<SetupHoldTimingInfo> timing_info = make_setup_hold_timing_info(routing_delay_calc);
     /*Unconstrained nodes should be warned in the main routing function, do not report it here*/
@@ -547,14 +539,14 @@ std::shared_ptr<SetupHoldTimingInfo> route_budgets::perform_sta(vtr::vector<Clus
 
 void route_budgets::update_congestion_times(ClusterNetId net_id) {
     /*Calling this function indicates this net is congested in
-     this routing iteration. This vector keeps the number of
-     consecutive times this net is congested */
+     * this routing iteration. This vector keeps the number of
+     * consecutive times this net is congested */
     num_times_congested[net_id]++;
 }
 
 void route_budgets::not_congested_this_iteration(ClusterNetId net_id) {
     /*Any time the net is not congested, clear this counter to only
-     count the /consecutive/ congested times*/
+     * count the /consecutive/ congested times*/
     num_times_congested[net_id] = 0;
 }
 
@@ -607,7 +599,7 @@ float route_budgets::get_crit_short_path(ClusterNetId net_id, int ipin) {
 
 void route_budgets::print_route_budget() {
     /*Used for debugging. Prints out all the delay budget class variables to an external
-     file named route_budgets.txt*/
+     * file named route_budgets.txt*/
     auto& cluster_ctx = g_vpr_ctx.clustering();
     fstream fp;
     fp.open("route_budget.txt", fstream::out | fstream::trunc);
@@ -615,49 +607,62 @@ void route_budgets::print_route_budget() {
     /* Prints out general info for easy error checking*/
     if (!fp.is_open() || !fp.good()) {
         vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                "could not open \"route_budget.txt\" for generating route budget file\n");
+                  "could not open \"route_budget.txt\" for generating route budget file\n");
     }
 
     fp << "Minimum Delay Budgets:" << endl;
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        fp << endl << "Net: " << size_t(net_id) << "            ";
+        fp << endl
+           << "Net: " << size_t(net_id) << "            ";
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
             fp << delay_min_budget[net_id][ipin] << " ";
         }
     }
 
-    fp << endl << endl << "Maximum Delay Budgets:" << endl;
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        fp << endl << "Net: " << size_t(net_id) << "            ";
+    fp << endl
+       << endl
+       << "Maximum Delay Budgets:" << endl;
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        fp << endl
+           << "Net: " << size_t(net_id) << "            ";
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
             fp << delay_max_budget[net_id][ipin] << " ";
         }
     }
 
-    fp << endl << endl << "Target Delay Budgets:" << endl;
+    fp << endl
+       << endl
+       << "Target Delay Budgets:" << endl;
 
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        fp << endl << "Net: " << size_t(net_id) << "            ";
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        fp << endl
+           << "Net: " << size_t(net_id) << "            ";
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
             fp << delay_target[net_id][ipin] << " ";
         }
     }
 
-    fp << endl << endl << "Delay lower_bound:" << endl;
-    for(auto net_id : cluster_ctx.clb_nlist.nets()) {
-        fp << endl << "Net: " << size_t(net_id) << "            ";
+    fp << endl
+       << endl
+       << "Delay lower_bound:" << endl;
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        fp << endl
+           << "Net: " << size_t(net_id) << "            ";
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
             fp << delay_lower_bound[net_id][ipin] << " ";
         }
     }
 
-    fp << endl << endl << "Delay upper_bound:" << endl;
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        fp << endl << "Net: " << size_t(net_id) << "            ";
+    fp << endl
+       << endl
+       << "Delay upper_bound:" << endl;
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        fp << endl
+           << "Net: " << size_t(net_id) << "            ";
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
             fp << delay_upper_bound[net_id][ipin] << " ";
@@ -667,18 +672,18 @@ void route_budgets::print_route_budget() {
     fp.close();
 }
 
-void route_budgets::print_temporary_budgets_to_file(vtr::vector<ClusterNetId, float *> &temp_budgets) {
+void route_budgets::print_temporary_budgets_to_file(vtr::vector<ClusterNetId, float*>& temp_budgets) {
     /*Used for debugging. Print one specific budget to an external file called
-     temporary_budgets.txt. This can be used to see how the budgets change between
-     each minimax PERT iteration*/
+     * temporary_budgets.txt. This can be used to see how the budgets change between
+     * each minimax PERT iteration*/
     auto& cluster_ctx = g_vpr_ctx.clustering();
     fstream fp;
     fp.open("temporary_budgets.txt", fstream::out | fstream::trunc);
 
-
     fp << "Temporary Budgets:" << endl;
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        fp << endl << "Net: " << size_t(net_id) << "            ";
+        fp << endl
+           << "Net: " << size_t(net_id) << "            ";
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
             fp << temp_budgets[net_id][ipin] << " ";

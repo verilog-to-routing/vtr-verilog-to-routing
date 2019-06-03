@@ -14,7 +14,7 @@ constexpr float ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_AGGRESSIVE = 1.5;
 constexpr size_t ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD = 100;
 
 class RoutingPredictor {
-public:
+  public:
     RoutingPredictor(size_t min_history = 8, float history_factor = 0.5);
 
     //Returns the estimated iteration when routing will succeed
@@ -26,7 +26,8 @@ public:
     void add_iteration_overuse(size_t iteration, size_t overused_rr_node_count);
 
     float get_slope();
-private:
+
+  private:
     size_t min_history_;
     float history_factor_;
 
