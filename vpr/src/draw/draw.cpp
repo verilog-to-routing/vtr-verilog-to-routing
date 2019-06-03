@@ -101,178 +101,177 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
     ezgl::color( 43,  61,  38)  //olive green
 };
 
-////The colours used to draw block types
-//const std::vector<color_types> block_type_colors = {
-//    //This first set of colours is somewhat curated to yield
-//    //a nice colour pallette
-//    BISQUE, //EMPTY type is usually the type with index 0, so this colour
-//    //usually unused
-//    LIGHTGREY,
-//    LIGHTSKYBLUE,
-//    THISTLE,
-//    KHAKI,
-//    CORAL,
-//    TURQUOISE,
-//    MEDIUMPURPLE,
-//    DARKSLATEBLUE,
-//    DARKKHAKI,
-//    LIGHTMEDIUMBLUE,
-//    SADDLEBROWN,
-//    FIREBRICK,
-//    LIMEGREEN,
-//    PLUM,
-//    
-//    //However, if we have lots of block types we just assign arbitrary HTML
-//    //colours. Note that these are shuffled (instead of in alphabetical order)
-//    //since some colours which are alphabetically close are also close in
-//    //shade (making them difficult to distinguish)
-//    DARKGREEN,
-//    PALEVIOLETRED,
-//    BLUE,
-//    FORESTGREEN,
-//    WHEAT,
-//    GOLD,
-//    MOCCASIN,
-//    MEDIUMORCHID,
-//    SKYBLUE,
-//    WHITESMOKE,
-//    LIME,
-//    MEDIUMSLATEBLUE,
-//    TOMATO,
-//    CYAN,
-//    OLIVE,
-//    LIGHTGRAY,
-//    STEELBLUE,
-//    LIGHTCORAL,
-//    IVORY,
-//    MEDIUMVIOLETRED,
-//    SNOW,
-//    DARKGRAY,
-//    GREY,
-//    GRAY,
-//    YELLOW,
-//    REBECCAPURPLE,
-//    DARKCYAN,
-//    MIDNIGHTBLUE,
-//    ROSYBROWN,
-//    CORNSILK,
-//    NAVAJOWHITE,
-//    BLANCHEDALMOND,
-//    ORCHID,
-//    LIGHTGOLDENRODYELLOW,
-//    MAROON,
-//    GREENYELLOW,
-//    SILVER,
-//    PALEGOLDENROD,
-//    LAWNGREEN,
-//    DIMGREY,
-//    DARKVIOLET,
-//    DARKTURQUOISE,
-//    INDIGO,
-//    DARKORANGE,
-//    PAPAYAWHIP,
-//    MINTCREAM,
-//    GREEN,
-//    DARKMAGENTA,
-//    MAGENTA,
-//    LIGHTSLATEGRAY,
-//    CHARTREUSE,
-//    GHOSTWHITE,
-//    LIGHTCYAN,
-//    SIENNA,
-//    GOLDENROD,
-//    DARKSLATEGRAY,
-//    OLDLACE,
-//    SEASHELL,
-//    SPRINGGREEN,
-//    MEDIUMTURQUOISE,
-//    LEMONCHIFFON,
-//    MISTYROSE,
-//    OLIVEDRAB,
-//    LIGHTBLUE,
-//    CHOCOLATE,
-//    SEAGREEN,
-//    DEEPPINK,
-//    LIGHTSEAGREEN,
-//    FLORALWHITE,
-//    CADETBLUE,
-//    AZURE,
-//    BURLYWOOD,
-//    AQUAMARINE,
-//    BROWN,
-//    POWDERBLUE,
-//    HOTPINK,
-//    MEDIUMBLUE,
-//    BLUEVIOLET,
-//    GREY75,
-//    PURPLE,
-//    TEAL,
-//    ANTIQUEWHITE,
-//    DEEPSKYBLUE,
-//    SLATEGRAY,
-//    SALMON,
-//    SLATEBLUE,
-//    DARKORCHID,
-//    LIGHTPINK,
-//    DARKBLUE,
-//    PEACHPUFF,
-//    PALEGREEN,
-//    DARKSALMON,
-//    DARKOLIVEGREEN,
-//    DARKSEAGREEN,
-//    VIOLET,
-//    RED,
-//    DARKSLATEGREY,
-//    PALETURQUOISE,
-//    DARKRED,
-//    SLATEGREY,
-//    HONEYDEW,
-//    AQUA,
-//    LIGHTSTEELBLUE,
-//    DODGERBLUE,
-//    MEDIUMSPRINGGREEN,
-//    NAVY,
-//    GAINSBORO,
-//    LIGHTYELLOW,
-//    CRIMSON,
-//    FUCHSIA,
-//    DARKGOLDENROD,
-//    SANDYBROWN,
-//    BEIGE,
-//    LINEN,
-//    ORANGERED,
-//    ROYALBLUE,
-//    LAVENDER,
-//    TAN,
-//    YELLOWGREEN,
-//    CORNFLOWERBLUE,
-//    LAVENDERBLUSH,
-//    MEDIUMSEAGREEN,
-//    PINK,
-//    GREY55,
-//    PERU,
-//    LIGHTGREEN,
-//    LIGHTSALMON,
-//    INDIANRED,
-//    DIMGRAY,
-//    LIGHTSLATEGREY,
-//    MEDIUMAQUAMARINE,
-//    DARKGREY,
-//    ORANGE,
-//    ALICEBLUE,
-//};
+//The colours used to draw block types
+const std::vector<ezgl::color> block_colors {
+    //This first set of colours is somewhat curated to yield
+    //a nice colour pallette
+    blk_BISQUE, //EMPTY type is usually the type with index 0, so this colour
+            //usually unused
+    blk_LIGHTGREY,
+    blk_LIGHTSKYBLUE,
+    blk_THISTLE,
+    blk_KHAKI,
+    blk_CORAL,
+    blk_TURQUOISE,
+    blk_MEDIUMPURPLE,
+    blk_DARKSLATEBLUE,
+    blk_DARKKHAKI,
+    blk_LIGHTMEDIUMBLUE,
+    blk_SADDLEBROWN,
+    blk_FIREBRICK,
+    blk_LIMEGREEN,
+    blk_PLUM,
+
+    //However, if we have lots of block types we just assign arbitrary HTML
+    //colours. Note that these are shuffled (instead of in alphabetical order)
+    //since some colours which are alphabetically close are also close in
+    //shade (making them difficult to distinguish)
+    blk_DARKGREEN,
+    blk_PALEVIOLETRED,
+    blk_BLUE,
+    blk_FORESTGREEN,
+    blk_WHEAT,
+    blk_GOLD,
+    blk_MOCCASIN,
+    blk_MEDIUMORCHID,
+    blk_SKYBLUE,
+    blk_WHITESMOKE,
+    blk_LIME,
+    blk_MEDIUMSLATEBLUE,
+    blk_TOMATO,
+    blk_CYAN,
+    blk_OLIVE,
+    blk_LIGHTGRAY,
+    blk_STEELBLUE,
+    blk_LIGHTCORAL,
+    blk_IVORY,
+    blk_MEDIUMVIOLETRED,
+    blk_SNOW,
+    blk_DARKGRAY,
+    blk_GREY,
+    blk_GRAY,
+    blk_YELLOW,
+    blk_REBECCAPURPLE,
+    blk_DARKCYAN,
+    blk_MIDNIGHTBLUE,
+    blk_ROSYBROWN,
+    blk_CORNSILK,
+    blk_NAVAJOWHITE,
+    blk_BLANCHEDALMOND,
+    blk_ORCHID,
+    blk_LIGHTGOLDENRODYELLOW,
+    blk_MAROON,
+    blk_GREENYELLOW,
+    blk_SILVER,
+    blk_PALEGOLDENROD,
+    blk_LAWNGREEN,
+    blk_DIMGREY,
+    blk_DARKVIOLET,
+    blk_DARKTURQUOISE,
+    blk_INDIGO,
+    blk_DARKORANGE,
+    blk_PAPAYAWHIP,
+    blk_MINTCREAM,
+    blk_GREEN,
+    blk_DARKMAGENTA,
+    blk_MAGENTA,
+    blk_LIGHTSLATEGRAY,
+    blk_CHARTREUSE,
+    blk_GHOSTWHITE,
+    blk_LIGHTCYAN,
+    blk_SIENNA,
+    blk_GOLDENROD,
+    blk_DARKSLATEGRAY,
+    blk_OLDLACE,
+    blk_SEASHELL,
+    blk_SPRINGGREEN,
+    blk_MEDIUMTURQUOISE,
+    blk_LEMONCHIFFON,
+    blk_MISTYROSE,
+    blk_OLIVEDRAB,
+    blk_LIGHTBLUE,
+    blk_CHOCOLATE,
+    blk_SEAGREEN,
+    blk_DEEPPINK,
+    blk_LIGHTSEAGREEN,
+    blk_FLORALWHITE,
+    blk_CADETBLUE,
+    blk_AZURE,
+    blk_BURLYWOOD,
+    blk_AQUAMARINE,
+    blk_BROWN,
+    blk_POWDERBLUE,
+    blk_HOTPINK,
+    blk_MEDIUMBLUE,
+    blk_BLUEVIOLET,
+    blk_GREY75,
+    blk_PURPLE,
+    blk_TEAL,
+    blk_ANTIQUEWHITE,
+    blk_DEEPSKYBLUE,
+    blk_SLATEGRAY,
+    blk_SALMON,
+    blk_SLATEBLUE,
+    blk_DARKORCHID,
+    blk_LIGHTPINK,
+    blk_DARKBLUE,
+    blk_PEACHPUFF,
+    blk_PALEGREEN,
+    blk_DARKSALMON,
+    blk_DARKOLIVEGREEN,
+    blk_DARKSEAGREEN,
+    blk_VIOLET,
+    blk_RED,
+    blk_DARKSLATEGREY,
+    blk_PALETURQUOISE,
+    blk_DARKRED,
+    blk_SLATEGREY,
+    blk_HONEYDEW,
+    blk_AQUA,
+    blk_LIGHTSTEELBLUE,
+    blk_DODGERBLUE,
+    blk_MEDIUMSPRINGGREEN,
+    blk_NAVY,
+    blk_GAINSBORO,
+    blk_LIGHTYELLOW,
+    blk_CRIMSON,
+    blk_FUCHSIA,
+    blk_DARKGOLDENROD,
+    blk_SANDYBROWN,
+    blk_BEIGE,
+    blk_LINEN,
+    blk_ORANGERED,
+    blk_ROYALBLUE,
+    blk_LAVENDER,
+    blk_TAN,
+    blk_YELLOWGREEN,
+    blk_CORNFLOWERBLUE,
+    blk_LAVENDERBLUSH,
+    blk_MEDIUMSEAGREEN,
+    blk_PINK,
+    blk_GREY55,
+    blk_PERU,
+    blk_LIGHTGREEN,
+    blk_LIGHTSALMON,
+    blk_INDIANRED,
+    blk_DIMGRAY,
+    blk_LIGHTSLATEGREY,
+    blk_MEDIUMAQUAMARINE,
+    blk_DARKGREY,
+    blk_ORANGE,
+    blk_ALICEBLUE,
+};
 
 //FIXME: ugly hack
 extern t_pl_macro* pl_macros;
 extern int num_pl_macros;
-extern const std::vector<ezgl::color> block_colors;
-/************************** EZGL File Scope Variables ****************************/
-ezgl::application::settings settings;
-ezgl::application application(settings);
+
 
 /************************** File Scope Variables ****************************/
 
 std::string rr_highlight_message;
+ezgl::application::settings settings;
+ezgl::application application(settings);
 
 /********************** Subroutines local to this module ********************/
 
@@ -398,76 +397,82 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 void draw_main_canvas(ezgl::renderer &g){
     
     t_draw_state* draw_state = get_draw_state_vars();
-    std::cout << "called draw_main_canvas" << std::endl;
-//    if(draw_state->pic_on_screen == NO_PICTURE){
-//        std::cout << "set to no picture?" << std::endl;
-//        return;
-//    }
+//    std::cout << "called draw_main_canvas" << std::endl;
+////    if(draw_state->pic_on_screen == NO_PICTURE){
+////        std::cout << "set to no picture?" << std::endl;
+////        return;
+////    }
+//    
+//    g.set_font_size(14);
+//    drawnets(g);// working fine
+//    drawplace(g);// working fine (text label?)
+//    draw_block_pin_util();// working fine
+//    draw_internal_draw_subblk(g);//partially working, show white box
+//    draw_placement_macros(g);
+////    
+////    drawroute(ALL_NETS, g);
+//    
+//    
+//    
     
+    
+    
+    
+    if(draw_state->pic_on_screen == NO_PICTURE){
+        std::cout << "set to no picture" << std::endl;
+        return;
+    }
     g.set_font_size(14);
-    drawnets(g);
-    drawplace(g);
+    
     draw_block_pin_util();
+    drawplace(g);
     draw_internal_draw_subblk(g);
     
-    drawroute(ALL_NETS, g);
+    if (draw_state->pic_on_screen == PLACEMENT) {
+        switch (draw_state->show_nets) {
+            case DRAW_NETS:
+                drawnets(g);
+                break;
+            case DRAW_LOGICAL_CONNECTIONS:
+                break;
+            default:
+                break;
+        }
+        
+    } else { /* ROUTING on screen */
+        
+        switch (draw_state->show_nets) {
+            case DRAW_NETS:
+                drawroute(ALL_NETS, g);
+                break;
+            case DRAW_LOGICAL_CONNECTIONS:
+                // fall through
+            default:
+                draw_rr(g);
+                break;
+        }
+        
+        draw_congestion(g);
+        
+        draw_routing_costs(g);
+        
+        draw_router_rr_costs(g);
+        
+        draw_routing_util(g);
+        
+        draw_routing_bb(g);
+    }
     
+    draw_placement_macros(g);
     
-//    if(draw_state->pic_on_screen == NO_PICTURE){
-//        std::cout << "set to no picture" << std::endl;
-//        return;
-//    }
-//    g.set_font_size(14);
-//    
-//    draw_block_pin_util();
-//    drawplace(g);
-//    draw_internal_draw_subblk(g);
-//    
-//    if (draw_state->pic_on_screen == PLACEMENT) {
-//        switch (draw_state->show_nets) {
-//            case DRAW_NETS:
-//                drawnets(g);
-//                break;
-//            case DRAW_LOGICAL_CONNECTIONS:
-//                break;
-//            default:
-//                break;
-//        }
-//        
-//    } else { /* ROUTING on screen */
-//        
-//        switch (draw_state->show_nets) {
-//            case DRAW_NETS:
-//                drawroute(ALL_NETS, g);
-//                break;
-//            case DRAW_LOGICAL_CONNECTIONS:
-//                // fall through
-//            default:
-//                draw_rr(g);
-//                break;
-//        }
-//        
-//        draw_congestion(g);
-//        
-//        draw_routing_costs(g);
-//        
-//        draw_router_rr_costs(g);
-//        
-//        draw_routing_util(g);
-//        
-//        draw_routing_bb(g);
-//    }
-//    
-//    draw_placement_macros(g);
-//    
-//    draw_crit_path(g);
-//    
-//    draw_logical_connections(g);
-//    
-//    if (draw_state->color_map) {
-//        draw_color_map_legend(*draw_state->color_map, g);
-//        draw_state->color_map.reset(); //Free color map in preparation for next redraw
-//    }
+    draw_crit_path(g);
+    
+    draw_logical_connections(g);
+    
+    if (draw_state->color_map) {
+        draw_color_map_legend(*draw_state->color_map, g);
+        draw_state->color_map.reset(); //Free color map in preparation for next redraw
+    }
     return;
 }
 
@@ -740,7 +745,6 @@ void toggle_nets(GtkWidget *widget, ezgl::application *application) {
             new_state = DRAW_NO_NETS;
             break;
     }
-    std::cout << new_state << std::endl;
     draw_state->reset_nets_congestion_and_rr();
     draw_state->show_nets = new_state;
     application->update_message(draw_state->default_message);
@@ -1077,6 +1081,7 @@ static void drawplace(ezgl::renderer &g) {
                 } else {
                     block_color = get_block_type_color(device_ctx.grid[i][j].type);
                     block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
+
                 }
                 g.set_color(block_color);
                 /* Get coords of current sub_tile */
@@ -1101,7 +1106,6 @@ static void drawplace(ezgl::renderer &g) {
                 if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
                     std::string block_type_loc = device_ctx.grid[i][j].type->name;
                     block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
-                    std::cout << "block_type_loc: " << block_type_loc << std::endl;
                     g.draw_text(center - ezgl::point2d(0, abs_clb_bbox.height()/4), 
                             block_type_loc.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
                 }
@@ -1134,12 +1138,10 @@ static void drawnets(ezgl::renderer &g) {
         ezgl::color netcolor = draw_state->net_color[net_id];
         b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
         ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).center();
-//        std::cout << "chosen driver" << driver_center.x << " " << driver_center.y << std::endl;
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
             ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2, cluster_ctx.clb_nlist.block_type(b2)).center();
             g.draw_line(driver_center, sink_center);
-//            std::cout << "chosen sink" << sink_center.x << " " << sink_center.y << std::endl;
             /* Uncomment to draw a chain instead of a star. */
             /* driver_center = sink_center;  */
         }
@@ -1374,10 +1376,10 @@ static void draw_routing_bb(ezgl::renderer &g) {
     int draw_xhigh = draw_coords->tile_x[bb->xmax] + 2*draw_coords->get_tile_width();
     int draw_yhigh = draw_coords->tile_y[bb->ymax] + 2*draw_coords->get_tile_height();
     
-    g.set_color(ezgl::RED);
+    g.set_color(blk_RED);
     g.fill_rectangle({draw_xlow, draw_ylow}, {draw_xhigh,draw_yhigh});
     
-    ezgl::color fill = to_ezgl_color(SKYBLUE);
+    ezgl::color fill = blk_SKYBLUE;
     fill.alpha *= 0.3;
     g.set_color(fill);
     g.fill_rectangle({draw_xlow, draw_ylow}, {draw_xhigh,draw_yhigh});
@@ -1421,7 +1423,7 @@ void draw_rr(ezgl::renderer &g) {
                     draw_state->draw_rr_node[inode].color = ezgl::PINK;
                     break;
                 case IPIN:
-                    draw_state->draw_rr_node[inode].color = to_ezgl_color(LIGHTSKYBLUE);
+                    draw_state->draw_rr_node[inode].color = blk_LIGHTSKYBLUE;
                     break;
                 default:
                     break;
@@ -1524,7 +1526,7 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g) 
     //with the corresponding switch point (see build_switchblocks.c for a description of switch points)
     t_draw_coords* draw_coords = get_draw_coords_vars();
     float arrow_offset = DEFAULT_ARROW_SIZE / 2;
-    ezgl::color arrow_color = to_ezgl_color(LIGHTGREY);
+    ezgl::color arrow_color = blk_LIGHTGREY;
     ezgl::color text_color = ezgl::BLACK;
     for(int k = coord_min; k <= coord_max; ++k) {
         
@@ -1712,10 +1714,10 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                             ezgl::color color = draw_state->draw_rr_node[inode].color;
                             g.set_color(color);
                         } else if (!edge_configurable) {
-                            ezgl::color color = to_ezgl_color(DARKGREY);
+                            ezgl::color color = blk_DARKGREY;
                             g.set_color(color);
                         } else {
-                            g.set_color(ezgl::DARK_GREEN);
+                            g.set_color(blk_DARKGREEN);
                         }
                         switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
                         draw_chanx_to_chanx_edge(inode, to_node,
@@ -1730,10 +1732,10 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                             ezgl::color color = draw_state->draw_rr_node[inode].color;
                             g.set_color(color);
                         } else if (!edge_configurable) {
-                            ezgl::color color = to_ezgl_color(DARKGREY);
+                            ezgl::color color = blk_DARKGREY;
                             g.set_color(color);
                         } else {
-                            g.set_color(ezgl::DARK_GREEN);
+                            g.set_color(blk_DARKGREEN);
                         }
                         switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
                         draw_chanx_to_chany_edge(inode, from_ptc_num, to_node,
@@ -1784,10 +1786,10 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                             ezgl::color color = draw_state->draw_rr_node[inode].color;
                             g.set_color(color);
                         } else if (!edge_configurable) {
-                            ezgl::color color = to_ezgl_color(DARKGREY);
+                            ezgl::color color = blk_DARKGREY;
                             g.set_color(color);
                         } else {
-                            g.set_color(ezgl::DARK_GREEN);
+                            g.set_color(blk_DARKGREEN);
                         }
                         switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
                         draw_chanx_to_chany_edge(to_node, to_ptc_num, inode,
@@ -1802,10 +1804,10 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                             ezgl::color color = draw_state->draw_rr_node[inode].color;
                             g.set_color(color);
                         } else if (!edge_configurable) {
-                            ezgl::color color = to_ezgl_color(DARKGREY);
+                            ezgl::color color = blk_DARKGREY;
                             g.set_color(color);
                         } else {
-                            g.set_color(ezgl::DARK_GREEN);
+                            g.set_color(blk_DARKGREEN);
                         }
                         switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
                         draw_chany_to_chany_edge(inode, to_node,
@@ -3633,9 +3635,8 @@ ezgl::color get_block_type_color(t_type_ptr type) {
     //Wrap around if there are too many blocks
     // This ensures we support an arbitrary number of types,
     // although the colours may repeat
-//    ezgl::color color = block_colors[type->index % block_colors.size()];
-    ezgl::color color = ezgl::BLUE;
-//    std::cout << "color: " << color.red << " " << color.blue << " " << color. green << std::endl;//floating ?
+    ezgl::color color = block_colors[type->index % block_colors.size()];
+
     return color;
 }
 
@@ -3652,7 +3653,7 @@ ezgl::color lighten_color(ezgl::color color, float amount) {
 static void draw_block_pin_util() {
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->show_blk_pin_util == DRAW_NO_BLOCK_PIN_UTIL) {
-        std::cout << "draw no block pin util, returned" << std::endl;
+        std::cout << "DRAW_NO_BLOCK_PIN_UTIL drawn, returned" << std::endl;
         return;
     }
     
@@ -3961,7 +3962,7 @@ static void draw_placement_macros(ezgl::renderer &g) {
     if (draw_state->show_placement_macros == DRAW_NO_PLACEMENT_MACROS) {
         return;
     }
-    
+    std::cout << "drawing placement macros!" << std::endl;
     t_draw_coords* draw_coords = get_draw_coords_vars();
     
     auto& place_ctx = g_vpr_ctx.placement();
@@ -4001,10 +4002,11 @@ static void draw_placement_macros(ezgl::renderer &g) {
         int draw_xhigh = draw_coords->tile_x[xhigh];
         int draw_yhigh = draw_coords->tile_y[yhigh];
         
-        g.set_color(ezgl::RED);
+        std::cout << "drawing rectnagles!" << std::endl;
+        g.set_color(blk_RED);
         g.draw_rectangle({draw_xlow, draw_ylow}, {draw_xhigh, draw_yhigh});
         
-        ezgl::color fill = to_ezgl_color(SKYBLUE);
+        ezgl::color fill = blk_SKYBLUE;
         fill.alpha *= 0.3;
         g.set_color(fill);
         g.fill_rectangle({draw_xlow, draw_ylow}, {draw_xhigh, draw_yhigh});
