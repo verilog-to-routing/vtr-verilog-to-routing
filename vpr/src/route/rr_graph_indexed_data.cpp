@@ -391,7 +391,9 @@ static void load_rr_indexed_data_T_values(int index_start,
 
             if (switches_buffered[cost_index]) {
                 // Here, we are computing the linear time delay for buffered switches. Tlinear is
-                // the sum of the intrinsic time delay of the switch and the two transient responses.
+                // the estimated sum of the intrinsic time delay of the switch and the two transient
+                // responses. The key assumption behind the estimate is that one switch will be turned on 
+                // from each wire and so we will correspondingly add one load for internal capacitance.
                 // The first transient response is the product between the resistance of the switch with 
                 // the combined capacitance of the node and internal capacitance of the switch. The 
                 // second transient response is the result of the Rnode being distributed halfway along a 
