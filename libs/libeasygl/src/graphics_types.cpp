@@ -376,10 +376,6 @@ t_color::t_color(uint_fast8_t r, uint_fast8_t g, uint_fast8_t b, uint_fast8_t a)
         alpha(a)
 {}
 
-t_color::t_color(const t_color&) = default;
-
-t_color::t_color() = default;
-
 t_color::t_color(color_types src) {
     *this = src;
 }
