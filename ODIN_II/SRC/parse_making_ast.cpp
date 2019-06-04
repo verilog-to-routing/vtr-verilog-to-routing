@@ -477,14 +477,13 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 		range_min = resolve_symbol_node(top_type, symbol_list->children[0]->children[2]);
 	}
 
-    for (i = 0; i < symbol_list->num_children; i++)
+	for (i = 0; i < symbol_list->num_children; i++)
 	{
 
 		if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
 		{
-			symbol_list->children[i]->children[1] = range_max;
-			symbol_list->children[i]->children[2] = range_min;
-		}
+			assign_child_to_node(symbol_list->children[i], range_max, 1);
+			assign_child_to_node(symbol_list->children[i], range_min, 2);		}
 		
         if(top_type == MODULE) {
                 switch(id)

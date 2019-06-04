@@ -1,4 +1,4 @@
-module eight_bit_for_pass_through(
+module eight_bit_while_pass_through(
 	a,
 	c,
 	clk,

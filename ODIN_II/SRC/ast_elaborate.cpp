@@ -70,7 +70,7 @@ void remove_generate(ast_node_t *node)
 				ast_node_t* new_child = ast_node_deep_copy(candidate->children[j]);
 				body_parent = body_parent ? newList_entry(body_parent, new_child) : newList(BLOCK, new_child);
 			}
-			node->children[i] = body_parent;
+			assign_child_to_node(node, body_parent, i);
 			free_whole_tree(candidate);
 		} else {
 			remove_generate(candidate);

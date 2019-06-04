@@ -27,11 +27,8 @@ void unroll_loops(ast_node_t **ast_module)
 	int num_unrolled_module_instances = 0;
 	int num_original_module_instances = 0;
 
-	ast_node_t* module = while_preprocessor(*ast_module, *ast_module);
-	if(module != *ast_module)
-		free_whole_tree(*ast_module);
-	*ast_module = module;
-	module = for_preprocessor((*ast_module), (*ast_module), &unrolled_module_instances, &num_unrolled_module_instances, &num_original_module_instances);
+	while_preprocessor(*ast_module, *ast_module);
+	ast_node_t* module = for_preprocessor((*ast_module), (*ast_module), &unrolled_module_instances, &num_unrolled_module_instances, &num_original_module_instances);
 	if(module != *ast_module)
 		free_whole_tree(*ast_module);
 	*ast_module = module;
@@ -134,7 +131,6 @@ bool while_preprocessor(ast_node_t* node, ast_node_t* module)
 
 	bool replaced_nodes = false;
 	
-	/* if this node is the parent of a while node, process this node */
 	for(int i=0; i<node->num_children && !replaced_nodes; i++){
 		if(!node->children[i])
 			continue;
@@ -614,7 +610,7 @@ ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node
 
 				/* give this unrolled instance a unique name */
 				ast_node_t* new_child = replace_named_module(child->children[1], value);
-				assign_child_to_node(copy->children[i], new_child, 1)
+				assign_child_to_node(copy->children[i], new_child, 1);
 				oassert(copy->children[i]->children[1]);
 
 				/* then add it to the table of unrolled instances */
