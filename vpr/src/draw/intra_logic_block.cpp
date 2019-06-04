@@ -85,7 +85,6 @@ void draw_internal_alloc_blk() {
          * the pb_graph of that type.
          */
         
-        // resize function not working here again!!!fix later
         draw_coords->blk_info.at(i).subblk_array.resize(pb_graph_head->total_pb_pins);
     }
 }
@@ -112,32 +111,35 @@ void draw_internal_init_blk() {
         
         
         // set the clb dimensions
-        t_bound_box& clb_bbox = draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0);
+        ezgl::rectangle& clb_bbox = draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0);
+        ezgl::point2d bot_left = {clb_bbox.bottom(), clb_bbox.left()};
+        ezgl::point2d top_right = {clb_bbox.top(), clb_bbox.right()};
+        
         
         // note, that all clbs of the same type are the same size,
         // and that consequently we have *one* model for each type.
-        clb_bbox.bottom_left() = t_point(0,0);
         if (size_t(type_desc.width) > device_ctx.grid.width() || size_t(type_desc.height) > device_ctx.grid.height()) {
             // in this case, the clb certainly wont't fit, but this prevents
             // an out-of-bounds access, and provides some sort of (probably right)
             // value
-            clb_bbox.top_right() = t_point(
+            top_right = ezgl::point2d(
                     (draw_coords->tile_x[1]-draw_coords->tile_x[0])*(type_desc.width - 1),
                     (draw_coords->tile_y[1]-draw_coords->tile_y[0])*(type_desc.height - 1)
                     );
         } else {
-            clb_bbox.top_right() = t_point(
+            top_right = ezgl::point2d(
                     draw_coords->tile_x[type_desc.width  - 1],
                     draw_coords->tile_y[type_desc.height - 1]
                     );
         }
-        clb_bbox.top_right() += t_point(
+        top_right += ezgl::point2d(
                 draw_coords->get_tile_width()/num_sub_tiles,
                 draw_coords->get_tile_width()
 		);
                 
+        clb_bbox = ezgl::rectangle(bot_left, top_right);
         draw_internal_load_coords(type_descriptor_index, pb_graph_head_node,
-                clb_bbox.get_width(), clb_bbox.get_height());
+                clb_bbox.width(), clb_bbox.height());
         
         /* Determine the max number of sub_block levels in the FPGA */
         draw_state->max_sub_blk_lvl = max(draw_internal_find_max_lvl(*type_desc.pb_type),
@@ -278,7 +280,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
     auto& place_ctx = g_vpr_ctx.placement();
     
     // get the bbox for this pb type
-    t_bound_box pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
+    ezgl::rectangle pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
     
     const float FRACTION_PARENT_PADDING_X = 0.01;
     
@@ -314,9 +316,11 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
     /* Divide parent_drawing_height by the number of instances of the pb_type. */
     child_height = parent_drawing_height/num_pb;
     
+    double left, bot, right, top;
+    
     /* The starting point to draw the physical block. */
-    pb_bbox.left()   = child_width * type_index + sub_tile_x + FRACTION_CHILD_MARGIN_X * child_width;
-    pb_bbox.bottom() = child_height * pb_index  + sub_tile_y + FRACTION_CHILD_MARGIN_Y * child_height;
+    left   = child_width * type_index + sub_tile_x + FRACTION_CHILD_MARGIN_X * child_width;
+    bot    = child_height * pb_index  + sub_tile_y + FRACTION_CHILD_MARGIN_Y * child_height;
     
     /* Leave some space between different pb_types. */
     child_width *= 1 - FRACTION_CHILD_MARGIN_X*2;
@@ -324,8 +328,10 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
     child_height *= 1 - FRACTION_CHILD_MARGIN_Y*2;
     
     /* Endpoint for drawing the pb_type */
-    pb_bbox.right() = pb_bbox.left()   + child_width;
-    pb_bbox.top()   = pb_bbox.bottom() + child_height;
+    right  = pb_bbox.left()   + child_width;
+    top    = pb_bbox.bottom() + child_height;
+    
+    pb_bbox = ezgl::rectangle({right, top}, {left, bot});
     
     *blk_width = child_width;
     *blk_height = child_height;

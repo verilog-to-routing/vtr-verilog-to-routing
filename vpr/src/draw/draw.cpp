@@ -273,6 +273,9 @@ std::string rr_highlight_message;
 ezgl::application::settings settings;
 ezgl::application application(settings);
 
+bool window_mode = false;
+ezgl::point2d new_window_top_left(0,0);
+
 /********************** Subroutines local to this module ********************/
 
 void toggle_nets(GtkWidget *widget, ezgl::application *app);
@@ -374,6 +377,7 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application *application);
 void initial_setup_ROUTING_to_PLACEMENT(ezgl::application *application);
 void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *application);
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application *application);
+ezgl::rectangle compute_fit_window();
 
 /********************** Subroutine definitions ******************************/
 
@@ -397,82 +401,82 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 void draw_main_canvas(ezgl::renderer &g){
     
     t_draw_state* draw_state = get_draw_state_vars();
-//    std::cout << "called draw_main_canvas" << std::endl;
-////    if(draw_state->pic_on_screen == NO_PICTURE){
-////        std::cout << "set to no picture?" << std::endl;
-////        return;
-////    }
-//    
-//    g.set_font_size(14);
-//    drawnets(g);// working fine
-//    drawplace(g);// working fine (text label?)
-//    draw_block_pin_util();// working fine
-//    draw_internal_draw_subblk(g);//partially working, show white box
-//    draw_placement_macros(g);
-////    
-////    drawroute(ALL_NETS, g);
-//    
-//    
-//    
+    std::cout << "called draw_main_canvas" << std::endl;
+//    if(draw_state->pic_on_screen == NO_PICTURE){
+//        std::cout << "set to no picture?" << std::endl;
+//        return;
+//    }
     
-    
-    
-    
-    if(draw_state->pic_on_screen == NO_PICTURE){
-        std::cout << "set to no picture" << std::endl;
-        return;
-    }
     g.set_font_size(14);
-    
-    draw_block_pin_util();
-    drawplace(g);
-    draw_internal_draw_subblk(g);
-    
-    if (draw_state->pic_on_screen == PLACEMENT) {
-        switch (draw_state->show_nets) {
-            case DRAW_NETS:
-                drawnets(g);
-                break;
-            case DRAW_LOGICAL_CONNECTIONS:
-                break;
-            default:
-                break;
-        }
-        
-    } else { /* ROUTING on screen */
-        
-        switch (draw_state->show_nets) {
-            case DRAW_NETS:
-                drawroute(ALL_NETS, g);
-                break;
-            case DRAW_LOGICAL_CONNECTIONS:
-                // fall through
-            default:
-                draw_rr(g);
-                break;
-        }
-        
-        draw_congestion(g);
-        
-        draw_routing_costs(g);
-        
-        draw_router_rr_costs(g);
-        
-        draw_routing_util(g);
-        
-        draw_routing_bb(g);
-    }
-    
+    drawnets(g);// working fine
+    drawplace(g);// working fine (text label?)
+    draw_block_pin_util();// working fine
+    draw_internal_draw_subblk(g);//partially working, show white box
     draw_placement_macros(g);
+//    
+//    drawroute(ALL_NETS, g);
     
-    draw_crit_path(g);
     
-    draw_logical_connections(g);
     
-    if (draw_state->color_map) {
-        draw_color_map_legend(*draw_state->color_map, g);
-        draw_state->color_map.reset(); //Free color map in preparation for next redraw
-    }
+    
+    
+    
+    
+//    if(draw_state->pic_on_screen == NO_PICTURE){
+//        std::cout << "set to no picture" << std::endl;
+//        return;
+//    }
+//    g.set_font_size(14);
+//    
+//    draw_block_pin_util();
+//    drawplace(g);
+//    draw_internal_draw_subblk(g);
+//    
+//    if (draw_state->pic_on_screen == PLACEMENT) {
+//        switch (draw_state->show_nets) {
+//            case DRAW_NETS:
+//                drawnets(g);
+//                break;
+//            case DRAW_LOGICAL_CONNECTIONS:
+//                break;
+//            default:
+//                break;
+//        }
+//        
+//    } else { /* ROUTING on screen */
+//        
+//        switch (draw_state->show_nets) {
+//            case DRAW_NETS:
+//                drawroute(ALL_NETS, g);
+//                break;
+//            case DRAW_LOGICAL_CONNECTIONS:
+//                // fall through
+//            default:
+//                draw_rr(g);
+//                break;
+//        }
+//        
+//        draw_congestion(g);
+//        
+//        draw_routing_costs(g);
+//        
+//        draw_router_rr_costs(g);
+//        
+//        draw_routing_util(g);
+//        
+//        draw_routing_bb(g);
+//    }
+//    
+//    draw_placement_macros(g);
+//    
+//    draw_crit_path(g);
+//    
+//    draw_logical_connections(g);
+//    
+//    if (draw_state->color_map) {
+//        draw_color_map_legend(*draw_state->color_map, g);
+//        draw_state->color_map.reset(); //Free color map in preparation for next redraw
+//    }
     return;
 }
 
@@ -529,8 +533,6 @@ void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application *appli
 
 void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type pic_on_screen_val,
         std::shared_ptr<SetupTimingInfo> setup_timing_info) {
-//    ezgl::application::settings settings;
-//    ezgl::application application(settings);
     /* Updates the screen if the user has requested graphics.  The priority  *
      * value controls whether or not the Proceed button must be clicked to   *
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
@@ -540,12 +542,16 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
     if (!draw_state->show_graphics) /* Graphics turned off */
         return;
     
-    const float rectangle_width = 50;
-    const float rectangle_height = 50;
-    const ezgl::point2d start_point(150, 30);
-    static ezgl::rectangle initial_world = {start_point, rectangle_width, rectangle_height};
+
+    ezgl::rectangle fit_window = compute_fit_window();
+    std::cout << "fit_window : (" << fit_window.m_first.x << ", " << fit_window.m_first.y << ") (" << fit_window.m_second.x << ", " << fit_window.m_second.y << ")" <<std::endl;
     /* If it's the type of picture displayed has changed, set up the proper  *
      * buttons.                                                              */
+    ezgl::point2d margin(fit_window.width()/6, fit_window.height()/6);
+    std::cout << "margin : " << margin.x << ", " << margin.y << std::endl;
+    ezgl::rectangle initial_world = {fit_window.m_first + margin, fit_window.m_second - margin};
+    std::cout << "initial_world : (" << initial_world.m_first.x << ", " << initial_world.m_first.y << ") (" << initial_world.m_second.x << ", " << initial_world.m_second.y << ")" <<std::endl;
+    
     if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
         if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
             //Placement first to open
@@ -558,6 +564,7 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
             }
         } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
             //Routing, opening after placement
+            (application.get_canvas(application.get_main_canvas_id()))->get_camera().
             application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
             application.run(initial_setup_PLACEMENT_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
         } else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
@@ -1075,7 +1082,7 @@ static void drawplace(ezgl::renderer &g) {
                  */
                 if (bnum == INVALID_BLOCK_ID) continue;
                 //Determine the block color
-                ezgl::color block_color(0,0,0);
+                ezgl::color block_color;
                 if (bnum != EMPTY_BLOCK_ID) {
                     block_color = draw_state->block_color[bnum];
                 } else {
@@ -2918,9 +2925,28 @@ void act_on_mouse_press(ezgl::application *application, GdkEventButton *event, d
 
   std::cout << "User clicked the ";
 
-  if (event->button == 1)
+  if (event->button == 1){
     std::cout << "left ";
-  else if (event->button == 2)
+//    if(!window_mode){
+//        new_window_top_left = {x, y};
+//        window_mode = true;
+//    }else{
+//        //click on any two points to form new window rectangle bound
+//        ezgl::point2d new_window_bot_right = {x, y};
+//        ezgl::rectangle current_window = (application->get_canvas(application->get_main_canvas_id()))->get_camera().get_world();
+//        
+//        //calculate a rectangle with the same ratio based on the two clicks
+//        double window_ratio = current_window.height()/current_window.width();
+//        double new_height = abs(new_window_top_left.y - new_window_bot_right.y);
+//        double new_width = new_height/window_ratio;
+//        
+//        //zoom in
+//        ezgl::rectangle new_window = {new_window_top_left, {new_window_top_left.x + new_width, new_window_bot_right.y}};
+//        (application->get_canvas(application->get_main_canvas_id()))->get_camera().set_world(new_window);
+//        window_mode = false;
+//        application->refresh_drawing();
+//    }
+  }else if (event->button == 2)
     std::cout << "middle ";
   else if (event->button == 3)
     std::cout << "right ";
@@ -2939,6 +2965,14 @@ void act_on_mouse_press(ezgl::application *application, GdkEventButton *event, d
 
 void act_on_mouse_move(ezgl::application *application, GdkEventButton *event, double x, double y) {
 //  std::cout << "Mouse move at coordinates (" << x << "," << y << ") "<< std::endl;
+//    if(window_mode){
+////        ezgl::renderer g = application->get_renderer();
+////        g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
+////        g.set_color(ezgl::BLACK);
+////        g.set_line_width(10);
+////        g.draw_rectangle(new_window_top_left, {x,y});
+//        std::cout << "window mode triggered move" << std::endl;
+//    }
 }
 
 
@@ -4012,4 +4046,51 @@ static void draw_placement_macros(ezgl::renderer &g) {
         g.fill_rectangle({draw_xlow, draw_ylow}, {draw_xhigh, draw_yhigh});
         
     }
+}
+
+ezgl::rectangle compute_fit_window(){
+    t_draw_state* draw_state = get_draw_state_vars();
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
+    ClusterBlockId bnum;
+    int num_sub_tiles;
+    
+    //find the max and min by traversing through all the boxes
+    double max_x = 0;
+    double max_y = 0;
+    double min_x = DBL_MAX;
+    double min_y = DBL_MAX;
+    
+    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
+        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
+            /* Only the first block of a group should control drawing */
+            if (device_ctx.grid[i][j].width_offset > 0 || device_ctx.grid[i][j].height_offset > 0)
+                continue;
+            num_sub_tiles = device_ctx.grid[i][j].type->capacity;
+            /* Don't draw if tile capacity is zero. eg. corners. */
+            if (num_sub_tiles == 0) {
+                continue;
+            }
+            for (int k = 0; k < num_sub_tiles; ++k) {
+                
+                /* Look at the tile at start of large block */
+
+                /* Fill background for the clb. Do not fill if "show_blk_internal"
+                 * is toggled.
+                 */
+                if (place_ctx.grid_blocks[i][j].blocks[k] == INVALID_BLOCK_ID) continue;
+                
+                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
+                
+                max_x = std::max(max_x, abs_clb_bbox.right());
+                min_x = std::min(min_x, abs_clb_bbox.left());
+                max_y = std::max(max_x, abs_clb_bbox.top());
+                min_y = std::min(min_y, abs_clb_bbox.bottom());
+            }
+        }
+    }
+    std::cout << "found max : " << max_x << " " << max_y << std::endl;
+    std::cout << "found min : " << min_x << " " << min_y << std::endl;
+    return ezgl::rectangle({max_x, max_y},{min_x, min_y});
 }

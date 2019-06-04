@@ -21,11 +21,11 @@ bool t_draw_state::showing_sub_blocks() {
  * begin t_draw_pb_type_info function definitions *
  **************************************************/
 
-t_bound_box t_draw_pb_type_info::get_pb_bbox(const t_pb_graph_node& pb_gnode) {
+ezgl::rectangle t_draw_pb_type_info::get_pb_bbox(const t_pb_graph_node& pb_gnode) {
     return get_pb_bbox_ref(pb_gnode);
 }
 
-t_bound_box& t_draw_pb_type_info::get_pb_bbox_ref(const t_pb_graph_node& pb_gnode) {
+ezgl::rectangle& t_draw_pb_type_info::get_pb_bbox_ref(const t_pb_graph_node& pb_gnode) {
     const int pb_gnode_id = get_unique_pb_graph_node_id(&pb_gnode);
     return subblk_array.at(pb_gnode_id);
 }
@@ -59,18 +59,18 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block
     const int clb_type_id = device_ctx.grid[grid_x][grid_y].type->index;
     t_draw_pb_type_info& blk_type_info = this->blk_info.at(clb_type_id);
     
-    t_bound_box result = blk_type_info.get_pb_bbox(pb_gnode);
+    ezgl::rectangle result = blk_type_info.get_pb_bbox(pb_gnode);
     
     // if getting clb bbox, apply location info.
     if (pb_gnode.is_root()) {
         float sub_blk_offset = this->tile_width * (sub_block_index/(float)device_ctx.grid[grid_x][grid_y].type->capacity);
         
-        result += t_point(this->tile_x[grid_x], this->tile_y[grid_y]);
+        result += ezgl::point2d(this->tile_x[grid_x], this->tile_y[grid_y]);
         if (sub_block_index != 0) {
-            result += t_point(sub_blk_offset, 0);
+            result += ezgl::point2d(sub_blk_offset, 0);
         }
     }
-    return ezgl::rectangle({result.bottom_left().x, result.bottom_left().y}, {result.top_right().x, result.top_right().y});
+    return result;
 }
 
 ezgl::rectangle t_draw_coords::get_absolute_pb_bbox(const ClusterBlockId clb_index, const t_pb_graph_node* pb_gnode) {

@@ -195,10 +195,10 @@ struct t_draw_state {
  * information for all sub-blocks inside. This includes
  * the bounding box for drawing each sub-block. */
 struct t_draw_pb_type_info {
-    std::vector<t_bound_box> subblk_array;
+    std::vector<ezgl::rectangle> subblk_array;
 
-	t_bound_box get_pb_bbox(const t_pb_graph_node& pb_gnode);
-	t_bound_box& get_pb_bbox_ref(const t_pb_graph_node& pb_gnode);
+	ezgl::rectangle get_pb_bbox(const t_pb_graph_node& pb_gnode);
+	ezgl::rectangle& get_pb_bbox_ref(const t_pb_graph_node& pb_gnode);
 };
 
 /* Structure used to store coordinates and dimensions for
@@ -208,7 +208,7 @@ struct t_draw_pb_type_info {
  * (tile_x[0],tile_y[0]) at the lower left corner of the FPGA
  * to (tile_x[device_ctx.grid.width()-1]+tile_width, tile_y[device_ctx.grid.height()-1]+tile_width) in
  * the upper right corner.
- * tile_width: Width (and height) of a grid_tile.
+ * tile_width: Width (and height) of a grid_tile.s
  *			 Set when init_draw_coords is called.
  * gap_size: distance of the gap between two adjacent
  *           clbs; the literal channel "width" .
