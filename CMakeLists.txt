@@ -183,7 +183,7 @@ set(FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK
     "-Wno-missing-declarations" #Flex misses some declarations in re-entrant mode
     "-Wimplicit-fallthrough=0" #Bison produces some cases with explicit
     "-Wno-sign-compare" #Flex generates code which performs some signed/unsigned comparison
-    "-Wno-null-dereference" #Bison produces some cases wiwth potenetial null derefs
+    "-Wno-null-dereference" #Bison produces some cases with potenetial null derefs
     )
 foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
     CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})

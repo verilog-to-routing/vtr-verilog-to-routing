@@ -1,3 +1,3 @@
-Please refer to http://code.google.com/p/vtr-verilog-to-routing/wiki/RunningVTR for the latest information on using VTR.
+This folder contains architecture files, benchmark circuits and scripts for running the VTR flow.
 
-A description of the VTR flow may be found in the "docs" folder
+For a description see the 'Running the VTR Flow' documentation at https://docs.verilogtorouting.org, or the 'docs' folder in the root of the VTR source tree.
