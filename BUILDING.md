@@ -7,6 +7,14 @@ VTR uses [CMake](https://cmake.org) as it's build system.
 
 CMake provides a portable cross-platform build systems with many useful features.
 
+## Tested Compilers ##
+VTR requires a C++-14 compliant compiler.
+The following compilers are tested with VTR:
+
+* GCC/G++: 5, 6, 7, 8, 9
+* Clang/Clang++: 3.8, 6
+
+Other compilers may work but are untested (your milage may vary).
 
 ## Unix-like ##
 For unix-like systems we provide a wrapper Makefile which supports the traditional `make` and `make clean` commands, but calls CMake behind the scenes.
