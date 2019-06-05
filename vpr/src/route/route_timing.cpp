@@ -1270,8 +1270,21 @@ static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_n
         //Found no path, that may be due to an unlucky choice of existing route tree sub-set,
         //try again with the full route tree to be sure this is not an artifact of high-fanout routing
         VTR_LOG_WARN("No routing path found in high-fanout mode for net connection (to sink_rr %d), retrying with full route tree\n", sink_node);
-        cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, net_bounding_box, router_lookahead, modified_rr_node_inf, router_stats);
+
+        //Reset any previously recorded node costs so timing_driven_route_connection()
+        //starts over from scratch.
+        reset_path_costs(modified_rr_node_inf);
+        modified_rr_node_inf.clear();
+
+        cheapest = timing_driven_route_connection_from_route_tree(rt_root,
+                                                                  sink_node,
+                                                                  cost_params,
+                                                                  net_bounding_box,
+                                                                  router_lookahead,
+                                                                  modified_rr_node_inf,
+                                                                  router_stats);
     }
+
     if (cheapest == nullptr) {
         VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
 
