@@ -60,7 +60,7 @@ class TimingPathElem {
         TimingPathElem() = default;
         TimingPathElem(TimingTag tag_v,
                        NodeId node_v,
-                       EdgeId incomming_edge_v)
+                       EdgeId incomming_edge_v) noexcept
             : tag_(tag_v)
             , node_(node_v)
             , incomming_edge_(incomming_edge_v) {

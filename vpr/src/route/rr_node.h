@@ -245,7 +245,7 @@ struct t_rr_indexed_data {
  *     box buffer capacitances hanging off it.
  */
 struct t_rr_rc_data {
-    t_rr_rc_data(float Rval, float Cval);
+    t_rr_rc_data(float Rval, float Cval) noexcept;
 
     float R;
     float C;

@@ -167,11 +167,11 @@ static void log_msg(t_log* log_ptr, const char* msg) {
     if (log_ptr->num_messages == (MAX_LOGS + 1)) {
         const char* full_msg = "\n***LOG IS FULL***\n";
         log_ptr->messages[log_ptr->num_messages - 1] = (char*)vtr::calloc(strlen(full_msg) + 1, sizeof(char));
-        strncpy(log_ptr->messages[log_ptr->num_messages - 1], full_msg,
-                strlen(full_msg));
+        strncpy(log_ptr->messages[log_ptr->num_messages - 1], full_msg, strlen(full_msg) + 1);
     } else {
-        log_ptr->messages[log_ptr->num_messages - 1] = (char*)vtr::calloc(strlen(msg) + 1, sizeof(char));
-        strncpy(log_ptr->messages[log_ptr->num_messages - 1], msg, strlen(msg));
+        size_t len = strlen(msg) + 1;
+        log_ptr->messages[log_ptr->num_messages - 1] = (char*)vtr::calloc(len, sizeof(char));
+        strncpy(log_ptr->messages[log_ptr->num_messages - 1], msg, len);
     }
 }
 

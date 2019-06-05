@@ -15,7 +15,7 @@ enum e_seg_details_type {
 };
 
 struct t_rr_edge_info {
-    t_rr_edge_info(int from, int to, short type)
+    t_rr_edge_info(int from, int to, short type) noexcept
         : from_node(from)
         , to_node(to)
         , switch_type(type) {}

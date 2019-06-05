@@ -16,7 +16,7 @@ std::vector<TimingPath> collect_worst_timing_paths(const TimingGraph& timing_gra
     std::vector<TimingPath> paths;
 
     struct TagNode {
-        TagNode(TimingTag t, NodeId n)
+        TagNode(TimingTag t, NodeId n) noexcept
             : tag(t), node(n) {}
 
         TimingTag tag;

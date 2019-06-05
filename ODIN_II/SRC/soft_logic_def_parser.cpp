@@ -143,7 +143,6 @@ void read_soft_def_file(t_model *hard_adder_models)
 				}
 			}
 		}
-		vtr::free(line_buf);
 		fclose(input_file);
 
 		if(error)

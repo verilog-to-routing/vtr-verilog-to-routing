@@ -5,7 +5,7 @@
 #include <vector>
 
 struct HistogramBucket {
-    HistogramBucket(float min_val, float max_val, float init_count = 0)
+    HistogramBucket(float min_val, float max_val, float init_count = 0) noexcept
         : min_value(min_val)
         , max_value(max_val)
         , count(init_count) {}

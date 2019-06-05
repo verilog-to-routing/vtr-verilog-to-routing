@@ -30,6 +30,7 @@ addons:
     - libfontconfig1-dev
     - liblist-moreutils-perl
     - libncurses5-dev
+#    - libtbb-dev
     - libx11-dev
     - libxft-dev
     - libxml++2.6-dev
@@ -42,17 +43,57 @@ addons:
     - qt5-default
     - clang-format-7
 
-before_install:
- - source .travis/common.sh
+cache:
+  ccache: true
+  directories:
+    - /home/travis/vtr-build
+    - /home/travis/vtr
 
-install:
- - ./.travis/install.sh
+stages:
+  - Build
+  - Test
+
+jobs:
+  include:
+    - stage: Build
+      name: "Building VtR"
+      script:
+        - ./.github/travis/build.sh
+    - stage: Test
+      name: "Code Formatting"
+      script:
+        - ./dev/check-format.sh
+    - stage: Test
+      name: "C++ Unit Tests"
+      script:
+        - ./.github/travis/unittest.sh
+    - stage: Test
+      name: "Basic Regression Tests"
+      script:
+        - ./run_reg_test.pl vtr_reg_basic -j2
+    - stage: Test
+      name: "Strong Regression Tests"
+      script:
+        - ./run_reg_test.pl vtr_reg_strong -j2
+    - stage: Test
+      name: "Basic Valgrind Memory Tests"
+      script:
+        - ./run_reg_test.pl vtr_reg_valgrind_small -j2
+    - stage: Test
+      name: "ODIN-II Micro Tests"
+      script:
+        - ./run_reg_test.pl odin_reg_micro -j2
+    - stage: Test
+      name: "ODIN-II Operators Tests"
+      script:
+        - ./run_reg_test.pl odin_reg_operators -j2
+
+before_script:
+  - source .github/travis/common.sh
+  - ./.github/travis/setup.sh
+
+after_script:
+  - ./.github/travis/setup.sh
 
 script:
-  - ./.travis/script.sh
-
-after_failure:
-  - ./.travis/after_failure.sh
-
-after_success:
-  - ./.travis/after_success.sh
+  - true

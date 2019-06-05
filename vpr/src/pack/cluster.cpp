@@ -1764,7 +1764,10 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
         //Update atom netlist mapping
         atom_ctx.lookup.set_atom_clb(blk_id, clb_index);
 
-        cur_pb = atom_ctx.lookup.atom_pb(blk_id)->parent_pb;
+        const t_pb* atom_pb = atom_ctx.lookup.atom_pb(blk_id);
+        VTR_ASSERT(atom_pb);
+
+        cur_pb = atom_pb->parent_pb;
         while (cur_pb) {
             /* reset list of feasible blocks */
             if (cur_pb->is_root()) {
@@ -1825,7 +1828,7 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
         }
 
         update_total_gain(alpha, beta, timing_driven, connection_driven,
-                          atom_ctx.lookup.atom_pb(blk_id)->parent_pb);
+                          atom_pb->parent_pb);
 
         commit_lookahead_pins_used(cb);
     }

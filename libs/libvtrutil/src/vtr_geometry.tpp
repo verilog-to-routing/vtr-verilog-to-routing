@@ -4,7 +4,7 @@ namespace vtr {
  */
 
 template<class T>
-Point<T>::Point(T x_val, T y_val)
+Point<T>::Point(T x_val, T y_val) noexcept
     : x_(x_val)
     , y_(y_val) {
     //pass
