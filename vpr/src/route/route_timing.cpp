@@ -1882,18 +1882,7 @@ static void timing_driven_expand_node(const t_conn_cost_params cost_params,
                                       const int to_node,
                                       const int iconn,
                                       const int target_node) {
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-    if (f_router_debug) {
-        auto& device_ctx = g_vpr_ctx.device();
-        bool reached_via_non_configurable_edge = !device_ctx.rr_nodes[from_node].edge_is_configurable(iconn);
-        if (reached_via_non_configurable_edge) {
-            VTR_LOG("        Force Expanding to node %d (%s)", to_node, describe_rr_node(to_node).c_str());
-        } else {
-            VTR_LOG("      Expanding to node %d (%s)", to_node, describe_rr_node(to_node).c_str());
-        }
-        VTR_LOG("\n");
-    }
-#endif
+    VTR_LOGV_DEBUG(f_router_debug, "      Expanding to node %d (%s)\n", to_node, describe_rr_node(to_node).c_str());
 
     evaluate_timing_driven_node_costs(current,
                                       cost_params,
