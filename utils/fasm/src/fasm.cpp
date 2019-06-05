@@ -139,7 +139,51 @@ std::string FasmWriterVisitor::build_clb_prefix(const t_pb_graph_node* pb_graph_
               fasm_prefix_unsplit.c_str(), pb_type->num_pb);
   }
 
-  return clb_prefix + fasm_prefix.at(pb_graph_node->placement_index) + ".";
+  return fasm_prefix.at(pb_graph_node->placement_index) + ".";
+}
+
+std::string FasmWriterVisitor::build_clb_prefix(const t_pb *pb, const t_pb_graph_node* pb_graph_node, bool* is_parent_pb_null) const {
+  std::string clb_prefix = "";
+
+  const t_pb *pb_for_graph_node = nullptr;
+
+  // If not t_pb, mode_index is always 0.
+  int mode_index = 0;
+  if(root_clb_ != pb_graph_node && pb_graph_node->parent_pb_graph_node != root_clb_) {
+    VTR_ASSERT(pb_graph_node->parent_pb_graph_node != nullptr);
+    if(pb != nullptr) {
+      while(pb_for_graph_node == nullptr) {
+        pb_for_graph_node = pb->find_pb(pb_graph_node);
+
+        if(pb_for_graph_node == nullptr) {
+          if(pb->parent_pb == nullptr) {
+            *is_parent_pb_null = true;
+            break;
+          }
+          pb = pb->parent_pb;
+        }
+      }
+
+      if(pb_for_graph_node != nullptr) {
+        mode_index = pb_for_graph_node->mode;
+      }
+    }
+
+    clb_prefix = build_clb_prefix(pb, pb_graph_node->parent_pb_graph_node, is_parent_pb_null);
+  }
+
+  const auto *pb_type = pb_graph_node->pb_type;
+
+  clb_prefix += handle_fasm_prefix(&pb_type->meta, pb_graph_node, pb_type);
+
+  if(pb_type->modes != nullptr) {
+    VTR_ASSERT(mode_index < pb_type->num_modes);
+
+    clb_prefix += handle_fasm_prefix(&pb_type->modes[mode_index].meta,
+                                     pb_graph_node, pb_type);
+  } else {
+    VTR_ASSERT(mode_index == 0);
+  }
 
 }
 
@@ -183,7 +227,15 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
 
   const t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
 
+  clb_prefix_ = build_clb_prefix(pb, pb_graph_node);
   clb_prefix_ = build_clb_prefix(pb_graph_node);
+  // Check if this PB is `open` and has to be skipped
+  bool is_parent_pb_null = false;
+  std::string clb_prefix = build_clb_prefix(pb, pb_graph_node, &is_parent_pb_null);
+  if (is_parent_pb_null == true) {
+    return;
+  }
+  clb_prefix_ = clb_prefix;
 
   t_pb_type *pb_type = pb_graph_node->pb_type;
   auto *mode = &pb_type->modes[pb->mode];
@@ -194,15 +246,15 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
   }
 
   if(mode != nullptr && std::string(mode->name) == "wire") {
-      auto io_pin = is_node_used(pb_routes, pb_graph_node);
-      if(io_pin != nullptr) {
-        const auto& route = pb_routes.at(io_pin->pin_count_in_cluster);
-        const int num_inputs = *route.pb_graph_pin->parent_node->num_input_pins;
-        const auto *lut_definition = find_lut(route.pb_graph_pin->parent_node);
-        VTR_ASSERT(lut_definition->num_inputs == num_inputs);
+    auto io_pin = is_node_used(pb_routes, pb_graph_node);
+    if(io_pin != nullptr) {
+    const auto& route = pb_routes.at(io_pin->pin_count_in_cluster);
+      const int num_inputs = *route.pb_graph_pin->parent_node->num_input_pins;
+      const auto *lut_definition = find_lut(route.pb_graph_pin->parent_node);
+      VTR_ASSERT(lut_definition->num_inputs == num_inputs);
 
-        output_fasm_features(lut_definition->CreateWire(route.pb_graph_pin->pin_number));
-      }
+      output_fasm_features(lut_definition->CreateWire(route.pb_graph_pin->pin_number));
+    }
   }
 
   int port_index = 0;
