@@ -715,9 +715,7 @@ void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].prev_node = NO_PREVIOUS;
-        ;
         route_ctx.rr_node_route_inf[node].prev_edge = NO_PREVIOUS;
-        ;
     }
 }
 

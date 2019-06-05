@@ -1190,6 +1190,27 @@ t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root,
         full_device_bounding_box.xmax = device_ctx.grid.width() - 1;
         full_device_bounding_box.ymax = device_ctx.grid.height() - 1;
 
+        //
+        //TODO: potential future optimization
+        //      We have already explored the RR nodes accessible within the regular
+        //      BB (which are stored in modified_rr_node_inf), and so already know
+        //      their cost from the source. Instead of re-starting the path search
+        //      from scratch (i.e. from the previous route tree as we do below), we
+        //      could just re-add all the explored nodes to the heap and continue
+        //      expanding.
+        //
+
+        //Reset any previously recorded node costs so that when we call
+        //add_route_tree_to_heap() the nodes in the route tree actually
+        //make it back into the heap.
+        reset_path_costs(modified_rr_node_inf);
+        modified_rr_node_inf.clear();
+
+        //Re-initialize the heap since it was emptied by the previous call to
+        //timing_driven_route_connection_from_heap()
+        add_route_tree_to_heap(rt_root, sink_node, cost_params, router_lookahead, router_stats);
+
+        //Try finding the path again with the relaxed bounding box
         cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                             cost_params,
                                                             full_device_bounding_box,
