@@ -384,7 +384,6 @@ static void load_rr_indexed_data_T_values(int index_start,
         } else {
             Rnode = R_total[cost_index] / num_nodes_of_index[cost_index];
             Cnode = C_total[cost_index] / num_nodes_of_index[cost_index];
-<<<<<<< HEAD
             Rsw = (float) switch_R_total[cost_index] / num_nodes_of_index[cost_index];
             Tsw = (float) switch_T_total[cost_index] / num_nodes_of_index[cost_index];
             Cinternalsw = (float) switch_Cinternal_total[cost_index] / num_nodes_of_index[cost_index];
