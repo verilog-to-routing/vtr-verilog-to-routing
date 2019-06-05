@@ -599,7 +599,7 @@ sub check_two_files {
 
 	my $pass_req_filename = $1;
 
-    if ($pass_req_filename !~ /\s*/) {
+    if ($pass_req_filename !~ /^\s*%/) {
 
         # Search for pass requirement file
         $pass_req_filename = expand_user_path($pass_req_filename);
