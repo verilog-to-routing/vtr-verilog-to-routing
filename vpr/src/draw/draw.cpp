@@ -407,12 +407,12 @@ void draw_main_canvas(ezgl::renderer &g){
 //        return;
 //    }
     
-    g.set_font_size(14);
-    drawnets(g);// working fine
-    drawplace(g);// working fine (text label?)
-    draw_block_pin_util();// working fine
-    draw_internal_draw_subblk(g);//partially working, show white box
-    draw_placement_macros(g);
+//    g.set_font_size(14);
+//    drawnets(g);// working fine
+//    drawplace(g);// working fine (text label?)
+//    draw_block_pin_util();// working fine
+//    draw_internal_draw_subblk(g);//partially working, show white box
+//    draw_placement_macros(g);
 //    
 //    drawroute(ALL_NETS, g);
     
@@ -422,61 +422,61 @@ void draw_main_canvas(ezgl::renderer &g){
     
     
     
-//    if(draw_state->pic_on_screen == NO_PICTURE){
-//        std::cout << "set to no picture" << std::endl;
-//        return;
-//    }
-//    g.set_font_size(14);
-//    
-//    draw_block_pin_util();
-//    drawplace(g);
-//    draw_internal_draw_subblk(g);
-//    
-//    if (draw_state->pic_on_screen == PLACEMENT) {
-//        switch (draw_state->show_nets) {
-//            case DRAW_NETS:
-//                drawnets(g);
-//                break;
-//            case DRAW_LOGICAL_CONNECTIONS:
-//                break;
-//            default:
-//                break;
-//        }
-//        
-//    } else { /* ROUTING on screen */
-//        
-//        switch (draw_state->show_nets) {
-//            case DRAW_NETS:
-//                drawroute(ALL_NETS, g);
-//                break;
-//            case DRAW_LOGICAL_CONNECTIONS:
-//                // fall through
-//            default:
-//                draw_rr(g);
-//                break;
-//        }
-//        
-//        draw_congestion(g);
-//        
-//        draw_routing_costs(g);
-//        
-//        draw_router_rr_costs(g);
-//        
-//        draw_routing_util(g);
-//        
-//        draw_routing_bb(g);
-//    }
-//    
-//    draw_placement_macros(g);
-//    
-//    draw_crit_path(g);
-//    
-//    draw_logical_connections(g);
-//    
-//    if (draw_state->color_map) {
-//        draw_color_map_legend(*draw_state->color_map, g);
-//        draw_state->color_map.reset(); //Free color map in preparation for next redraw
-//    }
+    if(draw_state->pic_on_screen == NO_PICTURE){
+        std::cout << "set to no picture" << std::endl;
+        return;
+    }
+    g.set_font_size(14);
+    
+    draw_block_pin_util();
+    drawplace(g);
+    draw_internal_draw_subblk(g);
+    
+    if (draw_state->pic_on_screen == PLACEMENT) {
+        switch (draw_state->show_nets) {
+            case DRAW_NETS:
+                drawnets(g);
+                break;
+            case DRAW_LOGICAL_CONNECTIONS:
+                break;
+            default:
+                break;
+        }
+        
+    } else { /* ROUTING on screen */
+        
+        switch (draw_state->show_nets) {
+            case DRAW_NETS:
+                drawroute(ALL_NETS, g);
+                break;
+            case DRAW_LOGICAL_CONNECTIONS:
+                // fall through
+            default:
+                draw_rr(g);
+                break;
+        }
+        
+        draw_congestion(g);
+        
+        draw_routing_costs(g);
+        
+        draw_router_rr_costs(g);
+        
+        draw_routing_util(g);
+        
+        draw_routing_bb(g);
+    }
+    
+    draw_placement_macros(g);
+    
+    draw_crit_path(g);
+    
+    draw_logical_connections(g);
+    
+    if (draw_state->color_map) {
+        draw_color_map_legend(*draw_state->color_map, g);
+        draw_state->color_map.reset(); //Free color map in preparation for next redraw
+    }
     return;
 }
 
@@ -564,7 +564,6 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
             }
         } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
             //Routing, opening after placement
-            (application.get_canvas(application.get_main_canvas_id()))->get_camera().
             application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
             application.run(initial_setup_PLACEMENT_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
         } else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
@@ -1102,12 +1101,11 @@ static void drawplace(ezgl::renderer &g) {
                 //setlinestyle((EMPTY_BLOCK_ID == bnum) ? DASHED : SOLID);
                 g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
                 g.draw_rectangle(abs_clb_bbox);
-                
                 /* Draw text if the space has parts of the netlist */
                 if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
                     std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
-                    g.draw_text(center, name.c_str());
+                    g.draw_text(center, name.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
                 }
                 /* Draw text for block type so that user knows what block */
                 if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
