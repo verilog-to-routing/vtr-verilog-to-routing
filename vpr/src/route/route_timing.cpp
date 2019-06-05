@@ -1809,7 +1809,7 @@ static void timing_driven_expand_neighbour(t_heap* current,
         VTR_LOGV_DEBUG(f_router_debug,
                        "      Pruned expansion of node %d edge %d -> %d"
                        " (to node location %d,%dx%d,%d outside of expanded"
-                       " net bounding box %d,%dx%d,%d\n",
+                       " net bounding box %d,%dx%d,%d)\n",
                        from_node, from_edge, to_node,
                        to_xlow, to_ylow, to_xhigh, to_yhigh,
                        bounding_box.xmin, bounding_box.ymin, bounding_box.xmax, bounding_box.ymax);
@@ -1831,8 +1831,8 @@ static void timing_driven_expand_neighbour(t_heap* current,
                 || to_yhigh > target_bb.ymax) {
                 VTR_LOGV_DEBUG(f_router_debug,
                                "      Pruned expansion of node %d edge %d -> %d"
-                               " (to node is IPIN at (%d,%d)x(%d,%d) which does not"
-                               " lead to target block (%d,%d)x(%d,%d)\n",
+                               " (to node is IPIN at %d,%dx%d,%d which does not"
+                               " lead to target block %d,%dx%d,%d)\n",
                                from_node, from_edge, to_node,
                                to_xlow, to_ylow, to_xhigh, to_yhigh,
                                target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
