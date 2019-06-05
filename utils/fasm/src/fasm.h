@@ -73,7 +73,7 @@ class FasmWriterVisitor : public NetlistVisitor {
       void output_fasm_mux(std::string fasm_mux, t_interconnect *interconnect, t_pb_graph_pin *mux_input_pin);
       void walk_routing();
       void walk_route_tree(const t_rt_node *root);
-      std::string build_clb_prefix(const t_pb *pb, const t_pb_graph_node* pb_graph_node) const;
+      std::string build_clb_prefix(const t_pb *pb, const t_pb_graph_node* pb_graph_node, bool* is_parent_pb_null) const;
       const LutOutputDefinition* find_lut(const t_pb_graph_node* pb_graph_node);
       void check_for_param(const t_pb *atom);
 
