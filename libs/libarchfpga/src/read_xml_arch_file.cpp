@@ -3088,8 +3088,13 @@ static void ProcessSwitches(pugi::xml_node Parent,
 
 		} else if (0 == strcmp(type_name, "short")) {
 			type = SwitchType::SHORT;
-            expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Tdel"}, " with type "s + type_name + "'"s, loc_data); 
-		
+            expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Tdel"}, " with type "s + type_name + "'"s, loc_data);
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           "Invalid switch type '%s'.\n", type_name);
+        }
+	    arch_switch.set_type(type);
+
         arch_switch.R = get_attribute(Node, "R", loc_data,TIMING_ENABLE_REQD).as_float(0);
 
 		ReqOpt COUT_REQD = TIMING_ENABLE_REQD;
