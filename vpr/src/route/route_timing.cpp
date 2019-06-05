@@ -2632,7 +2632,7 @@ static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId n
     }
 
 #ifndef VTR_ENABLE_DEBUG_LOGGING
-    VTR_LOGV_WARN(f_router_debug, "Limited router debug output provided since compiled without VTR_ENABLE_DEBUG_LOGGING defined");
+    VTR_LOGV_WARN(f_router_debug, "Limited router debug output provided since compiled without VTR_ENABLE_DEBUG_LOGGING defined\n");
 #endif
 }
 
