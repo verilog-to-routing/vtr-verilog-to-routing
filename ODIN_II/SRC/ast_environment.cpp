@@ -191,8 +191,12 @@ ast_node_t* evaluate_node(ast_node_t* node, Environment& env)
 			to_return = ast_node_deep_copy(node);
 			temp = to_return->children[0];
 			assign_child_to_node(to_return, evaluate_node(ast_node_deep_copy(to_return->children[0]), env), 0);
+			if(temp != to_return->children[0])
+				free_whole_tree(temp);
 			temp = to_return->children[1];
 			assign_child_to_node(to_return, evaluate_node(ast_node_deep_copy(to_return->children[1]), env), 1);
+			if(temp != to_return->children[1])
+				free_whole_tree(temp);
 			if(children_are_numbers(to_return, to_return->num_children)){
 				temp = reduce_binary_operation(to_return);
 				free_whole_tree(to_return);
