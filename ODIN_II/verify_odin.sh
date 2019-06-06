@@ -187,8 +187,9 @@ function create_temp() {
 		echo "running benchmark @${NEW_RUN_DIR}"
 		mkdir -p ${NEW_RUN_DIR}
 
-		if [ -d regression_test/latest ]; then
+		if [ -e regression_test/latest ]; then
 			unlink regression_test/latest || /bin/true
+			rm -Rf regression_test/latest || /bin/true
 		fi
 
 		ln -s ${NEW_RUN_DIR} regression_test/latest
@@ -207,8 +208,9 @@ function cleanup_temp() {
 		rm -Rf ${runs}
 	done
 
-	if [ -d regression_test/latest ]; then
+	if [ -e regression_test/latest ]; then
 		unlink regression_test/latest || /bin/true
+		rm -Rf regression_test/latest || /bin/true
 	fi
 
 }
@@ -221,14 +223,19 @@ function mv_failed() {
 	then
 		for failed_benchmark in $(cat ${log_file})
 		do
-			target_dir=$(dirname ${failed_dir}/${failed_benchmark})
-			target_link=$(basename ${failed_benchmark})
+			if [ ! -e ${target_dir}/${target_link} ]
+			then
+				target_dir=$(dirname ${failed_dir}/${failed_benchmark})
+				target_link=$(basename ${failed_benchmark})
 
-			mkdir -p ${target_dir}
-			echo "Linking failed benchmark ${failed_benchmark} -> in failures ${target_link}"
+				mkdir -p ${target_dir}
+				echo "Linking failed benchmark ${failed_benchmark} -> in failures ${target_link}"
 
-			ln -s ${NEW_RUN_DIR}/${failed_benchmark} ${target_dir}/${target_link}
-			FAILURE=$(( ${FAILURE} + 1 ))
+			
+				ln -s ${NEW_RUN_DIR}/${failed_benchmark} ${target_dir}/${target_link}
+
+				FAILURE=$(( ${FAILURE} + 1 ))
+			fi
 		done
 		cat ${log_file} >> ${NEW_RUN_DIR}/test_failures.log
 	fi
