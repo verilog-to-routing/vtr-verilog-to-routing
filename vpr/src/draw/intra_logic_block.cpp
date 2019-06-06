@@ -112,12 +112,13 @@ void draw_internal_init_blk() {
         
         // set the clb dimensions
         ezgl::rectangle& clb_bbox = draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0);
-        ezgl::point2d bot_left = {clb_bbox.bottom(), clb_bbox.left()};
-        ezgl::point2d top_right = {clb_bbox.top(), clb_bbox.right()};
+        ezgl::point2d bot_left = clb_bbox.bottom_left();
+        ezgl::point2d top_right = clb_bbox.top_right();
         
         
         // note, that all clbs of the same type are the same size,
         // and that consequently we have *one* model for each type.
+        bot_left = {0, 0};
         if (size_t(type_desc.width) > device_ctx.grid.width() || size_t(type_desc.height) > device_ctx.grid.height()) {
             // in this case, the clb certainly wont't fit, but this prevents
             // an out-of-bounds access, and provides some sort of (probably right)
@@ -180,7 +181,6 @@ void draw_internal_draw_subblk(ezgl::renderer &g) {
                 /* Safety check, that physical blocks exists in the CLB */
                 if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr)
                     continue;
-                
                 draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb(bnum), ezgl::rectangle({0,0},0,0), cluster_ctx.clb_nlist.block_type(bnum), g);
             }
         }
@@ -290,6 +290,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
     
     const float FRACTION_CHILD_MARGIN_X = 0.025;
     const float FRACTION_CHILD_MARGIN_Y = 0.04;
+    double left, bot, right, top;
     
     int capacity = device_ctx.block_types[type_descrip_index].capacity;
     if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && place_ctx.grid_blocks[1][0].usage != 0
@@ -316,7 +317,6 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
     /* Divide parent_drawing_height by the number of instances of the pb_type. */
     child_height = parent_drawing_height/num_pb;
     
-    double left, bot, right, top;
     
     /* The starting point to draw the physical block. */
     left   = child_width * type_index + sub_tile_x + FRACTION_CHILD_MARGIN_X * child_width;
@@ -351,21 +351,27 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     t_pb_type* pb_type = pb->pb_graph_node->pb_type;
     ezgl::rectangle temp = draw_coords->get_pb_bbox(clb_index, *pb->pb_graph_node);
     ezgl::rectangle abs_bbox = temp + parent_bbox.bottom_left();
-    
-    
+        
+//    ezgl::rectangle abs_bbox = (draw_coords->get_pb_bbox(clb_index, *pb->pb_graph_node)) + parent_bbox.bottom_left();//bug here
     // if we've gone too far, don't draw anything
     if (pb_type->depth > draw_state->show_blk_internal) {
         return;
     }
-    
+//    std::cout << "show_blk_internal level : " << draw_state->show_blk_internal << std::endl;
+//    std::cout << "current level : " << pb_type->depth << std::endl;
+//    std::cout << "draw_internal_pb triggered !!!!!!!!!!!!!!!!!!!!" << std::endl;
     /// first draw box ///
-    
+    std::cout << "temp : (" << temp.bottom_left().x << ", " << temp.bottom_left().y << ") (" << temp.top_right().x << ", " << temp.top_right().y << ")" <<std::endl;
+    std::cout << "abs_bbox : (" << abs_bbox.bottom_left().x << ", " << abs_bbox.bottom_left().y << ") (" << abs_bbox.top_right().x << ", " << abs_bbox.top_right().y << ")" <<std::endl;
+
     if (pb_type->depth == 0) {
         if (!is_top_lvl_block_highlighted(clb_index, type)) {
             // if this is a top level pb, and only if it isn't selected (ie. a funny colour),
             // overwrite it. (but stil draw the text)
-            g.set_color(ezgl::WHITE);
+//            std::cout << "abs_bbox size " << abs_bbox.height() << " " << abs_bbox.width() << std::endl;
+            g.set_color(ezgl::RED);//was white debugging
             g.fill_rectangle(abs_bbox);
+//            g.fill_rectangle({{0,0}, {2000,2000}});//test
             g.set_color(ezgl::BLACK);
             g.set_line_dash(ezgl::line_dash::none);
             g.draw_rectangle(abs_bbox);
@@ -387,11 +393,11 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             } else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb_index)) {
                 g.set_color(DRIVEN_BY_IT_COLOR);
             } else if (pb_type->depth != draw_state->show_blk_internal && pb->child_pbs != nullptr) {
-                g.set_color(ezgl::WHITE); // draw anthing else that will have a child as white
+                g.set_color(ezgl::RED);//WHITE); // draw anything else that will have a child as white
             } else if (type_index < 3) {
                 g.set_color(to_ezgl_color(LIGHTGREY));
             } else if (type_index < 3 + MAX_BLOCK_COLOURS) {
-                g.set_color(to_ezgl_color((color_types)(BISQUE + MAX_BLOCK_COLOURS + type_index - 3)));
+                g.set_color(to_ezgl_color((color_types)(BISQUE + MAX_BLOCK_COLOURS + type_index - 3)));//should fix later, using easygl library
             } else {
                 g.set_color(to_ezgl_color((color_types)(BISQUE + 2 * MAX_BLOCK_COLOURS - 1)));
             }
@@ -401,9 +407,9 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             // background with dashed border).
             
             g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
-            g.set_color(ezgl::WHITE);
+            g.set_color(ezgl::RED);//WHITE);
         }
-        
+        g.set_color(ezgl::GREEN);//debug
         g.fill_rectangle(abs_bbox);
         g.set_color(ezgl::BLACK);
         g.draw_rectangle(abs_bbox);

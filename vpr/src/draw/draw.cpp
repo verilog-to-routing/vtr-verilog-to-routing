@@ -426,57 +426,59 @@ void draw_main_canvas(ezgl::renderer &g){
         std::cout << "set to no picture" << std::endl;
         return;
     }
+    g.set_color(ezgl::YELLOW);
+    g.fill_rectangle({{-5000, -5000}, {5000, 5000}});
     g.set_font_size(14);
-    
-    draw_block_pin_util();
-    drawplace(g);
+//    
+//    draw_block_pin_util();
+//    drawplace(g);
     draw_internal_draw_subblk(g);
     
-    if (draw_state->pic_on_screen == PLACEMENT) {
-        switch (draw_state->show_nets) {
-            case DRAW_NETS:
-                drawnets(g);
-                break;
-            case DRAW_LOGICAL_CONNECTIONS:
-                break;
-            default:
-                break;
-        }
-        
-    } else { /* ROUTING on screen */
-        
-        switch (draw_state->show_nets) {
-            case DRAW_NETS:
-                drawroute(ALL_NETS, g);
-                break;
-            case DRAW_LOGICAL_CONNECTIONS:
-                // fall through
-            default:
-                draw_rr(g);
-                break;
-        }
-        
-        draw_congestion(g);
-        
-        draw_routing_costs(g);
-        
-        draw_router_rr_costs(g);
-        
-        draw_routing_util(g);
-        
-        draw_routing_bb(g);
-    }
-    
-    draw_placement_macros(g);
-    
-    draw_crit_path(g);
-    
-    draw_logical_connections(g);
-    
-    if (draw_state->color_map) {
-        draw_color_map_legend(*draw_state->color_map, g);
-        draw_state->color_map.reset(); //Free color map in preparation for next redraw
-    }
+//    if (draw_state->pic_on_screen == PLACEMENT) {
+//        switch (draw_state->show_nets) {
+//            case DRAW_NETS:
+//                drawnets(g);
+//                break;
+//            case DRAW_LOGICAL_CONNECTIONS:
+//                break;
+//            default:
+//                break;
+//        }
+//        
+//    } else { /* ROUTING on screen */
+//        
+//        switch (draw_state->show_nets) {
+//            case DRAW_NETS:
+//                drawroute(ALL_NETS, g);
+//                break;
+//            case DRAW_LOGICAL_CONNECTIONS:
+//                // fall through
+//            default:
+//                draw_rr(g);
+//                break;
+//        }
+//        
+//        draw_congestion(g);
+//        
+//        draw_routing_costs(g);
+//        
+//        draw_router_rr_costs(g);
+//        
+//        draw_routing_util(g);
+//        
+//        draw_routing_bb(g);
+//    }
+//    
+//    draw_placement_macros(g);
+//    
+//    draw_crit_path(g);
+//    
+//    draw_logical_connections(g);
+//    
+//    if (draw_state->color_map) {
+//        draw_color_map_legend(*draw_state->color_map, g);
+//        draw_state->color_map.reset(); //Free color map in preparation for next redraw
+//    }
     return;
 }
 
@@ -536,24 +538,43 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
     /* Updates the screen if the user has requested graphics.  The priority  *
      * value controls whether or not the Proceed button must be clicked to   *
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
-
+    
     t_draw_state* draw_state = get_draw_state_vars();
     
     if (!draw_state->show_graphics) /* Graphics turned off */
         return;
     
+    
+    
+        /* Save the main message. */
+    
+//    vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
+    
+//    draw_state->setup_timing_info = setup_timing_info;
+    
+//    draw_state->pic_on_screen = pic_on_screen_val;
+//    application.update_message(msg);//can only do this within init_Setup
+    
+    
+    
+    
+    
 
     ezgl::rectangle fit_window = compute_fit_window();
-    std::cout << "fit_window : (" << fit_window.m_first.x << ", " << fit_window.m_first.y << ") (" << fit_window.m_second.x << ", " << fit_window.m_second.y << ")" <<std::endl;
+//    std::cout << "fit_window : (" << fit_window.m_first.x << ", " << fit_window.m_first.y << ") (" << fit_window.m_second.x << ", " << fit_window.m_second.y << ")" <<std::endl;
     /* If it's the type of picture displayed has changed, set up the proper  *
      * buttons.                                                              */
     ezgl::point2d margin(fit_window.width()/6, fit_window.height()/6);
-    std::cout << "margin : " << margin.x << ", " << margin.y << std::endl;
+//    std::cout << "margin : " << margin.x << ", " << margin.y << std::endl;
     ezgl::rectangle initial_world = {fit_window.m_first + margin, fit_window.m_second - margin};
-    std::cout << "initial_world : (" << initial_world.m_first.x << ", " << initial_world.m_first.y << ") (" << initial_world.m_second.x << ", " << initial_world.m_second.y << ")" <<std::endl;
+//    std::cout << "initial_world : (" << initial_world.m_first.x << ", " << initial_world.m_first.y << ") (" << initial_world.m_second.x << ", " << initial_world.m_second.y << ")" <<std::endl;
     
     if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
         if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
+            vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
+            draw_state->setup_timing_info = setup_timing_info;
+            draw_state->pic_on_screen = pic_on_screen_val;
+            
             //Placement first to open
             if(setup_timing_info) {
                 application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
@@ -564,14 +585,26 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
             }
         } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
             //Routing, opening after placement
+            vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
+            draw_state->setup_timing_info = setup_timing_info;
+            draw_state->pic_on_screen = pic_on_screen_val;
+            
             application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
             application.run(initial_setup_PLACEMENT_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
         } else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
+            vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
+            draw_state->setup_timing_info = setup_timing_info;
+            draw_state->pic_on_screen = pic_on_screen_val;
+            
             //Placement, opening after routing
             application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
             application.run(initial_setup_ROUTING_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
         } else if (pic_on_screen_val == ROUTING
                 && draw_state->pic_on_screen == NO_PICTURE) {
+            vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
+            draw_state->setup_timing_info = setup_timing_info;
+            draw_state->pic_on_screen = pic_on_screen_val;
+            
             //Routing opening first
             if(setup_timing_info) {
                 application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
@@ -583,16 +616,14 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
         }
     }
 
-    /* Save the main message. */
-    
-    vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
-    
-    draw_state->setup_timing_info = setup_timing_info;
-    
-    draw_state->pic_on_screen = pic_on_screen_val;
-    //application.update_message(msg);//can only do this within init_Setup
-    //drawscreen();
-    //application.refresh_drawing();
+//    /* Save the main message. */
+//    
+//    vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
+//    
+//    draw_state->setup_timing_info = setup_timing_info;
+//    
+//    draw_state->pic_on_screen = pic_on_screen_val;
+//    application.update_message(msg);//can only do this within init_Setup
     
     //Has the user asked us to pause at the next screen updated?
     bool forced_pause = g_vpr_ctx.forced_pause();
@@ -952,7 +983,6 @@ void alloc_draw_structs(const t_arch* arch) {
     /* For sub-block drawings inside clbs */
     draw_internal_alloc_blk();
     
-    //cannot run the two lines below due to having no defualt constructor for ezgl::color, fix later!!
     draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size()); 
     draw_state->block_color.resize(cluster_ctx.clb_nlist.blocks().size());
     
@@ -1102,18 +1132,18 @@ static void drawplace(ezgl::renderer &g) {
                 g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
                 g.draw_rectangle(abs_clb_bbox);
                 /* Draw text if the space has parts of the netlist */
-                if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
-                    auto& cluster_ctx = g_vpr_ctx.clustering();
-                    std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
-                    g.draw_text(center, name.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
-                }
-                /* Draw text for block type so that user knows what block */
-                if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-                    std::string block_type_loc = device_ctx.grid[i][j].type->name;
-                    block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
-                    g.draw_text(center - ezgl::point2d(0, abs_clb_bbox.height()/4), 
-                            block_type_loc.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
-                }
+//                if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
+//                    auto& cluster_ctx = g_vpr_ctx.clustering();
+//                    std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
+//                    g.draw_text(center, name.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
+//                }
+//                /* Draw text for block type so that user knows what block */
+//                if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+//                    std::string block_type_loc = device_ctx.grid[i][j].type->name;
+//                    block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
+//                    g.draw_text(center - ezgl::point2d(0, abs_clb_bbox.height()/4), 
+//                            block_type_loc.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
+//                }
             }
         }
     }
@@ -1579,8 +1609,8 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g) 
             g.set_color(text_color);
             ezgl::rectangle bbox(ezgl::point2d(arrow_loc_min.x - DEFAULT_ARROW_SIZE/2, arrow_loc_min.y - DEFAULT_ARROW_SIZE / 4),
                     ezgl::point2d(arrow_loc_min.x + DEFAULT_ARROW_SIZE/2, arrow_loc_min.y + DEFAULT_ARROW_SIZE / 4));
-            ezgl::point2d center(arrow_loc_min.x, arrow_loc_min.y);
-            g.draw_text(center, std::to_string(switchpoint_min));
+            ezgl::point2d center = bbox.center();
+            g.draw_text(center, std::to_string(switchpoint_min), bbox.width(), bbox.height());
             
             if (k == coord_min) {
                 //Revert
@@ -1606,8 +1636,8 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g) 
             g.set_color(text_color);
             ezgl::rectangle bbox(ezgl::point2d(arrow_loc_max.x - DEFAULT_ARROW_SIZE/2, arrow_loc_max.y - DEFAULT_ARROW_SIZE / 4),
                     ezgl::point2d(arrow_loc_max.x + DEFAULT_ARROW_SIZE/2, arrow_loc_max.y + DEFAULT_ARROW_SIZE / 4));
-            ezgl::point2d center(arrow_loc_max.x, arrow_loc_max.y);
-            g.draw_text(center, std::to_string(switchpoint_max));
+            ezgl::point2d center = bbox.center();
+            g.draw_text(center, std::to_string(switchpoint_max), bbox.width(), bbox.height());
             
             if (k == coord_max) {
                 //Revert
@@ -3266,7 +3296,7 @@ static inline void draw_mux_with_size(ezgl::point2d origin, e_side orientation, 
     auto bounds = draw_mux(origin, orientation, height, g);
 
     g.set_color(ezgl::BLACK);
-    g.draw_text(bounds.center(), std::to_string(size));
+    g.draw_text(bounds.center(), std::to_string(size), bounds.width(), bounds.height());
 }
 
 //Draws a mux
@@ -3450,7 +3480,7 @@ static void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, flo
         ss << 1e9*incr_delay; //In nanoseconds
         std::string incr_delay_str = ss.str();
         
-        g.draw_text(text_bbox.center(), incr_delay_str.c_str());
+        g.draw_text(text_bbox.center(), incr_delay_str.c_str(), text_bbox.width(), text_bbox.height());
     }
 }
 
@@ -3805,9 +3835,9 @@ static void draw_routing_util(ezgl::renderer &g) {
                 
                 g.set_color(ezgl::BLACK);
                 if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE) {
-                    g.draw_text(bb.center(), vtr::string_fmt("%.2f", chanx_util).c_str());
+                    g.draw_text(bb.center(), vtr::string_fmt("%.2f", chanx_util).c_str(), bb.width(), bb.height());
                 } else if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_FORMULA) {
-                    g.draw_text(bb.center(), vtr::string_fmt("%.2f = %.0f / %.0f", chanx_util, chanx_usage[x][y], chanx_avail[x][y]).c_str());
+                    g.draw_text(bb.center(), vtr::string_fmt("%.2f = %.0f / %.0f", chanx_util, chanx_usage[x][y], chanx_avail[x][y]).c_str(), bb.width(), bb.height());
                 }
                 
                 sb_util += chanx_util;
@@ -3825,9 +3855,9 @@ static void draw_routing_util(ezgl::renderer &g) {
                 
                 g.set_color(ezgl::BLACK);
                 if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE) {
-                    g.draw_text(bb.center(), vtr::string_fmt("%.2f", chany_util).c_str());
+                    g.draw_text(bb.center(), vtr::string_fmt("%.2f", chany_util).c_str(), bb.width(), bb.height());
                 } else if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_FORMULA) {
-                    g.draw_text(bb.center(), vtr::string_fmt("%.2f = %.0f / %.0f", chany_util, chany_usage[x][y], chany_avail[x][y]).c_str());
+                    g.draw_text(bb.center(), vtr::string_fmt("%.2f = %.0f / %.0f", chany_util, chany_usage[x][y], chany_avail[x][y]).c_str(), bb.width(), bb.height());
                 }
                 
                 sb_util += chany_util;
@@ -3861,7 +3891,7 @@ static void draw_routing_util(ezgl::renderer &g) {
             g.set_color(ezgl::BLACK);
             if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE
                     || draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_FORMULA) {
-                g.draw_text(bb.center(), vtr::string_fmt("%.2f", sb_util).c_str());
+                g.draw_text(bb.center(), vtr::string_fmt("%.2f", sb_util).c_str(), bb.width(), bb.height());
             }
         }
     }
@@ -4083,12 +4113,10 @@ ezgl::rectangle compute_fit_window(){
                 
                 max_x = std::max(max_x, abs_clb_bbox.right());
                 min_x = std::min(min_x, abs_clb_bbox.left());
-                max_y = std::max(max_x, abs_clb_bbox.top());
+                max_y = std::max(max_y, abs_clb_bbox.top());
                 min_y = std::min(min_y, abs_clb_bbox.bottom());
             }
         }
     }
-    std::cout << "found max : " << max_x << " " << max_y << std::endl;
-    std::cout << "found min : " << min_x << " " << min_y << std::endl;
     return ezgl::rectangle({max_x, max_y},{min_x, min_y});
 }
