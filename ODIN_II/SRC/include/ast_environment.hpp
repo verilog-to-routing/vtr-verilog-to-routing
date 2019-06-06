@@ -10,7 +10,7 @@
 #define UNKNOWN_SYMBOL 2
 #define KNOWN_SYMBOL 3
 
-using Value = std::optional<ast_node_t*>;
+using Value = ast_node_t*;
 using Env = std::unordered_map<std::string, Value>;
 
 inline bool is_a_number_node(ast_node_t* node){

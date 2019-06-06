@@ -28,12 +28,12 @@ static void add_int_to_env(ast_node_t* node, Env& env)
 		return;
 	if(is_integer_decl(node)) {
 		env[std::string(node->children[0]->types.identifier)] 
-			= std::nullopt;
+			= nullptr;
 		remove_ast_node(node->parent, node);
 	} else if(is_integer_decl_list(node)) {
 		for(int i=0; i<node->num_children; i++){
 			env[std::string(node->children[i]->children[0]->types.identifier)] 
-				= std::nullopt;
+				= nullptr;
 		}
 		remove_ast_node(node->parent, node);
 	} else {
@@ -74,7 +74,7 @@ int Environment::update_value(std::string symbol, ast_node_t* new_value){
 /* (function: get_value) */
 Value Environment::get_value(std::string symbol){
 	if(!is_in_env(symbol))
-		return std::nullopt;
+		return nullptr;
 	return env[symbol];
 }
 
@@ -177,7 +177,7 @@ ast_node_t* evaluate_node(ast_node_t* node, Environment& env)
 	if(!node)
 		return nullptr;
 	ast_node_t* to_return = nullptr;
-	Value v = std::nullopt;
+	Value v = nullptr;
 	ast_node_t* temp = nullptr;
 	ast_node_t* child_node =nullptr ;
 	ast_node_t* body_parent = nullptr;
@@ -185,7 +185,7 @@ ast_node_t* evaluate_node(ast_node_t* node, Environment& env)
 	switch(node->type){
 		case IDENTIFIERS:
 			v = env.get_value(std::string(node->types.identifier));
-			to_return = (v != std::nullopt) ? ast_node_deep_copy(*v) : node;
+			to_return = (v != nullptr) ? ast_node_deep_copy(v) : node;
 			break;
 		case BINARY_OPERATION:
 			to_return = ast_node_deep_copy(node);
@@ -205,11 +205,10 @@ ast_node_t* evaluate_node(ast_node_t* node, Environment& env)
 			break;
 		case BLOCKING_STATEMENT:
 			if(node->children[0]->type == IDENTIFIERS) {
-				if(env.is_in_env(std::string(node->children[0]->types.identifier))){
+				if(env.is_in_env(std::string(node->children[0]->types.identifier))){	
 					env.update_value(
 						node->children[0]->types.identifier, 
 						evaluate_node(ast_node_deep_copy(node->children[1]), env));
-					free_whole_tree(*v);
 				} else {
 					goto default_case; //forgive me father for I have sinned
 				}
