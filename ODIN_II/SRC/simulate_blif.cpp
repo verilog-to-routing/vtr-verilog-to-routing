@@ -4433,16 +4433,26 @@ static int get_next_vector(FILE *file, char *buffer)
  */
 static void free_lines(lines_t *l)
 {
-	int i;
-	for (i = 0; i < l->count; i++)
+	if(l)
 	{
-		vtr::free(l->lines[i]->name);
-		vtr::free(l->lines[i]->pins);
-		vtr::free(l->lines[i]);
-	}
+		if(l->lines)
+		{
+			while (l->count--)
+			{
+				if(l->lines[l->count])
+				{
+					if(l->lines[l->count]->name)
+						vtr::free(l->lines[l->count]->name);
+					if(l->lines[l->count]->pins)
+						vtr::free(l->lines[l->count]->pins);
+					vtr::free(l->lines[l->count]);
+				}
+			}
 
-	vtr::free(l->lines);
-	vtr::free(l);
+			vtr::free(l->lines);
+		}
+		vtr::free(l);
+	}
 }
 
 /*
@@ -4450,11 +4460,24 @@ static void free_lines(lines_t *l)
  */
 static void free_stages(stages_t *s)
 {
-	while (s->count--)
-		vtr::free(s->stages[s->count]);
-	vtr::free(s->stages);
-	vtr::free(s->counts);
-	vtr::free(s);
+	if(s)
+	{
+		if(s->stages)
+		{
+			while (s->count--)
+			{
+				if(s->stages[s->count])
+					vtr::free(s->stages[s->count]);
+			}
+			vtr::free(s->stages);
+		}
+
+		if(s->counts)
+		{
+			vtr::free(s->counts);
+		}
+		vtr::free(s);
+	}
 }
 
 //maria
@@ -4462,17 +4485,30 @@ static void free_stages(stages_t *s)
 
 static void free_thread_distribution(thread_node_distribution *thread_distribution)
 {
-	for(int i = 0; i < thread_distribution->number_of_threads; i++)
+	if(thread_distribution)
 	{
-		for (int j=0;j<thread_distribution->thread_nodes[i]->number_of_nodes;j++)
+		if(thread_distribution->thread_nodes)
 		{
-			vtr::free(thread_distribution->thread_nodes[i]->nodes[j]);
+			for(int i = 0; i < thread_distribution->number_of_threads; i++)
+			{
+				if(thread_distribution->thread_nodes[i])
+				{
+					for (int j=0;j<thread_distribution->thread_nodes[i]->number_of_nodes;j++)
+					{
+						if(thread_distribution->thread_nodes[i]->nodes[j])
+							vtr::free(thread_distribution->thread_nodes[i]->nodes[j]);
+					}
+
+					if(thread_distribution->thread_nodes[i]->nodes)
+						vtr::free(thread_distribution->thread_nodes[i]->nodes);
+
+					vtr::free(thread_distribution->thread_nodes[i]);
+				}
+			}
+			vtr::free(thread_distribution->thread_nodes);
 		}
-		vtr::free(thread_distribution->thread_nodes[i]->nodes);
-		vtr::free(thread_distribution->thread_nodes[i]);
+		vtr::free(thread_distribution);
 	}
-	vtr::free(thread_distribution->thread_nodes);
-	vtr::free(thread_distribution);
 }
 
 
@@ -4481,11 +4517,22 @@ static void free_thread_distribution(thread_node_distribution *thread_distributi
  */
 static void free_test_vector(test_vector* v)
 {
-	while (v->count--)
-			vtr::free(v->values[v->count]);
-	vtr::free(v->values);
-	vtr::free(v->counts);
-	vtr::free(v);
+	if(v)
+	{
+		if(v->values)
+		{
+			while (v->count--)
+			{
+				if(v->values[v->count])
+					vtr::free(v->values[v->count]);
+			}
+			vtr::free(v->values);
+		}
+
+		if(v->counts)
+			vtr::free(v->counts);
+		vtr::free(v);
+	}
 }
 
 /*
