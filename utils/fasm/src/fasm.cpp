@@ -109,17 +109,11 @@ void FasmWriterVisitor::check_interconnect(const t_pb_routes &pb_routes, int ino
   }
 }
 
-std::string FasmWriterVisitor::build_clb_prefix(const t_pb_graph_node* pb_graph_node) const {
-  std::string clb_prefix = "";
-
-  if(root_clb_ != pb_graph_node && pb_graph_node->parent_pb_graph_node != root_clb_) {
-    VTR_ASSERT(pb_graph_node->parent_pb_graph_node != nullptr);
-    clb_prefix = build_clb_prefix(pb_graph_node->parent_pb_graph_node);
-  }
-
-  const auto *pb_type = pb_graph_node->pb_type;
-  if(!pb_type->meta.has("fasm_prefix")) {
-    return clb_prefix;
+static std::string handle_fasm_prefix(const t_metadata_dict *meta,
+        const t_pb_graph_node *pb_graph_node, const t_pb_type *pb_type) {
+  bool has_prefix = meta != nullptr && meta->has("fasm_prefix");
+  if(!has_prefix) {
+      return "";
   }
 
   auto fasm_prefix_unsplit = meta->one("fasm_prefix")->as_string();
@@ -185,6 +179,7 @@ std::string FasmWriterVisitor::build_clb_prefix(const t_pb *pb, const t_pb_graph
     VTR_ASSERT(mode_index == 0);
   }
 
+  return clb_prefix;
 }
 
 static const t_pb_graph_pin* is_node_used(const t_pb_routes &top_pb_route, const t_pb_graph_node* pb_graph_node) {
@@ -227,8 +222,6 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
 
   const t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
 
-  clb_prefix_ = build_clb_prefix(pb, pb_graph_node);
-  clb_prefix_ = build_clb_prefix(pb_graph_node);
   // Check if this PB is `open` and has to be skipped
   bool is_parent_pb_null = false;
   std::string clb_prefix = build_clb_prefix(pb, pb_graph_node, &is_parent_pb_null);
@@ -248,7 +241,7 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
   if(mode != nullptr && std::string(mode->name) == "wire") {
     auto io_pin = is_node_used(pb_routes, pb_graph_node);
     if(io_pin != nullptr) {
-    const auto& route = pb_routes.at(io_pin->pin_count_in_cluster);
+      const auto& route = pb_routes.at(io_pin->pin_count_in_cluster);
       const int num_inputs = *route.pb_graph_pin->parent_node->num_input_pins;
       const auto *lut_definition = find_lut(route.pb_graph_pin->parent_node);
       VTR_ASSERT(lut_definition->num_inputs == num_inputs);
@@ -268,6 +261,19 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
     }
     port_index += 1;
   }
+
+  port_index = 0;
+  for (int i = 0; i < pb_type->num_ports; i++) {
+    if (!pb_type->ports[i].is_clock || pb_type->ports[i].type != IN_PORT) {
+      continue;
+    }
+    for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
+      int inode = pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
+      check_interconnect(pb_routes, inode);
+    }
+    port_index += 1;
+  }
+
   port_index = 0;
   for (int i = 0; i < pb_type->num_ports; i++) {
     if (pb_type->ports[i].type != OUT_PORT) {
