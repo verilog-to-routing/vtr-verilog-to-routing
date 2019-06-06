@@ -10,10 +10,10 @@ class TimingGraphBuilder {
     TimingGraphBuilder(const AtomNetlist& netlist,
                        AtomLookup& netlist_lookup);
 
-    std::unique_ptr<tatum::TimingGraph> timing_graph();
+    std::unique_ptr<tatum::TimingGraph> timing_graph(bool allow_dangling_combinational_nodes);
 
   private:
-    void build();
+    void build(bool allow_dangling_combinational_nodes);
     void opt_memory_layout();
 
     void add_io_to_timing_graph(const AtomBlockId blk);
