@@ -1190,6 +1190,27 @@ t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root,
         full_device_bounding_box.xmax = device_ctx.grid.width() - 1;
         full_device_bounding_box.ymax = device_ctx.grid.height() - 1;
 
+        //
+        //TODO: potential future optimization
+        //      We have already explored the RR nodes accessible within the regular
+        //      BB (which are stored in modified_rr_node_inf), and so already know
+        //      their cost from the source. Instead of re-starting the path search
+        //      from scratch (i.e. from the previous route tree as we do below), we
+        //      could just re-add all the explored nodes to the heap and continue
+        //      expanding.
+        //
+
+        //Reset any previously recorded node costs so that when we call
+        //add_route_tree_to_heap() the nodes in the route tree actually
+        //make it back into the heap.
+        reset_path_costs(modified_rr_node_inf);
+        modified_rr_node_inf.clear();
+
+        //Re-initialize the heap since it was emptied by the previous call to
+        //timing_driven_route_connection_from_heap()
+        add_route_tree_to_heap(rt_root, sink_node, cost_params, router_lookahead, router_stats);
+
+        //Try finding the path again with the relaxed bounding box
         cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                             cost_params,
                                                             full_device_bounding_box,
@@ -1249,8 +1270,21 @@ static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_n
         //Found no path, that may be due to an unlucky choice of existing route tree sub-set,
         //try again with the full route tree to be sure this is not an artifact of high-fanout routing
         VTR_LOG_WARN("No routing path found in high-fanout mode for net connection (to sink_rr %d), retrying with full route tree\n", sink_node);
-        cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, net_bounding_box, router_lookahead, modified_rr_node_inf, router_stats);
+
+        //Reset any previously recorded node costs so timing_driven_route_connection()
+        //starts over from scratch.
+        reset_path_costs(modified_rr_node_inf);
+        modified_rr_node_inf.clear();
+
+        cheapest = timing_driven_route_connection_from_route_tree(rt_root,
+                                                                  sink_node,
+                                                                  cost_params,
+                                                                  net_bounding_box,
+                                                                  router_lookahead,
+                                                                  modified_rr_node_inf,
+                                                                  router_stats);
     }
+
     if (cheapest == nullptr) {
         VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
 
@@ -1788,7 +1822,7 @@ static void timing_driven_expand_neighbour(t_heap* current,
         VTR_LOGV_DEBUG(f_router_debug,
                        "      Pruned expansion of node %d edge %d -> %d"
                        " (to node location %d,%dx%d,%d outside of expanded"
-                       " net bounding box %d,%dx%d,%d\n",
+                       " net bounding box %d,%dx%d,%d)\n",
                        from_node, from_edge, to_node,
                        to_xlow, to_ylow, to_xhigh, to_yhigh,
                        bounding_box.xmin, bounding_box.ymin, bounding_box.xmax, bounding_box.ymax);
@@ -1810,8 +1844,8 @@ static void timing_driven_expand_neighbour(t_heap* current,
                 || to_yhigh > target_bb.ymax) {
                 VTR_LOGV_DEBUG(f_router_debug,
                                "      Pruned expansion of node %d edge %d -> %d"
-                               " (to node is IPIN at (%d,%d)x(%d,%d) which does not"
-                               " lead to target block (%d,%d)x(%d,%d)\n",
+                               " (to node is IPIN at %d,%dx%d,%d which does not"
+                               " lead to target block %d,%dx%d,%d)\n",
                                from_node, from_edge, to_node,
                                to_xlow, to_ylow, to_xhigh, to_yhigh,
                                target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
@@ -1861,18 +1895,7 @@ static void timing_driven_expand_node(const t_conn_cost_params cost_params,
                                       const int to_node,
                                       const int iconn,
                                       const int target_node) {
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-    if (f_router_debug) {
-        auto& device_ctx = g_vpr_ctx.device();
-        bool reached_via_non_configurable_edge = !device_ctx.rr_nodes[from_node].edge_is_configurable(iconn);
-        if (reached_via_non_configurable_edge) {
-            VTR_LOG("        Force Expanding to node %d (%s)", to_node, describe_rr_node(to_node).c_str());
-        } else {
-            VTR_LOG("      Expanding to node %d (%s)", to_node, describe_rr_node(to_node).c_str());
-        }
-        VTR_LOG("\n");
-    }
-#endif
+    VTR_LOGV_DEBUG(f_router_debug, "      Expanding to node %d (%s)\n", to_node, describe_rr_node(to_node).c_str());
 
     evaluate_timing_driven_node_costs(current,
                                       cost_params,
@@ -2646,7 +2669,7 @@ static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId n
     }
 
 #ifndef VTR_ENABLE_DEBUG_LOGGING
-    VTR_LOGV_WARN(f_router_debug, "Limited router debug output provided since compiled without VTR_ENABLE_DEBUG_LOGGING defined");
+    VTR_LOGV_WARN(f_router_debug, "Limited router debug output provided since compiled without VTR_ENABLE_DEBUG_LOGGING defined\n");
 #endif
 }
 

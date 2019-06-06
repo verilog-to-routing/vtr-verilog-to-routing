@@ -238,6 +238,10 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 				if(parent_parameter_list->children[i]->children[0] && parent_parameter_list->children[i]->shared_node == FALSE)
 				{
 					ast_node_t *var_declare = parent_parameter_list->children[i];
+					oassert(var_declare != NULL);
+					oassert(var_declare->children[0] != NULL);
+					oassert(var_declare->children[0]->types.identifier != NULL);
+					
 					sc_spot = sc_lookup_string(local_param_table_sc, var_declare->children[0]->types.identifier);
 					if(sc_spot == -1)
 					{
@@ -260,6 +264,11 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 					if(parent_parameter_list->children[i]->shared_node == TRUE)
 					{
 						ast_node_t *var_declare = parent_parameter_list->children[i];
+
+						oassert(var_declare != NULL);
+						oassert(var_declare->children[0] != NULL);
+						oassert(var_declare->children[0]->types.identifier != NULL);
+
 						sc_spot = sc_lookup_string(local_param_table_sc, var_declare->children[0]->types.identifier);
 						if(sc_spot == -1)
 						{
@@ -279,12 +288,13 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 					if (parameter_count < parameter_num) 
 					{
 						ast_node_t *var_declare = parent_parameter_list->children[i];
+
 						sc_spot = sc_lookup_string(local_param_table_sc, temp_parameter_list[parameter_count]);
 						if(sc_spot == -1)
 						{
 							error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
 									"Can't find parameter name %s in module %s\n",
-									var_declare->children[0]->types.identifier,
+									temp_parameter_list[parameter_count],
 									module_name);
 						}
 						local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
@@ -3893,19 +3903,36 @@ void terminate_continuous_assignment(ast_node_t *node, signal_list_t* assignment
 	{
 		npin_t *pin = memory_inputs->pins[i];
 		implicit_memory *memory = lookup_implicit_memory_input(pin->name);
-		nnode_t *node2 = memory->node;
-
-		int j;
-		for (j = 0; j < node2->num_input_pins; j++)
+		if(memory)
 		{
-			npin_t *original_pin = node2->input_pins[j];
-			if (original_pin->name && pin->name && !strcmp(original_pin->name, pin->name))
+			nnode_t *node2 = memory->node;
+			if(node2)
 			{
-				pin->mapping = original_pin->mapping;
-				add_input_pin_to_node(node2, pin, j);
-				break;
+				int j;
+				for (j = 0; j < node2->num_input_pins; j++)
+				{
+					npin_t *original_pin = node2->input_pins[j];
+					if (original_pin->name && pin->name && !strcmp(original_pin->name, pin->name))
+					{
+						pin->mapping = original_pin->mapping;
+						add_input_pin_to_node(node2, pin, j);
+						break;
+					}
+				}
 			}
+			else
+			{
+				// TODO: proper error
+				oassert(node2);
+			}
+			
 		}
+		else
+		{
+			// TODO: proper error
+			oassert(memory);
+		}
+		
 	}
 	free_signal_list(memory_inputs);
 

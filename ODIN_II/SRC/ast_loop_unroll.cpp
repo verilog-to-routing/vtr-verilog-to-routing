@@ -134,18 +134,30 @@ ast_node_t* for_preprocessor(ast_node_t *ast_module, ast_node_t* node, ast_node_
 		for_loops = is_for_node(node->children[i]);
 	}
 
-	ast_node_t* new_node = for_loops ? replace_fors(ast_module, node, instances, num_unrolled, num_original) : node;
+	ast_node_t* new_node = NULL;
+	if(for_loops)
+	{
+		new_node = replace_fors(ast_module, node, instances, num_unrolled, num_original);
+	}
+	else
+	{
+		new_node = node;
+	}
+	
+	if(new_node)
+	{
+		/* Run this function recursively on the children */
+		for(int i=0; i<new_node->num_children; i++){
+			ast_node_t* new_child = for_preprocessor(ast_module, new_node->children[i], instances, num_unrolled, num_original);
 
-	/* Run this function recursively on the children */
-	for(int i=0; i<new_node->num_children; i++){
-		ast_node_t* new_child = for_preprocessor(ast_module, new_node->children[i], instances, num_unrolled, num_original);
-
-		/* Cleanup replaced child */
-		if(new_node->children[i] != new_child){
-			free_whole_tree(new_node->children[i]);
-			new_node->children[i] = new_child;
+			/* Cleanup replaced child */
+			if(new_node->children[i] != new_child){
+				free_whole_tree(new_node->children[i]);
+				new_node->children[i] = new_child;
+			}
 		}
 	}
+	
 	return new_node;
 }
 
