@@ -128,8 +128,8 @@ my $crit_path_router_iterations = undef;
 
 ##########
 # ABC flow modifiers
-my $flow_type = 0;
-my $use_new_latches_restoration_script = 0;
+my $flow_type = 2; #Use iterative black-boxing flow for multi-clock circuits
+my $use_new_latches_restoration_script = 1;
 my $odin_run_simulation = 0;
 
 while ( scalar(@ARGV) != 0 ) { #While non-empty
