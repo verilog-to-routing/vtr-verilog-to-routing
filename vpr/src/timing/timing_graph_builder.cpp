@@ -40,8 +40,8 @@ TimingGraphBuilder::TimingGraphBuilder(const AtomNetlist& netlist,
     //pass
 }
 
-std::unique_ptr<TimingGraph> TimingGraphBuilder::timing_graph() {
-    build();
+std::unique_ptr<TimingGraph> TimingGraphBuilder::timing_graph(bool allow_dangling_combinational_nodes) {
+    build(allow_dangling_combinational_nodes);
     opt_memory_layout();
 
     VTR_ASSERT(tg_);
@@ -50,8 +50,12 @@ std::unique_ptr<TimingGraph> TimingGraphBuilder::timing_graph() {
     return std::move(tg_);
 }
 
-void TimingGraphBuilder::build() {
+void TimingGraphBuilder::build(bool allow_dangling_combinational_nodes) {
     tg_ = std::make_unique<tatum::TimingGraph>();
+
+    // Optionally allow dangling combinational nodes.
+    // Set by `--allow_dangling_combinational_nodes on`. Default value is false
+    tg_->set_allow_dangling_combinational_nodes(allow_dangling_combinational_nodes);
 
     for (AtomBlockId blk : netlist_.blocks()) {
         AtomBlockType blk_type = netlist_.block_type(blk);

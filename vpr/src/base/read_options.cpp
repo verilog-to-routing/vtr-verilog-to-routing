@@ -949,6 +949,16 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             "This option should be only used for development purposes.")
         .default_value("");
 
+    gen_grp.add_argument<bool, ParseOnOff>(args.allow_dangling_combinational_nodes, "--allow_dangling_combinational_nodes")
+        .help(
+            "Option to allow dangling combinational nodes in the timing graph.\n"
+            "This option should normally be off, as dangling combinational nodes are unusual\n"
+            "in the timing graph and may indicate a problem in the circuit or architecture.\n"
+            "Unless you understand why your architecture/circuit can have valid dangling combinational nodes, this option should be off.\n"
+            "In general this is a dev-only option and should not be turned on by the end-user.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& file_grp = parser.add_argument_group("file options");
 
     file_grp.add_argument(args.BlifFile, "--circuit_file")

@@ -52,6 +52,7 @@ struct t_options {
     argparse::ArgValue<bool> strict_checks;
     argparse::ArgValue<std::string> disable_errors;
     argparse::ArgValue<std::string> suppress_warnings;
+    argparse::ArgValue<bool> allow_dangling_combinational_nodes;
 
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;
