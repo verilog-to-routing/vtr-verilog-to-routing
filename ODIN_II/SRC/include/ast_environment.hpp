@@ -2,7 +2,6 @@
 #define AST_ENVIRONMENT_HPP
 
 #include <unordered_map>
-#include <optional>
 #include "odin_types.h"
 
 #define SUCCESS 0
