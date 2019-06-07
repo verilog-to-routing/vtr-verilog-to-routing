@@ -1592,8 +1592,8 @@ static void ProcessMode(pugi::xml_node Parent, t_mode* mode, const bool timing_e
     map<string, int> pb_type_names;
     pair<map<string, int>::iterator, bool> ret_pb_types;
 
-    if (0 == strcmp(Parent.name(), "pb_type")) {
-        /* implied mode */
+    bool implied_mode = 0 == strcmp(Parent.name(), "pb_type");
+    if (implied_mode) {
         mode->name = vtr::strdup("default");
     } else {
         Prop = get_attribute(Parent, "name", loc_data).value();
@@ -1610,7 +1610,8 @@ static void ProcessMode(pugi::xml_node Parent, t_mode* mode, const bool timing_e
             if (0 == strcmp(Cur.name(), "pb_type")) {
                 ProcessPb_Type(Cur, &mode->pb_type_children[i], mode, timing_enabled, arch, loc_data);
 
-                ret_pb_types = pb_type_names.insert(pair<string, int>(mode->pb_type_children[i].name, 0));
+                ret_pb_types = pb_type_names.insert(
+                    pair<string, int>(mode->pb_type_children[i].name, 0));
                 if (!ret_pb_types.second) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                    "Duplicate pb_type name: '%s' in mode: '%s'.\n",
@@ -1629,7 +1630,11 @@ static void ProcessMode(pugi::xml_node Parent, t_mode* mode, const bool timing_e
     /* Allocate power structure */
     mode->mode_power = (t_mode_power*)vtr::calloc(1, sizeof(t_mode_power));
 
-    mode->meta = ProcessMetadata(Parent, loc_data);
+    if (!implied_mode) {
+        // Implied mode metadata is attached to the pb_type, rather than
+        // the t_mode object.
+        mode->meta = ProcessMetadata(Parent, loc_data);
+    }
 
     /* Clear STL map used for duplicate checks */
     pb_type_names.clear();
