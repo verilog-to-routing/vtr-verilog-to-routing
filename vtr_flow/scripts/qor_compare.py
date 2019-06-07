@@ -9,19 +9,39 @@ import os
 import pandas as pd
 
 DEFAULT_METRICS = [
+    #ABC QoR Metrics
+    'abc_depth',
     'num_pre_packed_blocks',
+
+    #Pack QoR Metrics
     'num_post_packed_blocks',
-    'num_clb',
-    'min_chan_width',
-    'crit_path_routed_wirelength',
-    'critical_path_delay',
+    'num_clb', #VTR
+    'num_memories', #VTR
+    'num_mult', #VTR
+    'num_LAB', #Titan
+    'num_DSP', #Titan
+    'num_M9K', #Titan
+    'num_M144K', #Titan
     'device_grid_tiles',
 
-    'vtr_flow_elapsed_time',
+    #Place QoR Metrics
+    'placed_wirelength_est',
+    'placed_CPD_est',
+
+    #Route QoR Metrics
+    'min_chan_width', #VTR
+    'routed_wirelength', #VTR (minW), Titan
+    'crit_path_routed_wirelength', #VTR
+    'critical_path_delay', #VTR/Titan
+
+    #Run-time Metrics
+    'odin_synth_time',
+    'abc_synth_time',
     'pack_time',
     'place_time',
     'min_chan_width_route_time',
     'crit_path_route_time',
+    'vtr_flow_elapsed_time',
     'max_vpr_mem',
 ]
 
@@ -91,17 +111,33 @@ def main():
 
     assert len(args.result_names) == len(args.parse_result_files)
 
+    avail_metrics = set()
+
     #Load all the raw data into separate sheets
     raw_sheets = OrderedDict()
-    for i in xrange(len(args.parse_result_files)):
+    for i, csv in enumerate(args.parse_result_files):
+        #Load as CSV
+        print "Loading", csv
+        df = pd.read_csv(csv, sep='\t')
+
+        avail_metrics.update(df.columns) #Record available metrics
+
+        #Convert to work sheet
         sheet_name = safe_sheet_title("{}".format(args.result_names[i]))
-        ws = parse_result_to_sheet(wb, args.parse_result_files[i], sheet_name)
+        ws = dataframe_to_sheet(wb, df, sheet_name)
 
         raw_sheets[sheet_name] = ws
 
+    qor_metrics = []
+    for metric in args.qor_metrics:
+        if metric not in avail_metrics:
+            print "Warning: Metric", metric, "not found in parse results (may be for a different benchmark set)"
+        else:
+            qor_metrics.append(metric)
+
     #Create sheet of ratios
     ratio_sheet = wb.create_sheet("ratios", index=0)
-    ratio_ranges = make_ratios(ratio_sheet, raw_sheets, keys=args.keys, metrics=args.qor_metrics)
+    ratio_ranges = make_ratios(ratio_sheet, raw_sheets, keys=args.keys, metrics=qor_metrics)
 
     #Create summary sheet
     summary_data_sheet = wb.create_sheet("summary_data", index=0)
@@ -119,8 +155,7 @@ def make_transpose(dest_sheet, ref_sheet):
             ref_cell = ref_sheet.cell(row=ref_row, column=ref_col)
 
             dest_cell = dest_sheet.cell(row=ref_col, column=ref_row)
-            dest_cell.value = "=IF(ISBLANK({cell}),\"\",{cell})".format(cell=value_ref(ref_cell))
-
+            dest_cell.value = "=IF(OR(ISBLANK({cell}),ISERROR({cell})),\"\",{cell})".format(cell=value_ref(ref_cell))
 
 def make_summary(summary_sheet, ratio_sheet, ratio_ranges, keys):
     dest_row = 1
@@ -276,11 +311,7 @@ def link_sheet_header(dest_sheet, ref_sheet, row, values=None):
 
         dest_col += 1
 
-def parse_result_to_sheet(wb, parse_results_filename, sheet_name):
-
-    #Load as CSV
-    print "Loading", parse_results_filename
-    df = pd.read_csv(parse_results_filename, sep='\t')
+def dataframe_to_sheet(wb, df, sheet_name):
 
     #Add to sheet
     ws = wb.create_sheet(title=sheet_name)
@@ -318,7 +349,6 @@ def get_task_result_files(task_name):
         raise RuntimeError("Latest parse results of task \"{}\" doesn't exist".format(task_result_files[1]))
 
     return task_result_files
-
 
 if __name__ == "__main__":
     main()

@@ -187,10 +187,8 @@ function create_temp() {
 		echo "running benchmark @${NEW_RUN_DIR}"
 		mkdir -p ${NEW_RUN_DIR}
 
-		if [ -e regression_test/latest ]; then
-			unlink regression_test/latest || /bin/true
-			rm -Rf regression_test/latest || /bin/true
-		fi
+		unlink regression_test/latest &> /dev/null || /bin/true
+		rm -Rf regression_test/latest || /bin/true
 
 		ln -s ${NEW_RUN_DIR} regression_test/latest
 	fi
@@ -286,10 +284,10 @@ function _set_if() {
 
 function _set_flag() {
 	_low_ressource_flag=$(_set_if ${_LIMIT_RESSOURCE} "--limit_ressource")
-	_valgrind_flag=$(_set_if ${_VALGRIND} "--valgrind")
+	_valgrind_flag=$(_set_if ${_VALGRIND} "--tool valgrind")
 	_batch_sim_flag=$(_set_if ${_BATCH_SIM} "--batch")
 	_use_best_coverage_flag=$(_set_if ${_BEST_COVERAGE_OFF} "--best_coverage")
-	_perf_flag=$(_set_if ${_USE_PERF} "--perf")
+	_perf_flag=$(_set_if ${_USE_PERF} "--tool perf")
 	
 	_vector_flag="-g ${_VECTORS}"
 	_timeout_flag="--time_limit ${_TIMEOUT}s"

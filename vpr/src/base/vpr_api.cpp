@@ -726,7 +726,7 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
 }
 
 RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
-                             const t_arch& arch,
+                             const t_arch& /*arch*/,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
                              vtr::vector<ClusterNetId, float*>& net_delay) {
@@ -734,9 +734,6 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
         VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
     }
-
-    //Create the routing resource graph
-    vpr_create_rr_graph(vpr_setup, arch, fixed_channel_width);
 
     auto& filename_opts = vpr_setup.FileNameOpts;
 

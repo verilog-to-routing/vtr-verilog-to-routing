@@ -98,12 +98,10 @@ int yylex(void);
 %nonassoc LOWER_THAN_ELSE
 %nonassoc vELSE
 
-
-%type <node> source_text items define module list_of_module_items list_of_function_items module_item function_item
-%type <node> variable_define_list
-%type <node> parameter_declaration input_declaration output_declaration defparam_declaration function_declaration
-%type <node> function_input_declaration
-%type <node> inout_declaration variable_list function_output_variable function_id_and_output_variable
+%type <node> source_text items module list_of_module_items list_of_function_items module_item function_item module_parameters module_ports
+%type <node> list_of_parameter_declaration parameter_declaration list_of_port_declaration port_declaration defparam_declaration
+%type <node> function_declaration function_input_declaration
+%type <node> input_declaration output_declaration inout_declaration variable_list function_output_variable function_id_and_output_variable
 %type <node> integer_type_variable_list variable integer_type_variable
 %type <node> net_declaration integer_declaration function_instantiation genvar_declaration
 %type <node> continuous_assign multiple_inputs_gate_instance list_of_single_input_gate_declaration_instance
@@ -129,34 +127,53 @@ source_text:
 
 items:
 	items module	{($1 != NULL)? $$ = newList_entry($1, $2): $$ = newList(FILE_ITEMS, $2);}
-	| items define	{$$ = $1;}
 	| module	{$$ = newList(FILE_ITEMS, $1);}
-	| define	{$$ = NULL;}
 	;
-
-define:
-	vDEFINE vSYMBOL_ID vINTEGRAL			{$$ = NULL; newConstant($2, newNumberNode($3, LONG, UNSIGNED, yylineno), yylineno);}
-	| vDEFINE vSYMBOL_ID vUNSIGNED_DECIMAL		{$$ = NULL; newConstant($2, newNumberNode($3, DEC, UNSIGNED, yylineno), yylineno);}
-	| vDEFINE vSYMBOL_ID vUNSIGNED_OCTAL		{$$ = NULL; newConstant($2, newNumberNode($3, OCT, UNSIGNED, yylineno), yylineno);}
-	| vDEFINE vSYMBOL_ID vUNSIGNED_HEXADECIMAL	{$$ = NULL; newConstant($2, newNumberNode($3, HEX, UNSIGNED, yylineno), yylineno);}
-	| vDEFINE vSYMBOL_ID vUNSIGNED_BINARY		{$$ = NULL; newConstant($2, newNumberNode($3, BIN, UNSIGNED, yylineno), yylineno);}
-	| vDEFINE vSYMBOL_ID vSIGNED_DECIMAL		{$$ = NULL; newConstant($2, newNumberNode($3, DEC, SIGNED, yylineno), yylineno);}
-	| vDEFINE vSYMBOL_ID vSIGNED_OCTAL		{$$ = NULL; newConstant($2, newNumberNode($3, OCT, SIGNED, yylineno), yylineno);}
-	| vDEFINE vSYMBOL_ID vSIGNED_HEXADECIMAL	{$$ = NULL; newConstant($2, newNumberNode($3, HEX, SIGNED, yylineno), yylineno);}
-	| vDEFINE vSYMBOL_ID vSIGNED_BINARY		{$$ = NULL; newConstant($2, newNumberNode($3, BIN, SIGNED, yylineno), yylineno);}
-	;
-
 
 module:
-	vMODULE vSYMBOL_ID '(' variable_define_list ')' ';' list_of_module_items vENDMODULE		{$$ = newModule($2, $4, $7, yylineno);}
-	| vMODULE vSYMBOL_ID '(' variable_define_list ',' ')' ';' list_of_module_items vENDMODULE	{$$ = newModule($2, $4, $8, yylineno);}
-	| vMODULE vSYMBOL_ID '(' ')' ';' list_of_module_items vENDMODULE				{$$ = newModule($2, NULL, $6, yylineno);}
+	vMODULE vSYMBOL_ID module_parameters module_ports ';' list_of_module_items vENDMODULE			{$$ = newModule($2, $3, $4, $6, yylineno);}
+	| vMODULE vSYMBOL_ID module_parameters ';' list_of_module_items vENDMODULE						{$$ = newModule($2, $3, NULL, $5, yylineno);}
+	| vMODULE vSYMBOL_ID module_ports ';' list_of_module_items vENDMODULE							{$$ = newModule($2, NULL, $3, $5, yylineno);}
+	| vMODULE vSYMBOL_ID ';' list_of_module_items vENDMODULE										{$$ = newModule($2, NULL, NULL, $4, yylineno);}
 	;
 
-//TODO expand this to support INPUT OUTPUT INOUT
-variable_define_list:
-	variable_define_list ',' vSYMBOL_ID	{$$ = newList_entry($1, newVarDeclare($3, NULL, NULL, NULL, NULL, NULL, yylineno));}
-	| vSYMBOL_ID				{$$ = newList(VAR_DECLARE_LIST, newVarDeclare($1, NULL, NULL, NULL, NULL, NULL, yylineno));}
+module_parameters:
+	'#' '(' list_of_parameter_declaration ')'			{$$ = $3;}
+	| '#' '(' list_of_parameter_declaration ',' ')'		{$$ = $3;}
+	| '#' '(' ')'										{$$ = NULL;}
+	;
+
+list_of_parameter_declaration:
+	list_of_parameter_declaration ',' vPARAMETER variable	{$$ = newList_entry($1, markAndProcessParameterWith(MODULE,PARAMETER, $4));}
+	| list_of_parameter_declaration ',' variable			{$$ = newList_entry($1, markAndProcessParameterWith(MODULE,PARAMETER, $3));}
+	| vPARAMETER variable									{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(MODULE,PARAMETER, $2));}
+	;
+
+module_ports:
+	'(' list_of_port_declaration ')'					{$$ = $2;}
+	| '(' list_of_port_declaration ',' ')'				{$$ = $2;}
+	| '(' ')'											{$$ = NULL;}
+	;
+
+list_of_port_declaration:
+	list_of_port_declaration ',' port_declaration		{$$ = newList_entry($1, $3);}
+	| port_declaration									{$$ = newList(VAR_DECLARE_LIST, $1);}
+	;
+	
+port_declaration:
+	vINPUT vWIRE variable						{$$ = markAndProcessPortWith(MODULE, INPUT, WIRE, $3);}
+	| vOUTPUT vWIRE variable					{$$ = markAndProcessPortWith(MODULE, OUTPUT, WIRE, $3);}
+	| vINOUT vWIRE variable						{$$ = markAndProcessPortWith(MODULE, INOUT, WIRE, $3);}
+	| vINPUT vREG variable						{$$ = markAndProcessPortWith(MODULE, INPUT, REG, $3);}
+	| vOUTPUT vREG variable						{$$ = markAndProcessPortWith(MODULE, OUTPUT, REG, $3);}
+	| vINOUT vREG variable						{$$ = markAndProcessPortWith(MODULE, INOUT, REG, $3);}
+	| vINPUT vINTEGER integer_type_variable		{$$ = markAndProcessPortWith(MODULE, INPUT, INTEGER, $3);}
+	| vOUTPUT vINTEGER integer_type_variable	{$$ = markAndProcessPortWith(MODULE, OUTPUT, INTEGER, $3);}
+	| vINOUT vINTEGER integer_type_variable		{$$ = markAndProcessPortWith(MODULE, INOUT, INTEGER, $3);}
+	| vINPUT variable							{$$ = markAndProcessPortWith(MODULE, INPUT, NO_ID, $2);}
+	| vOUTPUT variable							{$$ = markAndProcessPortWith(MODULE, OUTPUT, NO_ID, $2);}
+	| vINOUT variable							{$$ = markAndProcessPortWith(MODULE, INOUT, NO_ID, $2);}
+	| variable									{$$ = $1;}
 	;
 
 list_of_module_items:
@@ -166,12 +183,12 @@ list_of_module_items:
 
 module_item:
 	parameter_declaration	{$$ = $1;}
-	| input_declaration	{$$ = $1;}
-	| output_declaration	{$$ = $1;}
-	| inout_declaration	{$$ = $1;}
-	| net_declaration	{$$ = $1;}
+	| input_declaration	 {$$ = $1;}
+	| output_declaration 	{$$ = $1;}
+	| inout_declaration 	{$$ = $1;}
+	| net_declaration 	{$$ = $1;}
 	| genvar_declaration	{$$ = $1;}
-	| integer_declaration	{$$ = $1;}
+	| integer_declaration 	{$$ = $1;}
 	| continuous_assign	{$$ = $1;}
 	| gate_declaration	{$$ = $1;}
 	| generate		{$$ = $1;}
@@ -203,8 +220,8 @@ list_of_function_items:
 function_item: 
 	parameter_declaration		{$$ = $1;}
 	| function_input_declaration	{$$ = $1;}
-	| net_declaration		{$$ = $1;}
-	| integer_declaration		{$$ = $1;}
+	| net_declaration 		{$$ = $1;}
+	| integer_declaration 		{$$ = $1;}
 	| continuous_assign		{$$ = $1;}
 	| defparam_declaration		{$$ = $1;}
 	| function_statement		{$$ = $1;} //TODO It`s temporary
@@ -231,6 +248,7 @@ input_declaration:
 output_declaration:
 	vOUTPUT variable_list ';'					{$$ = markAndProcessSymbolListWith(MODULE,OUTPUT, $2);}
 	| vOUTPUT net_declaration					{$$ = markAndProcessSymbolListWith(MODULE,OUTPUT, $2);}
+	| vOUTPUT integer_declaration				{$$ = markAndProcessSymbolListWith(MODULE,OUTPUT, $2);}
 	;
 
 inout_declaration:
@@ -254,7 +272,7 @@ function_output_variable:
 	function_id_and_output_variable	{$$ = newList(VAR_DECLARE_LIST, $1);}
 	;
 
-function_id_and_output_variable :
+function_id_and_output_variable:
 	vSYMBOL_ID					{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, NULL, yylineno);}
 	| '[' expression ':' expression ']' vSYMBOL_ID	{$$ = newVarDeclare($6, $2, $4, NULL, NULL, NULL, yylineno);}
 	;
