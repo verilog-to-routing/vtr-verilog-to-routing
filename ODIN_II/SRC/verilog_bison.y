@@ -145,7 +145,7 @@ define:
 	| vDEFINE vSYMBOL_ID vSIGNED_BINARY		{$$ = NULL; newConstant($2, newNumberNode($3, BIN, SIGNED, yylineno), yylineno);}
 	;
 
-
+// TODO support inline parameter declarations
 module:
 	vMODULE vSYMBOL_ID '(' list_of_port_declaration ')' ';' list_of_module_items vENDMODULE		{$$ = newModule($2, $4, $7, yylineno);}
 	| vMODULE vSYMBOL_ID '(' list_of_port_declaration ',' ')' ';' list_of_module_items vENDMODULE	{$$ = newModule($2, $4, $8, yylineno);}
