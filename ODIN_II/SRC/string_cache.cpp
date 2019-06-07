@@ -91,6 +91,36 @@ sc_lookup_string(STRING_CACHE * sc,
     }
 }
 
+bool
+sc_remove_string(STRING_CACHE * sc,
+	      const char *string)
+{
+    long i, hash;
+
+    if(sc != NULL) {
+        hash = string_hash(sc, string) % sc->string_hash_size;
+        i = sc->string_hash[hash];
+        while(i >= 0)
+        {
+            if(!strcmp(sc->string[i], string))
+            {
+                vtr::free(sc->string[i]);
+                if(sc->data[i] != NULL)
+                {
+            	    vtr::free(sc->data[i]);
+                    sc->data = NULL;
+                }
+                sc->string[i] = vtr::strdup("REMOVED_NAME_FROM_SC_CACHE");
+                return true;
+            }
+            i = sc->next_string[i];
+        }
+    }
+    
+    return false;
+
+}
+
 long
 sc_add_string(STRING_CACHE * sc,
 	   const char *string)

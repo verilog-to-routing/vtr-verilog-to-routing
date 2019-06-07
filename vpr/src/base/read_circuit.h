@@ -11,9 +11,9 @@ enum class e_circuit_format {
 };
 
 AtomNetlist read_and_process_circuit(const e_circuit_format circuit_format,
-                                     const char *circuit_file,
-                                     const t_model *user_models,
-                                     const t_model *library_models,
+                                     const char* circuit_file,
+                                     const t_model* user_models,
+                                     const t_model* library_models,
                                      e_const_gen_inference const_gen_inference,
                                      bool should_absorb_buffers,
                                      bool should_sweep_dangling_primary_ios,

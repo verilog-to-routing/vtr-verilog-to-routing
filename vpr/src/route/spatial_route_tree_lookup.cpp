@@ -75,7 +75,6 @@ size_t grid_to_bin_y(size_t grid_y, const SpatialRouteTreeLookup& spatial_lookup
 }
 
 bool validate_route_tree_spatial_lookup(t_rt_node* rt_node, const SpatialRouteTreeLookup& spatial_lookup) {
-
     auto& device_ctx = g_vpr_ctx.device();
 
     auto& rr_node = device_ctx.rr_nodes[rt_node->inode];
@@ -91,14 +90,14 @@ bool validate_route_tree_spatial_lookup(t_rt_node* rt_node, const SpatialRouteTr
     if (std::find(low_bin_rt_nodes.begin(), low_bin_rt_nodes.end(), rt_node) == low_bin_rt_nodes.end()) {
         valid = false;
         VPR_THROW(VPR_ERROR_ROUTE, "Failed to find route tree node %d at (low coord %d,%d) in spatial lookup [bin %d,%d]",
-                rt_node->inode, rr_node.xlow(), rr_node.ylow(), bin_xlow, bin_ylow);
+                  rt_node->inode, rr_node.xlow(), rr_node.ylow(), bin_xlow, bin_ylow);
     }
 
     auto& high_bin_rt_nodes = spatial_lookup[bin_xhigh][bin_yhigh];
     if (std::find(high_bin_rt_nodes.begin(), high_bin_rt_nodes.end(), rt_node) == high_bin_rt_nodes.end()) {
         valid = false;
         VPR_THROW(VPR_ERROR_ROUTE, "Failed to find route tree node %d at (high coord %d,%d) in spatial lookup [bin %d,%d]",
-                rt_node->inode, rr_node.xhigh(), rr_node.yhigh(), bin_xhigh, bin_yhigh);
+                  rt_node->inode, rr_node.xhigh(), rr_node.yhigh(), bin_xhigh, bin_yhigh);
     }
 
     //Recurse

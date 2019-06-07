@@ -12,14 +12,14 @@ else
   CMAKE_GEN_ARGS := -G'Unix Makefiles'
 endif
 
-CMAKE_ARGS := -DVPR_IPO_BUILD=off
-
 #Default build type
 # Possible values:
 #    release
 #    debug
 BUILD_TYPE ?= release
 MAKEFLAGS := -s
+
+CMAKE_ARGS = -DVTR_IPO_BUILD="off"
 
 BUILD_DIR=../build
 

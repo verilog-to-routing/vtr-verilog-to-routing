@@ -4,8 +4,8 @@
 #include "netlist_fwd.h"
 
 /*
-* StrongId's for the ClusteredNetlist class
-*/
+ * StrongId's for the ClusteredNetlist class
+ */
 
 //Forward declaration
 class ClusteredNetlist;

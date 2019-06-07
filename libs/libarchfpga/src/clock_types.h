@@ -61,4 +61,3 @@ struct t_clock_connection_arch {
 };
 
 #endif
-

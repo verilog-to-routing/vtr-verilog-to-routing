@@ -48,6 +48,8 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-#Use alternative seed to work-around sporadic routing failure on spla benchmark
-script_params=-starting_stage vpr -track_memory_usage --seed 2
+#We increase the critical path router iterations beyond the default 50, to avoid
+#spurrious routing failures at relaxed channel width (since we know they should 
+#be routable via the minimum channel width search)
+script_params=-starting_stage vpr -track_memory_usage -crit_path_router_iterations 60
 

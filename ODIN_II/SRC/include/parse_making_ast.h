@@ -15,6 +15,8 @@ ast_node_t *newNumberNode(char *num, bases base, signedness sign, int line_numbe
 ast_node_t *newList(ids type_id, ast_node_t *expression);
 ast_node_t *newList_entry(ast_node_t *concat_node, ast_node_t *expression);
 ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child );
+ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_node_t *port);
+ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parameter);
 ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list);
 
 /* EXPRESSIONS */
@@ -42,6 +44,7 @@ ast_node_t *newIf(ast_node_t *compare_expression, ast_node_t *true_expression, a
 ast_node_t *newIfQuestion(ast_node_t *compare_expression, ast_node_t *true_expression, ast_node_t *false_expression, int line_number);
 ast_node_t *newCase(ast_node_t *compare_expression, ast_node_t *case_list, int line_number);
 ast_node_t *newAlways(ast_node_t *delay_control, ast_node_t *statements, int line_number);
+ast_node_t *newGenerate(ast_node_t *instantiations, int line_number);
 ast_node_t *newFor(ast_node_t *initial, ast_node_t *compare_expression, ast_node_t *terminal, ast_node_t *statement, int line_number);
 ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int line_number);
 
@@ -69,7 +72,7 @@ ast_node_t *newVarDeclare2D(char* symbol, ast_node_t *expression1, ast_node_t *e
 ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number);
 
 /* HIGH LEVEL ITEMS */
-ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number);
+ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number);
 ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number);
 void next_module();
 void next_function();

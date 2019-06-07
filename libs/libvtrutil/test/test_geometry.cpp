@@ -3,7 +3,6 @@
 #include "vtr_geometry.h"
 
 TEST_CASE("Point", "[vtr_geometry/Point]") {
-
     vtr::Point<int> p1(5, 3);
     vtr::Point<float> p2(5.3, 3.9);
     SECTION("location") {
@@ -127,7 +126,6 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
 }
 
 TEST_CASE("Line", "[vtr_geometry/Line]") {
-
     std::vector<vtr::Point<int>> points = {{0, 0},
                                            {0, 2},
                                            {1, 0},
@@ -136,7 +134,6 @@ TEST_CASE("Line", "[vtr_geometry/Line]") {
     vtr::Line<int> line(points);
 
     SECTION("points") {
-
         auto line_points = line.points();
 
         REQUIRE(line_points.size() == points.size());
@@ -156,11 +153,9 @@ TEST_CASE("Line", "[vtr_geometry/Line]") {
         REQUIRE(bb.ymin() == -2);
         REQUIRE(bb.ymax() == 2);
     }
-
 }
 
 TEST_CASE("RectUnion", "[vtr_geometry/RectUnion]") {
-
     std::vector<vtr::Rect<int>> rects = {{0, 0, 2, 2},
                                          {1, 1, 3, 3}};
 
@@ -176,7 +171,6 @@ TEST_CASE("RectUnion", "[vtr_geometry/RectUnion]") {
             REQUIRE(rects[i] == rect);
             ++i;
         }
-
     }
     SECTION("bounding_box") {
         auto bb = rect_union.bounding_box();
@@ -207,6 +201,4 @@ TEST_CASE("RectUnion", "[vtr_geometry/RectUnion]") {
         REQUIRE(rect_union.coincident({2, 2}));
         REQUIRE(rect_union.coincident({3, 3}));
     }
-
-
 }

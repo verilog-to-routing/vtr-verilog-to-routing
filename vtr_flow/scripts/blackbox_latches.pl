@@ -13,9 +13,9 @@ print
 	This script black boxes latches unless specified and vice versa.
 
 	Usage:	./exec 
-				--input				Bliff input file
-				--output_list			Clock list output file
-				--output			Bliff output file
+				--input				Blif input file
+				--output_list		Clock list output file
+				--output			Blif output file
 				--clk_list			clock not to black box
 				--vanilla			Convert the bliff file to non boxed latches
 				--restore			Reatach given clock to all latches found
@@ -29,7 +29,7 @@ sub print_stats{
 	{
 		print "\n\t-None-";
 	}
-	foreach my $clks (keys %domain) 
+	foreach my $clks (sort(keys %domain))
 	{
 		print "\n\t".$clks."\t#".$domain{$clks};
 	}
@@ -98,7 +98,7 @@ foreach my $cur_arg (@ARGV)
 		}
 
 		print "using folowing clk domain: ";
-		foreach my $clks (keys %clocks_not_to_bb) {
+		foreach my $clks (sort(keys %clocks_not_to_bb)) {
 			print $clks." ";
 		}
 		print "\n";
@@ -409,7 +409,7 @@ while( (my $cur_line = <$InFile>) )
 if( $has_output 
 and not $vanilla)
 {
-	foreach my $module (keys %bb_clock_domain) 
+	foreach my $module (sort(keys %bb_clock_domain)) 
 	{
 		print $OutFile 	"\n".
 						".model ${module}\n".
@@ -433,7 +433,7 @@ and not $vanilla)
 # write out all the clock domains in the file (1/line)
 if( $has_output_clk )
 {
-	print $ClkFile join("\n", keys %vanilla_clk_domain).join("\n", keys %bb_clock_domain)."\n";
+	print $ClkFile join("\n", sort(keys %vanilla_clk_domain)).join("\n", sort(keys %bb_clock_domain))."\n";
 	close($ClkFile);
 }
 
@@ -453,7 +453,7 @@ foreach my $clks (keys %clocks_not_to_bb) {
 }
 if( ($size = keys %clocks_not_to_bb) ) {
 	print "\n####\nERROR: malformed or non-existant input clock:\n";
-	print "\t<".(join(">\n\t<", keys %clocks_not_to_bb)).">\n####\n";
+	print "\t<".(join(">\n\t<", sort(keys %clocks_not_to_bb))).">\n####\n";
 	exit(-1);
 }
 

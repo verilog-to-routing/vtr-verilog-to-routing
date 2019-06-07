@@ -10,10 +10,9 @@
 
 #include "vpr_types.h"
 
-ClusteredNetlist read_netlist(const char *net_file,
-		const t_arch *arch,
-        bool verify_file_digests,
-        int verbosity);
+ClusteredNetlist read_netlist(const char* net_file,
+                              const t_arch* arch,
+                              bool verify_file_digests,
+                              int verbosity);
 
 #endif
-

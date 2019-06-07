@@ -9,7 +9,7 @@
  */
 typedef signed char data_t;
 
-#define BUFFER_SIZE         8   //use something divisible by 4 since the compact buffer can contain 4 value
+#define BUFFER_SIZE         12   //use something divisible by 4 since the compact buffer can contain 4 value
 #define CONCURENCY_LIMIT    (BUFFER_SIZE-1)   // access to cycle -1 with an extra pdding cell
 
 

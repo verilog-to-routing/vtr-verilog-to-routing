@@ -64,6 +64,7 @@ char* standardize_number(const char* input);
 <INITIAL>"end"				{ MP; return vEND;}
 <INITIAL>"endcase"			{ MP; return vENDCASE;}
 <INITIAL>"endfunction"		{ MP; return vENDFUNCTION;}
+<INITIAL>"endgenerate"		{ MP; return vENDGENERATE;}
 <INITIAL>"endmodule"		{ MP; return vENDMODULE;}
 <INITIAL>"endspecify"		{ MP; return vENDSPECIFY;}
 <INITIAL>"for"				{ MP; return vFOR;}
@@ -72,6 +73,8 @@ char* standardize_number(const char* input);
 <INITIAL>"inout"			{ MP; return vINOUT;}
 <INITIAL>"input"			{ MP; return vINPUT;}
 <INITIAL>"integer"			{ MP; return vINTEGER;}
+<INITIAL>"generate"			{ MP; return vGENERATE;}
+<INITIAL>"genvar"			{ MP; return vGENVAR;}
 <INITIAL>"module"			{ MP; return vMODULE;}
 <INITIAL>"function"			{ MP; return vFUNCTION;}
 <INITIAL>"nand"				{ MP; return vNAND;}
@@ -81,12 +84,15 @@ char* standardize_number(const char* input);
 <INITIAL>"or"				{ MP; return vOR;}
 <INITIAL>"output"			{ MP; return vOUTPUT;}
 <INITIAL>"parameter"		{ MP; return vPARAMETER;}
-<INITIAL>"localparam"		{ MP; return vPARAMETER;}
+<INITIAL>"localparam"		{ MP; return vLOCALPARAM;}
 <INITIAL>"posedge"			{ MP; return vPOSEDGE;}
 <INITIAL>"reg"				{ MP; return vREG;}
 <INITIAL>"specify"			{ MP; return vSPECIFY;}
 <INITIAL>"while"			{ MP; return vWHILE;}
 <INITIAL>"wire"				{ MP; return vWIRE;}
+<INITIAL>"tri"				{ MP; return vWIRE;}
+<INITIAL>"tri0"				{ MP; return vWIRE;}
+<INITIAL>"tri1"				{ MP; return vWIRE;}
 <INITIAL>"xnor"				{ MP; return vXNOR;}
 <INITIAL>"xor"				{ MP; return vXOR;}
 <INITIAL>"macromodule"		{ MP; return vMODULE;}
@@ -146,9 +152,6 @@ char* standardize_number(const char* input);
 <INITIAL>"tran"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"tranif0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"tranif1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
-<INITIAL>"tri"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
-<INITIAL>"tri0"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
-<INITIAL>"tri1"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"triand"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"trior"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"vectored"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}

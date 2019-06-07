@@ -37,108 +37,105 @@ namespace vtr {
 //As with a std::vector, it is the caller's responsibility to ensure there is sufficient space
 //when a given index/key before it is accessed. The exception to this are the find(), insert() and
 //update() methods which handle non-existing keys gracefully.
-template<typename K, typename V, typename Sentinel=DefaultSentinel<V>>
+template<typename K, typename V, typename Sentinel = DefaultSentinel<V>>
 class vector_map {
-    public: //Public types
-        typedef typename std::vector<V>::const_reference const_reference;
-        typedef typename std::vector<V>::reference reference;
+  public: //Public types
+    typedef typename std::vector<V>::const_reference const_reference;
+    typedef typename std::vector<V>::reference reference;
 
-        typedef typename std::vector<V>::iterator iterator;
-        typedef typename std::vector<V>::const_iterator const_iterator;
-        typedef typename std::vector<V>::const_reverse_iterator const_reverse_iterator;
+    typedef typename std::vector<V>::iterator iterator;
+    typedef typename std::vector<V>::const_iterator const_iterator;
+    typedef typename std::vector<V>::const_reverse_iterator const_reverse_iterator;
 
-    public: //Constructor
-        template<typename... Args>
-        vector_map(Args&&... args)
-            : vec_(std::forward<Args>(args)...)
-        { }
+  public: //Constructor
+    template<typename... Args>
+    vector_map(Args&&... args)
+        : vec_(std::forward<Args>(args)...) {}
 
-    public: //Accessors
+  public: //Accessors
+    //Iterators
+    const_iterator begin() const { return vec_.begin(); }
+    const_iterator end() const { return vec_.end(); }
+    const_reverse_iterator rbegin() const { return vec_.rbegin(); }
+    const_reverse_iterator rend() const { return vec_.rend(); }
 
-        //Iterators
-        const_iterator begin() const { return vec_.begin(); }
-        const_iterator end() const { return vec_.end(); }
-        const_reverse_iterator rbegin() const { return vec_.rbegin(); }
-        const_reverse_iterator rend() const { return vec_.rend(); }
+    //Indexing
+    const_reference operator[](const K n) const {
+        size_t index = size_t(n);
+        VTR_ASSERT_SAFE_MSG(index >= 0 && index < vec_.size(), "Out-of-range index");
+        return vec_[index];
+    }
 
-        //Indexing
-        const_reference operator[] (const K n) const {
-            size_t index = size_t(n);
-            VTR_ASSERT_SAFE_MSG(index >= 0 && index < vec_.size(), "Out-of-range index");
-            return vec_[index];
+    const_iterator find(const K key) const {
+        if (size_t(key) < vec_.size()) {
+            return vec_.begin() + size_t(key);
+        } else {
+            return vec_.end();
+        }
+    }
+
+    std::size_t size() const { return vec_.size(); }
+
+    bool empty() const { return vec_.empty(); }
+
+    bool contains(const K key) const { return size_t(key) < vec_.size(); }
+    size_t count(const K key) const { return contains(key) ? 1 : 0; }
+
+  public: //Mutators
+    //Delegate potentially overloaded functions to the underlying vector with perfect
+    //forwarding
+    template<typename... Args>
+    void push_back(Args&&... args) { vec_.push_back(std::forward<Args>(args)...); }
+
+    template<typename... Args>
+    void emplace_back(Args&&... args) { vec_.emplace_back(std::forward<Args>(args)...); }
+
+    template<typename... Args>
+    void resize(Args&&... args) { vec_.resize(std::forward<Args>(args)...); }
+
+    void clear() { vec_.clear(); }
+
+    size_t capacity() const { return vec_.capacity(); }
+    void shrink_to_fit() { vec_.shrink_to_fit(); }
+
+    //Iterators
+    iterator begin() { return vec_.begin(); }
+    iterator end() { return vec_.end(); }
+
+    //Indexing
+    reference operator[](const K n) {
+        VTR_ASSERT_SAFE_MSG(size_t(n) < vec_.size(), "Out-of-range index");
+        return vec_[size_t(n)];
+    }
+
+    iterator find(const K key) {
+        if (size_t(key) < vec_.size()) {
+            return vec_.begin() + size_t(key);
+        } else {
+            return vec_.end();
+        }
+    }
+
+    void insert(const K key, const V value) {
+        if (size_t(key) >= vec_.size()) {
+            //Resize so key is in range
+            vec_.resize(size_t(key) + 1, Sentinel::INVALID());
         }
 
-        const_iterator find(const K key) const {
-            if(size_t(key) < vec_.size()) {
-                return vec_.begin() + size_t(key);
-            } else {
-                return vec_.end();
-            }
-        }
+        //Insert the value
+        operator[](key) = value;
+    }
 
-        std::size_t size() const { return vec_.size(); }
+    void update(const K key, const V value) { insert(key, value); }
 
-        bool empty() const { return vec_.empty(); }
+    //Swap (this enables std::swap via ADL)
+    friend void swap(vector_map<K, V>& x, vector_map<K, V>& y) {
+        std::swap(x.vec_, y.vec_);
+    }
 
-        bool contains(const K key) const { return size_t(key) < vec_.size(); }
-        size_t count(const K key) const { return contains(key) ? 1 : 0; }
-
-    public: //Mutators
-
-        //Delegate potentially overloaded functions to the underlying vector with perfect
-        //forwarding
-        template<typename... Args>
-        void push_back(Args&&... args) { vec_.push_back(std::forward<Args>(args)...); }
-
-        template<typename... Args>
-        void emplace_back(Args&&... args) { vec_.emplace_back(std::forward<Args>(args)...); }
-
-        template<typename... Args>
-        void resize(Args&&... args) { vec_.resize(std::forward<Args>(args)...); }
-
-        void clear() { vec_.clear(); }
-
-        size_t capacity() const { return vec_.capacity(); }
-        void shrink_to_fit() { vec_.shrink_to_fit(); }
-
-        //Iterators
-        iterator begin() { return vec_.begin(); }
-        iterator end() { return vec_.end(); }
-
-        //Indexing
-        reference operator[] (const K n) {
-            VTR_ASSERT_SAFE_MSG(size_t(n) < vec_.size(), "Out-of-range index");
-            return vec_[size_t(n)];
-        }
-
-        iterator find(const K key) {
-            if(size_t(key) < vec_.size()) {
-                return vec_.begin() + size_t(key);
-            } else {
-                return vec_.end();
-            }
-        }
-
-        void insert(const K key, const V value) {
-            if(size_t(key) >= vec_.size()) {
-                //Resize so key is in range
-                vec_.resize(size_t(key) + 1, Sentinel::INVALID());
-            }
-
-            //Insert the value
-            operator[](key) = value;
-        }
-
-        void update(const K key, const V value) { insert(key, value); }
-
-        //Swap (this enables std::swap via ADL)
-        friend void swap(vector_map<K,V>& x, vector_map<K,V>& y) {
-            std::swap(x.vec_, y.vec_);
-        }
-    private:
-        std::vector<V> vec_;
+  private:
+    std::vector<V> vec_;
 };
 
-
-} //namespace
+} // namespace vtr
 #endif

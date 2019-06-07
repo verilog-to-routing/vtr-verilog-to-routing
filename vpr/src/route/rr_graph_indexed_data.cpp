@@ -1,4 +1,4 @@
-#include <cmath>  /* Needed only for sqrt call (remove if sqrt removed) */
+#include <cmath> /* Needed only for sqrt call (remove if sqrt removed) */
 using namespace std;
 
 #include "vtr_assert.h"
@@ -17,14 +17,17 @@ using namespace std;
 /******************* Subroutines local to this module ************************/
 
 static void load_rr_indexed_data_base_costs(int nodes_per_chan,
-        const t_rr_node_indices& L_rr_node_indices, enum e_base_cost_type base_cost_type);
+                                            const t_rr_node_indices& L_rr_node_indices,
+                                            enum e_base_cost_type base_cost_type);
 
 static float get_delay_normalization_fac(int nodes_per_chan,
-        const t_rr_node_indices& L_rr_node_indices);
+                                         const t_rr_node_indices& L_rr_node_indices);
 
 static void load_rr_indexed_data_T_values(int index_start,
-        int num_indices_to_load, t_rr_type rr_type, int nodes_per_chan,
-        const t_rr_node_indices& L_rr_node_indices);
+                                          int num_indices_to_load,
+                                          t_rr_type rr_type,
+                                          int nodes_per_chan,
+                                          const t_rr_node_indices& L_rr_node_indices);
 
 static std::vector<size_t> count_rr_segment_types();
 
@@ -44,10 +47,10 @@ static std::vector<size_t> count_rr_segment_types();
  * x-channel its own cost_index, and each segment type in a y-channel its    *
  * own cost_index.                                                           */
 void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_inf,
-        const t_rr_node_indices& L_rr_node_indices,
-        const int nodes_per_chan, int wire_to_ipin_switch,
-        enum e_base_cost_type base_cost_type) {
-
+                                    const t_rr_node_indices& L_rr_node_indices,
+                                    const int nodes_per_chan,
+                                    int wire_to_ipin_switch,
+                                    enum e_base_cost_type base_cost_type) {
     int iseg, length, i, index;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -68,14 +71,13 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         device_ctx.rr_indexed_data[i].T_quadratic = OPEN;
         device_ctx.rr_indexed_data[i].C_load = OPEN;
     }
-    device_ctx.rr_indexed_data[IPIN_COST_INDEX].T_linear =
-            device_ctx.rr_switch_inf[wire_to_ipin_switch].Tdel;
+    device_ctx.rr_indexed_data[IPIN_COST_INDEX].T_linear = device_ctx.rr_switch_inf[wire_to_ipin_switch].Tdel;
 
     /* X-directed segments. */
     for (iseg = 0; iseg < num_segment; iseg++) {
         index = CHANX_COST_INDEX_START + iseg;
 
-        if ((index + num_segment) >= (int) device_ctx.rr_indexed_data.size()) {
+        if ((index + num_segment) >= (int)device_ctx.rr_indexed_data.size()) {
             device_ctx.rr_indexed_data[index].ortho_cost_index = index;
         } else {
             device_ctx.rr_indexed_data[index].ortho_cost_index = index + num_segment;
@@ -90,13 +92,13 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         device_ctx.rr_indexed_data[index].seg_index = iseg;
     }
     load_rr_indexed_data_T_values(CHANX_COST_INDEX_START, num_segment, CHANX,
-            nodes_per_chan, L_rr_node_indices);
+                                  nodes_per_chan, L_rr_node_indices);
 
     /* Y-directed segments. */
     for (iseg = 0; iseg < num_segment; iseg++) {
         index = CHANX_COST_INDEX_START + num_segment + iseg;
 
-        if((index - num_segment) < CHANX_COST_INDEX_START) {
+        if ((index - num_segment) < CHANX_COST_INDEX_START) {
             device_ctx.rr_indexed_data[index].ortho_cost_index = index;
         } else {
             device_ctx.rr_indexed_data[index].ortho_cost_index = index - num_segment;
@@ -111,10 +113,10 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         device_ctx.rr_indexed_data[index].seg_index = iseg;
     }
     load_rr_indexed_data_T_values((CHANX_COST_INDEX_START + num_segment),
-            num_segment, CHANY, nodes_per_chan, L_rr_node_indices);
+                                  num_segment, CHANY, nodes_per_chan, L_rr_node_indices);
 
     load_rr_indexed_data_base_costs(nodes_per_chan, L_rr_node_indices,
-            base_cost_type);
+                                    base_cost_type);
 }
 
 void load_rr_index_segments(const int num_segment) {
@@ -138,8 +140,8 @@ void load_rr_index_segments(const int num_segment) {
 }
 
 static void load_rr_indexed_data_base_costs(int nodes_per_chan,
-        const t_rr_node_indices& L_rr_node_indices, enum e_base_cost_type base_cost_type) {
-
+                                            const t_rr_node_indices& L_rr_node_indices,
+                                            enum e_base_cost_type base_cost_type) {
     /* Loads the base_cost member of device_ctx.rr_indexed_data according to the specified *
      * base_cost_type.                                                          */
 
@@ -169,12 +171,11 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
     //             so they get explored earlier (same rational as lowering IPIN costs)
 
     for (index = CHANX_COST_INDEX_START; index < device_ctx.rr_indexed_data.size(); index++) {
-
         if (base_cost_type == DELAY_NORMALIZED || base_cost_type == DEMAND_ONLY) {
             device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac;
 
         } else if (base_cost_type == DELAY_NORMALIZED_LENGTH) {
-            device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac / device_ctx.rr_indexed_data[index].inv_length;  
+            device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac / device_ctx.rr_indexed_data[index].inv_length;
 
         } else if (base_cost_type == DELAY_NORMALIZED_FREQUENCY) {
             int seg_index = device_ctx.rr_indexed_data[index].seg_index;
@@ -215,7 +216,7 @@ static std::vector<size_t> count_rr_segment_types() {
         if (device_ctx.rr_nodes[inode].type() != CHANX && device_ctx.rr_nodes[inode].type() != CHANY) continue;
 
         int cost_index = device_ctx.rr_nodes[inode].cost_index();
-        
+
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
         VTR_ASSERT(seg_index != OPEN);
@@ -226,15 +227,13 @@ static std::vector<size_t> count_rr_segment_types() {
         VTR_ASSERT(seg_index < int(rr_segment_type_counts.size()));
 
         ++rr_segment_type_counts[seg_index];
-        
     }
 
     return rr_segment_type_counts;
 }
 
 static float get_delay_normalization_fac(int nodes_per_chan,
-        const t_rr_node_indices& L_rr_node_indices) {
-
+                                         const t_rr_node_indices& L_rr_node_indices) {
     /* Returns the average delay to go 1 CLB distance along a wire.  */
 
     const int clb_dist = 3; /* Number of CLBs I think the average conn. goes. */
@@ -248,37 +247,38 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 
     for (itrack = 0; itrack < nodes_per_chan; itrack++) {
         inode = find_average_rr_node_index(device_ctx.grid.width(), device_ctx.grid.height(), CHANX, itrack,
-                L_rr_node_indices);
+                                           L_rr_node_indices);
         if (inode == -1)
             continue;
         cost_index = device_ctx.rr_nodes[inode].cost_index();
         frac_num_seg = clb_dist * device_ctx.rr_indexed_data[cost_index].inv_length;
         Tdel = frac_num_seg * device_ctx.rr_indexed_data[cost_index].T_linear
-                + frac_num_seg * frac_num_seg
-                * device_ctx.rr_indexed_data[cost_index].T_quadratic;
-        Tdel_sum += Tdel / (float) clb_dist;
+               + frac_num_seg * frac_num_seg
+                     * device_ctx.rr_indexed_data[cost_index].T_quadratic;
+        Tdel_sum += Tdel / (float)clb_dist;
     }
 
     for (itrack = 0; itrack < nodes_per_chan; itrack++) {
         inode = find_average_rr_node_index(device_ctx.grid.width(), device_ctx.grid.height(), CHANY, itrack,
-                L_rr_node_indices);
+                                           L_rr_node_indices);
         if (inode == -1)
             continue;
         cost_index = device_ctx.rr_nodes[inode].cost_index();
         frac_num_seg = clb_dist * device_ctx.rr_indexed_data[cost_index].inv_length;
         Tdel = frac_num_seg * device_ctx.rr_indexed_data[cost_index].T_linear
-                + frac_num_seg * frac_num_seg
-                * device_ctx.rr_indexed_data[cost_index].T_quadratic;
-        Tdel_sum += Tdel / (float) clb_dist;
+               + frac_num_seg * frac_num_seg
+                     * device_ctx.rr_indexed_data[cost_index].T_quadratic;
+        Tdel_sum += Tdel / (float)clb_dist;
     }
 
     return (Tdel_sum / (2. * nodes_per_chan));
 }
 
 static void load_rr_indexed_data_T_values(int index_start,
-        int num_indices_to_load, t_rr_type rr_type, int nodes_per_chan,
-        const t_rr_node_indices& L_rr_node_indices) {
-
+                                          int num_indices_to_load,
+                                          t_rr_type rr_type,
+                                          int nodes_per_chan,
+                                          const t_rr_node_indices& L_rr_node_indices) {
     /* Loads the average propagation times through segments of each index type  *
      * for either all CHANX segment types or all CHANY segment types.  It does  *
      * this by looking at all the segments in one channel in the middle of the  *
@@ -286,27 +286,27 @@ static void load_rr_indexed_data_T_values(int index_start,
      * and using them to compute average delay values for this type of segment. */
 
     int itrack, inode, cost_index;
-    float *C_total, *R_total; /* [0..device_ctx.rr_indexed_data.size() - 1] */
+    float *C_total, *R_total;                /* [0..device_ctx.rr_indexed_data.size() - 1] */
     double *switch_R_total, *switch_T_total; /* [0..device_ctx.rr_indexed_data.size() - 1] */
-    short *switches_buffered;
-    int *num_nodes_of_index; /* [0..device_ctx.rr_indexed_data.size() - 1] */
+    short* switches_buffered;
+    int* num_nodes_of_index; /* [0..device_ctx.rr_indexed_data.size() - 1] */
     float Rnode, Cnode, Rsw, Tsw;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    num_nodes_of_index = (int *) vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof (int));
-    C_total = (float *) vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof (float));
-    R_total = (float *) vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof (float));
+    num_nodes_of_index = (int*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(int));
+    C_total = (float*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(float));
+    R_total = (float*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(float));
 
     /* August 2014: Not all wire-to-wire switches connecting from some wire segment will
-       necessarily have the same delay. i.e. a mux with less inputs will have smaller delay
-       than a mux with a greater number of inputs. So to account for these differences we will
-       get the average R/Tdel values by first averaging them for a single wire segment (first
-       for loop below), and then by averaging this value over all wire segments in the channel
-       (second for loop below) */
-    switch_R_total = (double *) vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof (double));
-    switch_T_total = (double *) vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof (double));
-    switches_buffered = (short *) vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof (short));
+     * necessarily have the same delay. i.e. a mux with less inputs will have smaller delay
+     * than a mux with a greater number of inputs. So to account for these differences we will
+     * get the average R/Tdel values by first averaging them for a single wire segment (first
+     * for loop below), and then by averaging this value over all wire segments in the channel
+     * (second for loop below) */
+    switch_R_total = (double*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(double));
+    switch_T_total = (double*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(double));
+    switches_buffered = (short*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(short));
 
     /* initialize switches_buffered array */
     for (int i = index_start; i < index_start + num_indices_to_load; i++) {
@@ -318,7 +318,7 @@ static void load_rr_indexed_data_T_values(int index_start,
 
     for (itrack = 0; itrack < nodes_per_chan; itrack++) {
         inode = find_average_rr_node_index(device_ctx.grid.width(), device_ctx.grid.height(), rr_type, itrack,
-                L_rr_node_indices);
+                                           L_rr_node_indices);
         if (inode == -1)
             continue;
         cost_index = device_ctx.rr_nodes[inode].cost_index();
@@ -345,7 +345,7 @@ static void load_rr_indexed_data_T_values(int index_start,
         }
 
         if (num_switches == 0) {
-            VTR_LOG_WARN( "Track %d had no switches\n", itrack);
+            VTR_LOG_WARN("Track %d had no switches\n", itrack);
             continue;
         }
         VTR_ASSERT(num_switches > 0);
@@ -366,14 +366,13 @@ static void load_rr_indexed_data_T_values(int index_start,
         } else {
             if (switches_buffered[cost_index] != buffered) {
                 vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-                        "Expecting all wire-to-wire switches of wire segments with cost index (%d) to have same 'buffered' value (%d), but found segment switch with different 'buffered' value (%d)\n", cost_index, switches_buffered[cost_index], buffered);
+                          "Expecting all wire-to-wire switches of wire segments with cost index (%d) to have same 'buffered' value (%d), but found segment switch with different 'buffered' value (%d)\n", cost_index, switches_buffered[cost_index], buffered);
             }
         }
     }
 
     for (cost_index = index_start;
-            cost_index < index_start + num_indices_to_load; cost_index++) {
-
+         cost_index < index_start + num_indices_to_load; cost_index++) {
         if (num_nodes_of_index[cost_index] == 0) { /* Segments don't exist. */
             device_ctx.rr_indexed_data[cost_index].T_linear = OPEN;
             device_ctx.rr_indexed_data[cost_index].T_quadratic = OPEN;
@@ -381,12 +380,12 @@ static void load_rr_indexed_data_T_values(int index_start,
         } else {
             Rnode = R_total[cost_index] / num_nodes_of_index[cost_index];
             Cnode = C_total[cost_index] / num_nodes_of_index[cost_index];
-            Rsw = (float) switch_R_total[cost_index] / num_nodes_of_index[cost_index];
-            Tsw = (float) switch_T_total[cost_index] / num_nodes_of_index[cost_index];
+            Rsw = (float)switch_R_total[cost_index] / num_nodes_of_index[cost_index];
+            Tsw = (float)switch_T_total[cost_index] / num_nodes_of_index[cost_index];
 
             if (switches_buffered[cost_index]) {
                 device_ctx.rr_indexed_data[cost_index].T_linear = Tsw + Rsw * Cnode
-                        + 0.5 * Rnode * Cnode;
+                                                                  + 0.5 * Rnode * Cnode;
                 device_ctx.rr_indexed_data[cost_index].T_quadratic = 0.;
                 device_ctx.rr_indexed_data[cost_index].C_load = 0.;
             } else { /* Pass transistor */
@@ -396,7 +395,7 @@ static void load_rr_indexed_data_T_values(int index_start,
 
                 device_ctx.rr_indexed_data[cost_index].T_linear = Tsw + 0.5 * Rsw * Cnode;
                 device_ctx.rr_indexed_data[cost_index].T_quadratic = (Rsw + Rnode) * 0.5
-                        * Cnode;
+                                                                     * Cnode;
             }
         }
     }
@@ -408,4 +407,3 @@ static void load_rr_indexed_data_T_values(int index_start,
     free(switch_T_total);
     free(switches_buffered);
 }
-
