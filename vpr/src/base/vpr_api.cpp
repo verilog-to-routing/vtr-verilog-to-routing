@@ -810,6 +810,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     /* Startup X graphics */
+    //test later!!!might not work if call the init_graphics_state after making application a global variable 
         /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
     

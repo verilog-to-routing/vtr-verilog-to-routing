@@ -84,8 +84,15 @@ void draw_internal_alloc_blk() {
          * of physical logic block, in order to uniquely identify each sub-block in
          * the pb_graph of that type.
          */
-        
+        //uncomment here!
+        std::cout << "resize from " << draw_coords->blk_info.at(i).subblk_array.size() << " to " << pb_graph_head->total_pb_pins << std::endl;
         draw_coords->blk_info.at(i).subblk_array.resize(pb_graph_head->total_pb_pins);
+        for(unsigned j = 0; j < draw_coords->blk_info.at(i).subblk_array.size() && j < 5; j++){
+            ezgl::rectangle test = draw_coords->blk_info.at(i).subblk_array[j];
+            std::cout << "block " << j;
+            std::cout << " (" << test.m_first.x << ", " << test.m_first.y << ") (" << test.m_second.x << ", " << test.m_second.y << ")" << std::endl;
+        }
+        
     }
 }
 
@@ -361,17 +368,16 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 //    std::cout << "current level : " << pb_type->depth << std::endl;
 //    std::cout << "draw_internal_pb triggered !!!!!!!!!!!!!!!!!!!!" << std::endl;
     /// first draw box ///
-    std::cout << "temp : (" << temp.bottom_left().x << ", " << temp.bottom_left().y << ") (" << temp.top_right().x << ", " << temp.top_right().y << ")" <<std::endl;
-    std::cout << "abs_bbox : (" << abs_bbox.bottom_left().x << ", " << abs_bbox.bottom_left().y << ") (" << abs_bbox.top_right().x << ", " << abs_bbox.top_right().y << ")" <<std::endl;
+//    std::cout << "temp : (" << temp.bottom_left().x << ", " << temp.bottom_left().y << ") (" << temp.top_right().x << ", " << temp.top_right().y << ")" <<std::endl;
+//    std::cout << "abs_bbox : (" << abs_bbox.bottom_left().x << ", " << abs_bbox.bottom_left().y << ") (" << abs_bbox.top_right().x << ", " << abs_bbox.top_right().y << ")" <<std::endl;
 
     if (pb_type->depth == 0) {
         if (!is_top_lvl_block_highlighted(clb_index, type)) {
             // if this is a top level pb, and only if it isn't selected (ie. a funny colour),
             // overwrite it. (but stil draw the text)
 //            std::cout << "abs_bbox size " << abs_bbox.height() << " " << abs_bbox.width() << std::endl;
-            g.set_color(ezgl::RED);//was white debugging
+            g.set_color(ezgl::WHITE);
             g.fill_rectangle(abs_bbox);
-//            g.fill_rectangle({{0,0}, {2000,2000}});//test
             g.set_color(ezgl::BLACK);
             g.set_line_dash(ezgl::line_dash::none);
             g.draw_rectangle(abs_bbox);
@@ -393,7 +399,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             } else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb_index)) {
                 g.set_color(DRIVEN_BY_IT_COLOR);
             } else if (pb_type->depth != draw_state->show_blk_internal && pb->child_pbs != nullptr) {
-                g.set_color(ezgl::RED);//WHITE); // draw anything else that will have a child as white
+                g.set_color(ezgl::WHITE); // draw anything else that will have a child as white
             } else if (type_index < 3) {
                 g.set_color(to_ezgl_color(LIGHTGREY));
             } else if (type_index < 3 + MAX_BLOCK_COLOURS) {
@@ -407,9 +413,8 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             // background with dashed border).
             
             g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
-            g.set_color(ezgl::RED);//WHITE);
+            g.set_color(ezgl::WHITE);
         }
-        g.set_color(ezgl::GREEN);//debug
         g.fill_rectangle(abs_bbox);
         g.set_color(ezgl::BLACK);
         g.draw_rectangle(abs_bbox);

@@ -429,7 +429,7 @@ void draw_main_canvas(ezgl::renderer &g){
     g.set_color(ezgl::YELLOW);
     g.fill_rectangle({{-5000, -5000}, {5000, 5000}});
     g.set_font_size(14);
-//    
+    
 //    draw_block_pin_util();
 //    drawplace(g);
     draw_internal_draw_subblk(g);
