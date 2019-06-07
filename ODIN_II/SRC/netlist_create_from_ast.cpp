@@ -305,7 +305,7 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 					if(parameter_num == 0)
 					{
 						error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
-								"There is no parameters in %s !",
+								"There are no parameters in %s !",
 								 module_name);
 					}
 				}

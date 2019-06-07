@@ -769,10 +769,63 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 	return port;
 }
 
+ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parameter)
+{
+	long sc_spot;
+	STRING_CACHE **this_defines_sc = NULL;
+	long this_num_modules = 0;
+	const char *id_name = (id == PARAMETER) ? "Parameter" : "Localparam";
+
+	if (top_type == MODULE)
+	{
+		this_defines_sc = defines_for_module_sc;
+		this_num_modules = num_modules-num_instances;
+
+	}
+	else if (top_type == FUNCTION)
+	{
+		this_defines_sc = defines_for_function_sc;
+		this_num_modules = num_functions;
+	}
+
+	/* create an entry in the symbol table for this parameter */
+	if ((sc_spot = sc_lookup_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier)) > -1)
+	{
+		error_message(PARSE_ERROR, parameter->children[5]->line_number, current_parse_file, "Module already has parameter with this name (%s)\n",
+			parameter->children[0]->types.identifier);
+	}
+	sc_spot = sc_add_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier);
+	
+	ast_node_t *value = parameter->children[5];
+
+	/* make sure that the parameter value is constant */
+	if (!node_is_ast_constant(value, this_defines_sc[this_num_modules]))
+	{
+		error_message(PARSE_ERROR, parameter->children[5]->line_number, current_parse_file, "%s value must be constant\n", id_name);
+	}
+
+
+	this_defines_sc[this_num_modules]->data[sc_spot] = (void*)parameter->children[5];
+	/* mark the node as shared so we don't delete it */
+	parameter->children[5]->shared_node = TRUE;
+
+	if (id == PARAMETER)
+	{
+		parameter->children[5]->types.variable.is_parameter = TRUE;
+		parameter->types.variable.is_parameter = TRUE;
+	}
+	else if (id == LOCALPARAM)
+	{
+		parameter->children[5]->types.variable.is_localparam = TRUE;
+		parameter->types.variable.is_localparam = TRUE;
+	}
+
+	return parameter;
+}
+
 ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list)
 {
 	long i;
-	long sc_spot;
 	ast_node_t *range_min = 0;
 	ast_node_t *range_max = 0;
 
@@ -797,57 +850,9 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			switch(id)
 			{
 				case PARAMETER:
-				{
-					/* create an entry in the symbol table for this parameter */
-					if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules-num_instances], symbol_list->children[i]->children[0]->types.identifier)) > -1)
-					{
-						error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
-							symbol_list->children[i]->children[0]->types.identifier,
-							((ast_node_t*)(defines_for_module_sc[num_modules-num_instances]->data[sc_spot]))->line_number);
-					}
-					sc_spot = sc_add_string(defines_for_module_sc[num_modules-num_instances], symbol_list->children[i]->children[0]->types.identifier);
-					
-					ast_node_t *value = symbol_list->children[i]->children[5];
-
-					/* make sure that the parameter value is constant */
-					if (!node_is_ast_constant(value, defines_for_module_sc[num_modules-num_instances]))
-					{
-						error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Parameter value must be constant\n");
-					}
-
-					symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
-					defines_for_module_sc[num_modules-num_instances]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
-					/* mark the node as shared so we don't delete it */
-					symbol_list->children[i]->children[5]->shared_node = TRUE;
-					/* now do the mark */
-					symbol_list->children[i]->types.variable.is_parameter = TRUE;
-					break;
-				}
 				case LOCALPARAM:
 				{
-					/* create an entry in the symbol table for this parameter */
-					if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules-num_instances], symbol_list->children[i]->children[0]->types.identifier)) > -1)
-					{
-						error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
-							symbol_list->children[i]->children[0]->types.identifier,
-							((ast_node_t*)(defines_for_module_sc[num_modules-num_instances]->data[sc_spot]))->line_number);
-					}
-					sc_spot = sc_add_string(defines_for_module_sc[num_modules-num_instances], symbol_list->children[i]->children[0]->types.identifier);
-					
-					ast_node_t *value = symbol_list->children[i]->children[5];
-
-					/* make sure that the parameter value is constant */
-					if (!node_is_ast_constant(value, defines_for_module_sc[num_modules-num_instances]))
-					{
-						error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Localparam value must be constant\n");
-					}
-
-					symbol_list->children[i]->children[5]->types.variable.is_localparam = TRUE;
-					defines_for_module_sc[num_modules-num_instances]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
-					/* mark the node as shared so we don't delete it */
-					symbol_list->children[i]->children[5]->shared_node = TRUE;
-					/* now do the mark */
-					symbol_list->children[i]->types.variable.is_localparam = TRUE;
+					markAndProcessParameterWith(top_type, id, symbol_list->children[i]);
 					break;
 				}
 				case INPUT:
@@ -879,55 +884,9 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			switch(id)
 			{
 				case PARAMETER:
-				{
-					/* create an entry in the symbol table for this parameter */
-					if ((sc_spot = sc_add_string(defines_for_function_sc[num_functions], symbol_list->children[i]->children[0]->types.identifier)) == -1)
-					{
-						error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
-							symbol_list->children[i]->children[0]->types.identifier,
-							((ast_node_t*)(defines_for_function_sc[num_functions]->data[sc_spot]))->line_number);
-					}
-					
-					ast_node_t *value = symbol_list->children[i]->children[5];
-
-					/* make sure that the parameter value is constant */
-					if (!node_is_ast_constant(value, defines_for_function_sc[num_functions]))
-					{
-						error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Parameter value must be constant\n");
-					}
-
-					symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
-					defines_for_function_sc[num_functions]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
-					/* mark the node as shared so we don't delete it */
-					symbol_list->children[i]->children[5]->shared_node = TRUE;
-					/* now do the mark */
-					symbol_list->children[i]->types.variable.is_parameter = TRUE;
-					break;
-				}
 				case LOCALPARAM:
 				{
-					/* create an entry in the symbol table for this parameter */
-					if ((sc_spot = sc_add_string(defines_for_function_sc[num_functions], symbol_list->children[i]->children[0]->types.identifier)) == -1)
-					{
-						error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
-							symbol_list->children[i]->children[0]->types.identifier,
-							((ast_node_t*)(defines_for_function_sc[num_functions]->data[sc_spot]))->line_number);
-					}
-					
-					ast_node_t *value = symbol_list->children[i]->children[5];
-
-					/* make sure that the parameter value is constant */
-					if (!node_is_ast_constant(value, defines_for_function_sc[num_functions]))
-					{
-						error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Localparam value must be constant\n");
-					}
-
-					symbol_list->children[i]->children[5]->types.variable.is_localparam = TRUE;
-					defines_for_function_sc[num_functions]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
-					/* mark the node as shared so we don't delete it */
-					symbol_list->children[i]->children[5]->shared_node = TRUE;
-					/* now do the mark */
-					symbol_list->children[i]->types.variable.is_localparam = TRUE;
+					markAndProcessParameterWith(top_type, id, symbol_list->children[i]);
 					break;
 				}
 				case INPUT:
@@ -1691,7 +1650,7 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ 
  * ----------------------------------------------------
  * (function: newModule)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number)
+ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number)
 {
 	int i;
 	long j, k;
@@ -1709,10 +1668,19 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 	
 	/* mark all the ports symbols as ports */
 	ast_node_t *port_declarations = resolve_ports(MODULE, list_of_ports);
+
+	/* ports are expected to be in module items */
 	if (port_declarations)
 	{
 		add_child_at_the_beginning_of_the_node(list_of_module_items, port_declarations);
 	}
+
+	/* parameters are expected to be in module items */
+	if (list_of_parameters)
+	{
+		newList_entry(list_of_module_items, list_of_parameters);
+	}
+
 
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 3, symbol_node, list_of_ports, list_of_module_items);
