@@ -104,7 +104,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 signal_list_t * connect_function_instantiation_and_alias(short PASS, ast_node_t* module_instance, char *instance_name_prefix);
 void create_symbol_table_for_module(ast_node_t* module_items, char *module_name);
 void create_symbol_table_for_function(ast_node_t* module_items, char *module_name);
-int check_for_initial_reg_value(ast_node_t* var_declare, long *value);
+int check_for_initial_reg_value(ast_node_t* var_declare, long *value, char *instance_name_prefix);
 void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_node, char *instance_name_prefix);
 
 signal_list_t *concatenate_signal_lists(signal_list_t **signal_lists, int num_signal_lists);
@@ -991,22 +991,20 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				}
 
 				/* free the symbol table for this module since we're done processing */
-				sc_free_string_cache(local_symbol_table_sc);
+				local_symbol_table_sc = sc_free_string_cache(local_symbol_table_sc);
 				vtr::free(local_symbol_table);
+				local_symbol_table_sc = NULL;
+				num_local_symbol_table = 0;
 
 				break;
 			}
 			case FUNCTION_ITEMS:
 			{
-
-				//local_symbol_table_sc = sc_free_string_cache(local_symbol_table_sc);
-				//vtr::free(local_symbol_table);
 				/* free the symbol table for this module since we're done processing */
 				function_local_symbol_table_sc = sc_free_string_cache(function_local_symbol_table_sc);
 				vtr::free(function_local_symbol_table);
 				function_local_symbol_table = NULL;
-				//function_local_symbol_table = NULL;
-
+				function_num_local_symbol_table = 0;
 			}
 			break;
 			case FUNCTION_INSTANCE:
@@ -1724,7 +1722,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 		temp_string = make_full_ref_name(instance_name_prefix, NULL, NULL, var_declare->children[0]->types.identifier, -1);
 
 		sc_spot = sc_add_string(output_nets_sc, temp_string);
-		if (output_nets_sc->data[sc_spot] != NULL)
+		if (output_nets_sc->data[sc_spot] != NULL && ((ast_node_t*)output_nets_sc->data[sc_spot])->type != NO_ID)
 		{
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
 					"Net (%s) with the same name already created\n", temp_string);
@@ -1826,7 +1824,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
  * 	Creates a lookup of the variables declared here so that in the analysis we can look
  * 	up the definition of it to decide what to do.
  *-------------------------------------------------------------------------------------------*/
-void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_name*/)
+void create_symbol_table_for_module(ast_node_t* module_items, char * module_name)
 {
 	/* with the top module we need to visit the entire ast tree */
 	long i, j;
@@ -1859,114 +1857,127 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 						(var_declare->types.variable.is_integer) ||
 						(var_declare->types.variable.is_wire));
 
-					if (var_declare->types.variable.is_input 
-						&& var_declare->types.variable.is_reg)
-						{
-							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, "%s",
-									"Input cannot be defined as a reg\n");
-						}
+					/* grab the symbol table entry or create it from scratch */
+					ast_node_t *symbol_table_entry = NULL;
+					ast_node_t *original_var_declare = NULL;
 
 					/* make the string to add to the string cache */
 					temp_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, -1);
 					/* look for that element */
 					sc_spot = sc_add_string(local_symbol_table_sc, temp_string);
-					if (local_symbol_table_sc->data[sc_spot] != NULL)
+
+					if (local_symbol_table_sc->data[sc_spot] == NULL)
 					{
-						/* ERROR checks here
-						 * output with reg is fine
-						 * output with wire is fine
-						 * input with wire is fine
-						 * Then update the stored string cache entry with information */
-						if (var_declare->types.variable.is_input
-							&& ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg)
-						{
-							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, "%s",
-									"Input cannot be defined as a reg\n");
-						}
-						/* MORE ERRORS ... could check for same declaration name ... */
-						else if (var_declare->types.variable.is_output)
-						{
-							/* copy all the reg and wire info over */
-							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_output = TRUE;
+						symbol_table_entry = ast_node_deep_copy(var_declare);
+						original_var_declare = var_declare;
 
-							/* check for an initial value and copy it over if found */
-							long initial_value;
-							if(check_for_initial_reg_value(var_declare, &initial_value)){
-								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
-								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
-							}
-						}
-						else if ((var_declare->types.variable.is_reg) || (var_declare->types.variable.is_wire) || (var_declare->types.variable.is_integer))
-						{
-							/* copy the output status over */
-							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_wire = var_declare->types.variable.is_wire;
-							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg = var_declare->types.variable.is_reg;
+						/* add it to the table */
+						local_symbol_table_sc->data[sc_spot] = (void*) symbol_table_entry;
 
-							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_integer = var_declare->types.variable.is_integer;
-							/* check for an initial value and copy it over if found */
-							long initial_value;
-							if(check_for_initial_reg_value(var_declare, &initial_value)){
-								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
-								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
-							}
-						}
-						else if (!var_declare->types.variable.is_integer)
-						{
-							abort();
-						}
+						/* add it to the list */
+						local_symbol_table = (ast_node_t **)vtr::realloc(local_symbol_table, sizeof(ast_node_t*)*(num_local_symbol_table+1));
+						local_symbol_table[num_local_symbol_table] = symbol_table_entry;
+						num_local_symbol_table ++;
 					}
 					else
 					{
-						/* store the data which is an idx here */
-						local_symbol_table_sc->data[sc_spot] = (void *)var_declare;
-
-						/* store the symbol */
-						local_symbol_table = (ast_node_t **)vtr::realloc(local_symbol_table, sizeof(ast_node_t*)*(num_local_symbol_table+1));
-						local_symbol_table[num_local_symbol_table] = (ast_node_t *)var_declare;
-						num_local_symbol_table ++;
-
-						/* check for an initial value and store it if found */
-						long initial_value;
-						if(check_for_initial_reg_value(var_declare, &initial_value)){
-							var_declare->types.variable.is_initialized = TRUE;
-							var_declare->types.variable.initial_value = initial_value;
-						}
+						symbol_table_entry = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
 					}
-					vtr::free(temp_string);
-				}
-			}
-			if(module_items->children[i]->type == ASSIGN)
-			{
-				if((module_items->children[i]->children[0]) && (module_items->children[i]->children[0]->type == BLOCKING_STATEMENT))
-				{
-					if((module_items->children[i]->children[0]->children[0]) && (module_items->children[i]->children[0]->children[0]->type == IDENTIFIERS))
-					{ 
-						temp_string = make_full_ref_name(NULL, NULL, NULL, module_items->children[i]->children[0]->children[0]->types.identifier, -1);
-						/* look for that element */
-						sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
-						if( sc_spot == -1 )
+
+
+					/* ERROR checks here */
+
+					/* check parameters */
+
+					STRING_CACHE *local_param_table_sc;
+					sc_spot = sc_lookup_string(global_param_table_sc, module_name);
+					oassert(sc_spot != -1);
+					if (sc_spot != -1){
+						local_param_table_sc = (STRING_CACHE *)global_param_table_sc->data[sc_spot];
+					}
+
+					if ((sc_spot = sc_lookup_string(local_param_table_sc, temp_string)) > -1)
+						error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+								"Module already has parameter with this name\n", temp_string);
+					
+					/*	* output with reg is fine
+						* output with wire is fine
+						* input with wire is fine
+						* Then update the stored string cache entry with information */
+
+					if (var_declare->types.variable.is_input || symbol_table_entry->types.variable.is_input)
+					{
+						if (var_declare != original_var_declare
+							&& (var_declare->types.variable.is_reg || var_declare->types.variable.is_integer || var_declare->types.variable.is_wire)
+							&& (symbol_table_entry->types.variable.is_reg || symbol_table_entry->types.variable.is_integer || symbol_table_entry->types.variable.is_wire))
 						{
-							sc_spot = sc_add_string(local_symbol_table_sc, temp_string);
-
-							/* store the data which is an idx here */
-							local_symbol_table_sc->data[sc_spot]= module_items->children[i]->children[0];
-
-							/* store the symbol */
-							local_symbol_table = (ast_node_t **)vtr::realloc(local_symbol_table, sizeof(ast_node_t*)*(num_local_symbol_table+1));
-							local_symbol_table[num_local_symbol_table] = (ast_node_t *)module_items->children[i]->children[0];
-							num_local_symbol_table ++;
-
-
-							/* copy the output status over */
-							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_wire = TRUE;
-							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg = FALSE;
-
-							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_integer = FALSE;
-							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_input = FALSE;
-
+							error_message(PARSE_ERROR, var_declare->line_number, var_declare->file_number, 
+								"Module already has input with this name (%s)\n", 
+								var_declare->children[0]->types.identifier);
 						}
-						vtr::free(temp_string);
+
+						if (var_declare->types.variable.is_reg || symbol_table_entry->types.variable.is_reg)
+							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, "%s",
+									"Input cannot be defined as a reg\n");
+
+						if (var_declare->types.variable.is_integer || symbol_table_entry->types.variable.is_integer)
+							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, "%s",
+									"Input cannot be defined as an integer\n");
+
+						symbol_table_entry->types.variable.is_input = TRUE;
+						
 					}
+					/* MORE ERRORS ... could check for same declaration name ... */
+					else if (var_declare->types.variable.is_output || symbol_table_entry->types.variable.is_output)
+					{
+						if (var_declare != original_var_declare
+							&& (var_declare->types.variable.is_reg || var_declare->types.variable.is_integer || var_declare->types.variable.is_wire)
+							&& (symbol_table_entry->types.variable.is_reg || symbol_table_entry->types.variable.is_integer || symbol_table_entry->types.variable.is_wire))
+						{
+							error_message(PARSE_ERROR, var_declare->line_number, var_declare->file_number, 
+								"Module already has output with this name (%s)\n", 
+								var_declare->children[0]->types.identifier);
+						}
+
+						symbol_table_entry->types.variable.is_output = TRUE;
+					}
+					
+					if (var_declare != original_var_declare && 
+						((var_declare->types.variable.is_reg) || 
+						(var_declare->types.variable.is_wire) || 
+						(var_declare->types.variable.is_integer)))
+					{
+						/* copy all the reg and wire info over */
+						if (!(symbol_table_entry->types.variable.is_reg || symbol_table_entry->types.variable.is_integer || symbol_table_entry->types.variable.is_wire))
+						{
+							symbol_table_entry->types.variable.is_wire = var_declare->types.variable.is_wire;
+							symbol_table_entry->types.variable.is_reg = var_declare->types.variable.is_reg;
+							symbol_table_entry->types.variable.is_integer = var_declare->types.variable.is_integer;
+						}
+						else
+						{
+							error_message(PARSE_ERROR, var_declare->line_number, var_declare->file_number, 
+								"This name (%s) is already used in current module\n", 
+								var_declare->children[0]->types.identifier);
+						}
+					}
+
+					/* check for an initial value and store it if found */
+					long initial_value;
+					if(check_for_initial_reg_value(var_declare, &initial_value, module_name)){
+						if (symbol_table_entry->types.variable.is_reg || symbol_table_entry->types.variable.is_integer)
+						{
+							symbol_table_entry->types.variable.is_initialized = TRUE;
+							symbol_table_entry->types.variable.initial_value = initial_value;	
+						}	
+						else 
+						{
+							error_message(NETLIST_ERROR, var_declare->children[i]->line_number, var_declare->children[i]->file_number, "%s",
+								"Nets cannot be initialized\n");
+						}	
+					}
+
+					vtr::free(temp_string);
 				}
 			}
 		}
@@ -1982,9 +1993,9 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
  * 	Creates a lookup of the variables declared here so that in the analysis we can look
  * 	up the definition of it to decide what to do.
  *-------------------------------------------------------------------------------------------*/
-void create_symbol_table_for_function(ast_node_t* function_items, char * /*function_name*/)
+void create_symbol_table_for_function(ast_node_t* function_items, char * function_name)
 {
-	/* with the top module we need to visit the entire ast tree */
+	/* with the top function we need to visit the entire ast tree */
 	long i, j;
 	char *temp_string;
 	long sc_spot;
@@ -2003,84 +2014,132 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
 					ast_node_t *var_declare = function_items->children[i]->children[j];
 
 					/* parameters are already dealt with */
-					if (var_declare->types.variable.is_parameter)
+					if (var_declare->types.variable.is_parameter
+						|| var_declare->types.variable.is_localparam)
+						
 						continue;
 
 					oassert(function_items->children[i]->children[j]->type == VAR_DECLARE);
 					oassert(	(var_declare->types.variable.is_input) ||
 						(var_declare->types.variable.is_output) ||
-						(var_declare->types.variable.is_reg) || (var_declare->types.variable.is_integer) ||
+						(var_declare->types.variable.is_reg) ||
+						(var_declare->types.variable.is_integer) ||
 						(var_declare->types.variable.is_wire));
+
+					/* grab the symbol table entry or create it from scratch */
+					ast_node_t *symbol_table_entry = NULL;
+					ast_node_t *original_var_declare = NULL;
 
 					/* make the string to add to the string cache */
 					temp_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, -1);
 					/* look for that element */
 					sc_spot = sc_add_string(function_local_symbol_table_sc, temp_string);
 
-					if (function_local_symbol_table_sc->data[sc_spot] != NULL)
+					vtr::free(temp_string);
+
+					if (function_local_symbol_table_sc->data[sc_spot] == NULL)
 					{
-						/* ERROR checks here
-						 * output with reg is fine
-						 * output with wire is fine
-						 * Then update the stored string chache entry with information */
-						/* MORE ERRORS ... could check for same declaration name ... */
-						if (var_declare->types.variable.is_output)
-						{
-							/* copy all the reg and wire info over */
-							((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_output = TRUE;
+						symbol_table_entry = ast_node_deep_copy(var_declare);
+						original_var_declare = var_declare;
 
-							/* check for an initial value and copy it over if found */
-							long initial_value;
-							if(check_for_initial_reg_value(var_declare, &initial_value)){
-								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
-								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
-							}
-						}
-						else if ((var_declare->types.variable.is_reg) || (var_declare->types.variable.is_wire) || (var_declare->types.variable.is_integer))
-						{
-							/* copy the output status over */
-							((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_wire = var_declare->types.variable.is_wire;
-							((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_reg = var_declare->types.variable.is_reg;
+						/* add it to the table */
+						function_local_symbol_table_sc->data[sc_spot] = (void*) symbol_table_entry;
 
-                            ((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_integer = var_declare->types.variable.is_integer;
-
-							/* check for an initial value and copy it over if found */
-							long initial_value;
-							if(check_for_initial_reg_value(var_declare, &initial_value)){
-								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
-								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
-							}
-						}
-						else
-						{
-							abort();
-						}
+						/* add it to the list */
+						function_local_symbol_table = (ast_node_t **)vtr::realloc(function_local_symbol_table, sizeof(ast_node_t*)*(function_num_local_symbol_table+1));
+						function_local_symbol_table[function_num_local_symbol_table] = symbol_table_entry;
+						function_num_local_symbol_table ++;
 					}
 					else
 					{
-						/* store the data which is an idx here */
-						function_local_symbol_table_sc->data[sc_spot] = (void *)var_declare;
+						symbol_table_entry = (ast_node_t*)function_local_symbol_table_sc->data[sc_spot];
+					}
 
-						/* store the symbol */
-						function_local_symbol_table = (ast_node_t **)vtr::realloc(function_local_symbol_table, sizeof(ast_node_t*)*(function_num_local_symbol_table+1));
-						function_local_symbol_table[function_num_local_symbol_table] = (ast_node_t *)var_declare;
-						function_num_local_symbol_table ++;
 
-						/* check for an initial value and store it if found */
-						long initial_value;
-						if(check_for_initial_reg_value(var_declare, &initial_value)){
-							var_declare->types.variable.is_initialized = TRUE;
-							var_declare->types.variable.initial_value = initial_value;
+					/* ERROR checks here
+						* output with reg is fine
+						* output with wire is fine
+						* input with wire is fine
+						* Then update the stored string cache entry with information */
+					
+					if (var_declare->types.variable.is_input || symbol_table_entry->types.variable.is_input)
+					{
+						if (var_declare != original_var_declare
+							&& (var_declare->types.variable.is_reg || var_declare->types.variable.is_integer || var_declare->types.variable.is_wire)
+							&& (symbol_table_entry->types.variable.is_reg || symbol_table_entry->types.variable.is_integer || symbol_table_entry->types.variable.is_wire))
+						{
+							error_message(PARSE_ERROR, var_declare->line_number, var_declare->file_number, 
+								"Function already has input with this name (%s)\n", 
+								var_declare->children[0]->types.identifier);
+						}
+
+						if (var_declare->types.variable.is_reg || symbol_table_entry->types.variable.is_reg)
+							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, "%s",
+									"Input cannot be defined as a reg\n");
+
+						if (var_declare->types.variable.is_integer || symbol_table_entry->types.variable.is_integer)
+							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, "%s",
+									"Input cannot be defined as an integer\n");
+
+						symbol_table_entry->types.variable.is_input = TRUE;
+						
+					}
+					/* MORE ERRORS ... could check for same declaration name ... */
+					else if (var_declare->types.variable.is_output || symbol_table_entry->types.variable.is_output)
+					{
+						if (var_declare != original_var_declare
+							&& (var_declare->types.variable.is_reg || var_declare->types.variable.is_integer || var_declare->types.variable.is_wire)
+							&& (symbol_table_entry->types.variable.is_reg || symbol_table_entry->types.variable.is_integer || symbol_table_entry->types.variable.is_wire))
+						{
+							error_message(PARSE_ERROR, var_declare->line_number, var_declare->file_number, 
+								"Function already has output with this name (%s)\n", 
+								var_declare->children[0]->types.identifier);
+						}
+
+						symbol_table_entry->types.variable.is_output = TRUE;
+					}
+					
+					if (var_declare != original_var_declare && 
+						((var_declare->types.variable.is_reg) || 
+						(var_declare->types.variable.is_wire) || 
+						(var_declare->types.variable.is_integer)))
+					{
+						if ((var_declare->types.variable.is_reg) || (var_declare->types.variable.is_wire) || (var_declare->types.variable.is_integer))
+						{						
+							/* copy all the reg and wire info over */
+							symbol_table_entry->types.variable.is_wire = var_declare->types.variable.is_wire;
+							symbol_table_entry->types.variable.is_reg = var_declare->types.variable.is_reg;
+							symbol_table_entry->types.variable.is_integer = var_declare->types.variable.is_integer;
+						}
+						else
+						{
+							error_message(PARSE_ERROR, var_declare->line_number, var_declare->file_number, 
+								"This name (%s) is already used in current function\n", 
+								var_declare->children[0]->types.identifier);
 						}
 					}
-					vtr::free(temp_string);
+				
+					/* check for an initial value and store it if found */
+					long initial_value;
+					if(check_for_initial_reg_value(var_declare, &initial_value, function_name)){
+						if (symbol_table_entry->types.variable.is_reg || symbol_table_entry->types.variable.is_integer)
+						{
+							symbol_table_entry->types.variable.is_initialized = TRUE;
+							symbol_table_entry->types.variable.initial_value = initial_value;	
+						}	
+						else 
+						{
+							error_message(NETLIST_ERROR, var_declare->children[i]->line_number, var_declare->children[i]->file_number, "%s",
+								"Nets cannot be initialized\n");
+						}	
+					}
 				}
 			}
 		}
 	}
 	else
 	{
-		error_message(NETLIST_ERROR, function_items->line_number, function_items->file_number, "%s", "Empty module\n");
+		error_message(NETLIST_ERROR, function_items->line_number, function_items->file_number, "%s", "Empty function\n");
 	}
 }
 /*--------------------------------------------------------------------------
@@ -2090,13 +2149,16 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
  *  Returns the initial value in *value if one is found.
  *  Added by Conor
  *-------------------------------------------------------------------------*/
-int check_for_initial_reg_value(ast_node_t* var_declare, long *value){
+int check_for_initial_reg_value(ast_node_t* var_declare, long *value, char *instance_name_prefix)
+{
 	oassert(var_declare->type == VAR_DECLARE);
 	// Initial value is always the last child, if one exists
-	if(var_declare->children[5] != NULL){
-		*value = var_declare->children[5]->types.number.value;
+	ast_node_t *child_init = node_is_constant(resolve_node(NULL, instance_name_prefix, var_declare->children[5]));
+	if(child_init){
+		*value = child_init->types.number.value;
 		return TRUE;
 	}
+
 	return FALSE;
 }
 
@@ -3611,8 +3673,12 @@ void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_no
 				}
 				else
 				{
-					local_symbol_table[sc_spot]->types.variable.is_initialized = 1;
-					local_symbol_table[sc_spot]->types.variable.initial_value = number;
+					ast_node_t *local_symbol_node = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
+					if (local_symbol_node != NULL)
+					{
+						local_symbol_table[sc_spot]->types.variable.is_initialized = 1;
+						local_symbol_table[sc_spot]->types.variable.initial_value = number;
+					}
 				}
 			}
         }
@@ -3732,6 +3798,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			if(sc_spot != -1){
 
 				ff_node->has_initial_value = 1;
+				// TODO: ?? what is this?
 				ff_node->initial_value = ((char *)(local_symbol_table_sc->data[sc_spot]))[0];
 			}
 			else{

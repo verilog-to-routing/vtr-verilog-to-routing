@@ -15,6 +15,7 @@ ast_node_t *newNumberNode(char *num, bases base, signedness sign, int line_numbe
 ast_node_t *newList(ids type_id, ast_node_t *expression);
 ast_node_t *newList_entry(ast_node_t *concat_node, ast_node_t *expression);
 ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child );
+ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_node_t *port);
 ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list);
 
 /* EXPRESSIONS */
