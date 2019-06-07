@@ -591,39 +591,34 @@ sub check_two_files {
 	close(CONFIG_FILE);
 
 	# Search config file
-	if ( $lines =~ /^\s*pass_requirements_file\s*=\s*(\S+)\s*$/m ) { }
-	else {
+	if ( $lines =~ /^\s*pass_requirements_file\s*=\s*(\S+)\s*$/m ) {
+        my $pass_req_filename = $1;
+
+        if ($pass_req_filename !~ /^\s*%/) { #Not blank
+
+            # Search for pass requirement file
+            $pass_req_filename = expand_user_path($pass_req_filename);
+            if ( -e "$task_path/config/$pass_req_filename" ) {
+                $pass_req_file = "$task_path/config/$pass_req_filename";
+            } elsif ( -e "$vtr_flow_path/parse/pass_requirements/$pass_req_filename" ) {
+                $pass_req_file =
+                  "$vtr_flow_path/parse/pass_requirements/$pass_req_filename";
+            } elsif ( -e $pass_req_filename ) {
+                $pass_req_file = $pass_req_filename;
+            }
+
+            if ( -e $pass_req_file ) {
+                $failed += check_pass_requirements($pass_req_file, $test_file_1, $test_file_2, $is_golden);
+            } else {
+                print "[ERROR] Cannot find pass_requirements_file.  Checked for $task_path/config/$pass_req_filename or $vtr_flow_path/parse/$pass_req_filename or $pass_req_filename\n";
+                $failed += 1;
+            }
+        }
+    } else {
 		print
 		  "[Warning] No 'pass_requirements_file' in task configuration file ($task_path/config/config.txt)\n";
 	}
 
-	my $pass_req_filename = $1;
-
-    if ($pass_req_filename !~ /^\s*%/) {
-
-        # Search for pass requirement file
-        $pass_req_filename = expand_user_path($pass_req_filename);
-        if ( -e "$task_path/config/$pass_req_filename" ) {
-            $pass_req_file = "$task_path/config/$pass_req_filename";
-        }
-        elsif ( -e "$vtr_flow_path/parse/pass_requirements/$pass_req_filename" ) {
-            $pass_req_file =
-              "$vtr_flow_path/parse/pass_requirements/$pass_req_filename";
-        }
-        elsif ( -e $pass_req_filename ) {
-            $pass_req_file = $pass_req_filename;
-        }
-        else {
-            print
-              "[ERROR] Cannot find pass_requirements_file.  Checked for $task_path/config/$pass_req_filename or $vtr_flow_path/parse/$pass_req_filename or $pass_req_filename\n";
-            $failed += 1;
-            return $failed;
-        }
-
-        if ( -e $pass_req_file ) {
-            $failed += check_pass_requirements($pass_req_file, $test_file_1, $test_file_2, $is_golden);
-        }
-    }
 
 	if ($failed == 0) {
 		print "[Pass]\n";
