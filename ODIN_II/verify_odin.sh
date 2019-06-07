@@ -187,10 +187,8 @@ function create_temp() {
 		echo "running benchmark @${NEW_RUN_DIR}"
 		mkdir -p ${NEW_RUN_DIR}
 
-		if [ -e regression_test/latest ]; then
-			unlink regression_test/latest || /bin/true
-			rm -Rf regression_test/latest || /bin/true
-		fi
+		unlink regression_test/latest &> /dev/null || /bin/true
+		rm -Rf regression_test/latest || /bin/true
 
 		ln -s ${NEW_RUN_DIR} regression_test/latest
 	fi
