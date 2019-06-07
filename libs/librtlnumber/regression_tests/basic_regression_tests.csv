@@ -81,8 +81,8 @@ Multiplication,	    4'b0010,    *,  4'b0010,  'b100
 Power-Zero,              4'b0010,    **, 4'b0000,  'b1
 # TODO: Power-Unknown,              4'b0000,    **, 4'sb1110,  'bx
 Power-Neg-Even,              4'sb1111,    **, 2'b10,  'b1
-# Power-Neg-Odd,              4'sb1111,    **, 3'b011,  'b1
+# TODO: Power-Neg-Odd,              4'sb1111,    **, 3'b011,  'b1
 # TODO: Other Power Cases
 
 # Ternary operations
-# TODO: Ternary,			1'b1,   ?,  2'b01,  :,  2'b10,  2'b01
+Ternary,			1'b1,   ?,  2'b01,  :,  2'b10,  2'b01
