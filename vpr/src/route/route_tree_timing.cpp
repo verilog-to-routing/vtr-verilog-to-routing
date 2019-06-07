@@ -460,11 +460,10 @@ float load_new_subtree_C_downstream(t_rt_node* rt_node) {
 
         C_downstream += device_ctx.rr_nodes[rt_node->inode].C();
         for (t_linked_rt_edge* edge = rt_node->u.child_list; edge != nullptr; edge = edge->next) {
-         
-          /*Similar to net_delay.cpp, this for loop traverses a rc subtree, whose edges represent enabled switches.
-          * When switches such as multiplexers and tristate buffers are enabled, their fanout
-          * produces an "internal capacitance". We account for this internal capacitance of the
-          * switch by adding it to the total capacitance of the node.*/
+            /*Similar to net_delay.cpp, this for loop traverses a rc subtree, whose edges represent enabled switches.
+             * When switches such as multiplexers and tristate buffers are enabled, their fanout
+             * produces an "internal capacitance". We account for this internal capacitance of the
+             * switch by adding it to the total capacitance of the node.*/
 
             C_downstream += device_ctx.rr_switch_inf[edge->iswitch].Cinternal;
 
@@ -494,16 +493,16 @@ update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_new_path_rt_node) {
 
     auto& device_ctx = g_vpr_ctx.device();
 
-	rt_node = start_of_new_path_rt_node;
-	parent_rt_node = rt_node->parent_node;
-	iswitch = rt_node->parent_switch;
-    
+    rt_node = start_of_new_path_rt_node;
+    parent_rt_node = rt_node->parent_node;
+    iswitch = rt_node->parent_switch;
+
     /* Now that a connection has been made between rt_node and its parent we must also consider
      * the potential effect of internal capacitance. We will first assume that parent is connected
      * by an unbuffered switch, so the ancestors downstream capacitance must be equal to the sum
      * of the child's downstream capacitance with the internal capacitance of the switch.*/
 
-	C_downstream_addition = rt_node->C_downstream + device_ctx.rr_switch_inf[iswitch].Cinternal; 
+    C_downstream_addition = rt_node->C_downstream + device_ctx.rr_switch_inf[iswitch].Cinternal;
 
     /* Having set the value of C_downstream_addition, we must check whethere the parent switch
      * is a buffered or unbuffered switch with the if statement below. If the parent switch is
@@ -515,21 +514,20 @@ update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_new_path_rt_node) {
      * capacitance will be increased by the sum of the child's downstream capacitance with
      * the internal capacitance of the parent switch in the while loop/.*/
 
-
-	if (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered() == true){
-		C_downstream_addition = device_ctx.rr_switch_inf[iswitch].Cinternal;
-		rt_node = parent_rt_node;
-		rt_node->C_downstream += C_downstream_addition;
-		parent_rt_node = rt_node->parent_node;
-		iswitch = rt_node->parent_switch; 
-	}
-
-	while (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered() == false) {
+    if (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered() == true) {
+        C_downstream_addition = device_ctx.rr_switch_inf[iswitch].Cinternal;
         rt_node = parent_rt_node;
-		rt_node->C_downstream += C_downstream_addition;
-		parent_rt_node = rt_node->parent_node;
-		iswitch = rt_node->parent_switch;
-	}
+        rt_node->C_downstream += C_downstream_addition;
+        parent_rt_node = rt_node->parent_node;
+        iswitch = rt_node->parent_switch;
+    }
+
+    while (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered() == false) {
+        rt_node = parent_rt_node;
+        rt_node->C_downstream += C_downstream_addition;
+        parent_rt_node = rt_node->parent_node;
+        iswitch = rt_node->parent_switch;
+    }
     return (rt_node);
 }
 

@@ -1244,46 +1244,49 @@ enum class BufferSize {
  * buf_size:  The area of the buffer. If set to zero, area should be         *
  *            calculated from R                                              */
 struct t_arch_switch_inf {
-    public:
-        static constexpr int UNDEFINED_FANIN = -1;
+  public:
+    static constexpr int UNDEFINED_FANIN = -1;
 
-        char *name = nullptr;
-        float R = 0.;
-        float Cin = 0.;
-        float Cout = 0.;
-        float Cinternal = 0.;
-        float mux_trans_size = 1.;
-        BufferSize buf_size_type = BufferSize::AUTO;
-        float buf_size = 0.;
-        e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_AUTO;
-        float power_buffer_size = 0.;
-    public:
-        //Returns the type of switch
-        SwitchType type() const;
+    char* name = nullptr;
+    float R = 0.;
+    float Cin = 0.;
+    float Cout = 0.;
+    float Cinternal = 0.;
+    float mux_trans_size = 1.;
+    BufferSize buf_size_type = BufferSize::AUTO;
+    float buf_size = 0.;
+    e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_AUTO;
+    float power_buffer_size = 0.;
 
-        //Returns true if this switch type isolates its input and output into
-        //seperate DC-connected subcircuits
-        bool buffered() const;
+  public:
+    //Returns the type of switch
+    SwitchType type() const;
 
-        //Returns true if this switch type is configurable
-        bool configurable() const;
+    //Returns true if this switch type isolates its input and output into
+    //seperate DC-connected subcircuits
+    bool buffered() const;
 
-        //Returns whether the switch's directionality (e.g. BI_DIR, UNI_DIR)
-        e_directionality directionality() const;
+    //Returns true if this switch type is configurable
+    bool configurable() const;
 
-        //Returns the intrinsic delay of this switch
-        float Tdel(int fanin=UNDEFINED_FANIN) const;
+    //Returns whether the switch's directionality (e.g. BI_DIR, UNI_DIR)
+    e_directionality directionality() const;
 
-        //Returns true if the Tdel value is independent of fanout
-        bool fixed_Tdel() const;
-    public:
-        void set_Tdel(int fanin, float delay);
-        void set_type(SwitchType type_val);
-    private:
-        SwitchType type_ = SwitchType::INVALID;
-        std::map<int, double> Tdel_map_;
+    //Returns the intrinsic delay of this switch
+    float Tdel(int fanin = UNDEFINED_FANIN) const;
 
-        friend void PrintArchInfo(FILE*, const t_arch*);
+    //Returns true if the Tdel value is independent of fanout
+    bool fixed_Tdel() const;
+
+  public:
+    void set_Tdel(int fanin, float delay);
+    void set_type(SwitchType type_val);
+
+  private:
+    SwitchType type_ = SwitchType::INVALID;
+    std::map<int, double> Tdel_map_;
+
+    friend void PrintArchInfo(FILE*, const t_arch*);
 };
 
 /* Lists all the important information about an rr switch type.              *
@@ -1308,31 +1311,33 @@ struct t_arch_switch_inf {
  * buf_size:  The area of the buffer. If set to zero, area should be         *
  *            calculated from R                                              */
 struct t_rr_switch_inf {
-	float R = 0.;
-	float Cin = 0.;
-	float Cout = 0.;
-	float Cinternal = 0.; 
-	float Tdel = 0.;
-	float mux_trans_size = 0.;
-	float buf_size = 0.;
-	const char *name = nullptr;
-	e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
-	float power_buffer_size = 0.;
-    public:
-        //Returns the type of switch
-        SwitchType type() const;
+    float R = 0.;
+    float Cin = 0.;
+    float Cout = 0.;
+    float Cinternal = 0.;
+    float Tdel = 0.;
+    float mux_trans_size = 0.;
+    float buf_size = 0.;
+    const char* name = nullptr;
+    e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
+    float power_buffer_size = 0.;
 
-        //Returns true if this switch type isolates its input and output into
-        //seperate DC-connected subcircuits
-        bool buffered() const;
+  public:
+    //Returns the type of switch
+    SwitchType type() const;
 
-        //Returns true if this switch type is configurable
-        bool configurable() const;
+    //Returns true if this switch type isolates its input and output into
+    //seperate DC-connected subcircuits
+    bool buffered() const;
 
-    public:
-        void set_type(SwitchType type_val);
-    private:
-        SwitchType type_ = SwitchType::INVALID;
+    //Returns true if this switch type is configurable
+    bool configurable() const;
+
+  public:
+    void set_type(SwitchType type_val);
+
+  private:
+    SwitchType type_ = SwitchType::INVALID;
 };
 
 /* Lists all the important information about a direct chain connection.     *
