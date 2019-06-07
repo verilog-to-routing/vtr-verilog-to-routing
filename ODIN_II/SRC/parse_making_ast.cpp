@@ -81,6 +81,7 @@ short to_view_parse;
 void graphVizOutputPreproc(FILE *yyin);
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
+ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list);
 
 /*
  * Function implementations
@@ -376,6 +377,7 @@ ast_node_t *newfunctionList(ids node_type, ast_node_t *child)
 
     return new_node;
 }
+
 /*---------------------------------------------------------------------------------------------
  * (function: newList_entry)
  *-------------------------------------------------------------------------------------------*/
@@ -463,10 +465,367 @@ static ast_node_t *resolve_symbol_node(ids top_type, ast_node_t *symbol_node)
 	return to_return;
 }
 
+ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
+{
+	ast_node_t *unprocessed_ports = NULL;
+	long sc_spot;
+
+	for (long i = 0; i < symbol_list->num_children; i++)
+	{
+		if (symbol_list->children[i]->types.variable.is_port)
+		{
+			ast_node_t *this_port = symbol_list->children[i];
+
+			if (!unprocessed_ports)
+			{
+				unprocessed_ports = newList(VAR_DECLARE_LIST, this_port);
+			} 
+			else 
+			{
+				unprocessed_ports = newList_entry(unprocessed_ports, this_port);
+			}
+
+			/* grab and update all typeless ports immediately following this one */
+			long j = 0;
+			for (j = i + 1; j < symbol_list->num_children && !(symbol_list->children[j]->types.variable.is_port); j++)
+			{
+				/* port type */
+				symbol_list->children[j]->types.variable.is_input = this_port->types.variable.is_input;
+				symbol_list->children[j]->types.variable.is_output = this_port->types.variable.is_output;
+				symbol_list->children[j]->types.variable.is_inout = this_port->types.variable.is_inout;
+
+				/* net type */
+				symbol_list->children[j]->types.variable.is_wire = this_port->types.variable.is_wire;
+				symbol_list->children[j]->types.variable.is_reg = this_port->types.variable.is_reg;
+				symbol_list->children[j]->types.variable.is_integer = this_port->types.variable.is_integer;
+
+				/* range */
+				if (symbol_list->children[j]->children[1] == NULL)
+				{
+					symbol_list->children[j]->children[1] = this_port->children[1];
+					symbol_list->children[j]->children[2] = this_port->children[2];
+					symbol_list->children[j]->children[3] = this_port->children[3];
+					symbol_list->children[j]->children[4] = this_port->children[4];
+
+					if (this_port->num_children == 8)
+					{
+						symbol_list->children[j]->children = (ast_node_t**) realloc(symbol_list->children[j]->children, sizeof(ast_node_t*)*8);
+						symbol_list->children[j]->children[7] = symbol_list->children[j]->children[5];
+						symbol_list->children[j]->children[5] = this_port->children[5];
+						symbol_list->children[j]->children[6] = this_port->children[6];
+					}
+				}
+
+				/* error checking */
+				symbol_list->children[j] = markAndProcessPortWith(MODULE, NO_ID, NO_ID, symbol_list->children[j]);
+			}
+		}
+		else
+		{
+			if (top_type == MODULE)
+			{
+				/* find the related INPUT or OUTPUT definition and store that instead */
+				if ((sc_spot = sc_lookup_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
+				{
+					symbol_list->children[i]->types.variable.is_input = TRUE;
+					free_whole_tree(symbol_list->children[i]->children[0]);
+					symbol_list->children[i]->children[0] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
+				}
+				else if ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
+				{
+					symbol_list->children[i]->types.variable.is_output = TRUE;
+					free_whole_tree(symbol_list->children[i]->children[0]);
+					symbol_list->children[i]->children[0] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
+				}
+				else
+				{
+					error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
+				}
+			}
+			else if (top_type == FUNCTION)
+			{
+				/* find the related INPUT or OUTPUT definition and store that instead */
+				if ((sc_spot = sc_lookup_string(functions_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
+				{
+					symbol_list->children[i]->types.variable.is_input = TRUE;
+					free_whole_tree(symbol_list->children[i]->children[0]);
+					symbol_list->children[i]->children[0] = (ast_node_t*)functions_inputs_sc->data[sc_spot];
+				}
+				else if ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
+				{
+					symbol_list->children[i]->types.variable.is_output = TRUE;
+					free_whole_tree(symbol_list->children[i]->children[0]);
+					symbol_list->children[i]->children[0] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
+				}
+				else
+				{
+					error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
+				}
+			}
+
+			symbol_list->children[i]->types.variable.is_port = TRUE;
+		}
+	}
+
+	return unprocessed_ports;
+}
+
+ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_node_t *port)
+{
+	long sc_spot;
+	STRING_CACHE *this_inputs_sc = NULL;
+	STRING_CACHE *this_outputs_sc = NULL;
+	const char *top_type_name = (top_type == MODULE) ? "Module" : "Function";
+	ids temp_net_id = NO_ID;
+
+	if (port->types.variable.is_port)
+	{
+		oassert(false && "Port was already marked");
+	}
+
+	if (top_type == MODULE)
+	{
+		this_inputs_sc = modules_inputs_sc;
+		this_outputs_sc = modules_outputs_sc;
+
+	}
+	else if (top_type == FUNCTION)
+	{
+		this_inputs_sc = functions_inputs_sc;
+		this_outputs_sc = functions_outputs_sc;
+	}
+
+	/* look for processed inputs with this name */
+	sc_spot = sc_lookup_string(this_inputs_sc, port->children[0]->types.identifier);
+	if (sc_spot > -1 && ((ast_node_t*)this_inputs_sc->data[sc_spot])->types.variable.is_port)
+	{
+		error_message(PARSE_ERROR, port->line_number, current_parse_file, "%s already has input with this name %s\n", 
+			top_type_name, ((ast_node_t*)this_inputs_sc->data[sc_spot])->children[0]->types.identifier);
+	}
+
+	/* look for processed outputs with this name */
+	sc_spot = sc_lookup_string(this_outputs_sc, port->children[0]->types.identifier);
+	if (sc_spot > -1 && ((ast_node_t*)this_outputs_sc->data[sc_spot])->types.variable.is_port)
+	{
+		error_message(PARSE_ERROR, port->line_number, current_parse_file, "%s already has output with this name %s\n", 
+			top_type_name, ((ast_node_t*)this_outputs_sc->data[sc_spot])->children[0]->types.identifier);
+	}
+
+	switch (net_id)
+	{
+		case REG:
+			if (port_id == INPUT)
+			{
+				error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
+									"Input cannot be defined as a reg\n");
+			}
+			if (port_id == INOUT)
+			{
+				error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
+									"Inout cannot be defined as a reg\n");
+			}
+			port->types.variable.is_reg = TRUE;
+			port->types.variable.is_wire = FALSE;
+			port->types.variable.is_integer = FALSE;
+			break;
+
+		case INTEGER:
+			if (port_id == INPUT)
+			{
+				error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
+									"Input cannot be defined as an integer\n");
+			}
+			if (port_id == INOUT)
+			{
+				error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
+									"Inout cannot be defined as an integer\n");
+			}
+			port->types.variable.is_integer = TRUE;
+			port->types.variable.is_reg = FALSE;
+			port->types.variable.is_wire = FALSE;
+			break;
+
+		case WIRE:
+			if (port->children[5] != NULL)
+			{
+				error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
+									"Ports of type net cannot be initialized\n");
+			}
+			port->types.variable.is_wire = TRUE;
+			port->types.variable.is_reg = FALSE;
+			port->types.variable.is_integer = FALSE;
+			break;
+
+		default:
+			if (port->children[5] != NULL)
+			{
+				error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
+									"Ports with undefined type cannot be initialized\n");
+			}
+
+			if (port->types.variable.is_reg 
+				&& !(port->types.variable.is_wire) 
+				&& !(port->types.variable.is_integer))  
+			{
+				temp_net_id = REG;
+			}
+			else if (port->types.variable.is_integer
+				&& !(port->types.variable.is_wire)
+				&& !(port->types.variable.is_reg)) 
+			{
+				temp_net_id = INTEGER;
+			}
+			else if (port->types.variable.is_wire
+				&& !(port->types.variable.is_reg) 
+				&& !(port->types.variable.is_integer))
+			{
+				temp_net_id = WIRE;
+			}
+			else
+			{
+				/* port cannot have more than one type */
+				oassert(!(port->types.variable.is_wire) &&
+						!(port->types.variable.is_reg) &&
+						!(port->types.variable.is_integer));
+			}
+
+			if (net_id == NO_ID)
+			{
+				/* will be marked later */
+				net_id = temp_net_id;
+			}
+
+			break;
+	}
+
+	switch (port_id)
+	{
+		case INPUT:
+			port->types.variable.is_input = TRUE;
+			port->types.variable.is_output = FALSE;
+			port->types.variable.is_inout = FALSE;
+
+			/* add this input to the modules string cache */
+			sc_spot = sc_add_string(this_inputs_sc, port->children[0]->types.identifier);
+
+			/* store the data which is an idx here */
+			this_inputs_sc->data[sc_spot] = (void*)port;
+
+			break;
+
+		case OUTPUT:
+			port->types.variable.is_output = TRUE;
+			port->types.variable.is_input = FALSE;
+			port->types.variable.is_inout = FALSE;
+
+			/* add this output to the modules string cache */
+			sc_spot = sc_add_string(this_outputs_sc, port->children[0]->types.identifier);
+
+			/* store the data which is an idx here */
+			this_outputs_sc->data[sc_spot] = (void*)port;
+
+			break;
+
+		case INOUT:
+			port->types.variable.is_inout = TRUE;
+			port->types.variable.is_input = FALSE;
+			port->types.variable.is_output = FALSE;
+			error_message(PARSE_ERROR, port->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", port->children[0]->types.identifier);
+			break;
+
+		default:
+			if (port->types.variable.is_input 
+				&& !(port->types.variable.is_output) 
+				&& !(port->types.variable.is_inout))  
+			{
+				port = markAndProcessPortWith(top_type, INPUT, net_id, port);
+			}
+			else if (port->types.variable.is_output
+				&& !(port->types.variable.is_input)
+				&& !(port->types.variable.is_inout)) 
+			{
+				port = markAndProcessPortWith(top_type, OUTPUT, net_id, port);
+			}
+			else if (port->types.variable.is_inout
+				&& !(port->types.variable.is_input)
+				&& !(port->types.variable.is_output)) 
+			{
+				error_message(PARSE_ERROR, port->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", port->children[0]->types.identifier);
+				port = markAndProcessPortWith(top_type, INOUT, net_id, port);
+			}
+			else
+			{
+				// shouldn't ever get here...
+				oassert(port->types.variable.is_input
+						|| port->types.variable.is_output
+						|| port->types.variable.is_inout);
+			}
+
+			break;
+	}
+
+	port->types.variable.is_port = TRUE;
+
+	return port;
+}
+
+ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parameter)
+{
+	long sc_spot;
+	STRING_CACHE **this_defines_sc = NULL;
+	long this_num_modules = 0;
+	const char *id_name = (id == PARAMETER) ? "Parameter" : "Localparam";
+
+	if (top_type == MODULE)
+	{
+		this_defines_sc = defines_for_module_sc;
+		this_num_modules = num_modules-num_instances;
+
+	}
+	else if (top_type == FUNCTION)
+	{
+		this_defines_sc = defines_for_function_sc;
+		this_num_modules = num_functions;
+	}
+
+	/* create an entry in the symbol table for this parameter */
+	if ((sc_spot = sc_lookup_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier)) > -1)
+	{
+		error_message(PARSE_ERROR, parameter->children[5]->line_number, current_parse_file, "Module already has parameter with this name (%s)\n",
+			parameter->children[0]->types.identifier);
+	}
+	sc_spot = sc_add_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier);
+	
+	ast_node_t *value = parameter->children[5];
+
+	/* make sure that the parameter value is constant */
+	if (!node_is_ast_constant(value, this_defines_sc[this_num_modules]))
+	{
+		error_message(PARSE_ERROR, parameter->children[5]->line_number, current_parse_file, "%s value must be constant\n", id_name);
+	}
+
+
+	this_defines_sc[this_num_modules]->data[sc_spot] = (void*)parameter->children[5];
+	/* mark the node as shared so we don't delete it */
+	parameter->children[5]->shared_node = TRUE;
+
+	if (id == PARAMETER)
+	{
+		parameter->children[5]->types.variable.is_parameter = TRUE;
+		parameter->types.variable.is_parameter = TRUE;
+	}
+	else if (id == LOCALPARAM)
+	{
+		parameter->children[5]->types.variable.is_localparam = TRUE;
+		parameter->types.variable.is_localparam = TRUE;
+	}
+
+	return parameter;
+}
+
 ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list)
 {
 	long i;
-	long sc_spot;
 	ast_node_t *range_min = 0;
 	ast_node_t *range_max = 0;
 
@@ -488,115 +847,31 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 		
         if(top_type == MODULE) {
 
-                switch(id)
-	            {
-		            case PORT:
-		            {
-			            symbol_list->children[i]->types.variable.is_port = TRUE;
-
-                        /* find the related INPUT or OUTPUT definition and store that instead */
-			            if ((sc_spot = sc_lookup_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
-			            {
-				            symbol_list->children[i]->types.variable.is_input = TRUE;
-							free_whole_tree(symbol_list->children[i]->children[0]);
-				            symbol_list->children[i]->children[0] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
-			            }
-			            else if ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
-			            {
-				            symbol_list->children[i]->types.variable.is_output = TRUE;
-							free_whole_tree(symbol_list->children[i]->children[0]);
-				            symbol_list->children[i]->children[0] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
-			            }
-						else
-						{
-				            error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching input declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
-			            }
-
-			            break;
-		            }
-		            case PARAMETER:
-		            {
-			            /* create an entry in the symbol table for this parameter */
-			            if ((sc_spot = sc_add_string(defines_for_module_sc[num_modules-num_instances], symbol_list->children[i]->children[0]->types.identifier)) == -1)
-			            {
-				            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
-					            symbol_list->children[i]->children[0]->types.identifier,
-					            ((ast_node_t*)(defines_for_module_sc[num_modules-num_instances]->data[sc_spot]))->line_number);
-			            }
-						
-						ast_node_t *value = symbol_list->children[i]->children[5];
-
-						/* make sure that the parameter value is constant */
-						if (!node_is_ast_constant(value, defines_for_module_sc[num_modules-num_instances]))
-						{
-							error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Parameter value must be constant\n");
-						}
-
-			            symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
-			            defines_for_module_sc[num_modules-num_instances]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
-			            /* mark the node as shared so we don't delete it */
-			            symbol_list->children[i]->children[5]->shared_node = TRUE;
-			            /* now do the mark */
-			            symbol_list->children[i]->types.variable.is_parameter = TRUE;
-			            break;
-		            }
-					case LOCALPARAM:
+			switch(id)
+			{
+				case PARAMETER:
+				case LOCALPARAM:
+				{
+					markAndProcessParameterWith(top_type, id, symbol_list->children[i]);
+					break;
+				}
+				case INPUT:
+				case OUTPUT:
+				case INOUT:
+					symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i]);
+					break;
+				case WIRE:
+					if (symbol_list->children[i]->children[5] != NULL)
 					{
-						 /* create an entry in the symbol table for this parameter */
-			            if ((sc_spot = sc_add_string(defines_for_module_sc[num_modules-num_instances], symbol_list->children[i]->children[0]->types.identifier)) == -1)
-			            {
-				            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
-					            symbol_list->children[i]->children[0]->types.identifier,
-					            ((ast_node_t*)(defines_for_module_sc[num_modules-num_instances]->data[sc_spot]))->line_number);
-			            }
-						
-						ast_node_t *value = symbol_list->children[i]->children[5];
-
-						/* make sure that the parameter value is constant */
-						if (!node_is_ast_constant(value, defines_for_module_sc[num_modules-num_instances]))
-						{
-							error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Localparam value must be constant\n");
-						}
-
-			            symbol_list->children[i]->children[5]->types.variable.is_localparam = TRUE;
-			            defines_for_module_sc[num_modules-num_instances]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
-			            /* mark the node as shared so we don't delete it */
-			            symbol_list->children[i]->children[5]->shared_node = TRUE;
-			            /* now do the mark */
-			            symbol_list->children[i]->types.variable.is_localparam = TRUE;
-			            break;
+						error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
+								"Nets cannot be initialized\n");
 					}
-		            case INPUT:
-			            symbol_list->children[i]->types.variable.is_input = TRUE;
-			            /* add this input to the modules string cache */
-			            if ((sc_spot = sc_add_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
-			            {
-				            error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
-			            }
-			            /* store the data which is an idx here */
-			            modules_inputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
-			            break;
-		            case OUTPUT:
-			            symbol_list->children[i]->types.variable.is_output = TRUE;
-			            /* add this output to the modules string cache */
-			            if ((sc_spot = sc_add_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
-			            {
-				            error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has output with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
-			            }
-			            /* store the data which is an idx here */
-			            modules_outputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
-			            break;
-		            case INOUT:
-			            symbol_list->children[i]->types.variable.is_inout = TRUE;
-			            error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
-			            break;
-		            case WIRE:
-			            symbol_list->children[i]->types.variable.is_wire = TRUE;
-			            break;
-		            case REG:
-			            symbol_list->children[i]->types.variable.is_reg = TRUE;
-			            break;
-		            case INTEGER:
+					symbol_list->children[i]->types.variable.is_wire = TRUE;
+					break;
+				case REG:
+					symbol_list->children[i]->types.variable.is_reg = TRUE;
+					break;
+				case INTEGER:
 			    case GENVAR:			
 			            symbol_list->children[i]->types.variable.is_integer = TRUE;
 			            break;
@@ -606,122 +881,36 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
         }
         else if(top_type == FUNCTION) {
 
-
-
-                switch(id)
-		        {
-			        case PORT:
-			        {
-				        symbol_list->children[i]->types.variable.is_port = TRUE;
-
-                        /* find the related INPUT or OUTPUT definition and store that instead */
-				        if ((sc_spot = sc_lookup_string(functions_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
-				        {
-					        symbol_list->children[i]->types.variable.is_input = TRUE;
-							free_whole_tree(symbol_list->children[i]->children[0]);
-					        symbol_list->children[i]->children[0] = (ast_node_t*)functions_inputs_sc->data[sc_spot];
-				        }
-				        else if ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
-				        {
-                            symbol_list->children[i]->types.variable.is_output = TRUE;
-							free_whole_tree(symbol_list->children[i]->children[0]);
-					        symbol_list->children[i]->children[0] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
-				        }
-				        else
-				        {
-					        error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching input declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
-				        }
-
-				        break;
-			        }
-			        case PARAMETER:
-			        {
-				        /* create an entry in the symbol table for this parameter */
-				        if ((sc_spot = sc_add_string(defines_for_function_sc[num_functions], symbol_list->children[i]->children[0]->types.identifier)) == -1)
-				        {
-					        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
-						        symbol_list->children[i]->children[0]->types.identifier,
-						        ((ast_node_t*)(defines_for_function_sc[num_functions]->data[sc_spot]))->line_number);
-				        }
-						
-						ast_node_t *value = symbol_list->children[i]->children[5];
-
-						/* make sure that the parameter value is constant */
-						if (!node_is_ast_constant(value, defines_for_function_sc[num_functions]))
-						{
-							error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Parameter value must be constant\n");
-						}
-
-			            symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
-				        defines_for_function_sc[num_functions]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
-				        /* mark the node as shared so we don't delete it */
-				        symbol_list->children[i]->children[5]->shared_node = TRUE;
-				        /* now do the mark */
-				        symbol_list->children[i]->types.variable.is_parameter = TRUE;
-				        break;
-			        }
-					case LOCALPARAM:
+			switch(id)
+			{
+				case PARAMETER:
+				case LOCALPARAM:
+				{
+					markAndProcessParameterWith(top_type, id, symbol_list->children[i]);
+					break;
+				}
+				case INPUT:
+				case OUTPUT:
+				case INOUT:
+					symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i]);
+					break;
+				case WIRE:
+					if (symbol_list->children[i]->children[5] != NULL)
 					{
-						/* create an entry in the symbol table for this parameter */
-				        if ((sc_spot = sc_add_string(defines_for_function_sc[num_functions], symbol_list->children[i]->children[0]->types.identifier)) == -1)
-				        {
-					        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
-						        symbol_list->children[i]->children[0]->types.identifier,
-						        ((ast_node_t*)(defines_for_function_sc[num_functions]->data[sc_spot]))->line_number);
-				        }
-						
-						ast_node_t *value = symbol_list->children[i]->children[5];
-
-						/* make sure that the parameter value is constant */
-						if (!node_is_ast_constant(value, defines_for_function_sc[num_functions]))
-						{
-							error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "%s", "Localparam value must be constant\n");
-						}
-
-			            symbol_list->children[i]->children[5]->types.variable.is_localparam = TRUE;
-				        defines_for_function_sc[num_functions]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
-				        /* mark the node as shared so we don't delete it */
-				        symbol_list->children[i]->children[5]->shared_node = TRUE;
-				        /* now do the mark */
-				        symbol_list->children[i]->types.variable.is_localparam = TRUE;
-				        break;
+						error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
+								"Nets cannot be initialized\n");
 					}
-			        case INPUT:
-				        symbol_list->children[i]->types.variable.is_input = TRUE;
-				        /* add this input to the modules string cache */
-				        if ((sc_spot = sc_add_string(functions_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
-				        {
-					        error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
-				        }
-				        /* store the data which is an idx here */
-        		        functions_inputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
-				        break;
-			        case OUTPUT:
-                        symbol_list->children[i]->types.variable.is_output = TRUE;
-				        /* add this output to the modules string cache */
-				        if ((sc_spot = sc_add_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
-				        {
-					        error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has output with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
-				        }
-				        /* store the data which is an idx here */
-				        functions_outputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
-				        break;
-			        case INOUT:
-				        symbol_list->children[i]->types.variable.is_inout = TRUE;
-				        error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
-				        break;
-			        case WIRE:
-				        symbol_list->children[i]->types.variable.is_wire = TRUE;
-				        break;
-			        case REG:
-				        symbol_list->children[i]->types.variable.is_reg = TRUE;
-				        break;
-			        case INTEGER:
-				        symbol_list->children[i]->types.variable.is_integer = TRUE;
-				        break;
-			        default:
-				        oassert(FALSE);
-                }
+					symbol_list->children[i]->types.variable.is_wire = TRUE;
+					break;
+				case REG:
+					symbol_list->children[i]->types.variable.is_reg = TRUE;
+					break;
+				case INTEGER:
+					symbol_list->children[i]->types.variable.is_integer = TRUE;
+					break;
+				default:
+					oassert(FALSE);
+			}
         }
 
     }
@@ -1461,7 +1650,7 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ 
  * ----------------------------------------------------
  * (function: newModule)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number)
+ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number)
 {
 	int i;
 	long j, k;
@@ -1475,9 +1664,24 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 	}
 
 	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(MODULE, line_number, current_parse_file);
+	ast_node_t *new_node = create_node_w_type(MODULE, line_number, current_parse_file);
+	
 	/* mark all the ports symbols as ports */
-	markAndProcessSymbolListWith(MODULE, PORT, list_of_ports);
+	ast_node_t *port_declarations = resolve_ports(MODULE, list_of_ports);
+
+	/* ports are expected to be in module items */
+	if (port_declarations)
+	{
+		add_child_at_the_beginning_of_the_node(list_of_module_items, port_declarations);
+	}
+
+	/* parameters are expected to be in module items */
+	if (list_of_parameters)
+	{
+		newList_entry(list_of_module_items, list_of_parameters);
+	}
+
+
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 3, symbol_node, list_of_ports, list_of_module_items);
 
@@ -1579,9 +1783,13 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(FUNCTION, line_number, current_parse_file);
+	
 	/* mark all the ports symbols as ports */
-
-	markAndProcessSymbolListWith(FUNCTION, PORT, list_of_ports);
+	ast_node_t *port_declarations = resolve_ports(FUNCTION, list_of_ports);
+	if (port_declarations)
+	{
+		add_child_at_the_beginning_of_the_node(list_of_module_items, port_declarations);
+	}
 
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 3, symbol_node, list_of_ports, list_of_module_items);

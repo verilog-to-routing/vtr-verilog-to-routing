@@ -19,6 +19,8 @@ endif
 BUILD_TYPE ?= release
 MAKEFLAGS := -s
 
+CMAKE_ARGS = -DVTR_IPO_BUILD="off"
+
 BUILD_DIR=../build
 
 .PHONY: help build debug test large_test
