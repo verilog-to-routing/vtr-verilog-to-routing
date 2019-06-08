@@ -4,10 +4,12 @@ void parse_to_ast();
 
 /* INITIALISATIONS */
 void init_parser();
-void cleanup_parser();
+
 void cleanup_hard_blocks();
+
 void init_parser_for_file();
-void clean_up_parser_for_file();
+void cleanup_parser_for_file();
+
 
 /* GENERAL PARSER NODES */
 ast_node_t *newSymbolNode(char *id, int line_number);
@@ -76,7 +78,6 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number);
 void next_module();
 void next_function();
-void newConstant(char *id, ast_node_t *number, int line_number);
 ast_node_t *newDefparam(ids id, ast_node_t *val, int line_number);
 
 void next_parsed_verilog_file(ast_node_t *file_items_list);

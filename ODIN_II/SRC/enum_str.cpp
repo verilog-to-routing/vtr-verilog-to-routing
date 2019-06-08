@@ -1,5 +1,10 @@
 #include "odin_types.h"
 
+const char *file_extension_supported_STR[] =
+{
+	".v"
+};
+
 const char *signedness_STR[] =
 {
 	"SIGNED",

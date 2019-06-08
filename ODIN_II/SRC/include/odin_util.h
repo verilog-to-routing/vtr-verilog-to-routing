@@ -49,6 +49,8 @@ bool is_unknown(T val_in)
 
 long shift_left_value_with_overflow_check(long input_value, long shift_by);
 
+std::string get_file_extension(std::string input_file);
+
 const char *node_name_based_on_op(nnode_t *node);
 const char *name_based_on_op(operation_list op);
 

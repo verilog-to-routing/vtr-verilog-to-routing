@@ -57,33 +57,35 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define INSTANTIATE_DRIVERS 1
 #define ALIAS_INPUTS 2
 
-STRING_CACHE *output_nets_sc;
-STRING_CACHE *input_nets_sc;
+STRING_CACHE *output_nets_sc = NULL;
+STRING_CACHE *input_nets_sc = NULL;
 
-STRING_CACHE *local_symbol_table_sc;
-STRING_CACHE *function_local_symbol_table_sc;
-STRING_CACHE *global_param_table_sc;
-ast_node_t** local_symbol_table;
-ast_node_t** function_local_symbol_table;
-int num_local_symbol_table;
-int function_num_local_symbol_table;
-signal_list_t *local_clock_list;
-short local_clock_found;
-int local_clock_idx;
+STRING_CACHE *global_param_table_sc = NULL;
+
+STRING_CACHE *local_symbol_table_sc = NULL;
+ast_node_t** local_symbol_table = NULL;
+int num_local_symbol_table = 0;
+
+STRING_CACHE *function_local_symbol_table_sc = NULL;
+ast_node_t** function_local_symbol_table = NULL;
+int function_num_local_symbol_table = 0;
+
+signal_list_t *local_clock_list = NULL;
+int local_clock_idx = -1;
 
 /* CONSTANT NET ELEMENTS */
-char *one_string;
-char *zero_string;
-char *pad_string;
+char *one_string = NULL;
+char *zero_string = NULL;
+char *pad_string = NULL;
 
-ast_node_t *top_module;
+ast_node_t *top_module = NULL;
 
-netlist_t *verilog_netlist;
+netlist_t *verilog_netlist = NULL;
 
 int netlist_create_line_number = -2;
 
-circuit_type_e type_of_circuit;
-edge_type_e circuit_edge;
+circuit_type_e type_of_circuit = COMBINATIONAL;
+edge_type_e circuit_edge = UNDEFINED_SENSITIVITY;
 
 /* PROTOTYPES */
 void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name, char *parent_module);
@@ -146,6 +148,11 @@ void look_for_clocks(netlist_t *netlist);
 void convert_multi_to_single_dimentional_array(ast_node_t *node, char *instance_name_prefix);
 char *make_chunk_size_name(char *instance_name_prefix, char *array_name);
 ast_node_t *get_chunk_size_node(char *instance_name_prefix, char *array_name);
+
+void cleanup_function_local_symbol();
+void init_function_local_symbol();
+void cleanup_local_symbol();
+void init_local_symbol();
 
 /*----------------------------------------------------------------------------
  * (function: create_param_table_for_module)
@@ -374,7 +381,67 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 	}
 }
 
+void cleanup_function_local_symbol()
+{
+	if(function_local_symbol_table_sc)
+	{
+		function_local_symbol_table_sc = sc_free_string_cache(function_local_symbol_table_sc);
+	}
 
+	if(function_local_symbol_table)
+	{
+		vtr::free(function_local_symbol_table);
+		function_local_symbol_table = NULL;
+	}
+
+	function_num_local_symbol_table = 0;
+}
+
+void init_function_local_symbol()
+{
+	// make sure we cleanup first
+	cleanup_function_local_symbol();
+	function_local_symbol_table_sc = sc_new_string_cache();
+}
+
+void cleanup_local_symbol()
+{
+	if(local_symbol_table_sc)
+	{
+		local_symbol_table_sc = sc_free_string_cache(local_symbol_table_sc);
+	}
+
+	if(local_symbol_table)
+	{
+		vtr::free(local_symbol_table);
+		local_symbol_table = NULL;
+	}
+
+	num_local_symbol_table = 0;
+}
+
+void init_local_symbol()
+{
+	// make sure we cleanup first
+	cleanup_local_symbol();
+	local_symbol_table_sc = sc_new_string_cache();
+}
+
+void cleanup_local_clock_list()
+{
+	if(local_clock_list)
+	{
+		free_signal_list(local_clock_list);
+		local_clock_list = NULL;
+	}
+
+	local_clock_idx = -1;
+}
+
+void init_local_clock_list()
+{
+	cleanup_local_clock_list();
+}
 
 /*---------------------------------------------------------------------------------------------
  * (function: create_netlist)
@@ -758,14 +825,10 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 
 			case MODULE_ITEMS:
 				/* items include: wire, reg, input, outputs, assign, gate, module_instance, always */
-
 				/* make the symbol table */
-				local_symbol_table_sc = sc_new_string_cache();
-				local_symbol_table = NULL;
-				num_local_symbol_table = 0;
-				create_symbol_table_for_module(node, instance_name_prefix);
-				local_clock_found = FALSE;
 
+				init_local_symbol();
+				create_symbol_table_for_module(node, instance_name_prefix);
 				/* check for initial register values set in initial block.*/
 				for (i = 0; i < node->num_children; i++)
 				{
@@ -848,11 +911,8 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
             case FUNCTION_ITEMS:
 				/* items include: wire, reg, input, outputs, assign, gate, always */
 				/* make the symbol table */
-				function_local_symbol_table_sc = sc_new_string_cache();
-				function_local_symbol_table = NULL;
-				function_num_local_symbol_table = 0;
+				init_function_local_symbol();
 				create_symbol_table_for_function(node, instance_name_prefix);
-				local_clock_found = FALSE;
 
 				/* create all the driven nets based on the "reg" registers */
 				create_all_driver_nets_in_this_function(instance_name_prefix);
@@ -991,20 +1051,14 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				}
 
 				/* free the symbol table for this module since we're done processing */
-				local_symbol_table_sc = sc_free_string_cache(local_symbol_table_sc);
-				vtr::free(local_symbol_table);
-				local_symbol_table_sc = NULL;
-				num_local_symbol_table = 0;
+				cleanup_local_symbol();
 
 				break;
 			}
 			case FUNCTION_ITEMS:
 			{
 				/* free the symbol table for this module since we're done processing */
-				function_local_symbol_table_sc = sc_free_string_cache(function_local_symbol_table_sc);
-				vtr::free(function_local_symbol_table);
-				function_local_symbol_table = NULL;
-				function_num_local_symbol_table = 0;
+				cleanup_function_local_symbol();
 			}
 			break;
 			case FUNCTION_INSTANCE:
@@ -1049,8 +1103,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 
 				}
 
-				if (local_clock_list)
-					free_signal_list(local_clock_list);
+				cleanup_local_clock_list();
 					
 				break;
 			case BINARY_OPERATION:
@@ -1531,7 +1584,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		temp_string = make_chunk_size_name(instance_name_prefix, name);
 
-		if ((sc_spot = sc_add_string(local_param_table_sc, temp_string)) == -1)
+		sc_spot = sc_add_string(local_param_table_sc, temp_string);
+		if (local_param_table_sc->data[sc_spot] != NULL)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
 					"%s: name conflicts with Odin internal reference\n", temp_string);
 
@@ -1624,6 +1678,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 			output_nets_sc->data[sc_spot] = (void*)new_net;
 			new_net->name = temp_string;
 
+			// TODO: What is this ?
 			/* Assign initial value to this net if it exists */
 			if(var_declare->types.variable.is_initialized){
 				new_net->has_initial_value = TRUE;
@@ -3695,59 +3750,77 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 	npin_t **list_dependence_pin = (npin_t **)vtr::calloc(assignment->count,sizeof(npin_t *));
 	ids *list_dependence_type = (ids *)vtr::calloc(assignment->count,sizeof(ids));
 	/* figure out which one is the clock */
-	if (local_clock_found == FALSE)
+	if (local_clock_idx < 0)
 	{
-		int i;
-		for (i = 0; i < potential_clocks->count; i++)
+		if(potential_clocks->count == 1)
 		{
-			nnet_t *temp_net;
-			/* searching for the clock with no net */
-			long sc_spot = sc_lookup_string(output_nets_sc, potential_clocks->pins[i]->name);
-			if (sc_spot == -1)
+			/* If this element is the only item in the sensitivity list then its the clock */
+			local_clock_idx = 0;
+		}
+		else
+		{
+			int i;
+			for (i = 0; i < potential_clocks->count; i++)
 			{
-				sc_spot = sc_lookup_string(input_nets_sc, potential_clocks->pins[i]->name);
+				nnet_t *temp_net;
+				/* searching for the clock with no net */
+				long sc_spot = sc_lookup_string(output_nets_sc, potential_clocks->pins[i]->name);
 				if (sc_spot == -1)
 				{
-					error_message(NETLIST_ERROR, always_node->line_number, always_node->file_number,
-							"Sensitivity list element (%s) is not a driver or net ... must be\n", potential_clocks->pins[i]->name);
+					sc_spot = sc_lookup_string(input_nets_sc, potential_clocks->pins[i]->name);
+					if (sc_spot == -1)
+					{
+						error_message(NETLIST_ERROR, always_node->line_number, always_node->file_number,
+								"Sensitivity list element (%s) is not a driver or net ... must be\n", potential_clocks->pins[i]->name);
+					}
+					temp_net = (nnet_t*)input_nets_sc->data[sc_spot];
 				}
-				temp_net = (nnet_t*)input_nets_sc->data[sc_spot];
-			}
-			else
-			{
-				temp_net = (nnet_t*)output_nets_sc->data[sc_spot];
-			}
+				else
+				{
+					temp_net = (nnet_t*)output_nets_sc->data[sc_spot];
+				}
 
 
-			if ((((temp_net->num_fanout_pins == 1) && (temp_net->fanout_pins[0]->node == NULL)) || (temp_net->num_fanout_pins == 0))
-				&& (local_clock_found == TRUE))
-			{
-				error_message(NETLIST_ERROR, always_node->line_number, always_node->file_number,
-						"Suspected second clock (%s).  In a sequential sensitivity list, Odin expects the "
-						"clock not to drive anything and any other signals in this list to drive stuff.  "
-						"For example, a reset in the sensitivy list has to be hooked up to something in the always block.\n",
-						potential_clocks->pins[i]->name);
+				if (
+				(((temp_net->num_fanout_pins == 1) && (temp_net->fanout_pins[0]->node == NULL)) 
+					|| (temp_net->num_fanout_pins == 0))
+				&& (local_clock_idx >= 0))
+				{
+					error_message(NETLIST_ERROR, always_node->line_number, always_node->file_number,
+							"Suspected second clock (%s).  In a sequential sensitivity list, Odin expects the "
+							"clock not to drive anything and any other signals in this list to drive stuff.  "
+							"For example, a reset in the sensitivy list has to be hooked up to something in the always block.\n",
+							potential_clocks->pins[i]->name);
+				}
+				else if (temp_net->num_fanout_pins == 0)
+				{
+					/* If this element is in the sensitivity list and doesn't drive anything it's the clock */
+					local_clock_idx = i;
+				}
+				else if ((temp_net->num_fanout_pins == 1) && (temp_net->fanout_pins[0]->node == NULL))
+				{
+					/* If this element is in the sensitivity list and doesn't drive anything it's the clock */
+					local_clock_idx = i;
+				}
 			}
-			else if (temp_net->num_fanout_pins == 0)
-			{
-				/* If this element is in the sensitivity list and doesn't drive anything it's the clock */
-				local_clock_found = TRUE;
-				local_clock_idx = i;
-			}
-			else if ((temp_net->num_fanout_pins == 1) && (temp_net->fanout_pins[0]->node == NULL))
-			{
-				/* If this element is in the sensitivity list and doesn't drive anything it's the clock */
-				local_clock_found = TRUE;
-				local_clock_idx = i;
-			}
-
 		}
 	}
 
-	nnet_t *clock_net = potential_clocks->pins[local_clock_idx]->net;
+	npin_t *local_clock_pin = NULL;
+
+	if(local_clock_idx >= 0)
+	{
+		local_clock_pin = potential_clocks->pins[local_clock_idx];
+	}
+	else
+	{
+		error_message(NETLIST_ERROR, always_node->line_number, always_node->file_number,
+				"%s\n", "No clock found"
+				);
+	}
+	
 
 	signal_list_t *memory_inputs = init_signal_list();
-	char *ref_string;
 	int i, j, dependence_variable_position;
 	for (i = 0; i < assignment->count; i++)
 	{
@@ -3779,9 +3852,9 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			/* HERE create the ff node and hookup everything */
 			nnode_t *ff_node = allocate_nnode();
 			ff_node->related_ast_node = always_node;
-
 			ff_node->type = FF_NODE;
-			ff_node->edge_type = potential_clocks->pins[local_clock_idx]->sensitivity;
+			ff_node->edge_type = local_clock_pin->sensitivity;
+
 			/* create the unique name for this gate */
 			//ff_node->name = node_name(ff_node, instance_name_prefix);
 			/* Name the flipflop based on the name of its output pin */
@@ -3790,28 +3863,23 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			odin_sprintf(ff_node->name, "%s_%s", pin->name, ff_base_name);
 
 			/* Copy over the initial value information from the net */
-			ref_string = (char *)vtr::calloc(strlen(pin->name)+100,sizeof(char));
-			strcpy(ref_string,pin->name);
-			strcat(ref_string,"_latch_initial_value");
+			std::string ref_string(pin->name);
+			ref_string += "_latch_initial_value";
 
-			sc_spot = sc_lookup_string(local_symbol_table_sc, ref_string);
-			if(sc_spot != -1){
+			sc_spot = sc_add_string(local_symbol_table_sc, ref_string.c_str());
 
-				ff_node->has_initial_value = 1;
-				// TODO: ?? what is this?
-				ff_node->initial_value = ((char *)(local_symbol_table_sc->data[sc_spot]))[0];
-			}
-			else{
-
-				sc_spot = sc_add_string(local_symbol_table_sc, ref_string);
+			if(local_symbol_table_sc->data[sc_spot] == NULL)
+			{
 				local_symbol_table_sc->data[sc_spot] = (void *)ff_node;
-
 				ff_node->has_initial_value = net->has_initial_value;
 				ff_node->initial_value = net->initial_value;
 			}
-			/* free the reference string */
-			vtr::free(ref_string);
-
+			else
+			{
+				nnode_t *parent_symbol_node = (nnode_t *)local_symbol_table_sc->data[sc_spot];
+				ff_node->has_initial_value = parent_symbol_node->has_initial_value;
+				ff_node->initial_value = parent_symbol_node->initial_value;
+			}
 
 			/* allocate the pins needed */
 			allocate_more_input_pins(ff_node, 2);
@@ -3824,7 +3892,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			/* add the clock to the flip_flop */
 			/* add a fanout pin */
 			npin_t *fanout_pin_of_clock = allocate_npin();
-			add_fanout_pin_to_net(clock_net, fanout_pin_of_clock);
+			add_fanout_pin_to_net(local_clock_pin->net, fanout_pin_of_clock);
 			add_input_pin_to_node(ff_node, fanout_pin_of_clock, 1);
 
 			/* hookup the driver pin (the in_1) to to this net (the lookup) */
@@ -3852,8 +3920,9 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 		npin_t *pin = assignment->pins[i];
 		dependence_variable_position = -1;
 
-		if(pin->net->driver_pin){
-            ref_string = pin->net->driver_pin->node->name;
+		if(pin->net->driver_pin)
+		{
+            char *ref_string = pin->net->driver_pin->node->name;
 
             for(j = i-1; j >= 0; j--){
 
@@ -3894,7 +3963,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 		if (!memory->clock_added)
 		{
 			npin_t *clock_pin = allocate_npin();
-			add_fanout_pin_to_net(clock_net, clock_pin);
+			add_fanout_pin_to_net(local_clock_pin->net, clock_pin);
 			signal_list_t *clock = init_signal_list();
 			add_pin_to_signal_list(clock, clock_pin);
 			add_input_port_to_implicit_memory(memory, clock, "clk");

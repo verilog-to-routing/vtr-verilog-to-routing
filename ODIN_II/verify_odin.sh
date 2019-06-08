@@ -60,6 +60,9 @@ _FORCE_SIM="off"
 # Exit Functions
 function exit_program() {
 
+	FAIL_COUNT=$(wc -l ${NEW_RUN_DIR}/test_failures.log | cut -d ' ' -f 1)
+	FAILURE=$(( ${FAIL_COUNT} ))
+	
 	if [ "_${FAILURE}" != "_0" ]
 	then
 		echo "Failed ${FAILURE} benchmarks"
@@ -213,29 +216,46 @@ function cleanup_temp() {
 
 }
 
+function disable_failed() {
+	failed_dir=$1
+	log_file="${failed_dir}.log"
+
+	if [ -e ${log_file} ]
+	then
+
+		for failed_benchmark in $(cat ${log_file})
+		do
+			THIS_BM="${NEW_RUN_DIR}/${failed_benchmark}/sim_param"
+			if [ -f ${THIS_BM} ]
+			then
+				mv ${THIS_BM} ${THIS_BM}_disabled
+			fi
+		done
+	fi
+}
+
 function mv_failed() {
 	failed_dir=$1
 	log_file="${failed_dir}.log"
 
 	if [ -e ${log_file} ]
 	then
+		echo "Linking failed benchmark in failures $(basename ${failed_dir})"
+
 		for failed_benchmark in $(cat ${log_file})
 		do
-			if [ ! -e ${target_dir}/${target_link} ]
+			target="${failed_dir}/${failed_benchmark}"
+			target_dir=$(dirname ${target})
+			target_link=$(basename ${target})
+
+			mkdir -p ${target_dir}
+
+			if [ ! -L "${target}" ]
 			then
-				target_dir=$(dirname ${failed_dir}/${failed_benchmark})
-				target_link=$(basename ${failed_benchmark})
-
-				mkdir -p ${target_dir}
-				echo "Linking failed benchmark ${failed_benchmark} -> in failures ${target_link}"
-
-			
-				ln -s ${NEW_RUN_DIR}/${failed_benchmark} ${target_dir}/${target_link}
-
-				FAILURE=$(( ${FAILURE} + 1 ))
+				ln -s ${NEW_RUN_DIR}/${failed_benchmark} ${target}
+				echo "${failed_benchmark}" >> ${NEW_RUN_DIR}/test_failures.log
 			fi
 		done
-		cat ${log_file} >> ${NEW_RUN_DIR}/test_failures.log
 	fi
 }
 
@@ -667,18 +687,26 @@ function sim() {
 		done
 
 		#synthesize the circuits
-		if [ "${_SYNTHESIS}" == "on" ]
+		SYNTH_LIST=$(find ${NEW_RUN_DIR}/${bench_type}/ -name cmd_param)
+		if [ "${_SYNTHESIS}" == "on" ] && [ "_${SYNTH_LIST}" != "_" ]
 		then
 			echo " ========= Synthesizing Circuits"
 			find ${NEW_RUN_DIR}/${bench_type}/ -name cmd_param | xargs -n1 -P$threads -I test_cmd ${SHELL} -c '$(cat test_cmd)'
+			# disable simulations on failure
+			disable_failed ${global_synthesis_failure}
+
 			mv_failed ${global_synthesis_failure}
 		fi
 
-		if [ "${_SIMULATE}" == "on" ]
+		SIM_LIST=$(find ${NEW_RUN_DIR}/${bench_type}/ -name sim_param)
+		if [ "${_SIMULATE}" == "on" ] && [ "_${SIM_LIST}" != "_" ]
 		then
+			echo " ========= Simulating Circuits"
+
 			for i in $(seq 1 1 ${_SIM_COUNT}); do
+				echo " Itteration: ${i}"
+
 				#run the simulation
-				echo " ========= Simulating Circuits"
 				find ${NEW_RUN_DIR}/${bench_type}/ -name sim_param | xargs -n1 -P$threads -I sim_cmd ${SHELL} -c '$(cat sim_cmd)'
 				
 				# move the log
@@ -686,6 +714,8 @@ function sim() {
 				do
 					mv ${sim_log} "${sim_log}_${i}"
 				done
+
+				disable_failed ${global_simulation_failure}
 
 			done
 			

@@ -467,11 +467,11 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 					rnode[2] = resolve_node(NULL, instance_name_prefix, ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]);
 					oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 
-					///TODO	WHats this?? comapreo bit string but usesd value ??? value is honestly not the right thing to look for...
+					///TODO	WHats this?? compareo bit string but uses value ??? value is honestly not the right thing to look for...
 					// we should restrict ODIN to use binary representation only for easier support of 'x' and 'z' value..
 					// or at least it's the only thing that makes sense.
-					// also this gives us the ability to write our own math class for binary and ave better control of what is happening and better sense of it TO.
-					// this causes bugs.. theres a patchy workaround put in bit string but we need a better permannet fix.
+					// also this gives us the ability to write our own math class for binary and ave better control of what is happening and better sense of it.
+					// this causes bugs.. theres a patchy workaround, put in bit string but we need a better permanent fix.
 					for (j = rnode[1]->types.number.value - rnode[2]->types.number.value; j >= 0; j--)
 					{
 						concat_top->types.concat.num_bit_strings ++;
@@ -915,7 +915,7 @@ char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_n
  *--------------------------------------------------------------------------*/
 /**
  * Recursively resolves an IDENTIFIER to a parameter into its actual value,
- * by looking it up in the global_param_table_sc
+ * by looking it up in the local_param_table_sc
  * Also try and fold any BINARY_OPERATIONs now that an IDENTIFIER has been
  * resolved
  */
@@ -924,6 +924,7 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, 
 {
 	long sc_spot = -1;
 
+	// Not sure this should even be used.
 	if(local_param_table_sc == NULL 
 	&& module_name != NULL)
 	{
@@ -997,7 +998,7 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, 
  *--------------------------------------------------------------------------*/
 /**
  * Recursively resolves an IDENTIFIER to a parameter into its actual value,
- * by looking it up in the global_param_table_sc
+ * by looking it up in the local_param_table_sc
  * Also try and fold any BINARY_OPERATIONs now that an IDENTIFIER has been
  * resolved
  */
