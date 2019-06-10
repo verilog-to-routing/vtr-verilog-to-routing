@@ -1880,7 +1880,7 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
         //This means that the packer will prefer to use types with lower utilization.
         //This is a naive approach to try balancing utilization when multiple types can
         //support the same primitive(s).
-        std::sort(candidate_types.begin(), candidate_types.end(),
+        std::stable_sort(candidate_types.begin(), candidate_types.end(),
                   [&](t_type_ptr lhs, t_type_ptr rhs) {
                       float lhs_util = float(num_used_type_instances[lhs]) / device_ctx.grid.num_instances(lhs);
                       float rhs_util = float(num_used_type_instances[rhs]) / device_ctx.grid.num_instances(rhs);
@@ -2580,10 +2580,17 @@ static std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_
     }
 
     //Sort seeds in descending order of gain (i.e. highest gain first)
+    //
+    // Note that we use a *stable* sort here. It has been observed that different
+    // standard library implementations (e.g. gcc-4.9 vs gcc-5) use sorting algorithms
+    // which produce different orderings for seeds of equal gain (which is allowed with
+    // std::sort which does not specify how equal values are handled). Using a stable
+    // sort ensures that regardless of the underlying sorting algorithm the same seed
+    // order is produced regardless of compiler.
     auto by_descending_gain = [&](const AtomBlockId lhs, const AtomBlockId rhs) {
         return atom_gains[lhs] > atom_gains[rhs];
     };
-    std::sort(seed_atoms.begin(), seed_atoms.end(), by_descending_gain);
+    std::stable_sort(seed_atoms.begin(), seed_atoms.end(), by_descending_gain);
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES)) {
         print_seed_gains(getEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES), seed_atoms, atom_gains, atom_criticality);

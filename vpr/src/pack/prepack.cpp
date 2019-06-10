@@ -1464,7 +1464,7 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
     for (const auto& pin_ptr : chain_input_pins) {
         auto reachable_output_pins = find_end_of_path(pin_ptr, chain_pattern->index);
         // sort the reachable output pins to compare them later using set_intersection
-        std::sort(reachable_output_pins.begin(), reachable_output_pins.end());
+        std::stable_sort(reachable_output_pins.begin(), reachable_output_pins.end());
         reachable_pins.push_back(reachable_output_pins);
     }
 
