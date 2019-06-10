@@ -148,6 +148,10 @@ struct t_options {
     argparse::ArgValue<int> timing_report_npaths;
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
     argparse::ArgValue<bool> timing_report_skew;
+    /* Router diag tool Options */
+    argparse::ArgValue<int> source_rr_node;
+    argparse::ArgValue<int> sink_rr_node;
+    argparse::ArgValue<bool> profile_source;
 };
 
 t_options read_options(int argc, const char** argv);

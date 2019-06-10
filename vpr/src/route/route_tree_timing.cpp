@@ -642,6 +642,10 @@ void free_route_tree(t_rt_node* rt_node) {
     free_rt_node(rt_node);
 }
 
+void print_route_tree(const t_rt_node* rt_node) {
+    print_route_tree(rt_node, 0);
+}
+
 void print_route_tree(const t_rt_node* rt_node, int depth) {
     std::string indent;
     for (int i = 0; i < depth; ++i) {
@@ -1142,7 +1146,7 @@ void print_route_tree_inf(const t_rt_node* rt_root) {
     VTR_LOG("\n");
 }
 
-void print_route_tree(const t_rt_node* rt_root) {
+void print_route_tree_node(const t_rt_node* rt_root) {
     traverse_indented_route_tree(rt_root, 0, false, print_node, 34);
     VTR_LOG("\n");
 }

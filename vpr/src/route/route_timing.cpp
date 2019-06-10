@@ -282,8 +282,6 @@ static bool is_high_fanout(int fanout, int fanout_threshold);
 static size_t dynamic_update_bounding_boxes(const std::vector<ClusterNetId>& nets, int high_fanout_threshold);
 static t_bb calc_current_bb(const t_trace* head);
 
-static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr);
-
 static bool is_better_quality_routing(const vtr::vector<ClusterNetId, t_traceback>& best_routing,
                                       const RoutingMetrics& best_routing_metrics,
                                       const WirelengthInfo& wirelength_info,
@@ -1332,7 +1330,8 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
         ++router_stats.heap_pops;
 
         int inode = cheapest->index;
-        VTR_LOGV_DEBUG(f_router_debug, "  Popping node %d\n", inode);
+        VTR_LOGV_DEBUG(f_router_debug, "  Popping node %d (cost: %g)\n",
+                       inode, cheapest->cost);
 
         //Have we found the target?
         if (inode == sink_node) {
@@ -1406,7 +1405,8 @@ static std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(const
         ++router_stats.heap_pops;
 
         int inode = cheapest->index;
-        VTR_LOGV_DEBUG(f_router_debug, "  Popping node %d\n", inode);
+        VTR_LOGV_DEBUG(f_router_debug, "  Popping node %d (cost: %g)\n",
+                       inode, cheapest->cost);
 
         //Since we want to find shortest paths to all nodes in the graph
         //we do not specify a target node.
@@ -1463,6 +1463,8 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
 
     if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
         VTR_LOGV_DEBUG(f_router_debug, "    Better cost to %d\n", inode);
+        VTR_LOGV_DEBUG(f_router_debug, "    New total cost: %g\n", new_total_cost);
+        VTR_LOGV_DEBUG(f_router_debug, "    New back cost: %g\n", new_back_cost);
         VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for assicated node %d (from %d edge %d)\n", cheapest->index, cheapest->u.prev.node, cheapest->u.prev.edge);
 
         add_to_mod_list(cheapest->index, modified_rr_node_inf);
@@ -1476,6 +1478,12 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
                                         router_lookahead,
                                         target_node,
                                         router_stats);
+    } else {
+        VTR_LOGV_DEBUG(f_router_debug, "    Worse cost to %d\n", inode);
+        VTR_LOGV_DEBUG(f_router_debug, "    Old total cost: %g\n", old_total_cost);
+        VTR_LOGV_DEBUG(f_router_debug, "    Old back cost: %g\n", old_back_cost);
+        VTR_LOGV_DEBUG(f_router_debug, "    New total cost: %g\n", new_total_cost);
+        VTR_LOGV_DEBUG(f_router_debug, "    New back cost: %g\n", new_back_cost);
     }
 }
 
@@ -2649,7 +2657,7 @@ static t_bb calc_current_bb(const t_trace* head) {
     return bb;
 }
 
-static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr) {
+void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr) {
     bool all_net_debug = (router_opts.router_debug_net == -1);
 
     bool specific_net_debug = (router_opts.router_debug_net >= 0);
