@@ -3,16 +3,19 @@
 Get VTR
 -----------
 
-The official VTR release is available from:
-
-    http://www.eecg.utoronto.ca/vtr/terms.html
-
 How to Cite
 ~~~~~~~~~~~
 
 The following paper may be used as a general citation for VTR:
 
     J. Luu, J. Goeders, M. Wainberg, A. Somerville, T. Yu, K. Nasartschuk, M. Nasr, S. Wang, T. Liu, N. Ahmed, K. B. Kent, J. Anderson, J. Rose and V. Betz "VTR 7.0: Next Generation Architecture and CAD System for FPGAs," ACM TRETS, Vol. 7, No. 2, June 2014, pp. 6:1 - 6:30.
+
+Download
+~~~~~~~~
+
+The official VTR release is available from:
+
+    http://www.eecg.utoronto.ca/vtr/terms.html
 
 Release
 ~~~~~~~
