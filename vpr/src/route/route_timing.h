@@ -55,6 +55,8 @@ void alloc_timing_driven_route_structs(float** pin_criticality_ptr,
                                        t_rt_node*** rt_node_of_sink_ptr);
 void free_timing_driven_route_structs(float* pin_criticality, int* sink_order, t_rt_node** rt_node_of_sink);
 
+void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr);
+
 //Delay budget information for a specific connection
 struct t_conn_delay_budget {
     float short_path_criticality; //Hold criticality

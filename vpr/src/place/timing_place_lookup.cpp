@@ -100,7 +100,6 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
 static std::unique_ptr<OverrideDelayModel> compute_override_delay_model(const t_router_opts& router_opts, std::unique_ptr<PlaceDelayModel> base_model);
 
 static bool verify_delta_delays(const vtr::Matrix<float>& delta_delays);
-static std::vector<int> get_best_classes(enum e_pin_type pintype, t_type_ptr type);
 
 static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf);
 
@@ -108,8 +107,6 @@ static void fix_empty_coordinates(vtr::Matrix<float>& delta_delays);
 static void fix_uninitialized_coordinates(vtr::Matrix<float>& delta_delays);
 
 static float find_neightboring_average(vtr::Matrix<float>& matrix, int x, int y, int max_distance);
-
-static bool directconnect_exists(int src_rr_node, int sink_rr_node);
 
 /******* Globally Accessible Functions **********/
 
@@ -157,7 +154,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
 
 /******* File Accessible Functions **********/
 
-static std::vector<int> get_best_classes(enum e_pin_type pintype, t_type_ptr type) {
+std::vector<int> get_best_classes(enum e_pin_type pintype, t_type_ptr type) {
     /*
      * This function tries to identify the best pin classes to hook up
      * for delay calculation.  The assumption is that we should pick
