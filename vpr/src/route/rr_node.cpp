@@ -201,6 +201,10 @@ void t_rr_node::set_class_num(short new_class_num) {
 }
 
 void t_rr_node::set_cost_index(size_t new_cost_index) {
+    if (new_cost_index >= std::numeric_limits<decltype(cost_index_)>::max()) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set cost_index_ %zu above cost_index storage max value.",
+                  new_cost_index);
+    }
     cost_index_ = new_cost_index;
 }
 
