@@ -419,66 +419,66 @@ void draw_main_canvas(ezgl::renderer &g){
     
     
     
-    
+    int testVar = 3;
     
     
     if(draw_state->pic_on_screen == NO_PICTURE){
         std::cout << "set to no picture" << std::endl;
         return;
     }
-    g.set_color(ezgl::YELLOW);
+//    g.set_color(ezgl::YELLOW);
     g.fill_rectangle({{-5000, -5000}, {5000, 5000}});
     g.set_font_size(14);
     
-//    draw_block_pin_util();
-//    drawplace(g);
+    draw_block_pin_util();
+    drawplace(g);
     draw_internal_draw_subblk(g);
     
-//    if (draw_state->pic_on_screen == PLACEMENT) {
-//        switch (draw_state->show_nets) {
-//            case DRAW_NETS:
-//                drawnets(g);
-//                break;
-//            case DRAW_LOGICAL_CONNECTIONS:
-//                break;
-//            default:
-//                break;
-//        }
-//        
-//    } else { /* ROUTING on screen */
-//        
-//        switch (draw_state->show_nets) {
-//            case DRAW_NETS:
-//                drawroute(ALL_NETS, g);
-//                break;
-//            case DRAW_LOGICAL_CONNECTIONS:
-//                // fall through
-//            default:
-//                draw_rr(g);
-//                break;
-//        }
-//        
-//        draw_congestion(g);
-//        
-//        draw_routing_costs(g);
-//        
-//        draw_router_rr_costs(g);
-//        
-//        draw_routing_util(g);
-//        
-//        draw_routing_bb(g);
-//    }
-//    
-//    draw_placement_macros(g);
-//    
-//    draw_crit_path(g);
-//    
-//    draw_logical_connections(g);
-//    
-//    if (draw_state->color_map) {
-//        draw_color_map_legend(*draw_state->color_map, g);
-//        draw_state->color_map.reset(); //Free color map in preparation for next redraw
-//    }
+    if (draw_state->pic_on_screen == PLACEMENT) {
+        switch (draw_state->show_nets) {
+            case DRAW_NETS:
+                drawnets(g);
+                break;
+            case DRAW_LOGICAL_CONNECTIONS:
+                break;
+            default:
+                break;
+        }
+        
+    } else { /* ROUTING on screen */
+        
+        switch (draw_state->show_nets) {
+            case DRAW_NETS:
+                drawroute(ALL_NETS, g);
+                break;
+            case DRAW_LOGICAL_CONNECTIONS:
+                // fall through
+            default:
+                draw_rr(g);
+                break;
+        }
+        
+        draw_congestion(g);
+        
+        draw_routing_costs(g);
+        
+        draw_router_rr_costs(g);
+        
+        draw_routing_util(g);
+        
+        draw_routing_bb(g);
+    }
+    
+    draw_placement_macros(g);
+    
+    draw_crit_path(g);
+    
+    draw_logical_connections(g);
+    
+    if (draw_state->color_map) {
+        draw_color_map_legend(*draw_state->color_map, g);
+        draw_state->color_map.reset(); //Free color map in preparation for next redraw
+    }
     return;
 }
 
