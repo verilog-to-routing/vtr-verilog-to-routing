@@ -1,3 +1,5 @@
+.. _genfasm:
+
 FPGA Assembly (FASM) Output Support
 ===================================
 
