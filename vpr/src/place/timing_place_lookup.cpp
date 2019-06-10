@@ -107,7 +107,7 @@ static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf);
 static void fix_empty_coordinates(vtr::Matrix<float>& delta_delays);
 static void fix_uninitialized_coordinates(vtr::Matrix<float>& delta_delays);
 
-static float find_neightboring_average(vtr::Matrix<float>& matrix, int x, int y);
+static float find_neightboring_average(vtr::Matrix<float>& matrix, int x, int y, int max_distance);
 
 static bool directconnect_exists(int src_rr_node, int sink_rr_node);
 
@@ -158,7 +158,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(t_placer_opts placer_
 /******* File Accessible Functions **********/
 
 static std::vector<int> get_best_classes(enum e_pin_type pintype, t_type_ptr type) {
-    /* 
+    /*
      * This function tries to identify the best pin classes to hook up
      * for delay calculation.  The assumption is that we should pick
      * the pin class with the largest number of pins. This makes
@@ -530,9 +530,19 @@ float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
     return delay;
 }
 
-/* Take the average of the valid neighboring values in the matrix.
- * use interpolation to get the right answer for empty blocks*/
-static float find_neightboring_average(vtr::Matrix<float>& matrix, int x, int y) {
+/* We return the average placement estimated delay for a routing spanning (x,y).
+ * We start with an averaging distance of 1 (i.e. from (x-1,y-1) to (x+1,y+1))
+ * and look for legal delay values to average; if some are found we return the
+ * average and if none are found we increase the distance to average over.
+ *
+ * If no legal values are found to average over with a range of max_distance,
+ * we return IMPOSSIBLE_DELTA.
+ */
+static float find_neightboring_average(
+    vtr::Matrix<float>& matrix,
+    int x,
+    int y,
+    int max_distance) {
     float sum = 0;
     int counter = 0;
     int endx = matrix.end_index(0);
@@ -540,33 +550,19 @@ static float find_neightboring_average(vtr::Matrix<float>& matrix, int x, int y)
 
     int delx, dely;
 
-    for (delx = x - 1; delx <= x + 1; delx++) {
-        for (dely = y - 1; dely <= y + 1; dely++) {
-            //check out of bounds
-            if ((delx == x - 1 && dely == y + 1) || (delx == x + 1 && dely == y + 1) || (delx == x - 1 && dely == y - 1) || (delx == x + 1 && dely == y - 1)) {
-                continue;
-            }
-            if (delx < 0 || dely < 0 || delx >= endx || dely >= endy || (delx == x && dely == y)) {
-                continue;
-            }
-            if (matrix[delx][dely] == EMPTY_DELTA || matrix[delx][dely] == IMPOSSIBLE_DELTA) {
-                continue;
-            }
-            counter++;
-            sum += matrix[delx][dely];
-        }
-    }
-
-    if (counter == 0) {
-        //take in more values for more accuracy
-        sum = 0;
-        counter = 0;
-        for (delx = x - 1; delx <= x + 1; delx++) {
-            for (dely = y - 1; dely <= y + 1; dely++) {
-                //check out of bounds
-                if ((delx == x && dely == y) || delx < 0 || dely < 0 || delx >= endx || dely >= endy) {
+    for (int distance = 1; distance <= max_distance; ++distance) {
+        for (delx = x - distance; delx <= x + distance; delx++) {
+            for (dely = y - distance; dely <= y + distance; dely++) {
+                // Check distance constraint
+                if (abs(delx - x) + abs(dely - y) > distance) {
                     continue;
                 }
+
+                //check out of bounds
+                if (delx < 0 || dely < 0 || delx >= endx || dely >= endy || (delx == x && dely == y)) {
+                    continue;
+                }
+
                 if (matrix[delx][dely] == EMPTY_DELTA || matrix[delx][dely] == IMPOSSIBLE_DELTA) {
                     continue;
                 }
@@ -574,32 +570,60 @@ static float find_neightboring_average(vtr::Matrix<float>& matrix, int x, int y)
                 sum += matrix[delx][dely];
             }
         }
+        if (counter != 0) {
+            return sum / (float)counter;
+        }
     }
 
-    if (counter != 0) {
-        return sum / (float)counter;
-    } else {
-        return 0;
-    }
+    return IMPOSSIBLE_DELTA;
 }
 
 static void fix_empty_coordinates(vtr::Matrix<float>& delta_delays) {
-    //Set any empty delta's to the average of it's neighbours
+    // Set any empty delta's to the average of it's neighbours
+    //
+    // Empty coordinates may occur if the sampling location happens to not have
+    // a connection at that location.  However a more through sampling likely
+    // would return a result, so we fill in the empty holes with a small
+    // neighbour average.
+    constexpr int kMaxAverageDistance = 2;
     for (size_t delta_x = 0; delta_x < delta_delays.dim_size(0); ++delta_x) {
         for (size_t delta_y = 0; delta_y < delta_delays.dim_size(1); ++delta_y) {
             if (delta_delays[delta_x][delta_y] == EMPTY_DELTA) {
-                delta_delays[delta_x][delta_y] = find_neightboring_average(delta_delays, delta_x, delta_y);
+                delta_delays[delta_x][delta_y] = find_neightboring_average(delta_delays, delta_x, delta_y, kMaxAverageDistance);
             }
         }
     }
 }
 
 static void fix_uninitialized_coordinates(vtr::Matrix<float>& delta_delays) {
-    //Set any empty delta's to the average of it's neighbours
+    // Set any empty delta's to the average of it's neighbours
     for (size_t delta_x = 0; delta_x < delta_delays.dim_size(0); ++delta_x) {
         for (size_t delta_y = 0; delta_y < delta_delays.dim_size(1); ++delta_y) {
             if (delta_delays[delta_x][delta_y] == UNINITIALIZED_DELTA) {
                 delta_delays[delta_x][delta_y] = IMPOSSIBLE_DELTA;
+            }
+        }
+    }
+}
+
+static void fill_impossible_coordinates(vtr::Matrix<float>& delta_delays) {
+    // Set any impossible delta's to the average of it's neighbours
+    //
+    // Impossible coordinates may occur if an IPIN cannot be reached from the
+    // sampling OPIN.  This might occur if the IPIN or OPIN used for sampling
+    // is specialized, and therefore cannot be reached via the by the pins
+    // sampled.  Leaving this value in the delay matrix will result in invalid
+    // slacks if the delay matrix uses this value.
+    //
+    // A max average distance of 5 is used to provide increased effort in
+    // filling these gaps.  It is more important to have a poor predication,
+    // than a invalid value and causing a slack assertion.
+    constexpr int kMaxAverageDistance = 5;
+    for (size_t delta_x = 0; delta_x < delta_delays.dim_size(0); ++delta_x) {
+        for (size_t delta_y = 0; delta_y < delta_delays.dim_size(1); ++delta_y) {
+            if (delta_delays[delta_x][delta_y] == IMPOSSIBLE_DELTA) {
+                delta_delays[delta_x][delta_y] = find_neightboring_average(
+                    delta_delays, delta_x, delta_y, kMaxAverageDistance);
             }
         }
     }
@@ -612,6 +636,8 @@ static vtr::Matrix<float> compute_delta_delay_model(const t_placer_opts& placer_
     fix_uninitialized_coordinates(delta_delays);
 
     fix_empty_coordinates(delta_delays);
+
+    fill_impossible_coordinates(delta_delays);
 
     verify_delta_delays(delta_delays);
 
