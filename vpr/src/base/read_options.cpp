@@ -389,6 +389,8 @@ struct ParseTimingReportDetail {
             conv_value.set_value(e_timing_report_detail::NETLIST);
         else if (str == "aggregated")
             conv_value.set_value(e_timing_report_detail::AGGREGATED);
+        else if (str == "detailed")
+            conv_value.set_value(e_timing_report_detail::DETAILED_ROUTING);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_timing_report_detail (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -401,15 +403,17 @@ struct ParseTimingReportDetail {
         ConvertedValue<std::string> conv_value;
         if (val == e_timing_report_detail::NETLIST)
             conv_value.set_value("netlist");
-        else {
-            VTR_ASSERT(val == e_timing_report_detail::AGGREGATED);
+        else if (val == e_timing_report_detail::AGGREGATED) {
             conv_value.set_value("aggregated");
+        } else if (val == e_timing_report_detail::DETAILED_ROUTING) {
+            VTR_ASSERT(val == e_timing_report_detail::DETAILED_ROUTING);
+            conv_value.set_value("detailed");
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"netlist", "aggregated"};
+        return {"netlist", "aggregated", "detailed"};
     }
 };
 
@@ -1610,9 +1614,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help(
             "Controls how much detail is provided in timing reports.\n"
             " * netlist: Shows only netlist pins\n"
-            " * aggregated: Like 'netlist', but also shows aggregated intra-block/iter-block delays\n"
-            //" * routing: Lke 'aggregated' but shows detailed routing instead of aggregated inter-block delays\n" //TODO: implement
-            )
+            " * aggregated: Like 'netlist', but also shows aggregated intra-block/inter-block delays\n"
+            " * detailed: Lke 'aggregated' but shows detailed routing instead of aggregated inter-block delays\n")
         .default_value("netlist")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

@@ -16,11 +16,11 @@ using namespace std;
 #include "route_common.h"
 #include "route_tree_timing.h"
 
-/* This module keeps track of the partial routing tree for timing-driven
- * routing.  The normal traceback structure doesn't provide enough info
- * about the partial routing during timing-driven routing, so the routines
- * in this module are used to keep a tree representation of the partial
- * routing during timing-driven routing.  This allows rapid incremental
+/* This module keeps track of the partial routing tree for timing-driven     *
+ * routing.  The normal traceback structure doesn't provide enough info      *
+ * about the partial routing during timing-driven routing, so the routines   *
+ * in this module are used to keep a tree representation of the partial      *
+ * routing during timing-driven routing.  This allows rapid incremental      *
  * timing analysis.                                                          */
 
 /********************** Variables local to this module ***********************/
@@ -61,6 +61,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_r
 static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_trace* tail, const t_rt_node* node);
 
 void collect_route_tree_connections(const t_rt_node* node, std::set<std::tuple<int, int, int>>& connections);
+
 /************************** Subroutine definitions ***************************/
 
 constexpr float epsilon = 1e-15;
@@ -728,6 +729,7 @@ t_rt_node* traceback_to_route_tree(t_trace* head) {
 
     rr_node_to_rt[head->index]->parent_node = nullptr;
     rr_node_to_rt[head->index]->parent_switch = OPEN;
+
     return rr_node_to_rt[head->index];
 }
 
@@ -1395,4 +1397,40 @@ void collect_route_tree_connections(const t_rt_node* node, std::set<std::tuple<i
             collect_route_tree_connections(edge->child, connections);
         }
     }
+}
+
+t_rt_node* find_sink_rt_node(t_rt_node* rt_root, ClusterNetId net_id, ClusterPinId sink_pin) {
+    //Given the net_id and the sink_pin, this two-step function finds a pointer to the
+    //route tree sink corresponding to sink_pin. This function constitutes the first step,
+    //in which, we loop through the pins of the net and terminate the search once the mapping
+    //of (net_id, ipin) -> sink_pin is found. Conveniently, the pair (net_id, ipin) can
+    //be further translated to the index of the routing resource node sink_rr_inode.
+    //In the second step, we pass the root of the route tree and sink_rr_inode in order to
+    //recursively traverse the route tree until we reach the sink node that corresponds
+    //to sink_rr_inode.
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    int ipin = cluster_ctx.clb_nlist.pin_net_index(sink_pin);
+    int sink_rr_inode = route_ctx.net_rr_terminals[net_id][ipin]; //obtain the value of the routing resource sink
+
+    return find_sink_rt_node_recurr(rt_root, sink_rr_inode); //find pointer to route tree node corresponding to sink_rr_inode
+}
+t_rt_node* find_sink_rt_node_recurr(t_rt_node* node, int sink_rr_inode) {
+    t_rt_node* found_node = nullptr;
+
+    if (node->inode == sink_rr_inode) { //check if current node matches sink_rr_inode
+        return node;
+    }
+
+    for (t_linked_rt_edge* edge = node->u.child_list; edge != nullptr; edge = edge->next) {
+        found_node = find_sink_rt_node_recurr(edge->child, sink_rr_inode); //process each of the children
+
+        if (found_node->inode == sink_rr_inode) {
+            //If the sink has been found downstream in the branch, we would like to immediately exit the search
+            return found_node;
+        }
+    }
+    return found_node; //We have not reached the sink node
 }

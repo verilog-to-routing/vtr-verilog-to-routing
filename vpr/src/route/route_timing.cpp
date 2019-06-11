@@ -1030,7 +1030,6 @@ bool timing_driven_route_net(ClusterNetId net_id,
 
     // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
     VTR_LOGV_DEBUG(f_router_debug, "Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
-
     free_route_tree(rt_root);
     return (true);
 }

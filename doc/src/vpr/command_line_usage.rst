@@ -1041,45 +1041,44 @@ Analysis Options
 
     **Default:** ``100``
 
-.. option:: --timing_report_detail { netlist | aggregated }
+.. option:: --timing_report_detail { netlist | aggregated | detailed }
 
     Controls the level of detail included in generated timing reports.
+
+    We obtained the following results using the k6_frac_N10_frac_chain_mem32K_40nm.xml architecture and multiclock.blif circuit.
 
         * ``netlist``: Timing reports show only netlist primitive pins.
 
           For example:
 
             .. code-block:: none
-            
-                #Path 150
-                Startpoint: top^cur_state~3_FF_NODE.Q[0] (.latch clocked by top^clk)
-                Endpoint  : top^finish_FF_NODE.D[0] (.latch clocked by top^clk)
+                
+                #Path 2
+                Startpoint: FFC.Q[0] (.latch clocked by clk)
+                Endpoint  : out:out1.outpad[0] (.output clocked by virtual_io_clock)
                 Path Type : setup
 
                 Point                                                             Incr      Path
                 --------------------------------------------------------------------------------
-                clock top^clk (rise edge)                                        0.000     0.000
+                clock clk (rise edge)                                            0.000     0.000
                 clock source latency                                             0.000     0.000
-                top^clk.inpad[0] (.input)                                        0.000     0.000
-                top^cur_state~3_FF_NODE.clk[0] (.latch)                          0.042     0.042
-                top^cur_state~3_FF_NODE.Q[0] (.latch) [clock-to-output]          0.124     0.166
-                n1168.in[4] (.names)                                             0.475     0.641
-                n1168.out[0] (.names)                                            0.261     0.902
-                top^finish_FF_NODE.D[0] (.latch)                                 0.000     0.902
-                data arrival time                                                          0.902
+                clk.inpad[0] (.input)                                            0.000     0.000
+                FFC.clk[0] (.latch)                                              0.042     0.042
+                FFC.Q[0] (.latch) [clock-to-output]                              0.124     0.166
+                out:out1.outpad[0] (.output)                                     0.550     0.717
+                data arrival time                                                          0.717
 
-                clock top^clk (rise edge)                                        0.000     0.000
+                clock virtual_io_clock (rise edge)                               0.000     0.000
                 clock source latency                                             0.000     0.000
-                top^clk.inpad[0] (.input)                                        0.000     0.000
-                top^finish_FF_NODE.clk[0] (.latch)                               0.042     0.042
-                clock uncertainty                                                0.000     0.042
-                cell setup time                                                 -0.066    -0.024
-                data required time                                                        -0.024
+                clock uncertainty                                                0.000     0.000
+                output external delay                                            0.000     0.000
+                data required time                                                         0.000
                 --------------------------------------------------------------------------------
-                data required time                                                        -0.024
-                data arrival time                                                         -0.902
+                data required time                                                         0.000
+                data arrival time                                                         -0.717
                 --------------------------------------------------------------------------------
-                slack (VIOLATED)                                                          -0.926
+                slack (VIOLATED)                                                          -0.717
+
 
         * ``aggregated``: Timing reports show netlist pins, and an aggregated summary of intra-block and inter-block routing delays.
 
@@ -1087,47 +1086,38 @@ Analysis Options
 
             .. code-block:: none
 
-                #Path 150
-                Startpoint: top^cur_state~3_FF_NODE.Q[0] (.latch clocked by top^clk)
-                Endpoint  : top^finish_FF_NODE.D[0] (.latch clocked by top^clk)
+                #Path 2
+                Startpoint: FFC.Q[0] (.latch at (3,3) clocked by clk)
+                Endpoint  : out:out1.outpad[0] (.output at (3,4) clocked by virtual_io_clock)
                 Path Type : setup
 
                 Point                                                             Incr      Path
                 --------------------------------------------------------------------------------
-                clock top^clk (rise edge)                                        0.000     0.000
+                clock clk (rise edge)                                            0.000     0.000
                 clock source latency                                             0.000     0.000
-                top^clk.inpad[0] (.input)                                        0.000     0.000
+                clk.inpad[0] (.input at (4,2))                                   0.000     0.000
                 | (intra 'io' routing)                                           0.042     0.042
                 | (inter-block routing)                                          0.000     0.042
                 | (intra 'clb' routing)                                          0.000     0.042
-                top^cur_state~3_FF_NODE.clk[0] (.latch)                          0.000     0.042
+                FFC.clk[0] (.latch at (3,3))                                     0.000     0.042
                 | (primitive '.latch' Tcq_max)                                   0.124     0.166
-                top^cur_state~3_FF_NODE.Q[0] (.latch) [clock-to-output]          0.000     0.166
+                FFC.Q[0] (.latch at (3,3)) [clock-to-output]                     0.000     0.166
                 | (intra 'clb' routing)                                          0.045     0.211
-                | (inter-block routing)                                          0.335     0.546
-                | (intra 'clb' routing)                                          0.095     0.641
-                n1168.in[4] (.names)                                             0.000     0.641
-                | (primitive '.names' combinational delay)                       0.261     0.902
-                n1168.out[0] (.names)                                            0.000     0.902
-                | (intra 'clb' routing)                                          0.000     0.902
-                top^finish_FF_NODE.D[0] (.latch)                                 0.000     0.902
-                data arrival time                                                          0.902
+                | (inter-block routing)                                          0.491     0.703
+                | (intra 'io' routing)                                           0.014     0.717
+                out:out1.outpad[0] (.output at (3,4))                            0.000     0.717
+                data arrival time                                                          0.717
 
-                clock top^clk (rise edge)                                        0.000     0.000
+                clock virtual_io_clock (rise edge)                               0.000     0.000
                 clock source latency                                             0.000     0.000
-                top^clk.inpad[0] (.input)                                        0.000     0.000
-                | (intra 'io' routing)                                           0.042     0.042
-                | (inter-block routing)                                          0.000     0.042
-                | (intra 'clb' routing)                                          0.000     0.042
-                top^finish_FF_NODE.clk[0] (.latch)                               0.000     0.042
-                clock uncertainty                                                0.000     0.042
-                cell setup time                                                 -0.066    -0.024
-                data required time                                                        -0.024
+                clock uncertainty                                                0.000     0.000
+                output external delay                                            0.000     0.000
+                data required time                                                         0.000
                 --------------------------------------------------------------------------------
-                data required time                                                        -0.024
-                data arrival time                                                         -0.902
+                data required time                                                         0.000
+                data arrival time                                                         -0.717
                 --------------------------------------------------------------------------------
-                slack (VIOLATED)                                                          -0.926
+                slack (VIOLATED)                                                          -0.717
 
             where each line prefixed with ``|`` (pipe character) represent a sub-delay of an edge within the timing graph.
 
@@ -1135,26 +1125,146 @@ Analysis Options
             
             .. code-block:: none
                 
-                top^cur_state~3_FF_NODE.Q[0] (.latch) [clock-to-output]          0.000     0.166
+                FFC.Q[0] (.latch at (3,3)) [clock-to-output]                     0.000     0.166
                 | (intra 'clb' routing)                                          0.045     0.211
-                | (inter-block routing)                                          0.335     0.546
-                | (intra 'clb' routing)                                          0.095     0.641
-                n1168.in[4] (.names)                                             0.000     0.641
+                | (inter-block routing)                                          0.491     0.703
+                | (intra 'io' routing)                                           0.014     0.717
+                out:out1.outpad[0] (.output at (3,4))                            0.000     0.717
 
-            indicates that between the netlist pins ``top^cur_state~3_FF_NODE.Q[0]`` and ``n1168.in[4]`` there are delays of:
+            indicates that between the netlist pins ``FFC.Q[0]`` and ``out:out1.outpad[0]`` there are delays of:
 
               * ``45`` ps from the ``.latch`` output pin to an output pin of a ``clb`` block,
-              * ``335`` ps through the general inter-block routing fabric, and
-              * ``95`` ps from the input pin of a ``clb`` block to the ``.names`` input.
+              * ``491`` ps through the general inter-block routing fabric, and
+              * ``14`` ps from the input pin of a ``io`` block to ``.output``.
 
-            Similarly, we can observe that the connection between ``n1168.out[0]`` and ``top^finish_FF_NODE.D[0]`` is contained entirely within the same ``clb`` block, and does not use the general inter-block routing network:
+            Also note that a connection between two pins can be contained within the same ``clb`` block, and does not use the general inter-block routing network. As an example from a completely different circuit-architecture pair:
 
             .. code-block:: none
 
                 n1168.out[0] (.names)                                            0.000     0.902
                 | (intra 'clb' routing)                                          0.000     0.902
                 top^finish_FF_NODE.D[0] (.latch)                                 0.000     0.902
+
+        * ``detailed``: Like ``aggregated``, the timing reports show netlist pins, and an aggregated summary of intra-block. In addition, it includes a detailed breakdown of the inter-block routing delays.
+
+          It is important to note that detailed timing report can only list the components of a non-global 
+          net, otherwise, it reports inter-block routing as well as an incremental delay of 0, just as in the 
+          aggregated and netlist reports.
+          
+
+          For example:
+            
+            .. code-block:: none
+ 
+                #Path 2
+                Startpoint: FFC.Q[0] (.latch at (3,3) clocked by clk)
+                Endpoint  : out:out1.outpad[0] (.output at (3,4) clocked by virtual_io_clock)
+                Path Type : setup
+
+                Point                                                             Incr      Path
+                --------------------------------------------------------------------------------
+                clock clk (rise edge)                                            0.000     0.000
+                clock source latency                                             0.000     0.000
+                clk.inpad[0] (.input at (4,2))                                   0.000     0.000
+                | (intra 'io' routing)                                           0.042     0.042
+                | (inter-block routing:global net)                               0.000     0.042
+                | (intra 'clb' routing)                                          0.000     0.042
+                FFC.clk[0] (.latch at (3,3))                                     0.000     0.042
+                | (primitive '.latch' Tcq_max)                                   0.124     0.166
+                FFC.Q[0] (.latch at (3,3)) [clock-to-output]                     0.000     0.166
+                | (intra 'clb' routing)                                          0.045     0.211
+                | (OPIN:1479 side:TOP (3,3))                                     0.000     0.211
+                | (CHANX:2073 unnamed_segment_0 length:1 (3,3)->(2,3))           0.095     0.306
+                | (CHANY:2139 unnamed_segment_0 length:0 (1,3)->(1,3))           0.075     0.382
+                | (CHANX:2040 unnamed_segment_0 length:1 (2,2)->(3,2))           0.095     0.476
+                | (CHANY:2166 unnamed_segment_0 length:0 (2,3)->(2,3))           0.076     0.552
+                | (CHANX:2076 unnamed_segment_0 length:0 (3,3)->(3,3))           0.078     0.630
+                | (IPIN:1532 side:BOTTOM (3,4))                                  0.072     0.703
+                | (intra 'io' routing)                                           0.014     0.717
+                out:out1.outpad[0] (.output at (3,4))                            0.000     0.717
+                data arrival time                                                          0.717
+
+                clock virtual_io_clock (rise edge)                               0.000     0.000
+                clock source latency                                             0.000     0.000
+                clock uncertainty                                                0.000     0.000
+                output external delay                                            0.000     0.000
+                data required time                                                         0.000
+                --------------------------------------------------------------------------------
+                data required time                                                         0.000
+                data arrival time                                                         -0.717
+                --------------------------------------------------------------------------------
+                slack (VIOLATED)                                                          -0.717
+
+            where each line prefixed with ``|`` (pipe character) represent a sub-delay of an edge within the timing graph. 
+            In the detailed mode, the inter-block routing has now been replaced by the net components. 
+
+            For OPINS and IPINS, this is the format of the name:
+            | (``ROUTING_RESOURCE_NODE_TYPE:ROUTING_RESOURCE_NODE_ID`` ``side:SIDE`` ``(START_COORDINATES)->(END_COORDINATES)``)
+ 
+            For CHANX and CHANY, this is the format of the name:
+            | (``ROUTING_RESOURCE_NODE_TYPE:ROUTING_RESOURCE_NODE_ID`` ``SEGMENT_NAME`` ``length:LENGTH`` ``(START_COORDINATES)->(END_COORDINATES)``)
+            
+            Here is an example of the breakdown:
+            
+            .. code-block:: none
                 
+                FFC.Q[0] (.latch at (3,3)) [clock-to-output]                     0.000     0.166
+                | (intra 'clb' routing)                                          0.045     0.211
+                | (OPIN:1479 side:TOP (3,3))                                     0.000     0.211
+                | (CHANX:2073 unnamed_segment_0 length:1 (3,3)->(2,3))           0.095     0.306
+                | (CHANY:2139 unnamed_segment_0 length:0 (1,3)->(1,3))           0.075     0.382
+                | (CHANX:2040 unnamed_segment_0 length:1 (2,2)->(3,2))           0.095     0.476
+                | (CHANY:2166 unnamed_segment_0 length:0 (2,3)->(2,3))           0.076     0.552
+                | (CHANX:2076 unnamed_segment_0 length:0 (3,3)->(3,3))           0.078     0.630
+                | (IPIN:1532 side:BOTTOM (3,4))                                  0.072     0.703
+                | (intra 'io' routing)                                           0.014     0.717
+                out:out1.outpad[0] (.output at (3,4))                            0.000     0.717
+
+            indicates that between the netlist pins ``FFC.Q[0]`` and ``out:out1.outpad[0]`` there are delays of:
+
+              * ``45`` ps from the ``.latch`` output pin to an output pin of a ``clb`` block,
+              * ``0`` ps from the ``clb`` output pin to the ``CHANX:2073`` wire,
+              * ``95`` ps from the ``CHANX:2073`` to the ``CHANY:2139`` wire,
+              * ``75`` ps from the ``CHANY:2139`` to the ``CHANX:2040`` wore, 
+              * ``95`` ps from the ``CHANX:2040`` to the ``CHANY:2166`` wire,
+              * ``76`` ps from the ``CHANY:2166`` to the ``CHANX:2076`` wire, 
+              * ``78`` ps from the ``CHANX:2076`` to the input pin of a ``io`` block,
+              * ``14`` ps input pin of a ``io`` block to ``.output``.
+
+            In the initial description we referred to the existence of global nets, which also occur in this net:
+                
+            clk.inpad[0] (.input at (4,2))                                   0.000     0.000
+            | (intra 'io' routing)                                           0.042     0.042
+            | (inter-block routing:global net)                               0.000     0.042
+            | (intra 'clb' routing)                                          0.000     0.042
+            FFC.clk[0] (.latch at (3,3))                                     0.000     0.042
+
+            Global nets are unrouted nets, and their route trees happen to be null.
+            
+            Finally, is interesting to note that the consecutive channel components may not seem to connect. There are two types of occurences:
+
+            1. The preceding channel's ending coordinates extend past the following channel's starting coordinates (example from a different path): 
+               | (chany:2113 unnamed_segment_0 length:2 (1, 3) -> (1, 1))       0.116     0.405
+               | (chanx:2027 unnamed_segment_0 length:0 (1, 2) -> (1, 2))       0.078     0.482
+               It is possible that by opening a switch between (1,2) to (1,1),  CHANY:2113 actually only extends from (1,3) to (1,2).
+
+            2. The preceding channel's ending coordinates have no relation to the following channel's starting coordinates.
+               There is no logical contradiction, but for clarification, it is best to see an explanation of the VPR coordinate system.
+               The path can also be visualized by VPR graphics, as an illustration of this point:
+
+.. _fig_path_2:
+
+.. figure:: path_2.*
+ 
+ Illustration of Path #2 with insight into the coordinate system.
+
+:numref:`fig_path_2` shows the routing resources used in Path #2 and their locations on the FPGA.  
+1. The signal emerges from near the top-right corner of the block to_FFC (OPIN:1479)  and joins the topmost horizontal segment of length 1 (CHANX:2073). 
+2. The signal proceeds to the left, then connects to the outermost, blue vertical segment of length 0 (CHANY:2139). 
+3. The signal continues downward and attaches to the horizontal segment of length 1 (CHANX:2040). 
+4. Of the aforementioned horizontal segment, after travelling one linear unit to the right, the signal jumps on a vertical segment of length 0 (CHANY:2166).
+5. The signal travels upward and promptly connects to a horizontal segment of length 0 (CHANX:2076).
+6. This segment connects to the green destination io (3,4).
 
     **Default:** ``netlist``
 
