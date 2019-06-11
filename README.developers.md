@@ -67,7 +67,7 @@ VTR has a variety of tests which are used to check for correctness, performance 
 
 There are 4 main regression tests:
 
-* `vtr_reg_basic`: ~3 minutes serial
+* `vtr_reg_basic`: ~1 minute serial
 
     **Goal:** Fast functionality check
 
@@ -83,7 +83,7 @@ There are 4 main regression tests:
     QoR checks in this regression test are primarily 'canary' checks to catch gross degredations in QoR.
     Ocassionally, code changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
 
-* `vtr_reg_strong`: ~30 minutes serial, ~15 minutes with `-j4`
+* `vtr_reg_strong`: ~20 minutes serial, ~15 minutes with `-j4`
 
     **Goal:** Broad functionaly check
 
@@ -99,7 +99,7 @@ There are 4 main regression tests:
     QoR checks in this regression test are primarily 'canary' checks to catch gross degredations in QoR.
     Ocassionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
 
-* `vtr_reg_nightly`: ~15 hours with `-j2`
+* `vtr_reg_nightly`: ~6 hours with `-j3`
 
     **Goal:** Basic QoR and Performance evaluation.
 
@@ -116,7 +116,7 @@ There are 4 main regression tests:
    QoR checks in this regression are aimed at evaluating quality and run-time of the VTR flow.
    As a result any QoR failures are a concern and should be investigated and understood.
 
-* `vtr_reg_weekly`: ~30 hours with `-j2`
+* `vtr_reg_weekly`: ~42 hours with `-j4`
 
     **Goal:** Full QoR and Performance evaluation.
 
@@ -196,8 +196,8 @@ $ ./run_reg_test.pl vtr_reg_strong
 #Output trimmed...
 regression_tests/vtr_reg_basic/basic_no_timing
 -----------------------------------------
-k4_N10_memSize16384_memData64/ch_intrinsics...failed: vpr
-k4_N10_memSize16384_memData64/diffeq1...failed: vpr
+k4_N10_memSize16384_memData64/ch_intrinsics/common   failed: vpr
+k4_N10_memSize16384_memData64/diffeq1/common         failed: vpr
 #Output trimmed...
 regression_tests/vtr_reg_basic/basic_no_timing...[Fail]
  k4_N10_memSize16384_memData64.xml/ch_intrinsics.v vpr_status: golden = success result = exited
@@ -215,18 +215,18 @@ Lets move to that directory:
 #From the VTR root directory
 $ cd vtr_flow/tasks/regression_tests/vtr_reg_basic/basic_no_timing
 $ ls
-config  run002  run004
-run001  run003  run005
+config  run001  run003
+latest  run002  run004  run005
 ```
 
 There we see there is a `config` directory (which defines the test), and a set of run-directories.
 Each time a test is run it creates a new `runXXX` directory (where `XXX` is an incrementing number).
-From the above we can tell that our last run was `run005`.
-From the output of `run_reg_test.pl` we know that one of the failing architecture/circuit combinations was `k4_N10_memSize16384_memData64/ch_intrinsics`.
-Each architecture/circuit combination is run in its own sub-folder.
+From the above we can tell that our last run was `run005` (the symbolic link `latest` also points to the most recent run directory).
+From the output of `run_reg_test.pl` we know that one of the failing architecture/circuit/parameters combinations was `k4_N10_memSize16384_memData64/ch_intrinsics/common`.
+Each architecture/circuit/parameter combination is run in its own sub-folder.
 Lets move to that directory:
 ```shell
-$ cd run005/k4_N10_memSize16384_memData64/ch_intrinsics
+$ cd run005/k4_N10_memSize16384_memData64/ch_intrinsics/common
 $ ls
 abc.out                     k4_N10_memSize16384_memData64.xml  qor_results.txt
 ch_intrinsics.net           odin.out                           thread_1.out

@@ -731,7 +731,7 @@ t_type_ptr infer_logic_block_type(const DeviceGrid& grid) {
     auto by_desc_grid_count = [&](t_type_ptr lhs, t_type_ptr rhs) {
         return grid.num_instances(lhs) > grid.num_instances(rhs);
     };
-    std::sort(logic_block_candidates.begin(), logic_block_candidates.end(), by_desc_grid_count);
+    std::stable_sort(logic_block_candidates.begin(), logic_block_candidates.end(), by_desc_grid_count);
 
     if (!logic_block_candidates.empty()) {
         return logic_block_candidates.front();

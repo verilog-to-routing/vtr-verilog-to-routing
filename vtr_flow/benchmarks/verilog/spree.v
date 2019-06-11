@@ -2010,7 +2010,7 @@ assign func=instr[5:0];
 //is given 1'b1 on the boot_iwe wire so is
 //is assigned to an unused wire which is 
 //later dropped by the optimizer.
-wire NoUSE;
+wire NoUse;
 assign NoUse = ( |boot_iaddr );
 
 endmodule
