@@ -27,6 +27,8 @@ void reduce_assignment_expression();
 void reduce_assignment_expression(ast_node_t *ast_module);
 void find_assign_node(ast_node_t *node, std::vector<ast_node_t *> list, char *module_name);
 ast_node_t *find_top_module();
+void find_children_by_type(ast_node_t *node, std::vector<ast_node_t *> &list, ids type); 
+void find_proc_assign_nodes(ast_node_t *node, std::vector<ast_node_t *> &list); 
 
 typedef struct exp_node
 {

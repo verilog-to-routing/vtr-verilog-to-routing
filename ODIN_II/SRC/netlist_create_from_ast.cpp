@@ -913,6 +913,18 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				type_of_circuit = COMBINATIONAL;
 				circuit_edge = UNDEFINED_SENSITIVITY;
 				break;
+
+			case PROC_CONT_ASSIGN:
+				/* sequential path */
+				return_sig_list = assignment_alias(node, instance_name_prefix);
+				skip_children = TRUE;
+				break;
+
+			case DEASSIGN:
+				return_sig_list = init_signal_list();
+				skip_children = TRUE;
+				break;	
+				
 			case BLOCKING_STATEMENT:
 			case NON_BLOCKING_STATEMENT:
 			{
