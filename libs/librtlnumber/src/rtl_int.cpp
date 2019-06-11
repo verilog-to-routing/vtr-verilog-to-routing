@@ -40,7 +40,7 @@ public:
 
 static compare_bit eval_op(VNumber& a_in, VNumber& b_in)
 {
-	DEBUG_MSG("a_in: '" << a_in.to_string() << "' == b_in: '" << b_in.to_string() << "'");
+	//DEBUG_MSG("a_in: '" << a_in.to_string() << "' == b_in: '" << b_in.to_string() << "'");
 
 	assert_Werr( a_in.size() ,
 		"empty 1st bit string" 
@@ -53,23 +53,23 @@ static compare_bit eval_op(VNumber& a_in, VNumber& b_in)
 	bool neg_a = (a_in.is_negative());
 	bool neg_b = (b_in.is_negative());
 
-	DEBUG_MSG("neg_a: '" << ((true == neg_a) ? ("true") : ("false")) << "'");
-	DEBUG_MSG("neg_b: '" << ((true == neg_b) ? ("true") : ("false")) << "'");
+	//DEBUG_MSG("neg_a: '" << ((true == neg_a) ? ("true") : ("false")) << "'");
+	//DEBUG_MSG("neg_b: '" << ((true == neg_b) ? ("true") : ("false")) << "'");
 
 	if(neg_a && !neg_b)
 	{
-		return GT_EVAL;
+		return LT_EVAL;
 	}
 	else if(!neg_a && neg_b)
 	{
-		return LT_EVAL;
+		return GT_EVAL;
 	}
 
 	VNumber a;
 	VNumber b;
 	bool invert_result = (neg_a && neg_b);
 
-	DEBUG_MSG("invert_result: '" << ((true == invert_result) ? ("true") : ("false")) << "'");
+	//DEBUG_MSG("invert_result: '" << ((true == invert_result) ? ("true") : ("false")) << "'");
 
 	if(invert_result)
 	{
@@ -82,39 +82,39 @@ static compare_bit eval_op(VNumber& a_in, VNumber& b_in)
 		b = b_in;
 	}
 
-	DEBUG_MSG("a: '" << a.to_string() << "'");
-	DEBUG_MSG("b: '" << b.to_string() << "'");
+	//DEBUG_MSG("a: '" << a.to_string() << "'");
+	//DEBUG_MSG("b: '" << b.to_string() << "'");
 
 	size_t std_length = std::max(a.size(), b.size());
 	bit_value_t pad_a = a.get_padding_bit();
 	bit_value_t pad_b = b.get_padding_bit();
 
-	DEBUG_MSG("std_length: '" << std_length << "'");
-	DEBUG_MSG("pad_a: '" << (unsigned(pad_a)) << "'");
-	DEBUG_MSG("pad_b: '" << (unsigned(pad_b)) << "'");
+	//DEBUG_MSG("std_length: '" << std_length << "'");
+	//DEBUG_MSG("pad_a: '" << (unsigned(pad_a)) << "'");
+	//DEBUG_MSG("pad_b: '" << (unsigned(pad_b)) << "'");
 
 	for(size_t i=std_length-1; i < std_length ; i--)
 	{
 		bit_value_t bit_a = pad_a;
 		if(i < a.size())
 		{
-			DEBUG_MSG("bit_a = a.get_bit_from_lsb(i: '" << i << "'): '" << (unsigned(a.get_bit_from_lsb(i))) << "'");
+			//DEBUG_MSG("bit_a = a.get_bit_from_lsb(i: '" << i << "'): '" << (unsigned(a.get_bit_from_lsb(i))) << "'");
 			bit_a = a.get_bit_from_lsb(i);
 		}
 
 		bit_value_t bit_b = pad_b;
 		if(i < b.size())
 		{
-			DEBUG_MSG("bit_b = b.get_bit_from_lsb(i: '" << i << "'): '" << (unsigned(b.get_bit_from_lsb(i))) << "'");
+			//DEBUG_MSG("bit_b = b.get_bit_from_lsb(i: '" << i << "'): '" << (unsigned(b.get_bit_from_lsb(i))) << "'");
 			bit_b = b.get_bit_from_lsb(i);
 		}
 		
-		DEBUG_MSG("bit_a: '" << (unsigned(bit_a)) << "'");
-		DEBUG_MSG("bit_b: '" << (unsigned(bit_b)) << "'");
+		//DEBUG_MSG("bit_a: '" << (unsigned(bit_a)) << "'");
+		//DEBUG_MSG("bit_b: '" << (unsigned(bit_b)) << "'");
 
 		if(bit_a == BitSpace::_x || bit_b == BitSpace::_x)
 		{
-			DEBUG_MSG("return UNK_EVAL");
+			//DEBUG_MSG("return UNK_EVAL");
 
 			return UNK_EVAL;
 		}
@@ -122,18 +122,18 @@ static compare_bit eval_op(VNumber& a_in, VNumber& b_in)
 		{
 			if(bit_a == BitSpace::_1)
 			{
-				DEBUG_MSG("return " << ((true == invert_result) ? ("LT_EVAL") : ("GT_EVAL")));
+				//DEBUG_MSG("return " << ((true == invert_result) ? ("LT_EVAL") : ("GT_EVAL")));
 				return (invert_result)? LT_EVAL: GT_EVAL;
 			}
 			else
 			{
-				DEBUG_MSG("return " << ((true == invert_result) ? ("GT_EVAL") : ("LT_EVAL")));
+				//DEBUG_MSG("return " << ((true == invert_result) ? ("GT_EVAL") : ("LT_EVAL")));
 				return (invert_result)? GT_EVAL: LT_EVAL;
 			}
 		}
 	}
 
-	DEBUG_MSG("return EQ_EVAL");
+	//DEBUG_MSG("return EQ_EVAL");
 
 	return EQ_EVAL;
 }
@@ -167,7 +167,7 @@ static bool is_signed_operation(VNumber& a, VNumber& b)
  */
 static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry, bool is_twos_complement_subtraction)
 {
-	DEBUG_MSG("a: '" << a.to_string() << "' + b: '" << b.to_string() << "' (initial_carry: '" << (unsigned(initial_carry)) << "', is_twos_complement_subtraction: '" << ((true == is_twos_complement_subtraction) ? ("true") : ("false")) << "')");
+	//DEBUG_MSG("a: '" << a.to_string() << "' + b: '" << b.to_string() << "' (initial_carry: '" << (unsigned(initial_carry)) << "', is_twos_complement_subtraction: '" << ((true == is_twos_complement_subtraction) ? ("true") : ("false")) << "')");
 
 	assert_Werr( a.size() ,
 		"empty 1st bit string" 
@@ -183,17 +183,17 @@ static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry, 
 	const bit_value_t pad_b = b.get_padding_bit();
 	bool is_addition_signed_operation = is_signed_operation(a, b);
 
-	DEBUG_MSG("std_length: '" << std_length << "'");
-	DEBUG_MSG("new_length: '" << new_length << "'");
-	DEBUG_MSG("pad_a: '" << (unsigned(pad_a)) << "'");
-	DEBUG_MSG("pad_b: '" << (unsigned(pad_b)) << "'");
-	DEBUG_MSG("is_addition_signed_operation: '" << ((true == is_addition_signed_operation) ? ("true") : ("false")) << "'");
+	//DEBUG_MSG("std_length: '" << std_length << "'");
+	//DEBUG_MSG("new_length: '" << new_length << "'");
+	//DEBUG_MSG("pad_a: '" << (unsigned(pad_a)) << "'");
+	//DEBUG_MSG("pad_b: '" << (unsigned(pad_b)) << "'");
+	//DEBUG_MSG("is_addition_signed_operation: '" << ((true == is_addition_signed_operation) ? ("true") : ("false")) << "'");
 
 	bit_value_t previous_carry = initial_carry;
-	VNumber result(new_length, _x, is_addition_signed_operation);
+	VNumber result(new_length, _0, is_addition_signed_operation); 
 
-	DEBUG_MSG("previous_carry: '" << (unsigned(previous_carry)) << "'");
-	DEBUG_MSG("result: '" << result.to_string() << "'");
+	//DEBUG_MSG("previous_carry: '" << (unsigned(previous_carry)) << "'");
+	//DEBUG_MSG("result: '" << result.to_string() << "'");
 
 	for(size_t i = 0; i < new_length; i++)
 	{
@@ -209,17 +209,17 @@ static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry, 
 			bit_b = b.get_bit_from_lsb(i);
 		}
 
-		DEBUG_MSG("bit_a: '" << (unsigned(bit_a)) << "'");
-		DEBUG_MSG("bit_b: '" << (unsigned(bit_b)) << "'");
+		//DEBUG_MSG("bit_a: '" << (unsigned(bit_a)) << "'");
+		//DEBUG_MSG("bit_b: '" << (unsigned(bit_b)) << "'");
 
 		result.set_bit_from_lsb(i, l_sum[previous_carry][bit_a][bit_b]);
 		previous_carry = l_carry[previous_carry][bit_a][bit_b];
 
-		DEBUG_MSG("previous_carry: '" << (unsigned(previous_carry)) << "'");
-		DEBUG_MSG("result: '" << result.to_string() << "'");
+		//DEBUG_MSG("previous_carry: '" << (unsigned(previous_carry)) << "'");
+		//DEBUG_MSG("result: '" << result.to_string() << "'");
 	}
 
-	DEBUG_MSG("result: '" << result.to_string() << "'");
+	//DEBUG_MSG("result: '" << result.to_string() << "'");
 	return result;
 }
 
@@ -231,7 +231,7 @@ static VNumber shift_op(VNumber& a, int64_t b, bool sign_shift)
 	{
 		to_return = a;
 	}
-	//if b is negative than shift right
+	//if b is negative then shift right
 	else if(b < 0)
 	{
 		size_t u_b = static_cast<size_t>(-b);
@@ -295,8 +295,9 @@ VNumber V_ADD(VNumber& a)
 
 VNumber V_MINUS(VNumber& a)
 {
-	DEBUG_MSG("a: '" << a.to_string() << "': a.twos_complement(): '" << a.twos_complement().to_string() << "'");
-	return a.twos_complement();
+	//DEBUG_MSG("a: '" << a.to_string() << "': a.twos_complement(): '" << a.twos_complement().to_string() << "'");
+	VNumber new_a(a, a.size()+1);
+	return new_a.twos_complement();
 }
 
 VNumber V_BITWISE_AND(VNumber& a)
@@ -428,12 +429,12 @@ VNumber V_GT(VNumber& a, VNumber& b)
 
 VNumber V_EQUAL(VNumber& a, VNumber& b)
 {
-	DEBUG_MSG("a: '" << a.to_string() << "' == b: '" << b.to_string() << "'");
+	//DEBUG_MSG("a: '" << a.to_string() << "' == b: '" << b.to_string() << "'");
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_eq()? BitSpace::_1: BitSpace::_0;
-	DEBUG_MSG("result: '" << (unsigned(result)) << "'");
+	//DEBUG_MSG("result: '" << (unsigned(result)) << "'");
 	VNumber to_return(1, result, is_signed_operation(a, b));
-	DEBUG_MSG("to_return: '" << to_return.to_string() << "'");
+	//DEBUG_MSG("to_return: '" << to_return.to_string() << "'");
 	return to_return;
 }
 
@@ -495,17 +496,22 @@ VNumber V_SHIFT_RIGHT(VNumber& a, VNumber& b)
 
 VNumber V_ADD(VNumber& a, VNumber& b)
 {
-	DEBUG_MSG("a: '" << a.to_string() << "' + b: '" << b.to_string() << "'");
+	//DEBUG_MSG("a: '" << a.to_string() << "' + b: '" << b.to_string() << "'");
 	return sum_op(a, b, _0, /* is_twos_complement_subtraction */ false);
 }
 
 VNumber V_MINUS(VNumber& a, VNumber& b)
 {
-	DEBUG_MSG("a: '" << a.to_string() << "' - b: '" << b.to_string() << "'");
-	VNumber complement = V_MINUS(b);
-	DEBUG_MSG("complement: '" << complement.to_string() << "'");
-	DEBUG_MSG("a: '" << a.to_string() << "' + complement: '" << complement.to_string() << "'");
-	return sum_op(a, complement, _0, /* is_twos_complement_subtraction */ true);
+	size_t std_length = std::max(a.size(), b.size());
+	VNumber padded_a(a, std_length);
+	VNumber padded_b(b, std_length);
+
+
+	//DEBUG_MSG("a: '" << a.to_string() << "' - b: '" << b.to_string() << "'");
+	VNumber complement = V_MINUS(padded_b);
+	//DEBUG_MSG("complement: '" << complement.to_string() << "'");
+	//DEBUG_MSG("a: '" << a.to_string() << "' + complement: '" << complement.to_string() << "'");
+	return sum_op(padded_a, complement, _0, /* is_twos_complement_subtraction */ true);
 }
 
 VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
@@ -513,7 +519,10 @@ VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
 	DEBUG_MSG("a_in: '" << a_in.to_string() << "' * b_in: '" << b_in.to_string() << "'");
 
 	if(a_in.is_dont_care_string() || b_in.is_dont_care_string())
+	{
 		return VNumber("'bx");
+	}
+		
 
 	VNumber a;
 	VNumber b;
@@ -522,43 +531,43 @@ VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
 	bool neg_a = a_in.is_negative();
 	bool neg_b = b_in.is_negative();
 
-	DEBUG_MSG("is_multiply_signed_operation: '" << ((true == is_multiply_signed_operation) ? ("true") : ("false")) << "'");
-	DEBUG_MSG("neg_a: '" << ((true == neg_a) ? ("true") : ("false")) << "'");
-	DEBUG_MSG("neg_b: '" << ((true == neg_b) ? ("true") : ("false")) << "'");
+	//DEBUG_MSG("is_multiply_signed_operation: '" << ((true == is_multiply_signed_operation) ? ("true") : ("false")) << "'");
+	//DEBUG_MSG("neg_a: '" << ((true == neg_a) ? ("true") : ("false")) << "'");
+	//DEBUG_MSG("neg_b: '" << ((true == neg_b) ? ("true") : ("false")) << "'");
 	
 	if(neg_a)
 	{
 		a = V_MINUS(a_in);
-		DEBUG_MSG("a = V_MINUS(a_in: '" << a_in.to_string() << "'): '" << a.to_string() << "'");
+		//DEBUG_MSG("a = V_MINUS(a_in: '" << a_in.to_string() << "'): '" << a.to_string() << "'");
 	}
 	else
 	{
 		a = a_in;
-		DEBUG_MSG("a = a_in: '" << a_in.to_string() << "': '" << a.to_string() << "'");
+		//DEBUG_MSG("a = a_in: '" << a_in.to_string() << "': '" << a.to_string() << "'");
 	}
 
 	if(neg_b)
 	{
 		b = V_MINUS(b_in);
-		DEBUG_MSG("b = V_MINUS(b_in: '" << b_in.to_string() << "'): '" << b.to_string() << "'");
+		//DEBUG_MSG("b = V_MINUS(b_in: '" << b_in.to_string() << "'): '" << b.to_string() << "'");
 	}
 	else
 	{
 		b = b_in;
-		DEBUG_MSG("b = b_in: '" << b_in.to_string() << "': '" << b.to_string() << "'");
+		//DEBUG_MSG("b = b_in: '" << b_in.to_string() << "': '" << b.to_string() << "'");
 	}
 
-	DEBUG_MSG("a: '" << a.to_string() << "' * b: '" << b.to_string() << "'");
+	//DEBUG_MSG("a: '" << a.to_string() << "' * b: '" << b.to_string() << "'");
 		
 	bool invert_result = ((!neg_a && neg_b) || (neg_a && !neg_b));
 
-	DEBUG_MSG("invert_result: '" << ((true == invert_result) ? ("true") : ("false")) << "'");
+	//DEBUG_MSG("invert_result: '" << ((true == invert_result) ? ("true") : ("false")) << "'");
 
 	VNumber result("0");
 	VNumber b_copy = b;
 
-	DEBUG_MSG("result: '" << result.to_string() << "'");
-	DEBUG_MSG("b_copy: '" << b_copy.to_string() << "'");
+	//DEBUG_MSG("result: '" << result.to_string() << "'");
+	//DEBUG_MSG("b_copy: '" << b_copy.to_string() << "'");
 
 	// TODO: Handle Multiplication with (a) Negative Number(s):
 
@@ -566,31 +575,31 @@ VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
 	{
 		bit_value_t bit_a = a.get_bit_from_lsb(i);
 
-		DEBUG_MSG("bit_a: '" << (unsigned(bit_a)) << "'");
+		//DEBUG_MSG("bit_a: '" << (unsigned(bit_a)) << "'");
 
 		if(bit_a == _1)
 		{
-			DEBUG_MSG("result = V_ADD(result: '" << result.to_string() << "', b_copy: '" << b_copy.to_string() << "')");
+			//DEBUG_MSG("result = V_ADD(result: '" << result.to_string() << "', b_copy: '" << b_copy.to_string() << "')");
 			result = V_ADD(result, b_copy);
 		}
 
-		DEBUG_MSG("result: '" << result.to_string() << "'");
-		DEBUG_MSG("shift_op(b_copy: '" << b_copy.to_string() << "', 1, is_multiply_signed_operation: '" << ((true == is_multiply_signed_operation) ? ("true") : ("false")) << "')");
+		//DEBUG_MSG("result: '" << result.to_string() << "'");
+		//DEBUG_MSG("shift_op(b_copy: '" << b_copy.to_string() << "', 1, is_multiply_signed_operation: '" << ((true == is_multiply_signed_operation) ? ("true") : ("false")) << "')");
 
 		b_copy = shift_op(b_copy, 1, is_multiply_signed_operation);
 
-		DEBUG_MSG("b_copy: '" << b_copy.to_string() << "'");
+		//DEBUG_MSG("b_copy: '" << b_copy.to_string() << "'");
 	}
 
-	DEBUG_MSG("result: '" << result.to_string() << "'");
+	//DEBUG_MSG("result: '" << result.to_string() << "'");
 
 	if(invert_result)
 	{
-		DEBUG_MSG("Invert result");
+		//DEBUG_MSG("Invert result");
 		result = V_MINUS(result);
 	}
 
-	DEBUG_MSG("return result: '" << result.to_string() << "'");
+	//DEBUG_MSG("return result: '" << result.to_string() << "'");
 
 	return result;
 }
@@ -625,7 +634,7 @@ VNumber V_POWER(VNumber& a, VNumber& b)
 {
 	if(a.is_dont_care_string() || b.is_dont_care_string())
 	{
-		DEBUG_MSG("Return VNumber(\"2'sbxx\"): '" << VNumber("2'sbxx").to_string() << "'");
+		//DEBUG_MSG("Return VNumber(\"2'sbxx\"): '" << VNumber("2'sbxx").to_string() << "'");
 		return VNumber("2'sbxx");
 	}
 
@@ -639,8 +648,8 @@ VNumber V_POWER(VNumber& a, VNumber& b)
 					(res_b.is_lt()) 		? 	-1:
 					/* GREATHER_THAN */				1;
 
-	DEBUG_MSG("val_a: '" << val_a << "'");
-	DEBUG_MSG("val_b: '" << val_b << "'");
+	//DEBUG_MSG("val_a: '" << val_a << "'");
+	//DEBUG_MSG("val_b: '" << val_b << "'");
 
 	// Compute: Case Where 'val_a <= -2' or 'val_a >= 2'; As-Per the Spec:
 	if(val_b > 0 && (val_a < -1 || val_a > 1 ))
@@ -649,36 +658,36 @@ VNumber V_POWER(VNumber& a, VNumber& b)
 		VNumber one = VNumber("2'sb01");
 		VNumber tmp_b = b;
 
-		DEBUG_MSG("result: '" << result.to_string() << "'");
-		DEBUG_MSG("one: '" << one.to_string() << "'");
-		DEBUG_MSG("tmp_b: '" << tmp_b.to_string() << "'");
+		//DEBUG_MSG("result: '" << result.to_string() << "'");
+		//DEBUG_MSG("one: '" << one.to_string() << "'");
+		//DEBUG_MSG("tmp_b: '" << tmp_b.to_string() << "'");
 
 		while(eval_op(tmp_b, 0).is_gt())
 		{
-			DEBUG_MSG("tmp_b = V_MINUS(tmp_b: '" << tmp_b.to_string() << "', one: '" << one.to_string() << "')");
+			//DEBUG_MSG("tmp_b = V_MINUS(tmp_b: '" << tmp_b.to_string() << "', one: '" << one.to_string() << "')");
 
 			tmp_b = V_MINUS(tmp_b, one);
 
-			DEBUG_MSG("tmp_b: '" << tmp_b.to_string() << "'");
-			DEBUG_MSG("result = V_MULTIPLY(result: '" << result.to_string() << "', a: '" << a.to_string() << "')");
+			//DEBUG_MSG("tmp_b: '" << tmp_b.to_string() << "'");
+			//DEBUG_MSG("result = V_MULTIPLY(result: '" << result.to_string() << "', a: '" << a.to_string() << "')");
 
-			result = V_MULTIPLY( result, a);
+			result = V_MULTIPLY(result, a);
 
-			DEBUG_MSG("result: '" << result.to_string() << "'");
+			//DEBUG_MSG("result: '" << result.to_string() << "'");
 		}
 
-		DEBUG_MSG("Return result: '" << result.to_string() << "'");
+		//DEBUG_MSG("Return result: '" << result.to_string() << "'");
 
 		return result;
 	}
 	else if (val_b == 0 || val_a == 1)	
 	{
-		DEBUG_MSG("Return VNumber(\"'sb01\"): '" << VNumber("'sb01").to_string() << "'");
+		//DEBUG_MSG("Return VNumber(\"'sb01\"): '" << VNumber("'sb01").to_string() << "'");
 		return VNumber("2'sb01");
 	}
 	else if(val_b == -1 && val_a == 0)
 	{
-		DEBUG_MSG("Return VNumber(\"2'sbxx\"): '" << VNumber("2'sbxx").to_string() << "'");
+		//DEBUG_MSG("Return VNumber(\"2'sbxx\"): '" << VNumber("2'sbxx").to_string() << "'");
 		return VNumber("2'sbxx");
 	}
 	else if(val_a == -1)
@@ -686,70 +695,93 @@ VNumber V_POWER(VNumber& a, VNumber& b)
 		// Even:
 		if(BitSpace::_0 == b.get_bit_from_lsb(0))
 		{
-			DEBUG_MSG("Return VNumber(\"2'sb01\"): '" << VNumber("2'sb01").to_string() << "'");
+			//DEBUG_MSG("Return VNumber(\"2'sb01\"): '" << VNumber("2'sb01").to_string() << "'");
 			return VNumber("2'sb01");
 		}
 		// Odd:
 		else
 		{
-			DEBUG_MSG("Return VNumber(\"2'sb10\"): '" << VNumber("2'sb10").to_string() << "'");
-			return VNumber("2'sb10");
+			//DEBUG_MSG("Return VNumber(\"2'sb11\"): '" << VNumber("2'sb11").to_string() << "'");
+			return VNumber("2'sb11");
 		}
 	}
 	else	
 	{
-		DEBUG_MSG("Return VNumber(\"2'sb00\"): '" << VNumber("2'sb00").to_string() << "'");
+		//DEBUG_MSG("Return VNumber(\"2'sb00\"): '" << VNumber("2'sb00").to_string() << "'");
 		return VNumber("2'sb00");
 	}
 }
 
 /////////////////////////////
-VNumber V_DIV(VNumber& a_in, VNumber& b)
+VNumber V_DIV(VNumber& a_in, VNumber& b_in)
 {
-	if(a_in.is_dont_care_string() || b.is_dont_care_string() || eval_op(b,0).is_eq())
+	if(a_in.is_dont_care_string() || b_in.is_dont_care_string() || eval_op(b_in,0).is_eq())
 		return VNumber("'bx");
-
-	VNumber a(a_in);
 
 	VNumber result("0");
 
-	bool is_division_signed_operation = is_signed_operation(a, b);
+	bool is_division_signed_operation = is_signed_operation(a_in, b_in);
 
-	DEBUG_MSG("is_division_signed_operation: '" << ((true == is_division_signed_operation) ? ("true") : ("false")) << "'");
+	bool neg_a = a_in.is_negative();
+	bool neg_b = b_in.is_negative();
 
-	while(eval_op(a, b).is_gt() )
+	VNumber a = neg_a ? V_MINUS(a_in) : a_in;
+	VNumber b = b_in.is_negative() ? V_MINUS(b_in) : b_in;
+
+	//DEBUG_MSG("a: '" << a.to_string()  << "; b: " << b.to_string());
+	//DEBUG_MSG("is_division_signed_operation: '" << ((true == is_division_signed_operation) ? ("true") : ("false")) << "'");
+
+	while(eval_op(a, b).is_ge() )
 	{
-		VNumber  count("1");
-		VNumber  sub_with = b;
+		VNumber  count("'b1");
 		VNumber  tmp = b;
-		while(eval_op(tmp, a).is_lt())
+
+		// initialize our variables
+		VNumber  sub_with = tmp;
+		VNumber	 count_sub_with = count;
+		while(eval_op(tmp, a).is_le())
 		{
 			sub_with = tmp;
+			count_sub_with = count;
 			count = shift_op(count, 1, is_division_signed_operation);
 			tmp = shift_op(tmp, 1, is_division_signed_operation);
 		}
 		a = V_MINUS(a, sub_with);
-		result = V_ADD(result, count);
+		result = V_ADD(result, count_sub_with);
 	}
-	return result;
+
+	return (neg_a != neg_b) ? V_MINUS(result) : result;
 }
 
-VNumber V_MOD(VNumber& a_in, VNumber& b)
+VNumber V_MOD(VNumber& a_in, VNumber& b_in)
 {
-	if(a_in.is_dont_care_string() || b.is_dont_care_string() || eval_op(b, 0).is_eq())
+	if(a_in.is_dont_care_string() || b_in.is_dont_care_string() || eval_op(b_in, 0).is_eq())
 		return VNumber("'bx");
 
-	VNumber to_return(a_in);
-	while(eval_op(b, to_return).is_lt())
+	bool neg_a = a_in.is_negative();
+	bool neg_b = b_in.is_negative();
+
+	VNumber a = neg_a ? V_MINUS(a_in) : a_in;
+	VNumber b = neg_b ? V_MINUS(b_in) : b_in;
+
+	bool is_modulo_signed_operation = is_signed_operation(a, b);
+
+	std::cout << "a = " << a.to_string() << "; b = " << b.to_string() << std::endl;
+
+	while(eval_op(a, b).is_ge())
 	{
-		VNumber  sub_with = b;
-		for( VNumber  tmp = b; eval_op(tmp, to_return).is_lt(); shift_op(tmp, 1,_0))
+		VNumber  tmp = b;
+		VNumber  sub_with = tmp;
+
+		while( eval_op(tmp, a).is_le() )
 		{
 			sub_with = tmp;
+			tmp = shift_op(tmp, 1, is_modulo_signed_operation);
 		}
-		to_return = V_MINUS(to_return, sub_with);
+		a = V_MINUS(a, sub_with);
 	}
-	return to_return;
+
+	return (neg_a) ? V_MINUS(a) : a;
 }
 
 /***

@@ -9,7 +9,34 @@
 #include <algorithm>
 #include <iostream>
 
-inline static std::string _radix_digit_to_bits_str(const char digit, short radix,  const char *FUNCT, int LINE)
+static const char *base_10_digits = "0123456789";
+
+static uint8_t _to_decimal(char digit, const char *FUNCT, int LINE)
+{
+    switch(std::tolower(digit))
+    {
+        case '0': return 0;
+        case '1': return 1;
+        case '2': return 2;
+        case '3': return 3;
+        case '4': return 4;
+        case '5': return 5;
+        case '6': return 6;
+        case '7': return 7;
+        case '8': return 8;
+        case '9': return 9;
+        default:  
+            _assert_Werr( false, FUNCT, LINE,
+                    "INVALID BIT INPUT: " + std::string(1,digit) 
+            );
+        break;    
+    }
+    return 10;
+}
+
+#define to_decimal(num) _to_decimal(num,__func__, __LINE__)
+
+static std::string _radix_digit_to_bits_str(const char digit, short radix,  const char *FUNCT, int LINE)
 {
     switch(radix)
     {
@@ -93,10 +120,10 @@ inline static std::string _radix_digit_to_bits_str(const char digit, short radix
 }
 
 #define radix_digit_to_bits(num,radix) _radix_digit_to_bits(num,radix,__func__, __LINE__)
-inline static std::string _radix_digit_to_bits(const char digit, short radix,  const char *FUNCT, int LINE)
+static std::string _radix_digit_to_bits(const char digit, short radix,  const char *FUNCT, int LINE)
 {
     std::string result = _radix_digit_to_bits_str(digit, radix, FUNCT, LINE);
-    return std::string(result.crbegin(), result.crend());
+    return result;
 }
 
 /**********************
@@ -150,19 +177,30 @@ std::string string_of_radix_to_bitstring(std::string orig_string, short radix)
 			{
 				std::string new_number = "";
 
-				char rem_digit = '0';
-				for(char& current_digit : orig_string)
+				uint8_t rem_digit = 0;
+				for(char current_digit : orig_string)
 				{
-					uint8_t new_pair = (static_cast<uint8_t>(rem_digit - '0')*10) + static_cast<uint8_t>(current_digit-'0');
-					new_number.push_back(static_cast<char>((new_pair/2) + '0'));
-                    rem_digit =         (static_cast<char>((new_pair%2) + '0'));
+					uint8_t new_pair = (rem_digit *10) + to_decimal(current_digit);
+
+					new_number.push_back(base_10_digits[(new_pair/2)]);
+                    rem_digit = new_pair%2;
 				}
 
-                result.insert(result.begin(),rem_digit);
-                if(new_number == "0")
+                result.insert(result.begin(),base_10_digits[rem_digit]);
+                while(  new_number.size() > 1 
+                &&      new_number[0] == '0' )
+                {
+                    new_number.erase(0,1);
+                }
+
+                if( new_number == "0" )
+                {
                     orig_string = "";
+                }
                 else
+                {
                     orig_string = new_number;
+                }
 
 				break;
 			}
@@ -174,5 +212,8 @@ std::string string_of_radix_to_bitstring(std::string orig_string, short radix)
 			}
 		}
 	}
+    
+    // pad an extra bit for undefined length
+    result.insert(result.begin(),'0');
 	return result;
 }

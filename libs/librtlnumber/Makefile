@@ -41,7 +41,7 @@ SRC =src/*.cpp
 
 BIN = rtl_number
 
-C = clang++ -std=c++14 -lpthread
+C = clang++ -std=c++14 -lpthread #-DENABLE_DEBUG_MESSAGES
 
 cleanup_flags=\
 -ferror-limit=1000 \

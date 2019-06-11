@@ -27,11 +27,11 @@ function exit_code() {
 	exit ${my_failed_count}
 }
 
-# Check if Library 'file' "${0%/*}/librtlnumber.a" exists
-[ ! -f ${0%/*}/librtlnumber.a ] && exit_code 99 "${0%/*}/librtlnumber.a library file not found!\n"
-
-# Check if test harness binary "${0%/*}/rtl_number" exists
-[ ! -f ${0%/*}/rtl_number ] && exit_code 99 "${0%/*}/rtl_number test harness file not found!\n" 
+# # Check if Library 'file' "${0%/*}/librtlnumber.a" exists
+if [ ! -f ./librtlnumber.a ] && [ ! -f ./rtl_number ]; 
+then
+		exit_code 99 "${0%/*}rtl number is nowhere to be found :o !\n" 
+fi
 
 # Dynamically load in inputs and results from
 #  file(s) on disk.
