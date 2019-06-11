@@ -126,8 +126,8 @@ static void assert_supported_file_extension(std::string input_file, int file_num
 
 		error_message(ARG_ERROR, -1, file_number, 
 			"File (%s) has an unsupported extension (%s), Odin only support { %s }",
-			input_file,
-			extension,
+			input_file.c_str(),
+			extension.c_str(),
 			supported_extension_list.c_str()
 			);
 	}
