@@ -17,10 +17,6 @@ module  pram(
   dpram2_out2
 );
 
-wafq
-
-;;;
-
 // SIGNAL DECLARATIONS
 input   clock;
 
