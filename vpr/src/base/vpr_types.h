@@ -897,9 +897,9 @@ enum e_routing_budgets_algorithm {
 };
 
 enum class e_timing_report_detail {
-    NETLIST,    //Only show netlist elements
-    AGGREGATED, //Show aggregated intra-block and inter-block delays
-    //DETAILED_ROUTING, //Show inter-block routing resources used
+    NETLIST,          //Only show netlist elements
+    AGGREGATED,       //Show aggregated intra-block and inter-block delays
+    DETAILED_ROUTING, //Show inter-block routing resources used
 };
 
 enum class e_incr_reroute_delay_ripup {

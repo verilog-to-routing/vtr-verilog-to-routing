@@ -37,6 +37,9 @@ void add_route_tree_to_rr_node_lookup(t_rt_node* node);
 bool verify_route_tree(t_rt_node* root);
 bool verify_traceback_route_tree_equivalent(const t_trace* trace_head, const t_rt_node* rt_root);
 
+t_rt_node* find_sink_rt_node(t_rt_node* rt_root, ClusterNetId net_id, ClusterPinId sink_pin);
+t_rt_node* find_sink_rt_node_recurr(t_rt_node* node, int sink_inode);
+
 /********** Incremental reroute ***********/
 // instead of ripping up a net that has some congestion, cut the branches
 // that don't legally lead to a sink and start routing with that partial route tree
