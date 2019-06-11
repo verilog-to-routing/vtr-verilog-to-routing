@@ -91,6 +91,8 @@ int simplify_ast_module(ast_node_t **ast_module)
 	/* find multiply or divide operation that can be replaced with shift operation */
 	shift_operation(*ast_module);
 
+	simplify_pc_assignments();
+
 	return 1;
 }
 
@@ -1276,7 +1278,7 @@ void find_children_by_type(ast_node_t *node, std::vector<ast_node_t *> &list, id
  * (function: find_children_by_type)
  * Simplifies the procedural continuous assignments
  *-------------------------------------------------------------------------*/
-void simplify_pc_assignments2() {
+void simplify_pc_assignments() {
     struct assignment_info {
         std::string name;
         ast_node_t *id;
@@ -1373,34 +1375,6 @@ void simplify_pc_assignments2() {
             second.p_always->children[1]->num_children = 1;
         }
         //graphVizOutputAst("./temp",module);
-    }
-
-}
-
-void simplify_pc_assignments() {
-    simplify_pc_assignments2();
-    return;
-    for (long m = 0; m < num_modules; m++)
-    {
-        auto module = ast_modules[m];
-        std::vector<ast_node_t*> always_blocks;
-        find_children_by_type(module, always_blocks, ALWAYS);
-
-        if (always_blocks.empty())
-            continue;
-
-        for (auto always : always_blocks){
-            std::vector<ast_node_t *> assignments;
-            find_children_by_type(always, assignments, PROC_CONT_ASSIGN);
-			if (assignments.empty())
-				continue;
-
-			/* Convert Procedural Continuous Assignment to Continuous assignment */
-			for (auto assignment : assignments) {
-				if (assignment->type == PROC_CONT_ASSIGN)
-					assignment->type = BLOCKING_STATEMENT;
-			}
-        }
     }
 
 }
