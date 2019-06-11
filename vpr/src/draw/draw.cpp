@@ -1412,7 +1412,7 @@ static void draw_routing_bb(ezgl::renderer &g) {
     int draw_yhigh = draw_coords->tile_y[bb->ymax] + 2*draw_coords->get_tile_height();
     
     g.set_color(blk_RED);
-    g.fill_rectangle({draw_xlow, draw_ylow}, {draw_xhigh,draw_yhigh});
+    g.draw_rectangle({draw_xlow, draw_ylow}, {draw_xhigh,draw_yhigh});
     
     ezgl::color fill = blk_SKYBLUE;
     fill.alpha *= 0.3;
@@ -3649,14 +3649,15 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer &g) 
     constexpr size_t NUM_COLOR_POINTS = 1000;
     
     g.set_coordinate_system(ezgl::SCREEN);
-    ezgl::rectangle visible_screen = g.get_visible_world();
     
-    
-    float screen_width = visible_screen.width();
-    float vert_offset = visible_screen.height() * LEGEND_VERT_OFFSET_FAC;
+    float screen_width = application.get_canvas(application.get_main_canvas_id())->width();
+    float screen_height = application.get_canvas(application.get_main_canvas_id())->height();
+    float vert_offset = screen_height * LEGEND_VERT_OFFSET_FAC;
     float legend_width = std::min<int>(LEGEND_WIDTH_FAC * screen_width, 100);
-    
-    ezgl::rectangle legend ({visible_screen.left(), visible_screen.bottom() + vert_offset}, {visible_screen.left() + legend_width, visible_screen.top() - vert_offset});
+
+
+    // In SCREEN coordinate: bottom_left is (0,0), right_top is (screen_width, screen_height)
+    ezgl::rectangle legend ({0, vert_offset}, {legend_width, screen_height - vert_offset});
             
     float range = cmap.max() - cmap.min();
     float height_incr = legend.height() / float(NUM_COLOR_POINTS);
