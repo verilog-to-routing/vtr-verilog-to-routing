@@ -524,13 +524,12 @@ VNumber V_MINUS(VNumber& a, VNumber& b)
 
 VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
 {
-	DEBUG_MSG("a_in: '" << a_in.to_string() << "' * b_in: '" << b_in.to_string() << "'");
+	//DEBUG_MSG("a_in: '" << a_in.to_string() << "' * b_in: '" << b_in.to_string() << "'");
 
 	if(a_in.is_dont_care_string() || b_in.is_dont_care_string())
 	{
 		return VNumber("'bx");
-	}
-		
+	}	
 
 	VNumber a;
 	VNumber b;
@@ -579,7 +578,7 @@ VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
 		//DEBUG_MSG("b = b_in: '" << b_in.to_string() << "': '" << b.to_string() << "'");
 	}
 
-	//DEBUG_MSG("a: '" << a.to_string() << "' * b: '" << b.to_string() << "'");
+	DEBUG_MSG("a: '" << a.to_string() << "' * b: '" << b.to_string() << "'");
 		
 	bool invert_result = ((!neg_a && neg_b) || (neg_a && !neg_b));
 

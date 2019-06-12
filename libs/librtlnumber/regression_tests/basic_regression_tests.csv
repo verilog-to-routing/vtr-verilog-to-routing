@@ -89,11 +89,13 @@ Subtraction-Smaller-Larger, 4'b0010,    -,  4'b0100,    4'b1110
 Subtraction-Small-Base-10,  2,          -,  4,          3'sb110
 Division,			        4'b1010,    /,  4'b0010,    'b101
 Division-Base-10,           10,         /,  5,          2
+Division-Neg,               4'sb1010,   /,  3'sb010,    3'sb101
 Multiplication,	            4'b0010,    *,  4'b0010,    'b100
 Multiplication-Base-10,     2,          *,  3,          6
 Multiplication-Neg,         4,          *,  4'sb1100,   7'sb1110000
 Modulo,			            4'b1011,    %,  4'b0010,    'b1
 Modulo-Base-10,             13,         %,  5,          3
+Modulo-Neg,                 4'sb1011,   %,  4'sb0010,   2'sb11
 Power,                      2'b10,      **, 2'b10,      4'b0100
 Power-Base-10,              2,          **, 3,          8
 Power-Zero,                 4'b0010,    **, 4'b0000,    'b1
@@ -105,7 +107,8 @@ Power-Neg-Odd,              4'sb1111,   **, 3'b011,     2'sb11
 # Ternary operations
 Ternary,			1'b1,   ?,  2'b01,  :,  2'b10,  2'b01
 
-# Test Cases As-Per Verilog 2005 Specification
+# Test Cases As-Per Verilog 2005 Specification: 
+# Page 46 "Table 5-8 Examples of modulus and power operators"
 V2005-1,                    10,         %,  3,       1          # 10/3 yields a remainder of 1.
 V2005-2,                    11,         %,  3,       2          # 11/3 yields a remainder of 2.
 V2005-3,                    12,         %,  3,       0          # 12/3 yields no remainder.
