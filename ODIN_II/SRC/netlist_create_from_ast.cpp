@@ -153,6 +153,7 @@ void cleanup_function_local_symbol();
 void init_function_local_symbol();
 void cleanup_local_symbol();
 void init_local_symbol();
+void cleanup_local_clock_list();
 
 /*----------------------------------------------------------------------------
  * (function: create_param_table_for_module)
@@ -436,11 +437,6 @@ void cleanup_local_clock_list()
 	}
 
 	local_clock_idx = -1;
-}
-
-void init_local_clock_list()
-{
-	cleanup_local_clock_list();
 }
 
 /*---------------------------------------------------------------------------------------------

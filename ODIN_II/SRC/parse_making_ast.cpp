@@ -145,7 +145,6 @@ void parse_to_ast()
 	to_view_parse = configuration.print_parse_tokens;
 
 	/* initialize the parser */
-	init_parser();
 	init_veri_preproc();
 
 	/* read all the files in the configuration file */

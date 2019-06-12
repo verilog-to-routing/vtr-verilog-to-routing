@@ -60,7 +60,11 @@ _FORCE_SIM="off"
 # Exit Functions
 function exit_program() {
 
-	FAIL_COUNT=$(wc -l ${NEW_RUN_DIR}/test_failures.log | cut -d ' ' -f 1)
+	FAIL_COUNT="0"
+	if [ -f ${NEW_RUN_DIR}/test_failures.log ]; then
+		FAIL_COUNT=$(wc -l ${NEW_RUN_DIR}/test_failures.log | cut -d ' ' -f 1)
+	fi
+	
 	FAILURE=$(( ${FAIL_COUNT} ))
 	
 	if [ "_${FAILURE}" != "_0" ]

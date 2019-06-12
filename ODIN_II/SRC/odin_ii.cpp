@@ -108,6 +108,7 @@ static ODIN_ERROR_CODE synthesize_verilog()
 
 	/* parse to abstract syntax tree */
 	printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
+	init_parser();
 	parse_to_ast();
 	/**
 	 *  Note that the entry point for ast optimzations is done per module with the
@@ -184,6 +185,8 @@ static ODIN_ERROR_CODE synthesize_verilog()
 
 	global_param_table_sc = sc_free_string_cache(global_param_table_sc);
 	module_names_to_idx = sc_free_string_cache(module_names_to_idx);
+	
+	cleanup_parser();
 
 	elaboration_time = wall_time() - elaboration_time;
 

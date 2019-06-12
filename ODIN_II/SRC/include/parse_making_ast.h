@@ -4,6 +4,7 @@ void parse_to_ast();
 
 /* INITIALISATIONS */
 void init_parser();
+void cleanup_parser();
 
 void cleanup_hard_blocks();
 
