@@ -198,7 +198,7 @@ assign b0 = (reset)? 0: tmp_b0;
 assign b1 = (reset)? 0: tmp_b1;
 assign b2 = (reset)? 0: tmp_b2;
 assign dout = (reset)? 0: tmp_dout;
-assign obf_state = (reset)? 0: tmp_obf_state;
+assign obf_state = (reset)? idle: tmp_obf_state;
 assign ready = (reset)? 0: tmp_ready;
 
 always @(posedge clk) begin
