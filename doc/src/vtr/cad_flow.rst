@@ -43,7 +43,7 @@ Similarly, if you want only to route a placement produced by another CAD tool yo
 
 If you only need to analyze an implementation produced by another tool, you can create a :ref:`.route file <vpr_route_file>`, and have VPR analyze the implementation, to produce area/delay/power results.
 
-Finally, if your routing architecture is not supported by VPR's architecture generator, you can create an :ref:`rr_graph.xml file <vpr_route_resource_file>`, which can be loaded directly into VPR.
+Finally, if your routing architecture is not supported by VPR's architecture generator, you can describe your routing architecture in an :ref:`rr_graph.xml file <vpr_route_resource_file>`, which can be loaded directly into VPR.
 
 Bitstream Generation
 --------------------
