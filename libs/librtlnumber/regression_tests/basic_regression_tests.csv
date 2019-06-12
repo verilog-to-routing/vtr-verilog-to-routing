@@ -17,7 +17,6 @@ unknown_x,          is_true, 1'bx, fail
 large_number_pass,  is_true, 128'h8000_0000_0000_0000, pass
 
 # base conversions
-# TODO: Test Hex, Base 10 etc. Conversions
 Decimal-To-Binary,      10,         ==, 4'b1010,    1'b1
 Binary-To-Decimal,      4'b1100,    ==, 12,         1'b1
 Decimal-To-Hex,         10,         ==, 'hA,        1'b1
@@ -27,7 +26,7 @@ Octal-To-Decimal,       'o37,       ==, 31,         1'b1
 
 # Sign modifier
 Sign_minus,		        -,  10'b1010101010,	'b0101010110
-Sign_plus,			    +,  4'b1010,	'b1010
+Sign_plus,			    +,  4'b1010,	    'b1010
 
 # Simple Base 10 conversion
 simple_decimal_conversion,			+,  6,	6

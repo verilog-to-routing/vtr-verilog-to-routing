@@ -186,7 +186,7 @@ static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry, 
 	//DEBUG_MSG("std_length: '" << std_length << "'");
 	//DEBUG_MSG("new_length: '" << new_length << "'");
 	//DEBUG_MSG("pad_a: '" << (unsigned(pad_a)) << "'");
-	//DEBUG_MSG("pad_b: '" << (unsigned(pad_b)) << "'");
+	//("pad_b: '" << (unsigned(pad_b)) << "'");
 	//DEBUG_MSG("is_addition_signed_operation: '" << ((true == is_addition_signed_operation) ? ("true") : ("false")) << "'");
 
 	bit_value_t previous_carry = initial_carry;
@@ -296,8 +296,7 @@ VNumber V_ADD(VNumber& a)
 VNumber V_MINUS(VNumber& a)
 {
 	//DEBUG_MSG("a: '" << a.to_string() << "': a.twos_complement(): '" << a.twos_complement().to_string() << "'");
-	VNumber new_a(a, a.size()+1);
-	return new_a.twos_complement();
+	return a.twos_complement();
 }
 
 VNumber V_BITWISE_AND(VNumber& a)
@@ -506,9 +505,18 @@ VNumber V_MINUS(VNumber& a, VNumber& b)
 	VNumber padded_a(a, std_length);
 	VNumber padded_b(b, std_length);
 
-
 	//DEBUG_MSG("a: '" << a.to_string() << "' - b: '" << b.to_string() << "'");
 	VNumber complement = V_MINUS(padded_b);
+	if (padded_b.is_negative() && complement.is_negative())
+	{
+		/* special case: 2's comp is identical to original, must pad */
+		complement = VNumber(padded_b, padded_b.size()+1);
+		complement = V_MINUS(complement);
+	}
+	//DEBUG_MSG("complement: '" << complement.to_string() << "'");
+
+	//DEBUG_MSG("a: '" << a.to_string() << "' - b: '" << b.to_string() << "'");
+	//VNumber complement = V_MINUS(padded_b);
 	//DEBUG_MSG("complement: '" << complement.to_string() << "'");
 	//DEBUG_MSG("a: '" << a.to_string() << "' + complement: '" << complement.to_string() << "'");
 	return sum_op(padded_a, complement, _0, /* is_twos_complement_subtraction */ true);
@@ -538,6 +546,13 @@ VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
 	if(neg_a)
 	{
 		a = V_MINUS(a_in);
+
+		if (a.is_negative())
+		{
+			/* special case: 2's comp is identical to original, must pad */
+			a = VNumber(a_in, a_in.size()+1);
+			a = V_MINUS(a);
+		}
 		//DEBUG_MSG("a = V_MINUS(a_in: '" << a_in.to_string() << "'): '" << a.to_string() << "'");
 	}
 	else
@@ -549,6 +564,13 @@ VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in)
 	if(neg_b)
 	{
 		b = V_MINUS(b_in);
+
+		if (b.is_negative())
+		{
+			/* special case: 2's comp is identical to original, must pad */
+			b = VNumber(b_in, b_in.size()+1);
+			b = V_MINUS(b);
+		}
 		//DEBUG_MSG("b = V_MINUS(b_in: '" << b_in.to_string() << "'): '" << b.to_string() << "'");
 	}
 	else
@@ -666,8 +688,14 @@ VNumber V_POWER(VNumber& a, VNumber& b)
 		{
 			//DEBUG_MSG("tmp_b = V_MINUS(tmp_b: '" << tmp_b.to_string() << "', one: '" << one.to_string() << "')");
 
-			tmp_b = V_MINUS(tmp_b, one);
-
+			VNumber tmp_b_comp = V_MINUS(tmp_b, one);
+			if (tmp_b_comp.is_negative() && tmp_b.is_negative())
+			{
+				/* special case: 2's comp is identical to original, must pad */
+				tmp_b_comp = VNumber(tmp_b, tmp_b.size()+1);
+				tmp_b_comp = V_MINUS(tmp_b_comp);
+			}
+			tmp_b = tmp_b_comp;
 			//DEBUG_MSG("tmp_b: '" << tmp_b.to_string() << "'");
 			//DEBUG_MSG("result = V_MULTIPLY(result: '" << result.to_string() << "', a: '" << a.to_string() << "')");
 
@@ -726,14 +754,28 @@ VNumber V_DIV(VNumber& a_in, VNumber& b_in)
 	bool neg_b = b_in.is_negative();
 
 	VNumber a = neg_a ? V_MINUS(a_in) : a_in;
-	VNumber b = b_in.is_negative() ? V_MINUS(b_in) : b_in;
+	VNumber b = neg_b ? V_MINUS(b_in) : b_in;
+
+	if (neg_a && a.is_negative())
+	{
+		/* special case: 2's comp is identical to original, must pad */
+		a = VNumber(a_in, a_in.size()+1);
+		a = V_MINUS(a);
+	}
+
+	if (neg_b && b.is_negative())
+	{
+		/* special case: 2's comp is identical to original, must pad */
+		b = VNumber(b_in, b_in.size()+1);
+		b = V_MINUS(b);
+	}
 
 	//DEBUG_MSG("a: '" << a.to_string()  << "; b: " << b.to_string());
 	//DEBUG_MSG("is_division_signed_operation: '" << ((true == is_division_signed_operation) ? ("true") : ("false")) << "'");
 
 	while(eval_op(a, b).is_ge() )
 	{
-		VNumber  count("'b1");
+		VNumber  count("1");
 		VNumber  tmp = b;
 
 		// initialize our variables
@@ -764,9 +806,21 @@ VNumber V_MOD(VNumber& a_in, VNumber& b_in)
 	VNumber a = neg_a ? V_MINUS(a_in) : a_in;
 	VNumber b = neg_b ? V_MINUS(b_in) : b_in;
 
-	bool is_modulo_signed_operation = is_signed_operation(a, b);
+	if (neg_a && a.is_negative())
+	{
+		/* special case: 2's comp is identical to original, must pad */
+		a = VNumber(a_in, a_in.size()+1);
+		a = V_MINUS(a);
+	}
 
-	std::cout << "a = " << a.to_string() << "; b = " << b.to_string() << std::endl;
+	if (neg_b && b.is_negative())
+	{
+		/* special case: 2's comp is identical to original, must pad */
+		b = VNumber(b_in, b_in.size()+1);
+		b = V_MINUS(b);
+	}
+
+	bool is_modulo_signed_operation = is_signed_operation(a, b);
 
 	while(eval_op(a, b).is_ge())
 	{
