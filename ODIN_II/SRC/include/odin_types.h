@@ -374,14 +374,10 @@ struct typ_t
 
 	struct
 	{
-		short sign;
 		short base;
-		int size;
 		int binary_size;
 		char *binary_string;
-		char *number;
 		long value;
-		short is_full; //'bx means all of the wire get 'x'(dont care)
 	} number;
 	struct
 	{
