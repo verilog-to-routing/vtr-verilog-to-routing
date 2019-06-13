@@ -755,8 +755,7 @@ void try_place(t_placer_opts placer_opts,
     fflush(stdout);
 
     // TODO:
-    // 1. print a message about number of aborted moves.
-    // 2. add some subroutine hierarchy!  Too big!
+    // 1. add some subroutine hierarchy!  Too big!
 
 #ifdef VERBOSE
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
