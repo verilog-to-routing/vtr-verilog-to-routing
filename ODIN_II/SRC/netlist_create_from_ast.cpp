@@ -3600,33 +3600,47 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	{
 		int output_size = alias_output_assign_pins_to_inputs(out_list, in_1, assignment);
 
+		if(right->types.number.is_full == 1 && (right->types.number.number[0] == 'x' || right->types.number.number[0] == 'z' || right->types.number.number[0] == '0')) {
 
-		if (output_size < in_1->count)
-		{
 			/* need to shrink the output list */
-			int i;
-			for (i = 0; i < output_size; i++) {
-				add_pin_to_signal_list(return_list, in_1->pins[i]);
+			add_pin_to_signal_list(return_list, in_1->pins[0]);
 
-				/* free unused nnodes for related BLOCKING_STATEMENT nodes */
-				nnode_t *temp_node = in_1->pins[i]->node;
-				if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
-					in_1->pins[i]->node = free_nnode(temp_node);
-				}
+			int i;
+			for (i = 1; i < output_size; i++){
+				in_1->pins[i]->net = in_1->pins[0]->net;
+				add_pin_to_signal_list(return_list, in_1->pins[i]);
 			}
 			free_signal_list(in_1);
 		}
 		else
 		{
-			free_signal_list(return_list);
-			return_list = in_1;
+			if (output_size < in_1->count)
+			{
+				/* need to shrink the output list */
+				int i;
+				for (i = 0; i < output_size; i++) {
+					add_pin_to_signal_list(return_list, in_1->pins[i]);
 
-			/* free unused nnodes for related BLOCKING_STATEMENT nodes */
-			int i;
-			for (i = 0; i < output_size; i++) {
-				nnode_t *temp_node = in_1->pins[i]->node;
-				if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
-					in_1->pins[i]->node = free_nnode(temp_node);
+					/* free unused nnodes for related BLOCKING_STATEMENT nodes */
+					nnode_t *temp_node = in_1->pins[i]->node;
+					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
+						in_1->pins[i]->node = free_nnode(temp_node);
+					}
+				}
+				free_signal_list(in_1);
+			}
+			else
+			{
+				free_signal_list(return_list);
+				return_list = in_1;
+
+				/* free unused nnodes for related BLOCKING_STATEMENT nodes */
+				int i;
+				for (i = 0; i < output_size; i++) {
+					nnode_t *temp_node = in_1->pins[i]->node;
+					if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
+						in_1->pins[i]->node = free_nnode(temp_node);
+					}
 				}
 			}
 		}

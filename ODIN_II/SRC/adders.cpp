@@ -1194,7 +1194,7 @@ void traverse_operation_node(ast_node_t *node, char *component[], operation_list
 					component[i] = node->children[i]->types.identifier;
 				else
 					if (node->children[i]->type == NUMBERS)
-						component[i] = node->children[i]->types.number.binary_string;
+						component[i] = node->children[i]->types.number.number;
 			}
 
 		}
