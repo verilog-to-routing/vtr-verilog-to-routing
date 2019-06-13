@@ -679,7 +679,7 @@ void try_place(t_placer_opts placer_opts,
         }
 
         print_place_status(t, oldt,
-                           stats, 
+                           stats,
                            critical_path.delay(), sTNS, sWNS,
                            success_rat, std_dev, rlim, crit_exponent, tot_iter);
 
@@ -732,7 +732,7 @@ void try_place(t_placer_opts placer_opts,
         sWNS = timing_info->setup_worst_negative_slack();
     }
 
-    print_place_status(t, oldt, stats, 
+    print_place_status(t, oldt, stats,
                        critical_path.delay(), sTNS, sWNS,
                        success_rat, std_dev, rlim, crit_exponent, tot_iter);
 
@@ -3700,9 +3700,9 @@ static int grid_to_compressed(const std::vector<int>& coords, int point) {
 }
 
 static void print_place_status_header() {
-    VTR_LOG("------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------- -------- --------- ------\n");
-    VTR_LOG("      T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev R limit Crit Exp Tot Moves  Alpha\n");
-    VTR_LOG("------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------- -------- --------- ------\n");
+    VTR_LOG("------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
+    VTR_LOG("      T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha\n");
+    VTR_LOG("------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
 }
 
 static void print_place_status(const float t,
@@ -3716,15 +3716,18 @@ static void print_place_status(const float t,
                                const float rlim,
                                const float crit_exponent,
                                size_t tot_moves) {
-    VTR_LOG("%7.3f "
-            "%7.4f %10.4f %-10.5g "
-            "%7.3f % 10.3g % 8.3f "
-            "%7.4f %7.4f %7.4f %8.3f"
-            "%10d %6.3f\n",
-            oldt,
-            stats.av_cost, stats.av_bb_cost, stats.av_timing_cost,
-            1e9 * cpd, 1e9 * sTNS, 1e9 * sWNS,
-            acc_rate, std_dev, rlim, crit_exponent,
-            tot_moves, t / oldt);
+    VTR_LOG(
+        "%7.1e "
+        "%7.3f %10.2f %-10.5g "
+        "%7.3f % 10.3g % 8.3f "
+        "%7.3f %7.4f %6.1f %8.2f",
+        oldt,
+        stats.av_cost, stats.av_bb_cost, stats.av_timing_cost,
+        1e9 * cpd, 1e9 * sTNS, 1e9 * sWNS,
+        acc_rate, std_dev, rlim, crit_exponent);
+
+    pretty_print_uint(" ", tot_moves, 10, 3);
+
+    VTR_LOG(" %6.3f\n", t / oldt);
     fflush(stdout);
 }
