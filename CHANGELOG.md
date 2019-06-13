@@ -36,6 +36,19 @@ of the unreleased and any previous release candidates change logs.
 _The following are changes which have been implemented in the VTR master branch but have not yet been included in an official release._
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Deprecated
+
+### Removed
+
+
+## v8.0.0-rc1 - 2019-06-13
+
+### Added
  * Support for arbitrary FPGA device grids/floorplans
  * Support for clustered blocks with width > 1
  * Customizable connection-block and switch-blocks patterns (controlled from FPGA architecture file)
