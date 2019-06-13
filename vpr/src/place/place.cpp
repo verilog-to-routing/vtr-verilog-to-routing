@@ -433,6 +433,19 @@ static void log_move_abort(std::string reason);
 static void report_aborted_moves();
 static int grid_to_compressed(const std::vector<int>& coords, int point);
 
+static void print_place_status_header();
+static void print_place_status(const float t,
+                               const float oldt,
+                               const t_placer_statistics& stats,
+                               const float cpd,
+                               const float sTNS,
+                               const float sWNS,
+                               const float acc_rate,
+                               const float std_dev,
+                               const float rlim,
+                               const float crit_exponent,
+                               size_t tot_moves);
+
 /*****************************************************************************/
 void try_place(t_placer_opts placer_opts,
                t_annealing_sched annealing_sched,
@@ -451,7 +464,7 @@ void try_place(t_placer_opts placer_opts,
     int tot_iter, move_lim, moves_since_cost_recompute, width_fac, num_connections,
         outer_crit_iter_count, inner_recompute_limit;
     float t, success_rat, rlim,
-        oldt, crit_exponent,
+        oldt = 0, crit_exponent,
         first_rlim, final_rlim, inverse_delta_rlim;
 
     t_placer_costs costs;
@@ -591,39 +604,7 @@ void try_place(t_placer_opts placer_opts,
     VTR_LOG("\n");
 
     //Table header
-    VTR_LOG(
-        "%7s "
-        "%7s %10s %10s "
-        "%7s %10s %8s "
-        "%7s %7s %7s %6s "
-        "%9s %6s\n",
-        "-------",
-        "-------", "----------", "----------",
-        "-------", "----------", "--------",
-        "-------", "-------", "-------", "------",
-        "---------", "------");
-    VTR_LOG(
-        "%7s "
-        "%7s %10s %10s "
-        "%7s %10s %8s "
-        "%7s %7s %7s %6s "
-        "%9s %6s\n",
-        "T",
-        "Cost", "Av BB Cost", "Av TD Cost",
-        "CPD", "sTNS", "sWNS",
-        "Ac Rate", "Std Dev", "R limit", "Exp",
-        "Tot Moves", "Alpha");
-    VTR_LOG(
-        "%7s "
-        "%7s %10s %10s "
-        "%7s %10s %8s "
-        "%7s %7s %7s %6s "
-        "%9s %6s\n",
-        "-------",
-        "-------", "----------", "----------",
-        "-------", "----------", "--------",
-        "-------", "-------", "-------", "------",
-        "---------", "------");
+    print_place_status_header();
 
     sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
             costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
@@ -697,18 +678,10 @@ void try_place(t_placer_opts placer_opts,
             sWNS = timing_info->setup_worst_negative_slack();
         }
 
-        VTR_LOG(
-            "%7.3f "
-            "%7.4f %10.4f %-10.5g "
-            "%7.3f % 10.3g % 8.3f "
-            "%7.4f %7.4f %7.4f %6.3f"
-            "%9d %6.3f\n",
-            oldt,
-            stats.av_cost, stats.av_bb_cost, stats.av_timing_cost,
-            1e9 * critical_path.delay(), 1e9 * sTNS, 1e9 * sWNS,
-            success_rat, std_dev, rlim, crit_exponent,
-            tot_iter, t / oldt);
-        fflush(stdout);
+        print_place_status(t, oldt,
+                           stats, 
+                           critical_path.delay(), sTNS, sWNS,
+                           success_rat, std_dev, rlim, crit_exponent, tot_iter);
 
         sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
                 costs.cost, costs.bb_cost, costs.timing_cost, t);
@@ -759,18 +732,9 @@ void try_place(t_placer_opts placer_opts,
         sWNS = timing_info->setup_worst_negative_slack();
     }
 
-    VTR_LOG(
-        "%7.3f "
-        "%7.4f %10.4f %-10.5g "
-        "%7.3f % 10.3g % 8.3f "
-        "%7.4f %7.4f %7.4f %6.3f"
-        "%9d %6.3f\n",
-        t,
-        stats.av_cost, stats.av_bb_cost, stats.av_timing_cost,
-        1e9 * critical_path.delay(), 1e9 * sTNS, 1e9 * sWNS,
-        success_rat, std_dev, rlim, crit_exponent,
-        tot_iter, 0.);
-    fflush(stdout);
+    print_place_status(t, oldt, stats, 
+                       critical_path.delay(), sTNS, sWNS,
+                       success_rat, std_dev, rlim, crit_exponent, tot_iter);
 
     // TODO:
     // 1. add some subroutine hierarchy!  Too big!
@@ -3733,4 +3697,34 @@ static int grid_to_compressed(const std::vector<int>& coords, int point) {
     VTR_ASSERT(*itr == point);
 
     return std::distance(coords.begin(), itr);
+}
+
+static void print_place_status_header() {
+    VTR_LOG("------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------- -------- --------- ------\n");
+    VTR_LOG("      T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev R limit Crit Exp Tot Moves  Alpha\n");
+    VTR_LOG("------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------- -------- --------- ------\n");
+}
+
+static void print_place_status(const float t,
+                               const float oldt,
+                               const t_placer_statistics& stats,
+                               const float cpd,
+                               const float sTNS,
+                               const float sWNS,
+                               const float acc_rate,
+                               const float std_dev,
+                               const float rlim,
+                               const float crit_exponent,
+                               size_t tot_moves) {
+    VTR_LOG("%7.3f "
+            "%7.4f %10.4f %-10.5g "
+            "%7.3f % 10.3g % 8.3f "
+            "%7.4f %7.4f %7.4f %8.3f"
+            "%10d %6.3f\n",
+            oldt,
+            stats.av_cost, stats.av_bb_cost, stats.av_timing_cost,
+            1e9 * cpd, 1e9 * sTNS, 1e9 * sWNS,
+            acc_rate, std_dev, rlim, crit_exponent,
+            tot_moves, t / oldt);
+    fflush(stdout);
 }
