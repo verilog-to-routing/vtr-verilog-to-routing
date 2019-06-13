@@ -373,7 +373,7 @@ namespace BitSpace {
     #ifdef DEBUG_V_BITS
             if (index >= this->bits.size() )
             {
-                std::cout << "Bit array indexing out of bounds " << index << " but size is " << this->bit_size  << std::endl;
+                std::cerr << "Bit array indexing out of bounds " << index << " but size is " << this->bit_size  << std::endl;
                 std::abort();
             }
     #endif
@@ -386,7 +386,7 @@ namespace BitSpace {
     #ifdef DEBUG_V_BITS
             if (address >= this->bit_size )
             {
-                std::cout << "Bit index array out of bounds " << address << " but size is " << this->bit_size  << std::endl;
+                std::cerr << "Bit index array out of bounds " << address << " but size is " << this->bit_size  << std::endl;
                 std::abort();
             }
     #endif
@@ -399,7 +399,7 @@ namespace BitSpace {
     #ifdef DEBUG_V_BITS
             if (address >= this->bit_size )
             {
-                std::cout << "Bit index array out of bounds " << address << " but size is " << this->bit_size  << std::endl;
+                std::cerr << "Bit index array out of bounds " << address << " but size is " << this->bit_size  << std::endl;
                 std::abort();
             }
     #endif
@@ -620,21 +620,17 @@ public:
      */
     void set_value(const std::string& input)
     {
-        //DEBUG_MSG("input: '" << input << "'");
 
         std::string verilog_string(input);
 
-        //DEBUG_MSG("verilog_string: '" << verilog_string << "'");
 
         if(!verilog_string.size())
         {
-            //DEBUG_MSG("return Empty/NULL VNumber");
             return;
         }
 
         size_t loc = verilog_string.find("\'");
 
-        //DEBUG_MSG("loc: '" << loc << "'");
 
         if(loc == std::string::npos)
         {
@@ -642,18 +638,14 @@ public:
             loc = 0;
         }
 
-       // DEBUG_MSG("verilog_string: '" << verilog_string << "'");
-        //DEBUG_MSG("loc: '" << loc << "'");
 
         size_t bitsize = 0;
         if(loc != 0)
         {
             std::string bit_length_char = verilog_string.substr(0, loc);
-            //DEBUG_MSG("bit_length_char = verilog_string.substr(0, loc: '" << loc << "').c_str(): '" << bit_length_char << "'");
             bitsize = strtoul(bit_length_char.c_str(), nullptr, 10);
         }
 
-        //DEBUG_MSG("bitsize: '" << bitsize << "'");
 
         this->sign = false;
         if(std::tolower(verilog_string[loc+1]) == 's')
@@ -661,11 +653,9 @@ public:
             this->sign = true;
         }
 
-        //DEBUG_MSG("this->sign: '" << ((true == this->sign) ? ("true") : ("false")) << "'");
 
         char base = static_cast<char>(std::tolower(verilog_string[loc+1+sign]));
 
-        //DEBUG_MSG("base: '" << base << "'");
 
         uint8_t radix = 0;
         switch(base){
@@ -680,48 +670,36 @@ public:
                 break;
         }
 
-        //DEBUG_MSG("radix: '" << (unsigned(radix)) << "'");
 
         //remove underscores
         std::string v_value_str = verilog_string.substr(loc+2+sign);
         v_value_str.erase(std::remove(v_value_str.begin(), v_value_str.end(), '_'), v_value_str.end());
 
-        //DEBUG_MSG("v_value_str: '" << v_value_str << "'");
 
         //little endian bitstring string
         std::string temp_bitstring = string_of_radix_to_bitstring(v_value_str, radix);
 
-       // DEBUG_MSG("temp_bitstring: '" << temp_bitstring << "'");
 
         char pad = temp_bitstring[0];
 
-        //DEBUG_MSG("pad: '" << pad << "'");
 
         if(!this->sign && pad == '1')
         {
             pad = '0';
         }
 
-        //DEBUG_MSG("pad: '" << pad << "'");
 
-        //DEBUG_MSG("temp_bitstring.size(): '" << temp_bitstring.size() << "'");
 
         // convert the bits to the internal data struct (bit at index 0 in string is msb since string go from msb to lsb)
         BitSpace::VerilogBits new_bitstring(temp_bitstring.size(), BitSpace::_0);
         size_t counter = temp_bitstring.size()-1;
-        // DEBUG_MSG("counter: '" << counter << "'");
         for(char in: temp_bitstring)
         {
             new_bitstring.set_bit(counter--,BitSpace::c_to_bit(in));
-           // DEBUG_MSG("temp_bitstring: '" << (unsigned()) << "'");
-            // DEBUG_MSG("counter: '" << counter << "'");
         }
         
-      //  DEBUG_MSG("bit in : '" << this->bitstring.to_string(false) << "'");
-        // DEBUG_MSG("nwe_bitstring: '" << new_bitstring.to_string(false) << "'");
 
         this->bitstring = new_bitstring.resize(BitSpace::c_to_bit(pad), bitsize);
-       // DEBUG_MSG("bitstring: '" << this->bitstring.to_string(false) << "'");
     }
 
     void set_value(int64_t in)

@@ -30,11 +30,9 @@ inline static std::string _bad_ops(std::string test, const char *FUNCT, int LINE
 
 static std::string arithmetic(std::string op, std::string a_in)
 {
-	DEBUG_MSG("Unary: Op: '" << op << "' a_in: '" << a_in << "'");
 
 	VNumber a(a_in);
 
-	DEBUG_MSG("Unary: Op: '" << op << "' a: '" << a.to_string() << "'");
 
 	/* return Process Operator via ternary */
 	return (
@@ -55,12 +53,10 @@ static std::string arithmetic(std::string op, std::string a_in)
 
 static std::string arithmetic(std::string a_in, std::string op, std::string b_in)
 {
-	DEBUG_MSG("Binary: a_in: '" << a_in << "' Op: '" << op << "' b_in: '" << b_in << "'");
 
 	VNumber a(a_in);
 	VNumber b(b_in);
 
-	DEBUG_MSG("Binary: a: '" << a.to_string() << "' Op: '" << op << "' b: '" << b.to_string() << "'");
 
 	/* return Process Operator via ternary */
 	return (
@@ -102,13 +98,11 @@ static std::string arithmetic(std::string a_in, std::string op, std::string b_in
 
 static std::string arithmetic(std::string a_in, std::string op1 ,std::string b_in, std::string op2, std::string c_in)
 {
-	DEBUG_MSG("Ternary: a_in: '" << a_in << "' Op1: '" << op1 << "' b_in: '" << b_in << "' Op2: '" << op2 << "' c_in: '" << c_in << "'");
 
 	VNumber a(a_in);
 	VNumber b(b_in);
 	VNumber c(c_in);
 
-	DEBUG_MSG("Ternary: a: '" << a.to_string() << "' Op1: '" << op1 << "' b: '" << b.to_string() << "' Op2: '" << op2 << "' c: '" << c.to_string() << "'");
 
 	/* return Process Operator via ternary */
 	return(	(op1 == "?" && op2 == ":")	?	V_TERNARY(a, b, c):
@@ -139,13 +133,11 @@ int main(int argc, char** argv)
 	{
 		result = arithmetic(input[1], input[2]);
 
-		DEBUG_MSG("Unary: result: '" << result << "'");
 	}
 	else if(argc == 4)
 	{
 		result = arithmetic(input[1], input[2], input[3]);
 
-		DEBUG_MSG("Binary: result: '" << result << "'");
 	}
 	else if(argc == 5)
 	{
@@ -158,7 +150,6 @@ int main(int argc, char** argv)
 	{
 		result = arithmetic(input[1], input[2], input[3], input[4], input[5]);
 
-		DEBUG_MSG("Ternary: result: '" << result << "'");
 	}
 	else				
 	{
