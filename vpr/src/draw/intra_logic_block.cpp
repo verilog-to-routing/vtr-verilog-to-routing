@@ -291,7 +291,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
     auto& place_ctx = g_vpr_ctx.placement();
     
     // get the bbox for this pb type
-    ezgl::rectangle pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
+    ezgl::rectangle& pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
     
     const float FRACTION_PARENT_PADDING_X = 0.01;
     
@@ -339,8 +339,8 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
     child_height *= 1 - FRACTION_CHILD_MARGIN_Y*2;
     
     /* Endpoint for drawing the pb_type */
-    right  = pb_bbox.left()   + child_width;
-    top    = pb_bbox.bottom() + child_height;
+    right  = left   + child_width;
+    top    = bot    + child_height;
     
     pb_bbox = ezgl::rectangle({right, top}, {left, bot});
     
