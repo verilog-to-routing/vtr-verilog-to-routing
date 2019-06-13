@@ -406,7 +406,19 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
                                                const PlaceDelayModel& delay_model,
                                                SetupTimingInfo& timing_info);
 
-static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts, int move_lim, float crit_exponent, int inner_recompute_limit, t_placer_statistics* stats, t_placer_costs* costs, t_placer_prev_inverse_costs* prev_inverse_costs, int* moves_since_cost_recompute, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, const PlaceDelayModel& delay_model, SetupTimingInfo& timing_info);
+static void placement_inner_loop(float t,
+                                 float rlim,
+                                 t_placer_opts placer_opts,
+                                 int move_lim,
+                                 float crit_exponent,
+                                 int inner_recompute_limit,
+                                 t_placer_statistics* stats,
+                                 t_placer_costs* costs,
+                                 t_placer_prev_inverse_costs* prev_inverse_costs,
+                                 int* moves_since_cost_recompute,
+                                 const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                 const PlaceDelayModel& delay_model,
+                                 SetupTimingInfo& timing_info);
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel& delay_model, t_placer_costs* costs);
 
@@ -893,7 +905,19 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 }
 
 /* Function which contains the inner loop of the simulated annealing */
-static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts, int move_lim, float crit_exponent, int inner_recompute_limit, t_placer_statistics* stats, t_placer_costs* costs, t_placer_prev_inverse_costs* prev_inverse_costs, int* moves_since_cost_recompute, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, const PlaceDelayModel& delay_model, SetupTimingInfo& timing_info) {
+static void placement_inner_loop(float t,
+                                 float rlim,
+                                 t_placer_opts placer_opts,
+                                 int move_lim,
+                                 float crit_exponent,
+                                 int inner_recompute_limit,
+                                 t_placer_statistics* stats,
+                                 t_placer_costs* costs,
+                                 t_placer_prev_inverse_costs* prev_inverse_costs,
+                                 int* moves_since_cost_recompute,
+                                 const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                 const PlaceDelayModel& delay_model,
+                                 SetupTimingInfo& timing_info) {
     int inner_crit_iter_count, inner_iter;
 
     stats->av_cost = 0.;
