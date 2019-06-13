@@ -111,6 +111,8 @@ struct t_placer_prev_inverse_costs {
     float timing_cost;
 };
 
+constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
+
 #define MAX_INV_TIMING_COST 1.e9
 /* Stops inverse timing cost from going to infinity with very lax timing constraints,
  * which avoids multiplying by a gigantic prev_inverse.timing_cost when auto-normalizing.
@@ -2259,9 +2261,9 @@ static void update_td_cost() {
                 //all point to point connections on this net.
                 for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
                     point_to_point_delay[net_id][ipin] = temp_point_to_point_delay[net_id][ipin];
-                    temp_point_to_point_delay[net_id][ipin] = -1;
+                    temp_point_to_point_delay[net_id][ipin] = INVALID_DELAY;
                     point_to_point_timing_cost[net_id][ipin] = temp_point_to_point_timing_cost[net_id][ipin];
-                    temp_point_to_point_timing_cost[net_id][ipin] = -1;
+                    temp_point_to_point_timing_cost[net_id][ipin] = INVALID_DELAY;
                 }
             } else {
                 //This pin is a net sink on a moved block
@@ -2272,9 +2274,9 @@ static void update_td_cost() {
                     int net_pin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
 
                     point_to_point_delay[net_id][net_pin] = temp_point_to_point_delay[net_id][net_pin];
-                    temp_point_to_point_delay[net_id][net_pin] = -1;
+                    temp_point_to_point_delay[net_id][net_pin] = INVALID_DELAY;
                     point_to_point_timing_cost[net_id][net_pin] = temp_point_to_point_timing_cost[net_id][net_pin];
-                    temp_point_to_point_timing_cost[net_id][net_pin] = -1;
+                    temp_point_to_point_timing_cost[net_id][net_pin] = INVALID_DELAY;
                 }
             }
         } /* Finished going through all the pins in the moved block */
@@ -2313,10 +2315,10 @@ static void comp_td_costs(const PlaceDelayModel& delay_model, float* timing_cost
             float conn_timing_cost = conn_delay * get_timing_place_crit(net_id, ipin);
 
             point_to_point_delay[net_id][ipin] = conn_delay;
-            temp_point_to_point_delay[net_id][ipin] = -1; /* Undefined */
+            temp_point_to_point_delay[net_id][ipin] = INVALID_DELAY;
 
             point_to_point_timing_cost[net_id][ipin] = conn_timing_cost;
-            temp_point_to_point_timing_cost[net_id][ipin] = -1; /* Undefined */
+            temp_point_to_point_timing_cost[net_id][ipin] = INVALID_DELAY;
             new_timing_cost += conn_timing_cost;
         }
     }
