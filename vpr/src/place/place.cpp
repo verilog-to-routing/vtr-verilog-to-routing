@@ -101,19 +101,23 @@ struct t_placer_statistics {
 };
 
 struct t_placer_costs {
-    float cost;
-    float bb_cost;
-    float timing_cost;
+    //Although we do nost cost calculations with float's we
+    //use doubles for the accumulated costs to avoid round-off,
+    //particularly on large designs where the magnitude of a single
+    //move's delta cost is small compared to the overall cost.
+    double cost;
+    double bb_cost;
+    double timing_cost;
 };
 
 struct t_placer_prev_inverse_costs {
-    float bb_cost;
-    float timing_cost;
+    double bb_cost;
+    double timing_cost;
 };
 
 constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
 
-#define MAX_INV_TIMING_COST 1.e9
+constexpr double MAX_INV_TIMING_COST = 1.e9;
 /* Stops inverse timing cost from going to infinity with very lax timing constraints,
  * which avoids multiplying by a gigantic prev_inverse.timing_cost when auto-normalizing.
  * The exact value of this cost has relatively little impact, but should not be
@@ -288,7 +292,7 @@ static void initial_placement_location(const int* free_locations, ClusterBlockId
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
                               const char* pad_loc_file);
 
-static float comp_bb_cost(e_cost_methods method);
+static double comp_bb_cost(e_cost_methods method);
 
 static void apply_move_blocks();
 static void revert_move_blocks();
@@ -357,7 +361,7 @@ static int count_connections();
 
 static double get_std_dev(int n, double sum_x_squared, double av_x);
 
-static float recompute_bb_cost();
+static double recompute_bb_cost();
 
 static float comp_td_point_to_point_delay(const PlaceDelayModel& delay_model, ClusterNetId net_id, int ipin);
 
@@ -367,7 +371,7 @@ static void update_td_cost();
 
 static bool driven_by_moved_block(const ClusterNetId net);
 
-static void comp_td_costs(const PlaceDelayModel& delay_model, float* timing_cost);
+static void comp_td_costs(const PlaceDelayModel& delay_model, double* timing_cost);
 
 static e_swap_result assess_swap(float delta_c, float t);
 
@@ -885,7 +889,7 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
     /*for normalizing the tradeoff between timing and wirelength (bb)  */
     prev_inverse_costs->bb_cost = 1 / costs->bb_cost;
     /*Prevent inverse timing cost from going to infinity */
-    prev_inverse_costs->timing_cost = min(1 / costs->timing_cost, (float)MAX_INV_TIMING_COST);
+    prev_inverse_costs->timing_cost = min(1 / costs->timing_cost, MAX_INV_TIMING_COST);
 }
 
 /* Function which contains the inner loop of the simulated annealing */
@@ -967,7 +971,7 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 }
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel& delay_model, t_placer_costs* costs) {
-    float new_bb_cost = recompute_bb_cost();
+    double new_bb_cost = recompute_bb_cost();
     if (fabs(new_bb_cost - costs->bb_cost) > costs->bb_cost * ERROR_TOL) {
         std::string msg = vtr::string_fmt("in recompute_costs_from_scratch: new_bb_cost = %g, old bb_cost = %g\n",
                                           new_bb_cost, costs->bb_cost);
@@ -980,7 +984,7 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const
     costs->bb_cost = new_bb_cost;
 
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-        float new_timing_cost = 0.;
+        double new_timing_cost = 0.;
         comp_td_costs(delay_model, &new_timing_cost);
         if (fabs(new_timing_cost - costs->timing_cost) > costs->timing_cost * ERROR_TOL) {
             std::string msg = vtr::string_fmt("in recompute_costs_from_scratch: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
@@ -2160,12 +2164,12 @@ static e_swap_result assess_swap(float delta_c, float t) {
     return REJECTED;
 }
 
-static float recompute_bb_cost() {
+static double recompute_bb_cost() {
     /* Recomputes the cost to eliminate roundoff that may have accrued.  *
      * This routine does as little work as possible to compute this new  *
      * cost.                                                             */
 
-    float cost = 0;
+    double cost = 0;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -2295,14 +2299,14 @@ static bool driven_by_moved_block(const ClusterNetId net) {
     return false;
 }
 
-static void comp_td_costs(const PlaceDelayModel& delay_model, float* timing_cost) {
+static void comp_td_costs(const PlaceDelayModel& delay_model, double* timing_cost) {
     /* Computes the cost (from scratch) from the delays and criticalities    *
      * of all point to point connections, we define the timing cost of       *
      * each connection as criticality*delay.                                 */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    float new_timing_cost = 0.;
+    double new_timing_cost = 0.;
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) { /* For each net ... */
 
@@ -2335,8 +2339,8 @@ static void comp_td_costs(const PlaceDelayModel& delay_model, float* timing_cost
  * are found via the non_updateable_bb routine, to provide a    *
  * cost which can be used to check the correctness of the       *
  * other routine.                                               */
-static float comp_bb_cost(e_cost_methods method) {
-    float cost = 0;
+static double comp_bb_cost(e_cost_methods method) {
+    double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -3501,8 +3505,8 @@ static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel& delay_model,
                                  enum e_place_algorithm place_algorithm) {
     int error = 0;
-    float bb_cost_check;
-    float timing_cost_check;
+    double bb_cost_check;
+    double timing_cost_check;
 
     bb_cost_check = comp_bb_cost(CHECK);
     if (fabs(bb_cost_check - costs.bb_cost) > costs.bb_cost * ERROR_TOL) {
