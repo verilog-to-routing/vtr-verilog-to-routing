@@ -85,13 +85,13 @@ void draw_internal_alloc_blk() {
          * the pb_graph of that type.
          */
         //uncomment here!
-        std::cout << "resize from " << draw_coords->blk_info.at(i).subblk_array.size() << " to " << pb_graph_head->total_pb_pins << std::endl;
+//        std::cout << "resize from " << draw_coords->blk_info.at(i).subblk_array.size() << " to " << pb_graph_head->total_pb_pins << std::endl;
         draw_coords->blk_info.at(i).subblk_array.resize(pb_graph_head->total_pb_pins);
-        for(unsigned j = 0; j < draw_coords->blk_info.at(i).subblk_array.size() && j < 5; j++){
-            ezgl::rectangle test = draw_coords->blk_info.at(i).subblk_array[j];
-            std::cout << "block " << j;
-            std::cout << " (" << test.m_first.x << ", " << test.m_first.y << ") (" << test.m_second.x << ", " << test.m_second.y << ")" << std::endl;
-        }
+//        for(unsigned j = 0; j < draw_coords->blk_info.at(i).subblk_array.size() && j < 5; j++){
+//            ezgl::rectangle test = draw_coords->blk_info.at(i).subblk_array[j];
+//            std::cout << "block " << j;
+//            std::cout << " (" << test.m_first.x << ", " << test.m_first.y << ") (" << test.m_second.x << ", " << test.m_second.y << ")" << std::endl;
+//        }
         
     }
 }
@@ -118,6 +118,8 @@ void draw_internal_init_blk() {
         
         
         // set the clb dimensions
+        std::cout << "original value : (" << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).top_right().x << ", " << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).top_right().y;
+        std::cout << "), (" << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).bottom_left().x << ", " << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).bottom_left().y << ")!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
         ezgl::rectangle& clb_bbox = draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0);
         ezgl::point2d bot_left = clb_bbox.bottom_left();
         ezgl::point2d top_right = clb_bbox.top_right();
@@ -146,6 +148,8 @@ void draw_internal_init_blk() {
 		);
                 
         clb_bbox = ezgl::rectangle(bot_left, top_right);
+        std::cout << "new value assigned : (" << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).top_right().x << ", " << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).top_right().y;
+        std::cout << "), (" << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).bottom_left().x << ", " << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).bottom_left().y << ")!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
         draw_internal_load_coords(type_descriptor_index, pb_graph_head_node,
                 clb_bbox.width(), clb_bbox.height());
         
