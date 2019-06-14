@@ -46,7 +46,7 @@ using namespace std;
 
 /* This defines the error tolerance for floating points variables used in *
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
-#define ERROR_TOL .015
+#define ERROR_TOL .01
 
 /* This defines the maximum number of swap attempts before invoking the   *
  * once-in-a-while placement legality check as well as floating point     *
