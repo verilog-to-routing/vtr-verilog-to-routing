@@ -22,6 +22,14 @@ if(NOT DEFINED VTR_VERSION_PATCH)
     set(VTR_VERSION_PATCH 0)
 endif()
 
+set(VTR_BUILD_TYPE "${CMAKE_BUILD_TYPE}")
+if (CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+    set(VTR_BUILD_TYPE "${VTR_BUILD_TYPE} IPO")
+endif()
+if (VPR_PGO_CONFIG STREQUAL "prof_use")
+    set(VTR_BUILD_TYPE "${VTR_BUILD_TYPE} PGO")
+endif()
+
 # We always update the vtr_version.cpp file every time the project is built, 
 # to ensure the git revision and dirty status are up to date.
 #
@@ -45,7 +53,7 @@ add_custom_command(OUTPUT ${VTR_VERSION_FILE_OUT}
                     -D VTR_VERSION_PATCH=${VTR_VERSION_PATCH}
                     -D VTR_VERSION_PRERELEASE=${VTR_VERSION_PRERELEASE}
                     -D VTR_COMPILER_INFO=${VTR_COMPILER_INFO}
-                    -D VTR_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                    -D VTR_BUILD_TYPE=${VTR_BUILD_TYPE}
                     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/configure_version.cmake
     MAIN_DEPENDENCY ${VTR_VERSION_FILE_IN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
