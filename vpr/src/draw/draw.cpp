@@ -1129,7 +1129,7 @@ static void drawplace(ezgl::renderer &g) {
                 g.set_color(ezgl::BLACK);
                 
                 //setlinestyle((EMPTY_BLOCK_ID == bnum) ? DASHED : SOLID);
-                g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
+                g.set_line_dash((EMPTY_BLOCK_ID == bnum) ? ezgl::line_dash::asymmetric_5_3 : ezgl::line_dash::none);
                 g.draw_rectangle(abs_clb_bbox);
                 /* Draw text if the space has parts of the netlist */
 //                if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
@@ -3668,8 +3668,8 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer &g) 
         
         
         g.set_color(color);
-        g.fill_rectangle({legend.left(), legend.bottom() + i * height_incr},
-        {legend.right(), legend.bottom() + (i+1) * height_incr});
+        g.fill_rectangle({legend.left(), legend.top() - i * height_incr},
+        {legend.right(), legend.top() - (i+1) * height_incr});
         
         
     }
@@ -3971,7 +3971,8 @@ static void draw_rr_costs(ezgl::renderer &g, const std::vector<float>& rr_costs,
         min_cost = std::min(min_cost, rr_costs[inode]);
         max_cost = std::max(max_cost, rr_costs[inode]);
     }
-    
+    if(min_cost == std::numeric_limits<float>::infinity()) min_cost = 0;
+    if(max_cost == -std::numeric_limits<float>::infinity()) max_cost = 0;
     std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_cost, max_cost);
     
     //Draw the nodes in ascending order of value, this ensures high valued nodes
