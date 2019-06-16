@@ -1833,7 +1833,7 @@ static void power_print_breakdown_pb(FILE* fp) {
 
     for (int type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
         if (device_ctx.block_types[type_idx].pb_type) {
-            power_print_breakdown_pb_rec(power_ctx.output->out,
+            power_print_breakdown_pb_rec(fp,
                                          device_ctx.block_types[type_idx].pb_type, 0);
         }
     }
