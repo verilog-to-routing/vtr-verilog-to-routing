@@ -3606,8 +3606,8 @@ static void draw_rr_costs(const std::vector<float>& rr_costs, bool lowest_cost_f
         min_cost = std::min(min_cost, rr_costs[inode]);
         max_cost = std::max(max_cost, rr_costs[inode]);
     }
-    if(min_cost ==  std::numeric_limits<float>::infinity()) min_cost = 0;
-    if(max_cost == -std::numeric_limits<float>::infinity()) max_cost = 0;
+    if (min_cost == std::numeric_limits<float>::infinity()) min_cost = 0;
+    if (max_cost == -std::numeric_limits<float>::infinity()) max_cost = 0;
     std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_cost, max_cost);
 
     //Draw the nodes in ascending order of value, this ensures high valued nodes
