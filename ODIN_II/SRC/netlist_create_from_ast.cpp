@@ -1512,7 +1512,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 					"%s: right memory address index must be zero\n", name);
 
 		long addr_chunk_size = (addr_max1 - addr_min1 + 1);
-		ast_node_t *new_node = create_tree_node_long_number(addr_chunk_size, ODIN_STD_BITWIDTH, var_declare->children[0]->line_number, var_declare->children[0]->file_number);
+		ast_node_t *new_node = create_tree_node_number(addr_chunk_size, var_declare->children[0]->line_number, var_declare->children[0]->file_number);
 
 		STRING_CACHE *local_param_table_sc;
 		sc_spot = sc_lookup_string(global_param_table_sc, instance_name_prefix);

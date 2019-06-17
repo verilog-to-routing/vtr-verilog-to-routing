@@ -605,12 +605,18 @@ public:
     }
 
     // convert lsb_msb bitstring to verilog
-    std::string to_string()
+    std::string to_v_string()
     {
-        std::string out = this->bitstring.to_string(false);
+        std::string out = this->to_bit_string();
         size_t len = this->bitstring.size();
 
         return std::to_string(len) + ((this->is_signed())? "\'sb": "\'b") + out;
+    }
+
+    std::string to_bit_string()
+    {
+        std::string out = this->bitstring.to_string(false);
+        return out;
     }
 
     /***
@@ -637,8 +643,8 @@ public:
                 verilog_string.erase(verilog_string.begin());
                 is_neg_dec = true;
             }
-            verilog_string.insert(0, "\'sd");
-            loc = 0;
+            verilog_string.insert(0, "64\'sd");
+            loc = 2;
         }
 
 

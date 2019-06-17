@@ -37,7 +37,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define PRINT_TOKEN {printf("%d %s\n", yylineno, yytext);}
 #define UNSUPPORTED_TOKEN {printf("Unsuported token::"); PRINT_TOKEN }
 #define MP {if (to_view_parse) PRINT_TOKEN}
-char* standardize_number(const char* input);
 
 %}
 
@@ -194,26 +193,26 @@ char* standardize_number(const char* input);
 <INITIAL>`?[a-zA-Z_][a-zA-Z0-9_]*				{ MP; yylval.id_name = vtr::strdup(yytext); return vSYMBOL_ID; }
 
 	/*	signed numbers	*/
-<INITIAL>[0-9]+'[sS][bB][0-1_]*						{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_BINARY; }
-<INITIAL>[0-9]+'[sS][hH][a-fA-F0-9_]*				{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_HEXADECIMAL; }
-<INITIAL>[0-9]+'[sS][oO][0-7_]*						{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_OCTAL; }
-<INITIAL>[0-9]+'[sS][dD][0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_DECIMAL; }
-<INITIAL>'[sS][bB][0-1_]*							{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_BINARY; }
-<INITIAL>'[sS][hH][a-fA-F0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_HEXADECIMAL; }
-<INITIAL>'[sS][oO][0-7_]*							{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_OCTAL; }
-<INITIAL>'[sS][dD][0-9_]*							{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_DECIMAL; }
+<INITIAL>[0-9]+'[sS][bB][0-1_]*						{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_BINARY; }
+<INITIAL>[0-9]+'[sS][hH][a-fA-F0-9_]*				{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_HEXADECIMAL; }
+<INITIAL>[0-9]+'[sS][oO][0-7_]*						{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_OCTAL; }
+<INITIAL>[0-9]+'[sS][dD][0-9_]*						{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_DECIMAL; }
+<INITIAL>'[sS][bB][0-1_]*							{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_BINARY; }
+<INITIAL>'[sS][hH][a-fA-F0-9_]*						{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_HEXADECIMAL; }
+<INITIAL>'[sS][oO][0-7_]*							{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_OCTAL; }
+<INITIAL>'[sS][dD][0-9_]*							{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_DECIMAL; }
 
-<INITIAL>[0-9_]+									{ MP; yylval.num_value = standardize_number(yytext); return vINTEGRAL; }
+<INITIAL>[0-9_]+									{ MP; yylval.num_value = vtr::strdup(yytext); return vINTEGRAL; }
 
 	/*	unsigned Numbers	*/
-<INITIAL>[0-9]+'[bB][0-1_]*						{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_BINARY; }
-<INITIAL>[0-9]+'[hH][a-fA-F0-9_]*				{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_HEXADECIMAL; }
-<INITIAL>[0-9]+'[oO][0-7_]*						{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_OCTAL; }
-<INITIAL>[0-9]+'[dD][0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_DECIMAL; }
-<INITIAL>'[bB][0-1_]*							{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_BINARY; }
-<INITIAL>'[hH][a-fA-F0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_HEXADECIMAL; }
-<INITIAL>'[oO][0-7_]*							{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_OCTAL; }
-<INITIAL>'[dD][0-9_]*							{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_DECIMAL; }
+<INITIAL>[0-9]+'[bB][0-1_]*						{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_BINARY; }
+<INITIAL>[0-9]+'[hH][a-fA-F0-9_]*				{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_HEXADECIMAL; }
+<INITIAL>[0-9]+'[oO][0-7_]*						{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_OCTAL; }
+<INITIAL>[0-9]+'[dD][0-9_]*						{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_DECIMAL; }
+<INITIAL>'[bB][0-1_]*							{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_BINARY; }
+<INITIAL>'[hH][a-fA-F0-9_]*						{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_HEXADECIMAL; }
+<INITIAL>'[oO][0-7_]*							{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_OCTAL; }
+<INITIAL>'[dD][0-9_]*							{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_DECIMAL; }
 
 
 <INITIAL>#[0-9]+								{ MP; yylval.num_value = vtr::strdup(yytext+1); return vDELAY_ID; }
@@ -236,10 +235,3 @@ char* standardize_number(const char* input);
 <*>.|\n		{ printf("Missing verilog.l rule: Default rule invoked in state %d\nLine %d::\"%s\"\n", YY_START, yylineno, yytext); }
 
 %%
-
-char* standardize_number(const char* input)
-{
-	std::string input_number(input);
-	input_number.erase(std::remove(input_number.begin(), input_number.end(), '_'), input_number.end());
-	return vtr::strdup(input_number.c_str());
-}

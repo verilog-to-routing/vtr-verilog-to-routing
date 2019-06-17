@@ -377,13 +377,6 @@ struct typ_t
 
 	struct
 	{
-		short base;
-		int binary_size;
-		char *binary_string;
-		long value;
-	} number;
-	struct
-	{
 		operation_list op;
 	} operation;
 	struct

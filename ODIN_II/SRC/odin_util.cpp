@@ -48,7 +48,7 @@ long shift_left_value_with_overflow_check(long input_value, long shift_by)
 	if(shift_by < 0)
 		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that is negative [%ld]\n",shift_by);
 	else if(shift_by >= ODIN_STD_BITWIDTH-1 )
-		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that will overflow the maximum size of %d [%ld]\n", shift_by, ODIN_STD_BITWIDTH-1);
+		warning_message(NETLIST_ERROR, -1, -1, "requesting a shift left that will overflow the maximum size of %d [%ld]\n", shift_by, ODIN_STD_BITWIDTH-1);
 
 	return input_value << shift_by;
 }

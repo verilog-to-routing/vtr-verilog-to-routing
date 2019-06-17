@@ -48,7 +48,7 @@ static std::string arithmetic(std::string op, std::string a_in)
 		|| op == "^~")	?		V_BITWISE_XNOR(a):
 		(op == "!")		?		V_LOGICAL_NOT(a):
 								bad_ops(op)
-	).to_string();
+	).to_v_string();
 }
 
 static std::string arithmetic(std::string a_in, std::string op, std::string b_in)
@@ -93,7 +93,7 @@ static std::string arithmetic(std::string a_in, std::string op, std::string b_in
 		(op == "/")		?		V_DIV(a, b):
 		(op == "%")		?		V_MOD(a, b):
 								bad_ops(op)
-	).to_string();
+	).to_v_string();
 }
 
 static std::string arithmetic(std::string a_in, std::string op1 ,std::string b_in, std::string op2, std::string c_in)
@@ -107,7 +107,7 @@ static std::string arithmetic(std::string a_in, std::string op1 ,std::string b_i
 	/* return Process Operator via ternary */
 	return(	(op1 == "?" && op2 == ":")	?	V_TERNARY(a, b, c):
 											bad_ops("?:")
-	).to_string();
+	).to_v_string();
 }
 
 int main(int argc, char** argv) 

@@ -336,9 +336,9 @@ ast_node_t *newSymbolNode(char *id, int line_number)
 /*---------------------------------------------------------------------------------------------
  * (function: newNumberNode)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newNumberNode(char *num, bases base, signedness sign, int line_number)
+ast_node_t *newNumberNode(char *num, bases /*base */, signedness /* sign */, int line_number)
 {
-	ast_node_t *current_node = create_tree_node_number(num, base, sign, line_number, current_parse_file);
+	ast_node_t *current_node = create_tree_node_number(num, line_number, current_parse_file);
 	vtr::free(num);
 	return current_node;
 }
@@ -965,7 +965,7 @@ ast_node_t *newMinusColonRangeRef(char *id, ast_node_t *expression1, ast_node_t 
 	// expression 1 is the msb here since we subtract expression 2 from it
 	msb = expression1;
 
-	ast_node_t *number_one = create_tree_node_long_number(1, ODIN_STD_BITWIDTH, line_number, current_parse_file);
+	ast_node_t *number_one = create_tree_node_number(1L, line_number, current_parse_file);
 	ast_node_t *size_to_index = newBinaryOperation(MINUS, expression2, number_one, line_number);
 
 	lsb = newBinaryOperation(MINUS, ast_node_deep_copy(expression1), size_to_index, line_number);
@@ -998,7 +998,7 @@ ast_node_t *newPlusColonRangeRef(char *id, ast_node_t *expression1, ast_node_t *
 	// expression 1 is the lsb here since we add expression 2 to it
 	lsb = expression1;
 
-	ast_node_t *number_one = create_tree_node_long_number(1, ODIN_STD_BITWIDTH, line_number, current_parse_file);
+	ast_node_t *number_one = create_tree_node_number(1L, line_number, current_parse_file);
 	ast_node_t *size_to_index = newBinaryOperation(MINUS, expression2, number_one, line_number);
 
 	msb = newBinaryOperation(ADD, ast_node_deep_copy(expression1), size_to_index, line_number);
@@ -1040,10 +1040,10 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 		if( expression1->type == NUMBERS ){
 			int len1 = expression1->types.vnumber->get_value();
 			long powRes = pow(len1, len);
-			new_node = create_tree_node_long_number(powRes,ODIN_STD_BITWIDTH, line_number, current_parse_file);
+			new_node = create_tree_node_number(powRes, line_number, current_parse_file);
 		} else {
 			if (len == 0){
-				new_node = create_tree_node_long_number(1, ODIN_STD_BITWIDTH, line_number, current_parse_file);
+				new_node = create_tree_node_number(1L, line_number, current_parse_file);
 			} else {
 				new_node = expression1;
 				for(int i=1; i < len; ++i){
@@ -1646,9 +1646,9 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ 
 {
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 
-    ast_node_t *number_node_with_value_31 = create_tree_node_long_number(31, ODIN_STD_BITWIDTH, line_number,current_parse_file);
+    ast_node_t *number_node_with_value_31 = create_tree_node_number(31L, line_number,current_parse_file);
 
-    ast_node_t *number_node_with_value_0 = create_tree_node_long_number(0, ODIN_STD_BITWIDTH, line_number,current_parse_file);
+    ast_node_t *number_node_with_value_0 = create_tree_node_number(0L, line_number,current_parse_file);
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(VAR_DECLARE, line_number, current_parse_file);
@@ -2017,7 +2017,7 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 			break;
 		}
 		case NUMBERS:
-			fprintf(fp, ": %s",  node->types.vnumber->to_string().c_str());
+			fprintf(fp, ": %s",  node->types.vnumber->to_bit_string().c_str());
 			break;
 
 		case UNARY_OPERATION: //fallthrough
