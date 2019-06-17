@@ -1829,7 +1829,6 @@ static void power_print_breakdown_pb(FILE* fp) {
                                 0., 0., 0., nullptr);
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& power_ctx = g_vpr_ctx.power();
 
     for (int type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
         if (device_ctx.block_types[type_idx].pb_type) {
