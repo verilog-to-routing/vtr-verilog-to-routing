@@ -373,7 +373,7 @@ static bool driven_by_moved_block(const ClusterNetId net);
 
 static void comp_td_costs(const PlaceDelayModel& delay_model, double* timing_cost);
 
-static e_swap_result assess_swap(float delta_c, float t);
+static e_swap_result assess_swap(double delta_c, double t);
 
 static bool find_to(t_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& to);
 
@@ -381,12 +381,12 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new);
 
 static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new, int xold, int yold, int xnew, int ynew);
 
-static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel& delay_model, float& bb_delta_c, float& timing_delta_c);
+static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel& delay_model, double& bb_delta_c, double& timing_delta_c);
 
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
 
 static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId blk, const ClusterPinId blk_pin);
-static void update_td_delta_costs(const PlaceDelayModel& delay_model, const ClusterNetId net, const ClusterPinId pin, float& delta_timing_cost);
+static void update_td_delta_costs(const PlaceDelayModel& delay_model, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost);
 
 static float get_net_cost(ClusterNetId net_id, t_bb* bb_ptr);
 
@@ -1723,9 +1723,9 @@ static e_swap_result try_swap(float t,
     /* I'm using negative values of temp_net_cost as a flag, so DO NOT   *
      * use cost functions that can go negative.                          */
 
-    float delta_c = 0; /* Change in cost due to this swap. */
-    float bb_delta_c = 0;
-    float timing_delta_c = 0;
+    double delta_c = 0; /* Change in cost due to this swap. */
+    double bb_delta_c = 0;
+    double timing_delta_c = 0;
 
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
@@ -1881,7 +1881,7 @@ static ClusterBlockId pick_from_block() {
 //and updates their bounding box.
 //
 //Returns the number of affected nets.
-static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel& delay_model, float& bb_delta_c, float& timing_delta_c) {
+static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel& delay_model, double& bb_delta_c, double& timing_delta_c) {
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1968,7 +1968,7 @@ static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId
     }
 }
 
-static void update_td_delta_costs(const PlaceDelayModel& delay_model, const ClusterNetId net, const ClusterPinId pin, float& delta_timing_cost) {
+static void update_td_delta_costs(const PlaceDelayModel& delay_model, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
@@ -2133,7 +2133,7 @@ static bool find_to(t_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& 
     return true;
 }
 
-static e_swap_result assess_swap(float delta_c, float t) {
+static e_swap_result assess_swap(double delta_c, double t) {
     /* Returns: 1 -> move accepted, 0 -> rejected. */
     if (delta_c <= 0) {
         return ACCEPTED;
@@ -2144,7 +2144,7 @@ static e_swap_result assess_swap(float delta_c, float t) {
     }
 
     float fnum = vtr::frand();
-    float prob_fac = exp(-delta_c / t);
+    float prob_fac = std::exp(-delta_c / t);
     if (prob_fac > fnum) {
         return ACCEPTED;
     }
