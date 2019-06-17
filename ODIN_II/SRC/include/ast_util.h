@@ -16,6 +16,7 @@ void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child)
 ast_node_t **expand_node_list_at(ast_node_t **list, long old_size, long to_add, long start_idx);
 void move_ast_node(ast_node_t *src, ast_node_t *dest, ast_node_t *node);
 ast_node_t *ast_node_deep_copy(ast_node_t *node);
+ast_node_t *ast_node_copy(ast_node_t *node);
 
 void free_all_children(ast_node_t *node);
 ast_node_t *free_whole_tree(ast_node_t *node);

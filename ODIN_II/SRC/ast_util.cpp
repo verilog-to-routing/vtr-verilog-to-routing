@@ -38,6 +38,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 
 char **get_name_of_pins_number(ast_node_t *var_node, int start, int width);
+char *get_name_of_pin_number(ast_node_t *var_node, int bit);
 void update_tree_tag(ast_node_t *node, int cases, int tagged);
 
 // HIGH LEVEL AST TAG
@@ -106,20 +107,8 @@ static ast_node_t* create_node_w_type(ids id, int line_number, int file_number, 
 
 	initial_node(new_node, id, line_number, file_number, unique_count);
 
-	new_node->type = id;
-
-	new_node->children = NULL;
-	new_node->num_children = 0;
-
-	new_node->line_number = line_number;
-	new_node->file_number = file_number;
-	new_node->unique_count = unique_count;
-
 	if(update_unique_count)
 		unique_count += 1;
-
-	new_node->far_tag = 0;
-	new_node->high_number = 0;
 
 	return new_node;
 }
@@ -148,8 +137,10 @@ void free_assignement_of_node_keep_tree(ast_node_t *node)
 		vtr::free(node->types.identifier);
 		switch(node->type){
 			case NUMBERS:
-				vtr::free(node->types.number.number);
 				vtr::free(node->types.number.binary_string);
+				if (node->types.vnumber != nullptr)
+					delete node->types.vnumber;
+				node->types.vnumber = nullptr;
 				break;
 
 			case CONCATENATE:
@@ -223,6 +214,7 @@ ast_node_t *create_tree_node_long_number(long number, int constant_bit_size, int
 	ast_node_t* new_node = create_node_w_type(NUMBERS, line_number, current_parse_file);
 	new_node->types.number.base = LONG;
 	new_node->types.number.value = number;
+	new_node->types.vnumber = new VNumber(number);
 
 	if (number < 0)
 	{
@@ -235,7 +227,13 @@ ast_node_t *create_tree_node_long_number(long number, int constant_bit_size, int
 
 	new_node->types.number.binary_string = convert_long_to_bit_string(number, new_node->types.number.binary_size);
 	if (flag == 1)
+	{
+		VNumber *twos_comp;
+		twos_comp = new VNumber(V_MINUS(*(new_node->types.vnumber)));
+		delete new_node->types.vnumber;
+		new_node->types.vnumber = twos_comp;
 		twos_complement(new_node->types.number.binary_string);
+	}
 
 	return new_node;
 }
@@ -248,82 +246,78 @@ ast_node_t *create_tree_node_number(std::string input_number, bases base, signed
 	oassert(sign != SIGNED && "ODIN_II does not support signed numbers" );
 	short flag_constant_decimal = FALSE;
 	ast_node_t* new_node = create_node_w_type(NUMBERS, line_number, current_parse_file);
+	new_node->types.vnumber = new VNumber(input_number);
+	char *input_number_str = NULL;
 
-		if(base == LONG)
+	if(base == LONG)
+	{
+		flag_constant_decimal = TRUE;
+		/* this is base d */
+		new_node->types.number.base = DEC;
+		/* size is for a constant that needs */
+		input_number_str = vtr::strdup(input_number.c_str());
+
+		if (input_number != "0")
+			new_node->types.number.binary_size = new_node->types.vnumber->size();
+
+		else
+			new_node->types.number.binary_size = 1;
+
+	}
+	else
+	{
+		new_node->types.number.base = base;
+		//no need to check since the parser has done that
+		auto loc = input_number.find("\'");
+		std::string number = input_number.substr(loc+2,input_number.size()-(loc+2));
+
+		if(loc > 0)
 		{
-			flag_constant_decimal = TRUE;
-			/* this is base d */
-			new_node->types.number.base = DEC;
-			new_node->types.number.size = input_number.length();
-			new_node->types.number.number = vtr::strdup(input_number.c_str());
-			/* size is for a constant that needs */
-			if (strcmp(new_node->types.number.number, "0") != 0)
-				new_node->types.number.binary_size = ceil((log(convert_dec_string_of_size_to_long(new_node->types.number.number, new_node->types.number.size)+1))/log(2));
-
-			else
-				new_node->types.number.binary_size = 1;
+			new_node->types.number.binary_size = std::strtol(input_number.substr(0,loc).c_str(),NULL,10);
+			if(new_node->types.number.binary_size > ODIN_STD_BITWIDTH-1)
+				warning_message(PARSE_ERROR, line_number, file_number, "input number is %ld-bits but ODIN limit is %lu-bits \n",new_node->types.number.binary_size,ODIN_STD_BITWIDTH-1);
 
 		}
 		else
 		{
-			new_node->types.number.base = base;
-			//no need to check since the parser has done that
-			auto loc = input_number.find("\'");
-			std::string number = input_number.substr(loc+2,input_number.size()-(loc+2));
-
-			if(loc > 0)
-			{
-				new_node->types.number.is_full = 0;
-				new_node->types.number.size = std::strtol(input_number.substr(0,loc).c_str(),NULL,10);
-				if(new_node->types.number.size > ODIN_STD_BITWIDTH-1)
-					warning_message(PARSE_ERROR, line_number, file_number, "input number is %ld-bits but ODIN limit is %lu-bits \n",new_node->types.number.size,ODIN_STD_BITWIDTH-1);
-
-			}
-			else
-			{
-				new_node->types.number.is_full = 0;
-				new_node->types.number.size = ODIN_STD_BITWIDTH-1;
-			}
-			input_number = number;
-			new_node->types.number.binary_size = new_node->types.number.size;
-			new_node->types.number.number = vtr::strdup(input_number.c_str());
+			new_node->types.number.binary_size = ODIN_STD_BITWIDTH-1;
 		}
+		input_number = number;
+		input_number_str = vtr::strdup(input_number.c_str());
+
+	}
 
 	/* add in the values for all the numbers */
 	switch (new_node->types.number.base)
 	{
 		case DEC:
 			// This will have limited width.
-			new_node->types.number.value = convert_dec_string_of_size_to_long(new_node->types.number.number, new_node->types.number.size);
+			new_node->types.number.value = strtoll(input_number_str,NULL,10); // This will have limited width.
 			new_node->types.number.binary_string = convert_long_to_bit_string(new_node->types.number.value, new_node->types.number.binary_size);
 			break;
 
 		case HEX:
-			if(!is_dont_care_string(new_node->types.number.number)){
-				new_node->types.number.binary_size *= 4;
-				new_node->types.number.value = strtoll(new_node->types.number.number,NULL,16); // This will have limited width.
+			if(!is_dont_care_string(input_number_str)){
+				new_node->types.number.value = strtoll(input_number_str,NULL,16); // This will have limited width.
 				// This will have full width.
-				new_node->types.number.binary_string = convert_hex_string_of_size_to_bit_string(0, new_node->types.number.number, new_node->types.number.binary_size);
+				new_node->types.number.binary_string = convert_hex_string_of_size_to_bit_string(0, input_number_str, new_node->types.number.binary_size);
 			}
 			else{
-				new_node->types.number.binary_string = convert_hex_string_of_size_to_bit_string(1, new_node->types.number.number, new_node->types.number.binary_size);
+				new_node->types.number.binary_string = convert_hex_string_of_size_to_bit_string(1, input_number_str, new_node->types.number.binary_size);
 			}
 			break;
 
 		case OCT:
-			new_node->types.number.binary_size *= 3;
-			new_node->types.number.value = strtoll(new_node->types.number.number,NULL,8); // This will have limited width.
+			new_node->types.number.value = strtoll(input_number_str,NULL,8); // This will have limited width.
 			// This will have full width.
-			new_node->types.number.binary_string = convert_oct_string_of_size_to_bit_string(new_node->types.number.number, new_node->types.number.binary_size);
+			new_node->types.number.binary_string = convert_oct_string_of_size_to_bit_string(input_number_str, new_node->types.number.binary_size);
 			break;
 
 		case BIN:
-			if(new_node->types.number.is_full == 0){
-				// This will have limited width.
-				new_node->types.number.value = strtoll(new_node->types.number.number,NULL,2);
-				// This will have full width.
-			}
-			new_node->types.number.binary_string = convert_binary_string_of_size_to_bit_string(1, new_node->types.number.number, new_node->types.number.binary_size);
+			// This will have limited width.
+			new_node->types.number.value = strtoll(input_number_str,NULL,2);
+			// This will have full width.
+			new_node->types.number.binary_string = convert_binary_string_of_size_to_bit_string(1, input_number_str, new_node->types.number.binary_size);
 			break;
 
     default:
@@ -331,6 +325,7 @@ ast_node_t *create_tree_node_number(std::string input_number, bases base, signed
         break;
   }
 
+	vtr::free(input_number_str);
 	return new_node;
 
 }
@@ -470,9 +465,9 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 					///TODO	WHats this?? compareo bit string but uses value ??? value is honestly not the right thing to look for...
 					// we should restrict ODIN to use binary representation only for easier support of 'x' and 'z' value..
 					// or at least it's the only thing that makes sense.
-					// also this gives us the ability to write our own math class for binary and ave better control of what is happening and better sense of it.
-					// this causes bugs.. theres a patchy workaround, put in bit string but we need a better permanent fix.
-					for (j = rnode[1]->types.number.value - rnode[2]->types.number.value; j >= 0; j--)
+					// also this gives us the ability to write our own math class for binary and ave better control of what is happening and better sense of it TO.
+					// this causes bugs.. theres a patchy workaround put in bit string but we need a better permannet fix.
+					for (j = rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value(); j >= 0; j--)
 					{
 						concat_top->types.concat.num_bit_strings ++;
 						concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
@@ -497,17 +492,17 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 			rnode[1] = resolve_node(NULL, instance_name_prefix, concat_top->children[i]->children[1]);
 			rnode[2] = resolve_node(NULL, instance_name_prefix, concat_top->children[i]->children[2]);
 			oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
-			oassert(rnode[1]->types.number.value >= rnode[2]->types.number.value);
-			int width = abs(rnode[1]->types.number.value - rnode[2]->types.number.value) + 1;
+			oassert(rnode[1]->types.vnumber->get_value() >= rnode[2]->types.vnumber->get_value());
+			int width = abs(rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value()) + 1;
 
-			//for (j = rnode[1]->types.number.value - rnode[2]->types.number.value; j >= 0; j--)
+			//for (j = rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value(); j >= 0; j--)
 			// Changed to forward to fix concatenation bug.
 			for (j = 0; j < width; j++)
 			{
 				concat_top->types.concat.num_bit_strings ++;
 				concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
 				concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] =
-					get_name_of_pin_at_bit(concat_top->children[i], ((rnode[1]->types.number.value - rnode[2]->types.number.value))-j, instance_name_prefix);
+					get_name_of_pin_at_bit(concat_top->children[i], ((rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value()))-j, instance_name_prefix);
 			}
 		}
 		else if (concat_top->children[i]->type == NUMBERS)
@@ -563,9 +558,8 @@ void change_to_number_node(ast_node_t *node, long value)
 	node->type = NUMBERS;
 	node->types.identifier = temp_ident;
 	node->types.number.base = DEC;
-	node->types.number.size = len;
-	node->types.number.number = number;
 	node->types.number.value = value;
+	node->types.vnumber = new VNumber(value);
 
 	if (value == 0)
 	{
@@ -573,7 +567,7 @@ void change_to_number_node(ast_node_t *node, long value)
 	}
 	else
 	{
-		node->types.number.binary_size = ceil((log(convert_dec_string_of_size_to_long(node->types.number.number, node->types.number.size)+1))/log(2));
+		node->types.number.binary_size = ceil(log2(value+1));
 	}
 	
 	node->types.number.binary_string = convert_long_to_bit_string(value, node->types.number.binary_size);
@@ -597,7 +591,7 @@ char *get_name_of_var_declare_at_bit(ast_node_t *var_declare, int bit)
 	else if (var_declare->children[3] == NULL)
 	{
 		oassert(var_declare->children[2]->type == NUMBERS);
-		return_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, var_declare->children[2]->types.number.value+bit);
+		return_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, var_declare->children[2]->types.vnumber->get_value()+bit);
 	}
 	else if (var_declare->children[3] != NULL)
 	{
@@ -621,7 +615,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	{
 		oassert(var_node->children[0]->type == IDENTIFIERS);
 		oassert(var_node->children[1]->type == NUMBERS);
-		return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, (int)var_node->children[1]->types.number.value);
+		return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, (int)var_node->children[1]->types.vnumber->get_value());
 	}
 	else if (var_node->type == RANGE_REF)
 	{		
@@ -632,9 +626,9 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		oassert(var_node->children[0]->type == IDENTIFIERS);
 		oassert(rnode[1]->type == NUMBERS);
 		oassert(rnode[2]->type == NUMBERS);
-		oassert(rnode[1]->types.number.value >= rnode[2]->types.number.value+bit);
+		oassert(rnode[1]->types.vnumber->get_value() >= rnode[2]->types.vnumber->get_value()+bit);
 
-		return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[2]->types.number.value+bit);
+		return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[2]->types.vnumber->get_value()+bit);
 	}
 	else if ((var_node->type == IDENTIFIERS) && (bit == -1))
 	{
@@ -657,7 +651,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		else if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[3] == NULL)
 		{
 			oassert(((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]->type == NUMBERS);
-			pin_index = ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]->types.number.value + bit;
+			pin_index = ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]->types.vnumber->get_value() + bit;
 		}
 		else
 			oassert(FALSE);
@@ -666,27 +660,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	}
 	else if (var_node->type == NUMBERS)
 	{
-		if (bit == -1)
-			bit = 0;
-
-		/* strings are msb is 0th index in string, reverse access */
-		if (bit < var_node->types.number.binary_size)
-		{
-			char c = var_node->types.number.binary_string[var_node->types.number.binary_size-bit-1];
-			switch(c)
-			{
-			case '1': return_string = vtr::strdup(ONE_VCC_CNS); break;
-			case '0': return_string = vtr::strdup(ZERO_GND_ZERO); break;
-			case 'x': return_string = vtr::strdup(ZERO_GND_ZERO); break;
-			default: 
-				error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.number.binary_string);
-				break;
-			}
-		}
-		// if the index is too big for the number pad with zero
-
-		else
-			return_string = vtr::strdup(ZERO_GND_ZERO);
+		return_string = get_name_of_pin_number(var_node, bit);
 	}
 	else if (var_node->type == CONCATENATE)
 	{
@@ -723,25 +697,33 @@ char **get_name_of_pins_number(ast_node_t *var_node, int /*start*/, int width)
 	oassert(var_node->type == NUMBERS);
 
 	return_string = (char**)vtr::malloc(sizeof(char*)*width);
-	int i, j;
-	for (i = 0, j = var_node->types.number.binary_size-1; i < width; i++, j--)
+	int i;
+	for (i = 0; i < width; i++)//
 	{
-		/* strings are msb is 0th index in string, reverse access */
-		if (j >= 0)
-		{
-			char c = var_node->types.number.binary_string[j];
-			switch(c)
-			{
-			case '1': return_string[i] = vtr::strdup(ONE_VCC_CNS); break;
-			case '0': return_string[i] = vtr::strdup(ZERO_GND_ZERO); break;
-			case 'x': return_string[i] = vtr::strdup(ZERO_GND_ZERO); break;
-			default: error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.number.binary_string);
-			}
-		}
-		else
-			// if the index is too big for the number pad with zero
-			return_string[i] = vtr::strdup(ZERO_GND_ZERO);
+		return_string[i] = get_name_of_pin_number(var_node, i);
 	}
+	return return_string;
+}
+
+char *get_name_of_pin_number(ast_node_t *var_node, int bit)
+{
+	oassert(var_node->type == NUMBERS);
+	char *return_string = NULL;
+
+	if (bit == -1)
+		bit = 0;
+
+	BitSpace::bit_value_t c = var_node->types.vnumber->get_bit_from_lsb(bit);
+	switch(c)
+	{
+		case BitSpace::_1: return_string = vtr::strdup(ONE_VCC_CNS); break;
+		case BitSpace::_0: return_string = vtr::strdup(ZERO_GND_ZERO); break;
+		case BitSpace::_x: return_string = vtr::strdup(ZERO_GND_ZERO); break;
+		default: 
+			error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.vnumber->to_string().c_str());
+			break;
+	}
+
 	return return_string;
 }
 
@@ -766,7 +748,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		rnode[1] = resolve_node(NULL, instance_name_prefix, var_node->children[1]);
 		oassert(rnode[1] && rnode[1]->type == NUMBERS);
 		oassert(var_node->children[0]->type == IDENTIFIERS);
-		return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[1]->types.number.value);
+		return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[1]->types.vnumber->get_value());
 	}
 	else if (var_node->type == RANGE_REF)
 	{
@@ -774,17 +756,17 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		rnode[1] = resolve_node(NULL, instance_name_prefix, var_node->children[1]);
 		rnode[2] = resolve_node(NULL, instance_name_prefix, var_node->children[2]);
 		oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
-		width = abs(rnode[1]->types.number.value - rnode[2]->types.number.value) + 1;
+		width = abs(rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value()) + 1;
 		if (rnode[0]->type == IDENTIFIERS)
 		{
 			return_string = (char**)vtr::malloc(sizeof(char*)*width);
 			for (i = 0; i < width; i++)
-				return_string[i] = make_full_ref_name(NULL, NULL, NULL, rnode[0]->types.identifier, rnode[2]->types.number.value+i);
+				return_string[i] = make_full_ref_name(NULL, NULL, NULL, rnode[0]->types.identifier, rnode[2]->types.vnumber->get_value()+i);
 		}
 		else
 		{
 			oassert(rnode[0]->type == NUMBERS);
-			return_string = get_name_of_pins_number(rnode[0], rnode[2]->types.number.value, width);
+			return_string = get_name_of_pins_number(rnode[0], rnode[2]->types.vnumber->get_value(), width);
 		}
 	}
 	else if (var_node->type == IDENTIFIERS)
@@ -827,12 +809,12 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 				rnode[1] = resolve_node(NULL, instance_name_prefix, sym_node->children[1]);
 				rnode[2] = resolve_node(NULL, instance_name_prefix, sym_node->children[2]);
 				oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
-				width = (rnode[1]->types.number.value - rnode[2]->types.number.value + 1);
+				width = (rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value() + 1);
 				return_string = (char**)vtr::malloc(sizeof(char*)*width);
 				for (i = 0; i < width; i++)
 				{
 					return_string[index] = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier,
-						i+rnode[2]->types.number.value);
+						i+rnode[2]->types.vnumber->get_value());
 					index++;
 				}
 			}
@@ -919,9 +901,11 @@ char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_n
  * Also try and fold any BINARY_OPERATIONs now that an IDENTIFIER has been
  * resolved
  */
-
+static int counter = 0;
 ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, ast_node_t *node)
 {
+
+	oassert(++counter != 10000000);
 	long sc_spot = -1;
 
 	// Not sure this should even be used.
@@ -939,8 +923,7 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, 
 	{
 		oassert(node->type != NO_ID);
 		ast_node_t *node_copy;
-		node_copy = (ast_node_t *)vtr::calloc(1,sizeof(ast_node_t));
-		memcpy(node_copy, node, sizeof(ast_node_t));
+		node_copy = ast_node_copy(node);
 		node_copy->children = (ast_node_t **)vtr::calloc(node_copy->num_children,sizeof(ast_node_t*));
 
 		long i;
@@ -1008,8 +991,7 @@ ast_node_t *resolve_ast_node(STRING_CACHE *local_param_table_sc, short initial, 
 	if (node)
 	{
 		ast_node_t *node_copy;
-		node_copy = (ast_node_t *)vtr::calloc(1,sizeof(ast_node_t));
-		memcpy(node_copy, node, sizeof(ast_node_t));
+		node_copy = ast_node_copy(node);
 		node_copy->children = (ast_node_t **)vtr::calloc(node_copy->num_children,sizeof(ast_node_t*));
 
 		long i;
@@ -1071,7 +1053,7 @@ char *make_module_param_name(STRING_CACHE *defines_for_module_sc, ast_node_t *mo
 			{
 				ast_node_t *node = resolve_node(defines_for_module_sc, module_name, module_param_list->children[i]->children[5]);
 				oassert(node->type == NUMBERS);
-				odin_sprintf(module_param_name, "%s_%ld", module_param_name, module_param_list->children[i]->children[5]->types.number.value);
+				odin_sprintf(module_param_name, "%s_%ld", module_param_name, node->types.vnumber->get_value());
 			}
 		}
 	}
@@ -1111,8 +1093,28 @@ void move_ast_node(ast_node_t *src, ast_node_t *dest, ast_node_t *node)
  * copy node and its children recursively; return new subtree
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *ast_node_deep_copy(ast_node_t *node){
+	ast_node_t *node_copy = ast_node_copy(node);
+
+	if (node && node_copy)
+	{
+		//Create a new child list;
+		node_copy->children = (ast_node_t**)vtr::malloc(sizeof(ast_node_t*)*node->num_children);
+
+		//Recursively copy its children
+		for(long i = 0; i < node->num_children; i++){
+			node_copy->children[i] = ast_node_deep_copy(node->children[i]);
+		}
+	}
+  
+	return node_copy;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: ast_node_copy)
+ * copy node; return new node
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *ast_node_copy(ast_node_t *node){
 	ast_node_t *node_copy;
-	long i;
 
 	if(node == NULL){
 		return NULL;
@@ -1120,20 +1122,15 @@ ast_node_t *ast_node_deep_copy(ast_node_t *node){
 
 	//Copy node
 	node_copy = (ast_node_t *)vtr::malloc(sizeof(ast_node_t));
-	memcpy(node_copy, node, sizeof(ast_node_t));
+	memcpy(node_copy, node, sizeof(ast_node_t));	
 
 	//Copy contents
+	if (node->type == NUMBERS)
+		node_copy->types.vnumber = new VNumber(node->types.vnumber->get_value());
+
 	node_copy->types.identifier = vtr::strdup(node->types.identifier);
-	node_copy->types.number.number = vtr::strdup(node->types.number.number);
 	node_copy->types.number.binary_string = vtr::strdup(node->types.number.binary_string);
-
-    //Create a new child list
-    node_copy->children = (ast_node_t**)vtr::malloc(sizeof(ast_node_t*)*node_copy->num_children);
-
-	//Recursively copy its children
-	for(i = 0; i < node->num_children; i++){
-		node_copy->children[i] = ast_node_deep_copy(node->children[i]);
-	}
+	node_copy->children = NULL;
 
 	return node_copy;
 }
@@ -1151,31 +1148,37 @@ ast_node_t *fold_unary(ast_node_t *node)
 
 	if(node_is_constant(child_0))
 	{
-		long operand_0 = child_0->types.number.value;
+		long operand_0 = child_0->types.vnumber->get_value();
 		short success = FALSE;
 		long result = 0;
 		int i=0;
 		int length = child_0->types.number.binary_size;
 		char *binary_string = vtr::strdup(child_0->types.number.binary_string);
+		VNumber voperand_0 = *(child_0->types.vnumber);
+		VNumber vresult;
 
 		switch (op_id){
 			case LOGICAL_NOT:
 				result = !operand_0;
+				vresult = V_LOGICAL_NOT(voperand_0);
 				success = TRUE;
 				break;
 
 			case BITWISE_NOT:
 				result = ~operand_0;
+				vresult = V_BITWISE_NOT(voperand_0);
 				success = TRUE;
 				break;
 
 			case MINUS:
 				result = -operand_0;
+				vresult = V_MINUS(voperand_0);
 				success = TRUE;
 				break;
 
 			case ADD:
 				result = operand_0;
+				vresult = V_ADD(voperand_0);
 				success = TRUE;
 				break;
 
@@ -1187,6 +1190,7 @@ ast_node_t *fold_unary(ast_node_t *node)
 						break;
 					}
 				}
+				vresult = V_BITWISE_OR(voperand_0);
 				success = TRUE;
 				break;
 
@@ -1195,6 +1199,7 @@ ast_node_t *fold_unary(ast_node_t *node)
 				for(i=1;i<length;i++){
 					result = !(result && get_bit(binary_string[i]));
 				}
+				vresult = V_BITWISE_NAND(voperand_0);
 				success = TRUE;
 				break;
 
@@ -1203,6 +1208,7 @@ ast_node_t *fold_unary(ast_node_t *node)
 				for(i=1;i<length;i++){
 					result = !(result || get_bit(binary_string[i]));
 				}
+				vresult = V_BITWISE_NOR(voperand_0);
 				success = TRUE;
 				break;
 
@@ -1211,6 +1217,7 @@ ast_node_t *fold_unary(ast_node_t *node)
 				for(i=1;i<length;i++){
 					result = ( (result && get_bit(binary_string[i])) || (!result && !get_bit(binary_string[i])) );
 				}
+				vresult = V_BITWISE_XNOR(voperand_0);
 				success = TRUE;
 				break;
 
@@ -1219,6 +1226,7 @@ ast_node_t *fold_unary(ast_node_t *node)
 				for(i=1;i<length;i++){
 					result = ( (!result && get_bit(binary_string[i])) || (result && !get_bit(binary_string[i])) );
 				}
+				vresult = V_BITWISE_XOR(voperand_0);
 				success = TRUE;
 				break;
 
@@ -1227,6 +1235,7 @@ ast_node_t *fold_unary(ast_node_t *node)
 					warning_message(PARSE_ERROR, child_0->line_number, child_0->file_number, "argument is %ld-bits but ODIN limit is %lu-bits \n",length,ODIN_STD_BITWIDTH);
 
 				result = clog2(operand_0, length);
+				vresult = VNumber(voperand_0.size());
 				success = TRUE;
 				break;
 
@@ -1235,7 +1244,10 @@ ast_node_t *fold_unary(ast_node_t *node)
 		}
 		vtr::free(binary_string);
 		if(success){
-			return create_tree_node_long_number(result, ODIN_STD_BITWIDTH, child_0->line_number, child_0->file_number);
+			ast_node_t *new_num = create_tree_node_long_number(result,ODIN_STD_BITWIDTH, child_0->line_number, child_0->file_number);
+			delete new_num->types.vnumber;
+			new_num->types.vnumber = new VNumber(vresult);
+			return new_num;		
 		}
 	}
 	return NULL;
@@ -1252,10 +1264,13 @@ ast_node_t * fold_binary(ast_node_t *node)
 
 	if(node_is_constant(child_0) &&  node_is_constant(child_1))
 	{
-		long operand_0 = child_0->types.number.value;
-		long operand_1 = child_1->types.number.value;
+		long operand_0 = child_0->types.vnumber->get_value();
+		long operand_1 = child_1->types.vnumber->get_value();
 		long result = 0;
 		short success = FALSE;
+		VNumber voperand_0 = *(child_0->types.vnumber);
+		VNumber voperand_1 = *(child_1->types.vnumber);
+		VNumber vresult;
 
 		int length_0 = child_0->types.number.binary_size;
 		char *binary_string_0 = vtr::strdup(child_0->types.number.binary_string);
@@ -1266,61 +1281,73 @@ ast_node_t * fold_binary(ast_node_t *node)
 		switch (op_id){
 			case ADD:
 				result = operand_0 + operand_1;
+				vresult = V_ADD(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case MINUS:
 				result = operand_0 - operand_1;
+				vresult = V_MINUS(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case MULTIPLY:
 				result = operand_0 * operand_1;
+				vresult = V_MULTIPLY(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case DIVIDE:
 				result = operand_0 / operand_1;
+				vresult = V_DIV(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case BITWISE_XOR:
 				result = operand_0 ^ operand_1;
+				vresult = V_BITWISE_XOR(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case BITWISE_XNOR:
 				result = ~(operand_0 ^ operand_1);
+				vresult = V_BITWISE_XNOR(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case BITWISE_AND:
 				result = operand_0 & operand_1;
+				vresult = V_BITWISE_AND(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case BITWISE_NAND:
 				result = ~(operand_0 & operand_1);
+				vresult = V_BITWISE_NAND(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case BITWISE_OR:
 				result = operand_0 | operand_1;
+				vresult = V_BITWISE_OR(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case BITWISE_NOR:
 				result = ~(operand_0 | operand_1);
+				vresult = V_BITWISE_NOR(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case SL:
 				result = shift_left_value_with_overflow_check(operand_0, operand_1);
+				vresult = V_SHIFT_LEFT(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case SR:
 				result = operand_0 >> operand_1;
+				vresult = V_SHIFT_RIGHT(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
@@ -1335,51 +1362,61 @@ ast_node_t * fold_binary(ast_node_t *node)
                     }
                 }
                 result |= mask;
+				vresult = V_SIGNED_SHIFT_RIGHT(voperand_0, voperand_1);
                 success = TRUE;
                 break;
 			}
 			case LOGICAL_AND:
 				result = operand_0 && operand_1;
+				vresult = V_LOGICAL_AND(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case LOGICAL_OR:
 				result = operand_0 || operand_1;
+				vresult = V_LOGICAL_OR(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case MODULO:
 				result = operand_0 % operand_1;
+				vresult = V_MOD(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case LT:
 				result = operand_0 < operand_1;
+				vresult = V_LT(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case GT:
 				result = operand_0 > operand_1;
+				vresult = V_GT(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case LOGICAL_EQUAL:
 				result = operand_0 == operand_1;
+				vresult = V_LE(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case NOT_EQUAL:
 				result = operand_0 != operand_1;
+				vresult = V_NOT_EQUAL(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case LTE:
 				result = operand_0 <= operand_1;
+				vresult = V_LE(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
 			case GTE:
 				result = operand_0 >= operand_1;
+				vresult = V_GE(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
@@ -1397,6 +1434,7 @@ ast_node_t * fold_binary(ast_node_t *node)
 						break;
 					}
 				}
+				vresult = V_CASE_EQUAL(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
@@ -1414,6 +1452,7 @@ ast_node_t * fold_binary(ast_node_t *node)
 						break;
 					}
 				}
+				vresult = V_CASE_NOT_EQUAL(voperand_0, voperand_1);
 				success = TRUE;
 				break;
 
@@ -1423,7 +1462,10 @@ ast_node_t * fold_binary(ast_node_t *node)
 		vtr::free(binary_string_0);
 		vtr::free(binary_string_1);
 		if(success){
-			return create_tree_node_long_number(result,ODIN_STD_BITWIDTH, child_0->line_number, child_0->file_number);
+			ast_node_t *new_num = create_tree_node_long_number(result,ODIN_STD_BITWIDTH, child_0->line_number, child_0->file_number);
+			delete new_num->types.vnumber;
+			new_num->types.vnumber = new VNumber(vresult);
+			return new_num;
 		}
 	}
 	return NULL;
@@ -1440,7 +1482,7 @@ ast_node_t *node_is_constant(ast_node_t *node){
             case HEX: //fallthrough
             case OCT: //fallthrough
             case BIN:
-				if (node->types.number.value == -1){
+				if (node->types.vnumber->get_value() == -1){
 					break;
 				}
 				//fallthrough
@@ -1508,6 +1550,8 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->hb_port = 0;
 	new_node->net_node = 0;
 	new_node->is_read_write = 0;
+	new_node->types.vnumber = nullptr;
+	new_node->types.identifier = NULL;
 }
 
 /*---------------------------------------------------------------------------

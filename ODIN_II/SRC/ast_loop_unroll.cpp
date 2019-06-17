@@ -218,7 +218,8 @@ ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, ast_node_t ***
 	{
 		error_message(PARSE_ERROR, post->line_number, post->file_number, "%s", "Unsupported post-condition node in for loop");
 	}
-	bool dup_body = cond_func(value->types.number.value);
+
+	bool dup_body = cond_func(value->types.vnumber->get_value());
 	while(dup_body)
 	{
 		ast_node_t* new_body = dup_and_fill_body(ast_module, body, pre, &value, &error_code, instances, num_unrolled, num_original);
@@ -226,9 +227,14 @@ ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, ast_node_t ***
 		{
 			error_message(PARSE_ERROR, pre->line_number, pre->file_number, "%s", "Unsupported pre-condition node in for loop");
 		}
-		value->types.number.value = post_func(value->types.number.value);
+
+		VNumber *temp_vnum = value->types.vnumber;
+		value->types.vnumber = new VNumber(post_func(temp_vnum->get_value()));
+		delete temp_vnum;
+		
 		body_parent = body_parent ? newList_entry(body_parent, new_body) : newList(BLOCK, new_body);
-		dup_body = cond_func(value->types.number.value);
+		
+		dup_body = cond_func(value->types.vnumber->get_value());
 
 		if (*instances)
 		{
@@ -373,17 +379,17 @@ condition_function resolve_condition(ast_node_t* node, ast_node_t* symbol, int* 
 	return [=](long value) {
 		switch(node->types.operation.op){
 			case LT:
-				return value <  node->children[1]->types.number.value;
+				return value <  node->children[1]->types.vnumber->get_value();
 			case GT:
-				return value >  node->children[1]->types.number.value;
+				return value >  node->children[1]->types.vnumber->get_value();
 			case NOT_EQUAL:
-				return value != node->children[1]->types.number.value;
+				return value != node->children[1]->types.vnumber->get_value();
 			case LOGICAL_EQUAL:
-				return value == node->children[1]->types.number.value;
+				return value == node->children[1]->types.vnumber->get_value();
 			case LTE:
-				return value <= node->children[1]->types.number.value;
+				return value <= node->children[1]->types.vnumber->get_value();
 			case GTE:
-				return value >= node->children[1]->types.number.value; 
+				return value >= node->children[1]->types.vnumber->get_value(); 
 			default:
 			   return false;
 	   }
@@ -424,7 +430,7 @@ post_condition_function resolve_binary_operation(ast_node_t* node)
 			 * this lambda triggers a warning for unused variable unless
 			 * we use value to generate a 0
 			 */
-			return node->types.number.value + (value - value);
+			return node->types.vnumber->get_value() + (value - value);
 		};
 	} else if (node->type == IDENTIFIERS) {
 		return [=](long value){
@@ -497,7 +503,7 @@ ast_node_t* replace_named_module(ast_node_t* module, ast_node_t** value)
 	oassert( *value && "Value node is NULL");
 	oassert( (*value)->type == NUMBERS  && "Value node type is not a NUMBER");
 
-	long int val = (*value)->types.number.value;
+	long int val = (*value)->types.vnumber->get_value();
 	std::string concat_string(copy->children[0]->types.identifier);
 	concat_string = concat_string + "[" + std::to_string(val) + "]";
 
@@ -519,7 +525,7 @@ ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node
 			{
 				if(!strcmp(child->types.identifier, pre->children[0]->types.identifier))
 				{
-					ast_node_t* new_num = ast_node_deep_copy(*value);
+					ast_node_t* new_num = ast_node_copy(*value);
 					child = free_whole_tree(child);
 					copy->children[i] = new_num;
 				}
@@ -529,7 +535,7 @@ ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node
 				long idx = -1;
 
 				/* if this is the first iteration */
-				if ((*value)->types.number.value == pre->children[1]->types.number.value) 
+				if ((*value)->types.vnumber->get_value() == pre->children[1]->types.vnumber->get_value()) 
 				{
 					/* add this instance to the table */
 					if (!(*instances))

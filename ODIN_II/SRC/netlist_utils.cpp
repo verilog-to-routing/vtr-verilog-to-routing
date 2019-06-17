@@ -144,7 +144,7 @@ void allocate_more_input_pins(nnode_t *node, int width)
 
 	if (width <= 0)
 	{
-		error_message(NETLIST_ERROR, -1, -1, "tried adding input pins for width %ld <= 0 %s\n", width, node->name);
+		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "tried adding input pins for width %ld <= 0 %s\n", width, node->name);
 		return;
 	}
 

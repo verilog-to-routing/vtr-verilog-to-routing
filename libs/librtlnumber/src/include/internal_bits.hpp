@@ -53,6 +53,11 @@ namespace BitSpace {
             _1,_0,_x,_x
     };
 
+    static const bit_value_t is_unk[4] = {
+        /*	 0   1   x   z  <- a*/
+            _0,_0,_1,_1
+    };
+
     #define unroll_1d(lut) { lut[_0], lut[_1], lut[_x], lut[_z] }
     #define unroll_2d(lut) { unroll_1d(lut[_0]), unroll_1d(lut[_1]), unroll_1d(lut[_x]), unroll_1d(lut[_z]) }
 
@@ -172,6 +177,7 @@ namespace BitSpace {
         /* z */	{_x,_x,_x,_x}
     };
 
+
     static const bit_value_t l_case_eq[4][4] = {
         /* a  /	 0   1   x   z 	<-b */	
         /* 0 */	{_1,_0,_0,_0},	
@@ -250,7 +256,7 @@ namespace BitSpace {
     {
     private :
 
-        T bits = _All_x;
+        T bits = _All_x; // TODO this messes with is_dont_care_string!!!!
 
         size_t get_bit_location(size_t address)
         {
@@ -300,11 +306,6 @@ namespace BitSpace {
         static size_t size()
         {
             return (sizeof(T)<<2); // 8 bit in a byte, 2 bits for a verilog bits = 4 bits in a byte, << 2 = sizeof x 4
-        }
-
-        bool has_unknowns()
-        {
-            return static_cast<bool>(this->bits & _All_x);
         }
     };
 
@@ -423,9 +424,11 @@ namespace BitSpace {
 
         bool has_unknowns()
         {
-            for(auto bitField : this->bits)
-                if(bitField.has_unknowns())
-                    return true;
+            for(size_t address=0x0; address < this->size(); address++)
+            {
+                if(is_unk[this->get_bit(address)])
+                    return true;                
+            }
             
             return false;
         }
@@ -585,12 +588,7 @@ public:
     {
         assert_Werr( (! this->bitstring.has_unknowns() ) ,
                     "Invalid Number contains dont care values. number: " + this->bitstring.to_string(false)
-        );
-
-        // We need to accomodate for signed values
-        assert_Werr( (this->bitstring.size() < BitSpace::BitFields<veri_internal_bits_t>::size()),
-                    "Invalid Number. Too large to be converted. number size: " + std::to_string(this->bitstring.size())
-        );      
+        );   
 
         int64_t result = 0;
         int8_t pad = this->is_negative();
@@ -622,7 +620,7 @@ public:
     {
 
         std::string verilog_string(input);
-
+        bool is_neg_dec = false;
 
         if(!verilog_string.size())
         {
@@ -634,6 +632,11 @@ public:
 
         if(loc == std::string::npos)
         {
+            if (verilog_string.at(0) == '-')
+            {
+                verilog_string.erase(verilog_string.begin());
+                is_neg_dec = true;
+            }
             verilog_string.insert(0, "\'sd");
             loc = 0;
         }
@@ -700,6 +703,10 @@ public:
         
 
         this->bitstring = new_bitstring.resize(BitSpace::c_to_bit(pad), bitsize);
+        if (is_neg_dec) 
+        {
+            this->bitstring = this->bitstring.twos_complement();
+        }
     }
 
     void set_value(int64_t in)
@@ -722,7 +729,10 @@ public:
 
     BitSpace::bit_value_t get_bit_from_lsb(size_t index)
     {
-        return this->bitstring.get_bit(index);
+        if (index < this->size())
+            return this->bitstring.get_bit(index);
+        else
+            return this->get_padding_bit();
     }
 
     void set_bit_from_msb(size_t index, BitSpace::bit_value_t val)

@@ -396,9 +396,12 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 	allocate_children_to_node(new_node, 1, child);
 
 	int i;
-	for (i = 1; i < exp->types.number.value; i++)
+	if (exp->type == NUMBERS)
 	{
-		add_child_to_node(new_node, child);
+		for (i = 1; i < exp->types.vnumber->get_value(); i++)
+		{
+			add_child_to_node(new_node, child);
+		}
 	}
 
 	return new_node;
@@ -1033,9 +1036,9 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 
 	/* allocate child nodes to this node */
 	if( expression2->type == NUMBERS ){
-		int len = expression2->types.number.value;
+		int len = expression2->types.vnumber->get_value();
 		if( expression1->type == NUMBERS ){
-			int len1 = expression1->types.number.value;
+			int len1 = expression1->types.vnumber->get_value();
 			long powRes = pow(len1, len);
 			new_node = create_tree_node_long_number(powRes,ODIN_STD_BITWIDTH, line_number, current_parse_file);
 		} else {
@@ -2014,7 +2017,7 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 			break;
 		}
 		case NUMBERS:
-			fprintf(fp, ": %s",  node->types.number.binary_string );
+			fprintf(fp, ": %s",  node->types.vnumber->to_string().c_str());
 			break;
 
 		case UNARY_OPERATION: //fallthrough

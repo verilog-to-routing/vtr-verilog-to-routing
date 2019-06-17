@@ -287,52 +287,53 @@ void create_enode(ast_node_t *node)
 	switch (node->type)
 	{
 		case NUMBERS:
-			s->type.data = node->types.number.value;
+		{
+			s->type.data = node->types.vnumber->get_value();
 			s->flag = 1;
 			s->priority = 0;
-		break;
-
-		case IDENTIFIERS:
-			s->type.variable = node->types.identifier;
-			s->flag = 3;
-			s->priority = 0;
-		break;
-
+			break;
+		}
 		case BINARY_OPERATION:
 		{
+			s->flag = 2;
 			switch(node->types.operation.op)
 			{
 				case ADD:
 					s->type.operation = '+';
-					s->flag = 2;
 					s->priority = 2;
 				break;
 
 				case MINUS:
 					s->type.operation = '-';
-					s->flag =2;
 					s->priority = 2;
 				break;
 
 				case MULTIPLY:
 					s->type.operation = '*';
-					s->flag = 2;
 					s->priority = 1;
 					break;
 
 				case DIVIDE:
 					s->type.operation = '/';
-					s->flag = 2;
 					s->priority = 1;
 				break;
 
 				default:
 				break;
 			}
+		}
+
+		case IDENTIFIERS:
+		{
+			s->type.variable = node->types.identifier;
+			s->flag = 3;
+			s->priority = 0;
+			break;
+		}
 
 		default:
 			break;
-		}
+		
 
 
 	}
@@ -584,6 +585,10 @@ void construct_new_tree(enode *tail, ast_node_t *node, int line_num, int file_nu
 		node->children = (ast_node_t**)vtr::malloc(2*sizeof(ast_node_t*));
 		node->children[0] = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
 		node->children[1] = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
+
+		create_ast_node(tail1, node->children[0], line_num, file_num);
+		create_ast_node(tail2, node->children[1], line_num, file_num);
+		
 		construct_new_tree(tail1, node->children[0], line_num, file_num);
 		construct_new_tree(tail2, node->children[1], line_num, file_num);
 	}
@@ -1125,7 +1130,7 @@ void remove_para_node(ast_node_t *top, std::vector<ast_node_t *> para)
 				name = para[i]->children[0]->types.identifier;
 
 			if (node_is_constant(para[i]->children[5]))
-				value = para[i]->children[5]->types.number.value;
+				value = para[i]->children[5]->types.vnumber->get_value();
 
 			for (long j = 0; j < count_assign; j++){
 				change_para_node(list[j], name, value);
@@ -1202,7 +1207,7 @@ void check_binary_operation(ast_node_t *node)
 void check_node_number(ast_node_t *parent, ast_node_t *child, int flag)
 {
 	long power = 0;
-	long number = child->types.number.value;
+	long number = child->types.vnumber->get_value();
 	if (number <= 1)
 		return;
 	while (((number % 2) == 0) && number > 1) // While number is even and > 1

@@ -721,6 +721,17 @@ short get_bit(char in){
     return -1;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: to_bit)
+ *-------------------------------------------------------------------------------------------*/
+short get_bit(short in){
+	if(in == 0 || in == 1)
+		return in;
+	fprintf(stderr,"not a valid bit\n");
+    return -1;
+}
+
+
 void passed_verify_i_o_availabilty(nnode_t *node, int expected_input_size, int expected_output_size, const char *current_src, int line_src) {
 	if(!node)
 		error_message(SIMULATION_ERROR, -1, -1, "node unavailable @%s::%s", current_src, line_src);
