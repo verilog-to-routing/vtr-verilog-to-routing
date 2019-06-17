@@ -2853,27 +2853,6 @@ void act_on_mouse_press(ezgl::application *application, GdkEventButton *event, d
 //        window_mode = false;
 //        application->refresh_drawing();
 //    }
-        t_draw_state* draw_state = get_draw_state_vars();
-    
-    if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
-        
-        int hit_node = draw_check_rr_node_hit(x, y);
-        
-        if(hit_node != OPEN) {
-            //Update message
-            
-            std::string info = describe_rr_node(hit_node);
-            std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
-            application->update_message(msg.c_str());
-        } else {
-            //No rr node moused over, reset message
-            if(!rr_highlight_message.empty()) {
-                application->update_message(rr_highlight_message.c_str());
-            } else {
-                application->update_message(draw_state->default_message);
-            }
-        }
-    }
   }else if (event->button == 2)
     std::cout << "middle ";
   else if (event->button == 3)
@@ -2909,7 +2888,7 @@ void act_on_mouse_press(ezgl::application *application, GdkEventButton *event, d
     auto& place_ctx = g_vpr_ctx.placement();
     
     /* Control + mouse click to select multiple nets. */
-    if (event->state & GDK_CONTROL_MASK)
+    if (!(event->state & GDK_CONTROL_MASK))
         deselect_all();
     
     
@@ -2979,7 +2958,6 @@ void act_on_mouse_press(ezgl::application *application, GdkEventButton *event, d
     
     application->update_message(msg);
     
-    /* Need to erase screen. */
     application->refresh_drawing();
 }
 
@@ -2993,28 +2971,28 @@ void act_on_mouse_move(ezgl::application *application, GdkEventButton *event, do
 ////        g.draw_rectangle(new_window_top_left, {x,y});
 //        std::cout << "window mode triggered move" << std::endl;
 //    }
-//     
-//    t_draw_state* draw_state = get_draw_state_vars();
-//    
-//    if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
-//        
-//        int hit_node = draw_check_rr_node_hit(x, y);
-//        
-//        if(hit_node != OPEN) {
-//            //Update message
-//            
-//            std::string info = describe_rr_node(hit_node);
-//            std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
-//            application->update_message(msg.c_str());
-//        } else {
-//            //No rr node moused over, reset message
-//            if(!rr_highlight_message.empty()) {
-//                application->update_message(rr_highlight_message.c_str());
-//            } else {
-//                application->update_message(draw_state->default_message);
-//            }
-//        }
-//    }
+    
+    t_draw_state* draw_state = get_draw_state_vars();
+    
+    if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
+        
+        int hit_node = draw_check_rr_node_hit(x, y);
+        
+        if(hit_node != OPEN) {
+            //Update message
+            
+            std::string info = describe_rr_node(hit_node);
+            std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
+            application->update_message(msg.c_str());
+        } else {
+            //No rr node moused over, reset message
+            if(!rr_highlight_message.empty()) {
+                application->update_message(rr_highlight_message.c_str());
+            } else {
+                application->update_message(draw_state->default_message);
+            }
+        }
+    }
 }
 
 
@@ -3082,7 +3060,7 @@ static void deselect_all() {
     // Sets the color of all clbs, nets and rr_nodes to the default.
     // as well as clearing the highlighed sub-block
     
-    
+    std::cout << "deselecting!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
     t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -4040,7 +4018,6 @@ static void draw_placement_macros(ezgl::renderer &g) {
     if (draw_state->show_placement_macros == DRAW_NO_PLACEMENT_MACROS) {
         return;
     }
-    std::cout << "drawing placement macros!" << std::endl;
     t_draw_coords* draw_coords = get_draw_coords_vars();
     
     auto& place_ctx = g_vpr_ctx.placement();
@@ -4080,7 +4057,6 @@ static void draw_placement_macros(ezgl::renderer &g) {
         int draw_xhigh = draw_coords->tile_x[xhigh];
         int draw_yhigh = draw_coords->tile_y[yhigh];
         
-        std::cout << "drawing rectnagles!" << std::endl;
         g.set_color(blk_RED);
         g.draw_rectangle({draw_xlow, draw_ylow}, {draw_xhigh, draw_yhigh});
         
