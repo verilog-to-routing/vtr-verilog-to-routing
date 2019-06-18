@@ -1124,8 +1124,10 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 
         //Timing stats
         VTR_LOG("\n");
-        generate_hold_timing_stats(*timing_info, *analysis_delay_calc, vpr_setup.AnalysisOpts);
-        generate_setup_timing_stats(*timing_info, *analysis_delay_calc, vpr_setup.AnalysisOpts);
+        generate_hold_timing_stats(/*prefix=*/"", *timing_info,
+                                   *analysis_delay_calc, vpr_setup.AnalysisOpts);
+        generate_setup_timing_stats(/*prefix=*/"", *timing_info,
+                                    *analysis_delay_calc, vpr_setup.AnalysisOpts);
 
         //Write the post-syntesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
