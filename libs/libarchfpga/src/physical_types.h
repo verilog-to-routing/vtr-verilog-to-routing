@@ -184,11 +184,11 @@ enum e_pb_type_class {
 };
 
 // Set of all pb_type classes
-constexpr std::array<e_pb_type_class, NUM_CLASSES> TYPE_CLASSES = {
+constexpr std::array<e_pb_type_class, NUM_CLASSES> PB_TYPE_CLASSES = {
     {UNKNOWN_CLASS, LUT_CLASS, LATCH_CLASS, MEMORY_CLASS}};
 
 // String versions of pb_type class values
-constexpr std::array<const char*, NUM_CLASSES> TYPE_CLASS_STRING = {
+constexpr std::array<const char*, NUM_CLASSES> PB_TYPE_CLASS_STRING = {
     {"unknown", "lut", "flipflop", "memory"}};
 
 /* Annotations for pin-to-pin connections */
