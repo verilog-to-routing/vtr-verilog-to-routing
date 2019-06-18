@@ -129,7 +129,7 @@ constexpr double MAX_INV_TIMING_COST = 1.e9;
 /********************** Variables local to place.c ***************************/
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
-static vtr::vector<ClusterNetId, float> net_cost, temp_net_cost;
+static vtr::vector<ClusterNetId, double> net_cost, temp_net_cost;
 
 static t_pl_loc** legal_pos = nullptr; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1] */
 static int* num_legal_pos = nullptr;   /* [0..num_legal_pos-1] */
@@ -152,8 +152,8 @@ static vtr::vector<ClusterNetId, char> bb_updated_before;
 /* driven portion of the cost function. These arrays will be set to  */
 /* (criticality * delay) for each point to point connection. */
 
-static vtr::vector<ClusterNetId, float*> point_to_point_timing_cost;
-static vtr::vector<ClusterNetId, float*> temp_point_to_point_timing_cost;
+static vtr::vector<ClusterNetId, double*> point_to_point_timing_cost;
+static vtr::vector<ClusterNetId, double*> temp_point_to_point_timing_cost;
 
 /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]. What is the value of the delay */
 /* for each connection in the circuit */
@@ -388,7 +388,7 @@ static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
 static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId blk, const ClusterPinId blk_pin);
 static void update_td_delta_costs(const PlaceDelayModel& delay_model, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost);
 
-static float get_net_cost(ClusterNetId net_id, t_bb* bb_ptr);
+static double get_net_cost(ClusterNetId net_id, t_bb* bb_ptr);
 
 static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_edges);
 
@@ -2442,10 +2442,10 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
             temp_point_to_point_delay[net_id] = (float*)vtr::malloc(num_sinks * sizeof(float));
             temp_point_to_point_delay[net_id]--;
 
-            point_to_point_timing_cost[net_id] = (float*)vtr::malloc(num_sinks * sizeof(float));
+            point_to_point_timing_cost[net_id] = (double*)vtr::malloc(num_sinks * sizeof(double));
             point_to_point_timing_cost[net_id]--;
 
-            temp_point_to_point_timing_cost[net_id] = (float*)vtr::malloc(num_sinks * sizeof(float));
+            temp_point_to_point_timing_cost[net_id] = (double*)vtr::malloc(num_sinks * sizeof(double));
             temp_point_to_point_timing_cost[net_id]--;
         }
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -2738,11 +2738,11 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr) {
     return (ncost);
 }
 
-static float get_net_cost(ClusterNetId net_id, t_bb* bbptr) {
+static double get_net_cost(ClusterNetId net_id, t_bb* bbptr) {
     /* Finds the cost due to one net by looking at its coordinate bounding  *
      * box.                                                                 */
 
-    float ncost, crossing;
+    double ncost, crossing;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* Get the expected "crossing count" of a net, based on its number *
