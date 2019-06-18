@@ -62,6 +62,8 @@ The Titan benchmarks are suitable for large-scale FPGA CAD research, and FPGA ar
 
 .. note:: The Titan benchmarks are not included with the VTR release (due to their size). However they can be downloaded and extracted by running ``make get_titan_benchmarks`` from the root of the VTR tree.  They can also be `downloaded manually <http://www.eecg.utoronto.ca/~kmurray/titan/>`_.
 
+.. seealso:: :ref:`titan_benchmarks_tutorial`
+
 MCNC20 Benchmarks
 -----------------
 The MCNC benchmarks :cite:`mcnc_benchmarks` are a set of small and old (circa 1991) benchmarks.

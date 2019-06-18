@@ -1,14 +1,5 @@
 cmake_minimum_required(VERSION 3.9)
 
-if (${CMAKE_VERSION} VERSION_GREATER "3.8")
-    #For cmake >= 3.9 INTERPROCEDURAL_OPTIMIZATION behaviour we need to explicitly
-    #set the cmake policy version number
-    cmake_policy(VERSION 3.9)
-
-    # If we are using verison < 3.9 then setting INTERPROCEDURAL_OPTIMIZATION
-    # has no effect unless an Intel compiler is used
-endif()
-
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 include(SupportCcache)
 
@@ -44,7 +35,7 @@ option(ODIN_DEBUG "Enable building oding with extra debug flags" OFF)
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 0)
 set(VTR_VERSION_PATCH 0)
-set(VTR_VERSION_PRERELEASE "dev")
+set(VTR_VERSION_PRERELEASE "rc1")
 
 include(FilesToDirs)
 

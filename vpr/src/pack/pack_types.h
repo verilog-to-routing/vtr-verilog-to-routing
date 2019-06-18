@@ -56,11 +56,11 @@ struct t_pb_stats {
 
     int num_child_blocks_in_pb;
 
-    AtomNetId tie_break_high_fanout_net;                                            /* If no marked candidate molecules, use
-                                                                                     * this high fanout net to determine the
-                                                                                     * next candidate atom */
-    bool explore_transitive_fanout;                                                 /* If no marked candidate molecules and no high fanout nets to determine next candidate molecule then explore molecules on transitive fanout */
-    std::unordered_map<AtomBlockId, t_pack_molecule*> transitive_fanout_candidates; // Holding trasitive fanout candidates key: root block id of the molecule, value: pointer to the molecule
+    AtomNetId tie_break_high_fanout_net;                                  /* If no marked candidate molecules, use
+                                                                           * this high fanout net to determine the
+                                                                           * next candidate atom */
+    bool explore_transitive_fanout;                                       /* If no marked candidate molecules and no high fanout nets to determine next candidate molecule then explore molecules on transitive fanout */
+    std::map<AtomBlockId, t_pack_molecule*> transitive_fanout_candidates; // Holding trasitive fanout candidates key: root block id of the molecule, value: pointer to the molecule
 
     /* How many pins of each atom net are contained in the *
      * currently open pb?                                  */

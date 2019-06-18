@@ -53,6 +53,19 @@ long shift_left_value_with_overflow_check(long input_value, long shift_by)
 	return input_value << shift_by;
 }
 
+std::string get_file_extension(std::string input_file)
+{
+	auto dot_location = input_file.find_last_of('.');
+	if( dot_location != std::string::npos )
+	{
+		return input_file.substr(dot_location);
+	}
+	else
+	{
+		return "";
+	}
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: node_name_based_on_op)
  * 	Get the string version of a node

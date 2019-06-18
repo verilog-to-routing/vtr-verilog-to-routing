@@ -40,7 +40,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 extern int yylineno;
 
-STRING_CACHE *defines_for_file_sc;
 //for module
 STRING_CACHE **defines_for_module_sc;
 STRING_CACHE *modules_inputs_sc;
@@ -107,6 +106,32 @@ void graphVizOutputPreproc(FILE *yyin)
 	rewind(yyin);
 }
 
+static void assert_supported_file_extension(std::string input_file, int file_number)
+{
+	bool supported = false;
+	std::string extension = get_file_extension(input_file);
+	for(int i = 0; i< file_extension_supported_END && ! supported; i++)
+	{
+		supported = (extension == std::string(file_extension_supported_STR[i]) );
+	}
+
+	if(! supported)
+	{
+		std::string supported_extension_list = "";
+		for(int i=0; i<file_extension_supported_END; i++)
+		{
+			supported_extension_list += " "; 
+			supported_extension_list += file_extension_supported_STR[i];
+		}
+
+		error_message(ARG_ERROR, -1, file_number, 
+			"File (%s) has an unsupported extension (%s), Odin only support { %s }",
+			input_file.c_str(),
+			extension.c_str(),
+			supported_extension_list.c_str()
+			);
+	}
+}
 
 /*---------------------------------------------------------------------------------------------
  * (function: parse_to_ast)
@@ -120,28 +145,21 @@ void parse_to_ast()
 	to_view_parse = configuration.print_parse_tokens;
 
 	/* initialize the parser */
-	init_parser();
-	
+	init_veri_preproc();
+
 	/* read all the files in the configuration file */
 	current_parse_file =0;
 	while (current_parse_file < configuration.list_of_file_names.size())
 	{
+		assert_supported_file_extension(configuration.list_of_file_names[current_parse_file], current_parse_file);
+
 		yyin = fopen(configuration.list_of_file_names[current_parse_file].c_str(), "r");
 		if (yyin == NULL)
 		{
 			error_message(ARG_ERROR, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
 		}
 
-		/*Testing preprocessor - Paddy O'Brien*/
-
-		/**
-		 *  TODO shouldnt we push defines throughout multiple files ? just like includes?
-		 * Verify documentation for this
-		*/
-
-		init_veri_preproc();
 		yyin = veri_preproc(yyin);
-		cleanup_veri_preproc();
 
 		/* write out the pre-processed file */
 		if (configuration.output_preproc_source)
@@ -158,11 +176,9 @@ void parse_to_ast()
 		fclose(yyin);
 		current_parse_file++;
 	}
-	/* cleanup the defines hash */
-	sc_free_string_cache(defines_for_file_sc);
 
 	/* clean up all the structures in the parser */
-	cleanup_parser();
+	cleanup_veri_preproc();
 
 	/* for error messages - this is in case we use any of the parser functions after parsing (i.e. create_case_control_signals()) */
 	current_parse_file = -1;
@@ -210,7 +226,6 @@ void cleanup_hard_blocks()
  *-------------------------------------------------------------------------------------------*/
 void init_parser()
 {
-	defines_for_file_sc = sc_new_string_cache();
 
 	defines_for_module_sc = NULL;
 
@@ -221,7 +236,6 @@ void init_parser()
 	num_functions = 0;
 	ast_modules = NULL;
 	ast_functions = NULL;
-	module_names_to_idx = sc_new_string_cache();
 	module_instantiations_instance = NULL;
 	function_instantiations_instance = NULL;
 	module_variables_not_defined = NULL;
@@ -276,9 +290,13 @@ void init_parser_for_file()
 /*---------------------------------------------------------------------------------------------
  * (function: clean_up_parser_for_file)
  *-------------------------------------------------------------------------------------------*/
-void clean_up_parser_for_file()
+void cleanup_parser_for_file()
 {
-
+	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
+	modules_inputs_sc = sc_free_string_cache(modules_inputs_sc);
+	modules_outputs_sc = sc_free_string_cache(modules_outputs_sc);
+	functions_inputs_sc = sc_free_string_cache(functions_inputs_sc);
+	functions_outputs_sc = sc_free_string_cache(functions_outputs_sc);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -311,35 +329,7 @@ void next_parsed_verilog_file(ast_node_t *file_items_list)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newSymbolNode(char *id, int line_number)
 {
-	long sc_spot;
-	ast_node_t *current_node;
-
-	if(id != NULL) {
-		if (id[0] == '`')
-		{
-			/* IF - this is a define replace with number constant */
-			/* def_reduct */
-
-			/* get the define symbol from the string cache */
-			if ((sc_spot = sc_lookup_string(defines_for_file_sc, (id+1))) == -1)
-			{
-				error_message(PARSE_ERROR, line_number, current_parse_file, "Define \"%s\" used but not declared\n", id);
-			}
-
-			/* return the number node */
-			return (ast_node_t*)defines_for_file_sc->data[sc_spot];
-		}
-		else
-		{
-			/* create node */
-			current_node = create_tree_node_id(id, line_number, current_parse_file);
-		}
-	}
-	else {
-		current_node = create_tree_node_id(id, line_number, current_parse_file);
-	}
-
-	return current_node;
+	return create_tree_node_id(id, line_number, current_parse_file);
 
 }
 
@@ -950,50 +940,69 @@ ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expressio
 
 /*---------------------------------------------------------------------------------------------
  * (function: newPartSelectRangeRef)
+ * 
+ * NB!! only support [msb:lsb], will always resolve to this syntax
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newPartSelectRangeRef(char *id, ast_node_t *expression1, ast_node_t *expression2, char direction,
-								  int line_number)
+ast_node_t *newMinusColonRangeRef(char *id, ast_node_t *expression1, ast_node_t *expression2, int line_number)
 {
+	ast_node_t *msb = NULL;
+	ast_node_t *lsb = NULL;
 
-	long sc_spot;
-
-	oassert(expression1 != NULL && expression1->type == NUMBERS && expression2 != NULL && expression2->type == NUMBERS);
-
-	/* Try to find the original array to check low/high indices */
-	if ((sc_spot = sc_lookup_string(modules_inputs_sc, id)) == -1 &&
-		(sc_spot = sc_lookup_string(modules_outputs_sc, id)) == -1){
-		error_message(PARSE_ERROR, line_number, current_parse_file, "Could not find variable %s", id);
-		return nullptr;
-	}
-	ast_node_t *original_range = (ast_node_t *) modules_inputs_sc->data[sc_spot];;
-	long upper_limit = original_range->children[1]->types.number.value;
-	long bottom_limit = original_range->children[2]->types.number.value;
-	if (expression1->types.number.value < 0 || expression2->types.number.value < 0){
-
-		/* Negetive numbers are not supported */
+	if ( expression1 == NULL )
+	{
 		error_message(PARSE_ERROR, line_number, current_parse_file, 
-								"Odin doesn't support negative number in index : %s[%d%s%d].", id,
-								expression1->types.number.value, direction == 1 ? "+:" : "-:",
-								expression2->types.number.value);
+			"first expression for range ref is NULL %s", id);
+	}
+	else if ( expression2 == NULL )
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, 
+			"first expression for range ref is NULL  %s", id);
 	}
 	
-	if (direction == 1){
-		expression1->types.number.value = expression1->types.number.value + expression2->types.number.value - 1;
-		expression2->types.number.value = expression1->types.number.value - expression2->types.number.value + 1;
-	}
-	else{
-		expression2->types.number.value = expression1->types.number.value - expression2->types.number.value + 1;
-	}
-	if (expression1->types.number.value  > upper_limit || expression2->types.number.value < bottom_limit) {
-		/* out of original range */
-		error_message(PARSE_ERROR, line_number,current_parse_file, 
-								"This part-select range %s:[%d%s%d] is out of range. It should be in the %s:[%d:%d] range.",
-								id,expression1->types.number.value, direction ==1 ? "+:" : "-:",expression2->types.number.value,
-								 id,upper_limit,bottom_limit );
-	}
-	
-	return newRangeRef(id, expression1, expression2, line_number);
+	// expression 1 is the msb here since we subtract expression 2 from it
+	msb = expression1;
+
+	ast_node_t *number_one = create_tree_node_long_number(1, ODIN_STD_BITWIDTH, line_number, current_parse_file);
+	ast_node_t *size_to_index = newBinaryOperation(MINUS, expression2, number_one, line_number);
+
+	lsb = newBinaryOperation(MINUS, ast_node_deep_copy(expression1), size_to_index, line_number);
+
+
+	return newRangeRef(id, msb, lsb, line_number);
 }
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newPartSelectRangeRef)
+ * 
+ * NB!! only support [msb:lsb], will always resolve to this syntax
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newPlusColonRangeRef(char *id, ast_node_t *expression1, ast_node_t *expression2, int line_number)
+{
+	ast_node_t *msb = NULL;
+	ast_node_t *lsb = NULL;
+
+	if ( expression1 == NULL )
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, 
+			"first expression for range ref is NULL %s", id);
+	}
+	else if ( expression2 == NULL )
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, 
+			"first expression for range ref is NULL  %s", id);
+	}
+	
+	// expression 1 is the lsb here since we add expression 2 to it
+	lsb = expression1;
+
+	ast_node_t *number_one = create_tree_node_long_number(1, ODIN_STD_BITWIDTH, line_number, current_parse_file);
+	ast_node_t *size_to_index = newBinaryOperation(MINUS, expression2, number_one, line_number);
+
+	msb = newBinaryOperation(ADD, ast_node_deep_copy(expression1), size_to_index, line_number);
+
+	return newRangeRef(id, msb, lsb, line_number);
+}
+
 
 /*---------------------------------------------------------------------------------------------
  * (function: newBinaryOperation)
@@ -1713,8 +1722,8 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 
 	/* clean up */
 	vtr::free(module_variables_not_defined);
-
-	if ((sc_spot = sc_add_string(module_names_to_idx, module_name)) == -1)
+	sc_spot = sc_add_string(module_names_to_idx, module_name);
+	if (module_names_to_idx->data[sc_spot] != NULL)
 	{
 		error_message(PARSE_ERROR, line_number, current_parse_file, "module names with the same name -> %s\n", module_name);
 	}
@@ -1802,8 +1811,8 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
 	ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
 	ast_modules[num_modules] = new_node;
-
-	if ((sc_spot = sc_add_string(module_names_to_idx, function_name)) == -1)
+	sc_spot = sc_add_string(module_names_to_idx, function_name);
+	if (module_names_to_idx->data[sc_spot] != NULL)
 	{
 		error_message(PARSE_ERROR, line_number, current_parse_file, "module names with the same name -> %s\n", function_name);
 	}
@@ -1939,24 +1948,6 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 	//	add_child_to_node(new_node, symbol_node);
 	}
 	return NULL;
-}
-
-/*--------------------------------------------------------------------------
- * (function: newConstant)
- *------------------------------------------------------------------------*/
-void newConstant(char *id, ast_node_t *number_node, int line_number)
-{
-	long sc_spot;
-	/* add the define character string to the parser and maintain the number around */
-	/* def_reduct */
-	if ((sc_spot = sc_add_string(defines_for_file_sc, id)) == -1)
-	{
-		error_message(PARSE_ERROR, current_parse_file, line_number, "define with same name (%s) on line %d\n", id, ((ast_node_t*)(defines_for_file_sc->data[sc_spot]))->line_number);
-	}
-	/* store the data */
-	defines_for_file_sc->data[sc_spot] = (void*)number_node;
-	/* mark node as shared */
-	number_node->shared_node = TRUE;
 }
 
 /* --------------------------------------------------------------------------------------------

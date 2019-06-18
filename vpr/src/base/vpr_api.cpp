@@ -747,6 +747,8 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
         timing_info->update();
     }
 
+    init_draw_coords(fixed_channel_width);
+
     return RouteStatus(is_legal, fixed_channel_width);
 }
 
@@ -1140,9 +1142,13 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
     }
 }
 
-/* This function performs power estimation, and must be called
- * after packing, placement AND routing. Currently, this
- * will not work when running a partial flow (ex. only routing). */
+/* This function performs power estimation. It relies on the
+ * placement/routing results, as well as the critical path. 
+ * Power estimation can be performed as part of a full or
+ * partial flow. More information on the power estimation functions of 
+ * VPR can be found here:
+ *   http://docs.verilogtorouting.org/en/latest/vtr/power_estimation/
+ */
 void vpr_power_estimation(const t_vpr_setup& vpr_setup,
                           const t_arch& Arch,
                           const SetupTimingInfo& timing_info,

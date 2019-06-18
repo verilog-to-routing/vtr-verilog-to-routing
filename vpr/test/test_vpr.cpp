@@ -29,14 +29,18 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
             if (loc_def.block_type == "io") {
                 REQUIRE(loc_def.meta != nullptr);
                 REQUIRE(loc_def.meta->has("type"));
-                CHECK_THAT(loc_def.meta->one("type")->as_string(), Equals("io"));
+                auto* value = loc_def.meta->one("type");
+                REQUIRE(value != nullptr);
+                CHECK_THAT(value->as_string(), Equals("io"));
                 found_perimeter_meta = true;
             }
 
             if (loc_def.block_type == "clb" && loc_def.x.start_expr == "5" && loc_def.y.start_expr == "5") {
                 REQUIRE(loc_def.meta != nullptr);
                 REQUIRE(loc_def.meta->has("single"));
-                CHECK_THAT(loc_def.meta->one("single")->as_string(), Equals("clb"));
+                auto* value = loc_def.meta->one("single");
+                REQUIRE(value != nullptr);
+                CHECK_THAT(value->as_string(), Equals("clb"));
                 found_single_meta = true;
             }
         }
@@ -54,7 +58,9 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
             found_pb_type = true;
             REQUIRE(types[i].pb_type != nullptr);
             REQUIRE(types[i].pb_type->meta.has("pb_type_type"));
-            CHECK_THAT(types[i].pb_type->meta.one("pb_type_type")->as_string(), Equals("pb_type = io"));
+            auto* pb_type_value = types[i].pb_type->meta.one("pb_type_type");
+            REQUIRE(pb_type_value != nullptr);
+            CHECK_THAT(pb_type_value->as_string(), Equals("pb_type = io"));
 
             REQUIRE(types[i].pb_type->num_modes > 0);
             REQUIRE(types[i].pb_type->modes != nullptr);
@@ -65,7 +71,9 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
                     const auto* mode = &types[i].pb_type->modes[imode];
 
                     REQUIRE(mode->meta.has("mode"));
-                    CHECK_THAT(mode->meta.one("mode")->as_string(), Equals("inpad"));
+                    auto* mode_value = mode->meta.one("mode");
+                    REQUIRE(mode_value != nullptr);
+                    CHECK_THAT(mode_value->as_string(), Equals("inpad"));
 
                     CHECK(mode->num_interconnect > 0);
                     REQUIRE(mode->interconnect != nullptr);
@@ -74,7 +82,9 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
                         if (strcmp("inpad", mode->interconnect[iint].name) == 0) {
                             found_direct = true;
                             REQUIRE(mode->interconnect[iint].meta.has("interconnect"));
-                            CHECK_THAT(mode->interconnect[iint].meta.one("interconnect")->as_string(), Equals("inpad_iconnect"));
+                            auto* interconnect_value = mode->interconnect[iint].meta.one("interconnect");
+                            REQUIRE(interconnect_value != nullptr);
+                            CHECK_THAT(interconnect_value->as_string(), Equals("inpad_iconnect"));
                             break;
                         }
                     }
@@ -161,8 +171,9 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
     for (const auto& node_meta : device_ctx.rr_node_metadata) {
         CHECK(node_meta.first == src_inode);
         REQUIRE(node_meta.second.has("node"));
-        REQUIRE(node_meta.second.one("node") != nullptr);
-        CHECK_THAT(node_meta.second.one("node")->as_string(), Equals("test node"));
+        auto* value = node_meta.second.one("node");
+        REQUIRE(value != nullptr);
+        CHECK_THAT(value->as_string(), Equals("test node"));
     }
 
     for (const auto& edge_meta : device_ctx.rr_edge_metadata) {
@@ -171,8 +182,9 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         CHECK(std::get<2>(edge_meta.first) == switch_id);
 
         REQUIRE(edge_meta.second.has("edge"));
-        REQUIRE(edge_meta.second.one("edge") != nullptr);
-        CHECK_THAT(edge_meta.second.one("edge")->as_string(), Equals("test edge"));
+        auto* value = edge_meta.second.one("edge");
+        REQUIRE(value != nullptr);
+        CHECK_THAT(value->as_string(), Equals("test edge"));
     }
     vpr_free_all(arch, vpr_setup);
 }

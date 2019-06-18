@@ -104,9 +104,11 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	read_soft_def_file(hard_adders);
 
 	global_param_table_sc = sc_new_string_cache();
+	module_names_to_idx = sc_new_string_cache();
 
 	/* parse to abstract syntax tree */
 	printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
+	init_parser();
 	parse_to_ast();
 	/**
 	 *  Note that the entry point for ast optimzations is done per module with the
@@ -171,9 +173,6 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	/* Find any unused logic in the netlist and remove it */
 	remove_unused_logic(verilog_netlist);
 
-	sc_free_string_cache(global_param_table_sc);
-
-
 	/**
 	 *	point for outputs.  This includes soft and hard mapping all structures to the
 		*	target format.  Some of these could be considred optimizations 
@@ -183,6 +182,12 @@ static ODIN_ERROR_CODE synthesize_verilog()
 
 	
 	output_blif(output_file, verilog_netlist);
+
+	global_param_table_sc = sc_free_string_cache(global_param_table_sc);
+	module_names_to_idx = sc_free_string_cache(module_names_to_idx);
+	
+	cleanup_parser();
+
 	elaboration_time = wall_time() - elaboration_time;
 
 	printf("Successful High-level synthesis by Odin\n\tBlif file available at %s\n\tRan in ",output_file);

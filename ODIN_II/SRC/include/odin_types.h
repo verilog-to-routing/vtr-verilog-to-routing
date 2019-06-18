@@ -169,6 +169,8 @@ struct global_args_t_t
 /**
  * defined in enum_str.cpp
  */
+extern const char *file_extension_supported_STR[];
+
 extern const char *ZERO_GND_ZERO;
 extern const char *ONE_VCC_CNS;
 extern const char *ZERO_PAD_ZERO;
@@ -180,6 +182,12 @@ extern const char *signedness_STR[];
 extern const char *edge_type_e_STR[];
 extern const char *operation_list_STR[][2];
 extern const char *ids_STR [];
+
+typedef enum
+{
+	VERILOG,
+	file_extension_supported_END
+} file_extension_supported;
 
 typedef enum
 {

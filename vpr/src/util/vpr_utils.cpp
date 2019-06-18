@@ -731,7 +731,7 @@ t_type_ptr infer_logic_block_type(const DeviceGrid& grid) {
     auto by_desc_grid_count = [&](t_type_ptr lhs, t_type_ptr rhs) {
         return grid.num_instances(lhs) > grid.num_instances(rhs);
     };
-    std::sort(logic_block_candidates.begin(), logic_block_candidates.end(), by_desc_grid_count);
+    std::stable_sort(logic_block_candidates.begin(), logic_block_candidates.end(), by_desc_grid_count);
 
     if (!logic_block_candidates.empty()) {
         return logic_block_candidates.front();
@@ -2206,4 +2206,29 @@ int max_pins_per_grid_tile() {
         max_pins = max(max_pins, pins_per_grid_tile);
     }
     return max_pins;
+}
+
+void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision) {
+    //Print as integer if it will fit in the width, other wise scientific
+    if (value <= std::pow(10, num_digits) - 1) {
+        //Direct
+        VTR_LOG("%s%*zu", prefix, num_digits, value);
+    } else {
+        //Scientific
+        VTR_LOG("%s%#*.*g", prefix, num_digits, scientific_precision, float(value));
+    }
+}
+
+void pretty_print_float(const char* prefix, double value, int num_digits, int scientific_precision) {
+    //Print as float if it will fit in the width, other wise scientific
+
+    //How many whole digits are there in non-scientific style?
+    size_t whole_digits = num_digits - scientific_precision - 1; //-1 for decimal point
+    if (value <= std::pow(10, whole_digits) - 1) {
+        //Direct
+        VTR_LOG("%s%*.*f", prefix, num_digits, scientific_precision, value);
+    } else {
+        //Scientific
+        VTR_LOG("%s%#*.*g", prefix, num_digits, scientific_precision + 1, value);
+    }
 }
