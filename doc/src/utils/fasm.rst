@@ -233,6 +233,20 @@ can also be used with the ``<direct>`` tag in the same way, example:
       </metadata>
     </direct>
 
+If multiple FASM features are required for a mux, they can be specified using
+comma's as a seperator.  Example:
+
+.. code-block:: xml
+
+    <mux name="D5FFMUX" input="BLK_IG-COMMON_SLICE.DX BLK_IG-COMMON_SLICE.DO5" output="BLK_BB-SLICE_FF.D5[3]" >
+      <metadata>
+        <meta name="fasm_mux">
+          BLK_IG-COMMON_SLICE.DO5 : D5FFMUX.IN_A
+          BLK_IG-COMMON_SLICE.DX : D5FFMUX.IN_B, D5FF.OTHER_FEATURE
+        </meta>
+      </metadata>
+    </mux>
+
 Passing parameters through to the FASM Output
 ---------------------------------------------
 

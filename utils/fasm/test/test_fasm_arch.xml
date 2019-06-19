@@ -145,7 +145,7 @@
                   <delay_constant max="45e-12" in_port="ff[0:0].Q" out_port="ble5.out[0:0]"/>
                   <meta name="fasm_mux">
                     ff.Q : OUT_MUX.FFQ
-                    lut5.out : OUT_MUX.LUT
+                    lut5.out : OUT_MUX.LUT,DISABLE_FF
                   </meta>
                 </mux>
               </interconnect>
@@ -223,7 +223,7 @@
                 <metadata>
                   <meta name="fasm_mux">
                     ff.Q : OUT_MUX.FFQ
-                    lut6.out : OUT_MUX.LUT
+                    lut6.out : OUT_MUX.LUT,DISABLE_FF
                   </meta>
                 </metadata>
               </mux>
