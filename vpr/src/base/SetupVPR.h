@@ -6,7 +6,7 @@
 #include "physical_types.h"
 #include "vpr_types.h"
 
-void SetupVPR(t_options* Options,
+void SetupVPR(const t_options* Options,
               const bool TimingEnabled,
               const bool readArchFile,
               t_file_name_opts* FileNameOpts,

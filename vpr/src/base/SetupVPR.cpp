@@ -46,7 +46,7 @@ static int find_ipin_cblock_switch_index(const t_arch& Arch);
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
-void SetupVPR(t_options* Options,
+void SetupVPR(const t_options* Options,
               const bool TimingEnabled,
               const bool readArchFile,
               t_file_name_opts* FileNameOpts,
