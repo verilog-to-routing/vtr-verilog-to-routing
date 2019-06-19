@@ -5,6 +5,7 @@
 #include "vpr_types.h"
 #include "constant_nets.h"
 #include "argparse_value.hpp"
+#include "argparse.hpp"
 
 struct t_options {
     /* File names */
@@ -148,12 +149,11 @@ struct t_options {
     argparse::ArgValue<int> timing_report_npaths;
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
     argparse::ArgValue<bool> timing_report_skew;
-    /* Router diag tool Options */
-    argparse::ArgValue<int> source_rr_node;
-    argparse::ArgValue<int> sink_rr_node;
-    argparse::ArgValue<bool> profile_source;
 };
 
+argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args);
 t_options read_options(int argc, const char** argv);
+void set_conditional_defaults(t_options& args);
+bool verify_args(const t_options& args);
 
 #endif

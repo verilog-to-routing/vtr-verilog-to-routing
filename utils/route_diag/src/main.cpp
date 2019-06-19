@@ -46,7 +46,6 @@
  */
 constexpr int SUCCESS_EXIT_CODE = 0; //Everything OK
 constexpr int ERROR_EXIT_CODE = 1; //Something went wrong internally
-constexpr int UNIMPLEMENTABLE_EXIT_CODE = 2; //Could not implement (e.g. unroutable)
 constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g. SIGINT/ctr-C)
 
 static void do_one_route(int source_node, int sink_node,
@@ -149,7 +148,7 @@ static void profile_source(int source_rr_node,
                 VTR_ASSERT(sink_rr_node != OPEN);
 
                 {
-                    vtr::ScopedStartFinishTimer timer(vtr::string_fmt(
+                    vtr::ScopedStartFinishTimer delay_timer(vtr::string_fmt(
                         "Routing Src: %d Sink: %d", source_rr_node,
                         sink_rr_node));
                     successfully_routed = calculate_delay(source_rr_node, sink_rr_node,
@@ -166,8 +165,8 @@ static void profile_source(int source_rr_node,
     }
 
     VTR_LOG("Delay matrix from source_rr_node: %d\n", source_rr_node);
-    for(int iy = 0; iy < delays.dim_size(1); ++iy) {
-        for(int ix = 0; ix < delays.dim_size(0); ++ix) {
+    for(size_t iy = 0; iy < delays.dim_size(1); ++iy) {
+        for(size_t ix = 0; ix < delays.dim_size(0); ++ix) {
             VTR_LOG("%g,", delays[ix][iy]);
         }
         VTR_LOG("\n");
@@ -175,8 +174,8 @@ static void profile_source(int source_rr_node,
     VTR_LOG("\n");
 
     VTR_LOG("Sink matrix used for delay matrix:\n");
-    for(int iy = 0; iy < sink_nodes.dim_size(1); ++iy) {
-        for(int ix = 0; ix < sink_nodes.dim_size(0); ++ix) {
+    for(size_t iy = 0; iy < sink_nodes.dim_size(1); ++iy) {
+        for(size_t ix = 0; ix < sink_nodes.dim_size(0); ++ix) {
             VTR_LOG("%d,", sink_nodes[ix][iy]);
         }
         VTR_LOG("\n");
@@ -208,6 +207,42 @@ static t_chan_width setup_chan_width(t_router_opts router_opts,
     return init_chan(width_fac, chan_width_dist);
 }
 
+struct t_route_util_options {
+    /* Router diag tool Options */
+    argparse::ArgValue<int> source_rr_node;
+    argparse::ArgValue<int> sink_rr_node;
+    argparse::ArgValue<bool> profile_source;
+
+    t_options options;
+};
+
+t_route_util_options read_route_util_options(int argc, const char** argv) {
+    //Explicitly initialize for zero initialization
+    t_route_util_options args = t_route_util_options();
+    auto parser = create_arg_parser(argv[0], args.options);
+
+    auto& route_diag_grp = parser.add_argument_group("route diagnostic options");
+    route_diag_grp.add_argument(args.sink_rr_node, "--sink_rr_node")
+        .help("Sink RR node to route for route_diag.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+    route_diag_grp.add_argument(args.source_rr_node, "--source_rr_node")
+        .help("Source RR node to route for route_diag.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+    route_diag_grp.add_argument(args.profile_source, "--profile_source")
+        .help(
+            "Profile routes from source to IPINs at all locations."
+            "This is similiar to the placer delay matrix construction.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    parser.parse_args(argc, argv);
+
+    set_conditional_defaults(args.options);
+
+    verify_args(args.options);
+
+    return args;
+}
+
 int main(int argc, const char **argv) {
     t_options Options = t_options();
     t_arch Arch = t_arch();
@@ -216,8 +251,16 @@ int main(int argc, const char **argv) {
     try {
         vpr_install_signal_handler();
 
-        /* Read options, architecture, and circuit netlist */
-        vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
+        vpr_initialize_logging();
+
+        /* Print title message */
+        vpr_print_title();
+
+        t_route_util_options route_options = read_route_util_options(argc, argv);
+        Options = route_options.options;
+
+        /* Read architecture, and circuit netlist */
+        vpr_init_with_options(&Options, &vpr_setup, &Arch);
 
         vpr_create_device_grid(vpr_setup, Arch);
 
@@ -236,14 +279,14 @@ int main(int argc, const char **argv) {
                 Arch.num_directs
                 );
 
-        if(Options.profile_source) {
+        if(route_options.profile_source) {
             profile_source(
-                Options.source_rr_node,
+                route_options.source_rr_node,
                 vpr_setup.RouterOpts
                 );
         } else {
             do_one_route(
-                    Options.source_rr_node, Options.sink_rr_node,
+                    route_options.source_rr_node, route_options.sink_rr_node,
                     vpr_setup.RouterOpts);
         }
         free_routing_structs();
