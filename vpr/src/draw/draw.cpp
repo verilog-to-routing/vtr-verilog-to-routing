@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <sstream>
 #include <array>
+#include <ctime>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -398,14 +399,11 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 }
 
 void draw_main_canvas(ezgl::renderer &g){
+    clock_t start = clock();
     
     t_draw_state* draw_state = get_draw_state_vars();
 
     
-    if(draw_state->pic_on_screen == NO_PICTURE){
-        std::cout << "set to no picture" << std::endl;
-        return;
-    }
     g.fill_rectangle({{-5000, -5000}, {5000, 5000}});
     g.set_font_size(14);
     
@@ -458,6 +456,9 @@ void draw_main_canvas(ezgl::renderer &g){
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
+    
+    clock_t end = clock() - start;
+    std::cout << "--------------load time : " << float(end)/CLOCKS_PER_SEC << " s--------------" << std::endl;
     return;
 }
 
@@ -3060,7 +3061,6 @@ static void deselect_all() {
     // Sets the color of all clbs, nets and rr_nodes to the default.
     // as well as clearing the highlighed sub-block
     
-    std::cout << "deselecting!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
     t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -3111,7 +3111,7 @@ void draw_triangle_along_line(ezgl::renderer &g, ezgl::point2d start, ezgl::poin
     draw_triangle_along_line(g, xtri, ytri, start.x, end.x, start.y, end.y, arrow_size);
 }
 
-/* Draws a trangle with it's center at loc, and of length & width
+/* Draws a triangle with it's center at loc, and of length & width
  * arrow_size, rotated such that it points in the direction
  * of the directed line segment start -> end.
  */
@@ -3120,7 +3120,7 @@ void draw_triangle_along_line(ezgl::renderer &g, ezgl::point2d loc, ezgl::point2
 }
 
 /**
- * Draws a trangle with it's center at (xend, yend), and of length & width
+ * Draws a triangle with it's center at (xend, yend), and of length & width
  * arrow_size, rotated such that it points in the direction
  * of the directed line segment (x1, y1) -> (x2, y2).
  *
@@ -3153,7 +3153,7 @@ void draw_triangle_along_line(ezgl::renderer &g, float xend, float yend, float x
 static inline bool LOD_screen_area_test_square(float width, float screen_area_threshold) {
     
     //Since world coordinates get clipped when converted to screen (at high zoom levels),
-    //we can not pick an arbitrary world root coordinate for the rectange we want to test,
+    //we can not pick an arbitrary world root coordinate for the rectangle we want to test,
     //as clipping could cause it's area to go to zero when we convert from world to screen
     //coordinates.
     //
