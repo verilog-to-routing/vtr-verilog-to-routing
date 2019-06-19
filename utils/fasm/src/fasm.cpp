@@ -658,12 +658,14 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
       bool root_level_connection = interconnect->parent_mode->parent_pb_type ==
           mux_input_pin->parent_node->pb_type;
 
+      auto fasm_features = vtr::join(vtr::split(mux_parts[1], ","), "\n");
+
       if(root_level_connection) {
         // This connection is root level.  pb_index selects between
         // pb_type_prefixes_, not on the mux input.
         if(mux_pb_name == pb_name && mux_port_name == port_name && mux_pin_index == pin_index) {
           if(mux_parts[1] != "NULL") {
-            output_fasm_features(mux_parts[1]);
+            output_fasm_features(fasm_features);
           }
           return;
         }
@@ -672,7 +674,7 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
                 mux_port_name == port_name &&
                 mux_pin_index == pin_index) {
         if(mux_parts[1] != "NULL") {
-          output_fasm_features(mux_parts[1]);
+          output_fasm_features(fasm_features);
         }
         return;
       }
