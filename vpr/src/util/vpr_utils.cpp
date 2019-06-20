@@ -2076,6 +2076,15 @@ static int convert_switch_index(int* switch_index, int* fanin) {
     return -1;
 }
 
+void fread_secure(void* var, size_t size, unsigned int count, FILE* fp) {
+    auto result = fread(var, size, count, fp);
+    if (result != count) {
+        VPR_THROW(VPR_ERROR_OTHER, "ERROR reading file\n");
+    }
+
+    return;
+}
+
 /*
  * print out number of usage for every switch (type / fanin combination)
  * (referring to rr_graph.c: alloc_rr_switch_inf())
