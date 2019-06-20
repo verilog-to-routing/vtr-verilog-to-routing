@@ -42,6 +42,8 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
 
 void sync_grid_to_blocks();
 
+void fread_secure(void* var, size_t size, unsigned int count, FILE* fp);
+
 //Returns the name of the pin_index'th pin on the specified block type
 std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_index);
 
