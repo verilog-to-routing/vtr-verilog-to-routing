@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <algorithm>
 #include <cmath>
+#include <string>
 #include "odin_types.h"
 #include "node_creation_library.h"
 #include "multipliers.h"
@@ -38,6 +39,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "vtr_memory.h"
 #include "vtr_list.h"
+#include "vtr_util.h"
 
 
 using vtr::t_linked_vptr;
@@ -395,39 +397,55 @@ void declare_hard_multiplier(nnode_t *node)
  *-------------------------------------------------------------------------*/
 void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
-	char *new_name;
-	int len, sanity, i;
+	oassert(node
+	 && "node is NULL to instanciate hard multiplier");
 
 	declare_hard_multiplier(node);
 
-	/* Need to give node proper name */
-	len = strlen(node->name);
-	len = len + 20; /* 20 chars should hold mul specs */
-	new_name = (char*)vtr::malloc(len);
-
-	/* wide input first :) */
-	if (node->input_port_sizes[0] > node->input_port_sizes[1])
-		sanity = odin_sprintf(new_name, "%s_%d_%d_%d", node->name, node->input_port_sizes[0], node->input_port_sizes[1], node->output_port_sizes[0]);
-	else
-		sanity = odin_sprintf(new_name, "%s_%d_%d_%d", node->name, node->input_port_sizes[1], node->input_port_sizes[0], node->output_port_sizes[0]);
-
-	if (len <= sanity) /* buffer not large enough */
-		oassert(FALSE);
-
-	/* Give names to the output pins */
-	for (i = 0; i < node->num_output_pins;  i++)
-	{
-		if (node->output_pins[i]->name)
-		{
-			vtr::free(node->output_pins[i]->name);
-		}
-		len = strlen(node->name) + 6; /* 6 chars for pin idx */
-		new_name = (char*)vtr::malloc(len);
-		odin_sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
-		node->output_pins[i]->name = new_name;
+	std::string node_name = "";
+	if( node->name )
+	{	
+		node_name = node->name;
+		vtr::free(node->name);
+		node->name = NULL;
 	}
-	vtr::free(node->name);
-	node->name = new_name;
+
+	if(node->num_output_pins <= 0)
+	{
+		/* wide input first :) */
+		int portA = 0;
+		int portB = 1;
+		if (node->input_port_sizes[1] > node->input_port_sizes[0])
+		{
+			portA = 1;
+			portB = 0;
+		}
+		std::string tmp(
+			node_name +
+			"_" + std::to_string(node->input_port_sizes[portA]) +
+			"_" + std::to_string(node->input_port_sizes[portB]) +
+			"_" + std::to_string(node->output_port_sizes[0])
+		);
+		node->name = vtr::strdup(tmp.c_str());
+	}
+	else
+	{
+		/* Give names to the output pins */
+		for (int i = 0; i < node->num_output_pins;  i++)
+		{
+			if (node->output_pins[i]->name)
+			{
+				vtr::free(node->output_pins[i]->name);
+			}
+			//build the output string
+			std::string tmp( 
+				node_name + 
+				"[" + std::to_string(node->output_pins[i]->pin_node_idx) + "]"
+			);
+			node->output_pins[i]->name = vtr::strdup(tmp.c_str());
+		}
+		node->name = vtr::strdup(node->output_pins[node->num_output_pins-1]->name);
+	}
 	node->traverse_visited = mark;
 	return;
 }
