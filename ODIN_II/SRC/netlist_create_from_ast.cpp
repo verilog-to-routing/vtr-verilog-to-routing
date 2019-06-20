@@ -2271,6 +2271,7 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefi
 			/* Lookup port size in cache */
 			port_size = get_memory_port_size(alias_name);
 			vtr::free(alias_name);
+			vtr::free(full_name);
 			oassert(port_size != 0);
 
 			for (j = 0; j < port_size; j++)
@@ -2311,6 +2312,8 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefi
 							hb_instance->children[1]->children[0]->types.identifier,
 							hb_connect_list->children[i]->children[0]->types.identifier, -1);
 				}
+				
+				
 
 				/* Search for the old_input name */
 				sc_spot_input_old = sc_lookup_string(input_nets_sc, alias_name);
