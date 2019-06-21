@@ -103,12 +103,13 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 
 /* Display general VPR information */
 void vpr_print_title() {
-    VTR_LOG("\n");
     VTR_LOG("VPR FPGA Placement and Routing.\n");
     VTR_LOG("Version: %s\n", vtr::VERSION);
     VTR_LOG("Revision: %s\n", vtr::VCS_REVISION);
     VTR_LOG("Compiled: %s\n", vtr::BUILD_TIMESTAMP);
     VTR_LOG("Compiler: %s\n", vtr::COMPILER);
+    VTR_LOG("Build Info: %s\n", vtr::BUILD_INFO);
+    VTR_LOG("\n");
     VTR_LOG("University of Toronto\n");
     VTR_LOG("verilogtorouting.org\n");
     VTR_LOG("vtr-users@googlegroups.com\n");
