@@ -16,6 +16,8 @@
 #include "rtl_utils.hpp"
 
 typedef uint64_t veri_internal_bits_t;
+// typedef VNumber<64> veri_64_t;
+// typedef VNumber<32> veri_32_t;
 
 template <typename T>
 uint8_t get_veri_integer_limit()
@@ -256,7 +258,7 @@ namespace BitSpace {
     {
     private :
 
-        T bits = _All_x; // TODO this messes with is_dont_care_string!!!!
+        T bits = _All_x;
 
         size_t get_bit_location(size_t address)
         {
@@ -533,10 +535,12 @@ namespace BitSpace {
     }; 
 }
 
+//template<size_t bit_size>
 class VNumber 
 {
 private:
     bool sign;
+    bool defined_size;
     BitSpace::VerilogBits bitstring;
 
     VNumber(BitSpace::VerilogBits other_bitstring, bool other_sign)
@@ -557,6 +561,7 @@ public:
     {
         this->sign = other.sign;
         this->bitstring = other.bitstring;
+        this->defined_size = other.defined_size;
     }
 
     VNumber(VNumber other, size_t length)
@@ -591,7 +596,7 @@ public:
         );   
 
         int64_t result = 0;
-        int8_t pad = this->is_negative();
+        int8_t pad = this->get_padding_bit(); // = this->is_negative();
         for(size_t bit_index = 0; bit_index < this->size(); bit_index++)
         {
             int64_t current_bit = pad;
@@ -605,7 +610,7 @@ public:
     }
 
     // convert lsb_msb bitstring to verilog
-    std::string to_v_string()
+    std::string to_full_string()
     {
         std::string out = this->to_bit_string();
         size_t len = this->bitstring.size();
@@ -624,9 +629,7 @@ public:
      */
     void set_value(const std::string& input)
     {
-
         std::string verilog_string(input);
-        bool is_neg_dec = false;
 
         if(!verilog_string.size())
         {
@@ -638,21 +641,21 @@ public:
 
         if(loc == std::string::npos)
         {
-            if (verilog_string.at(0) == '-')
-            {
-                verilog_string.erase(verilog_string.begin());
-                is_neg_dec = true;
-            }
-            verilog_string.insert(0, "64\'sd");
-            loc = 2;
+            verilog_string.insert(0, "\'sd");
+            loc = 0;
         }
-
 
         size_t bitsize = 0;
         if(loc != 0)
         {
             std::string bit_length_char = verilog_string.substr(0, loc);
             bitsize = strtoul(bit_length_char.c_str(), nullptr, 10);
+            this->defined_size = true;
+        }
+        else
+        {
+            bitsize = 32;
+            this->defined_size = false;
         }
 
 
@@ -709,10 +712,6 @@ public:
         
 
         this->bitstring = new_bitstring.resize(BitSpace::c_to_bit(pad), bitsize);
-        if (is_neg_dec) 
-        {
-            this->bitstring = this->bitstring.twos_complement();
-        }
     }
 
     void set_value(int64_t in)
@@ -756,12 +755,18 @@ public:
      */
     size_t size()
     {
+
         return this->bitstring.size();
     }
 
     bool is_signed() const
     {
         return this->sign;
+    }
+
+    bool is_defined_size() 
+    {
+        return this->defined_size;
     }
 
     bool is_negative()

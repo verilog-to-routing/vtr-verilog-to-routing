@@ -400,7 +400,7 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 	{
 		for (i = 1; i < exp->types.vnumber->get_value(); i++)
 		{
-			add_child_to_node(new_node, child);
+			add_child_to_node(new_node, ast_node_deep_copy(child));
 		}
 	}
 

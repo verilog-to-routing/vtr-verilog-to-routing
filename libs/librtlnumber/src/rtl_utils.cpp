@@ -213,7 +213,6 @@ std::string string_of_radix_to_bitstring(std::string orig_string, short radix)
 		}
 	}
     
-    // pad an extra bit for undefined length
     result.insert(result.begin(),'0');
 	return result;
 }

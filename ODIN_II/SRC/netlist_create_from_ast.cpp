@@ -934,6 +934,8 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				child_skip_list[1] = TRUE; /* skip portlist ... we'll use where they're defined */
 				return_sig_list = create_hard_block(node, instance_name_prefix);
 				break;
+			case CONCATENATE:
+				resolve_concat_sizes(node, instance_name_prefix);
 			default:
 				break;
 		}
@@ -3351,8 +3353,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	else
 	{
 		// TODO Alex - this is temporary
-		if (right->type == BINARY_OPERATION || right->type == UNARY_OPERATION)
-			right = resolve_node(NULL, instance_name_prefix, right);
+		// if (right->type == BINARY_OPERATION || right->type == UNARY_OPERATION || right->type)
+		right = resolve_node(NULL, instance_name_prefix, right);
 
 		in_1 = netlist_expand_ast_of_module(right, instance_name_prefix);
 		oassert(in_1 != NULL);
@@ -3508,6 +3510,16 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		{
 			free_signal_list(return_list);
 			return_list = in_1;
+
+			// /* TODO must check if output_size > in_1->count... pad accordingly */
+			// if (output_size > return_list->count)
+			// {
+			// 	int i;
+			// 	for (i = return_list->count; i < output_size; i++)
+			// 	{
+			// 		add_pin_to_signal_list(return_list, return_list->pins[i-1]);
+			// 	}
+			// }
 
 			/* free unused nnodes for related BLOCKING_STATEMENT nodes */
 			int i;
@@ -4144,7 +4156,8 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 			break;
 		case SL: // <<
 			/* Shifts doesn't matter about port size, but second input needs to be a number */
-			output_port_width = input_lists[0]->count + (shift_left_value_with_overflow_check(0x1, input_lists[1]->count)-1);
+			//output_port_width = input_lists[0]->count + (shift_left_value_with_overflow_check(0x1, input_lists[1]->count)-1);
+			output_port_width = input_lists[0]->count + (shift_left_value_with_overflow_check(0x1, log2(op->children[1]->types.vnumber->get_value())));
 			input_port_width = output_port_width;
 			break;
 		case LOGICAL_NOT: // !

@@ -325,6 +325,76 @@ ast_node_t **expand_node_list_at(ast_node_t **list, long old_size, long to_add, 
 	return NULL;
 }
 
+void resolve_concat_sizes(ast_node_t *concat_top, char *instance_name_prefix)
+{
+	long i;
+	if (concat_top->type == CONCATENATE)
+	{
+		for (i = 0; i < concat_top->num_children; i++)
+		{
+			resolve_concat_sizes(concat_top->children[i], instance_name_prefix);
+		}
+	}
+	else if (concat_top->type == IDENTIFIERS)
+	{
+		ast_node_t *temp_node = resolve_node(NULL, instance_name_prefix, concat_top);
+		if (temp_node != concat_top)
+		{
+			oassert(temp_node->type == NUMBERS);
+			resolve_concat_sizes(temp_node, instance_name_prefix);
+			free(temp_node);
+		}
+		else
+		{
+			char *temp_string = make_full_ref_name(NULL, NULL, NULL, concat_top->types.identifier, -1);
+			long sc_spot;
+			if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) == -1)
+			{
+				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missing declaration of this symbol %s\n", temp_string);
+			}
+			else
+			{
+				temp_node = ((ast_node_t*)local_symbol_table_sc->data[sc_spot]);
+
+				if (temp_node->children[1] == NULL && temp_node->children[5] != NULL)
+				{				
+					resolve_concat_sizes(temp_node->children[5], instance_name_prefix);
+				}
+				else
+				{
+					oassert(temp_node->children[3] == NULL);
+				}
+			}
+			vtr::free(temp_string);
+		}
+	}
+	else if (concat_top->type == BINARY_OPERATION || concat_top->type == UNARY_OPERATION)
+	{
+		for (i = 0; i < concat_top->num_children; i++)
+		{
+			resolve_concat_sizes(concat_top->children[i], instance_name_prefix);
+		}
+	}
+	else if (concat_top->type == IF_Q)
+	{
+		/* check true/false expressions */
+		resolve_concat_sizes(concat_top->children[1], instance_name_prefix);
+		resolve_concat_sizes(concat_top->children[2], instance_name_prefix);
+	}
+	else if (concat_top->type == NUMBERS)
+	{
+		/* verify that the number that this represents is sized */
+		if (!(concat_top->types.vnumber->is_defined_size()))
+		{
+			error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "%s", "Unsized constants cannot be concatenated.\n");
+		}
+	}
+	else if (!(concat_top->type == ARRAY_REF || concat_top->type == RANGE_REF))
+	{
+		error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "%s", "Unsupported operation within a concatenation.\n");
+	}
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: make_concat_into_list_of_strings)
  * 	0th idx will be the MSbit
@@ -355,7 +425,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 			long sc_spot;
 			if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) == -1)
 			{
-				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missssing declaration of this symbol %s\n", temp_string);
+				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missing declaration of this symbol %s\n", temp_string);
 			}
 			else
 			{
@@ -417,17 +487,20 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 		}
 		else if (concat_top->children[i]->type == NUMBERS)
 		{
-			// if(concat_top->children[i]->types.number.base == DEC)
-			// {
-			// 	error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "%s", "Concatenation can't include decimal numbers due to conflict on bits\n");
-			// }
-
-			// Changed to reverse to fix concatenation bug.
-			for (j = concat_top->children[i]->types.vnumber->size()-1; j>= 0; j--)
+			if (concat_top->children[i]->types.vnumber->is_defined_size())
 			{
-				concat_top->types.concat.num_bit_strings ++;
-				concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
-				concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix);
+				// Changed to reverse to fix concatenation bug.
+				for (j = concat_top->children[i]->types.vnumber->size()-1; j>= 0; j--)
+				{
+					concat_top->types.concat.num_bit_strings ++;
+					concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
+					concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix);
+				
+				}
+			}
+			else
+			{
+				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "%s", "Unsized constants cannot be concatenated.\n");
 			}
 		}
 		else if (concat_top->children[i]->type == CONCATENATE)
@@ -460,10 +533,6 @@ void change_to_number_node(ast_node_t *node, long value)
 	}
 	free_assignement_of_node_keep_tree(node);
 	free_all_children(node);
-	
-	long len = snprintf(NULL,0,"%ld", value);
-	char *number = (char *)vtr::calloc(len+1,sizeof(char));
-	odin_sprintf(number, "%ld", value);
 
 	node->type = NUMBERS;
 	node->types.identifier = temp_ident;
@@ -509,6 +578,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 
 	if (var_node->type == ARRAY_REF)
 	{
+		var_node->children[1] = resolve_node(NULL, instance_name_prefix, var_node->children[1]);
 		oassert(var_node->children[0]->type == IDENTIFIERS);
 		oassert(var_node->children[1]->type == NUMBERS);
 		return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, (int)var_node->children[1]->types.vnumber->get_value());
@@ -797,11 +867,8 @@ char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_n
  * Also try and fold any BINARY_OPERATIONs now that an IDENTIFIER has been
  * resolved
  */
-static int counter = 0;
 ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, ast_node_t *node)
 {
-
-	oassert(++counter != 10000000);
 	long sc_spot = -1;
 
 	// Not sure this should even be used.
@@ -1094,7 +1161,10 @@ ast_node_t *fold_unary(ast_node_t *node)
 				break;
 
 			case CLOG2:
-				vresult = VNumber(voperand_0.size());
+				if(voperand_0.size() > ODIN_STD_BITWIDTH)
+					warning_message(PARSE_ERROR, child_0->line_number, child_0->file_number, "argument is %ld-bits but ODIN limit is %lu-bits \n",voperand_0.size(),ODIN_STD_BITWIDTH);
+
+				vresult = VNumber(clog2(voperand_0.get_value(), voperand_0.size()));
 				success = TRUE;
 				break;
 
@@ -1124,6 +1194,8 @@ ast_node_t * fold_binary(ast_node_t *node)
 		short success = FALSE;
 		VNumber voperand_0 = *(child_0->types.vnumber);
 		VNumber voperand_1 = *(child_1->types.vnumber);
+		// long size_0 = ;
+		// long size_1;
 		VNumber vresult;
 
 		switch (op_id){
