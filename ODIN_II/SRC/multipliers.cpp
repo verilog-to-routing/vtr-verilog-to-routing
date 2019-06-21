@@ -528,7 +528,9 @@ void add_the_blackbox_for_mults(FILE *out)
 		fprintf(out, ".end\n");
 		fprintf(out, "\n");
 
-		muls = muls->next;
+		t_multiplier *temp = muls->next;
+		vtr::free(muls);
+		muls = temp;
 	}
 }
 
