@@ -185,7 +185,7 @@ foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
 endforeach()
 
 #Suppress IPO link warnings
-set(IPO_LINK_WARN_SUPRESS_FLAGS "")
+set(IPO_LINK_WARN_SUPRESS_FLAGS " ")
 set(IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK 
     "-Wno-null-dereference"
     )
