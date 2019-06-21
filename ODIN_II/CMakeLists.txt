@@ -135,5 +135,10 @@ add_executable(odin_II ${EXEC_SOURCES})
 target_link_libraries(odin_II
                         libodin_ii)
 
+#Supress IPO link warnings if IPO is enabled
+get_target_property(ODIN_USES_IPO odin_II INTERPROCEDURAL_OPTIMIZATION)
+if (ODIN_USES_IPO)
+    set_target_properties(odin_II PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
+endif()
 
 install(TARGETS odin_II libodin_ii DESTINATION bin)

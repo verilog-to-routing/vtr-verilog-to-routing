@@ -184,6 +184,19 @@ foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
     endif()
 endforeach()
 
+#Suppress IPO link warnings
+set(IPO_LINK_WARN_SUPRESS_FLAGS "")
+set(IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK 
+    "-Wno-null-dereference"
+    )
+foreach(flag ${IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK})
+    CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
+    if(CXX_COMPILER_SUPPORTS_${flag})
+        #Flag supported, so enable it
+        set(IPO_LINK_WARN_SUPRESS_FLAGS "${IPO_LINK_WARN_SUPRESS_FLAGS} ${flag}")
+    endif()
+endforeach()
+
 #
 # Sanitizer flags
 #
