@@ -2,3 +2,6 @@ regression_test/runs
 OUTPUT/*
 temp
 regression_test/latest
+*_preproc.v
+default_out.blif
+*.dot

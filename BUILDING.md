@@ -7,6 +7,14 @@ VTR uses [CMake](https://cmake.org) as it's build system.
 
 CMake provides a portable cross-platform build systems with many useful features.
 
+## Tested Compilers ##
+VTR requires a C++-14 compliant compiler.
+The following compilers are tested with VTR:
+
+* GCC/G++: 5, 6, 7, 8, 9
+* Clang/Clang++: 3.8, 6
+
+Other compilers may work but are untested (your milage may vary).
 
 ## Unix-like ##
 For unix-like systems we provide a wrapper Makefile which supports the traditional `make` and `make clean` commands, but calls CMake behind the scenes.
@@ -23,6 +31,7 @@ For the VPR GUI you need:
  * FreeType
  * Xft (libXft + libX11)
  * fontconfig
+ * libgtk-3-dev
 
 For the [regression testing and benchmarking](README.developers.md#running-tests) you will need:
  * Perl + List::MoreUtils
@@ -34,6 +43,7 @@ It is also recommended you install the following development tools:
  * ctags
  * gdb
  * valgrind
+ * clang-format-7
 
 For Docs generation you will need:
  * Doxygen

@@ -5,23 +5,44 @@ from collections import OrderedDict
 import openpyxl #Excel spreadsheet manipulation library
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.worksheet.cell_range import CellRange
-
+import os
 import pandas as pd
 
 DEFAULT_METRICS = [
-    'num_pre_packed_blocks',        
-    'num_post_packed_blocks',        
-    'min_chan_width',        
-    'crit_path_routed_wirelength',        
-    'critical_path_delay',        
-    'device_grid_tiles',        
+    #ABC QoR Metrics
+    'abc_depth',
+    'num_pre_packed_blocks',
 
-    'vtr_flow_elapsed_time',        
-    'pack_time',        
-    'place_time',        
-    'min_chan_width_route_time',        
-    'crit_path_route_time',        
-    'max_vpr_mem',        
+    #Pack QoR Metrics
+    'num_post_packed_blocks',
+    'num_clb', #VTR
+    'num_memories', #VTR
+    'num_mult', #VTR
+    'num_LAB', #Titan
+    'num_DSP', #Titan
+    'num_M9K', #Titan
+    'num_M144K', #Titan
+    'device_grid_tiles',
+
+    #Place QoR Metrics
+    'placed_wirelength_est',
+    'placed_CPD_est',
+
+    #Route QoR Metrics
+    'min_chan_width', #VTR
+    'routed_wirelength', #VTR (minW), Titan
+    'crit_path_routed_wirelength', #VTR
+    'critical_path_delay', #VTR/Titan
+
+    #Run-time Metrics
+    'odin_synth_time',
+    'abc_synth_time',
+    'pack_time',
+    'place_time',
+    'min_chan_width_route_time',
+    'crit_path_route_time',
+    'vtr_flow_elapsed_time',
+    'max_vpr_mem',
 ]
 
 DEFAULT_KEYS = [
@@ -34,7 +55,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Utility script to generate spreadsheets comparing VTR metric files")
 
     parser.add_argument("parse_result_files",
-                        nargs="+",
+                        nargs="*",
                         metavar="PARSE_RESULT.TXT",
                         help="Set of metric files to compare")
 
@@ -56,9 +77,20 @@ def parse_args():
     parser.add_argument("--keys",
                         nargs="+",
                         default=DEFAULT_KEYS,
-                        help="Default keys to identify individiual experiments (default: %(default)s)")
+                        help="Default keys to identify individual experiments (default: %(default)s)")
+
+    parser.add_argument("-t", "--task",
+                        metavar="task_name",
+                        default="",
+                        help="Compare the latest result of a task to its golden results")
 
     args = parser.parse_args()
+
+    if (args.task):
+        args.parse_result_files = get_task_result_files(args.task)
+
+    if (not args.task and len(args.parse_result_files) == 0):
+        raise RuntimeError("No parse result files or task name provided")
 
     if not args.result_names or len(args.result_names) == 0:
         args.result_names = args.parse_result_files
@@ -79,17 +111,33 @@ def main():
 
     assert len(args.result_names) == len(args.parse_result_files)
 
+    avail_metrics = set()
+
     #Load all the raw data into separate sheets
     raw_sheets = OrderedDict()
-    for i in xrange(len(args.parse_result_files)):
+    for i, csv in enumerate(args.parse_result_files):
+        #Load as CSV
+        print "Loading", csv
+        df = pd.read_csv(csv, sep='\t')
+
+        avail_metrics.update(df.columns) #Record available metrics
+
+        #Convert to work sheet
         sheet_name = safe_sheet_title("{}".format(args.result_names[i]))
-        ws = parse_result_to_sheet(wb, args.parse_result_files[i], sheet_name)
+        ws = dataframe_to_sheet(wb, df, sheet_name)
 
         raw_sheets[sheet_name] = ws
 
+    qor_metrics = []
+    for metric in args.qor_metrics:
+        if metric not in avail_metrics:
+            print "Warning: Metric", metric, "not found in parse results (may be for a different benchmark set)"
+        else:
+            qor_metrics.append(metric)
+
     #Create sheet of ratios
     ratio_sheet = wb.create_sheet("ratios", index=0)
-    ratio_ranges = make_ratios(ratio_sheet, raw_sheets, keys=args.keys, metrics=args.qor_metrics)
+    ratio_ranges = make_ratios(ratio_sheet, raw_sheets, keys=args.keys, metrics=qor_metrics)
 
     #Create summary sheet
     summary_data_sheet = wb.create_sheet("summary_data", index=0)
@@ -107,8 +155,7 @@ def make_transpose(dest_sheet, ref_sheet):
             ref_cell = ref_sheet.cell(row=ref_row, column=ref_col)
 
             dest_cell = dest_sheet.cell(row=ref_col, column=ref_row)
-            dest_cell.value = "=IF(ISBLANK({cell}),\"\",{cell})".format(cell=value_ref(ref_cell))
-
+            dest_cell.value = "=IF(OR(ISBLANK({cell}),ISERROR({cell})),\"\",{cell})".format(cell=value_ref(ref_cell))
 
 def make_summary(summary_sheet, ratio_sheet, ratio_ranges, keys):
     dest_row = 1
@@ -131,7 +178,7 @@ def make_summary(summary_sheet, ratio_sheet, ratio_ranges, keys):
                     dest_col += 1
             dest_row += 1
             dest_col = 1 #Reset for next row
-        
+
         #
         #Data
         #
@@ -208,7 +255,7 @@ def fill_ratio(ws, raw_sheet, ref_sheet, dest_row, dest_col, keys, metrics):
 
             dest_cell = ws.cell(row=dest_row + row_offset, column=dest_col + col_offset)
 
-            
+
             if ref_header_name in keys:
                 assert ref_cell.value == raw_cell.value, "Key value must match"
 
@@ -264,11 +311,7 @@ def link_sheet_header(dest_sheet, ref_sheet, row, values=None):
 
         dest_col += 1
 
-def parse_result_to_sheet(wb, parse_results_filename, sheet_name):
-
-    #Load as CSV
-    print "Loading", parse_results_filename
-    df = pd.read_csv(parse_results_filename, sep='\t')
+def dataframe_to_sheet(wb, df, sheet_name):
 
     #Add to sheet
     ws = wb.create_sheet(title=sheet_name)
@@ -284,7 +327,28 @@ def safe_sheet_title(raw_title):
     for bad_char in ['/']:
         safe_title = safe_title.replace(bad_char, '_')
 
+    if (len(safe_title) > 31):
+        safe_title = safe_title[-31:]
+
     return safe_title
+
+def get_task_result_files(task_name):
+
+    task_path = os.path.join("..", "tasks", task_name)
+    if (not os.path.isdir(task_path)):
+        raise RuntimeError("Task is not found at {}".format(task_path))
+
+    task_result_files = []
+    task_result_files.append(os.path.join("..", "tasks", task_name, "config", "golden_results.txt"))
+    task_result_files.append(os.path.join("..", "tasks", task_name, "latest", "parse_results.txt"))
+
+    if (not os.path.isfile(task_result_files[0])):
+        raise RuntimeError("Golden results of task \"{}\" doesn't exist".format(task_result_files[0]))
+
+    if (not os.path.isfile(task_result_files[1])):
+        raise RuntimeError("Latest parse results of task \"{}\" doesn't exist".format(task_result_files[1]))
+
+    return task_result_files
 
 if __name__ == "__main__":
     main()

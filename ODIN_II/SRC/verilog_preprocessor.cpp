@@ -17,11 +17,11 @@ struct veri_Defines veri_defines;
 /* Function declarations */
 FILE* open_source_file(char* filename, std::string parent_path);
 FILE *remove_comments(FILE *source);
-FILE *format_verilog_file(FILE *source);
-FILE *format_verilog_variable(FILE * src, FILE *dest);
 /*
  * Initialize the preprocessor by allocating sufficient memory and setting sane values
  */
+const char symbol_char[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789";
+
 int init_veri_preproc()
 {
 	veri_includes.included_files = (veri_include **) vtr::calloc(DefaultSize, sizeof(veri_include *));
@@ -173,7 +173,7 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 
 	/* Create the new define and initalize it. */
 	new_def->symbol = (char *)vtr::strdup(symbol);
-	new_def->value = (value == NULL)? NULL : (char *)vtr::strdup(value);
+	new_def->value = (value == NULL)? vtr::strdup("") : (char *)vtr::strdup(value);
 	new_def->line = line;
 	new_def->defined_in = defined_in;
 
@@ -226,7 +226,7 @@ veri_include* add_veri_include(const char *path, int line, veri_include *include
  * Retrieve the value associated, if any, with the given symbol. If the symbol is not present or no
  * value is associated with the symbol then NULL is returned.
  */
-char* ret_veri_definedval(char *symbol)
+char* ret_veri_definedval(const char *symbol)
 {
 	int is_defined = veri_is_defined(symbol);
 	if(0 <= is_defined)
@@ -240,7 +240,7 @@ char* ret_veri_definedval(char *symbol)
 /*
  * Returns a non-negative integer if the symbol has been previously defined.
  */
-int veri_is_defined(char * symbol)
+int veri_is_defined(const char * symbol)
 {
 	int i;
 	veri_define *def_iterator = veri_defines.defined_constants[0];
@@ -335,12 +335,13 @@ FILE *remove_comments(FILE *source)
 	destination = freopen(NULL, "r+", destination);
 	rewind(source);
 
-	char line[MaxLine];
+	char *line = NULL;
+	long line_size = 0;
 	int in_multiline_comment = FALSE;
-	while (fgets(line, MaxLine, source))
+	while ((line = get_line(line, &line_size, source)) != nullptr)
 	{
 		unsigned int i;
-		for (i = 0; i < strnlen(line, MaxLine); i++)
+		for (i = 0; i < strnlen(line, line_size); i++)
 		{
 			if (!in_multiline_comment)
 			{
@@ -372,6 +373,7 @@ FILE *remove_comments(FILE *source)
 			}
 		}
 		fputc('\n', destination);
+		vtr::free(line);
 	}
 	rewind(destination);
 	return destination;
@@ -382,66 +384,66 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 	// Strip the comments from the source file producing a temporary source file.
 	FILE *source = remove_comments(original_source);
 
-	source = format_verilog_file(source);
-
 	int line_number = 1;
 	veri_flag_stack *skip = (veri_flag_stack *)vtr::calloc(1, sizeof(veri_flag_stack));;
-	char line[MaxLine];
+	char *line = NULL;
+	long line_size = 0;
 	char *token;
 	veri_include *new_include = NULL;
 
-
-	while (NULL != fgets(line, MaxLine, source))
+	while ((line = get_line(line, &line_size, source)) != NULL)
 	{
 		//fprintf(stderr, "%s:%ld\t%s", current_include->path,line_number, line);
-		char proc_line[MaxLine] ;
-		char symbol[MaxLine] ;
-		char *p_proc_line = proc_line ;
-		char *last_pch, *pch, *pch_end ;
+
 		// advance past all whitespace
-		last_pch = trim(line) ;
-		// start searching for backtick
-		pch = strchr( last_pch, '`' ) ;
-		while ( pch ) {
-			// if symbol found, copy everything from end of last_pch to here
-			strncpy( p_proc_line, last_pch, pch - last_pch ) ;
-			p_proc_line += pch - last_pch ;
-			*p_proc_line = '\0' ;
+		line = trim(line);
 
-			// find the end of the symbol
-			for(pch_end = pch+1 ; pch_end && ( isalnum(*pch_end) || *pch_end == '_' ); pch_end++){}
+		std::string proc_line(line);
 
-			// copy symbol into array
-			strncpy( symbol, pch+1, pch_end - (pch+1) ) ;
-			*(symbol + (pch_end - (pch+1))) = '\0' ;
+		// start searching for backticks
+		std::size_t pch = proc_line.find_first_of('`') ;
 
-			char* value = ret_veri_definedval( symbol ) ;
-			if ( !value ) {		// symbol not found, just pass it through
-				value = symbol;
-				*p_proc_line++ = '`' ;
+		while ( pch != std::string::npos) 
+		{				
+			std::size_t end_pch = proc_line.find_first_not_of(symbol_char, pch+1);
+			if (end_pch != std::string::npos)
+			{
+				std::string symbol = proc_line.substr(pch+1, (end_pch-pch)-1);
+				
+				// get value from lookup table
+				char* value = ret_veri_definedval( symbol.c_str() ) ;
+				if (value != NULL)
+				{
+					proc_line.erase(pch, (end_pch-pch));
+					proc_line.insert(pch, value);
+				}
 			}
-			vtr::strncpy( p_proc_line, value, MaxLine) ;
-			p_proc_line += strlen( value ) ;
+							
+			// find next backtick
+			pch = proc_line.find_first_of('`',  pch+1) ;
 
-			last_pch = pch_end ;
-			pch = strchr( last_pch+1, '`' ) ;
 		}
-		vtr::strncpy( p_proc_line, last_pch, MaxLine) ;
-		vtr::strncpy( line, proc_line, MaxLine) ;
 
+		if(!proc_line.empty())
+		{
+			
+			vtr::free(line);
+			line = vtr::strdup(proc_line.c_str());
+			line_size = proc_line.size();
+		}
+		
 		//fprintf(stderr, "%s:%ld\t%s\n", current_include->path,line_number, line);
 
 		/* Preprocessor directives have a backtick on the first column. */
 		if (line[0] == '`')
 		{
-			token = trim((char *)strtok(line, " \t"));
-			//printf("preproc first token: %s\n", token);
+			token = strtok(line, " \t");
 			/* If we encounter an `included directive we want to recurse using included_file and
 			 * new_include in place of source and current_include
 			 */
 			if (top(skip) < 1 && strcmp(token, "`include") == 0)
 			{
-				token = trim((char *)strtok(NULL, "\""));
+				token = strtok(NULL, "\"");
 				FILE *included_file = open_source_file(token,current_include->path);
 
 				/* If we failed to open the included file handle the error */
@@ -459,7 +461,6 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				}
 				fclose(included_file);
 				/* If last included file has no newline an error could result so we add one. */
-				fputc('\n', preproc_producer);
 			}
 			/* If we encounter a `define directive we want to add it and its value if any to our
 			 * symbol table.
@@ -469,20 +470,14 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				char *value = NULL;
 
 				/* strtok is destructive to the original string which we need to retain unchanged, this fixes it. */
-				fprintf(preproc_producer, "`define %s\n", line + 1 + strnlen(line, MaxLine));
-				//printf("\tIn define: %s", token + 1 + strnlen(token, MaxLine));
+			//	fprintf(preproc_producer, "`define %s\n", line + 1 + strnlen(line, line_size));
 
-				token = trim(strtok(NULL, " \t"));
-				//printf("token is: %s\n", token);
+				token = strtok(NULL, " \t");
+				size_t len = strlen(token);
+				value = &(token[len+1]);
 
 				// symbol value can potentially be to the end of the line!
-				value = trim(strtok(NULL, "\r\n"));
-				//printf("value is: %s\n", value);
 
-				if ( value ) {
-					// trim it again just in case
-					value = trim(value);
-				}
 				add_veri_define(token, value, line_number, current_include);
 			}
 			/* If we encounter a `undef preprocessor directive we want to remove the corresponding
@@ -492,9 +487,9 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			{
 				int is_defined = 0;
 				/* strtok is destructive to the original string which we need to retain unchanged, this fixes it. */
-				fprintf(preproc_producer, "`undef %s", line + 1 + strnlen(line, MaxLine));
+			//	fprintf(preproc_producer, "`undef %s", line + 1 + strnlen(line, line_size));
 
-				token = trim(strtok(NULL, " \t"));
+				token = strtok(NULL, " \t");
 
 				is_defined = veri_is_defined(token);
 
@@ -511,7 +506,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				if ( top(skip) < 1 ) {
 					int is_defined = 0;
 
-					token = trim(strtok(NULL, " \t"));
+					token = strtok(NULL, " \t");
 					is_defined = veri_is_defined(token);
 					if(is_defined < 0) //If we are unable to locate the symbol in the table
 					{
@@ -533,7 +528,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				if ( top(skip) < 1 ) {
 					int is_defined = 0;
 
-					token = trim(strtok(NULL, " \t"));
+					token = strtok(NULL, " \t");
 					is_defined = veri_is_defined(token);
 					if(is_defined >= 0) //If we are able to locate the symbol in the table
 					{
@@ -576,23 +571,20 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			/* Leave unhandled preprocessor directives in place. */
 			else if (top(skip) < 1)
 			{
-				fprintf(preproc_producer, "%s %s\n", line, line + 1 + strnlen(line, MaxLine));
+				fprintf(preproc_producer, "%s %s", line, line + 1 + strnlen(line, line_size));
 			}
 		}
 		else if(top(skip) < 1)
 		{
-			if(strnlen(line, MaxLine) <= 0)
-			{
-				/* There is nothing to print */
-				fprintf(preproc_producer, "\n");
-			}
-			else if( fprintf(preproc_producer, "%s\n", line) < 0)//fputs(line, preproc_producer)
+			if(strlen(line) > 0 && fprintf(preproc_producer, "%s", line) < 0)//fputs(line, preproc_producer)
 			{
 				/* There was an error writing to the stream */
 			}
 		}
+		fprintf(preproc_producer, "\n");
 		line_number++;
 		token = NULL;
+		vtr::free(line);
 	}
 	fclose(source);
 	vtr::free(skip);
@@ -659,6 +651,43 @@ char* trim(char *input_string, size_t n)
 
 	return input_string;
 }
+
+/*
+* Reads a line from a file stream character-by-character 
+* to dynamically build a string.
+*/
+char *get_line(char *line, long *size, FILE *source)
+{
+	long length = 0;
+	line = (char *) vtr::malloc(sizeof(char) * 1);
+	char next = 0;
+
+	while (next != '\n')
+	{
+		next = (char) fgetc(source);
+		if (next != EOF)
+		{
+			line = (char*) vtr::realloc(line, sizeof(char) * (length + 2));
+			line[length] = next;
+			length++;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	if (length == 0) 
+	{	
+		vtr::free(line);
+		return NULL;
+	}
+
+	line[length] = '\0';
+
+	if (size != NULL) *size = length;
+	return line;
+}
 /* ------------------------------------------------------------------------- */
 
 
@@ -689,6 +718,7 @@ int pop(veri_flag_stack *stack)
 	}
 	return 0;
 }
+
 void push(veri_flag_stack *stack, int flag)
 {
 	if(stack != NULL)
@@ -700,137 +730,4 @@ void push(veri_flag_stack *stack, int flag)
 		stack->top = new_node;
 	}
 }
-FILE *format_verilog_file(FILE *source)
-{
-	FILE *destination = tmpfile();
-	char searchString [4][7]= {"input","output","reg","wire"};
-	char templine[MaxLine] = { 0 };
-	char *line = templine;
-	char ch;
-	unsigned i;
-	char temp[10];
-	int j;
-	static const char *pattern = "\\binput\\b|\\boutput\\b|\\breg\\b|\\bwire\\b";
-	i = 0;
-	while( (ch = getc(source) ) != ';')
-	{
-		line[i++] = ch;
-		if (ch == '`')
-		{
-			while( (ch = getc(source)) != '\n')
-			{
-				line[i++] = ch;
-			}
-			line[i] = '\n';
-			fputs(line,destination);
-			i = 0;
-		}
-
-	}
-	line[i++] = ch;
-	line[i] = '\0';
-	std::string sub_line = find_substring(line,"module",2);
-	sprintf(line,"%s",sub_line.c_str());
-	line = search_replace(line,"\n","",2);
-
-	if (! validate_string_regex(line, pattern))
-	{
-		free(line);
-	 	rewind(source);
-		return source;
-	}
-	for (i = 0; i < 4; i++)
-	{
-		char *line_cpy = vtr::strdup(line);
-		free(line);
-		line = search_replace(line_cpy,searchString[i],"",2);
-		vtr::free(line_cpy);
-	}
-	i = 0;
-	while (i < strnlen(line, MaxLine))
-	{
-		if(line[i] == '[')
-		{
-			j = 0;
-			while(line[i] != ']')
-			{
-				temp[j++] = line[i];
-				i++;
-			}
-			temp[j++] = line[i];
-			temp[j] = '\0';
-			line = search_replace(line,temp,"",2);
-			i = 0;
-		}
-		else
-			i++;
-	}
-	fputs(line, destination);
-	vtr::free(line);
-	rewind(source);
-	destination = format_verilog_variable(source,destination);
-	rewind(destination);
-	return destination;
-}
-
-FILE *format_verilog_variable(FILE * src, FILE *dest)
-{
-	char ch;
-	int i;
-	char line[MaxLine];
-	char *tempLine;
-	char *pos;
-	while( (ch = getc(src) ) != ';')
-	{
-		if(ch == '(')
-		{
-			i = 0;
-			while( (ch = getc(src) ) != ')')
-			{
-				if (ch == ',')
-				{
-					line[i++] = ';';
-					line[i] = '\0';
-					pos = strstr(line,"reg");
-					if (pos != NULL)
-					{
-						tempLine = search_replace(line,"reg","",2);
-						fputs(tempLine,dest);
-						tempLine = search_replace(line,"output","",2);
-						fputs(tempLine,dest);
-					}
-					else
-					{
-						fputs(line, dest);
-					}
-					i = 0;
-				}
-				else
-					line[i++] = ch;
-			}
-			line[i-1] = ';';
-			line[i] = '\0';
-			pos = strstr(line,"reg");
-			if (pos != NULL)
-			{
-				tempLine = search_replace(line,"reg","",2);
-				fputs(tempLine,dest);
-				tempLine = search_replace(line,"output","",2);
-				fputs(tempLine,dest);
-			}
-			else
-			{
-				fputs(line, dest);
-			}
-		}
-	}
-	while( (ch = getc(src) ) != EOF)
-	{
-		fputc(ch, dest);
-	}
-	return dest;
-}
-
 /* ------------------------------------------------------------------------- */
-
-

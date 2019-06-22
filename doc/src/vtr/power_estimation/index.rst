@@ -124,11 +124,12 @@ ACE 2.0 was modifed to use ABC, and is included in the VTR package here::
 
 The tool can be run using the following command-line arguments::
 
-    $VTR_ROOT/ace2/ace -b <abc.blif> -o <activities.act> -n <new.blif>
+    $VTR_ROOT/ace2/ace -b <abc.blif> -c <clock_name> -o <activities.act> -n <new.blif>
 
 where
 
     * ``<abc.blif>``: Is the input BLIF file produced by ABC.
+    * ``<clock_name>``: Is the name of the clock in the input BLIF file
     * ``<activities.act>``: Is the activity file to be created.
     * ``<new.blif>``: The new BLIF file.
 

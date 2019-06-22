@@ -20,7 +20,7 @@
 #include <atomic>
 
 #ifdef VPR_USE_SIGACTION
-#include <csignal>
+#    include <csignal>
 #endif
 
 void vpr_signal_handler(int signal);
@@ -30,58 +30,58 @@ std::atomic<int> uncleared_sigint_count(0);
 
 #ifdef VPR_USE_SIGACTION
 
-    void vpr_install_signal_handler() {
-        //Install the signal handler for SIGINT (i.e. ctrl+C from the terminal)
-        struct sigaction sa;
-        sa.sa_handler = vpr_signal_handler;
-        sigemptyset(&sa.sa_mask);
-        sa.sa_flags = 0; //Make sure the flags are cleared
-        sigaction(SIGINT, &sa, nullptr); //Keyboard interrupt (1 pauses, 2 quits)
-        sigaction(SIGHUP, &sa, nullptr); //Hangup (attempts to checkpoint)
-        sigaction(SIGTERM, &sa, nullptr); //Terminate (attempts to checkpoint, then exit)
-    }
+void vpr_install_signal_handler() {
+    //Install the signal handler for SIGINT (i.e. ctrl+C from the terminal)
+    struct sigaction sa;
+    sa.sa_handler = vpr_signal_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;                  //Make sure the flags are cleared
+    sigaction(SIGINT, &sa, nullptr);  //Keyboard interrupt (1 pauses, 2 quits)
+    sigaction(SIGHUP, &sa, nullptr);  //Hangup (attempts to checkpoint)
+    sigaction(SIGTERM, &sa, nullptr); //Terminate (attempts to checkpoint, then exit)
+}
 
-    void vpr_signal_handler(int signal) {
-        if (signal == SIGINT) {
-            if (g_vpr_ctx.forced_pause()) {
-                uncleared_sigint_count++; //Previous SIGINT uncleared
-            } else {
-                uncleared_sigint_count.store(1); //Only this SIGINT outstanding
-            }
+void vpr_signal_handler(int signal) {
+    if (signal == SIGINT) {
+        if (g_vpr_ctx.forced_pause()) {
+            uncleared_sigint_count++; //Previous SIGINT uncleared
+        } else {
+            uncleared_sigint_count.store(1); //Only this SIGINT outstanding
+        }
 
-            if (uncleared_sigint_count == 1) {
-                //Request a pause at the next reasonable point (e.g. to resume the GUI)
-                VTR_LOG("Recieved SIGINT: Attempting to pause...\n");
-                g_vpr_ctx.set_forced_pause(true);
-            } else if (uncleared_sigint_count == 2) {
-                VTR_LOG("Recieved two uncleared SIGINTs: Attempting to checkpoint and exit...\n");
-                checkpoint();
-                std::quick_exit(INTERRUPTED_EXIT_CODE);
-            } else if (uncleared_sigint_count == 3) {
-                //Really exit (e.g. SIGINT while checkpointing)
-                VTR_LOG("Recieved three uncleared SIGINTs: Exiting...\n");
-                std::quick_exit(INTERRUPTED_EXIT_CODE);
-            }
-        } else if (signal == SIGHUP) {
-            VTR_LOG("Recieved SIGHUP: Attempting to checkpoint...\n");
-            checkpoint();
-        } else if (signal == SIGTERM) {
-            VTR_LOG("Recieved SIGTERM: Attempting to checkpoint then exit...\n");
+        if (uncleared_sigint_count == 1) {
+            //Request a pause at the next reasonable point (e.g. to resume the GUI)
+            VTR_LOG("Recieved SIGINT: Attempting to pause...\n");
+            g_vpr_ctx.set_forced_pause(true);
+        } else if (uncleared_sigint_count == 2) {
+            VTR_LOG("Recieved two uncleared SIGINTs: Attempting to checkpoint and exit...\n");
             checkpoint();
             std::quick_exit(INTERRUPTED_EXIT_CODE);
+        } else if (uncleared_sigint_count == 3) {
+            //Really exit (e.g. SIGINT while checkpointing)
+            VTR_LOG("Recieved three uncleared SIGINTs: Exiting...\n");
+            std::quick_exit(INTERRUPTED_EXIT_CODE);
         }
+    } else if (signal == SIGHUP) {
+        VTR_LOG("Recieved SIGHUP: Attempting to checkpoint...\n");
+        checkpoint();
+    } else if (signal == SIGTERM) {
+        VTR_LOG("Recieved SIGTERM: Attempting to checkpoint then exit...\n");
+        checkpoint();
+        std::quick_exit(INTERRUPTED_EXIT_CODE);
     }
+}
 
 #else
-    //No signal support all operations are no-ops
+//No signal support all operations are no-ops
 
-    void vpr_install_signal_handler() {
-        //Do nothing
-    }
+void vpr_install_signal_handler() {
+    //Do nothing
+}
 
-    void vpr_signal_handler(int /*signal*/) {
-        //Do nothing
-    }
+void vpr_signal_handler(int /*signal*/) {
+    //Do nothing
+}
 
 #endif
 

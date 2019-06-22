@@ -134,9 +134,9 @@ However the output port (``out``) is a combinational output, connected internall
 
       <model name="single_port_ram_mixed">
         <input_ports>
-          <port name="we" combinational_sink_ports="out"/>
-          <port name="addr" combinational_sink_ports="out"/>
-          <port name="data" combinational_sink_ports="out"/>
+          <port name="we" clock="clk" combinational_sink_ports="out"/>
+          <port name="addr" clock="clk" combinational_sink_ports="out"/>
+          <port name="data" clock="clk" combinational_sink_ports="out"/>
           <port name="clk" is_clock="1"/>
         </input_ports>
         <output_ports>

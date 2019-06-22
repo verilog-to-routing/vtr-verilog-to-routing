@@ -170,7 +170,7 @@ void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, const ch
 		if (!strcmp(pin->mapping, port_name))
 		{
 			error_message(NETLIST_ERROR, -1, -1,
-					"Attempted to reassign output port %s to memory %s.", port_name, node->name);
+					"Attempted to reassign input port %s to memory %s.", port_name, node->name);
 		}
 	}
 
@@ -1202,6 +1202,8 @@ void pad_memory_output_port(nnode_t *node, netlist_t * /*netlist*/, t_model *mod
 
 	t_model_ports *ports = get_model_port(model->outputs, port_name);
 
+	oassert(ports != NULL);
+
 	int target_size = ports->size;
 	int diff        = target_size - port_size;
 
@@ -1244,6 +1246,8 @@ void pad_memory_input_port(nnode_t *node, netlist_t *netlist, t_model *model, co
 	int port_size = node->input_port_sizes[port_number];
 
 	t_model_ports *ports = get_model_port(model->inputs, port_name);
+
+	oassert(ports != NULL);
 
 	int target_size = ports->size;
 	int diff        = target_size - port_size;

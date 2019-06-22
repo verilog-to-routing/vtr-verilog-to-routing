@@ -13,11 +13,11 @@
 #include "physical_types.h"
 
 class PreClusterDelayCalculator : public tatum::DelayCalculator {
-public:
+  public:
     PreClusterDelayCalculator(const AtomNetlist& netlist,
                               const AtomLookup& netlist_lookup,
                               float intercluster_net_delay,
-                              std::unordered_map<AtomBlockId,t_pb_graph_node*> expected_lowest_cost_pb_gnode)
+                              std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode)
         : netlist_(netlist)
         , netlist_lookup_(netlist_lookup)
         , inter_cluster_net_delay_(intercluster_net_delay)
@@ -33,7 +33,7 @@ public:
 
         if (edge_type == tatum::EdgeType::PRIMITIVE_COMBINATIONAL) {
             return prim_comb_delay(tg, src_node, sink_node);
-        } else if(edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
+        } else if (edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
             return prim_tcq_delay(tg, src_node, sink_node);
         } else {
             VTR_ASSERT(edge_type == tatum::EdgeType::INTERCONNECT);
@@ -73,12 +73,12 @@ public:
         return setup_time(tg, edge_id);
     }
 
-private:
+  private:
     //TODO: use generic AtomDelayCalc class to avoid code duplication
 
     tatum::Time prim_tcq_delay(const tatum::TimingGraph& tg, tatum::NodeId src_node, tatum::NodeId sink_node) const {
-        VTR_ASSERT_MSG(   tg.node_type(src_node) == tatum::NodeType::CPIN
-                       && tg.node_type(sink_node) == tatum::NodeType::SOURCE,
+        VTR_ASSERT_MSG(tg.node_type(src_node) == tatum::NodeType::CPIN
+                           && tg.node_type(sink_node) == tatum::NodeType::SOURCE,
                        "Tcq only defined from CPIN to SOURCE");
 
         AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
@@ -98,10 +98,10 @@ private:
     tatum::Time prim_comb_delay(const tatum::TimingGraph& tg, tatum::NodeId src_node, tatum::NodeId sink_node) const {
         auto src_node_type = tg.node_type(src_node);
         auto sink_node_type = tg.node_type(sink_node);
-        VTR_ASSERT_MSG(   (src_node_type == tatum::NodeType::IPIN && sink_node_type == tatum::NodeType::OPIN)
-                       || (src_node_type == tatum::NodeType::SOURCE && sink_node_type == tatum::NodeType::SINK)
-                       || (src_node_type == tatum::NodeType::SOURCE && sink_node_type == tatum::NodeType::OPIN)
-                       || (src_node_type == tatum::NodeType::IPIN && sink_node_type == tatum::NodeType::SINK),
+        VTR_ASSERT_MSG((src_node_type == tatum::NodeType::IPIN && sink_node_type == tatum::NodeType::OPIN)
+                           || (src_node_type == tatum::NodeType::SOURCE && sink_node_type == tatum::NodeType::SINK)
+                           || (src_node_type == tatum::NodeType::SOURCE && sink_node_type == tatum::NodeType::OPIN)
+                           || (src_node_type == tatum::NodeType::IPIN && sink_node_type == tatum::NodeType::SINK),
                        "Primitive combinational delay must be between {SOURCE, IPIN} and {SINK, OPIN}");
 
         //Primitive internal combinational delay
@@ -114,10 +114,10 @@ private:
         const t_pb_graph_pin* output_gpin = find_pb_graph_pin(output_pin);
 
         tatum::Time time;
-        for(int i = 0; i < input_gpin->num_pin_timing; ++i) {
+        for (int i = 0; i < input_gpin->num_pin_timing; ++i) {
             const t_pb_graph_pin* sink_gpin = input_gpin->pin_timing[i];
 
-            if(sink_gpin == output_gpin) {
+            if (sink_gpin == output_gpin) {
                 time = tatum::Time(input_gpin->pin_timing_del_max[i]);
                 break;
             }
@@ -152,18 +152,19 @@ private:
 
         const t_pb_graph_pin* clock_gpin = io_gpin->associated_clock_pin;
 
-        if(!clock_gpin) {
+        if (!clock_gpin) {
             AtomBlockId blk = netlist_.pin_block(io_pin);
             const t_model* model = netlist_.block_model(blk);
             VPR_THROW(VPR_ERROR_TIMING, "Failed to find clock pin associated with pin '%s' (model '%s')", netlist_.pin_name(io_pin).c_str(), model->name);
         }
         return clock_gpin;
     }
-private:
+
+  private:
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
     const float inter_cluster_net_delay_;
-    const std::unordered_map<AtomBlockId,t_pb_graph_node*> block_to_pb_gnode_;
+    const std::unordered_map<AtomBlockId, t_pb_graph_node*> block_to_pb_gnode_;
 };
 
 #endif

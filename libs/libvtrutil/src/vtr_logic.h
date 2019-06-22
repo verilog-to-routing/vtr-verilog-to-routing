@@ -3,13 +3,13 @@
 
 namespace vtr {
 
-    enum class LogicValue {
-        FALSE = 0,
-        TRUE = 1,
-        DONT_CARE = 2,
-        UNKOWN = 3
-    };
+enum class LogicValue {
+    FALSE = 0,
+    TRUE = 1,
+    DONT_CARE = 2,
+    UNKOWN = 3
+};
 
-} //namespace
+} // namespace vtr
 
 #endif

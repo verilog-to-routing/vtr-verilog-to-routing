@@ -1,4 +1,4 @@
-#ifndef	READ_BLIF_H
+#ifndef READ_BLIF_H
 #define READ_BLIF_H
 #include "logic_types.h"
 #include "atom_netlist_fwd.h"

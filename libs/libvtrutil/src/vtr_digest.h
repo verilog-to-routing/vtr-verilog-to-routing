@@ -11,6 +11,6 @@ std::string secure_digest_file(const std::string& filepath);
 //Generate a secure hash of a stream
 std::string secure_digest_stream(std::istream& is);
 
-} //namespace
+} // namespace vtr
 
 #endif

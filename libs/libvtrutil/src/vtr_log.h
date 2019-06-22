@@ -72,18 +72,18 @@
 #define VTR_LOGF_NOP(file, line, ...) VTR_LOGVF_NOP(true, file, line, __VA_ARGS__)
 
 //Conditional logging and custom file-line location macros
-#define VTR_LOGVF(expr, file, line, ...) \
-    do { \
+#define VTR_LOGVF(expr, file, line, ...)    \
+    do {                                    \
         if (expr) vtr::printf(__VA_ARGS__); \
     } while (false)
 
-#define VTR_LOGVF_WARN(expr, file, line, ...) \
-    do { \
+#define VTR_LOGVF_WARN(expr, file, line, ...)                   \
+    do {                                                        \
         if (expr) vtr::printf_warning(file, line, __VA_ARGS__); \
     } while (false)
 
-#define VTR_LOGVF_ERROR(expr, file, line, ...) \
-    do { \
+#define VTR_LOGVF_ERROR(expr, file, line, ...)                \
+    do {                                                      \
         if (expr) vtr::printf_error(file, line, __VA_ARGS__); \
     } while (false)
 
@@ -95,29 +95,29 @@
 //
 //Also note the use of std::make_tuple to ensure all arguments in VA_ARGS
 //are used.
-#define VTR_LOGVF_NOP(expr, file, line, ...) \
-    do { \
-        static_cast<void>(sizeof(expr)); \
-        static_cast<void>(sizeof(file)); \
-        static_cast<void>(sizeof(line)); \
+#define VTR_LOGVF_NOP(expr, file, line, ...)                     \
+    do {                                                         \
+        static_cast<void>(sizeof(expr));                         \
+        static_cast<void>(sizeof(file));                         \
+        static_cast<void>(sizeof(line));                         \
         static_cast<void>(sizeof(std::make_tuple(__VA_ARGS__))); \
     } while (false)
 
 //Debug logging macros
 #ifdef VTR_ENABLE_DEBUG_LOGGING //Enable
-# define VTR_LOG_DEBUG(...) VTR_LOG(__VA_ARGS__)
-# define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV(expr, __VA_ARGS__)
+#    define VTR_LOG_DEBUG(...) VTR_LOG(__VA_ARGS__)
+#    define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV(expr, __VA_ARGS__)
 #else //Disable
-# define VTR_LOG_DEBUG(...) VTR_LOG_NOP(__VA_ARGS__)
-# define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV_NOP(expr, __VA_ARGS__)
+#    define VTR_LOG_DEBUG(...) VTR_LOG_NOP(__VA_ARGS__)
+#    define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV_NOP(expr, __VA_ARGS__)
 #endif
 
 namespace vtr {
 
-typedef void (*PrintHandlerInfo)(const char* pszMessage, ... );
-typedef void (*PrintHandlerWarning)(const char* pszFileName, unsigned int lineNum, const char* pszMessage,	... );
-typedef void (*PrintHandlerError)(const char* pszFileName, unsigned int lineNum, const char* pszMessage,	... );
-typedef void (*PrintHandlerDirect)(const char* pszMessage,	... );
+typedef void (*PrintHandlerInfo)(const char* pszMessage, ...);
+typedef void (*PrintHandlerWarning)(const char* pszFileName, unsigned int lineNum, const char* pszMessage, ...);
+typedef void (*PrintHandlerError)(const char* pszFileName, unsigned int lineNum, const char* pszMessage, ...);
+typedef void (*PrintHandlerDirect)(const char* pszMessage, ...);
 
 extern PrintHandlerInfo printf; //Same as printf_info
 extern PrintHandlerInfo printf_info;
@@ -127,7 +127,6 @@ extern PrintHandlerDirect printf_direct;
 
 void set_log_file(const char* filename);
 
-} //namespace
-
+} // namespace vtr
 
 #endif

@@ -1,5 +1,10 @@
 #include "odin_types.h"
 
+const char *file_extension_supported_STR[] =
+{
+	".v"
+};
+
 const char *signedness_STR[] =
 {
 	"SIGNED",
@@ -8,12 +13,12 @@ const char *signedness_STR[] =
 
 const char *edge_type_e_STR[] =
 {
+	"UNDEFINED_SENSITIVITY",
 	"FALLING_EDGE_SENSITIVITY",
 	"RISING_EDGE_SENSITIVITY",
 	"ACTIVE_HIGH_SENSITIVITY",
 	"ACTIVE_LOW_SENSITIVITY",
 	"ASYNCHRONOUS_SENSITIVITY",
-	"UNDEFINED_SENSITIVITY"
 };
 
 const char *_ZERO_GND_ZERO[] = 
@@ -99,7 +104,9 @@ const char *operation_list_STR[][2] =
 	{"PAD_NODE",        "PAD"},
 	{"HARD_IP",         "HARD"},
 	{"GENERIC",         "GEN"}, /*added for the unknown node type */
-	{"FULLADDER",       "FlADD"}
+	{"FULLADDER",       "FlADD"},
+	{"CLOG2",			"CL2"}, // $clog2
+	{"ERROR OOB",		"OOB"} // should not reach this
 };
 
 const char *ids_STR []= 
@@ -108,6 +115,7 @@ const char *ids_STR []=
 	/* top level things */
 	"FILE_ITEMS",
 	"MODULE",
+	"SPECIFY",
 	/* VARIABLES */
 	"INPUT",
 	"OUTPUT",
@@ -115,7 +123,9 @@ const char *ids_STR []=
 	"WIRE",
 	"REG",
 	"INTEGER",
+	"GENVAR",
 	"PARAMETER",
+	"LOCALPARAM",
 	"INITIALS",
 	"PORT",
 	/* OTHER MODULE ITEMS */
@@ -143,6 +153,9 @@ const char *ids_STR []=
 	/* Function instances*/
 	"FUNCTION_NAMED_INSTANCE",
 	"FUNCTION_INSTANCE",
+	/* Specify Items */
+	"SPECIFY_ITEMS",
+	"SPECIFY_PARAMETER",
 	"SPECIFY_PAL_CONNECTION_STATEMENT",
 	"SPECIFY_PAL_CONNECT_LIST",
 	/* statements */
@@ -155,6 +168,7 @@ const char *ids_STR []=
 	"CASE_ITEM",
 	"CASE_DEFAULT",
 	"ALWAYS",
+	"GENERATE",
 	"IF",
 	"IF_Q",
 	"FOR",
@@ -179,5 +193,6 @@ const char *ids_STR []=
 	"HARD_BLOCK_CONNECT_LIST",
 	"HARD_BLOCK_CONNECT",
 	// EDDIE: new enum value for ids to replace MEMORY from operation_t
-	"RAM"
+	"RAM",
+	"ids_END"
 };

@@ -96,12 +96,6 @@ typedef struct adder_def_t_t adder_def_t;
 
 #define verify_i_o_availabilty(node, expected_input_size, expected_output_size) passed_verify_i_o_availabilty(node, expected_input_size, expected_output_size, __FILE__, __LINE__)
 
-typedef enum {
-	NO_SIMULATION = 0,
-	TEST_EXISTING_VECTORS,
-	GENERATE_VECTORS,
-}simulation_type;
-
 /* the global arguments of the software */
 struct global_args_t_t
 {
@@ -115,12 +109,13 @@ struct global_args_t_t
 
 	argparse::ArgValue<char*> high_level_block; //Legacy option, no longer used
 
+	argparse::ArgValue<char*> top_level_module_name; // force the name of the top level module desired
+
     argparse::ArgValue<bool> write_netlist_as_dot;
     argparse::ArgValue<bool> write_ast_as_dot;
     argparse::ArgValue<bool> all_warnings;
     argparse::ArgValue<bool> show_help;
 
-    argparse::ArgValue<bool> black_box_latches; //Weather or not to treat and output latches as black boxes
 	argparse::ArgValue<char*> adder_def; //carry skip adder skip size
     // defines if the first cin of an adder/subtractor is connected to a global gnd/vdd
     // or generated using a dummy adder with both inputs set to gnd/vdd
@@ -155,6 +150,7 @@ struct global_args_t_t
 	argparse::ArgValue<bool> sim_achieve_best;
 
 	argparse::ArgValue<int> parralelized_simulation;
+	argparse::ArgValue<bool> parralelized_simulation_in_batch;
 	argparse::ArgValue<int> sim_initial_value;
 	// The seed for creating random simulation vector
     argparse::ArgValue<int> sim_random_seed;
@@ -173,6 +169,8 @@ struct global_args_t_t
 /**
  * defined in enum_str.cpp
  */
+extern const char *file_extension_supported_STR[];
+
 extern const char *ZERO_GND_ZERO;
 extern const char *ONE_VCC_CNS;
 extern const char *ZERO_PAD_ZERO;
@@ -184,6 +182,12 @@ extern const char *signedness_STR[];
 extern const char *edge_type_e_STR[];
 extern const char *operation_list_STR[][2];
 extern const char *ids_STR [];
+
+typedef enum
+{
+	VERILOG,
+	file_extension_supported_END
+} file_extension_supported;
 
 typedef enum
 {
@@ -204,14 +208,21 @@ typedef enum
 
 typedef enum
 {
+	UNDEFINED_SENSITIVITY,
 	FALLING_EDGE_SENSITIVITY,
 	RISING_EDGE_SENSITIVITY,
 	ACTIVE_HIGH_SENSITIVITY,
 	ACTIVE_LOW_SENSITIVITY,
 	ASYNCHRONOUS_SENSITIVITY,
-	UNDEFINED_SENSITIVITY,
 	edge_type_e_END
 } edge_type_e;
+
+typedef enum
+{
+	COMBINATIONAL,
+	SEQUENTIAL,
+	circuit_type_e_END
+} circuit_type_e;
 
 typedef enum
 {
@@ -265,6 +276,7 @@ typedef enum
 	HARD_IP,
 	GENERIC, /*added for the unknown node type */
 	FULLADDER,
+	CLOG2, // $clog2
 	operation_list_END
 } operation_list;
 
@@ -274,6 +286,7 @@ typedef enum
 	/* top level things */
 	FILE_ITEMS,
 	MODULE,
+	SPECIFY,
 	/* VARIABLES */
 	INPUT,
 	OUTPUT,
@@ -281,7 +294,9 @@ typedef enum
 	WIRE,
 	REG,
 	INTEGER,
+	GENVAR,
 	PARAMETER,
+	LOCALPARAM,
 	INITIALS,
 	PORT,
 	/* OTHER MODULE ITEMS */
@@ -309,6 +324,9 @@ typedef enum
 	/* Function instances*/
 	FUNCTION_NAMED_INSTANCE,
 	FUNCTION_INSTANCE,
+	/* Specify Items */
+	SPECIFY_ITEMS,
+	SPECIFY_PARAMETER,
 	SPECIFY_PAL_CONNECTION_STATEMENT,
 	SPECIFY_PAL_CONNECT_LIST,
 	/* statements */
@@ -321,6 +339,7 @@ typedef enum
 	CASE_ITEM,
 	CASE_DEFAULT,
 	ALWAYS,
+	GENERATE,
 	IF,
 	IF_Q,
 	FOR,
@@ -371,6 +390,7 @@ struct typ_t
 	struct
 	{
 		short is_parameter;
+		short is_localparam;
 		short is_port;
 		short is_input;
 		short is_output;
@@ -526,6 +546,8 @@ struct npin_t_t
 	nnode_t *node;    // related node
 	int pin_node_idx; // pin on the node where we're located
 	char *mapping;    // name of mapped port from hard block
+
+	edge_type_e sensitivity;
 
 	////////////////////
 	// For simulation

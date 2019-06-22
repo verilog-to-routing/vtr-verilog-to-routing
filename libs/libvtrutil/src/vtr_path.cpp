@@ -13,8 +13,8 @@ namespace vtr {
 const std::string PATH_DELIM = "/";
 
 //Splits off the name and extension (including ".") of the specified filename
-std::array<std::string,2> split_ext(const std::string& filename) {
-    std::array<std::string,2> name_ext;
+std::array<std::string, 2> split_ext(const std::string& filename) {
+    std::array<std::string, 2> name_ext;
     auto pos = filename.find_last_of('.');
 
     if (pos == std::string::npos) {
@@ -32,7 +32,7 @@ std::string basename(const std::string& path) {
     auto elements = split(path, PATH_DELIM);
 
     std::string str;
-    if(elements.size() > 0) {
+    if (elements.size() > 0) {
         //Return the last path element
         str = elements[elements.size() - 1];
     }
@@ -44,9 +44,9 @@ std::string dirname(const std::string& path) {
     auto elements = split(path, PATH_DELIM);
 
     std::string str;
-    if(elements.size() > 0) {
+    if (elements.size() > 0) {
         //We need to start the dirname with a PATH_DELIM if path started with one
-        if(starts_with(path, PATH_DELIM)) {
+        if (starts_with(path, PATH_DELIM)) {
             str += PATH_DELIM;
         }
 
@@ -63,7 +63,7 @@ std::string dirname(const std::string& path) {
 
 std::string getcwd() {
     constexpr size_t BUF_SIZE = 500;
-    char buf [BUF_SIZE];
+    char buf[BUF_SIZE];
 
     if (::getcwd(buf, BUF_SIZE)) {
         return std::string(buf);
@@ -84,4 +84,4 @@ std::string getcwd() {
     }
 }
 
-} //namespace
+} // namespace vtr

@@ -115,9 +115,7 @@ my @forwarded_vpr_args;   # VPR arguments that pass through the script
 my $verify_rr_graph         = 0;
 my $check_route             = 0;
 my $check_place             = 0;
-my $use_old_abc             = 0;
 my $use_old_abc_script      = 0;
-my $abc_use_dc2             = 1;
 my $run_name = "";
 my $expect_fail = 0;
 my $verbosity = 0;
@@ -130,8 +128,8 @@ my $crit_path_router_iterations = undef;
 
 ##########
 # ABC flow modifiers
-my $flow_type = 0;
-my $use_new_latches_restoration_script = 0;
+my $flow_type = 2; #Use iterative black-boxing flow for multi-clock circuits
+my $use_new_latches_restoration_script = 1;
 my $odin_run_simulation = 0;
 
 while ( scalar(@ARGV) != 0 ) { #While non-empty
@@ -178,12 +176,8 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
             $check_route = 1;
     } elsif ( $token eq "-check_place" ){
             $check_place = 1;
-    } elsif ( $token eq "-use_old_abc"){
-            $use_old_abc = 1;
     } elsif ( $token eq "-use_old_abc_script"){
             $use_old_abc_script = 1;
-    } elsif ( $token eq "-abc_use_dc2"){
-            $abc_use_dc2 = shift(@ARGV);
     } elsif ( $token eq "-name"){
             $run_name = shift(@ARGV);
     } elsif ( $token eq "-expect_fail"){
@@ -314,18 +308,9 @@ my $abc_path;
 my $abc_rc_path;
 if ( $stage_idx_abc >= $starting_stage or $stage_idx_vpr <= $ending_stage ) {
 	#Need ABC for either synthesis or post-VPR verification
-	if ($use_old_abc)
-	{
-		my $abc_dir_path = "$vtr_flow_path/../abc_with_bb_support";
-		$abc_path = "$abc_dir_path/oldabc";
-		$abc_rc_path = "$abc_dir_path/abc.rc";
-	}
-	else
-	{
-		my $abc_dir_path = "$vtr_flow_path/../abc";
-		$abc_path = "$abc_dir_path/abc";
-		$abc_rc_path = "$abc_dir_path/abc.rc";
-	}
+    my $abc_dir_path = "$vtr_flow_path/../abc";
+    $abc_path = "$abc_dir_path/abc";
+    $abc_rc_path = "$abc_dir_path/abc.rc";
 
 	( -e $abc_path or -e "${abc_path}.exe" )
 	  or die "Cannot find ABC executable ($abc_path)";
@@ -385,8 +370,8 @@ if (!defined $lut_size) {
     $lut_size = xml_find_LUT_Kvalue($xml_tree);
 }
 if ( $lut_size < 1 ) {
-	$error_status = "failed: cannot determine arch LUT k-value";
-	$error_code = 1;
+    $error_status = "failed: cannot determine arch LUT k-value";
+    $error_code = 1;
 }
 
 # Get memory size
@@ -463,7 +448,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 	if ( !$error_code ) {
 		if ( $use_odin_xml_config ) {
 			$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
-				"-c", $odin_config_file_name, 
+				"-c", $odin_config_file_name,
 				"--adder_type", $odin_adder_config_path,
                 $odin_adder_cin_global,
 				"-U0");
@@ -504,8 +489,8 @@ if (    $starting_stage <= $stage_idx_abc
 			"-g", "100",
 			"--best_coverage",
 			"-U0");	#ABC sets DC bits as 0
-			
-		if ( $q ne "success") 
+
+		if ( $q ne "success")
 		{
 			$odin_run_simulation = 0;
 			print "\tfailed to include simulation\n";
@@ -545,14 +530,14 @@ if (    $starting_stage <= $stage_idx_abc
 		open ($clock_list_file, "<", $temp_dir.$clk_list_filename) or die "Unable to open \"".$clk_list_filename."\": $! \n";
 		#read line and strip whitespace of line
 		my $line = "";
-		while(($line = <$clock_list_file>)) 
+		while(($line = <$clock_list_file>))
 		{
 			$line =~ s/^\s+|\s+$//g;
 			if($line =~ /^latch/)
 			{
 				#get the initial value out (last char)
 				push(@clock_list , $line);
-			}	
+			}
 		}
 	}
 
@@ -592,13 +577,13 @@ if (    $starting_stage <= $stage_idx_abc
 		{
 			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
-					"--clk_list", $clock_list[$domain_itter], "--input", $input_blif, "--output", $pre_abc_blif);	
+					"--clk_list", $clock_list[$domain_itter], "--input", $input_blif, "--output", $pre_abc_blif);
 
 			if ($q ne "success") {
 				$error_status = "failed: to black box the clock <".$clock_list[$domain_itter]."> for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
 				$error_code = 1;
 				last ABC_OPTIMIZATION;
-			}	
+			}
 		}
 		else
 		{
@@ -669,19 +654,19 @@ if (    $starting_stage <= $stage_idx_abc
 		time;
 		";
 
-		if ($use_old_abc) {
-			#Legacy ABC script
+		if ($use_old_abc_script) {
+			#Legacy ABC script adapted for new ABC by moving scleanup before if
 			$abc_commands="
-			read $pre_abc_blif;
-			time;
-			resyn;
-			resyn2;
-			if -K $lut_size;
+			read $pre_abc_blif; 
+			time; 
+			resyn; 
+			resyn2; 
 			time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; 
-			write_hie ${pre_abc_blif} ${post_abc_raw_blif};
+			if -K $lut_size; 
+			write_hie ${pre_abc_blif} ${post_abc_raw_blif}; 
 			print_stats;
 			";
-		}
+        }
 
 		$abc_commands =~ s/\R/ /g; #Convert new-lines to spaces
 
@@ -916,7 +901,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
     my $explicit_analysis_vpr_stage = (grep(/^--analysis$/, @forwarded_vpr_args));
 
     #If no VPR stages are explicitly specified, then all stages run by default
-    my $implicit_all_vpr_stage = !($explicit_pack_vpr_stage 
+    my $implicit_all_vpr_stage = !($explicit_pack_vpr_stage
                                    or $explicit_place_vpr_stage
                                    or $explicit_route_vpr_stage
                                    or $explicit_analysis_vpr_stage);
@@ -938,7 +923,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
         my $do_routing = ($explicit_route_vpr_stage or $implicit_all_vpr_stage);
 
         if ($do_routing) {
-            # Critical path delay and wirelength is nonsensical at minimum channel width because congestion constraints 
+            # Critical path delay and wirelength is nonsensical at minimum channel width because congestion constraints
             # dominate the cost function.
             #
             # Additional channel width needs to be added so that there is a reasonable trade-off between delay and area.
@@ -1002,7 +987,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
             $error_code = 1;
         }
 
-        #Run vpr again with additional parameters. 
+        #Run vpr again with additional parameters.
         #This is used to ensure that files generated by VPR can be re-loaded by it
         my $do_second_vpr_run = ($verify_rr_graph or $check_route or $check_place);
 

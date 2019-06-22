@@ -43,63 +43,10 @@ The symbolic link ``latest`` will point to the most recent ``run<#>`` directory.
 
 .. _fig_vtr_tasks_file_layout:
 
-.. graphviz::
-    :caption: Task directory layout.
+.. figure:: vtr_task_fig.*
+    :width: 75%
 
-    digraph {
-        #Default style
-        node[shape=Mrecord, style=filled, fillcolor="/blues4/2:/blues4/3", gradientangle=270, fontname="arial"]
-
-        #Nodes
-        node_task[label="\<task_name\>", fillcolor="/reds4/2:/reds4/3"];
-        node_config[label="config", fillcolor="/reds4/2:/reds4/3"];
-        node_config_txt[label="config.txt", fillcolor="/reds4/2:/reds4/3"];
-
-        node_run1[label="run001"];
-        node_run2[label="run002"];
-        node_run3[label="run003"];
-        node_runlatest[label="latest", fillcolor="/blues4/1:/blues4/2"];
-
-        node_arch1[label="\<arch1\>"];
-        node_arch2[label="\<arch2\>"];
-        node_arch_cont[label="..."];
-
-        node_circuit1[label="\<circuit1\>"];
-        node_circuit2[label="\<circuit2\>"];
-        node_circuit_cont[label="..."];
-
-        node_params1a[label="\<params1\>"]
-        node_params1b[label="\<params2\>"]
-        node_params1_cont[label="..."]
-
-        node_results1[label="odin.out\nabc.out\nvpr.out", style="", color="/blues4/4"]
-        node_results2[label="odin.out\nabc.out\nvpr.out", style="", color="/blues4/4"]
-
-        #Edges
-        node_task -> node_config -> node_config_txt;
-        node_task -> node_run1;
-        node_task -> node_run2;
-        node_task -> node_run3;
-
-        node_runlatest -> node_run3 [constraint=false, color=grey];
-
-        node_run1 -> node_arch1;
-        node_run1 -> node_arch2;
-        node_run1 -> node_arch_cont;
-
-        node_arch1 -> node_circuit1;
-        node_arch1 -> node_circuit2;
-        node_arch1 -> node_circuit_cont;
-
-        node_circuit1 -> node_params1a;
-        node_circuit1 -> node_params1b;
-        node_circuit1 -> node_params1_cont;
-
-        node_params1a -> node_results1;
-        node_params1b -> node_results2;
-
-        {rank = same; node_run1; node_run2; node_run3; node_runlatest; rankdir=LR; }
-    }
+    Task directory layout.
 
 Creating a New Task
 ~~~~~~~~~~~~~~~~~~~

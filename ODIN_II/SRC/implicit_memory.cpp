@@ -106,15 +106,20 @@ implicit_memory *create_implicit_memory_block(int data_width, long memory_depth,
 	oassert(memory_depth > 0
 		&& "implicit memory depth must be greater than 0");
 
-	//find closest power of 2 fr memory depth.
-	long addr_width = 1;
-	while (shift_left_value_with_overflow_check(0x1, addr_width) < memory_depth)
-		addr_width++;
+	//find closest power of 2 from memory depth.
+	long addr_width = 0;
+	long real_memory_depth = 1;
+	while (real_memory_depth < memory_depth)
+	{
+		addr_width += 1;
+		real_memory_depth = shift_left_value_with_overflow_check(real_memory_depth, 0x1);
+	}
 
 	//verify if it is a power of two (only one bit set)
-	if(memory_depth - shift_left_value_with_overflow_check(0x1, addr_width) != 0)
+	if((memory_depth != real_memory_depth))
 	{
-		warning_message(NETLIST_ERROR, -1, -1, "Rounding memory <%s> of size <%ld> to closest power of two: %ld.", name, memory_depth, shift_left_value_with_overflow_check(0x1, addr_width));
+		warning_message(NETLIST_ERROR, -1, -1, "Rounding memory <%s> of size <%ld> to closest power of two: %ld.", name, memory_depth, real_memory_depth);
+		memory_depth = real_memory_depth;
 	}
 
 	nnode_t *node = allocate_nnode();
@@ -328,23 +333,30 @@ void finalize_implicit_memory(implicit_memory *memory)
 	if (!has_port1 || !has_port2)
 		collapse_implicit_memory_to_single_port_ram(memory);
 
-	/*
-	 *  If this hard block is supported, register it globally and mark
-	 *  it as used. (For splitting and BLIF output.)
-	 *
-	 *  If it isn't supported, it will be automagically blown out
-	 *  into soft logic during the partial map.
-	 */
-	ast_node_t *ast_node = node->related_ast_node;
-	char *hard_block_identifier = ast_node->children[0]->types.identifier;
-	t_model *hb_model = find_hard_block(hard_block_identifier);
-	if (hb_model)
+	if (!has_port1 && !has_port2)
 	{
-		hb_model->used = 1;
-		if (!strcmp(hard_block_identifier, SINGLE_PORT_RAM_string))
-			sp_memory_list = insert_in_vptr_list(sp_memory_list, node);
-		else
-			dp_memory_list = insert_in_vptr_list(dp_memory_list, node);
+		warning_message(NETLIST_ERROR, -1, -1, "Implicit memory %s has no ports...", memory->name);
+	}
+	else
+	{
+		/*
+		*  If this hard block is supported, register it globally and mark
+		*  it as used. (For splitting and BLIF output.)
+		*
+		*  If it isn't supported, it will be automagically blown out
+		*  into soft logic during the partial map.
+		*/
+		ast_node_t *ast_node = node->related_ast_node;
+		char *hard_block_identifier = ast_node->children[0]->types.identifier;
+		t_model *hb_model = find_hard_block(hard_block_identifier);
+		if (hb_model)
+		{
+			hb_model->used = 1;
+			if (!strcmp(hard_block_identifier, SINGLE_PORT_RAM_string))
+				sp_memory_list = insert_in_vptr_list(sp_memory_list, node);
+			else
+				dp_memory_list = insert_in_vptr_list(dp_memory_list, node);
+		}
 	}
 }
 

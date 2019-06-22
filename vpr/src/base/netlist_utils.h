@@ -5,10 +5,10 @@
 #include <set>
 
 /*
-*
-* Templated utility functions for cleaning and reordering IdMaps
-*
-*/
+ *
+ * Templated utility functions for cleaning and reordering IdMaps
+ *
+ */
 
 //Returns true if all elements are contiguously ascending values (i.e. equal to their index)
 template<typename T>
@@ -132,7 +132,7 @@ Container update_all_refs(const Container& values, const vtr::vector_map<ValId, 
 template<typename Container, typename ValId>
 Container update_valid_refs(const Container& values,
                             const vtr::vector_map<ValId, ValId>& id_map,
-                            const std::set<size_t>& preserved_indices={}) {
+                            const std::set<size_t>& preserved_indices = {}) {
     Container updated;
 
     size_t idx = 0;

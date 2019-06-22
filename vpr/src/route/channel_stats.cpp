@@ -20,7 +20,6 @@ void print_channel_stats() {
     histogram.emplace_back(0.9, 1.0);
     histogram.emplace_back(1.0, std::numeric_limits<float>::infinity());
 
-
     auto chanx_usage = calculate_routing_usage(CHANX);
     auto chany_usage = calculate_routing_usage(CHANY);
 

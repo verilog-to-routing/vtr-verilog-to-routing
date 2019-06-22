@@ -40,6 +40,6 @@ auto make_value_range(const Container& c) {
     return make_value_range(std::begin(c), std::end(c));
 }
 
-} //namespace
+} // namespace vtr
 
 #endif

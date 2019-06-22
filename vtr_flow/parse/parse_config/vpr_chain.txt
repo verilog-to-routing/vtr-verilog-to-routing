@@ -1,6 +1,6 @@
 %include "vpr_standard.txt"
 
-num_luts;vpr.out;(\d+) of type names
+num_luts;vpr.out;6-LUT\s*:\s*(\d+)
 num_add_blocks;odin.out;The Total Number of Hard Block adders: (\d+)
 max_add_chain_length;odin.out;The Number of Hard Block adders in the Longest Chain: (\d+)
 num_sub_blocks;odin.out;The Total Number of Hard Block subs: (\d+)

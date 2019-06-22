@@ -21,21 +21,11 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
-int simplify_ast();
-void optimize_for_tree();
-void search_for_node(ast_node_t *root, std::vector<ast_node_t *> list_for_node, std::vector<ast_node_t *> list_parent);
-ast_node_t *get_copy_tree(ast_node_t *node, long virtual_value, std::string virtual_name);
-void record_expression(ast_node_t *node, std::vector<std::string> expressions, bool *found_statement);
-long  calculation(std::vector<std::string> post_exp);
-void translate_expression(std::vector<std::string> infix_exp, std::vector<std::string> postfix_exp);
-void reallocate_node(ast_node_t *node, int idx);
-void find_most_unique_count();
-void mark_node_write(ast_node_t *node, std::vector<std::string> list);
-void mark_node_read(ast_node_t *node, std::vector<std::string> list);
-void remove_intermediate_variable(ast_node_t *node, std::vector<std::string> list, long virtual_value, std::string virtual_name);
-ast_node_t *search_marked_node(ast_node_t *node, int is, std::string temp);
+void remove_generate(ast_node_t *node);
+int simplify_ast_module(ast_node_t **ast_module);
 void reduce_assignment_expression();
-void find_assign_node(ast_node_t *t, std::vector<ast_node_t *>list);
+void reduce_assignment_expression(ast_node_t *ast_module);
+void find_assign_node(ast_node_t *node, std::vector<ast_node_t *> list, char *module_name);
 ast_node_t *find_top_module();
 
 typedef struct exp_node
@@ -82,15 +72,16 @@ void delete_bracket_tail(enode *begin, enode *end);
 void delete_bracket_body(enode *begin, enode *end);
 bool check_tree_operation(ast_node_t *node);
 void reduce_parameter();
+void reduce_parameter(ast_node_t *ast_module);
 void find_parameter(ast_node_t *top, std::vector<ast_node_t *>para);
 void remove_para_node(ast_node_t *top, std::vector<ast_node_t *>para);
 void change_para_node(ast_node_t *node, std::string name, long value);
 void check_operation(enode *begin, enode *end);
 void shift_operation();
+void shift_operation(ast_node_t *ast_module);
 void search_certain_operation(ast_node_t *node);
 void check_binary_operation(ast_node_t *node);
 void check_node_number(ast_node_t *parent, ast_node_t *child, int flag);
 bool check_mult_bracket(std::vector<int> list);
 short has_intermediate_variable(ast_node_t *node);
-void keep_all_branch(ast_node_t *temp_node, ast_node_t *for_parent, int mark);
 
