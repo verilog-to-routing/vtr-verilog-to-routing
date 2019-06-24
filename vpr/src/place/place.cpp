@@ -2551,7 +2551,7 @@ static std::vector<t_compressed_block_grid> create_compressed_block_grids() {
     return compressed_type_grids;
 }
 
-//Given a set of locations, returns a 2D matrix in a compressed
+//Given a set of locations, returns a 2D matrix in a compressed space
 static t_compressed_block_grid create_compressed_block_grid(const std::vector<vtr::Point<int>>& locations) {
     t_compressed_block_grid compressed_grid;
 
