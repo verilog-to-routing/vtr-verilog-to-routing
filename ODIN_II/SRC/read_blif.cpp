@@ -295,15 +295,15 @@ void create_latch_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 	char ** names = NULL;       // Store the names of the tokens
 	int input_token_count = 0; /*to keep track whether controlling clock is specified or not */
 	/*input_token_count=3 it is not and =5 it is */
-	char *ptr;
+	char *ptr = NULL;
+
 	char buffer[READ_BLIF_BUFFER];
 	while ((ptr = vtr::strtok (NULL, TOKENS, file, buffer)) != NULL)
 	{
-		if(input_token_count == 0)
-			names = (char**)vtr::malloc((sizeof(char*)));
-		else
-			names = (char**)vtr::realloc(names, (sizeof(char*))* (input_token_count + 1));
-		names[input_token_count++] = vtr::strdup(ptr);
+		input_token_count += 1;
+		names = (char**)vtr::realloc(names, (sizeof(char*))* (input_token_count));
+		
+		names[input_token_count-1] = vtr::strdup(ptr);
 	}
 
 	/* assigning the new_node */
@@ -496,8 +496,8 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
   	}
 
 	// Split the name parameters at the equals sign.
-	char **mappings = (char**)vtr::malloc(sizeof(char*) * count);
-	char **names    = (char**)vtr::malloc(sizeof(char*) * count);
+	char **mappings = (char**)vtr::calloc(count, sizeof(char*));
+	char **names    = (char**)vtr::calloc(count, sizeof(char*));
 	int i = 0;
 	for (i = 0; i < count; i++)
 	{
@@ -520,7 +520,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
 	hard_block_ports *ports = get_hard_block_ports(mappings, count);
 
 	// Look up the model in the models cache.
- 	hard_block_model *model;
+ 	hard_block_model *model = NULL;
  	if (!(model = get_hard_block_model(subcircuit_name, ports, models)))
  	{
  		// If the model isn's present, scan ahead and find it.
@@ -1280,13 +1280,13 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 			// match .model followed buy the subcircuit name.
 			if (token && !strcmp(token,".model") && !strcmp(vtr::strtok(NULL,TOKENS, file, buffer), name_subckt))
 			{
-				model = (hard_block_model *)vtr::malloc(sizeof(hard_block_model));
+				model = (hard_block_model *)vtr::calloc(1, sizeof(hard_block_model));
 				model->name = vtr::strdup(name_subckt);
-				model->inputs = (hard_block_pins *)vtr::malloc(sizeof(hard_block_pins));
+				model->inputs = (hard_block_pins *)vtr::calloc(1, sizeof(hard_block_pins));
 				model->inputs->count = 0;
 				model->inputs->names = NULL;
 
-				model->outputs = (hard_block_pins *)vtr::malloc(sizeof(hard_block_pins));
+				model->outputs = (hard_block_pins *)vtr::calloc(1, sizeof(hard_block_pins));
 				model->outputs->count = 0;
 				model->outputs->names = NULL;
 
@@ -1393,7 +1393,7 @@ Hashtable *index_names(char **names, int count)
 	Hashtable *index = new Hashtable();
 	for (long i = 0; i < count; i++)
 	{
-		int *offset = (int *)vtr::malloc(sizeof(int));
+		int *offset = (int *)vtr::calloc(1, sizeof(int));
 		*offset = i;
 		index->add(names[i], offset);
 	}
@@ -1421,10 +1421,10 @@ Hashtable *associate_names(char **names1, char **names2, int count)
 hard_block_ports *get_hard_block_ports(char **pins, int count)
 {
 	// Count the input port sizes.
-	hard_block_ports *ports = (hard_block_ports *)vtr::malloc(sizeof(hard_block_ports));
+	hard_block_ports *ports = (hard_block_ports *)vtr::calloc(1, sizeof(hard_block_ports));
 	ports->count = 0;
-	ports->sizes = 0;
-	ports->names = 0;
+	ports->sizes = NULL;
+	ports->names = NULL;
 	char *prev_portname = 0;
 	int i;
 	for (i = 0; i < count; i++)
@@ -1576,13 +1576,26 @@ long get_hard_block_pin_number(char *original_name)
  */
 void add_hard_block_model(hard_block_model *m, hard_block_ports *ports, hard_block_models *models)
 {
-	char needle[READ_BLIF_BUFFER];
-	needle[0] = '\0';
-	strcat(needle, m->name);
-	strcat(needle, ports->signature);
-	models->models = (hard_block_model **)vtr::realloc(models->models, (models->count * sizeof(hard_block_model *)) + 1);
-	models->models[models->count++] = m;
-	models->index->add(needle, m);
+	if(models && m)
+	{
+		char needle[READ_BLIF_BUFFER] = { 0 };
+
+		if(m->name && ports && ports->signature)
+			sprintf(needle, "%s%s", m->name, ports->signature);
+		else if(m->name) 
+			sprintf(needle, "%s", m->name);
+		else if(ports && ports->signature)
+			sprintf(needle, "%s", ports->signature);
+		
+		if(strlen(needle) > 0)
+		{
+			models->count += 1;
+
+			models->models = (hard_block_model **)vtr::realloc(models->models, models->count * sizeof(hard_block_model *));
+			models->models[models->count-1] = m;
+			models->index->add(needle, m);
+		}
+	}
 }
 
 /*
@@ -1591,11 +1604,20 @@ void add_hard_block_model(hard_block_model *m, hard_block_ports *ports, hard_blo
  */
 hard_block_model *get_hard_block_model(char *name, hard_block_ports *ports, hard_block_models *models)
 {
-	char needle[READ_BLIF_BUFFER];
-	needle[0] = '\0';
-	strcat(needle, name);
-	strcat(needle, ports->signature);
-	return (hard_block_model *)models->index->get(needle);
+	hard_block_model *to_return = NULL;
+	char needle[READ_BLIF_BUFFER] = { 0 };
+
+	if(name && ports && ports->signature)
+		sprintf(needle, "%s%s", name, ports->signature);
+	else if(name) 
+		sprintf(needle, "%s", name);
+	else if(ports && ports->signature)
+		sprintf(needle, "%s", ports->signature);
+	
+	if(strlen(needle) > 0) 
+		to_return = (hard_block_model *)models->index->get(needle);
+
+	return to_return;
 }
 
 /*
@@ -1603,8 +1625,8 @@ hard_block_model *get_hard_block_model(char *name, hard_block_ports *ports, hard
  */
 hard_block_models *create_hard_block_models()
 {
-	hard_block_models *m = (hard_block_models *)vtr::malloc(sizeof(hard_block_models));
-	m->models = 0;
+	hard_block_models *m = (hard_block_models *)vtr::calloc(1, sizeof(hard_block_models));
+	m->models = NULL;
 	m->count  = 0;
 	m->index  = new Hashtable();
 
