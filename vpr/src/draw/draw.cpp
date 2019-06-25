@@ -19,6 +19,7 @@
 #include <sstream>
 #include <array>
 #include <ctime>
+#include <chrono>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -399,7 +400,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 }
 
 void draw_main_canvas(ezgl::renderer &g){
-    clock_t start = clock();
+    auto start = std::chrono::high_resolution_clock::now();
     
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -457,9 +458,9 @@ void draw_main_canvas(ezgl::renderer &g){
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
     
-    clock_t end = clock() - start;
-    std::cout << "--------------load time : " << float(end)/CLOCKS_PER_SEC << " s--------------" << std::endl;
-    return;
+    auto end = std::chrono::high_resolution_clock::now();
+    auto timeDiff = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);    
+    std::cout << "--------------load time : " << timeDiff.count() << " s--------------" << std::endl;
 }
 
 void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application *application){
@@ -1124,6 +1125,7 @@ static void drawplace(ezgl::renderer &g) {
             }
         }
     }
+    g.set_line_dash(ezgl::line_dash::none);
 }
 
 static void drawnets(ezgl::renderer &g) {
