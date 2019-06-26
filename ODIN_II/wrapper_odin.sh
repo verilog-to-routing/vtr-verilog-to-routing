@@ -20,7 +20,7 @@ if [ ! -f ${EXEC} ]; then
 fi
 
 TIME_EXEC=$($SHELL -c "which time") 
-VALGRIND_EXEC="valgrind --leak-check=full"
+VALGRIND_EXEC="valgrind --leak-check=full --max-stackframe=128000000"
 PERF_EXEC="perf stat record -a -d -d -d -o"
 GDB_EXEC="gdb --args"
 LOG=""
