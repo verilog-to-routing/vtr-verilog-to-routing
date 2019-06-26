@@ -1008,14 +1008,6 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, 
 			
 			node = newNode;
 		}
-		else
-		{
-			if(newNode)
-			{
-				vtr::free(newNode->children);
-				vtr::free(newNode);
-			}
-		}
 
 		vtr::free(node_copy->children);
 		vtr::free(node_copy);
