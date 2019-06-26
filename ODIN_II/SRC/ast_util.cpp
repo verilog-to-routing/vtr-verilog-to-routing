@@ -791,7 +791,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 	{
 		/* need to look in the symbol table for details about this identifier (i.e. is it a port) */
 		long sc_spot;
-		ast_node_t *sym_node;
+		ast_node_t *sym_node = NULL;
 
 		// try and resolve var_node
 		sym_node = resolve_node(NULL, instance_name_prefix, var_node);
@@ -846,6 +846,28 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 			oassert(sym_node->type == NUMBERS);
 			width = sym_node->types.number.binary_size;
 			return_string = get_name_of_pins_number(sym_node, 0, width);
+			// clean up
+			if(sym_node)
+			{
+				if(sym_node->children)
+				{
+					ast_node_t *temp = sym_node;
+					int x = 0;
+					while(temp->children[x] != NULL)
+					{
+						vtr::free(temp->children[x]);
+						x += 1;
+					}
+					vtr::free(sym_node->children);
+				}
+
+				vtr::free(sym_node->types.identifier);
+				vtr::free(sym_node->types.number.number);
+				vtr::free(sym_node->types.number.binary_string);
+				
+				vtr::free(sym_node);
+				sym_node = NULL;
+			}
 		}
 	}
 	else if (var_node->type == NUMBERS)
@@ -985,6 +1007,14 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, 
 			// }
 			
 			node = newNode;
+		}
+		else
+		{
+			if(newNode)
+			{
+				vtr::free(newNode->children);
+				vtr::free(newNode);
+			}
 		}
 
 		vtr::free(node_copy->children);
