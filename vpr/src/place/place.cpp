@@ -318,6 +318,7 @@ static e_find_affected_blocks_result identify_macro_self_swap_affected_macros(st
 static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, t_pl_offset swap_offset);
 
 bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to);
+bool is_legal_blk_swap(t_pl_loc from, t_pl_loc to);
 
 std::set<t_pl_loc> determine_locations_emptied_by_move();
 
@@ -1675,12 +1676,27 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
     auto blk_type_from = cluster_ctx.clb_nlist.block_type(blk);
     auto blk_type_to = device_ctx.grid[to.x][to.y].type;
 
-    // First check is to see if `from` type can be placed in `to` type
+    // Check is to see if `from` type can be placed in `to` type
     if (!blk_type_from->is_available_tile_index(blk_type_to->index)) {
         return false;
     }
 
     t_pl_loc from = place_ctx.block_locs[blk].loc;
+    if (!is_legal_blk_swap(from, to)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool is_legal_blk_swap(t_pl_loc from, t_pl_loc to) {
+    // Make sure that when swapping, the block in the `to` location
+    // can be moved in the `from` location
+
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+
     ClusterBlockId blk_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
 
     // In case `blk_to` is empty we can skip the second check
@@ -1688,10 +1704,10 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
         return true;
     }
 
-    blk_type_from = device_ctx.grid[from.x][from.y].type;
-    blk_type_to = cluster_ctx.clb_nlist.block_type(blk_to);
+    auto blk_type_from = device_ctx.grid[from.x][from.y].type;
+    auto blk_type_to = cluster_ctx.clb_nlist.block_type(blk_to);
 
-    // Second check is to see if `to` type can be placed in `from` type
+    // Check is to see if `to` type can be placed in `from` type
     if (!blk_type_to->is_available_tile_index(blk_type_from->index)) {
         return false;
     }
@@ -2179,7 +2195,7 @@ static bool find_to(t_type_ptr to_type, t_type_ptr from_type, float rlim, const 
     VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].width_offset == 0, "Should be at block base location");
     VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].height_offset == 0, "Should be at block base location");
 
-    return true;
+    return is_legal_blk_swap(from, to);
 }
 
 static e_swap_result assess_swap(double delta_c, double t) {
