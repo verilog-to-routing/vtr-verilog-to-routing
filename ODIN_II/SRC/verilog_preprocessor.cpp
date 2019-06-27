@@ -10,18 +10,84 @@
 #include <stdbool.h>
 #include <regex>
 
+#include "odin_buffer.hpp"
+
+#define DefaultSize 20
+
+/* Structs */
+typedef struct veri_include
+{
+	char *path;
+	struct veri_include *included_from;
+	int	line;
+} veri_include;
+
+typedef struct veri_define
+{
+	char *symbol;
+	char *value;
+	int line;
+	veri_include *defined_in;
+} veri_define;
+
+struct veri_Includes
+{
+	veri_include **included_files;
+	int current_size;
+	int current_index;
+} ;
+
+struct veri_Defines
+{
+	veri_define **defined_constants;
+	int current_size;
+	int current_index;
+} ;
+
+/* Stack for tracking conditional branches --------------------------------- */
+typedef struct veri_flag_node
+{
+	int flag;
+	struct veri_flag_node *next;
+} veri_flag_node;
+
+typedef struct
+{
+	veri_flag_node *top;
+} veri_flag_stack;
+
+void clean_veri_define(veri_define *current);
+void clean_veri_include(veri_include *current);
+
+/* Adding/Removing includes or defines */
+int add_veri_define(char *symbol, char *value, int line, veri_include *included_from);
+char* ret_veri_definedval(const char *symbol);
+int veri_is_defined(const char * symbol);
+veri_include* add_veri_include(const char *path, int line, veri_include *included_from);
+
+/* Preprocessor ------------------------------------------------------------- */
+void veri_preproc_bootstraped(FILE *source, FILE *preproc_producer, veri_include *current_include);
+
+/* stack methods */
+int top(veri_flag_stack *stack);
+int pop(veri_flag_stack *stack);
+void push(veri_flag_stack *stack, int flag);
+
+/* General Utility methods ------------------------------------------------- */
+static char* get_line(FILE *source, bool *eof, bool *multiline_comment, const char *one_line_comment, const char *n_line_comment_ST, const char *n_line_comment_END);
+FILE* open_source_file(char* filename, std::string parent_path);
+
+
 /* Globals */
 struct veri_Includes veri_includes;
 struct veri_Defines veri_defines;
 
-/* Function declarations */
-FILE* open_source_file(char* filename, std::string parent_path);
-FILE *remove_comments(FILE *source);
+const char symbol_char[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789";
+
+
 /*
  * Initialize the preprocessor by allocating sufficient memory and setting sane values
  */
-const char symbol_char[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789";
-
 int init_veri_preproc()
 {
 	veri_includes.included_files = (veri_include **) vtr::calloc(DefaultSize, sizeof(veri_include *));
@@ -299,7 +365,6 @@ FILE* veri_preproc(FILE *source)
 	extern int current_parse_file;
 	FILE *preproc_producer = NULL;
 
-	/* Was going to use filename to prevent duplication but the global var isn't used in the case of a config value */
 	veri_include *veri_initial = add_veri_include(configuration.list_of_file_names[current_parse_file].c_str(), 0, NULL);
 	if (veri_initial == NULL)
 	{
@@ -307,8 +372,12 @@ FILE* veri_preproc(FILE *source)
 		return source;
 	}
 
-	preproc_producer = tmpfile();
-	preproc_producer = freopen(NULL, "r+", preproc_producer);
+	std::string file_out = 	configuration.debug_output_path 
+						+ "/" 
+						+ strip_path_and_ext(configuration.list_of_file_names[current_parse_file]).c_str() 
+						+ "_preproc.v";
+
+	preproc_producer = fopen(file_out.c_str(), "w+");
 
 	if (preproc_producer == NULL)
 	{
@@ -322,375 +391,279 @@ FILE* veri_preproc(FILE *source)
 
 	veri_preproc_bootstraped(source, preproc_producer, veri_initial);
 	rewind(preproc_producer);
+	
 	return preproc_producer;
 }
 
-/*
- * Returns a new temporary file with the comments removed.
- * Preserves the line numbers by keeping newlines in place.
- */
-FILE *remove_comments(FILE *source)
+const char *preproc_symbol_e_STR[] = 
 {
-	FILE *destination = tmpfile();
-	destination = freopen(NULL, "r+", destination);
-	rewind(source);
+	"include",
+	"define",
+	"undef",
+	"ifdef",
+	"ifndef",
+	"else",
+	"endif",
+	"preproc_symbol_e_END"
+};
 
-	char *line = NULL;
-	long line_size = 0;
-	int in_multiline_comment = FALSE;
-	while ((line = get_line(line, &line_size, source)) != nullptr)
+typedef enum preproc_symbol_e_e
+{
+	PREPROC_INCLUDE,
+	PREPROC_DEFINE,
+	PREPROC_UNDEF,
+	PREPROC_IFDEF,
+	PREPROC_IFNDEF,
+	PREPROC_ELSE,
+	PREPROC_ENDIF,
+	preproc_symbol_e_END
+} preproc_symbol_e;
+
+static preproc_symbol_e get_preproc_directive(const char *in)
+{
+	preproc_symbol_e to_return = preproc_symbol_e_END;
+
+	if(in && strlen(in) > 0)
 	{
-		unsigned int i;
-		for (i = 0; i < strnlen(line, line_size); i++)
+		for(int i=0 ; i < (int)preproc_symbol_e_END; i++)
 		{
-			if (!in_multiline_comment)
+			if(! strcmp(preproc_symbol_e_STR[i], in) )
 			{
-				// For a single line comment, skip the rest of the line.
-				if (line[i] == '/' && line[i+1] == '/')
-				{
-					break;
-				}
-				// For a multi-line comment, set the flag and skip over the *.
-				else if (line[i] == '/' && line[i+1] == '*')
-				{
-					i++; // Skip the *.
-					in_multiline_comment = TRUE;
-				}
-				else
-				{
-					if (line[i] != '\n')
-						fputc(line[i], destination);
-				}
-			}
-			else
-			{
-				// If we're in a multi-line comment, search for the */
-				if (line[i] == '*' && line[i+1] == '/')
-				{
-					i++; // Skip the /
-					in_multiline_comment = FALSE;
-				}
+				to_return = (preproc_symbol_e) i;
+				break;
 			}
 		}
-		fputc('\n', destination);
-		vtr::free(line);
 	}
-	rewind(destination);
-	return destination;
+	return to_return;
 }
 
 void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, veri_include *current_include)
 {
-	// Strip the comments from the source file producing a temporary source file.
-	FILE *source = remove_comments(original_source);
+
+	rewind(original_source);
 
 	int line_number = 1;
-	veri_flag_stack *skip = (veri_flag_stack *)vtr::calloc(1, sizeof(veri_flag_stack));;
-	char *line = NULL;
-	long line_size = 0;
-	char *token;
+	veri_flag_stack *skip = (veri_flag_stack *)vtr::calloc(1, sizeof(veri_flag_stack));
+
 	veri_include *new_include = NULL;
 
-	while ((line = get_line(line, &line_size, source)) != NULL)
+	char *line = NULL;
+	buffered_reader_t reader = buffered_reader_t(original_source, "//", "/*", "*/");
+
+	while ((line = reader.get_line()))
 	{
-		//fprintf(stderr, "%s:%ld\t%s", current_include->path,line_number, line);
+		// fprintf(stderr, "%s:%ld\t%s\n", current_include->path,line_number, line);
+		if( strlen(line) > 0 )
+		{
+			std::string proc_line(line);
 
-		// advance past all whitespace
-		line = trim(line);
+			// start searching for backticks
+			std::size_t pch = proc_line.find_first_of('`') ;
 
-		std::string proc_line(line);
-
-		// start searching for backticks
-		std::size_t pch = proc_line.find_first_of('`') ;
-
-		while ( pch != std::string::npos) 
-		{				
-			std::size_t end_pch = proc_line.find_first_not_of(symbol_char, pch+1);
-			if (end_pch != std::string::npos)
-			{
-				std::string symbol = proc_line.substr(pch+1, (end_pch-pch)-1);
-				
-				// get value from lookup table
-				char* value = ret_veri_definedval( symbol.c_str() ) ;
-				if (value != NULL)
+			while ( pch != std::string::npos)
+			{			
+				std::size_t end_pch = proc_line.find_first_not_of(symbol_char, pch+1);
+				if (end_pch != std::string::npos)
 				{
-					proc_line.erase(pch, (end_pch-pch));
-					proc_line.insert(pch, value);
+					// skip the backtick
+					std::string symbol = proc_line.substr(pch+1, (end_pch-pch)-1);
+
+					// verify that this is not a preprocessor directive
+					if( get_preproc_directive(symbol.c_str()) == preproc_symbol_e_END)
+					{
+						// get value from lookup table
+						char* value = ret_veri_definedval( symbol.c_str() ) ;
+						if (value != NULL)
+						{
+							proc_line.erase(pch, (end_pch-pch));
+							proc_line.insert(pch, value);
+						}
+					}
 				}
-			}
 							
-			// find next backtick
-			pch = proc_line.find_first_of('`',  pch+1) ;
+				// find next backtick
+				pch = proc_line.find_first_of('`',  pch+1) ;
 
-		}
+			}
 
-		if(!proc_line.empty())
-		{
-			
-			vtr::free(line);
-			line = vtr::strdup(proc_line.c_str());
-			line_size = proc_line.size();
-		}
+			if(! proc_line.empty())
+			{
+				vtr::free(line);
+				line = vtr::strdup(proc_line.c_str());
 		
-		//fprintf(stderr, "%s:%ld\t%s\n", current_include->path,line_number, line);
+				// fprintf(stderr, "%s:%ld\t%s\n", current_include->path,line_number, line);
 
-		/* Preprocessor directives have a backtick on the first column. */
-		if (line[0] == '`')
-		{
-			token = strtok(line, " \t");
-			/* If we encounter an `included directive we want to recurse using included_file and
-			 * new_include in place of source and current_include
-			 */
-			if (top(skip) < 1 && strcmp(token, "`include") == 0)
-			{
-				token = strtok(NULL, "\"");
-				FILE *included_file = open_source_file(token,current_include->path);
-
-				/* If we failed to open the included file handle the error */
-				if (!included_file)
+				/* Preprocessor directives have a backtick on the first column. */
+				if (line[0] == '`')
 				{
-					warning_message(PARSE_ERROR, -1, -1, "Unable to open file %s included on line %d of %s\n",
-						token, line_number, current_include->path);
-					perror("included_file : fopen");
-					/*return erro or exit ? */
-				}
-				else if (NULL != (new_include = add_veri_include(token, line_number, current_include)))
-				{
-					printf("Including file %s\n", new_include->path);
-					veri_preproc_bootstraped(included_file, preproc_producer, new_include);
-				}
-				fclose(included_file);
-				/* If last included file has no newline an error could result so we add one. */
-			}
-			/* If we encounter a `define directive we want to add it and its value if any to our
-			 * symbol table.
-			 */
-			else if (top(skip) < 1 && strcmp(token, "`define") == 0)
-			{
-				char *value = NULL;
+					char *token = strtok(line, " ");
 
-				/* strtok is destructive to the original string which we need to retain unchanged, this fixes it. */
-			//	fprintf(preproc_producer, "`define %s\n", line + 1 + strnlen(line, line_size));
-
-				token = strtok(NULL, " \t");
-				size_t len = strlen(token);
-				value = &(token[len+1]);
-
-				// symbol value can potentially be to the end of the line!
-
-				add_veri_define(token, value, line_number, current_include);
-			}
-			/* If we encounter a `undef preprocessor directive we want to remove the corresponding
-			 * symbol from our lookup table.
-			 */
-			else if (top(skip) < 1 && strcmp(token, "`undef") == 0)
-			{
-				int is_defined = 0;
-				/* strtok is destructive to the original string which we need to retain unchanged, this fixes it. */
-			//	fprintf(preproc_producer, "`undef %s", line + 1 + strnlen(line, line_size));
-
-				token = strtok(NULL, " \t");
-
-				is_defined = veri_is_defined(token);
-
-				if(is_defined >= 0)
-				{
-					clean_veri_define(veri_defines.defined_constants[is_defined]);
-					veri_defines.defined_constants[is_defined] = veri_defines.defined_constants[veri_defines.current_index];
-					veri_defines.defined_constants[veri_defines.current_index--] = NULL;
-				}
-			}
-			else if (strcmp(token, "`ifdef") == 0)
-			{
-				// if parent is not skipped
-				if ( top(skip) < 1 ) {
-					int is_defined = 0;
-
-					token = strtok(NULL, " \t");
-					is_defined = veri_is_defined(token);
-					if(is_defined < 0) //If we are unable to locate the symbol in the table
+					// skip the backtick to find the type
+					switch( get_preproc_directive(&token[1]) )
 					{
-						push(skip, 1);
-					}
-					else
-					{
-						push(skip, 0);
-					}
-				}
-				// otherwise inherit skip from parent (use 2)
-				else {
-					push( skip, 2 ) ;
-				}
-			}
-			else if (strcmp(token, "`ifndef") == 0)
-			{
-				// if parent is not skipped
-				if ( top(skip) < 1 ) {
-					int is_defined = 0;
+						case PREPROC_INCLUDE:
+						{
+							if(top(skip) < 1)
+							{
+								/**
+								 *  If we encounter an `included directive we want to recurse using included_file and
+								 * new_include in place of source and current_include
+								 */	
 
-					token = strtok(NULL, " \t");
-					is_defined = veri_is_defined(token);
-					if(is_defined >= 0) //If we are able to locate the symbol in the table
-					{
-						push(skip, 1);
+								token = strtok(NULL, "\"");
+								FILE *included_file = open_source_file(token,current_include->path);
+
+								/* If we failed to open the included file handle the error */
+								if (!included_file)
+								{
+									warning_message(PARSE_ERROR, -1, -1, "Unable to open file %s included on line %d of %s\n",
+										token, line_number, current_include->path);
+									perror("included_file : fopen");
+									/*return erro or exit ? */
+								}
+								else if (NULL != (new_include = add_veri_include(token, line_number, current_include)))
+								{
+									printf("Including file %s\n", new_include->path);
+									veri_preproc_bootstraped(included_file, preproc_producer, new_include);
+								}
+								fclose(included_file);
+								/* If last included file has no newline an error could result so we add one. */
+							}
+							break;
+						}
+						case PREPROC_DEFINE:
+						{
+							if(top(skip) < 1)
+							{
+								token = strtok(NULL, " ");
+								size_t len = strlen(token);
+								char *value = &(token[len+1]);
+								
+								if(get_preproc_directive(value) != preproc_symbol_e_END)
+								{
+									printf("Warning! trying to override preprocessor restricted keyword is not allowed\n");
+								}
+								else
+								{
+									// symbol value can potentially be to the end of the line!
+									add_veri_define(token, value, line_number, current_include);
+								}
+							}
+							break;
+						}
+						case PREPROC_UNDEF:
+						{
+							if(top(skip) < 1)
+							{
+								token = strtok(NULL, " ");
+								int is_defined = veri_is_defined(token);
+								if(is_defined >= 0)
+								{
+									clean_veri_define(veri_defines.defined_constants[is_defined]);
+									veri_defines.defined_constants[is_defined] = veri_defines.defined_constants[veri_defines.current_index];
+									veri_defines.defined_constants[veri_defines.current_index--] = NULL;
+								}
+							}
+							break;
+						}
+						case PREPROC_IFDEF:
+						{
+							// if parent is not skipped
+							if ( top(skip) < 1 ) 
+							{
+								token = strtok(NULL, " ");
+								int is_defined = veri_is_defined(token);
+								if(is_defined < 0) //If we are unable to locate the symbol in the table
+								{
+									push(skip, 1);
+								}
+								else
+								{
+									push(skip, 0);
+								}
+							}
+							// otherwise inherit skip from parent (use 2)
+							else 
+							{
+								push( skip, 2 ) ;
+							}
+							break;
+						}
+						case PREPROC_IFNDEF:
+						{
+							// if parent is not skipped
+							if ( top(skip) < 1 ) 
+							{
+								token = strtok(NULL, " ");
+								int is_defined = veri_is_defined(token);
+								if(is_defined >= 0) //If we are able to locate the symbol in the table
+								{
+									push(skip, 1);
+								}
+								else
+								{
+									push(skip, 0);
+								}
+							}
+							// otherwise inherit skip from parent (use 2)
+							else 
+							{
+								push( skip, 2 ) ;
+							}
+							break;
+						}
+						case PREPROC_ELSE:
+						{
+							// if skip was 0 (prev. ifdef was 1)
+							if(top(skip) < 1)
+							{
+								// then set to 0
+								pop(skip) ;
+								push(skip, 1);
+							}
+							// only when prev skip was 1 do we set to 0 now
+							else if (top(skip) == 1)
+							{
+								pop(skip) ;
+								push(skip, 0);
+							}
+							// but if it's 2 (parent ifdef is 1)
+							else 
+							{
+								// then do nothing
+							}
+							break;
+						}
+						case PREPROC_ENDIF:
+						{
+							pop(skip);
+							break;
+						}
+						default:
+						{
+							/* Leave unhandled preprocessor directives in place. */
+							if (top(skip) < 1)
+							{
+								fprintf(preproc_producer, "%s %s", line, line + 1 + strlen(line));
+							}
+
+							break;
+						}
 					}
-					else
-					{
-						push(skip, 0);
-					}
 				}
-				// otherwise inherit skip from parent (use 2)
-				else {
-					push( skip, 2 ) ;
-				}
-			}
-			else if (strcmp(token, "`else") == 0)
-			{
-				// if skip was 0 (prev. ifdef was 1)
-				if(top(skip) < 1)
+				else if(top(skip) < 1)
 				{
-					// then set to 0
-					pop(skip) ;
-					push(skip, 1);
+					fprintf(preproc_producer, "%s", line);							
 				}
-				// only when prev skip was 1 do we set to 0 now
-				else if (top(skip) == 1)
-				{
-					pop(skip) ;
-					push(skip, 0);
-				}
-				// but if it's 2 (parent ifdef is 1)
-				else {
-					// then do nothing
-				}
-			}
-			else if (strcmp(token, "`endif") == 0)
-			{
-				pop(skip);
-			}
-			/* Leave unhandled preprocessor directives in place. */
-			else if (top(skip) < 1)
-			{
-				fprintf(preproc_producer, "%s %s", line, line + 1 + strnlen(line, line_size));
 			}
 		}
-		else if(top(skip) < 1)
-		{
-			if(strlen(line) > 0 && fprintf(preproc_producer, "%s", line) < 0)//fputs(line, preproc_producer)
-			{
-				/* There was an error writing to the stream */
-			}
-		}
-		fprintf(preproc_producer, "\n");
+
+		fprintf(preproc_producer,"\n");
 		line_number++;
-		token = NULL;
 		vtr::free(line);
 	}
-	fclose(source);
 	vtr::free(skip);
 }
-
-/* General Utility methods ------------------------------------------------- */
-#define UPPER_BUFFER_LIMIT 32728
-bool is_whitespace(const char in)
-{
-	return (in == ' ' || in == '\t' || in == '\n' || in == '\r');
-}
-
-/**
- * the trim function remove consequent whitespace and remove trailing whitespace
- */
-char *trim(char *input_str)
-{
-	return trim(input_str, UPPER_BUFFER_LIMIT);
-}
-
-char* trim(char *input_string, size_t n)
-{
-	size_t upper_limit = (n < 1)?  UPPER_BUFFER_LIMIT: (n > UPPER_BUFFER_LIMIT)? UPPER_BUFFER_LIMIT: n;
-	if (!input_string)
-		return input_string;
-  
-	int head = 0;
-	int tail = 0;
-	char current = ' ';
-	char previous = ' ';
-
-	// trim head and compress
-	while( tail < upper_limit && input_string[tail] != '\0' )
-	{
-		previous = current;
-		current = input_string[tail];
-		input_string[tail] = '\0';
-
-		tail += 1;
-
-		if( is_whitespace(current) )
-		{
-			if( ! is_whitespace(previous) )
-			{
-				input_string[head] = ' ';
-				head += 1;	
-			}
-		}
-		else
-		{
-			input_string[head] = current;
-			head += 1;	
-		}
-	}
-	input_string[head] = '\0';
-
-	// trim tail end
-	while( head >= 0 
-	&& (input_string[head] == '\0' || is_whitespace(input_string[head]) ) )
-	{
-		input_string[head] = '\0';
-		head -= 1;
-	}
-
-	return input_string;
-}
-
-/*
-* Reads a line from a file stream character-by-character 
-* to dynamically build a string.
-*/
-char *get_line(char *line, long *size, FILE *source)
-{
-	long length = 0;
-	line = (char *) vtr::malloc(sizeof(char) * 1);
-	char next = 0;
-
-	while (next != '\n')
-	{
-		next = (char) fgetc(source);
-		if (next != EOF)
-		{
-			line = (char*) vtr::realloc(line, sizeof(char) * (length + 2));
-			line[length] = next;
-			length++;
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	if (length == 0) 
-	{	
-		vtr::free(line);
-		return NULL;
-	}
-
-	line[length] = '\0';
-
-	if (size != NULL) *size = length;
-	return line;
-}
-/* ------------------------------------------------------------------------- */
-
-
 
 /* stack methods ------------------------------------------------------------*/
 
@@ -730,4 +703,3 @@ void push(veri_flag_stack *stack, int flag)
 		stack->top = new_node;
 	}
 }
-/* ------------------------------------------------------------------------- */
