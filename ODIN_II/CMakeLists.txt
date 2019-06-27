@@ -40,9 +40,9 @@ if(ODIN_DEBUG)
     ##############
     # comment out the flag set you do not wish to see added below
     #
-    #    ${ODIN_REF_FLAGS}
-    #    ${ODIN_SIGN_FLAGS}
-    #    ${ODIN_LIMITS_FLAGS}
+        ${ODIN_REF_FLAGS}
+        ${ODIN_SIGN_FLAGS}
+        ${ODIN_LIMITS_FLAGS}
     )
 
 endif()
