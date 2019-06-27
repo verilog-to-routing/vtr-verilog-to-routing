@@ -75,11 +75,16 @@ void update_tree_tag(ast_node_t *node, int cases, int tagged);
 		high_level_id = -1;
 
 		ids type = NO_ID;
-		if(!strcmp(global_args.high_level_block,"if")){
+		if(global_args.high_level_block.value() == "if")
+		{
 			type = IF;
-		}else if(!strcmp(global_args.high_level_block,"always")){
+		}
+		else if(global_args.high_level_block.value() == "always")
+		{
 			type = ALWAYS;
-		}else if(!strcmp(global_args.high_level_block,"module")){
+		}
+		else if(global_args.high_level_block.value() == "module")
+		{
 			type = MODULE;
 		}
 
@@ -845,7 +850,7 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, 
 			break;
 
 			case UNARY_OPERATION:
-				newNode = fold_unary(node);
+				newNode = fold_unary(&node);
 				break;
 
 			case BINARY_OPERATION:
@@ -1084,10 +1089,13 @@ static void check_binary_operation(ast_node_t **node)
  * we currently make it as small as possible(+1) such that d'00001 becomes (in bin) 01
  * so it would become 10, is that what is defined?
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *fold_unary(ast_node_t *node)
+ast_node_t *fold_unary(ast_node_t **node)
 {
-	operation_list op_id = node->types.operation.op;
-	ast_node_t *child_0 = node->children[0];
+	if(!node || !(*node))
+		return NULL;
+		
+	operation_list op_id = (*node)->types.operation.op;
+	ast_node_t *child_0 = (*node)->children[0];
 
 	if(node_is_constant(child_0))
 	{
@@ -1143,7 +1151,7 @@ ast_node_t *fold_unary(ast_node_t *node)
 
 			case CLOG2:
 				if(voperand_0.size() > ODIN_STD_BITWIDTH)
-					warning_message(PARSE_ERROR, child_0->line_number, child_0->file_number, "argument is %ld-bits but ODIN limit is %lu-bits \n",voperand_0.size(),ODIN_STD_BITWIDTH);
+					warning_message(PARSE_ERROR, (*node)->line_number, (*node)->file_number, "argument is %ld-bits but ODIN limit is %lu-bits \n",voperand_0.size(),ODIN_STD_BITWIDTH);
 
 				vresult = VNumber(clog2(voperand_0.get_value(), voperand_0.size()));
 				success = TRUE;
@@ -1155,14 +1163,14 @@ ast_node_t *fold_unary(ast_node_t *node)
 
 		if(success)
 		{
-			ast_node_t *new_num = create_tree_node_number(vresult, child_0->line_number, child_0->file_number);
+			ast_node_t *new_num = create_tree_node_number(vresult, (*node)->line_number, (*node)->file_number);
 			return new_num;		
 		}
 	}
 	else if (op_id == CLOG2)
 	{
 		/* $clog2() argument must be a constant expression */
-		error_message(PARSE_ERROR, node->line_number, current_parse_file, "%s", "Argument must be constant\n");
+		error_message(PARSE_ERROR, (*node)->line_number, current_parse_file, "%s", "Argument must be constant\n");
 	}
 
 	return NULL;
@@ -1173,6 +1181,9 @@ ast_node_t *fold_unary(ast_node_t *node)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t * fold_binary(ast_node_t **node)
 {
+	if(!node || !(*node))
+		return NULL;
+		
 	operation_list op_id = (*node)->types.operation.op;
 	ast_node_t *child_0 = (*node)->children[0];
 	ast_node_t *child_1 = (*node)->children[1];
@@ -1317,7 +1328,7 @@ ast_node_t * fold_binary(ast_node_t **node)
 
 		if(success)
 		{
-			ast_node_t *new_num = create_tree_node_number(vresult, child_0->line_number, child_0->file_number);
+			ast_node_t *new_num = create_tree_node_number(vresult, (*node)->line_number, (*node)->file_number);
 			return new_num;
 		}
 	}

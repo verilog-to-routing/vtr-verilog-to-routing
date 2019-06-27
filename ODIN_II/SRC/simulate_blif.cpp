@@ -1,5 +1,4 @@
-/*	number_of_workers = std::max(1, global_args.parralelized_simulation.value());
-
+/**
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
 FILEs (the "Software"), to deal in the Software without
@@ -222,7 +221,7 @@ static void write_cycle_to_file(lines_t *l, FILE* file, int cycle);
 static void write_vector_to_modelsim_file(lines_t *l, FILE *modelsim_out, int cycle);
 static void write_cycle_to_modelsim_file(netlist_t *netlist, lines_t *l, FILE* modelsim_out, int cycle);
 
-static int verify_output_vectors(char* output_vector_file, int num_test_vectors);
+static int verify_output_vectors(const char* output_vector_file, int num_test_vectors);
 
 static void add_additional_items_to_lines(nnode_t *node, lines_t *l);
 
@@ -291,11 +290,10 @@ void simulate_netlist(netlist_t *netlist)
 
 	printf("\n");
 	// If a second output vector file was given via the -T option, verify that it matches.
-	char *output_vector_file = global_args.sim_vector_output_file;
-	if (output_vector_file)
+	if (global_args.sim_vector_output_file.provenance() == argparse::Provenance::SPECIFIED)
 	{
-		if (verify_output_vectors(output_vector_file, sim_data->num_vectors))
-			printf("Vector file \"%s\" matches output\n", output_vector_file);
+		if ( verify_output_vectors( global_args.sim_vector_output_file.value().c_str(), sim_data->num_vectors) )
+			printf("Vector file \"%s\" matches output\n", global_args.sim_vector_output_file.value().c_str());
 		else
 			error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Vector files differ.");
 		printf("\n");
@@ -430,33 +428,33 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	sim_data_t *sim_data = (sim_data_t *)vtr::malloc(sizeof(sim_data_t));
 
 	sim_data->netlist = netlist;
-	printf("Beginning simulation. Output_files located @: %s\n", ((char *)global_args.sim_directory)); 
+	printf("Beginning simulation. Output_files located @: %s\n", global_args.sim_directory.value().c_str()); 
 	fflush(stdout);
 
 	// Open the output vector file.
 	char out_vec_file[BUFFER_MAX_SIZE] = { 0 };
-	odin_sprintf(out_vec_file,"%s/%s",((char *)global_args.sim_directory),OUTPUT_VECTOR_FILE_NAME);
+	odin_sprintf(out_vec_file,"%s/%s", global_args.sim_directory.value().c_str(),OUTPUT_VECTOR_FILE_NAME);
 	sim_data->out = fopen(out_vec_file, "w");
 	if (!sim_data->out)
 		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create output vector file.");
 
 	// Open the input vector file.
 	char in_vec_file[BUFFER_MAX_SIZE] = { 0 };
-	odin_sprintf(in_vec_file,"%s/%s",((char *)global_args.sim_directory),INPUT_VECTOR_FILE_NAME);
+	odin_sprintf(in_vec_file,"%s/%s", global_args.sim_directory.value().c_str(),INPUT_VECTOR_FILE_NAME);
 	sim_data->in_out = fopen(in_vec_file, "w+");
 	if (!sim_data->in_out)
 		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create input vector file.");
 
 	// Open the activity output file.
 	char act_file[BUFFER_MAX_SIZE] = { 0 };
-	odin_sprintf(act_file,"%s/%s",((char *)global_args.sim_directory),OUTPUT_ACTIVITY_FILE_NAME);
+	odin_sprintf(act_file,"%s/%s", global_args.sim_directory.value().c_str(),OUTPUT_ACTIVITY_FILE_NAME);
 	sim_data->act_out = fopen(act_file, "w");
 	if (!sim_data->act_out)
 		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create activity output file.");
 
 	// Open the modelsim vector file.
 	char test_file[BUFFER_MAX_SIZE] = { 0 };
-	odin_sprintf(test_file,"%s/%s",((char *)global_args.sim_directory),MODEL_SIM_FILE_NAME);
+	odin_sprintf(test_file,"%s/%s", global_args.sim_directory.value().c_str(),MODEL_SIM_FILE_NAME);
 	sim_data->modelsim_out = fopen(test_file, "w");
 	if (!sim_data->modelsim_out)
 		error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create modelsim output file.");
@@ -472,35 +470,33 @@ sim_data_t *init_simulation(netlist_t *netlist)
 
 
 	sim_data->in = NULL;
-	sim_data->input_vector_file = NULL;
+	
 	// Passed via the -t option. Input vectors can either come from a file 
 	// if we expect no lines on input, then don't read the input file and generate as many input test vector as there are output
 	// vectors so that simulation can run
-	char *input_vector_file = global_args.sim_vector_input_file;
-	if (input_vector_file && sim_data->input_lines->count != 0)
+	if(global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED)
 	{
-		sim_data->input_vector_file  = input_vector_file;
-		sim_data->in = fopen(sim_data->input_vector_file, "r");
-		if (!sim_data->in)
-			error_message(SIMULATION_ERROR, 0, -1, "Could not open vector input file: %s", sim_data->input_vector_file);
 
+		sim_data->in = fopen(global_args.sim_vector_input_file.value().c_str(), "r");
+		if (!sim_data->in)
+			error_message(SIMULATION_ERROR, 0, -1, "Could not open vector input file: %s", global_args.sim_vector_input_file.value().c_str());
+	}
+
+	if (sim_data->in && sim_data->input_lines->count != 0)
+	{
 		sim_data->num_vectors = count_test_vectors(sim_data->in);
 
 		// Read the vector headers and check to make sure they match the lines.
 		if (!verify_test_vector_headers(sim_data->in, sim_data->input_lines))
-			error_message(SIMULATION_ERROR, 0, -1, "Invalid vector header format in %s.", sim_data->input_vector_file);
+			error_message(SIMULATION_ERROR, 0, -1, "Invalid vector header format in %s.", global_args.sim_vector_input_file.value().c_str());
 
-		printf("Simulating %ld existing vectors from \"%s\".\n", sim_data->num_vectors, sim_data->input_vector_file); fflush(stdout);
+		printf("Simulating %ld existing vectors from \"%s\".\n", sim_data->num_vectors, global_args.sim_vector_input_file.value().c_str()); fflush(stdout);
 	}
 	// or be randomly generated. Passed via the -g option. it also serve as a fallback when we have an empty input
 	else
 	{
-		if(input_vector_file)
+		if(sim_data->in)
 		{
-			sim_data->in = fopen(input_vector_file, "r");
-			if (!sim_data->in)
-				error_message(SIMULATION_ERROR, 0, -1, "Could not open vector input file: %s", input_vector_file);
-
 			sim_data->num_vectors = count_empty_test_vectors(sim_data->in);
 		}
 		else
@@ -547,8 +543,9 @@ sim_data_t *terminate_simulation(sim_data_t *sim_data)
 
 	fclose(sim_data->modelsim_out);
 	fclose(sim_data->in_out);
-	if (sim_data->input_vector_file)
+	if (sim_data->in)
 		fclose(sim_data->in);
+	
 	fclose(sim_data->out);
 	vtr::free(sim_data);
 	sim_data = NULL;
@@ -4047,7 +4044,7 @@ static void write_vector_to_modelsim_file(lines_t *l, FILE *modelsim_out, int cy
  * Returns false if the files differ and true if they are identical, with the exception of
  * number format.
  */
-static int verify_output_vectors(char* output_vector_file, int num_vectors)
+static int verify_output_vectors(const char* output_vector_file, int num_vectors)
 {
 	int error = FALSE;
 
@@ -4068,7 +4065,7 @@ static int verify_output_vectors(char* output_vector_file, int num_vectors)
 
 		// Our current output vectors. (Just produced.)
 		char out_vec_file[BUFFER_MAX_SIZE] = { 0 };
-		odin_sprintf(out_vec_file,"%s/%s",((char *)global_args.sim_directory),OUTPUT_VECTOR_FILE_NAME);
+		odin_sprintf(out_vec_file,"%s/%s",global_args.sim_directory.value().c_str(),OUTPUT_VECTOR_FILE_NAME);
 		FILE *current_out  = fopen(out_vec_file, "r");
 		if (!current_out)
 			error_message(SIMULATION_ERROR, 0, -1, "Could not open output vector file: %s", out_vec_file);
@@ -4501,7 +4498,7 @@ static void free_test_vector(test_vector* v)
 static void print_netlist_stats(stages_t *stages, int /*num_vectors*/)
 {
 	if(configuration.list_of_file_names.size() == 0)
-		printf("%s:\n", (char*)global_args.blif_file);
+		printf("%s:\n", global_args.blif_file.value().c_str());
 	else
 		for(long i=0; i < configuration.list_of_file_names.size(); i++)
 			printf("%s:\n", configuration.list_of_file_names[i].c_str());

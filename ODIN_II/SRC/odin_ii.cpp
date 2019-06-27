@@ -116,7 +116,7 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	 */
 
 	/* after the ast is made potentially do tagging for downstream links to verilog */
-	if (global_args.high_level_block)
+	if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
 		add_tag_data();
 
 	/**
@@ -177,11 +177,9 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	 *	point for outputs.  This includes soft and hard mapping all structures to the
 		*	target format.  Some of these could be considred optimizations 
 		*/
-	char *output_file = global_args.output_file;
 	printf("Outputting the netlist to the specified output format\n");
-
 	
-	output_blif(output_file, verilog_netlist);
+	output_blif(global_args.output_file.value().c_str(), verilog_netlist);
 
 	global_param_table_sc = sc_free_string_cache(global_param_table_sc);
 	module_names_to_idx = sc_free_string_cache(module_names_to_idx);
@@ -190,7 +188,7 @@ static ODIN_ERROR_CODE synthesize_verilog()
 
 	elaboration_time = wall_time() - elaboration_time;
 
-	printf("Successful High-level synthesis by Odin\n\tBlif file available at %s\n\tRan in ",output_file);
+	printf("Successful High-level synthesis by Odin\n\tBlif file available at %s\n\tRan in ",global_args.output_file.value().c_str());
 	print_time(elaboration_time);
 	printf("\n");
 	printf("--------------------------------------------------------------------\n");
@@ -232,19 +230,19 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 	get_options(argc, argv);
 
 	/* read the confirguration file .. get options presets the config values just in case theyr'e not read in with config file */
-	if (global_args.config_file != NULL)
+	if (global_args.config_file.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		printf("Reading Configuration file\n");
-		read_config_file(global_args.config_file);
+		read_config_file(global_args.config_file.value().c_str());
 	}
 
 	/* read the FPGA architecture file */
-	if (global_args.arch_file != NULL)
+	if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		printf("Reading FPGA Architecture file\n");
 		try 
 		{
-			XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types);
+			XmlReadArch(global_args.arch_file.value().c_str(), false, &Arch, &type_descriptors, &num_types);
 		} 
 		catch(vtr::VtrError& vtr_error) 
 		{
@@ -254,7 +252,7 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 	}
 
 	/* do High level Synthesis */
-	if (!global_args.blif_file)
+	if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED)
 	{
 		ODIN_ERROR_CODE error_code = synthesize_verilog();
 		if(error_code)
@@ -269,17 +267,16 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 	 */
 	netlist_t *odin_netlist = NULL;
 
-	if(global_args.blif_file
+	if(global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED
 	|| global_args.interactive_simulation 
 	|| global_args.sim_num_test_vectors 
-	|| global_args.sim_vector_input_file)
+	|| global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		// if we started with a verilog file read the output that was made since
 		// the simulator can only simulate blifs
-		if(!global_args.blif_file)
+		if(global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED)
 		{
-			char *output_file = global_args.output_file;
-			configuration.list_of_file_names = { std::string(output_file) };
+			configuration.list_of_file_names = { global_args.output_file };
 			current_parse_file =0;
 		}
 
@@ -296,7 +293,7 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 
 	/* Simulate netlist */
 	if(odin_netlist && !global_args.interactive_simulation
-	&& (global_args.sim_num_test_vectors || global_args.sim_vector_input_file))
+	&& (global_args.sim_num_test_vectors || (global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) ))
 	{
 		printf("Netlist Simulation Begin\n");
 		simulate_netlist(odin_netlist);
@@ -551,9 +548,9 @@ void get_options(int argc, char** argv) {
 
 	//Check required options
 	if(!only_one_is_true({	
-		global_args.config_file,					//have a config file
-		global_args.blif_file,						//have a blif file
-		!global_args.verilog_files.value().empty()	//have a verilog input list
+		global_args.config_file.provenance() == argparse::Provenance::SPECIFIED,					//have a config file
+		global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED,						//have a blif file
+		global_args.verilog_files.value().size() > 0												//have a verilog input list
 	})){
 		parser.print_usage();
 		error_message(ARG_ERROR,0,-1, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
@@ -585,7 +582,7 @@ void get_options(int argc, char** argv) {
 		//parse comma separated list of verilog files
 		configuration.list_of_file_names = global_args.verilog_files.value();
 	}
-	else if(global_args.blif_file)
+	else if(global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		configuration.list_of_file_names = { std::string(global_args.blif_file) };
 	}
@@ -627,7 +624,7 @@ void set_default_config()
 	configuration.print_parse_tokens = 0;
 	configuration.output_preproc_source = 0; // TODO: unused
 	configuration.debug_output_path = std::string(DEFAULT_OUTPUT);
-	configuration.arch_file = NULL;
+	configuration.arch_file = "";
 
 	configuration.fixed_hard_multiplier = 0;
 	configuration.split_hard_multiplier = 0;

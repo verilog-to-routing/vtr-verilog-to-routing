@@ -31,6 +31,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "config_t.h"
 #include <mutex>
 #include <atomic>
+#include <string>
 
 #include <stdlib.h>
 
@@ -103,22 +104,22 @@ struct global_args_t_t
 {
 	std::string program_name;
 
-    argparse::ArgValue<char*> config_file;
+    argparse::ArgValue<std::string> config_file;
 	argparse::ArgValue<std::vector<std::string>> verilog_files;
-	argparse::ArgValue<char*> blif_file;
-	argparse::ArgValue<char*> output_file;
-	argparse::ArgValue<char*> arch_file; // Name of the FPGA architecture file
+	argparse::ArgValue<std::string> blif_file;
+	argparse::ArgValue<std::string> output_file;
+	argparse::ArgValue<std::string> arch_file; // Name of the FPGA architecture file
 
-	argparse::ArgValue<char*> high_level_block; //Legacy option, no longer used
+	argparse::ArgValue<std::string> high_level_block; //Legacy option, no longer used
 
-	argparse::ArgValue<char*> top_level_module_name; // force the name of the top level module desired
+	argparse::ArgValue<std::string> top_level_module_name; // force the name of the top level module desired
 
     argparse::ArgValue<bool> write_netlist_as_dot;
     argparse::ArgValue<bool> write_ast_as_dot;
     argparse::ArgValue<bool> all_warnings;
     argparse::ArgValue<bool> show_help;
 
-	argparse::ArgValue<char*> adder_def; //carry skip adder skip size
+	argparse::ArgValue<std::string> adder_def; //carry skip adder skip size
     // defines if the first cin of an adder/subtractor is connected to a global gnd/vdd
     // or generated using a dummy adder with both inputs set to gnd/vdd
     argparse::ArgValue<bool> adder_cin_global;
@@ -129,11 +130,11 @@ struct global_args_t_t
 	// Generate this number of random vectors.
 	argparse::ArgValue<int> sim_num_test_vectors;
 	// Input vectors to simulate instead of generating vectors.
-	argparse::ArgValue<char*> sim_vector_input_file;
+	argparse::ArgValue<std::string> sim_vector_input_file;
 	// Existing output vectors to verify against.
-	argparse::ArgValue<char*> sim_vector_output_file;
+	argparse::ArgValue<std::string> sim_vector_output_file;
 	// Simulation output Directory
-	argparse::ArgValue<char*> sim_directory;
+	argparse::ArgValue<std::string> sim_directory;
 	// Tells the simulator whether or not to generate random vectors which include the unknown logic value.
 	argparse::ArgValue<bool> sim_generate_three_valued_logic;
 	// Output both falling and rising edges in the output_vectors file. (DEFAULT)

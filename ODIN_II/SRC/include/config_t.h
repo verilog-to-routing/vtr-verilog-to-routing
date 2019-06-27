@@ -46,7 +46,7 @@ struct config_t
 	int soft_logic_memory_depth_threshold;
 	int soft_logic_memory_width_threshold;
 
-	char *arch_file; // Name of the FPGA architecture file
+	std::string arch_file; // Name of the FPGA architecture file
 };
 
 extern config_t configuration;

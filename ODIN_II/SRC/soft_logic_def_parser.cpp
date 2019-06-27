@@ -65,22 +65,21 @@ std::map<std::string,soft_sub_structure*> soft_def_map;
 
 void read_soft_def_file(t_model *hard_adder_models)
 {
-	std::string soft_distribution(global_args.adder_def);
-	if(hard_adder_models || !global_args.adder_def || soft_distribution == "default")
+	if(hard_adder_models || global_args.adder_def.provenance() != argparse::Provenance::SPECIFIED || global_args.adder_def.value() == "default")
 	{
 		// given any of these cases do not optimize soft logic for adders
 		return;
 	}
 
 	// use the default optimized file input
-	if(soft_distribution == "optimized")
-		soft_distribution = vtr::dirname(global_args.program_name) + "odin.soft_config";
+	if(global_args.adder_def.value() == "optimized")
+		global_args.adder_def.set(vtr::dirname(global_args.program_name) + "odin.soft_config", argparse::Provenance::SPECIFIED);
 	//else keep as is and try to open it
 
-	FILE *input_file = fopen(soft_distribution.c_str(),"r");
+	FILE *input_file = fopen(global_args.adder_def.value().c_str(),"r");
 	if(input_file)
 	{
-		printf("Reading soft_logic definition file @ %s ... ", soft_distribution.c_str());
+		printf("Reading soft_logic definition file @ %s ... ", global_args.adder_def.value().c_str());
 
 		soft_def_map[std::string("+_0")] = NULL;
 		soft_def_map[std::string("/_0")] = NULL;
