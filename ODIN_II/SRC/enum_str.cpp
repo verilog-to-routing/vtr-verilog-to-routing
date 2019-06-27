@@ -83,7 +83,7 @@ const char *operation_list_STR[][2] =
 	{"MULTIPLY",        "MUL"}, // *
 	{"DIVIDE",          "DIV"}, // /
 	{"MODULO",          "MOD"}, // %
-	{"OP_POW",          "POW"}, // **
+	{"POWER",          "POW"}, // **
 	{"LT",              "LT"}, // <
 	{"GT",              "GT"}, // >
 	{"LOGICAL_EQUAL",   "lEQ"}, // ==

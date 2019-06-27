@@ -402,7 +402,7 @@ void create_netlist()
 			ast_node_t *module = (ast_node_t *)module_names_to_idx->data[sc_spot2];
 			ast_node_t *symbol_node = newSymbolNode(module_param_name, module->line_number);
 			ast_node_t* new_node = create_node_w_type(MODULE, module->line_number, module->file_number);
-			allocate_children_to_node(new_node, 3, symbol_node, module->children[1], module->children[2]);
+			allocate_children_to_node(new_node, 3, symbol_node, module->children[1], ast_node_deep_copy(module->children[2]));
 			module->types.module.is_instantiated = TRUE;
 			new_node->types.module.index = i;
 			new_node->types.module.is_instantiated = TRUE;
@@ -934,8 +934,6 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				child_skip_list[1] = TRUE; /* skip portlist ... we'll use where they're defined */
 				return_sig_list = create_hard_block(node, instance_name_prefix);
 				break;
-			case CONCATENATE:
-				resolve_concat_sizes(node, instance_name_prefix);
 			default:
 				break;
 		}
@@ -1399,20 +1397,23 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 							ast_node_t *node_min = resolve_node(NULL, instance_name_prefix, var_declare->children[2]);
 							
 							oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
-							if(node_min->types.vnumber->get_value() > node_max->types.vnumber->get_value())
+							long max_value = node_max->types.vnumber->get_value();
+							long min_value = node_min->types.vnumber->get_value();
+							
+							if(min_value > max_value)
 							{
 								error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 										"Odin doesn't support arrays declared [m:n] where m is less than n.");
 							}	
 							//ODIN doesn't support negative number in index now.
-							if(node_min->types.vnumber->get_value() < 0 || node_max->types.vnumber->get_value() < 0)
+							if(min_value < 0 || max_value < 0)
 							{
 								warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 										"Odin doesn't support negative number in index.");
 							}
 
 							/* assume digit 1 is largest */
-							for (k = node_min->types.vnumber->get_value(); k <= node_max->types.vnumber->get_value(); k++)
+							for (k = min_value; k <= max_value; k++)
 							{
 								/* get the name of the pin */
 								full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, var_declare->children[0]->types.identifier, k);
@@ -1488,26 +1489,24 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);		
 		oassert(node_min3->type == NUMBERS && node_max3->type == NUMBERS);
 
-		if((node_min2->types.vnumber->get_value() > node_max2->types.vnumber->get_value())
-		||(node_min3->types.vnumber->get_value() > node_max3->types.vnumber->get_value()))
+		long addr_min = node_min2->types.vnumber->get_value();
+		long addr_max = node_max2->types.vnumber->get_value();
+
+		long addr_min1= node_min3->types.vnumber->get_value();
+		long addr_max1= node_max3->types.vnumber->get_value();
+
+		if((addr_min > addr_max) || (addr_min1 > addr_max1))
 		{
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 					"Odin doesn't support arrays declared [m:n] where m is less than n.");
 		}	
-		else if((node_min2->types.vnumber->get_value() < 0 || node_max2->types.vnumber->get_value() < 0)
-		||(node_min3->types.vnumber->get_value() < 0 || node_max3->types.vnumber->get_value() < 0))
+		else if((addr_min < 0 || addr_max < 0) || (addr_min1 < 0 || addr_max1 < 0))
 		{
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 					"Odin doesn't support negative number in index.");
 		}
 
 		char *name = var_declare->children[0]->types.identifier;
-
-		long addr_min = node_min2->types.vnumber->get_value();
-		long addr_max = node_max2->types.vnumber->get_value();
-
-		long addr_min1= node_min3->types.vnumber->get_value();
-		long addr_max1= node_max3->types.vnumber->get_value();
 
 		if (addr_min != 0 || addr_min1 != 0)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
@@ -1519,9 +1518,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		STRING_CACHE *local_param_table_sc;
 		sc_spot = sc_lookup_string(global_param_table_sc, instance_name_prefix);
 		oassert(sc_spot != -1);
-		if (sc_spot != -1){
-			local_param_table_sc = (STRING_CACHE *)global_param_table_sc->data[sc_spot];
-		}
+		local_param_table_sc = (STRING_CACHE *)global_param_table_sc->data[sc_spot];
 
 		temp_string = make_chunk_size_name(instance_name_prefix, name);
 
@@ -1580,13 +1577,16 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		/* FOR array driver  since sport 3 and 4 are NULL */
 		oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
-		if(node_min->types.vnumber->get_value() > node_max->types.vnumber->get_value())
+		long min_value = node_min->types.vnumber->get_value();
+		long max_value = node_max->types.vnumber->get_value();
+
+		if(min_value > max_value)
 		{
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 					"Odin doesn't support arrays declared [m:n] where m is less than n.");
 		}	
 		//ODIN doesn't support negative number in index now.
-		if(node_min->types.vnumber->get_value() < 0 || node_max->types.vnumber->get_value() < 0)
+		if(min_value < 0 || max_value < 0)
 		{
 			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 					"Odin doesn't support negative number in index.");
@@ -1600,7 +1600,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		/* This register declaration is a range as opposed to a single bit so we need to define each element */
 		/* assume digit 1 is largest */
-		for (i = node_min->types.vnumber->get_value(); i <= node_max->types.vnumber->get_value(); i++)
+		for (i = min_value; i <= max_value; i++)
 		{
 			/* create the net */
 			new_net = allocate_nnet();
@@ -1638,26 +1638,32 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		ast_node_t *node_min2 = resolve_node(NULL, instance_name_prefix, var_declare->children[4]);
 
 		oassert(node_min1->type == NUMBERS && node_max1->type == NUMBERS);
-		if(node_min1->types.vnumber->get_value() > node_max1->types.vnumber->get_value())
+		long data_min = node_min1->types.vnumber->get_value();
+		long data_max = node_max1->types.vnumber->get_value();
+
+		if(data_min > data_max)
 		{
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 					"Odin doesn't support arrays declared [m:n] where m is less than n.");
 		}	
 		//ODIN doesn't support negative number in index now.
-		if(node_min1->types.vnumber->get_value() < 0 || node_max1->types.vnumber->get_value() < 0)
+		if(data_min < 0 || data_max < 0)
 		{
 			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 					"Odin doesn't support negative number in index.");
 		}
 
 		oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);
-		if(node_min2->types.vnumber->get_value() > node_max2->types.vnumber->get_value())
+		long addr_min = node_min2->types.vnumber->get_value();
+		long addr_max = node_max2->types.vnumber->get_value();
+
+		if(addr_min > addr_max)
 		{
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 					"Odin doesn't support arrays declared [m:n] where m is less than n.");
 		}	
 		//ODIN doesn't support negative number in index now.
-		if(node_min2->types.vnumber->get_value() < 0 || node_max2->types.vnumber->get_value() < 0)
+		if(addr_min < 0 || addr_max < 0)
 		{
 			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 					"Odin doesn't support negative number in index.");
@@ -1665,17 +1671,11 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		char *name = var_declare->children[0]->types.identifier;
 
-		long data_min = node_min1->types.vnumber->get_value();
-		long data_max = node_max1->types.vnumber->get_value();
-
 		if (data_min != 0)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
 					"%s: right memory index must be zero\n", name);
 
 		oassert(data_min <= data_max);
-
-		long addr_min = node_min2->types.vnumber->get_value();
-		long addr_max = node_max2->types.vnumber->get_value();
 
 		if (addr_min != 0)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
@@ -1752,20 +1752,23 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 		ast_node_t *node_min = resolve_node(NULL, instance_name_prefix, var_declare->children[2]);
 		
 		oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
-		if(node_min->types.vnumber->get_value() > node_max->types.vnumber->get_value())
+		long min_value = node_min->types.vnumber->get_value();
+		long max_value = node_max->types.vnumber->get_value();
+
+		if(min_value > max_value)
 		{
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 					"Odin doesn't support arrays declared [m:n] where m is less than n.");
 		}	
 		//ODIN doesn't support negative number in index now.
-		if(node_min->types.vnumber->get_value() < 0 || node_max->types.vnumber->get_value() < 0)
+		if(min_value < 0 || max_value < 0)
 		{
 			warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
 					"Odin doesn't support negative number in index.");
 		}
 
 		/* assume digit 1 is largest */
-		for (i = node_min->types.vnumber->get_value(); i <= node_max->types.vnumber->get_value(); i++)
+		for (i = min_value; i <= max_value; i++)
 		{
 			/* create the net */
 			new_net = allocate_nnet();
@@ -2951,7 +2954,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 					    if ((sc_spot_input_new = sc_lookup_string(input_nets_sc, full_name)) == -1)
 					    {
 						    /* if this input is not yet used in this module then we'll add it */
-						    sc_spot_input_new = sc_add_string(input_nets_sc, full_name);
+							sc_spot_input_new = sc_add_string(input_nets_sc, full_name);
 
 						    /* copy the pin to the old spot */
 						    input_nets_sc->data[sc_spot_input_new] = input_nets_sc->data[sc_spot_input_old];
@@ -3352,8 +3355,6 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	}
 	else
 	{
-		// TODO Alex - this is temporary
-		// if (right->type == BINARY_OPERATION || right->type == UNARY_OPERATION || right->type)
 		right = resolve_node(NULL, instance_name_prefix, right);
 
 		in_1 = netlist_expand_ast_of_module(right, instance_name_prefix);
@@ -4388,6 +4389,9 @@ signal_list_t *create_if_for_question(ast_node_t *if_ast, char *instance_name_pr
 	signal_list_t *return_list;
 	nnode_t *if_node;
 
+	/* try to resolve constant expressions in condition */
+	if_ast->children[0] = resolve_node(NULL, instance_name_prefix, if_ast->children[0]);
+
 	/* create the node */
 	if_node = allocate_nnode();
 	/* store all the relevant info */
@@ -4444,6 +4448,9 @@ signal_list_t *create_if(ast_node_t *if_ast, char *instance_name_prefix)
 {
 	signal_list_t *return_list;
 	nnode_t *if_node;
+
+	/* try to resolve constant expressions in condition */
+	if_ast->children[0] = resolve_node(NULL, instance_name_prefix, if_ast->children[0]);
 
 	/* create the node */
 	if_node = allocate_nnode();
