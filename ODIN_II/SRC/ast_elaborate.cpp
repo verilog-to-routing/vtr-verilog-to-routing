@@ -314,11 +314,12 @@ void create_enode(ast_node_t *node)
 				case DIVIDE:
 					s->type.operation = '/';
 					s->priority = 1;
-				break;
+					break;
 
 				default:
-				break;
+					break;
 			}
+			break;
 		}
 
 		case IDENTIFIERS:
@@ -330,10 +331,9 @@ void create_enode(ast_node_t *node)
 		}
 
 		default:
+		{
 			break;
-		
-
-
+		}
 	}
 
 	p->next = s;
