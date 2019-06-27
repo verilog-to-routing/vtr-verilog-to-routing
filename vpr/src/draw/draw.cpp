@@ -3240,7 +3240,9 @@ static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_
     std::reverse(rr_nodes_on_path.begin(), rr_nodes_on_path.end());
 
     if (allocated_route_tree_structs) {
-        free_route_tree_timing_structs(); //Clean-up
+        clear_rr_node_to_rt_node(); //Clean-up
+        free_route_tree_timing_structs();
+        //See discussion in route_tree_timing.cpp on clear_rr_node_to_rt_node usage.
     }
     return rr_nodes_on_path;
 }

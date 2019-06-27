@@ -21,11 +21,7 @@ using namespace std;
  * about the partial routing during timing-driven routing, so the routines
  * in this module are used to keep a tree representation of the partial
  * routing during timing-driven routing.  This allows rapid incremental
- * timing analysis.  The net_delay module does timing analysis in one step
- * (not incrementally as pieces of the routing are added).  I could probably
- * one day remove a lot of net_delay.c and call the corresponding routines
- * here, but it's useful to have a from-scratch delay calculator to check
- * the results of this one.                                                  */
+ * timing analysis.                                                          */
 
 /********************** Variables local to this module ***********************/
 
@@ -93,14 +89,31 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
     return true;
 }
 
+void clear_rr_node_to_rt_node() {
+    /* This is a function which clears the rr_node_to_rt_node vector. 
+     * We do not include this inside free_route_tree_timing_structs()
+     * because of a VTR_SAFE_ASSERT(timing_check_net_delays) in 
+     * route_timing.cpp. Doing so would clear the vector during routing
+     * and result in undefined behavior. It is encouraged to use
+     * free_route_tree_timing_structs() with clear_rr_node_to_rt_node() 
+     * in external modules.
+     * Example usage:
+     * 
+     * module(){
+     * ...
+     * clear_rr_node_to_rt_node();
+     * free_route_tree_timing_structs();
+     * ...
+     * }                                                                         */
+    rr_node_to_rt_node.clear();
+}
+
 void free_route_tree_timing_structs() {
     /* Frees the structures needed to build routing trees, and really frees
      * (i.e. calls free) all the data on the free lists.                         */
 
     t_rt_node *rt_node, *next_node;
     t_linked_rt_edge *rt_edge, *next_edge;
-
-    rr_node_to_rt_node.clear();
 
     rt_node = rt_node_free_list;
 

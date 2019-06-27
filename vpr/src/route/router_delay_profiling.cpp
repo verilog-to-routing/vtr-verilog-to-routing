@@ -203,5 +203,7 @@ void free_routing_structs() {
     free_route_structs();
     free_trace_structs();
 
+    //See discussion in route_tree_timing.cpp on clear_rr_node_to_rt_node usage.
+    clear_rr_node_to_rt_node();
     free_route_tree_timing_structs();
 }
