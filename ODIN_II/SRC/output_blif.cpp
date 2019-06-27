@@ -56,25 +56,24 @@ void output_blif_pin_connect(nnode_t *node, FILE *out);
  * (function: output_blif)
  * 	The function that prints out the details for a blif formatted file
  *-------------------------------------------------------------------------*/
-void output_blif(char *file_name, netlist_t *netlist)
+void output_blif(const char *file_name, netlist_t *netlist)
 {
 	int i;
 	int count = 0;
 	short first_time_inputs = FALSE;
 	short first_time_outputs = FALSE;
 	FILE *out;
-	char *out_file;
 
 	/* open the file for output */
-	if (global_args.high_level_block != NULL)
+	if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED )
 	{
-		out_file = (char*)vtr::malloc(sizeof(char)*(1+strlen(file_name)+strlen(global_args.high_level_block)+6));
-		odin_sprintf(out_file, "%s_%s.blif", file_name, global_args.high_level_block.value());
-		out = fopen(out_file, "w");
+		std::string out_file = "";
+		out_file = out_file + file_name + "_" + global_args.high_level_block.value() + ".blif";
+		out = fopen(out_file.c_str(), "w+");
 	}
 	else
 	{
-		out = fopen(file_name, "w");
+		out = fopen(file_name, "w+");
 	}
 
 	if (out == NULL)
@@ -93,7 +92,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 			first_time_inputs = TRUE;
 		}
 
-		if (global_args.high_level_block != NULL)
+		if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
 		{
 			if (strlen(netlist->top_input_nodes[i]->name) + count < 79)
 				count = count + fprintf(out, " %s^^%i-%i", netlist->top_input_nodes[i]->name, netlist->top_input_nodes[i]->related_ast_node->far_tag, netlist->top_input_nodes[i]->related_ast_node->high_number);
@@ -136,7 +135,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 				first_time_outputs = TRUE;
 			}
 
-			if (global_args.high_level_block != NULL)
+			if ( global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED )
 			{
 				if ((strlen(netlist->top_output_nodes[i]->name) + count) < 79)
 					count = count + fprintf(out, " %s^^%i-%i", netlist->top_output_nodes[i]->name,netlist->top_output_nodes[i]->related_ast_node->far_tag, netlist->top_output_nodes[i]->related_ast_node->high_number);
@@ -183,7 +182,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 		nnode_t *node = netlist->top_output_nodes[i];
 		if (node->input_pins[0]->net->driver_pin != NULL)
 		{
-			if (global_args.high_level_block != NULL)
+			if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
 			{
 				fprintf(out, ".names %s^^%i-%i %s^^%i-%i\n1 1\n",
 						node->input_pins[0]->net->driver_pin->node->name,
@@ -414,7 +413,7 @@ void define_logical_function(nnode_t *node, FILE *out)
 	fprintf(out, ".names");
 
 
-	if (global_args.high_level_block != NULL)
+	if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		/* printout all the port hookups */
 		for (i = 0; i < node->num_input_pins; i++)
@@ -589,7 +588,7 @@ void define_set_input_logical_function(nnode_t *node, const char *bit_output, FI
 	oassert(node->num_input_pins >= 1);
 
 
-	if (global_args.high_level_block != NULL)
+	if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		/* printout all the port hookups */
 		for (i = 0; i < node->num_input_pins; i++)
@@ -692,7 +691,7 @@ void define_ff(nnode_t *node, FILE *out)
 	fprintf(out, ".latch ");
 
 	/* input */
-	if (global_args.high_level_block != NULL)
+	if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		fprintf(out, "%s^^%i-%i ",
 						node->input_pins[0]->net->driver_pin->node->name,
@@ -706,7 +705,7 @@ void define_ff(nnode_t *node, FILE *out)
 
 
 	/* output */
-	if (global_args.high_level_block != NULL)
+	if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		fprintf(out, "%s^^%i-%i ",
 						node->name, 
@@ -719,7 +718,7 @@ void define_ff(nnode_t *node, FILE *out)
 
 	/* clock */
 	fprintf(out, "%s ", edge_type_str);
-	if(global_args.high_level_block != NULL)
+	if(global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		fprintf(out, "%s^^%i-%i ",
 						node->input_pins[1]->net->driver_pin->node->name,
@@ -745,7 +744,7 @@ void define_decoded_mux(nnode_t *node, FILE *out)
 
 	fprintf(out, ".names");
 
-	if (global_args.high_level_block != NULL)
+	if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		/* printout all the port hookups */
 		for (i = 0; i < node->num_input_pins; i++)

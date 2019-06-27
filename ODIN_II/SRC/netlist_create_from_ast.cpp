@@ -505,7 +505,7 @@ ast_node_t *find_top_module()
 	std::string desired_module("");
 	bool found_desired_module = false;
 
-	if ( global_args.top_level_module_name )
+	if ( global_args.top_level_module_name.provenance() == argparse::Provenance::SPECIFIED )
 	{
 		desired_module = global_args.top_level_module_name;
 		printf("Using Top Level Module: %s\n", desired_module.c_str());

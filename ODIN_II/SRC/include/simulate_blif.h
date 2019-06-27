@@ -124,7 +124,6 @@ typedef struct sim_data_t_t
 	FILE *modelsim_out;
 	FILE *in  = NULL;
 	long num_vectors;
-	char *input_vector_file;
 
 	double total_time; // Includes I/O
 	double simulation_time; // Does not include I/O

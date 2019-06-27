@@ -75,11 +75,16 @@ void update_tree_tag(ast_node_t *node, int cases, int tagged);
 		high_level_id = -1;
 
 		ids type = NO_ID;
-		if(!strcmp(global_args.high_level_block,"if")){
+		if(global_args.high_level_block.value() == "if")
+		{
 			type = IF;
-		}else if(!strcmp(global_args.high_level_block,"always")){
+		}
+		else if(global_args.high_level_block.value() == "always")
+		{
 			type = ALWAYS;
-		}else if(!strcmp(global_args.high_level_block,"module")){
+		}
+		else if(global_args.high_level_block.value() == "module")
+		{
 			type = MODULE;
 		}
 
@@ -1086,6 +1091,9 @@ static void check_binary_operation(ast_node_t **node)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *fold_unary(ast_node_t *node)
 {
+	if(!node)
+		return NULL;
+		
 	operation_list op_id = node->types.operation.op;
 	ast_node_t *child_0 = node->children[0];
 
