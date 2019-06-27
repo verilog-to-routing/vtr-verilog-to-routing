@@ -513,7 +513,7 @@ expression:
 	| '^' expression %prec UXOR				{$$ = newUnaryOperation(BITWISE_XOR, $2, yylineno);}
 	| vCLOG2 '(' expression ')'				{$$ = newUnaryOperation(CLOG2, $3, yylineno);}
 	| expression '^' expression				{$$ = newBinaryOperation(BITWISE_XOR, $1, $3, yylineno);}
-	| expression voPOWER expression				{$$ = newExpandPower(MULTIPLY,$1, $3, yylineno);}
+	| expression voPOWER expression				{$$ = newBinaryOperation(POWER,$1, $3, yylineno);}
 	| expression '*' expression				{$$ = newBinaryOperation(MULTIPLY, $1, $3, yylineno);}
 	| expression '/' expression				{$$ = newBinaryOperation(DIVIDE, $1, $3, yylineno);}
 	| expression '%' expression				{$$ = newBinaryOperation(MODULO, $1, $3, yylineno);}

@@ -34,6 +34,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include <stdlib.h>
 
+#include "rtl_int.hpp"
+
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -254,7 +256,7 @@ typedef enum
 	MULTIPLY, // *
 	DIVIDE, // /
 	MODULO, // %
-	OP_POW, // **
+	POWER, // **
 	LT, // <
 	GT, // >
 	LOGICAL_EQUAL, // ==
@@ -371,18 +373,8 @@ typedef enum
 struct typ_t
 {
 	char *identifier;
+	VNumber *vnumber = nullptr;
 
-	struct
-	{
-		short sign;
-		short base;
-		int size;
-		int binary_size;
-		char *binary_string;
-		char *number;
-		long value;
-		short is_full; //'bx means all of the wire get 'x'(dont care)
-	} number;
 	struct
 	{
 		operation_list op;

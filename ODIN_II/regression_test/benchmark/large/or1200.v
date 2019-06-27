@@ -1,3 +1,8 @@
+/* ******************************************************************
+* NOTE: This code has known bugs and is no longer being maintained. 
+*		This cannot be simulated.
+****************************************************************** */
+
 `define OR1200_DCFGR_NDP		3'h0	// Zero DVR/DCR pairs
 `define OR1200_DCFGR_WPCI		1'b0	// WP counters not impl.
 

@@ -77,11 +77,6 @@ void find_parameter(ast_node_t *top, std::vector<ast_node_t *>para);
 void remove_para_node(ast_node_t *top, std::vector<ast_node_t *>para);
 void change_para_node(ast_node_t *node, std::string name, long value);
 void check_operation(enode *begin, enode *end);
-void shift_operation();
-void shift_operation(ast_node_t *ast_module);
-void search_certain_operation(ast_node_t *node);
-void check_binary_operation(ast_node_t *node);
-void check_node_number(ast_node_t *parent, ast_node_t *child, int flag);
 bool check_mult_bracket(std::vector<int> list);
 short has_intermediate_variable(ast_node_t *node);
 

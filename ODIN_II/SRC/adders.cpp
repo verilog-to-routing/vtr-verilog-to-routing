@@ -1112,7 +1112,6 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 {
 	int flag = 0;
 	int sign = 0;
-	int *mark = &sign;
 	int mark1 = 1;
 	int mark2 = 1;
 	ast_node_t *ast_node, *ast_node_next;
@@ -1122,10 +1121,10 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 	ast_node_next = next_node->related_ast_node;
 	if (ast_node->types.operation.op == oper)
 	{
-		traverse_operation_node(ast_node, component_s, oper, mark);
+		traverse_operation_node(ast_node, component_s, oper, &sign);
 		if (sign != 1)
 		{
-			traverse_operation_node(ast_node_next, component_o, oper, mark);
+			traverse_operation_node(ast_node_next, component_o, oper, &sign);
 			if (sign != 1)
 			{
 				switch (oper)
@@ -1138,12 +1137,10 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 							mark2 = strcmp(component_s[1], component_o[1]);
 						else
 						{
-              oassert(component_s[0] && component_o[1] && component_s[1] && component_o[0]);
+							oassert(component_s[0] && component_o[1] && component_s[1] && component_o[0]);
 							mark1 = strcmp(component_s[0], component_o[1]);
 							mark2 = strcmp(component_s[1], component_o[0]);
 						}
-						if (mark1 == 0 && mark2 == 0)
-							flag = 1;
 					}
 					break;
 
@@ -1151,14 +1148,14 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 						mark1 = strcmp(component_s[0], component_o[0]);
 						if (mark1 == 0)
 							mark2 = strcmp(component_s[1], component_s[1]);
-						if (mark2 == 0)
-							flag = 1;
 					break;
 
 					default:
 
 					break;
 				}
+				if (mark1 == 0 && mark2 == 0)
+					flag = 1;
 			}
 		}
 	}
@@ -1191,10 +1188,16 @@ void traverse_operation_node(ast_node_t *node, char *component[], operation_list
 			else
 			{
 				if (node->children[i]->type == IDENTIFIERS)
+				{
 					component[i] = node->children[i]->types.identifier;
-				else
-					if (node->children[i]->type == NUMBERS)
-						component[i] = node->children[i]->types.number.number;
+				}
+				else if (node->children[i]->type == NUMBERS)
+				{
+					long value = node->children[i]->types.vnumber->get_value();
+					long len = snprintf(NULL,0,"%ld", value);
+					component[i] = (char *)vtr::calloc(len+1,sizeof(char));
+					odin_sprintf(component[i], "%ld", value);
+				}	
 			}
 
 		}

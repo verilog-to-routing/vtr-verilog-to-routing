@@ -48,7 +48,7 @@ long shift_left_value_with_overflow_check(long input_value, long shift_by)
 	if(shift_by < 0)
 		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that is negative [%ld]\n",shift_by);
 	else if(shift_by >= ODIN_STD_BITWIDTH-1 )
-		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that will overflow the maximum size of %d [%ld]\n", shift_by, ODIN_STD_BITWIDTH-1);
+		warning_message(NETLIST_ERROR, -1, -1, "requesting a shift left that will overflow the maximum size of %d [%ld]\n", shift_by, ODIN_STD_BITWIDTH-1);
 
 	return input_value << shift_by;
 }
@@ -720,6 +720,17 @@ short get_bit(char in){
 	fprintf(stderr,"not a valid bit\n");
     return -1;
 }
+
+/*---------------------------------------------------------------------------------------------
+ * (function: to_bit)
+ *-------------------------------------------------------------------------------------------*/
+short get_bit(short in){
+	if(in == 0 || in == 1)
+		return in;
+	fprintf(stderr,"not a valid bit\n");
+    return -1;
+}
+
 
 void passed_verify_i_o_availabilty(nnode_t *node, int expected_input_size, int expected_output_size, const char *current_src, int line_src) {
 	if(!node)

@@ -336,9 +336,9 @@ ast_node_t *newSymbolNode(char *id, int line_number)
 /*---------------------------------------------------------------------------------------------
  * (function: newNumberNode)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newNumberNode(char *num, bases base, signedness sign, int line_number)
+ast_node_t *newNumberNode(char *num, bases /*base */, signedness /* sign */, int line_number)
 {
-	ast_node_t *current_node = create_tree_node_number(num, base, sign, line_number, current_parse_file);
+	ast_node_t *current_node = create_tree_node_number(num, line_number, current_parse_file);
 	vtr::free(num);
 	return current_node;
 }
@@ -396,9 +396,12 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 	allocate_children_to_node(new_node, 1, child);
 
 	int i;
-	for (i = 1; i < exp->types.number.value; i++)
+	if (exp->type == NUMBERS)
 	{
-		add_child_to_node(new_node, child);
+		for (i = 1; i < exp->types.vnumber->get_value(); i++)
+		{
+			add_child_to_node(new_node, ast_node_deep_copy(child));
+		}
 	}
 
 	return new_node;
@@ -764,7 +767,6 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 	long sc_spot;
 	STRING_CACHE **this_defines_sc = NULL;
 	long this_num_modules = 0;
-	const char *id_name = (id == PARAMETER) ? "Parameter" : "Localparam";
 
 	if (top_type == MODULE)
 	{
@@ -786,15 +788,6 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 	}
 	sc_spot = sc_add_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier);
 	
-	ast_node_t *value = parameter->children[5];
-
-	/* make sure that the parameter value is constant */
-	if (!node_is_ast_constant(value, this_defines_sc[this_num_modules]))
-	{
-		error_message(PARSE_ERROR, parameter->children[5]->line_number, current_parse_file, "%s value must be constant\n", id_name);
-	}
-
-
 	this_defines_sc[this_num_modules]->data[sc_spot] = (void*)parameter->children[5];
 	/* mark the node as shared so we don't delete it */
 	parameter->children[5]->shared_node = TRUE;
@@ -962,7 +955,7 @@ ast_node_t *newMinusColonRangeRef(char *id, ast_node_t *expression1, ast_node_t 
 	// expression 1 is the msb here since we subtract expression 2 from it
 	msb = expression1;
 
-	ast_node_t *number_one = create_tree_node_long_number(1, ODIN_STD_BITWIDTH, line_number, current_parse_file);
+	ast_node_t *number_one = create_tree_node_number(1L, line_number, current_parse_file);
 	ast_node_t *size_to_index = newBinaryOperation(MINUS, expression2, number_one, line_number);
 
 	lsb = newBinaryOperation(MINUS, ast_node_deep_copy(expression1), size_to_index, line_number);
@@ -995,7 +988,7 @@ ast_node_t *newPlusColonRangeRef(char *id, ast_node_t *expression1, ast_node_t *
 	// expression 1 is the lsb here since we add expression 2 to it
 	lsb = expression1;
 
-	ast_node_t *number_one = create_tree_node_long_number(1, ODIN_STD_BITWIDTH, line_number, current_parse_file);
+	ast_node_t *number_one = create_tree_node_number(1L, line_number, current_parse_file);
 	ast_node_t *size_to_index = newBinaryOperation(MINUS, expression2, number_one, line_number);
 
 	msb = newBinaryOperation(ADD, ast_node_deep_copy(expression1), size_to_index, line_number);
@@ -1016,72 +1009,20 @@ ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, as
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 2, expression1, expression2);
 
-	/* see if this binary expression can have some constant folding */
-	new_node = resolve_ast_node(defines_for_module_sc[num_modules-num_instances],TRUE,NULL,new_node);
-
 	return new_node;
 }
 
-ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number)
-{
-	/* create a node for this array reference */
-	ast_node_t* new_node, *node;
-	ast_node_t *node_copy;
-
-    /* avoid uninitialized warning */
-    new_node = NULL;
-
-	/* allocate child nodes to this node */
-	if( expression2->type == NUMBERS ){
-		int len = expression2->types.number.value;
-		if( expression1->type == NUMBERS ){
-			int len1 = expression1->types.number.value;
-			long powRes = pow(len1, len);
-			new_node = create_tree_node_long_number(powRes,ODIN_STD_BITWIDTH, line_number, current_parse_file);
-		} else {
-			if (len == 0){
-				new_node = create_tree_node_long_number(1, ODIN_STD_BITWIDTH, line_number, current_parse_file);
-			} else {
-				new_node = expression1;
-				for(int i=1; i < len; ++i){
-					node = create_node_w_type(BINARY_OPERATION, line_number, current_parse_file);
-					node->types.operation.op = op_id;
-
-					node_copy = ast_node_deep_copy(expression1);
-
-					allocate_children_to_node(node, 2, node_copy, new_node);
-					new_node = node;
-				}
-			}
-		}
-	}
-	else
-	{
-	error_message(NETLIST_ERROR, line_number, current_parse_file, "%s", "Operation not supported by Odin\n");
-        }
-	/* see if this binary expression can have some constant folding */
-	new_node = resolve_ast_node(defines_for_module_sc[num_modules-num_instances],TRUE,NULL,new_node);
-
-	return new_node;
-}
 /*---------------------------------------------------------------------------------------------
  * (function: newUnaryOperation)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int line_number)
 {
-	/* $clog2() argument must be a constant expression */
-	if (op_id == CLOG2 && !node_is_ast_constant(expression, defines_for_module_sc[num_modules-num_instances]))
-		error_message(PARSE_ERROR, expression->line_number, current_parse_file, "%s", "Argument must be constant\n");
-
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(UNARY_OPERATION, line_number, current_parse_file);
 	/* store the operation type */
 	new_node->types.operation.op = op_id;
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 1, expression);
-
-	/* see if this binary expression can have some constant folding */
-	new_node = resolve_ast_node(defines_for_module_sc[num_modules-num_instances],TRUE,NULL,new_node);
 
 	return new_node;
 }
@@ -1346,11 +1287,6 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
 	else
 	{
 		symbol_node = NULL;
-	}
-
-	if (expression && !node_is_ast_constant(expression, defines_for_module_sc[num_modules-num_instances]))
-	{
-		error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "Parameter value must be constant\n");
 	}
 
 	/* allocate child nodes to this node */
@@ -1643,9 +1579,9 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ 
 {
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 
-    ast_node_t *number_node_with_value_31 = create_tree_node_long_number(31, ODIN_STD_BITWIDTH, line_number,current_parse_file);
+    ast_node_t *number_node_with_value_31 = create_tree_node_number(31L, line_number,current_parse_file);
 
-    ast_node_t *number_node_with_value_0 = create_tree_node_long_number(0, ODIN_STD_BITWIDTH, line_number,current_parse_file);
+    ast_node_t *number_node_with_value_0 = create_tree_node_number(0L, line_number,current_parse_file);
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(VAR_DECLARE, line_number, current_parse_file);
@@ -1906,10 +1842,6 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 				}
 			}
 			new_node = val->children[(val->num_children - 1)];
-			if (!node_is_ast_constant(new_node->children[5], defines_for_module_sc[num_modules-num_instances])) 
-			{
-				error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "Parameter value must be constant\n");
-			}
 
 			new_node->type = MODULE_PARAMETER;
 			new_node->types.variable.is_parameter = TRUE;
@@ -2014,7 +1946,7 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 			break;
 		}
 		case NUMBERS:
-			fprintf(fp, ": %s",  node->types.number.binary_string );
+			fprintf(fp, ": %s",  node->types.vnumber->to_bit_string().c_str());
 			break;
 
 		case UNARY_OPERATION: //fallthrough
