@@ -733,6 +733,10 @@ int get_bidir_opin_connections(const int i,
                 to_switch = seg_details[to_track].arch_wire_switch();
                 to_node = get_rr_node_index(L_rr_node_indices, tr_i, tr_j, to_type, to_track);
 
+                if (to_node == OPEN) {
+                    continue;
+                }
+
                 rr_edges_to_create.emplace_back(from_rr_node, to_node, to_switch);
                 ++num_conn;
             }
@@ -807,6 +811,10 @@ int get_unidir_opin_connections(const int chan,
         /* Figure the inodes of those muxes */
         inc_inode_index = get_rr_node_index(L_rr_node_indices, x, y, chan_type, inc_track);
         dec_inode_index = get_rr_node_index(L_rr_node_indices, x, y, chan_type, dec_track);
+
+        if (inc_inode_index == OPEN || dec_inode_index == OPEN) {
+            continue;
+        }
 
         /* Add to the list. */
         rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, seg_details[inc_track].arch_opin_switch());
@@ -1237,7 +1245,10 @@ std::vector<int> get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
     } else {
         //Sides do not effect non-pins so there should only be one per ptc
         int rr_node_index = get_rr_node_index(L_rr_node_indices, x, y, rr_type, ptc);
-        indices.push_back(rr_node_index);
+
+        if (rr_node_index != OPEN) {
+            indices.push_back(rr_node_index);
+        }
     }
 
     return indices;
@@ -1347,15 +1358,15 @@ int find_average_rr_node_index(int device_width,
     int inode = get_rr_node_index(L_rr_node_indices, (device_width) / 2, (device_height) / 2,
                                   rr_type, ptc);
 
-    if (inode == -1) {
+    if (inode == OPEN) {
         inode = get_rr_node_index(L_rr_node_indices, (device_width) / 4, (device_height) / 4,
                                   rr_type, ptc);
     }
-    if (inode == -1) {
+    if (inode == OPEN) {
         inode = get_rr_node_index(L_rr_node_indices, (device_width) / 4 * 3, (device_height) / 4 * 3,
                                   rr_type, ptc);
     }
-    if (inode == -1) {
+    if (inode == OPEN) {
         auto& device_ctx = g_vpr_ctx.device();
 
         for (int x = 0; x < device_width; ++x) {
@@ -1366,10 +1377,10 @@ int find_average_rr_node_index(int device_width,
                     continue;
 
                 inode = get_rr_node_index(L_rr_node_indices, x, y, rr_type, ptc);
-                if (inode != -1)
+                if (inode != OPEN)
                     break;
             }
-            if (inode != -1)
+            if (inode != OPEN)
                 break;
         }
     }
@@ -1730,6 +1741,10 @@ static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
         to_track = conn_tracks[iconn];
         to_node = get_rr_node_index(L_rr_node_indices, to_x, to_y, to_type, to_track);
 
+        if (to_node == OPEN) {
+            continue;
+        }
+
         /* Get the switches for any edges between the two tracks */
         to_switch = seg_details[to_track].arch_wire_switch();
 
@@ -1804,6 +1819,10 @@ static int get_track_to_chan_seg(const int from_wire,
 
             int to_wire = conn_vector.at(iconn).to_wire;
             int to_node = get_rr_node_index(L_rr_node_indices, to_x, to_y, to_chan_type, to_wire);
+
+            if (to_node == OPEN) {
+                continue;
+            }
 
             /* Get the index of the switch connecting the two wires */
             int src_switch = conn_vector[iconn].switch_ind;
@@ -1900,6 +1919,10 @@ static int get_unidir_track_to_chan_seg(const int from_track,
             }
 
             int to_node = get_rr_node_index(L_rr_node_indices, to_x, to_y, to_type, to_track);
+
+            if (to_node == OPEN) {
+                continue;
+            }
 
             //Determine which switch to use
             int iswitch = seg_details[to_track].arch_wire_switch();

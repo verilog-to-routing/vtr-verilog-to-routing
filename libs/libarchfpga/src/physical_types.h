@@ -179,8 +179,17 @@ enum e_pb_type_class {
     UNKNOWN_CLASS = 0,
     LUT_CLASS = 1,
     LATCH_CLASS = 2,
-    MEMORY_CLASS = 3
+    MEMORY_CLASS = 3,
+    NUM_CLASSES
 };
+
+// Set of all pb_type classes
+constexpr std::array<e_pb_type_class, NUM_CLASSES> PB_TYPE_CLASSES = {
+    {UNKNOWN_CLASS, LUT_CLASS, LATCH_CLASS, MEMORY_CLASS}};
+
+// String versions of pb_type class values
+constexpr std::array<const char*, NUM_CLASSES> PB_TYPE_CLASS_STRING = {
+    {"unknown", "lut", "flipflop", "memory"}};
 
 /* Annotations for pin-to-pin connections */
 enum e_pin_to_pin_annotation_type {

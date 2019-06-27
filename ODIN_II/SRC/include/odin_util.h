@@ -49,6 +49,8 @@ bool is_unknown(T val_in)
 
 long shift_left_value_with_overflow_check(long input_value, long shift_by);
 
+std::string get_file_extension(std::string input_file);
+
 const char *node_name_based_on_op(nnode_t *node);
 const char *name_based_on_op(operation_list op);
 
@@ -88,6 +90,7 @@ char *get_pin_name  (char *name);
 char *get_port_name (char *name);
 int get_pin_number  (char *name);
 short get_bit(char in);
+short get_bit(short in);
 char *search_replace(char *src, const char *sKey, const char *rKey, int flag);
 bool validate_string_regex(const char *str, const char *pattern);
 std::string find_substring(char *src,const char *sKey,int flag);

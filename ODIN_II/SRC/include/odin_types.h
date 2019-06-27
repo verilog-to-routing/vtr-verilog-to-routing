@@ -34,6 +34,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include <stdlib.h>
 
+#include "rtl_int.hpp"
+
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -169,6 +171,8 @@ struct global_args_t_t
 /**
  * defined in enum_str.cpp
  */
+extern const char *file_extension_supported_STR[];
+
 extern const char *ZERO_GND_ZERO;
 extern const char *ONE_VCC_CNS;
 extern const char *ZERO_PAD_ZERO;
@@ -180,6 +184,12 @@ extern const char *signedness_STR[];
 extern const char *edge_type_e_STR[];
 extern const char *operation_list_STR[][2];
 extern const char *ids_STR [];
+
+typedef enum
+{
+	VERILOG,
+	file_extension_supported_END
+} file_extension_supported;
 
 typedef enum
 {
@@ -246,7 +256,7 @@ typedef enum
 	MULTIPLY, // *
 	DIVIDE, // /
 	MODULO, // %
-	OP_POW, // **
+	POWER, // **
 	LT, // <
 	GT, // >
 	LOGICAL_EQUAL, // ==
@@ -365,18 +375,8 @@ typedef enum
 struct typ_t
 {
 	char *identifier;
+	VNumber *vnumber = nullptr;
 
-	struct
-	{
-		short sign;
-		short base;
-		int size;
-		int binary_size;
-		char *binary_string;
-		char *number;
-		long value;
-		short is_full; //'bx means all of the wire get 'x'(dont care)
-	} number;
 	struct
 	{
 		operation_list op;

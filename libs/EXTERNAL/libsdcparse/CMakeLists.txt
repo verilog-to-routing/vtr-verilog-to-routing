@@ -7,7 +7,7 @@ project("libsdcparse")
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     #Only set compiler settings if we are not a sub-project
     set(WARN_FLAGS "-Wall -Wextra -Wpedantic -Wcast-qual -Wcast-align -Wshadow -Wformat=2 -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wundef -Wunused-variable -Wdisabled-optimization -Wnoexcept -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11 ${WARN_FLAGS}") 
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++14 ${WARN_FLAGS}") 
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined") 
     set(FLEX_BISON_WARN_SUPPRESS_FLAGS "-Wno-switch-default -Wno-unused-parameter -Wno-missing-declarations")
 endif()
@@ -52,5 +52,18 @@ set_target_properties(libsdcparse PROPERTIES PREFIX "") #Avoid extra 'lib' prefi
 #Create the test executable
 add_executable(sdcparse_test src/main.cpp)
 target_link_libraries(sdcparse_test libsdcparse)
+
+#Suppress IPO link warnings
+get_target_property(USES_IPO sdcparse_test INTERPROCEDURAL_OPTIMIZATION)
+if (USES_IPO)
+    set(IPO_LINK_WARN_FLAGS_TO_CHECK "-Wno-null-dereference")
+    foreach(flag ${IPO_LINK_WARN_FLAGS_TO_CHECK})
+        CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
+        if(CXX_COMPILER_SUPPORTS_${flag})
+            #Flag supported, so enable it
+            set_target_properties(sdcparse_test PROPERTIES LINK_FLAGS ${flag})
+        endif()
+    endforeach()
+endif()
 
 install(TARGETS libsdcparse sdcparse_test DESTINATION bin)

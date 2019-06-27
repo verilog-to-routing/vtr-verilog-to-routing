@@ -82,14 +82,12 @@ int simplify_ast_module(ast_node_t **ast_module)
 {
 	/* reduce parameters with their values if they have been set */
 	reduce_parameter(*ast_module);
-	/* simplify assignment expressions */
-	reduce_assignment_expression(*ast_module);
 	/* for loop support */
 	unroll_loops(ast_module);
 	/* remove unused node preventing module instantiation */
 	remove_generate(*ast_module);
-	/* find multiply or divide operation that can be replaced with shift operation */
-	shift_operation(*ast_module);
+	/* simplify assignment expressions */
+	reduce_assignment_expression(*ast_module);
 
 	simplify_pc_assignments();
 
@@ -281,62 +279,67 @@ void record_tree_info(ast_node_t *node)
  *-------------------------------------------------------------------------*/
 void create_enode(ast_node_t *node)
 {
-	enode *s;
-	s = (enode*)vtr::malloc(sizeof(enode));
+	enode *s = (enode*)vtr::malloc(sizeof(enode));
 	s->flag = -1;
 	s->priority = -1;
 	s->id = node->unique_count;
+	
 	switch (node->type)
 	{
 		case NUMBERS:
-			s->type.data = node->types.number.value;
+		{
+			s->type.data = node->types.vnumber->get_value();
 			s->flag = 1;
 			s->priority = 0;
-		break;
-
-		case IDENTIFIERS:
-			s->type.variable = node->types.identifier;
-			s->flag = 3;
-			s->priority = 0;
-		break;
-
+			break;
+		}
 		case BINARY_OPERATION:
 		{
+			s->flag = 2;
 			switch(node->types.operation.op)
 			{
 				case ADD:
+				{
 					s->type.operation = '+';
-					s->flag = 2;
 					s->priority = 2;
-				break;
-
+					break;
+				}
 				case MINUS:
+				{
 					s->type.operation = '-';
-					s->flag =2;
 					s->priority = 2;
-				break;
-
+					break;
+				}
 				case MULTIPLY:
+				{
 					s->type.operation = '*';
-					s->flag = 2;
 					s->priority = 1;
 					break;
-
+				}
 				case DIVIDE:
+				{
 					s->type.operation = '/';
-					s->flag = 2;
 					s->priority = 1;
-				break;
-
+					break;
+				}
 				default:
-				break;
+				{
+					break;
+				}
 			}
-
-		default:
 			break;
 		}
-
-
+		case IDENTIFIERS:
+		{
+			s->type.variable = node->types.identifier;
+			s->flag = 3;
+			s->priority = 0;
+			break;
+		}
+		default:
+		{
+			break;
+		}
 	}
 
 	p->next = s;
@@ -586,6 +589,10 @@ void construct_new_tree(enode *tail, ast_node_t *node, int line_num, int file_nu
 		node->children = (ast_node_t**)vtr::malloc(2*sizeof(ast_node_t*));
 		node->children[0] = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
 		node->children[1] = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
+
+		create_ast_node(tail1, node->children[0], line_num, file_num);
+		create_ast_node(tail2, node->children[1], line_num, file_num);
+		
 		construct_new_tree(tail1, node->children[0], line_num, file_num);
 		construct_new_tree(tail2, node->children[1], line_num, file_num);
 	}
@@ -1127,7 +1134,7 @@ void remove_para_node(ast_node_t *top, std::vector<ast_node_t *> para)
 				name = para[i]->children[0]->types.identifier;
 
 			if (node_is_constant(para[i]->children[5]))
-				value = para[i]->children[5]->types.number.value;
+				value = para[i]->children[5]->types.vnumber->get_value();
 
 			for (long j = 0; j < count_assign; j++){
 				change_para_node(list[j], name, value);
@@ -1148,86 +1155,6 @@ void change_para_node(ast_node_t *node, std::string name, long value)
 	for (long i = 0; node && i < node->num_children; i++)
 		change_para_node(node->children[i], name, value);
 }
-
-/*---------------------------------------------------------------------------
- * (function: copy_tree)
- * find multiply or divide operation that can be replaced with shift operation
- *-------------------------------------------------------------------------*/
-void shift_operation(ast_node_t *ast_module)
-{
-	if(ast_module){
-		search_certain_operation(ast_module);
-	}
-
-}
-
-/*---------------------------------------------------------------------------
- * (function: change_ast_node)
- *  search all AST to find multiply or divide operations
- *-------------------------------------------------------------------------*/
-void search_certain_operation(ast_node_t *node)
-{
-	for (long i = 0; node && i < node->num_children; i++){
-		check_binary_operation(node->children[i]);
-		search_certain_operation(node->children[i]);
-	}
-}
-
-/*---------------------------------------------------------------------------
- * (function: change_ast_node)
- *  check the children nodes of an operation node
- *-------------------------------------------------------------------------*/
-void check_binary_operation(ast_node_t *node)
-{
-	if(node && node->type == BINARY_OPERATION){
-		switch(node->types.operation.op){
-			case MULTIPLY:
-				if (node->children[0]->type == IDENTIFIERS && node->children[1]->type == NUMBERS)
-					check_node_number(node, node->children[1], 1); // 1 means multiply and don't need to move children nodes
-				if (node->children[0]->type == NUMBERS && node->children[1]->type == IDENTIFIERS)
-					check_node_number(node, node->children[0], 2); // 2 means multiply and needs to move children nodes
-				break;
-			case DIVIDE:
-				if (node->children[0]->type == IDENTIFIERS && node->children[1]->type == NUMBERS)
-					check_node_number(node, node->children[1], 3); // 3 means divide
-				break;
-			default:
-				break;
-		}
-	}
-}
-
-/*---------------------------------------------------------------------------
- * (function: change_ast_node)
- * check if the number is the power of 2
- *-------------------------------------------------------------------------*/
-void check_node_number(ast_node_t *parent, ast_node_t *child, int flag)
-{
-	long power = 0;
-	long number = child->types.number.value;
-	if (number <= 1)
-		return;
-	while (((number % 2) == 0) && number > 1) // While number is even and > 1
-	{
-		number >>= 1;
-		power++;
-	}
-	if (number == 1) // the previous number is a power of 2
-	{
-		change_to_number_node(child, power);
-		if (flag == 1) // multiply
-			parent->types.operation.op = SL;
-		else if (flag == 2) // multiply and needs to move children nodes
-		{
-			parent->types.operation.op = SL;
-			parent->children[0] = parent->children[1];
-			parent->children[1] = child;
-		}
-		else if (flag == 3) // divide
-			parent->types.operation.op = SR;
-	}
-}
-
 
 /*---------------------------------------------------------------------------
  * (function: check_intermediate_variable)

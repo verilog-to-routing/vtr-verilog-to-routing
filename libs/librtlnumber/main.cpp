@@ -33,7 +33,7 @@ static std::string arithmetic(std::string op, std::string a_in)
 
 	VNumber a(a_in);
 
-	
+
 	/* return Process Operator via ternary */
 	return (
 		(op == "~")		?		V_BITWISE_NOT(a):
@@ -48,7 +48,7 @@ static std::string arithmetic(std::string op, std::string a_in)
 		|| op == "^~")	?		V_BITWISE_XNOR(a):
 		(op == "!")		?		V_LOGICAL_NOT(a):
 								bad_ops(op)
-	).to_string();
+	).to_full_string();
 }
 
 static std::string arithmetic(std::string a_in, std::string op, std::string b_in)
@@ -93,7 +93,7 @@ static std::string arithmetic(std::string a_in, std::string op, std::string b_in
 		(op == "/")		?		V_DIV(a, b):
 		(op == "%")		?		V_MOD(a, b):
 								bad_ops(op)
-	).to_string();
+	).to_full_string();
 }
 
 static std::string arithmetic(std::string a_in, std::string op1 ,std::string b_in, std::string op2, std::string c_in)
@@ -103,16 +103,15 @@ static std::string arithmetic(std::string a_in, std::string op1 ,std::string b_i
 	VNumber b(b_in);
 	VNumber c(c_in);
 
-	
+
 	/* return Process Operator via ternary */
 	return(	(op1 == "?" && op2 == ":")	?	V_TERNARY(a, b, c):
 											bad_ops("?:")
-	).to_string();
+	).to_full_string();
 }
 
 int main(int argc, char** argv) 
 {
-
 	std::vector<std::string> input;
 	for(int i=0; i < argc; i++)		input.push_back(argv[i]);
 
@@ -122,51 +121,44 @@ int main(int argc, char** argv)
 	{
 		ERR_MSG("Not Enough Arguments: " << std::to_string(argc - 1));
 
-
 		return -1;
 	}
 	else if(argc == 3 && input[1] == "is_true")
 	{
-
 		VNumber input_2(input[2]);
-
 
 		result = (V_TRUE(input_2) ? "pass" : "fail");
 	}
 	else if(argc == 3)
 	{
-
 		result = arithmetic(input[1], input[2]);
+
 	}
 	else if(argc == 4)
 	{
-
 		result = arithmetic(input[1], input[2], input[3]);
+
 	}
 	else if(argc == 5)
 	{
 		// Binary or Ternary?
 		ERR_MSG("Either Too Few (Ternary) or Too Many (Binary) Arguments: " << std::to_string(argc - 1));
 
-
 		return -1;
 	}
 	else if(argc == 6)
 	{
-
 		result = arithmetic(input[1], input[2], input[3], input[4], input[5]);
+
 	}
 	else				
 	{
 		ERR_MSG("Too Many Arguments: " << std::to_string(argc - 1));
 
-
 		return -1;
 	}
 
-
 	std::cout << result << std::endl;
-
 
 	return 0;
 }

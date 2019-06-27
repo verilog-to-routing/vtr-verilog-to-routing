@@ -1036,7 +1036,7 @@ void instantiate_shift_left_or_right(nnode_t *node, operation_list type, short m
 	if (node->related_ast_node->children[1]->type == NUMBERS)
 	{
 		/* record the size of the shift */
-		shift_size = node->related_ast_node->children[1]->types.number.value;
+		shift_size = node->related_ast_node->children[1]->types.vnumber->get_value();
 	}
 	else
 	{
@@ -1127,7 +1127,7 @@ void instantiate_arithmetic_shift_right(nnode_t *node, short mark, netlist_t *ne
 	if (node->related_ast_node->children[1]->type == NUMBERS)
     {
 		/* record the size of the shift */
-		shift_size = node->related_ast_node->children[1]->types.number.value;
+		shift_size = node->related_ast_node->children[1]->types.vnumber->get_value();
 	}
 	else
 	{

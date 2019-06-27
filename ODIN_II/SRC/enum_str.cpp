@@ -1,5 +1,10 @@
 #include "odin_types.h"
 
+const char *file_extension_supported_STR[] =
+{
+	".v"
+};
+
 const char *signedness_STR[] =
 {
 	"SIGNED",
@@ -78,7 +83,7 @@ const char *operation_list_STR[][2] =
 	{"MULTIPLY",        "MUL"}, // *
 	{"DIVIDE",          "DIV"}, // /
 	{"MODULO",          "MOD"}, // %
-	{"OP_POW",          "POW"}, // **
+	{"POWER",          "POW"}, // **
 	{"LT",              "LT"}, // <
 	{"GT",              "GT"}, // >
 	{"LOGICAL_EQUAL",   "lEQ"}, // ==

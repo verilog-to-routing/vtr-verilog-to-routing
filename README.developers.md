@@ -402,7 +402,7 @@ $ ../scripts/run_vtr_task.pl regression_tests/vtr_reg_weekly/vtr_reg_titan
 #Several days later... they complete
 
 #Parse the results
-$ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_nightly/vtr_reg_titan
+$ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_weekly/vtr_reg_titan
 
 #The run directory should now contain a summary parse_results.txt file
 $ head -5 vtr_reg_nightly/vtr_reg_qor_chain/latest/parse_results.txt
@@ -535,7 +535,7 @@ To automate some of the QoR comparison VTR includes a script to compare pares_re
 For example:
 ```shell
 #From the VTR Root
-$ ./vtr_flow/scripts/qor_compare.py parse_results1.txt parse_results2.txt parse_results3.txt-o comparison.xlsx
+$ ./vtr_flow/scripts/qor_compare.py parse_results1.txt parse_results2.txt parse_results3.txt -o comparison.xlsx
 ```
 will produce ratio tables and a summary table for the files parse_results1.txt, parse_results2.txt and parse_results3.txt, where the first file (parse_results1.txt) is assumed to be the baseline used to produce normalized ratios.
 
@@ -550,7 +550,7 @@ Typically, test which exercise new features should be added to `vtr_reg_strong`.
 These tests should use small benchmarks to ensure they:
  * run quickly (so they get run often!), and
  * are easier to debug.
-If your test will take more than ~2 mintues it should probably go in a longer running regression test (but see first if you can create a smaller testcase first).
+If your test will take more than ~1 minute it should probably go in a longer running regression test (but see first if you can create a smaller testcase first).
 
 ## Adding a test to vtr_reg_strong
 This describes adding a test to `vtr_reg_strong`, but the process is similar for the other regression tests.
@@ -806,10 +806,26 @@ You may need to configure coverity to 'know' about your compiler. For example:
 On unix-like systems run `scan-build make` from the root VTR directory.
 to output the html analysis to a specific folder, run `scan-build make -o /some/folder`
 
-# Debugging with clang static analyser
-First make sure you have clang installed.
-define clang as the default compiler:
-  `export CC=clang`
-  `export CXX=clang++`
+# Release Procedures
 
-set the build type to `debug` in makefile
+## General Principles
+
+We periodically make 'official' VTR releases.
+While we aim to keep the VTR master branch stable through-out development some users prefer to work of off an official release.
+Historically this has coincided with the publishing of a paper detailing and carefully evaluating the changes from the previous VTR release.
+This is particularly helpful for giving academics a named baseline version of VTR to which they can compare which has a known quality.
+
+In preparation for a release it may make sense to produce 'release candidates' which when fully tested and evaluated (and after any bug fixes) become the official release.
+
+## Checklist
+
+The following outlines the procedure to following when making an official VTR release:
+
+ * Check the code compiles on the list of supported compilers
+ * Check that all regression tests pass
+ * Update regression test golden results to match the released version
+ * Increment the version number (set in root CMakeLists.txt)
+ * Create a new entry in the CHANGELOG.md for the release, summarizing at a high-level user-facing changes
+ * Create a git annotated tag (e.g. `v8.0.0`) and push it to github
+
+

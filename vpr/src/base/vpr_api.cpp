@@ -103,12 +103,13 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 
 /* Display general VPR information */
 void vpr_print_title() {
-    VTR_LOG("\n");
     VTR_LOG("VPR FPGA Placement and Routing.\n");
     VTR_LOG("Version: %s\n", vtr::VERSION);
     VTR_LOG("Revision: %s\n", vtr::VCS_REVISION);
     VTR_LOG("Compiled: %s\n", vtr::BUILD_TIMESTAMP);
     VTR_LOG("Compiler: %s\n", vtr::COMPILER);
+    VTR_LOG("Build Info: %s\n", vtr::BUILD_INFO);
+    VTR_LOG("\n");
     VTR_LOG("University of Toronto\n");
     VTR_LOG("verilogtorouting.org\n");
     VTR_LOG("vtr-users@googlegroups.com\n");
@@ -498,8 +499,10 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                  + wtoi_switch_del); /* multiply by 4 to get a more conservative estimate */
     }
 
-    return try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models,
-                    vpr_setup.library_models, inter_cluster_delay, vpr_setup.PackerRRGraph);
+    return try_pack(&vpr_setup.PackerOpts, &vpr_setup.AnalysisOpts,
+                    &arch, vpr_setup.user_models,
+                    vpr_setup.library_models, inter_cluster_delay,
+                    vpr_setup.PackerRRGraph);
 }
 
 void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -746,6 +749,8 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
 
         timing_info->update();
     }
+
+    init_draw_coords(fixed_channel_width);
 
     return RouteStatus(is_legal, fixed_channel_width);
 }
@@ -1122,8 +1127,10 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 
         //Timing stats
         VTR_LOG("\n");
-        generate_hold_timing_stats(*timing_info, *analysis_delay_calc, vpr_setup.AnalysisOpts);
-        generate_setup_timing_stats(*timing_info, *analysis_delay_calc, vpr_setup.AnalysisOpts);
+        generate_hold_timing_stats(/*prefix=*/"", *timing_info,
+                                   *analysis_delay_calc, vpr_setup.AnalysisOpts);
+        generate_setup_timing_stats(/*prefix=*/"", *timing_info,
+                                    *analysis_delay_calc, vpr_setup.AnalysisOpts);
 
         //Write the post-syntesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
@@ -1140,9 +1147,13 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
     }
 }
 
-/* This function performs power estimation, and must be called
- * after packing, placement AND routing. Currently, this
- * will not work when running a partial flow (ex. only routing). */
+/* This function performs power estimation. It relies on the
+ * placement/routing results, as well as the critical path. 
+ * Power estimation can be performed as part of a full or
+ * partial flow. More information on the power estimation functions of 
+ * VPR can be found here:
+ *   http://docs.verilogtorouting.org/en/latest/vtr/power_estimation/
+ */
 void vpr_power_estimation(const t_vpr_setup& vpr_setup,
                           const t_arch& Arch,
                           const SetupTimingInfo& timing_info,

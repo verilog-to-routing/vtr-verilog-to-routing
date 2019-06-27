@@ -27,11 +27,11 @@ function exit_code() {
 	exit ${my_failed_count}
 }
 
-# Check if Library 'file' "${0%/*}/librtlnumber.a" exists
-[ ! -f ${0%/*}/librtlnumber.a ] && exit_code 99 "${0%/*}/librtlnumber.a library file not found!\n"
-
-# Check if test harness binary "${0%/*}/rtl_number" exists
-[ ! -f ${0%/*}/rtl_number ] && exit_code 99 "${0%/*}/rtl_number test harness file not found!\n" 
+# # Check if Library 'file' "${0%/*}/librtlnumber.a" exists
+if [ ! -f ./librtlnumber.a ] && [ ! -f ./rtl_number ]; 
+then
+		exit_code 99 "${0%/*}rtl number is nowhere to be found :o !\n" 
+fi
 
 # Dynamically load in inputs and results from
 #  file(s) on disk.
@@ -96,7 +96,11 @@ for INPUT in ${0%/*}/regression_tests/*.csv; do
 
 			echo -e "\nERROR: Non-Zero Exit Code from ${0%/*}/rtl_number (on $INPUT:$LINE)\n"
 
-			echo -e "-X- FAILED == $TEST_LABEL\t  ./rtl_number ${RTL_CMD_IN}\t sOutput:<$OUTPUT_AND_RESULT> != <$EXPECTED_RESULT>"
+			echo -e "-X- FAILED == $TEST_LABEL\t  ./rtl_number ${RTL_CMD_IN}\t Output:<$OUTPUT_AND_RESULT> != Expected:<$EXPECTED_RESULT>"
+
+		elif [ "${OUTPUT_AND_RESULT}" == "${EXPECTED_RESULT}" ]
+		then
+			echo "--- PASSED == $TEST_LABEL"
 
 		elif [ "pass" == "$(${0%/*}/rtl_number is_true $(${0%/*}/rtl_number ${OUTPUT_AND_RESULT} == ${EXPECTED_RESULT}))" ]
 		then
@@ -109,7 +113,7 @@ for INPUT in ${0%/*}/regression_tests/*.csv; do
 
 			echo -e "\nERROR: Expected Result Didn't match what we got back from ${0%/*}/rtl_number (on $INPUT:$LINE)\n"
 
-			echo -e "-X- FAILED == $TEST_LABEL\t  ./rtl_number ${RTL_CMD_IN}\t sOutput:<$OUTPUT_AND_RESULT> != <$EXPECTED_RESULT>"
+			echo -e "-X- FAILED == $TEST_LABEL\t  ./rtl_number ${RTL_CMD_IN}\t Output:<$OUTPUT_AND_RESULT> != Expected:<$EXPECTED_RESULT>"
 
 		fi
 

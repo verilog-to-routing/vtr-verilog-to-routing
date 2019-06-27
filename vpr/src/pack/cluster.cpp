@@ -64,9 +64,12 @@ using namespace std;
 #include "lb_type_rr_graph.h"
 
 #include "timing_info.h"
+#include "timing_reports.h"
 #include "PreClusterDelayCalculator.h"
+#include "PreClusterTimingGraphResolver.h"
 #include "tatum/echo_writer.hpp"
 #include "tatum/report/graphviz_dot_writer.hpp"
+#include "tatum/TimingReporter.hpp"
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30 /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10       /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
@@ -339,6 +342,7 @@ static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const Atom
 /*****************************************/
 /*globally accessible function*/
 std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
+                                           const t_analysis_opts& analysis_opts,
                                            const t_arch* arch,
                                            t_pack_molecule* molecule_head,
                                            int num_models,
@@ -465,6 +469,21 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
             auto& timing_ctx = g_vpr_ctx.timing();
             tatum::write_echo(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH),
                               *timing_ctx.graph, *timing_ctx.constraints, *clustering_delay_calc, timing_info->analyzer());
+        }
+
+        {
+            auto& timing_ctx = g_vpr_ctx.timing();
+            PreClusterTimingGraphResolver resolver(atom_ctx.nlist,
+                                                   atom_ctx.lookup, *timing_ctx.graph, *clustering_delay_calc);
+            resolver.set_detail_level(analysis_opts.timing_report_detail);
+
+            tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph,
+                                                  *timing_ctx.constraints);
+
+            timing_reporter.report_timing_setup(
+                "pre_pack.report_timing.setup.rpt",
+                *timing_info->setup_analyzer(),
+                analysis_opts.timing_report_npaths);
         }
 
         //Calculate true criticalities of each block

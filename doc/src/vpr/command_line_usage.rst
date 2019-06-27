@@ -113,6 +113,8 @@ General Options
 
     If this option is not specified it may be set from the ``VPR_NUM_WORKERS`` environment variable; otherwise the default is used.
 
+    .. note:: To compile VPR to allow the usage of parallel workers, ``libtbb-dev`` must be installed in the system.
+
     **Default:** ``1``
 
 .. option:: --timing_analysis {on | off}

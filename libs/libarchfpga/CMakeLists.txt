@@ -27,4 +27,10 @@ target_link_libraries(libarchfpga
 add_executable(read_arch ${EXEC_SOURCES})
 target_link_libraries(read_arch libarchfpga)
 
+#Supress IPO link warnings if IPO is enabled
+get_target_property(READ_ARCH_USES_IPO read_arch INTERPROCEDURAL_OPTIMIZATION)
+if (READ_ARCH_USES_IPO)
+    set_target_properties(read_arch PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
+endif()
+
 install(TARGETS libarchfpga read_arch DESTINATION bin)

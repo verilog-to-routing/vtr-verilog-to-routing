@@ -220,27 +220,32 @@ assign tempsum = -xvalid[`DATAWIDTH-2:0];
 assign tempsum2 = -{4'b0000,mb10out[`COEFWIDTH+`DATAWIDTH-3:`COEFWIDTH-2-`ACCUM]};
 //assign tempsum2 = ~{4'b0000,mb10out[`COEFWIDTH+`DATAWIDTH-3:`COEFWIDTH-2-`ACCUM]} + 1;
 
+wire tmp_xvalid;
+wire tmp_xm1;
+wire tmp_xm2;
+wire tmp_xm3;
+wire tmp_xm4;
+wire tmp_xm5;
+
+assign xvalid = (~nreset)? 0: tmp_xvalid;
+assign xm1 = (~nreset)? 0: tmp_xm1;
+assign xm2 = (~nreset)? 0: tmp_xm2;
+assign xm3 = (~nreset)? 0: tmp_xm3;
+assign xm4 = (~nreset)? 0: tmp_xm4;
+assign xm5 = (~nreset)? 0: tmp_xm5;
+
 /* clock data into pipeline.  Divide by 8.  Convert to sign magnitude. */
-always @(posedge clk or negedge nreset)
+always @(posedge clk)
 begin
-if ( ~nreset )
-  begin
-    xvalid <= 0;
-    xm1 <= 0;
-    xm2 <= 0;
-    xm3 <= 0;
-    xm4 <= 0;
-    xm5 <= 0;
-  end
-else
-  begin
-    xvalid <= valid ? x : xvalid;
-    xm1 <= valid ? (xvalid[`DATAWIDTH-1] ? ({xvalid[`DATAWIDTH-1],tempsum}) : {xvalid}) : xm1;
-    xm2 <= valid ? xm1 : xm2;
-    xm3 <= valid ? xm2 : xm3;
-    xm4 <= valid ? xm3 : xm4;
-    xm5 <= valid ? xm4 : xm5;
-  end
+	if(valid)
+	begin
+		tmp_xvalid <= x;
+		tmp_xm1 <= (xvalid[`DATAWIDTH-1] ? ({xvalid[`DATAWIDTH-1],tempsum}) : {xvalid});
+		tmp_xm2 <= xm1;
+		tmp_xm3 <= xm2;
+		tmp_xm4 <= xm3;
+		tmp_xm5 <= xm4;
+  	end
 end
 
 /* Multiply input by filter coefficient b10 */
@@ -280,28 +285,34 @@ assign suma11 = (a11[`COEFWIDTH-1] ^ y[`DATAWIDTH+3]) ? (suma12reg - {1'b0,ma11o
 assign olimit = {y[`DATAWIDTH+3],~y[`DATAWIDTH+3],~y[`DATAWIDTH+3],~y[`DATAWIDTH+3],~y[`DATAWIDTH+3],
 				~y[`DATAWIDTH+3],~y[`DATAWIDTH+3],~y[`DATAWIDTH+3]};
 
+
+wire tmp_sumb10reg;
+wire tmp_sumb11reg;
+wire tmp_sumb12reg;
+wire tmp_suma12reg;
+wire tmp_y;
+wire tmp_yout;
+
+assign sumb10reg = (~nreset)? 0 : tmp_sumb10reg;
+assign sumb11reg = (~nreset)? 0 : tmp_sumb11reg;
+assign sumb12reg = (~nreset)? 0 : tmp_sumb12reg;
+assign suma12reg = (~nreset)? 0 : tmp_suma12reg;
+assign y = (~nreset)? 0 : tmp_y;
+assign yout = (~nreset)? 0 : tmp_yout;
+
+
 /* State registers */
-always @(posedge clk or negedge nreset)
+always @(posedge clk)
 begin
-if ( ~nreset )
-  begin
-    sumb10reg <= 0;
-    sumb11reg <= 0;
-    sumb12reg <= 0;
-    suma12reg <= 0;
-    y <= 0;
-    yout <= 0;
-  end
-else
-  begin
-    sumb10reg <= valid ? (sumb10) : (sumb10reg);
-    sumb11reg <= valid ? (sumb11) : (sumb11reg);
-    sumb12reg <= valid ? (sumb12) : (sumb12reg);
-    suma12reg <= valid ? (suma12) : (suma12reg);
-    y <= valid ? suma11[`DATAWIDTH+3+`ACCUM:`ACCUM] : y;
-    yout <= valid ? (( (&y[`DATAWIDTH+3:`DATAWIDTH-1]) | (~|y[`DATAWIDTH+3:`DATAWIDTH-1])  ) ? 
-		(y[`DATAWIDTH-1:0]) : (olimit)) : (yout);
-  end
+	if(valid)
+	begin
+		tmp_sumb10reg <= sumb10;
+		tmp_sumb11reg <= sumb11;
+		tmp_sumb12reg <= sumb12;
+		tmp_suma12reg <= suma12;
+		tmp_y <= suma11[`DATAWIDTH+3+`ACCUM:`ACCUM];
+		tmp_yout <= ( (&y[`DATAWIDTH+3:`DATAWIDTH-1]) | (~|y[`DATAWIDTH+3:`DATAWIDTH-1])  ) ? (y[`DATAWIDTH-1:0]) : (olimit) ;
+	end
 end
 
 
@@ -388,38 +399,36 @@ assign sel_b12 = (adr_i == 3'b100);
 
 assign ack_o = stb_i;
 
-always @(posedge clk_i or posedge rst_i)
-if ( rst_i )
-  begin
-    a11 <= 15'b11111111;
-    a12 <= 15'b11111;
-    b10 <= 15'b1111111;
-    b11 <= 15'b11;
-    b12 <= 15'b11111111;
-/*
-    a11 <= 15'd0;
-    a12 <= 15'd0;
-    b10 <= 15'd0;
-    b11 <= 15'd0;
-    b12 <= 15'd0;
-*/
-  end
-else
-  begin
-    a11 <= (stb_i & we_i & sel_a11) ? (dat_i) : (a11);
-    a12 <= (stb_i & we_i & sel_a12) ? (dat_i) : (a12);
-    b10 <= (stb_i & we_i & sel_b10) ? (dat_i) : (b10);
-    b11 <= (stb_i & we_i & sel_b11) ? (dat_i) : (b11);
-    b12 <= (stb_i & we_i & sel_b12) ? (dat_i) : (b12);
-  end
+wire tmp_a11;
+wire tmp_a12;
+wire tmp_b10;
+wire tmp_b11;
+wire tmp_b12;
 
-assign dat_o = sel_a11 ? (a11) : 
-		((sel_a12) ? (a12) : 
-		((sel_b10) ? (b10) : 
-		((sel_b11) ? (b11) : 
-		((sel_b12) ? (b12) : 
-		(16'h0000)))));
+assign a11 = (rst_i)? 15'b11111111: tmp_a11;
+assign a12 = (rst_i)? 15'b11111: tmp_a12;
+assign b10 = (rst_i)? 15'b1111111: tmp_b10;
+assign b11 = (rst_i)? 15'b11: tmp_b11;
+assign b12 = (rst_i)? 15'b11111111: tmp_b12;
 
+assign dat_o = 	((sel_a11) ? (a11) : 
+				((sel_a12) ? (a12) : 
+				((sel_b10) ? (b10) : 
+				((sel_b11) ? (b11) : 
+				((sel_b12) ? (b12) : 
+				(16'h0000))))));
+
+always @(posedge clk_i)
+begin
+	if(stb_i & we_i & sel_a11)
+	begin
+		tmp_a11 <= dat_i;
+		tmp_a12 <= dat_i;
+		tmp_b10 <= dat_i;
+		tmp_b11 <= dat_i;
+		tmp_b12 <= dat_i;
+	end
+end
 
 endmodule
 /* ********************************************************************************* */

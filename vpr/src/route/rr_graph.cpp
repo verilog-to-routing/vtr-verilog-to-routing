@@ -1607,7 +1607,10 @@ static void build_rr_chan(const int x_coord,
         }
 
         int node = get_rr_node_index(L_rr_node_indices, x_coord, y_coord, chan_type, track);
-        VTR_ASSERT(node >= 0);
+
+        if (node == OPEN) {
+            continue;
+        }
 
         /* Add the edges from this track to all it's connected pins into the list */
         int num_edges = 0;

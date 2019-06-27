@@ -164,4 +164,7 @@ AtomBlockId find_memory_sibling(const t_pb* pb);
 void place_sync_external_block_connections(ClusterBlockId iblk);
 
 int max_pins_per_grid_tile();
+
+void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision);
+void pretty_print_float(const char* prefix, double value, int num_digits, int scientific_precision);
 #endif

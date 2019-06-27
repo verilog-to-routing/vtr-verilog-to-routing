@@ -36,6 +36,7 @@ static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<st
 static std::string high_fanout_thresholds_to_string(const t_pack_high_fanout_thresholds& hf_thresholds);
 
 bool try_pack(t_packer_opts* packer_opts,
+              const t_analysis_opts* analysis_opts,
               const t_arch* arch,
               const t_model* user_models,
               const t_model* library_models,
@@ -121,15 +122,18 @@ bool try_pack(t_packer_opts* packer_opts,
 
     while (true) {
         //Cluster the netlist
-        auto num_type_instances = do_clustering(*packer_opts, arch, list_of_pack_molecules, num_models,
-                                                is_clock,
-                                                atom_molecules,
-                                                expected_lowest_cost_pb_gnode,
-                                                allow_unrelated_clustering,
-                                                balance_block_type_util,
-                                                lb_type_rr_graphs,
-                                                target_external_pin_util,
-                                                high_fanout_thresholds);
+        auto num_type_instances = do_clustering(
+            *packer_opts,
+            *analysis_opts,
+            arch, list_of_pack_molecules, num_models,
+            is_clock,
+            atom_molecules,
+            expected_lowest_cost_pb_gnode,
+            allow_unrelated_clustering,
+            balance_block_type_util,
+            lb_type_rr_graphs,
+            target_external_pin_util,
+            high_fanout_thresholds);
 
         //Try to size/find a device
         bool fits_on_device = try_size_device_grid(*arch, num_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);

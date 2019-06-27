@@ -676,8 +676,20 @@ void process_rr_node_indices(const DeviceGrid& grid) {
 
     indices.resize(NUM_RR_TYPES);
 
+    typedef struct max_ptc {
+        short chanx_max_ptc = 0;
+        short chany_max_ptc = 0;
+    } t_max_ptc;
+
+    /*
+     * Local multi-dimensional vector to hold max_ptc for every coordinate.
+     * It has same height and width as CHANY and CHANX are inverted
+     */
+    vtr::Matrix<t_max_ptc> coordinates_max_ptc; /* [x][y] */
+    size_t max_coord_size = std::max(grid.width(), grid.height());
+    coordinates_max_ptc.resize({max_coord_size, max_coord_size}, t_max_ptc());
+
     /* Alloc the lookup table */
-    indices.resize(NUM_RR_TYPES);
     for (t_rr_type rr_type : RR_TYPES) {
         if (rr_type == CHANX) {
             indices[rr_type].resize(grid.height());
@@ -698,10 +710,14 @@ void process_rr_node_indices(const DeviceGrid& grid) {
         }
     }
 
-    /*Add the correct node into the vector
+    /*
+     * Add the correct node into the vector
+     * For CHANX and CHANY no node is added yet, but the maximum ptc is counted for each
+     * x/y location. This is needed later to add the correct node corresponding to CHANX
+     * and CHANY.
+     *
      * Note that CHANX and CHANY 's x and y are swapped due to the chan and seg convention.
-     * Push back temporary incorrect nodes for CHANX and CHANY to set the length of the vector*/
-
+     */
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         auto& node = device_ctx.rr_nodes[inode];
         if (node.type() == SOURCE || node.type() == SINK) {
@@ -733,13 +749,30 @@ void process_rr_node_indices(const DeviceGrid& grid) {
         } else if (node.type() == CHANX) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                    indices[CHANX][iy][ix][0].push_back(inode);
+                    coordinates_max_ptc[iy][ix].chanx_max_ptc = std::max(coordinates_max_ptc[iy][ix].chanx_max_ptc, node.ptc_num());
                 }
             }
         } else if (node.type() == CHANY) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                    indices[CHANY][ix][iy][0].push_back(inode);
+                    coordinates_max_ptc[ix][iy].chany_max_ptc = std::max(coordinates_max_ptc[ix][iy].chany_max_ptc, node.ptc_num());
+                }
+            }
+        }
+    }
+
+    /* Alloc the lookup table */
+    for (t_rr_type rr_type : RR_TYPES) {
+        if (rr_type == CHANX) {
+            for (size_t y = 0; y < grid.height(); ++y) {
+                for (size_t x = 0; x < grid.width(); ++x) {
+                    indices[CHANX][y][x][0].resize(coordinates_max_ptc[y][x].chanx_max_ptc + 1, OPEN);
+                }
+            }
+        } else if (rr_type == CHANY) {
+            for (size_t x = 0; x < grid.width(); ++x) {
+                for (size_t y = 0; y < grid.height(); ++y) {
+                    indices[CHANY][x][y][0].resize(coordinates_max_ptc[x][y].chany_max_ptc + 1, OPEN);
                 }
             }
         }
@@ -775,6 +808,7 @@ void process_rr_node_indices(const DeviceGrid& grid) {
             }
         }
     }
+
     //Copy the SOURCE/SINK nodes to all offset positions for blocks with width > 1 and/or height > 1
     // This ensures that look-ups on non-root locations will still find the correct SOURCE/SINK
     for (size_t x = 0; x < grid.width(); x++) {

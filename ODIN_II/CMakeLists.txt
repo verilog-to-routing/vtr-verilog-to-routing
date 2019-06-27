@@ -112,7 +112,6 @@ foreach(ODIN_FLAG ${ODIN_EXTRA_FLAGS})
 
 endforeach()
 
-if(WITH_LIBRTLNUMBER)
 target_link_libraries(libodin_ii
                         libvtrutil
                         librtlnumber
@@ -120,14 +119,6 @@ target_link_libraries(libodin_ii
                         libabc
                         libargparse
                         ${CMAKE_DL_LIBS})
-else()
-target_link_libraries(libodin_ii
-                        libvtrutil
-                        libarchfpga
-                        libabc
-                        libargparse
-                        ${CMAKE_DL_LIBS})
-endif()
 
 #Create the executable
 add_executable(odin_II ${EXEC_SOURCES})
@@ -135,5 +126,10 @@ add_executable(odin_II ${EXEC_SOURCES})
 target_link_libraries(odin_II
                         libodin_ii)
 
+#Supress IPO link warnings if IPO is enabled
+get_target_property(ODIN_USES_IPO odin_II INTERPROCEDURAL_OPTIMIZATION)
+if (ODIN_USES_IPO)
+    set_target_properties(odin_II PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
+endif()
 
 install(TARGETS odin_II libodin_ii DESTINATION bin)

@@ -5,8 +5,10 @@ void add_tag_data();
 ast_node_t* create_node_w_type_no_count(ids id, int line_number, int file_number);
 ast_node_t* create_node_w_type(ids id, int line_number, int file_number);
 ast_node_t* create_tree_node_id(char* string, int line_number, int file_number);
-ast_node_t *create_tree_node_long_number(long number, int constant_bit_size, int line_number, int file_number);
-ast_node_t *create_tree_node_number(std::string number, bases base, signedness sign, int line_number, int file_number);
+
+ast_node_t *create_tree_node_number(char *input_number, int line_number, int file_number);
+ast_node_t *create_tree_node_number(VNumber& input_number, int line_number, int file_number);
+ast_node_t *create_tree_node_number(long input_number, int line_number, int file_number);
 
 void initial_node(ast_node_t *node, ids id, int line_number, int file_number, int counter);
 
@@ -16,6 +18,7 @@ void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child)
 ast_node_t **expand_node_list_at(ast_node_t **list, long old_size, long to_add, long start_idx);
 void move_ast_node(ast_node_t *src, ast_node_t *dest, ast_node_t *node);
 ast_node_t *ast_node_deep_copy(ast_node_t *node);
+ast_node_t *ast_node_copy(ast_node_t *node);
 
 void free_all_children(ast_node_t *node);
 ast_node_t *free_whole_tree(ast_node_t *node);
@@ -32,11 +35,8 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix);
 char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_name_prefix);
 
 ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, ast_node_t *node);
-ast_node_t *resolve_ast_node(STRING_CACHE *local_param_table_sc, short initial, char *module_name, ast_node_t *node);
 ast_node_t *node_is_constant(ast_node_t *node);
-ast_node_t *node_is_ast_constant(ast_node_t *node);
-ast_node_t *node_is_ast_constant(ast_node_t *node, STRING_CACHE *defines_for_module_sc);
-ast_node_t * fold_binary(ast_node_t *node);
+ast_node_t * fold_binary(ast_node_t **node);
 ast_node_t *fold_unary(ast_node_t *node);
 
 long clog2(long value_in, int length);
