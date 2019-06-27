@@ -277,11 +277,11 @@ void record_tree_info(ast_node_t *node)
  *-------------------------------------------------------------------------*/
 void create_enode(ast_node_t *node)
 {
-	enode *s;
-	s = (enode*)vtr::malloc(sizeof(enode));
+	enode *s = (enode*)vtr::malloc(sizeof(enode));
 	s->flag = -1;
 	s->priority = -1;
 	s->id = node->unique_count;
+	
 	switch (node->type)
 	{
 		case NUMBERS:
@@ -297,30 +297,36 @@ void create_enode(ast_node_t *node)
 			switch(node->types.operation.op)
 			{
 				case ADD:
+				{
 					s->type.operation = '+';
 					s->priority = 2;
-				break;
-
+					break;
+				}
 				case MINUS:
+				{
 					s->type.operation = '-';
 					s->priority = 2;
-				break;
-
+					break;
+				}
 				case MULTIPLY:
+				{
 					s->type.operation = '*';
 					s->priority = 1;
 					break;
-
+				}
 				case DIVIDE:
+				{
 					s->type.operation = '/';
 					s->priority = 1;
-				break;
-
+					break;
+				}
 				default:
-				break;
+				{
+					break;
+				}
 			}
+			break;
 		}
-
 		case IDENTIFIERS:
 		{
 			s->type.variable = node->types.identifier;
@@ -328,12 +334,10 @@ void create_enode(ast_node_t *node)
 			s->priority = 0;
 			break;
 		}
-
 		default:
+		{
 			break;
-		
-
-
+		}
 	}
 
 	p->next = s;
