@@ -28,6 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <cmath>
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include "odin_buffer.hpp"
 #include "odin_util.h"
 #include <string>
 #include <sstream>
@@ -320,7 +321,7 @@ void simulate_netlist(netlist_t *netlist)
 	int       progress_bar_position = -1;
 	const int progress_bar_length   = 50;
 	
-	int increment_vector_by = global_args.sim_num_test_vectors;;
+	int increment_vector_by = global_args.sim_num_test_vectors;
 	double min_coverage =0.0;
 	if(global_args.sim_min_coverage)
 	{
@@ -563,7 +564,7 @@ void simulate_steps_sequential(sim_data_t *sim_data,double min_coverage)
 	int       progress_bar_position = -1;
 	const int progress_bar_length   = 50;
 	
-	int increment_vector_by = global_args.sim_num_test_vectors;;
+	int increment_vector_by = global_args.sim_num_test_vectors;
 	
 
 	double current_coverage =0.0;
@@ -3185,48 +3186,6 @@ static void instantiate_memory(nnode_t *node, long data_width, long addr_width)
 	}
 }
 
-/*
- * Removes white space (except new lines) and comments from
- * the given mif file and returns the resulting temporary file.
- */
-static FILE *preprocess_mif_file(FILE *source)
-{
-	FILE *destination = tmpfile();
-	destination = freopen(NULL, "r+", destination);
-	rewind(source);
-
-	char line[BUFFER_MAX_SIZE];
-	int in_multiline_comment = FALSE;
-	while (fgets(line, BUFFER_MAX_SIZE, source))
-	{
-		unsigned int i;
-		for (i = 0; i < strlen(line); i++)
-		{
-			if (!in_multiline_comment)
-			{
-				// For a single line comment, skip the rest of the line.
-				if (line[i] == '-' && line[i+1] == '-')
-					break;
-				// Start of a multiline comment
-				else if (line[i] == '%')
-					in_multiline_comment = TRUE;
-				// Don't copy any white space over.
-				else if (line[i] != '\n' && line[i] != ' ' && line[i] != '\r' && line[i] != '\t' )
-					fputc(line[i], destination);
-			}
-			else
-			{
-				// If we're in a multi-line comment, search for the %
-				if (line[i] == '%')
-					in_multiline_comment = FALSE;
-			}
-		}
-		fputc('\n', destination);
-	}
-	rewind(destination);
-	return destination;
-}
-
 static int parse_mif_radix(std::string radix)
 {
 		return 	(radix == "HEX")	?	16:
@@ -3238,23 +3197,24 @@ static int parse_mif_radix(std::string radix)
 
 static void assign_memory_from_mif_file(nnode_t *node, FILE *mif, char *filename, int width, long address_width)
 {
-	FILE *file = preprocess_mif_file(mif);
-	rewind(file);
+	rewind(mif);
 
 	std::unordered_map<std::string, std::string> symbols = std::unordered_map<std::string, std::string>();
 
-	char buffer_in[BUFFER_MAX_SIZE];
 	bool in_content = false;
 	std::string last_line;
 	int line_number = 0;
 
 	int addr_radix = 0;
 	int data_radix = 0;
-	while (fgets(buffer_in, BUFFER_MAX_SIZE, file))
+
+
+	char *buffer_in = NULL;
+	buffered_reader_t reader = buffered_reader_t(mif, "--", "%", "%");
+
+	while ((buffer_in = reader.get_line()))
 	{
 		line_number++;
-		// Remove the newline.
-		trim_string(buffer_in, "\n");
 		std::string buffer = buffer_in;
 		// Only process lines which are not empty.
 		if (buffer.size())
@@ -3383,9 +3343,9 @@ static void assign_memory_from_mif_file(nnode_t *node, FILE *mif, char *filename
 
 			last_line = buffer;
 		}
-	}
 
-	fclose(file);
+		vtr::free(buffer_in);
+	}
 }
 
 /*

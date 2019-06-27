@@ -625,7 +625,7 @@ void set_default_config()
 	configuration.output_ast_graphs = 0;
 	configuration.output_netlist_graphs = 0;
 	configuration.print_parse_tokens = 0;
-	configuration.output_preproc_source = 1;
+	configuration.output_preproc_source = 0; // TODO: unused
 	configuration.debug_output_path = std::string(DEFAULT_OUTPUT);
 	configuration.arch_file = NULL;
 

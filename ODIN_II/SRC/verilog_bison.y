@@ -67,7 +67,7 @@ int yylex(void);
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vCLOG2 vGENVAR
 %token vPLUS_COLON vMINUS_COLON vSPECPARAM
-%token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
+%token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']' '~' '!' ';' '#' ',' '.' '@' '='
 %token vNOT_SUPPORT 
 
 %right '?' ':'

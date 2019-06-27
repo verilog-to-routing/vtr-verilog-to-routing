@@ -77,34 +77,10 @@ short to_view_parse;
 /*
  * File-scope function declarations
  */
-void graphVizOutputPreproc(FILE *yyin);
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
 ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list);
 
-/*
- * Function implementations
- */
-void graphVizOutputPreproc(FILE *yyin)
-{
-	std::string file_out = 	configuration.debug_output_path 
-							+ "/" 
-							+ strip_path_and_ext(configuration.list_of_file_names[current_parse_file]).c_str() 
-							+ "_preproc.v";
-
-	FILE *fp = fopen(file_out.c_str(), "w");
-	oassert(fp);
-
-	char *line = NULL;
-
-	while ((line = get_line(line, NULL, yyin)) != NULL)
-	{
-		fprintf(fp, "%s", line);
-		vtr::free(line);
-	}
-	fclose(fp);
-	rewind(yyin);
-}
 
 static void assert_supported_file_extension(std::string input_file, int file_number)
 {
@@ -160,10 +136,6 @@ void parse_to_ast()
 		}
 
 		yyin = veri_preproc(yyin);
-
-		/* write out the pre-processed file */
-		if (configuration.output_preproc_source)
-			graphVizOutputPreproc(yyin);
 
 		/* reset the line count */
 		yylineno = 0;

@@ -178,12 +178,6 @@ void read_debug_switches(pugi::xml_node a_node, config_t *config, const pugiutil
 		config->print_parse_tokens = atoi(child.child_value());
 	}
 
-	child = get_single_child(a_node, "output_preproc_source", loc_data, OPTIONAL);
-	if (child != NULL)
-	{
-		config->output_preproc_source = atoi(child.child_value());
-	}
-
 	return;
 }
 
