@@ -233,6 +233,38 @@ namespace BitSpace {
     static const bit_value_t l_half_carry[4][4] = unroll_2d(l_carry[_0]);
     static const bit_value_t l_half_sum[4][4] = unroll_2d(l_sum[_0]);
 
+    static const void *lut_table[] = {
+        l_buf, 
+        l_not, 
+        is_unk, 
+        l_and, 
+        l_nand, 
+        l_or, 
+        l_nor, 
+        l_xor, 
+        l_xnor, 
+        l_notif1, 
+        l_notif0, 
+        l_bufif1, 
+        l_bufif0, 
+        l_rpmos, 
+        l_rnmos, 
+        l_nmos, 
+        l_ternary, 
+        l_unk, 
+        l_case_eq,
+        l_case_neq,
+        l_lt,
+        l_gt,
+        l_le,
+        l_ge,
+        l_eq,
+        l_sum,
+        l_carry,
+        l_half_carry,
+        l_half_sum
+    };
+
     static char bit_to_c(bit_value_t bit)
     {
         switch(bit)
@@ -254,6 +286,7 @@ namespace BitSpace {
             default:    return _x;
         }
     }
+
     template<typename T>
     class BitFields
     {
@@ -280,7 +313,8 @@ namespace BitSpace {
 
         BitFields(bit_value_t init_v)
         {
-            
+            assert_Werr(lut_table, "Unable to init the lu tables");
+
             this->bits = 
                 (_0 == init_v)? _All_0:
                 (_1 == init_v)? _All_1:
@@ -481,13 +515,13 @@ namespace BitSpace {
         /**
          * size of zero compact to the least amount of bits
          */
-        VerilogBits resize(BitSpace::bit_value_t pad, size_t size)
+        VerilogBits resize(BitSpace::bit_value_t pad, size_t new_size)
         {
 
             /**
              * find the new size
              */
-            if(size == 0)
+            if(new_size == 0)
             {
 
                 size_t last_bit_id = this->size() - 1;
@@ -512,20 +546,20 @@ namespace BitSpace {
      
                 }
 
-                size = last_bit_id+1;
+                new_size = last_bit_id+1;
             }
 
-            VerilogBits other(size, BitSpace::_0);
+            VerilogBits other(new_size, BitSpace::_0);
 
             size_t i = 0;
 
-            while(i < this->size() && i < size)
+            while(i < this->size() && i < new_size)
             {
                 other.set_bit(i, this->get_bit(i));
                 i++;
             }
 
-            while(i < size)
+            while(i < new_size)
             {
                 other.set_bit(i, pad);/* <- ask Eve about it */
                 i++;
