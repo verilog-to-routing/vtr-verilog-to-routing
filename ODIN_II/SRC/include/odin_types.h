@@ -358,6 +358,7 @@ typedef enum
 	ARRAY_REF,
 	RANGE_REF,
 	CONCATENATE,
+	REPLICATE,
 	/* basic identifiers */
 	IDENTIFIERS,
 	NUMBERS,

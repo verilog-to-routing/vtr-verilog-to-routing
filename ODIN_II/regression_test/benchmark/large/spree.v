@@ -280,7 +280,7 @@ wire	ctrl_pipereg1_en;
 wire	ctrl_pipereg11_en;
 wire	ctrl_pipereg12_en;
 wire	ctrl_pipereg13_en;
-wire crtl_ifetch_squashn;
+wire 	ctrl_ifetch_squashn;
 
 /****************************** Control **************************/
 		//Decode Logic for Opcode and Multiplex Select signals
@@ -1121,7 +1121,6 @@ assign ctrl_pipereg11_squashn = 1'b1;
 assign ctrl_pipereg12_squashn = 1'b1;
 assign ctrl_pipereg13_squashn = 1'b1;
 assign ctrl_ifetch_squashn = 1'b1;
-wire ctrl_ifetch_squashn;
 
 assign squash_stage2 = ((stall_out_stage2))|~resetn;
 
