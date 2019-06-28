@@ -718,11 +718,12 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 						i+rnode[2]->types.vnumber->get_value());
 					index++;
 				}
+				if(rnode[1] != sym_node->children[1])
+				{
+					free_whole_tree(rnode[1]);
+				}
 			}
-			if(rnode[1] != sym_node->children[1])
-			{
-				free_whole_tree(rnode[1]);
-			}
+
 			else if (sym_node->children[3] != NULL)
 			{
 				oassert(FALSE);
