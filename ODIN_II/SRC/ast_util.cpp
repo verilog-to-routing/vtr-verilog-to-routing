@@ -857,6 +857,11 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, 
 				newNode = fold_binary(&node);
 				break;
 
+			case IF_Q:
+			{
+				newNode = fold_conditional(&node);
+				break;
+			}
 			default:
 				break;
 		}
@@ -1338,6 +1343,47 @@ ast_node_t * fold_binary(ast_node_t **node)
 		oassert(!((*node)->type == BINARY_OPERATION && (*node)->types.operation.op == POWER));
 	}
 	return NULL;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: calculate_ternary)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t * fold_conditional(ast_node_t **node)
+{
+	if(!node || !(*node))
+		return NULL;
+
+	operation_list op_id = (*node)->types.operation.op;
+	ast_node_t *to_return = NULL;
+
+	switch (op_id)
+	{
+		case IF_Q:
+		{
+			ast_node_t *child_condition = (*node)->children[0];
+			if(node_is_constant(child_condition))
+			{
+				VNumber condition = *(child_condition->types.vnumber);
+
+				if(V_TRUE(condition))
+				{
+					to_return = ast_node_deep_copy((*node)->children[1]);
+				}
+				else if(V_FALSE(condition))
+				{
+					to_return = ast_node_deep_copy((*node)->children[2]);
+				}
+				// otherwise we keep it as is to build the circuitry
+			}
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+
+	return to_return;
 }
 
 /*---------------------------------------------------------------------------------------------
