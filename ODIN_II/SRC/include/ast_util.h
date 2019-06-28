@@ -34,7 +34,7 @@ char *get_name_of_var_declare_at_bit(ast_node_t *var_declare, int bit);
 char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix);
 char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_name_prefix);
 
-ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, ast_node_t *node);
+ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, ast_node_t *node, long *max_size, long assignment_size);
 ast_node_t *node_is_constant(ast_node_t *node);
 ast_node_t *fold_binary(ast_node_t **node);
 ast_node_t *fold_unary(ast_node_t **node);

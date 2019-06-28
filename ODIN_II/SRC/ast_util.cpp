@@ -802,8 +802,14 @@ char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_n
  * Also try and fold any BINARY_OPERATIONs now that an IDENTIFIER has been
  * resolved
  */
-ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, ast_node_t *node)
+ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, ast_node_t *node, long *max_size, long assignment_size)
 {
+	long my_max = 0;
+	if(max_size == NULL)
+	{
+		max_size = &my_max;
+	}
+
 	long sc_spot = -1;
 
 	// Not sure this should even be used.
@@ -824,12 +830,12 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, 
 		long i;
 		for (i = 0; i < node->num_children; i++)
 		{
-			node->children[i] = resolve_node(local_param_table_sc, module_name, node->children[i]);
+			node->children[i] = resolve_node(local_param_table_sc, module_name, node->children[i], max_size, assignment_size);
 		}
 
 		ast_node_t *newNode = NULL;
-		switch (node->type){
-
+		switch (node->type)
+		{
 			case IDENTIFIERS:
 			{
 				if(local_param_table_sc != NULL && node->types.identifier)
@@ -856,12 +862,19 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, 
 			case BINARY_OPERATION:
 				newNode = fold_binary(&node);
 				break;
-
-			case IF_Q:
-			{
-				newNode = fold_conditional(&node);
+			
+			case REPLICATE:
+				oassert(node_is_constant(node->children[0])); // should be taken care of in parse
+				newNode = create_node_w_type(CONCATENATE, node->line_number, node->file_number); // ????
+				for (i = 0; i < node->children[0]->types.vnumber->get_value(); i++)
+				{
+					add_child_to_node(newNode, ast_node_deep_copy(node->children[1]));
+				}
+			//	node = free_whole_tree(node); // this might free stuff we don't want to free?
+				node = newNode;
 				break;
-			}
+			
+
 			default:
 				break;
 		}
@@ -869,6 +882,19 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, 
 		if (node_is_constant(newNode)){
 			newNode->shared_node = node->shared_node;
 
+			/* resize as needed */
+			if (assignment_size != 0)
+			{
+				VNumber *temp_num = new VNumber(*(newNode->types.vnumber), assignment_size);
+				delete newNode->types.vnumber;
+				newNode->types.vnumber = temp_num;
+			}
+
+			if (newNode->types.vnumber->size() > *max_size)
+			{
+				*max_size = newNode->types.vnumber->size();
+			}
+			
 			// /* clean up */
 			// if (node->type != IDENTIFIERS) {
 			// 	node = free_whole_tree(node);
