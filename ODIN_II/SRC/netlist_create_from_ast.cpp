@@ -6023,7 +6023,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node, char *instance_
 	// see if this operation can be resolved
 	if (new_node_2->type != NUMBERS)
 	{
-		new_node_2 = resolve_node(NULL, instance_name_prefix, new_node_2);
+		new_node_2 = resolve_node(NULL, instance_name_prefix, new_node_2, NULL, 0);
 	}
 
 	return;
