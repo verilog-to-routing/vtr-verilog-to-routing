@@ -448,7 +448,8 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 				concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix);
 			}
 		}
-		else {
+		else 
+		{
 			error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "%s", "Unsupported operation within a concatenation.\n");
 		}
 	}
@@ -575,6 +576,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 			if (var_node->types.concat.num_bit_strings == -1)
 			{
 				/* If this hasn't been made into a string list then do it */
+				var_node = resolve_node(NULL, instance_name_prefix, var_node, NULL, 0);
 				make_concat_into_list_of_strings(var_node, instance_name_prefix);
 			}
 
@@ -747,6 +749,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 			if (var_node->types.concat.num_bit_strings == -1)
 			{
 				/* If this hasn't been made into a string list then do it */
+				var_node = resolve_node(NULL, instance_name_prefix, var_node, NULL, 0);
 				make_concat_into_list_of_strings(var_node, instance_name_prefix);
 			}
 
