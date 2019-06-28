@@ -1160,6 +1160,17 @@ ast_node_t *newIf(ast_node_t *compare_expression, ast_node_t *true_expression, a
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newIfQuestion(ast_node_t *compare_expression, ast_node_t *true_expression, ast_node_t *false_expression, int line_number)
 {
+	if (! true_expression)
+	{
+		error_message(NETLIST_ERROR, line_number, current_parse_file, 
+			"%s", "Invalid ternary operation: No statement for if true");
+	}
+	else if (! false_expression)
+	{
+		error_message(NETLIST_ERROR, line_number, current_parse_file, 
+			"%s", "Invalid ternary operation:  No statement for if false");
+	}
+	
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(IF_Q, line_number, current_parse_file);
 	/* allocate child nodes to this node */

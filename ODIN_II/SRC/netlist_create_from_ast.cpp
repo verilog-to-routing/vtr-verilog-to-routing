@@ -130,6 +130,7 @@ signal_list_t *create_if_question_mux_expressions(ast_node_t *if_ast, nnode_t *i
 signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *case_node, int num_statement_lists, char *instance_name_prefix);
 signal_list_t *create_mux_expressions(signal_list_t **expression_lists, nnode_t *mux_node, int num_expression_lists, char *instance_name_prefix);
 
+void reduce_sensitivity_list(ast_node_t *delay_control, char *instance_name_prefix);
 signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instance_name_prefix);
 
 int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *input_list, ast_node_t *node);
@@ -729,6 +730,28 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 		}
 
 		/* ------------------------------------------------------------------------------*/
+		/* REDUCE EXPRESSION */
+
+		switch(node->type)
+		{
+			case ALWAYS:
+			{
+				reduce_sensitivity_list(node->children[0], instance_name_prefix);
+				break;
+			}			
+			case IF: //fallthrough
+			case IF_Q: //fallthrough
+			{
+				node = resolve_node(NULL,instance_name_prefix, node, NULL, 0);
+				break;
+			}
+			default:
+			{
+				break;
+			}
+		}
+
+		/* ------------------------------------------------------------------------------*/
 		/* PREAMBLE */
 		switch(node->type)
 		{
@@ -889,7 +912,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				return_sig_list = create_pins(node, NULL, instance_name_prefix);
 				break;
 			}
-			case RANGE_REF:
+			case RANGE_REF: //fallthrough
 			case NUMBERS:
 			{
 				return_sig_list = create_pins(node, NULL, instance_name_prefix);
@@ -903,7 +926,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				type_of_circuit = COMBINATIONAL;
 				circuit_edge = UNDEFINED_SENSITIVITY;
 				break;
-			case BLOCKING_STATEMENT:
+			case BLOCKING_STATEMENT: //fallthrough
 			case NON_BLOCKING_STATEMENT:
 			{
 
@@ -1079,7 +1102,6 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 			case HARD_BLOCK:
 				connect_hard_block_and_alias(node, instance_name_prefix, return_sig_list->count);
 				break;
-			case IF:
 			default:
 				break;
 		}
@@ -4273,6 +4295,57 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 /*---------------------------------------------------------------------------------------------
  * (function: evaluate_sensitivity_list)
  *-------------------------------------------------------------------------------------------*/
+void reduce_sensitivity_list(ast_node_t *delay_control, char *instance_name_prefix)
+{
+
+	if (! delay_control)
+		return;
+
+	oassert(delay_control->type == DELAY_CONTROL);
+
+	size_t dest = 0;
+	for (size_t i=0; i < delay_control->num_children; i++)
+	{
+		bool deassign_signal = true;
+
+		if(delay_control->children[i])
+		{
+			std::string signal_name = "undefined signal";
+			if(delay_control->children[i]->types.identifier )
+				signal_name = delay_control->children[i]->types.identifier;
+
+			delay_control->children[i] = resolve_node(NULL, instance_name_prefix, delay_control->children[i], NULL, 0);
+
+			if( ! node_is_constant(delay_control->children[i]) )
+			{
+				deassign_signal = false;
+			}
+			else
+			{
+				warning_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number,
+					"Passing a constant value in sensitivity list, dropping signal \"%s\".", signal_name.c_str());
+			}
+		}
+
+		if(deassign_signal)
+		{
+			if(delay_control->children[i])
+				free_whole_tree(delay_control->children[i]);
+			
+			delay_control->children[i] = NULL;
+		}
+		else
+		{
+			delay_control->children[dest] = delay_control->children[i];
+			dest += 1;
+		}
+	}
+	delay_control->num_children = dest;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: evaluate_sensitivity_list)
+ *-------------------------------------------------------------------------------------------*/
 signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instance_name_prefix)
 {
 	long i;
@@ -4384,32 +4457,14 @@ signal_list_t *create_if_for_question(ast_node_t *if_ast, char *instance_name_pr
  *-------------------------------------------------------------------------------------------*/
 signal_list_t *create_if_question_mux_expressions(ast_node_t *if_ast, nnode_t *if_node, char *instance_name_prefix)
 {
-	signal_list_t **if_expressions;
-	signal_list_t *return_list;
-	int i;
-
-	/* make storage for statements and expressions */
-	if_expressions = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*)*2);
-
 	/* now we will process the statements and add to the other ports */
-	for (i = 0; i < 2; i++)
-	{
-		if (if_ast->children[i+1] != NULL) // checking to see if expression exists.  +1 since first child is control expression
-		{
-			/* IF - this is a normal case item, then process the case match and the details of the statement */
-			if_expressions[i] = netlist_expand_ast_of_module(if_ast->children[i+1], instance_name_prefix);
-		}
-		else
-		{
-			error_message(NETLIST_ERROR, if_ast->line_number, if_ast->file_number, "%s", "No such thing as a a = b ? z;\n");
-		}
-	}
+	signal_list_t *if_expressions[] = { 
+		netlist_expand_ast_of_module(if_ast->children[1], instance_name_prefix),
+		netlist_expand_ast_of_module(if_ast->children[2], instance_name_prefix)
+	};
 
 	/* now with all the lists sorted, we do the matching and proper propogation */
-	return_list = create_mux_expressions(if_expressions, if_node, 2, instance_name_prefix);
-	vtr::free(if_expressions);
-
-	return return_list;
+	return create_mux_expressions(if_expressions, if_node, 2, instance_name_prefix);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -4489,10 +4544,6 @@ void create_if_control_signals(ast_node_t *if_expression, nnode_t *if_node, char
 	/* get the output pin of the not gate .... also adds a net inbetween and the linking output pin to node and net */
 	out_pin_list = make_output_pins_for_existing_node(not_node, 1);
 	oassert(out_pin_list->count == 1);
-
-
-	// Mark the else condition for the simulator.
-	out_pin_list->pins[0]->is_default = TRUE;
 
 	/* copy that output pin to be put into the default */
 	add_input_pin_to_node(if_node, out_pin_list->pins[0], 1);
@@ -4799,8 +4850,6 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 					{
 						/* DON'T CARE - so hookup zero */
 						add_input_pin_to_node(mux_node, get_zero_pin(verilog_netlist), pin_index);
-						// Allows the simulator to be aware of the implied nature of this signal.
-						mux_node->input_pins[pin_index]->is_implied = TRUE;
 						break;
 					}
 					default:

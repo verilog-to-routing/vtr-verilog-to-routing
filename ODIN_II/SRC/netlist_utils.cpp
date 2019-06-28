@@ -218,9 +218,6 @@ npin_t* allocate_npin() {
 
 	new_pin->coverage = 0;
 
-	new_pin->is_default = FALSE;
-	new_pin->is_implied = FALSE;
-
 	new_pin->ace_info = NULL;
 
 	return new_pin;
@@ -254,7 +251,6 @@ npin_t* copy_output_npin(npin_t* copy_pin)
 	new_pin->type = copy_pin->type;
 	new_pin->net = copy_pin->net;
 	new_pin->mapping = copy_pin->mapping;
-	new_pin->is_default = copy_pin->is_default;
 	return new_pin;
 }
 
@@ -270,7 +266,6 @@ npin_t* copy_input_npin(npin_t* copy_pin)
 	new_pin->name = copy_pin->name?vtr::strdup(copy_pin->name):0;
 	new_pin->type = copy_pin->type;
 	new_pin->mapping = copy_pin->mapping?vtr::strdup(copy_pin->mapping):0;
-	new_pin->is_default = copy_pin->is_default;
 	if (copy_pin->net != NULL)
 	{
 		add_fanout_pin_to_net(copy_pin->net, new_pin);

@@ -1154,18 +1154,3 @@ void change_para_node(ast_node_t *node, std::string name, long value)
 		change_para_node(node->children[i], name, value);
 }
 
-/*---------------------------------------------------------------------------
- * (function: check_intermediate_variable)
- * check if there are intermediate variables
- *-------------------------------------------------------------------------*/
-short has_intermediate_variable(ast_node_t *node){
-	if (node && (node->is_read_write == 1 || node->is_read_write == 2))
-		return TRUE;
-
-	for (long i = 0; node && i < node->num_children; i++){
-		if(has_intermediate_variable(node->children[i]))
-			return TRUE;
-	}
-
-	return FALSE;
-}

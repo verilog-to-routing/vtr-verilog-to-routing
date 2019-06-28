@@ -960,6 +960,17 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, 
 				node = newNode;
 				break;
 			
+			case IF: //fallthrough
+			case IF_Q:
+			{
+				newNode = fold_conditional(&node);
+				if(newNode)
+				{
+					//	node = free_whole_tree(node); // this might free stuff we don't want to free?
+					node = newNode;
+				}
+				break;
+			}
 
 			default:
 				break;
@@ -1470,6 +1481,7 @@ ast_node_t * fold_conditional(ast_node_t **node)
 
 	switch (op_id)
 	{
+		case IF: //fallthrough
 		case IF_Q:
 		{
 			ast_node_t *child_condition = (*node)->children[0];
@@ -1528,7 +1540,6 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->shared_node = FALSE;
 	new_node->hb_port = 0;
 	new_node->net_node = 0;
-	new_node->is_read_write = 0;
 	new_node->types.vnumber = nullptr;
 	new_node->types.identifier = NULL;
 }

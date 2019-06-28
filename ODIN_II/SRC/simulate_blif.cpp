@@ -2533,12 +2533,6 @@ static void compute_mux_2_node(nnode_t *node, int cycle)
 		else if (value == 1 && select == -1) // Take the first selection only.
 			select = i;
 
-		/*
-		 *  If the pin comes from an "else" condition or a case "default" condition,
-		 *  we favour it in the case where there are unknowns.
-		 */
-		if (ast_node && pin->is_default && (ast_node->type == IF || ast_node->type == CASE))
-			default_select = i;
 	}
 
 	// If there are unknowns and there is a default clause, select it.
@@ -2572,11 +2566,7 @@ static void compute_mux_2_node(nnode_t *node, int cycle)
 		npin_t *pin = node->input_pins[select + node->input_port_sizes[0]];
 		signed char value = get_pin_value(pin,cycle);
 
-		// Drive implied drivers to unknown value.
-		/*if (pin->is_implied && ast_node && (ast_node->type == CASE))
-			update_pin_value(output_pin, -1, cycle);
-		else*/
-			update_pin_value(output_pin, value, cycle);
+		update_pin_value(output_pin, value, cycle);
 	}
 }
 
