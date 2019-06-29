@@ -130,8 +130,9 @@ signal_list_t *create_if_question_mux_expressions(ast_node_t *if_ast, nnode_t *i
 signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *case_node, int num_statement_lists, char *instance_name_prefix);
 signal_list_t *create_mux_expressions(signal_list_t **expression_lists, nnode_t *mux_node, int num_expression_lists, char *instance_name_prefix);
 
-void reduce_sensitivity_list(ast_node_t *delay_control, char *instance_name_prefix);
-signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instance_name_prefix);
+bool skip_sensitivity_child(ast_node_t *control_signal_pin, char *instance_name_prefix);
+signal_list_t *evaluate_sensitivity_pin(ast_node_t *edge_control_signal, signal_list_t *child_sig_list, char *instance_name_prefix);
+signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, signal_list_t **child_sig_list, char *instance_name_prefix);
 
 int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *input_list, ast_node_t *node);
 
@@ -733,12 +734,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 		/* REDUCE EXPRESSION */
 
 		switch(node->type)
-		{
-			case ALWAYS:
-			{
-				reduce_sensitivity_list(node->children[0], instance_name_prefix);
-				break;
-			}			
+		{		
 			case IF: //fallthrough
 			case IF_Q: //fallthrough
 			{
@@ -934,11 +930,11 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				skip_children = TRUE;
 				break;
 			}
-			case ALWAYS:
-				/* evaluate if this is a sensitivity list with posedges/negedges (=SEQUENTIAL) or none (=COMBINATIONAL) */
-				local_clock_list = evaluate_sensitivity_list(node->children[0], instance_name_prefix);
-				child_skip_list[0] = TRUE;
+			case CONTROL_SIGNAL:
+			{
+				skip_children = skip_sensitivity_child(node, instance_name_prefix);
 				break;
+			}
 			case CASE:
 				return_sig_list = create_case(node, instance_name_prefix);
 				skip_children = TRUE;
@@ -973,8 +969,11 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 			{
 				if (child_skip_list[i] == FALSE)
 				{
-					/* recursively call through the tree going to each instance.  This is depth first traverse. */
-					children_signal_list[i] = netlist_expand_ast_of_module(node->children[i], instance_name_prefix);
+					if(node->children[i])
+					{
+						/* recursively call through the tree going to each instance.  This is depth first traverse. */
+						children_signal_list[i] = netlist_expand_ast_of_module(node->children[i], instance_name_prefix);
+					}
 				}
 			}
 		}
@@ -1043,34 +1042,32 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 					}
 				}
 			break;
-			case ALWAYS:
-				/* attach the drivers to the driver nets */
-				switch(circuit_edge)
+			case CONTROL_SIGNAL:
+			{
+				if(skip_children)
 				{
-					case FALLING_EDGE_SENSITIVITY: //fallthrough
-					case RISING_EDGE_SENSITIVITY:
-					{
-						terminate_registered_assignment(node, children_signal_list[1], local_clock_list, instance_name_prefix);
-						break;
-					}
-					case ASYNCHRONOUS_SENSITIVITY:
-					{
-						/* idx 1 element since always has DELAY Control first */
-						terminate_continuous_assignment(node, children_signal_list[1], instance_name_prefix);
-						break;
-					}
-					default:
-					{
-						oassert(false &&
-							"Assignment outside of always block.");
-						break;
-					}
-
+					return_sig_list = NULL;
 				}
-
-				if (local_clock_list)
-					free_signal_list(local_clock_list);
-					
+				else
+				{
+					return_sig_list = evaluate_sensitivity_pin(node, children_signal_list[0], instance_name_prefix);
+				}
+				break;
+			}
+			case DELAY_CONTROL:
+			{
+				return_sig_list = evaluate_sensitivity_list(node, children_signal_list, instance_name_prefix);
+				break;
+			}
+			case ALWAYS:
+				if(children_signal_list[0] != NULL)
+				{
+					terminate_registered_assignment(node, children_signal_list[1], children_signal_list[0], instance_name_prefix);
+				}
+				else
+				{
+					terminate_continuous_assignment(node, children_signal_list[1], instance_name_prefix);
+				}
 				break;
 			case BINARY_OPERATION:
 				oassert(node->num_children == 2);
@@ -4293,90 +4290,80 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: evaluate_sensitivity_list)
+ * (function: skip_sensitivity_child)
  *-------------------------------------------------------------------------------------------*/
-void reduce_sensitivity_list(ast_node_t *delay_control, char *instance_name_prefix)
+bool skip_sensitivity_child(ast_node_t *control_signal_pin, char *instance_name_prefix)
+{
+	oassert(control_signal_pin->type == CONTROL_SIGNAL);
+
+	bool skip_child = false;
+
+	std::string signal_name = "undefined signal";
+	if(control_signal_pin->children[0]->types.identifier )
+		signal_name = control_signal_pin->children[0]->types.identifier;
+
+	control_signal_pin->children[0] = resolve_node(NULL, instance_name_prefix, control_signal_pin->children[0], NULL, 0);
+
+	if( node_is_constant( control_signal_pin->children[0] ) )
+	{
+		warning_message(NETLIST_ERROR, control_signal_pin->line_number, control_signal_pin->file_number,
+			"Passing a constant value in sensitivity list, dropping signal \"%s\".", signal_name.c_str());
+
+		skip_child = true;
+	}
+
+	return skip_child;
+}
+
+
+/*---------------------------------------------------------------------------------------------
+ * (function: evaluate_sensitivity_pin)
+ *-------------------------------------------------------------------------------------------*/
+signal_list_t *evaluate_sensitivity_pin(ast_node_t *edge_control_signal, signal_list_t *child_sig_list, char * /*instance_name_prefix*/)
 {
 
-	if (! delay_control)
-		return;
+	oassert(edge_control_signal->type == CONTROL_SIGNAL);
 
-	oassert(delay_control->type == DELAY_CONTROL);
+	signal_list_t *return_sig_list = init_signal_list();
 
-	size_t dest = 0;
-	for (size_t i=0; i < delay_control->num_children; i++)
+	if(child_sig_list)
 	{
-		bool deassign_signal = true;
-
-		if(delay_control->children[i])
-		{
-			std::string signal_name = "undefined signal";
-			if(delay_control->children[i]->types.identifier )
-				signal_name = delay_control->children[i]->types.identifier;
-
-			delay_control->children[i] = resolve_node(NULL, instance_name_prefix, delay_control->children[i], NULL, 0);
-
-			if( ! node_is_constant(delay_control->children[i]) )
-			{
-				deassign_signal = false;
-			}
-			else
-			{
-				warning_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number,
-					"Passing a constant value in sensitivity list, dropping signal \"%s\".", signal_name.c_str());
-			}
+		if(child_sig_list->count > 1 && 
+		 	( edge_control_signal->types.control_signal == RISING_EDGE_SENSITIVITY 
+			|| edge_control_signal->types.control_signal == FALLING_EDGE_SENSITIVITY)
+		){
+			error_message(NETLIST_ERROR, edge_control_signal->line_number, edge_control_signal->file_number, "%s",
+				"Sensitivity use range in synchronous sensitivity list.  You can't define something like always @(posedge clock[2:0]).\n");
 		}
-
-		if(deassign_signal)
+		else if(child_sig_list->count == 0)
 		{
-			if(delay_control->children[i])
-				free_whole_tree(delay_control->children[i]);
-			
-			delay_control->children[i] = NULL;
+			error_message(NETLIST_ERROR, edge_control_signal->line_number, edge_control_signal->file_number, "%s",
+				"Sensitivity is empty in synchronous sensitivity list.  You can't define something like always @(posedge ).\n");
 		}
-		else
-		{
-			delay_control->children[dest] = delay_control->children[i];
-			dest += 1;
-		}
+		
+		child_sig_list->pins[0]->sensitivity = edge_control_signal->types.control_signal;
+		add_pin_to_signal_list(return_sig_list, child_sig_list->pins[0]);
 	}
-	delay_control->num_children = dest;
+
+	return return_sig_list;
 }
 
 /*---------------------------------------------------------------------------------------------
  * (function: evaluate_sensitivity_list)
  *-------------------------------------------------------------------------------------------*/
-signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instance_name_prefix)
+signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, signal_list_t **child_sig_list, char * /*instance_name_prefix*/)
 {
-	long i;
 	circuit_edge = UNDEFINED_SENSITIVITY;
 	signal_list_t *return_sig_list = init_signal_list();
 
-	if (delay_control == NULL)
-	{
-		/* Assume always @* */
-		circuit_edge = ASYNCHRONOUS_SENSITIVITY;
-	}
-	else
-	{
-		oassert(delay_control->type == DELAY_CONTROL);
+	oassert(delay_control->type == DELAY_CONTROL);
 
-		for (i = 0; i < delay_control->num_children; i++)
+	for (long i = 0; i < delay_control->num_children; i++ )
+	{
+		if(child_sig_list && child_sig_list[i] && child_sig_list[i]->pins[0])
 		{
 			/* gather edge sensitivity */
-			edge_type_e child_sensitivity = UNDEFINED_SENSITIVITY;
-			switch(delay_control->children[i]->type)
-			{
-				case NEGEDGE:	
-					child_sensitivity = FALLING_EDGE_SENSITIVITY;	
-					break;
-				case POSEDGE:	
-					child_sensitivity = RISING_EDGE_SENSITIVITY;	
-					break;
-				default:		
-					child_sensitivity = ASYNCHRONOUS_SENSITIVITY;	
-					break;
-			}
+			edge_type_e child_sensitivity = child_sig_list[i]->pins[0]->sensitivity;
 
 			if(circuit_edge == UNDEFINED_SENSITIVITY)
 				circuit_edge = child_sensitivity;
@@ -4390,32 +4377,12 @@ signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instan
 				}
 			}
 
-			switch(child_sensitivity)
-			{
-				case FALLING_EDGE_SENSITIVITY: //falltrhough
-				case RISING_EDGE_SENSITIVITY:
-				{
-					signal_list_t *temp_list = create_pins(delay_control->children[i]->children[0], NULL, instance_name_prefix);
-					oassert(temp_list->count == 1);
-					temp_list->pins[0]->sensitivity = child_sensitivity;
-					add_pin_to_signal_list(return_sig_list, temp_list->pins[0]);
-					free_signal_list(temp_list);
-					break;
-				}
-				default: /* nothing to do */ break;
-			}
+			add_pin_to_signal_list(return_sig_list, child_sig_list[i]->pins[0]);
 		}
 	}
 
-	/* update the analysis type of this block of statements */
-	if(circuit_edge == UNDEFINED_SENSITIVITY)
+	if(circuit_edge == ASYNCHRONOUS_SENSITIVITY)
 	{
-		// TODO: empty always block will probably appear here
-		error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number, "%s", "Sensitivity list error...looks empty?\n");
-	}
-	else if(circuit_edge == ASYNCHRONOUS_SENSITIVITY)
-	{
-		/* @(*) or @* is here */
 		free_signal_list(return_sig_list);
 		return_sig_list = NULL;
 	}

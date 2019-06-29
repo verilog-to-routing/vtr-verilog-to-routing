@@ -175,8 +175,7 @@ const char *ids_STR []=
 	"WHILE",
 	/* Delay Control */
 	"DELAY_CONTROL",
-	"POSEDGE",
-	"NEGEDGE",
+	"CONTROL_SIGNAL",
 	/* expressions */
 	"BINARY_OPERATION",
 	"UNARY_OPERATION",

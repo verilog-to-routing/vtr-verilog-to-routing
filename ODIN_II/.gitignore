@@ -1,7 +1,11 @@
+/*.v
+/*.blif
+/*_input
+/*_output
+/*_vectors
+/*_activity
+/*.do
+/*.dot
+
 regression_test/runs
-OUTPUT/*
-temp
 regression_test/latest
-*_preproc.v
-default_out.blif
-*.dot

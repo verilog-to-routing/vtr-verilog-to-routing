@@ -349,8 +349,7 @@ typedef enum
 	WHILE,
 	/* Delay Control */
 	DELAY_CONTROL,
-	POSEDGE,
-	NEGEDGE,
+	CONTROL_SIGNAL,
 	/* expressions */
 	BINARY_OPERATION,
 	UNARY_OPERATION,
@@ -415,6 +414,7 @@ struct typ_t
 		char **bit_strings;
 	} concat;
 
+	edge_type_e control_signal;
 };
 
 

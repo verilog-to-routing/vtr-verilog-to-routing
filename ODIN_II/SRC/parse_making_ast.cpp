@@ -985,31 +985,43 @@ ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int 
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: newNegedgeSymbol)
+ * (function: newAsyncSignal)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newNegedgeSymbol(char *symbol, int line_number)
+ast_node_t *newAsyncSignal(ast_node_t *expression, int line_number)
 {
-	/* get the symbol node */
-	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(NEGEDGE, line_number, current_parse_file);
+	ast_node_t* new_node = create_node_w_type(CONTROL_SIGNAL, line_number, current_parse_file);
+	new_node->types.control_signal = ASYNCHRONOUS_SENSITIVITY;
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 1, symbol_node);
+	allocate_children_to_node(new_node, 1, expression);
 
 	return new_node;
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: newPosedgeSymbol)
+ * (function: newNegedgeSignal)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newPosedgeSymbol(char *symbol, int line_number)
+ast_node_t *newNegedgeSignal(ast_node_t *expression, int line_number)
 {
-	/* get the symbol node */
-	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(POSEDGE, line_number, current_parse_file);
+	ast_node_t* new_node = create_node_w_type(CONTROL_SIGNAL, line_number, current_parse_file);
+	new_node->types.control_signal = FALLING_EDGE_SENSITIVITY;
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 1, symbol_node);
+	allocate_children_to_node(new_node, 1, expression);
+
+	return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newPosedgeSignal)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newPosedgeSignal(ast_node_t *expression, int line_number)
+{
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(CONTROL_SIGNAL, line_number, current_parse_file);
+	new_node->types.control_signal = RISING_EDGE_SENSITIVITY;
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 1, expression);
 
 	return new_node;
 }

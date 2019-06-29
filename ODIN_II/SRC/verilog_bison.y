@@ -494,9 +494,9 @@ event_expression_list:
 	;
 
 event_expression:
-	primary			{$$ = $1;}
-	| vPOSEDGE vSYMBOL_ID	{$$ = newPosedgeSymbol($2, yylineno);}
-	| vNEGEDGE vSYMBOL_ID	{$$ = newNegedgeSymbol($2, yylineno);}
+	primary					{$$ = newAsyncSignal($1, yylineno);}
+	| vPOSEDGE primary	{$$ = newPosedgeSignal($2, yylineno);}
+	| vNEGEDGE primary	{$$ = newNegedgeSignal($2, yylineno);}
 	;
 
 expression:
