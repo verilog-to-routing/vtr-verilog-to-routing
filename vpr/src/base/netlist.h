@@ -81,7 +81,7 @@
  *          printf("Block: %s\n", block_name.c_str());
  *      }
  *
- * Note that the member functions are associated with the type of componenet (e.g. block_name() yields
+ * Note that the member functions are associated with the type of component (e.g. block_name() yields
  * the name of a block, net_name() yields the name of a net).
  *
  * Tracing cross-references
@@ -265,7 +265,7 @@
  *      //Mark blk3 and any references to it invalid
  *      netlist.remove_block(blk3);
  *
- *      //Compress the netlist to actually remove the data assoicated with blk3
+ *      //Compress the netlist to actually remove the data associated with blk3
  *      // NOTE: This will invalidate all client held IDs (e.g. blk1, blk1_out, net1, blk2, blk2_in)
  *      netlist.compress();
  *
