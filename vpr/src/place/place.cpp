@@ -3093,13 +3093,13 @@ static int check_macro_can_be_placed(int imacro, int itype, t_pl_loc head_pos) {
         t_pl_loc member_pos = head_pos + pl_macros[imacro].members[imember].offset;
 
         // Check whether the location could accept block of this type
-        // Then check whether the location could still accomodate more blocks
+        // Then check whether the location could still accommodate more blocks
         // Also check whether the member position is valid, that is the member's location
         // still within the chip's dimemsion and the member_z is allowed at that location on the grid
         if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
             && device_ctx.grid[member_pos.x][member_pos.y].type->index == itype
             && place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.z] == EMPTY_BLOCK_ID) {
-            // Can still accomodate blocks here, check the next position
+            // Can still accommodate blocks here, check the next position
             continue;
         } else {
             // Cant be placed here - skip to the next try
@@ -3237,7 +3237,7 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
         if (!(is_io_type(cluster_ctx.clb_nlist.block_type(blk_id)) && pad_loc_type == USER)) {
             /* Randomly select a free location of the appropriate type for blk_id.
              * We have a linearized list of all the free locations that can
-             * accomodate a block of that type in free_locations[itype].
+             * accommodate a block of that type in free_locations[itype].
              * Choose one randomly and put blk_id there. Then we don't want to pick
              * that location again, so remove it from the free_locations array.
              */
@@ -3288,7 +3288,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
                               const char* pad_loc_file) {
     /* Randomly places the blocks to create an initial placement. We rely on
      * the legal_pos array already being loaded.  That legal_pos[itype] is an
-     * array that gives every legal value of (x,y,z) that can accomodate a block.
+     * array that gives every legal value of (x,y,z) that can accommodate a block.
      * The number of such locations is given by num_legal_pos[itype].
      */
     int itype, ipos;
