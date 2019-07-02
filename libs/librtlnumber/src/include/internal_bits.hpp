@@ -219,32 +219,23 @@ namespace BitSpace {
     };
     _static_unused(l_case_eq)
 
-    constexpr bit_value_t l_case_neq[4][4] = unroll_2d_invert(l_case_eq);
-    _static_unused(l_case_neq)
-
     constexpr bit_value_t l_lt[4][4] = {
-        /* a  /	 0   1   x   z 	<-b */	
-        /* 0 */	{_0,_0,_x,_x},	
-        /* 1 */	{_1,_0,_x,_x},	
-        /* x */	{_x,_x,_x,_x},	
-        /* z */	{_x,_x,_x,_x}
-    };
-    _static_unused(l_lt)
-
-    constexpr bit_value_t l_ge[4][4] = unroll_2d_invert(l_lt);
-    _static_unused(l_ge)
-
-    constexpr bit_value_t l_gt[4][4] = {
         /* a  /	 0   1   x   z 	<-b */	
         /* 0 */	{_0,_1,_x,_x},	
         /* 1 */	{_0,_0,_x,_x},	
         /* x */	{_x,_x,_x,_x},	
         /* z */	{_x,_x,_x,_x}
     };
-    _static_unused(l_gt)
+    _static_unused(l_lt)
 
-    constexpr bit_value_t l_le[4][4] = unroll_2d_invert(l_gt);
-    _static_unused(l_le)
+    constexpr bit_value_t l_gt[4][4] = {
+        /* a  /	 0   1   x   z 	<-b */	
+        /* 0 */	{_0,_0,_x,_x},	
+        /* 1 */	{_1,_0,_x,_x},	
+        /* x */	{_x,_x,_x,_x},	
+        /* z */	{_x,_x,_x,_x}
+    };
+    _static_unused(l_gt)
 
     constexpr bit_value_t l_eq[4][4] = unroll_2d(l_xnor);
     _static_unused(l_eq)
