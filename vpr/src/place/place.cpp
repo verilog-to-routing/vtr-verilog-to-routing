@@ -963,11 +963,7 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const
     if (fabs(new_bb_cost - costs->bb_cost) > costs->bb_cost * ERROR_TOL) {
         std::string msg = vtr::string_fmt("in recompute_costs_from_scratch: new_bb_cost = %g, old bb_cost = %g\n",
                                           new_bb_cost, costs->bb_cost);
-        if (placer_opts.strict_checks) {
-            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__, msg.c_str());
-        } else {
-            VTR_LOG_WARN(msg.c_str());
-        }
+        VPR_THROW(VPR_ERROR_PLACE, msg.c_str());
     }
     costs->bb_cost = new_bb_cost;
 
@@ -977,11 +973,7 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const
         if (fabs(new_timing_cost - costs->timing_cost) > costs->timing_cost * ERROR_TOL) {
             std::string msg = vtr::string_fmt("in recompute_costs_from_scratch: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
                                               new_timing_cost, costs->timing_cost, ERROR_TOL);
-            if (placer_opts.strict_checks) {
-                vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__, msg.c_str());
-            } else {
-                VTR_LOG_WARN(msg.c_str());
-            }
+            VPR_THROW(VPR_ERROR_PLACE, msg.c_str());
         }
         costs->timing_cost = new_timing_cost;
     } else {

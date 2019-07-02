@@ -353,32 +353,17 @@ ast_node_t *newList_entry(ast_node_t *list, ast_node_t *child)
 
 /*---------------------------------------------------------------------------------------------
  * (function: newListReplicate)
- * Basically this functions emulates verilog replication: {5{1'b0}} by concatenating that many
- * children together -- certainly not the most elegant solution, but was the easiest
  *-------------------------------------------------------------------------------------------*/
-
 ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 {
 	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(CONCATENATE, yylineno, current_parse_file);
-
-	new_node->types.concat.num_bit_strings = -1;
+	ast_node_t* new_node = create_node_w_type(REPLICATE, yylineno, current_parse_file);
 
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 1, child);
-
-	int i;
-	if (exp->type == NUMBERS)
-	{
-		for (i = 1; i < exp->types.vnumber->get_value(); i++)
-		{
-			add_child_to_node(new_node, ast_node_deep_copy(child));
-		}
-	}
+	allocate_children_to_node(new_node, 2, exp, child);
 
 	return new_node;
 }
-
 
 static ast_node_t *resolve_symbol_node(ids top_type, ast_node_t *symbol_node)
 {

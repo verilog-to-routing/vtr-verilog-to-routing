@@ -50,6 +50,8 @@ struct t_options {
     argparse::ArgValue<e_clock_modeling> clock_modeling;
     argparse::ArgValue<bool> exit_before_pack;
     argparse::ArgValue<bool> strict_checks;
+    argparse::ArgValue<std::string> disable_errors;
+    argparse::ArgValue<std::string> suppress_warnings;
 
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;
