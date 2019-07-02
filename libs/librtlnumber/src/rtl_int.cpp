@@ -236,7 +236,20 @@ bool V_TRUE(VNumber& a)
 	}
 	else
 	{
-		return result.get_value();
+		return (result.get_value() != 0);
+	}	
+}
+
+bool V_FALSE(VNumber& a)
+{
+	VNumber result = a.bitwise_reduce(l_or);
+	if(result.is_dont_care_string())
+	{
+		return false;
+	}
+	else
+	{
+		return (result.get_value() == 0);
 	}	
 }
 

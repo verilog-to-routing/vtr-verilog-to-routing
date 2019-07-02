@@ -26,18 +26,26 @@ uint8_t get_veri_integer_limit()
     return (sizeof(T)*8);
 }
 
+#define _static_unused(x) namespace { constexpr auto _##x = x; }
+
+#define unroll_1d(lut) { lut[_0], lut[_1], lut[_x], lut[_z] }
+#define unroll_2d(lut) { unroll_1d(lut[_0]), unroll_1d(lut[_1]), unroll_1d(lut[_x]), unroll_1d(lut[_z]) }
+
+#define unroll_1d_invert(lut) { l_not[lut[_0]], l_not[lut[_1]], l_not[lut[_x]], l_not[lut[_z]] }
+#define unroll_2d_invert(lut) { unroll_1d_invert(lut[_0]), unroll_1d_invert(lut[_1]), unroll_1d_invert(lut[_x]), unroll_1d_invert(lut[_z]) }
+
 namespace BitSpace {
     typedef uint8_t bit_value_t;
 
-    static const veri_internal_bits_t _All_0 = static_cast<veri_internal_bits_t>(0x0000000000000000UL);
-    static const veri_internal_bits_t _All_1 = static_cast<veri_internal_bits_t>(0x5555555555555555UL);
-    static const veri_internal_bits_t _All_x = static_cast<veri_internal_bits_t>(0xAAAAAAAAAAAAAAAAUL);
-    static const veri_internal_bits_t _All_z = static_cast<veri_internal_bits_t>(0xFFFFFFFFFFFFFFFFUL);
+    constexpr veri_internal_bits_t _All_0 = static_cast<veri_internal_bits_t>(0x0000000000000000UL);
+    constexpr veri_internal_bits_t _All_1 = static_cast<veri_internal_bits_t>(0x5555555555555555UL);
+    constexpr veri_internal_bits_t _All_x = static_cast<veri_internal_bits_t>(0xAAAAAAAAAAAAAAAAUL);
+    constexpr veri_internal_bits_t _All_z = static_cast<veri_internal_bits_t>(0xFFFFFFFFFFFFFFFFUL);
 
-    static const bit_value_t _0 = 0x0;
-    static const bit_value_t _1 = 0x1;
-    static const bit_value_t _x = 0x2;
-    static const bit_value_t _z = 0x3;
+    constexpr bit_value_t _0 = 0x0;
+    constexpr bit_value_t _1 = 0x1;
+    constexpr bit_value_t _x = 0x2;
+    constexpr bit_value_t _z = 0x3;
 
     /***                                                              
      * these are taken from the raw verilog truth tables so that the evaluation are correct.
@@ -46,192 +54,224 @@ namespace BitSpace {
      * 
      *******************************************************/
 
-    static const bit_value_t l_buf[4] = {
+    constexpr bit_value_t l_buf[4] = {
         /*	 0   1   x   z  <- a*/
             _0,_1,_x,_x
     };
+    _static_unused(l_buf)
 
-    static const bit_value_t l_not[4] = {
+    constexpr bit_value_t l_not[4] = {
         /*   0   1   x   z 	<- a */
             _1,_0,_x,_x
     };
+    _static_unused(l_not)
 
-    static const bit_value_t is_unk[4] = {
+    constexpr bit_value_t is_unk[4] = {
         /*	 0   1   x   z  <- a*/
             _0,_0,_1,_1
     };
+    _static_unused(is_unk)
 
-    #define unroll_1d(lut) { lut[_0], lut[_1], lut[_x], lut[_z] }
-    #define unroll_2d(lut) { unroll_1d(lut[_0]), unroll_1d(lut[_1]), unroll_1d(lut[_x]), unroll_1d(lut[_z]) }
+    constexpr bit_value_t is_x_bit[4] = {
+        /*	 0   1   x   z  <- a*/
+            _0,_0,_1,_0
+    };
+    _static_unused(is_x_bit)
 
-    #define unroll_1d_invert(lut) { l_not[lut[_0]], l_not[lut[_1]], l_not[lut[_x]], l_not[lut[_z]] }
-    #define unroll_2d_invert(lut) { unroll_1d_invert(lut[_0]), unroll_1d_invert(lut[_1]), unroll_1d_invert(lut[_x]), unroll_1d_invert(lut[_z]) }
+    constexpr bit_value_t is_z_bit[4] = {
+        /*	 0   1   x   z  <- a*/
+            _0,_0,_0,_1
+    };
+    _static_unused(is_z_bit)
 
-    static const bit_value_t l_and[4][4] = {
+    constexpr bit_value_t l_and[4][4] = {
         /* a  /	 0   1   x   z 	<-b */	
         /* 0 */	{_0,_0,_0,_0},	
         /* 1 */	{_0,_1,_x,_x},	
         /* x */	{_0,_x,_x,_x},	
         /* z */	{_0,_x,_x,_x}
     };
-    static const bit_value_t l_nand[4][4] = 
-        unroll_2d_invert(l_and);
+    _static_unused(l_and)
 
-    static const bit_value_t l_or[4][4] = {
+    constexpr bit_value_t l_nand[4][4] = unroll_2d_invert(l_and);
+    _static_unused(l_nand)
+
+    constexpr bit_value_t l_or[4][4] = {
         /* a  /	 0   1   x   z 	<-b */	
         /* 0 */	{_0,_1,_x,_x},	
         /* 1 */	{_1,_1,_1,_1},	
         /* x */	{_x,_1,_x,_x},	
         /* z */	{_x,_1,_x,_x}
     };
-    static const bit_value_t l_nor[4][4] = 
-        unroll_2d_invert(l_or);
+    _static_unused(l_or)
 
-    static const bit_value_t l_xor[4][4] = {
+    constexpr bit_value_t l_nor[4][4] = unroll_2d_invert(l_or);
+    _static_unused(l_nor)
+
+    constexpr bit_value_t l_xor[4][4] = {
         /* a  /	 0   1   x   z 	<-b */	
         /* 0 */	{_0,_1,_x,_x},	
         /* 1 */	{_1,_0,_x,_x},	
         /* x */	{_x,_x,_x,_x},	
         /* z */	{_x,_x,_x,_x}
     };
-    static const bit_value_t l_xnor[4][4] = 
-        unroll_2d_invert(l_xor);
+    _static_unused(l_xor)
 
+    constexpr bit_value_t l_xnor[4][4] = unroll_2d_invert(l_xor);
+    _static_unused(l_xnor)
 
     /*****************************************************
      *  Tran NO SUPPORT FOR THESE YET 
      */
-    static const bit_value_t l_notif1[4][4] = {
+    constexpr bit_value_t l_notif1[4][4] = {
         /* in /	 0   1   x   z 	<-control */	
         /* 0 */	{_z,_1,_x,_x},
         /* 1 */	{_z,_0,_x,_x},
         /* x */	{_z,_x,_x,_x},
         /* z */	{_z,_x,_x,_x}
     };
+    _static_unused(l_notif1)
 
-    static const bit_value_t l_notif0[4][4] = {
+    constexpr bit_value_t l_notif0[4][4] = {
         /* in /	 0   1   x   z 	<-control */	
         /* 0 */	{_1,_z,_x,_x},
         /* 1 */	{_0,_z,_x,_x},
         /* x */	{_x,_z,_x,_x},
         /* z */	{_x,_z,_x,_x}
     };
+    _static_unused(l_notif0)
 
-    static const bit_value_t l_bufif1[4][4] = {
+    constexpr bit_value_t l_bufif1[4][4] = {
         /* in /	 0   1   x   z 	<-control */	
         /* 0 */	{_z,_0,_x,_x},
         /* 1 */	{_z,_1,_x,_x},
         /* x */	{_z,_x,_x,_x},
         /* z */	{_z,_x,_x,_x}
     };
+    _static_unused(l_bufif1)
 
-    static const bit_value_t l_bufif0[4][4] = {
+    constexpr bit_value_t l_bufif0[4][4] = {
         /* in /	 0   1   x   z 	<-control */	
         /* 0 */	{_0,_z,_x,_x},
         /* 1 */	{_1,_z,_x,_x},
         /* x */	{_x,_z,_x,_x},
         /* z */	{_x,_z,_x,_x}
     };
+    _static_unused(l_bufif0)
 
     /* cmos gates */
-    static const bit_value_t l_rpmos[4][4] = {
+    constexpr bit_value_t l_rpmos[4][4] = {
         /* in /	 0   1   x   z 	<-control */	
         /* 0 */	{_0,_z,_x,_x},
         /* 1 */	{_1,_z,_x,_x},
         /* x */	{_x,_z,_x,_x},
         /* z */	{_z,_z,_z,_z}
     };
+    _static_unused(l_rpmos)
 
-    static const bit_value_t l_rnmos[4][4] = {
+    constexpr bit_value_t l_rnmos[4][4] = {
         /* in /	 0   1   x   z 	<-control */	
         /* 0 */	{_z,_0,_x,_x},
         /* 1 */	{_z,_1,_x,_x},
         /* x */	{_z,_x,_x,_x},
         /* z */	{_z,_z,_z,_z}
     };
+    _static_unused(l_rnmos)
 
-    static const bit_value_t l_nmos[4][4] = {
+    constexpr bit_value_t l_nmos[4][4] = {
         /* in /	 0   1   x   z 	<-control */	
         /* 0 */	{_z,_0,_x,_x},
         /* 1 */	{_z,_1,_x,_x},
         /* x */	{_z,_x,_x,_x},
         /* z */	{_z,_z,_z,_z}
     };
-
+    _static_unused(l_nmos)
 
     // see table 5-21 p:54 IEEE 1364-2005
-    static const bit_value_t l_ternary[4][4] = {
+    constexpr bit_value_t l_ternary[4][4] = {
         /* in /	 0   1   x   z 	<-control */	
         /* 0 */	{_0,_x,_x,_x},
         /* 1 */	{_x,_1,_x,_x},
         /* x */	{_x,_x,_x,_x},
         /* z */	{_x,_x,_x,_x}
     };
+    _static_unused(l_ternary)
 
     /*****
      * these extend the library and simplify the process
      */
     /* helper */
-    static const bit_value_t l_unk[4][4] = {
+    constexpr bit_value_t l_unk[4][4] = {
         /* in /	 0   1   x   z 	<-control */	
         /* 0 */	{_x,_x,_x,_x},
         /* 1 */	{_x,_x,_x,_x},
         /* x */	{_x,_x,_x,_x},
         /* z */	{_x,_x,_x,_x}
     };
+    _static_unused(l_unk)
 
-
-    static const bit_value_t l_case_eq[4][4] = {
+    constexpr bit_value_t l_case_eq[4][4] = {
         /* a  /	 0   1   x   z 	<-b */	
         /* 0 */	{_1,_0,_0,_0},	
         /* 1 */	{_0,_1,_0,_0},	
         /* x */	{_0,_0,_1,_0},	
         /* z */	{_0,_0,_0,_1}
     };
+    _static_unused(l_case_eq)
 
-    static const bit_value_t l_case_neq[4][4] =
-        unroll_2d_invert(l_case_eq);
+    constexpr bit_value_t l_case_neq[4][4] = unroll_2d_invert(l_case_eq);
+    _static_unused(l_case_neq)
 
-
-    static const bit_value_t l_lt[4][4] = {
+    constexpr bit_value_t l_lt[4][4] = {
         /* a  /	 0   1   x   z 	<-b */	
         /* 0 */	{_0,_0,_x,_x},	
         /* 1 */	{_1,_0,_x,_x},	
         /* x */	{_x,_x,_x,_x},	
         /* z */	{_x,_x,_x,_x}
     };
-    static const bit_value_t l_ge[4][4] = unroll_2d(l_lt);
+    _static_unused(l_lt)
 
-    static const bit_value_t l_gt[4][4] = {
+    constexpr bit_value_t l_ge[4][4] = unroll_2d_invert(l_lt);
+    _static_unused(l_ge)
+
+    constexpr bit_value_t l_gt[4][4] = {
         /* a  /	 0   1   x   z 	<-b */	
         /* 0 */	{_0,_1,_x,_x},	
         /* 1 */	{_0,_0,_x,_x},	
         /* x */	{_x,_x,_x,_x},	
         /* z */	{_x,_x,_x,_x}
     };
-    static const bit_value_t l_le[4][4] = unroll_2d(l_gt);
+    _static_unused(l_gt)
 
-    static const bit_value_t l_eq[4][4] = 
-        unroll_2d(l_xnor);
+    constexpr bit_value_t l_le[4][4] = unroll_2d_invert(l_gt);
+    _static_unused(l_le)
 
-    static const bit_value_t l_sum[4][4][4] = {
+    constexpr bit_value_t l_eq[4][4] = unroll_2d(l_xnor);
+    _static_unused(l_eq)
+
+    constexpr bit_value_t l_sum[4][4][4] = {
         /* c_in */ 
         /* 0 */ unroll_2d(l_xor),
         /* 1 */ unroll_2d(l_xnor),
         /* x */ unroll_2d(l_unk),
         /* z */ unroll_2d(l_unk)
     };
+    _static_unused(l_sum)
 
-    static const bit_value_t l_carry[4][4][4] = {
+    constexpr bit_value_t l_carry[4][4][4] = {
         /* c_in */
         /* 0 */ unroll_2d(l_and),
         /* 1 */ unroll_2d(l_or),
         /* x */ unroll_2d(l_ternary),
         /* z */ unroll_2d(l_ternary)
     };
+    _static_unused(l_carry)
 
-    static const bit_value_t l_half_carry[4][4] = unroll_2d(l_carry[_0]);
-    static const bit_value_t l_half_sum[4][4] = unroll_2d(l_sum[_0]);
+    constexpr bit_value_t l_half_carry[4][4] = unroll_2d(l_carry[_0]);
+    _static_unused(l_half_carry)
+
+    constexpr bit_value_t l_half_sum[4][4] = unroll_2d(l_sum[_0]);
+    _static_unused(l_half_sum)
 
     static char bit_to_c(bit_value_t bit)
     {
@@ -254,6 +294,7 @@ namespace BitSpace {
             default:    return _x;
         }
     }
+
     template<typename T>
     class BitFields
     {
@@ -280,7 +321,6 @@ namespace BitSpace {
 
         BitFields(bit_value_t init_v)
         {
-            
             this->bits = 
                 (_0 == init_v)? _All_0:
                 (_1 == init_v)? _All_1:
@@ -436,6 +476,28 @@ namespace BitSpace {
             return false;
         }
 
+        bool is_only_z()
+        {
+            for(size_t address=0x0; address < this->size(); address++)
+            {
+                if(! is_z_bit[this->get_bit(address)])
+                    return false;                
+            }
+            
+            return true;
+        }
+
+        bool is_only_x()
+        {
+            for(size_t address=0x0; address < this->size(); address++)
+            {
+                if(! is_x_bit[this->get_bit(address)])
+                    return false;               
+            }
+            
+            return true;
+        }
+
         /**
          * Unary Reduction operations
          * This is Msb to Lsb on purpose, as per specs
@@ -481,13 +543,13 @@ namespace BitSpace {
         /**
          * size of zero compact to the least amount of bits
          */
-        VerilogBits resize(BitSpace::bit_value_t pad, size_t size)
+        VerilogBits resize(BitSpace::bit_value_t pad, size_t new_size)
         {
 
             /**
              * find the new size
              */
-            if(size == 0)
+            if(new_size == 0)
             {
 
                 size_t last_bit_id = this->size() - 1;
@@ -512,20 +574,20 @@ namespace BitSpace {
      
                 }
 
-                size = last_bit_id+1;
+                new_size = last_bit_id+1;
             }
 
-            VerilogBits other(size, BitSpace::_0);
+            VerilogBits other(new_size, BitSpace::_0);
 
             size_t i = 0;
 
-            while(i < this->size() && i < size)
+            while(i < this->size() && i < new_size)
             {
                 other.set_bit(i, this->get_bit(i));
                 i++;
             }
 
-            while(i < size)
+            while(i < new_size)
             {
                 other.set_bit(i, pad);/* <- ask Eve about it */
                 i++;
@@ -597,10 +659,10 @@ public:
         );   
 
         int64_t result = 0;
-        int8_t pad = this->get_padding_bit(); // = this->is_negative();
+        BitSpace::bit_value_t pad = this->get_padding_bit(); // = this->is_negative();
         for(size_t bit_index = 0; bit_index < this->size(); bit_index++)
         {
-            int64_t current_bit = pad;
+            int64_t current_bit = static_cast<int64_t>(pad);
             if(bit_index < this->size())
                 current_bit = this->bitstring.get_bit(bit_index);
 
@@ -759,6 +821,11 @@ public:
 
         return this->bitstring.size();
     }
+    
+    BitSpace::bit_value_t get_padding_bit()
+    {
+        return this->is_negative()? BitSpace::_1:BitSpace::_0;
+    }
 
     bool is_signed() const
     {
@@ -775,14 +842,19 @@ public:
         return ( this->get_bit_from_msb(0) == BitSpace::_1 && this->sign );
     }
 
-    BitSpace::bit_value_t get_padding_bit()
-    {
-        return this->is_negative()? BitSpace::_1:BitSpace::_0;
-    }
-
     bool is_dont_care_string()
     {
         return this->bitstring.has_unknowns();
+    }
+
+    bool is_z()
+    {
+        return this->bitstring.is_only_z();
+    }
+
+    bool is_x()
+    {
+        return this->bitstring.is_only_x();
     }
 
     VNumber twos_complement()

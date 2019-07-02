@@ -17,6 +17,7 @@
  */
 
 bool V_TRUE(VNumber& a);
+bool V_FALSE(VNumber& a);
 
 VNumber V_ADD(VNumber& a);
 VNumber V_MINUS(VNumber& a);
