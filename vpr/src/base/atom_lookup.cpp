@@ -52,6 +52,9 @@ void AtomLookup::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
  * PB Pins
  */
 const t_pb_graph_pin* AtomLookup::atom_pin_pb_graph_pin(AtomPinId atom_pin) const {
+    if (atom_pin_to_pb_graph_pin_.empty()) {
+        return nullptr;
+    }
     return atom_pin_to_pb_graph_pin_[atom_pin];
 }
 
