@@ -880,6 +880,15 @@ long get_size_of_variable(ast_node_t *node, char *instance_name_prefix, STRING_C
 		long range_min = node_min->types.vnumber->get_value();
 
 		assignment_size = (range_max - range_min) + 1;
+
+		if(node_max != var_declare->children[1])
+		{
+			node_max = free_whole_tree(node_max);
+		}
+		if(node_min != var_declare->children[2])
+		{
+			node_min = free_whole_tree(node_min);
+		}
 	}
 
 	oassert(assignment_size != 0);
