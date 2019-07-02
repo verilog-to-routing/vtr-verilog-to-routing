@@ -412,10 +412,10 @@ std::string atom_pin_arch_name(const AtomNetlist& netlist, const AtomPinId pin) 
 
 int mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, int verbosity) {
     int num_undriven_pins_marked_const = mark_undriven_primitive_outputs_as_constant(netlist, verbosity);
-    VTR_LOGV(verbosity > 0, "Inferred %4d primitive pins as constant generators since they have no combinationally connected inputs\n", num_undriven_pins_marked_const);
+    VTR_LOGV(verbosity > 0, "Inferred %4d additional primitive pins as constant generators since they have no combinationally connected inputs\n", num_undriven_pins_marked_const);
 
     int num_inferred_pins_marked_const = infer_and_mark_constant_pins(netlist, const_gen_inference_method, verbosity);
-    VTR_LOGV(verbosity > 0, "Inferred %4d primitive pins as constant generators due to constant inputs\n", num_inferred_pins_marked_const);
+    VTR_LOGV(verbosity > 0, "Inferred %4d additional primitive pins as constant generators due to constant inputs\n", num_inferred_pins_marked_const);
 
     return num_undriven_pins_marked_const + num_inferred_pins_marked_const;
 }
@@ -429,6 +429,8 @@ int mark_undriven_primitive_outputs_as_constant(AtomNetlist& netlist, int verbos
     size_t num_pins_marked_constant = 0;
 
     for (AtomBlockId blk : netlist.blocks()) {
+        if (!blk) continue;
+
         //Don't mark primary I/Os as constants
         if (netlist.block_type(blk) != AtomBlockType::BLOCK) continue;
 
@@ -489,6 +491,8 @@ int infer_and_mark_constant_pins(AtomNetlist& netlist, e_const_gen_inference con
         //Look through all the blocks marking those pins which are
         //constant generataors
         for (auto blk : netlist.blocks()) {
+            if (!blk) continue;
+
             num_pins_marked += infer_and_mark_block_pins_constant(netlist, blk, const_gen_inference_method, verbosity);
         }
 
@@ -946,12 +950,14 @@ size_t sweep_iterative(AtomNetlist& netlist,
                        bool should_sweep_nets,
                        bool should_sweep_blocks,
                        bool should_sweep_constant_primary_outputs,
+                       e_const_gen_inference const_gen_inference_method,
                        int verbosity) {
     size_t dangling_nets_swept = 0;
     size_t dangling_blocks_swept = 0;
     size_t dangling_inputs_swept = 0;
     size_t dangling_outputs_swept = 0;
     size_t constant_outputs_swept = 0;
+    size_t constant_generators_marked = 0;
 
     //We perform multiple passes of sweeping, since sweeping something may
     //enable more things to be swept afterward.
@@ -962,12 +968,14 @@ size_t sweep_iterative(AtomNetlist& netlist,
     size_t pass_dangling_inputs_swept;
     size_t pass_dangling_outputs_swept;
     size_t pass_constant_outputs_swept;
+    size_t pass_constant_generators_marked;
     do {
         pass_dangling_nets_swept = 0;
         pass_dangling_blocks_swept = 0;
         pass_dangling_inputs_swept = 0;
         pass_dangling_outputs_swept = 0;
         pass_constant_outputs_swept = 0;
+        pass_constant_generators_marked = 0;
 
         if (should_sweep_ios) {
             pass_dangling_inputs_swept += sweep_inputs(netlist, verbosity);
@@ -986,23 +994,29 @@ size_t sweep_iterative(AtomNetlist& netlist,
             pass_constant_outputs_swept += sweep_constant_primary_outputs(netlist, verbosity);
         }
 
+        pass_constant_generators_marked += mark_constant_generators(netlist, const_gen_inference_method, verbosity);
+
         dangling_nets_swept += pass_dangling_nets_swept;
         dangling_blocks_swept += pass_dangling_blocks_swept;
         dangling_inputs_swept += pass_dangling_inputs_swept;
         dangling_outputs_swept += pass_dangling_outputs_swept;
         constant_outputs_swept += pass_constant_outputs_swept;
+        constant_generators_marked += pass_constant_generators_marked;
     } while (pass_dangling_nets_swept != 0
              || pass_dangling_blocks_swept != 0
              || pass_dangling_inputs_swept != 0
              || pass_dangling_outputs_swept != 0
-             || pass_constant_outputs_swept != 0);
+             || pass_constant_outputs_swept != 0
+             || pass_constant_generators_marked != 0);
 
-    VTR_LOGV(verbosity > 0, "Swept input(s) : %zu\n", dangling_inputs_swept);
-    VTR_LOGV(verbosity > 0, "Swept output(s): %zu (%zu dangling, %zu constant)\n", dangling_outputs_swept + constant_outputs_swept,
+    VTR_LOGV(verbosity > 0, "Swept input(s)      : %zu\n", dangling_inputs_swept);
+    VTR_LOGV(verbosity > 0, "Swept output(s)     : %zu (%zu dangling, %zu constant)\n",
+             dangling_outputs_swept + constant_outputs_swept,
              dangling_outputs_swept,
              constant_outputs_swept);
-    VTR_LOGV(verbosity > 0, "Swept net(s)   : %zu\n", dangling_nets_swept);
-    VTR_LOGV(verbosity > 0, "Swept block(s) : %zu\n", dangling_blocks_swept);
+    VTR_LOGV(verbosity > 0, "Swept net(s)        : %zu\n", dangling_nets_swept);
+    VTR_LOGV(verbosity > 0, "Swept block(s)      : %zu\n", dangling_blocks_swept);
+    VTR_LOGV(verbosity > 0, "Constant Pins Marked: %zu\n", constant_generators_marked);
 
     return dangling_nets_swept
            + dangling_blocks_swept
