@@ -353,7 +353,7 @@ namespace BitSpace {
     private:
 
         std::vector<BitFields<veri_internal_bits_t>> bits;
-        size_t bit_size;
+        size_t bit_size = 0;
 
         size_t to_index(size_t address)
         {
@@ -371,6 +371,8 @@ namespace BitSpace {
 
         VerilogBits()
         {
+            this->bit_size = 0;
+            this->bits = std::vector<BitSpace::BitFields<veri_internal_bits_t>>();
         }
 
         VerilogBits(size_t data_size, bit_value_t value_in)
@@ -593,9 +595,9 @@ namespace BitSpace {
 class VNumber 
 {
 private:
-    bool sign;
-    bool defined_size;
-    BitSpace::VerilogBits bitstring;
+    bool sign = false;
+    bool defined_size = false;
+    BitSpace::VerilogBits bitstring = BitSpace::VerilogBits(1, BitSpace::_x);
 
     VNumber(BitSpace::VerilogBits other_bitstring, bool other_sign)
     {
@@ -605,7 +607,12 @@ private:
 
 public:
 
-    VNumber(){}
+    VNumber()
+    {
+        this->sign = false;
+        this->bitstring = BitSpace::VerilogBits(1, BitSpace::_x);
+        this->defined_size = false;
+    }
 
     VNumber(VNumber&&) = default;
     VNumber& operator=(VNumber&&) = default;
