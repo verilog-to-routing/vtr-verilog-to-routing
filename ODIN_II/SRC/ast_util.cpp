@@ -969,18 +969,6 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, char *module_name, 
 			newNode->shared_node = node->shared_node;
 
 			/* resize as needed */
-			// if (assignment_size != 0)
-			// {
-			// 	VNumber *temp_num = new VNumber(*(newNode->types.vnumber), assignment_size);
-			// 	delete newNode->types.vnumber;
-			// 	newNode->types.vnumber = temp_num;
-			// }
-
-			// if (newNode->types.vnumber->size() > *max_size)
-			// {
-			// 	*max_size = newNode->types.vnumber->size();
-			// }
-
 			if (assignment_size == 0)
 			{
 				VNumber *temp_num = new VNumber(*(newNode->types.vnumber), *max_size);
