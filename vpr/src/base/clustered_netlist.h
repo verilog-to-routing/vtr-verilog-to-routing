@@ -76,9 +76,9 @@
  * relative to the t_type_descriptor (physical description of the block).
  *
  *           +-----------+
- *       0-->|X         X|-->3
+ *       0-->|O         X|-->3
  *       1-->|O  Block  O|-->4
- *       2-->|O         O|-->5 (e.g. ClusterPinId = 92)
+ *       2-->|X         O|-->5 (e.g. ClusterPinId = 92)
  *           +-----------+
  *
  * The index skips over unused pins, e.g. CLB has 6 pins (3 in, 3 out, numbered [0...5]), where
