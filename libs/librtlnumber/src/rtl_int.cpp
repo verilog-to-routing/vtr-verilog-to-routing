@@ -99,25 +99,23 @@ static compare_bit eval_op(VNumber& a_in, VNumber& b_in)
 			bit_b = b.get_bit_from_lsb(i);
 		}
 		
-
-		if(bit_a == BitSpace::_x || bit_b == BitSpace::_x)
+		if(BitSpace::l_lt[bit_a][bit_b] == BitSpace::_1)
 		{
-
+			return (!invert_result)? LT_EVAL: GT_EVAL;
+		}
+		else if(BitSpace::l_gt[bit_a][bit_b] == BitSpace::_1)
+		{
+			return (!invert_result)? GT_EVAL: LT_EVAL;
+		}
+		else if(BitSpace::l_eq[bit_a][bit_b] == BitSpace::_1)
+		{
+			continue;
+		}
+		else
+		{
 			return UNK_EVAL;
 		}
-		else if(bit_a != bit_b)
-		{
-			if(bit_a == BitSpace::_1)
-			{
-				return (invert_result)? LT_EVAL: GT_EVAL;
-			}
-			else
-			{
-				return (invert_result)? GT_EVAL: LT_EVAL;
-			}
-		}
 	}
-
 
 	return EQ_EVAL;
 }
@@ -398,7 +396,7 @@ VNumber V_LT(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_lt()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, is_signed_operation(a, b));
+	VNumber to_return(1, result, false);
 	return to_return;
 }
 
@@ -406,7 +404,7 @@ VNumber V_GT(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_gt()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, is_signed_operation(a, b));
+	VNumber to_return(1, result, false);
 	return to_return;
 }
 
@@ -414,7 +412,7 @@ VNumber V_EQUAL(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_eq()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, is_signed_operation(a, b));
+	VNumber to_return(1, result, false);
 	return to_return;
 }
 
@@ -422,7 +420,7 @@ VNumber V_GE(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_ge()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, is_signed_operation(a, b));
+	VNumber to_return(1, result, false);
 	return to_return;
 }
 
@@ -430,7 +428,7 @@ VNumber V_LE(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_le()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, is_signed_operation(a, b));
+	VNumber to_return(1, result, false);
 	return to_return;
 }
 
@@ -438,7 +436,7 @@ VNumber V_NOT_EQUAL(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_ne()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, is_signed_operation(a, b));
+	VNumber to_return(1, result, false);
 	return to_return;
 }
 
@@ -447,7 +445,7 @@ VNumber V_SIGNED_SHIFT_LEFT(VNumber& a, VNumber& b)
 	if(b.is_dont_care_string())	
 		return VNumber("2'sbxx");
 	
-	return shift_op(a, b.get_value(), true);
+	return shift_op(a, b.get_value(), a.is_signed());
 }
 
 VNumber V_SHIFT_LEFT(VNumber& a, VNumber& b)
@@ -463,7 +461,7 @@ VNumber V_SIGNED_SHIFT_RIGHT(VNumber& a, VNumber& b)
 	if(b.is_dont_care_string())	
 		return VNumber("2'sbxx");
 	
-	return shift_op(a, -1* b.get_value(), true);
+	return shift_op(a, -1* b.get_value(), a.is_signed());
 }
 
 VNumber V_SHIFT_RIGHT(VNumber& a, VNumber& b)
