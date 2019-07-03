@@ -299,7 +299,7 @@ struct t_grid_loc_spec {
  *                            <-------------->
  *                                 repeatx
  *
- *  startx/endx and endx/endy define a rectangular region instancess dimensions.
+ *  startx/endx and endx/endy define a rectangular region instances dimensions.
  *  The region instance is then repeated every repeatx/repeaty (if specified).
  *
  *  Within a particular region instance a block of block_type is laid down every
@@ -346,8 +346,8 @@ struct t_grid_loc_def {
     t_grid_loc_spec x; //Horizontal location specification
     t_grid_loc_spec y; //Veritcal location specification
 
-    // When 1 metadata tag is split amoung multiple t_grid_loc_def, one
-    // t_grid_loc_def is arbitrarily choosen to own the metadata, and the other
+    // When 1 metadata tag is split among multiple t_grid_loc_def, one
+    // t_grid_loc_def is arbitrarily chosen to own the metadata, and the other
     // t_grid_loc_def point to the owned version.
     std::unique_ptr<t_metadata_dict> owned_meta;
     t_metadata_dict* meta; // Metadata for this location definition. This
@@ -886,7 +886,7 @@ struct t_pin_to_pin_annotation {
  *      parent_pb_graph_node  : parent pb graph node
  *      total_primitive_count : Total number of this primitive type in the cluster. If there are 10 ALMs per cluster
  *                              and 2 FFs per ALM (given the mode of the parent of this primitive) then the total is 20.
- *      illegal_modes         : vector containing illigal modes that result in conflicts during routing
+ *      illegal_modes         : vector containing illegal modes that result in conflicts during routing
  */
 class t_pb_graph_node {
   public:
@@ -900,7 +900,7 @@ class t_pb_graph_node {
      * the parent_pb.
      * Example: Edges that connect LUTs A, B and C to the parent pb_graph_node refer to the correct parent's mode which is set to "LUTs",
      *          but edges of LUT D have the mode of edge corresponding to a wrong parent's pb_graph_node mode, namely "LUTRAM".
-     *          This situation is unfeasible as the edge modes are incosistent between siblings of the same parent pb_graph_node.
+     *          This situation is unfeasible as the edge modes are inconsistent between siblings of the same parent pb_graph_node.
      *          In this case, the "LUTs" mode of the parent pb_graph_node cannot be used as the LUT D is not able to have a feasible
      *          edge mode that does relate with the other sibling's edge modes.
      *
@@ -1253,7 +1253,7 @@ struct t_arch_switch_inf {
     SwitchType type() const;
 
     //Returns true if this switch type isolates its input and output into
-    //seperate DC-connected subcircuits
+    //separate DC-connected subcircuits
     bool buffered() const;
 
     //Returns true if this switch type is configurable
