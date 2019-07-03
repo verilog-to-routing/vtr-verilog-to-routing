@@ -942,7 +942,9 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
         .help(
             "Parses a list of functions for which the warnings will be suppressed on stdout.\n"
             "The first element of the list is the name of the output log file with the suppressed warnings.\n"
-            "The file name and the list of functions is separated by `,`\n"
+            "The output log file can be omitted to completely suppress warnings.\n"
+            "The file name and the list of functions is separated by `,`. If no output log file is specified,\n"
+            "the comma is not needed.\n"
             "Each function in the list is delimited by `:`\n"
             "This option should be only used for development purposes.")
         .default_value("");

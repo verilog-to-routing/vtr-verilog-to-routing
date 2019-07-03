@@ -23,11 +23,11 @@ void add_warnings_to_suppress(std::string function_name) {
     warnings_to_suppress.insert(function_name);
 }
 
-void set_noisy_warn_log_file(const char* log_file_name) {
+void set_noisy_warn_log_file(std::string log_file_name) {
     std::ofstream log;
     log.open(log_file_name, std::ifstream::out | std::ifstream::trunc);
     log.close();
-    noisy_warn_log_file = std::string(log_file_name);
+    noisy_warn_log_file = log_file_name;
 }
 
 void print_or_suppress_warning(const char* pszFileName, unsigned int lineNum, const char* pszFuncName, const char* pszMessage, ...) {
@@ -41,7 +41,7 @@ void print_or_suppress_warning(const char* pszFileName, unsigned int lineNum, co
     auto result = warnings_to_suppress.find(function_name);
     if (result == warnings_to_suppress.end()) {
         vtr::printf_warning(pszFileName, lineNum, msg.data());
-    } else {
+    } else if (!noisy_warn_log_file.empty()) {
         std::ofstream log;
         log.open(noisy_warn_log_file.data(), std::ios_base::app);
         log << "Warning:\n\tfile: " << pszFileName << "\n\tline: " << lineNum << "\n\tmessage: " << msg << std::endl;
