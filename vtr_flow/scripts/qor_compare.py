@@ -5,6 +5,7 @@ from collections import OrderedDict
 import openpyxl #Excel spreadsheet manipulation library
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.worksheet.cell_range import CellRange
+from openpyxl.cell.cell import TYPE_NUMERIC
 import os
 import pandas as pd
 
@@ -260,7 +261,7 @@ def fill_ratio(ws, raw_sheet, ref_sheet, dest_row, dest_col, keys, metrics):
                 assert ref_cell.value == raw_cell.value, "Key value must match"
 
                 dest_cell.value = "={}".format(value_ref(ref_cell))
-            elif ref_header.value in metrics and ref_cell.data_type == ref_cell.TYPE_NUMERIC:
+            elif ref_header.value in metrics and ref_cell.data_type == TYPE_NUMERIC:
                 dest_cell.value = "={}".format(safe_ratio_ref(raw_cell, ref_cell))
             else:
                 pass
@@ -322,10 +323,10 @@ def dataframe_to_sheet(wb, df, sheet_name):
 
 def safe_sheet_title(raw_title):
 
-    safe_title = raw_title
+    safe_title = raw_title.split('/')[-1]
 
-    for bad_char in ['/']:
-        safe_title = safe_title.replace(bad_char, '_')
+    #Removing all leading zeros from title name
+    safe_title = safe_title.lstrip('0')
 
     if (len(safe_title) > 31):
         safe_title = safe_title[-31:]
