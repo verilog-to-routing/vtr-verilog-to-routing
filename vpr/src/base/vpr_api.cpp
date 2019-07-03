@@ -227,14 +227,20 @@ void vpr_init(const int argc, const char** argv, t_options* options, t_vpr_setup
      * warnings are being suppressed
      */
     std::vector<std::string> split_warning_option = vtr::split(options->suppress_warnings, std::string(","));
+    std::string warn_log_file;
+    std::string warn_functions;
+    // If no log file name is provided, the specified warning
+    // to suppress are not output anywhere.
+    if (split_warning_option.size() == 1) {
+        warn_functions = split_warning_option[0];
+    } else if (split_warning_option.size() == 2) {
+        warn_log_file = split_warning_option[0];
+        warn_functions = split_warning_option[1];
+    }
 
-    // If the file or the list of functions is not provided
-    // no warning is suppressed
-    if (split_warning_option.size() == 2) {
-        set_noisy_warn_log_file(split_warning_option[0].data());
-        for (std::string func_name : vtr::split(split_warning_option[1], std::string(":"))) {
-            add_warnings_to_suppress(func_name);
-        }
+    set_noisy_warn_log_file(warn_log_file);
+    for (std::string func_name : vtr::split(warn_functions, std::string(":"))) {
+        add_warnings_to_suppress(func_name);
     }
 
     /* Read in arch and circuit */
