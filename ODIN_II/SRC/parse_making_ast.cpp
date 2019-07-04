@@ -477,15 +477,17 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 				/* find the related INPUT or OUTPUT definition and store that instead */
 				if ((sc_spot = sc_lookup_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 				{
-					symbol_list->children[i]->types.variable.is_input = TRUE;
-					free_whole_tree(symbol_list->children[i]->children[0]);
-					symbol_list->children[i]->children[0] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
+					oassert(((ast_node_t*)modules_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
+					free_whole_tree(symbol_list->children[i]);
+					symbol_list->children[i] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
+					oassert(symbol_list->children[i]->types.variable.is_input);
 				}
 				else if ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 				{
-					symbol_list->children[i]->types.variable.is_output = TRUE;
-					free_whole_tree(symbol_list->children[i]->children[0]);
-					symbol_list->children[i]->children[0] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
+					oassert(((ast_node_t*)modules_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
+					free_whole_tree(symbol_list->children[i]);
+					symbol_list->children[i] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
+					oassert(symbol_list->children[i]->types.variable.is_output);
 				}
 				else
 				{
@@ -497,15 +499,17 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 				/* find the related INPUT or OUTPUT definition and store that instead */
 				if ((sc_spot = sc_lookup_string(functions_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 				{
-					symbol_list->children[i]->types.variable.is_input = TRUE;
-					free_whole_tree(symbol_list->children[i]->children[0]);
-					symbol_list->children[i]->children[0] = (ast_node_t*)functions_inputs_sc->data[sc_spot];
+					oassert(((ast_node_t*)functions_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
+					free_whole_tree(symbol_list->children[i]);
+					symbol_list->children[i] = (ast_node_t*)functions_inputs_sc->data[sc_spot];
+					oassert(symbol_list->children[i]->types.variable.is_input);
 				}
 				else if ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
 				{
-					symbol_list->children[i]->types.variable.is_output = TRUE;
-					free_whole_tree(symbol_list->children[i]->children[0]);
-					symbol_list->children[i]->children[0] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
+					oassert(((ast_node_t*)functions_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
+					free_whole_tree(symbol_list->children[i]);
+					symbol_list->children[i] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
+					oassert(symbol_list->children[i]->types.variable.is_output);
 				}
 				else
 				{
