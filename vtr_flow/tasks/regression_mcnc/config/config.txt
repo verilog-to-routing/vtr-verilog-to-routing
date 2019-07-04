@@ -31,7 +31,6 @@ circuit_list_add=seq.pre-vpr.blif
 circuit_list_add=spla.pre-vpr.blif
 circuit_list_add=tseng.pre-vpr.blif
 
-
 # Add architectures to list to sweep
 arch_list_add=k6_N10_40nm.xml
 

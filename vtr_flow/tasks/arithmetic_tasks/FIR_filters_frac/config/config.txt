@@ -10,7 +10,6 @@ circuits_dir=benchmarks/arithmetic/generated_circuits/FIR_filters/verilog
 # archs_dir=benchmarks/arithmetic/arch/
 archs_dir=arch/timing/fraclut_carrychain
 
-
 # Add circuits to list to sweep
 
 # circuit_list_add=fir_pipe_10.v
@@ -101,7 +100,6 @@ circuit_list_add=fir_nopipe_50.v
 circuit_list_add=fir_nopipe_51.v
 circuit_list_add=fir_nopipe_52.v
 
-
 # Add architectures to list to sweep
 arch_list_add=k6_frac_2ripple_N8_22nm.xml
 arch_list_add=k6_frac_2uripple_N8_22nm.xml
@@ -114,6 +112,5 @@ parse_file=vpr_chain.txt
 
 # Pass requirements
 pass_requirements_file=pass_requirements_chain.txt
-
 
 script_params=-lut_size 6 -routing_failure_predictor off

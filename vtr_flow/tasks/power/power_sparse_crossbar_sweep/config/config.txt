@@ -59,7 +59,6 @@ arch_list_add=k6_N10_I40_Fi6_L4_frac0_ff1_C40_45nm.xml
 arch_list_add=k6_N10_I40_Fi6_L4_frac0_ff1_C45_45nm.xml
 arch_list_add=k6_N10_I40_Fi6_L4_frac0_ff1_C50_45nm.xml
 
-
 # Parse info and how to parse
 parse_file=vpr_power_detailed.txt
 

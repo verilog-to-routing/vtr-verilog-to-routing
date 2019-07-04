@@ -9,9 +9,6 @@ circuits_dir=benchmarks/verilog
 # Path to directory of architectures to use
 archs_dir=arch/
 
-# Path to directory of SDC files to use
-sdc_dir=sdc
-
 # Add circuits to list to sweep
 circuit_list_add=mkSMAdapter4B.v
 circuit_list_add=or1200.v
@@ -21,8 +18,6 @@ circuit_list_add=sha.v
 # The boundtop.v circuit will not work with architectures without ram blocks. Odin will synthesize large LUTs that will cause a variable to overflow in current version of abc
 # It should work with the updated version (change from "char" to "int" which solves overflow problem) 
 #circuit_list_add=boundtop.v
-
-
 
 # Add architectures to list to sweep
 arch_list_add=timing/k6_frac_N10_frac_chain_mem32K_40nm.xml

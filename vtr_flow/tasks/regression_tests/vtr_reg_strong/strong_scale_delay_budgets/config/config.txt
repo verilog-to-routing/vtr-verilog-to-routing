@@ -8,9 +8,6 @@ circuits_dir=benchmarks/verilog
 # Path to directory of architectures to use
 archs_dir=arch/timing
 
-# Path to directory of SDC files to use
-sdc_dir=sdc/samples
-
 # Add circuits to list to sweep
 circuit_list_add=stereovision3.v
 
@@ -27,4 +24,4 @@ qor_parse_file=qor_fixed_chan_width.txt
 pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 # Script parameters
-script_params = --routing_budgets_algorithm scale_delay --route_chan_width 100
+script_params = --routing_budgets_algorithm scale_delay --route_chan_width 100 -sdc_file /sdc/samples/stereovision3.sdc

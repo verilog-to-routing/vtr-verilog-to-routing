@@ -8,9 +8,6 @@ circuits_dir=benchmarks/blif/4
 # Path to directory of architectures to use
 archs_dir=arch/bidir
 
-# Path to directory of SDC files to use
-sdc_dir=sdc
-
 # Add circuits to list to sweep
 circuit_list_add=dsip.blif
 circuit_list_add=elliptic.blif

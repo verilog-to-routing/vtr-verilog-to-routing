@@ -9,9 +9,6 @@ circuits_dir=benchmarks/blif/wiremap6
 # Path to directory of architectures to use
 archs_dir=arch/timing
 
-# Path to directory of SDC files to use
-sdc_dir=sdc
-
 # Add circuits to list to sweep
 circuit_list_add=alu4.pre-vpr.blif
 circuit_list_add=apex2.pre-vpr.blif
@@ -33,7 +30,6 @@ circuit_list_add=s38584.1.pre-vpr.blif
 circuit_list_add=seq.pre-vpr.blif
 circuit_list_add=spla.pre-vpr.blif
 circuit_list_add=tseng.pre-vpr.blif
-
 
 # Add architectures to list to sweep
 arch_list_add=k6_frac_N10_40nm.xml
