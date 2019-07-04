@@ -731,6 +731,8 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 			oassert(sym_node->type == NUMBERS);
 			width = sym_node->types.vnumber->size();
 			return_string = get_name_of_pins_number(sym_node, 0, width);
+
+			free_whole_tree(sym_node);
 		}
 	}
 	else if (var_node->type == NUMBERS)
