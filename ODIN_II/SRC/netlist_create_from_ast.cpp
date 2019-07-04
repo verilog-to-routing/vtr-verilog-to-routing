@@ -2456,15 +2456,15 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 	{
 		int port_size = 0;
 		// VAR_DECLARE_LIST(child[i])->VAR_DECLARE_PORT(child[0])->VAR_DECLARE_input-or-output(child[0])
-		ast_node_t *module_var_node = module_list->children[i]->children[0];
+		ast_node_t *module_var_node = module_list->children[i];
 		// MODULE_CONNECT_LIST(child[i])->MODULE_CONNECT(child[1]) // child[0] is for aliasing
 		ast_node_t *module_instance_var_node = module_instance_list->children[i]->children[1];
 
 		if (
 			   // skip inputs on pass 1
-			   ((PASS == INSTANTIATE_DRIVERS) && (module_list->children[i]->children[0]->types.variable.is_input))
+			   ((PASS == INSTANTIATE_DRIVERS) && (module_list->children[i]->types.variable.is_input))
 			   // skip outputs on pass 2
-			|| ((PASS == ALIAS_INPUTS) && (module_list->children[i]->children[0]->types.variable.is_output))
+			|| ((PASS == ALIAS_INPUTS) && (module_list->children[i]->types.variable.is_output))
 		)
 		{
 			continue;
@@ -2520,7 +2520,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 		for (j = 0; j < port_size; j++)
 		{
 
-			if (module_list->children[i]->children[0]->types.variable.is_input)
+			if (module_var_node->types.variable.is_input)
 			{
 				/* IF - this spot in the module list is an input, then we need to find it in the
 				 * string cache (as its old name), check if the new_name (the instantiation name)
@@ -2539,7 +2539,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 					vtr::free(name_of_module_instance_of_input);
 
 					/* make the new string for the alias name - has to be a identifier in the instantiated modules old names */
-					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_list->children[i]->children[0], j);
+					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_var_node, j);
 					alias_name = make_full_ref_name(instance_name_prefix,
 							module_instance->children[0]->types.identifier,
 							module_instance->children[1]->children[0]->types.identifier,
@@ -2556,7 +2556,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 					full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_module_instance_of_input, -1);
 					vtr::free(name_of_module_instance_of_input);
 
-					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_list->children[i]->children[0], 0);
+					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_var_node, 0);
 					alias_name = make_full_ref_name(instance_name_prefix,
 							module_instance->children[0]->types.identifier,
 							module_instance->children[1]->children[0]->types.identifier,
@@ -2636,13 +2636,13 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				if (module_instance_list->children[i]->children[0] != NULL)
 				{
 					if (strcmp(module_instance_list->children[i]->children[0]->types.identifier,
-							module_list->children[i]->children[0]->children[0]->types.identifier) != 0
+							module_var_node->children[0]->types.identifier) != 0
 					)
 					{
-						error_message(NETLIST_ERROR, module_list->children[i]->children[0]->line_number, module_list->children[i]->children[0]->file_number,
+						error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
 								"This module entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
 								module_instance_list->children[i]->children[0]->types.identifier,
-								module_list->children[i]->children[0]->children[0]->types.identifier
+								module_var_node->children[0]->types.identifier
 						);
 					}
 				}
@@ -2650,7 +2650,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				vtr::free(full_name);
 				vtr::free(alias_name);
 			}
-			else if (module_list->children[i]->children[0]->types.variable.is_output)
+			else if (module_var_node->types.variable.is_output)
 			{
 				/* ELSE IF - this is an output pin from the module.  We need to alias this output
 				 * pin with it's calling name here so that everyone can see it at this level */
@@ -2667,7 +2667,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 					full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_module_instance_of_input, -1);
 					vtr::free(name_of_module_instance_of_input);
 
-					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_list->children[i]->children[0], j);
+					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_var_node, j);
 					alias_name = make_full_ref_name(instance_name_prefix,
 							module_instance->children[0]->types.identifier,
 							module_instance->children[1]->children[0]->types.identifier, name_of_module_instance_of_input, -1);
@@ -2681,7 +2681,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 					full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_module_instance_of_input, -1);
 					vtr::free(name_of_module_instance_of_input);
 
-					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_list->children[i]->children[0], 0);
+					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_var_node, 0);
 					alias_name = make_full_ref_name(instance_name_prefix,
 							module_instance->children[0]->types.identifier,
 							module_instance->children[1]->children[0]->types.identifier, name_of_module_instance_of_input, -1);
@@ -2692,7 +2692,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				/* check if the instantiation pin exists. */
 				if ((sc_spot_output = sc_lookup_string(output_nets_sc, alias_name)) == -1)
 				{
-					error_message(NETLIST_ERROR, module_list->children[i]->children[0]->line_number, module_list->children[i]->children[0]->file_number,
+					error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
 							"This output (%s) must exist...must be an error\n", alias_name);
 				}
 
@@ -2726,12 +2726,12 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				/* IF the designer users port names then make sure they line up */
 				if (module_instance_list->children[i]->children[0] != NULL)
 				{
-					if (strcmp(module_instance_list->children[i]->children[0]->types.identifier, module_list->children[i]->children[0]->children[0]->types.identifier) != 0)
+					if (strcmp(module_instance_list->children[i]->children[0]->types.identifier, module_var_node->children[0]->types.identifier) != 0)
 					{
-						error_message(NETLIST_ERROR, module_list->children[i]->children[0]->line_number, module_list->children[i]->children[0]->file_number,
+						error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
 								"This module entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
 								module_instance_list->children[i]->children[0]->types.identifier,
-								module_list->children[i]->children[0]->children[0]->types.identifier
+								module_var_node->children[0]->types.identifier
 						);
 					}
 				}
@@ -2785,16 +2785,16 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 
 		int port_size = 0;
 		// VAR_DECLARE_LIST(child[i])->VAR_DECLARE_PORT(child[0])->VAR_DECLARE_input-or-output(child[0])
-		ast_node_t *module_var_node = module_list->children[i]->children[0];
-    ast_node_t *module_instance_var_node = NULL;
+		ast_node_t *module_var_node = module_list->children[i];
+    	ast_node_t *module_instance_var_node = NULL;
 
         if(i > 0) module_instance_var_node = module_instance_list->children[i]->children[1];
 
 		if (
 			   // skip inputs on pass 1
-			   ((PASS == INSTANTIATE_DRIVERS) && (module_list->children[i]->children[0]->types.variable.is_input))
+			   ((PASS == INSTANTIATE_DRIVERS) && (module_var_node->types.variable.is_input))
 			   // skip outputs on pass 2
-			|| ((PASS == ALIAS_INPUTS) && (module_list->children[i]->children[0]->types.variable.is_output))
+			|| ((PASS == ALIAS_INPUTS) && (module_var_node->types.variable.is_output))
 		)
 		{
 			continue;
@@ -2853,7 +2853,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 		}
 		for (j = 0; j < port_size; j++)
 		{
-			if (i > 0 && module_list->children[i]->children[0]->types.variable.is_input)
+			if (i > 0 && module_var_node->types.variable.is_input)
 			{
 				/* IF - this spot in the module list is an input, then we need to find it in the
 				 * string cache (as its old name), check if the new_name (the instantiation name)
@@ -2872,7 +2872,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 					vtr::free(name_of_module_instance_of_input);
 
 					/* make the new string for the alias name - has to be a identifier in the instantiated modules old names */
-					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_list->children[i]->children[0], j);
+					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_var_node, j);
 					alias_name = make_full_ref_name(instance_name_prefix,
 							module_instance->children[0]->types.identifier,
 							module_instance->children[1]->children[0]->types.identifier,
@@ -2891,7 +2891,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 					full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_module_instance_of_input, -1);
 					vtr::free(name_of_module_instance_of_input);
 
-					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_list->children[i]->children[0], 0);
+					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_var_node, 0);
 					alias_name = make_full_ref_name(instance_name_prefix,
 							module_instance->children[0]->types.identifier,
 							module_instance->children[1]->children[0]->types.identifier,
@@ -2974,13 +2974,13 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				if (module_instance_list->children[i]->children[0] != NULL)
 				{
 					if (strcmp(module_instance_list->children[i]->children[0]->types.identifier,
-							module_list->children[i]->children[0]->children[0]->types.identifier) != 0
+							module_var_node->children[0]->types.identifier) != 0
 					)
 					{
-						error_message(NETLIST_ERROR, module_list->children[i]->children[0]->line_number, module_list->children[i]->children[0]->file_number,
+						error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
 								"This module entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
 								module_instance_list->children[i]->children[0]->types.identifier,
-								module_list->children[i]->children[0]->children[0]->types.identifier
+								module_var_node->children[0]->types.identifier
 						);
 					}
 				}
@@ -2988,7 +2988,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				vtr::free(full_name);
 				vtr::free(alias_name);
 			}
-			else if (i == 0 && module_list->children[i]->children[0]->types.variable.is_output)
+			else if (i == 0 && module_var_node->types.variable.is_output)
 			{
 				/* ELSE IF - this is an output pin from the module.  We need to alias this output
 				 * pin with it's calling name here so that everyone can see it at this level */
@@ -3009,7 +3009,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 					//vtr::free(name_of_module_instance_of_input);
 
 
-					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_list->children[i]->children[0], j);
+					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_var_node, j);
 
 					alias_name = make_full_ref_name(instance_name_prefix,
 							module_instance->children[0]->types.identifier,
@@ -3030,7 +3030,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 
 					//vtr::free(name_of_module_instance_of_input);
 
-					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_list->children[i]->children[0], 0);
+					name_of_module_instance_of_input = get_name_of_var_declare_at_bit(module_var_node, 0);
 
 					alias_name = make_full_ref_name(instance_name_prefix,
 							module_instance->children[0]->types.identifier,
@@ -3042,7 +3042,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				/* check if the instantiation pin exists. */
 				if ((sc_spot_output = sc_lookup_string(output_nets_sc, alias_name)) == -1)
 				{
-					error_message(NETLIST_ERROR, module_list->children[i]->children[0]->line_number, module_list->children[i]->children[0]->file_number,
+					error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
 							"This output (%s) must exist...must be an error\n", alias_name);
 				}
 
@@ -3079,12 +3079,12 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				/* IF the designer users port names then make sure they line up */
 				if (i > 0 && module_instance_list->children[i]->children[0] != NULL)
 				{
-					if (strcmp(module_instance_list->children[i]->children[0]->types.identifier, module_list->children[i]->children[0]->children[0]->types.identifier) != 0)
+					if (strcmp(module_instance_list->children[i]->children[0]->types.identifier, module_var_node->children[0]->types.identifier) != 0)
 					{
-						error_message(NETLIST_ERROR, module_list->children[i]->children[0]->line_number, module_list->children[i]->children[0]->file_number,
+						error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
 								"This module entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
 								module_instance_list->children[i]->children[0]->types.identifier,
-								module_list->children[i]->children[0]->children[0]->types.identifier
+								module_var_node->children[0]->types.identifier
 						);
 					}
 				}
@@ -3624,7 +3624,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 		int i;
 		for (i = 0; i < potential_clocks->count; i++)
 		{
-			nnet_t *temp_net;
+			nnet_t *temp_net = NULL;
 			/* searching for the clock with no net */
 			long sc_spot = sc_lookup_string(output_nets_sc, potential_clocks->pins[i]->name);
 			if (sc_spot == -1)
@@ -3697,7 +3697,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 
 			/* clean up non-blocking */
 			if (pin->node && pin->node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
-				free_nnode(pin->node);
+				pin->node = free_nnode(pin->node);
 			}
 
 			/* HERE create the ff node and hookup everything */
