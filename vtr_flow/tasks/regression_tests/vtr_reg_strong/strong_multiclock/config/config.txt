@@ -9,9 +9,6 @@ circuits_dir=tasks/regression_tests/vtr_reg_strong/strong_multiclock/config
 # Path to directory of architectures to use
 archs_dir=arch/timing
 
-# Path to directory of SDC files to use
-sdc_dir=tasks/regression_tests/vtr_reg_strong/strong_multiclock/config
-
 # Add circuits to list to sweep
 circuit_list_add=multiclock.blif
 
@@ -27,5 +24,5 @@ qor_parse_file=qor_multiclock.txt
 # Pass requirements
 pass_requirements_file=pass_requirements_multiclock.txt
 
-script_params=-starting_stage vpr
+script_params=-starting_stage vpr -sdc_file /tasks/regression_tests/vtr_reg_strong/strong_multiclock/config/multiclock.sdc
 

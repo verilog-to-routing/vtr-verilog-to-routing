@@ -8,9 +8,6 @@ circuits_dir=benchmarks/microbenchmarks
 # Path to directory of architectures to use
 archs_dir=arch/routing_mode
 
-# Path to directory of SDC files to use
-sdc_dir = sdc
-
 # Add circuits to list to sweep
 circuit_list_add=ndff.blif
 

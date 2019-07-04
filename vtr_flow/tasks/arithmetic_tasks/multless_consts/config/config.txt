@@ -140,7 +140,6 @@ circuit_list_add=mult_126.v
 circuit_list_add=mult_127.v
 circuit_list_add=mult_128.v
 
-
 # Add architectures to list to sweep
 arch_list_add=fixed_k6_N8_gate_boost_0.2V_22nm.xml
 arch_list_add=fixed_k6_N8_lookahead_chain_gate_boost_0.2V_22nm.xml
@@ -158,6 +157,5 @@ parse_file=vpr_chain.txt
 
 # Pass requirements
 pass_requirements_file=pass_requirements_chain.txt
-
 
 script_params=-lut_size 6 -routing_failure_predictor off

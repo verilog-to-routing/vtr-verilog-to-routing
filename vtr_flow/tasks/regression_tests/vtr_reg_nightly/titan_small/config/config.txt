@@ -9,13 +9,9 @@ circuits_dir=benchmarks/titan_blif
 # Path to directory of architectures to use
 archs_dir=arch/titan
 
-# Path to directory of SDC files to use
-sdc_dir=sdc
-
 # Add circuits to list to sweep
 circuit_list_add=neuron_stratixiv_arch_timing.blif
 circuit_list_add=stereo_vision_stratixiv_arch_timing.blif
-
 
 # Add architectures to list to sweep
 arch_list_add=stratixiv_arch.timing.xml

@@ -135,9 +135,23 @@ my $odin_run_simulation = 0;
 while ( scalar(@ARGV) != 0 ) { #While non-empty
     my $token = shift(@ARGV);
 	if ( $token eq "-sdc_file" ) {
-		$sdc_file_path = expand_user_path( shift(@ARGV) );
+            $sdc_file_path = shift(@ARGV);#let us take the user input as an absolute path 
+        if ( !-e $sdc_file_path) { #check if absolute path exists
+            $sdc_file_path = "${vtr_flow_path}/${sdc_file_path}"; #assume this is a relative path
+        } 
+        if ( !-e $sdc_file_path) { #check if relative path exists
+            die 
+		        "Error: Invalid SDC file specified";
+        } 
 	} elsif ( $token eq "-fix_pins" and $ARGV[0] ne "random") {
-		$pad_file_path = $vtr_flow_path . shift(@ARGV);
+            $pad_file_path = shift(@ARGV);
+        if ( !-e $pad_file_path) { #check if absolute path exists
+            $pad_file_path = "${vtr_flow_path}/${pad_file_path}"; #assume this is a relative path
+        } 
+        if ( !-e $pad_file_path) { #check if relative path exists
+            die 
+		        "Error: Invalid pad file specified";
+        } 
 	} elsif ( $token eq "-starting_stage" ) {
 		$starting_stage = stage_index( shift(@ARGV) );
 	} elsif ( $token eq "-ending_stage" ) {
@@ -1539,12 +1553,12 @@ sub run_vpr {
     push(@vpr_args, "--circuit_file"	);
     push(@vpr_args, $args->{circuit_file});
 
-    if (defined $args->{sdc_file} && -e $args->{sdc_file}){
+    if (defined $args->{sdc_file}){
         push(@vpr_args, "--sdc_file" );
         push(@vpr_args, $args->{sdc_file});
     }
 
-    if (defined $args->{pad_file} && -e $args->{pad_file}){
+    if (defined $args->{pad_file}){
         push(@vpr_args, "--fix_pins" );
         push(@vpr_args, $args->{pad_file});
     }

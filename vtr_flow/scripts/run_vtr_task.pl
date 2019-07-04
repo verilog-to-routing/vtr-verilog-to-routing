@@ -205,7 +205,6 @@ exit $num_total_failures;
 sub generate_single_task_actions {
 	my $circuits_dir;
 	my $archs_dir;
-	my $sdc_dir        = "sdc";
 	my $script_default = "run_vtr_flow.pl";
 	my $script         = $script_default;
 	my $script_path;
@@ -251,8 +250,6 @@ sub generate_single_task_actions {
 			$circuits_dir = $value;
 		} elsif ( $key eq "archs_dir" ) {
 			$archs_dir = $value;
-		} elsif ( $key eq "sdc_dir" ) {
-			$sdc_dir = $value;
 		} elsif ( $key eq "circuit_list_add" ) {
 			push( @circuits_list, $value );
 		} elsif ( $key eq "arch_list_add" ) {
@@ -295,7 +292,6 @@ sub generate_single_task_actions {
 
 	$circuits_dir = expand_user_path($circuits_dir);
 	$archs_dir    = expand_user_path($archs_dir);
-	$sdc_dir      = expand_user_path($sdc_dir);
 
 	if ( -d "$vtr_flow_path/$circuits_dir" ) {
 		$circuits_dir = "$vtr_flow_path/$circuits_dir";
@@ -313,15 +309,6 @@ sub generate_single_task_actions {
 	}
 	else {
 		die "Archs directory not found ($archs_dir)";
-	}
-
-	if ( -d "$vtr_flow_path/$sdc_dir" ) {
-		$sdc_dir = "$vtr_flow_path/$sdc_dir";
-	}
-	elsif ( -d $sdc_dir ) {
-	}
-	else {
-		$sdc_dir = "$vtr_flow_path/sdc";
 	}
 
 	(@circuits_list) or die "No circuits specified for task $task";
@@ -454,13 +441,6 @@ sub generate_single_task_actions {
 
                 #Build the command to run
                 my $command = "$script_path $circuits_dir/$circuit $archs_dir/$arch $expect_fail -name $name $full_params";
-
-                #Determine the SDC file name
-                my $sdc_name = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
-                my $sdc = "$sdc_dir/$sdc_name";
-                if( -r $sdc) {
-                    $command .= " --sdc_file $sdc";
-                }
 
                 #Add a hint about the minimum channel width (potentially saves run-time)
                 my $expected_min_W = ret_expected_min_W($circuit, $arch, $full_params_dirname, $golden_results_file);
