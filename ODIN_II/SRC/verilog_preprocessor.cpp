@@ -9,6 +9,7 @@
 #include "odin_util.h"
 #include <stdbool.h>
 #include <regex>
+#include <string>
 
 #include "odin_buffer.hpp"
 
@@ -75,7 +76,6 @@ void push(veri_flag_stack *stack, int flag);
 
 /* General Utility methods ------------------------------------------------- */
 static char* get_line(FILE *source, bool *eof, bool *multiline_comment, const char *one_line_comment, const char *n_line_comment_ST, const char *n_line_comment_END);
-FILE* open_source_file(char* filename, std::string parent_path);
 
 
 /* Globals */
@@ -323,39 +323,6 @@ int veri_is_defined(const char * symbol)
 }
 
 /*
- * Return an open file handle
- * if the file is not in the pwd try the paths indicated by char* list_of_file_names int current_parse_file
- *
- * Return NULL if unable to find and open the file
- */
-FILE* open_source_file(char* filename, std::string path)
-{
-	auto loc = path.find_last_of('/');
-	if (loc != std::string::npos) /* No other path to try to find the file */
-		path = path.substr(0,loc+1);
-	
-	path += filename;
-
-	// look in the directory where the file with the include directory resides in
-	FILE* src_file = fopen(path.c_str(), "r");
-	if (src_file != NULL)
-		return src_file;
-
-	// else Look for the file in the PWD as a last resort TODO: this should go away... not standard behavior
-	src_file = fopen(filename, "r");
-	if (src_file != NULL)
-	{
-		fprintf(stderr, "Warning: Unable to find %s, opening in current working directory instead\n",
-				path.c_str());
-		return src_file;
-	}
-
-
-
-	return NULL;
-}
-
-/*
  * Bootstraps our preprocessor
  */
 FILE* veri_preproc(FILE *source)
@@ -511,7 +478,22 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 								 */	
 
 								token = strtok(NULL, "\"");
-								FILE *included_file = open_source_file(token,current_include->path);
+
+								std::string current_path = current_include->path;
+								auto loc = current_path.find_last_of('/');
+								if (loc != std::string::npos) /* No other path to try to find the file */
+								{
+									current_path = current_path.substr(0,loc+1);
+								}
+								else
+								{
+									current_path = "";
+								}
+
+								std::string file_path = current_path + token;
+								
+								FILE* included_file = fopen(file_path.c_str(), "r");
+		
 
 								/* If we failed to open the included file handle the error */
 								if (!included_file)
@@ -521,7 +503,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 									perror("included_file : fopen");
 									/*return erro or exit ? */
 								}
-								else if (NULL != (new_include = add_veri_include(token, line_number, current_include)))
+								else if (NULL != (new_include = add_veri_include(file_path.c_str(), line_number, current_include)))
 								{
 									printf("Including file %s\n", new_include->path);
 									veri_preproc_bootstraped(included_file, preproc_producer, new_include);
