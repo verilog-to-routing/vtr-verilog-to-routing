@@ -320,7 +320,6 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     vpr_create_device(vpr_setup, arch);
 
     vpr_init_graphics(vpr_setup, arch);
-    std::cout << "no seg fault here 3" << std::endl;
     { //Place
         bool place_success = vpr_place_flow(vpr_setup, arch);
 
@@ -329,16 +328,13 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
             return false; //Unimplementable
         }
     }
-    std::cout << "no seg fault here 4" << std::endl;
     RouteStatus route_status;
     { //Route
         route_status = vpr_route_flow(vpr_setup, arch);
     }
-    std::cout << "no seg fault here 5" << std::endl;
     { //Analysis
         vpr_analysis_flow(vpr_setup, arch, route_status);
     }
-    std::cout << "no seg fault here 6" << std::endl;
     vpr_close_graphics(vpr_setup);
 
     return route_status.success();
@@ -688,7 +684,6 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         }
 
         //Update interactive graphics
-        std::cout << "update vpr api" << std::endl;
         update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
 
         free_net_delay(net_delay, &net_delay_ch);

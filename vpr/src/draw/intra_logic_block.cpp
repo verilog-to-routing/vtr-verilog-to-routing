@@ -84,14 +84,7 @@ void draw_internal_alloc_blk() {
          * of physical logic block, in order to uniquely identify each sub-block in
          * the pb_graph of that type.
          */
-        //uncomment here!
-//        std::cout << "resize from " << draw_coords->blk_info.at(i).subblk_array.size() << " to " << pb_graph_head->total_pb_pins << std::endl;
         draw_coords->blk_info.at(i).subblk_array.resize(pb_graph_head->total_pb_pins);
-//        for(unsigned j = 0; j < draw_coords->blk_info.at(i).subblk_array.size() && j < 5; j++){
-//            ezgl::rectangle test = draw_coords->blk_info.at(i).subblk_array[j];
-//            std::cout << "block " << j;
-//            std::cout << " (" << test.m_first.x << ", " << test.m_first.y << ") (" << test.m_second.x << ", " << test.m_second.y << ")" << std::endl;
-//        }
         
     }
 }
@@ -118,8 +111,6 @@ void draw_internal_init_blk() {
         
         
         // set the clb dimensions
-        std::cout << "original value : (" << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).top_right().x << ", " << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).top_right().y;
-        std::cout << "), (" << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).bottom_left().x << ", " << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).bottom_left().y << ")!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
         ezgl::rectangle& clb_bbox = draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0);
         ezgl::point2d bot_left = clb_bbox.bottom_left();
         ezgl::point2d top_right = clb_bbox.top_right();
@@ -148,8 +139,6 @@ void draw_internal_init_blk() {
 		);
                 
         clb_bbox = ezgl::rectangle(bot_left, top_right);
-        std::cout << "new value assigned : (" << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).top_right().x << ", " << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).top_right().y;
-        std::cout << "), (" << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).bottom_left().x << ", " << draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0).bottom_left().y << ")!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
         draw_internal_load_coords(type_descriptor_index, pb_graph_head_node,
                 clb_bbox.width(), clb_bbox.height());
         
@@ -166,7 +155,6 @@ void draw_internal_draw_subblk(ezgl::renderer &g) {
     if (!draw_state->show_blk_internal) {
         return;
     }
-    std::cout << "draw_internal_draw_subblk triggered" << std::endl;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -363,23 +351,17 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     ezgl::rectangle temp = draw_coords->get_pb_bbox(clb_index, *pb->pb_graph_node);
     ezgl::rectangle abs_bbox = temp + parent_bbox.bottom_left();
         
-//    ezgl::rectangle abs_bbox = (draw_coords->get_pb_bbox(clb_index, *pb->pb_graph_node)) + parent_bbox.bottom_left();//bug here
     // if we've gone too far, don't draw anything
     if (pb_type->depth > draw_state->show_blk_internal) {
         return;
     }
-//    std::cout << "show_blk_internal level : " << draw_state->show_blk_internal << std::endl;
-//    std::cout << "current level : " << pb_type->depth << std::endl;
-//    std::cout << "draw_internal_pb triggered !!!!!!!!!!!!!!!!!!!!" << std::endl;
+    
     /// first draw box ///
-//    std::cout << "temp : (" << temp.bottom_left().x << ", " << temp.bottom_left().y << ") (" << temp.top_right().x << ", " << temp.top_right().y << ")" <<std::endl;
-//    std::cout << "abs_bbox : (" << abs_bbox.bottom_left().x << ", " << abs_bbox.bottom_left().y << ") (" << abs_bbox.top_right().x << ", " << abs_bbox.top_right().y << ")" <<std::endl;
 
     if (pb_type->depth == 0) {
         if (!is_top_lvl_block_highlighted(clb_index, type)) {
             // if this is a top level pb, and only if it isn't selected (ie. a funny colour),
             // overwrite it. (but stil draw the text)
-//            std::cout << "abs_bbox size " << abs_bbox.height() << " " << abs_bbox.width() << std::endl;
             g.set_color(ezgl::WHITE);
             g.fill_rectangle(abs_bbox);
             g.set_color(ezgl::BLACK);
