@@ -71,6 +71,7 @@ constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.10;
+const char *initial_message = NULL;
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
@@ -365,7 +366,7 @@ static void draw_router_rr_costs(ezgl::renderer &g);
 
 static void draw_rr_costs(ezgl::renderer &g, const std::vector<float>& rr_costs, bool lowest_cost_first=true);
 
-/********************** new EZGL Subroutines Local to this Module ********************/
+ezgl::rectangle compute_fit_window();
 void draw_main_canvas(ezgl::renderer &g);
 void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application *app);
 void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application *app);
@@ -373,7 +374,6 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application *app);
 void initial_setup_ROUTING_to_PLACEMENT(ezgl::application *app);
 void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *app);
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application *app);
-ezgl::rectangle compute_fit_window();
 
 /********************** Subroutine definitions ******************************/
 
@@ -458,11 +458,15 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application *app){
     app->create_button("Blk Internal", 3, toggle_blk_internal);
     app->create_button("Blk Pin Util", 4, toggle_block_pin_util);
     app->create_button("Place Macros", 5, toggle_placement_macros);
+    
+//    app->update_message(initial_message);
 }
 
 void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application *app){
     initial_setup_NO_PICTURE_to_PLACEMENT(app);
     app->create_button("Crit. Path", 6, toggle_crit_path);
+    
+//    app->update_message(initial_message);
 }
 
 void initial_setup_PLACEMENT_to_ROUTING(ezgl::application *app){
@@ -473,6 +477,8 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application *app){
     app->create_button("Route BB", 5, toggle_routing_bounding_box);
     app->create_button("Routing Util", 6, toggle_routing_util);
     app->create_button("Router Cost", 7, toggle_router_rr_costs);
+    
+//    app->update_message(initial_message);
 }
 
 void initial_setup_ROUTING_to_PLACEMENT(ezgl::application *app){
@@ -483,6 +489,8 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application *app){
     app->destroy_button("Route BB");
     app->destroy_button("Route Util");
     app->destroy_button("Router Cost");
+    
+//    app->update_message(initial_message);
 }
 
 void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *app){
@@ -496,11 +504,15 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *app){
     app->create_button("Route BB", 9, toggle_routing_bounding_box);
     app->create_button("Routing Util", 10, toggle_routing_util);
     app->create_button("Router Cost", 11, toggle_router_rr_costs);
+    
+//    app->update_message(initial_message);
 }
 
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application *app){
     initial_setup_NO_PICTURE_to_ROUTING(app);
     app->create_button("Crit. Path", 6, toggle_crit_path);
+    
+//    app->update_message(initial_message);
 }
 
 void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type pic_on_screen_val,
@@ -513,86 +525,8 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
     
     if (!draw_state->show_graphics) /* Graphics turned off */
         return;
-    
-    
-    
-        /* Save the main message. */
-    
-//    vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
-    
-//    draw_state->setup_timing_info = setup_timing_info;
-    
-//    draw_state->pic_on_screen = pic_on_screen_val;
-//    application.update_message(msg);//can only do this within init_Setup
-    
-    
-    
-    
-    
-
-    ezgl::rectangle fit_window = compute_fit_window();
-    /* If it's the type of picture displayed has changed, set up the proper  *
-     * buttons.                                                              */
-    ezgl::point2d margin(fit_window.width()/6, fit_window.height()/6);
-    ezgl::rectangle initial_world = {fit_window.m_first + margin, fit_window.m_second - margin};
-    
-    if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
-        if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
-            vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
-            draw_state->setup_timing_info = setup_timing_info;
-            draw_state->pic_on_screen = pic_on_screen_val;
             
-            //Placement first to open
-            if(setup_timing_info) {
-                application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                application.run(initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-            }else{
-                application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                application.run(initial_setup_NO_PICTURE_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-            }
-        } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
-            //Routing, opening after placement
-            vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
-            draw_state->setup_timing_info = setup_timing_info;
-            draw_state->pic_on_screen = pic_on_screen_val;
-            
-            application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-            application.run(initial_setup_PLACEMENT_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-        } else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
-            vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
-            draw_state->setup_timing_info = setup_timing_info;
-            draw_state->pic_on_screen = pic_on_screen_val;
-            
-            //Placement, opening after routing
-            application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-            application.run(initial_setup_ROUTING_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-        } else if (pic_on_screen_val == ROUTING
-                && draw_state->pic_on_screen == NO_PICTURE) {
-            vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
-            draw_state->setup_timing_info = setup_timing_info;
-            draw_state->pic_on_screen = pic_on_screen_val;
-            
-            //Routing opening first
-            if(setup_timing_info) {
-                application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                application.run(initial_setup_NO_PICTURE_to_ROUTING_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-            }else{
-                application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                application.run(initial_setup_NO_PICTURE_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-            }
-        }
-    }
-
-//    /* Save the main message. */
-//    
-//    vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
-//    
-//    draw_state->setup_timing_info = setup_timing_info;
-//    
-//    draw_state->pic_on_screen = pic_on_screen_val;
-//    application.update_message(msg);//can only do this within init_Setup
-    
-    //Has the user asked us to pause at the next screen updated?
+        //Has the user asked us to pause at the next screen updated?
     bool forced_pause = g_vpr_ctx.forced_pause();
     
     if (int(priority) >= draw_state->gr_automode || forced_pause) {
@@ -600,13 +534,61 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
             VTR_LOG("Starting interactive graphics (due to user interrupt)\n");
             g_vpr_ctx.set_forced_pause(false); //Reset pause flag
         }
-//        set_mouse_move_input(true); //Enable act_on_mouse_over callback
-//        set_keypress_input(true); //Enable act_on_mouse_over callback
-//        event_loop(highlight_blocks, act_on_mouse_over, act_on_key_press, drawscreen);
         
-         
+        vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
+        ezgl::rectangle fit_window = compute_fit_window();
+        /* If it's the type of picture displayed has changed, set up the proper  *
+         * buttons.                                                              */
+        ezgl::point2d margin(fit_window.width()/6, fit_window.height()/6);
+        ezgl::rectangle initial_world = {fit_window.m_first + margin, fit_window.m_second - margin};
+
+        if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
+            if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
+                draw_state->pic_on_screen = pic_on_screen_val;
+
+                //Placement first to open
+                if(setup_timing_info) {
+                    draw_state->setup_timing_info = setup_timing_info;
+                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                    application.run(initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
+                }else{
+                    draw_state->setup_timing_info = setup_timing_info;
+                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                    application.run(initial_setup_NO_PICTURE_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
+                }
+            } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
+                //Routing, opening after placement
+                draw_state->setup_timing_info = setup_timing_info;
+                draw_state->pic_on_screen = pic_on_screen_val;
+
+                application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                application.run(initial_setup_PLACEMENT_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
+            } else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
+                draw_state->setup_timing_info = setup_timing_info;
+                draw_state->pic_on_screen = pic_on_screen_val;
+
+                //Placement, opening after routing
+                application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                application.run(initial_setup_ROUTING_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
+            } else if (pic_on_screen_val == ROUTING
+                    && draw_state->pic_on_screen == NO_PICTURE) {
+                draw_state->pic_on_screen = pic_on_screen_val;
+
+                //Routing opening first
+                if(setup_timing_info) {
+                    draw_state->setup_timing_info = setup_timing_info;
+                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                    application.run(initial_setup_NO_PICTURE_to_ROUTING_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
+                }else{
+                    draw_state->setup_timing_info = setup_timing_info;
+                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                    application.run(initial_setup_NO_PICTURE_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
+                }
+            }
+        }
+    
     } else {
-        //flushinput();
+        application.refresh_drawing();
     }
 }
 
@@ -1007,7 +989,6 @@ static void drawplace(ezgl::renderer &g) {
             }
         }
     }
-    g.set_line_dash(ezgl::line_dash::none);
 }
 
 static void drawnets(ezgl::renderer &g) {
@@ -3594,7 +3575,6 @@ ezgl::color lighten_color(ezgl::color color, float amount) {
 static void draw_block_pin_util() {
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->show_blk_pin_util == DRAW_NO_BLOCK_PIN_UTIL) {
-        std::cout << "DRAW_NO_BLOCK_PIN_UTIL drawn, returned" << std::endl;
         return;
     }
     
