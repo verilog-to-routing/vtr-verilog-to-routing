@@ -643,7 +643,7 @@ public:
 
     VNumber(size_t len, BitSpace::bit_value_t initial_bits, bool input_sign)
     {
-        this->bitstring = new BitSpace::VerilogBits(len, initial_bits);
+        this->bitstring = BitSpace::VerilogBits(len, initial_bits);
         this->sign = input_sign;
     }
     
