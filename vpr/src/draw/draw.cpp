@@ -383,7 +383,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 {
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
-    
+
     /* Sets the static show_graphics and gr_automode variables to the    *
      * desired values.  They control if graphics are enabled and, if so, *
      * how often the user is prompted for input.                         */
