@@ -80,8 +80,6 @@ void remove_generate(ast_node_t *node)
 
 int simplify_ast_module(ast_node_t **ast_module)
 {
-	/* reduce parameters with their values if they have been set */
-	reduce_parameter(*ast_module);
 	/* for loop support */
 	unroll_loops(ast_module);
 	/* remove unused node preventing module instantiation */
@@ -113,8 +111,6 @@ void reduce_assignment_expression(ast_node_t *ast_module)
 		if (check_tree_operation(list_assign[j]->children[1]) && (list_assign[j]->children[1]->num_children > 0))
 		{
 			store_exp_list(list_assign[j]->children[1]);
-			if (deal_with_bracket(list_assign[j]->children[1])) // there are multiple brackets multiplying -- ()*(), stop expanding brackets which may not simplify AST but make it mroe complex
-				return;
 
 			if (simplify_expression())
 			{
@@ -750,142 +746,6 @@ void free_exp_list()
 }
 
 /*---------------------------------------------------------------------------
- * (function: deal_with_bracket)
- *-------------------------------------------------------------------------*/
-bool deal_with_bracket(ast_node_t *node)
-{
-	std::vector<int> list_bracket;
-
-	recursive_tree(node, list_bracket);
-	if (!check_mult_bracket(list_bracket)) //if there are brackets multiplying continuously ()*(), stop expanding brackets which may not simplify AST but make it mroe complex
-	{
-		for (int i = list_bracket.size()-2; i >= 0; i = i - 2)
-			delete_bracket(list_bracket[i], list_bracket[i+1]);
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-/*---------------------------------------------------------------------------
- * (function: check_mult_bracket)
- * check if the brackets are continuously multiplying
- *-------------------------------------------------------------------------*/
-bool check_mult_bracket(std::vector<int> list)
-{
-	for (long i = 1; i < list.size() - 2; i = i + 2)
-	{
-		enode *node = head;
-		while (node != NULL && node->next != NULL && node->next->next != NULL)
-		{
-			if (node->id == list[i] && node->next->next->id == list[i+1] &&
-				node->next->flag == 2 &&
-				(node->next->type.operation == '*' || node->next->type.operation == '/'))
-
-				return TRUE;
-
-			node = node->next;
-		}
-	}
-	return FALSE;
-
-}
-
-/*---------------------------------------------------------------------------
- * (function: recursive_tree)
- * search the AST recursively to find brackets
- *-------------------------------------------------------------------------*/
-void recursive_tree(ast_node_t *node, std::vector<int> list_bracket)
-{
-	if (node && (node->type == BINARY_OPERATION) && (node->types.operation.op == MULTIPLY))
-	{
-		for (long i = 0; i < node->num_children; i++)
-		{
-			if ((node->children[i]->type == BINARY_OPERATION) && (node->children[i]->types.operation.op == ADD || node->children[i]->types.operation.op == MINUS))
-			{
-				find_leaf_node(node->children[i], list_bracket, 0);
-				find_leaf_node(node->children[i], list_bracket, 1);
-			}
-		}
-
-	}
-
-	for (long i = 0; node && i < node->num_children; i++)
-		recursive_tree(node->children[i], list_bracket);
-
-}
-
-/*---------------------------------------------------------------------------
- * (function: find_lead_node)
- *-------------------------------------------------------------------------*/
-void find_leaf_node(ast_node_t *node, std::vector<int> list_bracket, int ids2)
-{
-	if (node){
-		if (node->num_children > 0){
-			find_leaf_node(node->children[ids2], list_bracket, ids2);
-		}else{
-			list_bracket.push_back(node->unique_count);
-		}
-	}
-}
-
-/*---------------------------------------------------------------------------
- * (function: delete_bracket)
- *-------------------------------------------------------------------------*/
-void delete_bracket(int begin, int end)
-{
-	enode *s1 = NULL, *s2 = NULL, *temp, *p2;
-	int mark = 0;
-	for (temp = head; temp != NULL; temp = temp->next)
-	{
-		if (temp->id == begin)
-		{
-			s1 = temp;
-			for (p2 = temp; p2 != NULL; p2 = p2->next)
-				if (p2->id == end)
-				{
-					s2 = p2;
-					mark = 1;
-					break;
-				}
-		}
-		if (mark == 1)
-			break;
-	}
-
-	if (s1 == head)
-		delete_bracket_head(s1, s2);
-	else
-		if (s2->next == NULL)
-			delete_bracket_tail(s1, s2);
-		else
-			delete_bracket_body(s1, s2);
-	if (s1 != head)
-		check_operation(s1, s2);
-
-}
-
-/*---------------------------------------------------------------------------
- * (function: delete_bracket_head)
- *-------------------------------------------------------------------------*/
-void delete_bracket_head(enode *begin, enode *end)
-{
-	enode *temp;
-    enode *s = NULL;
-	for (temp = end; temp != NULL; temp = temp->next)
-	{
-		if ((temp->flag == 2) && (temp->priority == 2))
-		{
-			s = temp->pre;
-			break;
-		}
-		if (temp->next == NULL)
-			s = temp;
-	}
-	change_exp_list(begin, end, s, 1);
-}
-
-/*---------------------------------------------------------------------------
  * (function: change_exp_list)
  *-------------------------------------------------------------------------*/
 void change_exp_list(enode *begin, enode *end, enode *s, int flag)
@@ -1009,45 +869,6 @@ void copy_enode(enode *node, enode *new_node)
 }
 
 /*---------------------------------------------------------------------------
- * (function: deleted_bracket_tail)
- *-------------------------------------------------------------------------*/
-void delete_bracket_tail(enode *begin, enode *end)
-{
-	enode *temp, *s = NULL;
-	for (temp = begin; temp != NULL; temp = temp->pre)
-		if ((temp->flag == 2) && (temp->priority == 2)) // '+' or '-'
-		{
-			s = temp->next;
-			break;
-		}
-	change_exp_list(begin, end, s, 2);
-}
-
-/*---------------------------------------------------------------------------
- * (function: delete_bracket_body)
- *-------------------------------------------------------------------------*/
-void delete_bracket_body(enode *begin, enode *end)
-{
-	enode *temp;
-	if ((begin->pre->priority == 1) && (end->next->priority == 2))
-		delete_bracket_tail(begin, end);
-	if ((begin->pre->priority == 2) && (end->next->priority == 1))
-		delete_bracket_head(begin, end);
-	if ((begin->pre->priority == 1) && (end->next->priority == 1))
-	{
-		delete_bracket_tail(begin, end);
-		for (temp = begin; temp != NULL; temp = temp->pre)
-			if ((temp->flag == 2) && (temp->priority == 2))
-			{
-				begin = temp->next;
-				break;
-			}
-		delete_bracket_head(begin, end);
-	}
-
-}
-
-/*---------------------------------------------------------------------------
  * (function: check_tree_operation)
  *-------------------------------------------------------------------------*/
 bool check_tree_operation(ast_node_t *node)
@@ -1084,88 +905,4 @@ void check_operation(enode *begin, enode *end)
 			}
 		}
 	}
-}
-
-/*---------------------------------------------------------------------------
- * (function: reduce_parameter)
- * replace parameters with their values in the AST
- *-------------------------------------------------------------------------*/
-void reduce_parameter(ast_node_t *ast_module)
-{
-	std::vector<ast_node_t *>para;
-	find_parameter(ast_module, para);
-	if (ast_module->types.module.is_instantiated == 0 && !para.empty())
-		remove_para_node(ast_module, para);
-
-
-}
-
-/*---------------------------------------------------------------------------
- * (function: find_parameter)
- *-------------------------------------------------------------------------*/
-void find_parameter(ast_node_t *node, std::vector<ast_node_t *>para)
-{
-	for (long i = 0; node && i < node->num_children; i++)
-	{
-		if (node->children[i] && node->children[i]->type == VAR_DECLARE && node->children[i]->types.variable.is_parameter == 1)
-				para.push_back(node->children[i]);
-
-		find_parameter(node->children[i], para);
-	}
-}
-
-/*---------------------------------------------------------------------------
- * (function: remove_para_node)
- *-------------------------------------------------------------------------*/
-void remove_para_node(ast_node_t *top, std::vector<ast_node_t *> para)
-{
-	std::vector<ast_node_t *> list;
-
-	count_assign = 0;
-	find_assign_node(top, list, top->children[0]->types.identifier);
-	if (count_assign!= 0){
-		for (long i = 0; i < para.size(); i++)
-		{
-			std::string name;
-			long value = 0;
-			if (para[i] && para[i]->children[0])
-				name = para[i]->children[0]->types.identifier;
-
-			if (node_is_constant(para[i]->children[5]))
-				value = para[i]->children[5]->types.vnumber->get_value();
-
-			for (long j = 0; j < count_assign; j++){
-				change_para_node(list[j], name, value);
-			}
-
-		}
-	}
-}
-
-/*---------------------------------------------------------------------------
- * (function: change_para_node)
- *-------------------------------------------------------------------------*/
-void change_para_node(ast_node_t *node, std::string name, long value)
-{
-	if (node && node->type == IDENTIFIERS && name == (std::string) node->types.identifier)
-		change_to_number_node(node, value);
-
-	for (long i = 0; node && i < node->num_children; i++)
-		change_para_node(node->children[i], name, value);
-}
-
-/*---------------------------------------------------------------------------
- * (function: check_intermediate_variable)
- * check if there are intermediate variables
- *-------------------------------------------------------------------------*/
-short has_intermediate_variable(ast_node_t *node){
-	if (node && (node->is_read_write == 1 || node->is_read_write == 2))
-		return TRUE;
-
-	for (long i = 0; node && i < node->num_children; i++){
-		if(has_intermediate_variable(node->children[i]))
-			return TRUE;
-	}
-
-	return FALSE;
 }

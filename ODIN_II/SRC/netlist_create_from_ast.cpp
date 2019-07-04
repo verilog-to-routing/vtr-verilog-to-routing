@@ -526,6 +526,7 @@ ast_node_t *find_top_module()
 			module_name_list = std::string("\t") + current_module;
 			found_top = i;
 			found_desired_module = true;
+			number_of_top_modules = 1;
 			break;
 		}
 		else if ((ast_modules[i]->types.module.is_instantiated == FALSE))
