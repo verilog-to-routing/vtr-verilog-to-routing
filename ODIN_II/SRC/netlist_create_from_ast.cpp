@@ -3326,11 +3326,18 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	}
 	else
 	{
+
+		ast_node_t *temp = right;
 		long assignment_size = get_size_of_variable(left, instance_name_prefix, local_symbol_table_sc, function_local_symbol_table_sc);
 		right = resolve_node(NULL, instance_name_prefix, right, NULL, assignment_size);
 
 		in_1 = netlist_expand_ast_of_module(right, instance_name_prefix);
 		oassert(in_1 != NULL);
+
+		if(right != temp)
+		{
+			free_whole_tree(right);
+		}
 	}
 
 	char_list_t *out_list;
