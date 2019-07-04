@@ -1632,6 +1632,14 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 				initial_value >>= 1;
 			}
 		}
+		if(node_max != var_declare->children[1])
+		{
+			node_max = free_whole_tree(node_max);
+		}
+		if(node_min != var_declare->children[2])
+		{
+			node_min = free_whole_tree(node_min);
+		}
 	}
 	/* Implicit memory */
 	else if (var_declare->children[3] != NULL)
