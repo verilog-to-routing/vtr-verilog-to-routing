@@ -212,7 +212,7 @@ void renderer::set_line_dash(line_dash dash)
 
 void renderer::set_line_width(int width)
 {
-  cairo_set_line_width(m_cairo, width);
+  cairo_set_line_width(m_cairo, width == 0 ? 1 : width);
 
 #ifdef EZGL_USE_X11
   if (x11_display != nullptr) {
