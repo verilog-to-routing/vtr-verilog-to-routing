@@ -231,7 +231,7 @@ public:
   /**
    * Set the line width.
    *
-   * @param width The width in pixels. A value of 0 means as thin as possible.
+   * @param width The width in pixels. A value of 0 means as thin as possible (fast).
    */
   void set_line_width(int width);
 
