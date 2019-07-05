@@ -8,6 +8,7 @@ from openpyxl.worksheet.cell_range import CellRange
 from openpyxl.cell.cell import TYPE_NUMERIC
 import os
 import pandas as pd
+import re
 
 DEFAULT_METRICS = [
     #ABC QoR Metrics
@@ -323,13 +324,22 @@ def dataframe_to_sheet(wb, df, sheet_name):
 
 def safe_sheet_title(raw_title):
 
+    #Keep only file name and drop file path
     safe_title = raw_title.split('/')[-1]
-
-    #Removing all leading zeros from title name
-    safe_title = safe_title.lstrip('0')
 
     if (len(safe_title) > 31):
         safe_title = safe_title[-31:]
+
+    #Remove all non-alphanumerical characters
+    regex = re.compile(r"^\W+")
+    safe_title = regex.sub("", safe_title)
+
+    #Remove bad characters from title
+    for bad_char in ['-']:
+        safe_title = safe_title.replace(bad_char, '_')
+
+    #Remove all leading zeros from title name
+    safe_title = safe_title.lstrip('0')
 
     return safe_title
 
