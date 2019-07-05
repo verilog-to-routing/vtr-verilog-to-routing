@@ -260,7 +260,8 @@ struct more_sinks_than {
     }
 };
 
-static WirelengthInfo calculate_wirelength_info();
+static size_t calculate_wirelength_available();
+static WirelengthInfo calculate_wirelength_info(size_t available_wirelength);
 static OveruseInfo calculate_overuse_info();
 
 static void print_route_status_header();
@@ -368,6 +369,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
     constexpr float BB_SCALE_FACTOR = 2;
     constexpr int BB_SCALE_ITER_COUNT = 5;
 
+    size_t available_wirelength = calculate_wirelength_available();
+
     /*
      * Routing status and metrics
      */
@@ -460,7 +463,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
         float est_success_iteration = routing_predictor.estimate_success_iteration();
 
         overuse_info = calculate_overuse_info();
-        wirelength_info = calculate_wirelength_info();
+        wirelength_info = calculate_wirelength_info(available_wirelength);
         routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes());
 
         if (timing_info) {
@@ -2311,18 +2314,26 @@ static OveruseInfo calculate_overuse_info() {
     return OveruseInfo(device_ctx.rr_nodes.size(), overused_nodes, total_overuse, worst_overuse);
 }
 
-static WirelengthInfo calculate_wirelength_info() {
+static size_t calculate_wirelength_available() {
     auto& device_ctx = g_vpr_ctx.device();
+
+    size_t available_wirelength = 0;
+    for (size_t i = 0; i < device_ctx.rr_nodes.size(); ++i) {
+        if (device_ctx.rr_nodes[i].type() == CHANX || device_ctx.rr_nodes[i].type() == CHANY) {
+            size_t length_x = device_ctx.rr_nodes[i].xhigh() - device_ctx.rr_nodes[i].xlow();
+            size_t length_y = device_ctx.rr_nodes[i].yhigh() - device_ctx.rr_nodes[i].ylow();
+
+            available_wirelength += device_ctx.rr_nodes[i].capacity() * (length_x + length_y + 1);
+        }
+    }
+    return available_wirelength;
+}
+
+static WirelengthInfo calculate_wirelength_info(size_t available_wirelength) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     size_t used_wirelength = 0;
-    size_t available_wirelength = 0;
-
-    for (size_t i = 0; i < device_ctx.rr_nodes.size(); ++i) {
-        if (device_ctx.rr_nodes[i].type() == CHANX || device_ctx.rr_nodes[i].type() == CHANY) {
-            available_wirelength += device_ctx.rr_nodes[i].capacity() + device_ctx.rr_nodes[i].xhigh() - device_ctx.rr_nodes[i].xlow() + device_ctx.rr_nodes[i].yhigh() - device_ctx.rr_nodes[i].ylow();
-        }
-    }
+    VTR_ASSERT(available_wirelength > 0);
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)
@@ -2333,7 +2344,6 @@ static WirelengthInfo calculate_wirelength_info() {
             used_wirelength += wirelength;
         }
     }
-    VTR_ASSERT(available_wirelength > 0);
 
     return WirelengthInfo(available_wirelength, used_wirelength);
 }
