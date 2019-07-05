@@ -112,7 +112,8 @@ ezgl::application::settings settings;
 ezgl::application application(settings);
 
 bool window_mode = false;
-ezgl::point2d new_window_top_left(0,0);
+ezgl::point2d point_1(0,0);
+bool window_point_1_collected = false;
 
 /********************** Subroutines local to this module ********************/
 
@@ -210,6 +211,7 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application *app);
 void initial_setup_ROUTING_to_PLACEMENT(ezgl::application *app);
 void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *app);
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application *app);
+void toggle_window_mode(GtkWidget *widget, ezgl::application *app);
 
 /********************** Subroutine definitions ******************************/
 
@@ -291,6 +293,10 @@ void draw_main_canvas(ezgl::renderer &g){
 
 void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application *app){
     
+    GtkButton* window = (GtkButton*) app->get_object("Window");
+    gtk_button_set_label(window, "");
+    g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
+    
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
     app->create_button("Blk Pin Util", 4, toggle_block_pin_util);
@@ -330,6 +336,10 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application *app){
 }
 
 void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *app){
+    
+    GtkButton* window = (GtkButton*) app->get_object("Window");
+    gtk_button_set_label(window, "Window");
+    g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
     
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
@@ -423,6 +433,12 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
     } else {
         application.refresh_drawing();
     }
+}
+
+void toggle_window_mode(GtkWidget *widget, ezgl::application *app) {
+    std::cout << "before window_mode is " << window_mode << std::endl;
+    window_mode = true;
+    std::cout << "after window_mode is " << window_mode << std::endl;
 }
 
 void toggle_nets(GtkWidget *widget, ezgl::application *app) {
@@ -2531,25 +2547,37 @@ void act_on_mouse_press(ezgl::application *app, GdkEventButton *event, double x,
 
   if (event->button == 1){
     std::cout << "left ";
-//    if(!window_mode){
-//        new_window_top_left = {x, y};
-//        window_mode = true;
-//    }else{
-//        //click on any two points to form new window rectangle bound
-//        ezgl::point2d new_window_bot_right = {x, y};
-//        ezgl::rectangle current_window = (app->get_canvas(app->get_main_canvas_id()))->get_camera().get_world();
-//        
-//        //calculate a rectangle with the same ratio based on the two clicks
-//        double window_ratio = current_window.height()/current_window.width();
-//        double new_height = abs(new_window_top_left.y - new_window_bot_right.y);
-//        double new_width = new_height/window_ratio;
-//        
-//        //zoom in
-//        ezgl::rectangle new_window = {new_window_top_left, {new_window_top_left.x + new_width, new_window_bot_right.y}};
-//        (app->get_canvas(app->get_main_canvas_id()))->get_camera().set_world(new_window);
-//        window_mode = false;
-//        app->refresh_drawing();
-//    }
+    
+    if(window_mode){
+        //click on any two points to form new window rectangle bound
+        
+        if(!window_point_1_collected){
+            //collecting first point data
+            window_point_1_collected = true;
+            point_1 = ezgl::point2d(x, y);
+        }else{
+            //collecting second point data
+            
+            //click on any two points to form new window rectangle bound
+            ezgl::point2d point_2 = {x, y};
+            ezgl::rectangle current_window = (app->get_canvas(app->get_main_canvas_id()))->get_camera().get_world();
+
+            //calculate a rectangle with the same ratio based on the two clicks
+            double window_ratio = current_window.height()/current_window.width();
+            double new_height = abs(point_1.y - point_2.y);
+            double new_width = new_height/window_ratio;
+
+            //zoom in
+            ezgl::rectangle new_window = {point_1, {point_1.x + new_width, point_2.y}};
+            (app->get_canvas(app->get_main_canvas_id()))->get_camera().set_world(new_window);
+
+            //reset and refresh
+            window_mode = false;
+            window_point_1_collected = false;
+        }
+        app->refresh_drawing();
+    }
+    
   }else if (event->button == 2)
     std::cout << "middle ";
   else if (event->button == 3)
@@ -2661,14 +2689,16 @@ void act_on_mouse_press(ezgl::application *app, GdkEventButton *event, double x,
 
 void act_on_mouse_move(ezgl::application *app, GdkEventButton *event, double x, double y) {
 //  std::cout << "Mouse move at coordinates (" << x << "," << y << ") "<< std::endl;
-//    if(window_mode){
-////        ezgl::renderer g = app->get_renderer();
-////        g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
-////        g.set_color(ezgl::BLACK);
-////        g.set_line_width(10);
-////        g.draw_rectangle(new_window_top_left, {x,y});
-//        std::cout << "window mode triggered move" << std::endl;
-//    }
+    if(window_point_1_collected){
+        ezgl::renderer g = app->get_renderer();
+//        g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
+        g.set_line_dash(ezgl::line_dash::none);
+        g.set_color(ezgl::BLACK);
+        g.set_line_width(10);
+        g.draw_rectangle(point_1, {x,y});
+        app->refresh_drawing();
+        std::cout << "window mode triggered move" << std::endl;
+    }
     
     t_draw_state* draw_state = get_draw_state_vars();
     
