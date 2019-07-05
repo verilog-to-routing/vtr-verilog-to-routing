@@ -2297,20 +2297,43 @@ void Connection_based_routing_resources::clear_force_reroute_for_net() {
 
 static OveruseInfo calculate_overuse_info() {
     auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
+
+    std::unordered_set<int> checked_nodes;
 
     size_t overused_nodes = 0;
     size_t total_overuse = 0;
     size_t worst_overuse = 0;
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
-        if (overuse > 0) {
-            overused_nodes += 1;
 
-            total_overuse += overuse;
-            worst_overuse = std::max(worst_overuse, size_t(overuse));
+    //We walk through the entire routing calculating the overuse for each node.
+    //Since in the presence of overuse multiple nets could be using a single node
+    //(and also since branch nodes show up multiple times in the traceback) we use
+    //checked_nodes to avoid double counting the overuse.
+    //
+    //Note that we walk through the entire routing and *not* the RR graph, which
+    //should be more efficient (since usually only a portion of the RR graph is
+    //used by routing, particularly on large devices).
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+
+        for(t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
+            int inode = tptr->index;
+
+            auto result = checked_nodes.insert(inode);
+            if (!result.second) { //Already counted
+                continue;
+            }
+
+            int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
+            if (overuse > 0) {
+                overused_nodes += 1;
+
+                total_overuse += overuse;
+                worst_overuse = std::max(worst_overuse, size_t(overuse));
+            }
         }
     }
+
     return OveruseInfo(device_ctx.rr_nodes.size(), overused_nodes, total_overuse, worst_overuse);
 }
 
