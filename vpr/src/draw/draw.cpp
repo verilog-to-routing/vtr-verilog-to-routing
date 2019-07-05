@@ -69,9 +69,8 @@ using namespace std;
 //The arrow head position for turning/straight-thru connections in a switch box
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
-
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.10;
-const char *initial_message = NULL;
+ezgl::rectangle initial_world;
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
@@ -102,171 +101,9 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
     ezgl::color( 43,  61,  38)  //olive green
 };
 
-//The colours used to draw block types
-const std::vector<ezgl::color> block_colors {
-    //This first set of colours is somewhat curated to yield
-    //a nice colour pallette
-    blk_BISQUE, //EMPTY type is usually the type with index 0, so this colour
-            //usually unused
-    blk_LIGHTGREY,
-    blk_LIGHTSKYBLUE,
-    blk_THISTLE,
-    blk_KHAKI,
-    blk_CORAL,
-    blk_TURQUOISE,
-    blk_MEDIUMPURPLE,
-    blk_DARKSLATEBLUE,
-    blk_DARKKHAKI,
-    blk_LIGHTMEDIUMBLUE,
-    blk_SADDLEBROWN,
-    blk_FIREBRICK,
-    blk_LIMEGREEN,
-    blk_PLUM,
-
-    //However, if we have lots of block types we just assign arbitrary HTML
-    //colours. Note that these are shuffled (instead of in alphabetical order)
-    //since some colours which are alphabetically close are also close in
-    //shade (making them difficult to distinguish)
-    blk_DARKGREEN,
-    blk_PALEVIOLETRED,
-    blk_BLUE,
-    blk_FORESTGREEN,
-    blk_WHEAT,
-    blk_GOLD,
-    blk_MOCCASIN,
-    blk_MEDIUMORCHID,
-    blk_SKYBLUE,
-    blk_WHITESMOKE,
-    blk_LIME,
-    blk_MEDIUMSLATEBLUE,
-    blk_TOMATO,
-    blk_CYAN,
-    blk_OLIVE,
-    blk_LIGHTGRAY,
-    blk_STEELBLUE,
-    blk_LIGHTCORAL,
-    blk_IVORY,
-    blk_MEDIUMVIOLETRED,
-    blk_SNOW,
-    blk_DARKGRAY,
-    blk_GREY,
-    blk_GRAY,
-    blk_YELLOW,
-    blk_REBECCAPURPLE,
-    blk_DARKCYAN,
-    blk_MIDNIGHTBLUE,
-    blk_ROSYBROWN,
-    blk_CORNSILK,
-    blk_NAVAJOWHITE,
-    blk_BLANCHEDALMOND,
-    blk_ORCHID,
-    blk_LIGHTGOLDENRODYELLOW,
-    blk_MAROON,
-    blk_GREENYELLOW,
-    blk_SILVER,
-    blk_PALEGOLDENROD,
-    blk_LAWNGREEN,
-    blk_DIMGREY,
-    blk_DARKVIOLET,
-    blk_DARKTURQUOISE,
-    blk_INDIGO,
-    blk_DARKORANGE,
-    blk_PAPAYAWHIP,
-    blk_MINTCREAM,
-    blk_GREEN,
-    blk_DARKMAGENTA,
-    blk_MAGENTA,
-    blk_LIGHTSLATEGRAY,
-    blk_CHARTREUSE,
-    blk_GHOSTWHITE,
-    blk_LIGHTCYAN,
-    blk_SIENNA,
-    blk_GOLDENROD,
-    blk_DARKSLATEGRAY,
-    blk_OLDLACE,
-    blk_SEASHELL,
-    blk_SPRINGGREEN,
-    blk_MEDIUMTURQUOISE,
-    blk_LEMONCHIFFON,
-    blk_MISTYROSE,
-    blk_OLIVEDRAB,
-    blk_LIGHTBLUE,
-    blk_CHOCOLATE,
-    blk_SEAGREEN,
-    blk_DEEPPINK,
-    blk_LIGHTSEAGREEN,
-    blk_FLORALWHITE,
-    blk_CADETBLUE,
-    blk_AZURE,
-    blk_BURLYWOOD,
-    blk_AQUAMARINE,
-    blk_BROWN,
-    blk_POWDERBLUE,
-    blk_HOTPINK,
-    blk_MEDIUMBLUE,
-    blk_BLUEVIOLET,
-    blk_GREY75,
-    blk_PURPLE,
-    blk_TEAL,
-    blk_ANTIQUEWHITE,
-    blk_DEEPSKYBLUE,
-    blk_SLATEGRAY,
-    blk_SALMON,
-    blk_SLATEBLUE,
-    blk_DARKORCHID,
-    blk_LIGHTPINK,
-    blk_DARKBLUE,
-    blk_PEACHPUFF,
-    blk_PALEGREEN,
-    blk_DARKSALMON,
-    blk_DARKOLIVEGREEN,
-    blk_DARKSEAGREEN,
-    blk_VIOLET,
-    blk_RED,
-    blk_DARKSLATEGREY,
-    blk_PALETURQUOISE,
-    blk_DARKRED,
-    blk_SLATEGREY,
-    blk_HONEYDEW,
-    blk_AQUA,
-    blk_LIGHTSTEELBLUE,
-    blk_DODGERBLUE,
-    blk_MEDIUMSPRINGGREEN,
-    blk_NAVY,
-    blk_GAINSBORO,
-    blk_LIGHTYELLOW,
-    blk_CRIMSON,
-    blk_FUCHSIA,
-    blk_DARKGOLDENROD,
-    blk_SANDYBROWN,
-    blk_BEIGE,
-    blk_LINEN,
-    blk_ORANGERED,
-    blk_ROYALBLUE,
-    blk_LAVENDER,
-    blk_TAN,
-    blk_YELLOWGREEN,
-    blk_CORNFLOWERBLUE,
-    blk_LAVENDERBLUSH,
-    blk_MEDIUMSEAGREEN,
-    blk_PINK,
-    blk_GREY55,
-    blk_PERU,
-    blk_LIGHTGREEN,
-    blk_LIGHTSALMON,
-    blk_INDIANRED,
-    blk_DIMGRAY,
-    blk_LIGHTSLATEGREY,
-    blk_MEDIUMAQUAMARINE,
-    blk_DARKGREY,
-    blk_ORANGE,
-    blk_ALICEBLUE,
-};
-
 //FIXME: ugly hack
 extern t_pl_macro* pl_macros;
 extern int num_pl_macros;
-
 
 /************************** File Scope Variables ****************************/
 
@@ -366,7 +203,6 @@ static void draw_router_rr_costs(ezgl::renderer &g);
 
 static void draw_rr_costs(ezgl::renderer &g, const std::vector<float>& rr_costs, bool lowest_cost_first=true);
 
-ezgl::rectangle compute_fit_window();
 void draw_main_canvas(ezgl::renderer &g);
 void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application *app);
 void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application *app);
@@ -454,22 +290,23 @@ void draw_main_canvas(ezgl::renderer &g){
 }
 
 void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application *app){
+    
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
     app->create_button("Blk Pin Util", 4, toggle_block_pin_util);
     app->create_button("Place Macros", 5, toggle_placement_macros);
     
-//    app->update_message(initial_message);
 }
 
 void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application *app){
+    
     initial_setup_NO_PICTURE_to_PLACEMENT(app);
     app->create_button("Crit. Path", 6, toggle_crit_path);
     
-//    app->update_message(initial_message);
 }
 
 void initial_setup_PLACEMENT_to_ROUTING(ezgl::application *app){
+    
     initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(app);
     app->create_button("Toggle RR", 2, toggle_rr);
     app->create_button("Congestion", 3, toggle_congestion);
@@ -478,10 +315,10 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application *app){
     app->create_button("Routing Util", 6, toggle_routing_util);
     app->create_button("Router Cost", 7, toggle_router_rr_costs);
     
-//    app->update_message(initial_message);
 }
 
 void initial_setup_ROUTING_to_PLACEMENT(ezgl::application *app){
+    
     initial_setup_PLACEMENT_to_ROUTING(app);
     app->destroy_button("Toggle RR");
     app->destroy_button("Congestion");
@@ -490,10 +327,10 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application *app){
     app->destroy_button("Route Util");
     app->destroy_button("Router Cost");
     
-//    app->update_message(initial_message);
 }
 
 void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *app){
+    
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
     app->create_button("Blk Pin Util", 4, toggle_block_pin_util);
@@ -504,15 +341,14 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *app){
     app->create_button("Route BB", 9, toggle_routing_bounding_box);
     app->create_button("Routing Util", 10, toggle_routing_util);
     app->create_button("Router Cost", 11, toggle_router_rr_costs);
-    
-//    app->update_message(initial_message);
+
 }
 
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application *app){
+    
     initial_setup_NO_PICTURE_to_ROUTING(app);
     app->create_button("Crit. Path", 6, toggle_crit_path);
     
-//    app->update_message(initial_message);
 }
 
 void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type pic_on_screen_val,
@@ -536,12 +372,9 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
         }
         
         vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
-        ezgl::rectangle fit_window = compute_fit_window();
+        
         /* If it's the type of picture displayed has changed, set up the proper  *
          * buttons.                                                              */
-        ezgl::point2d margin(fit_window.width()/6, fit_window.height()/6);
-        ezgl::rectangle initial_world = {fit_window.m_first + margin, fit_window.m_second - margin};
-
         if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
             if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
                 draw_state->pic_on_screen = pic_on_screen_val;
@@ -918,9 +751,7 @@ void init_draw_coords(float width_val) {
     float draw_width = draw_coords->tile_x[device_ctx.grid.width() - 1] + draw_coords->get_tile_width();
     float draw_height = draw_coords->tile_y[device_ctx.grid.height() - 1] + draw_coords->get_tile_width();
     
-    ezgl::rectangle new_world({-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height}, {(1. + VISIBLE_MARGIN) * draw_width, (1. + VISIBLE_MARGIN) * draw_height});
-    //line below causes segfault 
-//    (application.get_canvas(application.get_main_canvas_id()))->get_camera().set_world(new_world);
+    initial_world = ezgl::rectangle({-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height}, {(1. + VISIBLE_MARGIN) * draw_width, (1. + VISIBLE_MARGIN) * draw_height});
 }
 
 /* Draws the blocks placed on the proper clbs.  Occupied blocks are darker colours *
@@ -1577,7 +1408,7 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                             ezgl::color color = draw_state->draw_rr_node[inode].color;
                             g.set_color(color);
                         } else {
-                            g.set_color(ezgl::LIGHT_SKY_BLUE);
+                            g.set_color(blk_LIGHTSKYBLUE);
                         }
                         draw_pin_to_chan_edge(to_node, inode, g);
                         break;
@@ -1649,7 +1480,7 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                             ezgl::color color = draw_state->draw_rr_node[inode].color;
                             g.set_color(color);
                         } else {
-                            g.set_color(ezgl::LIGHT_SKY_BLUE);
+                            g.set_color(blk_LIGHTSKYBLUE);
                         }
                         draw_pin_to_chan_edge(to_node, inode, g);
                         break;
@@ -3300,7 +3131,7 @@ static void draw_crit_path(ezgl::renderer &g) {
         prev_arr_time = arr_time;
     }
 }
-//editing here
+
 static void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer &g) {
     g.draw_line(start, end);
     draw_triangle_along_line(g, start, end, 0.95, 40*DEFAULT_ARROW_SIZE);
@@ -3356,7 +3187,7 @@ static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end
     g.set_line_width(0);
     g.set_line_dash(ezgl::line_dash::none);
 }
-//editing here
+
 //Collect all the drawing locations associated with the timing edge between start and end
 static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, ezgl::color color, ezgl::renderer &g) {
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -3500,7 +3331,6 @@ ezgl::color to_ezgl_color(color_types color_enum) {
     return to_ezgl_color(color);
 }
 
-//editing here
 static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer &g) {
     constexpr float LEGEND_WIDTH_FAC = 0.075;
     constexpr float LEGEND_VERT_OFFSET_FAC = 0.05;
@@ -3574,9 +3404,7 @@ ezgl::color lighten_color(ezgl::color color, float amount) {
 
 static void draw_block_pin_util() {
     t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->show_blk_pin_util == DRAW_NO_BLOCK_PIN_UTIL) {
-        return;
-    }
+    if (draw_state->show_blk_pin_util == DRAW_NO_BLOCK_PIN_UTIL) return;
     
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -3639,7 +3467,7 @@ static void draw_reset_blk_colors() {
         draw_reset_blk_color(blk);
     }
 }
-//editing here
+
 static void draw_routing_util(ezgl::renderer &g) {
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) {
@@ -3934,46 +3762,3 @@ static void draw_placement_macros(ezgl::renderer &g) {
     }
 }
 
-ezgl::rectangle compute_fit_window(){
-    t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
-    ClusterBlockId bnum;
-    int num_sub_tiles;
-    
-    //find the max and min by traversing through all the boxes
-    double max_x = 0;
-    double max_y = 0;
-    double min_x = DBL_MAX;
-    double min_y = DBL_MAX;
-    
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            /* Only the first block of a group should control drawing */
-            if (device_ctx.grid[i][j].width_offset > 0 || device_ctx.grid[i][j].height_offset > 0)
-                continue;
-            num_sub_tiles = device_ctx.grid[i][j].type->capacity;
-            /* Don't draw if tile capacity is zero. eg. corners. */
-            if (num_sub_tiles == 0) {
-                continue;
-            }
-            for (int k = 0; k < num_sub_tiles; ++k) {
-                
-                /* Look at the tile at start of large block */
-
-                /* Fill background for the clb. Do not fill if "show_blk_internal"
-                 * is toggled.
-                 */
-                if (place_ctx.grid_blocks[i][j].blocks[k] == INVALID_BLOCK_ID) continue;
-                
-                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
-                
-                max_x = std::max(max_x, abs_clb_bbox.right());
-                min_x = std::min(min_x, abs_clb_bbox.left());
-                max_y = std::max(max_y, abs_clb_bbox.top());
-                min_y = std::min(min_y, abs_clb_bbox.bottom());
-            }
-        }
-    }
-    return ezgl::rectangle({max_x, max_y},{min_x, min_y});
-}

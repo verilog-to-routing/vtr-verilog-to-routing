@@ -617,7 +617,6 @@ void try_place(t_placer_opts placer_opts,
 		costs.cost, costs.bb_cost, costs.timing_cost, costs.delay_cost, width_fac);
 
     //Draw the initial placement
-        std::cout << "update place" << std::endl;
 	update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
 
 	move_lim = (int) (annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
@@ -705,7 +704,6 @@ void try_place(t_placer_opts placer_opts,
 
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
 				costs.cost, costs.bb_cost, costs.timing_cost, t);
-                std::cout << "update place" << std::endl;
 		update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info);
 		update_rlim(&rlim, success_rat, device_ctx.grid);
 
@@ -835,7 +833,6 @@ void try_place(t_placer_opts placer_opts,
 			costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
 	VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, delay_cost: %g\n",
 			costs.cost, costs.bb_cost, costs.timing_cost, costs.delay_cost);
-        std::cout << "update place" << std::endl;
 	update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
 
 	// Print out swap statistics

@@ -34,6 +34,7 @@ using namespace std;
 #include "draw_global.h"
 #include "graphics.h"
 #include "draw.h"
+#include "draw_color.h"
 
 /************************* Subroutines local to this file. *******************************/
 
@@ -56,6 +57,7 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 
 void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin, ezgl::renderer &g);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
+
 
 /************************* Subroutine definitions begin *********************************/
 
@@ -387,11 +389,11 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             } else if (pb_type->depth != draw_state->show_blk_internal && pb->child_pbs != nullptr) {
                 g.set_color(ezgl::WHITE); // draw anything else that will have a child as white
             } else if (type_index < 3) {
-                g.set_color(to_ezgl_color(LIGHTGREY));
+                g.set_color(blk_LIGHTGREY);
             } else if (type_index < 3 + MAX_BLOCK_COLOURS) {
-                g.set_color(to_ezgl_color((color_types)(BISQUE + MAX_BLOCK_COLOURS + type_index - 3)));//should fix later, using easygl library
+                g.set_color((block_colors[MAX_BLOCK_COLOURS + type_index - 3]));
             } else {
-                g.set_color(to_ezgl_color((color_types)(BISQUE + 2 * MAX_BLOCK_COLOURS - 1)));
+                g.set_color((block_colors[2 * MAX_BLOCK_COLOURS - 1]));
             }
         }
         else {
