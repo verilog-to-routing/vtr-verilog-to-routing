@@ -60,8 +60,8 @@ void output_blif(const char *file_name, netlist_t *netlist)
 {
 	int i;
 	int count = 0;
-	short first_time_inputs = FALSE;
-	short first_time_outputs = FALSE;
+	bool first_time_inputs = false;
+	bool first_time_outputs = false;
 	FILE *out;
 
 	/* open the file for output */
@@ -86,10 +86,10 @@ void output_blif(const char *file_name, netlist_t *netlist)
 	/* generate all te signals */
 	for (i = 0; i < netlist->num_top_input_nodes; i++)
 	{
-		if (first_time_inputs == FALSE)
+		if (first_time_inputs == false)
 		{
 			count = fprintf(out, ".inputs");
-			first_time_inputs = TRUE;
+			first_time_inputs = true;
 		}
 
 		if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
@@ -129,10 +129,10 @@ void output_blif(const char *file_name, netlist_t *netlist)
 		}
 		else
 		{
-			if (first_time_outputs == FALSE)
+			if (first_time_outputs == false)
 			{
 				count = fprintf(out, ".outputs");
-				first_time_outputs = TRUE;
+				first_time_outputs = true;
 			}
 
 			if ( global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED )
@@ -346,7 +346,7 @@ void output_node(nnode_t *node, short /*traverse_number*/, FILE *fp)
 
 		case MULTIPLY:
 			if (hard_multipliers == NULL)
-				oassert(FALSE); /* should be soft logic! */
+				oassert(false); /* should be soft logic! */
 			define_mult_function(node, fp);
 
 			break;
@@ -354,7 +354,7 @@ void output_node(nnode_t *node, short /*traverse_number*/, FILE *fp)
 		//case FULLADDER:
 		case ADD:
 			if (hard_adders == NULL)
-				oassert(FALSE); /* should be soft logic! */
+				oassert(false); /* should be soft logic! */
 			define_add_function(node, fp);
 			break;
 
@@ -565,7 +565,7 @@ void define_logical_function(nnode_t *node, FILE *out)
 			break;
 		}
 		default:
-			oassert(FALSE);
+			oassert(false);
 			break;
 	}
 

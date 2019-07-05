@@ -235,7 +235,7 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 			/* 	defparam before calling instance; these overrides must be done first */
 			for(i = 0; i < parent_parameter_list->num_children; i ++)
 			{
-				if(parent_parameter_list->children[i]->children[0] && parent_parameter_list->children[i]->shared_node == FALSE)
+				if(parent_parameter_list->children[i]->children[0] && parent_parameter_list->children[i]->shared_node == false)
 				{
 					ast_node_t *var_declare = parent_parameter_list->children[i];
 					sc_spot = sc_lookup_string(local_param_table_sc, var_declare->children[0]->types.identifier);
@@ -257,7 +257,7 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 				// defparam after calling instance
 				if(parent_parameter_list->children[i]->children[0])
 				{
-					if(parent_parameter_list->children[i]->shared_node == TRUE)
+					if(parent_parameter_list->children[i]->shared_node == true)
 					{
 						ast_node_t *var_declare = parent_parameter_list->children[i];
 						sc_spot = sc_lookup_string(local_param_table_sc, var_declare->children[0]->types.identifier);
@@ -403,9 +403,9 @@ void create_netlist()
 			ast_node_t *symbol_node = newSymbolNode(module_param_name, module->line_number);
 			ast_node_t* new_node = create_node_w_type(MODULE, module->line_number, module->file_number);
 			allocate_children_to_node(new_node, 3, symbol_node, module->children[1], ast_node_deep_copy(module->children[2]));
-			module->types.module.is_instantiated = TRUE;
+			module->types.module.is_instantiated = true;
 			new_node->types.module.index = i;
-			new_node->types.module.is_instantiated = TRUE;
+			new_node->types.module.is_instantiated = true;
 			// and to the module_names_to_idx for parameterised name
 			module_names_to_idx->data[sc_spot] = new_node;
 			ast_modules[i] = new_node;
@@ -495,7 +495,7 @@ ast_node_t *find_top_module()
 				}
 
 				/* use that number to mark this module as instantiated */
-				ast_modules[((ast_node_t*)module_names_to_idx->data[sc_spot])->types.module.index]->types.module.is_instantiated = TRUE;
+				ast_modules[((ast_node_t*)module_names_to_idx->data[sc_spot])->types.module.index]->types.module.is_instantiated = true;
 			}
 		}
 	}
@@ -529,7 +529,7 @@ ast_node_t *find_top_module()
 			number_of_top_modules = 1;
 			break;
 		}
-		else if ((ast_modules[i]->types.module.is_instantiated == FALSE))
+		else if ((ast_modules[i]->types.module.is_instantiated == false))
 		{
 			// append the name
 			module_name_list += std::string("\t") + current_module;
@@ -711,7 +711,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 	/* with the top module we need to visit the entire ast tree */
 	long i;
 	short *child_skip_list = NULL; // list of children not to traverse into
-	short skip_children = FALSE; // skips the DFS completely if TRUE
+	short skip_children = false; // skips the DFS completely if true
 	signal_list_t *return_sig_list = NULL;
 	signal_list_t **children_signal_list = NULL;
 
@@ -734,17 +734,17 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 		switch(node->type)
 		{
 			case FILE_ITEMS:
-				oassert(FALSE);
+				oassert(false);
 				break;
 			case MODULE:
 				/* set the skip list */
-				child_skip_list[0] = TRUE; /* skip the identifier */
-				child_skip_list[1] = TRUE; /* skip portlist ... we'll use where they're defined */
+				child_skip_list[0] = true; /* skip the identifier */
+				child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
 				break;
 			case FUNCTION:
    				/* set the skip list */
-				child_skip_list[0] = TRUE; /* skip the identifier */
-				child_skip_list[1] = TRUE; /* skip portlist ... we'll use where they're defined */
+				child_skip_list[0] = true; /* skip the identifier */
+				child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
 				break;
 
 			case MODULE_ITEMS:
@@ -755,7 +755,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				local_symbol_table = NULL;
 				num_local_symbol_table = 0;
 				create_symbol_table_for_module(node, instance_name_prefix);
-				local_clock_found = FALSE;
+				local_clock_found = false;
 
 				/* check for initial register values set in initial block.*/
 				for (i = 0; i < node->num_children; i++)
@@ -776,7 +776,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 					{
 						/*if (node->children[i]->type == VAR_DECLARE_LIST)
 						{
-							child_skip_list[i] = TRUE;
+							child_skip_list[i] = true;
 						}*/
 						if (node->children[i]->type == MODULE_INSTANCE)
 						{
@@ -790,11 +790,11 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
                             }
 
                             /* is a call site for another module.  Alias names to nets and pins */
-							child_skip_list[i] = TRUE;
+							child_skip_list[i] = true;
 						}
 						else if (node->children[i]->type == FUNCTION)
 						{
-							child_skip_list[i] = TRUE;
+							child_skip_list[i] = true;
 						}
 
 					}
@@ -817,7 +817,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
                             }
 
                             /* is a call site for another module.  Alias names to nets and pins */
-							child_skip_list[i] = TRUE;
+							child_skip_list[i] = true;
 						}
 					}
 				}
@@ -825,7 +825,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
             case VAR_DECLARE_LIST:
                 for(i = 0; i < node->num_children; i++) {
                     if(node->children[i]->types.variable.is_parameter == 1 || !node->children[i]->children[5]){
-                        child_skip_list[i] = TRUE;
+                        child_skip_list[i] = true;
                     }
                 }
                 break;
@@ -834,7 +834,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
                     /*we don't create signal list on declaration.*/
 					return_sig_list = init_signal_list();
                 }
-                skip_children = TRUE;
+                skip_children = true;
                 break;
             case FUNCTION_ITEMS:
 				/* items include: wire, reg, input, outputs, assign, gate, always */
@@ -843,7 +843,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				function_local_symbol_table = NULL;
 				function_num_local_symbol_table = 0;
 				create_symbol_table_for_function(node, instance_name_prefix);
-				local_clock_found = FALSE;
+				local_clock_found = false;
 
 				/* create all the driven nets based on the "reg" registers */
 				create_all_driver_nets_in_this_function(instance_name_prefix);
@@ -857,7 +857,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 						if (node->children[i]->type == VAR_DECLARE_LIST)
 						{
 							/* IF - The port lists of this module are handled else where */
-							child_skip_list[i] = TRUE;
+							child_skip_list[i] = true;
 						}
 					}
 				}
@@ -865,24 +865,24 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
             case INITIALS:
                 /* define initial value of latchs */
                 //define_latchs_initial_value_inside_initial_statement(node->children[0], instance_name_prefix);
-                skip_children = TRUE;
+                skip_children = true;
                 break;
             case FUNCTION_INSTANCE:
                 return_sig_list = connect_function_instantiation_and_alias(INSTANTIATE_DRIVERS, node, instance_name_prefix);
-                skip_children = TRUE;
+                skip_children = true;
                 break;
 			case GATE:
 				/* create gate instances */
 				return_sig_list = create_gate(node, instance_name_prefix);
 				/* create_gate does it's own instantiations so skip the children in the traverse */
-				skip_children = TRUE;
+				skip_children = true;
 				break;
 			/* ---------------------- */
 			/* All these are input references that we need to grab their pins from by create_pin */
 			case ARRAY_REF:
 			{
 				return_sig_list = create_pins(node, NULL, instance_name_prefix);
-				skip_children = TRUE;
+				skip_children = true;
 				break;
 			}
 			case IDENTIFIERS:
@@ -895,7 +895,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 			{
 				return_sig_list = create_pins(node, NULL, instance_name_prefix);
 				/* children are traversed in the create_pin function */
-				//skip_children = TRUE;
+				//skip_children = true;
 				break;
 			}
 			/* ---------------------- */
@@ -909,30 +909,30 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 			{
 
 				return_sig_list = assignment_alias(node, instance_name_prefix);
-				skip_children = TRUE;
+				skip_children = true;
 				break;
 			}
 			case ALWAYS:
 				/* evaluate if this is a sensitivity list with posedges/negedges (=SEQUENTIAL) or none (=COMBINATIONAL) */
 				local_clock_list = evaluate_sensitivity_list(node->children[0], instance_name_prefix);
-				child_skip_list[0] = TRUE;
+				child_skip_list[0] = true;
 				break;
 			case CASE:
 				return_sig_list = create_case(node, instance_name_prefix);
-				skip_children = TRUE;
+				skip_children = true;
 				break;
 			case IF:
 				return_sig_list = create_if(node, instance_name_prefix);
-				skip_children = TRUE;
+				skip_children = true;
 				break;
 			case IF_Q:
 				return_sig_list = create_if_for_question(node, instance_name_prefix);
-				skip_children = TRUE;
+				skip_children = true;
 				break;
 			case HARD_BLOCK:
 				/* set the skip list */
-				child_skip_list[0] = TRUE; /* skip the identifier */
-				child_skip_list[1] = TRUE; /* skip portlist ... we'll use where they're defined */
+				child_skip_list[0] = true; /* skip the identifier */
+				child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
 				return_sig_list = create_hard_block(node, instance_name_prefix);
 				break;
 			case CONCATENATE:
@@ -944,12 +944,12 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 		}
 		/* ------------------------------------------------------------------------------*/
 		/* This is the depth first traverse (DFT aka DFS) of the ast nodes that make up the netlist. */
-		if (skip_children == FALSE)
+		if (skip_children == false)
 		{
 			/* traverse all the children */
 			for (i = 0; i < node->num_children; i++)
 			{
-				if (child_skip_list[i] == FALSE)
+				if (child_skip_list[i] == false)
 				{
 					/* recursively call through the tree going to each instance.  This is depth first traverse. */
 					children_signal_list[i] = netlist_expand_ast_of_module(node->children[i], instance_name_prefix);
@@ -1570,7 +1570,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		/* Check if this net should have an initial value */
 		if(var_declare->types.variable.is_initialized){
-			new_net->has_initial_value = TRUE;
+			new_net->has_initial_value = true;
 			/* Initial net value should only be either 1 or 0 */
 			new_net->initial_value = var_declare->types.variable.initial_value ? 1 : 0;
 		}
@@ -1625,7 +1625,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 			/* Assign initial value to this net if it exists */
 			if(var_declare->types.variable.is_initialized){
-				new_net->has_initial_value = TRUE;
+				new_net->has_initial_value = true;
 				/* Grab LSB */
 				new_net->initial_value = initial_value & 0x01;
 				/* Shift out lowest bit */
@@ -1895,12 +1895,12 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * module_name
 						else if (var_declare->types.variable.is_output)
 						{
 							/* copy all the reg and wire info over */
-							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_output = TRUE;
+							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_output = true;
 
 							/* check for an initial value and copy it over if found */
 							long initial_value;
 							if(check_for_initial_reg_value(module_name, var_declare, &initial_value)){
-								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
+								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = true;
 								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
 							}
 						}
@@ -1914,7 +1914,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * module_name
 							/* check for an initial value and copy it over if found */
 							long initial_value;
 							if(check_for_initial_reg_value(module_name, var_declare, &initial_value)){
-								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
+								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = true;
 								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
 							}
 						}
@@ -1936,7 +1936,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * module_name
 						/* check for an initial value and store it if found */
 						long initial_value;
 						if(check_for_initial_reg_value(module_name, var_declare, &initial_value)){
-							var_declare->types.variable.is_initialized = TRUE;
+							var_declare->types.variable.is_initialized = true;
 							var_declare->types.variable.initial_value = initial_value;
 						}
 					}
@@ -2001,12 +2001,12 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * module_
 						if (var_declare->types.variable.is_output)
 						{
 							/* copy all the reg and wire info over */
-							((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_output = TRUE;
+							((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_output = true;
 
 							/* check for an initial value and copy it over if found */
 							long initial_value;
 							if(check_for_initial_reg_value(module_name, var_declare, &initial_value)){
-								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
+								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = true;
 								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
 							}
 						}
@@ -2021,7 +2021,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * module_
 							/* check for an initial value and copy it over if found */
 							long initial_value;
 							if(check_for_initial_reg_value(module_name, var_declare, &initial_value)){
-								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
+								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = true;
 								((ast_node_t*)function_local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
 							}
 						}
@@ -2043,7 +2043,7 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * module_
 						/* check for an initial value and store it if found */
 						long initial_value;
 						if(check_for_initial_reg_value(module_name, var_declare, &initial_value)){
-							var_declare->types.variable.is_initialized = TRUE;
+							var_declare->types.variable.is_initialized = true;
 							var_declare->types.variable.initial_value = initial_value;
 						}
 					}
@@ -2075,7 +2075,7 @@ int check_for_initial_reg_value(char * module_name, ast_node_t* var_declare, lon
 		if(resolved_number->type == NUMBERS)
 		{
 			*value = resolved_number->types.vnumber->get_value();
-			return TRUE;
+			return true;
 		}
 		else
 		{
@@ -2083,7 +2083,7 @@ int check_for_initial_reg_value(char * module_name, ast_node_t* var_declare, lon
 				"%s", "Could not resolve initial assignement to a constant value, skipping\n");
 		}
 	}
-	return FALSE;
+	return false;
 }
 
 /*--------------------------------------------------------------------------
@@ -2614,7 +2614,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 					nnet_t* net = (nnet_t*)output_nets_sc->data[sc_spot_output];
 					nnet_t* in_net = (nnet_t*)input_nets_sc->data[sc_spot_input_old];
 
-					if ((net != in_net) && (net->combined == TRUE))
+					if ((net != in_net) && (net->combined == true))
 					{
 						/* if they haven't been combined already, then join the inputs and output */
 						join_nets(net, in_net);
@@ -2622,7 +2622,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 						/* since the driver net is deleted, copy the spot of the in_net over */
 						input_nets_sc->data[sc_spot_input_old] = (void*)net;
 					}
-					else if ((net != in_net) && (net->combined == FALSE))
+					else if ((net != in_net) && (net->combined == false))
 					{
 						/* if they haven't been combined already, then join the inputs and output */
 						combine_nets(net, in_net, verilog_netlist);
@@ -2951,7 +2951,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 					    nnet_t* net = (nnet_t*)output_nets_sc->data[sc_spot_output];
 					    nnet_t* in_net = (nnet_t*)input_nets_sc->data[sc_spot_input_old];
 
-					    if ((net != in_net) && (net->combined == TRUE))
+					    if ((net != in_net) && (net->combined == true))
 					    {
 						    /* if they haven't been combined already, then join the inputs and output */
 						    join_nets(net, in_net);
@@ -2959,7 +2959,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 						    /* since the driver net is deleted, copy the spot of the in_net over */
 						    input_nets_sc->data[sc_spot_input_old] = (void*)net;
 					    }
-					    else if ((net != in_net) && (net->combined == FALSE))
+					    else if ((net != in_net) && (net->combined == false))
 					    {
 						    /* if they haven't been combined already, then join the inputs and output */
 						    combine_nets(net, in_net, verilog_netlist);
@@ -3619,7 +3619,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 	npin_t **list_dependence_pin = (npin_t **)vtr::calloc(assignment->count,sizeof(npin_t *));
 	ids *list_dependence_type = (ids *)vtr::calloc(assignment->count,sizeof(ids));
 	/* figure out which one is the clock */
-	if (local_clock_found == FALSE)
+	if (local_clock_found == false)
 	{
 		int i;
 		for (i = 0; i < potential_clocks->count; i++)
@@ -3644,7 +3644,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 
 
 			if ((((temp_net->num_fanout_pins == 1) && (temp_net->fanout_pins[0]->node == NULL)) || (temp_net->num_fanout_pins == 0))
-				&& (local_clock_found == TRUE))
+				&& (local_clock_found == true))
 			{
 				error_message(NETLIST_ERROR, always_node->line_number, always_node->file_number,
 						"Suspected second clock (%s).  In a sequential sensitivity list, Odin expects the "
@@ -3655,13 +3655,13 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			else if (temp_net->num_fanout_pins == 0)
 			{
 				/* If this element is in the sensitivity list and doesn't drive anything it's the clock */
-				local_clock_found = TRUE;
+				local_clock_found = true;
 				local_clock_idx = i;
 			}
 			else if ((temp_net->num_fanout_pins == 1) && (temp_net->fanout_pins[0]->node == NULL))
 			{
 				/* If this element is in the sensitivity list and doesn't drive anything it's the clock */
-				local_clock_found = TRUE;
+				local_clock_found = true;
 				local_clock_idx = i;
 			}
 
@@ -3822,7 +3822,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			add_pin_to_signal_list(clock, clock_pin);
 			add_input_port_to_implicit_memory(memory, clock, "clk");
 			free_signal_list(clock);
-			memory->clock_added = TRUE;
+			memory->clock_added = true;
 		}
 	}
 	free_signal_list(memory_inputs);
@@ -4095,7 +4095,7 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 			break;
 		case ADD: // +
 			/* add the largest bit width + the other input padded with 0's */
-			return_list->is_adder = TRUE;
+			return_list->is_adder = true;
 			output_port_width = max_input_port_width + 1;
 			input_port_width = max_input_port_width;
 
@@ -4508,7 +4508,7 @@ void create_if_control_signals(ast_node_t *if_expression, nnode_t *if_node, char
 
 
 	// Mark the else condition for the simulator.
-	out_pin_list->pins[0]->is_default = TRUE;
+	out_pin_list->pins[0]->is_default = true;
 
 	/* copy that output pin to be put into the default */
 	add_input_pin_to_node(if_node, out_pin_list->pins[0], 1);
@@ -4648,7 +4648,7 @@ void create_case_control_signals(ast_node_t *case_list_of_items, ast_node_t *com
 			default_expression = make_output_pins_for_existing_node(default_node, 1);
 
 			// Mark the "default" case for simulation.
-			default_expression->pins[0]->is_default = TRUE;
+			default_expression->pins[0]->is_default = true;
 
 			/* copy that output pin to be put into the default */
 			add_input_pin_to_node(case_node, default_expression->pins[0], i);
@@ -4657,7 +4657,7 @@ void create_case_control_signals(ast_node_t *case_list_of_items, ast_node_t *com
 		}
 		else
 		{
-			oassert(FALSE);
+			oassert(false);
 		}
 	}
 
@@ -4709,7 +4709,7 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 		}
 		else
 		{
-			oassert(FALSE);
+			oassert(false);
 		}
 	}
 
@@ -4816,7 +4816,7 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 						/* DON'T CARE - so hookup zero */
 						add_input_pin_to_node(mux_node, get_zero_pin(verilog_netlist), pin_index);
 						// Allows the simulator to be aware of the implied nature of this signal.
-						mux_node->input_pins[pin_index]->is_implied = TRUE;
+						mux_node->input_pins[pin_index]->is_implied = true;
 						break;
 					}
 					default:
@@ -4929,9 +4929,9 @@ int find_smallest_non_numerical(ast_node_t *node, signal_list_t **input_list, in
 	int smallest;
 	int smallest_idx;
 	short *tested = (short*)vtr::calloc(sizeof(short), num_input_lists);
-	short found_non_numerical = FALSE;
+	short found_non_numerical = false;
 
-	while(found_non_numerical == FALSE)
+	while(found_non_numerical == false)
 	{
 		smallest_idx = -1;
 		smallest = -1;
@@ -4958,7 +4958,7 @@ int find_smallest_non_numerical(ast_node_t *node, signal_list_t **input_list, in
 		else
 		{
 			/* mark that we're evaluating this input */
-			tested[smallest_idx] = TRUE;
+			tested[smallest_idx] = true;
 
 			/* check if the smallest is not a number */
 			for (i = 0; i < input_list[smallest_idx]->count; i++)

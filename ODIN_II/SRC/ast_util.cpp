@@ -391,7 +391,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 				}
 				else if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[3] != NULL)
 				{
-					oassert(FALSE);
+					oassert(false);
 				}
 			}
 			vtr::free(temp_string);
@@ -497,7 +497,7 @@ char *get_name_of_var_declare_at_bit(ast_node_t *var_declare, int bit)
 	else if (var_declare->children[3] != NULL)
 	{
 		/* MEMORY output */
-		oassert(FALSE);
+		oassert(false);
 	}
 
 	return return_string;
@@ -556,7 +556,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 			pin_index = ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]->types.vnumber->get_value() + bit;
 		}
 		else
-			oassert(FALSE);
+			oassert(false);
 
 		return_string = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier, pin_index);
 	}
@@ -569,7 +569,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		if (var_node->types.concat.num_bit_strings == 0)
 		{
 			return_string = NULL;
-			oassert(FALSE);
+			oassert(false);
 		}
 		else
 		{
@@ -728,7 +728,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 
 			else if (sym_node->children[3] != NULL)
 			{
-				oassert(FALSE);
+				oassert(false);
 			}
 		}
 		else
@@ -749,7 +749,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 	{
 		if (var_node->types.concat.num_bit_strings == 0)
 		{
-			oassert(FALSE);
+			oassert(false);
 		}
 		else
 		{
@@ -771,7 +771,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 	}
 	else
 	{
-		oassert(FALSE);
+		oassert(false);
 	}
 
 	return_list->strings = return_string;
@@ -1224,54 +1224,54 @@ ast_node_t *fold_unary(ast_node_t **node)
 
 	if(node_is_constant(child_0))
 	{
-		short success = FALSE;
+		bool success = false;
 		VNumber voperand_0 = *(child_0->types.vnumber);
 		VNumber vresult;
 
 		switch (op_id){
 			case LOGICAL_NOT:
 				vresult = V_LOGICAL_NOT(voperand_0);
-				success = TRUE;
+				success = true;
 				break;
 
 			case BITWISE_NOT:
 				vresult = V_BITWISE_NOT(voperand_0);
-				success = TRUE;
+				success = true;
 				break;
 
 			case MINUS:
 				vresult = V_MINUS(voperand_0);
-				success = TRUE;
+				success = true;
 				break;
 
 			case ADD:
 				vresult = V_ADD(voperand_0);
-				success = TRUE;
+				success = true;
 				break;
 
 			case BITWISE_OR:
 				vresult = V_BITWISE_OR(voperand_0);
-				success = TRUE;
+				success = true;
 				break;
 
 			case BITWISE_NAND:
 				vresult = V_BITWISE_NAND(voperand_0);
-				success = TRUE;
+				success = true;
 				break;
 
 			case BITWISE_NOR:
 				vresult = V_BITWISE_NOR(voperand_0);
-				success = TRUE;
+				success = true;
 				break;
 
 			case BITWISE_XNOR:
 				vresult = V_BITWISE_XNOR(voperand_0);
-				success = TRUE;
+				success = true;
 				break;
 
 			case BITWISE_XOR:
 				vresult = V_BITWISE_XOR(voperand_0);
-				success = TRUE;
+				success = true;
 				break;
 
 			case CLOG2:
@@ -1279,7 +1279,7 @@ ast_node_t *fold_unary(ast_node_t **node)
 					warning_message(PARSE_ERROR, (*node)->line_number, (*node)->file_number, "argument is %ld-bits but ODIN limit is %lu-bits \n",voperand_0.size(),ODIN_STD_BITWIDTH);
 
 				vresult = VNumber(clog2(voperand_0.get_value(), voperand_0.size()));
-				success = TRUE;
+				success = true;
 				break;
 
 			default:
@@ -1315,7 +1315,7 @@ ast_node_t * fold_binary(ast_node_t **node)
 
 	if(node_is_constant(child_0) &&  node_is_constant(child_1))
 	{
-		short success = FALSE;
+		bool success = false;
 		VNumber voperand_0 = *(child_0->types.vnumber);
 		VNumber voperand_1 = *(child_1->types.vnumber);
 		VNumber vresult;
@@ -1323,17 +1323,17 @@ ast_node_t * fold_binary(ast_node_t **node)
 		switch (op_id){
 			case ADD:
 				vresult = V_ADD(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case MINUS:
 				vresult = V_MINUS(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case MULTIPLY:
 				vresult = V_MULTIPLY(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case POWER:
@@ -1343,108 +1343,108 @@ ast_node_t * fold_binary(ast_node_t **node)
 
 			case DIVIDE:
 				vresult = V_DIV(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case BITWISE_XOR:
 				vresult = V_BITWISE_XOR(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case BITWISE_XNOR:
 				vresult = V_BITWISE_XNOR(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case BITWISE_AND:
 				vresult = V_BITWISE_AND(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case BITWISE_NAND:
 				vresult = V_BITWISE_NAND(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case BITWISE_OR:
 				vresult = V_BITWISE_OR(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case BITWISE_NOR:
 				vresult = V_BITWISE_NOR(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case SL:
 				vresult = V_SHIFT_LEFT(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case SR:
 				vresult = V_SHIFT_RIGHT(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
             case ASR:
 			{
 				vresult = V_SIGNED_SHIFT_RIGHT(voperand_0, voperand_1);
-                success = TRUE;
+                success = true;
                 break;
 			}
 			case LOGICAL_AND:
 				vresult = V_LOGICAL_AND(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case LOGICAL_OR:
 				vresult = V_LOGICAL_OR(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case MODULO:
 				vresult = V_MOD(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case LT:
 				vresult = V_LT(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case GT:
 				vresult = V_GT(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case LOGICAL_EQUAL:
 				vresult = V_LE(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case NOT_EQUAL:
 				vresult = V_NOT_EQUAL(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case LTE:
 				vresult = V_LE(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case GTE:
 				vresult = V_GE(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case CASE_EQUAL:
 				vresult = V_CASE_EQUAL(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			case CASE_NOT_EQUAL:
 				vresult = V_CASE_NOT_EQUAL(voperand_0, voperand_1);
-				success = TRUE;
+				success = true;
 				break;
 
 			default:
@@ -1533,7 +1533,7 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->file_number = file_number;
 	new_node->far_tag = 0;
 	new_node->high_number = 0;
-	new_node->shared_node = FALSE;
+	new_node->shared_node = false;
 	new_node->hb_port = 0;
 	new_node->net_node = 0;
 	new_node->is_read_write = 0;

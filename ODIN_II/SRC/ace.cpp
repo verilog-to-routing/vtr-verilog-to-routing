@@ -65,11 +65,11 @@ typedef unsigned int *pset;
 #define set_new(size)		set_clear(ALLOC(unsigned int, set_size(size)), size)
 #define set_size(size)          ((size) <= BPI ? 2 : (WHICH_WORD((size)-1) + 1))
 
-typedef struct {
+struct ace_cube_t{
 	pset cube;
 	int num_literals;
 	double static_prob;
-} ace_cube_t;
+};
 
 
 /******** Function prototypes ********/

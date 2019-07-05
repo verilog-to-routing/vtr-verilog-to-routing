@@ -1,3 +1,6 @@
+#ifndef PARSE_MAKING_AST_H
+#define PARSE_MAKING_AST_H
+
 #include "odin_types.h"
 
 void parse_to_ast();
@@ -87,3 +90,5 @@ void next_parsed_verilog_file(ast_node_t *file_items_list);
 /* VISUALIZATION */
 void graphVizOutputAst(std::string path, ast_node_t *top);
 void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *from, int from_num);
+
+#endif

@@ -79,14 +79,14 @@ t_type_descriptor* type_descriptors;
 int block_tag;
 int num_types=0;
 
-typedef enum
+enum ODIN_ERROR_CODE
 {
 	SUCCESS,
 	ERROR_PARSE_ARCH,
 	ERROR_SYNTHESIS,
 	ERROR_PARSE_BLIF,
 
-}ODIN_ERROR_CODE;
+};
 
 static ODIN_ERROR_CODE synthesize_verilog()
 {
@@ -204,7 +204,7 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	return SUCCESS;
 }
 
-struct netlist_t_t *start_odin_ii(int argc,char **argv)
+netlist_t *start_odin_ii(int argc,char **argv)
 {
 
 	/* Some initialization */

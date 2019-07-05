@@ -40,10 +40,10 @@ int _visited_forward, _visited_backward, _visited_removal;
 
 
 /* Simple linked list of nodes structure */
-typedef struct node_list_t_t{
+struct node_list_t{
 	nnode_t *node;
-	struct node_list_t_t *next;
-} node_list_t;
+	struct node_list_t *next;
+};
 
 node_list_t useless_nodes; // List of the nodes to be removed
 node_list_t *removal_list_next = &useless_nodes; // Tail of the nodes to be removed
@@ -96,7 +96,7 @@ void traverse_forward(nnode_t *node, int toplevel, int remove_me){
 
 	/* We want to remove this node if either its parent was removed,
 	 * or if it was not visited on the backwards sweep */
-	remove_me = remove_me || ((node->node_data != VISITED_BACKWARD) && (toplevel == FALSE));
+	remove_me = remove_me || ((node->node_data != VISITED_BACKWARD) && (toplevel == false));
 
 	/* Mark this node as visited */
 	node->node_data = VISITED_FORWARD;
@@ -129,7 +129,7 @@ void traverse_forward(nnode_t *node, int toplevel, int remove_me){
 					if(child){
 						/* If this child hasn't already been visited, visit it now */
 						if(child->node_data != VISITED_FORWARD){
-							traverse_forward(child, FALSE, remove_me);
+							traverse_forward(child, false, remove_me);
 						}
 					}
 				}
@@ -158,12 +158,12 @@ void identify_unused_nodes(netlist_t *netlist){
 	addsub_nodes.node = NULL;
 	addsub_nodes.next = NULL;
 
-	traverse_forward(netlist->gnd_node, TRUE, FALSE);
-	traverse_forward(netlist->vcc_node, TRUE, FALSE);
-	traverse_forward(netlist->pad_node, TRUE, FALSE);
+	traverse_forward(netlist->gnd_node, true, false);
+	traverse_forward(netlist->vcc_node, true, false);
+	traverse_forward(netlist->pad_node, true, false);
 	int i;
 	for(i = 0; i < netlist->num_top_input_nodes; i++){
-		traverse_forward(netlist->top_input_nodes[i], TRUE, FALSE);
+		traverse_forward(netlist->top_input_nodes[i], true, false);
 	}
 }
 
@@ -198,19 +198,19 @@ double total_addsub_chain_count = 0.0;
 
 void calculate_addsub_statistics(node_list_t *addsub){
 	while(addsub != NULL && addsub->node != NULL){
-		int found_tail = FALSE;
+		int found_tail = false;
 		nnode_t *node = addsub->node;
 		int chain_depth = 0;
 		while(!found_tail){
 			if(node->node_data == VISITED_REMOVAL){
-				found_tail = TRUE;
+				found_tail = true;
 				break;
 			}
 			chain_depth += 1;
 
 			/* Carry out is always output pin 0 */
 			nnet_t *carry_out_net = node->output_pins[0]->net;
-			if(carry_out_net == NULL || carry_out_net->fanout_pins[0] == NULL) found_tail = TRUE;
+			if(carry_out_net == NULL || carry_out_net->fanout_pins[0] == NULL) found_tail = true;
 			else node = carry_out_net->fanout_pins[0]->node;
 		}
 		if(chain_depth > 0){

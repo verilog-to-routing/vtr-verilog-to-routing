@@ -49,7 +49,6 @@ extern netlist_t *blif_netlist;
 
 /* Global variable for read_blif function call */
 extern netlist_t *read_blif_netlist;
-extern global_args_read_blif_t global_args_read_blif;
 
 extern long file_line_number;
 

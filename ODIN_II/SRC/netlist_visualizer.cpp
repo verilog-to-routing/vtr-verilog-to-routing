@@ -25,9 +25,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "odin_types.h"
 #include "odin_globals.h"
 #include "netlist_utils.h"
+#include "netlist_visualizer.h"
 #include "odin_util.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -37,9 +39,6 @@ void depth_first_traversal_graph_display(FILE *out, short marker_value, netlist_
 
 void forward_traversal_net_graph_display(FILE *out, short marker_value, nnode_t *node);
 void backward_traversal_net_graph_display(FILE *out, short marker_value, nnode_t *node);
-
-void graphVizOutputNetlist(std::string path, const char* name, short marker_value, netlist_t *netlist);
-void graphVizOutputCombinationalNet(std::string path, const char* name, short marker_value, nnode_t *current_node);
 
 /*---------------------------------------------------------------------------------------------
  * (function: graphVizOutputNetlist)

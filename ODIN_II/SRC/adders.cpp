@@ -28,6 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <math.h>
 
 #include "odin_types.h"
+#include "odin_util.h"
 #include "node_creation_library.h"
 #include "soft_logic_def_parser.h"
 #include "adders.h"
@@ -36,6 +37,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "read_xml_arch_file.h"
 #include "odin_globals.h"
 
+#include "multipliers.h"
 #include "subtractions.h"
 
 #include "vtr_memory.h"
@@ -207,7 +209,7 @@ void instantiate_hard_adder(nnode_t *node, short mark, netlist_t * /*netlist*/)
 		sanity = odin_sprintf(new_name, "%s", node->name);
 
 	if (len <= sanity) /* buffer not large enough */
-		oassert(FALSE);
+		oassert(false);
 
 	/* Give names to the output pins */
 	for (i = 0; i < node->num_output_pins;  i++)

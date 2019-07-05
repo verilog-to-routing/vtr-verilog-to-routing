@@ -190,8 +190,8 @@ void set_default_optimization_settings(config_t *config)
 	config->fixed_hard_multiplier = 0;
 	config->mult_padding = -1; /* unconn */
 	config->split_hard_multiplier = 1;
-	config->split_memory_width = FALSE;
-	config->split_memory_depth = FALSE;
+	config->split_memory_width = false;
+	config->split_memory_depth = false;
 	config->min_hard_adder = 0;
 	config->fixed_hard_adder = 0;
 	config->split_hard_adder = 1;

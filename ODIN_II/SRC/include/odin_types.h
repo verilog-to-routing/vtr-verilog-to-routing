@@ -21,31 +21,23 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
+#ifndef ODIN_TYPES_H
+#define ODIN_TYPES_H
+
 #include "string_cache.h"
-#include "odin_util.h"
 #include "odin_error.h"
 #include "read_xml_arch_file.h"
-#include "simulate_blif.h"
 #include "argparse_value.hpp"
 #include "AtomicBuffer.hpp"
 #include "config_t.h"
 #include <mutex>
 #include <atomic>
 #include <string>
+#include <stdbool.h>
 
 #include <stdlib.h>
 
 #include "rtl_int.hpp"
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-#ifndef FALSE
-#define FALSE 0
-#endif
-
-#ifndef TYPES_H
-#define TYPES_H
 
 /**
  * to use short vs long string for output
@@ -60,27 +52,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #define ODIN_STD_BITWIDTH (sizeof(long)*8)
-
-typedef struct global_args_t_t global_args_t;
-/* new struct for the global arguments of verify_blif function */
-typedef struct global_args_read_blif_t_t global_args_read_blif_t;
-
-typedef struct ast_node_t_t ast_node_t;
-typedef struct typ_t typ;
-
-typedef struct sim_state_t_t sim_state_t;
-typedef struct nnode_t_t nnode_t;
-typedef struct ace_obj_info_t_t ace_obj_info_t;
-typedef struct npin_t_t npin_t;
-typedef struct nnet_t_t nnet_t;
-typedef struct signal_list_t_t signal_list_t;
-typedef struct char_list_t_t char_list_t;
-typedef struct netlist_t_t netlist_t;
-typedef struct netlist_stats_t_t netlist_stats_t;
-typedef struct chain_information_t_t chain_information_t;
-
-// to define type of adder in cmd line
-typedef struct adder_def_t_t adder_def_t;
 
 /* unique numbers to mark the nodes as we DFS traverse the netlist */
 #define PARTIAL_MAP_TRAVERSE_VALUE 10
@@ -99,8 +70,16 @@ typedef struct adder_def_t_t adder_def_t;
 
 #define verify_i_o_availabilty(node, expected_input_size, expected_output_size) passed_verify_i_o_availabilty(node, expected_input_size, expected_output_size, __FILE__, __LINE__)
 
+
+struct ast_node_t;
+struct nnode_t;
+struct npin_t;
+struct nnet_t;
+struct netlist_t;
+
+
 /* the global arguments of the software */
-struct global_args_t_t
+struct global_args_t
 {
 	std::string program_name;
 
@@ -162,12 +141,6 @@ struct global_args_t_t
 
 };
 
-#endif // TYPES_H
-
-//-----------------------------------------------------------------------------------------------------
-
-#ifndef AST_TYPES_H
-#define AST_TYPES_H
 
 /**
  * defined in enum_str.cpp
@@ -186,13 +159,13 @@ extern const char *edge_type_e_STR[];
 extern const char *operation_list_STR[][2];
 extern const char *ids_STR [];
 
-typedef enum
+enum file_extension_supported
 {
 	VERILOG,
 	file_extension_supported_END
-} file_extension_supported;
+};
 
-typedef enum
+enum bases
 {
 	DEC = 10,
 	HEX = 16,
@@ -200,16 +173,16 @@ typedef enum
 	BIN = 2,
 	LONG = 0,
 	bases_END
-} bases;
+};
 
-typedef enum
+enum signedness
 {
 	SIGNED,
 	UNSIGNED,
 	signedness_END
-} signedness;
+};
 
-typedef enum
+enum edge_type_e
 {
 	UNDEFINED_SENSITIVITY,
 	FALLING_EDGE_SENSITIVITY,
@@ -218,16 +191,16 @@ typedef enum
 	ACTIVE_LOW_SENSITIVITY,
 	ASYNCHRONOUS_SENSITIVITY,
 	edge_type_e_END
-} edge_type_e;
+};
 
-typedef enum
+enum circuit_type_e
 {
 	COMBINATIONAL,
 	SEQUENTIAL,
 	circuit_type_e_END
-} circuit_type_e;
+};
 
-typedef enum
+enum operation_list
 {
 	NO_OP,
 	MULTI_PORT_MUX, // port 1 = control, port 2+ = mux options
@@ -281,9 +254,9 @@ typedef enum
 	FULLADDER,
 	CLOG2, // $clog2
 	operation_list_END
-} operation_list;
+};
 
-typedef enum
+enum ids
 {
 	NO_ID,
 	/* top level things */
@@ -370,9 +343,9 @@ typedef enum
 	// EDDIE: new enum value for ids to replace MEMORY from operation_t
 	RAM,
 	ids_END
-} ids;
+};
 
-struct typ_t
+struct typ
 {
 	char *identifier;
 	VNumber *vnumber = nullptr;
@@ -418,7 +391,7 @@ struct typ_t
 };
 
 
-struct ast_node_t_t
+struct ast_node_t
 {
 	long unique_count;
 	int far_tag;
@@ -439,14 +412,11 @@ struct ast_node_t_t
 	short is_read_write;
 
 };
-#endif // AST_TYPES_H
-
 
 //-----------------------------------------------------------------------------------------------------
-#ifndef NETLIST_UTILS_H
-#define NETLIST_UTILS_H
+
 /* DEFINTIONS for carry chain*/
-struct chain_information_t_t
+struct chain_information_t
 {
 	char *name;//unique name of the chain
 	int count;//the number of hard blocks in this chain
@@ -455,7 +425,7 @@ struct chain_information_t_t
 
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version
  * of these names, so if you add new tpyes in here, be sure to add those same types in utils.c */
-struct nnode_t_t
+struct nnode_t
 {
 	long unique_id;
 	char *name; // unique name of a node
@@ -517,7 +487,7 @@ struct nnode_t_t
 
 
 // Ace_Obj_Info_t; /* Activity info for each node */
-struct ace_obj_info_t_t
+struct ace_obj_info_t
 {
 	int value;
 	int num_ones;
@@ -530,7 +500,7 @@ struct ace_obj_info_t_t
 	int depth;
 };
 
-struct npin_t_t
+struct npin_t
 {
 	long unique_id;
 	ids type;         // INPUT or OUTPUT
@@ -560,7 +530,7 @@ struct npin_t_t
 
 };
 
-struct nnet_t_t
+struct nnet_t
 {
 	long unique_id;
 	char *name; // name for the net
@@ -583,7 +553,7 @@ struct nnet_t_t
 	//////////////////////
 };
 
-struct signal_list_t_t
+struct signal_list_t
 {
 	npin_t **pins;
 	long count;
@@ -592,13 +562,13 @@ struct signal_list_t_t
 	char is_adder;
 };
 
-struct char_list_t_t
+struct char_list_t
 {
 	char **strings;
 	int num_strings;
 };
 
-struct netlist_t_t
+struct netlist_t
 {
 	nnode_t *gnd_node;
 	nnode_t *vcc_node;
@@ -638,36 +608,8 @@ struct netlist_t_t
 	STRING_CACHE *out_pins_sc;
 	STRING_CACHE *nodes_sc;
 
-	netlist_stats_t *stats;
-
 	t_type_ptr type;
 
 };
 
-struct netlist_stats_t_t
-{
-	int num_inputs;
-	int num_outputs;
-	int num_ff_nodes;
-	int num_logic_nodes;
-	int num_nodes;
-
-	float average_fanin; /* = to the fanin of all nodes: basic outs, combo and ffs */
-	int *fanin_distribution;
-	int num_fanin_distribution;
-
-	long num_output_pins;
-	float average_output_pins_per_node;
-	float average_fanout; /* = to the fanout of all nodes: basic IOs, combo and ffs...no vcc, clocks, gnd */
-	int *fanout_distribution;
-	int num_fanout_distribution;
-
-	/* expect these should be close but doubt they'll be equal */
-	long num_edges_fo; /* without control signals like clocks and gnd and vcc...= to number of fanouts from output pins */
-	long num_edges_fi; /* without control signals like clocks and gnd and vcc...= to number of fanins from output pins */
-
-	int **combinational_shape;
-	int *num_combinational_shape_for_sequential_level;
-};
-
-#endif // NET_TYPES_H
+#endif

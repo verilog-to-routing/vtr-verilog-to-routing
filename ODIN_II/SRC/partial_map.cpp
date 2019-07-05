@@ -62,8 +62,6 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist);
 
 void instantiate_soft_logic_ram(nnode_t *node, short mark, netlist_t *netlist);
 
-adder_def_t *get_adder_type();
-
 /*-------------------------------------------------------------------------
  * (function: partial_map_top)
  *-----------------------------------------------------------------------*/
@@ -168,7 +166,7 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 				instantiate_bitwise_reduction(node, node->type, traverse_number, netlist);
 			}
 			else
-				oassert(FALSE);
+				oassert(false);
 			break;
 
 		case LOGICAL_OR:
@@ -215,7 +213,7 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 					instantiate_unary_sub(node, traverse_number, netlist);
 				}
 				else
-					oassert(FALSE);
+					oassert(false);
 			}
 			else{
 				if (node->num_input_port_sizes == 2)
@@ -227,7 +225,7 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 					instantiate_unary_sub(node, traverse_number, netlist);
 				}
 				else
-					oassert(FALSE);
+					oassert(false);
 			}
 
 			break;
@@ -322,7 +320,7 @@ void instantiate_soft_logic_ram(nnode_t *node, short mark, netlist_t *netlist)
 	else if (is_dp_ram(node))
 		instantiate_soft_dual_port_ram(node, mark, netlist);
 	else
-		oassert(FALSE);
+		oassert(false);
 }
 
 
@@ -528,7 +526,7 @@ void instantiate_bitwise_reduction(nnode_t *node, operation_list op, short mark,
 			break;
 		default:
 			cell_op = NO_OP;
-			oassert(FALSE);
+			oassert(false);
 			break;
 	}
 	/* instantiate the cells */
@@ -588,7 +586,7 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 			break;
 		default:
 			cell_op = NO_OP;
-			oassert(FALSE);
+			oassert(false);
 			break;
 	}
 

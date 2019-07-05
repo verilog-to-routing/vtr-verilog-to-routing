@@ -150,10 +150,10 @@ bool simplify_expression()
 	reduce_enode_list();
 
 	if(delete_continuous_multiply())
-		build = TRUE;
+		build = true;
 
 	if(combine_constant())
-		build = TRUE;
+		build = true;
 
 	reduce_enode_list();
 	return build;
@@ -348,7 +348,7 @@ void create_enode(ast_node_t *node)
  *-------------------------------------------------------------------------*/
 bool adjoin_constant()
 {
-	bool build = FALSE;
+	bool build = false;
 	enode *t, *replace;
 	int a, b, result = 0;
 	int mark;
@@ -367,7 +367,7 @@ bool adjoin_constant()
 					else
 						result = a / b;
 					replace = replace_enode(result, t, 1);
-					build = TRUE;
+					build = true;
 					mark = 1;
 					break;
 
@@ -392,7 +392,7 @@ bool adjoin_constant()
 						}
 
 						replace = replace_enode(result, t, 1);
-						build = TRUE;
+						build = true;
 						mark = 1;
 					}
 					break;
@@ -463,7 +463,7 @@ bool combine_constant()
 	enode *temp, *m, *s1, *s2, *replace;
 	int a, b, result;
 	int mark;
-	bool build = FALSE;
+	bool build = false;
 
 	for (temp = head; temp != NULL; )
 	{
@@ -515,7 +515,7 @@ bool combine_constant()
 						}
 						else
 							temp = replace->pre;
-						build = TRUE;
+						build = true;
 
 						break;
 					}
@@ -617,7 +617,7 @@ int check_exp_list(enode *tail)
 bool delete_continuous_multiply()
 {
 	enode *temp, *t, *m, *replace;
-	bool build = FALSE;
+	bool build = false;
 	int a, b, result;
 	int mark;
 	for (temp = head; temp != NULL; )
@@ -655,7 +655,7 @@ bool delete_continuous_multiply()
 							t->next->pre = t->pre->pre;
 						}
 						mark = 2;
-						build = TRUE;
+						build = true;
 						vtr::free(t->pre);
 						vtr::free(t);
 						break;
@@ -726,7 +726,7 @@ void create_op_node(ast_node_t *node, enode *temp, int line_num, int file_num)
 			node->types.operation.op = DIVIDE;
 		break;
         default:
-            oassert(FALSE);
+            oassert(false);
         break;
 	}
 
@@ -874,13 +874,13 @@ void copy_enode(enode *node, enode *new_node)
 bool check_tree_operation(ast_node_t *node)
 {
 	if (node && (node->type == BINARY_OPERATION) && ((node->types.operation.op == ADD ) || (node->types.operation.op == MINUS) || (node->types.operation.op == MULTIPLY)))
-		return TRUE;
+		return true;
 
 	for (long i = 0; node &&  i < node->num_children; i++)
 		if(check_tree_operation(node->children[i]))
-			return TRUE;
+			return true;
 
-	return FALSE;
+	return false;
 }
 
 /*---------------------------------------------------------------------------
