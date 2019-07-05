@@ -57,22 +57,22 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #define DEFAULT_CLOCK_NAME "GLOBAL_SIM_BASE_CLK"
 
-typedef struct {
+struct line_t{
 	int number_of_pins;
 	int max_number_of_pins;
 	npin_t **pins;
 	int  *pin_numbers;
 	char *name;
 	int type;
-} line_t;
+};
 
-typedef struct {
+struct lines_t{
 	line_t **lines;
 	int    *pin_numbers;
 	int    count;
-} lines_t;
+};
 
-typedef struct {
+struct stages_t{
 	nnode_t ***stages; // Stages.
 	int       *counts; // Number of nodes in each stage.
 	int 	   count;  // Number of stages.
@@ -87,29 +87,29 @@ typedef struct {
 	int worker_const;
 	int worker_temp;
 	bool warned;
-} stages_t;
+};
 
 //maria
-typedef struct {
+struct netlist_subset{
 	nnode_t **nodes;
 	int number_of_nodes;
-} netlist_subset;
+};
 
 //maria
-typedef struct {
+struct thread_node_distribution{
 	netlist_subset **thread_nodes;
 	int number_of_threads;
 	netlist_subset *memory_nodes; //pointers to memory nodes
-}thread_node_distribution;
+};
 
 
-typedef struct {
+struct test_vector{
 	signed char  **values;
 	int           *counts;
 	int            count;
-} test_vector;
+};
 
-typedef struct sim_data_t_t
+struct sim_data_t
 {
 	//maria
 	lines_t **input_lines_per_wave;
@@ -139,7 +139,7 @@ typedef struct sim_data_t_t
 
 	netlist_t *netlist;
 
-}sim_data_t;
+};
 
 
 void simulate_netlist(netlist_t *netlist);

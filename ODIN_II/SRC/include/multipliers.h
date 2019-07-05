@@ -25,13 +25,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "read_xml_arch_file.h"
 
-typedef struct s_multiplier
+struct t_multiplier
 {
 	int size_a;
 	int size_b;
 	int size_out;
-	struct s_multiplier *next;
-} t_multiplier;
+	struct t_multiplier *next;
+} ;
 
 extern t_model *hard_multipliers;
 extern vtr::t_linked_vptr *mult_list;

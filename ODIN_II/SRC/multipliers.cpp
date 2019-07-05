@@ -28,6 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <cmath>
 #include <string>
 #include "odin_types.h"
+#include "odin_util.h"
 #include "node_creation_library.h"
 #include "multipliers.h"
 #include "netlist_utils.h"
@@ -547,7 +548,7 @@ void define_mult_function(nnode_t *node, FILE *out)
 	oassert(node->input_port_sizes[1] > 0);
 	oassert(node->output_port_sizes[0] > 0);
 
-	int flip = FALSE;
+	int flip = false;
 
 	if (configuration.fixed_hard_multiplier != 0)
 	{
@@ -560,14 +561,14 @@ void define_mult_function(nnode_t *node, FILE *out)
 			count += fprintf(out, " mult_%d_%d_%d", node->input_port_sizes[0],
 				node->input_port_sizes[1], node->output_port_sizes[0]);
 
-			flip = FALSE;
+			flip = false;
 		}
 		else
 		{
 			count += fprintf(out, " mult_%d_%d_%d", node->input_port_sizes[1],
 				node->input_port_sizes[0], node->output_port_sizes[0]);
 
-			flip = TRUE;
+			flip = true;
 		}
 	}
 

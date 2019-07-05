@@ -28,7 +28,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 
 #include "odin_types.h"
+#include "odin_util.h"
 #include "odin_globals.h"
+#include "netlist_utils.h"
 #include "hard_blocks.h"
 #include "memories.h"
 

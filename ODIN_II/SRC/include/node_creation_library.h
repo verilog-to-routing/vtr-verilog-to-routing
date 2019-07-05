@@ -1,3 +1,6 @@
+#ifndef NODE_CREATION_LIBRARY_H
+#define NODE_CREATION_LIBRARY_H
+
 #include "odin_types.h"
 
 nnode_t *make_not_gate_with_input(npin_t *input_pin, nnode_t *node, short mark);
@@ -22,3 +25,5 @@ nnode_t *make_mult_block(nnode_t *node, short mark);
 
 edge_type_e edge_type_blif_enum(std::string edge_kind_str);
 const char *edge_type_blif_str(nnode_t *node);
+
+#endif

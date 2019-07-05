@@ -24,6 +24,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <math.h>
 #include "odin_globals.h"
+#include "odin_types.h"
 #include "odin_util.h"
 
 #include "netlist_utils.h"
@@ -896,7 +897,7 @@ void split_dp_memory_width(nnode_t *node, int target_size)
 				}
 				else
 				{
-					oassert(FALSE);
+					oassert(false);
 				}
 			}
 		}

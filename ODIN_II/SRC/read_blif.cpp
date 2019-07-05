@@ -21,13 +21,13 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include<stdlib.h>
-#include<string.h>
-#include<stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 #include "odin_globals.h"
+#include "odin_util.h"
 #include "read_blif.h"
 #include "string_cache.h"
-#include "netlist_utils.h"
 
 #include "netlist_utils.h"
 #include "odin_types.h"
@@ -49,25 +49,25 @@ long file_line_number;
 int line_count;
 
 // Stores pin names of the form port[pin]
-typedef struct {
+struct hard_block_pins{
 	int count;
 	char **names;
 	// Maps name to index.
 	Hashtable *index;
-} hard_block_pins;
+};
 
 // Stores port names, and their sizes.
-typedef struct {
+struct hard_block_ports{
 	char *signature;
 	int count;
 	int *sizes;
 	char **names;
 	// Maps portname to index.
 	Hashtable *index;
-} hard_block_ports;
+};
 
 // Stores all information pertaining to a hard block model. (.model)
-typedef struct {
+struct hard_block_model{
 	char *name;
 
 	hard_block_pins *inputs;
@@ -75,15 +75,15 @@ typedef struct {
 
 	hard_block_ports *input_ports;
 	hard_block_ports *output_ports;
-} hard_block_model;
+};
 
 // A cache structure for models.
-typedef struct {
+struct hard_block_models{
 	hard_block_model **models;
 	int count;
 	// Maps name to model
 	Hashtable *index;
-} hard_block_models;
+};
 
 
 netlist_t * blif_netlist;
