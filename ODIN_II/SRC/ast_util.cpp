@@ -338,13 +338,8 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 {
 	long i;
 	int j;
-	ast_node_t *rnode[3];
+	ast_node_t *rnode[3] = { 0 };
 
-	//initialize these to NULL
-	for(i = 0; i < 3; i++)
-	{
-		rnode[i] = NULL;
-	}
 
 	concat_top->types.concat.num_bit_strings = 0;
 	concat_top->types.concat.bit_strings = NULL;
@@ -536,13 +531,7 @@ char *get_name_of_var_declare_at_bit(ast_node_t *var_declare, int bit)
 char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_prefix)
 {
 	char *return_string = NULL;
-	ast_node_t *rnode[3];
-
-	// initialize these to NULL;
-	for(int i = 0; i < 3; i++)
-	{
-		rnode[i] = NULL;
-	}
+	ast_node_t *rnode[3] = { 0 };
 
 	if (var_node->type == ARRAY_REF)
 	{
@@ -687,16 +676,9 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 { 
 	char **return_string = NULL;
 	char_list_t *return_list = (char_list_t*)vtr::malloc(sizeof(char_list_t));
-	ast_node_t *rnode[3];
-
+	ast_node_t *rnode[3] = { 0 };
 	int i;
 	int width = 0;
-	//initialize these to NULL
-	for(i = 0; i < 3; i++)
-	{
-		rnode[i] = NULL;
-	}
-	i = 0;
 
 	if (var_node->type == ARRAY_REF)
 	{
