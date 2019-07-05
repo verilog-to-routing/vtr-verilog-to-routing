@@ -22,6 +22,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 #include "soft_logic_def_parser.h"
 #include "odin_types.h"
+#include "odin_globals.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

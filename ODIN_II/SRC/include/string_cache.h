@@ -21,7 +21,7 @@
  */
 
 
-typedef struct {
+struct STRING_CACHE{
 	long size;
 	long string_hash_size;
 	long free;
@@ -31,7 +31,7 @@ typedef struct {
 	void **data;
 	long *string_hash;
 	long *next_string;
-} STRING_CACHE;
+};
 
 /* creates the hash where it is indexed by a string and the void ** holds the data */
 STRING_CACHE *sc_new_string_cache(void);

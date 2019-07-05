@@ -65,11 +65,13 @@ files_to_dirs(BISON_VerilogParser_OUTPUT_HEADER PARSER_INCLUDE_DIRS)
 
 include(CheckCXXSymbolExists)
 
+set(LIB_INCLUDE_DIRS "SRC/include")
+
 #Collect the source files
 file(GLOB_RECURSE EXEC_SOURCES main.cpp)
 file(GLOB_RECURSE LIB_SOURCES SRC/*.cpp)
-file(GLOB_RECURSE LIB_HEADERS SRC/include/*.h)
-files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
+file(GLOB_RECURSE LIB_HEADERS_H ${LIB_INCLUDE_DIRS}/*.h)
+file(GLOB_RECURSE LIB_HEADERS_HPP ${LIB_INCLUDE_DIRS}/*.hpp)
 
 #Treat .c as CXX
 set_source_files_properties(${FLEX_VerilogLexer_OUTPUTS} ${BISON_VerilogParser_OUTPUT_SOURCE} PROPERTIES LANGUAGE CXX)
@@ -85,7 +87,8 @@ include_directories(${LIB_INCLUDE_DIRS} ${PARSER_INCLUDE_DIRS})
 
 #Create the library
 add_library(libodin_ii STATIC
-             ${LIB_HEADERS}
+             ${LIB_HEADERS_H}
+             ${LIB_HEADERS_HPP}
              ${LIB_SOURCES}
              ${FLEX_VerilogLexer_OUTPUTS} 
              ${BISON_VerilogParser_OUTPUT_SOURCE})

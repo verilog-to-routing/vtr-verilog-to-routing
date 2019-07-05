@@ -29,6 +29,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <sstream>
 #include "odin_globals.h"
 #include "odin_types.h"
+#include "odin_util.h"
 #include "ast_util.h"
 #include "parse_making_ast.h"
 #include "string_cache.h"
@@ -387,7 +388,7 @@ static ast_node_t *resolve_symbol_node(ids top_type, ast_node_t *symbol_node)
 					newNode = (ast_node_t *)defines_for_function_sc[num_functions]->data[sc_spot];
 			}
 
-			if (newNode && newNode->types.variable.is_parameter == TRUE)
+			if (newNode && newNode->types.variable.is_parameter == true)
 			{
 				to_return = symbol_node;
 			}
@@ -517,7 +518,7 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 				}
 			}
 
-			symbol_list->children[i]->types.variable.is_port = TRUE;
+			symbol_list->children[i]->types.variable.is_port = true;
 		}
 	}
 
@@ -578,9 +579,9 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 				error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
 									"Inout cannot be defined as a reg\n");
 			}
-			port->types.variable.is_reg = TRUE;
-			port->types.variable.is_wire = FALSE;
-			port->types.variable.is_integer = FALSE;
+			port->types.variable.is_reg = true;
+			port->types.variable.is_wire = false;
+			port->types.variable.is_integer = false;
 			break;
 
 		case INTEGER:
@@ -594,9 +595,9 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 				error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
 									"Inout cannot be defined as an integer\n");
 			}
-			port->types.variable.is_integer = TRUE;
-			port->types.variable.is_reg = FALSE;
-			port->types.variable.is_wire = FALSE;
+			port->types.variable.is_integer = true;
+			port->types.variable.is_reg = false;
+			port->types.variable.is_wire = false;
 			break;
 
 		case WIRE:
@@ -605,9 +606,9 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 				error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
 									"Ports of type net cannot be initialized\n");
 			}
-			port->types.variable.is_wire = TRUE;
-			port->types.variable.is_reg = FALSE;
-			port->types.variable.is_integer = FALSE;
+			port->types.variable.is_wire = true;
+			port->types.variable.is_reg = false;
+			port->types.variable.is_integer = false;
 			break;
 
 		default:
@@ -655,9 +656,9 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 	switch (port_id)
 	{
 		case INPUT:
-			port->types.variable.is_input = TRUE;
-			port->types.variable.is_output = FALSE;
-			port->types.variable.is_inout = FALSE;
+			port->types.variable.is_input = true;
+			port->types.variable.is_output = false;
+			port->types.variable.is_inout = false;
 
 			/* add this input to the modules string cache */
 			sc_spot = sc_add_string(this_inputs_sc, port->children[0]->types.identifier);
@@ -668,9 +669,9 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 			break;
 
 		case OUTPUT:
-			port->types.variable.is_output = TRUE;
-			port->types.variable.is_input = FALSE;
-			port->types.variable.is_inout = FALSE;
+			port->types.variable.is_output = true;
+			port->types.variable.is_input = false;
+			port->types.variable.is_inout = false;
 
 			/* add this output to the modules string cache */
 			sc_spot = sc_add_string(this_outputs_sc, port->children[0]->types.identifier);
@@ -681,9 +682,9 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 			break;
 
 		case INOUT:
-			port->types.variable.is_inout = TRUE;
-			port->types.variable.is_input = FALSE;
-			port->types.variable.is_output = FALSE;
+			port->types.variable.is_inout = true;
+			port->types.variable.is_input = false;
+			port->types.variable.is_output = false;
 			error_message(PARSE_ERROR, port->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", port->children[0]->types.identifier);
 			break;
 
@@ -718,7 +719,7 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 			break;
 	}
 
-	port->types.variable.is_port = TRUE;
+	port->types.variable.is_port = true;
 
 	return port;
 }
@@ -751,17 +752,17 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 	
 	this_defines_sc[this_num_modules]->data[sc_spot] = (void*)parameter->children[5];
 	/* mark the node as shared so we don't delete it */
-	parameter->children[5]->shared_node = TRUE;
+	parameter->children[5]->shared_node = true;
 
 	if (id == PARAMETER)
 	{
-		parameter->children[5]->types.variable.is_parameter = TRUE;
-		parameter->types.variable.is_parameter = TRUE;
+		parameter->children[5]->types.variable.is_parameter = true;
+		parameter->types.variable.is_parameter = true;
 	}
 	else if (id == LOCALPARAM)
 	{
-		parameter->children[5]->types.variable.is_localparam = TRUE;
-		parameter->types.variable.is_localparam = TRUE;
+		parameter->children[5]->types.variable.is_localparam = true;
+		parameter->types.variable.is_localparam = true;
 	}
 
 	return parameter;
@@ -810,17 +811,17 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
 								"Nets cannot be initialized\n");
 					}
-					symbol_list->children[i]->types.variable.is_wire = TRUE;
+					symbol_list->children[i]->types.variable.is_wire = true;
 					break;
 				case REG:
-					symbol_list->children[i]->types.variable.is_reg = TRUE;
+					symbol_list->children[i]->types.variable.is_reg = true;
 					break;
 				case INTEGER:
 			    case GENVAR:			
-			            symbol_list->children[i]->types.variable.is_integer = TRUE;
+			            symbol_list->children[i]->types.variable.is_integer = true;
 			            break;
 				default:
-					oassert(FALSE);
+					oassert(false);
 			}
         }
         else if(top_type == FUNCTION) {
@@ -844,16 +845,16 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
 								"Nets cannot be initialized\n");
 					}
-					symbol_list->children[i]->types.variable.is_wire = TRUE;
+					symbol_list->children[i]->types.variable.is_wire = true;
 					break;
 				case REG:
-					symbol_list->children[i]->types.variable.is_reg = TRUE;
+					symbol_list->children[i]->types.variable.is_reg = true;
 					break;
 				case INTEGER:
-					symbol_list->children[i]->types.variable.is_integer = TRUE;
+					symbol_list->children[i]->types.variable.is_integer = true;
 					break;
 				default:
-					oassert(FALSE);
+					oassert(false);
 			}
         }
 
@@ -1256,7 +1257,7 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
 	allocate_children_to_node(new_node, 6, symbol_node, NULL, NULL, NULL, NULL, expression);
 
 	// set is_parameter for the same reason
-	new_node->types.variable.is_parameter = TRUE;
+	new_node->types.variable.is_parameter = true;
 
 	return new_node;
 }
@@ -1594,22 +1595,23 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 	/* store the list of modules this module instantiates */
 	new_node->types.module.module_instantiations_instance = module_instantiations_instance;
 	new_node->types.module.size_module_instantiations = size_module_instantiations;
-	new_node->types.module.is_instantiated = FALSE;
+	new_node->types.module.is_instantiated = false;
 	new_node->types.module.index = num_modules;
 
 	new_node->types.function.function_instantiations_instance = function_instantiations_instance_by_module;
 	new_node->types.function.size_function_instantiations = size_function_instantiations_by_module;
-	new_node->types.function.is_instantiated = FALSE;
+	new_node->types.function.is_instantiated = false;
 	new_node->types.function.index = num_functions;
 	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
 	ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
 	ast_modules[num_modules] = new_node;
 	for(i = 0; i < size_module_variables_not_defined; i++){
-		short variable_found = FALSE;
-		for(j = 0; j < list_of_module_items->num_children && variable_found == FALSE; j++){
+		short variable_found = false;
+		for(j = 0; j < list_of_module_items->num_children && variable_found == false; j++){
 		if(list_of_module_items->children[j]->type == VAR_DECLARE_LIST){
 			for(k = 0; k < list_of_module_items->children[j]->num_children; k++){
-				if(strcmp(list_of_module_items->children[j]->children[k]->children[0]->types.identifier,module_variables_not_defined[i]->children[0]->children[0]->types.identifier) == 0) variable_found = TRUE;
+				if(strcmp(list_of_module_items->children[j]->children[k]->children[0]->types.identifier,module_variables_not_defined[i]->children[0]->children[0]->types.identifier) == 0) 
+					variable_found = true;
 				}
 			}
 		}
@@ -1703,7 +1705,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 	/* store the list of modules this module instantiates */
 	new_node->types.function.function_instantiations_instance = function_instantiations_instance;
 	new_node->types.function.size_function_instantiations = size_function_instantiations;
-	new_node->types.function.is_instantiated = FALSE;
+	new_node->types.function.is_instantiated = false;
 
 	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
 	ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
@@ -1805,10 +1807,10 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 			new_node = val->children[(val->num_children - 1)];
 
 			new_node->type = MODULE_PARAMETER;
-			new_node->types.variable.is_parameter = TRUE;
-			new_node->shared_node = TRUE;
-			new_node->children[5]->types.variable.is_parameter = TRUE;
-			new_node->children[5]->shared_node = TRUE;
+			new_node->types.variable.is_parameter = true;
+			new_node->shared_node = true;
+			new_node->children[5]->types.variable.is_parameter = true;
+			new_node->children[5]->shared_node = true;
 			new_node->types.identifier = module_instance_name;
 		}
 	}
@@ -1836,7 +1838,7 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 	//if the instance never showed before, dealt with this parameter in function convert_ast_to_netlist_recursing_via_modules
 	if(flag == 0)
 	{
-		new_node->shared_node = FALSE;
+		new_node->shared_node = false;
 		return new_node;
 	//	add_child_to_node(new_node, symbol_node);
 	}

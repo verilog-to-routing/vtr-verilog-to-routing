@@ -1,5 +1,5 @@
-#ifndef verilog_preprocessor_h
-#define verilog_preprocessor_h
+#ifndef VERILOG_PREPROCESSOR_H
+#define VERILOG_PREPROCESSOR_H
 
 #include <stdio.h>
 

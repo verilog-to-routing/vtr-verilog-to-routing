@@ -21,6 +21,9 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#ifndef AST_ELABORATE_H
+#define AST_ELABORATE_H
+
 void remove_generate(ast_node_t *node);
 int simplify_ast_module(ast_node_t **ast_module);
 void reduce_assignment_expression();
@@ -28,7 +31,7 @@ void reduce_assignment_expression(ast_node_t *ast_module);
 void find_assign_node(ast_node_t *node, std::vector<ast_node_t *> list, char *module_name);
 ast_node_t *find_top_module();
 
-typedef struct exp_node
+struct enode
 {
 	struct
 	{
@@ -40,10 +43,10 @@ typedef struct exp_node
 	int id;
 	int flag;
 	int priority;
-	struct exp_node *next;
-	struct exp_node *pre;
+	struct enode *next;
+	struct enode *pre;
 
-}enode;
+};
 
 void record_tree_info(ast_node_t *node);
 void store_exp_list(ast_node_t *node);
@@ -67,3 +70,4 @@ bool check_tree_operation(ast_node_t *node);
 void check_operation(enode *begin, enode *end);
 bool check_mult_bracket(std::vector<int> list);
 
+#endif

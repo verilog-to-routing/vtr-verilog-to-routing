@@ -39,10 +39,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 #include <regex>
 #include <stdbool.h>
-/*---------------------------------------------------------------------------------------------
- * (function: node_name_based_on_op)
- * 	Get the string version of a node
- *-------------------------------------------------------------------------------------------*/
+
+
 long shift_left_value_with_overflow_check(long input_value, long shift_by)
 {
 	if(shift_by < 0)
@@ -67,8 +65,8 @@ std::string get_file_extension(std::string input_file)
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: node_name_based_on_op)
- * 	Get the string version of a node
+ * (function: name_based_on_op)
+ * 	Get the string version of an operation
  *-------------------------------------------------------------------------------------------*/
 const char *name_based_on_op(operation_list op)
 {
@@ -247,7 +245,7 @@ int is_string_of_radix(char *string, int radix)
 	else if (radix == 2)
 		return is_binary_string(string);
 	else
-		return FALSE;
+		return false;
 }
 
 /*
@@ -446,68 +444,68 @@ char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, cha
 }
 
 /*
- * Returns TRUE if the given string contains only '0' to '9' and 'a' through 'f'
+ * Returns true if the given string contains only '0' to '9' and 'a' through 'f'
  */
 int is_hex_string(char *string)
 {
 	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
 		if (!((string[i] >= '0' && string[i] <= '9') || (tolower(string[i]) >= 'a' && tolower(string[i]) <= 'f')))
-			return FALSE;
+			return false;
 
-	return TRUE;
+	return true;
 }
 
 /*
- * Returns TRUE if the given string contains only '0' to '9' and 'a' through 'f'
+ * Returns true if the given string contains only '0' to '9' and 'a' through 'f'
  */
 int is_dont_care_string(char *string)
 {
 	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
-        if(string[i] != 'x') return FALSE;
+        if(string[i] != 'x') return false;
 		//if (!((string[i] >= '0' && string[i] <= '9') || (tolower(string[i]) >= 'a' && tolower(string[i]) <= 'f')))
-		//	return FALSE;
+		//	return false;
 
-	return TRUE;
+	return true;
 }
 /*
- * Returns TRUE if the string contains only '0' to '9'
+ * Returns true if the string contains only '0' to '9'
  */
 int is_decimal_string(char *string)
 {
 	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
 		if (!(string[i] >= '0' && string[i] <= '9'))
-			return FALSE;
+			return false;
 
-	return TRUE;
+	return true;
 }
 
 /*
- * Returns TRUE if the string contains only '0' to '7'
+ * Returns true if the string contains only '0' to '7'
  */
 int is_octal_string(char *string)
 {
 	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
 		if (!(string[i] >= '0' && string[i] <= '7'))
-			return FALSE;
+			return false;
 
-	return TRUE;
+	return true;
 }
 
 /*
- * Returns TRUE if the string contains only '0's and '1's.
+ * Returns true if the string contains only '0's and '1's.
  */
 int is_binary_string(char *string)
 {
 	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
 		if (!(string[i] >= '0' && string[i] <= '1'))
-			return FALSE;
+			return false;
 
-	return TRUE;
+	return true;
 }
 
 /*
@@ -835,10 +833,8 @@ void print_time(double time)
  */
 double wall_time()
 {
-	typedef std::chrono::system_clock Time;
-	typedef std::chrono::duration<double> dsec;
-	auto time_point = Time::now();
-	dsec time_since_epoch = time_point.time_since_epoch();
+	auto time_point = std::chrono::system_clock::now();
+	std::chrono::duration<double> time_since_epoch = time_point.time_since_epoch();
 
 	return time_since_epoch.count();
 }
@@ -930,13 +926,14 @@ void trim_string(char* string, const char *chars)
 	{
 		int length;
 		while((length = strlen(string)))
-		{	int trimmed = FALSE;
+		{	
+			bool trimmed = false;
 			unsigned int i;
 			for (i = 0; i < strlen(chars); i++)
 			{
 				if (string[length-1] == chars[i])
 				{
-					trimmed = TRUE;
+					trimmed = true;
 					string[length-1] = '\0';
 					break;
 				}
@@ -993,7 +990,7 @@ int odin_sprintf (char *s, const char *format, ...)
     {
         va_end(args_copy) ;
         va_end(args) ;
-        return -BUFFER_MAX_SIZE;
+        return -1;
     }
 
 }

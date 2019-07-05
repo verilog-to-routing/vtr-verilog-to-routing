@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-typedef enum
+enum odin_error
 {
 	NO_ERROR,
 	/* for error during odin bootup */
@@ -23,7 +23,7 @@ typedef enum
 	SIMULATION_ERROR,
 	/* for error in ACE */
 	ACE,
-} odin_error;
+};
 
 extern const char *odin_error_STR[];
 

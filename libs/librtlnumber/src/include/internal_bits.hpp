@@ -277,7 +277,7 @@ namespace BitSpace {
 
     static bit_value_t c_to_bit(char c)
     {
-        switch(c)
+        switch(tolower(c))
         {
             case '0':   return _0;
             case '1':   return _1;
@@ -291,50 +291,52 @@ namespace BitSpace {
     {
     private :
 
-        T bits = _All_x;
+        T bits = static_cast<T>(_All_x);
 
-        size_t get_bit_location(size_t address)
+        template<typename Addr_t>
+        size_t get_bit_location(Addr_t address)
         {
-            return ((address%this->size())<<1);
-        }
-
-        T make_insert(size_t loc, bit_value_t value)
-        {
-            return (static_cast<T>(value) << (loc));
-        }
-
-        T make_mask(size_t loc)
-        {
-            return (~make_insert(loc,_0));
+            size_t current_address = static_cast<size_t>(address);
+            current_address %= this->size();
+            current_address <<= 1;
+            return current_address;
         }
 
     public :
 
         BitFields(bit_value_t init_v)
         {
-            this->bits = 
+            this->bits = static_cast<T>(
                 (_0 == init_v)? _All_0:
                 (_1 == init_v)? _All_1:
                 (_z == init_v)? _All_z:
-                                _All_x;
+                                _All_x
+            );
         } 
         
-        bit_value_t get_bit(size_t address)
+        template<typename Addr_t>
+        bit_value_t get_bit(Addr_t address)
         {
-            return ((this->bits >> (this->get_bit_location(address))) & 0x3UL);
+            auto result = this->bits >> this->get_bit_location(address);
+            result &= 0x3;
+
+            return static_cast<bit_value_t>(result);
         }
 
-        void set_bit(size_t address, bit_value_t value)
+        template<typename Addr_t>
+        void set_bit(Addr_t address, bit_value_t value)
         {	
             size_t real_address = this->get_bit_location(address);
 
-            T long_value = static_cast<T>(value);
+            T set_value = static_cast<T>(value);
+            set_value = static_cast<T>(set_value << real_address);
 
-            T set_value = long_value << real_address;
-            T zero_out_location = ~(0x3UL << real_address);
+            T mask = static_cast<T>(0x3);
+            mask = static_cast<T>(mask << real_address);
+            mask = static_cast<T>(~(mask));
 
-            this->bits &= zero_out_location;
-            this->bits |= set_value;
+            this->bits = static_cast<T>(this->bits & mask);
+            this->bits = static_cast<T>(this->bits | set_value);
         }
 
         static size_t size()
@@ -343,7 +345,7 @@ namespace BitSpace {
         }
     };
 
-    #define DEBUG_V_BITS
+    // #define DEBUG_V_BITS
 
     /*****
      * we use large array since we process the bits in chunks

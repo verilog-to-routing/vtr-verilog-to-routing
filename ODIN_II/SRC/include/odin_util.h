@@ -1,51 +1,11 @@
 #ifndef ODIN_UTIL_H
 #define ODIN_UTIL_H
+
+#include <string>
+
 #include "odin_types.h"
 
-#define MAX_BUF 256
-
-template<typename T>
-data_t val(T val_in)
-{
-	switch(val_in)
-	{
-		case 0:		//fallthrough
-		case '0':	return 0;
-
-		case 1:		//fallthrough
-		case '1':	return 1;
-
-		default:	return -1;
-	}
-}
-
-template<typename T>
-char val_c(T val_in)
-{
-	switch(val_in)
-	{
-		case 0:		//fallthrough
-		case '0':	return '0';
-
-		case 1:		//fallthrough
-		case '1':	return '1';
-
-		default:	return 'x';
-	}
-}
-
-template<typename T>
-bool is_unknown(T val_in)
-{
-	switch(val_in)
-	{
-		case 0:		//fallthrough
-		case '0':	//fallthrough
-		case 1:		//fallthrough
-		case '1':	return false;
-		default:	return true;
-	}
-}
+#define MAX_BUF 2048
 
 long shift_left_value_with_overflow_check(long input_value, long shift_by);
 
@@ -107,7 +67,7 @@ void trim_string(char* string, const char *chars);
 bool only_one_is_true(std::vector<bool> tested);
 int odin_sprintf (char *s, const char *format, ...);
 
-void passed_verify_i_o_availabilty(struct nnode_t_t *node, int expected_input_size, int expected_output_size, const char *current_src, int line_src);
+void passed_verify_i_o_availabilty(nnode_t *node, int expected_input_size, int expected_output_size, const char *current_src, int line_src);
 
 
 #endif

@@ -40,12 +40,12 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "odin_types.h"
 
-typedef struct soft_sub_structure_t
+struct soft_sub_structure
 {
   char *type;
 	char *name;
 	int bitsize;
-}soft_sub_structure;
+};
 
 void read_soft_def_file(t_model *hard_adder_models);
 soft_sub_structure *fetch_blk(std::string, int width);

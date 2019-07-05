@@ -16,46 +16,46 @@
 #define DefaultSize 20
 
 /* Structs */
-typedef struct veri_include
+struct veri_include
 {
 	char *path;
 	struct veri_include *included_from;
 	int	line;
-} veri_include;
+};
 
-typedef struct veri_define
+struct veri_define
 {
 	char *symbol;
 	char *value;
 	int line;
 	veri_include *defined_in;
-} veri_define;
+};
 
 struct veri_Includes
 {
 	veri_include **included_files;
 	int current_size;
 	int current_index;
-} ;
+};
 
 struct veri_Defines
 {
 	veri_define **defined_constants;
 	int current_size;
 	int current_index;
-} ;
+};
 
 /* Stack for tracking conditional branches --------------------------------- */
-typedef struct veri_flag_node
+struct veri_flag_node
 {
 	int flag;
 	struct veri_flag_node *next;
-} veri_flag_node;
+};
 
-typedef struct
+struct veri_flag_stack
 {
 	veri_flag_node *top;
-} veri_flag_stack;
+} ;
 
 void clean_veri_define(veri_define *current);
 void clean_veri_include(veri_include *current);
@@ -374,7 +374,7 @@ const char *preproc_symbol_e_STR[] =
 	"preproc_symbol_e_END"
 };
 
-typedef enum preproc_symbol_e_e
+enum preproc_symbol_e
 {
 	PREPROC_INCLUDE,
 	PREPROC_DEFINE,
@@ -384,7 +384,7 @@ typedef enum preproc_symbol_e_e
 	PREPROC_ELSE,
 	PREPROC_ENDIF,
 	preproc_symbol_e_END
-} preproc_symbol_e;
+};
 
 static preproc_symbol_e get_preproc_directive(const char *in)
 {

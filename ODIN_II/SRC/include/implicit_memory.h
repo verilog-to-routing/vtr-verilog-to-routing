@@ -29,7 +29,7 @@ OTHER DEALINGS IN THE SOFTWARE.
  * Contains a pointer to the implicit memory node as well as other
  * information which is used in creating the implicit memory.
  */
-typedef struct {
+struct implicit_memory{
 	nnode_t *node;
 	int data_width;
 	int memory_depth;
@@ -37,7 +37,7 @@ typedef struct {
 	char clock_added;
 	char output_added;
 	char *name;
-} implicit_memory;
+};
 
 void add_input_port_to_implicit_memory(implicit_memory *memory, signal_list_t *signals, const char *port_name);
 void add_output_port_to_implicit_memory(implicit_memory *memory, signal_list_t *signals, const char *port_name);

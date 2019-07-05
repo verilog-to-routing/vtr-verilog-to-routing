@@ -25,6 +25,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <string.h>
 #include "odin_types.h"
+#include "odin_util.h"
 #include "node_creation_library.h"
 #include "adders.h"
 #include "subtractions.h"
@@ -138,7 +139,7 @@ void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t * /
 	// 	sanity = odin_sprintf(new_name, "%s", node->name);
 
 	if (len <= sanity) /* buffer not large enough */
-		oassert(FALSE);
+		oassert(false);
 
 	/* Give names to the output pins */
 	for (i = 0; i < node->num_output_pins;  i++)

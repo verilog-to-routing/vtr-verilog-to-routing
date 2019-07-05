@@ -24,6 +24,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef MEMORIES_H
 #define MEMORIES_H
 
+#include "odin_types.h"
+
 extern vtr::t_linked_vptr *sp_memory_list;
 extern vtr::t_linked_vptr *dp_memory_list;
 extern vtr::t_linked_vptr *memory_instances;
@@ -34,7 +36,7 @@ extern t_model *dual_port_rams;
 #define HARD_RAM_ADDR_LIMIT 33
 #define SOFT_RAM_ADDR_LIMIT 10
 
-typedef struct s_memory
+struct t_memory
 {
 	long size_d1;
 	long size_d2;
@@ -43,23 +45,23 @@ typedef struct s_memory
 	long size_out1;
 	long size_out2;
 	struct s_memory *next;
-} t_memory;
+};
 
-typedef struct s_memory_port_sizes
+struct t_memory_port_sizes
 {
 	long size;
 	char *name;
-} t_memory_port_sizes;
+};
 
-typedef struct {
+struct sp_ram_signals{
 	signal_list_t *addr;
 	signal_list_t *data;
 	signal_list_t *out;
 	npin_t *we;
 	npin_t *clk;
-} sp_ram_signals;
+};
 
-typedef struct {
+struct dp_ram_signals{
 	signal_list_t *addr1;
 	signal_list_t *addr2;
 	signal_list_t *data1;
@@ -69,7 +71,7 @@ typedef struct {
 	npin_t *we1;
 	npin_t *we2;
 	npin_t *clk;
-} dp_ram_signals;
+};
 
 long get_sp_ram_split_depth();
 long get_dp_ram_split_depth();

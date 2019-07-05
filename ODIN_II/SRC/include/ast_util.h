@@ -1,3 +1,6 @@
+#ifndef AST_UTIL_H
+#define AST_UTIL_H
+
 #include "odin_types.h"
 
 void add_tag_data();
@@ -43,3 +46,5 @@ ast_node_t * fold_conditional(ast_node_t **node);
 
 long clog2(long value_in, int length);
 long resolve_concat_sizes(ast_node_t *node_top, char *instance_name_prefix, STRING_CACHE *local_sym_table_sc, STRING_CACHE *function_local_sym_table_sc);
+
+#endif
