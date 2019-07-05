@@ -56,6 +56,7 @@ vDEC [Dd][_]*[[:digit:]][[:digit:]_]*
 vHEX [Hh][_]*[ZzXx[:xdigit:]][ZzXx[:xdigit:]_]*
 vINT [_]*[[:digit:]][[:digit:]_]*
 vWORD [[:alpha:]_][[:alnum:]_]*
+vCPARAM_STRING ["][[:print:]]*["]
 
 	/**
 	* add \" to vPUNCT when support is added for strings
@@ -206,6 +207,7 @@ vDISCARD [\"]
 
 	/*	C functions	*/
 <INITIAL>"$clog2"			{MP; return vCLOG2;}
+<INITIAL>[\$]{vWORD}			{MP; return vCFUNC;}
 
 	/*	signed numbers	*/
 <INITIAL>[[:digit:]]+'[sS]{vBIN}	{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_BINARY; }
@@ -236,6 +238,9 @@ vDISCARD [\"]
 
 	/* return operators */
 <INITIAL>{vPUNCT}					{ MP; return yytext[0]; }
+
+	/* string parameters to c functions */
+<INITIAL>{vCPARAM_STRING}					{ MP; yylval.id_name = vtr::strdup(yytext); return vC_FUNCTION_EXPRESSION; }
 
 	/* general stuff */
 [[:space:]]+						/* ignore spaces */

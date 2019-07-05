@@ -66,7 +66,7 @@ int yylex(void);
 %token vOUTPUT vPARAMETER vLOCALPARAM vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND vNAND vNEGEDGE vNOR vNOT vOR vFOR
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vCLOG2 vGENVAR
-%token vPLUS_COLON vMINUS_COLON vSPECPARAM
+%token vPLUS_COLON vMINUS_COLON vSPECPARAM vCFUNC vC_FUNCTION_EXPRESSION
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']' '~' '!' ';' '#' ',' '.' '@' '='
 %token vNOT_SUPPORT 
 
@@ -116,7 +116,7 @@ int yylex(void);
 %type <node> list_of_module_parameters
 %type <node> specify_block list_of_specify_items specify_item specparam_declaration
 %type <node> specify_pal_connect_declaration
-%type <node> initial_block parallel_connection list_of_blocking_assignment
+%type <node> initial_block parallel_connection list_of_blocking_assignment c_function c_function_expression_list c_function_expression
 
 %%
 
@@ -198,6 +198,7 @@ module_item:
 	| always		{$$ = $1;}
 	| defparam_declaration	{$$ = $1;}
 	| specify_block		{$$ = $1;}
+	| c_function		{$$ = $1;}
 	;
 
 function_declaration:
@@ -418,6 +419,7 @@ generate_for:
 
 statement:
 	seq_block										{$$ = $1;}
+	| c_function											{$$ = $1;}
 	| blocking_assignment ';'								{$$ = $1;}
 	| non_blocking_assignment ';'								{$$ = $1;}
 	| vIF '(' expression ')' statement %prec LOWER_THAN_ELSE				{$$ = newIf($3, $5, NULL, yylineno);}
@@ -571,6 +573,20 @@ probable_expression_list:
 expression_list:
 	expression_list ',' expression	{$$ = newList_entry($1, $3); /* note this will be in order lsb = greatest to msb = 0 in the node child list */}
 	| expression			{$$ = newList(CONCATENATE, $1);}
+	;
+
+c_function_expression:
+	vC_FUNCTION_EXPRESSION		{$$ = NULL;}
+	| expression	{$$ = free_whole_tree($1);}
+	;
+
+c_function_expression_list:
+	c_function_expression_list ',' c_function_expression	{$$ = $1;}
+	| c_function_expression			{$$ = $1;}
+	;
+
+c_function:
+	vCFUNC '(' c_function_expression_list ')'';'	{$$ = NULL;}
 	;
 
 %%
