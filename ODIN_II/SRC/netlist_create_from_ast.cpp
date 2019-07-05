@@ -346,13 +346,24 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 		}
 		ast_node_t *node = (ast_node_t *)local_param_table_sc->data[sc_spot];
 		oassert(node);
+		ast_node_t *temp1 = node;
+		ast_node_t *temp2 = NULL;
 		node = resolve_node(NULL, module_name, node, NULL, 0);
+		if(node != temp1);
+		{
+			temp2 = node;
+		}
 		if (node->type != NUMBERS) 
 		{
 			node = resolve_node(NULL, parent_module, node, NULL, 0); // may contain parameters from parent
 		}
 		oassert(node->type == NUMBERS);
 		local_param_table_sc->data[sc_spot] = (void *)node;
+		if(temp2 && temp2 != node)
+		{
+			free_whole_tree(temp2);
+		}
+
 	}
 
 	/* clean up */
@@ -1405,6 +1416,15 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 							long max_value = node_max->types.vnumber->get_value();
 							long min_value = node_min->types.vnumber->get_value();
 							
+							if(node_max != var_declare->children[1])
+							{
+								node_max = free_whole_tree(node_max);
+							}
+							if(node_min != var_declare->children[2])
+							{
+								node_min = free_whole_tree(node_min);
+							}
+
 							if(min_value > max_value)
 							{
 								error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
@@ -1499,6 +1519,23 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		long addr_min1= node_min3->types.vnumber->get_value();
 		long addr_max1= node_max3->types.vnumber->get_value();
+
+		if(node_max2 != var_declare->children[3])
+		{
+			node_max2 = free_whole_tree(node_max2);
+		}
+		if(node_min2 != var_declare->children[4])
+		{
+			node_min2 = free_whole_tree(node_min2);
+		}
+		if(node_max3 != var_declare->children[5])
+		{
+			node_max3 = free_whole_tree(node_max3);
+		}
+		if(node_min3 != var_declare->children[6])
+		{
+			node_min3 = free_whole_tree(node_min3);
+		}
 
 		if((addr_min > addr_max) || (addr_min1 > addr_max1))
 		{
@@ -1670,6 +1707,24 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		long addr_min = node_min2->types.vnumber->get_value();
 		long addr_max = node_max2->types.vnumber->get_value();
 
+		if(node_max1 != var_declare->children[1])
+		{
+			node_max1 = free_whole_tree(node_max1);
+		}
+		if(node_min1 != var_declare->children[2])
+		{
+			node_min1 = free_whole_tree(node_min1);
+		}
+
+		if(node_max2 != var_declare->children[3])
+		{
+			node_max2 = free_whole_tree(node_max2);
+		}
+		if(node_min2 != var_declare->children[4])
+		{
+			node_min2 = free_whole_tree(node_min2);
+		}
+
 		if(addr_min > addr_max)
 		{
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
@@ -1763,10 +1818,19 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 		/* FOR array driver  since sport 3 and 4 are NULL */
 		ast_node_t *node_max = resolve_node(NULL, instance_name_prefix, var_declare->children[1], NULL, 0);
 		ast_node_t *node_min = resolve_node(NULL, instance_name_prefix, var_declare->children[2], NULL, 0);
-		
+
 		oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
 		long min_value = node_min->types.vnumber->get_value();
 		long max_value = node_max->types.vnumber->get_value();
+
+		if(node_max != var_declare->children[1])
+		{
+			node_max = free_whole_tree(node_max);
+		}
+		if(node_min != var_declare->children[2])
+		{
+			node_min = free_whole_tree(node_min);
+		}
 
 		if(min_value > max_value)
 		{
@@ -2082,6 +2146,10 @@ int check_for_initial_reg_value(char * module_name, ast_node_t* var_declare, lon
 			warning_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, 
 				"%s", "Could not resolve initial assignement to a constant value, skipping\n");
 		}
+	}
+	if(resolved_number != number_node)
+	{
+		resolved_number = free_whole_tree(resolved_number);
 	}
 	return FALSE;
 }
@@ -2490,6 +2558,16 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 			/* assume all arrays declared [largest:smallest] */
 			oassert(node2->types.vnumber->get_value() <= node1->types.vnumber->get_value());
 			port_size = node1->types.vnumber->get_value() - node2->types.vnumber->get_value() + 1;
+		
+			if(node1 != module_var_node->children[1])
+			{
+				node1 = free_whole_tree(node1);
+			}
+			if(node2 != module_var_node->children[2])
+			{
+				node2 = free_whole_tree(node2);
+			}
+
 		}
 		else if (module_var_node->children[5] == NULL)
 		{
@@ -2509,6 +2587,24 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 			oassert(node2->types.vnumber->get_value() <= node1->types.vnumber->get_value());
 			oassert(node4->types.vnumber->get_value() <= node3->types.vnumber->get_value());
 			port_size = node1->types.vnumber->get_value() * node3->types.vnumber->get_value() - 1;
+		
+			if(node1 != module_var_node->children[1])
+			{
+				node1 = free_whole_tree(node1);
+			}
+			if(node2 != module_var_node->children[2])
+			{
+				node2 = free_whole_tree(node2);
+			}
+			if(node3 != module_var_node->children[3])
+			{
+				node3 = free_whole_tree(node3);
+			}
+			if(node4 != module_var_node->children[4])
+			{
+				node4 = free_whole_tree(node4);
+			}
+
 		}
 
 		//---------------------------------------------------------------------------
@@ -2822,6 +2918,15 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 			oassert(node2->types.vnumber->get_value() <= node1->types.vnumber->get_value());
 			port_size = node1->types.vnumber->get_value() - node2->types.vnumber->get_value() + 1;
 
+			if(node1 != module_var_node->children[1])
+			{
+				node1 = free_whole_tree(node1);
+			}
+			if(node2 != module_var_node->children[2])
+			{
+				node2 = free_whole_tree(node2);
+			}
+		
 		}
 		else if (module_var_node->children[5] == NULL)
 		{
@@ -2842,6 +2947,23 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 			oassert(node2->types.vnumber->get_value() <= node1->types.vnumber->get_value());
 			oassert(node4->types.vnumber->get_value() <= node3->types.vnumber->get_value());
 			port_size = node1->types.vnumber->get_value() * node3->types.vnumber->get_value() - 1;
+
+			if(node1 != module_var_node->children[1])
+			{
+				node1 = free_whole_tree(node1);
+			}
+			if(node2 != module_var_node->children[2])
+			{
+				node2 = free_whole_tree(node2);
+			}
+			if(node3 != module_var_node->children[3])
+			{
+				node3 = free_whole_tree(node3);
+			}
+			if(node4 != module_var_node->children[4])
+			{
+				node4 = free_whole_tree(node4);
+			}
 
 		}
 
@@ -4213,6 +4335,11 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 			if (second->type != NUMBERS)
 				error_message(NETLIST_ERROR, op->line_number, op->file_number, "%s", "Odin only supports constant shifts at present\n");
 			oassert(second->type == NUMBERS);
+
+			if(second != op->children[1])
+			{
+				free_whole_tree(second);
+			}
 
 			/* for shift left or right, it's actually a one port operation. The 2nd port is constant */
 			if (i == 0)
@@ -6039,7 +6166,12 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node, char *instance_
 	// see if this operation can be resolved
 	if (new_node_2->type != NUMBERS)
 	{
+		ast_node_t *temp = new_node_2;
 		new_node_2 = resolve_node(NULL, instance_name_prefix, new_node_2, NULL, 0);
+		if(new_node_2 != temp)
+		{
+			free_whole_tree(new_node_2);
+		}
 	}
 
 	return;

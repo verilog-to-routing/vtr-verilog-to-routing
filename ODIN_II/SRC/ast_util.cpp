@@ -340,6 +340,12 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 	int j;
 	ast_node_t *rnode[3];
 
+	//initialize these to NULL
+	for(i = 0; i < 3; i++)
+	{
+		rnode[i] = NULL;
+	}
+
 	concat_top->types.concat.num_bit_strings = 0;
 	concat_top->types.concat.bit_strings = NULL;
 
@@ -388,6 +394,16 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 						concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
 						concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix);
 					}
+
+					if(rnode[1] != ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[1])
+					{
+						rnode[1] = free_whole_tree(rnode[1]);
+					}
+					if(rnode[2] != ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2])
+					{
+						rnode[2] = free_whole_tree(rnode[2]);
+					}
+
 				}
 				else if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[3] != NULL)
 				{
@@ -419,6 +435,16 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 				concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] =
 					get_name_of_pin_at_bit(concat_top->children[i], ((rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value()))-j, instance_name_prefix);
 			}
+
+			if(rnode[1] != concat_top->children[i]->children[1])
+			{
+				rnode[1] = free_whole_tree(rnode[1]);
+			}
+			if(rnode[2] != concat_top->children[i]->children[2])
+			{
+				rnode[2] = free_whole_tree(rnode[2]);
+			}
+
 		}
 		else if (concat_top->children[i]->type == NUMBERS)
 		{
@@ -512,6 +538,12 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	char *return_string = NULL;
 	ast_node_t *rnode[3];
 
+	// initialize these to NULL;
+	for(int i = 0; i < 3; i++)
+	{
+		rnode[i] = NULL;
+	}
+
 	if (var_node->type == ARRAY_REF)
 	{
 		var_node->children[1] = resolve_node(NULL, instance_name_prefix, var_node->children[1], NULL, 0);
@@ -531,6 +563,16 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		oassert(rnode[1]->types.vnumber->get_value() >= rnode[2]->types.vnumber->get_value()+bit);
 
 		return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[2]->types.vnumber->get_value()+bit);
+
+		if(rnode[1] != var_node->children[1])
+		{
+			rnode[1] = free_whole_tree(rnode[1]);
+		}
+		if(rnode[2] != var_node->children[2])
+		{
+			rnode[2] = free_whole_tree(rnode[2]);
+		}
+	
 	}
 	else if ((var_node->type == IDENTIFIERS) && (bit == -1))
 	{
@@ -573,6 +615,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		}
 		else
 		{
+			ast_node_t *temp = var_node;
 			if (var_node->types.concat.num_bit_strings == -1)
 			{
 				/* If this hasn't been made into a string list then do it */
@@ -582,6 +625,11 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 
 			return_string = (char*)vtr::malloc(sizeof(char)*strlen(var_node->types.concat.bit_strings[bit])+1);
 			odin_sprintf(return_string, "%s", var_node->types.concat.bit_strings[bit]);
+		
+			if(var_node != temp)
+			{
+				var_node = free_whole_tree(var_node);
+			}
 		}
 	}
 	else
@@ -643,6 +691,12 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 
 	int i;
 	int width = 0;
+	//initialize these to NULL
+	for(i = 0; i < 3; i++)
+	{
+		rnode[i] = NULL;
+	}
+	i = 0;
 
 	if (var_node->type == ARRAY_REF)
 	{
@@ -652,6 +706,12 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		oassert(rnode[1] && rnode[1]->type == NUMBERS);
 		oassert(var_node->children[0]->type == IDENTIFIERS);
 		return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[1]->types.vnumber->get_value());
+
+		if(rnode[1] != var_node->children[1])
+		{
+			rnode[1] = free_whole_tree(rnode[1]);
+		}
+	
 	}
 	else if (var_node->type == RANGE_REF)
 	{
@@ -671,6 +731,20 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 			oassert(rnode[0]->type == NUMBERS);
 			return_string = get_name_of_pins_number(rnode[0], rnode[2]->types.vnumber->get_value(), width);
 		}
+
+		if(rnode[0] != var_node->children[0])
+		{
+			rnode[0] = free_whole_tree(rnode[0]);
+		}
+		if(rnode[1] != var_node->children[1])
+		{
+			rnode[1] = free_whole_tree(rnode[1]);
+		}
+		if(rnode[2] != var_node->children[2])
+		{
+			rnode[2] = free_whole_tree(rnode[2]);
+		}
+
 	}
 	else if (var_node->type == IDENTIFIERS)
 	{
@@ -722,7 +796,11 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 				}
 				if(rnode[1] != sym_node->children[1])
 				{
-					free_whole_tree(rnode[1]);
+					rnode[1] = free_whole_tree(rnode[1]);
+				}
+				if(rnode[2] != sym_node->children[2])
+				{
+					rnode[2] = free_whole_tree(rnode[2]);
 				}
 			}
 
@@ -753,6 +831,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		}
 		else
 		{
+			ast_node_t *temp = var_node;
 			if (var_node->types.concat.num_bit_strings == -1)
 			{
 				/* If this hasn't been made into a string list then do it */
@@ -766,6 +845,10 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 			{
 				return_string[i] = (char*)vtr::malloc(sizeof(char)*strlen(var_node->types.concat.bit_strings[var_node->types.concat.num_bit_strings-i-1])+1);
 				odin_sprintf(return_string[i], "%s", var_node->types.concat.bit_strings[var_node->types.concat.num_bit_strings-i-1]);
+			}
+			if(var_node != temp)
+			{
+				var_node = free_whole_tree(var_node);
 			}
 		}
 	}
@@ -880,6 +963,14 @@ long get_size_of_variable(ast_node_t *node, char *instance_name_prefix, STRING_C
 		long range_min = node_min->types.vnumber->get_value();
 
 		assignment_size = (range_max - range_min) + 1;
+		if(node_max != var_declare->children[1])
+		{
+			node_max = free_whole_tree(node_max);
+		}
+		if(node_min != var_declare->children[2])
+		{
+			node_min = free_whole_tree(node_min);
+		}
 	}
 
 	oassert(assignment_size != 0);
