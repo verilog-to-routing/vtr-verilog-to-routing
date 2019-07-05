@@ -436,9 +436,7 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 }
 
 void toggle_window_mode(GtkWidget *widget, ezgl::application *app) {
-    std::cout << "before window_mode is " << window_mode << std::endl;
     window_mode = true;
-    std::cout << "after window_mode is " << window_mode << std::endl;
 }
 
 void toggle_nets(GtkWidget *widget, ezgl::application *app) {
@@ -2552,11 +2550,12 @@ void act_on_mouse_press(ezgl::application *app, GdkEventButton *event, double x,
         //click on any two points to form new window rectangle bound
         
         if(!window_point_1_collected){
-            //collecting first point data
+            //collect first point data
+            
             window_point_1_collected = true;
-            point_1 = ezgl::point2d(x, y);
+            point_1 = {x, y};
         }else{
-            //collecting second point data
+            //collect second point data
             
             //click on any two points to form new window rectangle bound
             ezgl::point2d point_2 = {x, y};
@@ -2571,7 +2570,7 @@ void act_on_mouse_press(ezgl::application *app, GdkEventButton *event, double x,
             ezgl::rectangle new_window = {point_1, {point_1.x + new_width, point_2.y}};
             (app->get_canvas(app->get_main_canvas_id()))->get_camera().set_world(new_window);
 
-            //reset and refresh
+            //reset flags
             window_mode = false;
             window_point_1_collected = false;
         }
@@ -2689,17 +2688,20 @@ void act_on_mouse_press(ezgl::application *app, GdkEventButton *event, double x,
 
 void act_on_mouse_move(ezgl::application *app, GdkEventButton *event, double x, double y) {
 //  std::cout << "Mouse move at coordinates (" << x << "," << y << ") "<< std::endl;
+    
+    // user has clicked the window button, in window mode
     if(window_point_1_collected){
-        ezgl::renderer g = app->get_renderer();
-//        g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
-        g.set_line_dash(ezgl::line_dash::none);
-        g.set_color(ezgl::BLACK);
-        g.set_line_width(10);
-        g.draw_rectangle(point_1, {x,y});
+        // draw a grey, dashed-line box to indicate the zoom-in region
         app->refresh_drawing();
-        std::cout << "window mode triggered move" << std::endl;
+        ezgl::renderer g = app->get_renderer();
+        g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
+        g.set_color(blk_GREY);
+        g.set_line_width(2);
+        g.draw_rectangle(point_1, {x,y});
+        return;
     }
     
+    // user has not clicked the window button, in regular mode
     t_draw_state* draw_state = get_draw_state_vars();
     
     if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
