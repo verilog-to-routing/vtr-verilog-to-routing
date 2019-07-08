@@ -356,10 +356,10 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
     route_budgets budgeting_inf;
 
     auto router_lookahead = make_router_lookahead(
-            router_opts.lookahead_type,
-            router_opts.write_lookahead,
-            router_opts.read_lookahead,
-            segment_inf);
+        router_opts.lookahead_type,
+        router_opts.write_lookahead,
+        router_opts.read_lookahead,
+        segment_inf);
 
     /*
      * Routing parameters
