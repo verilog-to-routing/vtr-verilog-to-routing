@@ -1012,11 +1012,20 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     file_grp.add_argument(args.read_rr_graph_file, "--read_lookahead")
         .help(
-            "Reads the lookahead data to the specified file instead of computing it.")
+            "Reads the lookahead data from the specified file instead of computing it.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_rr_graph_file, "--write_lookahead")
         .help("Writes the lookahead data to the specified file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.read_rr_graph_file, "--read_placement_delay_lookup")
+        .help(
+            "Reads the placement delay lookup from the specified file instead of computing it.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_rr_graph_file, "--write_placement_delay_lookup")
+        .help("Writes the placement delay lookup to the specified file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.out_file_prefix, "--outfile_prefix")

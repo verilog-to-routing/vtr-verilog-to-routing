@@ -105,10 +105,6 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                                                  int* src_rr,
                                                  int* sink_rr);
 
-static std::unique_ptr<OverrideDelayModel> compute_override_delay_model(
-        const RouterDelayProfile & router,
-        const t_router_opts& router_opts, std::unique_ptr<PlaceDelayModel> base_model);
-
 static bool verify_delta_delays(const vtr::Matrix<float>& delta_delays);
 
 static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf);
@@ -146,26 +142,54 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
 
     /*now setup and compute the actual arrays */
     std::unique_ptr<PlaceDelayModel> place_delay_model;
-    if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA
-        || placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
-        bool measure_directconnect = (placer_opts.delay_model_type != PlaceDelayModelType::DELTA_OVERRIDE);
-
-        auto delta_delays = compute_delta_delay_model(router, placer_opts, router_opts, measure_directconnect, longest_length);
-        place_delay_model = std::make_unique<DeltaDelayModel>(std::move(delta_delays), router_opts);
-
+    if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
+        place_delay_model = std::make_unique<DeltaDelayModel>();
+    } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
+        place_delay_model = std::make_unique<OverrideDelayModel>();
     } else {
         VTR_ASSERT_MSG(false, "Invalid placer delay model");
     }
 
-    if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
-        //Override direct-connect delays
-        place_delay_model = compute_override_delay_model(router, router_opts, std::move(place_delay_model));
+    if(placer_opts.read_placement_delay_lookup.empty()) {
+        place_delay_model->compute(router, placer_opts, router_opts, longest_length);
+    } else {
+        place_delay_model->read(placer_opts.read_placement_delay_lookup);
+    }
+
+    if(!placer_opts.write_placement_delay_lookup.empty()) {
+        place_delay_model->write(placer_opts.write_placement_delay_lookup);
     }
 
     /*free all data structures that are no longer needed */
     free_routing_structs();
 
     return place_delay_model;
+}
+
+void DeltaDelayModel::compute(
+        const RouterDelayProfile & router,
+        const t_placer_opts& placer_opts, const t_router_opts& router_opts,
+        int longest_length) {
+    router_opts_ = router_opts;
+    delays_ = compute_delta_delay_model(
+        router,
+        placer_opts, router_opts, /*measure_directconnect=*/true,
+        longest_length);
+}
+
+void OverrideDelayModel::compute(
+        const RouterDelayProfile & router,
+        const t_placer_opts& placer_opts, const t_router_opts& router_opts,
+        int longest_length) {
+    router_opts_ = router_opts;
+    auto delays = compute_delta_delay_model(
+        router,
+        placer_opts, router_opts, /*measure_directconnect=*/false,
+        longest_length);
+
+    base_delay_model_ = std::make_unique<DeltaDelayModel>(delays, router_opts);
+
+    compute_override_delay_model(router);
 }
 
 /******* File Accessible Functions **********/
@@ -790,12 +814,8 @@ static bool verify_delta_delays(const vtr::Matrix<float>& delta_delays) {
     return true;
 }
 
-static std::unique_ptr<OverrideDelayModel> compute_override_delay_model(
-        const RouterDelayProfile & router,
-        const t_router_opts& router_opts, std::unique_ptr<PlaceDelayModel> base_model) {
-    auto delay_model = std::make_unique<OverrideDelayModel>(std::move(base_model), router_opts);
-
-    t_router_opts router_opts2 = router_opts;
+void OverrideDelayModel::compute_override_delay_model(const RouterDelayProfile & router) {
+    t_router_opts router_opts2 = router_opts_;
     router_opts2.astar_fac = 0.;
 
     //Look at all the direct connections that exist, and add overrides to delay model
@@ -858,7 +878,7 @@ static std::unique_ptr<OverrideDelayModel> compute_override_delay_model(
             bool found_routing_path = router.calculate_delay(src_rr, sink_rr, router_opts2, &direct_connect_delay);
 
             if (found_routing_path) {
-                delay_model->set_delay_override(from_type->index, from_pin_class, to_type->index, to_pin_class, direct->x_offset, direct->y_offset, direct_connect_delay);
+                set_delay_override(from_type->index, from_pin_class, to_type->index, to_pin_class, direct->x_offset, direct->y_offset, direct_connect_delay);
             } else {
                 ++missing_paths;
             }
@@ -870,8 +890,6 @@ static std::unique_ptr<OverrideDelayModel> compute_override_delay_model(
         VTR_LOGV_WARN(missing_instances > 0, "Found no delta delay for %d bits of inter-block direct connect '%s' (no instances of this direct found)\n", missing_instances, direct->name);
         VTR_LOGV_WARN(missing_paths > 0, "Found no delta delay for %d bits of inter-block direct connect '%s' (no routing path found)\n", missing_paths, direct->name);
     }
-
-    return delay_model;
 }
 
 bool directconnect_exists(int src_rr_node, int sink_rr_node) {

@@ -483,6 +483,9 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->move_stats_file = Options.place_move_stats_file;
 
     PlacerOpts->strict_checks = Options.strict_checks;
+
+    PlacerOpts->write_placement_delay_lookup = Options.write_placement_delay_lookup;
+    PlacerOpts->read_placement_delay_lookup = Options.read_placement_delay_lookup;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

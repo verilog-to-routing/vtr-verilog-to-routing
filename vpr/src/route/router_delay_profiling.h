@@ -1,3 +1,6 @@
+#ifndef ROUTER_DELAY_PROFILING_H_
+#define ROUTER_DELAY_PROFILING_H_
+
 #include "vpr_types.h"
 #include "router_lookahead.h"
 
@@ -25,3 +28,5 @@ void alloc_routing_structs(t_chan_width chan_width,
                            const int num_directs);
 
 void free_routing_structs();
+
+#endif /* ROUTER_DELAY_PROFILING_H_ */
