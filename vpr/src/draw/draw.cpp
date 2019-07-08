@@ -112,8 +112,8 @@ ezgl::application::settings settings;
 ezgl::application application(settings);
 
 bool window_mode = false;
-ezgl::point2d point_1(0,0);
 bool window_point_1_collected = false;
+ezgl::point2d point_1(0,0);
 
 /********************** Subroutines local to this module ********************/
 
@@ -177,6 +177,7 @@ static void draw_reset_blk_colors();
 static void draw_reset_blk_color(ClusterBlockId blk_id);
 
 static inline bool LOD_screen_area_test_square(float width, float screen_area_threshold);
+static inline bool internal_LOD_screen_area_test(ezgl::rectangle test, float screen_area_threshold);
 static inline bool default_triangle_LOD_screen_area_test();
 static inline bool triangle_LOD_screen_area_test(float arrow_size);
 
@@ -294,7 +295,7 @@ void draw_main_canvas(ezgl::renderer &g){
 void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application *app){
     
     GtkButton* window = (GtkButton*) app->get_object("Window");
-    gtk_button_set_label(window, "");
+    gtk_button_set_label(window, "Window");
     g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
     
     app->create_button("Toggle Nets", 2, toggle_nets);
@@ -437,6 +438,8 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 
 void toggle_window_mode(GtkWidget *widget, ezgl::application *app) {
     window_mode = true;
+    widget = widget; // just for hiding warning message
+    app = app; // just for hiding warning message
 }
 
 void toggle_nets(GtkWidget *widget, ezgl::application *app) {
@@ -2484,31 +2487,6 @@ static bool highlight_rr_nodes(float x, float y) {
 }
 
 
-//static void act_on_mouse_over(float mouse_x, float mouse_y) {
-//    
-//    t_draw_state* draw_state = get_draw_state_vars();
-//    
-//    if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
-//        
-//        int hit_node = draw_check_rr_node_hit(mouse_x, mouse_y);
-//        
-//        if(hit_node != OPEN) {
-//            //Update message
-//            
-//            std::string info = describe_rr_node(hit_node);
-//            std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
-//            application.update_message(msg.c_str());
-//        } else {
-//            //No rr node moused over, reset message
-//            if(!rr_highlight_message.empty()) {
-//                application.update_message(rr_highlight_message.c_str());
-//            } else {
-//                application.update_message(draw_state->default_message);
-//            }
-//        }
-//    }
-//}
-
 #if defined(X11) && !defined(__MINGW32__)
 void act_on_key_press(ezgl::application *app, GdkEventKey *event, char *key_name) {
     //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
@@ -2888,16 +2866,32 @@ static inline bool LOD_screen_area_test_square(float width, float screen_area_th
     //coordinates.
     //
     //Instead we specify an on-screen location for the rectangle we plan to test
-    t_point lower_left = scrn_to_world(t_point(0., 0.)); //Pick one corner of the screen
+    ezgl::camera & camera = (application.get_canvas(application.get_main_canvas_id()))->get_camera();
+    ezgl::point2d lower_left(0, 0); //Pick one corner of the screen
     
     //Offset by the width
-    t_point upper_right = lower_left;
-    upper_right.offset(width, width);
+    ezgl::point2d upper_right = lower_left + ezgl::point2d(width, width);
     
-    t_bound_box world_rect(lower_left, upper_right);
     
-    return LOD_screen_area_test(world_rect, screen_area_threshold); 
-    //could not find equivalent function to LOD_screen_area_test in EZGL, so left the same (using easygl)
+    
+    ezgl::rectangle world_rect (
+            camera.world_to_screen({lower_left.x, lower_left.y}), 
+            camera.world_to_screen({upper_right.x, upper_right.y})
+            );
+            
+    return internal_LOD_screen_area_test(world_rect, screen_area_threshold); 
+}
+
+static inline bool internal_LOD_screen_area_test(ezgl::rectangle test, float screen_area_threshold) {
+    /**
+     * screen_area_threshold is in (screen pixels)^2. I suggest something around 3
+     *
+     * If the _screen_ area of the rectangle (passed in as world coordinates)
+     * is less than screen_area_threshold then this function returns false. When
+     * this function returns false it means that bounding box passed in will
+     * occupy less than (screen_area_threshold pixels)^2 on the screen.
+     */
+    return test.area() < screen_area_threshold;
 }
 
 static inline bool default_triangle_LOD_screen_area_test() {
