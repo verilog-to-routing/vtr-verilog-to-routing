@@ -53,6 +53,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const DeviceGrid& grid);
 void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
+void process_connection_boxes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int* wire_to_rr_ipin_switch, const int num_rr_switches);
 void process_channels(t_chan_width& chan_width, const DeviceGrid& grid, pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_rr_node_indices(const DeviceGrid& grid);
@@ -130,6 +131,13 @@ void load_rr_file(const t_graph_type graph_type,
         t_chan_width nodes_per_chan;
         process_channels(nodes_per_chan, grid, next_component, loc_data);
 
+        next_component = get_first_child(rr_graph, "connection_boxes", loc_data, OPTIONAL);
+        if (next_component != nullptr) {
+            process_connection_boxes(next_component, loc_data);
+        } else {
+            device_ctx.connection_boxes.clear();
+        }
+
         /* Decode the graph_type */
         bool is_global_graph = (GRAPH_GLOBAL == graph_type ? true : false);
 
@@ -143,6 +151,7 @@ void load_rr_file(const t_graph_type graph_type,
         int num_rr_nodes = count_children(next_component, "node", loc_data);
 
         device_ctx.rr_nodes.resize(num_rr_nodes);
+        device_ctx.connection_boxes.resize_nodes(num_rr_nodes);
         process_nodes(next_component, loc_data);
 
         /* Loads edges, switches, and node look up tables*/
@@ -177,6 +186,7 @@ void load_rr_file(const t_graph_type graph_type,
         device_ctx.read_rr_graph_filename = std::string(read_rr_graph_name);
 
         check_rr_graph(graph_type, grid, device_ctx.physical_tile_types);
+        device_ctx.connection_boxes.create_sink_back_ref();
 
     } catch (pugiutil::XmlError& e) {
         vpr_throw(VPR_ERROR_ROUTE, read_rr_graph_name, e.line(), "%s", e.what());
@@ -304,6 +314,18 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
             node.set_type(OPIN);
         } else if (strcmp(node_type, "IPIN") == 0) {
             node.set_type(IPIN);
+
+            pugi::xml_node connection_boxSubnode = get_single_child(rr_node, "connection_box", loc_data, OPTIONAL);
+            if (connection_boxSubnode) {
+                int x = get_attribute(connection_boxSubnode, "x", loc_data).as_int();
+                int y = get_attribute(connection_boxSubnode, "y", loc_data).as_int();
+                int id = get_attribute(connection_boxSubnode, "id", loc_data).as_int();
+
+                device_ctx.connection_boxes.add_connection_box(inode,
+                                                               ConnectionBoxId(id),
+                                                               std::make_pair(x, y));
+            }
+
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Valid inputs for class types are \"CHANX\", \"CHANY\",\"SOURCE\", \"SINK\",\"OPIN\", and \"IPIN\".");
@@ -321,6 +343,15 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
                 VTR_ASSERT((strcmp(correct_direction, "NO_DIR") == 0));
                 node.set_direction(NO_DIRECTION);
             }
+        }
+
+        pugi::xml_node connection_boxSubnode = get_single_child(rr_node, "canonical_loc", loc_data, OPTIONAL);
+        if (connection_boxSubnode) {
+            int x = get_attribute(connection_boxSubnode, "x", loc_data).as_int();
+            int y = get_attribute(connection_boxSubnode, "y", loc_data).as_int();
+
+            device_ctx.connection_boxes.add_canonical_loc(inode,
+                                                          std::make_pair(x, y));
         }
 
         node.set_capacity(get_attribute(rr_node, "capacity", loc_data).as_float());
@@ -883,4 +914,27 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
         }
         rr_node = rr_node.next_sibling(rr_node.name());
     }
+}
+
+void process_connection_boxes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    int x_dim = get_attribute(parent, "x_dim", loc_data).as_int(0);
+    int y_dim = get_attribute(parent, "y_dim", loc_data).as_int(0);
+    int num_boxes = get_attribute(parent, "num_boxes", loc_data).as_int(0);
+    VTR_ASSERT(num_boxes >= 0);
+
+    pugi::xml_node connection_box = get_first_child(parent, "connection_box", loc_data);
+    std::vector<ConnectionBox> boxes(num_boxes);
+    while (connection_box) {
+        int id = get_attribute(connection_box, "id", loc_data).as_int(-1);
+        const char* name = get_attribute(connection_box, "name", loc_data).as_string(nullptr);
+        VTR_ASSERT(id >= 0 && id < num_boxes);
+        VTR_ASSERT(boxes.at(id).name == "");
+        boxes.at(id).name = std::string(name);
+
+        connection_box = connection_box.next_sibling(connection_box.name());
+    }
+
+    device_ctx.connection_boxes.reset_boxes(std::make_pair(x_dim, y_dim), boxes);
 }
