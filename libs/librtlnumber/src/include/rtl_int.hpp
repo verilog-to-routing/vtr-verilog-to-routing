@@ -18,7 +18,16 @@
 
 bool V_TRUE(VNumber& a);
 bool V_FALSE(VNumber& a);
+bool V_UNK(VNumber& a);
+bool V_IS_X(VNumber& a);
+bool V_IS_Z(VNumber& a);
+bool V_IS_SIGNED(VNumber& a);
+bool V_IS_UNSIGNED(VNumber& a);
 
+std::string V_STRING(VNumber& a);
+
+VNumber V_UNSIGNED(VNumber& a);
+VNumber V_SIGNED(VNumber& a);
 VNumber V_ADD(VNumber& a);
 VNumber V_MINUS(VNumber& a);
 

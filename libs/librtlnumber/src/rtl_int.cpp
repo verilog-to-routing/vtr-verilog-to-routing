@@ -227,28 +227,42 @@ static VNumber shift_op(VNumber& a, int64_t b, bool sign_shift)
 
 bool V_TRUE(VNumber& a)
 {
-	VNumber result = a.bitwise_reduce(l_or);
-	if(result.is_dont_care_string())
-	{
-		return false;
-	}
-	else
-	{
-		return (result.get_value() != 0);
-	}	
+	return a.is_true();
 }
 
 bool V_FALSE(VNumber& a)
 {
-	VNumber result = a.bitwise_reduce(l_or);
-	if(result.is_dont_care_string())
-	{
-		return false;
-	}
-	else
-	{
-		return (result.get_value() == 0);
-	}	
+	return a.is_false();
+}
+
+bool V_UNK(VNumber& a)
+{
+	return a.is_dont_care_string();
+}
+
+bool V_IS_X(VNumber& a)
+{
+	return a.is_x();
+}
+
+bool V_IS_Z(VNumber& a)
+{
+	return a.is_z();
+}
+
+bool V_IS_SIGNED(VNumber& a)
+{
+	return a.is_signed();
+}
+
+bool V_IS_UNSIGNED(VNumber& a)
+{
+	return !a.is_signed();
+}
+
+std::string V_STRING(VNumber& a)
+{
+	return a.to_printable();
 }
 
 /***
@@ -279,6 +293,16 @@ VNumber V_ADD(VNumber& a)
 VNumber V_MINUS(VNumber& a)
 {
 	return a.twos_complement();
+}
+
+VNumber V_UNSIGNED(VNumber& a)
+{
+	return a.to_unsigned();
+}
+
+VNumber V_SIGNED(VNumber& a)
+{
+	return a.to_signed();
 }
 
 VNumber V_BITWISE_AND(VNumber& a)

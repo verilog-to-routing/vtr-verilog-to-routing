@@ -16,7 +16,7 @@
 #include <bitset>
 #include "rtl_utils.hpp"
 
-typedef uint64_t veri_internal_bits_t;
+typedef uint16_t veri_internal_bits_t;
 // typedef VNumber<64> veri_64_t;
 // typedef VNumber<32> veri_32_t;
 
@@ -83,6 +83,18 @@ namespace BitSpace {
             _0,_0,_0,_1
     };
     _static_unused(is_z_bit)
+
+    constexpr bit_value_t is_one_bit[4] = {
+        /*	 0   1   x   z  <- a*/
+            _0,_1,_0,_0
+    };
+    _static_unused(is_one_bit)
+
+    constexpr bit_value_t is_zero_bit[4] = {
+        /*	 0   1   x   z  <- a*/
+            _1,_0,_0,_0
+    };
+    _static_unused(is_zero_bit)
 
     constexpr bit_value_t l_and[4][4] = {
         /* a  /	 0   1   x   z 	<-b */	
@@ -339,6 +351,23 @@ namespace BitSpace {
             this->bits = static_cast<T>(this->bits | set_value);
         }
 
+        /**
+         * get 16 bit as 8 bit
+         */
+        template<typename Addr_t>
+        char get_as_char(Addr_t address)
+        {
+            size_t start = (8*(address));
+            size_t end = (8*(address+1))-1;
+            char value = 0;
+            for(size_t i = start; i <= end; i++)
+            {
+                value += (((this->get_bit(i))? 1: 0) << i);
+            }
+            
+            return value;
+        }
+
         static size_t size()
         {
             return (sizeof(T)<<2); // 8 bit in a byte, 2 bits for a verilog bits = 4 bits in a byte, << 2 = sizeof x 4
@@ -451,13 +480,30 @@ namespace BitSpace {
             std::string to_return = "";
             for(size_t address=0x0; address < this->size(); address++)
             {
-                to_return.push_back(BitSpace::bit_to_c(this->get_bit(address)));
+                char value = BitSpace::bit_to_c(this->get_bit(address));
+                if(big_endian)
+                {
+                    to_return.push_back(value);
+                }
+                else
+                {
+                    to_return.insert(0,1,value);
+                }
             }
 
-            if(!big_endian)
-                return std::string(to_return.crbegin(), to_return.crend());
-            else
-                return to_return;              
+            return to_return;              
+        }
+
+        std::string to_printable()
+        {
+            std::string to_return = "";
+
+            for(size_t i=0; i< this->size(); i += 8)
+            {
+                to_return.insert(0,1,this->get_bitfield(to_index(i))->get_as_char(i));
+            }
+
+            return to_return;              
         }
 
         bool has_unknowns()
@@ -491,6 +537,28 @@ namespace BitSpace {
             }
             
             return true;
+        }
+
+        bool is_true()
+        {
+            for(size_t address=0x0; address < this->size(); address++)
+            {
+                if(is_one_bit[this->get_bit(address)])
+                    return true;               
+            }
+            
+            return false; 
+        }
+
+        bool is_false()
+        {
+            for(size_t address=0x0; address < this->size(); address++)
+            {
+                if(! is_zero_bit[this->get_bit(address)])
+                    return false;               
+            }
+            
+            return true; 
         }
 
         /**
@@ -599,7 +667,6 @@ class VNumber
 private:
     bool sign = false;
     bool defined_size = false;
-    bool is_string = false;
     BitSpace::VerilogBits bitstring = BitSpace::VerilogBits(1, BitSpace::_x);
 
     VNumber(BitSpace::VerilogBits other_bitstring, bool other_sign)
@@ -615,7 +682,6 @@ public:
         this->sign = false;
         this->bitstring = BitSpace::VerilogBits(1, BitSpace::_x);
         this->defined_size = false;
-        this->is_string = false;
     }
 
     VNumber(VNumber&&) = default;
@@ -627,13 +693,11 @@ public:
         this->sign = other.sign;
         this->bitstring = other.bitstring;
         this->defined_size = other.defined_size;
-        this->is_string = other.is_string;
     }
 
     VNumber(VNumber other, size_t length)
     {
         this->sign = other.sign;
-        this->is_string = other.is_string;
         this->bitstring = other.bitstring.resize(other.get_padding_bit(),length);
         // TODO this->defined_size = true?????;
     }
@@ -692,25 +756,10 @@ public:
         return out;
     }
 
-    const char *to_c_str()
+    std::string to_printable()
     {
-        if (!(this->is_string))
-        {
-            return NULL;
-        }
-
-        std::string out = "";
-        std::string bit_string = this->to_bit_string();
-        printf("bit_string: %s\n", bit_string.c_str());
-
-        for (unsigned int i = 0; i < bit_string.size(); i += 8)
-        {
-            std::string sub_str(bit_string.substr(i, 8));
-            char ascii_char = (char) stoi(sub_str, nullptr, 2);
-            out.push_back(ascii_char);
-        }
-
-        return out.c_str();
+        std::string out = this->bitstring.to_printable();
+        return out;
     }
 
     /***
@@ -726,6 +775,7 @@ public:
         std::string verilog_string(input);
         std::string v_value_str = "";
 
+        // printf("verilog string %s", verilog_string.c_str());
         /**
          * set defaults
          */
@@ -737,12 +787,15 @@ public:
         // if this is a string
         if(verilog_string[0] == '\"' && verilog_string.back() == '\"')
         {
-            this->is_string = true;
-            bitsize = 8*(verilog_string.size()-2);
+            size_t string_size = verilog_string.size()-2;
+            if(string_size == 0)
+                string_size = 1;
+
+            bitsize = string_size * 8;
             this->defined_size = true;
             radix = 256;
 
-            v_value_str = verilog_string.substr(1, verilog_string.size()-2);
+            v_value_str = verilog_string.substr(1, string_size);
         }
         else
         {
@@ -885,9 +938,29 @@ public:
         return this->bitstring.is_only_x();
     }
 
+    bool is_true()
+    {
+        return this->bitstring.is_true();
+    }
+
+    bool is_false()
+    {
+        return this->bitstring.is_false();
+    }
+
     VNumber twos_complement()
     {
         return VNumber(this->bitstring.twos_complement(),this->sign);
+    }
+
+    VNumber to_signed()
+    {
+        return VNumber(this->bitstring,true);
+    }
+
+    VNumber to_unsigned()
+    {
+        return VNumber(this->bitstring,false);
     }
 
     VNumber invert()

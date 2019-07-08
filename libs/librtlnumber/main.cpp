@@ -36,6 +36,8 @@ static std::string arithmetic(std::string op, std::string a_in)
 
 	/* return Process Operator via ternary */
 	return (
+		(op == "to_unsigned")?	V_UNSIGNED(a):
+		(op == "to_signed")	 ?	V_SIGNED(a):
 		(op == "~")		?		V_BITWISE_NOT(a):
 		(op == "-")		?		V_MINUS(a):
 		(op == "+")		?		V_ADD(a):
@@ -129,10 +131,51 @@ int main(int argc, char** argv)
 
 		result = (V_TRUE(input_2) ? "pass" : "fail");
 	}
+	else if(argc == 3 && input[1] == "is_false")
+	{
+		VNumber input_2(input[2]);
+
+		result = (V_FALSE(input_2) ? "pass" : "fail");
+	}
+	else if(argc == 3 && input[1] == "is_unk")
+	{
+		VNumber input_2(input[2]);
+
+		result = (V_UNK(input_2) ? "pass" : "fail");
+	}
+	else if(argc == 3 && input[1] == "is_x")
+	{
+		VNumber input_2(input[2]);
+
+		result = (V_IS_X(input_2) ? "pass" : "fail");
+	}
+	else if(argc == 3 && input[1] == "is_z")
+	{
+		VNumber input_2(input[2]);
+
+		result = (V_IS_Z(input_2) ? "pass" : "fail");
+	}
+	else if(argc == 3 && input[1] == "is_unsigned")
+	{
+		VNumber input_2(input[2]);
+
+		result = (V_IS_UNSIGNED(input_2) ? "pass" : "fail");
+	}
+	else if(argc == 3 && input[1] == "is_signed")
+	{
+		VNumber input_2(input[2]);
+
+		result = (V_IS_SIGNED(input_2) ? "pass" : "fail");
+	}
+	else if(argc == 3 && input[1] == "display")
+	{
+		VNumber input_2(input[2]);
+
+		result = V_STRING(input_2);
+	}
 	else if(argc == 3)
 	{
 		result = arithmetic(input[1], input[2]);
-
 	}
 	else if(argc == 4)
 	{
