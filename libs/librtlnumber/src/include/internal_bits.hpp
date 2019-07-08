@@ -599,6 +599,7 @@ class VNumber
 private:
     bool sign = false;
     bool defined_size = false;
+    bool is_string = false;
     BitSpace::VerilogBits bitstring = BitSpace::VerilogBits(1, BitSpace::_x);
 
     VNumber(BitSpace::VerilogBits other_bitstring, bool other_sign)
@@ -614,6 +615,7 @@ public:
         this->sign = false;
         this->bitstring = BitSpace::VerilogBits(1, BitSpace::_x);
         this->defined_size = false;
+        this->is_string = false;
     }
 
     VNumber(VNumber&&) = default;
@@ -625,12 +627,15 @@ public:
         this->sign = other.sign;
         this->bitstring = other.bitstring;
         this->defined_size = other.defined_size;
+        this->is_string = other.is_string;
     }
 
     VNumber(VNumber other, size_t length)
     {
         this->sign = other.sign;
+        this->is_string = other.is_string;
         this->bitstring = other.bitstring.resize(other.get_padding_bit(),length);
+        // TODO this->defined_size = true?????;
     }
 
     VNumber(const std::string& verilog_string)
@@ -687,6 +692,27 @@ public:
         return out;
     }
 
+    const char *to_c_str()
+    {
+        if (!(this->is_string))
+        {
+            return NULL;
+        }
+
+        std::string out = "";
+        std::string bit_string = this->to_bit_string();
+        printf("bit_string: %s\n", bit_string.c_str());
+
+        for (unsigned int i = 0; i < bit_string.size(); i += 8)
+        {
+            std::string sub_str(bit_string.substr(i, 8));
+            char ascii_char = (char) stoi(sub_str, nullptr, 2);
+            out.push_back(ascii_char);
+        }
+
+        return out.c_str();
+    }
+
     /***
      * setters
      */
@@ -711,7 +737,8 @@ public:
         // if this is a string
         if(verilog_string[0] == '\"' && verilog_string.back() == '\"')
         {
-            bitsize = verilog_string.size()-2;
+            this->is_string = true;
+            bitsize = 8*(verilog_string.size()-2);
             this->defined_size = true;
             radix = 256;
 

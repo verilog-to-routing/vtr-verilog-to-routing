@@ -1913,7 +1913,14 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 			break;
 		}
 		case NUMBERS:
-			fprintf(fp, ": %s",  node->types.vnumber->to_bit_string().c_str());
+			if (node->types.vnumber->to_c_str())
+			{
+				fprintf(fp, ": \"%s\"", node->types.vnumber->to_c_str());
+			}
+			else
+			{
+				fprintf(fp, ": %s",  node->types.vnumber->to_bit_string().c_str());
+			}
 			break;
 
 		case UNARY_OPERATION: //fallthrough

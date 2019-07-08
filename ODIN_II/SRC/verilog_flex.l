@@ -63,9 +63,6 @@ vWORD [[:alpha:]_][[:alnum:]_]*
 	*/
 vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
-	/* hack to get strings to match as a symbol, this is broken and wrong. */
-vDISCARD [\"]
-
 %%
 
 <INITIAL>`timescale.*$              { MP; continue;}
