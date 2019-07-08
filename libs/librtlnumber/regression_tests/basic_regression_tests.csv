@@ -38,7 +38,11 @@ simple_is_signed_1,          to_signed,      2'b11,  2'sb11
 simple_is_signed_2,          to_signed,      2'sb11, 2'sb11
 
 # string test
-simple_string,          display,    "hello world",   hello world
+simple_string,          display,        "hello world",   hello world
+string_compare_pass,    "hello world",  ==,  "hello world", 1'b1
+string_compare_fail,    "hello world",  ==,  "hello", 1'b0
+string_compare_fail,    "hello world",  !=,  "hello", 1'b1
+string_add,             "a",            +,    0,      8'b0
 
 # base conversions
 Decimal-To-Binary,      10,         ==, 4'b1010,    1'b1
