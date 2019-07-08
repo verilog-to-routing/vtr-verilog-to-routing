@@ -21,6 +21,7 @@
 #include "router_lookahead.h"
 #include "place_macro.h"
 #include "compressed_grid.h"
+#include "connection_box.h"
 
 //A Context is collection of state relating to a particular part of VPR
 //
@@ -199,6 +200,8 @@ struct DeviceContext : public Context {
     // Name of rrgraph file read (if any).
     // Used to determine when reading rrgraph if file is already loaded.
     std::string read_rr_graph_filename;
+
+    ConnectionBoxes connection_boxes;
 };
 
 //State relating to power analysis
