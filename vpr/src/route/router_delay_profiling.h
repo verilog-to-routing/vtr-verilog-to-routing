@@ -1,8 +1,19 @@
 #include "vpr_types.h"
+#include "router_lookahead.h"
 
 #include <vector>
 
-bool calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay);
+class RouterDelayProfile {
+public:
+    RouterDelayProfile(
+        e_router_lookahead router_lookahead_type,
+        std::string write_lookahead,
+        std::string read_lookahead,
+        const std::vector<t_segment_inf>& segment_inf);
+    bool calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) const;
+private:
+    std::unique_ptr<RouterLookahead> router_lookahead_;
+};
 
 std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts);
 

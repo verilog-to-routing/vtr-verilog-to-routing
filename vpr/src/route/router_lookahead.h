@@ -2,21 +2,41 @@
 #define VPR_ROUTER_LOOKAHEAD_H
 #include <memory>
 #include "vpr_types.h"
+#include "vpr_error.h"
 
 struct t_conn_cost_params; //Forward declaration
 
 class RouterLookahead {
   public:
     virtual float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
+    virtual void compute(const std::vector<t_segment_inf>& segment_inf) = 0;
+    virtual void read(const std::string &file) = 0;
+    virtual void write(const std::string &file) const = 0;
 
     virtual ~RouterLookahead() {}
 };
 
-std::unique_ptr<RouterLookahead> make_router_lookahead(e_router_lookahead router_lookahead_type);
+std::unique_ptr<RouterLookahead> make_router_lookahead(
+        e_router_lookahead router_lookahead_type,
+        std::string write_lookahead,
+        std::string read_lookahead,
+        const std::vector<t_segment_inf>& segment_inf);
 
 class ClassicLookahead : public RouterLookahead {
   public:
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    void compute(const std::vector<t_segment_inf>& segment_inf) override {
+        (void)segment_inf;
+    }
+
+    void read(const std::string &file) override {
+        (void)file;
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::read unimplemented");
+    }
+    void write(const std::string &file) const override {
+        (void)file;
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::write unimplemented");
+    }
 
   private:
     float classic_wire_lookahead_cost(int node, int target_node, float criticality, float R_upstream) const;
@@ -25,11 +45,29 @@ class ClassicLookahead : public RouterLookahead {
 class MapLookahead : public RouterLookahead {
   protected:
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    void compute(const std::vector<t_segment_inf>& segment_inf) override;
+    void read(const std::string &file) override {
+        (void)file;
+        VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::read unimplemented");
+    }
+    void write(const std::string &file) const override {
+        (void)file;
+        VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::write unimplemented");
+    }
 };
 
 class NoOpLookahead : public RouterLookahead {
   protected:
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    void compute(const std::vector<t_segment_inf>& segment_inf) override {
+        (void)segment_inf;
+    }
+    void read(const std::string &file) override {
+        (void)file;
+    }
+    void write(const std::string &file) const override {
+        (void)file;
+    }
 };
 
 #endif

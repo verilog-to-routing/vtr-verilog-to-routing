@@ -380,10 +380,6 @@ void create_rr_graph(const t_graph_type graph_type,
 
     print_rr_graph_stats();
 
-    if (router_lookahead_type == e_router_lookahead::MAP) {
-        compute_router_lookahead(segment_inf.size());
-    }
-
     //Write out rr graph file if needed
     if (!det_routing_arch->write_rr_graph_filename.empty()) {
         write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str(), segment_inf);
