@@ -22,22 +22,21 @@ static std::unique_ptr<RouterLookahead> make_router_lookahead_object(e_router_lo
 }
 
 std::unique_ptr<RouterLookahead> make_router_lookahead(
-        e_router_lookahead router_lookahead_type,
-        std::string write_lookahead,
-        std::string read_lookahead,
-        const std::vector<t_segment_inf>& segment_inf) {
+    e_router_lookahead router_lookahead_type,
+    std::string write_lookahead,
+    std::string read_lookahead,
+    const std::vector<t_segment_inf>& segment_inf) {
     std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(router_lookahead_type);
 
-    if(read_lookahead.empty()) {
+    if (read_lookahead.empty()) {
         router_lookahead->compute(segment_inf);
     } else {
         router_lookahead->read(read_lookahead);
     }
 
-    if(!write_lookahead.empty()) {
+    if (!write_lookahead.empty()) {
         router_lookahead->write(write_lookahead);
     }
-
 
     return std::move(router_lookahead);
 }
