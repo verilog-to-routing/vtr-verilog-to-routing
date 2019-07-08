@@ -250,7 +250,7 @@ void reduce_budgets_if_congested(route_budgets& budgeting_inf,
                                  float slope,
                                  int itry);
 
-static bool should_route_net(ClusterNetId net_id, const CBRR& connections_inf, bool if_force_reroute);
+static bool should_route_net(ClusterNetId net_id, CBRR& connections_inf, bool if_force_reroute);
 static bool early_exit_heuristic(const t_router_opts& router_opts, const WirelengthInfo& wirelength_info);
 
 struct more_sinks_than {
@@ -279,7 +279,7 @@ static std::string describe_unrouteable_connection(const int source_node, const 
 
 static bool is_high_fanout(int fanout, int fanout_threshold);
 
-static size_t dynamic_update_bounding_boxes(int high_fanout_threshold);
+static size_t dynamic_update_bounding_boxes(const std::vector<ClusterNetId>& nets, int high_fanout_threshold);
 static t_bb calc_current_bb(const t_trace* head);
 
 static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr);
@@ -405,6 +405,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
     int itry_since_last_convergence = -1;
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
         RouterStats router_iteration_stats;
+        std::vector<ClusterNetId> rerouted_nets;
 
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -434,6 +435,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
          * Route each net
          */
         for (auto net_id : sorted_nets) {
+            bool was_rerouted = false;
             bool is_routable = try_timing_driven_route_net(net_id,
                                                            itry,
                                                            pres_fac,
@@ -445,10 +447,16 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
                                                            net_delay,
                                                            *router_lookahead,
                                                            netlist_pin_lookup,
-                                                           route_timing_info, budgeting_inf);
+                                                           route_timing_info,
+                                                           budgeting_inf,
+                                                           was_rerouted);
 
             if (!is_routable) {
                 return (false); //Impossible to route
+            }
+
+            if (was_rerouted) {
+                rerouted_nets.push_back(net_id);
             }
         }
 
@@ -587,7 +595,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
          */
 
         if (router_opts.route_bb_update == e_route_bb_update::DYNAMIC) {
-            num_net_bounding_boxes_updated = dynamic_update_bounding_boxes(router_opts.high_fanout_threshold);
+            num_net_bounding_boxes_updated = dynamic_update_bounding_boxes(rerouted_nets, router_opts.high_fanout_threshold);
         }
 
         if (itry >= high_effort_congestion_mode_iteration_threshold) {
@@ -749,7 +757,8 @@ bool try_timing_driven_route_net(ClusterNetId net_id,
                                  const RouterLookahead& router_lookahead,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                  std::shared_ptr<SetupTimingInfo> timing_info,
-                                 route_budgets& budgeting_inf) {
+                                 route_budgets& budgeting_inf,
+                                 bool& was_rerouted) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -789,6 +798,8 @@ bool try_timing_driven_route_net(ClusterNetId net_id,
         } else {
             VTR_LOG("Routing failed.\n");
         }
+
+        was_rerouted = true; //Flag to record whether routing was actually changed
     }
     return (is_routed);
 }
@@ -2044,7 +2055,7 @@ static bool timing_driven_check_net_delays(vtr::vector<ClusterNetId, float*>& ne
 }
 
 /* Detect if net should be routed or not */
-static bool should_route_net(ClusterNetId net_id, const CBRR& connections_inf, bool if_force_reroute) {
+static bool should_route_net(ClusterNetId net_id, CBRR& connections_inf, bool if_force_reroute) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -2079,6 +2090,8 @@ static bool should_route_net(ClusterNetId net_id, const CBRR& connections_inf, b
         tptr = tptr->next;
 
     } /* End while loop -- did an entire traceback. */
+
+    VTR_ASSERT(connections_inf.get_remaining_targets().empty());
 
     return false; /* Current route has no overuse */
 }
@@ -2512,7 +2525,7 @@ static bool is_high_fanout(int fanout, int fanout_threshold) {
 //
 //Typically, only a small minority of nets (typically > 10%) have their BBs updated
 //each routing iteration.
-static size_t dynamic_update_bounding_boxes(int high_fanout_threshold) {
+static size_t dynamic_update_bounding_boxes(const std::vector<ClusterNetId>& updated_nets, int high_fanout_threshold) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -2535,7 +2548,7 @@ static size_t dynamic_update_bounding_boxes(int high_fanout_threshold) {
 
     size_t num_bb_updated = 0;
 
-    for (ClusterNetId net : clb_nlist.nets()) {
+    for (ClusterNetId net : updated_nets) {
         t_trace* routing_head = route_ctx.trace[net].head;
 
         if (routing_head == nullptr) continue; //Skip if no routing
