@@ -27,6 +27,9 @@ struct t_options {
     argparse::ArgValue<std::string> write_rr_graph_file;
     argparse::ArgValue<std::string> read_rr_graph_file;
 
+    argparse::ArgValue<std::string> write_lookahead;
+    argparse::ArgValue<std::string> read_lookahead;
+
     /* Stage Options */
     argparse::ArgValue<bool> do_packing;
     argparse::ArgValue<bool> do_placement;

@@ -351,6 +351,9 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->first_iteration_timing_report_file = Options.router_first_iteration_timing_report_file;
 
     RouterOpts->strict_checks = Options.strict_checks;
+
+    RouterOpts->write_lookahead = Options.write_lookahead;
+    RouterOpts->read_lookahead = Options.read_lookahead;
 }
 
 static void SetupAnnealSched(const t_options& Options,

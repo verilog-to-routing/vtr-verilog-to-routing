@@ -315,6 +315,7 @@ bool try_route(int width_fac,
 
         success = try_timing_driven_route(router_opts,
                                           analysis_opts,
+                                          segment_inf,
                                           net_delay,
                                           netlist_pin_lookup,
                                           timing_info,
