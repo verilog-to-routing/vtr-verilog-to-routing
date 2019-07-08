@@ -820,6 +820,9 @@ struct t_placer_opts {
     std::string post_place_timing_report_file;
 
     bool strict_checks;
+
+    std::string write_placement_delay_lookup;
+    std::string read_placement_delay_lookup;
 };
 
 /* All the parameters controlling the router's operation are in this        *
