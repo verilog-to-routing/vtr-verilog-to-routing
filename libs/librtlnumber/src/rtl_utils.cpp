@@ -109,6 +109,20 @@ static std::string _radix_digit_to_bits_str(const char digit, short radix,  cons
             }
             break;
         }
+        case 256:
+        {
+            std::string bitstring = "";
+            char temp = digit;
+            // 8 bit per char
+            for(int i=0; i<8; i++)
+            {
+                char value = temp % 2;
+                temp = temp / 2;
+
+                bitstring.insert(bitstring.begin(), (value)? '1': '0');
+            }
+            return bitstring;
+        }
         default:
         {
             _assert_Werr( false, FUNCT, LINE,
@@ -130,7 +144,7 @@ static std::string _radix_digit_to_bits(const char digit, short radix,  const ch
 /**********************
  * convert from different radix to bitstring
  */
-std::string string_of_radix_to_bitstring(std::string orig_string, short radix)
+std::string string_of_radix_to_bitstring(std::string orig_string, size_t radix)
 {
 	std::string result = "";	
 
@@ -161,6 +175,10 @@ std::string string_of_radix_to_bitstring(std::string orig_string, short radix)
             assert_Werr(std::string::npos == orig_string.find_first_not_of("xZzZ0123456789aAbBcCdDeEfF"),
                     "INVALID BIT INPUT: " + orig_string + "for radix 16"
             );
+            break;
+
+		case 256:    
+            // allow all chars
             break;
 
 		default:	    
@@ -215,5 +233,6 @@ std::string string_of_radix_to_bitstring(std::string orig_string, short radix)
 	}
     
     result.insert(result.begin(),'0');
+
 	return result;
 }

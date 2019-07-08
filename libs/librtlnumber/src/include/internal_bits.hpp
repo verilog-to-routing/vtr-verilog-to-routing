@@ -692,78 +692,80 @@ public:
      */
     void set_value(const std::string& input)
     {
-        std::string verilog_string(input);
-
-        if(!verilog_string.size())
+        if(!input.size())
         {
             return;
         }
 
-        size_t loc = verilog_string.find("\'");
+        std::string verilog_string(input);
+        std::string v_value_str = "";
 
+        /**
+         * set defaults
+         */
+        size_t bitsize = 32;            // 32 bit is the fall back
+        this->defined_size = false;     // the size is undefined unless otherwise specified
+        size_t radix = 0;              // the radix is unknown to start with
+        this->sign = false;             // we treat everything as unsigned unless specified
 
-        if(loc == std::string::npos)
+        // if this is a string
+        if(verilog_string[0] == '\"' && verilog_string.back() == '\"')
         {
-            verilog_string.insert(0, "\'sd");
-            loc = 0;
-        }
-
-        size_t bitsize = 0;
-        if(loc != 0)
-        {
-            std::string bit_length_char = verilog_string.substr(0, loc);
-            bitsize = strtoul(bit_length_char.c_str(), nullptr, 10);
+            bitsize = verilog_string.size()-2;
             this->defined_size = true;
+            radix = 256;
+
+            v_value_str = verilog_string.substr(1, verilog_string.size()-2);
         }
         else
         {
-            bitsize = 32;
-            this->defined_size = false;
+            size_t loc = verilog_string.find("\'");
+            if(loc == std::string::npos)
+            {
+                verilog_string.insert(0, "\'sd");
+                loc = 0;
+            }
+
+            if(loc != 0)
+            {
+                std::string bit_length_char = verilog_string.substr(0, loc);
+                bitsize = strtoul(bit_length_char.c_str(), nullptr, 10);
+                this->defined_size = true;
+            }
+
+            if(std::tolower(verilog_string[loc+1]) == 's')
+            {
+                this->sign = true;
+            }
+
+            char base = static_cast<char>(std::tolower(verilog_string[loc+1+sign]));
+            switch(base)
+            {
+                case 'b':   radix = 2;  break;  // binary
+                case 'o':   radix = 8;  break;  // octal
+                case 'd':   radix = 10; break;  // decimal
+                case 'h':   radix = 16; break;  // hexadecimal
+                default:    
+                    assert_Werr( false,
+                            "Invalid radix base for number: " + std::string(1,base)
+                    ); 
+                    break;
+            }
+
+            //remove underscores
+            v_value_str = verilog_string.substr(loc+2+sign);
+            v_value_str.erase(std::remove(v_value_str.begin(), v_value_str.end(), '_'), v_value_str.end());
+
+            //little endian bitstring string
         }
 
-
-        this->sign = false;
-        if(std::tolower(verilog_string[loc+1]) == 's')
-        {
-            this->sign = true;
-        }
-
-
-        char base = static_cast<char>(std::tolower(verilog_string[loc+1+sign]));
-
-
-        uint8_t radix = 0;
-        switch(base){
-            case 'b':   radix = 2;  break;
-            case 'o':   radix = 8;  break;
-            case 'd':   radix = 10; break;
-            case 'h':   radix = 16; break;
-            default:    
-                assert_Werr( false,
-                        "Invalid radix base for number: " + std::string(1,base)
-                ); 
-                break;
-        }
-
-
-        //remove underscores
-        std::string v_value_str = verilog_string.substr(loc+2+sign);
-        v_value_str.erase(std::remove(v_value_str.begin(), v_value_str.end(), '_'), v_value_str.end());
-
-
-        //little endian bitstring string
         std::string temp_bitstring = string_of_radix_to_bitstring(v_value_str, radix);
 
-
         char pad = temp_bitstring[0];
-
-
         if(!this->sign && pad == '1')
         {
             pad = '0';
         }
-
-
 
         // convert the bits to the internal data struct (bit at index 0 in string is msb since string go from msb to lsb)
         BitSpace::VerilogBits new_bitstring(temp_bitstring.size(), BitSpace::_0);
@@ -773,7 +775,6 @@ public:
             new_bitstring.set_bit(counter--,BitSpace::c_to_bit(in));
         }
         
-
         this->bitstring = new_bitstring.resize(BitSpace::c_to_bit(pad), bitsize);
     }
 

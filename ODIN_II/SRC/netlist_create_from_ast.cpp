@@ -3533,7 +3533,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	{
 		int output_size = alias_output_assign_pins_to_inputs(out_list, in_1, assignment);
 
-		if (output_size < in_1->count)
+		if (in_1 && output_size < in_1->count)
 		{
 			/* need to shrink the output list */
 			int i;

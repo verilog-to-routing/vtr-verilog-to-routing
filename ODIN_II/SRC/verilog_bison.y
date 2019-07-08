@@ -51,15 +51,7 @@ int yylex(void);
 }
 
 %token <id_name> vSYMBOL_ID
-%token <num_value> vINTEGRAL
-%token <num_value> vUNSIGNED_DECIMAL
-%token <num_value> vUNSIGNED_OCTAL
-%token <num_value> vUNSIGNED_HEXADECIMAL
-%token <num_value> vUNSIGNED_BINARY
-%token <num_value> vSIGNED_DECIMAL
-%token <num_value> vSIGNED_OCTAL
-%token <num_value> vSIGNED_HEXADECIMAL
-%token <num_value> vSIGNED_BINARY
+%token <num_value> vNUMBER
 %token <num_value> vDELAY_ID
 %token vALWAYS vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vDEFINE vELSE vEND vENDCASE
 %token vENDMODULE vENDSPECIFY vENDGENERATE vENDFUNCTION vIF vINOUT vINPUT vMODULE vGENERATE vFUNCTION
@@ -544,15 +536,7 @@ expression:
 	;
 
 primary:
-	vINTEGRAL										{$$ = newNumberNode($1, LONG, UNSIGNED, yylineno);}
-	| vUNSIGNED_DECIMAL									{$$ = newNumberNode($1, DEC, UNSIGNED, yylineno);}
-	| vUNSIGNED_OCTAL									{$$ = newNumberNode($1, OCT, UNSIGNED, yylineno);}
-	| vUNSIGNED_HEXADECIMAL									{$$ = newNumberNode($1, HEX, UNSIGNED, yylineno);}
-	| vUNSIGNED_BINARY									{$$ = newNumberNode($1, BIN, UNSIGNED, yylineno);}
-	| vSIGNED_DECIMAL									{$$ = newNumberNode($1, DEC, SIGNED, yylineno);}
-	| vSIGNED_OCTAL										{$$ = newNumberNode($1, OCT, SIGNED, yylineno);}
-	| vSIGNED_HEXADECIMAL									{$$ = newNumberNode($1, HEX, SIGNED, yylineno);}
-	| vSIGNED_BINARY									{$$ = newNumberNode($1, BIN, SIGNED, yylineno);}
+	vNUMBER										{$$ = newNumberNode($1, yylineno);}
 	| vSYMBOL_ID										{$$ = newSymbolNode($1, yylineno);}
 	| vSYMBOL_ID '[' expression ']'								{$$ = newArrayRef($1, $3, yylineno);}
 	| vSYMBOL_ID '[' expression ']' '[' expression ']'					{$$ = newArrayRef2D($1, $3, $6, yylineno);}

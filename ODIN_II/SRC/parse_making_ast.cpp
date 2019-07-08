@@ -308,7 +308,7 @@ ast_node_t *newSymbolNode(char *id, int line_number)
 /*---------------------------------------------------------------------------------------------
  * (function: newNumberNode)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newNumberNode(char *num, bases /*base */, signedness /* sign */, int line_number)
+ast_node_t *newNumberNode(char *num, int line_number)
 {
 	ast_node_t *current_node = create_tree_node_number(num, line_number, current_parse_file);
 	vtr::free(num);

@@ -37,7 +37,7 @@
 #endif
 
 
-std::string string_of_radix_to_bitstring(std::string orig_string, short radix);
+std::string string_of_radix_to_bitstring(std::string orig_string, size_t radix);
 
 inline void _assert_Werr(bool cond, const char *FUNCT, int LINE, std::string error_string)
 {

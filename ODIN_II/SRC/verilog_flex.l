@@ -207,29 +207,20 @@ vDISCARD [\"]
 	/*	C functions	*/
 <INITIAL>"$clog2"			{MP; return vCLOG2;}
 
-	/*	signed numbers	*/
-<INITIAL>[[:digit:]]+'[sS]{vBIN}	{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_BINARY; }
-<INITIAL>[[:digit:]]+'[sS]{vHEX}	{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_HEXADECIMAL; }
-<INITIAL>[[:digit:]]+'[sS]{vOCT}	{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_OCTAL; }
-<INITIAL>[[:digit:]]+'[sS]{vDEC}	{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_DECIMAL; }
-<INITIAL>'[sS]{vBIN}				{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_BINARY; }
-<INITIAL>'[sS]{vHEX}				{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_HEXADECIMAL; }
-<INITIAL>'[sS]{vOCT}				{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_OCTAL; }
-<INITIAL>'[sS]{vDEC}				{ MP; yylval.num_value = vtr::strdup(yytext); return vSIGNED_DECIMAL; }
-
-	/*	unsigned Numbers	*/
-<INITIAL>[[:digit:]]+'{vBIN}		{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_BINARY; }
-<INITIAL>[[:digit:]]+'{vHEX}		{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_HEXADECIMAL; }
-<INITIAL>[[:digit:]]+'{vOCT}		{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_OCTAL; }
-<INITIAL>[[:digit:]]+'{vDEC}		{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_DECIMAL; }
-<INITIAL>'{vBIN}					{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_BINARY; }
-<INITIAL>'{vHEX}					{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_HEXADECIMAL; }
-<INITIAL>'{vOCT}					{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_OCTAL; }
-<INITIAL>'{vDEC}					{ MP; yylval.num_value = vtr::strdup(yytext); return vUNSIGNED_DECIMAL; }
-
-	/* ints */
+	/* Delay */
 <INITIAL>#{vINT}					{ MP; yylval.num_value = vtr::strdup(yytext+1); return vDELAY_ID; }
-<INITIAL>{vINT}						{ MP; yylval.num_value = vtr::strdup(yytext); return vINTEGRAL; }
+
+	/* Integers */
+<INITIAL>{vINT}						{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+
+	/* Strings */
+<INITIAL>[\"].*[\"]					{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+
+	/* Numbers */
+<INITIAL>[[:digit:]]*'[sS]?{vBIN}	{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>[[:digit:]]*'[sS]?{vHEX}	{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>[[:digit:]]*'[sS]?{vOCT}	{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>[[:digit:]]*'[sS]?{vDEC}	{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
 
 	/*	operands	*/
 <INITIAL>{vWORD}					{ MP; yylval.id_name = vtr::strdup(yytext); return vSYMBOL_ID; }
@@ -239,7 +230,6 @@ vDISCARD [\"]
 
 	/* general stuff */
 [[:space:]]+						/* ignore spaces */
-{vDISCARD}							/* ignore some chars altogether */
 
 	/* catch all */
 .									{ UNSUPPORTED_TOKEN; }
