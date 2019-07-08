@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcxx.py rr_graph.xsd
  * Input file: rr_graph.xsd
- * md5sum of input file: c4f47394efd27f5819c943829c111204
+ * md5sum of input file: d9e439fa173fdf56b51feeed0ac48272
  */
 
 #include <functional>
@@ -68,6 +68,8 @@ struct DefaultRrGraphContextTypes {
     using PinClassReadContext = void*;
     using BlockTypeReadContext = void*;
     using BlockTypesReadContext = void*;
+    using ConnectionBoxDeclarationReadContext = void*;
+    using ConnectionBoxesReadContext = void*;
     using GridLocReadContext = void*;
     using GridLocsReadContext = void*;
     using NodeLocReadContext = void*;
@@ -75,6 +77,8 @@ struct DefaultRrGraphContextTypes {
     using NodeSegmentReadContext = void*;
     using MetaReadContext = void*;
     using MetadataReadContext = void*;
+    using CanonicalLocReadContext = void*;
+    using ConnectionBoxAnnotationReadContext = void*;
     using NodeReadContext = void*;
     using RrNodesReadContext = void*;
     using EdgeReadContext = void*;
@@ -95,6 +99,8 @@ struct DefaultRrGraphContextTypes {
     using PinClassWriteContext = void*;
     using BlockTypeWriteContext = void*;
     using BlockTypesWriteContext = void*;
+    using ConnectionBoxDeclarationWriteContext = void*;
+    using ConnectionBoxesWriteContext = void*;
     using GridLocWriteContext = void*;
     using GridLocsWriteContext = void*;
     using NodeLocWriteContext = void*;
@@ -102,6 +108,8 @@ struct DefaultRrGraphContextTypes {
     using NodeSegmentWriteContext = void*;
     using MetaWriteContext = void*;
     using MetadataWriteContext = void*;
+    using CanonicalLocWriteContext = void*;
+    using ConnectionBoxAnnotationWriteContext = void*;
     using NodeWriteContext = void*;
     using RrNodesWriteContext = void*;
     using EdgeWriteContext = void*;
@@ -351,6 +359,35 @@ class RrGraphBase {
     virtual inline size_t num_block_types_block_type(typename ContextTypes::BlockTypesReadContext& ctx) = 0;
     virtual inline typename ContextTypes::BlockTypeReadContext get_block_types_block_type(int n, typename ContextTypes::BlockTypesReadContext& ctx) = 0;
 
+    /** Generated for complex type "connection_box_declaration":
+     * <xs:complexType name="connection_box_declaration">
+     *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
+     *   <xs:attribute name="name" type="xs:string" use="required" />
+     * </xs:complexType>
+     */
+    virtual inline unsigned int get_connection_box_declaration_id(typename ContextTypes::ConnectionBoxDeclarationReadContext& ctx) = 0;
+    virtual inline const char* get_connection_box_declaration_name(typename ContextTypes::ConnectionBoxDeclarationReadContext& ctx) = 0;
+    virtual inline void set_connection_box_declaration_name(const char* name, typename ContextTypes::ConnectionBoxDeclarationWriteContext& ctx) = 0;
+
+    /** Generated for complex type "connection_boxes":
+     * <xs:complexType name="connection_boxes">
+     *   <xs:sequence>
+     *     <xs:element maxOccurs="unbounded" name="connection_box" type="connection_box_declaration" />
+     *   </xs:sequence>
+     *   <xs:attribute name="x_dim" type="xs:unsignedInt" use="required" />
+     *   <xs:attribute name="y_dim" type="xs:unsignedInt" use="required" />
+     *   <xs:attribute name="num_boxes" type="xs:unsignedInt" use="required" />
+     * </xs:complexType>
+     */
+    virtual inline unsigned int get_connection_boxes_num_boxes(typename ContextTypes::ConnectionBoxesReadContext& ctx) = 0;
+    virtual inline unsigned int get_connection_boxes_x_dim(typename ContextTypes::ConnectionBoxesReadContext& ctx) = 0;
+    virtual inline unsigned int get_connection_boxes_y_dim(typename ContextTypes::ConnectionBoxesReadContext& ctx) = 0;
+    virtual inline void preallocate_connection_boxes_connection_box(typename ContextTypes::ConnectionBoxesWriteContext& ctx, size_t size) = 0;
+    virtual inline typename ContextTypes::ConnectionBoxDeclarationWriteContext add_connection_boxes_connection_box(typename ContextTypes::ConnectionBoxesWriteContext& ctx, unsigned int id) = 0;
+    virtual inline void finish_connection_boxes_connection_box(typename ContextTypes::ConnectionBoxDeclarationWriteContext& ctx) = 0;
+    virtual inline size_t num_connection_boxes_connection_box(typename ContextTypes::ConnectionBoxesReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::ConnectionBoxDeclarationReadContext get_connection_boxes_connection_box(int n, typename ContextTypes::ConnectionBoxesReadContext& ctx) = 0;
+
     /** Generated for complex type "grid_loc":
      * <xs:complexType name="grid_loc">
      *   <xs:attribute name="x" type="xs:int" use="required" />
@@ -440,6 +477,28 @@ class RrGraphBase {
     virtual inline size_t num_metadata_meta(typename ContextTypes::MetadataReadContext& ctx) = 0;
     virtual inline typename ContextTypes::MetaReadContext get_metadata_meta(int n, typename ContextTypes::MetadataReadContext& ctx) = 0;
 
+    /** Generated for complex type "canonical_loc":
+     * <xs:complexType name="canonical_loc">
+     *   <xs:attribute name="x" type="xs:unsignedInt" use="required" />
+     *   <xs:attribute name="y" type="xs:unsignedInt" use="required" />
+     * </xs:complexType>
+     */
+    virtual inline unsigned int get_canonical_loc_x(typename ContextTypes::CanonicalLocReadContext& ctx) = 0;
+    virtual inline unsigned int get_canonical_loc_y(typename ContextTypes::CanonicalLocReadContext& ctx) = 0;
+
+    /** Generated for complex type "connection_box_annotation":
+     * <xs:complexType name="connection_box_annotation">
+     *   <xs:attribute name="x" type="xs:unsignedInt" use="required" />
+     *   <xs:attribute name="y" type="xs:unsignedInt" use="required" />
+     *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
+     *   <xs:attribute name="site_pin_delay" type="xs:float" use="required" />
+     * </xs:complexType>
+     */
+    virtual inline unsigned int get_connection_box_annotation_id(typename ContextTypes::ConnectionBoxAnnotationReadContext& ctx) = 0;
+    virtual inline float get_connection_box_annotation_site_pin_delay(typename ContextTypes::ConnectionBoxAnnotationReadContext& ctx) = 0;
+    virtual inline unsigned int get_connection_box_annotation_x(typename ContextTypes::ConnectionBoxAnnotationReadContext& ctx) = 0;
+    virtual inline unsigned int get_connection_box_annotation_y(typename ContextTypes::ConnectionBoxAnnotationReadContext& ctx) = 0;
+
     /** Generated for complex type "node":
      * <xs:complexType name="node">
      *   <xs:all>
@@ -447,6 +506,8 @@ class RrGraphBase {
      *     <xs:element minOccurs="0" name="timing" type="node_timing" />
      *     <xs:element minOccurs="0" name="segment" type="node_segment" />
      *     <xs:element minOccurs="0" name="metadata" type="metadata" />
+     *     <xs:element minOccurs="0" name="canonical_loc" type="canonical_loc" />
+     *     <xs:element minOccurs="0" name="connection_box" type="connection_box_annotation" />
      *   </xs:all>
      *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
      *   <xs:attribute name="type" type="node_type" use="required" />
@@ -474,6 +535,14 @@ class RrGraphBase {
     virtual inline void finish_node_metadata(typename ContextTypes::MetadataWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::MetadataReadContext get_node_metadata(typename ContextTypes::NodeReadContext& ctx) = 0;
     virtual inline bool has_node_metadata(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::CanonicalLocWriteContext init_node_canonical_loc(typename ContextTypes::NodeWriteContext& ctx, unsigned int x, unsigned int y) = 0;
+    virtual inline void finish_node_canonical_loc(typename ContextTypes::CanonicalLocWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::CanonicalLocReadContext get_node_canonical_loc(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline bool has_node_canonical_loc(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::ConnectionBoxAnnotationWriteContext init_node_connection_box(typename ContextTypes::NodeWriteContext& ctx, unsigned int id, float site_pin_delay, unsigned int x, unsigned int y) = 0;
+    virtual inline void finish_node_connection_box(typename ContextTypes::ConnectionBoxAnnotationWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::ConnectionBoxAnnotationReadContext get_node_connection_box(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline bool has_node_connection_box(typename ContextTypes::NodeReadContext& ctx) = 0;
 
     /** Generated for complex type "rr_nodes":
      * <xs:complexType name="rr_nodes">
@@ -526,6 +595,7 @@ class RrGraphBase {
      *       <xs:element name="switches" type="switches" />
      *       <xs:element name="segments" type="segments" />
      *       <xs:element name="block_types" type="block_types" />
+     *       <xs:element minOccurs="0" name="connection_boxes" type="connection_boxes" />
      *       <xs:element name="grid" type="grid_locs" />
      *       <xs:element name="rr_nodes" type="rr_nodes" />
      *       <xs:element name="rr_edges" type="rr_edges" />
@@ -553,6 +623,10 @@ class RrGraphBase {
     virtual inline typename ContextTypes::BlockTypesWriteContext init_rr_graph_block_types(typename ContextTypes::RrGraphWriteContext& ctx) = 0;
     virtual inline void finish_rr_graph_block_types(typename ContextTypes::BlockTypesWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::BlockTypesReadContext get_rr_graph_block_types(typename ContextTypes::RrGraphReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::ConnectionBoxesWriteContext init_rr_graph_connection_boxes(typename ContextTypes::RrGraphWriteContext& ctx, unsigned int num_boxes, unsigned int x_dim, unsigned int y_dim) = 0;
+    virtual inline void finish_rr_graph_connection_boxes(typename ContextTypes::ConnectionBoxesWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::ConnectionBoxesReadContext get_rr_graph_connection_boxes(typename ContextTypes::RrGraphReadContext& ctx) = 0;
+    virtual inline bool has_rr_graph_connection_boxes(typename ContextTypes::RrGraphReadContext& ctx) = 0;
     virtual inline typename ContextTypes::GridLocsWriteContext init_rr_graph_grid(typename ContextTypes::RrGraphWriteContext& ctx) = 0;
     virtual inline void finish_rr_graph_grid(typename ContextTypes::GridLocsWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::GridLocsReadContext get_rr_graph_grid(typename ContextTypes::RrGraphReadContext& ctx) = 0;
