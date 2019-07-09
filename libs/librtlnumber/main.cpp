@@ -183,7 +183,7 @@ int main(int argc, char** argv)
 		VNumber a(input[2]);
 		VNumber b(input[4]);
 
-		result = V_CONCAT(a, b).to_full_string();
+		result = V_CONCAT({a, b}).to_full_string();
 	}
 	else if(argc == 7
 	&&(input[1] == "{" && input[3] == "{" && input[5] == "}" && input[6] == "}"))

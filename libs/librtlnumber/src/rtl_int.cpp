@@ -353,9 +353,21 @@ VNumber V_REPLICATE(VNumber& a, VNumber& n_times)
 	return a.replicate(n_times);
 }
 
-VNumber V_CONCAT(VNumber& a, VNumber& b)
+VNumber V_CONCAT(std::vector<VNumber> concat_list)
 {
-	return a.insert_at_lsb(b);
+	if(concat_list.empty())
+	{
+		return VNumber("0"); // todo: what to do?
+	}
+	else
+	{
+		VNumber init = concat_list[0];
+		for(size_t i=1; i<concat_list.size(); i++)
+		{
+			init = init.insert_at_lsb(concat_list[i]);
+		}
+		return init;
+	}
 }
 
 VNumber V_BITWISE_AND(VNumber& a, VNumber& b)

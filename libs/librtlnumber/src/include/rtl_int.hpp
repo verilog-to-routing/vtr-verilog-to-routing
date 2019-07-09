@@ -44,7 +44,7 @@ VNumber V_LOGICAL_NOT(VNumber& a);
  * Binary Operator
  */
 VNumber V_REPLICATE(VNumber& a, VNumber& n_times);
-VNumber V_CONCAT(VNumber& a, VNumber& b);
+VNumber V_CONCAT(std::vector<VNumber> concat_list);
 
 VNumber V_BITWISE_AND(VNumber& a,VNumber& b);
 VNumber V_BITWISE_OR(VNumber& a,VNumber& b);
