@@ -565,7 +565,7 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
             if (((t_pack_pattern_block*)destination_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index) {
                 // if this pb_graph_node is known to be the root of the chain, update the root block and root pin
 				if(make_root_of_chain && destination_block) {
-					list_of_packing_patterns[curr_pattern_index].chain_root_pins.push_back(expansion_edge->output_pins[i]);
+					list_of_packing_patterns[curr_pattern_index].chain_root_pins = {{ expansion_edge->output_pins[i] }};
 					list_of_packing_patterns[curr_pattern_index].root_block = destination_block;
 				}
 			}
@@ -1076,7 +1076,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
                 auto driver_blk_id = get_driving_block(block_id, port_model, ipin);
                 if (molecule->type == MOLECULE_FORCED_PACK &&
                     molecule->pack_pattern->is_chain &&
-                    port_model != molecule->pack_pattern->chain_root_pins[0]->port->model_port &&
+                    port_model != molecule->pack_pattern->chain_root_pins[0][0]->port->model_port &&
                     block_connection->to_pin->parent_node->pb_type == block_connection->from_pin->parent_node->pb_type) {
                     has_second_level = true;
                 }
@@ -1085,7 +1085,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
                 // inputs port which will result in a molecule that cannot be placed
                 if (molecule->type == MOLECULE_FORCED_PACK &&
                     molecule->pack_pattern->is_chain &&
-                    port_model == molecule->pack_pattern->chain_root_pins[0]->port->model_port) {
+                    port_model == molecule->pack_pattern->chain_root_pins[0][0]->port->model_port) {
                     pattern_block_queue.push(std::make_pair(block_connection->from_block, driver_blk_id));
                 }
             }
@@ -1204,9 +1204,9 @@ static bool check_second_level_chain(const t_pack_molecule* molecule,
 
     const auto& chain_root_pins = molecule->pack_pattern->chain_root_pins;
     // get the model of the cin port of the adder primitive
-    const auto cin_port_model = chain_root_pins[0]->port->model_port;
+    const auto cin_port_model = chain_root_pins[0][0]->port->model_port;
     // get the pin number of the cin pin within the cin port
-    const auto cin_pin_number = chain_root_pins[0]->pin_number;
+    const auto cin_pin_number = chain_root_pins[0][0]->pin_number;
     // get the atom block driving the root block of this molecule
     const auto driver_block = g_vpr_ctx.atom().nlist.find_atom_pin_driver(second_root, cin_port_model, cin_pin_number);
 
@@ -1242,9 +1242,9 @@ static bool chain_input_is_reachable(const t_pack_molecule* molecule,
     // id of the root block of this molecule
     const auto root_block = molecule->atom_block_ids[molecule->root];
     // get the model of the cin port of the adder primitive
-    const auto cin_port_model = chain_root_pins[0]->port->model_port;
+    const auto cin_port_model = chain_root_pins[0][0]->port->model_port;
     // get the pin number of the cin pin within the cin port
-    const auto cin_pin_number = chain_root_pins[0]->pin_number;
+    const auto cin_pin_number = chain_root_pins[0][0]->pin_number;
     // get the atom block driving the root block of this molecule
     const auto driver_block = g_vpr_ctx.atom().nlist.find_atom_pin_driver(root_block, cin_port_model, cin_pin_number);
 
@@ -1509,7 +1509,7 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 	VTR_ASSERT(list_of_pack_pattern->is_chain);
     VTR_ASSERT(list_of_pack_pattern->chain_root_pins.size());
 
-	root_ipin = list_of_pack_pattern->chain_root_pins[0];
+	root_ipin = list_of_pack_pattern->chain_root_pins[0][0];
 	root_pb_graph_node = root_ipin->parent_node;
 
 	if(!primitive_type_feasible(blk_id, root_pb_graph_node->pb_type)) {
@@ -1541,7 +1541,7 @@ static AtomBlockId get_adder_driver_block(const AtomBlockId block_id, const t_pa
 
     const auto& atom_ctx = g_vpr_ctx.atom();
 
-    const auto cin_pin = pack_pattern->chain_root_pins[0];
+    const auto cin_pin = pack_pattern->chain_root_pins[0][0];
     const auto cin_model = cin_pin->port->model_port;
     const auto block_pb_graph_node = cin_pin->parent_node;
     const auto block_pb_type = block_pb_graph_node->pb_type;
@@ -1779,29 +1779,6 @@ static void update_chain_root_pins(t_pack_patterns* chain_pattern,
     chain_pattern->chain_root_pins = primitive_input_pins;
 }
 
-/**
- *  Find the next primitive input pin connected to the given cluster_input_pin.
- *  Following edges that are annotated with pack_pattern index
- */
-static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* cluster_input_pin, const int pack_pattern) {
-    for (int iedge = 0; iedge < cluster_input_pin->num_output_edges; iedge++) {
-        const auto& output_edge = cluster_input_pin->output_edges[iedge];
-        // if edge is annotated with pack pattern or its pack pattern could be inferred
-        if (output_edge->annotated_with_pattern(pack_pattern) || output_edge->infer_pattern) {
-            for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {
-                if (output_edge->output_pins[ipin]->is_primitive_pin()) {
-                    return output_edge->output_pins[ipin];
-                }
-                return get_connected_primitive_input_pin(output_edge->output_pins[ipin], pack_pattern);
-            }
-        }
-    }
-
-    // primitive input pin should always
-    // be found when using this function
-    VTR_ASSERT(false);
-    return nullptr;
-}
 
 /**
  *  This function takes a pin as an input an does a depth first search on all the output edges
@@ -1823,6 +1800,31 @@ static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input
     }
 
     VTR_ASSERT(connected_primitive_pins.size());
+}
+
+/**
+ *  Find the next primitive input pin connected to the given cluster_input_pin.
+ *  Following edges that are annotated with pack_pattern index
+ */
+static t_pb_graph_pin* get_connected_primitive_input_pin(const t_pb_graph_pin* cluster_input_pin, const int pack_pattern) {
+
+    for (int iedge = 0; iedge < cluster_input_pin->num_output_edges; iedge++) {
+        const auto& output_edge = cluster_input_pin->output_edges[iedge];
+        // if edge is annotated with pack pattern or its pack pattern could be inferred
+        if (output_edge->annotated_with_pattern(pack_pattern) || output_edge->infer_pattern) {
+            for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {
+                if (output_edge->output_pins[ipin]->is_primitive_pin()) {
+                    return output_edge->output_pins[ipin];
+                }
+                return get_connected_primitive_input_pin(output_edge->output_pins[ipin], pack_pattern);
+            }
+        }
+    }
+
+    // primitive input pin should always
+    // be found when using this function
+    VTR_ASSERT(false);
+    return nullptr;
 }
 
 /**
