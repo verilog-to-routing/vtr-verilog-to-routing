@@ -352,7 +352,7 @@ namespace BitSpace {
         }
 
         /**
-         * get 16 bit as 8 bit
+         * get 16 real bit (8 verilog bits) as 8 bit (char)
          */
         template<typename Addr_t>
         char get_as_char(Addr_t address)
@@ -773,9 +773,7 @@ public:
         }
 
         std::string verilog_string(input);
-        std::string v_value_str = "";
 
-        // printf("verilog string %s", verilog_string.c_str());
         /**
          * set defaults
          */
@@ -785,17 +783,24 @@ public:
         this->sign = false;             // we treat everything as unsigned unless specified
 
         // if this is a string
-        if(verilog_string[0] == '\"' && verilog_string.back() == '\"')
+        if(verilog_string[0] == '\"')
         {
-            size_t string_size = verilog_string.size()-2;
+            assert_Werr(verilog_string.size() >= 2,
+                "Malformed input String for VNumber, only open quote" + verilog_string);
+
+            assert_Werr(verilog_string.back() == '\"',
+                "Malformed input String for VNumber, expected closing quotes" + verilog_string);
+
+            verilog_string.erase(0,1);
+            verilog_string.pop_back();
+
+            size_t string_size = verilog_string.size();
             if(string_size == 0)
                 string_size = 1;
 
             bitsize = string_size * 8;
             this->defined_size = true;
             radix = 256;
-
-            v_value_str = verilog_string.substr(1, string_size);
         }
         else
         {
@@ -833,13 +838,13 @@ public:
             }
 
             //remove underscores
-            v_value_str = verilog_string.substr(loc+2+sign);
-            v_value_str.erase(std::remove(v_value_str.begin(), v_value_str.end(), '_'), v_value_str.end());
+            verilog_string = verilog_string.substr(loc+2+sign);
+            verilog_string.erase(std::remove(verilog_string.begin(), verilog_string.end(), '_'), verilog_string.end());
 
             //little endian bitstring string
         }
 
-        std::string temp_bitstring = string_of_radix_to_bitstring(v_value_str, radix);
+        std::string temp_bitstring = string_of_radix_to_bitstring(verilog_string, radix);
 
         char pad = temp_bitstring[0];
         if(!this->sign && pad == '1')

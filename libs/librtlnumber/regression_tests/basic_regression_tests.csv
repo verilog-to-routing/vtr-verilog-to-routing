@@ -41,8 +41,10 @@ simple_is_signed_2,          to_signed,      2'sb11, 2'sb11
 simple_string,          display,        "hello world",   hello world
 string_compare_pass,    "hello world",  ==,  "hello world", 1'b1
 string_compare_fail,    "hello world",  ==,  "hello", 1'b0
-string_compare_fail,    "hello world",  !=,  "hello", 1'b1
+string_ne_pass,         "hello world",  !=,  "hello", 1'b1
+string_ne_fail,         "hello world",  !=,  "hello world", 1'b0
 string_add,             "a",            +,    1,      "b"
+string_add_empty,       "b",             +,    "",    "b"
 
 # base conversions
 Decimal-To-Binary,      10,         ==, 4'b1010,    1'b1
