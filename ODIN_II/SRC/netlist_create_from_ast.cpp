@@ -5750,7 +5750,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 
 			t_memory_port_sizes *ps = (t_memory_port_sizes *)vtr::calloc(1, sizeof(t_memory_port_sizes));
 			ps->size = port_size;
-			ps->name = vtr::strdup(alias_name);
+			ps->name = alias_name;
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
 
 			// make the implicit output list and hook up the outputs
