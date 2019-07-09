@@ -71,6 +71,7 @@ constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.10;
 ezgl::rectangle initial_world;
+ezgl::rectangle search_node;
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
@@ -127,6 +128,7 @@ void toggle_crit_path(GtkWidget *widget, ezgl::application *app);
 void toggle_block_pin_util(GtkWidget *widget, ezgl::application *app);
 void toggle_router_rr_costs(GtkWidget *widget, ezgl::application *app);
 void toggle_placement_macros(GtkWidget *widget, ezgl::application *app);
+void search_rr_node(GtkWidget *widget, ezgl::application *app);
 
 static void drawplace(ezgl::renderer &g);
 static void drawnets(ezgl::renderer &g);
@@ -285,6 +287,13 @@ void draw_main_canvas(ezgl::renderer &g){
     
     draw_logical_connections(g);
     
+    if(search_node != ezgl::rectangle({0, 0}, {0, 0})){
+        g.set_color(ezgl::RED);
+        g.set_line_width(3);
+        g.set_line_dash(ezgl::line_dash::none);
+        g.draw_rectangle(search_node);
+    }
+    
     if (draw_state->color_map) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
@@ -297,6 +306,10 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application *app){
     GtkButton* window = (GtkButton*) app->get_object("Window");
     gtk_button_set_label(window, "Window");
     g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
+    
+    GtkButton* search = (GtkButton*) app->get_object("Search");
+    gtk_button_set_label(search, "Search RR Node");
+    g_signal_connect(search, "clicked", G_CALLBACK(search_rr_node), app);
     
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
@@ -341,6 +354,10 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *app){
     GtkButton* window = (GtkButton*) app->get_object("Window");
     gtk_button_set_label(window, "Window");
     g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
+    
+    GtkButton* search = (GtkButton*) app->get_object("Search");
+    gtk_button_set_label(search, "Search RR Node");
+    g_signal_connect(search, "clicked", G_CALLBACK(search_rr_node), app);
     
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
@@ -1456,8 +1473,7 @@ static void draw_rr_edges(int inode, ezgl::renderer &g) {
                             ezgl::color color = draw_state->draw_rr_node[inode].color;
                             g.set_color(color);
                         } else if (!edge_configurable) {
-                            ezgl::color color = blk_DARKGREY;
-                            g.set_color(color);
+                            g.set_color(blk_DARKGREY);
                         } else {
                             g.set_color(blk_DARKGREEN);
                         }
@@ -3788,3 +3804,99 @@ static void draw_placement_macros(ezgl::renderer &g) {
     }
 }
 
+void search_rr_node(GtkWidget *widget, ezgl::application *app) {
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+    auto& device_ctx = g_vpr_ctx.device();
+    
+    GtkEntry* text_entry = (GtkEntry *) app->get_object("TextInput");
+    const char* text = gtk_entry_get_text(text_entry);
+    std::string user_input = text;
+    std::stringstream ss(user_input);
+    
+    
+    int rr_node_id = -1;
+    ss >> rr_node_id;
+    
+    std::cout << "searching : " << rr_node_id << std::endl;
+    
+    if(rr_node_id < 0 || rr_node_id >= device_ctx.rr_nodes.size()) {
+        std::cout << "node not exist (exceed the bound)" << std::endl;
+        return;
+    }
+    
+    //highlight and zoom to the node
+    float xcen, ycen;
+    draw_get_rr_pin_coords(rr_node_id, &xcen, &ycen);
+    ezgl::rectangle search_node({xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
+            xcen + draw_coords->pin_size, ycen + draw_coords->pin_size);
+    search_node = {{xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
+        {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size}};
+    
+    app->refresh_drawing();
+    //zoom in to the node
+//    ezgl::zoom_in(app->get_canvas(app->get_main_canvas_id()), {xcen, ycen}, 5.0 / 2.0);
+}
+
+//
+//static int draw_check_rr_node_hit (float click_x, float click_y) {
+//    int hit_node = OPEN;
+//    ezgl::rectangle bound_box;
+//    
+//    t_draw_coords* draw_coords = get_draw_coords_vars();
+//    auto& device_ctx = g_vpr_ctx.device();
+//    
+//    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+//        switch (device_ctx.rr_nodes[inode].type()) {
+//            case IPIN:
+//            case OPIN:
+//            {
+//                int i = device_ctx.rr_nodes[inode].xlow();
+//                int j = device_ctx.rr_nodes[inode].ylow();
+//                t_type_ptr type = device_ctx.grid[i][j].type;
+//                int width_offset = device_ctx.grid[i][j].width_offset;
+//                int height_offset = device_ctx.grid[i][j].height_offset;
+//                int ipin = device_ctx.rr_nodes[inode].ptc_num();
+//                float xcen, ycen;
+//                
+//                int iside;
+//                for (iside = 0; iside < 4; iside++) {
+//                    // If pin exists on this side of the block, then get pin coordinates
+//                    if (type->pinloc[width_offset][height_offset][iside][ipin]) {
+//                        draw_get_rr_pin_coords(inode, &xcen, &ycen);
+//                        
+//                        // Now check if we clicked on this pin
+//                        if (click_x >= xcen - draw_coords->pin_size &&
+//                                click_x <= xcen + draw_coords->pin_size &&
+//                                click_y >= ycen - draw_coords->pin_size &&
+//                                click_y <= ycen + draw_coords->pin_size) {
+//                            hit_node = inode;
+//                            return hit_node;
+//                        }
+//                    }
+//                }
+//                break;
+//            }
+//            case CHANX:
+//            case CHANY:
+//            {
+//                bound_box = draw_get_rr_chan_bbox(inode);
+//                
+//                // Check if we clicked on this wire, with 30%
+//                // tolerance outside its boundary
+//                const float tolerance = 0.3;
+//                if (click_x >= bound_box.left() - tolerance &&
+//                        click_x <= bound_box.right() + tolerance &&
+//                        click_y >= bound_box.bottom() - tolerance &&
+//                        click_y <= bound_box.top() + tolerance) {
+//                    hit_node = inode;
+//                    return hit_node;
+//                }
+//                break;
+//            }
+//            default:
+//                break;
+//        }
+//    }
+// 
+//return hit_node;
+//}
