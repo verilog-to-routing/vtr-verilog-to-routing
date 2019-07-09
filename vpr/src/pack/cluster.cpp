@@ -73,7 +73,6 @@ using namespace std;
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30 /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10       /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
-#define AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE 4  /* When investigating transitive fanout connections in packing, this is the highest fanout net that will be explored */
 #define AAPACK_MAX_TRANSITIVE_EXPLORE 40        /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
 
 //Constant allowing all cluster pins to be used
