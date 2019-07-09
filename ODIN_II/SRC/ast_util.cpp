@@ -1372,6 +1372,16 @@ ast_node_t *fold_unary(ast_node_t **node)
 				success = true;
 				break;
 
+			case UNSIGNED:
+				vresult = V_UNSIGNED(voperand_0);
+				success = true;
+				break;
+
+			case SIGNED:
+				vresult = V_SIGNED(voperand_0);
+				success = true;
+				break;
+
 			default:
 				break;
 		}

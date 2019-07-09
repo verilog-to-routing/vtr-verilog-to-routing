@@ -203,6 +203,10 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
 	/*	C functions	*/
 <INITIAL>"$clog2"			{MP; return vCLOG2;}
+<INITIAL>"$unsigned"		{MP; return vUNSIGNED;}
+<INITIAL>"$signed"			{MP; return vSIGNED;}
+
+<INITIAL>[\$]{vWORD}		{MP; return vCFUNC;}
 
 	/* Delay */
 <INITIAL>#{vINT}					{ MP; yylval.num_value = vtr::strdup(yytext+1); return vDELAY_ID; }
