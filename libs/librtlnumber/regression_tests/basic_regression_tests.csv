@@ -50,7 +50,7 @@ string_add_empty,       "b",             +,    "",    "b"
 simple_replicate,       {, 3, {, 2'b10, }, }, 6'b101010
 
 # concat test
-simple_concat,          {, 2'b01, | , 2'b10, }, 4'b0110
+simple_concat,          {, 2'b01, \, , 2'b10, }, 4'b0110
 
 # base conversions
 Decimal-To-Binary,      10,         ==, 4'b1010,    1'b1

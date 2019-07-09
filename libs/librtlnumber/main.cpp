@@ -178,7 +178,7 @@ int main(int argc, char** argv)
 		result = V_TERNARY(a, b, c).to_full_string();
 	}
 	else if(argc == 6
-	&&(input[1] == "{" && input[3] == "|" && input[5] == "}")) // the pipe symbol is a hack since our test handle uses csv.
+	&&(input[1] == "{" && input[3] == "," && input[5] == "}")) // the pipe symbol is a hack since our test handle uses csv.
 	{
 		VNumber a(input[2]);
 		VNumber b(input[4]);
