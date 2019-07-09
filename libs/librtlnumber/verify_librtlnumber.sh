@@ -46,8 +46,6 @@ for INPUT in ${0%/*}/regression_tests/*.csv; do
 
 		LINE=$((LINE + 1))
 
-		# echo -e "${0##*/}@${HOSTNAME}: DEBUG: LINE: $LINE\n"
-
 		#glob whitespace from line and remove everything after comment
 		input_line=$(echo ${input_line} | tr -d '[:space:]' | cut -d '#' -f1)
 
@@ -60,14 +58,13 @@ for INPUT in ${0%/*}/regression_tests/*.csv; do
 
 		if 	[ ${len} != "4" ] &&		# unary
 			[ ${len} != "5" ] &&		# binary
-			[ ${len} != "7" ]; then		# ternary
+			[ ${len} != "7" ] &&		# ternary
+			[ ${len} != "8" ]; then		# replicate
 				[ ! -z ${DEBUG} ] && echo -e "\nWARNING: Malformed Line in CSV File ($INPUT:$LINE) Input Line: ${input_line}! Skipping...\n"
 				continue
 		fi
 
 		TOTAL_TEST_RAN=$((TOTAL_TEST_RAN + 1))
-
-		# echo -e "${0##*/}@${HOSTNAME}: DEBUG: TOTAL_TEST_RAN: $TOTAL_TEST_RAN\n"
 
 		#deal with multiplication
 		set -f
@@ -77,22 +74,13 @@ for INPUT in ${0%/*}/regression_tests/*.csv; do
 		EXPECTED_RESULT=${arr[$(( len -1 ))]}
 		RTL_CMD_IN=$(printf "%s " "${arr[@]:1:$(( len -2 ))}")
 
-		# echo -e "${0##*/}@${HOSTNAME}: DEBUG: TEST_LABEL: $TEST_LABEL\n"
-		# echo -e "${0##*/}@${HOSTNAME}: DEBUG: EXPECTED_RESULT: $EXPECTED_RESULT\n"
-		# echo -e "${0##*/}@${HOSTNAME}: DEBUG: RTL_CMD_IN: $RTL_CMD_IN\n"
-
 		# Check for Anything on standard out and any non-'0' exit codes:
 		OUTPUT_AND_RESULT=$(${0%/*}/rtl_number ${RTL_CMD_IN})
 		EXIT_CODE=$?
 
-		# echo -e "${0##*/}@${HOSTNAME}: DEBUG: OUTPUT_AND_RESULT: $OUTPUT_AND_RESULT\n"
-		# echo -e "${0##*/}@${HOSTNAME}: DEBUG: EXIT_CODE: $EXIT_CODE\n"
-
 		if [[ 0 -ne $EXIT_CODE ]]
 		then
 			FAILURE_COUNT=$((FAILURE_COUNT+1))
-
-			# echo -e "${0##*/}@${HOSTNAME}: DEBUG: FAILURE_COUNT: $FAILURE_COUNT\n"
 
 			echo -e "\nERROR: Non-Zero Exit Code from ${0%/*}/rtl_number (on $INPUT:$LINE)\n"
 
@@ -100,11 +88,11 @@ for INPUT in ${0%/*}/regression_tests/*.csv; do
 
 		elif [ "${OUTPUT_AND_RESULT}" == "${EXPECTED_RESULT}" ]
 		then
-			echo "--- PASSED == $TEST_LABEL"
+			echo "--- PASSED == $TEST_LABEL ( ${OUTPUT_AND_RESULT} ) "
 
 		elif [ "pass" == "$(${0%/*}/rtl_number is_true $(${0%/*}/rtl_number ${OUTPUT_AND_RESULT} == ${EXPECTED_RESULT}))" ]
 		then
-			echo "--- PASSED == $TEST_LABEL"
+			echo "--- PASSED == $TEST_LABEL ( ${OUTPUT_AND_RESULT} )"
 
 		else
 			FAILURE_COUNT=$((FAILURE_COUNT+1))

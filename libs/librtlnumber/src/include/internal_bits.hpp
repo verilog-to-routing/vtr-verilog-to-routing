@@ -388,15 +388,13 @@ namespace BitSpace {
 
         size_t to_index(size_t address)
         {
-            return (address / BitFields<veri_internal_bits_t>::size() );
+            return ( address / BitFields<veri_internal_bits_t>::size() );
         }
 
         size_t list_size()
         {
             return this->bits.size();
         }
-
-
 
     public:
 
@@ -658,6 +656,24 @@ namespace BitSpace {
 
             return other;
         }
+
+        /**
+         * replicates the bitset n times
+         */
+        VerilogBits replicate(size_t n_times)
+        {
+            size_t old_size = this->size();
+            size_t new_size = old_size * n_times;
+
+            VerilogBits other(new_size, BitSpace::_0);
+
+            for(size_t i = 0; i < new_size; i += 1)
+            {
+                other.set_bit(i, this->get_bit( i%old_size ));
+            }
+
+            return other;
+        }
     }; 
 }
 
@@ -673,6 +689,24 @@ private:
     {
         bitstring = BitSpace::VerilogBits(other_bitstring);
         sign = other_sign;
+    }
+
+    VNumber insert(VNumber &other, size_t index_to_insert_at, size_t insertion_size)
+    {
+        VNumber new_bitstring(this->size() + insertion_size, BitSpace::_0, this->is_signed() && other.is_signed());
+
+        size_t index = 0;
+
+        for(size_t i=0; i < this->size() && i < index_to_insert_at; i += 1, index +=1)
+            new_bitstring.set_bit_from_lsb(index, this->get_bit_from_lsb( i ));
+
+        for(size_t i=0; i < insertion_size; i += 1, index +=1)
+            new_bitstring.set_bit_from_lsb(index, other.get_bit_from_lsb( i ));
+
+        for(size_t i=index_to_insert_at; i < this->size(); i += 1, index +=1)
+            new_bitstring.set_bit_from_lsb(index, this->get_bit_from_lsb( i ));
+
+        return new_bitstring; 
     }
 
 public:
@@ -1005,6 +1039,30 @@ public:
         return result;
     }
 
+    VNumber replicate(VNumber& n_times)
+    {
+        // TODO: check that it's a number
+        int64_t n_times_replicate = n_times.get_value();
+
+        // TODO: this might cause issue, what does the standard say here ?
+        assert_Werr(n_times_replicate > 0,
+            "Cannot replicate bitstring less than 1 times");
+
+        size_t n_times_unsigned = static_cast<size_t>(n_times_replicate);
+
+        // TODO: check that input a as a set size
+        return VNumber(this->bitstring.replicate(n_times_unsigned),this->sign);
+    }
+
+    VNumber insert_at_lsb(VNumber &other)
+    {
+        return this->insert(other, 0, other.size());
+    }
+
+    VNumber insert_at_msb(VNumber &other)
+    {
+        return this->insert(other, this->size(), other.size());
+    }
 };
 
 #endif

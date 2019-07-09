@@ -348,6 +348,16 @@ VNumber V_BITWISE_XNOR(VNumber& a)
  *                                                                          
  */
 
+VNumber V_REPLICATE(VNumber& a, VNumber& n_times)
+{
+	return a.replicate(n_times);
+}
+
+VNumber V_CONCAT(VNumber& a, VNumber& b)
+{
+	return a.insert_at_lsb(b);
+}
+
 VNumber V_BITWISE_AND(VNumber& a, VNumber& b)
 {
 	return a.bitwise(b,l_and);

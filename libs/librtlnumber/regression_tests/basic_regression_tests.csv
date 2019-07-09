@@ -46,6 +46,12 @@ string_ne_fail,         "hello world",  !=,  "hello world", 1'b0
 string_add,             "a",            +,    1,      "b"
 string_add_empty,       "b",             +,    "",    "b"
 
+# replicate test
+simple_replicate,       {, 3, {, 2'b10, }, }, 6'b101010
+
+# concat test
+simple_concat,          {, 2'b01, | , 2'b10, }, 4'b0110
+
 # base conversions
 Decimal-To-Binary,      10,         ==, 4'b1010,    1'b1
 Binary-To-Decimal,      4'b1100,    ==, 12,         1'b1

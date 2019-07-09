@@ -98,20 +98,6 @@ static std::string arithmetic(std::string a_in, std::string op, std::string b_in
 	).to_full_string();
 }
 
-static std::string arithmetic(std::string a_in, std::string op1 ,std::string b_in, std::string op2, std::string c_in)
-{
-
-	VNumber a(a_in);
-	VNumber b(b_in);
-	VNumber c(c_in);
-
-
-	/* return Process Operator via ternary */
-	return(	(op1 == "?" && op2 == ":")	?	V_TERNARY(a, b, c):
-											bad_ops("?:")
-	).to_full_string();
-}
-
 int main(int argc, char** argv) 
 {
 	std::vector<std::string> input;
@@ -182,22 +168,34 @@ int main(int argc, char** argv)
 		result = arithmetic(input[1], input[2], input[3]);
 
 	}
-	else if(argc == 5)
+	else if(argc == 6
+	&& (input[2] == "?" && input[4] == ":"))
 	{
-		// Binary or Ternary?
-		ERR_MSG("Either Too Few (Ternary) or Too Many (Binary) Arguments: " << std::to_string(argc - 1));
+		VNumber a(input[1]);
+		VNumber b(input[3]);
+		VNumber c(input[5]);
 
-		return -1;
+		result = V_TERNARY(a, b, c).to_full_string();
 	}
-	else if(argc == 6)
+	else if(argc == 6
+	&&(input[1] == "{" && input[3] == "|" && input[5] == "}")) // the pipe symbol is a hack since our test handle uses csv.
 	{
-		result = arithmetic(input[1], input[2], input[3], input[4], input[5]);
+		VNumber a(input[2]);
+		VNumber b(input[4]);
 
+		result = V_CONCAT(a, b).to_full_string();
+	}
+	else if(argc == 7
+	&&(input[1] == "{" && input[3] == "{" && input[5] == "}" && input[6] == "}"))
+	{
+		VNumber n_times(input[2]);
+		VNumber replicant(input[4]);
+
+		result = V_REPLICATE(replicant, n_times).to_full_string();
 	}
 	else				
 	{
-		ERR_MSG("Too Many Arguments: " << std::to_string(argc - 1));
-
+		ERR_MSG("invalid Arguments: " << std::to_string(argc - 1));
 		return -1;
 	}
 
