@@ -10,7 +10,7 @@
 #include "vtr_math.h"
 
 #include "capnp/serialize.h"
-#include "lookahead.capnp.h"
+#include "place_delay_model.capnp.h"
 #include "ndmatrix_serdes.h"
 #include "mmap_file.h"
 #include "serdes_utils.h"
