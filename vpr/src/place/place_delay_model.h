@@ -54,7 +54,7 @@ class DeltaDelayModel : public PlaceDelayModel {
 
     void read(const std::string& file) override;
     void write(const std::string& file) const override;
-    const vtr::Matrix<float> &delays() const {
+    const vtr::Matrix<float>& delays() const {
         return delays_;
     }
 
@@ -81,7 +81,7 @@ class OverrideDelayModel : public PlaceDelayModel {
 
     void set_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y, float delay);
     void compute_override_delay_model(const RouterDelayProfiler& router,
-        const t_router_opts &router_opts);
+                                      const t_router_opts& router_opts);
 
     struct t_override {
         short from_type;

@@ -117,11 +117,11 @@ void OverrideDelayModel::dump_echo(std::string filepath) const {
     vtr::fclose(f);
 }
 
-static void ToFloat(float *out, const Vpr::FloatEntry::Reader &in) {
+static void ToFloat(float* out, const Vpr::FloatEntry::Reader& in) {
     *out = in.getValue();
 }
 
-static void FromFloat(Vpr::FloatEntry::Builder *out, const float &in) {
+static void FromFloat(Vpr::FloatEntry::Builder* out, const float& in) {
     out->setValue(in);
 }
 
@@ -155,8 +155,8 @@ void OverrideDelayModel::read(const std::string& file) {
 
     auto overrides = model.getDelayOverrides();
     std::vector<std::pair<t_override, float>> overrides_arr(overrides.size());
-    for(size_t i = 0; i < overrides.size(); ++i) {
-        const auto &elem = overrides[i];
+    for (size_t i = 0; i < overrides.size(); ++i) {
+        const auto& elem = overrides[i];
         overrides_arr[i].first.from_type = elem.getFromType();
         overrides_arr[i].first.to_type = elem.getToType();
         overrides_arr[i].first.from_class = elem.getFromClass();
@@ -179,7 +179,7 @@ void OverrideDelayModel::write(const std::string& file) const {
 
     auto overrides = model.initDelayOverrides(delay_overrides_.size());
     auto dst_iter = overrides.begin();
-    for(const auto & src : delay_overrides_) {
+    for (const auto& src : delay_overrides_) {
         auto elem = *dst_iter++;
         elem.setFromType(src.first.from_type);
         elem.setToType(src.first.to_type);
