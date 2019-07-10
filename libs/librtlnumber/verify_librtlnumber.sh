@@ -49,8 +49,8 @@ for INPUT in ${0%/*}/regression_tests/*.csv; do
 		#glob whitespace from line and remove everything after comment
 		input_line=$(echo ${input_line} | tr -d '[:space:]' | cut -d '#' -f1)
 
-		#flip escaped commas to 'ESCAPPED_COMMA' to safeguard agains having them as csv separator
-		input_line=$(echo ${input_line} | sed 's/\\\,/ESCAPPED_COMMA/g')
+		#flip escaped commas to 'ESCAPED_COMMA' to safeguard agains having them as csv separator
+		input_line=$(echo ${input_line} | sed 's/\\\,/ESCAPED_COMMA/g')
 
 		#skip empty lines
 		[  "_" ==  "_${input_line}" ] && continue
@@ -80,7 +80,7 @@ for INPUT in ${0%/*}/regression_tests/*.csv; do
 		
 		# build the command and get back our escaped commas 
 		RTL_CMD_IN=$(printf "%s " "${arr[@]:1:$(( len -2 ))}")
-		RTL_CMD_IN=$( echo ${RTL_CMD_IN} | sed 's/ESCAPPED_COMMA/,/g' )
+		RTL_CMD_IN=$( echo ${RTL_CMD_IN} | sed 's/ESCAPED_COMMA/,/g' )
 
 		# Check for Anything on standard out and any non-'0' exit codes:
 		OUTPUT_AND_RESULT=$(${0%/*}/rtl_number ${RTL_CMD_IN})

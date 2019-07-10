@@ -1041,16 +1041,16 @@ public:
 
     VNumber replicate(VNumber& n_times)
     {
-        // TODO: check that it's a number
+        assert_Werr(! n_times.is_dont_care_string(),
+            "Cannot use undefined number for the replication count");
+
         int64_t n_times_replicate = n_times.get_value();
 
-        // TODO: this might cause issue, what does the standard say here ?
         assert_Werr(n_times_replicate > 0,
             "Cannot replicate bitstring less than 1 times");
 
         size_t n_times_unsigned = static_cast<size_t>(n_times_replicate);
 
-        // TODO: check that input a as a set size
         return VNumber(this->bitstring.replicate(n_times_unsigned),this->sign);
     }
 

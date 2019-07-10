@@ -537,7 +537,7 @@ expression:
 	| function_instantiation				{$$ = $1;}
 	| '(' expression ')'					{$$ = $2;}
 	| '{' expression '{' probable_expression_list '}' '}'	{$$ = newListReplicate( $2, $4 ); }
-	| vCFUNC '(' c_function_expression_list ')'				{$$ = NULL;}
+	| c_function							{$$ = $1;}
 	;
 
 primary:
@@ -564,6 +564,7 @@ expression_list:
 
  c_function:
 	vCFUNC '(' c_function_expression_list ')'	{$$ = NULL;}
+	| vCFUNC '(' ')'							{$$ = NULL;}
 	| vCFUNC									{$$ = NULL;}
 	;
 

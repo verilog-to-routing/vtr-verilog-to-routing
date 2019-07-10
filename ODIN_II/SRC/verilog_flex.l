@@ -55,7 +55,7 @@ vOCT [Oo][_]*[ZzXx0-7][ZzXx0-7_]*
 vDEC [Dd][_]*[[:digit:]][[:digit:]_]*
 vHEX [Hh][_]*[ZzXx[:xdigit:]][ZzXx[:xdigit:]_]*
 vINT [_]*[[:digit:]][[:digit:]_]*
-vWORD [[:alpha:]_][[:alnum:]_]*
+vWORD [[:alpha:]_][[:alnum:]_$]*
 
 	/**
 	* add \" to vPUNCT when support is added for strings
