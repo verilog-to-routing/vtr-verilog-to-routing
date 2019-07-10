@@ -32,7 +32,6 @@ use strict;
 use Cwd;
 use File::Spec;
 use List::Util;
-use List::MoreUtils qw(uniq);
 use Scalar::Util;
 
 # Function Prototypes
@@ -445,4 +444,9 @@ sub trim($) {
 	$string =~ s/^\s+//;
 	$string =~ s/\s+$//;
 	return $string;
+}
+
+sub uniq {
+  my %seen;
+  return grep { !$seen{$_}++ } @_;
 }
