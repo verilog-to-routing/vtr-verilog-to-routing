@@ -11,7 +11,7 @@ void writeMessageToFile(const std::string& file, ::capnp::MessageBuilder* builde
         auto path = kj::Path::parse(file);
         auto fs = kj::newDiskFilesystem();
         const auto& dir = fs->getCurrent();
-        auto f = dir.appendFile(path, kj::WriteMode::CREATE);
+        auto f = dir.appendFile(path, kj::WriteMode::CREATE | kj::WriteMode::MODIFY);
         capnp::writeMessage(*f, *builder);
     } catch (kj::Exception& e) {
         vpr_throw(VPR_ERROR_OTHER, e.getFile(), e.getLine(), e.getDescription().cStr());
