@@ -3285,7 +3285,6 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
  * the number of used pb_types in the given packed cluster t_pb
  */
 static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string, int>& pb_type_count) {
-
     auto pb_graph_node = pb->pb_graph_node;
     auto pb_type = pb_graph_node->pb_type;
     auto mode = &pb_type->modes[pb->mode];
@@ -3302,23 +3301,20 @@ static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string,
     if (pb_type->num_modes > 0) {
         for (int i = 0; i < mode->num_pb_type_children; i++) {
             for (int j = 0; j < mode->pb_type_children[i].num_pb; j++) {
-                if (pb->child_pbs[i] && pb->child_pbs[i][j].name )
+                if (pb->child_pbs[i] && pb->child_pbs[i][j].name)
                     update_pb_type_count(&pb->child_pbs[i][j], pb_type_count);
             }
         }
     }
-
 }
 
 /**
  * Print the total number of used physical blocks for each pb type in the architecture
  */
 static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count) {
-
     VTR_LOG("\nPb types usage...\n\n");
     for (auto& pb_type : pb_type_count) {
         VTR_LOG("\t%-12s : %d\n", pb_type.first.c_str(), pb_type.second);
     }
     VTR_LOG("\n");
-
 }

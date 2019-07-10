@@ -2328,8 +2328,7 @@ static OveruseInfo calculate_overuse_info() {
     //should be more efficient (since usually only a portion of the RR graph is
     //used by routing, particularly on large devices).
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-
-        for(t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
+        for (t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
             int inode = tptr->index;
 
             auto result = checked_nodes.insert(inode);

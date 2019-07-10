@@ -83,7 +83,6 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_name, const char*
 #    endif
 #endif
 
-
 /*
  * Macro wrapper around vpr_throw() which automatically
  * specifies file and line number of call site.
@@ -91,8 +90,8 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_name, const char*
  * VPR_THROW() is used to signal an *unconditional* fatal error which should
  * stop the program.
  */
-#define VPR_THROW(type, ...)                                            \
-    do {                                                                \
+#define VPR_THROW(type, ...)                              \
+    do {                                                  \
         vpr_throw(type, __FILE__, __LINE__, __VA_ARGS__); \
     } while (false)
 
@@ -104,8 +103,8 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_name, const char*
  * default stops the program, but may be suppressed (i.e. converted to a
  * warning).
  */
-#define VPR_ERROR(type, ...)                                            \
-    do {                                                                \
+#define VPR_ERROR(type, ...)                                                      \
+    do {                                                                          \
         vpr_throw_opt(type, VPR_THROW_FUNCTION, __FILE__, __LINE__, __VA_ARGS__); \
     } while (false)
 
