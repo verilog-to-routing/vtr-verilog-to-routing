@@ -68,13 +68,45 @@ void map_error_activation_status(std::string function_name);
 
 void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_name, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
 
+//Figure out what macro to use to get the name of the current function
+// We default to __func__ which is defined in C99
+//
+// g++ > 2.6 define __PRETTY_FUNC__ which includes class/namespace/overload
+// information, so we prefer to use it if possible
+#define VPR_THROW_FUNCTION __func__
+#ifdef __GNUC__
+#    ifdef __GNUC_MINOR__
+#        if __GNUC__ >= 2 && __GNUC_MINOR__ > 6
+#            undef VPR_THROW_FUNCTION
+#            define VPR_THROW_FUNCTION __PRETTY_FUNCTION__
+#        endif
+#    endif
+#endif
+
+
 /*
  * Macro wrapper around vpr_throw() which automatically
  * specifies file and line number of call site.
+ *
+ * VPR_THROW() is used to signal an *unconditional* fatal error which should
+ * stop the program.
  */
 #define VPR_THROW(type, ...)                                            \
     do {                                                                \
-        vpr_throw_opt(type, __func__, __FILE__, __LINE__, __VA_ARGS__); \
+        vpr_throw(type, __FILE__, __LINE__, __VA_ARGS__); \
+    } while (false)
+
+/*
+ * Macro wrapper around vpr_throw_opt() which automatically
+ * specifies file and line number of call site.
+ *
+ * VPR_ERROR() is used to signal an error (potentially non-fatal) which by
+ * default stops the program, but may be suppressed (i.e. converted to a
+ * warning).
+ */
+#define VPR_ERROR(type, ...)                                            \
+    do {                                                                \
+        vpr_throw_opt(type, VPR_THROW_FUNCTION, __FILE__, __LINE__, __VA_ARGS__); \
     } while (false)
 
 #endif
