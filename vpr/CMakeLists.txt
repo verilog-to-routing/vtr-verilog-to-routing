@@ -30,7 +30,6 @@ list(APPEND CMAKE_MODULE_PATH
 #
 include(CheckCXXSymbolExists)
 include(GlibCompileResourcesSupport)
-find_package(CapnProto CONFIG REQUIRED)
 
 #Collect the source files
 file(GLOB_RECURSE EXEC_SOURCES src/main.cpp)

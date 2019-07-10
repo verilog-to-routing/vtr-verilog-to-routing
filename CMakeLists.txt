@@ -125,7 +125,6 @@ else()
         "-Wmissing-include-dirs"        #Warn if a user include directory is missing
         "-Wredundant-decls"             #Warn if there are overlapping declarations
         "-Wswitch-default"              #Warn if a switch has no default
-        "-Wundef"                       #Warn if #if() preprocessor refers to an undefined directive
         "-Wunused"                      #Warn about unused variables/parameters
         "-Wunused-variable"             #Warn about variables that are not used
         "-Wunused-parameter"            #Warn about function parameters which are unused
@@ -264,8 +263,13 @@ endif()
 #
 # Set final flags
 #
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS} ${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE}")
-message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+separate_arguments(
+    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE}"
+    )
+add_compile_options(${ADDITIONAL_FLAGS})
+separate_arguments(
+    WARN_FLAGS UNIX_COMMAND "${WARN_FLAGS}"
+    )
 
 
 #
@@ -297,6 +301,9 @@ set(READLINE_FOUND FALSE)
 
 #Add the various sub-projects
 add_subdirectory(libs)
+
+# Only add warn flags for VPR internal libraries.
+add_compile_options(${WARN_FLAGS})
 add_subdirectory(vpr)
 add_subdirectory(abc)
 add_subdirectory(ODIN_II)
