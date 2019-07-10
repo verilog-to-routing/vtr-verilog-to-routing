@@ -13,8 +13,9 @@ MmapFile::MmapFile(const std::string& file)
     : size_(0) {
     try {
         auto fs = kj::newDiskFilesystem();
-        const auto& dir = fs->getCurrent();
-        auto path = kj::Path::parse(file);
+        auto path = fs->getCurrentPath().evalNative(file);
+
+        const auto& dir = fs->getRoot();
         auto stat = dir.lstat(path);
         auto f = dir.openFile(path);
         size_ = stat.size;
