@@ -1039,12 +1039,8 @@ public:
         return result;
     }
 
-    VNumber replicate(VNumber& n_times)
+    VNumber replicate(int64_t n_times_replicate)
     {
-        assert_Werr(! n_times.is_dont_care_string(),
-            "Cannot use undefined number for the replication count");
-
-        int64_t n_times_replicate = n_times.get_value();
 
         assert_Werr(n_times_replicate > 0,
             "Cannot replicate bitstring less than 1 times");

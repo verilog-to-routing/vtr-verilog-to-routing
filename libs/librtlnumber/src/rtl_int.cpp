@@ -350,7 +350,10 @@ VNumber V_BITWISE_XNOR(VNumber& a)
 
 VNumber V_REPLICATE(VNumber& a, VNumber& n_times)
 {
-	return a.replicate(n_times);
+	assert_Werr(! n_times.is_dont_care_string(),
+        "Cannot use undefined number for the replication count");
+
+	return a.replicate(n_times.get_value());
 }
 
 VNumber V_CONCAT(std::vector<VNumber> concat_list)
