@@ -338,6 +338,10 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
 
 static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const AtomPinId driver_pin_id);
 
+static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string, int>& pb_type_count);
+
+static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count);
+
 /*****************************************/
 /*globally accessible function*/
 std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
@@ -394,6 +398,10 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
 
     std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
     std::shared_ptr<SetupTimingInfo> timing_info;
+
+    // data structure holding the total number of physical blocks
+    // used from each physical block type defined in the architecture
+    std::unordered_map<std::string, int> pb_type_count;
 
     num_clb = 0;
 
@@ -689,7 +697,10 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                         clb_inter_blk_nets[clb_index].push_back(mnet_id);
                     }
                 }
-                free_pb_stats_recursive(cluster_ctx.clb_nlist.block_pb(clb_index));
+                auto cur_pb = cluster_ctx.clb_nlist.block_pb(clb_index);
+                // update the pb type count by counting the used pb types in this packed cluster
+                update_pb_type_count(cur_pb, pb_type_count);
+                free_pb_stats_recursive(cur_pb);
             } else {
                 /* Free up data structures and requeue used molecules */
                 num_used_type_instances[cluster_ctx.clb_nlist.block_type(clb_index)]--;
@@ -703,6 +714,10 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
             router_data = nullptr;
         }
     }
+
+    // print the total number of used physical blocks for each
+    // physical block type after finishing the packing stage
+    print_pb_type_count(pb_type_count);
 
     /****************************************************************
      * Free Data Structures
@@ -3263,4 +3278,47 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
     }
 
     return block_pack_status;
+}
+
+/**
+ * This function update the pb_type_count data structure by incrementing
+ * the number of used pb_types in the given packed cluster t_pb
+ */
+static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string, int>& pb_type_count) {
+
+    auto pb_graph_node = pb->pb_graph_node;
+    auto pb_type = pb_graph_node->pb_type;
+    auto mode = &pb_type->modes[pb->mode];
+    std::string pb_type_name(pb_type->name);
+
+    auto it = pb_type_count.find(pb_type_name);
+    // if this pb type is in the list increment its
+    // count by 1 otherwise initialize the count to 1
+    if (it == pb_type_count.end())
+        pb_type_count[pb_type_name] = 1;
+    else
+        pb_type_count[pb_type_name]++;
+
+    if (pb_type->num_modes > 0) {
+        for (int i = 0; i < mode->num_pb_type_children; i++) {
+            for (int j = 0; j < mode->pb_type_children[i].num_pb; j++) {
+                if (pb->child_pbs[i] && pb->child_pbs[i][j].name )
+                    update_pb_type_count(&pb->child_pbs[i][j], pb_type_count);
+            }
+        }
+    }
+
+}
+
+/**
+ * Print the total number of used physical blocks for each pb type in the architecture
+ */
+static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count) {
+
+    VTR_LOG("\nPb types usage...\n\n");
+    for (auto& pb_type : pb_type_count) {
+        VTR_LOG("\t%-12s : %d\n", pb_type.first.c_str(), pb_type.second);
+    }
+    VTR_LOG("\n");
+
 }
