@@ -3,16 +3,16 @@
 
 #include <string>
 #include "capnp/message.h"
+#include "kj/array.h"
 
 class MmapFile {
   public:
     explicit MmapFile(const std::string& file);
-    ~MmapFile();
     const kj::ArrayPtr<const ::capnp::word> getData() const;
 
   private:
     size_t size_;
-    void* mapped_;
+    kj::Array<const kj::byte> data_;
 };
 
 #endif /* MMAP_FILE_H_ */

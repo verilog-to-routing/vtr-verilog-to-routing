@@ -4,15 +4,16 @@
 #include <unistd.h>
 
 #include "vpr_error.h"
+#include "kj/filesystem.h"
 
 void writeMessageToFile(const std::string& file, ::capnp::MessageBuilder* builder) {
-    int fd = open(file.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (fd < 0) {
-        VPR_THROW(VPR_ERROR_ROUTE, "open %s failed: %s", file.c_str(), strerror(errno));
-    }
-
-    capnp::writeMessageToFd(fd, *builder);
-    if (close(fd) < 0) {
-        VPR_THROW(VPR_ERROR_ROUTE, "close %s failed: %s", file.c_str(), strerror(errno));
+    try {
+        auto path = kj::Path::parse(file);
+        auto fs = kj::newDiskFilesystem();
+        const auto &dir = fs->getCurrent();
+        auto f = dir.appendFile(path, kj::WriteMode::CREATE);
+        capnp::writeMessage(*f, *builder);
+    } catch (kj::Exception & e) {
+        vpr_throw(VPR_ERROR_OTHER, e.getFile(), e.getLine(), e.getDescription().cStr());
     }
 }
