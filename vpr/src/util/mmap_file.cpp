@@ -13,13 +13,13 @@ MmapFile::MmapFile(const std::string& file)
     : size_(0) {
     try {
         auto fs = kj::newDiskFilesystem();
-        const auto &dir = fs->getCurrent();
+        const auto& dir = fs->getCurrent();
         auto path = kj::Path::parse(file);
         auto stat = dir.lstat(path);
         auto f = dir.openFile(path);
         size_ = stat.size;
         data_ = f->mmap(0, stat.size);
-    } catch (kj::Exception & e) {
+    } catch (kj::Exception& e) {
         vpr_throw(VPR_ERROR_OTHER, e.getFile(), e.getLine(), e.getDescription().cStr());
     }
 }
