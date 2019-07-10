@@ -70,8 +70,6 @@ using namespace std;
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.10;
-ezgl::rectangle initial_world;
-ezgl::rectangle search_node;
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
@@ -115,9 +113,12 @@ ezgl::application application(settings);
 bool window_mode = false;
 bool window_point_1_collected = false;
 ezgl::point2d point_1(0,0);
+int entered_id = -1;
+ezgl::rectangle initial_world;
+ezgl::rectangle search_node;
 
 /********************** Subroutines local to this module ********************/
-
+void print_bound(ezgl::rectangle box) ;//remove later!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!here
 void toggle_nets(GtkWidget *widget, ezgl::application *app);
 void toggle_rr(GtkWidget *widget, ezgl::application *app);
 void toggle_congestion(GtkWidget *widget, ezgl::application *app);
@@ -131,6 +132,7 @@ void toggle_placement_macros(GtkWidget *widget, ezgl::application *app);
 void search_rr_node(GtkWidget *widget, ezgl::application *app);
 
 static void drawplace(ezgl::renderer &g);
+static void draw_search_node(ezgl::renderer &g);
 static void drawnets(ezgl::renderer &g);
 static void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer &g);
 static void draw_congestion(ezgl::renderer &g);
@@ -244,6 +246,7 @@ void draw_main_canvas(ezgl::renderer &g){
     
     draw_block_pin_util();
     drawplace(g);
+    draw_search_node(g);
     draw_internal_draw_subblk(g);
     
     if (draw_state->pic_on_screen == PLACEMENT) {
@@ -287,13 +290,15 @@ void draw_main_canvas(ezgl::renderer &g){
     
     draw_logical_connections(g);
     
-    if(search_node != ezgl::rectangle({0, 0}, {0, 0})){
-        g.set_color(ezgl::RED);
-        g.set_line_width(3);
-        g.set_line_dash(ezgl::line_dash::none);
-        g.draw_rectangle(search_node);
-    }
-    
+    g.set_coordinate_system(ezgl::WORLD);
+//    if(search_node != ezgl::rectangle({0, 0}, {0, 0})){
+//        std::cout << "search node drawn!!!!" << std::endl;
+//        g.set_color(ezgl::RED);
+//        g.set_line_width(5);
+//        g.set_line_dash(ezgl::line_dash::none);
+//        g.draw_rectangle(search_node);
+//    }
+
     if (draw_state->color_map) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
@@ -1136,7 +1141,6 @@ static void draw_routing_bb(ezgl::renderer &g) {
 }
 
 void draw_rr(ezgl::renderer &g) {
-    
     /* Draws the routing resources that exist in the FPGA, if the user wants *
      * them drawn.                                                           */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -1150,7 +1154,7 @@ void draw_rr(ezgl::renderer &g) {
     }
     
     g.set_line_dash(ezgl::line_dash::none);
-    
+
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         if (!draw_state->draw_rr_node[inode].node_highlighted)
         {
@@ -1918,6 +1922,7 @@ static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer &g) 
     auto& device_ctx = g_vpr_ctx.device();
     
     int ipin = device_ctx.rr_nodes[inode].ptc_num();
+//    int ipin = inode;
     
     g.set_color(color);
     
@@ -2445,13 +2450,13 @@ static bool highlight_rr_nodes(float x, float y) {
     
     if (draw_state->draw_rr_toggle == DRAW_NO_RR && !draw_state->show_nets) {
         application.update_message(draw_state->default_message);
-        //drawscreen();
         application.refresh_drawing();
         return false; //No rr shown
     }
     
     // Check which rr_node (if any) was clicked on.
-    int hit_node = draw_check_rr_node_hit (x, y);
+//    int hit_node = draw_check_rr_node_hit (x, y);
+    int hit_node = -1;
     
     if (hit_node != OPEN) {
         auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
@@ -3806,16 +3811,20 @@ static void draw_placement_macros(ezgl::renderer &g) {
 
 void search_rr_node(GtkWidget *widget, ezgl::application *app) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
+    t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     
+    // reset search
+    search_node = {{0, 0},{0, 0}};
+    
+    // get ID from search bar
     GtkEntry* text_entry = (GtkEntry *) app->get_object("TextInput");
     const char* text = gtk_entry_get_text(text_entry);
     std::string user_input = text;
     std::stringstream ss(user_input);
-    
-    
     int rr_node_id = -1;
     ss >> rr_node_id;
+    entered_id = rr_node_id;
     
     std::cout << "searching : " << rr_node_id << std::endl;
     
@@ -3823,80 +3832,72 @@ void search_rr_node(GtkWidget *widget, ezgl::application *app) {
         std::cout << "node not exist (exceed the bound)" << std::endl;
         return;
     }
+    draw_state->draw_rr_node[rr_node_id].node_highlighted = true;
+      
+    switch (device_ctx.rr_nodes[rr_node_id].type()) {
+        case IPIN:
+        case OPIN:
+        {
+            int i = device_ctx.rr_nodes[rr_node_id].xlow();
+            int j = device_ctx.rr_nodes[rr_node_id].ylow();
+            t_type_ptr type = device_ctx.grid[i][j].type;
+            int width_offset = device_ctx.grid[i][j].width_offset;
+            int height_offset = device_ctx.grid[i][j].height_offset;
+            int ipin = device_ctx.rr_nodes[rr_node_id].ptc_num();
+            float xcen, ycen;
+
+            int iside;
+            for (iside = 0; iside < 4; iside++) {
+                // If pin exists on this side of the block, then get pin coordinates
+                if (type->pinloc[width_offset][height_offset][iside][ipin]) {
+                    draw_get_rr_pin_coords(rr_node_id, &xcen, &ycen);
+                    search_node = {{xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
+                            {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size}};
+                }
+            }
+            break;
+        }
+        case CHANX:
+        case CHANY:
+        {
+            search_node = draw_get_rr_chan_bbox(rr_node_id);
+            break;
+        }
+        default:
+            break;
+    }
     
-    //highlight and zoom to the node
-    float xcen, ycen;
-    draw_get_rr_pin_coords(rr_node_id, &xcen, &ycen);
-    ezgl::rectangle search_node({xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
-            xcen + draw_coords->pin_size, ycen + draw_coords->pin_size);
-    search_node = {{xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
-        {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size}};
+    
+    print_bound(search_node);
     
     app->refresh_drawing();
-    //zoom in to the node
-//    ezgl::zoom_in(app->get_canvas(app->get_main_canvas_id()), {xcen, ycen}, 5.0 / 2.0);
 }
 
-//
-//static int draw_check_rr_node_hit (float click_x, float click_y) {
-//    int hit_node = OPEN;
-//    ezgl::rectangle bound_box;
-//    
-//    t_draw_coords* draw_coords = get_draw_coords_vars();
-//    auto& device_ctx = g_vpr_ctx.device();
-//    
-//    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-//        switch (device_ctx.rr_nodes[inode].type()) {
-//            case IPIN:
-//            case OPIN:
-//            {
-//                int i = device_ctx.rr_nodes[inode].xlow();
-//                int j = device_ctx.rr_nodes[inode].ylow();
-//                t_type_ptr type = device_ctx.grid[i][j].type;
-//                int width_offset = device_ctx.grid[i][j].width_offset;
-//                int height_offset = device_ctx.grid[i][j].height_offset;
-//                int ipin = device_ctx.rr_nodes[inode].ptc_num();
-//                float xcen, ycen;
-//                
-//                int iside;
-//                for (iside = 0; iside < 4; iside++) {
-//                    // If pin exists on this side of the block, then get pin coordinates
-//                    if (type->pinloc[width_offset][height_offset][iside][ipin]) {
-//                        draw_get_rr_pin_coords(inode, &xcen, &ycen);
-//                        
-//                        // Now check if we clicked on this pin
-//                        if (click_x >= xcen - draw_coords->pin_size &&
-//                                click_x <= xcen + draw_coords->pin_size &&
-//                                click_y >= ycen - draw_coords->pin_size &&
-//                                click_y <= ycen + draw_coords->pin_size) {
-//                            hit_node = inode;
-//                            return hit_node;
-//                        }
-//                    }
-//                }
-//                break;
-//            }
-//            case CHANX:
-//            case CHANY:
-//            {
-//                bound_box = draw_get_rr_chan_bbox(inode);
-//                
-//                // Check if we clicked on this wire, with 30%
-//                // tolerance outside its boundary
-//                const float tolerance = 0.3;
-//                if (click_x >= bound_box.left() - tolerance &&
-//                        click_x <= bound_box.right() + tolerance &&
-//                        click_y >= bound_box.bottom() - tolerance &&
-//                        click_y <= bound_box.top() + tolerance) {
-//                    hit_node = inode;
-//                    return hit_node;
-//                }
-//                break;
-//            }
-//            default:
-//                break;
-//        }
-//    }
-// 
-//return hit_node;
-//}
+void print_bound(ezgl::rectangle box) {
+    std::cout << "box coord: (" << box.m_first.x << ", " << box.m_first.y << "), (" << box.m_second.x << ", " << box.m_second.y << ")" << std::endl;
+    return;
+}
+
+static void draw_search_node(ezgl::renderer &g){
+    
+    if(search_node == ezgl::rectangle({0, 0},{0, 0})) return;// not searching node
+    
+    // highlight the node
+    g.set_color(ezgl::RED);
+    g.set_line_width(0);
+    g.fill_rectangle(search_node);
+    g.set_color(ezgl::BLACK);
+    g.set_line_dash(ezgl::line_dash::none);
+    g.draw_rectangle(search_node);
+    g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
+    // zoom to the node
+//    ezgl::zoom_in(application.get_canvas(application.get_main_canvas_id()), search_node.center(), 5.0/2.0);
+    
+//    ezgl::canvas *cnv = application.get_canvas(application.get_main_canvas_id());
+//    ezgl::point2d zoom_point = search_node.center();
+//    ezgl::rectangle const world = cnv->get_camera().get_world();
+//    cnv->get_camera().set_world(ezgl::zoom_in_world(zoom_point, world, 5/2));
+    
+    // reset search
+//    search_node = {{0, 0},{0, 0}};
+}
