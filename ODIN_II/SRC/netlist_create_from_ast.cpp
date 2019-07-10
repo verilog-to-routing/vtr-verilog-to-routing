@@ -2131,14 +2131,17 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * module_
 int check_for_initial_reg_value(char * module_name, ast_node_t* var_declare, long *value){
 	oassert(var_declare->type == VAR_DECLARE);
 
-	ast_node_t *number_node = var_declare->children[5];
-	ast_node_t *resolved_number = resolve_node(NULL, module_name, number_node, NULL, 0);
+	ast_node_t *resolved_number = resolve_node(NULL, module_name, var_declare->children[5], NULL, 0);
 	// Initial value is always the last child, if one exists
 	if(resolved_number != NULL)
 	{
 		if(resolved_number->type == NUMBERS)
 		{
 			*value = resolved_number->types.vnumber->get_value();
+			if(resolved_number != var_declare->children[5])
+			{
+				resolved_number = free_whole_tree(resolved_number);
+			}
 			return true;
 		}
 		else
@@ -2146,10 +2149,6 @@ int check_for_initial_reg_value(char * module_name, ast_node_t* var_declare, lon
 			warning_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, 
 				"%s", "Could not resolve initial assignement to a constant value, skipping\n");
 		}
-	}
-	if(resolved_number != number_node)
-	{
-		resolved_number = free_whole_tree(resolved_number);
 	}
 	return false;
 }
