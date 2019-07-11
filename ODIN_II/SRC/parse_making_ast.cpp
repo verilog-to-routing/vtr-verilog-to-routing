@@ -233,15 +233,14 @@ void cleanup_parser()
 	long i;
 
 	/* frees all the defines for module string caches (used for parameters) */
-	if (num_modules > 0)
-	{
-		for (i = 0; i < num_modules; i++)
-		{
-			sc_free_string_cache(defines_for_module_sc[i]);
-		}
 
-		vtr::free(defines_for_module_sc);
+	for (i = 0; i <= num_modules; i++)
+	{
+		sc_free_string_cache(defines_for_module_sc[i]);
 	}
+
+	vtr::free(defines_for_module_sc);
+
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1605,7 +1604,8 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
 	ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
 	ast_modules[num_modules] = new_node;
-	for(i = 0; i < size_module_variables_not_defined; i++){
+	for(i = 0; i < size_module_variables_not_defined; i++)
+	{
 		short variable_found = false;
 		for(j = 0; j < list_of_module_items->num_children && variable_found == false; j++){
 		if(list_of_module_items->children[j]->type == VAR_DECLARE_LIST){

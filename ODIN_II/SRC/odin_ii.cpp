@@ -103,7 +103,6 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	/* get odin soft_logic definition file */
 	read_soft_def_file(hard_adders);
 
-	global_param_table_sc = sc_new_string_cache();
 	module_names_to_idx = sc_new_string_cache();
 
 	/* parse to abstract syntax tree */
@@ -181,7 +180,6 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	
 	output_blif(global_args.output_file.value().c_str(), verilog_netlist);
 
-	global_param_table_sc = sc_free_string_cache(global_param_table_sc);
 	module_names_to_idx = sc_free_string_cache(module_names_to_idx);
 	
 	cleanup_parser();
