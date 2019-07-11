@@ -167,7 +167,7 @@ static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry, 
 	//("pad_b: '" << (unsigned(pad_b)) << "'");
 
 	bit_value_t previous_carry = initial_carry;
-	VNumber result(new_length, _0, is_addition_signed_operation); 
+	VNumber result(new_length, _0, is_addition_signed_operation, a.is_defined_size() && b.is_defined_size()); 
 
 
 	for(size_t i = 0; i < new_length; i++)
@@ -206,7 +206,7 @@ static VNumber shift_op(VNumber& a, int64_t b, bool sign_shift)
 	{
 		size_t u_b = static_cast<size_t>(-b);
 		bit_value_t pad = ( sign_shift ) ? a.get_padding_bit(): BitSpace::_0;
-		to_return = VNumber(a.size(), pad, sign_shift);
+		to_return = VNumber(a.size(), pad, sign_shift, a.is_defined_size());
 		for(size_t i=0; i < (a.size() - u_b); i++)
 		{
 			to_return.set_bit_from_lsb(i, a.get_bit_from_lsb(i+u_b));
@@ -216,7 +216,7 @@ static VNumber shift_op(VNumber& a, int64_t b, bool sign_shift)
 	{
 		size_t u_b = static_cast<size_t>(b);
 		bit_value_t pad = BitSpace::_0;
-		to_return =VNumber((a.size() + u_b), pad, sign_shift);
+		to_return =VNumber((a.size() + u_b), pad, sign_shift, a.is_defined_size());
 		for(size_t i=0; i < a.size(); i++)
 		{
 			to_return.set_bit_from_lsb(i+u_b, a.get_bit_from_lsb(i));
@@ -441,7 +441,7 @@ VNumber V_LT(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_lt()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, false);
+	VNumber to_return(1, result, false, true);
 	return to_return;
 }
 
@@ -449,7 +449,7 @@ VNumber V_GT(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_gt()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, false);
+	VNumber to_return(1, result, false, true);
 	return to_return;
 }
 
@@ -457,7 +457,7 @@ VNumber V_EQUAL(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_eq()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, false);
+	VNumber to_return(1, result, false, true);
 	return to_return;
 }
 
@@ -465,7 +465,7 @@ VNumber V_GE(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_ge()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, false);
+	VNumber to_return(1, result, false, true);
 	return to_return;
 }
 
@@ -473,7 +473,7 @@ VNumber V_LE(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_le()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, false);
+	VNumber to_return(1, result, false, true);
 	return to_return;
 }
 
@@ -481,7 +481,7 @@ VNumber V_NOT_EQUAL(VNumber& a, VNumber& b)
 {
 	compare_bit cmp = eval_op(a,b);
 	BitSpace::bit_value_t result = cmp.is_unk()? BitSpace::_x: cmp.is_ne()? BitSpace::_1: BitSpace::_0;
-	VNumber to_return(1, result, false);
+	VNumber to_return(1, result, false, true);
 	return to_return;
 }
 

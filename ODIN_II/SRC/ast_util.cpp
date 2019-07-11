@@ -1106,8 +1106,9 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 					}
 					else
 					{
-						previous_is_constant = current_is_constant;
 						last_index += 1;
+						previous_is_constant = current_is_constant;
+						node->children[last_index] = node->children[index];
 					}
 					index += 1;
 				}

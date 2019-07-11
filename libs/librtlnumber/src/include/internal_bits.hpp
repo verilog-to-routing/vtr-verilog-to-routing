@@ -693,7 +693,10 @@ private:
 
     VNumber insert(VNumber &other, size_t index_to_insert_at, size_t insertion_size)
     {
-        VNumber new_bitstring(this->size() + insertion_size, BitSpace::_0, this->is_signed() && other.is_signed());
+        assert_Werr(other.is_defined_size() && this->is_defined_size()
+            ,"Size must be defined on both operand for insertion");
+
+        VNumber new_bitstring(this->size() + insertion_size, BitSpace::_0, this->is_signed() && other.is_signed(), true);
 
         size_t index = 0;
 
@@ -746,10 +749,11 @@ public:
         set_value(numeric_value);
     }
 
-    VNumber(size_t len, BitSpace::bit_value_t initial_bits, bool input_sign)
+    VNumber(size_t len, BitSpace::bit_value_t initial_bits, bool input_sign, bool this_defined_size)
     {
         this->bitstring = BitSpace::VerilogBits(len, initial_bits);
         this->sign = input_sign;
+        this->defined_size = this_defined_size;
     }
     
     /***
@@ -1021,7 +1025,7 @@ public:
         const BitSpace::bit_value_t pad_a = this->get_padding_bit();
         const BitSpace::bit_value_t pad_b = b.get_padding_bit();
 
-        VNumber result(std_length, BitSpace::_x, false);
+        VNumber result(std_length, BitSpace::_x, false, this->is_defined_size() && b.is_defined_size() );
 
         for(size_t i=0; i < result.size(); i++)
         {
@@ -1047,6 +1051,7 @@ public:
 
         size_t n_times_unsigned = static_cast<size_t>(n_times_replicate);
 
+        this->defined_size = true;
         return VNumber(this->bitstring.replicate(n_times_unsigned),this->sign);
     }
 
