@@ -3867,6 +3867,7 @@ void search_rr_node(GtkWidget *widget, ezgl::application *app) {
             break;
     }
     
+//    draw_search_node(app->get_renderer());
     
     print_bound(search_node);
     
@@ -3891,7 +3892,8 @@ static void draw_search_node(ezgl::renderer &g){
     g.draw_rectangle(search_node);
     g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
     // zoom to the node
-//    ezgl::zoom_in(application.get_canvas(application.get_main_canvas_id()), search_node.center(), 5.0/2.0);
+    // seg fault below!
+    ezgl::zoom_in(application.get_canvas(application.get_main_canvas_id())/*, search_node.center()*/, 1.0 + 2.0/3.0);
     
 //    ezgl::canvas *cnv = application.get_canvas(application.get_main_canvas_id());
 //    ezgl::point2d zoom_point = search_node.center();
