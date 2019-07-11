@@ -56,6 +56,7 @@ void vpr_throw_msg(enum e_vpr_error type,
 }
 
 void vpr_throw_opt(enum e_vpr_error type,
+                   const char* psz_func_pretty_name,
                    const char* psz_func_name,
                    const char* psz_file_name,
                    unsigned int line_num,
@@ -77,7 +78,7 @@ void vpr_throw_opt(enum e_vpr_error type,
 
     auto result = functions_to_demote.find(func_name);
     if (result != functions_to_demote.end()) {
-        VTR_LOGFF_WARN(psz_file_name, line_num, psz_func_name, msg.data());
+        VTR_LOGFF_WARN(psz_file_name, line_num, psz_func_pretty_name, msg.data());
     } else {
         vpr_throw_msg(type, psz_file_name, line_num, msg);
     }
