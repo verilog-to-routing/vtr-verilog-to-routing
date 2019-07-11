@@ -76,10 +76,14 @@ class OverrideDelayModel : public PlaceDelayModel {
     void write(const std::string& file) const override;
 
   public: //Mutators
+    void set_base_delay_model(std::unique_ptr<DeltaDelayModel> base_delay_model);
+    const DeltaDelayModel* base_delay_model() const;
+    float get_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y) const;
+    void set_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y, float delay);
+
   private:
     std::unique_ptr<DeltaDelayModel> base_delay_model_;
 
-    void set_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y, float delay);
     void compute_override_delay_model(const RouterDelayProfiler& router,
                                       const t_router_opts& router_opts);
 

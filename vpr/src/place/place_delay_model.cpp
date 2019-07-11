@@ -8,6 +8,7 @@
 
 #include "vtr_log.h"
 #include "vtr_math.h"
+#include "vpr_error.h"
 
 #include "capnp/serialize.h"
 #include "place_delay_model.capnp.h"
@@ -117,11 +118,11 @@ void OverrideDelayModel::dump_echo(std::string filepath) const {
     vtr::fclose(f);
 }
 
-static void ToFloat(float* out, const Vpr::FloatEntry::Reader& in) {
+static void ToFloat(float* out, const VprFloatEntry::Reader& in) {
     *out = in.getValue();
 }
 
-static void FromFloat(Vpr::FloatEntry::Builder* out, const float& in) {
+static void FromFloat(VprFloatEntry::Builder* out, const float& in) {
     out->setValue(in);
 }
 
@@ -129,16 +130,18 @@ void DeltaDelayModel::read(const std::string& file) {
     MmapFile f(file);
     ::capnp::FlatArrayMessageReader reader(f.getData());
 
-    auto model = reader.getRoot<Vpr::DeltaDelayModel>();
-    ToNdMatrix<2, Vpr::FloatEntry, float>(&delays_, model.getDelays(), ToFloat);
+    VprDeltaDelayModel::Reader model;
+    model = reader.getRoot<VprDeltaDelayModel>();
+
+    ToNdMatrix<2, VprFloatEntry, float>(&delays_, model.getDelays(), ToFloat);
 }
 
 void DeltaDelayModel::write(const std::string& file) const {
     ::capnp::MallocMessageBuilder builder;
-    auto model = builder.initRoot<Vpr::DeltaDelayModel>();
+    auto model = builder.initRoot<VprDeltaDelayModel>();
 
     auto delays = model.getDelays();
-    FromNdMatrix<2, Vpr::FloatEntry, float>(&delays, delays_, FromFloat);
+    FromNdMatrix<2, VprFloatEntry, float>(&delays, delays_, FromFloat);
 
     writeMessageToFile(file, &builder);
 }
@@ -148,8 +151,8 @@ void OverrideDelayModel::read(const std::string& file) {
     ::capnp::FlatArrayMessageReader reader(f.getData());
 
     vtr::Matrix<float> delays;
-    auto model = reader.getRoot<Vpr::OverrideDelayModel>();
-    ToNdMatrix<2, Vpr::FloatEntry, float>(&delays, model.getDelays(), ToFloat);
+    auto model = reader.getRoot<VprOverrideDelayModel>();
+    ToNdMatrix<2, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
 
     base_delay_model_ = std::make_unique<DeltaDelayModel>(delays);
 
@@ -172,10 +175,10 @@ void OverrideDelayModel::read(const std::string& file) {
 
 void OverrideDelayModel::write(const std::string& file) const {
     ::capnp::MallocMessageBuilder builder;
-    auto model = builder.initRoot<Vpr::OverrideDelayModel>();
+    auto model = builder.initRoot<VprOverrideDelayModel>();
 
     auto delays = model.getDelays();
-    FromNdMatrix<2, Vpr::FloatEntry, float>(&delays, base_delay_model_->delays(), FromFloat);
+    FromNdMatrix<2, VprFloatEntry, float>(&delays, base_delay_model_->delays(), FromFloat);
 
     auto overrides = model.initDelayOverrides(delay_overrides_.size());
     auto dst_iter = overrides.begin();
@@ -192,4 +195,28 @@ void OverrideDelayModel::write(const std::string& file) const {
     }
 
     writeMessageToFile(file, &builder);
+}
+
+float OverrideDelayModel::get_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y) const {
+    t_override key;
+    key.from_type = from_type;
+    key.from_class = from_class;
+    key.to_type = to_type;
+    key.to_class = to_class;
+    key.delta_x = delta_x;
+    key.delta_y = delta_y;
+
+    auto iter = delay_overrides_.find(key);
+    if (iter == delay_overrides_.end()) {
+        VPR_THROW(VPR_ERROR_PLACE, "Key not found.");
+    }
+    return iter->second;
+}
+
+const DeltaDelayModel* OverrideDelayModel::base_delay_model() const {
+    return base_delay_model_.get();
+}
+
+void OverrideDelayModel::set_base_delay_model(std::unique_ptr<DeltaDelayModel> base_delay_model) {
+    base_delay_model_ = std::move(base_delay_model);
 }
