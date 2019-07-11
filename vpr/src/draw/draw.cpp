@@ -113,12 +113,14 @@ ezgl::application application(settings);
 bool window_mode = false;
 bool window_point_1_collected = false;
 ezgl::point2d point_1(0,0);
-int entered_id = -1;
 ezgl::rectangle initial_world;
 ezgl::rectangle search_node;
+std::string search_type_info = "";
+std::string search_id_info = "";
 
 /********************** Subroutines local to this module ********************/
-void print_bound(ezgl::rectangle box) ;//remove later!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!here
+void print_bound(ezgl::rectangle box);//remove later!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!here
+void print_point(ezgl::point2d point);
 void toggle_nets(GtkWidget *widget, ezgl::application *app);
 void toggle_rr(GtkWidget *widget, ezgl::application *app);
 void toggle_congestion(GtkWidget *widget, ezgl::application *app);
@@ -246,7 +248,6 @@ void draw_main_canvas(ezgl::renderer &g){
     
     draw_block_pin_util();
     drawplace(g);
-    draw_search_node(g);
     draw_internal_draw_subblk(g);
     
     if (draw_state->pic_on_screen == PLACEMENT) {
@@ -290,15 +291,8 @@ void draw_main_canvas(ezgl::renderer &g){
     
     draw_logical_connections(g);
     
-    g.set_coordinate_system(ezgl::WORLD);
-//    if(search_node != ezgl::rectangle({0, 0}, {0, 0})){
-//        std::cout << "search node drawn!!!!" << std::endl;
-//        g.set_color(ezgl::RED);
-//        g.set_line_width(5);
-//        g.set_line_dash(ezgl::line_dash::none);
-//        g.draw_rectangle(search_node);
-//    }
-
+    draw_search_node(g);
+    
     if (draw_state->color_map) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
@@ -3824,16 +3818,15 @@ void search_rr_node(GtkWidget *widget, ezgl::application *app) {
     std::stringstream ss(user_input);
     int rr_node_id = -1;
     ss >> rr_node_id;
-    entered_id = rr_node_id;
-    
-    std::cout << "searching : " << rr_node_id << std::endl;
+    search_id_info = "Node ID: " + std::to_string(rr_node_id);
+    std::cout << "searching : node " << rr_node_id << std::endl;
     
     if(rr_node_id < 0 || rr_node_id >= device_ctx.rr_nodes.size()) {
-        std::cout << "node not exist (exceed the bound)" << std::endl;
+        std::cout << "node " << rr_node_id << " not exist (exceed the bound)" << std::endl;
+        app->refresh_drawing();
         return;
     }
-    draw_state->draw_rr_node[rr_node_id].node_highlighted = true;
-      
+          
     switch (device_ctx.rr_nodes[rr_node_id].type()) {
         case IPIN:
         case OPIN:
@@ -3853,6 +3846,7 @@ void search_rr_node(GtkWidget *widget, ezgl::application *app) {
                     draw_get_rr_pin_coords(rr_node_id, &xcen, &ycen);
                     search_node = {{xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
                             {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size}};
+                            search_type_info = "Node Type: IPIN/OPIN";
                 }
             }
             break;
@@ -3861,21 +3855,28 @@ void search_rr_node(GtkWidget *widget, ezgl::application *app) {
         case CHANY:
         {
             search_node = draw_get_rr_chan_bbox(rr_node_id);
+            search_type_info = "Node Type: CHANX/CHANY";
             break;
         }
         default:
             break;
     }
     
-//    draw_search_node(app->get_renderer());
-    
-    print_bound(search_node);
+    //auto zoom to the searching node
+    ezgl::point2d offset = {search_node.width()*1.5, search_node.height()*1.5};
+    ezgl::rectangle zoom_view = {search_node.m_first - offset, search_node.m_second + offset};
+    (app->get_canvas(app->get_main_canvas_id()))->get_camera().set_world(zoom_view);
     
     app->refresh_drawing();
 }
 
 void print_bound(ezgl::rectangle box) {
     std::cout << "box coord: (" << box.m_first.x << ", " << box.m_first.y << "), (" << box.m_second.x << ", " << box.m_second.y << ")" << std::endl;
+    return;
+}
+
+void print_point(ezgl::point2d point) {
+    std::cout << "point coord: (" << point.x << ", " << point.y << ")" << std::endl;
     return;
 }
 
@@ -3890,16 +3891,17 @@ static void draw_search_node(ezgl::renderer &g){
     g.set_color(ezgl::BLACK);
     g.set_line_dash(ezgl::line_dash::none);
     g.draw_rectangle(search_node);
+    
+    // set back to dashed
     g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
-    // zoom to the node
-    // seg fault below!
-    ezgl::zoom_in(application.get_canvas(application.get_main_canvas_id())/*, search_node.center()*/, 1.0 + 2.0/3.0);
     
-//    ezgl::canvas *cnv = application.get_canvas(application.get_main_canvas_id());
-//    ezgl::point2d zoom_point = search_node.center();
-//    ezgl::rectangle const world = cnv->get_camera().get_world();
-//    cnv->get_camera().set_world(ezgl::zoom_in_world(zoom_point, world, 5/2));
+    //label node info
+    g.set_color(ezgl::BLACK);
+    ezgl::point2d id_label_loc = search_node.center() + ezgl::point2d(0, search_node.height()/4);
+    ezgl::point2d type_label_loc = search_node.center() - ezgl::point2d(0, search_node.height()/4);
+    g.set_font_size(15);
+    g.draw_text(id_label_loc, search_id_info, search_node.width(), search_node.height());
+    g.set_font_size(10);
+    g.draw_text(type_label_loc, search_type_info, search_node.width(), search_node.height());
     
-    // reset search
-//    search_node = {{0, 0},{0, 0}};
 }
