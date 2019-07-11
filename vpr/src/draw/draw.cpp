@@ -119,7 +119,7 @@ std::string search_type_info = "";
 std::string search_id_info = "";
 
 /********************** Subroutines local to this module ********************/
-void print_bound(ezgl::rectangle box);//remove later!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!here
+void print_bound(ezgl::rectangle box);//remove later!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 void print_point(ezgl::point2d point);
 void toggle_nets(GtkWidget *widget, ezgl::application *app);
 void toggle_rr(GtkWidget *widget, ezgl::application *app);
@@ -131,7 +131,7 @@ void toggle_crit_path(GtkWidget *widget, ezgl::application *app);
 void toggle_block_pin_util(GtkWidget *widget, ezgl::application *app);
 void toggle_router_rr_costs(GtkWidget *widget, ezgl::application *app);
 void toggle_placement_macros(GtkWidget *widget, ezgl::application *app);
-void search_rr_node(GtkWidget *widget, ezgl::application *app);
+void search_and_highlight(GtkWidget *widget, ezgl::application *app);
 
 static void drawplace(ezgl::renderer &g);
 static void draw_search_node(ezgl::renderer &g);
@@ -307,9 +307,16 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application *app){
     g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
     
     GtkButton* search = (GtkButton*) app->get_object("Search");
-    gtk_button_set_label(search, "Search RR Node");
-    g_signal_connect(search, "clicked", G_CALLBACK(search_rr_node), app);
-    
+    gtk_button_set_label(search, "Search");
+    g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
+           
+    GObject* search_type = (GObject*) app->get_object("SearchType");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Node ID");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block Name");
+
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
     app->create_button("Blk Pin Util", 4, toggle_block_pin_util);
@@ -356,8 +363,15 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *app){
     
     GtkButton* search = (GtkButton*) app->get_object("Search");
     gtk_button_set_label(search, "Search RR Node");
-    g_signal_connect(search, "clicked", G_CALLBACK(search_rr_node), app);
+    g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
     
+    GObject* search_type = (GObject*) app->get_object("SearchType");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Node ID");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block Name");
+
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
     app->create_button("Blk Pin Util", 4, toggle_block_pin_util);
@@ -1125,7 +1139,7 @@ static void draw_routing_bb(ezgl::renderer &g) {
     g.fill_rectangle({draw_xlow, draw_ylow}, {draw_xhigh,draw_yhigh});
     
     draw_routed_net(net_id, g);
-    
+
     std::string msg;;
     msg += "Showing BB";
     msg += " (" + std::to_string(bb->xmin) + ", " + std::to_string(bb->ymin) + ", " + std::to_string(bb->xmax) + ", " + std::to_string(bb->ymax) + ")";
@@ -2523,6 +2537,14 @@ void act_on_key_press(ezgl::application *app, GdkEventKey *event, char *key_name
         } default:
             break; //Unrecognized
     }
+    
+    std::string key(key_name);
+    
+    if (key == "Return"){ // can also press enter to trigger search bar
+        GtkButton* search = (GtkButton*) app->get_object("Search");
+        gtk_button_clicked (search);
+    }
+    
     event = event; // just for hiding warning message
 }
 #else
@@ -3803,70 +3825,99 @@ static void draw_placement_macros(ezgl::renderer &g) {
     }
 }
 
-void search_rr_node(GtkWidget *widget, ezgl::application *app) {
+void search_and_highlight(GtkWidget *widget, ezgl::application *app) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
-    
-    // reset search
-    search_node = {{0, 0},{0, 0}};
     
     // get ID from search bar
     GtkEntry* text_entry = (GtkEntry *) app->get_object("TextInput");
     const char* text = gtk_entry_get_text(text_entry);
     std::string user_input = text;
     std::stringstream ss(user_input);
-    int rr_node_id = -1;
-    ss >> rr_node_id;
-    search_id_info = "Node ID: " + std::to_string(rr_node_id);
-    std::cout << "searching : node " << rr_node_id << std::endl;
+//    std::string search_type = "";
+//    ss >> search_type;
     
-    if(rr_node_id < 0 || rr_node_id >= device_ctx.rr_nodes.size()) {
-        std::cout << "node " << rr_node_id << " not exist (exceed the bound)" << std::endl;
-        app->refresh_drawing();
-        return;
-    }
-          
-    switch (device_ctx.rr_nodes[rr_node_id].type()) {
-        case IPIN:
-        case OPIN:
-        {
-            int i = device_ctx.rr_nodes[rr_node_id].xlow();
-            int j = device_ctx.rr_nodes[rr_node_id].ylow();
-            t_type_ptr type = device_ctx.grid[i][j].type;
-            int width_offset = device_ctx.grid[i][j].width_offset;
-            int height_offset = device_ctx.grid[i][j].height_offset;
-            int ipin = device_ctx.rr_nodes[rr_node_id].ptc_num();
-            float xcen, ycen;
+    GObject* combo_box = (GObject*) app->get_object("SearchType");
+    gchar* type = gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT(combo_box));
+    std::string search_type(type);
+//        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Node ID");
+//    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
+//    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
+//    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
+//    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block Name");
+    if(search_type == "Node ID") {//"rr_node_id") {
+        std::cout << "search rr_node_id" << std::endl;
+        // reset search
+        search_node = {{0, 0},{0, 0}};
 
-            int iside;
-            for (iside = 0; iside < 4; iside++) {
-                // If pin exists on this side of the block, then get pin coordinates
-                if (type->pinloc[width_offset][height_offset][iside][ipin]) {
-                    draw_get_rr_pin_coords(rr_node_id, &xcen, &ycen);
-                    search_node = {{xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
-                            {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size}};
-                            search_type_info = "Node Type: IPIN/OPIN";
+        int rr_node_id = -1;
+        ss >> rr_node_id;
+        search_id_info = "Node ID: " + std::to_string(rr_node_id);
+        std::cout << "searching : node " << rr_node_id << std::endl;
+
+        if(rr_node_id < 0 || rr_node_id >= device_ctx.rr_nodes.size()) {
+            std::cout << "node " << rr_node_id << " not exist (exceed the bound)" << std::endl;
+            app->refresh_drawing();
+            return;
+        }
+
+        switch (device_ctx.rr_nodes[rr_node_id].type()) {
+            case IPIN:
+            case OPIN:
+            {
+                int i = device_ctx.rr_nodes[rr_node_id].xlow();
+                int j = device_ctx.rr_nodes[rr_node_id].ylow();
+                t_type_ptr type = device_ctx.grid[i][j].type;
+                int width_offset = device_ctx.grid[i][j].width_offset;
+                int height_offset = device_ctx.grid[i][j].height_offset;
+                int ipin = device_ctx.rr_nodes[rr_node_id].ptc_num();
+                float xcen, ycen;
+
+                int iside;
+                for (iside = 0; iside < 4; iside++) {
+                    // If pin exists on this side of the block, then get pin coordinates
+                    if (type->pinloc[width_offset][height_offset][iside][ipin]) {
+                        draw_get_rr_pin_coords(rr_node_id, &xcen, &ycen);
+                        search_node = {{xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
+                                {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size}};
+                                search_type_info = "Node Type: IPIN/OPIN";
+                    }
                 }
+                break;
             }
-            break;
+            case CHANX:
+            case CHANY:
+            {
+                search_node = draw_get_rr_chan_bbox(rr_node_id);
+                search_type_info = "Node Type: CHANX/CHANY";
+                break;
+            }
+            default:
+                break;
         }
-        case CHANX:
-        case CHANY:
-        {
-            search_node = draw_get_rr_chan_bbox(rr_node_id);
-            search_type_info = "Node Type: CHANX/CHANY";
-            break;
-        }
-        default:
-            break;
+
+        //auto zoom to the searching node
+        ezgl::point2d offset = {search_node.width()*1.5, search_node.height()*1.5};
+        ezgl::rectangle zoom_view = {search_node.m_first - offset, search_node.m_second + offset};
+        (app->get_canvas(app->get_main_canvas_id()))->get_camera().set_world(zoom_view);
     }
     
-    //auto zoom to the searching node
-    ezgl::point2d offset = {search_node.width()*1.5, search_node.height()*1.5};
-    ezgl::rectangle zoom_view = {search_node.m_first - offset, search_node.m_second + offset};
-    (app->get_canvas(app->get_main_canvas_id()))->get_camera().set_world(zoom_view);
+    else if(search_type == "Block ID") { //"block_id") {
+        std::cout << "search block_id" << std::endl;
+    }
     
+    else if(search_type == "Block Name") {//block_name") {
+        std::cout << "search block_name" << std::endl;
+    }
+    
+    else if(search_type == "Net ID") {//"net_id") {
+        std::cout << "search net_id" << std::endl;
+    }
+    
+    else if(search_type == "Net Name") {//"net_name") {
+        std::cout << "search net_name" << std::endl;
+    }
     app->refresh_drawing();
 }
 
@@ -3880,7 +3931,7 @@ void print_point(ezgl::point2d point) {
     return;
 }
 
-static void draw_search_node(ezgl::renderer &g){
+static void draw_search_node(ezgl::renderer &g) {
     
     if(search_node == ezgl::rectangle({0, 0},{0, 0})) return;// not searching node
     
