@@ -1336,7 +1336,11 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 			|| !strcmp(module_ref_name, DUAL_PORT_RAM_string)
 		)
 		{
-			return newHardBlockInstance(module_ref_name, module_named_instance->children[i], line_number);
+			ast_node_t *instance = ast_node_deep_copy(module_named_instance->children[i]);
+			free_whole_tree(new_master_node);
+			free_whole_tree(module_named_instance);
+			
+			return newHardBlockInstance(module_ref_name, instance, line_number);
 		}
 
 		// make a unique module name based on its parameter list
