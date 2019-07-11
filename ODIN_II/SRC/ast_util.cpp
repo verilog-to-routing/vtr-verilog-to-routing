@@ -1058,17 +1058,73 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 				break;
 			
 			case REPLICATE:
+			{
 				oassert(node_is_constant(node->children[0])); // should be taken care of in parse
+				if( node->children[0]->types.vnumber->is_dont_care_string() )
+				{
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Passing a non constant value to replication command, i.e. 2'bx1{...}");
+				}
+
+				int64_t value = node->children[0]->types.vnumber->get_value();
+				if(value <= 0)
+				{
+					// todo, if this is part of a concat, it is valid
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Passing a number less than or equal to 0 for replication");
+				}
+
 				newNode = create_node_w_type(CONCATENATE, node->line_number, node->file_number); // ????
-				for (i = 0; i < node->children[0]->types.vnumber->get_value(); i++)
+				for (i = 0; i < value; i++)
 				{
 					add_child_to_node(newNode, ast_node_deep_copy(node->children[1]));
 				}
 			//	node = free_whole_tree(node); // this might free stuff we don't want to free?
 				node = newNode;
-				break;
-			
 
+				break;
+			}
+			
+			case CONCATENATE:
+			{
+				size_t index = 1;
+				size_t last_index = 0;
+				
+				while(index < node->num_children)
+				{
+					bool previous_is_constant = node_is_constant(node->children[last_index]);
+					bool current_is_constant = node_is_constant(node->children[index]);
+
+					if(previous_is_constant && current_is_constant)
+					{
+						VNumber new_value = V_CONCAT({*(node->children[last_index]->types.vnumber), *(node->children[index]->types.vnumber)});
+
+						node->children[index] = free_whole_tree(node->children[index]);
+
+						delete node->children[last_index]->types.vnumber;
+						node->children[last_index]->types.vnumber = new VNumber(new_value);
+					}
+					else
+					{
+						previous_is_constant = current_is_constant;
+						last_index += 1;
+					}
+					index += 1;
+				}
+
+				node->num_children = last_index+1;
+
+				if(node->num_children == 1)
+				{
+					ast_node_t *tmp = node->children[0];
+					node->children[0] = NULL;
+					free_whole_tree(node);
+					node = tmp;
+				}
+
+				break;
+			}
+			
 			default:
 				break;
 		}

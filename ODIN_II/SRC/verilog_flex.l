@@ -54,8 +54,9 @@ vBIN [Bb][_]*[ZzXx0-1][ZzXx0-1_]*
 vOCT [Oo][_]*[ZzXx0-7][ZzXx0-7_]*
 vDEC [Dd][_]*[[:digit:]][[:digit:]_]*
 vHEX [Hh][_]*[ZzXx[:xdigit:]][ZzXx[:xdigit:]_]*
-vINT [_]*[[:digit:]][[:digit:]_]*
+vINT [[:digit:]][[:digit:]_]*
 vWORD [[:alpha:]_][[:alnum:]_$]*
+vSTRING ["][^"]*["]  
 
 	/**
 	* add \" to vPUNCT when support is added for strings
@@ -215,7 +216,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>{vINT}						{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
 
 	/* Strings */
-<INITIAL>[\"].*[\"]					{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>{vSTRING}				{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
 
 	/* Numbers */
 <INITIAL>[[:digit:]]*'[sS]?{vBIN}	{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
