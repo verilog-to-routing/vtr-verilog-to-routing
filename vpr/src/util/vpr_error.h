@@ -66,7 +66,7 @@ void map_error_activation_status(std::string function_name);
 [[noreturn]] void vvpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, va_list args);
 [[noreturn]] void vpr_throw_msg(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, std::string msg);
 
-void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_name, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
+void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, const char* psz_func_name, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
 
 //Figure out what macro to use to get the name of the current function
 // We default to __func__ which is defined in C99
@@ -103,9 +103,9 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_name, const char*
  * default stops the program, but may be suppressed (i.e. converted to a
  * warning).
  */
-#define VPR_ERROR(type, ...)                                                      \
-    do {                                                                          \
-        vpr_throw_opt(type, VPR_THROW_FUNCTION, __FILE__, __LINE__, __VA_ARGS__); \
+#define VPR_ERROR(type, ...)                                                                \
+    do {                                                                                    \
+        vpr_throw_opt(type, VPR_THROW_FUNCTION, __func__, __FILE__, __LINE__, __VA_ARGS__); \
     } while (false)
 
 #endif

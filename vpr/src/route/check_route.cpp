@@ -118,7 +118,7 @@ void check_route(enum e_route_type route_type) {
             } else { //Continuing along existing branch
                 connects = check_adjacent(prev_node, inode);
                 if (!connects) {
-                    VPR_THROW(VPR_ERROR_ROUTE,
+                    VPR_ERROR(VPR_ERROR_ROUTE,
                               "in check_route: found non-adjacent segments in traceback while checking net %d:\n"
                               "  %s\n"
                               "  %s\n",
