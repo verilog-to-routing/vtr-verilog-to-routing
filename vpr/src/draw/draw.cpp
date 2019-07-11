@@ -2492,14 +2492,14 @@ void act_on_key_press(ezgl::application *app, GdkEventKey *event, char *key_name
     //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
     switch(*key_name) {
         case 'S': {// Left Shift or Right Shift to zoom in
-            float zoom_factor = get_zoom_factor();
+            float zoom_factor = 5.0/3.0; // a constant in easyGL library
             zoom_factor += (zoom_factor - 1.);
             zoom_factor = std::min(8.f, zoom_factor); //Clip maximum zoom factor
             VTR_LOG("Increasing graphics zoom factor to %f\n", zoom_factor);
             ezgl::zoom_in(app->get_canvas(app->get_main_canvas_id()), zoom_factor);
             break;
         } case 'C': {// Left Control or Right Control to zoom out
-            float zoom_factor = get_zoom_factor();
+            float zoom_factor = 5.0/3.0; // a constant in easyGL library
             zoom_factor -= (zoom_factor - 1.) / 2;
             zoom_factor = std::max(1.0001f, zoom_factor); //Clip minimum zoom factor
             VTR_LOG("Decreasing graphics zoom factor to %f\n", zoom_factor);
