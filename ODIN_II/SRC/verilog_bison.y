@@ -51,22 +51,14 @@ int yylex(void);
 }
 
 %token <id_name> vSYMBOL_ID
-%token <num_value> vINTEGRAL
-%token <num_value> vUNSIGNED_DECIMAL
-%token <num_value> vUNSIGNED_OCTAL
-%token <num_value> vUNSIGNED_HEXADECIMAL
-%token <num_value> vUNSIGNED_BINARY
-%token <num_value> vSIGNED_DECIMAL
-%token <num_value> vSIGNED_OCTAL
-%token <num_value> vSIGNED_HEXADECIMAL
-%token <num_value> vSIGNED_BINARY
+%token <num_value> vNUMBER
 %token <num_value> vDELAY_ID
 %token vALWAYS vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vDEFINE vELSE vEND vENDCASE
 %token vENDMODULE vENDSPECIFY vENDGENERATE vENDFUNCTION vIF vINOUT vINPUT vMODULE vGENERATE vFUNCTION
 %token vOUTPUT vPARAMETER vLOCALPARAM vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND vNAND vNEGEDGE vNOR vNOT vOR vFOR
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vCLOG2 vGENVAR
-%token vPLUS_COLON vMINUS_COLON vSPECPARAM
+%token vPLUS_COLON vMINUS_COLON vSPECPARAM vUNSIGNED vSIGNED vCFUNC
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']' '~' '!' ';' '#' ',' '.' '@' '='
 %token vNOT_SUPPORT 
 
@@ -115,7 +107,7 @@ int yylex(void);
 %type <node> expression primary probable_expression_list expression_list module_parameter
 %type <node> list_of_module_parameters
 %type <node> specify_block list_of_specify_items specify_item specparam_declaration
-%type <node> specify_pal_connect_declaration
+%type <node> specify_pal_connect_declaration c_function_expression_list c_function
 %type <node> initial_block parallel_connection list_of_blocking_assignment
 
 %%
@@ -198,6 +190,7 @@ module_item:
 	| always		{$$ = $1;}
 	| defparam_declaration	{$$ = $1;}
 	| specify_block		{$$ = $1;}
+	| c_function ';'		{$$ = $1;}
 	;
 
 function_declaration:
@@ -417,8 +410,9 @@ generate_for:
 	; 
 
 statement:
-	seq_block										{$$ = $1;}
-	| blocking_assignment ';'								{$$ = $1;}
+	seq_block													{$$ = $1;}
+	| c_function ';'											{$$ = $1;}
+	| blocking_assignment ';'									{$$ = $1;}
 	| non_blocking_assignment ';'								{$$ = $1;}
 	| vIF '(' expression ')' statement %prec LOWER_THAN_ELSE				{$$ = newIf($3, $5, NULL, yylineno);}
 	| vIF '(' expression ')' statement vELSE statement					{$$ = newIf($3, $5, $7, yylineno);}
@@ -512,6 +506,8 @@ expression:
 	| '!' expression %prec ULNOT				{$$ = newUnaryOperation(LOGICAL_NOT, $2, yylineno);}
 	| '^' expression %prec UXOR				{$$ = newUnaryOperation(BITWISE_XOR, $2, yylineno);}
 	| vCLOG2 '(' expression ')'				{$$ = newUnaryOperation(CLOG2, $3, yylineno);}
+	| vUNSIGNED '(' expression ')'				{$$ = newUnaryOperation(UNSIGNED, $3, yylineno);}
+	| vSIGNED '(' expression ')'				{$$ = newUnaryOperation(SIGNED, $3, yylineno);}
 	| expression '^' expression				{$$ = newBinaryOperation(BITWISE_XOR, $1, $3, yylineno);}
 	| expression voPOWER expression				{$$ = newBinaryOperation(POWER,$1, $3, yylineno);}
 	| expression '*' expression				{$$ = newBinaryOperation(MULTIPLY, $1, $3, yylineno);}
@@ -541,18 +537,11 @@ expression:
 	| function_instantiation				{$$ = $1;}
 	| '(' expression ')'					{$$ = $2;}
 	| '{' expression '{' probable_expression_list '}' '}'	{$$ = newListReplicate( $2, $4 ); }
+	| c_function							{$$ = $1;}
 	;
 
 primary:
-	vINTEGRAL										{$$ = newNumberNode($1, LONG, UNSIGNED, yylineno);}
-	| vUNSIGNED_DECIMAL									{$$ = newNumberNode($1, DEC, UNSIGNED, yylineno);}
-	| vUNSIGNED_OCTAL									{$$ = newNumberNode($1, OCT, UNSIGNED, yylineno);}
-	| vUNSIGNED_HEXADECIMAL									{$$ = newNumberNode($1, HEX, UNSIGNED, yylineno);}
-	| vUNSIGNED_BINARY									{$$ = newNumberNode($1, BIN, UNSIGNED, yylineno);}
-	| vSIGNED_DECIMAL									{$$ = newNumberNode($1, DEC, SIGNED, yylineno);}
-	| vSIGNED_OCTAL										{$$ = newNumberNode($1, OCT, SIGNED, yylineno);}
-	| vSIGNED_HEXADECIMAL									{$$ = newNumberNode($1, HEX, SIGNED, yylineno);}
-	| vSIGNED_BINARY									{$$ = newNumberNode($1, BIN, SIGNED, yylineno);}
+	vNUMBER										{$$ = newNumberNode($1, yylineno);}
 	| vSYMBOL_ID										{$$ = newSymbolNode($1, yylineno);}
 	| vSYMBOL_ID '[' expression ']'								{$$ = newArrayRef($1, $3, yylineno);}
 	| vSYMBOL_ID '[' expression ']' '[' expression ']'					{$$ = newArrayRef2D($1, $3, $6, yylineno);}
@@ -571,6 +560,17 @@ probable_expression_list:
 expression_list:
 	expression_list ',' expression	{$$ = newList_entry($1, $3); /* note this will be in order lsb = greatest to msb = 0 in the node child list */}
 	| expression			{$$ = newList(CONCATENATE, $1);}
+	;
+
+ c_function:
+	vCFUNC '(' c_function_expression_list ')'	{$$ = NULL;}
+	| vCFUNC '(' ')'							{$$ = NULL;}
+	| vCFUNC									{$$ = NULL;}
+	;
+
+ c_function_expression_list:
+	expression ',' c_function_expression_list	{$$ = free_whole_tree($1);}
+	| expression								{$$ = free_whole_tree($1);}
 	;
 
 %%

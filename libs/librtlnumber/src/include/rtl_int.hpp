@@ -18,7 +18,16 @@
 
 bool V_TRUE(VNumber& a);
 bool V_FALSE(VNumber& a);
+bool V_UNK(VNumber& a);
+bool V_IS_X(VNumber& a);
+bool V_IS_Z(VNumber& a);
+bool V_IS_SIGNED(VNumber& a);
+bool V_IS_UNSIGNED(VNumber& a);
 
+std::string V_STRING(VNumber& a);
+
+VNumber V_UNSIGNED(VNumber& a);
+VNumber V_SIGNED(VNumber& a);
 VNumber V_ADD(VNumber& a);
 VNumber V_MINUS(VNumber& a);
 
@@ -34,6 +43,9 @@ VNumber V_LOGICAL_NOT(VNumber& a);
 /**
  * Binary Operator
  */
+VNumber V_REPLICATE(VNumber& a, VNumber& n_times);
+VNumber V_CONCAT(std::vector<VNumber> concat_list);
+
 VNumber V_BITWISE_AND(VNumber& a,VNumber& b);
 VNumber V_BITWISE_OR(VNumber& a,VNumber& b);
 VNumber V_BITWISE_XOR(VNumber& a,VNumber& b);

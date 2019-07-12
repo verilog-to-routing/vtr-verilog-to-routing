@@ -17,6 +17,41 @@ complex_fail,       is_true, 2'b0x, fail
 unknown_x,          is_true, 1'bx, fail
 large_number_pass,  is_true, 128'h8000_0000_0000_0000, pass
 
+# type test
+simple_x_pass,      is_x,   1'bx,   pass
+simple_x_fail,      is_x,   1'b1,   fail
+simple_z_pass,      is_z,   1'bz,   pass
+simple_z_fail,      is_z,   1'b1,   fail
+simple_unk_pass,    is_unk, 2'b1x,  pass
+simple_unk_fail,    is_unk, 2'b11,  fail
+
+# sign test
+simple_is_unsigned_pass,     is_unsigned,    2'b11,  pass
+simple_is_unsigned_fail,     is_unsigned,    2'sb11, fail
+simple_is_signed_pass,       is_signed,      2'b11,  fail
+simple_is_signed_fail,       is_signed,      2'sb11, pass
+
+# type conversion test
+simple_is_unsigned_1,        to_unsigned,    2'b11,  2'b11
+simple_is_unsigned_2,        to_unsigned,    2'sb11, 2'b11
+simple_is_signed_1,          to_signed,      2'b11,  2'sb11
+simple_is_signed_2,          to_signed,      2'sb11, 2'sb11
+
+# string test
+simple_string,          display,        "hello world",   hello world
+string_compare_pass,    "hello world",  ==,  "hello world", 1'b1
+string_compare_fail,    "hello world",  ==,  "hello", 1'b0
+string_ne_pass,         "hello world",  !=,  "hello", 1'b1
+string_ne_fail,         "hello world",  !=,  "hello world", 1'b0
+string_add,             "a",            +,    1,      "b"
+string_add_empty,       "b",             +,    "",    "b"
+
+# replicate test
+simple_replicate,       {, 3, {, 2'b10, }, }, 6'b101010
+
+# concat test
+simple_concat,          {, 2'b01, \, , 2'b10, }, 4'b0110
+
 # base conversions
 Decimal-To-Binary,      10,         ==, 4'b1010,    1'b1
 Binary-To-Decimal,      4'b1100,    ==, 12,         1'b1

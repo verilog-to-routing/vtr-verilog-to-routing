@@ -342,10 +342,10 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 		}
 		ast_node_t *node = (ast_node_t *)local_param_table_sc->data[sc_spot];
 		oassert(node);
-		node = resolve_node(local_string_cache_list, node, NULL, 0);
+		node = resolve_node(local_string_cache_list, node, NULL, -1);
 		if (node->type != NUMBERS && parent_string_cache_list) 
 		{
-			node = resolve_node(parent_string_cache_list, node, NULL, 0); // may contain parameters from parent
+			node = resolve_node(parent_string_cache_list, node, NULL, -1); // may contain parameters from parent
 		}
 		oassert(node->type == NUMBERS);
 		local_param_table_sc->data[sc_spot] = (void *)node;
@@ -3533,7 +3533,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	{
 		int output_size = alias_output_assign_pins_to_inputs(out_list, in_1, assignment);
 
-		if (output_size < in_1->count)
+		if (in_1 && output_size < in_1->count)
 		{
 			/* need to shrink the output list */
 			int i;

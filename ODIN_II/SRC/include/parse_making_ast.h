@@ -17,7 +17,7 @@ void cleanup_parser_for_file();
 
 /* GENERAL PARSER NODES */
 ast_node_t *newSymbolNode(char *id, int line_number);
-ast_node_t *newNumberNode(char *num, bases base, signedness sign, int line_number);
+ast_node_t *newNumberNode(char *num, int line_number);
 ast_node_t *newList(ids type_id, ast_node_t *expression);
 ast_node_t *newList_entry(ast_node_t *concat_node, ast_node_t *expression);
 ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child );

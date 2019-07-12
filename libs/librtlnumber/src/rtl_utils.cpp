@@ -37,7 +37,7 @@ static uint8_t _to_decimal(char digit, const char *FUNCT, int LINE)
 
 #define to_decimal(num) _to_decimal(num,__func__, __LINE__)
 
-static std::string _radix_digit_to_bits_str(const char digit, short radix,  const char *FUNCT, int LINE)
+static std::string _radix_digit_to_bits_str(const char digit, size_t radix,  const char *FUNCT, int LINE)
 {
     switch(radix)
     {
@@ -109,6 +109,20 @@ static std::string _radix_digit_to_bits_str(const char digit, short radix,  cons
             }
             break;
         }
+        case 256:
+        {
+            std::string bitstring = "";
+            char temp = digit;
+            // 8 bit per char
+            for(int i=0; i<8; i++)
+            {
+                char value = temp % 2;
+                temp = temp / 2;
+
+                bitstring.insert(bitstring.begin(), (value)? '1': '0');
+            }
+            return bitstring;
+        }
         default:
         {
             _assert_Werr( false, FUNCT, LINE,
@@ -121,7 +135,7 @@ static std::string _radix_digit_to_bits_str(const char digit, short radix,  cons
 }
 
 #define radix_digit_to_bits(num,radix) _radix_digit_to_bits(num,radix,__func__, __LINE__)
-static std::string _radix_digit_to_bits(const char digit, short radix,  const char *FUNCT, int LINE)
+static std::string _radix_digit_to_bits(const char digit, size_t radix,  const char *FUNCT, int LINE)
 {
     std::string result = _radix_digit_to_bits_str(digit, radix, FUNCT, LINE);
     return result;
@@ -130,37 +144,46 @@ static std::string _radix_digit_to_bits(const char digit, short radix,  const ch
 /**********************
  * convert from different radix to bitstring
  */
-std::string string_of_radix_to_bitstring(std::string orig_string, short radix)
+std::string string_of_radix_to_bitstring(std::string orig_string, size_t radix)
 {
 	std::string result = "";	
 
-    if(orig_string.empty())
-        return "";
-
     switch(radix)
 	{
-		case 2:    
+		case 2:  
+            assert_Werr(!orig_string.empty(), "INVALID BIT INPUT: empty string"); 
+
             assert_Werr(std::string::npos == orig_string.find_first_not_of("xXzZ01"),
                     "INVALID BIT INPUT: " + orig_string + "for radix 2"
             );
             break;
 
-		case 8:    
+		case 8:  
+            assert_Werr(!orig_string.empty(), "INVALID BIT INPUT: empty string"); 
+  
             assert_Werr(std::string::npos == orig_string.find_first_not_of("xXzZ01234567"),
                     "INVALID BIT INPUT: " + orig_string + "for radix 8"
             );
             break;
 
-		case 10:    
+		case 10:   
+            assert_Werr(!orig_string.empty(), "INVALID BIT INPUT: empty string"); 
+ 
             assert_Werr(std::string::npos == orig_string.find_first_not_of("0123456789"),
                     "INVALID BIT INPUT: " + orig_string + "for radix 10"
             );
             break;
 
-		case 16:    
+		case 16:   
+            assert_Werr(!orig_string.empty(), "INVALID BIT INPUT: empty string"); 
+ 
             assert_Werr(std::string::npos == orig_string.find_first_not_of("xZzZ0123456789aAbBcCdDeEfF"),
                     "INVALID BIT INPUT: " + orig_string + "for radix 16"
             );
+            break;
+
+		case 256:    
+            // allow all chars
             break;
 
 		default:	    
@@ -215,5 +238,6 @@ std::string string_of_radix_to_bitstring(std::string orig_string, short radix)
 	}
     
     result.insert(result.begin(),'0');
+
 	return result;
 }

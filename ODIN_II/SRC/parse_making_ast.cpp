@@ -308,7 +308,7 @@ ast_node_t *newSymbolNode(char *id, int line_number)
 /*---------------------------------------------------------------------------------------------
  * (function: newNumberNode)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newNumberNode(char *num, bases /*base */, signedness /* sign */, int line_number)
+ast_node_t *newNumberNode(char *num, int line_number)
 {
 	ast_node_t *current_node = create_tree_node_number(num, line_number, current_parse_file);
 	vtr::free(num);
@@ -1913,7 +1913,9 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 			break;
 		}
 		case NUMBERS:
-			fprintf(fp, ": %s",  node->types.vnumber->to_bit_string().c_str());
+			fprintf(fp, ": %s (%s)",  
+				node->types.vnumber->to_bit_string().c_str(), 
+				node->types.vnumber->to_printable().c_str());
 			break;
 
 		case UNARY_OPERATION: //fallthrough

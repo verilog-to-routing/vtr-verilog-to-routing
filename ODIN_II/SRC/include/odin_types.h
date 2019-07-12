@@ -154,7 +154,6 @@ extern const char *ZERO_PAD_ZERO;
 extern const char *SINGLE_PORT_RAM_string;
 extern const char *DUAL_PORT_RAM_string;
 
-extern const char *signedness_STR[];
 extern const char *edge_type_e_STR[];
 extern const char *operation_list_STR[][2];
 extern const char *ids_STR [];
@@ -163,23 +162,6 @@ enum file_extension_supported
 {
 	VERILOG,
 	file_extension_supported_END
-};
-
-enum bases
-{
-	DEC = 10,
-	HEX = 16,
-	OCT = 8,
-	BIN = 2,
-	LONG = 0,
-	bases_END
-};
-
-enum signedness
-{
-	SIGNED,
-	UNSIGNED,
-	signedness_END
 };
 
 enum edge_type_e
@@ -253,6 +235,8 @@ enum operation_list
 	GENERIC, /*added for the unknown node type */
 	FULLADDER,
 	CLOG2, // $clog2
+	UNSIGNED, // $unsigned
+	SIGNED, // $signed
 	operation_list_END
 };
 
