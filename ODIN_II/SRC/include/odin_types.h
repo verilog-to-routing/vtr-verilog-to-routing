@@ -523,11 +523,6 @@ struct npin_t
 	bool is_default; // The pin is feeding a mux from logic representing an else or default.
 	bool is_implied; // This signal is implied.
 
-	////////////////////
-
-	// For Activity Estimation
-	ace_obj_info_t *ace_info;
-
 };
 
 struct nnet_t
