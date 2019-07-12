@@ -221,8 +221,6 @@ npin_t* allocate_npin() {
 	new_pin->is_default = false;
 	new_pin->is_implied = false;
 
-	new_pin->ace_info = NULL;
-
 	return new_pin;
 }
 

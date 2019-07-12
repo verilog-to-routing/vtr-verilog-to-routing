@@ -301,8 +301,6 @@ void simulate_netlist(netlist_t *netlist)
 
 	// Print statistics.
 	print_simulation_stats(sim_data->stages, sim_data->num_vectors, sim_data->total_time, sim_data->simulation_time);
-	// Perform ACE activity calculations
-	calculate_activity ( netlist, sim_data->num_vectors, sim_data->act_out );
 }
 
 
@@ -403,8 +401,6 @@ void simulate_netlist(netlist_t *netlist)
 
 	// Print statistics.
 	print_simulation_stats(sim_data->stages, sim_data->num_vectors, sim_data->total_time, sim_data->simulation_time);
-	// Perform ACE activity calculations
-	calculate_activity ( netlist, sim_data->num_vectors, sim_data->act_out );
 }  */
 
 
@@ -508,9 +504,6 @@ sim_data_t *init_simulation(netlist_t *netlist)
 
 		srand(global_args.sim_random_seed);
 	}
-
-	// Setup data structures for activity estimation
-	alloc_and_init_ace_structs(netlist);
 
 	// Determine which edge(s) we are outputting.
 	sim_data->total_time      = 0;  // Includes I/O
@@ -2034,7 +2027,7 @@ static bool compute_and_store_value(nnode_t *node, int cycle)
 			break;
 	}
 
-	// Count number of ones and toggles for activity estimation
+	// Count number of ones and toggles for coverage estimation
 	bool covered = true;
 	bool skip_node_from_coverage = (
 		type == INPUT_NODE ||
@@ -2046,35 +2039,22 @@ static bool compute_and_store_value(nnode_t *node, int cycle)
 
 	if(!skip_node_from_coverage)
 	{
-		for (int i = 0; i < node->num_output_pins; i++) {
-			if ( node->output_pins[i]->ace_info != NULL ) {
+		for (int i = 0; i < node->num_output_pins && !covered; i++) 
+		{
+			signed char pin_value = get_pin_value(node->output_pins[i],cycle);
+			signed char last_pin_value = get_pin_value(node->output_pins[i],cycle-1);
 
-				signed char pin_value = get_pin_value(node->output_pins[i],cycle);
-				// last_pin_value = get_pin_value(node->output_pins[i],cycle-1);
-				// Pin values for cycle-1 were not correct on Wave boundaries. Needed to store it in ace object.
-				signed char last_pin_value = node->output_pins[i]->ace_info->value;
-
-				// # of ones
-				if ( pin_value == 1 ) 
-				{
-					node->output_pins[i]->ace_info->num_ones += pin_value;
-				}
-
-				// # of toggles
-				if ( ( pin_value != last_pin_value ) && (last_pin_value != -1 ) ) 
-				{
-					node->output_pins[i]->ace_info->num_toggles++;
-					node->output_pins[i]->coverage++;
-					if(node->output_pins[i]->coverage < 2)
-						covered = false;
-				}
-
-				node->output_pins[i]->ace_info->value = pin_value;
+			// # of toggles
+			if ( ( pin_value != last_pin_value ) && (last_pin_value != -1 ) ) 
+			{
+				node->output_pins[i]->coverage++;
+				if(node->output_pins[i]->coverage < 2)
+					covered = false;
 			}
 		}
 	}
-	if(covered || skip_node_from_coverage)
-		node->covered = true;
+
+	node->covered = (covered || skip_node_from_coverage);
 
 	//computation_time = wall_time() - computation_time;
 

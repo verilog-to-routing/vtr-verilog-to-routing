@@ -2,14 +2,22 @@ cmake_minimum_required(VERSION 3.9)
 
 project("ODIN_II")
 
-#base extra flags for odin
-set(ODIN_EXTRA_FLAGS 
-    ""  # nothing for now
-)
-
 if(ODIN_DEBUG)
 
     message("*** Compiling with Odin debug flags")
+
+    set(ODIN_EXTRA_FLAGS
+        "-g"
+        "-ggdb"
+        "-O0"
+        ${ODIN_EXTRA_FLAGS}
+    )
+
+endif()
+
+if(ODIN_WARN)
+
+    message("*** Compiling with Odin with extra warning flags")
 
     set(ODIN_REF_FLAGS
         "-Wchkp"                    # Warn about memory access errors found by Pointer Bounds Checker
@@ -32,17 +40,31 @@ if(ODIN_DEBUG)
     )
 
     set(ODIN_EXTRA_FLAGS
-        "-g"
-        "-ggdb"
-        "-O0"
-        ""
         ${ODIN_EXTRA_FLAGS}
-    ##############
-    # comment out the flag set you do not wish to see added below
-    #
         ${ODIN_REF_FLAGS}
         ${ODIN_SIGN_FLAGS}
         ${ODIN_LIMITS_FLAGS}
+    )
+
+endif()
+
+if(ODIN_TIDY)
+    set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=-*,readability-*")
+endif()
+
+if(ODIN_COVERAGE)
+
+    message("*** Compiling with Odin Coverage flags")
+
+    set(ODIN_EXTRA_FLAGS
+        "-g"
+        "-fprofile-arcs"
+        "-ftest-coverage"
+        ${ODIN_EXTRA_FLAGS}
+    )
+
+    set(ODIN_EXTRA_LINK_FLAGS
+        "-lgcov --coverage"
     )
 
 endif()
@@ -96,25 +118,6 @@ add_library(libodin_ii STATIC
 target_include_directories(libodin_ii PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libodin_ii PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
-#################################
-# INCLUDE EXTRA ODIN FLAGS IS EXECUTED HERE
-#
-#  include the flags one at a time in case some are not supported and report the error
-#
-
-foreach(ODIN_FLAG ${ODIN_EXTRA_FLAGS})
-
-    CHECK_CXX_COMPILER_FLAG(${ODIN_FLAG} FLAG_TEST)
-
-    if(FLAG_TEST)
-        message("-- Performing Test CXX_SUPPORT_FLAG${ODIN_FLAG} - Success")
-        target_compile_options(libodin_ii PRIVATE ${ODIN_FLAG})
-    else()
-        message("-- Performing Test CXX_SUPPORT_FLAG${ODIN_FLAG} - Failure")
-    endif()
-
-endforeach()
-
 target_link_libraries(libodin_ii
                         libvtrutil
                         librtlnumber
@@ -128,6 +131,32 @@ add_executable(odin_II ${EXEC_SOURCES})
 
 target_link_libraries(odin_II
                         libodin_ii)
+
+#################################
+# INCLUDE EXTRA ODIN FLAGS IS EXECUTED HERE
+#
+#  include the flags one at a time in case some are not supported and report the error
+#
+
+foreach(ODIN_FLAG ${ODIN_EXTRA_FLAGS})
+
+    CHECK_CXX_COMPILER_FLAG(${ODIN_FLAG} FLAG_TEST)
+
+    if(FLAG_TEST)
+        message("-- Performing Test CXX_SUPPORT_FLAG${ODIN_FLAG} - Success")
+        target_compile_options(libodin_ii PRIVATE ${ODIN_FLAG})
+        target_compile_options(odin_II PRIVATE ${ODIN_FLAG})
+    else()
+        message("-- Performing Test CXX_SUPPORT_FLAG${ODIN_FLAG} - Failure")
+    endif()
+
+endforeach()
+
+#add extra link flags for odin
+if(ODIN_EXTRA_LINK_FLAGS)
+    set_target_properties(libodin_ii PROPERTIES LINK_FLAGS ${ODIN_EXTRA_LINK_FLAGS})
+    set_target_properties(odin_II PROPERTIES LINK_FLAGS ${ODIN_EXTRA_LINK_FLAGS})
+endif()
 
 #Supress IPO link warnings if IPO is enabled
 get_target_property(ODIN_USES_IPO odin_II INTERPROCEDURAL_OPTIMIZATION)

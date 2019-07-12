@@ -300,6 +300,9 @@ void allocate_children_to_node(ast_node_t* node, int num_children, ...)
 	{
 		node->children[i] = va_arg(ap, ast_node_t*);
 	}
+	
+	va_end(ap);
+
 }
 
 /*---------------------------------------------------------------------------------------------

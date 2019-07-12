@@ -44,7 +44,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "hard_blocks.h"
 #include "odin_types.h"
 #include "memories.h"
-#include "ace.h"
 
 /*
  * Number of values to store for each pin at one time.
