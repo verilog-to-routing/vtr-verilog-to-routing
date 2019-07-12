@@ -1044,6 +1044,7 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 						{
 							error_message(NETLIST_ERROR, node->line_number, node->file_number, "Parameter %s is not a constant expression\n", node->types.identifier);
 						}
+						node = free_whole_tree(node);
 						node = newNode;
 						return node;
 					}
@@ -1081,7 +1082,7 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 				{
 					add_child_to_node(newNode, ast_node_deep_copy(node->children[1]));
 				}
-			//	node = free_whole_tree(node); // this might free stuff we don't want to free?
+				node = free_whole_tree(node); // this might free stuff we don't want to free?
 				node = newNode;
 
 				break;
