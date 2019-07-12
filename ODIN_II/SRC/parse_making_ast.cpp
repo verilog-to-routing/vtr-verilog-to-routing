@@ -1289,6 +1289,7 @@ ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t
     strcpy(unique_name,"function_instance_");
     odin_sprintf(aux_name,"%ld",size_function_instantiations_by_module);
     strcat(unique_name,aux_name);
+	vtr::free(aux_name);
 
     ast_node_t *symbol_node = newSymbolNode(unique_name, line_number);
 
@@ -1678,10 +1679,14 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 	list_of_ports->children[0] = var_node;
 
 
-	for(i = 0; i < list_of_module_items->num_children; i++) {
-		if(list_of_module_items->children[i]->type == VAR_DECLARE_LIST){
-			for(j = 0; j < list_of_module_items->children[i]->num_children; j++) {
-				if(list_of_module_items->children[i]->children[j]->types.variable.is_input){
+	for(i = 0; i < list_of_module_items->num_children; i++) 
+	{
+		if(list_of_module_items->children[i]->type == VAR_DECLARE_LIST)
+		{
+			for(j = 0; j < list_of_module_items->children[i]->num_children; j++)
+			{
+				if(list_of_module_items->children[i]->children[j]->types.variable.is_input)
+				{
                     label = (char *)vtr::calloc(strlen(list_of_module_items->children[i]->children[j]->children[0]->types.identifier)+10,sizeof(char));
                     strcpy(label,list_of_module_items->children[i]->children[j]->children[0]->types.identifier);
                     var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);

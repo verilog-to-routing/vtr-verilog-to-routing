@@ -1075,7 +1075,7 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 
 		if (node_is_constant(newNode)){
 			/* resize as needed */
-			if (assignment_size != 0 && *max_size < assignment_size)
+			if (assignment_size != 0 && *max_size != assignment_size)
 			{
 				*max_size = assignment_size;
 			}

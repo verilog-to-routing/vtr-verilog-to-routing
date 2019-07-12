@@ -577,7 +577,7 @@ ast_node_t *find_top_module()
 void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, char *instance_name, STRING_CACHE_LIST *local_string_cache_list, int level)
 {
 	signal_list_t *list = NULL;
-	simplify_ast_module(current_module/*, local_param_table_sc*/);
+	simplify_ast_module(current_module/*, local_string_cache_list*/);
 
 	STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
 
@@ -1039,7 +1039,10 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				break;
 			}
 			case FUNCTION_INSTANCE:
-				connect_function_instantiation_and_alias(ALIAS_INPUTS, node, instance_name_prefix, local_string_cache_list);
+			{
+				signal_list_t *temp_list = connect_function_instantiation_and_alias(ALIAS_INPUTS, node, instance_name_prefix, local_string_cache_list);
+				free_signal_list(temp_list); // list is unused; discard
+			}
 			break;
 			case ASSIGN:
 				//oassert(node->num_children == 1);
@@ -3297,7 +3300,17 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	if (assignment->children[1]->type != FUNCTION_INSTANCE)
 	{
 		long assignment_size = get_size_of_variable(assignment->children[0], local_string_cache_list);
-		assignment->children[1] = resolve_node(local_string_cache_list, assignment->children[1], NULL, assignment_size);
+		
+		if (!node_is_constant(assignment->children[1]))
+		{
+			assignment->children[1] = resolve_node(local_string_cache_list, assignment->children[1], NULL, assignment_size);
+		}
+		else
+		{
+			VNumber *resized_num = new VNumber(*(assignment->children[1]->types.vnumber), assignment_size);
+			delete assignment->children[1]->types.vnumber;
+			assignment->children[1]->types.vnumber = resized_num;
+		}
 	}
 	
 	ast_node_t *left  = assignment->children[0];
