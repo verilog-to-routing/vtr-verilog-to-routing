@@ -342,10 +342,10 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 		}
 		ast_node_t *node = (ast_node_t *)local_param_table_sc->data[sc_spot];
 		oassert(node);
-		node = resolve_node(local_string_cache_list, node, NULL, 0);
+		node = resolve_node(local_string_cache_list, node, NULL, -1);
 		if (node->type != NUMBERS && parent_string_cache_list) 
 		{
-			node = resolve_node(parent_string_cache_list, node, NULL, 0); // may contain parameters from parent
+			node = resolve_node(parent_string_cache_list, node, NULL, -1); // may contain parameters from parent
 		}
 		oassert(node->type == NUMBERS);
 		local_param_table_sc->data[sc_spot] = (void *)node;

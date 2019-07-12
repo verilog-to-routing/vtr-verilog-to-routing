@@ -1021,8 +1021,7 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 			}
 		}
 
-		long i;
-		for (i = 0; i < node->num_children; i++)
+		for (size_t i = 0; i < node->num_children; i++)
 		{
 			node->children[i] = resolve_node(local_string_cache_list, node->children[i], max_size, assignment_size);
 		}
@@ -1075,7 +1074,7 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 				}
 
 				newNode = create_node_w_type(CONCATENATE, node->line_number, node->file_number); // ????
-				for (i = 0; i < value; i++)
+				for (size_t i = 0; i < value; i++)
 				{
 					add_child_to_node(newNode, ast_node_deep_copy(node->children[1]));
 				}
@@ -1087,40 +1086,46 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 			
 			case CONCATENATE:
 			{
-				size_t index = 1;
-				size_t last_index = 0;
-				
-				while(index < node->num_children)
+				// for params only
+				// TODO: this is a hack, concats cannot be folded in place as it breaks netlist expand from ast,
+				// to fix we need to move the node resolution before netlist create from ast.
+				if(assignment_size == -1)
 				{
-					bool previous_is_constant = node_is_constant(node->children[last_index]);
-					bool current_is_constant = node_is_constant(node->children[index]);
-
-					if(previous_is_constant && current_is_constant)
+					size_t index = 1;
+					size_t last_index = 0;
+					
+					while(index < node->num_children)
 					{
-						VNumber new_value = V_CONCAT({*(node->children[last_index]->types.vnumber), *(node->children[index]->types.vnumber)});
+						bool previous_is_constant = node_is_constant(node->children[last_index]);
+						bool current_is_constant = node_is_constant(node->children[index]);
 
-						node->children[index] = free_whole_tree(node->children[index]);
+						if(previous_is_constant && current_is_constant)
+						{
+							VNumber new_value = V_CONCAT({*(node->children[last_index]->types.vnumber), *(node->children[index]->types.vnumber)});
 
-						delete node->children[last_index]->types.vnumber;
-						node->children[last_index]->types.vnumber = new VNumber(new_value);
+							node->children[index] = free_whole_tree(node->children[index]);
+
+							delete node->children[last_index]->types.vnumber;
+							node->children[last_index]->types.vnumber = new VNumber(new_value);
+						}
+						else
+						{
+							last_index += 1;
+							previous_is_constant = current_is_constant;
+							node->children[last_index] = node->children[index];
+						}
+						index += 1;
 					}
-					else
+
+					node->num_children = last_index+1;
+
+					if(node->num_children == 1)
 					{
-						last_index += 1;
-						previous_is_constant = current_is_constant;
-						node->children[last_index] = node->children[index];
+						ast_node_t *tmp = node->children[0];
+						node->children[0] = NULL;
+						free_whole_tree(node);
+						node = tmp;
 					}
-					index += 1;
-				}
-
-				node->num_children = last_index+1;
-
-				if(node->num_children == 1)
-				{
-					ast_node_t *tmp = node->children[0];
-					node->children[0] = NULL;
-					free_whole_tree(node);
-					node = tmp;
 				}
 
 				break;
