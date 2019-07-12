@@ -174,6 +174,7 @@ static int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, c
 static bool draw_if_net_highlighted (ClusterNetId inet);
 static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
 static void highlight_nets(char *message, int hit_node);
+static void highlight_nets(ClusterNetId net_id);
 static int draw_check_rr_node_hit (float click_x, float click_y);
 static std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
 static void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set<int>& expanded_nodes);
@@ -313,11 +314,11 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application *app){
     g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
            
     GObject* search_type = (GObject*) app->get_object("SearchType");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Node ID");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block Name");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID");
 
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
@@ -368,11 +369,12 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *app){
     g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
     
     GObject* search_type = (GObject*) app->get_object("SearchType");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Node ID");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block Name");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID");
+    
 
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
@@ -3734,7 +3736,10 @@ void search_and_highlight(GtkWidget *widget, ezgl::application *app) {
     GObject* combo_box = (GObject*) app->get_object("SearchType");
     gchar* type = gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT(combo_box));
     std::string search_type(type);
-
+    
+    //reset first
+    deselect_all();
+    
     if(search_type == "Node ID") {
         std::cout << "search rr_node_id" << std::endl;
         
@@ -3773,7 +3778,12 @@ void search_and_highlight(GtkWidget *widget, ezgl::application *app) {
     
     else if(search_type == "Net ID") {
         std::cout << "search net_id" << std::endl;
-        //auto zoom and highlight
+        
+        int net_id = -1;
+        ss >> net_id;
+        std::cout << "searching : Net " << net_id << std::endl;
+        
+        highlight_nets((ClusterNetId) net_id);
     }
     
     else if(search_type == "Net Name") {
@@ -3898,7 +3908,7 @@ static void auto_zoom_rr_node(int rr_node_id) {
 }
 
  static void highlight_blocks(double x, double y) {
-//    print_message("in highlight_blocks xy");
+    print_message("in highlight_blocks xy");
     t_draw_coords* draw_coords = get_draw_coords_vars();
     
     char msg[vtr::bufsize];
@@ -3970,10 +3980,6 @@ static void auto_zoom_rr_node(int rr_node_id) {
 }
 
 static void highlight_blocks(ClusterBlockId clb_index) {
-    
-    //reset first
-    deselect_all();
-    
     //start highlighting
     t_draw_coords* draw_coords = get_draw_coords_vars();
     
@@ -4004,4 +4010,17 @@ static void highlight_blocks(ClusterBlockId clb_index) {
     application.update_message(msg);
     
     application.refresh_drawing();
+}
+
+
+static void highlight_nets(ClusterNetId net_id) {
+    t_trace *tptr;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
+    
+    t_draw_state* draw_state = get_draw_state_vars();
+    
+    for (tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
+        draw_state->net_color[net_id] = ezgl::MAGENTA;
+    }
 }
