@@ -900,23 +900,16 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				break;
 			/* ---------------------- */
 			/* All these are input references that we need to grab their pins from by create_pin */
-			case ARRAY_REF:
+			case ARRAY_REF: // fallthrough
 			{
-				return_sig_list = create_pins(node, NULL, instance_name_prefix, local_string_cache_list);
-				skip_children = true;
-				break;
+				// skip_children = true;
 			}
 			case IDENTIFIERS:
-			{
-				return_sig_list = create_pins(node, NULL, instance_name_prefix, local_string_cache_list);
-				break;
-			}
 			case RANGE_REF:
 			case NUMBERS:
 			{
+				node = resolve_node(local_string_cache_list, node, NULL, 0);
 				return_sig_list = create_pins(node, NULL, instance_name_prefix, local_string_cache_list);
-				/* children are traversed in the create_pin function */
-				//skip_children = true;
 				break;
 			}
 			/* ---------------------- */
@@ -3300,6 +3293,12 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		assignment->children[1] = resolve_node(local_string_cache_list, assignment->children[1], NULL, assignment_size);
 	}
 	
+	if (assignment->children[0]->type != FUNCTION_INSTANCE)
+	{
+		long assignment_size = get_size_of_variable(assignment->children[0], local_string_cache_list);
+		assignment->children[0] = resolve_node(local_string_cache_list, assignment->children[0], NULL, assignment_size);
+	}
+
 	ast_node_t *left  = assignment->children[0];
 	ast_node_t *right = assignment->children[1];
 
@@ -4391,6 +4390,8 @@ signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instan
 						"Sensitivity list switches between edge sensitive to asynchronous.  You can't define something like always @(posedge clock or a).\n");
 				}
 			}
+
+			delay_control->children[i] = resolve_node(local_string_cache_list, delay_control->children[i], NULL, 0);
 
 			switch(child_sensitivity)
 			{

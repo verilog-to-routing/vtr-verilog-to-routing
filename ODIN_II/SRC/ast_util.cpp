@@ -702,7 +702,6 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 	char **return_string = NULL;
 	char_list_t *return_list = (char_list_t*)vtr::malloc(sizeof(char_list_t));
 	ast_node_t *rnode[3] = { 0 };
-	ast_node_t *temp_var_node = NULL;
 	int i;
 	int width = 0;
 
@@ -749,7 +748,6 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 		long sc_spot;
 
 		// try and resolve var_node
-		temp_var_node = var_node;
 		var_node = resolve_node(local_string_cache_list, var_node, NULL, 0);
 
 		if (var_node->type != NUMBERS)
@@ -843,10 +841,6 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 	else
 	{
 		oassert(false);
-	}
-	if(temp_var_node && var_node != temp_var_node)
-	{
-		var_node = free_whole_tree(var_node);
 	}
 
 	return_list->strings = return_string;
@@ -1048,6 +1042,7 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 						{
 							error_message(NETLIST_ERROR, node->line_number, node->file_number, "Parameter %s is not a constant expression\n", node->types.identifier);
 						}
+						node = free_whole_tree(node);
 						node = newNode;
 						return node;
 					}
@@ -1070,7 +1065,7 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 				{
 					add_child_to_node(newNode, ast_node_deep_copy(node->children[1]));
 				}
-			//	node = free_whole_tree(node); // this might free stuff we don't want to free?
+				node = free_whole_tree(node); // this might free stuff we don't want to free?
 				node = newNode;
 				break;
 			
