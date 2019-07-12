@@ -22,6 +22,7 @@ MAKEFLAGS := -s
 CMAKE_ARGS = -DVTR_IPO_BUILD="off"
 
 BUILD_DIR=../build
+ODIN_BUILD_DIR=$(BUILD_DIR)/ODIN_II
 
 .PHONY: help build debug test large_test
 
@@ -36,45 +37,49 @@ help:
 	"
 
 _init:
-	mkdir -p $(BUILD_DIR)
+	mkdir -p $(ODIN_BUILD_DIR)
+
+clean:
+	$(RM) -f $(ODIN_BUILD_DIR)/.*.build
+	$(RM) -Rf $(BUILD_DIR)/CMakeCache.txt
+	$(RM) -Rf $(BUILD_DIR)/ODIN_II
 
 _build_it:
 	cd $(BUILD_DIR) &&\
 	$(BUILDER)
 
-_set_build: _init
+$(ODIN_BUILD_DIR)/.%.build: clean _init
+	touch $@
+
+_set_build: $(ODIN_BUILD_DIR)/.regular.build
 	cd $(BUILD_DIR) &&\
 	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) ..
 
-_set_debug: _init
+_set_debug: $(ODIN_BUILD_DIR)/.debug.build
 	cd $(BUILD_DIR) &&\
 	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_DEBUG=on ..
 
-_set_warn: _init
+_set_warn: $(ODIN_BUILD_DIR)/.warn.build
 	cd $(BUILD_DIR) &&\
 	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_WARN=on ..
 
-_set_gcov: _init
+_set_gcov: $(ODIN_BUILD_DIR)/.gcov.build
 	cd $(BUILD_DIR) &&\
 	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_COVERAGE=on ..
 
-_set_clang_tidy: _init
+_set_clang_tidy: $(ODIN_BUILD_DIR)/.tidy.build
 	cd $(BUILD_DIR) &&\
 	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_TIDY=on ..
 
-build: clean _set_build _build_it
+build: _set_build _build_it
 
-debug: clean _set_debug _build_it
+debug: _set_debug _build_it
 
-warn: clean _set_warn _build_it
+warn: _set_warn _build_it
 
-gcov: clean _set_gcov _build_it
+gcov: _set_gcov _build_it
 
-clang_tidy: clean _set_clang_tidy _build_it
-
-clean:
-	$(RM) -Rf $(BUILD_DIR)/CMakeCache.txt
-	$(RM) -Rf $(BUILD_DIR)/ODIN_II
+clang_tidy: _set_clang_tidy _build_it
 
 scrub:
 	find SRC/ -type f \( -iname \*.gcno -or -iname \*.gcda -or -iname \*.gcov \) -exec rm -f {} \; 
