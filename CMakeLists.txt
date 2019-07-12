@@ -30,7 +30,11 @@ option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 option(WITH_LIBRTLNUMBER "Enable build with librtlnumber" OFF)
-option(ODIN_DEBUG "Enable building oding with extra debug flags" OFF)
+
+option(ODIN_DEBUG "Enable building odin with debug flags" OFF)
+option(ODIN_WARN "Enable building odin with extra warning flags" OFF)
+option(ODIN_COVERAGE "Enable building odin with coverage flags" OFF)
+option(ODIN_TIDY "Enable building odin with clang tidy" OFF)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 0)

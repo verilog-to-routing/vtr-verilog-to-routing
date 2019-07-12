@@ -1,4 +1,4 @@
-
+ODIN_ROOT=$(PWD)
 NB_OF_PROCESS ?= $(shell nproc --all)
 
 ################
@@ -35,22 +35,58 @@ help:
 		large_test		run the complete battery of test before merging changes\n\
 	"
 
-init:
+_init:
 	mkdir -p $(BUILD_DIR)
 
-build: clean init
-	cd $(BUILD_DIR);\
-	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) .. &&\
+_build_it:
+	cd $(BUILD_DIR) &&\
 	$(BUILDER)
 
-debug: clean init
-	cd $(BUILD_DIR);\
-	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_DEBUG=on .. &&\
-	$(BUILDER)
+_set_build: _init
+	cd $(BUILD_DIR) &&\
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) ..
+
+_set_debug: _init
+	cd $(BUILD_DIR) &&\
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_DEBUG=on ..
+
+_set_warn: _init
+	cd $(BUILD_DIR) &&\
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_WARN=on ..
+
+_set_gcov: _init
+	cd $(BUILD_DIR) &&\
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_COVERAGE=on ..
+
+_set_clang_tidy: _init
+	cd $(BUILD_DIR) &&\
+	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_TIDY=on ..
+
+build: clean _set_build _build_it
+
+debug: clean _set_debug _build_it
+
+warn: clean _set_warn _build_it
+
+gcov: clean _set_gcov _build_it
+
+clang_tidy: clean _set_clang_tidy _build_it
 
 clean:
 	$(RM) -Rf $(BUILD_DIR)/CMakeCache.txt
 	$(RM) -Rf $(BUILD_DIR)/ODIN_II
+
+scrub:
+	find SRC/ -type f \( -iname \*.gcno -or -iname \*.gcda -or -iname \*.gcov \) -exec rm -f {} \; 
+	./verify_odin.sh --clean
+
+gcovr:
+	find $(BUILD_DIR)/ODIN_II/CMakeFiles/libodin_ii.dir -type f \( -iname \*.gcno -or -iname \*.gcda -or -iname \*.gcov \) -exec cp {} SRC/ \; 
+	gcovr --html -s -o coverage_report.html -r .;
+	find SRC/ -type f \( -iname \*.gcno -or -iname \*.gcda -or -iname \*.gcov \) -exec rm -f {} \; 
+
+cppcheck:
+	cppcheck . 1> /dev/null 
 
 test:
 	./verify_odin.sh --test pre_commit --nb_of_process $(NB_OF_PROCESS) --limit_ressource

@@ -725,6 +725,9 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 
 ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parameter)
 {
+	oassert((top_type == MODULE || top_type == FUNCTION) 
+		&& "can only use MODULE or FUNCITON as top type");
+		
 	long sc_spot;
 	STRING_CACHE **this_defines_sc = NULL;
 	long this_num_modules = 0;
@@ -740,6 +743,9 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 		this_defines_sc = defines_for_function_sc;
 		this_num_modules = num_functions;
 	}
+
+	oassert(this_defines_sc);
+	oassert(this_defines_sc[this_num_modules]);
 
 	/* create an entry in the symbol table for this parameter */
 	if ((sc_spot = sc_lookup_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier)) > -1)

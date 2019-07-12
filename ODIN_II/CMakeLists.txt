@@ -7,9 +7,27 @@ set(ODIN_EXTRA_FLAGS
     ""  # nothing for now
 )
 
+#base extra flags for odin
+set(ODIN_EXTRA_LINK_FLAGS 
+    ""  # nothing for now
+)
+
 if(ODIN_DEBUG)
 
     message("*** Compiling with Odin debug flags")
+
+    set(ODIN_EXTRA_FLAGS
+        "-g"
+        "-ggdb"
+        "-O0"
+        ${ODIN_EXTRA_FLAGS}
+    )
+
+endif()
+
+if(ODIN_WARN)
+
+    message("*** Compiling with Odin with extra warning flags")
 
     set(ODIN_REF_FLAGS
         "-Wchkp"                    # Warn about memory access errors found by Pointer Bounds Checker
@@ -32,17 +50,31 @@ if(ODIN_DEBUG)
     )
 
     set(ODIN_EXTRA_FLAGS
-        "-g"
-        "-ggdb"
-        "-O0"
-        ""
         ${ODIN_EXTRA_FLAGS}
-    ##############
-    # comment out the flag set you do not wish to see added below
-    #
         ${ODIN_REF_FLAGS}
         ${ODIN_SIGN_FLAGS}
         ${ODIN_LIMITS_FLAGS}
+    )
+
+endif()
+
+if(ODIN_TIDY)
+    set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=-*,readability-*")
+endif()
+
+if(ODIN_COVERAGE)
+
+    message("*** Compiling with Odin Coverage flags")
+
+    set(ODIN_EXTRA_FLAGS
+        "-g"
+        "-fprofile-arcs"
+        "-ftest-coverage"
+        ${ODIN_EXTRA_FLAGS}
+    )
+
+    set(ODIN_EXTRA_LINK_FLAGS
+        "-lgcov --coverage"
     )
 
 endif()
@@ -128,6 +160,12 @@ add_executable(odin_II ${EXEC_SOURCES})
 
 target_link_libraries(odin_II
                         libodin_ii)
+
+#add extra link flags for odin
+if(ODIN_COVERAGE)
+    set_target_properties(odin_II PROPERTIES LINK_FLAGS ${ODIN_EXTRA_LINK_FLAGS})
+    # set(GCOV_PREFIX ${CMAKE_CURRENT_LIST_FILE})
+endif()
 
 #Supress IPO link warnings if IPO is enabled
 get_target_property(ODIN_USES_IPO odin_II INTERPROCEDURAL_OPTIMIZATION)
