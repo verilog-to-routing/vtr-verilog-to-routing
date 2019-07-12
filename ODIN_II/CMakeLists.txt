@@ -2,16 +2,6 @@ cmake_minimum_required(VERSION 3.9)
 
 project("ODIN_II")
 
-#base extra flags for odin
-set(ODIN_EXTRA_FLAGS 
-    ""  # nothing for now
-)
-
-#base extra flags for odin
-set(ODIN_EXTRA_LINK_FLAGS 
-    ""  # nothing for now
-)
-
 if(ODIN_DEBUG)
 
     message("*** Compiling with Odin debug flags")
@@ -128,25 +118,6 @@ add_library(libodin_ii STATIC
 target_include_directories(libodin_ii PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libodin_ii PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
-#################################
-# INCLUDE EXTRA ODIN FLAGS IS EXECUTED HERE
-#
-#  include the flags one at a time in case some are not supported and report the error
-#
-
-foreach(ODIN_FLAG ${ODIN_EXTRA_FLAGS})
-
-    CHECK_CXX_COMPILER_FLAG(${ODIN_FLAG} FLAG_TEST)
-
-    if(FLAG_TEST)
-        message("-- Performing Test CXX_SUPPORT_FLAG${ODIN_FLAG} - Success")
-        target_compile_options(libodin_ii PRIVATE ${ODIN_FLAG})
-    else()
-        message("-- Performing Test CXX_SUPPORT_FLAG${ODIN_FLAG} - Failure")
-    endif()
-
-endforeach()
-
 target_link_libraries(libodin_ii
                         libvtrutil
                         librtlnumber
@@ -161,10 +132,30 @@ add_executable(odin_II ${EXEC_SOURCES})
 target_link_libraries(odin_II
                         libodin_ii)
 
+#################################
+# INCLUDE EXTRA ODIN FLAGS IS EXECUTED HERE
+#
+#  include the flags one at a time in case some are not supported and report the error
+#
+
+foreach(ODIN_FLAG ${ODIN_EXTRA_FLAGS})
+
+    CHECK_CXX_COMPILER_FLAG(${ODIN_FLAG} FLAG_TEST)
+
+    if(FLAG_TEST)
+        message("-- Performing Test CXX_SUPPORT_FLAG${ODIN_FLAG} - Success")
+        target_compile_options(libodin_ii PRIVATE ${ODIN_FLAG})
+        target_compile_options(odin_II PRIVATE ${ODIN_FLAG})
+    else()
+        message("-- Performing Test CXX_SUPPORT_FLAG${ODIN_FLAG} - Failure")
+    endif()
+
+endforeach()
+
 #add extra link flags for odin
-if(ODIN_COVERAGE)
+if(ODIN_EXTRA_LINK_FLAGS)
+    set_target_properties(libodin_ii PROPERTIES LINK_FLAGS ${ODIN_EXTRA_LINK_FLAGS})
     set_target_properties(odin_II PROPERTIES LINK_FLAGS ${ODIN_EXTRA_LINK_FLAGS})
-    # set(GCOV_PREFIX ${CMAKE_CURRENT_LIST_FILE})
 endif()
 
 #Supress IPO link warnings if IPO is enabled
