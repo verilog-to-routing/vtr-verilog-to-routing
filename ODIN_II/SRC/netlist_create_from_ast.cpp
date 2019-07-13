@@ -5229,6 +5229,7 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 
 	for (i = 0; i < block_list->num_children; i++)
 		free_signal_list(in_list[i]);
+	vtr::free(in_list);
 
 	dp_memory_list = insert_in_vptr_list(dp_memory_list, block_node);
 	block_node->type = MEMORY;
