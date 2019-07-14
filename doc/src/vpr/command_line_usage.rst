@@ -495,14 +495,21 @@ For people not working on CAD, you can probably leave all the options to their d
         --pack_high_fanout_threshold 128 clb:16
 
     would specify that ``clb`` blocks use a threshold of 16, while all other blocks (e.g. DSPs/RAMs) would use a threshold of 128.
-    
+
     **Default:** ``auto``
 
 .. option::  --pack_transitive_fanout_threshold <int>
 
     Packer transitive fanout threshold.
-    
+
     **Default:** ``4``
+
+.. option::  --pack_feasible_block_array_size <int>
+
+    This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test
+    but not the more detailed routing filter.
+
+    **Default:** ``30``
 
 .. option:: --pack_verbosity <int>
 
