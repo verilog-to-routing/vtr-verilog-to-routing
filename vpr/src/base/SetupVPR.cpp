@@ -411,6 +411,7 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->prioritize_transitive_connectivity = Options.pack_prioritize_transitive_connectivity;
     PackerOpts->high_fanout_threshold = Options.pack_high_fanout_threshold;
     PackerOpts->transitive_fanout_threshold = Options.pack_transitive_fanout_threshold;
+    PackerOpts->feasible_block_array_size = Options.pack_feasible_block_array_size;
 
     //TODO: document?
     PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */

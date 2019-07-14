@@ -727,6 +727,7 @@ struct t_packer_opts {
     bool prioritize_transitive_connectivity;
     std::vector<std::string> high_fanout_threshold;
     int transitive_fanout_threshold;
+    int feasible_block_array_size;
     e_stage_action doPacking;
     enum e_packer_algorithm packer_algorithm;
     std::string device_layout;

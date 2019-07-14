@@ -1183,6 +1183,14 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
         .default_value("4")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument(args.pack_feasible_block_array_size, "--pack_feasible_block_array_size")
+        .help(
+            "This value is used to determine the max size of the\n"
+            "priority queue for candidates that pass the early filter\n"
+            "legality test but not the more detailed routing test\n")
+        .default_value("30")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
         .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
         .default_value("2")
