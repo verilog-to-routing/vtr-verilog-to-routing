@@ -347,7 +347,17 @@ static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const Atom
 
 static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string, int>& pb_type_count);
 
+static void update_alm_count(const t_pb* pb, const t_type_ptr logic_block_type, const t_pb_type* alm_pb_type, std::vector<int>& alm_count);
+
 static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count);
+
+static t_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types);
+
+static t_pb_type* identify_alm_block_type(t_type_ptr logic_block_type);
+
+static bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name);
+
+static void print_alm_count(std::vector<int>& alm_count);
 
 /*****************************************/
 /*globally accessible function*/
@@ -406,9 +416,20 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
     std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
     std::shared_ptr<SetupTimingInfo> timing_info;
 
-    // data structure holding the total number of physical blocks
-    // used from each physical block type defined in the architecture
+    // this data structure is used to track the total number of physical blocks
+    // used for each physical block type defined in the architecture file.
     std::unordered_map<std::string, int> pb_type_count;
+
+    // this data structure tracks the number of ALMs used. It is populated only
+    // for architectures which has an ALM-like logic blocks. The architecture is
+    // assumed to have an ALM-like logic block only if it has a logic block that
+    // contains LUT primitives and is the first pb_block to have more than one
+    // instance from the top of the hierarchy (All parent pb_block have one
+    // instance only and one mode only). Index 0 holds the number of ALMs that are
+    // used for both logic (LUTs/adders) and registers. Index 1 holds the number
+    // of ALMs that are used for logic (LUTs/adders) only. Index 2 holds the
+    // number of ALMs that are used for registers only.
+    std::vector<int> alm_count(3, 0);
 
     num_clb = 0;
 
@@ -459,6 +480,10 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                               num_molecules);
 
     auto primitive_candidate_block_types = identify_primitive_candidate_block_types();
+    // find the cluster type that has lut primitives
+    auto logic_block_type = identify_logic_block_type(primitive_candidate_block_types);
+    // find an ALM-like pb_type within the found logic_block_type
+    auto alm_pb_type = identify_alm_block_type(logic_block_type);
 
     blocks_since_last_analysis = 0;
     num_blocks_hill_added = 0;
@@ -712,6 +737,8 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                 auto cur_pb = cluster_ctx.clb_nlist.block_pb(clb_index);
                 // update the pb type count by counting the used pb types in this packed cluster
                 update_pb_type_count(cur_pb, pb_type_count);
+                // update the data structure holding the alm counts
+                update_alm_count(cur_pb, logic_block_type, alm_pb_type, alm_count);
                 free_pb_stats_recursive(cur_pb);
             } else {
                 /* Free up data structures and requeue used molecules */
@@ -730,6 +757,11 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
     // print the total number of used physical blocks for each
     // physical block type after finishing the packing stage
     print_pb_type_count(pb_type_count);
+
+    // if this architecture has an ALM-like physical block, report its usage
+    if (alm_pb_type) {
+        print_alm_count(alm_count);
+    }
 
     /****************************************************************
      * Free Data Structures
@@ -3344,4 +3376,134 @@ static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_co
         VTR_LOG("\t%-12s : %d\n", pb_type.first.c_str(), pb_type.second);
     }
     VTR_LOG("\n");
+}
+
+/**
+ * This function identifies the logic block type which is
+ * defined by the block type which has a lut primitive
+ */
+static t_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types) {
+    std::string lut_name = ".names";
+
+    for (auto& model : primitive_candidate_block_types) {
+        std::string model_name(model.first->name);
+        if (model_name == lut_name)
+            return model.second[0];
+    }
+
+    return nullptr;
+}
+
+/**
+ * This function returns the pb_type that is similar to an ALM in an Intel
+ * FPGA. The ALM is defined as a physical block that contains a LUT primitive and
+ * is found by searching a cluster type to find the first pb_type (from the top
+ * of the hierarchy clb->alm) that has more than one instance within the cluster.
+ */
+static t_pb_type* identify_alm_block_type(t_type_ptr logic_block_type) {
+    // if there is no CLB-like cluster, then there is no ALM-like pb_block
+    if (!logic_block_type)
+        return nullptr;
+
+    // search down the hierarchy starting from the pb_graph_head
+    auto pb_graph_node = logic_block_type->pb_graph_head;
+
+    while (pb_graph_node->child_pb_graph_nodes) {
+        // if this pb_graph_node has more than one mode or more than one pb_type in the default mode return
+        // nullptr since the logic block of this architecture is not a CLB-like logic block
+        if (pb_graph_node->pb_type->num_modes > 1 || pb_graph_node->pb_type->modes[0].num_pb_type_children > 1)
+            return nullptr;
+        // explore the only child of this pb_graph_node
+        pb_graph_node = &pb_graph_node->child_pb_graph_nodes[0][0][0];
+        // if the child node has more than one instance in the
+        // cluster then this is the pb_type similar to an ALM
+        if (pb_graph_node->pb_type->num_pb > 1)
+            return pb_graph_node->pb_type;
+    }
+
+    return nullptr;
+}
+
+/**
+ * This function updates the alm_count data structure from the given packed cluster
+ */
+static void update_alm_count(const t_pb* pb, const t_type_ptr logic_block_type, const t_pb_type* alm_pb_type, std::vector<int>& alm_count) {
+    // if this cluster doesn't contain ALMs or there
+    // are no alms in this architecture, ignore it
+    if (!logic_block_type || pb->pb_graph_node != logic_block_type->pb_graph_head || !alm_pb_type)
+        return;
+
+    const std::string lut(".names");
+    const std::string ff(".latch");
+    const std::string adder("adder");
+
+    auto parent_pb = pb;
+
+    // go down the hierarchy till the parent physical block of the ALM is found
+    while (parent_pb->child_pbs[0][0].pb_graph_node->pb_type != alm_pb_type) {
+        parent_pb = &parent_pb->child_pbs[0][0];
+    }
+
+    // iterate over all the ALMs and update the ALM count accordingly
+    for (int ialm = 0; ialm < parent_pb->get_num_children_of_type(0); ialm++) {
+        if (!parent_pb->child_pbs[0][ialm].name)
+            continue;
+
+        auto has_used_lut = pb_used_for_blif_model(&parent_pb->child_pbs[0][ialm], lut);
+        auto has_used_adder = pb_used_for_blif_model(&parent_pb->child_pbs[0][ialm], adder);
+        auto has_used_ff = pb_used_for_blif_model(&parent_pb->child_pbs[0][ialm], ff);
+
+        // First type of ALMs: used for logic and registers
+        if ((has_used_lut || has_used_adder) && has_used_ff) {
+            alm_count[0]++;
+            // Second type of ALMs: used for logic only
+        } else if (has_used_lut || has_used_adder) {
+            alm_count[1]++;
+            // Third type of ALMs: used for registers only
+        } else if (has_used_ff) {
+            alm_count[2]++;
+        }
+    }
+}
+
+/**
+ * This function returns true if the given physical block has
+ * a primitive matching the given blif model and is used
+ */
+static bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name) {
+    auto pb_graph_node = pb->pb_graph_node;
+    auto pb_type = pb_graph_node->pb_type;
+    auto mode = &pb_type->modes[pb->mode];
+
+    // if this is a primitive check if it matches the given blif model name
+    if (pb_type->blif_model) {
+        if (blif_model_name == pb_type->blif_model || ".subckt " + blif_model_name == pb_type->blif_model) {
+            return true;
+        }
+    }
+
+    if (pb_type->num_modes > 0) {
+        for (int i = 0; i < mode->num_pb_type_children; i++) {
+            for (int j = 0; j < mode->pb_type_children[i].num_pb; j++) {
+                if (pb->child_pbs[i] && pb->child_pbs[i][j].name) {
+                    if (pb_used_for_blif_model(&pb->child_pbs[i][j], blif_model_name)) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Print the alm count data strurture
+ */
+static void print_alm_count(std::vector<int>& alm_count) {
+    VTR_LOG("\nALM count...\n");
+    VTR_LOG("  Total number of ALMs used         : %d\n", alm_count[0] + alm_count[1] + alm_count[2]);
+    VTR_LOG("  ALMs used for logic and registers : %d\n", alm_count[0]);
+    VTR_LOG("  ALMs used for logic only          : %d\n", alm_count[1]);
+    VTR_LOG("  ALMs used for registers only      : %d\n\n", alm_count[2]);
 }
