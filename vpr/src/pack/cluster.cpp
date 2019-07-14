@@ -3371,9 +3371,9 @@ static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string,
  * Print the total number of used physical blocks for each pb type in the architecture
  */
 static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count) {
-    VTR_LOG("\nPb types usage...\n\n");
+    VTR_LOG("\nPb types usage...\n");
     for (auto& pb_type : pb_type_count) {
-        VTR_LOG("\t%-12s : %d\n", pb_type.first.c_str(), pb_type.second);
+        VTR_LOG("  %-12s : %d\n", pb_type.first.c_str(), pb_type.second);
     }
     VTR_LOG("\n");
 }
