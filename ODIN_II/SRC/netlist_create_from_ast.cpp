@@ -348,6 +348,14 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 			node = resolve_node(parent_string_cache_list, node, NULL, -1); // may contain parameters from parent
 		}
 		oassert(node->type == NUMBERS);
+
+		/* this forces parameter values as unsigned, since we don't currently support signed keyword...
+		   must be changed once support is added */
+		VNumber *temp = node->types.vnumber;
+		VNumber *to_unsigned = new VNumber(V_UNSIGNED(*temp));
+		node->types.vnumber = to_unsigned;
+		delete temp;
+
 		local_param_table_sc->data[sc_spot] = (void *)node;
 	}
 

@@ -794,6 +794,7 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 				"Odin does not handle signed parameters (%s)\n", parameter->children[0]->types.identifier);
 	}
 
+	parameter->children[5]->types.variable.is_signed = is_signed;
 	parameter->types.variable.is_signed = is_signed;
 
 	return parameter;

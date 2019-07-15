@@ -685,10 +685,11 @@ private:
     bool defined_size = false;
     BitSpace::VerilogBits bitstring = BitSpace::VerilogBits(1, BitSpace::_x);
 
-    VNumber(BitSpace::VerilogBits other_bitstring, bool other_sign)
+    VNumber(BitSpace::VerilogBits other_bitstring, bool other_defined_size, bool other_sign)
     {
         bitstring = BitSpace::VerilogBits(other_bitstring);
         sign = other_sign;
+        defined_size = other_defined_size;
     }
 
     VNumber insert(VNumber &other, size_t index_to_insert_at, size_t insertion_size)
@@ -993,27 +994,27 @@ public:
 
     VNumber twos_complement()
     {
-        return VNumber(this->bitstring.twos_complement(),this->sign);
+        return VNumber(this->bitstring.twos_complement(),this->defined_size,this->sign);
     }
 
     VNumber to_signed()
     {
-        return VNumber(this->bitstring,true);
+        return VNumber(this->bitstring,this->defined_size,true);
     }
 
     VNumber to_unsigned()
     {
-        return VNumber(this->bitstring,false);
+        return VNumber(this->bitstring,this->defined_size,false);
     }
 
     VNumber invert()
     {
-        return VNumber(this->bitstring.invert(),this->sign);
+        return VNumber(this->bitstring.invert(),this->defined_size,this->sign);
     }
 
     VNumber bitwise_reduce(const BitSpace::bit_value_t lut[4][4])
     {
-        return VNumber(this->bitstring.bitwise_reduce(lut),false);
+        return VNumber(this->bitstring.bitwise_reduce(lut),this->defined_size,false);
     }
 
     /**
@@ -1051,8 +1052,7 @@ public:
 
         size_t n_times_unsigned = static_cast<size_t>(n_times_replicate);
 
-        this->defined_size = true;
-        return VNumber(this->bitstring.replicate(n_times_unsigned),this->sign);
+        return VNumber(this->bitstring.replicate(n_times_unsigned),true,this->sign);
     }
 
     VNumber insert_at_lsb(VNumber &other)
