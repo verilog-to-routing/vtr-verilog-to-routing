@@ -67,6 +67,79 @@ float ClassicLookahead::classic_wire_lookahead_cost(int inode, int target_node, 
     return (expected_cost);
 }
 
+float ClassicLookahead::get_expected_delay(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
+
+    if (rr_type == CHANX || rr_type == CHANY) {
+
+        VTR_ASSERT_SAFE(device_ctx.rr_nodes[inode].type() == CHANX || device_ctx.rr_nodes[inode].type() == CHANY);
+
+        int num_segs_ortho_dir = 0;
+        int num_segs_same_dir = get_expected_segs_to_target(inode, target_node, &num_segs_ortho_dir);
+
+        int cost_index = device_ctx.rr_nodes[inode].cost_index();
+        int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
+
+        const auto& same_data = device_ctx.rr_indexed_data[cost_index];
+        const auto& ortho_data = device_ctx.rr_indexed_data[ortho_cost_index];
+        const auto& ipin_data = device_ctx.rr_indexed_data[IPIN_COST_INDEX];
+        const auto& sink_data = device_ctx.rr_indexed_data[SINK_COST_INDEX];
+
+        float Tdel =   num_segs_same_dir * same_data.T_linear
+                    + num_segs_ortho_dir * ortho_data.T_linear
+                    + num_segs_same_dir * num_segs_same_dir * same_data.T_quadratic
+                    + num_segs_ortho_dir * num_segs_ortho_dir * ortho_data.T_quadratic
+                    + R_upstream * (  num_segs_same_dir * same_data.C_load
+                                    + num_segs_ortho_dir * ortho_data.C_load);
+                    + ipin_data.T_linear;
+
+        return (Tdel);
+        
+    } else { /* Change this if you want to investigate route-throughs */
+        return (0.);
+    }
+}
+
+float ClassicLookahead::get_expected_cong(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
+
+    if (rr_type == CHANX || rr_type == CHANY) {
+        VTR_ASSERT_SAFE(device_ctx.rr_nodes[inode].type() == CHANX || device_ctx.rr_nodes[inode].type() == CHANY);
+
+        int num_segs_ortho_dir = 0;
+        int num_segs_same_dir = get_expected_segs_to_target(inode, target_node, &num_segs_ortho_dir);
+
+        int cost_index = device_ctx.rr_nodes[inode].cost_index();
+        int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
+
+        const auto& same_data = device_ctx.rr_indexed_data[cost_index];
+        const auto& ortho_data = device_ctx.rr_indexed_data[ortho_cost_index];
+        const auto& ipin_data = device_ctx.rr_indexed_data[IPIN_COST_INDEX];
+        const auto& sink_data = device_ctx.rr_indexed_data[SINK_COST_INDEX];
+
+        float cong_cost =   num_segs_same_dir * same_data.base_cost
+                        + num_segs_ortho_dir * ortho_data.base_cost
+                        + ipin_data.base_cost
+                        + sink_data.base_cost;
+
+
+        return (1. - params.criticality) * cong_cost;
+    } else if (rr_type == IPIN) {
+
+    const auto& ipin_data = device_ctx.rr_indexed_data[IPIN_COST_INDEX];
+    const auto& sink_data = device_ctx.rr_indexed_data[SINK_COST_INDEX];
+
+    float cong_cost =    ipin_data.base_cost
+                      + sink_data.base_cost;
+    } else {
+        return (0.);
+    }
+}
+
 float MapLookahead::get_expected_cost(int current_node, int target_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -81,7 +154,25 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
     }
 }
 
+
+
+float MapLookahead::get_expected_delay(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
+    return 0.;
+}
+
+float MapLookahead::get_expected_cong(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
+    return 0.;
+}
+
 float NoOpLookahead::get_expected_cost(int /*current_node*/, int /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
+    return 0.;
+}
+
+float NoOpLookahead::get_expected_delay(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
+    return 0.;
+}
+
+float NoOpLookahead::get_expected_cong(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
     return 0.;
 }
 
