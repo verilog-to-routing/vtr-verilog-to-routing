@@ -449,6 +449,9 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 				symbol_list->children[j]->types.variable.is_reg = this_port->types.variable.is_reg;
 				symbol_list->children[j]->types.variable.is_integer = this_port->types.variable.is_integer;
 
+				/* signedness */
+				symbol_list->children[j]->types.variable.is_signed = this_port->types.variable.is_signed;
+
 				/* range */
 				if (symbol_list->children[j]->children[1] == NULL)
 				{
@@ -467,7 +470,7 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 				}
 
 				/* error checking */
-				symbol_list->children[j] = markAndProcessPortWith(MODULE, NO_ID, NO_ID, symbol_list->children[j]);
+				symbol_list->children[j] = markAndProcessPortWith(MODULE, NO_ID, NO_ID, symbol_list->children[j], this_port->types.variable.is_signed);
 			}
 		}
 		else
@@ -524,7 +527,7 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 	return unprocessed_ports;
 }
 
-ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_node_t *port)
+ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_node_t *port, bool is_signed)
 {
 	long sc_spot;
 	STRING_CACHE *this_inputs_sc = NULL;
@@ -589,10 +592,16 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 				error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
 									"Input cannot be defined as an integer\n");
 			}
-			if (port_id == INOUT)
+			else if (port_id == INOUT)
 			{
 				error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
 									"Inout cannot be defined as an integer\n");
+			}
+			else if (port_id == OUTPUT)
+			{
+				/* cannot support signed ports right now (integers are signed) */
+				error_message(PARSE_ERROR, port->line_number, current_parse_file, 
+						"Odin does not handle signed ports (%s)\n", port->children[0]->types.identifier);
 			}
 			port->types.variable.is_integer = true;
 			port->types.variable.is_reg = false;
@@ -692,20 +701,20 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 				&& !(port->types.variable.is_output) 
 				&& !(port->types.variable.is_inout))  
 			{
-				port = markAndProcessPortWith(top_type, INPUT, net_id, port);
+				port = markAndProcessPortWith(top_type, INPUT, net_id, port, is_signed);
 			}
 			else if (port->types.variable.is_output
 				&& !(port->types.variable.is_input)
 				&& !(port->types.variable.is_inout)) 
 			{
-				port = markAndProcessPortWith(top_type, OUTPUT, net_id, port);
+				port = markAndProcessPortWith(top_type, OUTPUT, net_id, port, is_signed);
 			}
 			else if (port->types.variable.is_inout
 				&& !(port->types.variable.is_input)
 				&& !(port->types.variable.is_output)) 
 			{
 				error_message(PARSE_ERROR, port->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", port->children[0]->types.identifier);
-				port = markAndProcessPortWith(top_type, INOUT, net_id, port);
+				port = markAndProcessPortWith(top_type, INOUT, net_id, port, is_signed);
 			}
 			else
 			{
@@ -718,12 +727,20 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 			break;
 	}
 
+	if (is_signed)
+	{
+		/* cannot support signed ports right now */
+		error_message(PARSE_ERROR, port->line_number, current_parse_file, 
+				"Odin does not handle signed ports (%s)\n", port->children[0]->types.identifier);
+	}
+
+	port->types.variable.is_signed = is_signed;
 	port->types.variable.is_port = true;
 
 	return port;
 }
 
-ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parameter)
+ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parameter, bool is_signed)
 {
 	oassert((top_type == MODULE || top_type == FUNCTION) 
 		&& "can only use MODULE or FUNCITON as top type");
@@ -750,8 +767,8 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 	/* create an entry in the symbol table for this parameter */
 	if ((sc_spot = sc_lookup_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier)) > -1)
 	{
-		error_message(PARSE_ERROR, parameter->children[5]->line_number, current_parse_file, "Module already has parameter with this name (%s)\n",
-			parameter->children[0]->types.identifier);
+		error_message(PARSE_ERROR, parameter->children[5]->line_number, current_parse_file, 
+				"Module already has parameter with this name (%s)\n", parameter->children[0]->types.identifier);
 	}
 	sc_spot = sc_add_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier);
 	
@@ -770,10 +787,19 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 		parameter->types.variable.is_localparam = true;
 	}
 
+	if (is_signed)
+	{
+		/* cannot support signed parameters right now */
+		error_message(PARSE_ERROR, parameter->line_number, current_parse_file, 
+				"Odin does not handle signed parameters (%s)\n", parameter->children[0]->types.identifier);
+	}
+
+	parameter->types.variable.is_signed = is_signed;
+
 	return parameter;
 }
 
-ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list)
+ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list, bool is_signed)
 {
 	long i;
 	ast_node_t *range_min = 0;
@@ -802,13 +828,13 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				case PARAMETER:
 				case LOCALPARAM:
 				{
-					markAndProcessParameterWith(top_type, id, symbol_list->children[i]);
+					markAndProcessParameterWith(top_type, id, symbol_list->children[i], is_signed);
 					break;
 				}
 				case INPUT:
 				case OUTPUT:
 				case INOUT:
-					symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i]);
+					symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], is_signed);
 					break;
 				case WIRE:
 					if (symbol_list->children[i]->children[5] != NULL)
@@ -816,15 +842,29 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
 								"Nets cannot be initialized\n");
 					}
+					if (is_signed)
+					{
+						/* cannot support signed nets right now */
+						error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
+								"Odin does not handle signed nets (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+					}
 					symbol_list->children[i]->types.variable.is_wire = true;
 					break;
 				case REG:
+					if (is_signed)
+					{
+						/* cannot support signed regs right now */
+						error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
+								"Odin does not handle signed regs (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+					}
 					symbol_list->children[i]->types.variable.is_reg = true;
 					break;
 				case INTEGER:
-			    case GENVAR:			
-			            symbol_list->children[i]->types.variable.is_integer = true;
-			            break;
+			    case GENVAR:
+					oassert(is_signed && "Integers must always be signed");
+					symbol_list->children[i]->types.variable.is_signed = is_signed;			
+					symbol_list->children[i]->types.variable.is_integer = true;
+					break;
 				default:
 					oassert(false);
 			}
@@ -836,13 +876,13 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				case PARAMETER:
 				case LOCALPARAM:
 				{
-					markAndProcessParameterWith(top_type, id, symbol_list->children[i]);
+					markAndProcessParameterWith(top_type, id, symbol_list->children[i], is_signed);
 					break;
 				}
 				case INPUT:
 				case OUTPUT:
 				case INOUT:
-					symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i]);
+					symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], is_signed);
 					break;
 				case WIRE:
 					if (symbol_list->children[i]->children[5] != NULL)
@@ -850,12 +890,26 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
 								"Nets cannot be initialized\n");
 					}
+					if (is_signed)
+					{
+						/* cannot support signed nets right now */
+						error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
+								"Odin does not handle signed nets (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+					}
 					symbol_list->children[i]->types.variable.is_wire = true;
 					break;
 				case REG:
+					if (is_signed)
+					{
+						/* cannot support signed regs right now */
+						error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
+								"Odin does not handle signed regs (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+					}
 					symbol_list->children[i]->types.variable.is_reg = true;
 					break;
 				case INTEGER:
+					oassert(is_signed && "Integers must always be signed");
+					symbol_list->children[i]->types.variable.is_signed = is_signed;
 					symbol_list->children[i]->types.variable.is_integer = true;
 					break;
 				default:
@@ -1448,7 +1502,7 @@ ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, a
 	strcpy(newChar,expression1->types.identifier);
 	ast_node_t *newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
 	ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar);
-	ast_node_t *newVarMaked = markAndProcessSymbolListWith(MODULE,WIRE, newVarList);
+	ast_node_t *newVarMaked = markAndProcessSymbolListWith(MODULE,WIRE, newVarList, false);
 	if(size_module_variables_not_defined == 0){
 		module_variables_not_defined = (ast_node_t **)vtr::calloc(1, sizeof(ast_node_t*));
 	}
@@ -1486,7 +1540,7 @@ ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *
 
     ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar);
 
-    ast_node_t *newVarMarked = markAndProcessSymbolListWith(MODULE, WIRE, newVarList);
+    ast_node_t *newVarMarked = markAndProcessSymbolListWith(MODULE, WIRE, newVarList, false);
 
     if(size_module_variables_not_defined == 0){
        module_variables_not_defined = (ast_node_t **)vtr::calloc(1, sizeof(ast_node_t*));
@@ -1671,7 +1725,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 
 	output_node = newList(VAR_DECLARE_LIST, list_of_ports->children[0]);
 
-	markAndProcessSymbolListWith(FUNCTION, OUTPUT, output_node);
+	markAndProcessSymbolListWith(FUNCTION, OUTPUT, output_node, list_of_ports->children[0]->types.variable.is_signed);
 
 	add_child_at_the_beginning_of_the_node(list_of_module_items, output_node);
 

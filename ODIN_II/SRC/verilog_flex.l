@@ -103,6 +103,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"localparam"		{ MP; return vLOCALPARAM;}
 <INITIAL>"posedge"			{ MP; return vPOSEDGE;}
 <INITIAL>"reg"				{ MP; return vREG;}
+<INITIAL>"signed"			{ MP; return vSIGNED;}
 <INITIAL>"specify"			{ MP; return vSPECIFY;}
 <INITIAL>"while"			{ MP; return vWHILE;}
 <INITIAL>"wire"				{ MP; return vWIRE;}
@@ -157,7 +158,6 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"rtranif0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"rtranif1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"small"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
-<INITIAL>"signed"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"strong0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"strong1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"supply0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
@@ -204,8 +204,8 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
 	/*	C functions	*/
 <INITIAL>"$clog2"			{MP; return vCLOG2;}
-<INITIAL>"$unsigned"		{MP; return vUNSIGNED;}
-<INITIAL>"$signed"			{MP; return vSIGNED;}
+<INITIAL>"$unsigned"		{MP; return voUNSIGNED;}
+<INITIAL>"$signed"			{MP; return voSIGNED;}
 
 <INITIAL>[\$]{vWORD}		{MP; return vCFUNC;}
 
