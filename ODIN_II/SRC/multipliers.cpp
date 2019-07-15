@@ -531,6 +531,8 @@ void add_the_blackbox_for_mults(FILE *out)
 
 		muls = muls->next;
 	}
+	
+	free_multipliers();
 }
 
 /*-------------------------------------------------------------------------
@@ -1432,5 +1434,24 @@ void clean_multipliers()
 	while (mult_list != NULL)
 		mult_list = delete_in_vptr_list(mult_list);
 	return;
+}
+
+void free_multipliers()
+{
+	if(hard_multipliers && hard_multipliers->instances)
+	{
+		t_multiplier *tmp = (t_multiplier *)hard_multipliers->instances;
+		
+		if(tmp && tmp->next)
+		{
+			tmp = tmp->next;
+			while(tmp != NULL)
+			{
+				t_multiplier *tmp2 = tmp->next;
+				vtr::free(tmp);
+				tmp = tmp2;
+			}	
+		}
+	}
 }
 
