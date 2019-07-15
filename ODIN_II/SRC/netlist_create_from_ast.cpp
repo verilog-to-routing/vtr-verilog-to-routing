@@ -577,7 +577,7 @@ ast_node_t *find_top_module()
 void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, char *instance_name, STRING_CACHE_LIST *local_string_cache_list, int level)
 {
 	signal_list_t *list = NULL;
-	simplify_ast_module(current_module/*, local_param_table_sc*/);
+	simplify_ast_module(current_module/*, local_string_cache_list*/);
 
 	STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
 
@@ -1039,8 +1039,11 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				break;
 			}
 			case FUNCTION_INSTANCE:
-				connect_function_instantiation_and_alias(ALIAS_INPUTS, node, instance_name_prefix, local_string_cache_list);
-			break;
+			{
+				signal_list_t *temp_list = connect_function_instantiation_and_alias(ALIAS_INPUTS, node, instance_name_prefix, local_string_cache_list);
+				free_signal_list(temp_list); // list is unused; discard
+				break;
+			}
 			case ASSIGN:
 				//oassert(node->num_children == 1);
 				/* attach the drivers to the driver nets */
