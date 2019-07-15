@@ -51,6 +51,11 @@ class route_budgets {
     void lower_budgets(float delay_decrement);
     void not_congested_this_iteration(ClusterNetId net_id);
 
+    bool get_should_reroute(ClusterNetId net_id) ;
+    void set_should_reroute(ClusterNetId net_id, bool value);
+    int get_hold_fac(ClusterNetId net_id) ;
+    void set_hold_fac(ClusterNetId net_id, int value) ;
+
   private:
     /*For allocating and freeing memory*/
     void free_budgets();
@@ -65,7 +70,10 @@ class route_budgets {
     void allocate_slack_using_weights(vtr::vector<ClusterNetId, float*>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
     /*Sometimes want to allocate only positive or negative slack.
      * By default, allocate both*/
-    float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float*>& temp_budgets, vtr::vector<ClusterNetId, float*>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type analysis_type, bool keep_in_bounds, slack_allocated_type slack_type = BOTH);
+    
+    float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timing_info, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float *> &temp_budgets,
+		vtr::vector<ClusterNetId, float *> &net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type analysis_type,
+            bool keep_in_bounds, slack_allocated_type slack_type = BOTH);
     void process_negative_slack_using_minimax(vtr::vector<ClusterNetId, float*>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
 
     /*Perform static timing analysis*/
@@ -112,6 +120,10 @@ class route_budgets {
 
     /*budgets only valid when loaded*/
     bool set;
+
+    /*flag to reroute each net for hold violation*/
+    std::map<ClusterNetId, bool> should_reroute_for_hold;
+    std::map<ClusterNetId, int> hold_fac;
 };
 
 #endif /* ROUTE_BUDGETS_H */

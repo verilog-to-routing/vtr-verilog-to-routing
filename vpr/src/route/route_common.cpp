@@ -1265,6 +1265,30 @@ void push_back_node(int inode, float total_cost, int prev_node, int prev_edge, f
     push_back(hptr);
 }
 
+void push_back_node_with_info(int inode, float total_cost, int prev_node, int prev_edge,
+    float backward_path_cost, float R_upstream, float backward_path_delay, std::vector<int> path, std::set<int> net_rr) {
+
+    /* Puts an rr_node on the heap with the same condition as node_to_heap,
+        but do not fix heap property yet as that is more efficiently done from
+        bottom up with build_heap. Certain information is also added     */
+
+    auto& route_ctx = g_vpr_ctx.routing();
+    if (total_cost >= route_ctx.rr_node_route_inf[inode].path_cost)
+        return;
+
+    t_heap* hptr = alloc_heap_data();
+    hptr->index = inode;
+    hptr->cost = total_cost;
+    hptr->backward_path_cost = backward_path_cost;
+    hptr->R_upstream = R_upstream;
+    hptr->path_rr.clear();
+    hptr->edge.clear();
+    hptr->net_rr = net_rr;
+    hptr->backward_delay = backward_path_delay;
+    hptr->backward_cong = 0; 
+    push_back(hptr);
+}
+
 bool is_valid() {
     for (size_t i = 1; (int)i <= heap_tail >> 1; ++i) {
         if ((int)left(i) < heap_tail && heap[left(i)]->cost < heap[i]->cost) return false;
@@ -1381,8 +1405,13 @@ alloc_heap_data() {
     temp_ptr->u.next = nullptr;
     temp_ptr->cost = 0.;
     temp_ptr->backward_path_cost = 0.;
+    temp_ptr->backward_delay = 0.;
+    temp_ptr->backward_cong = 0.;
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = OPEN;
+    temp_ptr->path_rr.clear();
+    temp_ptr->net_rr.clear();
+    temp_ptr->edge.clear();
     temp_ptr->u.prev.node = NO_PREVIOUS;
     temp_ptr->u.prev.edge = NO_PREVIOUS;
     return (temp_ptr);
