@@ -1165,6 +1165,9 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 			if(ast_node->children[i]->type != IDENTIFIERS)
 			{
 				vtr::free(component_s[i]);
+			}
+			if(ast_node_next->children[i]->type != IDENTIFIERS)
+			{
 				vtr::free(component_o[i]);
 			}
 		}
