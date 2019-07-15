@@ -211,7 +211,6 @@ void output_blif(const char *file_name, netlist_t *netlist)
 			}
 
 		}
-		free_nnode(node);
 		fprintf(out, "\n");
 	}
 
