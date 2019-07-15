@@ -1160,14 +1160,6 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 					flag = 1;
 			}
 		}
-		for(int i = 0; i < ast_node->num_children; i++)
-		{
-			if(ast_node->children[i]->type != IDENTIFIERS)
-			{
-				vtr::free(component_s[i]);
-				vtr::free(component_o[i]);
-			}
-		}
 
 	}
 
