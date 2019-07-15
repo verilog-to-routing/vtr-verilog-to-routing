@@ -175,12 +175,14 @@ static bool draw_if_net_highlighted (ClusterNetId inet);
 static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
 static void highlight_nets(char *message, int hit_node);
 static void highlight_nets(ClusterNetId net_id);
+static void highlight_nets(std::string net_name);
 static int draw_check_rr_node_hit (float click_x, float click_y);
 static std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
 static void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set<int>& expanded_nodes);
 static bool highlight_rr_nodes(float x, float y);
 static bool highlight_rr_nodes(int hit_node);
 static void highlight_blocks(ClusterBlockId clb_index);
+static void highlight_blocks(std::string block_name);
 static void highlight_blocks(double x, double y);
 static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id);
 static void draw_reset_blk_colors();
@@ -2476,24 +2478,24 @@ static bool highlight_rr_nodes(float x, float y) {
 #if defined(X11) && !defined(__MINGW32__)
 void act_on_key_press(ezgl::application *app, GdkEventKey *event, char *key_name) {
     //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
-    switch(*key_name) {
-        case 'S': {// Left Shift or Right Shift to zoom in
-            float zoom_factor = get_zoom_factor();
-            zoom_factor += (zoom_factor - 1.);
-            zoom_factor = std::min(8.f, zoom_factor); //Clip maximum zoom factor
-            VTR_LOG("Increasing graphics zoom factor to %f\n", zoom_factor);
-            ezgl::zoom_in(app->get_canvas(app->get_main_canvas_id()), zoom_factor);
-            break;
-        } case 'C': {// Left Control or Right Control to zoom out
-            float zoom_factor = get_zoom_factor();
-            zoom_factor -= (zoom_factor - 1.) / 2;
-            zoom_factor = std::max(1.0001f, zoom_factor); //Clip minimum zoom factor
-            VTR_LOG("Decreasing graphics zoom factor to %f\n", zoom_factor);
-            ezgl::zoom_out(app->get_canvas(app->get_main_canvas_id()), zoom_factor);
-            break;
-        } default:
-            break; //Unrecognized
-    }
+//    switch(*key_name) {
+//        case 'S': {// Left Shift or Right Shift to zoom in
+//            float zoom_factor = get_zoom_factor();
+//            zoom_factor += (zoom_factor - 1.);
+//            zoom_factor = std::min(8.f, zoom_factor); //Clip maximum zoom factor
+//            VTR_LOG("Increasing graphics zoom factor to %f\n", zoom_factor);
+//            ezgl::zoom_in(app->get_canvas(app->get_main_canvas_id()), zoom_factor);
+//            break;
+//        } case 'C': {// Left Control or Right Control to zoom out
+//            float zoom_factor = get_zoom_factor();
+//            zoom_factor -= (zoom_factor - 1.) / 2;
+//            zoom_factor = std::max(1.0001f, zoom_factor); //Clip minimum zoom factor
+//            VTR_LOG("Decreasing graphics zoom factor to %f\n", zoom_factor);
+//            ezgl::zoom_out(app->get_canvas(app->get_main_canvas_id()), zoom_factor);
+//            break;
+//        } default:
+//            break; //Unrecognized
+//    }
     
     std::string key(key_name);
     
@@ -3774,6 +3776,12 @@ void search_and_highlight(GtkWidget *widget, ezgl::application *app) {
     
     else if(search_type == "Block Name") {
         std::cout << "search block_name" << std::endl;
+        
+        std::string block_name = "";
+        ss >> block_name;
+        std::cout << "searching : Block " << block_name << std::endl;
+        
+        highlight_blocks((std::string) block_name);
     }
     
     else if(search_type == "Net ID") {
@@ -3788,6 +3796,12 @@ void search_and_highlight(GtkWidget *widget, ezgl::application *app) {
     
     else if(search_type == "Net Name") {
         std::cout << "search net_name" << std::endl;
+        
+        std::string net_name = "";
+        ss >> net_name;
+        std::cout << "searching : Net " << net_name << std::endl;
+        
+        highlight_nets((std::string) net_name);
     }
     app->refresh_drawing();
 }
@@ -4023,4 +4037,42 @@ static void highlight_nets(ClusterNetId net_id) {
     for (tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
         draw_state->net_color[net_id] = ezgl::MAGENTA;
     }
+}
+
+
+static void highlight_nets(std::string net_name) {
+    t_trace *tptr;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
+    ClusterNetId net_id(-1);
+    
+    for (auto i : cluster_ctx.clb_nlist.nets()) {
+        if(cluster_ctx.clb_nlist.net_name(i).c_str() == net_name){
+            net_id = i;
+            break;
+        }
+    }
+            
+    if(net_id == ClusterNetId::INVALID()) return; //name not exist
+    
+    highlight_nets(net_id);//found net
+}
+
+
+static void highlight_blocks(std::string block_name) {
+    t_trace *tptr;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
+    ClusterBlockId block_id(-1);
+        
+    for (auto i : cluster_ctx.clb_nlist.blocks()) {
+        if(cluster_ctx.clb_nlist.block_name(i).c_str() == block_name){
+            block_id = i;
+            break;
+        }
+    }
+            
+    if(block_id == ClusterBlockId::INVALID()) return; //name not exist
+    
+    highlight_blocks(block_id);//found block
 }
