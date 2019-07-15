@@ -1295,6 +1295,7 @@ ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t
     strcpy(unique_name,"function_instance_");
     odin_sprintf(aux_name,"%ld",size_function_instantiations_by_module);
     strcat(unique_name,aux_name);
+	vtr::free(aux_name);
 
     ast_node_t *symbol_node = newSymbolNode(unique_name, line_number);
 
