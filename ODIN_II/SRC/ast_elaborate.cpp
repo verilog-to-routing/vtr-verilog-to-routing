@@ -101,6 +101,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 // bool check_mult_bracket(std::vector<int> list);
 
 void remove_generate(ast_node_t *node);
+void reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list);
 
 void remove_generate(ast_node_t *node)
 {
@@ -128,15 +129,113 @@ void remove_generate(ast_node_t *node)
 	}
 }
 
-int simplify_ast_module(ast_node_t **ast_module)
+int simplify_ast_module(ast_node_t **ast_module, STRING_CACHE_LIST *local_string_cache_list)
 {
-	/* for loop support */
-	unroll_loops(ast_module);
-	/* remove unused node preventing module instantiation */
-	remove_generate(*ast_module);
-	/* simplify assignment expressions */
-	//reduce_assignment_expression(*ast_module);
+	/* resolve constant expressions */
+	//reduce_expressions(*ast_module, local_string_cache_list);
+	
 
+	return 1;
+}
+
+// this should replace ^^
+int reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list)
+{
+	// this will replace resolve_node which occurs all over the place in the code...
+	// one pass to optimize ast
+
+	if (node->type == MODULE)
+	{
+		// skip identifier and ports
+		reduce_expressions(node->children[2]);
+	}
+
+	for (long i = 0; i < node->num_children; i++)
+	{
+		/* pre-amble */
+		switch (node->children[i]->type)
+		{
+			case FOR:
+				// look ahead for parameters
+				break;
+			case WHILE:
+				// look ahead for parameters
+			case GENERATE:
+				break;
+			case BINARY_OPERATION:
+				break;
+			case UNARY_OPERATION:
+				break;
+			case CONCATENATE:
+				break;
+			case REPLICATE:
+				break;
+			case IDENTIFIERS:
+				break;
+			case NUMBERS:
+				break;
+			case IF_Q:
+				break;
+			case IF:
+				break;
+			case CASE:
+				break;
+			case RANGE_REF:
+				// look ahead
+				break;
+			case ARRAY_REF:
+				// look ahead
+				break;
+			case MODULE_INSTANCE:
+				// flip hard blocks
+				break;
+		}
+
+		/* recurse */
+
+
+		/* post-amble */
+		switch (node->children[i]->type)
+		{
+			case FOR:
+				// unroll
+				unroll_loops(node->children[i]); // change this function (dont have to go through whole tree)
+				// recurse
+				break;
+			case WHILE:
+				// unroll
+				// recurse (simplify_ast?)
+			case GENERATE:
+				/* remove unused node preventing module instantiation */
+				remove_generate(node->children[i]); // change this function (dont have to go through whole tree)
+				break;
+			case BINARY_OPERATION:
+				break;
+			case UNARY_OPERATION:
+				break;
+			case CONCATENATE:
+				break;
+			case REPLICATE:
+				break;
+			case IDENTIFIERS:
+				break;
+			case NUMBERS:
+				break;
+			case IF_Q:
+				break;
+			case IF:
+				break;
+			case CASE:
+				break;
+			case RANGE_REF:
+				break;
+			case ARRAY_REF:
+				break;
+			case MODULE_INSTANCE:
+				// flip hard blocks
+				break;
+		}
+	}
 	return 1;
 }
 

@@ -96,8 +96,8 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_prefix, int outport_size, STRING_CACHE_LIST *local_string_cache_list);
 void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_instance, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list);
 signal_list_t * connect_function_instantiation_and_alias(short PASS, ast_node_t* module_instance, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list);
-void create_symbol_table_for_module(ast_node_t* module_items, char *module_name, STRING_CACHE_LIST *local_string_cache_list);
-void create_symbol_table_for_function(ast_node_t* module_items, char *module_name, STRING_CACHE_LIST *local_string_cache_list);
+void create_symbol_table_for_module(ast_node_t* module_items, STRING_CACHE_LIST *local_string_cache_list);
+void create_symbol_table_for_function(ast_node_t* module_items, STRING_CACHE_LIST *local_string_cache_list);
 int check_for_initial_reg_value(STRING_CACHE_LIST *local_string_cache_list, ast_node_t* var_declare, long *value);
 void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_node, char * /*instance_name_prefix*/, STRING_CACHE_LIST *local_string_cache_list);
 
@@ -439,10 +439,16 @@ void create_netlist()
 	/* initialize the storage of the top level drivers.  Assigned in create_top_driver_nets */
 	verilog_netlist = allocate_netlist();
 
-	// create the parameter table for the top module
-	STRING_CACHE *top_param_table_sc = create_param_table_for_module(NULL, top_module->children[2], top_string, NULL);
 	STRING_CACHE_LIST *top_sc_list = (STRING_CACHE_LIST*)vtr::calloc(1, sizeof(STRING_CACHE_LIST));
-	top_sc_list->local_param_table_sc = top_param_table_sc;
+
+	/* create the parameter table for the top module */
+	top_sc_list->local_param_table_sc = create_param_table_for_module(NULL, top_module->children[2], top_string, NULL);
+	
+	/* create the symbol table for the top module */
+	top_sc_list->local_symbol_table_sc = sc_new_string_cache();
+	top_sc_list->num_local_symbol_table = 0;
+	top_sc_list->local_symbol_table = NULL;
+	create_symbol_table_for_module(top_module->children[2], top_sc_list);
 
 	/* now recursively parse the modules by going through the tree of modules starting at top */
 	create_top_driver_nets(top_module, top_string, top_sc_list);
@@ -451,7 +457,11 @@ void create_netlist()
 	free_implicit_memory_index_and_finalize_memories();
 	create_top_output_nodes(top_module, top_string, top_sc_list);
 
-	top_sc_list->local_param_table_sc = sc_free_string_cache(top_param_table_sc);
+	top_sc_list->local_param_table_sc = sc_free_string_cache(top_sc_list->local_param_table_sc);
+	top_sc_list->local_symbol_table_sc = sc_free_string_cache(top_sc_list->local_symbol_table_sc);
+	top_sc_list->num_local_symbol_table = 0;
+	top_sc_list->local_symbol_table = (ast_node_t **)vtr::free(top_sc_list->local_symbol_table);
+
 	vtr::free(top_sc_list);
 
 	/* now look for high-level signals */
@@ -587,7 +597,7 @@ ast_node_t *find_top_module()
 void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, char *instance_name, STRING_CACHE_LIST *local_string_cache_list, int level)
 {
 	signal_list_t *list = NULL;
-	simplify_ast_module(current_module/*, local_string_cache_list*/);
+	simplify_ast_module(current_module, local_string_cache_list);
 
 	STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
 
@@ -673,12 +683,23 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
 			STRING_CACHE_LIST *module_string_cache_list = (STRING_CACHE_LIST*)calloc(1, sizeof(STRING_CACHE_LIST));
 			module_string_cache_list->local_param_table_sc = module_param_table_sc;
 
+			// create the symbol table for the instantiated module
+			module_string_cache_list->local_symbol_table_sc = sc_new_string_cache();
+			module_string_cache_list->num_local_symbol_table = 0;
+			module_string_cache_list->local_symbol_table = NULL;
+			create_symbol_table_for_module(((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2], module_string_cache_list);
+
 			/* recursive call point */
 			convert_ast_to_netlist_recursing_via_modules(((ast_node_t**)&module_names_to_idx->data[sc_spot]), temp_instance_name, module_string_cache_list, level+1);
 
 			/* clean up */
 			vtr::free(temp_instance_name);
-			module_param_table_sc = sc_free_string_cache(module_param_table_sc);
+
+			module_string_cache_list->local_param_table_sc = sc_free_string_cache(module_string_cache_list->local_param_table_sc);
+			module_string_cache_list->local_symbol_table_sc = sc_free_string_cache(module_string_cache_list->local_symbol_table_sc);
+			module_string_cache_list->num_local_symbol_table = 0;
+			module_string_cache_list->local_symbol_table = (ast_node_t **)vtr::free(module_string_cache_list->local_symbol_table);
+			
 			vtr::free(module_string_cache_list);
 		}
         for (k = 0; k < (*current_module)->types.function.size_function_instantiations; k++)
@@ -702,7 +723,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
 
 			ast_node_t *parent_parameter_list = (*current_module)->types.function.function_instantiations_instance[k]->children[1]->children[2];
 
-			// create the parameter table for the instantiated module
+			// create the parameter table for the instantiated function
 			STRING_CACHE *function_param_table_sc = create_param_table_for_module(parent_parameter_list,
 				/* module_items */
 				((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2],
@@ -711,12 +732,23 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
 			STRING_CACHE_LIST *function_string_cache_list = (STRING_CACHE_LIST*)calloc(1, sizeof(STRING_CACHE_LIST));
 			function_string_cache_list->local_param_table_sc = function_param_table_sc;
 
+			// create the symbol table for the instantiated function
+			function_string_cache_list->function_local_symbol_table_sc = sc_new_string_cache();
+			function_string_cache_list->function_num_local_symbol_table = 0;
+			function_string_cache_list->function_local_symbol_table = NULL;
+			create_symbol_table_for_function(((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2], function_string_cache_list);
+
 			/* recursive call point */
 			convert_ast_to_netlist_recursing_via_modules(((ast_node_t**)&module_names_to_idx->data[sc_spot]), temp_instance_name,function_string_cache_list, level+1);
 
 			/* clean up */
 			vtr::free(temp_instance_name);
-			function_param_table_sc = sc_free_string_cache(function_param_table_sc);
+			
+			function_string_cache_list->local_param_table_sc = sc_free_string_cache(function_string_cache_list->local_param_table_sc);
+			function_string_cache_list->function_local_symbol_table_sc = sc_free_string_cache(function_string_cache_list->function_local_symbol_table_sc);
+			function_string_cache_list->num_local_symbol_table = 0;
+			function_string_cache_list->function_local_symbol_table = (ast_node_t **)vtr::free(function_string_cache_list->function_local_symbol_table);
+
 			vtr::free(function_string_cache_list);
 		}
 
@@ -766,11 +798,6 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				oassert(false);
 				break;
 			case MODULE:
-				oassert(child_skip_list);
-				local_string_cache_list->local_symbol_table_sc = sc_new_string_cache();
-				local_string_cache_list->num_local_symbol_table = 0;
-				local_string_cache_list->local_symbol_table = NULL;
-
 				/* set the skip list */
 				child_skip_list[0] = true; /* skip the identifier */
 				child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
@@ -785,8 +812,6 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 			case MODULE_ITEMS:
 				/* items include: wire, reg, input, outputs, assign, gate, module_instance, always */
 
-				/* make the symbol table */
-				create_symbol_table_for_module(node, instance_name_prefix, local_string_cache_list);
 				local_clock_found = false;
 
 				/* check for initial register values set in initial block.*/
@@ -871,11 +896,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
                 break;
             case FUNCTION_ITEMS:
 				/* items include: wire, reg, input, outputs, assign, gate, always */
-				/* make the symbol table */
-				local_string_cache_list->function_local_symbol_table_sc = sc_new_string_cache();
-				local_string_cache_list->function_num_local_symbol_table = 0;
-				local_string_cache_list->function_local_symbol_table = NULL;
-				create_symbol_table_for_function(node, instance_name_prefix, local_string_cache_list);
+
 				local_clock_found = false;
 
 				/* create all the driven nets based on the "reg" registers */
@@ -1005,11 +1026,6 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 					port_list->children[i] = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
 					port_list->children[i] = resolve_node(local_string_cache_list, port_list->children[i], NULL, 0);
 				}
-
-				/* free the symbol table for this module since we're done processing */
-				local_string_cache_list->local_symbol_table_sc = sc_free_string_cache(local_string_cache_list->local_symbol_table_sc);
-				local_string_cache_list->local_symbol_table = (ast_node_t**) vtr::free(local_string_cache_list->local_symbol_table);
-				local_string_cache_list->local_symbol_table = NULL;
 				break;
 			}
 			case FILE_ITEMS:
@@ -1035,14 +1051,6 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 						}
 					}
 				}
-				break;
-			}
-			case FUNCTION_ITEMS:
-			{
-				/* free the symbol table for this function since we're done processing */
-				local_string_cache_list->function_local_symbol_table_sc = sc_free_string_cache(local_string_cache_list->function_local_symbol_table_sc);
-				local_string_cache_list->function_local_symbol_table = (ast_node_t**) vtr::free(local_string_cache_list->function_local_symbol_table);
-				local_string_cache_list->function_local_symbol_table = NULL;
 				break;
 			}
 			case FUNCTION_INSTANCE:
@@ -1894,7 +1902,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
  * 	Creates a lookup of the variables declared here so that in the analysis we can look
  * 	up the definition of it to decide what to do.
  *-------------------------------------------------------------------------------------------*/
-void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_name*/, STRING_CACHE_LIST *local_string_cache_list)
+void create_symbol_table_for_module(ast_node_t* module_items, STRING_CACHE_LIST *local_string_cache_list)
 {
 	/* with the top module we need to visit the entire ast tree */
 	long i, j;
@@ -2022,7 +2030,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
  * 	Creates a lookup of the variables declared here so that in the analysis we can look
  * 	up the definition of it to decide what to do.
  *-------------------------------------------------------------------------------------------*/
-void create_symbol_table_for_function(ast_node_t* function_items, char * /*module_name*/, STRING_CACHE_LIST *local_string_cache_list)
+void create_symbol_table_for_function(ast_node_t* function_items, STRING_CACHE_LIST *local_string_cache_list)
 {
 	/* with the top module we need to visit the entire ast tree */
 	long i, j;
