@@ -192,7 +192,7 @@ void declare_hard_adder(nnode_t *node)
  *-------------------------------------------------------------------------*/
 void instantiate_hard_adder(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
-	char *new_name = NULL;
+	char *new_name;
 	int len, sanity, i;
 
 	declare_hard_adder(node);
@@ -211,8 +211,6 @@ void instantiate_hard_adder(nnode_t *node, short mark, netlist_t * /*netlist*/)
 	if (len <= sanity) /* buffer not large enough */
 		oassert(false);
 
-	if(new_name)
-		vtr::free(new_name);
 	/* Give names to the output pins */
 	for (i = 0; i < node->num_output_pins;  i++)
 	{
