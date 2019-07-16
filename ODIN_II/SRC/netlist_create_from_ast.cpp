@@ -416,7 +416,7 @@ void create_netlist()
 			ast_node_t *module = (ast_node_t *)module_names_to_idx->data[sc_spot2];
 			ast_node_t *symbol_node = newSymbolNode(module_param_name, module->line_number);
 			ast_node_t* new_node = create_node_w_type(MODULE, module->line_number, module->file_number);
-			allocate_children_to_node(new_node, 3, symbol_node, ast_node_deep_copy(module->children[1]), ast_node_deep_copy(module->children[2]));
+			allocate_children_to_node(new_node, { symbol_node, ast_node_deep_copy(module->children[1]), ast_node_deep_copy(module->children[2]) });
 			module->types.module.is_instantiated = true;
 			new_node->types.module.index = i;
 			new_node->types.module.is_instantiated = true;
