@@ -119,9 +119,6 @@ std::string search_type_info = "";
 std::string search_id_info = "";
 
 /********************** Subroutines local to this module ********************/
-void print_bound(ezgl::rectangle box);//remove later!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-void print_point(ezgl::point2d point);
-void print_message(std::string str);
 void toggle_nets(GtkWidget *widget, ezgl::application *app);
 void toggle_rr(GtkWidget *widget, ezgl::application *app);
 void toggle_congestion(GtkWidget *widget, ezgl::application *app);
@@ -247,8 +244,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 }
 
 void draw_main_canvas(ezgl::renderer &g){
-    
-    auto start = std::chrono::high_resolution_clock::now();
+//    auto start = std::chrono::high_resolution_clock::now();
     
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -305,9 +301,9 @@ void draw_main_canvas(ezgl::renderer &g){
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
     
-    auto end = std::chrono::high_resolution_clock::now();
-    auto timeDiff = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);    
-    std::cout << "--------------load time : " << timeDiff.count() << " s--------------" << std::endl;	    
+//    auto end = std::chrono::high_resolution_clock::now();
+//    auto time_diff = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);    
+//    std::cout << "--------------load time : " << time_diff.count() << " s--------------" << std::endl;	    
     return;
     
 }
@@ -3749,16 +3745,12 @@ void search_and_highlight(GtkWidget *widget, ezgl::application *app) {
     //reset first
     deselect_all();
     
-    if(search_type == "Node ID") {
-        std::cout << "search rr_node_id" << std::endl;
-        
+    if(search_type == "RR Node ID") {
         // reset search
         search_node = {{0, 0},{0, 0}};
 
         int rr_node_id = -1;
         ss >> rr_node_id;
-        std::cout << "searching : rr node " << rr_node_id << std::endl;
-
         
         if(rr_node_id < 0 || rr_node_id >= device_ctx.rr_nodes.size()) {
             std::cout << "node " << rr_node_id << " not exist (exceed the bound)" << std::endl;
@@ -3772,59 +3764,34 @@ void search_and_highlight(GtkWidget *widget, ezgl::application *app) {
     }
     
     else if(search_type == "Block ID") {
-        std::cout << "search block_id" << std::endl;
         
         int block_id = -1;
         ss >> block_id;
-        std::cout << "searching : Block " << block_id << std::endl;
         
         highlight_blocks((ClusterBlockId) block_id);
     }
     
     else if(search_type == "Block Name") {
-        std::cout << "search block_name" << std::endl;
-        
         std::string block_name = "";
         ss >> block_name;
-        std::cout << "searching : Block " << block_name << std::endl;
         
         highlight_blocks((std::string) block_name);
     }
     
     else if(search_type == "Net ID") {
-        std::cout << "search net_id" << std::endl;
-        
         int net_id = -1;
         ss >> net_id;
-        std::cout << "searching : Net " << net_id << std::endl;
         
         highlight_nets((ClusterNetId) net_id);
     }
     
     else if(search_type == "Net Name") {
-        std::cout << "search net_name" << std::endl;
-        
         std::string net_name = "";
         ss >> net_name;
-        std::cout << "searching : Net " << net_name << std::endl;
         
         highlight_nets((std::string) net_name);
     }
     app->refresh_drawing();
-}
-
-void print_bound(ezgl::rectangle box) {
-    std::cout << "box coord: (" << box.m_first.x << ", " << box.m_first.y << "), (" << box.m_second.x << ", " << box.m_second.y << ")" << std::endl;
-    return;
-}
-
-void print_point(ezgl::point2d point) {
-    std::cout << "point coord: (" << point.x << ", " << point.y << ")" << std::endl;
-    return;
-}
-void print_message(std::string str) {
-    std::cout << str << std::endl;
-    return;
 }
 
 static bool highlight_rr_nodes(int hit_node) {
@@ -3873,9 +3840,9 @@ static bool highlight_rr_nodes(int hit_node) {
         return false; //No hit
     }
     
-    if (draw_state->show_nets) {
+    if (draw_state->show_nets)
         highlight_nets(message, hit_node);
-    } else
+    else
         application.update_message(message);
     
     application.refresh_drawing();
@@ -3929,7 +3896,6 @@ static void auto_zoom_rr_node(int rr_node_id) {
 }
 
  static void highlight_blocks(double x, double y) {
-    print_message("in highlight_blocks xy");
     t_draw_coords* draw_coords = get_draw_coords_vars();
     
     char msg[vtr::bufsize];
@@ -4000,10 +3966,7 @@ static void auto_zoom_rr_node(int rr_node_id) {
     application.refresh_drawing();
 }
 
-static void highlight_blocks(ClusterBlockId clb_index) {
-    //start highlighting
-    t_draw_coords* draw_coords = get_draw_coords_vars();
-    
+static void highlight_blocks(ClusterBlockId clb_index) {    
     char msg[vtr::bufsize];
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -4036,10 +3999,11 @@ static void highlight_blocks(ClusterBlockId clb_index) {
 
 static void highlight_nets(ClusterNetId net_id) {
     t_trace *tptr;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
     
     t_draw_state* draw_state = get_draw_state_vars();
+    
+    if(route_ctx.trace.size() == 0) return;
     
     for (tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
         draw_state->net_color[net_id] = ezgl::MAGENTA;
@@ -4048,10 +4012,8 @@ static void highlight_nets(ClusterNetId net_id) {
 
 
 static void highlight_nets(std::string net_name) {
-    t_trace *tptr;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.routing();
-    ClusterNetId net_id(-1);
+    ClusterNetId net_id = ClusterNetId::INVALID();
     
     for (auto i : cluster_ctx.clb_nlist.nets()) {
         if(cluster_ctx.clb_nlist.net_name(i).c_str() == net_name){
@@ -4067,10 +4029,8 @@ static void highlight_nets(std::string net_name) {
 
 
 static void highlight_blocks(std::string block_name) {
-    t_trace *tptr;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.routing();
-    ClusterBlockId block_id(-1);
+    ClusterBlockId block_id = ClusterBlockId::INVALID();
         
     for (auto i : cluster_ctx.clb_nlist.blocks()) {
         if(cluster_ctx.clb_nlist.block_name(i).c_str() == block_name){
