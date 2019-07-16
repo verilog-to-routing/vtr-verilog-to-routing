@@ -208,10 +208,8 @@ void write_rr_block_types(fstream& fp) {
 
         fp << "\t\t<block_type id=\"" << btype.index;
 
-        /*since the < symbol is not allowed in xml format, converted to only print "EMPTY"*/
-        if (btype.name) {
-            fp << "\" name=\"" << btype.name;
-        }
+        VTR_ASSERT(btype.name);
+        fp << "\" name=\"" << btype.name;
 
         fp << "\" width=\"" << btype.width << "\" height=\"" << btype.height << "\">" << endl;
 
