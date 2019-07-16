@@ -1442,16 +1442,14 @@ void free_multipliers()
 	{
 		t_multiplier *tmp = (t_multiplier *)hard_multipliers->instances;
 		
-		if(tmp && tmp->next)
+		while(tmp != NULL)
 		{
-			tmp = tmp->next;
-			while(tmp != NULL)
-			{
-				t_multiplier *tmp2 = tmp->next;
-				vtr::free(tmp);
-				tmp = tmp2;
-			}	
-		}
+			t_multiplier *tmp2 = tmp->next;
+			vtr::free(tmp);
+			tmp = tmp2;
+		}	
+		
+		hard_multipliers->instances = NULL;
 	}
 }
 
