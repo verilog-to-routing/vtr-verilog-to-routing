@@ -2626,6 +2626,7 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     pnum = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
+    VTR_ASSERT(pnum >= 0);
     x = place_ctx.block_locs[bnum].loc.x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
     y = place_ctx.block_locs[bnum].loc.y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 
