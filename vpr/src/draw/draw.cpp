@@ -248,6 +248,8 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 
 void draw_main_canvas(ezgl::renderer &g){
     
+    auto start = std::chrono::high_resolution_clock::now();
+    
     t_draw_state* draw_state = get_draw_state_vars();
 
     
@@ -302,6 +304,11 @@ void draw_main_canvas(ezgl::renderer &g){
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    auto timeDiff = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);    
+    std::cout << "--------------load time : " << timeDiff.count() << " s--------------" << std::endl;	    
+    return;
     
 }
 
