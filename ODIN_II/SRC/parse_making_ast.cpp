@@ -609,7 +609,8 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 			break;
 
 		case WIRE:
-			if (port->children[5] != NULL)
+			if ((port->num_children == 6 && port->children[5] != NULL)
+				|| (port->num_children == 8 && port->children[7] != NULL))
 			{
 				error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
 									"Ports of type net cannot be initialized\n");
@@ -620,7 +621,8 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 			break;
 
 		default:
-			if (port->children[5] != NULL)
+			if ((port->num_children == 6 && port->children[5] != NULL)
+				|| (port->num_children == 8 && port->children[7] != NULL))
 			{
 				error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
 									"Ports with undefined type cannot be initialized\n");
@@ -838,7 +840,8 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], is_signed);
 					break;
 				case WIRE:
-					if (symbol_list->children[i]->children[5] != NULL)
+					if ((symbol_list->children[i]->num_children == 6 && symbol_list->children[i]->children[5] != NULL)
+						|| (symbol_list->children[i]->num_children == 8 && symbol_list->children[i]->children[7] != NULL))
 					{
 						error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
 								"Nets cannot be initialized\n");
@@ -886,7 +889,8 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], is_signed);
 					break;
 				case WIRE:
-					if (symbol_list->children[i]->children[5] != NULL)
+					if ((symbol_list->children[i]->num_children == 6 && symbol_list->children[i]->children[5] != NULL)
+						|| (symbol_list->children[i]->num_children == 8 && symbol_list->children[i]->children[7] != NULL))
 					{
 						error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
 								"Nets cannot be initialized\n");
