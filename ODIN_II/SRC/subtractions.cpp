@@ -398,10 +398,12 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 	for(i = 0; i < b; i++)
 	{
 		not_node[i] = allocate_nnode();
+		nnode_t *temp = not_node[i];
 		if(nodeo->num_input_port_sizes == 2)
 			not_node[i] = make_not_gate_with_input(nodeo->input_pins[a + i], not_node[i], -1);
 		else
 			not_node[i] = make_not_gate_with_input(nodeo->input_pins[i], not_node[i], -1);
+		free_nnode(temp);
 	}
 
 	for(i = 0; i < count; i++)
