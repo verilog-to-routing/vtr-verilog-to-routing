@@ -366,7 +366,6 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 		}
 		vtr::free(temp_parameter_list);
 	}
-
 	vtr::free(local_string_cache_list);
 	vtr::free(parent_string_cache_list);
 
