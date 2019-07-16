@@ -284,25 +284,16 @@ ast_node_t *create_tree_node_number(long input_number, int line_number, int /* f
 /*---------------------------------------------------------------------------
  * (function: allocate_children_to_node)
  *-------------------------------------------------------------------------*/
-void allocate_children_to_node(ast_node_t* node, int num_children, ...)
+void allocate_children_to_node(ast_node_t* node, std::vector<ast_node_t *> children_list)
 {
-	va_list ap;
-	int i;
-
 	/* allocate space for the children */
-	node->children = (ast_node_t**)vtr::malloc(sizeof(ast_node_t*)*num_children);
-	node->num_children = num_children;
+	node->num_children = children_list.size();
+	node->children = (ast_node_t**)vtr::malloc(sizeof(ast_node_t*) * node->num_children );
 
-	/* set the virtual arguments */
-	va_start(ap, num_children);
-
-	for (i = 0; i < num_children; i++)
+	for (size_t i = 0; i < node->num_children; i++)
 	{
-		node->children[i] = va_arg(ap, ast_node_t*);
+		node->children[i] = children_list[i];
 	}
-	
-	va_end(ap);
-
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1314,7 +1305,7 @@ static void expand_power(ast_node_t **node)
 				ast_node_t *temp_node = create_node_w_type(BINARY_OPERATION, (*node)->line_number, (*node)->file_number);
 				temp_node->types.operation.op = MULTIPLY;
 
-				allocate_children_to_node(temp_node, 2, ast_node_deep_copy(expression1), new_node);
+				allocate_children_to_node(temp_node, { ast_node_deep_copy(expression1), new_node } );
 				new_node = temp_node;
 			}
 		}

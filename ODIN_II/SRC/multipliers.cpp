@@ -531,6 +531,7 @@ void add_the_blackbox_for_mults(FILE *out)
 
 		muls = muls->next;
 	}
+
 }
 
 /*-------------------------------------------------------------------------
@@ -1433,4 +1434,5 @@ void clean_multipliers()
 		mult_list = delete_in_vptr_list(mult_list);
 	return;
 }
+
 

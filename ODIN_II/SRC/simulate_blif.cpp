@@ -3281,7 +3281,7 @@ static void assign_memory_from_mif_file(nnode_t *node, FILE *mif, char *filename
 
 						long mif_width = std::strtol(item_in->second.c_str(),NULL,10);
 						if (mif_width != width)
-							error_message(SIMULATION_ERROR, -1, -1, "%s: MIF width mismatch: must be %ld but %ld was given", filename, width, mif_width);
+							error_message(SIMULATION_ERROR, -1, -1, "%s: MIF width mismatch: must be %d but %ld was given", filename, width, mif_width);
 
 
 						// Verify the depth parameter.

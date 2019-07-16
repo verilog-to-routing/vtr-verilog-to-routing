@@ -323,7 +323,7 @@ ast_node_t *newList(ids node_type, ast_node_t *child)
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(node_type, yylineno, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 1, child);
+	allocate_children_to_node(new_node, { child });
 
 	return new_node;
 }
@@ -335,7 +335,7 @@ ast_node_t *newfunctionList(ids node_type, ast_node_t *child)
     /* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(node_type, yylineno, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, output_node, child);
+	allocate_children_to_node(new_node, { output_node, child });
 
     return new_node;
 }
@@ -360,7 +360,7 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 	ast_node_t* new_node = create_node_w_type(REPLICATE, yylineno, current_parse_file);
 
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, exp, child);
+	allocate_children_to_node(new_node, { exp, child });
 
 	return new_node;
 }
@@ -932,7 +932,7 @@ ast_node_t *newArrayRef(char *id, ast_node_t *expression, int line_number)
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(ARRAY_REF, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, symbol_node, expression);
+	allocate_children_to_node(new_node, { symbol_node, expression });
 
 	return new_node;
 }
@@ -947,7 +947,7 @@ ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expressio
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(RANGE_REF, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 3, symbol_node, expression1, expression2);
+	allocate_children_to_node(new_node, { symbol_node, expression1, expression2 });
 
 	return new_node;
 }
@@ -1029,7 +1029,7 @@ ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, as
 	/* store the operation type */
 	new_node->types.operation.op = op_id;
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, expression1, expression2);
+	allocate_children_to_node(new_node, { expression1, expression2 });
 
 	return new_node;
 }
@@ -1044,7 +1044,7 @@ ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int 
 	/* store the operation type */
 	new_node->types.operation.op = op_id;
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 1, expression);
+	allocate_children_to_node(new_node, { expression });
 
 	return new_node;
 }
@@ -1059,7 +1059,7 @@ ast_node_t *newNegedgeSymbol(char *symbol, int line_number)
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(NEGEDGE, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 1, symbol_node);
+	allocate_children_to_node(new_node, { symbol_node });
 
 	return new_node;
 }
@@ -1074,7 +1074,7 @@ ast_node_t *newPosedgeSymbol(char *symbol, int line_number)
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(POSEDGE, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 1, symbol_node);
+	allocate_children_to_node(new_node, { symbol_node });
 
 	return new_node;
 }
@@ -1087,7 +1087,7 @@ ast_node_t *newCaseItem(ast_node_t *expression, ast_node_t *statement, int line_
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(CASE_ITEM, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, expression, statement);
+	allocate_children_to_node(new_node, { expression, statement });
 
 	return new_node;
 }
@@ -1100,7 +1100,7 @@ ast_node_t *newDefaultCase(ast_node_t *statement, int line_number)
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(CASE_DEFAULT, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 1, statement);
+	allocate_children_to_node(new_node, { statement });
 
 	return new_node;
 }
@@ -1113,7 +1113,7 @@ ast_node_t *newParallelConnection(ast_node_t *expression1, ast_node_t *expressio
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(SPECIFY_PAL_CONNECTION_STATEMENT, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, expression1, expression2);
+	allocate_children_to_node(new_node, { expression1, expression2 });
 
 	return new_node;
 }
@@ -1125,7 +1125,7 @@ ast_node_t *newNonBlocking(ast_node_t *expression1, ast_node_t *expression2, int
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(NON_BLOCKING_STATEMENT, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, expression1, expression2);
+	allocate_children_to_node(new_node, { expression1, expression2 });
 
 	return new_node;
 }
@@ -1138,7 +1138,7 @@ ast_node_t *newInitial(ast_node_t *expression1, int line_number)
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(INITIALS, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 1, expression1);
+	allocate_children_to_node(new_node, { expression1 });
 
 	return new_node;
 }
@@ -1150,7 +1150,7 @@ ast_node_t *newBlocking(ast_node_t *expression1, ast_node_t *expression2, int li
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(BLOCKING_STATEMENT, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, expression1, expression2);
+	allocate_children_to_node(new_node, { expression1, expression2 });
 
 	return new_node;
 }
@@ -1174,7 +1174,7 @@ ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression
 	ast_node_t* new_node = create_node_w_type(BLOCKING_STATEMENT, line_number, current_parse_file);
 
     /* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, expression1, expression2);
+	allocate_children_to_node(new_node, { expression1, expression2 });
 
     return new_node;
 }
@@ -1187,7 +1187,7 @@ ast_node_t *newFor(ast_node_t *initial, ast_node_t *compare_expression, ast_node
 	/* create a node for this for reference */
 	ast_node_t* new_node = create_node_w_type(FOR, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 4, initial, compare_expression, terminal, statement);
+	allocate_children_to_node(new_node, { initial, compare_expression, terminal, statement });
 
 	return new_node;
 }
@@ -1200,7 +1200,7 @@ ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int 
 	/* create a node for this for reference */
 	ast_node_t* new_node = create_node_w_type(WHILE, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, compare_expression, statement);
+	allocate_children_to_node(new_node, { compare_expression, statement });
 
 	/* This needs to be removed once support is added */
 	error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "While statements are NOT supported");
@@ -1215,7 +1215,7 @@ ast_node_t *newIf(ast_node_t *compare_expression, ast_node_t *true_expression, a
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(IF, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 3, compare_expression, true_expression, false_expression);
+	allocate_children_to_node(new_node, { compare_expression, true_expression, false_expression });
 
 	return new_node;
 }
@@ -1228,7 +1228,7 @@ ast_node_t *newIfQuestion(ast_node_t *compare_expression, ast_node_t *true_expre
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(IF_Q, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 3, compare_expression, true_expression, false_expression);
+	allocate_children_to_node(new_node, { compare_expression, true_expression, false_expression });
 
 	return new_node;
 }
@@ -1240,7 +1240,7 @@ ast_node_t *newCase(ast_node_t *compare_expression, ast_node_t *case_list, int l
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(CASE, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, compare_expression, case_list);
+	allocate_children_to_node(new_node, { compare_expression, case_list });
 
 	return new_node;
 }
@@ -1253,7 +1253,7 @@ ast_node_t *newAlways(ast_node_t *delay_control, ast_node_t *statement, int line
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(ALWAYS, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, delay_control, statement);
+	allocate_children_to_node(new_node, { delay_control, statement });
 
 	return new_node;
 }
@@ -1266,7 +1266,7 @@ ast_node_t *newGenerate(ast_node_t *instantiations, int line_number)
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(GENERATE, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 1, instantiations);
+	allocate_children_to_node(new_node, { instantiations });
 
 	return new_node;
 }
@@ -1289,7 +1289,7 @@ ast_node_t *newModuleConnection(char* id, ast_node_t *expression, int line_numbe
 	}
 
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, symbol_node, expression);
+	allocate_children_to_node(new_node, { symbol_node, expression });
 
 	return new_node;
 }
@@ -1314,7 +1314,7 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
 	/* allocate child nodes to this node */
 	// leave 4 blank nodes so that expression is the 6th node to behave just like
 	// a default var_declare parameter (see create_symbol_table_for_module)
-	allocate_children_to_node(new_node, 6, symbol_node, NULL, NULL, NULL, NULL, expression);
+	allocate_children_to_node(new_node, { symbol_node, NULL, NULL, NULL, NULL, expression });
 
 	// set is_parameter for the same reason
 	new_node->types.variable.is_parameter = true;
@@ -1332,7 +1332,7 @@ ast_node_t *newModuleNamedInstance(char* unique_name, ast_node_t *module_connect
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(MODULE_NAMED_INSTANCE, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 3, symbol_node, module_connect_list, module_parameter_list);
+	allocate_children_to_node(new_node, { symbol_node, module_connect_list, module_parameter_list });
 
 	return new_node;
 }
@@ -1357,7 +1357,7 @@ ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t
     /* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(FUNCTION_NAMED_INSTANCE, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 3, symbol_node, module_connect_list, module_parameter_list);
+	allocate_children_to_node(new_node, { symbol_node, module_connect_list, module_parameter_list });
 
 	return new_node;
 }
@@ -1371,7 +1371,7 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
 	// create a node for this array reference
 	ast_node_t* new_node = create_node_w_type(HARD_BLOCK, line_number, current_parse_file);
 	// allocate child nodes to this node
-	allocate_children_to_node(new_node, 2, symbol_node, module_named_instance);
+	allocate_children_to_node(new_node, { symbol_node, module_named_instance });
 
 	// store the hard block symbol name that this calls in a list that will at the end be asociated with the hard block node
 	block_instantiations_instance = (ast_node_t **)vtr::realloc(block_instantiations_instance, sizeof(ast_node_t*)*(size_block_instantiations+1));
@@ -1434,8 +1434,8 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 		/* create a node for this array reference */
 		ast_node_t* new_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
 		/* allocate child nodes to this node */
-			allocate_children_to_node(new_node, 2, symbol_node, module_named_instance->children[i]);
-			if(i == 0) allocate_children_to_node(new_master_node, 1, new_node);
+			allocate_children_to_node(new_node, { symbol_node, module_named_instance->children[i] });
+			if(i == 0) allocate_children_to_node(new_master_node, { new_node });
 			else add_child_to_node(new_master_node,new_node);
 
 		/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
@@ -1475,7 +1475,7 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
     /* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(FUNCTION_INSTANCE, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, symbol_node, function_named_instance);
+	allocate_children_to_node(new_node, { symbol_node, function_named_instance });
 
 	/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
 	function_instantiations_instance_by_module = (ast_node_t **)vtr::realloc(function_instantiations_instance_by_module, sizeof(ast_node_t*)*(size_function_instantiations_by_module+1));
@@ -1514,7 +1514,7 @@ ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, a
 	module_variables_not_defined[size_module_variables_not_defined] = newVarMaked;
 	size_module_variables_not_defined++;
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 4, symbol_node, expression1, expression2, expression3);
+	allocate_children_to_node(new_node, { symbol_node, expression1, expression2, expression3 });
 
 	return new_node;
 }
@@ -1555,7 +1555,7 @@ ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *
 
     size_module_variables_not_defined++;
 
-    allocate_children_to_node(new_node, 3, symbol_node, expression1, expression2);
+    allocate_children_to_node(new_node, { symbol_node, expression1, expression2 });
 
     /* allocate n children nodes to this node */
     for(i = 1; i < expression3->num_children; i++) add_child_to_node(new_node, expression3->children[i]);
@@ -1575,7 +1575,7 @@ ast_node_t *newGate(operation_list op_id, ast_node_t *gate_instance, int line_nu
 	/* store the operation type */
 	new_node->types.operation.op = op_id;
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 1, gate_instance);
+	allocate_children_to_node(new_node, { gate_instance });
 
 	return new_node;
 }
@@ -1593,7 +1593,7 @@ ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *exp
 	ast_node_t* new_node = create_node_w_type(VAR_DECLARE, line_number, current_parse_file);
 
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 6, symbol_node, expression1, expression2, expression3, expression4, value);
+	allocate_children_to_node(new_node, { symbol_node, expression1, expression2, expression3, expression4, value });
 
 	return new_node;
 }
@@ -1614,7 +1614,7 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ 
 	ast_node_t* new_node = create_node_w_type(VAR_DECLARE, line_number, current_parse_file);
 
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 6, symbol_node, number_node_with_value_31, number_node_with_value_0, expression3, expression4, value);
+	allocate_children_to_node(new_node, { symbol_node, number_node_with_value_31, number_node_with_value_0, expression3, expression4, value });
 
 	return new_node;
 }
@@ -1655,7 +1655,7 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 
 
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 3, symbol_node, list_of_ports, list_of_module_items);
+	allocate_children_to_node(new_node, { symbol_node, list_of_ports, list_of_module_items });
 
 	/* store the list of modules this module instantiates */
 	new_node->types.module.module_instantiations_instance = module_instantiations_instance;
@@ -1766,7 +1766,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 	}
 
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 3, symbol_node, list_of_ports, list_of_module_items);
+	allocate_children_to_node(new_node, { symbol_node, list_of_ports, list_of_module_items });
 
 	/* store the list of modules this module instantiates */
 	new_node->types.function.function_instantiations_instance = function_instantiations_instance;
@@ -2015,7 +2015,7 @@ ast_node_t *newVarDeclare2D(char* symbol, ast_node_t *expression1, ast_node_t *e
 	ast_node_t* new_node = create_node_w_type(VAR_DECLARE, line_number, current_parse_file);
 
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 8, symbol_node, expression1, expression2, expression3, expression4, expression5, expression6, value);
+	allocate_children_to_node(new_node, { symbol_node, expression1, expression2, expression3, expression4, expression5, expression6, value });
 	return new_node;
 }
 /*---------------------------------------------------------------------------------------------
@@ -2028,7 +2028,7 @@ ast_node_t *newArrayRef2D(char *id, ast_node_t *expression1, ast_node_t *express
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(ARRAY_REF, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 3, symbol_node, expression1,expression2);
+	allocate_children_to_node(new_node, { symbol_node, expression1,expression2 });
 	return new_node;
 }
 /*---------------------------------------------------------------------------------------------
@@ -2041,7 +2041,7 @@ ast_node_t *newRangeRef2D(char *id, ast_node_t *expression1, ast_node_t *express
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(RANGE_REF, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 5, symbol_node, expression1, expression2, expression3, expression4);
+	allocate_children_to_node(new_node, { symbol_node, expression1, expression2, expression3, expression4 });
 
 	return new_node;
 }
