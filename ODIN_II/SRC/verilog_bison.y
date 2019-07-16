@@ -56,9 +56,9 @@ int yylex(void);
 %token vALWAYS vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vDEFINE vELSE vEND vENDCASE
 %token vENDMODULE vENDSPECIFY vENDGENERATE vENDFUNCTION vIF vINOUT vINPUT vMODULE vGENERATE vFUNCTION
 %token vOUTPUT vPARAMETER vLOCALPARAM vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND vNAND vNEGEDGE vNOR vNOT vOR vFOR
-%token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
+%token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT voASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vCLOG2 vGENVAR
-%token vPLUS_COLON vMINUS_COLON vSPECPARAM vUNSIGNED vSIGNED vCFUNC
+%token vPLUS_COLON vMINUS_COLON vSPECPARAM voUNSIGNED voSIGNED vSIGNED vCFUNC
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']' '~' '!' ';' '#' ',' '.' '@' '='
 %token vNOT_SUPPORT 
 
@@ -91,7 +91,7 @@ int yylex(void);
 %nonassoc vELSE
 
 %type <node> source_text items module list_of_module_items list_of_function_items module_item function_item module_parameters module_ports
-%type <node> list_of_parameter_declaration parameter_declaration list_of_port_declaration port_declaration defparam_declaration
+%type <node> list_of_parameter_declaration parameter_declaration list_of_port_declaration port_declaration signed_port_declaration defparam_declaration
 %type <node> function_declaration function_input_declaration
 %type <node> input_declaration output_declaration inout_declaration variable_list function_output_variable function_id_and_output_variable
 %type <node> integer_type_variable_list variable integer_type_variable
@@ -136,9 +136,11 @@ module_parameters:
 	;
 
 list_of_parameter_declaration:
-	list_of_parameter_declaration ',' vPARAMETER variable	{$$ = newList_entry($1, markAndProcessParameterWith(MODULE,PARAMETER, $4));}
-	| list_of_parameter_declaration ',' variable			{$$ = newList_entry($1, markAndProcessParameterWith(MODULE,PARAMETER, $3));}
-	| vPARAMETER variable									{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(MODULE,PARAMETER, $2));}
+	list_of_parameter_declaration ',' vPARAMETER vSIGNED variable	{$$ = newList_entry($1, markAndProcessParameterWith(MODULE,PARAMETER, $5, true));}
+	| list_of_parameter_declaration ',' vPARAMETER variable			{$$ = newList_entry($1, markAndProcessParameterWith(MODULE,PARAMETER, $4, false));}
+	| list_of_parameter_declaration ',' variable					{$$ = newList_entry($1, markAndProcessParameterWith(MODULE,PARAMETER, $3, false));} // force unsigned; error thrown if preceding parameter is signed
+	| vPARAMETER vSIGNED variable									{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(MODULE,PARAMETER, $3, true));}
+	| vPARAMETER variable											{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(MODULE,PARAMETER, $2, false));}
 	;
 
 module_ports:
@@ -153,43 +155,56 @@ list_of_port_declaration:
 	;
 	
 port_declaration:
-	vINPUT vWIRE variable						{$$ = markAndProcessPortWith(MODULE, INPUT, WIRE, $3);}
-	| vOUTPUT vWIRE variable					{$$ = markAndProcessPortWith(MODULE, OUTPUT, WIRE, $3);}
-	| vINOUT vWIRE variable						{$$ = markAndProcessPortWith(MODULE, INOUT, WIRE, $3);}
-	| vINPUT vREG variable						{$$ = markAndProcessPortWith(MODULE, INPUT, REG, $3);}
-	| vOUTPUT vREG variable						{$$ = markAndProcessPortWith(MODULE, OUTPUT, REG, $3);}
-	| vINOUT vREG variable						{$$ = markAndProcessPortWith(MODULE, INOUT, REG, $3);}
-	| vINPUT vINTEGER integer_type_variable		{$$ = markAndProcessPortWith(MODULE, INPUT, INTEGER, $3);}
-	| vOUTPUT vINTEGER integer_type_variable	{$$ = markAndProcessPortWith(MODULE, OUTPUT, INTEGER, $3);}
-	| vINOUT vINTEGER integer_type_variable		{$$ = markAndProcessPortWith(MODULE, INOUT, INTEGER, $3);}
-	| vINPUT variable							{$$ = markAndProcessPortWith(MODULE, INPUT, NO_ID, $2);}
-	| vOUTPUT variable							{$$ = markAndProcessPortWith(MODULE, OUTPUT, NO_ID, $2);}
-	| vINOUT variable							{$$ = markAndProcessPortWith(MODULE, INOUT, NO_ID, $2);}
+	signed_port_declaration						{$$ = $1;}
+	| vINPUT vWIRE variable						{$$ = markAndProcessPortWith(MODULE, INPUT, WIRE, $3, false);}
+	| vOUTPUT vWIRE variable					{$$ = markAndProcessPortWith(MODULE, OUTPUT, WIRE, $3, false);}
+	| vINOUT vWIRE variable						{$$ = markAndProcessPortWith(MODULE, INOUT, WIRE, $3, false);}
+	| vINPUT vREG variable						{$$ = markAndProcessPortWith(MODULE, INPUT, REG, $3, false);}
+	| vOUTPUT vREG variable						{$$ = markAndProcessPortWith(MODULE, OUTPUT, REG, $3, false);}
+	| vINOUT vREG variable						{$$ = markAndProcessPortWith(MODULE, INOUT, REG, $3, false);}
+	| vINPUT variable							{$$ = markAndProcessPortWith(MODULE, INPUT, NO_ID, $2, false);}
+	| vOUTPUT variable							{$$ = markAndProcessPortWith(MODULE, OUTPUT, NO_ID, $2, false);}
+	| vINOUT variable							{$$ = markAndProcessPortWith(MODULE, INOUT, NO_ID, $2, false);}
 	| variable									{$$ = $1;}
+	;
+
+signed_port_declaration:
+	vINPUT vWIRE vSIGNED variable				{$$ = markAndProcessPortWith(MODULE, INPUT, WIRE, $4, true);}
+	| vOUTPUT vWIRE vSIGNED variable			{$$ = markAndProcessPortWith(MODULE, OUTPUT, WIRE, $4, true);}
+	| vINOUT vWIRE vSIGNED variable				{$$ = markAndProcessPortWith(MODULE, INOUT, WIRE, $4, true);}
+	| vINPUT vREG vSIGNED variable				{$$ = markAndProcessPortWith(MODULE, INPUT, REG, $4, true);}
+	| vOUTPUT vREG vSIGNED variable				{$$ = markAndProcessPortWith(MODULE, OUTPUT, REG, $4, true);}
+	| vINOUT vREG vSIGNED variable				{$$ = markAndProcessPortWith(MODULE, INOUT, REG, $4, true);}
+	| vINPUT vINTEGER integer_type_variable		{$$ = markAndProcessPortWith(MODULE, INPUT, INTEGER, $3, true);}
+	| vOUTPUT vINTEGER integer_type_variable	{$$ = markAndProcessPortWith(MODULE, OUTPUT, INTEGER, $3, true);}
+	| vINOUT vINTEGER integer_type_variable		{$$ = markAndProcessPortWith(MODULE, INOUT, INTEGER, $3, true);}
+	| vINPUT vSIGNED variable					{$$ = markAndProcessPortWith(MODULE, INPUT, NO_ID, $3, true);}
+	| vOUTPUT vSIGNED variable					{$$ = markAndProcessPortWith(MODULE, OUTPUT, NO_ID, $3, true);}
+	| vINOUT vSIGNED variable					{$$ = markAndProcessPortWith(MODULE, INOUT, NO_ID, $3, true);}
 	;
 
 list_of_module_items:
 	list_of_module_items module_item	{$$ = newList_entry($1, $2);}
-	| module_item				{$$ = newList(MODULE_ITEMS, $1);}
+	| module_item						{$$ = newList(MODULE_ITEMS, $1);}
 	;
 
 module_item:
 	parameter_declaration	{$$ = $1;}
-	| input_declaration	 {$$ = $1;}
+	| input_declaration	 	{$$ = $1;}
 	| output_declaration 	{$$ = $1;}
 	| inout_declaration 	{$$ = $1;}
-	| net_declaration 	{$$ = $1;}
+	| net_declaration 		{$$ = $1;}
 	| genvar_declaration	{$$ = $1;}
 	| integer_declaration 	{$$ = $1;}
-	| continuous_assign	{$$ = $1;}
-	| gate_declaration	{$$ = $1;}
-	| generate		{$$ = $1;}
+	| continuous_assign		{$$ = $1;}
+	| gate_declaration		{$$ = $1;}
+	| generate				{$$ = $1;}
 	| module_instantiation	{$$ = $1;}
 	| function_declaration	{$$ = $1;}
-	| initial_block		{$$ = $1;}
-	| always		{$$ = $1;}
+	| initial_block			{$$ = $1;}
+	| always				{$$ = $1;}
 	| defparam_declaration	{$$ = $1;}
-	| specify_block		{$$ = $1;}
+	| specify_block			{$$ = $1;}
 	| c_function ';'		{$$ = $1;}
 	;
 
@@ -211,22 +226,25 @@ list_of_function_items:
 	;
 
 function_item: 
-	parameter_declaration		{$$ = $1;}
+	parameter_declaration			{$$ = $1;}
 	| function_input_declaration	{$$ = $1;}
-	| net_declaration 		{$$ = $1;}
-	| integer_declaration 		{$$ = $1;}
-	| continuous_assign		{$$ = $1;}
-	| defparam_declaration		{$$ = $1;}
-	| function_statement		{$$ = $1;} //TODO It`s temporary
+	| net_declaration 				{$$ = $1;}
+	| integer_declaration 			{$$ = $1;}
+	| continuous_assign				{$$ = $1;}
+	| defparam_declaration			{$$ = $1;}
+	| function_statement			{$$ = $1;} //TODO It`s temporary
 	;
 
 function_input_declaration:
-	vINPUT variable_list ';'	{$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $2);}
+	vINPUT vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $3, true);}
+	| vINPUT variable_list ';'			{$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $2, false);}
 	;
 
 parameter_declaration:
-	vPARAMETER variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $2);}
-	| vLOCALPARAM variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $2);}
+	vPARAMETER vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $3, true);}
+	| vLOCALPARAM vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $3, true);}
+	| vPARAMETER variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $2, false);}
+	| vLOCALPARAM variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $2, false);}
 	;
 
 defparam_declaration:
@@ -234,31 +252,39 @@ defparam_declaration:
 	;
 
 input_declaration:
-	vINPUT variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,INPUT, $2);}
-	| vINPUT net_declaration	{$$ = markAndProcessSymbolListWith(MODULE,INPUT, $2);}
+	vINPUT net_declaration					{$$ = markAndProcessSymbolListWith(MODULE,INPUT, $2, false);}
+	| vINPUT integer_declaration			{$$ = markAndProcessSymbolListWith(MODULE,INPUT, $2, true);}
+	| vINPUT vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(MODULE,INPUT, $3, true);}
+	| vINPUT variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE,INPUT, $2, false);}
 	;
 
 output_declaration:
-	vOUTPUT variable_list ';'					{$$ = markAndProcessSymbolListWith(MODULE,OUTPUT, $2);}
-	| vOUTPUT net_declaration					{$$ = markAndProcessSymbolListWith(MODULE,OUTPUT, $2);}
-	| vOUTPUT integer_declaration				{$$ = markAndProcessSymbolListWith(MODULE,OUTPUT, $2);}
+	vOUTPUT net_declaration					{$$ = markAndProcessSymbolListWith(MODULE,OUTPUT, $2, false);}
+	| vOUTPUT integer_declaration			{$$ = markAndProcessSymbolListWith(MODULE,OUTPUT, $2, true);}
+	| vOUTPUT vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(MODULE,OUTPUT, $3, true);}
+	| vOUTPUT variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE,OUTPUT, $2, false);}
 	;
 
 inout_declaration:
-	vINOUT variable_list ';'					{$$ = markAndProcessSymbolListWith(MODULE,INOUT, $2);}
+	vINOUT net_declaration					{$$ = markAndProcessSymbolListWith(MODULE,INOUT, $2, false);}
+	| vINOUT integer_declaration			{$$ = markAndProcessSymbolListWith(MODULE,INOUT, $2, true);}
+	| vINOUT vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(MODULE,INOUT, $3, true);}
+	| vINOUT variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE,INOUT, $2, false);}
 	;
 
 net_declaration:
-	vWIRE variable_list ';'						{$$ = markAndProcessSymbolListWith(MODULE, WIRE, $2);}
-	| vREG variable_list ';'			        {$$ = markAndProcessSymbolListWith(MODULE, REG, $2);}
+	vWIRE vSIGNED variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE, WIRE, $3, true);}
+	| vREG vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(MODULE, REG, $3, true);}
+	| vWIRE variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE, WIRE, $2, false);}
+	| vREG variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE, REG, $2, false);}
 	;
 
 integer_declaration:
-	vINTEGER integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,INTEGER, $2);}
+	vINTEGER integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,INTEGER, $2, true);}
 	;
 
 genvar_declaration:
-	vGENVAR integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,GENVAR, $2);}
+	vGENVAR integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,GENVAR, $2, true);}
 	;
 
 function_output_variable:
@@ -494,34 +520,34 @@ event_expression:
 	;
 
 expression:
-	primary							{$$ = $1;}
-	| '+' expression %prec UADD				{$$ = newUnaryOperation(ADD, $2, yylineno);}
+	primary										{$$ = $1;}
+	| '+' expression %prec UADD					{$$ = newUnaryOperation(ADD, $2, yylineno);}
 	| '-' expression %prec UMINUS				{$$ = newUnaryOperation(MINUS, $2, yylineno);}
-	| '~' expression %prec UNOT				{$$ = newUnaryOperation(BITWISE_NOT, $2, yylineno);}
-	| '&' expression %prec UAND				{$$ = newUnaryOperation(BITWISE_AND, $2, yylineno);}
-	| '|' expression %prec UOR				{$$ = newUnaryOperation(BITWISE_OR, $2, yylineno);}
+	| '~' expression %prec UNOT					{$$ = newUnaryOperation(BITWISE_NOT, $2, yylineno);}
+	| '&' expression %prec UAND					{$$ = newUnaryOperation(BITWISE_AND, $2, yylineno);}
+	| '|' expression %prec UOR					{$$ = newUnaryOperation(BITWISE_OR, $2, yylineno);}
 	| voNAND expression %prec UNAND				{$$ = newUnaryOperation(BITWISE_NAND, $2, yylineno);}
 	| voNOR expression %prec UNOR				{$$ = newUnaryOperation(BITWISE_NOR, $2, yylineno);}
 	| voXNOR  expression %prec UXNOR			{$$ = newUnaryOperation(BITWISE_XNOR, $2, yylineno);}
 	| '!' expression %prec ULNOT				{$$ = newUnaryOperation(LOGICAL_NOT, $2, yylineno);}
-	| '^' expression %prec UXOR				{$$ = newUnaryOperation(BITWISE_XOR, $2, yylineno);}
-	| vCLOG2 '(' expression ')'				{$$ = newUnaryOperation(CLOG2, $3, yylineno);}
-	| vUNSIGNED '(' expression ')'				{$$ = newUnaryOperation(UNSIGNED, $3, yylineno);}
-	| vSIGNED '(' expression ')'				{$$ = newUnaryOperation(SIGNED, $3, yylineno);}
-	| expression '^' expression				{$$ = newBinaryOperation(BITWISE_XOR, $1, $3, yylineno);}
+	| '^' expression %prec UXOR					{$$ = newUnaryOperation(BITWISE_XOR, $2, yylineno);}
+	| vCLOG2 '(' expression ')'					{$$ = newUnaryOperation(CLOG2, $3, yylineno);}
+	| voUNSIGNED '(' expression ')'				{$$ = newUnaryOperation(UNSIGNED, $3, yylineno);}
+	| voSIGNED '(' expression ')'				{$$ = newUnaryOperation(SIGNED, $3, yylineno);}
+	| expression '^' expression					{$$ = newBinaryOperation(BITWISE_XOR, $1, $3, yylineno);}
 	| expression voPOWER expression				{$$ = newBinaryOperation(POWER,$1, $3, yylineno);}
-	| expression '*' expression				{$$ = newBinaryOperation(MULTIPLY, $1, $3, yylineno);}
-	| expression '/' expression				{$$ = newBinaryOperation(DIVIDE, $1, $3, yylineno);}
-	| expression '%' expression				{$$ = newBinaryOperation(MODULO, $1, $3, yylineno);}
-	| expression '+' expression				{$$ = newBinaryOperation(ADD, $1, $3, yylineno);}
-	| expression '-' expression				{$$ = newBinaryOperation(MINUS, $1, $3, yylineno);}
-	| expression '&' expression				{$$ = newBinaryOperation(BITWISE_AND, $1, $3, yylineno);}
-	| expression '|' expression				{$$ = newBinaryOperation(BITWISE_OR, $1, $3, yylineno);}
+	| expression '*' expression					{$$ = newBinaryOperation(MULTIPLY, $1, $3, yylineno);}
+	| expression '/' expression					{$$ = newBinaryOperation(DIVIDE, $1, $3, yylineno);}
+	| expression '%' expression					{$$ = newBinaryOperation(MODULO, $1, $3, yylineno);}
+	| expression '+' expression					{$$ = newBinaryOperation(ADD, $1, $3, yylineno);}
+	| expression '-' expression					{$$ = newBinaryOperation(MINUS, $1, $3, yylineno);}
+	| expression '&' expression					{$$ = newBinaryOperation(BITWISE_AND, $1, $3, yylineno);}
+	| expression '|' expression					{$$ = newBinaryOperation(BITWISE_OR, $1, $3, yylineno);}
 	| expression voNAND expression				{$$ = newBinaryOperation(BITWISE_NAND, $1, $3, yylineno);}
 	| expression voNOR expression				{$$ = newBinaryOperation(BITWISE_NOR, $1, $3, yylineno);}
 	| expression voXNOR expression				{$$ = newBinaryOperation(BITWISE_XNOR, $1, $3, yylineno);}
-	| expression '<' expression				{$$ = newBinaryOperation(LT, $1, $3, yylineno);}
-	| expression '>' expression				{$$ = newBinaryOperation(GT, $1, $3, yylineno);}
+	| expression '<' expression					{$$ = newBinaryOperation(LT, $1, $3, yylineno);}
+	| expression '>' expression					{$$ = newBinaryOperation(GT, $1, $3, yylineno);}
 	| expression voSRIGHT expression			{$$ = newBinaryOperation(SR, $1, $3, yylineno);}
 	| expression voASRIGHT expression			{$$ = newBinaryOperation(ASR, $1, $3, yylineno);}
 	| expression voSLEFT expression				{$$ = newBinaryOperation(SL, $1, $3, yylineno);}
@@ -530,14 +556,14 @@ expression:
 	| expression voLTE expression				{$$ = newBinaryOperation(LTE, $1, $3, yylineno);}
 	| expression voGTE expression				{$$ = newBinaryOperation(GTE, $1, $3, yylineno);}
 	| expression voCASEEQUAL expression			{$$ = newBinaryOperation(CASE_EQUAL, $1, $3, yylineno);}
-	| expression voCASENOTEQUAL expression			{$$ = newBinaryOperation(CASE_NOT_EQUAL, $1, $3, yylineno);}
+	| expression voCASENOTEQUAL expression		{$$ = newBinaryOperation(CASE_NOT_EQUAL, $1, $3, yylineno);}
 	| expression voOROR expression				{$$ = newBinaryOperation(LOGICAL_OR, $1, $3, yylineno);}
 	| expression voANDAND expression			{$$ = newBinaryOperation(LOGICAL_AND, $1, $3, yylineno);}
-	| expression '?' expression ':' expression		{$$ = newIfQuestion($1, $3, $5, yylineno);}
-	| function_instantiation				{$$ = $1;}
-	| '(' expression ')'					{$$ = $2;}
+	| expression '?' expression ':' expression	{$$ = newIfQuestion($1, $3, $5, yylineno);}
+	| function_instantiation					{$$ = $1;}
+	| '(' expression ')'						{$$ = $2;}
 	| '{' expression '{' probable_expression_list '}' '}'	{$$ = newListReplicate( $2, $4 ); }
-	| c_function							{$$ = $1;}
+	| c_function								{$$ = $1;}
 	;
 
 primary:

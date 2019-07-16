@@ -994,11 +994,13 @@ long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cach
 ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t *node, long *max_size, long assignment_size)
 {
 	STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
+	bool top_case = false;
 	
 	long my_max = 0;
 	if (max_size == NULL)
 	{
 		max_size = &my_max;
+		top_case = true;
 	}
 
 	long sc_spot = -1;
@@ -1046,9 +1048,28 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 						}
 						node = free_whole_tree(node);
 						node = newNode;
-						return node;
+					}
+					else
+					{
+						break;
 					}
 				}
+				else
+				{
+					break;
+				}
+			}
+			// fallthrough
+
+			case NUMBERS:
+			{
+				if (top_case && assignment_size > 0) 
+				{
+					VNumber *temp = node->types.vnumber;
+					node->types.vnumber = new VNumber(*temp, assignment_size);
+					delete temp;
+				}
+				return node;
 			}
 			break;
 
@@ -1141,7 +1162,7 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 
 		if (node_is_constant(newNode)){
 			/* resize as needed */
-			if (assignment_size != 0 && *max_size < assignment_size)
+			if (assignment_size > 0)
 			{
 				*max_size = assignment_size;
 			}
