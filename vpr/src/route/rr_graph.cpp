@@ -1473,11 +1473,13 @@ static void build_rr_sinks_sources(const int i,
                         if (class_inf[iclass].type == RECEIVER) {
                             //Connect the input pin to the sink
                             inode = get_rr_node_index(L_rr_node_indices, i + width_offset, j + height_offset, IPIN, ipin, side);
+
                             int to_node = get_rr_node_index(L_rr_node_indices, i, j, SINK, iclass);
 
                             //Add info about the edge to be created
                             rr_edges_to_create.emplace_back(inode, to_node, delayless_switch);
 
+                            VTR_ASSERT(inode >= 0);
                             L_rr_node[inode].set_cost_index(IPIN_COST_INDEX);
                             L_rr_node[inode].set_type(IPIN);
 
