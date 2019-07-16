@@ -257,12 +257,12 @@ static float route_connection_delay(int source_x, int source_y, int sink_x, int 
 
             int sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
 
+            VTR_ASSERT(sink_rr_node != OPEN);
+
             if (!measure_directconnect && directconnect_exists(source_rr_node, sink_rr_node)) {
                 //Skip if we shouldn't measure direct connects and a direct connect exists
                 continue;
             }
-
-            VTR_ASSERT(sink_rr_node != OPEN);
 
             successfully_routed = calculate_delay(source_rr_node, sink_rr_node,
                                                   router_opts,
