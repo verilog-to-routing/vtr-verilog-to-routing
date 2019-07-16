@@ -280,7 +280,7 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_type_ptr, 
 
         float num_instances = itr->second;
         float util = 0.;
-        if (num_instances != 0) {
+        if (device_ctx.grid.num_instances(type) != 0) {
             util = num_instances / device_ctx.grid.num_instances(type);
         }
         type_util[type] = util;
