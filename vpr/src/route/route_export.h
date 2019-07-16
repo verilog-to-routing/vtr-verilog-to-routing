@@ -6,7 +6,13 @@
 #include "route_common.h"
 #include "RoutingDelayCalculator.h"
 
-void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_arch* det_routing_arch, std::vector<t_segment_inf>& segment_inf, t_chan_width_dist chan_width_dist, t_direct_inf* directs, int num_directs);
+void try_graph(int width_fac,
+               const t_router_opts& router_opts,
+               t_det_routing_arch* det_routing_arch,
+               std::vector<t_segment_inf>& segment_inf,
+               t_chan_width_dist chan_width_dist,
+               t_direct_inf* directs,
+               int num_directs);
 
 bool try_route(int width_fac,
                const t_router_opts& router_opts,
