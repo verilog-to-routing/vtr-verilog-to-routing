@@ -55,14 +55,14 @@ void check_rr_graph(const t_graph_type graph_type,
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
 
-            check_rr_edge(inode, iedge, to_node);
-
             if (to_node < 0 || to_node >= (int)device_ctx.rr_nodes.size()) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                           "in check_rr_graph: node %d has an edge %d.\n"
                           "\tEdge is out of range.\n",
                           inode, to_node);
             }
+
+            check_rr_edge(inode, iedge, to_node);
 
             edges_from_current_to_node[to_node].push_back(iedge);
             total_edges_to_node[to_node]++;
