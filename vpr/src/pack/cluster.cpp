@@ -71,9 +71,8 @@ using namespace std;
 #include "tatum/report/graphviz_dot_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
-#define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30 /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
-#define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10       /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
-#define AAPACK_MAX_TRANSITIVE_EXPLORE 40        /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
+#define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10 /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
+#define AAPACK_MAX_TRANSITIVE_EXPLORE 40  /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than packer_opts.feasible_block_array_size */
 
 //Constant allowing all cluster pins to be used
 const t_ext_pin_util FULL_EXTERNAL_PIN_UTIL(1., 1.);
@@ -202,6 +201,7 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                                                   t_lb_router_data* router_data,
                                                   int verbosity,
                                                   bool enable_pin_feasibility_filter,
+                                                  const int feasible_block_array_size,
                                                   t_ext_pin_util max_external_pin_util);
 
 static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
@@ -214,7 +214,8 @@ static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* 
                                                          const t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                          const t_pack_molecule* molecule,
                                                          t_lb_router_data* router_data,
-                                                         int verbosity);
+                                                         int verbosity,
+                                                         const int feasible_block_array_size);
 
 static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data* router_data, const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules);
 
@@ -260,7 +261,8 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                               const std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types,
                               int verbosity,
                               bool enable_pin_feasibility_filter,
-                              bool balance_block_type_utilization);
+                              bool balance_block_type_utilization,
+                              const int feasible_block_array_size);
 
 static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                                   const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
@@ -269,28 +271,33 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                                   vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
                                                   const ClusterBlockId cluster_index,
                                                   bool prioritize_transitive_connectivity,
-                                                  int transitive_fanout_threshold);
+                                                  int transitive_fanout_threshold,
+                                                  const int feasible_block_array_size);
 
 void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules);
+                                                                const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                                const int feasible_block_array_size);
 
 void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules);
+                                                                const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                                const int feasible_block_array_size);
 
 void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                 const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                                                 vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
                                                                 const ClusterBlockId cluster_index,
-                                                                int transitive_fanout_threshold);
+                                                                int transitive_fanout_threshold,
+                                                                const int feasible_block_array_size);
 
 static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                                  const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                                  const bool allow_unrelated_clustering,
                                                  const bool prioritize_transitive_connectivity,
                                                  const int transitive_fanout_threshold,
+                                                 const int feasible_block_array_size,
                                                  int* num_unrelated_clustering_attempts,
                                                  t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                  vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
@@ -340,7 +347,17 @@ static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const Atom
 
 static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string, int>& pb_type_count);
 
+static void update_alm_count(const t_pb* pb, const t_type_ptr logic_block_type, const t_pb_type* alm_pb_type, std::vector<int>& alm_count);
+
 static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count);
+
+static t_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types);
+
+static t_pb_type* identify_alm_block_type(t_type_ptr logic_block_type);
+
+static bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name);
+
+static void print_alm_count(std::vector<int>& alm_count);
 
 /*****************************************/
 /*globally accessible function*/
@@ -399,9 +416,20 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
     std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
     std::shared_ptr<SetupTimingInfo> timing_info;
 
-    // data structure holding the total number of physical blocks
-    // used from each physical block type defined in the architecture
+    // this data structure is used to track the total number of physical blocks
+    // used for each physical block type defined in the architecture file.
     std::unordered_map<std::string, int> pb_type_count;
+
+    // this data structure tracks the number of ALMs used. It is populated only
+    // for architectures which has an ALM-like logic blocks. The architecture is
+    // assumed to have an ALM-like logic block only if it has a logic block that
+    // contains LUT primitives and is the first pb_block to have more than one
+    // instance from the top of the hierarchy (All parent pb_block have one
+    // instance only and one mode only). Index 0 holds the number of ALMs that are
+    // used for both logic (LUTs/adders) and registers. Index 1 holds the number
+    // of ALMs that are used for logic (LUTs/adders) only. Index 2 holds the
+    // number of ALMs that are used for registers only.
+    std::vector<int> alm_count(3, 0);
 
     num_clb = 0;
 
@@ -452,6 +480,10 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                               num_molecules);
 
     auto primitive_candidate_block_types = identify_primitive_candidate_block_types();
+    // find the cluster type that has lut primitives
+    auto logic_block_type = identify_logic_block_type(primitive_candidate_block_types);
+    // find an ALM-like pb_type within the found logic_block_type
+    auto alm_pb_type = identify_alm_block_type(logic_block_type);
 
     blocks_since_last_analysis = 0;
     num_blocks_hill_added = 0;
@@ -530,7 +562,8 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                               primitive_candidate_block_types,
                               packer_opts.pack_verbosity,
                               packer_opts.enable_pin_feasibility_filter,
-                              balance_block_type_utilization);
+                              balance_block_type_utilization,
+                              packer_opts.feasible_block_array_size);
 
             VTR_LOGV(verbosity == 2,
                      "Complex block %d: '%s' (%s) ", num_clb,
@@ -563,6 +596,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                                                      allow_unrelated_clustering,
                                                      packer_opts.prioritize_transitive_connectivity,
                                                      packer_opts.transitive_fanout_threshold,
+                                                     packer_opts.feasible_block_array_size,
                                                      &num_unrelated_clustering_attempts,
                                                      cur_cluster_placement_stats_ptr,
                                                      clb_inter_blk_nets,
@@ -582,6 +616,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                                                       router_data,
                                                       packer_opts.pack_verbosity,
                                                       packer_opts.enable_pin_feasibility_filter,
+                                                      packer_opts.feasible_block_array_size,
                                                       target_ext_pin_util);
                 prev_molecule = next_molecule;
 
@@ -613,6 +648,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                                                              allow_unrelated_clustering,
                                                              packer_opts.prioritize_transitive_connectivity,
                                                              packer_opts.transitive_fanout_threshold,
+                                                             packer_opts.feasible_block_array_size,
                                                              &num_unrelated_clustering_attempts,
                                                              cur_cluster_placement_stats_ptr,
                                                              clb_inter_blk_nets,
@@ -647,6 +683,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                                                          allow_unrelated_clustering,
                                                          packer_opts.prioritize_transitive_connectivity,
                                                          packer_opts.transitive_fanout_threshold,
+                                                         packer_opts.feasible_block_array_size,
                                                          &num_unrelated_clustering_attempts,
                                                          cur_cluster_placement_stats_ptr,
                                                          clb_inter_blk_nets,
@@ -700,6 +737,8 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                 auto cur_pb = cluster_ctx.clb_nlist.block_pb(clb_index);
                 // update the pb type count by counting the used pb types in this packed cluster
                 update_pb_type_count(cur_pb, pb_type_count);
+                // update the data structure holding the alm counts
+                update_alm_count(cur_pb, logic_block_type, alm_pb_type, alm_count);
                 free_pb_stats_recursive(cur_pb);
             } else {
                 /* Free up data structures and requeue used molecules */
@@ -718,6 +757,11 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
     // print the total number of used physical blocks for each
     // physical block type after finishing the packing stage
     print_pb_type_count(pb_type_count);
+
+    // if this architecture has an ALM-like physical block, report its usage
+    if (alm_pb_type) {
+        print_alm_count(alm_count);
+    }
 
     /****************************************************************
      * Free Data Structures
@@ -1107,7 +1151,7 @@ static t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster(t_pb*
 }
 
 /*****************************************/
-static void alloc_and_load_pb_stats(t_pb* pb) {
+static void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_size) {
     /* Call this routine when starting to fill up a new cluster.  It resets *
      * the gain vector, etc.                                                */
 
@@ -1123,7 +1167,7 @@ static void alloc_and_load_pb_stats(t_pb* pb) {
     pb->pb_stats->lookahead_input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
     pb->pb_stats->lookahead_output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
     pb->pb_stats->num_feasible_blocks = NOT_VALID;
-    pb->pb_stats->feasible_blocks = (t_pack_molecule**)vtr::calloc(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, sizeof(t_pack_molecule*));
+    pb->pb_stats->feasible_blocks = (t_pack_molecule**)vtr::calloc(feasible_block_array_size, sizeof(t_pack_molecule*));
 
     pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID();
 
@@ -1157,6 +1201,7 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                                                   t_lb_router_data* router_data,
                                                   int verbosity,
                                                   bool enable_pin_feasibility_filter,
+                                                  const int feasible_block_array_size,
                                                   t_ext_pin_util max_external_pin_util) {
     int molecule_size, failed_location;
     int i;
@@ -1208,7 +1253,8 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                     block_pack_status = try_place_atom_block_rec(primitives_list[i],
                                                                  molecule->atom_block_ids[i], pb, &parent,
                                                                  max_models, max_cluster_size, clb_index,
-                                                                 cluster_placement_stats_ptr, molecule, router_data, verbosity);
+                                                                 cluster_placement_stats_ptr, molecule, router_data,
+                                                                 verbosity, feasible_block_array_size);
                 }
             }
             if (enable_pin_feasibility_filter && block_pack_status == BLK_PASSED) {
@@ -1345,7 +1391,8 @@ static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* 
                                                          const t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                          const t_pack_molecule* molecule,
                                                          t_lb_router_data* router_data,
-                                                         int verbosity) {
+                                                         int verbosity,
+                                                         const int feasible_block_array_size) {
     int i, j;
     bool is_primitive;
     enum e_block_pack_status block_pack_status;
@@ -1364,7 +1411,8 @@ static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* 
     if (pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
         block_pack_status = try_place_atom_block_rec(pb_graph_node->parent_pb_graph_node, blk_id, cb,
                                                      &my_parent, max_models, max_cluster_size, clb_index,
-                                                     cluster_placement_stats_ptr, molecule, router_data, verbosity);
+                                                     cluster_placement_stats_ptr, molecule, router_data,
+                                                     verbosity, feasible_block_array_size);
         parent_pb = my_parent;
     } else {
         parent_pb = cb;
@@ -1407,7 +1455,7 @@ static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* 
     *parent = pb; /* this pb is parent of it's child that called this function */
     VTR_ASSERT(pb->pb_graph_node == pb_graph_node);
     if (pb->pb_stats == nullptr) {
-        alloc_and_load_pb_stats(pb);
+        alloc_and_load_pb_stats(pb, feasible_block_array_size);
     }
     pb_type = pb_graph_node->pb_type;
 
@@ -1891,7 +1939,8 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                               const std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types,
                               int verbosity,
                               bool enable_pin_feasibility_filter,
-                              bool balance_block_type_utilization) {
+                              bool balance_block_type_utilization,
+                              const int feasible_block_array_size) {
     /* Given a starting seed block, start_new_cluster determines the next cluster type to use
      * It expands the FPGA if it cannot find a legal cluster for the atom block
      */
@@ -1937,7 +1986,7 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
 
         t_pb* pb = new t_pb;
         pb->pb_graph_node = type->pb_graph_head;
-        alloc_and_load_pb_stats(pb);
+        alloc_and_load_pb_stats(pb, feasible_block_array_size);
         pb->parent_pb = nullptr;
 
         *router_data = alloc_and_load_router_data(&lb_type_rr_graphs[type->index], type);
@@ -1962,6 +2011,7 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                                             detailed_routing_stage, *router_data,
                                             verbosity,
                                             enable_pin_feasibility_filter,
+                                            feasible_block_array_size,
                                             FULL_EXTERNAL_PIN_UTIL);
 
             success = (pack_result == BLK_PASSED);
@@ -2029,7 +2079,8 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                                   vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
                                                   const ClusterBlockId cluster_index,
                                                   bool prioritize_transitive_connectivity,
-                                                  int transitive_fanout_threshold) {
+                                                  int transitive_fanout_threshold,
+                                                  const int feasible_block_array_size) {
     /* This routine populates a list of feasible blocks outside the cluster then returns the best one for the list    *
      * not currently in a cluster and satisfies the feasibility     *
      * function passed in as is_feasible.  If there are no feasible *
@@ -2042,28 +2093,30 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
 
     // 1. Find unpacked molecule based on criticality and strong connectedness (connected by low fanout nets) with current cluster
     if (cur_pb->pb_stats->num_feasible_blocks == NOT_VALID) {
-        add_cluster_molecule_candidates_by_connectivity_and_timing(cur_pb, cluster_placement_stats_ptr, atom_molecules);
+        add_cluster_molecule_candidates_by_connectivity_and_timing(cur_pb, cluster_placement_stats_ptr, atom_molecules, feasible_block_array_size);
     }
 
     if (prioritize_transitive_connectivity) {
         // 2. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->explore_transitive_fanout) {
-            add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets, cluster_index, transitive_fanout_threshold);
+            add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets,
+                                                                       cluster_index, transitive_fanout_threshold, feasible_block_array_size);
         }
 
         // 3. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
-            add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules);
+            add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, feasible_block_array_size);
         }
     } else { //Reverse order
         // 3. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
-            add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules);
+            add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, feasible_block_array_size);
         }
 
         // 2. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->explore_transitive_fanout) {
-            add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets, cluster_index, transitive_fanout_threshold);
+            add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets,
+                                                                       cluster_index, transitive_fanout_threshold, feasible_block_array_size);
         }
     }
 
@@ -2082,7 +2135,8 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
 
 void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules) {
+                                                                const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                                const int feasible_block_array_size) {
     VTR_ASSERT(cur_pb->pb_stats->num_feasible_blocks == NOT_VALID);
 
     cur_pb->pb_stats->num_feasible_blocks = 0;
@@ -2111,7 +2165,7 @@ void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
                     }
                     if (success) {
                         add_molecule_to_pb_stats_candidates(molecule,
-                                                            cur_pb->pb_stats->gain, cur_pb, AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE);
+                                                            cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size);
                     }
                 }
             }
@@ -2121,7 +2175,8 @@ void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
 
 void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules) {
+                                                                const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                                const int feasible_block_array_size) {
     /* Because the packer ignores high fanout nets when marking what blocks
      * to consider, use one of the ignored high fanout net to fill up lightly
      * related blocks */
@@ -2159,7 +2214,7 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
                     }
                     if (success) {
                         add_molecule_to_pb_stats_candidates(molecule,
-                                                            cur_pb->pb_stats->gain, cur_pb, min(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, AAPACK_MAX_HIGH_FANOUT_EXPLORE));
+                                                            cur_pb->pb_stats->gain, cur_pb, min(feasible_block_array_size, AAPACK_MAX_HIGH_FANOUT_EXPLORE));
                         count++;
                     }
                 }
@@ -2174,7 +2229,8 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                                                 vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
                                                                 const ClusterBlockId cluster_index,
-                                                                int transitive_fanout_threshold) {
+                                                                int transitive_fanout_threshold,
+                                                                const int feasible_block_array_size) {
     //TODO: For now, only done by fan-out; should also consider fan-in
 
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -2206,7 +2262,7 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
             }
             if (success) {
                 add_molecule_to_pb_stats_candidates(molecule,
-                                                    cur_pb->pb_stats->gain, cur_pb, min(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, AAPACK_MAX_TRANSITIVE_EXPLORE));
+                                                    cur_pb->pb_stats->gain, cur_pb, min(feasible_block_array_size, AAPACK_MAX_TRANSITIVE_EXPLORE));
             }
         }
     }
@@ -2218,6 +2274,7 @@ static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                                  const bool allow_unrelated_clustering,
                                                  const bool prioritize_transitive_connectivity,
                                                  const int transitive_fanout_threshold,
+                                                 const int feasible_block_array_size,
                                                  int* num_unrelated_clustering_attempts,
                                                  t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                  vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
@@ -2233,7 +2290,9 @@ static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
     /* If cannot pack into primitive, try packing into cluster */
 
     auto best_molecule = get_highest_gain_molecule(cur_pb, atom_molecules,
-                                                   NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets, cluster_index, prioritize_transitive_connectivity, transitive_fanout_threshold);
+                                                   NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets,
+                                                   cluster_index, prioritize_transitive_connectivity,
+                                                   transitive_fanout_threshold, feasible_block_array_size);
 
     /* If no blocks have any gain to the current cluster, the code above      *
      * will not find anything.  However, another atom block with no inputs in *
@@ -3312,9 +3371,139 @@ static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string,
  * Print the total number of used physical blocks for each pb type in the architecture
  */
 static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count) {
-    VTR_LOG("\nPb types usage...\n\n");
+    VTR_LOG("\nPb types usage...\n");
     for (auto& pb_type : pb_type_count) {
-        VTR_LOG("\t%-12s : %d\n", pb_type.first.c_str(), pb_type.second);
+        VTR_LOG("  %-12s : %d\n", pb_type.first.c_str(), pb_type.second);
     }
     VTR_LOG("\n");
+}
+
+/**
+ * This function identifies the logic block type which is
+ * defined by the block type which has a lut primitive
+ */
+static t_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types) {
+    std::string lut_name = ".names";
+
+    for (auto& model : primitive_candidate_block_types) {
+        std::string model_name(model.first->name);
+        if (model_name == lut_name)
+            return model.second[0];
+    }
+
+    return nullptr;
+}
+
+/**
+ * This function returns the pb_type that is similar to an ALM in an Intel
+ * FPGA. The ALM is defined as a physical block that contains a LUT primitive and
+ * is found by searching a cluster type to find the first pb_type (from the top
+ * of the hierarchy clb->alm) that has more than one instance within the cluster.
+ */
+static t_pb_type* identify_alm_block_type(t_type_ptr logic_block_type) {
+    // if there is no CLB-like cluster, then there is no ALM-like pb_block
+    if (!logic_block_type)
+        return nullptr;
+
+    // search down the hierarchy starting from the pb_graph_head
+    auto pb_graph_node = logic_block_type->pb_graph_head;
+
+    while (pb_graph_node->child_pb_graph_nodes) {
+        // if this pb_graph_node has more than one mode or more than one pb_type in the default mode return
+        // nullptr since the logic block of this architecture is not a CLB-like logic block
+        if (pb_graph_node->pb_type->num_modes > 1 || pb_graph_node->pb_type->modes[0].num_pb_type_children > 1)
+            return nullptr;
+        // explore the only child of this pb_graph_node
+        pb_graph_node = &pb_graph_node->child_pb_graph_nodes[0][0][0];
+        // if the child node has more than one instance in the
+        // cluster then this is the pb_type similar to an ALM
+        if (pb_graph_node->pb_type->num_pb > 1)
+            return pb_graph_node->pb_type;
+    }
+
+    return nullptr;
+}
+
+/**
+ * This function updates the alm_count data structure from the given packed cluster
+ */
+static void update_alm_count(const t_pb* pb, const t_type_ptr logic_block_type, const t_pb_type* alm_pb_type, std::vector<int>& alm_count) {
+    // if this cluster doesn't contain ALMs or there
+    // are no alms in this architecture, ignore it
+    if (!logic_block_type || pb->pb_graph_node != logic_block_type->pb_graph_head || !alm_pb_type)
+        return;
+
+    const std::string lut(".names");
+    const std::string ff(".latch");
+    const std::string adder("adder");
+
+    auto parent_pb = pb;
+
+    // go down the hierarchy till the parent physical block of the ALM is found
+    while (parent_pb->child_pbs[0][0].pb_graph_node->pb_type != alm_pb_type) {
+        parent_pb = &parent_pb->child_pbs[0][0];
+    }
+
+    // iterate over all the ALMs and update the ALM count accordingly
+    for (int ialm = 0; ialm < parent_pb->get_num_children_of_type(0); ialm++) {
+        if (!parent_pb->child_pbs[0][ialm].name)
+            continue;
+
+        auto has_used_lut = pb_used_for_blif_model(&parent_pb->child_pbs[0][ialm], lut);
+        auto has_used_adder = pb_used_for_blif_model(&parent_pb->child_pbs[0][ialm], adder);
+        auto has_used_ff = pb_used_for_blif_model(&parent_pb->child_pbs[0][ialm], ff);
+
+        // First type of ALMs: used for logic and registers
+        if ((has_used_lut || has_used_adder) && has_used_ff) {
+            alm_count[0]++;
+            // Second type of ALMs: used for logic only
+        } else if (has_used_lut || has_used_adder) {
+            alm_count[1]++;
+            // Third type of ALMs: used for registers only
+        } else if (has_used_ff) {
+            alm_count[2]++;
+        }
+    }
+}
+
+/**
+ * This function returns true if the given physical block has
+ * a primitive matching the given blif model and is used
+ */
+static bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name) {
+    auto pb_graph_node = pb->pb_graph_node;
+    auto pb_type = pb_graph_node->pb_type;
+    auto mode = &pb_type->modes[pb->mode];
+
+    // if this is a primitive check if it matches the given blif model name
+    if (pb_type->blif_model) {
+        if (blif_model_name == pb_type->blif_model || ".subckt " + blif_model_name == pb_type->blif_model) {
+            return true;
+        }
+    }
+
+    if (pb_type->num_modes > 0) {
+        for (int i = 0; i < mode->num_pb_type_children; i++) {
+            for (int j = 0; j < mode->pb_type_children[i].num_pb; j++) {
+                if (pb->child_pbs[i] && pb->child_pbs[i][j].name) {
+                    if (pb_used_for_blif_model(&pb->child_pbs[i][j], blif_model_name)) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Print the alm count data strurture
+ */
+static void print_alm_count(std::vector<int>& alm_count) {
+    VTR_LOG("\nALM count...\n");
+    VTR_LOG("  Total number of ALMs used         : %d\n", alm_count[0] + alm_count[1] + alm_count[2]);
+    VTR_LOG("  ALMs used for logic and registers : %d\n", alm_count[0]);
+    VTR_LOG("  ALMs used for logic only          : %d\n", alm_count[1]);
+    VTR_LOG("  ALMs used for registers only      : %d\n\n", alm_count[2]);
 }

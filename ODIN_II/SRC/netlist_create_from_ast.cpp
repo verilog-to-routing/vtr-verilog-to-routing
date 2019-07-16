@@ -348,6 +348,14 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 			node = resolve_node(parent_string_cache_list, node, NULL, -1); // may contain parameters from parent
 		}
 		oassert(node->type == NUMBERS);
+
+		/* this forces parameter values as unsigned, since we don't currently support signed keyword...
+		   must be changed once support is added */
+		VNumber *temp = node->types.vnumber;
+		VNumber *to_unsigned = new VNumber(V_UNSIGNED(*temp));
+		node->types.vnumber = to_unsigned;
+		delete temp;
+
 		local_param_table_sc->data[sc_spot] = (void *)node;
 	}
 
@@ -577,7 +585,7 @@ ast_node_t *find_top_module()
 void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, char *instance_name, STRING_CACHE_LIST *local_string_cache_list, int level)
 {
 	signal_list_t *list = NULL;
-	simplify_ast_module(current_module/*, local_param_table_sc*/);
+	simplify_ast_module(current_module/*, local_string_cache_list*/);
 
 	STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
 
@@ -900,23 +908,16 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				break;
 			/* ---------------------- */
 			/* All these are input references that we need to grab their pins from by create_pin */
-			case ARRAY_REF:
+			case ARRAY_REF: // fallthrough
 			{
-				return_sig_list = create_pins(node, NULL, instance_name_prefix, local_string_cache_list);
-				skip_children = true;
-				break;
+				// skip_children = true;
 			}
 			case IDENTIFIERS:
-			{
-				return_sig_list = create_pins(node, NULL, instance_name_prefix, local_string_cache_list);
-				break;
-			}
 			case RANGE_REF:
 			case NUMBERS:
 			{
+				node = resolve_node(local_string_cache_list, node, NULL, 0);
 				return_sig_list = create_pins(node, NULL, instance_name_prefix, local_string_cache_list);
-				/* children are traversed in the create_pin function */
-				//skip_children = true;
 				break;
 			}
 			/* ---------------------- */
@@ -1039,8 +1040,11 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				break;
 			}
 			case FUNCTION_INSTANCE:
-				connect_function_instantiation_and_alias(ALIAS_INPUTS, node, instance_name_prefix, local_string_cache_list);
-			break;
+			{
+				signal_list_t *temp_list = connect_function_instantiation_and_alias(ALIAS_INPUTS, node, instance_name_prefix, local_string_cache_list);
+				free_signal_list(temp_list); // list is unused; discard
+				break;
+			}
 			case ASSIGN:
 				//oassert(node->num_children == 1);
 				/* attach the drivers to the driver nets */
@@ -3294,12 +3298,56 @@ signal_list_t *create_output_pin(ast_node_t* var_declare, char *instance_name_pr
  *-------------------------------------------------------------------------------------------*/
 signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list)
 {
+	/* try to resolve */
 	if (assignment->children[1]->type != FUNCTION_INSTANCE)
 	{
 		long assignment_size = get_size_of_variable(assignment->children[0], local_string_cache_list);
 		assignment->children[1] = resolve_node(local_string_cache_list, assignment->children[1], NULL, assignment_size);
+	
+		/* cast to unsigned if necessary */
+		if (node_is_constant(assignment->children[1]))
+		{
+			char *id = NULL;
+			if (assignment->children[0]->type == IDENTIFIERS)
+			{
+				id = assignment->children[0]->types.identifier;
+			}
+			else
+			{
+				id = assignment->children[0]->children[0]->types.identifier;
+			}
+
+			STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
+			long sc_spot = sc_lookup_string(local_symbol_table_sc, id);
+			if (sc_spot > -1)
+			{
+				bool is_signed = ((ast_node_t *)local_symbol_table_sc->data[sc_spot])->types.variable.is_signed;
+				if (!is_signed)
+				{
+					VNumber *temp = assignment->children[1]->types.vnumber;
+					VNumber *to_unsigned = new VNumber(V_UNSIGNED(*temp));
+					assignment->children[1]->types.vnumber = to_unsigned;
+					delete temp;
+				}
+				else
+				{
+					/* leave as is */
+				}
+			}
+		}
+		else
+		{
+			/* signed keyword is not supported, meaning unresolved values will already be handled as
+				unsigned at the netlist level... must update once signed support is added */
+		}
 	}
 	
+	if (assignment->children[0]->type != FUNCTION_INSTANCE)
+	{
+		long assignment_size = get_size_of_variable(assignment->children[0], local_string_cache_list);
+		assignment->children[0] = resolve_node(local_string_cache_list, assignment->children[0], NULL, assignment_size);
+	}
+
 	ast_node_t *left  = assignment->children[0];
 	ast_node_t *right = assignment->children[1];
 
@@ -4392,6 +4440,8 @@ signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instan
 				}
 			}
 
+			delay_control->children[i] = resolve_node(local_string_cache_list, delay_control->children[i], NULL, 0);
+
 			switch(child_sensitivity)
 			{
 				case FALLING_EDGE_SENSITIVITY: //falltrhough
@@ -5228,6 +5278,7 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 
 	for (i = 0; i < block_list->num_children; i++)
 		free_signal_list(in_list[i]);
+	vtr::free(in_list);
 
 	dp_memory_list = insert_in_vptr_list(dp_memory_list, block_node);
 	block_node->type = MEMORY;

@@ -1160,6 +1160,7 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 					flag = 1;
 			}
 		}
+
 	}
 
 	return flag;
