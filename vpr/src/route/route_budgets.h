@@ -41,7 +41,7 @@ class route_budgets {
     void load_route_budgets(vtr::vector<ClusterNetId, float*>& net_delay,
                             std::shared_ptr<SetupTimingInfo> timing_info,
                             const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                            t_router_opts router_opts);
+                            const t_router_opts& router_opts);
 
     /*debugging tools*/
     void print_route_budget();
@@ -61,7 +61,7 @@ class route_budgets {
     void allocate_slack_using_delays_and_criticalities(vtr::vector<ClusterNetId, float*>& net_delay,
                                                        std::shared_ptr<SetupTimingInfo> timing_info,
                                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                                       t_router_opts router_opts);
+                                                       const t_router_opts& router_opts);
     void allocate_slack_using_weights(vtr::vector<ClusterNetId, float*>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
     /*Sometimes want to allocate only positive or negative slack.
      * By default, allocate both*/

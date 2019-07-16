@@ -207,7 +207,7 @@ void get_serial_num() {
     VTR_LOG("Serial number (magic cookie) for the routing is: %d\n", serial_num);
 }
 
-void try_graph(int width_fac, t_router_opts router_opts, t_det_routing_arch* det_routing_arch, std::vector<t_segment_inf>& segment_inf, t_chan_width_dist chan_width_dist, t_direct_inf* directs, int num_directs) {
+void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_arch* det_routing_arch, std::vector<t_segment_inf>& segment_inf, t_chan_width_dist chan_width_dist, t_direct_inf* directs, int num_directs) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     t_graph_type graph_type;

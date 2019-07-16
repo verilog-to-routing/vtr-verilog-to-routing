@@ -66,10 +66,10 @@ struct t_profile_info {
 };
 
 /*** Function Prototypes *****/
-static t_chan_width setup_chan_width(t_router_opts router_opts,
+static t_chan_width setup_chan_width(const t_router_opts& router_opts,
                                      t_chan_width_dist chan_width_dist);
 
-static float route_connection_delay(int source_x_loc, int source_y_loc, int sink_x_loc, int sink_y_loc, t_router_opts router_opts, bool measure_directconnect);
+static float route_connection_delay(int source_x_loc, int source_y_loc, int sink_x_loc, int sink_y_loc, const t_router_opts& router_opts, bool measure_directconnect);
 
 static void generic_compute_matrix(vtr::Matrix<std::vector<float>>& matrix,
                                    int source_x,
@@ -78,7 +78,7 @@ static void generic_compute_matrix(vtr::Matrix<std::vector<float>>& matrix,
                                    int start_y,
                                    int end_x,
                                    int end_y,
-                                   t_router_opts router_opts,
+                                   const t_router_opts& router_opts,
                                    bool measure_directconnect);
 
 static vtr::Matrix<float> compute_delta_delays(const t_placer_opts& palcer_opts, const t_router_opts& router_opts, bool measure_directconnect, size_t longest_length);
@@ -113,8 +113,8 @@ static bool directconnect_exists(int src_rr_node, int sink_rr_node);
 
 /******* Globally Accessible Functions **********/
 
-std::unique_ptr<PlaceDelayModel> compute_place_delay_model(t_placer_opts placer_opts,
-                                                           t_router_opts router_opts,
+std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& placer_opts,
+                                                           const t_router_opts& router_opts,
                                                            t_det_routing_arch* det_routing_arch,
                                                            std::vector<t_segment_inf>& segment_inf,
                                                            t_chan_width_dist chan_width_dist,
@@ -209,7 +209,7 @@ static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf) {
     return (length);
 }
 
-static t_chan_width setup_chan_width(t_router_opts router_opts,
+static t_chan_width setup_chan_width(const t_router_opts& router_opts,
                                      t_chan_width_dist chan_width_dist) {
     /*we give plenty of tracks, this increases routability for the */
     /*lookup table generation */
@@ -232,7 +232,7 @@ static t_chan_width setup_chan_width(t_router_opts router_opts,
     return init_chan(width_fac, chan_width_dist);
 }
 
-static float route_connection_delay(int source_x, int source_y, int sink_x, int sink_y, t_router_opts router_opts, bool measure_directconnect) {
+static float route_connection_delay(int source_x, int source_y, int sink_x, int sink_y, const t_router_opts& router_opts, bool measure_directconnect) {
     //Routes between the source and sink locations and calculates the delay
 
     float net_delay_value = IMPOSSIBLE_DELTA; /*set to known value for debug purposes */
@@ -288,7 +288,7 @@ static void generic_compute_matrix(vtr::Matrix<std::vector<float>>& matrix,
                                    int start_y,
                                    int end_x,
                                    int end_y,
-                                   t_router_opts router_opts,
+                                   const t_router_opts& router_opts,
                                    bool measure_directconnect) {
     int delta_x, delta_y;
     int sink_x, sink_y;

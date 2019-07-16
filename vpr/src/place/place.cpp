@@ -257,7 +257,7 @@ static void print_clb_placement(const char* fname);
 #endif
 
 static void alloc_and_load_placement_structs(float place_cost_exp,
-                                             t_placer_opts placer_opts,
+                                             const t_placer_opts& placer_opts,
                                              t_direct_inf* directs,
                                              int num_directs);
 
@@ -269,7 +269,7 @@ static std::vector<t_compressed_block_grid> create_compressed_block_grids();
 
 static t_compressed_block_grid create_compressed_block_grid(const std::vector<vtr::Point<int>>& locations);
 
-static void free_placement_structs(t_placer_opts placer_opts);
+static void free_placement_structs(const t_placer_opts& placer_opts);
 
 static void alloc_and_load_for_fast_cost_update(float place_cost_exp);
 
@@ -396,7 +396,7 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr);
 
 static void free_try_swap_arrays();
 
-static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
+static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
                                                t_placer_costs* costs,
                                                t_placer_prev_inverse_costs* prev_inverse_costs,
                                                int num_connections,
@@ -408,7 +408,7 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 
 static void placement_inner_loop(float t,
                                  float rlim,
-                                 t_placer_opts placer_opts,
+                                 const t_placer_opts& placer_opts,
                                  int move_lim,
                                  float crit_exponent,
                                  int inner_recompute_limit,
@@ -447,9 +447,9 @@ static void print_place_status(const float t,
                                size_t tot_moves);
 
 /*****************************************************************************/
-void try_place(t_placer_opts placer_opts,
+void try_place(const t_placer_opts& placer_opts,
                t_annealing_sched annealing_sched,
-               t_router_opts router_opts,
+               const t_router_opts& router_opts,
                const t_analysis_opts& analysis_opts,
                t_chan_width_dist chan_width_dist,
                t_det_routing_arch* det_routing_arch,
@@ -829,7 +829,7 @@ void try_place(t_placer_opts placer_opts,
 }
 
 /* Function to recompute the criticalities before the inner loop of the annealing */
-static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
+static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
                                                t_placer_costs* costs,
                                                t_placer_prev_inverse_costs* prev_inverse_costs,
                                                int num_connections,
@@ -871,7 +871,7 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 /* Function which contains the inner loop of the simulated annealing */
 static void placement_inner_loop(float t,
                                  float rlim,
-                                 t_placer_opts placer_opts,
+                                 const t_placer_opts& placer_opts,
                                  int move_lim,
                                  float crit_exponent,
                                  int inner_recompute_limit,
@@ -2353,7 +2353,7 @@ static double comp_bb_cost(e_cost_methods method) {
 
 /* Frees the major structures needed by the placer (and not needed       *
  * elsewhere).   */
-static void free_placement_structs(t_placer_opts placer_opts) {
+static void free_placement_structs(const t_placer_opts& placer_opts) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     free_legal_placements();
@@ -2394,7 +2394,7 @@ static void free_placement_structs(t_placer_opts placer_opts) {
 /* Allocates the major structures needed only by the placer, primarily for *
  * computing costs quickly and such.                                       */
 static void alloc_and_load_placement_structs(float place_cost_exp,
-                                             t_placer_opts placer_opts,
+                                             const t_placer_opts& placer_opts,
                                              t_direct_inf* directs,
                                              int num_directs) {
     int max_pins_per_clb, i;

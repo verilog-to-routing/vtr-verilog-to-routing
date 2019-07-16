@@ -39,7 +39,7 @@ using namespace std;
 
 static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, float parent_width, float parent_height);
 static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height);
-static int draw_internal_find_max_lvl(t_pb_type pb_type);
+static int draw_internal_find_max_lvl(const t_pb_type& pb_type);
 static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_bound_box& parent_bbox, const t_type_ptr type);
 static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_type_ptr type);
 
@@ -176,7 +176,7 @@ void draw_internal_draw_subblk() {
 /* This function traverses through the pb_graph of a certain physical block type and
  * finds the maximum sub-block levels for that type.
  */
-static int draw_internal_find_max_lvl(t_pb_type pb_type) {
+static int draw_internal_find_max_lvl(const t_pb_type& pb_type) {
     int i, j;
     t_mode mode;
     int max_levels = 0;

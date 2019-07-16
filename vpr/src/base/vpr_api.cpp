@@ -1077,13 +1077,13 @@ void vpr_check_arch(const t_arch& Arch) {
 }
 
 /* Verify settings don't conflict or otherwise not make sense */
-void vpr_check_setup(const t_packer_opts PackerOpts,
-                     const t_placer_opts PlacerOpts,
-                     const t_router_opts RouterOpts,
-                     const t_det_routing_arch RoutingArch,
+void vpr_check_setup(const t_packer_opts& PackerOpts,
+                     const t_placer_opts& PlacerOpts,
+                     const t_router_opts& RouterOpts,
+                     const t_det_routing_arch& RoutingArch,
                      const std::vector<t_segment_inf>& Segments,
-                     const t_timing_inf Timing,
-                     const t_chan_width_dist Chans) {
+                     const t_timing_inf& Timing,
+                     const t_chan_width_dist& Chans) {
     CheckSetup(PackerOpts, PlacerOpts, RouterOpts, RoutingArch,
                Segments, Timing, Chans);
 }

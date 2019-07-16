@@ -163,7 +163,7 @@ static t_rt_node* setup_routing_resources_no_net(int source_node) {
 }
 
 void alloc_routing_structs(t_chan_width chan_width,
-                           t_router_opts router_opts,
+                           const t_router_opts& router_opts,
                            t_det_routing_arch* det_routing_arch,
                            std::vector<t_segment_inf>& segment_inf,
                            const t_direct_inf* directs,

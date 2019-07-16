@@ -30,7 +30,7 @@ static void breadth_first_add_source_to_heap(ClusterNetId net_id);
 
 /************************ Subroutine definitions ****************************/
 
-bool try_breadth_first_route(t_router_opts router_opts) {
+bool try_breadth_first_route(const t_router_opts& router_opts) {
     /* Iterated maze router ala Pathfinder Negotiated Congestion algorithm,  *
      * (FPGA 95 p. 111).  Returns true if it can route this FPGA, false if   *
      * it can't.                                                             */
@@ -99,7 +99,7 @@ bool try_breadth_first_route(t_router_opts router_opts) {
     return (false);
 }
 
-bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac, t_router_opts router_opts) {
+bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac, const t_router_opts& router_opts) {
     bool is_routed = false;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
