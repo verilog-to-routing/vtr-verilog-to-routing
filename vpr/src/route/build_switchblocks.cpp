@@ -801,11 +801,12 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
     //      * interleave (to ensure good diversity)
 
     //Determine how many connections to make
-    size_t num_conns = evaluate_num_conns_formula(wireconn_ptr->num_conns_formula, potential_src_wires.size(), potential_dest_wires.size());
+    int num_conns = evaluate_num_conns_formula(wireconn_ptr->num_conns_formula, potential_src_wires.size(), potential_dest_wires.size());
+    VTR_ASSERT_MSG(num_conns >= 0, "Number of switchblock connections to create must be non-negative");
 
     VTR_LOGV(verbose, "  num_conns: %zu\n", num_conns);
 
-    for (size_t iconn = 0; iconn < num_conns; ++iconn) {
+    for (size_t iconn = 0; iconn < size_t(num_conns); ++iconn) {
         //Select the from wire
         // We modulo by the src set size to wrap around if there are more connections that src wires
         int src_wire_ind = iconn % potential_src_wires.size();  //Index in src set
