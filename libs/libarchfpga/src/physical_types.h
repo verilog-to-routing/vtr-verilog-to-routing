@@ -350,9 +350,9 @@ struct t_grid_loc_def {
     // t_grid_loc_def is arbitrarily choosen to own the metadata, and the other
     // t_grid_loc_def point to the owned version.
     std::unique_ptr<t_metadata_dict> owned_meta;
-    t_metadata_dict* meta; // Metadata for this location definition. This
-                           // metadata may be shared with multiple grid_locs
-                           // that come from a common definition.
+    t_metadata_dict* meta = nullptr; // Metadata for this location definition. This
+                                     // metadata may be shared with multiple grid_locs
+                                     // that come from a common definition.
 };
 
 enum GridDefType {
