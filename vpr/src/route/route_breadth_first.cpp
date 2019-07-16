@@ -322,6 +322,7 @@ static void breadth_first_expand_trace_segment(t_trace* start_ptr,
             tptr = next_ptr;
             next_ptr = tptr->next;
         }
+        VTR_ASSERT(last_ipin_node >= 0);
 
         /* This will stop the IPIN node used to get to this SINK from being         *
          * reexpanded for the remainder of this net's routing.  This will make us   *
