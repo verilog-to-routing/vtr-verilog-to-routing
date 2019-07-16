@@ -214,6 +214,8 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 							temp_localparam_list = (ast_node_t**) vtr::realloc(temp_localparam_list, sizeof(ast_node_t*)*localparam_num);
 						
 						temp_localparam_list[localparam_num-1] = var_declare;
+						
+						vtr::free(temp_string);
 					}
 				}
 			}
