@@ -140,7 +140,7 @@ void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t * /
 
 	if (len <= sanity) /* buffer not large enough */
 		oassert(false);
-	
+
 	/* Give names to the output pins */
 	for (i = 0; i < node->num_output_pins;  i++)
 	{
