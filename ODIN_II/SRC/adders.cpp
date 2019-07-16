@@ -1171,6 +1171,7 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 				vtr::free(component_o[i]);
 			}
 		}
+		
 	}
 
 	return flag;
