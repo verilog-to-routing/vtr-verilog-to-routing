@@ -444,9 +444,9 @@ static void build_rr_graph(const t_graph_type graph_type,
     *Warnings = RR_GRAPH_NO_WARN;
 
     /* Decode the graph_type */
-    bool is_global_graph = (GRAPH_GLOBAL == graph_type ? true : false);
-    bool use_full_seg_groups = (GRAPH_UNIDIR_TILEABLE == graph_type ? true : false);
-    enum e_directionality directionality = (GRAPH_BIDIR == graph_type ? BI_DIRECTIONAL : UNI_DIRECTIONAL);
+    bool is_global_graph = ((GRAPH_GLOBAL == graph_type) ? true : false);
+    bool use_full_seg_groups = ((GRAPH_UNIDIR_TILEABLE == graph_type) ? true : false);
+    enum e_directionality directionality = ((GRAPH_BIDIR == graph_type) ? BI_DIRECTIONAL : UNI_DIRECTIONAL);
     if (is_global_graph) {
         directionality = BI_DIRECTIONAL;
     }
