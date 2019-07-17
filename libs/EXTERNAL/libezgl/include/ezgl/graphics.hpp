@@ -191,6 +191,13 @@ public:
    */
   rectangle get_visible_screen();
 
+  /**
+   * Get the screen coordinates (i.e. pixel locations) of the world coordinate rectangle box
+   *
+   * @param box: a rectangle in world coordinates
+   */
+  rectangle world_to_screen(const rectangle& box);
+
   /**** Functions to set graphics attributes (for all subsequent drawing calls). ****/
 
   /**

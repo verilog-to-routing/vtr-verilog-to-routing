@@ -113,6 +113,14 @@ rectangle renderer::get_visible_screen()
   return m_camera->get_widget();
 }
 
+rectangle renderer::world_to_screen(const rectangle& box)
+{
+  point2d origin = m_transform(box.bottom_left());
+  point2d top_right = m_transform(box.top_right());
+
+  return rectangle(origin, top_right);
+}
+
 bool renderer::rectangle_off_screen(rectangle rect)
 {
   if(current_coordinate_system == SCREEN)
