@@ -125,8 +125,8 @@ void route_budgets::load_route_budgets(vtr::vector<ClusterNetId, float*>& net_de
     load_initial_budgets();
 
     /*go to the associated function depending on user input/default settings*/
-    if (router_opts.routing_budgets_algorithm == MINIMAX) {
-        allocate_slack_using_weights(net_delay, netlist_pin_lookup);
+    if (router_opts.routing_budgets_algorithm == MINIMAX || router_opts.routing_budgets_algorithm == YOYO) {
+        allocate_slack_using_weights(net_delay, netlist_pin_lookup, (router_opts.routing_budgets_algorithm == YOYO));
         calculate_delay_targets();
     } else if (router_opts.routing_budgets_algorithm == SCALE_DELAY) {
         allocate_slack_using_delays_and_criticalities(net_delay, timing_info, netlist_pin_lookup, router_opts);
@@ -156,7 +156,7 @@ void route_budgets::calculate_delay_targets(ClusterNetId net_id, ClusterPinId pi
     delay_target[net_id][ipin] = min(0.5 * (delay_min_budget[net_id][ipin] + delay_max_budget[net_id][ipin]), delay_min_budget[net_id][ipin] + 0.1e-9);
 }
 
-void route_budgets::allocate_slack_using_weights(vtr::vector<ClusterNetId, float*>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
+void route_budgets::allocate_slack_using_weights(vtr::vector<ClusterNetId, float*>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, bool negative_hold_slack) {
     /*The minimax PERT algorithm uses a weight based approach to allocate slack for each connection
      * The formula used where c is a connection is
      * slack_allocated(c) = (slack(c)*weight(c)/max_weight_of_all_path_through(c)).
@@ -171,8 +171,9 @@ void route_budgets::allocate_slack_using_weights(vtr::vector<ClusterNetId, float
 
     /*Preprocessing algorithm in order to consider short paths when setting initial maximum budgets.
      * Not necessary unless budgets are really hard to meet*/
-    process_negative_slack_using_minimax(net_delay, netlist_pin_lookup);
-
+    if ( negative_hold_slack ) {
+    	process_negative_slack_using_minimax(net_delay, netlist_pin_lookup);
+    }
     iteration = 0;
     max_budget_change = 900e-12;
 

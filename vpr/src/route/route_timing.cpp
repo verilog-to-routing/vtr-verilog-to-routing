@@ -1015,6 +1015,7 @@ bool timing_driven_route_net(ClusterNetId net_id,
             conn_delay_budget.target_delay = budgeting_inf.get_delay_target(net_id, target_pin);
             conn_delay_budget.min_delay = budgeting_inf.get_min_delay_budget(net_id, target_pin);
             conn_delay_budget.short_path_criticality = budgeting_inf.get_crit_short_path(net_id, target_pin);
+            conn_delay_budget.routing_budgets_algorithm = router_opts.routing_budgets_algorithm;
         }
 
         // build a branch in the route tree to the target
@@ -1365,7 +1366,7 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
 
         //Have we found the target?
         if (inode == sink_node) {
-            if (cost_params.delay_budget) {
+            if (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO) {
                 for (unsigned i = 1; i < cheapest->edge.size() - 1; i++ ) {
                     int node_2 = cheapest->path_rr[i];
                     int edge = cheapest->edge[i-1];
@@ -1501,7 +1502,7 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
      * than one with higher cost.  Test whether or not I should disallow   *
      * re-expansion based on a higher total cost.                          */
 
-    if (old_total_cost > new_total_cost && (old_back_cost > new_back_cost || (cost_params.delay_budget))) {
+    if (old_total_cost > new_total_cost && (old_back_cost > new_back_cost || (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO))) {
         VTR_LOGV_DEBUG(f_router_debug, "    Better cost to %d\n", inode);
         
         VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for assicated node %d (from %d edge %d)\n", cheapest->index, cheapest->u.prev.node, cheapest->u.prev.edge);
@@ -1817,7 +1818,7 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
     float expected_cost = router_lookahead.get_expected_cost(inode, target_node, cost_params, R_upstream);
     std::vector<int> path;
 
-    if (delay_budget) {
+    if (delay_budget && delay_budget->routing_budgets_algorithm == YOYO ) {
         float expected_total_cost;
         float expected_delay = router_lookahead.get_expected_delay(inode, target_node, cost_params, R_upstream);
         float expected_cong = router_lookahead.get_expected_cong(inode, target_node, cost_params, R_upstream);
@@ -1830,7 +1831,7 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
         expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * max(0.f,  delay_budget->target_delay - expected_total_delay);
         expected_total_delay_cost += pow(max(0.f, expected_total_delay- delay_budget->max_delay), 2) / 100e-12;
         expected_total_delay_cost += pow(max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
-        expected_total_cost = expected_total_delay_cost + expected_total_cong;
+        expected_total_cost = expected_total_delay_cost + (1. - cost_params.criticality) * expected_total_cong;
         
         heap_::push_back_node_with_info(inode, expected_total_cost, NO_PREVIOUS, NO_PREVIOUS,
                 backward_path_cost, R_upstream, rt_node->Tdel, path, net_rr);
@@ -1841,11 +1842,6 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
         heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
                 backward_path_cost, R_upstream);
     }
-
-    VTR_LOGV_DEBUG(f_router_debug, "  Adding node %8d to heap from init route tree with cost %g (%s)\n", inode, tot_cost, describe_rr_node(inode).c_str());
-
-    heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
-                          backward_path_cost, R_upstream);
 
     ++router_stats.heap_pushes;
 }
@@ -1907,7 +1903,7 @@ static void timing_driven_expand_neighbour(t_heap* current,
     if ((to_xhigh < bounding_box.xmin      //Strictly left of BB left-edge
         || to_xlow > bounding_box.xmax    //Strictly right of BB right-edge
         || to_yhigh < bounding_box.ymin   //Strictly below BB bottom-edge
-        || to_ylow > bounding_box.ymax) && !(cost_params.delay_budget)) { //Strictly above BB top-edge
+        || to_ylow > bounding_box.ymax) && !(cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO)) { //Strictly above BB top-edge
         VTR_LOGV_DEBUG(f_router_debug,
                        "      Pruned expansion of node %d edge %d -> %d"
                        " (to node location %d,%dx%d,%d outside of expanded"
@@ -1946,7 +1942,7 @@ static void timing_driven_expand_neighbour(t_heap* current,
     VTR_LOGV_DEBUG(f_router_debug, "      Expanding node %d edge %d -> %d\n",
                    from_node, from_edge, to_node);
 
-    if (!cost_params.delay_budget || (cost_params.delay_budget && current->net_rr.find(to_node) == current->net_rr.end())) {
+    if (!cost_params.delay_budget || (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm != YOYO) || (current->net_rr.find(to_node) == current->net_rr.end())) {
         timing_driven_add_to_heap(cost_params,
                               router_lookahead,
                               current, from_node, to_node, from_edge, target_node, router_stats);
@@ -1969,6 +1965,7 @@ static void timing_driven_add_to_heap(const t_conn_cost_params cost_params,
     next->cost = std::numeric_limits<float>::infinity(); //Not used directly
     next->backward_path_cost = current->backward_path_cost;
     next->backward_delay = current->backward_delay;
+    next->backward_cong = current->backward_cong;
     next->R_upstream = current->R_upstream;
     next->path_rr = current->path_rr;
     next->net_rr = current->net_rr;
@@ -2012,7 +2009,6 @@ static void timing_driven_expand_node(const t_conn_cost_params cost_params,
     current->path_rr.emplace_back(from_node);
     current->net_rr.emplace(from_node);
     current->edge.emplace_back(iconn);
-    current->index = to_node;
 }
 
 //Calculates the cost of reaching to_node
@@ -2062,7 +2058,7 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     to->backward_path_cost += cost_params.criticality * Tdel;                             //Delay cost
 
     to->backward_delay += Tdel;
-    to->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to_node);
+    to->backward_cong += get_rr_cong_cost(to_node);
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
@@ -2076,8 +2072,10 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
 
     float expected_delay = router_lookahead.get_expected_delay(to_node, target_node, cost_params, to->R_upstream );
     float expected_cong = router_lookahead.get_expected_cong(to_node, target_node, cost_params, to->R_upstream );
-    if (delay_budget) {
+    if (delay_budget && delay_budget->routing_budgets_algorithm == YOYO) {
         float expected_total_delay_cost;// = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
+        float expected_total_cong_cost;
+        
         float expected_total_cong =cost_params.astar_fac *  expected_cong + to->backward_cong;
         float expected_total_delay =cost_params.astar_fac * expected_delay + to->backward_delay;
         //If budgets specified calculate cost as described by RCV paper:
@@ -2090,7 +2088,8 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
         expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * max(0.f,  delay_budget->target_delay - expected_total_delay);
         expected_total_delay_cost += pow(max(0.f, expected_total_delay- delay_budget->max_delay), 2) / 100e-12;
         expected_total_delay_cost += pow(max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
-        total_cost = expected_total_delay_cost + expected_total_cong;
+        expected_total_cong_cost = (1. - cost_params.criticality) *  expected_total_cong;
+        total_cost = expected_total_delay_cost + expected_total_cong_cost;
     }
     else {
         //Update total cost

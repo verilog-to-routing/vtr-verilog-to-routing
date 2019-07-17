@@ -37,6 +37,7 @@ struct t_conn_delay_budget {
     float min_delay;    //Minimum legal connection delay
     float target_delay; //Target/goal connection delay
     float max_delay;    //Maximum legal connection delay
+    e_routing_budgets_algorithm routing_budgets_algorithm;
 };
 
 struct t_conn_cost_params {

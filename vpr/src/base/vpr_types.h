@@ -888,6 +888,7 @@ enum e_routing_failure_predictor {
 };
 enum e_routing_budgets_algorithm {
     MINIMAX,
+    YOYO,
     SCALE_DELAY,
     DISABLE
 };

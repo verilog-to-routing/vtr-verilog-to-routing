@@ -252,6 +252,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("RouterOpts.routing_budgets_algorithm = DISABLE\n");
         } else if (RouterOpts.routing_budgets_algorithm == MINIMAX) {
             VTR_LOG("RouterOpts.routing_budgets_algorithm = MINIMAX\n");
+        } else if (RouterOpts.routing_budgets_algorithm == YOYO) {
+            VTR_LOG("RouterOpts.routing_budgets_algorithm = YOYO\n");
         } else if (RouterOpts.routing_budgets_algorithm == SCALE_DELAY) {
             VTR_LOG("RouterOpts.routing_budgets_algorithm = SCALE_DELAY\n");
         }

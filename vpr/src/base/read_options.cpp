@@ -172,6 +172,8 @@ struct RouteBudgetsAlgorithm {
         ConvertedValue<e_routing_budgets_algorithm> conv_value;
         if (str == "minimax")
             conv_value.set_value(MINIMAX);
+        else if (str == "yoyo")
+            conv_value.set_value(YOYO);
         else if (str == "scale_delay")
             conv_value.set_value(SCALE_DELAY);
         else if (str == "disable")
@@ -189,6 +191,8 @@ struct RouteBudgetsAlgorithm {
         ConvertedValue<std::string> conv_value;
         if (val == MINIMAX)
             conv_value.set_value("minimax");
+        else if (val == YOYO)
+            conv_value.set_value("yoyo");
         else if (val == DISABLE)
             conv_value.set_value("disable");
         else {
@@ -1472,7 +1476,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             " * criticality: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality)\n"
             " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
         .default_value("disable")
-        .choices({"minimax", "scale_delay", "disable"})
+        .choices({"minimax", "scale_delay", "yoyo", "disable"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.save_routing_per_iteration, "--save_routing_per_iteration")
