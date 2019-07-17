@@ -864,10 +864,14 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					symbol_list->children[i]->types.variable.is_reg = true;
 					break;
 				case INTEGER:
-			    case GENVAR:
 					oassert(is_signed && "Integers must always be signed");
 					symbol_list->children[i]->types.variable.is_signed = is_signed;			
 					symbol_list->children[i]->types.variable.is_integer = true;
+					break;
+			    case GENVAR:
+					oassert(is_signed && "Genvars must always be signed");
+					symbol_list->children[i]->types.variable.is_signed = is_signed;			
+					symbol_list->children[i]->types.variable.is_integer = true; // TODO: flip to is_genvar
 					break;
 				default:
 					oassert(false);

@@ -101,14 +101,16 @@ int yylex(void);
 %type <node> gate_declaration single_input_gate_instance
 %type <node> module_instantiation module_instance function_instance list_of_module_connections list_of_function_connections
 %type <node> list_of_multiple_inputs_gate_connections
-%type <node> module_connection always statement function_statement blocking_assignment generate
-%type <node> non_blocking_assignment case_item_list case_items seq_block generate_for
-%type <node> stmt_list delay_control event_expression_list event_expression
+%type <node> module_connection always statement function_statement blocking_assignment
+%type <node> non_blocking_assignment conditional_statement case_statement case_item_list case_items seq_block
+%type <node> stmt_list delay_control event_expression_list event_expression loop_statement
 %type <node> expression primary probable_expression_list expression_list module_parameter
-%type <node> list_of_module_parameters
+%type <node> list_of_module_parameters localparam_declaration
 %type <node> specify_block list_of_specify_items specify_item specparam_declaration
 %type <node> specify_pal_connect_declaration c_function_expression_list c_function
 %type <node> initial_block parallel_connection list_of_blocking_assignment
+%type <node> list_of_generate_items generate_item generate loop_generate_construct if_generate_construct 
+%type <node> case_generate_construct case_generate_item_list case_generate_items generate_block
 
 %%
 
@@ -193,19 +195,31 @@ module_item:
 	| input_declaration	 	{$$ = $1;}
 	| output_declaration 	{$$ = $1;}
 	| inout_declaration 	{$$ = $1;}
-	| net_declaration 		{$$ = $1;}
-	| genvar_declaration	{$$ = $1;}
-	| integer_declaration 	{$$ = $1;}
-	| continuous_assign		{$$ = $1;}
-	| gate_declaration		{$$ = $1;}
-	| generate				{$$ = $1;}
-	| module_instantiation	{$$ = $1;}
-	| function_declaration	{$$ = $1;}
-	| initial_block			{$$ = $1;}
-	| always				{$$ = $1;}
-	| defparam_declaration	{$$ = $1;}
 	| specify_block			{$$ = $1;}
-	| c_function ';'		{$$ = $1;}
+	| generate_item			{$$ = $1;}
+	| generate				{$$ = $1;}
+	;
+
+list_of_generate_items:
+	list_of_generate_items generate_item	{$$ = newList_entry($1, $2);}
+	| generate_item							{$$ = newList(BLOCK, $1);}
+
+generate_item:
+	localparam_declaration		{$$ = $1;}
+	| net_declaration 			{$$ = $1;}
+	| genvar_declaration		{$$ = $1;}
+	| integer_declaration 		{$$ = $1;}
+	| continuous_assign			{$$ = $1;}
+	| gate_declaration			{$$ = $1;}
+	| module_instantiation		{$$ = $1;}
+	| function_declaration		{$$ = $1;}
+	| initial_block				{$$ = $1;}
+	| always					{$$ = $1;}
+	| defparam_declaration		{$$ = $1;}
+	| c_function ';'			{$$ = $1;}
+	| if_generate_construct		{$$ = $1;}
+	| case_generate_construct	{$$ = $1;}
+	| loop_generate_construct	{$$ = $1;}
 	;
 
 function_declaration:
@@ -242,8 +256,11 @@ function_input_declaration:
 
 parameter_declaration:
 	vPARAMETER vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $3, true);}
-	| vLOCALPARAM vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $3, true);}
 	| vPARAMETER variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $2, false);}
+	;
+
+localparam_declaration:
+	vLOCALPARAM vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $3, true);}
 	| vLOCALPARAM variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $2, false);}
 	;
 
@@ -424,28 +441,65 @@ always:
 	;
 
 generate:
-	vGENERATE generate_for vENDGENERATE	{$$ = newGenerate($2, yylineno);}
+	vGENERATE list_of_generate_items vENDGENERATE	{$$ = newGenerate($2, yylineno);}
+	;
+
+loop_generate_construct:
+	vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' generate_block	{$$ = newFor($3, $5, $7, $9, yylineno);}
+	; 
+
+if_generate_construct:
+	vIF '(' expression ')' generate_block %prec LOWER_THAN_ELSE		{$$ = newIf($3, $5, NULL, yylineno);}
+	| vIF '(' expression ')' generate_block vELSE generate_block	{$$ = newIf($3, $5, $7, yylineno);}
+	;
+
+case_generate_construct:
+	vCASE '(' expression ')' case_generate_item_list vENDCASE			{$$ = newCase($3, $5, yylineno);}
+	;
+
+case_generate_item_list:
+	case_generate_item_list case_generate_items	{$$ = newList_entry($1, $2);}
+	| case_generate_items			{$$ = newList(CASE_LIST, $1);}
+	;
+
+case_generate_items:
+	expression ':' generate_block	{$$ = newCaseItem($1, $3, yylineno);}
+	| vDEFAULT ':' generate_block	{$$ = newDefaultCase($3, yylineno);}
+	;
+
+generate_block:
+	generate_item										{$$ = $1;}
+	| vBEGIN list_of_generate_items vEND				{$$ = $2;}
+	| vBEGIN ':' vSYMBOL_ID list_of_generate_items vEND	{$$ = $4;}
 	;
 
 function_statement:
 	statement	{$$ = newAlways(NULL, $1, yylineno);}
 	;
 
-generate_for:
-	vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' vBEGIN module_instantiation vEND	{$$ = newFor($3, $5, $7, $10, yylineno);}
-	; 
-
 statement:
 	seq_block													{$$ = $1;}
 	| c_function ';'											{$$ = $1;}
 	| blocking_assignment ';'									{$$ = $1;}
 	| non_blocking_assignment ';'								{$$ = $1;}
-	| vIF '(' expression ')' statement %prec LOWER_THAN_ELSE				{$$ = newIf($3, $5, NULL, yylineno);}
-	| vIF '(' expression ')' statement vELSE statement					{$$ = newIf($3, $5, $7, yylineno);}
-	| vCASE '(' expression ')' case_item_list vENDCASE					{$$ = newCase($3, $5, yylineno);}
-	| vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' statement	{$$ = newFor($3, $5, $7, $9, yylineno);}
+	| conditional_statement										{$$ = $1;}
+	| case_statement											{$$ = $1;}
+	| loop_statement											{$$ = $1;}
+	| ';'														{$$ = NULL;}
+	;
+
+loop_statement:
+	vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' statement	{$$ = newFor($3, $5, $7, $9, yylineno);}
 	| vWHILE '(' expression ')' statement							{$$ = newWhile($3, $5, yylineno);}
-	| ';'											{$$ = NULL;}
+	;
+
+case_statement:
+	vCASE '(' expression ')' case_item_list vENDCASE			{$$ = newCase($3, $5, yylineno);}
+	;
+
+conditional_statement:
+	vIF '(' expression ')' statement %prec LOWER_THAN_ELSE	{$$ = newIf($3, $5, NULL, yylineno);}
+	| vIF '(' expression ')' statement vELSE statement			{$$ = newIf($3, $5, $7, yylineno);}
 	;
 
 list_of_specify_items:

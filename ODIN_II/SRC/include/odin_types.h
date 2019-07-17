@@ -349,6 +349,7 @@ struct typ
 		short is_wire;
 		short is_reg;
 		short is_integer;
+		short is_genvar;
 		short is_signed;
 		short is_initialized; // should the variable be initialized with some value?
 		long initial_value;

@@ -128,6 +128,33 @@ char *make_full_ref_name(const char *previous, const char *module_name, const ch
 }
 
 /*---------------------------------------------------------------------------------------------
+ * (function: make_full_name_w_o_array_ref)
+// {previous_string}.module_name+instance_name
+ *-------------------------------------------------------------------------------------------*/
+char *make_full_name_w_o_array_ref(const char *previous, const char *module_name, const char *module_instance_name)
+{
+
+	std::stringstream return_string;
+	if(previous)								 
+		return_string << previous;
+
+	if(module_name) 							 
+		return_string	<< "." << module_name << "+" << module_instance_name;
+		
+
+	std::string name = return_string.str();
+
+	size_t idx = name.find_first_of('[', 0);
+	if (idx != std::string::npos)
+	{
+		// delete array refs
+		name.erase(idx, std::string::npos);
+	}
+	
+	return vtr::strdup(name.c_str());
+}
+
+/*---------------------------------------------------------------------------------------------
  * (function: twos_complement)
  * Changes a bit string to its twos complement value
  *-------------------------------------------------------------------------------------------*/
