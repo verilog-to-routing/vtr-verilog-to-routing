@@ -1891,17 +1891,20 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 		if(flag == 0)
 		{
 			ref_node = module_instantiations_instance[j];
-			if(strcmp(ref_node->children[1]->children[0]->types.identifier, module_instance_name) == 0)
+			if(module_instance_name != NULL)
 			{
-				if(ref_node->children[1]->children[2])
-					add_child_to_node(ref_node->children[1]->children[2], new_node);
-				else
+				if(strcmp(ref_node->children[1]->children[0]->types.identifier, module_instance_name) == 0)
 				{
-					ast_node_t* symbol_node = create_node_w_type(MODULE_PARAMETER_LIST, line_number, current_parse_file);
-					ref_node->children[1]->children[2] = symbol_node;
-					add_child_to_node(ref_node->children[1]->children[2], new_node);
+					if(ref_node->children[1]->children[2])
+						add_child_to_node(ref_node->children[1]->children[2], new_node);
+					else
+					{
+						ast_node_t* symbol_node = create_node_w_type(MODULE_PARAMETER_LIST, line_number, current_parse_file);
+						ref_node->children[1]->children[2] = symbol_node;
+						add_child_to_node(ref_node->children[1]->children[2], new_node);
+					}
+					flag = 1;
 				}
-				flag = 1;
 			}
 		}
 	}
