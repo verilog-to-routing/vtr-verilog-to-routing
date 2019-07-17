@@ -1529,7 +1529,7 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix, STR
 nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list)
 {
 	int i;
-	char *temp_string;
+	char *temp_string = NULL;
 	long sc_spot;
 	nnet_t *new_net = NULL;
 
@@ -1586,6 +1586,9 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		if ((sc_spot = sc_add_string(local_param_table_sc, temp_string)) == -1)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
 					"%s: name conflicts with Odin internal reference\n", temp_string);
+
+		vtr::free(temp_string);
+		temp_string = NULL;
 
 		local_param_table_sc->data[sc_spot] = (void *)new_node;
 
