@@ -198,7 +198,7 @@ int read_tokens (char *buffer, hard_block_models *models, FILE *file, Hashtable 
 
 	if (token)
 	{
-		if(skip_reading_bit_map && !token && ((token[0] == '0') || (token[0] == '1') || (token[0] == '-')))
+		if(skip_reading_bit_map && ((token[0] == '0') || (token[0] == '1') || (token[0] == '-')))
 		{
 			dum_parse(buffer, file);
 		}
