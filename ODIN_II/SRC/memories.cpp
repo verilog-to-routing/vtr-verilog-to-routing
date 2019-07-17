@@ -436,7 +436,10 @@ void split_sp_memory_depth(nnode_t *node, int split_size)
 		connect_nodes(not_g, 0, mux, 1);
 
 		npin_t *pin = signals->out->pins[i];
+		if(pin->name)
+			vtr::free(pin->name);
 		pin->name = mux->name;
+		
 		if(pin->mapping)
 			vtr::free(pin->mapping);
 		pin->mapping = NULL;
