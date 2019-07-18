@@ -6190,5 +6190,7 @@ ast_node_t *get_chunk_size_node(char *instance_name_prefix, char *array_name, ST
 		array_size = ast_node_deep_copy((ast_node_t *)local_param_table_sc->data[sc_spot]);
 	}
 
+	vtr::free(temp_string);
+
 	return array_size;
 }
