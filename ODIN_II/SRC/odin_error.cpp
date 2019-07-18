@@ -98,10 +98,12 @@ void _log_message(odin_error error_type, long line_number, long file, bool soft_
 		va_start(ap, message);
 		vfprintf(stderr,message, ap);
 		va_end(ap);
+
+		if (message[strlen(message)-1] != '\n') 
+			fprintf(stderr,"\n");
 	}
 
-	if (message[strlen(message)-1] != '\n') 
-		fprintf(stderr,"\n");
+
 
 	print_culprit_line(line_number, file);
 
