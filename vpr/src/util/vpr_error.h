@@ -48,10 +48,6 @@ class VprError : public vtr::VtrError {
     t_vpr_error_type type_;
 };
 
-// Set of function names for which the VPR_THROW errors are treated
-// as VTR_LOG_WARN
-static std::unordered_set<std::string> functions_to_demote;
-
 // This function is used to save into the functions_to_demote set
 // all the function names which contain VPR_THROW errors that are
 // going to be demoted to be VTR_LOG_WARN

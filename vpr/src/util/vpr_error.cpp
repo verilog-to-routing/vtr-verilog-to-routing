@@ -5,6 +5,10 @@
 #include "vtr_log.h"
 #include "vpr_error.h"
 
+// Set of function names for which the VPR_THROW errors are treated
+// as VTR_LOG_WARN
+static std::unordered_set<std::string> functions_to_demote;
+
 /* Date:June 15th, 2013
  * Author: Daniel Chen
  * Purpose: Used to throw any internal VPR error or architecture
