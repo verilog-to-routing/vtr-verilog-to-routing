@@ -191,6 +191,13 @@ public:
    */
   rectangle get_visible_screen();
 
+  /**
+   * Get the screen coordinates (i.e. pixel locations) of the world coordinate rectangle box
+   *
+   * @param box: a rectangle in world coordinates
+   */
+  rectangle world_to_screen(const rectangle& box);
+
   /**** Functions to set graphics attributes (for all subsequent drawing calls). ****/
 
   /**
@@ -231,7 +238,9 @@ public:
   /**
    * Set the line width.
    *
-   * @param width The width in pixels. A value of 0 means as thin as possible (fast).
+   * @param width The width in pixels. 
+   * A value of 0 is still one pixel wide but about 100x faster 
+   * to draw than other line widths.
    */
   void set_line_width(int width);
 
