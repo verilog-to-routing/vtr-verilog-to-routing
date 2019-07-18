@@ -332,35 +332,6 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 	oassert(parent_string_cache_list);
 	parent_string_cache_list->local_param_table_sc = parent_param_table_sc; // to check parent parameters
 
-	for (i = 0; i < parameter_num; i++) 
-	{
-		sc_spot = sc_lookup_string(local_param_table_sc, temp_parameter_list[i]);
-		if(sc_spot == -1)
-		{
-			error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
-					"Can't find parameter name %s in module %s\n",
-					temp_parameter_list[i],
-					module_name);
-		}
-		ast_node_t *node = (ast_node_t *)local_param_table_sc->data[sc_spot];
-		oassert(node);
-		node = resolve_node(local_string_cache_list, node, NULL, -1);
-		if (node->type != NUMBERS) 
-		{
-			node = resolve_node(parent_string_cache_list, node, NULL, -1); // may contain parameters from parent
-		}
-		oassert(node->type == NUMBERS);
-
-		/* this forces parameter values as unsigned, since we don't currently support signed keyword...
-		   must be changed once support is added */
-		VNumber *temp = node->types.vnumber;
-		VNumber *to_unsigned = new VNumber(V_UNSIGNED(*temp));
-		node->types.vnumber = to_unsigned;
-		delete temp;
-
-		local_param_table_sc->data[sc_spot] = (void *)node;
-	}
-
 	/* clean up */
 	if (temp_parameter_list) {
 		for (i = 0; i < parameter_num; i++) {
@@ -449,6 +420,9 @@ void create_netlist()
 	top_sc_list->num_local_symbol_table = 0;
 	top_sc_list->local_symbol_table = NULL;
 	create_symbol_table_for_module(top_module->children[2], top_sc_list);
+
+	/* elaboration */
+	simplify_ast_module(&top_module, top_sc_list);
 
 	/* now recursively parse the modules by going through the tree of modules starting at top */
 	create_top_driver_nets(top_module, top_string, top_sc_list);
@@ -597,7 +571,6 @@ ast_node_t *find_top_module()
 void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, char *instance_name, STRING_CACHE_LIST *local_string_cache_list, int level)
 {
 	signal_list_t *list = NULL;
-	simplify_ast_module(current_module, local_string_cache_list);
 
 	STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
 
@@ -689,6 +662,9 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
 			module_string_cache_list->local_symbol_table = NULL;
 			create_symbol_table_for_module(((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2], module_string_cache_list);
 
+			/* elaboration */
+			simplify_ast_module(((ast_node_t**)&module_names_to_idx->data[sc_spot]), module_string_cache_list);
+
 			/* recursive call point */
 			convert_ast_to_netlist_recursing_via_modules(((ast_node_t**)&module_names_to_idx->data[sc_spot]), temp_instance_name, module_string_cache_list, level+1);
 
@@ -737,6 +713,9 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
 			function_string_cache_list->function_num_local_symbol_table = 0;
 			function_string_cache_list->function_local_symbol_table = NULL;
 			create_symbol_table_for_function(((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2], function_string_cache_list);
+
+			/* elaboration */
+			simplify_ast_module(((ast_node_t**)&module_names_to_idx->data[sc_spot]), function_string_cache_list);
 
 			/* recursive call point */
 			convert_ast_to_netlist_recursing_via_modules(((ast_node_t**)&module_names_to_idx->data[sc_spot]), temp_instance_name,function_string_cache_list, level+1);

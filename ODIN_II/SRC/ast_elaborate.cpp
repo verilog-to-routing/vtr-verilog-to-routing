@@ -101,7 +101,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 // bool check_mult_bracket(std::vector<int> list);
 
 void remove_generate(ast_node_t *node);
-void reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list);
+void reduce_expressions(ast_node_t *parent, STRING_CACHE_LIST *local_string_cache_list);
 
 void remove_generate(ast_node_t *node)
 {
@@ -132,111 +132,198 @@ void remove_generate(ast_node_t *node)
 int simplify_ast_module(ast_node_t **ast_module, STRING_CACHE_LIST *local_string_cache_list)
 {
 	/* resolve constant expressions */
-	//reduce_expressions(*ast_module, local_string_cache_list);
-	
+	reduce_expressions(*ast_module, local_string_cache_list);
+	unroll_loops(ast_module);
+	remove_generate(*ast_module);
 
 	return 1;
 }
 
 // this should replace ^^
-int reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list)
+void reduce_expressions(ast_node_t *parent, STRING_CACHE_LIST *local_string_cache_list)
 {
 	// this will replace resolve_node which occurs all over the place in the code...
-	// one pass to optimize ast
 
-	if (node->type == MODULE)
+	if (parent)
 	{
-		// skip identifier and ports
-		reduce_expressions(node->children[2]);
-	}
+		// if (parent->type == MODULE)
+		// {
+		// 	// skip identifier
+		// 	reduce_expressions(parent->children[1], local_string_cache_list);
+		// 	reduce_expressions(parent->children[2], local_string_cache_list);
+		// }
 
-	for (long i = 0; i < node->num_children; i++)
-	{
-		/* pre-amble */
-		switch (node->children[i]->type)
+		STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
+
+		for (long i = 0; i < parent->num_children; i++)
 		{
-			case FOR:
-				// look ahead for parameters
-				break;
-			case WHILE:
-				// look ahead for parameters
-			case GENERATE:
-				break;
-			case BINARY_OPERATION:
-				break;
-			case UNARY_OPERATION:
-				break;
-			case CONCATENATE:
-				break;
-			case REPLICATE:
-				break;
-			case IDENTIFIERS:
-				break;
-			case NUMBERS:
-				break;
-			case IF_Q:
-				break;
-			case IF:
-				break;
-			case CASE:
-				break;
-			case RANGE_REF:
-				// look ahead
-				break;
-			case ARRAY_REF:
-				// look ahead
-				break;
-			case MODULE_INSTANCE:
-				// flip hard blocks
-				break;
-		}
+			ast_node_t **node = &(parent->children[i]);
 
-		/* recurse */
+			/* pre-amble */
+			if (*node)
+			{
+				switch ((*node)->type)
+			{
+					case VAR_DECLARE:
+					{
+						if ((*node)->types.variable.is_parameter || (*node)->types.variable.is_localparam)
+						{
+							bool is_stored = false;
+							long sc_spot = sc_lookup_string(local_param_table_sc, (*node)->children[0]->types.identifier);
+							if (sc_spot != -1 && ((ast_node_t*)local_param_table_sc->data[sc_spot]) == (*node)->children[5])
+							{
+								is_stored = true;
+							}
 
+							// resolve right-hand side
+							reduce_expressions((*node)->children[5], local_string_cache_list);
+							(*node)->children[5] = resolve_node(local_string_cache_list, (*node)->children[5], NULL, -1);
 
-		/* post-amble */
-		switch (node->children[i]->type)
-		{
-			case FOR:
-				// unroll
-				unroll_loops(node->children[i]); // change this function (dont have to go through whole tree)
-				// recurse
-				break;
-			case WHILE:
-				// unroll
-				// recurse (simplify_ast?)
-			case GENERATE:
-				/* remove unused node preventing module instantiation */
-				remove_generate(node->children[i]); // change this function (dont have to go through whole tree)
-				break;
-			case BINARY_OPERATION:
-				break;
-			case UNARY_OPERATION:
-				break;
-			case CONCATENATE:
-				break;
-			case REPLICATE:
-				break;
-			case IDENTIFIERS:
-				break;
-			case NUMBERS:
-				break;
-			case IF_Q:
-				break;
-			case IF:
-				break;
-			case CASE:
-				break;
-			case RANGE_REF:
-				break;
-			case ARRAY_REF:
-				break;
-			case MODULE_INSTANCE:
-				// flip hard blocks
-				break;
+							oassert((*node)->children[5]->type == NUMBERS);
+
+							/* this forces parameter values as unsigned, since we don't currently support signed keyword...
+								must be changed once support is added */
+							VNumber *temp = (*node)->children[5]->types.vnumber;
+							VNumber *to_unsigned = new VNumber(V_UNSIGNED(*temp));
+							(*node)->children[5]->types.vnumber = to_unsigned;
+							delete temp;
+
+							if (is_stored)
+							{
+								local_param_table_sc->data[sc_spot] = (void *) (*node)->children[5];
+							}
+
+							return;
+						}
+						break;
+					}
+					case IDENTIFIERS:
+					{
+						if (local_param_table_sc != NULL && (*node)->types.identifier)
+						{
+							long sc_spot = sc_lookup_string(local_param_table_sc, (*node)->types.identifier);
+							if (sc_spot != -1)
+							{
+								ast_node_t *newNode = ast_node_deep_copy((ast_node_t *)local_param_table_sc->data[sc_spot]);
+								
+								if (newNode->type != NUMBERS)
+								{
+									reduce_expressions(newNode, local_string_cache_list);
+									newNode = resolve_node(local_string_cache_list, newNode, NULL, -1);
+
+									oassert(newNode->type == NUMBERS);
+
+									/* this forces parameter values as unsigned, since we don't currently support signed keyword...
+									must be changed once support is added */
+									VNumber *temp = newNode->types.vnumber;
+									VNumber *to_unsigned = new VNumber(V_UNSIGNED(*temp));
+									newNode->types.vnumber = to_unsigned;
+									delete temp;
+									
+									if (newNode->type != NUMBERS)
+									{
+										error_message(NETLIST_ERROR, (*node)->line_number, (*node)->file_number, "Parameter %s is not a constant expression\n", (*node)->types.identifier);
+									}
+								}
+
+								(*node) = free_whole_tree(*node);
+								(*node) = newNode;
+							}
+							else
+							{
+								break;
+							}
+						}
+					}
+					case FOR:
+						// look ahead for parameters
+						break;
+					case WHILE:
+						// look ahead for parameters
+					case GENERATE:
+						break;
+					case BINARY_OPERATION:
+						// reduce_expressions((*node)->children[0], local_string_cache_list);
+						// reduce_expressions((*node)->children[1], local_string_cache_list);
+						break;
+					case UNARY_OPERATION:
+						// reduce_expressions((*node)->children[0], local_string_cache_list);
+						break;
+					case CONCATENATE:
+						break;
+					case REPLICATE:
+						break;
+					case NUMBERS:
+						break;
+					case IF_Q:
+						break;
+					case IF:
+						break;
+					case CASE:
+						break;
+					case RANGE_REF:
+						// look ahead
+						break;
+					case ARRAY_REF:
+						// look ahead
+						break;
+					case MODULE_INSTANCE:
+						// flip hard blocks
+						break;
+					default:
+						break;
+				}
+
+				/* recurse */
+
+				reduce_expressions((*node), local_string_cache_list);
+
+				/* post-amble */
+				switch ((*node)->type)
+				{
+					case FOR:
+						// unroll
+						//unroll_loops(node->children[i]); // change this function (dont have to go through whole tree)
+						// recurse
+						break;
+					case WHILE:
+						// unroll
+						// recurse (simplify_ast?)
+					case GENERATE:
+						/* remove unused node preventing module instantiation */
+						//remove_generate(node->children[i]); // change this function (dont have to go through whole tree)
+						break;
+					case BINARY_OPERATION:
+						break;
+					case UNARY_OPERATION:
+						break;
+					case CONCATENATE:
+						break;
+					case REPLICATE:
+						break;
+					case IDENTIFIERS:
+						break;
+					case NUMBERS:
+						break;
+					case IF_Q:
+						break;
+					case IF:
+						break;
+					case CASE:
+						break;
+					case RANGE_REF:
+						break;
+					case ARRAY_REF:
+						break;
+					case MODULE_INSTANCE:
+						// flip hard blocks
+						break;
+					default:
+						break;
+				}
+			}
 		}
 	}
-	return 1;
 }
 
 // /*---------------------------------------------------------------------------

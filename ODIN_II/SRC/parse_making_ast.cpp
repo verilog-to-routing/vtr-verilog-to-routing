@@ -1401,7 +1401,8 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	long i;
 	/* create a node for this array reference */
 	ast_node_t* new_master_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
-	for(i = 0; i < module_named_instance->num_children; i++){
+	for(i = 0; i < module_named_instance->num_children; i++)
+	{
 		if
 		(
 			sc_lookup_string(hard_block_names, module_ref_name) != -1
@@ -1451,11 +1452,10 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 
 		/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
 		module_instantiations_instance = (ast_node_t **)vtr::realloc(module_instantiations_instance, sizeof(ast_node_t*)*(size_module_instantiations+1));
-		module_instantiations_instance[size_module_instantiations] = ast_node_deep_copy(new_node);
+		module_instantiations_instance[size_module_instantiations] = new_node;
 		size_module_instantiations++;
-
 	}
-	//TODO: free_whole_tree ??
+
 	vtr::free(module_named_instance->children);
 	vtr::free(module_named_instance);
 	vtr::free(module_ref_name);

@@ -52,7 +52,7 @@ void update_module_instantiations(ast_node_t *ast_module, ast_node_t ****new_ins
 		if ((idx = find_module_instance(ast_module, instance_name, module_instantiations, module_instantiations_size)) != -1)
 		{
 			(*removed_instances) = (ast_node_t **)vtr::realloc((*removed_instances), sizeof(ast_node_t*)*((*num_removed)+1));
-			(*removed_instances)[*num_removed] = (*module_instantiations)[idx];
+			(*removed_instances)[*num_removed] = ast_node_deep_copy((*module_instantiations)[idx]);
 			(*num_removed)++;
 
 			(*module_instantiations) = expand_node_list_at(*module_instantiations, *module_instantiations_size, (*num_unrolled) - 1, idx + 1);
