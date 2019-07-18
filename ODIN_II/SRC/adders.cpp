@@ -1149,7 +1149,7 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 					case MINUS:
 						mark1 = strcmp(component_s[0], component_o[0]);
 						if (mark1 == 0)
-							mark2 = strcmp(component_s[1], component_s[1]);
+							mark2 = strcmp(component_s[1], component_o[1]);
 					break;
 
 					default:
