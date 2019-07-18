@@ -326,7 +326,7 @@ enum e_pack_pattern_molecule_type {
  *      next           : next molecule in the linked list
  */
 class t_pack_molecule {
-public:
+  public:
     /* general molecule info */
     bool valid;
     float base_gain;
