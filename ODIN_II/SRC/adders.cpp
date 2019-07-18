@@ -743,7 +743,7 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	{
 		node[i] = allocate_nnode();
 		node[i]->name = (char *)vtr::malloc(strlen(nodeo->name) + 20);
-		odin_sprintf(node[i]->name, "%s-%ld", nodeo->name, i);
+		odin_sprintf(node[i]->name, "%s-%d", nodeo->name, i);
 		if(i == count - 1)
 		{
 			//fixed_hard_adder = 1 then adder need to be exact size;
@@ -799,7 +799,7 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 		connect_nodes(netlist->gnd_node, 0, node[0], sizea);
 		//hang the first sumout
 		node[0]->output_pins[1] = allocate_npin();
-		node[0]->output_pins[1]->name = append_string("", "%s~dummy_output~%ld~%ld", node[0]->name, 0, 1);
+		node[0]->output_pins[1]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, 1);
 	}
 
 	if(nodeo->num_input_port_sizes == 2)
@@ -854,11 +854,11 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 				else
 				{
 					node[0]->output_pins[j + 2] = allocate_npin();
-					node[0]->output_pins[j + 2]->name = append_string("", "%s~dummy_output~%ld~%ld", node[0]->name, 0, j + 2);
+					node[0]->output_pins[j + 2]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, j + 2);
 				}
 				//hang the first cout
 				node[0]->output_pins[0] = allocate_npin();
-				node[0]->output_pins[0]->name = append_string("", "%s~dummy_output~%ld~%ld", node[0]->name, 0, 0);
+				node[0]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, 0);
 			}
 		}
 		else
@@ -891,13 +891,13 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 				{
 					node[count - 1]->output_pins[j + 1] = allocate_npin();
 					// Pad outputs with a unique and descriptive name to avoid collisions.
-					node[count - 1]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%ld~%ld", node[count - 1]->name, count - 1, j + 1);
+					node[count - 1]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%d~%d", node[count - 1]->name, count - 1, j + 1);
 				}
 			}
 			//Hang the last cout
 			node[count - 1]->output_pins[0] = allocate_npin();
 			// Pad outputs with a unique and descriptive name to avoid collisions.
-			node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%ld~%ld", node[count - 1]->name, count - 1, 0);
+			node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[count - 1]->name, count - 1, 0);
 		}
 		else
 		{
@@ -910,7 +910,7 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 			{
 				node[count - 1]->output_pins[0] = allocate_npin();
 				// Pad outputs with a unique and descriptive name to avoid collisions.
-				node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%ld~%ld", node[count - 1]->name, count - 1, 0);
+				node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[count - 1]->name, count - 1, 0);
 			}
 		}
 	}
