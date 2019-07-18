@@ -149,8 +149,11 @@ void free_assignement_of_node_keep_tree(ast_node_t *node)
 
 			case CONCATENATE:
 				for(i=0; i<node->types.concat.num_bit_strings; i++){
-					vtr::free(node->types.concat.bit_strings);
+					if(node->types.concat.bit_strings[i])
+						vtr::free(node->types.concat.bit_strings[i]);
 				}
+				vtr::free(node->types.concat.bit_strings);
+				
 
 			default:
 				break;
