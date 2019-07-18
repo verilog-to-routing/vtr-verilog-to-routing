@@ -6147,6 +6147,8 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node, char *instance_
 		new_node_2 = resolve_node(local_string_cache_list, new_node_2, NULL, 0);
 	}
 
+	vtr::free(array_name);
+
 	node->children[1] = new_node_2;
 	node->children[2] = NULL;
 	node->num_children -= 1;
