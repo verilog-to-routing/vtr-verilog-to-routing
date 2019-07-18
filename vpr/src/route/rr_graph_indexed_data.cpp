@@ -198,7 +198,7 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
             device_ctx.rr_indexed_data[index].base_cost = (delay_normalization_fac / device_ctx.rr_indexed_data[index].inv_length) * (1 + (1 - freq_fac));
 
         } else {
-            VPR_THROW(VPR_ERROR_ROUTE, "Unrecognized base cost type");
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unrecognized base cost type");
         }
     }
 

@@ -90,10 +90,10 @@ void ClockRib::set_metal_layer(MetalLayer metal_layer) {
 
 void ClockRib::set_initial_wire_location(int start_x, int end_x, int y) {
     if (end_x <= start_x) {
-        VPR_THROW(VPR_ERROR_ROUTE,
-                  "Clock Network wire cannot have negtive or zero length. "
-                  "Wire end: %d < wire start: %d\n",
-                  end_x, start_x);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Clock Network wire cannot have negtive or zero length. "
+                        "Wire end: %d < wire start: %d\n",
+                        end_x, start_x);
     }
 
     x_chan_wire.start = start_x;
@@ -104,8 +104,8 @@ void ClockRib::set_initial_wire_location(int start_x, int end_x, int y) {
 void ClockRib::set_wire_repeat(int repeat_x, int repeat_y) {
     if (repeat_x <= 0 || repeat_y <= 0) {
         // Avoid an infinte loop when creating ribs
-        VPR_THROW(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
-                  repeat_x, repeat_y);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
+                        repeat_x, repeat_y);
     }
 
     repeat.x = repeat_x;
@@ -336,10 +336,10 @@ void ClockSpine::set_metal_layer(MetalLayer metal_layer) {
 
 void ClockSpine::set_initial_wire_location(int start_y, int end_y, int x) {
     if (end_y <= start_y) {
-        VPR_THROW(VPR_ERROR_ROUTE,
-                  "Clock Network wire cannot have negtive or zero length. "
-                  "Wire end: %d < wire start: %d\n",
-                  end_y, start_y);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Clock Network wire cannot have negtive or zero length. "
+                        "Wire end: %d < wire start: %d\n",
+                        end_y, start_y);
     }
 
     y_chan_wire.start = start_y;
@@ -350,8 +350,8 @@ void ClockSpine::set_initial_wire_location(int start_y, int end_y, int x) {
 void ClockSpine::set_wire_repeat(int repeat_x, int repeat_y) {
     if (repeat_x <= 0 || repeat_y <= 0) {
         // Avoid an infinte loop when creating spines
-        VPR_THROW(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
-                  repeat_x, repeat_y);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
+                        repeat_x, repeat_y);
     }
 
     repeat.x = repeat_x;

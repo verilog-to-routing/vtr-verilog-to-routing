@@ -3545,7 +3545,7 @@ static float get_router_rr_cost(const t_rr_node_route_inf node_inf, e_draw_route
         return node_inf.path_cost - node_inf.backward_path_cost;
     }
 
-    VPR_THROW(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
+    VPR_FATAL_ERROR(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
 }
 
 static void draw_router_rr_costs() {

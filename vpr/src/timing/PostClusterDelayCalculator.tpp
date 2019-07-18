@@ -87,7 +87,7 @@ inline tatum::Time PostClusterDelayCalculator::calc_edge_delay(const tatum::Timi
         return atom_net_delay(tg, edge, delay_type);
     }
 
-    VPR_THROW(VPR_ERROR_TIMING, "Invalid edge type");
+    VPR_FATAL_ERROR(VPR_ERROR_TIMING, "Invalid edge type");
 
     return tatum::Time(NAN); //Suppress compiler warning
 }

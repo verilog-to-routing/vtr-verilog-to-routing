@@ -2675,7 +2675,7 @@ static std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_
         }
 
     } else {
-        VPR_THROW(VPR_ERROR_PACK, "Unrecognized cluster seed type");
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unrecognized cluster seed type");
     }
 
     //Sort seeds in descending order of gain (i.e. highest gain first)

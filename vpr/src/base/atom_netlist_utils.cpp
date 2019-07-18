@@ -156,7 +156,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
                             clk_net = netlist.net_name(net_id);
 
                         } else {
-                            VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Unrecognzied latch port '%s'", netlist.port_name(port_id).c_str());
+                            VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST, "Unrecognzied latch port '%s'", netlist.port_name(port_id).c_str());
                         }
                     }
                 }
@@ -1154,7 +1154,7 @@ bool truth_table_encodes_on_set(const AtomNetlist::TruthTable& truth_table) {
                 encodes_on_set = false;
                 break;
             default:
-                VPR_THROW(VPR_ERROR_OTHER, "Unrecognized truth-table output value");
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Unrecognized truth-table output value");
         }
     }
     return encodes_on_set;

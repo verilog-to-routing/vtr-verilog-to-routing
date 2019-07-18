@@ -1748,7 +1748,7 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
 
             //Verify that the next element (branch point) has been already seen in the traceback so far
             if (!seen_rr_nodes.count(next->index)) {
-                VPR_THROW(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);
             } else {
                 //Recurse along the new branch
                 return validate_traceback_recurr(next, seen_rr_nodes);
@@ -1769,16 +1769,16 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
                     //Verify that the switch matches
                     int rr_iswitch = device_ctx.rr_nodes[trace->index].edge_switch(iedge);
                     if (trace->iswitch != rr_iswitch) {
-                        VPR_THROW(VPR_ERROR_ROUTE, "Traceback mismatched switch type: traceback %d rr_graph %d (RR nodes %d -> %d)\n",
-                                  trace->iswitch, rr_iswitch,
-                                  trace->index, to_node);
+                        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback mismatched switch type: traceback %d rr_graph %d (RR nodes %d -> %d)\n",
+                                        trace->iswitch, rr_iswitch,
+                                        trace->index, to_node);
                     }
                     break;
                 }
             }
 
             if (!found) {
-                VPR_THROW(VPR_ERROR_ROUTE, "Traceback no RR edge between RR nodes %d -> %d\n", trace->index, next->index);
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback no RR edge between RR nodes %d -> %d\n", trace->index, next->index);
             }
 
             //Recurse
@@ -1898,7 +1898,7 @@ static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& t
             missing_from_trace_nodes.size(),
             vtr::join(missing_from_trace_nodes, ", ").c_str());
 
-        VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
         return false;
     }
 

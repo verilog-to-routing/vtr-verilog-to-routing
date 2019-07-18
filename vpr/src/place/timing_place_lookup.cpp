@@ -524,7 +524,7 @@ float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
     } else if (reducer == e_reducer::GEOMEAN) {
         delay = vtr::geomean(delays.begin(), delays.end());
     } else {
-        VPR_THROW(VPR_ERROR_PLACE, "Unrecognized delta delay reducer");
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Unrecognized delta delay reducer");
     }
 
     return delay;
@@ -754,7 +754,7 @@ static bool verify_delta_delays(const vtr::Matrix<float>& delta_delays) {
             float delta_delay = delta_delays[x][y];
 
             if (delta_delay < 0.) {
-                VPR_THROW(VPR_ERROR_PLACE,
+                VPR_ERROR(VPR_ERROR_PLACE,
                           "Found invaild negative delay %g for delta (%d,%d)",
                           delta_delay, x, y);
             }

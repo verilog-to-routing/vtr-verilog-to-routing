@@ -116,7 +116,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
                 auto switch_type = device_ctx.rr_switch_inf[kv.first].type();
 
-                VPR_THROW(VPR_ERROR_ROUTE, "in check_rr_graph: node %d has %d redundant connections to node %d of switch type %d (%s)",
+                VPR_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d has %d redundant connections to node %d of switch type %d (%s)",
                           inode, kv.second, to_node, kv.first, SWITCH_TYPE_STRINGS[size_t(switch_type)]);
             }
         }
@@ -127,15 +127,15 @@ void check_rr_graph(const t_graph_type graph_type,
         //Check that all config/non-config edges are appropriately organized
         for (auto edge : device_ctx.rr_nodes[inode].configurable_edges()) {
             if (!device_ctx.rr_nodes[inode].edge_is_configurable(edge)) {
-                VPR_THROW(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is non-configurable, but in configurable edges",
-                          inode, edge);
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is non-configurable, but in configurable edges",
+                                inode, edge);
             }
         }
 
         for (auto edge : device_ctx.rr_nodes[inode].non_configurable_edges()) {
             if (device_ctx.rr_nodes[inode].edge_is_configurable(edge)) {
-                VPR_THROW(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is configurable, but in non-configurable edges",
-                          inode, edge);
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is configurable, but in non-configurable edges",
+                                inode, edge);
             }
         }
 
@@ -542,7 +542,7 @@ static void check_rr_edge(int from_node, int iedge, int to_node) {
                 msg += "  Possible cause is complex block output pins connecting to:\n";
                 msg += "    " + describe_rr_node(to_node);
 
-                VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
             }
         case SwitchType::TRISTATE:  //Fallthrough
         case SwitchType::MUX:       //Fallthrough
@@ -550,6 +550,6 @@ static void check_rr_edge(int from_node, int iedge, int to_node) {
         case SwitchType::SHORT:     //Fallthrough
             break;                  //pass
         default:
-            VPR_THROW(VPR_ERROR_ROUTE, "Invalid switch type %d", switch_type);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid switch type %d", switch_type);
     }
 }

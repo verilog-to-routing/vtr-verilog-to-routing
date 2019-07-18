@@ -189,7 +189,7 @@ float PowerSpicedComponent::scale_factor(int num_inputs,
             factor_lower = perc_upper * size_upper->factor
                            + (1 - perc_upper) * size_lower->factor;
         } else {
-            VPR_THROW(VPR_ERROR_POWER, "Failed to interpolate transitor size");
+            VPR_FATAL_ERROR(VPR_ERROR_POWER, "Failed to interpolate transitor size");
         }
     }
 
@@ -205,7 +205,7 @@ float PowerSpicedComponent::scale_factor(int num_inputs,
             factor_upper = perc_upper * size_upper->factor
                            + (1 - perc_upper) * size_lower->factor;
         } else {
-            VPR_THROW(VPR_ERROR_POWER, "Failed to interpolate transitor size");
+            VPR_FATAL_ERROR(VPR_ERROR_POWER, "Failed to interpolate transitor size");
         }
     }
 

@@ -581,7 +581,7 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
             crit = 1.;
         } else {
             std::string msg = vtr::string_fmt("Invalid maximum required time %g (expected >= 0). Shifted slack was %g.", max_req, slack);
-            VPR_THROW(VPR_ERROR_TIMING, msg.c_str());
+            VPR_ERROR(VPR_ERROR_TIMING, msg.c_str());
         }
 
         //Soft check for reasonable criticality values

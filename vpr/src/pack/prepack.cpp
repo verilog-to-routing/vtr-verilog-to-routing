@@ -176,7 +176,7 @@ t_pack_patterns* alloc_and_load_pack_patterns(int* num_packing_patterns) {
     //Sanity check, every pattern should have a root block
     for (size_t i = 0; i < pattern_names.size(); ++i) {
         if (list_of_packing_patterns[i].root_block == nullptr) {
-            VPR_THROW(VPR_ERROR_ARCH, "Failed to find root block for pack pattern %s", list_of_packing_patterns[i].name);
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find root block for pack pattern %s", list_of_packing_patterns[i].name);
         }
     }
 
@@ -1187,8 +1187,8 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const 
 
     if (!best) {
         auto& atom_ctx = g_vpr_ctx.atom();
-        VPR_THROW(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
-                  atom_ctx.nlist.block_model(blk_id)->name);
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
+                        atom_ctx.nlist.block_model(blk_id)->name);
     }
 
     return best;

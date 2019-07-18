@@ -215,7 +215,7 @@ void vpr_init(const int argc, const char** argv, t_options* options, t_vpr_setup
     setEchoEnabled(options->CreateEchoFile);
 
     /*
-     * Initialize the functions names for which VPR_THROWs
+     * Initialize the functions names for which VPR_ERRORs
      * are demoted to VTR_LOG_WARNs
      */
     for (std::string func_name : vtr::split(options->disable_errors, std::string(":"))) {
@@ -713,7 +713,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
     vtr::ScopedStartFinishTimer timer("Routing");
 
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width || fixed_channel_width <= 0) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when routing at fixed channel width (was %d)", fixed_channel_width);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when routing at fixed channel width (was %d)", fixed_channel_width);
     }
 
     bool status = try_route(fixed_channel_width,
@@ -764,7 +764,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              vtr::vector<ClusterNetId, float*>& net_delay) {
     vtr::ScopedStartFinishTimer timer("Load Routing");
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
     }
 
     auto& filename_opts = vpr_setup.FileNameOpts;
@@ -1123,7 +1123,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
     //Check the first index to see if a pointer exists
     //TODO: Implement a better error check
     if (route_ctx.trace.empty()) {
-        VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
+        VPR_FATAL_ERROR(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
     }
 
     vtr::vector<ClusterNetId, float*> net_delay;
@@ -1189,7 +1189,7 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup,
                           const RouteStatus& route_status) {
     /* Ensure we are only using 1 clock */
     if (timing_info.critical_paths().size() != 1) {
-        VPR_THROW(VPR_ERROR_POWER, "Power analysis only supported on single-clock circuits");
+        VPR_FATAL_ERROR(VPR_ERROR_POWER, "Power analysis only supported on single-clock circuits");
     }
 
     auto& power_ctx = g_vpr_ctx.mutable_power();

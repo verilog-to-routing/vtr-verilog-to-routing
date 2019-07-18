@@ -17,7 +17,7 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(e_router_lookahead router
         return std::make_unique<NoOpLookahead>();
     }
 
-    VPR_THROW(VPR_ERROR_ROUTE, "Unrecognized router lookahead type");
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unrecognized router lookahead type");
     return nullptr;
 }
 

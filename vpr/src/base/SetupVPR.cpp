@@ -128,12 +128,12 @@ void SetupVPR(t_options* Options,
     VTR_ASSERT(device_ctx.EMPTY_TYPE != nullptr);
 
     if (device_ctx.input_types.empty()) {
-        VPR_THROW(VPR_ERROR_ARCH,
+        VPR_ERROR(VPR_ERROR_ARCH,
                   "Architecture contains no top-level block type containing '.input' models");
     }
 
     if (device_ctx.output_types.empty()) {
-        VPR_THROW(VPR_ERROR_ARCH,
+        VPR_ERROR(VPR_ERROR_ARCH,
                   "Architecture contains no top-level block type containing '.output' models");
     }
 
@@ -514,7 +514,7 @@ static int find_ipin_cblock_switch_index(const t_arch& Arch) {
     for (int i = 0; i < Arch.num_switches; ++i) {
         if (Arch.Switches[i].name == Arch.ipin_cblock_switch_name) {
             if (ipin_cblock_switch_index != UNDEFINED) {
-                VPR_THROW(VPR_ERROR_ARCH, "Found duplicate switches named '%s'\n", Arch.ipin_cblock_switch_name.c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Found duplicate switches named '%s'\n", Arch.ipin_cblock_switch_name.c_str());
             } else {
                 ipin_cblock_switch_index = i;
             }
@@ -522,7 +522,7 @@ static int find_ipin_cblock_switch_index(const t_arch& Arch) {
     }
 
     if (ipin_cblock_switch_index == UNDEFINED) {
-        VPR_THROW(VPR_ERROR_ARCH, "Failed to find connection block input pin switch named '%s'\n", Arch.ipin_cblock_switch_name.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find connection block input pin switch named '%s'\n", Arch.ipin_cblock_switch_name.c_str());
     }
     return ipin_cblock_switch_index;
 }

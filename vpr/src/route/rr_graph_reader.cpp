@@ -208,7 +208,7 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data& loc_data)
         }
 
         if (name != nullptr && !found_arch_name) {
-            VPR_THROW(VPR_ERROR_ROUTE, "Switch name '%s' not found in architecture\n", name);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Switch name '%s' not found in architecture\n", name);
         }
 
         rr_switch.name = name;
@@ -226,7 +226,7 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data& loc_data)
         } else if (switch_type_str == "buffer") {
             switch_type = SwitchType::BUFFER;
         } else {
-            VPR_THROW(VPR_ERROR_ROUTE, "Invalid switch type '%s'\n", switch_type_str.c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid switch type '%s'\n", switch_type_str.c_str());
         }
         rr_switch.set_type(switch_type);
         SwitchSubnode = get_single_child(Switch, "timing", loc_data, OPTIONAL);
@@ -787,9 +787,9 @@ void process_rr_node_indices(const DeviceGrid& grid) {
                 for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                     count = node.ptc_num();
                     if (count >= int(indices[CHANX][iy][ix][0].size())) {
-                        VPR_THROW(VPR_ERROR_ROUTE,
-                                  "Ptc index %d for CHANX (%d, %d) is out of bounds, size = %zu",
-                                  count, ix, iy, indices[CHANX][iy][ix][0].size());
+                        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                        "Ptc index %d for CHANX (%d, %d) is out of bounds, size = %zu",
+                                        count, ix, iy, indices[CHANX][iy][ix][0].size());
                     }
                     indices[CHANX][iy][ix][0][count] = inode;
                 }
@@ -799,9 +799,9 @@ void process_rr_node_indices(const DeviceGrid& grid) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                     count = node.ptc_num();
                     if (count >= int(indices[CHANY][ix][iy][0].size())) {
-                        VPR_THROW(VPR_ERROR_ROUTE,
-                                  "Ptc index %d for CHANY (%d, %d) is out of bounds, size = %zu",
-                                  count, ix, iy, indices[CHANY][ix][iy][0].size());
+                        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                        "Ptc index %d for CHANY (%d, %d) is out of bounds, size = %zu",
+                                        count, ix, iy, indices[CHANY][ix][iy][0].size());
                     }
                     indices[CHANY][ix][iy][0][count] = inode;
                 }

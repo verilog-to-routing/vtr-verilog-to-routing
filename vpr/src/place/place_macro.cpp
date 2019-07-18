@@ -521,7 +521,7 @@ static void validate_macros(const std::vector<t_pl_macro>& macros) {
                 msg << "  Macro #: " << imacro << "\n";
             }
 
-            VPR_THROW(VPR_ERROR_PLACE, msg.str().c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, msg.str().c_str());
         }
     }
 }

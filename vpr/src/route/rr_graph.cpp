@@ -1082,17 +1082,17 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
                     VTR_ASSERT(fc_spec.fc_value_type == e_fc_value_type::ABSOLUTE);
 
                     if (std::fmod(fc_spec.fc_value, fac) != 0.) {
-                        VPR_THROW(VPR_ERROR_ROUTE, "Absolute Fc value must be a multiple of %d (was %f) between block pin '%s' and wire segment '%s'",
-                                  fac, fc_spec.fc_value,
-                                  block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
-                                  segment_inf[iseg].name.c_str());
+                        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Absolute Fc value must be a multiple of %d (was %f) between block pin '%s' and wire segment '%s'",
+                                        fac, fc_spec.fc_value,
+                                        block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
+                                        segment_inf[iseg].name.c_str());
                     }
 
                     if (fc_spec.fc_value < fac) {
-                        VPR_THROW(VPR_ERROR_ROUTE, "Absolute Fc value must be at least %d (was %f) between block pin '%s' to wire segment %s",
-                                  fac, fc_spec.fc_value,
-                                  block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
-                                  segment_inf[iseg].name.c_str());
+                        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Absolute Fc value must be at least %d (was %f) between block pin '%s' to wire segment %s",
+                                        fac, fc_spec.fc_value,
+                                        block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
+                                        segment_inf[iseg].name.c_str());
                     }
 
                     total_connections = vtr::nint(fc_spec.fc_value) * fc_spec.pins.size();

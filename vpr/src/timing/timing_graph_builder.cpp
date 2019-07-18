@@ -61,7 +61,7 @@ void TimingGraphBuilder::build() {
         } else if (blk_type == AtomBlockType::BLOCK) {
             add_block_to_timing_graph(blk);
         } else {
-            VPR_THROW(VPR_ERROR_TIMING, "Unrecognized atom block type while constructing timing graph");
+            VPR_FATAL_ERROR(VPR_ERROR_TIMING, "Unrecognized atom block type while constructing timing graph");
         }
     }
 
@@ -302,8 +302,8 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                                          netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(sink_pin).c_str(), netlist_.pin_name(sink_pin).c_str());
                         } else {
                             //Unknown
-                            VPR_THROW(VPR_ERROR_TIMING, "Unable to find matching sink tnode for timing edge from %s to %s",
-                                      netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(src_pin).c_str());
+                            VPR_FATAL_ERROR(VPR_ERROR_TIMING, "Unable to find matching sink tnode for timing edge from %s to %s",
+                                            netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(src_pin).c_str());
                         }
 
                     } else {

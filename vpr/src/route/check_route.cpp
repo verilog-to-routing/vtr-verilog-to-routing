@@ -699,7 +699,7 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
                     msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(inode).c_str());
                 }
 
-                VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
             }
         }
     }
@@ -768,7 +768,7 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
                     msg += vtr::string_fmt("    %s\n", describe_rr_node(missing_edge.to_node).c_str());
                 }
 
-                VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
             }
 
             //TODO: verify that the switches used in trace are actually non-configurable

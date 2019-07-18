@@ -119,4 +119,3 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, cons
     } while (false)
 
 #endif
-

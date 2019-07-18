@@ -403,14 +403,14 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                                             "BUFFER has fan in %d (expected 1)\n",
                                             fan_in);
                                         msg += "  " + describe_rr_node(to_node);
-                                        VPR_THROW(VPR_ERROR_OTHER, msg.c_str());
+                                        VPR_FATAL_ERROR(VPR_ERROR_OTHER, msg.c_str());
                                     }
 
                                     //This is a non-configurable buffer, so there are no mux transistors,
                                     //only the buffer area
                                     ntrans += device_ctx.rr_switch_inf[switch_index].buf_size;
                                 } else {
-                                    VPR_THROW(VPR_ERROR_OTHER, "Unexpected switch type %d while calculating area of uni-directional routing", switch_type);
+                                    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Unexpected switch type %d while calculating area of uni-directional routing", switch_type);
                                 }
                                 chan_node_switch_done[to_node] = true;
                             }

@@ -32,21 +32,21 @@ short t_rr_node::ptc_num() const {
 
 short t_rr_node::pin_num() const {
     if (type() != IPIN && type() != OPIN) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", type_string());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", type_string());
     }
     return ptc_.pin_num;
 }
 
 short t_rr_node::track_num() const {
     if (type() != CHANX && type() != CHANY) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", type_string());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", type_string());
     }
     return ptc_.track_num;
 }
 
 short t_rr_node::class_num() const {
     if (type() != SOURCE && type() != SINK) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", type_string());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", type_string());
     }
     return ptc_.class_num;
 }
@@ -69,7 +69,7 @@ short t_rr_node::fan_in() const {
 
 e_direction t_rr_node::direction() const {
     if (type() != CHANX && type() != CHANY) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to access RR node 'direction' for non-channel type '%s'", type_string());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'direction' for non-channel type '%s'", type_string());
     }
     return dir_side_.direction;
 }
@@ -89,7 +89,7 @@ const char* t_rr_node::direction_string() const {
 
 e_side t_rr_node::side() const {
     if (type() != IPIN && type() != OPIN) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'", type_string());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'", type_string());
     }
     return dir_side_.side;
 }
@@ -125,25 +125,25 @@ bool t_rr_node::validate() const {
     //Check internal assumptions about RR node are valid
 
     if (num_edges_ > edges_capacity_) {
-        VPR_THROW(VPR_ERROR_ROUTE, "RR Node number of edges exceeded edge capacity");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "RR Node number of edges exceeded edge capacity");
     }
 
     short iedge = 0;
     for (auto edge : edges()) {
         if (edge < num_configurable_edges()) {
             if (!edge_is_configurable(edge)) {
-                VPR_THROW(VPR_ERROR_ROUTE, "RR Node non-configurable edge found in configurable edge list");
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "RR Node non-configurable edge found in configurable edge list");
             }
         } else {
             if (edge_is_configurable(edge)) {
-                VPR_THROW(VPR_ERROR_ROUTE, "RR Node configurable edge found in non-configurable edge list");
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "RR Node configurable edge found in non-configurable edge list");
             }
         }
         ++iedge;
     }
 
     if (iedge != num_edges()) {
-        VPR_THROW(VPR_ERROR_ROUTE, "RR Node Edge iteration does not match edge size");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "RR Node Edge iteration does not match edge size");
     }
 
     return true;
@@ -181,29 +181,29 @@ void t_rr_node::set_ptc_num(short new_ptc_num) {
 
 void t_rr_node::set_pin_num(short new_pin_num) {
     if (type() != IPIN && type() != OPIN) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set RR node 'pin_num' for non-IPIN/OPIN type '%s'", type_string());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'pin_num' for non-IPIN/OPIN type '%s'", type_string());
     }
     ptc_.pin_num = new_pin_num;
 }
 
 void t_rr_node::set_track_num(short new_track_num) {
     if (type() != CHANX && type() != CHANY) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'", type_string());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'", type_string());
     }
     ptc_.track_num = new_track_num;
 }
 
 void t_rr_node::set_class_num(short new_class_num) {
     if (type() != SOURCE && type() != SINK) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set RR node 'class_num' for non-SOURCE/SINK type '%s'", type_string());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'class_num' for non-SOURCE/SINK type '%s'", type_string());
     }
     ptc_.class_num = new_class_num;
 }
 
 void t_rr_node::set_cost_index(size_t new_cost_index) {
     if (new_cost_index >= std::numeric_limits<decltype(cost_index_)>::max()) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set cost_index_ %zu above cost_index storage max value.",
-                  new_cost_index);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set cost_index_ %zu above cost_index storage max value.",
+                        new_cost_index);
     }
     cost_index_ = new_cost_index;
 }
@@ -226,7 +226,7 @@ short t_rr_node::add_edge(int sink_node, int iswitch) {
     if (edges_capacity_ == num_edges_) {
         constexpr size_t MAX_EDGE_COUNT = std::numeric_limits<decltype(edges_capacity_)>::max();
         if (edges_capacity_ == MAX_EDGE_COUNT) {
-            VPR_THROW(VPR_ERROR_ROUTE, "Maximum RR Node out-edge count (%zu) exceeded", MAX_EDGE_COUNT);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Maximum RR Node out-edge count (%zu) exceeded", MAX_EDGE_COUNT);
         }
 
         //Grow
@@ -279,7 +279,7 @@ void t_rr_node::partition_edges() {
 
     //Check that within allowable range (no overflow when stored as num_non_configurable_edges_
     if (num_non_conf_edges > std::numeric_limits<decltype(num_non_configurable_edges_)>::max()) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Exceeded RR node maximum number of non-configurable edges");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Exceeded RR node maximum number of non-configurable edges");
     }
     num_non_configurable_edges_ = num_non_conf_edges; //Narrowing
 }
@@ -294,14 +294,14 @@ void t_rr_node::set_num_edges(short new_num_edges) {
 
 void t_rr_node::set_direction(e_direction new_direction) {
     if (type() != CHANX && type() != CHANY) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set RR node 'direction' for non-channel type '%s'", type_string());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'direction' for non-channel type '%s'", type_string());
     }
     dir_side_.direction = new_direction;
 }
 
 void t_rr_node::set_side(e_side new_side) {
     if (type() != IPIN && type() != OPIN) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", type_string());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", type_string());
     }
     dir_side_.side = new_side;
 }

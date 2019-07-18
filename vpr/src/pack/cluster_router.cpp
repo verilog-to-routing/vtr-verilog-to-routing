@@ -225,7 +225,7 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
             // If the number of illegal modes equals the number of available mode for a specific pb_graph_node it means that no cluster can be generated. This resuts
             // in a fatal error.
             if ((int)pb_graph_node->illegal_modes.size() >= pb_graph_node->pb_type->num_modes) {
-                VPR_THROW(VPR_ERROR_PACK, "There are no more available modes to be used. Routing Failed!");
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, "There are no more available modes to be used. Routing Failed!");
             }
 
             return true;

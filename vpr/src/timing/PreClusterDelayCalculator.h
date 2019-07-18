@@ -155,7 +155,7 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         if (!clock_gpin) {
             AtomBlockId blk = netlist_.pin_block(io_pin);
             const t_model* model = netlist_.block_model(blk);
-            VPR_THROW(VPR_ERROR_TIMING, "Failed to find clock pin associated with pin '%s' (model '%s')", netlist_.pin_name(io_pin).c_str(), model->name);
+            VPR_FATAL_ERROR(VPR_ERROR_TIMING, "Failed to find clock pin associated with pin '%s' (model '%s')", netlist_.pin_name(io_pin).c_str(), model->name);
         }
         return clock_gpin;
     }

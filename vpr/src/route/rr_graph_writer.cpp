@@ -180,7 +180,7 @@ void write_rr_switches(fstream& fp) {
         } else if (rr_switch.type() == SwitchType::BUFFER) {
             fp << "\" type=\"buffer";
         } else {
-            VPR_THROW(VPR_ERROR_ROUTE, "Invalid switch type %d\n", rr_switch.type());
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid switch type %d\n", rr_switch.type());
         }
         fp << "\"";
 
