@@ -234,64 +234,84 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 }
 
 void draw_main_canvas(ezgl::renderer &g){
+    auto start = std::chrono::high_resolution_clock::now();
     
-    t_draw_state* draw_state = get_draw_state_vars();
+    g.set_line_width(0);
+    g.set_line_dash(ezgl::line_dash::none);
+
+    for(int i = 0; i < 1000*1000; i++){
+        int offsetY = 2*i % 2000;
+        int offsetX = 10*(2*i / 2000) % 2000;
+        g.draw_line({1+offsetX, offsetY}, {9+offsetX, offsetY+0});
+    }
+    
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    auto timeDiff = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);    
+    std::cout << "--------------0 width solid time : " << timeDiff.count() << " s--------------" << std::endl;
 
     
-    g.set_font_size(14);
-    
-    draw_block_pin_util();
-    drawplace(g);
-    draw_internal_draw_subblk(g);
-    
-    if (draw_state->pic_on_screen == PLACEMENT) {
-        switch (draw_state->show_nets) {
-            case DRAW_NETS:
-                drawnets(g);
-                break;
-            case DRAW_LOGICAL_CONNECTIONS:
-                break;
-            default:
-                break;
-        }
-        
-    } else { /* ROUTING on screen */
-        
-        switch (draw_state->show_nets) {
-            case DRAW_NETS:
-                drawroute(ALL_NETS, g);
-                break;
-            case DRAW_LOGICAL_CONNECTIONS:
-                // fall through
-            default:
-                draw_rr(g);
-                break;
-        }
-        
-        draw_congestion(g);
-        
-        draw_routing_costs(g);
-        
-        draw_router_rr_costs(g);
-        
-        draw_routing_util(g);
-        
-        draw_routing_bb(g);
-    }
-    
-    draw_placement_macros(g);
-    
-    draw_crit_path(g);
-    
-    draw_logical_connections(g);
-    
-    if (draw_state->color_map) {
-        draw_color_map_legend(*draw_state->color_map, g);
-        draw_state->color_map.reset(); //Free color map in preparation for next redraw
-    }
+//    
+//    t_draw_state* draw_state = get_draw_state_vars();
+//
+//    
+//    g.set_font_size(14);
+//    
+//    draw_block_pin_util();
+//    drawplace(g);
+//    draw_internal_draw_subblk(g);
+//    
+//    if (draw_state->pic_on_screen == PLACEMENT) {
+//        switch (draw_state->show_nets) {
+//            case DRAW_NETS:
+//                drawnets(g);
+//                break;
+//            case DRAW_LOGICAL_CONNECTIONS:
+//                break;
+//            default:
+//                break;
+//        }
+//        
+//    } else { /* ROUTING on screen */
+//        
+//        switch (draw_state->show_nets) {
+//            case DRAW_NETS:
+//                drawroute(ALL_NETS, g);
+//                break;
+//            case DRAW_LOGICAL_CONNECTIONS:
+//                // fall through
+//            default:
+//                draw_rr(g);
+//                break;
+//        }
+//        
+//        draw_congestion(g);
+//        
+//        draw_routing_costs(g);
+//        
+//        draw_router_rr_costs(g);
+//        
+//        draw_routing_util(g);
+//        
+//        draw_routing_bb(g);
+//    }
+//    
+//    draw_placement_macros(g);
+//    
+//    draw_crit_path(g);
+//    
+//    draw_logical_connections(g);
+//    
+//    if (draw_state->color_map) {
+//        draw_color_map_legend(*draw_state->color_map, g);
+//        draw_state->color_map.reset(); //Free color map in preparation for next redraw
+//    }
     
 }
 
+/* function below intializes the interface window with a set of buttons and links 
+ * signals to corresponding functions for situation where the window is opened from 
+ * NO_PICTURE_to_PLACEMENT */
 void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application *app){
     
     GtkButton* window = (GtkButton*) app->get_object("Window");
@@ -305,6 +325,9 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application *app){
     
 }
 
+/* function below intializes the interface window with a set of buttons and links 
+ * signals to corresponding functions for situation where the window is opened from 
+ * NO_PICTURE_to_PLACEMENT_with_crit_path */
 void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application *app){
     
     initial_setup_NO_PICTURE_to_PLACEMENT(app);
@@ -312,6 +335,9 @@ void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application *app
     
 }
 
+/* function below intializes the interface window with a set of buttons and links 
+ * signals to corresponding functions for situation where the window is opened from 
+ * PLACEMENT_to_ROUTING */
 void initial_setup_PLACEMENT_to_ROUTING(ezgl::application *app){
     
     initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(app);
@@ -324,6 +350,9 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application *app){
     
 }
 
+/* function below intializes the interface window with a set of buttons and links 
+ * signals to corresponding functions for situation where the window is opened from 
+ * ROUTING_to_PLACEMENT */
 void initial_setup_ROUTING_to_PLACEMENT(ezgl::application *app){
     
     initial_setup_PLACEMENT_to_ROUTING(app);
@@ -336,6 +365,9 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application *app){
     
 }
 
+/* function below intializes the interface window with a set of buttons and links 
+ * signals to corresponding functions for situation where the window is opened from 
+ * NO_PICTURE_to_ROUTING */
 void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *app){
     
     GtkButton* window = (GtkButton*) app->get_object("Window");
@@ -355,6 +387,9 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application *app){
 
 }
 
+/* function below intializes the interface window with a set of buttons and links 
+ * signals to corresponding functions for situation where the window is opened from 
+ * NO_PICTURE_to_ROUTING_with_crit_path */
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application *app){
     
     initial_setup_NO_PICTURE_to_ROUTING(app);
@@ -389,7 +424,6 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
         if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
             if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
                 draw_state->pic_on_screen = pic_on_screen_val;
-
                 //Placement first to open
                 if(setup_timing_info) {
                     draw_state->setup_timing_info = setup_timing_info;
@@ -874,7 +908,7 @@ static void drawnets(ezgl::renderer &g) {
 
 static void draw_congestion(ezgl::renderer &g) {
     
-    /* Draws all the overused routing resources (i.e. congestion) in RED.   */
+    /* Draws all the overused routing resources (i.e. congestion) in various contrasting colors showing congestion ratio.   */
     t_draw_state* draw_state = get_draw_state_vars();
     
     if (draw_state->show_congestion == DRAW_NO_CONGEST) {
@@ -991,7 +1025,7 @@ static void draw_routing_costs(ezgl::renderer &g) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
     
-    g.set_line_width(2);
+    g.set_line_width(0);
     
     VTR_ASSERT(!route_ctx.rr_node_route_inf.empty());
     
@@ -3671,7 +3705,7 @@ static void draw_rr_costs(ezgl::renderer &g, const std::vector<float>& rr_costs,
     
     auto& device_ctx = g_vpr_ctx.device();
     
-    g.set_line_width(2);
+    g.set_line_width(0);
     
     VTR_ASSERT(rr_costs.size() == device_ctx.rr_nodes.size());
     

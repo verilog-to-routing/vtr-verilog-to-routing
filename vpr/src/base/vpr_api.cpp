@@ -809,10 +809,6 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
             vpr_setup.RouterOpts.route_type);
     if (vpr_setup.ShowGraphics) {
-        std::stringstream msg;
-        msg << "VPR: Versatile Place and Route for FPGAs";
-        msg << " (" << vtr::getcwd() << ")";
-//        init_graphics(msg.str().c_str(), WHITE);
         alloc_draw_structs(&arch);
     }
 }

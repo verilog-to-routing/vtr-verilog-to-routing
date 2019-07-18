@@ -584,6 +584,8 @@ void draw_logical_connections(ezgl::renderer &g) {
     
     auto& atom_ctx = g_vpr_ctx.atom();
     
+    g.set_line_dash(ezgl::line_dash::none);
+    
     // iterate over all the atom nets
     for(auto net_id : atom_ctx.nlist.nets()) {
         
