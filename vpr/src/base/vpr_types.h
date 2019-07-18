@@ -203,7 +203,7 @@ class t_pack_high_fanout_thresholds {
 
 /* these are defined later, but need to declare here because it is used */
 class t_rr_node;
-struct t_pack_molecule;
+class t_pack_molecule;
 struct t_pb_stats;
 struct t_pb_route;
 struct t_chain_info;
@@ -325,7 +325,8 @@ enum e_pack_pattern_molecule_type {
  *      base_gain      : intrinsic "goodness" score for molecule independent of rest of netlist
  *      next           : next molecule in the linked list
  */
-struct t_pack_molecule {
+class t_pack_molecule {
+public:
     /* general molecule info */
     bool valid;
     float base_gain;
@@ -339,6 +340,8 @@ struct t_pack_molecule {
     std::shared_ptr<t_chain_info> chain_info;
 
     t_pack_molecule* next;
+    // a molecule is chain is it is a forced pack and its pack pattern is chain
+    bool is_chain() const { return type == MOLECULE_FORCED_PACK && pack_pattern->is_chain; }
 };
 
 /**

@@ -1235,7 +1235,7 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
     // molecules to be placed in this cluster. To avoid possibly creating cluster level
     // blocks that have incompatible placement constraints or form very long placement
     // macros that limit placement flexibility.
-    if (cluster_placement_stats_ptr->has_long_chain && molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain && molecule->chain_info->is_long_chain) {
+    if (cluster_placement_stats_ptr->has_long_chain && molecule->is_chain() && molecule->chain_info->is_long_chain) {
         VTR_LOGV(verbosity > 4, "\t\t\tFAILED Placement Feasibility Filter: Only one long chain per cluster is allowed\n");
         return BLK_FAILED_FEASIBLE;
     }
@@ -1315,7 +1315,7 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                      * TODO: SW Engineering note - may want to update cluster stats here too instead of doing it outside
                      */
                     VTR_ASSERT(block_pack_status == BLK_PASSED);
-                    if (molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain) {
+                    if (molecule->is_chain()) {
                         /* Chained molecules often take up lots of area and are important,
                          * if a chain is packed in, want to rename logic block to match chain name */
                         AtomBlockId chain_root_blk_id = molecule->atom_block_ids[molecule->pack_pattern->root_block->block_id];
@@ -1480,7 +1480,7 @@ static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* 
         }
 
         // if this block passed and is part of a chained molecule
-        if (block_pack_status == BLK_PASSED && molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain) {
+        if (block_pack_status == BLK_PASSED && molecule->is_chain()) {
             auto molecule_root_block = molecule->atom_block_ids[molecule->root];
             // if this is the root block of the chain molecule check its placmeent feasibility
             if (blk_id == molecule_root_block) {
