@@ -123,6 +123,10 @@ static int get_forced_chain_id(t_pack_molecule* molecule, const t_pack_molecule*
 static AtomBlockId get_adder_driver_block(const AtomBlockId block_id, const t_pack_patterns* pack_pattern, const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules);
 
 static bool molecule_is_hierarchical(const t_pack_molecule* molecule);
+
+static bool valid_second_level_placement(const AtomBlockId first_level_block, const AtomBlockId block_id, const t_pack_molecule* molecule);
+
+static AtomBlockId is_second_level_block(const t_pack_pattern_block* pattern_block, const t_pack_molecule* molecule);
 /*****************************************/
 /*Function Definitions					 */
 /*****************************************/
@@ -996,6 +1000,12 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
                                 const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                 const AtomBlockId blk_id) {
     bool has_second_level = false;
+    bool found_second_level = false;
+    const bool hierarchical_molecule = molecule_is_hierarchical(molecule);
+    const t_model_ports* cin_port_model = nullptr;
+    if (molecule->is_chain()) {
+        cin_port_model = molecule->pack_pattern->chain_root_pins[0][0]->port->model_port;
+    }
     // root block of the pack pattern, which is the starting point of this pattern
     const auto pattern_root_block = molecule->pack_pattern->root_block;
     // bool array indicating whether a position in a pack pattern is optional or should
@@ -1049,7 +1059,22 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
             continue;
         }
 
+
+        if (hierarchical_molecule && !found_second_level) {
+            auto first_level_block = is_second_level_block(pattern_block, molecule);
+            if (first_level_block) {
+                if (valid_second_level_placement(first_level_block, block_id, molecule))
+                    found_second_level = true;
+                else
+                    continue;
+            }
+        }
+
+        // before commiting this atom check if this a second level addition. If so, make sure that if the flag is unset
+        // this this is only driven by a dummy adder and set the flag. If the flag is unset and it's not driven by a dummy
+        // adder ignore it.
         // set this node in the molecule as visited
+
         molecule->atom_block_ids[pattern_block->block_id] = block_id;
 
         // starting from the first connections, add all the connections of this block to the queue
@@ -1070,13 +1095,14 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
                 auto port_model = block_connection->to_pin->port->model_port;
                 auto ipin = block_connection->to_pin->pin_number;
                 auto driver_blk_id = get_driving_block(block_id, port_model, ipin);
-                if (molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain && port_model != molecule->pack_pattern->chain_root_pins[0][0]->port->model_port && block_connection->to_pin->parent_node->pb_type == block_connection->from_pin->parent_node->pb_type) {
+                if (molecule->is_chain() && port_model != cin_port_model &&
+                    block_connection->to_pin->parent_node->pb_type == block_connection->from_pin->parent_node->pb_type) {
                     has_second_level = true;
                 }
                 // add this driver block id with its corresponding pattern block to the queue
                 // only if it's driving the cin port. To avoid adding blocks by tracking the adder
                 // inputs port which will result in a molecule that cannot be placed
-                if (molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain && port_model == molecule->pack_pattern->chain_root_pins[0][0]->port->model_port) {
+                if (molecule->is_chain() && port_model == cin_port_model) {
                     pattern_block_queue.push(std::make_pair(block_connection->from_block, driver_blk_id));
                 }
             }
@@ -1088,7 +1114,7 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
         }
     }
 
-    if (!has_second_level && molecule_is_hierarchical(molecule)) {
+    if (!has_second_level && hierarchical_molecule) {
         return false;
     }
 
@@ -1096,7 +1122,7 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
     // block is reachable from the other molecule
     // if all non-optional positions in the pack pattern have atoms
     // mapped to them, then this molecule is valid
-    if (molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain) {
+    if (molecule->is_chain()) {
         if (chain_input_is_reachable(molecule, atom_molecules))
             return check_second_level_chain(molecule, atom_molecules);
         else
@@ -1104,6 +1130,44 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
     }
 
     return true;
+}
+
+static bool valid_second_level_placement(const AtomBlockId first_level_block, const AtomBlockId block_id, const t_pack_molecule* molecule) {
+
+    const auto& atom_ctx = g_vpr_ctx.atom();
+    // check that this block is being placed in the second level of the chain
+    auto cin_pin = molecule->pack_pattern->chain_root_pins[0][0];
+    auto cin_port_model = cin_pin->port->model_port;
+
+    auto first_level_driver = first_level_block;
+    auto second_level_driver = block_id;
+    do {
+        first_level_driver = atom_ctx.nlist.find_atom_pin_driver(first_level_driver, cin_port_model, cin_pin->pin_number);
+        second_level_driver = atom_ctx.nlist.find_atom_pin_driver(second_level_driver, cin_port_model, cin_pin->pin_number);
+
+        if (first_level_driver && !second_level_driver) return true;
+        if (!first_level_driver && second_level_driver) return false;
+    } while(first_level_driver || second_level_driver);
+
+    // check the number of atoms connected to cin of this molecule and not yet in a molecule
+    // is less than or equal to the same number of first level atom directly above this one
+    return true;
+}
+
+static AtomBlockId is_second_level_block(const t_pack_pattern_block* pattern_block, const t_pack_molecule* molecule) {
+    auto cin_pin = molecule->pack_pattern->chain_root_pins[0][0];
+    auto cin_port_model = cin_pin->port->model_port;
+    auto connection = pattern_block->connections;
+    while(connection) {
+        // if this block is being driven by this connection and the port being driven is not cin port
+        if (connection->to_block == pattern_block &&
+            connection->to_pin->port->model_port != cin_port_model) {
+            return molecule->atom_block_ids[connection->from_block->block_id];
+        }
+        connection = connection->next;
+    }
+
+    return AtomBlockId::INVALID();
 }
 
 /**
@@ -1267,7 +1331,7 @@ static bool chain_input_is_reachable(const t_pack_molecule* molecule,
 }
 
 /**
- * This function finds the atom driving the root block of a moleucle
+ * This function finds the atom driving the root block of a molecule
  * and find the pb_graph_node associated with this block
  */
 static t_pb_graph_node* get_driver_pb_graph_node(const t_pack_molecule* driver_molecule, const AtomBlockId driver_block) {
@@ -2002,7 +2066,7 @@ static t_pb_graph_pin* find_chain_exit_pin(t_pb_graph_pin* input_pin, int patter
  */
 static bool molecule_is_hierarchical(const t_pack_molecule* molecule) {
     // assume that only chained molecules can be hierarchical
-    if (!molecule->pack_pattern->is_chain)
+    if (!molecule->is_chain())
         return false;
 
     const auto cout_pin_model = molecule->pack_pattern->chain_exit_pins[0]->port->model_port;
