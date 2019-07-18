@@ -1527,25 +1527,41 @@ static AtomBlockId get_adder_driver_block(const AtomBlockId block_id, const t_pa
     const auto block_pb_graph_node = cin_pin->parent_node;
     const auto block_pb_type = block_pb_graph_node->pb_type;
 
+    // checked all ports except for cin and no port is driven by an adder // check the cin port then
+    // Steps for finding the driving adder of this adder atom
+    // 1) Check if the adder is driven by another adder from the cin port.
+    //      a) If this driver adder is a dummy adder that starts the adder chain (adder with two inputs connected to ground and cin unconnected),
+    //         check the input ports of block_id first to be able to go back to the first addition in the adder tree.
+    //      b) If this driver adder is not a dummy adder, return it.
+    // find the driver of this atom from the cin port
+    auto driver_id = atom_ctx.nlist.find_atom_pin_driver(block_id, cin_model, cin_pin->pin_number);
+    AtomBlockId dummy_adder = AtomBlockId::INVALID();
+    // if this atom is driven by another adder from the cin port and this adder is not in a molecule yet
+    if (driver_id && primitive_type_feasible(driver_id, block_pb_type) && atom_molecules.find(driver_id) == atom_molecules.end()) {
+        // if this driver adder is not the very first adder in the chain or the first adder but is driven by a ground connection
+        if (atom_ctx.nlist.find_atom_pin_driver(driver_id, cin_model, cin_pin->pin_number))
+            return driver_id;
+        else
+            dummy_adder = driver_id;
+    }
+
+    // Either this adder is not driven by another adder from the cin port or is driven by a dummy adder, therefore we need to
+    // check ports a and b of the adder first to reach the top of the adder tree.
     for (int iport = 0; iport < block_pb_graph_node->num_input_ports; iport++) {
         for (int ipin = 0; ipin < block_pb_graph_node->num_input_pins[iport]; ipin++) {
             const auto& pin = block_pb_graph_node->input_pins[iport][ipin];
             if (pin.port->model_port != cin_model) {
-                auto driver_id = atom_ctx.nlist.find_atom_pin_driver(block_id, pin.port->model_port, pin.pin_number);
-                if (driver_id && primitive_type_feasible(driver_id, block_pb_type) && atom_molecules.find(driver_id) == atom_molecules.end()) {
-                    return driver_id;
+                auto input_driver_id = atom_ctx.nlist.find_atom_pin_driver(block_id, pin.port->model_port, pin.pin_number);
+                if (input_driver_id && primitive_type_feasible(input_driver_id, block_pb_type) && atom_molecules.find(input_driver_id) == atom_molecules.end()) {
+                    return input_driver_id;
                 }
             }
         }
     }
 
-    // checked all porst except for cin and no port is driven by an adder
-    // check the cin port then
-    auto driver_id = atom_ctx.nlist.find_atom_pin_driver(block_id, cin_model, cin_pin->pin_number);
-    if (driver_id && primitive_type_feasible(driver_id, block_pb_type) && atom_molecules.find(driver_id) == atom_molecules.end())
-        return driver_id;
-
-    return AtomBlockId::INVALID();
+    // If this adder is driven by a dummy adder and no other adder is driving this one
+    // from a and b ports then the dummy adder is the very firs
+    return dummy_adder;
 }
 
 /**
