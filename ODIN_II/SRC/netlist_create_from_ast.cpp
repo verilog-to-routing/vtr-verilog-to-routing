@@ -3520,52 +3520,55 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 					data = in_1;
 
 				// Pad/shrink the data to the width of the memory.
-				while(data->count < left_memory->data_width)
-					add_pin_to_signal_list(data, get_zero_pin(verilog_netlist));
-					
-				data->count = left_memory->data_width;
-
-				add_input_port_to_implicit_memory(left_memory, data, "data2");
-
-				signal_list_t *we = init_signal_list();
-				add_pin_to_signal_list(we, get_one_pin(verilog_netlist));
-				add_input_port_to_implicit_memory(left_memory, we, "we2");
-
-				in_1 = init_signal_list();
-				char *name = left->children[0]->types.identifier;
-				int i;
-				int pin_index = left_memory->data_width + left_memory->data_width + left_memory->addr_width + 2;
-				for (i = 0; i < address->count; i++)
+				if(data)
 				{
-					npin_t *pin = address->pins[i];
-					if (pin->name) 
-						vtr::free(pin->name);
-					pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
-					add_pin_to_signal_list(in_1, pin);
-				}
-				free_signal_list(address);
+					while(data->count < left_memory->data_width)
+						add_pin_to_signal_list(data, get_zero_pin(verilog_netlist));
+						
+					data->count = left_memory->data_width;
 
-				for (i = 0; i < data->count; i++)
-				{
-					npin_t *pin = data->pins[i];
-					if (pin->name)
-						vtr::free(pin->name);
-					pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
-					add_pin_to_signal_list(in_1, pin);
-				}
-				free_signal_list(data);
+					add_input_port_to_implicit_memory(left_memory, data, "data2");
 
-				for (i = 0; i < we->count; i++)
-				{
-					npin_t *pin = we->pins[i];
-					if (pin->name)
-						vtr::free(pin->name);
-					pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
-					add_pin_to_signal_list(in_1, pin);
-				}
-				free_signal_list(we);
+					signal_list_t *we = init_signal_list();
+					add_pin_to_signal_list(we, get_one_pin(verilog_netlist));
+					add_input_port_to_implicit_memory(left_memory, we, "we2");
 
-				out_list = NULL;
+					in_1 = init_signal_list();
+					char *name = left->children[0]->types.identifier;
+					int i;
+					int pin_index = left_memory->data_width + left_memory->data_width + left_memory->addr_width + 2;
+					for (i = 0; i < address->count; i++)
+					{
+						npin_t *pin = address->pins[i];
+						if (pin->name) 
+							vtr::free(pin->name);
+						pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
+						add_pin_to_signal_list(in_1, pin);
+					}
+					free_signal_list(address);
+
+					for (i = 0; i < data->count; i++)
+					{
+						npin_t *pin = data->pins[i];
+						if (pin->name)
+							vtr::free(pin->name);
+						pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
+						add_pin_to_signal_list(in_1, pin);
+					}
+					free_signal_list(data);
+
+					for (i = 0; i < we->count; i++)
+					{
+						npin_t *pin = we->pins[i];
+						if (pin->name)
+							vtr::free(pin->name);
+						pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
+						add_pin_to_signal_list(in_1, pin);
+					}
+					free_signal_list(we);
+
+					out_list = NULL;
+				}
 			}
 		}
 	}
