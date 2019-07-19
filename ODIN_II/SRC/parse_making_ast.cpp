@@ -809,124 +809,127 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 	ast_node_t *range_max = 0;
 
 
-	if(symbol_list && symbol_list->children[0] && symbol_list->children[0]->children[1])
+	if(symbol_list)
 	{
-		range_max = resolve_symbol_node(top_type, symbol_list->children[0]->children[1]);
-		range_min = resolve_symbol_node(top_type, symbol_list->children[0]->children[2]);
-	}
-
-    for (i = 0; i < symbol_list->num_children; i++)
-	{
-
-		if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
+		if(symbol_list->children[0] && symbol_list->children[0]->children[1])
 		{
-			symbol_list->children[i]->children[1] = range_max;
-			symbol_list->children[i]->children[2] = range_min;
+			range_max = resolve_symbol_node(top_type, symbol_list->children[0]->children[1]);
+			range_min = resolve_symbol_node(top_type, symbol_list->children[0]->children[2]);
 		}
-		
-        if(top_type == MODULE) {
 
-			switch(id)
+		for (i = 0; i < symbol_list->num_children; i++)
+		{
+
+			if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
 			{
-				case PARAMETER:
-				case LOCALPARAM:
-				{
-					markAndProcessParameterWith(top_type, id, symbol_list->children[i], is_signed);
-					break;
-				}
-				case INPUT:
-				case OUTPUT:
-				case INOUT:
-					symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], is_signed);
-					break;
-				case WIRE:
-					if ((symbol_list->children[i]->num_children == 6 && symbol_list->children[i]->children[5] != NULL)
-						|| (symbol_list->children[i]->num_children == 8 && symbol_list->children[i]->children[7] != NULL))
-					{
-						error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
-								"Nets cannot be initialized\n");
-					}
-					if (is_signed)
-					{
-						/* cannot support signed nets right now */
-						error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
-								"Odin does not handle signed nets (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
-					}
-					symbol_list->children[i]->types.variable.is_wire = true;
-					break;
-				case REG:
-					if (is_signed)
-					{
-						/* cannot support signed regs right now */
-						error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
-								"Odin does not handle signed regs (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
-					}
-					symbol_list->children[i]->types.variable.is_reg = true;
-					break;
-				case INTEGER:
-					oassert(is_signed && "Integers must always be signed");
-					symbol_list->children[i]->types.variable.is_signed = is_signed;			
-					symbol_list->children[i]->types.variable.is_integer = true;
-					break;
-			    case GENVAR:
-					oassert(is_signed && "Genvars must always be signed");
-					symbol_list->children[i]->types.variable.is_signed = is_signed;			
-					symbol_list->children[i]->types.variable.is_integer = true; // TODO: flip to is_genvar
-					break;
-				default:
-					oassert(false);
+				symbol_list->children[i]->children[1] = range_max;
+				symbol_list->children[i]->children[2] = range_min;
 			}
-        }
-        else if(top_type == FUNCTION) {
+			
+			if(top_type == MODULE) {
 
-			switch(id)
-			{
-				case PARAMETER:
-				case LOCALPARAM:
+				switch(id)
 				{
-					markAndProcessParameterWith(top_type, id, symbol_list->children[i], is_signed);
-					break;
+					case PARAMETER:
+					case LOCALPARAM:
+					{
+						markAndProcessParameterWith(top_type, id, symbol_list->children[i], is_signed);
+						break;
+					}
+					case INPUT:
+					case OUTPUT:
+					case INOUT:
+						symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], is_signed);
+						break;
+					case WIRE:
+						if ((symbol_list->children[i]->num_children == 6 && symbol_list->children[i]->children[5] != NULL)
+							|| (symbol_list->children[i]->num_children == 8 && symbol_list->children[i]->children[7] != NULL))
+						{
+							error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
+									"Nets cannot be initialized\n");
+						}
+						if (is_signed)
+						{
+							/* cannot support signed nets right now */
+							error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
+									"Odin does not handle signed nets (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+						}
+						symbol_list->children[i]->types.variable.is_wire = true;
+						break;
+					case REG:
+						if (is_signed)
+						{
+							/* cannot support signed regs right now */
+							error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
+									"Odin does not handle signed regs (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+						}
+						symbol_list->children[i]->types.variable.is_reg = true;
+						break;
+					case INTEGER:
+						oassert(is_signed && "Integers must always be signed");
+						symbol_list->children[i]->types.variable.is_signed = is_signed;			
+						symbol_list->children[i]->types.variable.is_integer = true;
+						break;
+					case GENVAR:
+						oassert(is_signed && "Genvars must always be signed");
+						symbol_list->children[i]->types.variable.is_signed = is_signed;			
+						symbol_list->children[i]->types.variable.is_integer = true; // TODO: flip to is_genvar
+						break;
+					default:
+						oassert(false);
 				}
-				case INPUT:
-				case OUTPUT:
-				case INOUT:
-					symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], is_signed);
-					break;
-				case WIRE:
-					if ((symbol_list->children[i]->num_children == 6 && symbol_list->children[i]->children[5] != NULL)
-						|| (symbol_list->children[i]->num_children == 8 && symbol_list->children[i]->children[7] != NULL))
-					{
-						error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
-								"Nets cannot be initialized\n");
-					}
-					if (is_signed)
-					{
-						/* cannot support signed nets right now */
-						error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
-								"Odin does not handle signed nets (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
-					}
-					symbol_list->children[i]->types.variable.is_wire = true;
-					break;
-				case REG:
-					if (is_signed)
-					{
-						/* cannot support signed regs right now */
-						error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
-								"Odin does not handle signed regs (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
-					}
-					symbol_list->children[i]->types.variable.is_reg = true;
-					break;
-				case INTEGER:
-					oassert(is_signed && "Integers must always be signed");
-					symbol_list->children[i]->types.variable.is_signed = is_signed;
-					symbol_list->children[i]->types.variable.is_integer = true;
-					break;
-				default:
-					oassert(false);
 			}
-        }
+			else if(top_type == FUNCTION) {
 
-    }
+				switch(id)
+				{
+					case PARAMETER:
+					case LOCALPARAM:
+					{
+						markAndProcessParameterWith(top_type, id, symbol_list->children[i], is_signed);
+						break;
+					}
+					case INPUT:
+					case OUTPUT:
+					case INOUT:
+						symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], is_signed);
+						break;
+					case WIRE:
+						if ((symbol_list->children[i]->num_children == 6 && symbol_list->children[i]->children[5] != NULL)
+							|| (symbol_list->children[i]->num_children == 8 && symbol_list->children[i]->children[7] != NULL))
+						{
+							error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
+									"Nets cannot be initialized\n");
+						}
+						if (is_signed)
+						{
+							/* cannot support signed nets right now */
+							error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
+									"Odin does not handle signed nets (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+						}
+						symbol_list->children[i]->types.variable.is_wire = true;
+						break;
+					case REG:
+						if (is_signed)
+						{
+							/* cannot support signed regs right now */
+							error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
+									"Odin does not handle signed regs (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+						}
+						symbol_list->children[i]->types.variable.is_reg = true;
+						break;
+					case INTEGER:
+						oassert(is_signed && "Integers must always be signed");
+						symbol_list->children[i]->types.variable.is_signed = is_signed;
+						symbol_list->children[i]->types.variable.is_integer = true;
+						break;
+					default:
+						oassert(false);
+				}
+			}
+
+		}
+	}
 
 	return symbol_list;
 }
