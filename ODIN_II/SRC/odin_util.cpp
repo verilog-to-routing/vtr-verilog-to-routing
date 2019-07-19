@@ -252,11 +252,11 @@ long convert_dec_string_of_size_to_long(char *orig_string, int /*size*/)
 long convert_string_of_radix_to_long(char *orig_string, int radix)
 {
 	if (!is_string_of_radix(orig_string, radix))
-		error_message(PARSE_ERROR, -1, -1, "Invalid base %ld number: %s.\n", radix, orig_string);
+		error_message(PARSE_ERROR, -1, -1, "Invalid base %d number: %s.\n", radix, orig_string);
 
 	long number = strtoll(orig_string, NULL, radix);
 	if (number == LLONG_MAX || number == LLONG_MIN)
-		error_message(PARSE_ERROR, -1, -1, "This base %ld number (%s) is too long for Odin\n", radix, orig_string);
+		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
 
 	return number;
 }
