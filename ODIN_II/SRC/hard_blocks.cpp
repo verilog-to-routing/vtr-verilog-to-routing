@@ -185,9 +185,9 @@ void define_hard_block(nnode_t *node, FILE *out)
 		else
 		{
 			if (node->input_pins[i]->net->driver_pin->name != NULL)
-				j = odin_sprintf(buffer, " %s[%ld]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->name);
+				j = odin_sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->name);
 			else
-				j = odin_sprintf(buffer, " %s[%ld]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->node->name);
+				j = odin_sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->node->name);
 		}
 
 		if (count + j > 79)
@@ -210,7 +210,7 @@ void define_hard_block(nnode_t *node, FILE *out)
 	for (i = 0; i < node->num_output_pins; i++)
 	{
 		if (node->output_port_sizes[port] != 1)
-			j = odin_sprintf(buffer, " %s[%ld]=%s", node->output_pins[i]->mapping, index, node->output_pins[i]->name);
+			j = odin_sprintf(buffer, " %s[%d]=%s", node->output_pins[i]->mapping, index, node->output_pins[i]->name);
 		else
 			j = odin_sprintf(buffer, " %s=%s", node->output_pins[i]->mapping, node->output_pins[i]->name);
 
