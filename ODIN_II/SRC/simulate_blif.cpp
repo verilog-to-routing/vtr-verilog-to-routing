@@ -3623,9 +3623,9 @@ static char *generate_vector_header(lines_t *l)
 static void add_test_vector_to_lines(test_vector *v, lines_t *l, int cycle)
 {
 	if (l->count < v->count)
-		error_message(SIMULATION_ERROR, 0, -1, "Fewer lines (%ld) than values (%ld).", l->count, v->count);
+		error_message(SIMULATION_ERROR, 0, -1, "Fewer lines (%d) than values (%d).", l->count, v->count);
 	if (l->count > v->count)
-		error_message(SIMULATION_ERROR, 0, -1, "More lines (%ld) than values (%ld).", l->count, v->count);
+		error_message(SIMULATION_ERROR, 0, -1, "More lines (%d) than values (%d).", l->count, v->count);
 
 	int i;
 	for (i = 0; i < v->count; i++)
