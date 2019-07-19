@@ -1521,7 +1521,7 @@ char *generate_hard_block_ports_signature(hard_block_ports *ports)
 	for (j = 0; j < ports->count; j++)
 	{
 		char buffer1[READ_BLIF_BUFFER];
-		odin_sprintf(buffer1, "%s_%ld_", ports->names[j], ports->sizes[j]);
+		odin_sprintf(buffer1, "%s_%d_", ports->names[j], ports->sizes[j]);
 		strcat(buffer, buffer1);
 	}
 	return vtr::strdup(buffer);
