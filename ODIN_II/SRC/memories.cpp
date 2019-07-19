@@ -784,7 +784,7 @@ void split_dp_memory_width(nnode_t *node, int target_size)
 		for (i = 0; i < num_memories; i++)
 		{
 			nnode_t *new_node = allocate_nnode();
-			new_node->name = append_string(node->name, "-%ld",i);
+			new_node->name = append_string(node->name, "-%d",i);
 			dp_memory_list = insert_in_vptr_list(dp_memory_list, new_node);
 
 			/* Copy properties from the original node */
