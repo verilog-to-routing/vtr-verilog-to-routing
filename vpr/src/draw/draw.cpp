@@ -990,10 +990,15 @@ static void draw_congestion(ezgl::renderer &g) {
 
 static void draw_routing_costs(ezgl::renderer &g) {
     
-    /* Draws routing costs */
+    /* Draws routing resource nodes colored according to their congestion costs */
     
     t_draw_state* draw_state = get_draw_state_vars();
     
+    
+    /* show_routing_costs controls whether the total/sum of the costs or individual 
+     * cost components (base cost, accumulated cost, present cost) are shown, and 
+     * whether colours are proportional to the node's cost or the logarithm of 
+     * it's cost.*/
     if (draw_state->show_routing_costs == DRAW_NO_ROUTING_COSTS) {
         return;
     }
@@ -2555,12 +2560,11 @@ void act_on_mouse_press(ezgl::application *app, GdkEventButton *event, double x,
         app->refresh_drawing();
     }
     
-  }else if (event->button == 2)
+  }
+//  else if (event->button == 2)
 //    std::cout << "middle ";
-      ;
-  else if (event->button == 3)
+//  else if (event->button == 3)
 //    std::cout << "right ";
-      ;
 
 //  std::cout << "mouse button at coordinates (" << x << "," << y << ") " << std::endl;
   
