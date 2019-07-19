@@ -639,170 +639,165 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,d
 	
 	bool done = false;
 	bool restart = false;
-
-	while (!done)	
-	{
 		
-		for (int wave = 0; wave<=threads_waves; wave++)
+	for (int wave = 0; wave<=threads_waves && !done; wave++)
+	{
+		double simulation_start_time = wall_time();
+		int from_cycle = from_wave + wave*offset;
+		int to_cycle = from_cycle+offset;
+		if (to_cycle > to_wave)
+			to_cycle = to_wave;
+
+		
+		test_vector *v=NULL;
+		// Assign vectors to lines, either by reading or generating them.
+		// Every second cycle gets a new vector.
+
+		
+		
+		char buffer[BUFFER_MAX_SIZE];
+		
+		for (int i=from_cycle;i<to_cycle;i++)
 		{
-			double simulation_start_time = wall_time();
-			int from_cycle = from_wave + wave*offset;
-			int to_cycle = from_cycle+offset;
-			if (to_cycle > to_wave)
-				to_cycle = to_wave;
-
-			
-			test_vector *v=NULL;
-			// Assign vectors to lines, either by reading or generating them.
-			// Every second cycle gets a new vector.
-
-			
-			
-			char buffer[BUFFER_MAX_SIZE];
-			
-			for (int i=from_cycle;i<to_cycle;i++)
+			v = NULL;
+			if (sim_data->in)
 			{
-				v = NULL;
-				if (sim_data->in)
-				{
-					//buffer = NULL;
-					if (!get_next_vector(sim_data->in, buffer))
-						error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not read next vector.");
-					
-					v = parse_test_vector(buffer);
-					//printf("Here\n");
-				}
-				else
-				{
-					v = generate_random_test_vector(i, sim_data);
-				}
-				//printf("v=%ld \n",v->values[0][0]);
-				add_test_vector_to_lines(v, sim_data->input_lines, i);
-				write_cycle_to_file(sim_data->input_lines, sim_data->in_out, i);
-				write_cycle_to_modelsim_file(sim_data->netlist, sim_data->input_lines, sim_data->modelsim_out, i);
+				//buffer = NULL;
+				if (!get_next_vector(sim_data->in, buffer))
+					error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not read next vector.");
 				
+				v = parse_test_vector(buffer);
+				//printf("Here\n");
 			}
-			if (v)
-				free_test_vector(v);
-
-			if (wave == 0)
+			else
 			{
-				// lines as specified by the -p option.
-				sim_data->stages = simulate_first_cycle(sim_data->netlist, from_cycle, sim_data->output_lines);
-				// Make sure the output lines are still OK after adding custom lines.
-				if (!verify_lines(sim_data->output_lines))
-					error_message(SIMULATION_ERROR, 0, -1,"%s\n", 
-							"Problem detected with the output lines after the first cycle.");
-				
-				//maria
-				sim_data->thread_distribution = calculate_thread_distribution(sim_data->stages);
-				
-				//create_threads_and_let them wait for the signal
-				for (int t=0; t<sim_data->thread_distribution->number_of_threads; t++)
-				{	
-					worker_threads.push_back(std::thread(compute_and_store_part_in_waves_multithreaded,t,sim_data->thread_distribution->thread_nodes[t],from_wave,to_wave,offset,true));
-				}
-
+				v = generate_random_test_vector(i, sim_data);
 			}
-
-			if (wave !=0 || restart)
-			{
-				
-				pthread_mutex_lock(&output_mp);
-				threads_done_wave =0;
-				pthread_mutex_unlock(&output_mp);
-				if( (errno =pthread_cond_broadcast(&start_threads)) !=0)
-					printf("Broadcast Error!");					
-
-			}
-
-			pthread_mutex_lock(&threads_mp);
-			while (threads_done_wave != sim_data->thread_distribution->number_of_threads)
-			{
-				pthread_cond_wait(&start_output,&threads_mp);
-			}
-			pthread_mutex_unlock(&threads_mp);
-	
+			//printf("v=%ld \n",v->values[0][0]);
+			add_test_vector_to_lines(v, sim_data->input_lines, i);
+			write_cycle_to_file(sim_data->input_lines, sim_data->in_out, i);
+			write_cycle_to_modelsim_file(sim_data->netlist, sim_data->input_lines, sim_data->modelsim_out, i);
 			
-			for (int i=from_cycle;i<to_cycle;i++)
-			{
-				//if (i!=0)
-				write_cycle_to_file(sim_data->output_lines, sim_data->out, i);
+		}
+		if (v)
+			free_test_vector(v);
 
-			}
-			//update memory directories of all memory nodes
-			write_back_memory_nodes(sim_data->thread_distribution->memory_nodes->nodes,sim_data->thread_distribution->memory_nodes->number_of_nodes);
-			sim_data->simulation_time += wall_time() - simulation_start_time;
-			if (wave==threads_waves) //check for coverage in the last cycle
-			{
-				if(min_coverage > 0.0)
-				{
-					current_coverage = (((double) get_num_covered_nodes(sim_data->stages) / (double) sim_data->stages->num_nodes));
-					if(global_args.sim_achieve_best)
-					{
-						if(current_coverage > min_coverage)
-						{
-							increment_vector_by = global_args.sim_num_test_vectors;
-							min_coverage = current_coverage;
-							sim_data->num_vectors += increment_vector_by;
-						}
-						else if(increment_vector_by)
-						{
-							//slowly reduce the search until there is no more possible increment, this prevent building too large of a comparative vector pair
-							sim_data->num_vectors += increment_vector_by;
-							increment_vector_by /= 2;
-						}
-
-					}
-					else
-					{
-						if(current_coverage < min_coverage)
-							sim_data->num_vectors += increment_vector_by;
-					}
-					//update the cycle boundaries to continue calculations
-					if (sim_data->num_vectors != to_cycle)
-					{
-						from_wave = to_cycle+1;
-						to_wave = sim_data->num_vectors;
-						threads_waves = (to_wave-from_wave)/offset;
-
-						pthread_mutex_lock(&output_mp);
-						threads_start = from_cycle;
-						threads_end = to_cycle;
-						pthread_mutex_unlock(&output_mp);
-						restart = true;
-						//printf("threads start %ld threads end %ld",threads_start,threads_end);	
-					}
-					else
-						done = true;			
-				}
-				else
-				{
-					current_coverage = to_cycle/(double)sim_data->num_vectors;
-					done = true;
-				}
-				
-
-			}
+		if (wave == 0)
+		{
+			// lines as specified by the -p option.
+			sim_data->stages = simulate_first_cycle(sim_data->netlist, from_cycle, sim_data->output_lines);
+			// Make sure the output lines are still OK after adding custom lines.
+			if (!verify_lines(sim_data->output_lines))
+				error_message(SIMULATION_ERROR, 0, -1,"%s\n", 
+						"Problem detected with the output lines after the first cycle.");
 			
-
-			// Print netlist-specific statistics.
-			if (wave == 0)
-				print_netlist_stats(sim_data->stages, sim_data->num_vectors);
+			//maria
+			sim_data->thread_distribution = calculate_thread_distribution(sim_data->stages);
 			
-			sim_data->total_time = wall_time() - start_time;
-			progress_bar_position = print_progress_bar(
-						to_cycle/(double)(sim_data->num_vectors), progress_bar_position, progress_bar_length, sim_data->total_time);
+			//create_threads_and_let them wait for the signal
+			for (int t=0; t<sim_data->thread_distribution->number_of_threads; t++)
+			{	
+				worker_threads.push_back(std::thread(compute_and_store_part_in_waves_multithreaded,t,sim_data->thread_distribution->thread_nodes[t],from_wave,to_wave,offset,true));
+			}
 
 		}
-		if (done)
+
+		if (wave !=0 || restart)
 		{
-			//signal to unblock threads and let them finish
+			
+			pthread_mutex_lock(&output_mp);
+			threads_done_wave =0;
+			pthread_mutex_unlock(&output_mp);
 			if( (errno =pthread_cond_broadcast(&start_threads)) !=0)
-				printf("Broadcast Error!");
+				printf("Broadcast Error!");					
 
 		}
 
+		pthread_mutex_lock(&threads_mp);
+		while (threads_done_wave != sim_data->thread_distribution->number_of_threads)
+		{
+			pthread_cond_wait(&start_output,&threads_mp);
+		}
+		pthread_mutex_unlock(&threads_mp);
+
+		
+		for (int i=from_cycle;i<to_cycle;i++)
+		{
+			//if (i!=0)
+			write_cycle_to_file(sim_data->output_lines, sim_data->out, i);
+
+		}
+		//update memory directories of all memory nodes
+		write_back_memory_nodes(sim_data->thread_distribution->memory_nodes->nodes,sim_data->thread_distribution->memory_nodes->number_of_nodes);
+		sim_data->simulation_time += wall_time() - simulation_start_time;
+		if (wave==threads_waves) //check for coverage in the last cycle
+		{
+			if(min_coverage > 0.0)
+			{
+				current_coverage = (((double) get_num_covered_nodes(sim_data->stages) / (double) sim_data->stages->num_nodes));
+				if(global_args.sim_achieve_best)
+				{
+					if(current_coverage > min_coverage)
+					{
+						increment_vector_by = global_args.sim_num_test_vectors;
+						min_coverage = current_coverage;
+						sim_data->num_vectors += increment_vector_by;
+					}
+					else if(increment_vector_by)
+					{
+						//slowly reduce the search until there is no more possible increment, this prevent building too large of a comparative vector pair
+						sim_data->num_vectors += increment_vector_by;
+						increment_vector_by /= 2;
+					}
+
+				}
+				else
+				{
+					if(current_coverage < min_coverage)
+						sim_data->num_vectors += increment_vector_by;
+				}
+				//update the cycle boundaries to continue calculations
+				if (sim_data->num_vectors != to_cycle)
+				{
+					from_wave = to_cycle+1;
+					to_wave = sim_data->num_vectors;
+					threads_waves = (to_wave-from_wave)/offset;
+
+					pthread_mutex_lock(&output_mp);
+					threads_start = from_cycle;
+					threads_end = to_cycle;
+					pthread_mutex_unlock(&output_mp);
+					restart = true;
+					//printf("threads start %ld threads end %ld",threads_start,threads_end);	
+				}
+				else
+					done = true;			
+			}
+			else
+			{
+				current_coverage = to_cycle/(double)sim_data->num_vectors;
+				done = true;
+			}
+			
+
+		}
+		
+
+		// Print netlist-specific statistics.
+		if (wave == 0)
+			print_netlist_stats(sim_data->stages, sim_data->num_vectors);
+		
+		sim_data->total_time = wall_time() - start_time;
+		progress_bar_position = print_progress_bar(
+					to_cycle/(double)(sim_data->num_vectors), progress_bar_position, progress_bar_length, sim_data->total_time);
+
+	}
+
+	if(done)
+	{
+		//signal to unblock threads and let them finish
+		if( (errno =pthread_cond_broadcast(&start_threads)) !=0)
+			printf("Broadcast Error!");
 	}
 
 	
