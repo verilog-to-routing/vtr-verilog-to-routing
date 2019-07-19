@@ -3641,6 +3641,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		if (right_memory)
 		{
 			// Register inputs for later assignment directly to the memory.
+			oassert(right_inputs);
 			int i;
 			for (i = 0; i < right_inputs->count; i++)
 			{
