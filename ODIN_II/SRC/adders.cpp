@@ -361,23 +361,23 @@ void define_add_function(nnode_t *node, FILE *out)
 			if (i < node->input_port_sizes[0])
 			{
 				if (!driver_pin->name)
-					j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->inputs->next->next->name, i, driver_pin->node->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->node->name);
 				else
-					j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->inputs->next->next->name, i, driver_pin->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->name);
 			}
 			else if(i >= node->input_port_sizes[0] && i < node->input_port_sizes[1] + node->input_port_sizes[0])
 			{
 				if (!driver_pin->name)
-					j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->node->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->node->name);
 				else
-					j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->name);
 			}
 			else
 			{
 				if (!driver_pin->name)
-					j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->node->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->node->name);
 				else
-					j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->name);
 			}
 
 		if (count + j > 79)
