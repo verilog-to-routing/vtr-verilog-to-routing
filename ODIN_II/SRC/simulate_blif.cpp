@@ -3230,10 +3230,10 @@ static void assign_memory_from_mif_file(nnode_t *node, FILE *mif, char *filename
 					{
 						// Make sure the address and value are valid strings of the specified radix.
 						if (!is_string_of_radix(address_string, addr_radix))
-							error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is not a base %ld string.", filename, address_string, addr_radix);
+							error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is not a base %d string.", filename, address_string, addr_radix);
 
 						if (!is_string_of_radix(data_string, data_radix))
-							error_message(SIMULATION_ERROR, line_number, -1, "%s: data string %s is not a base %ld string.", filename, data_string, data_radix);
+							error_message(SIMULATION_ERROR, line_number, -1, "%s: data string %s is not a base %d string.", filename, data_string, data_radix);
 
 						char *binary_data = convert_string_of_radix_to_bit_string(data_string, data_radix, width);
 						long address = convert_string_of_radix_to_long(address_string, addr_radix);
