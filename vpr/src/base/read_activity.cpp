@@ -43,8 +43,8 @@ std::unordered_map<AtomNetId, t_net_power> read_activity(const AtomNetlist& netl
 
     act_file_hdl = vtr::fopen(activity_file, "r");
     if (act_file_hdl == nullptr) {
-        vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
-                  "Error: could not open activity file: %s\n", activity_file);
+        VPR_FATAL_ERROR(VPR_ERROR_BLIF_F,
+                        "Error: could not open activity file: %s\n", activity_file);
     }
 
     ptr = vtr::fgets(buf, vtr::bufsize, act_file_hdl);
@@ -62,9 +62,9 @@ std::unordered_map<AtomNetId, t_net_power> read_activity(const AtomNetlist& netl
     for (auto net_id : netlist.nets()) {
         if (atom_net_power[net_id].probability < 0.0
             || atom_net_power[net_id].density < 0.0) {
-            vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
-                      "Error: Activity file does not contain signal %s\n",
-                      netlist.net_name(net_id).c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_BLIF_F,
+                            "Error: Activity file does not contain signal %s\n",
+                            netlist.net_name(net_id).c_str());
         }
     }
     return atom_net_power;

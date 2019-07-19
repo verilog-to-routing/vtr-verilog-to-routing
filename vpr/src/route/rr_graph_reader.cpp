@@ -305,8 +305,8 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
         } else if (strcmp(node_type, "IPIN") == 0) {
             node.set_type(IPIN);
         } else {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "Valid inputs for class types are \"CHANX\", \"CHANY\",\"SOURCE\", \"SINK\",\"OPIN\", and \"IPIN\".");
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Valid inputs for class types are \"CHANX\", \"CHANY\",\"SOURCE\", \"SINK\",\"OPIN\", and \"IPIN\".");
         }
 
         if (node.type() == CHANX || node.type() == CHANY) {
@@ -400,9 +400,9 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
     while (edges) {
         size_t source_node = get_attribute(edges, "src_node", loc_data).as_uint();
         if (source_node >= device_ctx.rr_nodes.size()) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "source_node %d is larger than rr_nodes.size() %d",
-                      source_node, device_ctx.rr_nodes.size());
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "source_node %d is larger than rr_nodes.size() %d",
+                            source_node, device_ctx.rr_nodes.size());
         }
 
         num_edges_for_node[source_node]++;
@@ -430,15 +430,15 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
         int switch_id = get_attribute(edges, "switch_id", loc_data).as_int();
 
         if (sink_node >= device_ctx.rr_nodes.size()) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "sink_node %d is larger than rr_nodes.size() %d",
-                      sink_node, device_ctx.rr_nodes.size());
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "sink_node %d is larger than rr_nodes.size() %d",
+                            sink_node, device_ctx.rr_nodes.size());
         }
 
         if (switch_id >= num_rr_switches) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "switch_id %d is larger than num_rr_switches %d",
-                      switch_id, num_rr_switches);
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "switch_id %d is larger than num_rr_switches %d",
+                            switch_id, num_rr_switches);
         }
 
         /*Keeps track of the number of the specific type of switch that connects a wire to an ipin
@@ -494,9 +494,9 @@ void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pug
     while (channelLists) {
         size_t index = get_attribute(channelLists, "index", loc_data).as_uint();
         if (index >= chan_width.x_list.size()) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "index %d on x_list exceeds x_list size %u",
-                      index, chan_width.x_list.size());
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "index %d on x_list exceeds x_list size %u",
+                            index, chan_width.x_list.size());
         }
         chan_width.x_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
         channelLists = channelLists.next_sibling(channelLists.name());
@@ -505,9 +505,9 @@ void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pug
     while (channelLists) {
         size_t index = get_attribute(channelLists, "index", loc_data).as_uint();
         if (index >= chan_width.y_list.size()) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "index %d on y_list exceeds y_list size %u",
-                      index, chan_width.y_list.size());
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "index %d on y_list exceeds y_list size %u",
+                            index, chan_width.y_list.size());
         }
         chan_width.y_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
         channelLists = channelLists.next_sibling(channelLists.name());
@@ -528,18 +528,18 @@ void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data, cons
         const t_grid_tile& grid_tile = grid[x][y];
 
         if (grid_tile.type->index != get_attribute(grid_node, "block_type_id", loc_data).as_int(0)) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "Architecture file does not match RR graph's block_type_id at (%d, %d): arch used ID %d, RR graph used ID %d.", x, y,
-                      (grid_tile.type->index), get_attribute(grid_node, "block_type_id", loc_data).as_int(0));
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Architecture file does not match RR graph's block_type_id at (%d, %d): arch used ID %d, RR graph used ID %d.", x, y,
+                            (grid_tile.type->index), get_attribute(grid_node, "block_type_id", loc_data).as_int(0));
         }
         if (grid_tile.width_offset != get_attribute(grid_node, "width_offset", loc_data).as_float(0)) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "Architecture file does not match RR graph's width_offset at (%d, %d)", x, y);
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Architecture file does not match RR graph's width_offset at (%d, %d)", x, y);
         }
 
         if (grid_tile.height_offset != get_attribute(grid_node, "height_offset", loc_data).as_float(0)) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "Architecture file does not match RR graph's height_offset at (%d, %d)", x, y);
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Architecture file does not match RR graph's height_offset at (%d, %d)", x, y);
         }
         grid_node = grid_node.next_sibling(grid_node.name());
     }
@@ -568,17 +568,17 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
         const char* name = get_attribute(Block, "name", loc_data).as_string(nullptr);
 
         if (strcmp(block_info.name, name) != 0) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "Architecture file does not match RR graph's block name: arch uses name %s, RR graph uses name %s", block_info.name, name);
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Architecture file does not match RR graph's block name: arch uses name %s, RR graph uses name %s", block_info.name, name);
         }
 
         if (block_info.width != get_attribute(Block, "width", loc_data).as_float(0)) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "Architecture file does not match RR graph's block width");
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Architecture file does not match RR graph's block width");
         }
         if (block_info.height != get_attribute(Block, "height", loc_data).as_float(0)) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "Architecture file does not match RR graph's block height");
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Architecture file does not match RR graph's block height");
         }
 
         pin_class = get_first_child(Block, "pin_class", loc_data, OPTIONAL);
@@ -598,19 +598,19 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
             } else if (strcmp(typeInfo, "INPUT") == 0) {
                 type = RECEIVER;
             } else {
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                          "Valid inputs for class types are \"OPEN\", \"OUTPUT\", and \"INPUT\".");
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Valid inputs for class types are \"OPEN\", \"OUTPUT\", and \"INPUT\".");
                 type = OPEN;
             }
 
             if (class_inf.type != type) {
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                          "Architecture file does not match RR graph's block type");
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Architecture file does not match RR graph's block type");
             }
 
             if (class_inf.num_pins != (int)count_children(pin_class, "pin", loc_data)) {
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                          "Incorrect number of pins in %d pin_class in block %s", classNum, block_info.name);
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Incorrect number of pins in %d pin_class in block %s", classNum, block_info.name);
             }
 
             pin = get_first_child(pin_class, "pin", loc_data, OPTIONAL);
@@ -619,13 +619,13 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
                 auto index = pin_index_by_num(class_inf, num);
 
                 if (index < 0) {
-                    vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                              "Architecture file does not match RR graph's block pin list: invalid ptc for pin class");
+                    VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                    "Architecture file does not match RR graph's block pin list: invalid ptc for pin class");
                 }
 
                 if (pin.child_value() != block_type_pin_index_to_name(&block_info, class_inf.pinlist[index])) {
-                    vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                              "Architecture file does not match RR graph's block pin list");
+                    VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                    "Architecture file does not match RR graph's block pin list");
                 }
                 pin = pin.next_sibling("pin");
             }
@@ -645,20 +645,20 @@ void verify_segments(pugi::xml_node parent, const pugiutil::loc_data& loc_data, 
         int segNum = get_attribute(Segment, "id", loc_data).as_int();
         const char* name = get_attribute(Segment, "name", loc_data).as_string();
         if (strcmp(segment_inf[segNum].name.c_str(), name) != 0) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "Architecture file does not match RR graph's segment name: arch uses %s, RR graph uses %s", segment_inf[segNum].name.c_str(), name);
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Architecture file does not match RR graph's segment name: arch uses %s, RR graph uses %s", segment_inf[segNum].name.c_str(), name);
         }
 
         subnode = get_single_child(parent, "timing", loc_data, OPTIONAL);
 
         if (subnode) {
             if (segment_inf[segNum].Rmetal != get_attribute(subnode, "R_per_meter", loc_data).as_float(0)) {
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                          "Architecture file does not match RR graph's segment R_per_meter");
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Architecture file does not match RR graph's segment R_per_meter");
             }
             if (segment_inf[segNum].Cmetal != get_attribute(subnode, "C_per_meter", loc_data).as_float(0)) {
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                          "Architecture file does not match RR graph's segment C_per_meter");
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Architecture file does not match RR graph's segment C_per_meter");
             }
         }
         Segment = Segment.next_sibling(Segment.name());

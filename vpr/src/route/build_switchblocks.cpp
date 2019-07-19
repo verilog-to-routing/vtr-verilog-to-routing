@@ -264,7 +264,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
     /* get a single number for channel width */
     int channel_width = nodes_per_chan->max;
     if (nodes_per_chan->max != nodes_per_chan->x_min || nodes_per_chan->max != nodes_per_chan->y_min) {
-        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Custom switch blocks currently support consistent channel widths only.");
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Custom switch blocks currently support consistent channel widths only.");
     }
 
     /* sparse array that will contain switch block connections */
@@ -302,7 +302,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
 
         /* verify that switchblock type matches specified directionality -- currently we have to stay consistent */
         if (directionality != sb.directionality) {
-            vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "alloc_and_load_switchblock_connections: Switchblock %s does not match directionality of architecture\n", sb.name.c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "alloc_and_load_switchblock_connections: Switchblock %s does not match directionality of architecture\n", sb.name.c_str());
         }
         /* Iterate over the x,y coordinates spanning the FPGA. */
         for (size_t x_coord = 0; x_coord < grid.width(); x_coord++) {
@@ -539,7 +539,7 @@ static bool sb_not_here(const DeviceGrid& grid, int x, int y, e_sb_location loca
             }
             break;
         default:
-            vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "sb_not_here: unrecognized location enum: %d\n", location);
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "sb_not_here: unrecognized location enum: %d\n", location);
             break;
     }
     return sb_not_here;
@@ -842,7 +842,7 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
             int dest_wire_ind = adjust_formula_result(raw_dest_wire_ind, src_W, dest_W, iconn);
 
             if (dest_wire_ind < 0) {
-                vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Got a negative wire from switch block formula %s", permutations_ref[iperm].c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Got a negative wire from switch block formula %s", permutations_ref[iperm].c_str());
             }
 
             int to_wire = potential_dest_wires[dest_wire_ind].wire; //Index in channel
@@ -920,7 +920,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, enu
             return chan_details_x;
             break;
         default:
-            vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "index_into_correct_chan: unknown side specified: %d\n", side);
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "index_into_correct_chan: unknown side specified: %d\n", side);
             break;
     }
     VTR_ASSERT(false);
@@ -946,7 +946,7 @@ static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coor
         }
 
     } else {
-        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "coords_out_of_bounds(): illegal channel type %d\n", chan_type);
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "coords_out_of_bounds(): illegal channel type %d\n", chan_type);
     }
     return result;
 }

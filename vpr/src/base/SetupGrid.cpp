@@ -596,16 +596,16 @@ static void CheckGrid(const DeviceGrid& grid) {
         for (size_t j = 0; j < grid.height(); ++j) {
             auto type = grid[i][j].type;
             if (nullptr == type) {
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Grid Location (%d,%d) has no type.\n", i, j);
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has no type.\n", i, j);
             }
 
             if ((grid[i][j].width_offset < 0)
                 || (grid[i][j].width_offset >= type->width)) {
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Grid Location (%d,%d) has invalid width offset (%d).\n", i, j, grid[i][j].width_offset);
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has invalid width offset (%d).\n", i, j, grid[i][j].width_offset);
             }
             if ((grid[i][j].height_offset < 0)
                 || (grid[i][j].height_offset >= type->height)) {
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Grid Location (%d,%d) has invalid height offset (%d).\n", i, j, grid[i][j].height_offset);
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d) has invalid height offset (%d).\n", i, j, grid[i][j].height_offset);
             }
 
             //Verify that type and width/height offsets are correct (e.g. for dimension > 1 blocks)
@@ -618,21 +618,21 @@ static void CheckGrid(const DeviceGrid& grid) {
 
                         auto& tile = grid[x][y];
                         if (tile.type != type) {
-                            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                                      "Grid Location (%d,%d) should have type '%s' (based on root location) but has type '%s'\n",
-                                      i, j, type->name, tile.type->name);
+                            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                            "Grid Location (%d,%d) should have type '%s' (based on root location) but has type '%s'\n",
+                                            i, j, type->name, tile.type->name);
                         }
 
                         if (tile.width_offset != x_offset) {
-                            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                                      "Grid Location (%d,%d) of type '%s' should have width offset '%d' (based on root location) but has '%d'\n",
-                                      i, j, type->name, x_offset, tile.width_offset);
+                            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                            "Grid Location (%d,%d) of type '%s' should have width offset '%d' (based on root location) but has '%d'\n",
+                                            i, j, type->name, x_offset, tile.width_offset);
                         }
 
                         if (tile.height_offset != y_offset) {
-                            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                                      "Grid Location (%d,%d)  of type '%s' should have height offset '%d' (based on root location) but has '%d'\n",
-                                      i, j, type->name, y_offset, tile.height_offset);
+                            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                            "Grid Location (%d,%d)  of type '%s' should have height offset '%d' (based on root location) but has '%d'\n",
+                                            i, j, type->name, y_offset, tile.height_offset);
                         }
                     }
                 }

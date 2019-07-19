@@ -606,8 +606,8 @@ void route_budgets::print_route_budget() {
 
     /* Prints out general info for easy error checking*/
     if (!fp.is_open() || !fp.good()) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "could not open \"route_budget.txt\" for generating route budget file\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "could not open \"route_budget.txt\" for generating route budget file\n");
     }
 
     fp << "Minimum Delay Budgets:" << endl;

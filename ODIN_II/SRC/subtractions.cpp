@@ -408,7 +408,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 	{
 		node[i] = allocate_nnode();
 		node[i]->name = (char *)vtr::malloc(strlen(nodeo->name) + 20);
-		odin_sprintf(node[i]->name, "%s-%ld", nodeo->name, i);
+		odin_sprintf(node[i]->name, "%s-%d", nodeo->name, i);
 		if(i == count - 1)
 		{
 			if(configuration.fixed_hard_adder == 1)
@@ -564,7 +564,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 		connect_nodes(netlist->vcc_node, 0, node[0], sizea);
 		//hang the first sumout
 		node[0]->output_pins[1] = allocate_npin();
-		node[0]->output_pins[1]->name = append_string("", "%s~dummy_output~%ld~%ld", node[0]->name, 0, 1);
+		node[0]->output_pins[1]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, 1);
 	}
 
 	// connect the first cin pin to vcc or unconn depending on configuration
@@ -604,7 +604,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 			{
 				node[0]->output_pins[j + 1] = allocate_npin();
 				// Pad outputs with a unique and descriptive name to avoid collisions.
-				node[0]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%ld~%ld", node[0]->name, 0, j + 1);
+				node[0]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, j + 1);
 			}
 		}
 	}
@@ -618,7 +618,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 			{
 				node[0]->output_pins[j + 2] = allocate_npin();
 				// Pad outputs with a unique and descriptive name to avoid collisions.
-				node[0]->output_pins[j + 2]->name = append_string("", "%s~dummy_output~%ld~%ld", node[0]->name, 0, j + 2);
+				node[0]->output_pins[j + 2]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, j + 2);
 			}
 		}
 	}
@@ -636,14 +636,14 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 				{
 					node[i]->output_pins[j + 1] = allocate_npin();
 					// Pad outputs with a unique and descriptive name to avoid collisions.
-				    node[i]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%ld~%ld", node[i]->name, i, j + 2);
+				    node[i]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%d~%d", node[i]->name, i, j + 2);
 				}
 			}
 		}
 	}
 		node[count - 1]->output_pins[0] = allocate_npin();
 		// Pad outputs with a unique and descriptive name to avoid collisions.
-		node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%ld~%ld", node[(count - 1)]->name, (count - 1), 0);
+		node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), 0);
 		//connect_nodes(node[count - 1], (node[(count - 1)]->num_output_pins - 1), netlist->gnd_node, 0);
 	//}
 

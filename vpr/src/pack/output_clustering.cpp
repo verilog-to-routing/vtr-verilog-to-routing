@@ -216,11 +216,11 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
                         VTR_ASSERT(edge != nullptr);
                         mode_of_edge = edge->interconnect->parent_mode_index;
                         if (mode != nullptr && &pb_type->modes[mode_of_edge] != mode) {
-                            vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                                      "Differing modes for block.  Got %s previously and %s for edge %d (interconnect %s).",
-                                      mode->name, pb_type->modes[mode_of_edge].name,
-                                      port_index,
-                                      edge->interconnect->name);
+                            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                            "Differing modes for block.  Got %s previously and %s for edge %d (interconnect %s).",
+                                            mode->name, pb_type->modes[mode_of_edge].name,
+                                            port_index,
+                                            edge->interconnect->name);
                         }
                         VTR_ASSERT(mode == nullptr || &pb_type->modes[mode_of_edge] == mode);
                         mode = &pb_type->modes[mode_of_edge];

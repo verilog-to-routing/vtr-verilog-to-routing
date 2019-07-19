@@ -2033,7 +2033,7 @@ static bool timing_driven_check_net_delays(vtr::vector<ClusterNetId, float*>& ne
         for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
             if (net_delay_check[net_id][ipin] == 0.) { /* Should be only GLOBAL nets */
                 if (fabs(net_delay[net_id][ipin]) > ERROR_TOL) {
-                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                    VPR_ERROR(VPR_ERROR_ROUTE,
                               "in timing_driven_check_net_delays: net %lu pin %d.\n"
                               "\tIncremental calc. net_delay is %g, but from scratch net delay is %g.\n",
                               size_t(net_id), ipin, net_delay[net_id][ipin], net_delay_check[net_id][ipin]);
@@ -2041,7 +2041,7 @@ static bool timing_driven_check_net_delays(vtr::vector<ClusterNetId, float*>& ne
             } else {
                 float error = fabs(1.0 - net_delay[net_id][ipin] / net_delay_check[net_id][ipin]);
                 if (error > ERROR_TOL) {
-                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                    VPR_ERROR(VPR_ERROR_ROUTE,
                               "in timing_driven_check_net_delays: net %d pin %lu.\n"
                               "\tIncremental calc. net_delay is %g, but from scratch net delay is %g.\n",
                               size_t(net_id), ipin, net_delay[net_id][ipin], net_delay_check[net_id][ipin]);

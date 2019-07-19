@@ -790,8 +790,8 @@ static void alloc_and_load_rr_switch_inf(const int num_arch_switches, const floa
         /* only have one ipin cblock switch. OK. */
         (*wire_to_rr_ipin_switch) = arch_switch_fanins[wire_to_arch_ipin_switch][UNDEFINED];
     } else if (arch_switch_fanins[wire_to_arch_ipin_switch].size() != 0) {
-        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-                  "Not currently allowing an ipin cblock switch to have multiple fan-ins");
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                        "Not currently allowing an ipin cblock switch to have multiple fan-ins");
     } else {
         //This likely indicates that no connection block has been constructed, indicating significant issues with
         //the generated RR graph.

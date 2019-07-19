@@ -298,13 +298,13 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 			if(parameter_count > parameter_num)
 			{
 				error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
-						"There are more parameters (%ld) in %s than there are specified in the module instantiation (%ld)!",
+						"There are more parameters (%d) in %s than there are specified in the module instantiation (%d)!",
 						parameter_count, module_name, parameter_num);
 			}
 			else if(parameter_count < parameter_num)
 			{
 				warning_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
-						"There are less parameters (%ld) in %s than there are specified in the module instantiation (%ld)!",
+						"There are less parameters (%d) in %s than there are specified in the module instantiation (%d)!",
 						parameter_count, module_name, parameter_num);
 			}
 		}
@@ -325,9 +325,11 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 
 	/* now that parameters are all updated, resolve them */
 	STRING_CACHE_LIST *local_string_cache_list = (STRING_CACHE_LIST*)vtr::calloc(1, sizeof(STRING_CACHE_LIST));
+	oassert(local_string_cache_list);
 	local_string_cache_list->local_param_table_sc = local_param_table_sc;
 	
 	STRING_CACHE_LIST *parent_string_cache_list = (STRING_CACHE_LIST*)vtr::calloc(1, sizeof(STRING_CACHE_LIST));
+	oassert(parent_string_cache_list);
 	parent_string_cache_list->local_param_table_sc = parent_param_table_sc; // to check parent parameters
 
 	for (i = 0; i < parameter_num; i++) 
@@ -343,7 +345,7 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 		ast_node_t *node = (ast_node_t *)local_param_table_sc->data[sc_spot];
 		oassert(node);
 		node = resolve_node(local_string_cache_list, node, NULL, -1);
-		if (node->type != NUMBERS && parent_string_cache_list) 
+		if (node->type != NUMBERS) 
 		{
 			node = resolve_node(parent_string_cache_list, node, NULL, -1); // may contain parameters from parent
 		}
@@ -764,6 +766,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				oassert(false);
 				break;
 			case MODULE:
+				oassert(child_skip_list);
 				local_string_cache_list->local_symbol_table_sc = sc_new_string_cache();
 				local_string_cache_list->num_local_symbol_table = 0;
 				local_string_cache_list->local_symbol_table = NULL;
@@ -773,6 +776,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
 				break;
 			case FUNCTION:
+				oassert(child_skip_list);
    				/* set the skip list */
 				child_skip_list[0] = true; /* skip the identifier */
 				child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
@@ -935,6 +939,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				break;
 			}
 			case ALWAYS:
+				oassert(child_skip_list);
 				/* evaluate if this is a sensitivity list with posedges/negedges (=SEQUENTIAL) or none (=COMBINATIONAL) */
 				local_clock_list = evaluate_sensitivity_list(node->children[0], instance_name_prefix, local_string_cache_list);
 				child_skip_list[0] = true;
@@ -952,6 +957,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				skip_children = true;
 				break;
 			case HARD_BLOCK:
+				oassert(child_skip_list);
 				/* set the skip list */
 				child_skip_list[0] = true; /* skip the identifier */
 				child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
@@ -3520,52 +3526,55 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 					data = in_1;
 
 				// Pad/shrink the data to the width of the memory.
-				while(data->count < left_memory->data_width)
-					add_pin_to_signal_list(data, get_zero_pin(verilog_netlist));
-					
-				data->count = left_memory->data_width;
-
-				add_input_port_to_implicit_memory(left_memory, data, "data2");
-
-				signal_list_t *we = init_signal_list();
-				add_pin_to_signal_list(we, get_one_pin(verilog_netlist));
-				add_input_port_to_implicit_memory(left_memory, we, "we2");
-
-				in_1 = init_signal_list();
-				char *name = left->children[0]->types.identifier;
-				int i;
-				int pin_index = left_memory->data_width + left_memory->data_width + left_memory->addr_width + 2;
-				for (i = 0; i < address->count; i++)
+				if(data)
 				{
-					npin_t *pin = address->pins[i];
-					if (pin->name) 
-						vtr::free(pin->name);
-					pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
-					add_pin_to_signal_list(in_1, pin);
-				}
-				free_signal_list(address);
+					while(data->count < left_memory->data_width)
+						add_pin_to_signal_list(data, get_zero_pin(verilog_netlist));
+						
+					data->count = left_memory->data_width;
 
-				for (i = 0; i < data->count; i++)
-				{
-					npin_t *pin = data->pins[i];
-					if (pin->name)
-						vtr::free(pin->name);
-					pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
-					add_pin_to_signal_list(in_1, pin);
-				}
-				free_signal_list(data);
+					add_input_port_to_implicit_memory(left_memory, data, "data2");
 
-				for (i = 0; i < we->count; i++)
-				{
-					npin_t *pin = we->pins[i];
-					if (pin->name)
-						vtr::free(pin->name);
-					pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
-					add_pin_to_signal_list(in_1, pin);
-				}
-				free_signal_list(we);
+					signal_list_t *we = init_signal_list();
+					add_pin_to_signal_list(we, get_one_pin(verilog_netlist));
+					add_input_port_to_implicit_memory(left_memory, we, "we2");
 
-				out_list = NULL;
+					in_1 = init_signal_list();
+					char *name = left->children[0]->types.identifier;
+					int i;
+					int pin_index = left_memory->data_width + left_memory->data_width + left_memory->addr_width + 2;
+					for (i = 0; i < address->count; i++)
+					{
+						npin_t *pin = address->pins[i];
+						if (pin->name) 
+							vtr::free(pin->name);
+						pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
+						add_pin_to_signal_list(in_1, pin);
+					}
+					free_signal_list(address);
+
+					for (i = 0; i < data->count; i++)
+					{
+						npin_t *pin = data->pins[i];
+						if (pin->name)
+							vtr::free(pin->name);
+						pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
+						add_pin_to_signal_list(in_1, pin);
+					}
+					free_signal_list(data);
+
+					for (i = 0; i < we->count; i++)
+					{
+						npin_t *pin = we->pins[i];
+						if (pin->name)
+							vtr::free(pin->name);
+						pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
+						add_pin_to_signal_list(in_1, pin);
+					}
+					free_signal_list(we);
+
+					out_list = NULL;
+				}
 			}
 		}
 	}
@@ -3909,29 +3918,36 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 	for (i = 0; i < memory_inputs->count; i++)
 	{
 		npin_t *pin = memory_inputs->pins[i];
-		implicit_memory *memory = lookup_implicit_memory_input(pin->name);
-		nnode_t *node = memory->node;
-
-		for (j = 0; j < node->num_input_pins; j++)
+		if(pin->name)
 		{
-			npin_t *original_pin = node->input_pins[j];
-			if (original_pin->name && pin->name && !strcmp(original_pin->name, pin->name))
+			implicit_memory *memory = lookup_implicit_memory_input(pin->name);
+			
+			if(memory)
 			{
-				pin->mapping = original_pin->mapping;
-				add_input_pin_to_node(node, pin, j);
-				break;
-			}
-		}
+				nnode_t *node = memory->node;
 
-		if (!memory->clock_added)
-		{
-			npin_t *clock_pin = allocate_npin();
-			add_fanout_pin_to_net(clock_net, clock_pin);
-			signal_list_t *clock = init_signal_list();
-			add_pin_to_signal_list(clock, clock_pin);
-			add_input_port_to_implicit_memory(memory, clock, "clk");
-			free_signal_list(clock);
-			memory->clock_added = true;
+				for (j = 0; j < node->num_input_pins; j++)
+				{
+					npin_t *original_pin = node->input_pins[j];
+					if (original_pin->name && !strcmp(original_pin->name, pin->name))
+					{
+						pin->mapping = original_pin->mapping;
+						add_input_pin_to_node(node, pin, j);
+						break;
+					}
+				}
+
+				if (!memory->clock_added)
+				{
+					npin_t *clock_pin = allocate_npin();
+					add_fanout_pin_to_net(clock_net, clock_pin);
+					signal_list_t *clock = init_signal_list();
+					add_pin_to_signal_list(clock, clock_pin);
+					add_input_port_to_implicit_memory(memory, clock, "clk");
+					free_signal_list(clock);
+					memory->clock_added = true;
+				}
+			}
 		}
 	}
 	free_signal_list(memory_inputs);

@@ -438,17 +438,24 @@ void define_logical_function(nnode_t *node, FILE *out)
 			/* now hookup the input wires with their respective ports.  [1+i] to skip output spot. */
 			/* Just print the driver_pin->name NOT driver_pin->node->name -- KEN */
 			nnet_t *net = node->input_pins[i]->net;
-			if (net && net->driver_pin)
+			if (net)
 			{
-				if (net->driver_pin->name != NULL)
+				if(net->driver_pin)
 				{
-					if ((net->driver_pin->node->type == MULTIPLY) ||
-					(net->driver_pin->node->type == HARD_IP) ||
-					(net->driver_pin->node->type == MEMORY) ||
-					(net->driver_pin->node->type == ADD) ||
-					(net->driver_pin->node->type == MINUS) )
+					if (net->driver_pin->name != NULL)
 					{
-						fprintf(out, " %s", net->driver_pin->name);
+						if ((net->driver_pin->node->type == MULTIPLY) ||
+						(net->driver_pin->node->type == HARD_IP) ||
+						(net->driver_pin->node->type == MEMORY) ||
+						(net->driver_pin->node->type == ADD) ||
+						(net->driver_pin->node->type == MINUS) )
+						{
+							fprintf(out, " %s", net->driver_pin->name);
+						}
+						else
+						{
+							fprintf(out, " %s", net->driver_pin->node->name);
+						}
 					}
 					else
 					{
@@ -457,16 +464,13 @@ void define_logical_function(nnode_t *node, FILE *out)
 				}
 				else
 				{
-					fprintf(out, " %s", net->driver_pin->node->name);
+					int line_number = node->related_ast_node?node->related_ast_node->line_number:0;
+					warning_message(NETLIST_ERROR, line_number, -1, "Net %s driving node %s is itself undriven.", net->name, node->name);
+
+					fprintf(out, " %s", "unconn");
 				}
 			}
-			else
-			{
-				int line_number = node->related_ast_node?node->related_ast_node->line_number:0;
-				warning_message(NETLIST_ERROR, line_number, -1, "Net %s driving node %s is itself undriven.", net->name, node->name);
 
-				fprintf(out, " %s", "unconn");
-			}
 		}
 		/* now print the output */
 		fprintf(out, " %s", node->name);

@@ -571,7 +571,7 @@ void ClockHTree::create_segments(std::vector<t_segment_inf>& segment_inf) {
     //Remove unused parameter warning
     (void)segment_inf;
 
-    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "HTrees are not yet supported.\n");
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "HTrees are not yet supported.\n");
 }
 void ClockHTree::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
                                                                      int num_segments) {
@@ -579,5 +579,5 @@ void ClockHTree::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
     (void)clock_graph;
     (void)num_segments;
 
-    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "HTrees are not yet supported.\n");
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "HTrees are not yet supported.\n");
 }

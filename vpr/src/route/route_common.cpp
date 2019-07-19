@@ -508,8 +508,8 @@ void init_route_structs(int bb_factor) {
      * really were.                                                           */
 
     if (heap_tail != 1) {
-        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                  "in init_route_structs. Heap is not empty.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "in init_route_structs. Heap is not empty.\n");
     }
 }
 
@@ -558,8 +558,8 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_
 
     auto rr_type = device_ctx.rr_nodes[node].type();
     if (rr_type != SINK) {
-        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                  "in traceback_branch: Expected type = SINK (%d).\n");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "in traceback_branch: Expected type = SINK (%d).\n");
     }
 
     //We construct the main traceback by walking from the given node back to the source,
@@ -1486,9 +1486,9 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
                             break;
 
                         default:
-                            vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                                      "in print_route: Unexpected traceback element type: %d (%s).\n",
-                                      rr_type, device_ctx.rr_nodes[inode].type_string());
+                            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                            "in print_route: Unexpected traceback element type: %d (%s).\n",
+                                            rr_type, device_ctx.rr_nodes[inode].type_string());
                             break;
                     }
 

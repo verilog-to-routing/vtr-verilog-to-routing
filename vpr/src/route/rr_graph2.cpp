@@ -1335,10 +1335,10 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
             break;
 
         default:
-            vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                      "Bad rr_node passed to get_rr_node_index.\n"
-                      "Request for type=%d ptc=%d at (%d, %d).\n",
-                      rr_type, ptc, x, y);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Bad rr_node passed to get_rr_node_index.\n"
+                            "Request for type=%d ptc=%d at (%d, %d).\n",
+                            rr_type, ptc, x, y);
     }
 
     return ((unsigned)ptc < lookup.size() ? lookup[ptc] : -1);

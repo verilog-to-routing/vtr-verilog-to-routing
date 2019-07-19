@@ -1778,7 +1778,7 @@ void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int
     int ichar, match_count;
 
     if (vtr::split(src_string).size() > 1) {
-        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
+        VPR_THROW(VPR_ERROR_ARCH,
                   "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
     }
 
@@ -1791,8 +1791,8 @@ void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int
         if (strlen(src_string) + 1 <= MAX_STRING_LEN + 1) {
             strcpy(source_string, src_string);
         } else {
-            vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-                      "Pin name exceeded buffer size of %zu characters", MAX_STRING_LEN + 1);
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                            "Pin name exceeded buffer size of %zu characters", MAX_STRING_LEN + 1);
         }
         for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
             if (source_string[ichar] == '.')
@@ -1878,9 +1878,9 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 
             // Check whether the pins are marked, errors out if so
             if (direct_type_from_blk_pin[itype][iblk_pin] != OPEN) {
-                vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-                          "[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n",
-                          line, src_string);
+                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                                "[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n",
+                                line, src_string);
             } else {
                 direct_type_from_blk_pin[itype][iblk_pin] = direct_type;
             }

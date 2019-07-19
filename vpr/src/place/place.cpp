@@ -940,7 +940,7 @@ static void placement_inner_loop(float t,
         VTR_LOG("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d\n",
                 t, costs->cost, costs->bb_cost, costs->timing_cost, inner_iter);
         if (fabs((costs->bb_cost) - comp_bb_cost(CHECK)) > (costs->bb_cost) * ERROR_TOL)
-            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+            VPR_ERROR(VPR_ERROR_PLACE,
                       "fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
 #endif
 
@@ -2203,7 +2203,7 @@ static float comp_td_point_to_point_delay(const PlaceDelayModel& delay_model, Cl
                                                  sink_y,
                                                  sink_block_ipin);
         if (delay_source_to_sink < 0) {
-            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+            VPR_ERROR(VPR_ERROR_PLACE,
                       "in comp_td_point_to_point_delay: Bad delay_source_to_sink value %g from %s (at %d,%d) to %s (at %d,%d)\n"
                       "in comp_td_point_to_point_delay: Delay is less than 0\n",
                       block_type_pin_index_to_name(cluster_ctx.clb_nlist.block_type(source_block), source_block_ipin).c_str(),
@@ -3172,11 +3172,11 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
         blk_id = pl_macros[imacro].members[0].blk_index;
         itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
         if (free_locations[itype] < int(pl_macros[imacro].members.size())) {
-            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-                      "Initial placement failed.\n"
-                      "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
-                      "VPR cannot auto-size for your circuit, please resize the FPGA manually.\n",
-                      pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                            "Initial placement failed.\n"
+                            "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
+                            "VPR cannot auto-size for your circuit, please resize the FPGA manually.\n",
+                            pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
         }
 
         // Try to place the macro first, if can be placed - place them, otherwise try again
@@ -3206,11 +3206,11 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
             // If macro could not be placed after exhaustive placement, error out
             if (macro_placed == false) {
                 // Error out
-                vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-                          "Initial placement failed.\n"
-                          "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
-                          "Please manually size the FPGA because VPR can't do this yet.\n",
-                          pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                                "Initial placement failed.\n"
+                                "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
+                                "Please manually size the FPGA because VPR can't do this yet.\n",
+                                pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
             }
 
         } else {
@@ -3244,10 +3244,10 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
              */
             itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
             if (free_locations[itype] <= 0) {
-                vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-                          "Initial placement failed.\n"
-                          "Could not place block %s (#%zu); no free locations of type %s (#%d).\n",
-                          cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                                "Initial placement failed.\n"
+                                "Could not place block %s (#%zu); no free locations of type %s (#%d).\n",
+                                cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
             }
 
             t_pl_loc to;
@@ -3477,7 +3477,7 @@ static void check_place(const t_placer_costs& costs,
         VTR_LOG("Completed placement consistency check successfully.\n");
 
     } else {
-        vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+        VPR_ERROR(VPR_ERROR_PLACE,
                   "\nCompleted placement consistency check, %d errors found.\n"
                   "Aborting program.\n",
                   error);

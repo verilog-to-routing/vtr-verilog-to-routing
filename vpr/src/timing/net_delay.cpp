@@ -179,8 +179,8 @@ alloc_and_load_rc_tree(ClusterNetId net_id, t_rc_node** rc_node_free_list_ptr, t
     tptr = route_ctx.trace[net_id].head;
 
     if (tptr == nullptr) {
-        vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__,
-                  "in alloc_and_load_rc_tree: Traceback for net %lu does not exist.\n", size_t(net_id));
+        VPR_FATAL_ERROR(VPR_ERROR_TIMING,
+                        "in alloc_and_load_rc_tree: Traceback for net %lu does not exist.\n", size_t(net_id));
     }
 
     inode = tptr->index;

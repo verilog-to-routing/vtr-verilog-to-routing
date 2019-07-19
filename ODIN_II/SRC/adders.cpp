@@ -218,7 +218,7 @@ void instantiate_hard_adder(nnode_t *node, short mark, netlist_t * /*netlist*/)
 		{
 			len = strlen(node->name) + 20; /* 6 chars for pin idx */
 			new_name = (char*)vtr::malloc(len);
-			odin_sprintf(new_name, "%s[%ld]", node->name, node->output_pins[i]->pin_node_idx);
+			odin_sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
 			node->output_pins[i]->name = new_name;
 		}
 	}
@@ -361,23 +361,23 @@ void define_add_function(nnode_t *node, FILE *out)
 			if (i < node->input_port_sizes[0])
 			{
 				if (!driver_pin->name)
-					j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->inputs->next->next->name, i, driver_pin->node->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->node->name);
 				else
-					j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->inputs->next->next->name, i, driver_pin->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->name);
 			}
 			else if(i >= node->input_port_sizes[0] && i < node->input_port_sizes[1] + node->input_port_sizes[0])
 			{
 				if (!driver_pin->name)
-					j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->node->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->node->name);
 				else
-					j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->name);
 			}
 			else
 			{
 				if (!driver_pin->name)
-					j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->node->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->node->name);
 				else
-					j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->name);
 			}
 
 		if (count + j > 79)
@@ -392,9 +392,9 @@ void define_add_function(nnode_t *node, FILE *out)
 	for (i = 0; i < node->num_output_pins; i++)
 	{
 		if(i < node->output_port_sizes[0])
-			j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->outputs->next->name, i , node->output_pins[i]->name);
+			j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->next->name, i , node->output_pins[i]->name);
 		else
-			j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->outputs->name, i - node->output_port_sizes[0], node->output_pins[i]->name);
+			j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->name, i - node->output_port_sizes[0], node->output_pins[i]->name);
 		if (count + j > 79)
 		{
 			fprintf(out, "\\\n");
@@ -743,7 +743,7 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	{
 		node[i] = allocate_nnode();
 		node[i]->name = (char *)vtr::malloc(strlen(nodeo->name) + 20);
-		odin_sprintf(node[i]->name, "%s-%ld", nodeo->name, i);
+		odin_sprintf(node[i]->name, "%s-%d", nodeo->name, i);
 		if(i == count - 1)
 		{
 			//fixed_hard_adder = 1 then adder need to be exact size;
@@ -799,7 +799,7 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 		connect_nodes(netlist->gnd_node, 0, node[0], sizea);
 		//hang the first sumout
 		node[0]->output_pins[1] = allocate_npin();
-		node[0]->output_pins[1]->name = append_string("", "%s~dummy_output~%ld~%ld", node[0]->name, 0, 1);
+		node[0]->output_pins[1]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, 1);
 	}
 
 	if(nodeo->num_input_port_sizes == 2)
@@ -854,11 +854,11 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 				else
 				{
 					node[0]->output_pins[j + 2] = allocate_npin();
-					node[0]->output_pins[j + 2]->name = append_string("", "%s~dummy_output~%ld~%ld", node[0]->name, 0, j + 2);
+					node[0]->output_pins[j + 2]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, j + 2);
 				}
 				//hang the first cout
 				node[0]->output_pins[0] = allocate_npin();
-				node[0]->output_pins[0]->name = append_string("", "%s~dummy_output~%ld~%ld", node[0]->name, 0, 0);
+				node[0]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, 0);
 			}
 		}
 		else
@@ -891,13 +891,13 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 				{
 					node[count - 1]->output_pins[j + 1] = allocate_npin();
 					// Pad outputs with a unique and descriptive name to avoid collisions.
-					node[count - 1]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%ld~%ld", node[count - 1]->name, count - 1, j + 1);
+					node[count - 1]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%d~%d", node[count - 1]->name, count - 1, j + 1);
 				}
 			}
 			//Hang the last cout
 			node[count - 1]->output_pins[0] = allocate_npin();
 			// Pad outputs with a unique and descriptive name to avoid collisions.
-			node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%ld~%ld", node[count - 1]->name, count - 1, 0);
+			node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[count - 1]->name, count - 1, 0);
 		}
 		else
 		{
@@ -910,7 +910,7 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 			{
 				node[count - 1]->output_pins[0] = allocate_npin();
 				// Pad outputs with a unique and descriptive name to avoid collisions.
-				node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%ld~%ld", node[count - 1]->name, count - 1, 0);
+				node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[count - 1]->name, count - 1, 0);
 			}
 		}
 	}
@@ -1156,9 +1156,9 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 						mark1 = strcmp(component_s[0], component_o[0]);
 						if (mark1 == 0 && component_s[1] && component_o[1])
 						{
-							mark2 = strcmp(component_s[1], component_s[1]);
+							mark2 = strcmp(component_s[1], component_o[1]);
 						}
-					}							
+					}				
 					break;
 
 					default:
