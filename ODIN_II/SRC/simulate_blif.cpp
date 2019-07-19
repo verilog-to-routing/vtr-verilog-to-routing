@@ -3548,7 +3548,7 @@ static int verify_lines (lines_t *l)
 		{
 			if (!l->lines[i]->pins[j])
 			{
-				warning_message(SIMULATION_ERROR, 0, -1, "A line %ld:(%s) has a NULL pin. ", j, l->lines[i]->name);
+				warning_message(SIMULATION_ERROR, 0, -1, "A line %d:(%s) has a NULL pin. ", j, l->lines[i]->name);
 				return false;
 			}
 		}
