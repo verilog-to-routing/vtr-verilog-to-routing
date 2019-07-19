@@ -298,13 +298,13 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 			if(parameter_count > parameter_num)
 			{
 				error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
-						"There are more parameters (%ld) in %s than there are specified in the module instantiation (%ld)!",
+						"There are more parameters (%d) in %s than there are specified in the module instantiation (%d)!",
 						parameter_count, module_name, parameter_num);
 			}
 			else if(parameter_count < parameter_num)
 			{
 				warning_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
-						"There are less parameters (%ld) in %s than there are specified in the module instantiation (%ld)!",
+						"There are less parameters (%d) in %s than there are specified in the module instantiation (%d)!",
 						parameter_count, module_name, parameter_num);
 			}
 		}
