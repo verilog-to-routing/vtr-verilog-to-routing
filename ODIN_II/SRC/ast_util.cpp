@@ -1000,9 +1000,13 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 	{
 		oassert(node->type != NO_ID);
 
-		if (node->type == NUMBERS && node->types.vnumber->size() > (*max_size))
+		if (node->type == NUMBERS)
 		{
-			*max_size = node->types.vnumber->size();
+			oassert(node->types.vnumber && "missing vnumber");
+			if (node->types.vnumber->size() > (*max_size))
+			{
+				*max_size = node->types.vnumber->size();
+			}
 		}
 		else if (node->type == IDENTIFIERS)
 		{
@@ -1036,14 +1040,6 @@ ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t 
 				return node;
 			}
 			break;
-
-			case UNARY_OPERATION:
-				newNode = fold_unary(&node);
-				break;
-
-			case BINARY_OPERATION:
-				newNode = fold_binary(&node);
-				break;
 			
 			case REPLICATE:
 			{

@@ -15,7 +15,7 @@
 typedef std::function<bool(long)> condition_function;
 typedef std::function<long(long)> post_condition_function;
 
-void unroll_loops(ast_node_t **ast_module);
+void unroll_loops(ast_node_t **ast_module, STRING_CACHE_LIST *local_string_cache_list);
 
 inline bool is_for_node(ast_node_t* node)
 {
@@ -33,9 +33,9 @@ inline bool is_unsupported_pre(ast_node_t* node){
 bool is_unsupported_post(ast_node_t* node, ast_node_t* symbol);
 bool is_unsupported_condition(ast_node_t* node, ast_node_t* symbol);
 
-ast_node_t* for_preprocessor(ast_node_t *ast_module, ast_node_t* node, ast_node_t ***removed_instances, int *num_removed);
-ast_node_t* replace_fors(ast_node_t *ast_module, ast_node_t* node, ast_node_t ***removed_instances, int *num_removed);
-ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, ast_node_t ****instances, int *num_unrolled, int *num_original);
+ast_node_t* for_preprocessor(ast_node_t *ast_module, ast_node_t* node, STRING_CACHE_LIST *local_string_cache_list, ast_node_t ***removed_instances, int *num_removed);
+ast_node_t* replace_fors(ast_node_t *ast_module, ast_node_t* node, STRING_CACHE_LIST *local_string_cache_list, ast_node_t ***removed_instances, int *num_removed);
+ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, STRING_CACHE_LIST *local_string_cache_list, ast_node_t ****instances, int *num_unrolled, int *num_original);
 int resolve_pre_condition(ast_node_t* node, ast_node_t** number);
 condition_function resolve_condition(ast_node_t* node, ast_node_t* symbol, int* error_code);
 post_condition_function resolve_binary_operation(ast_node_t* node);

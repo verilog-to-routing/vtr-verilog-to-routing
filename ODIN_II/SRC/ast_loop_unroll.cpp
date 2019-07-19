@@ -6,6 +6,7 @@
 #include "odin_globals.h"
 #include "odin_types.h"
 #include "ast_util.h"
+#include "ast_elaborate.h"
 #include "parse_making_ast.h"
 #include "odin_util.h"
 #include "vtr_memory.h"
@@ -20,12 +21,12 @@ long find_module_instance(ast_node_t *ast_module, char *instance_name, ast_node_
 /*
  *  (function: unroll_loops)
  */
-void unroll_loops(ast_node_t **ast_module)
+void unroll_loops(ast_node_t **ast_module, STRING_CACHE_LIST *local_string_cache_list)
 {
 	ast_node_t **removed_instances = NULL;
 	int num_removed = 0;
 
-	ast_node_t* module = for_preprocessor((*ast_module), (*ast_module), &removed_instances, &num_removed);
+	ast_node_t* module = for_preprocessor((*ast_module), (*ast_module), local_string_cache_list, &removed_instances, &num_removed);
 	
 	for (int i = 0; i < num_removed; i++)
 	{
@@ -142,7 +143,7 @@ long find_module_instance(ast_node_t *ast_module, char *instance_name, ast_node_
 /*
  *  (function: for_preprocessor)
  */
-ast_node_t* for_preprocessor(ast_node_t *ast_module, ast_node_t* node, ast_node_t ***removed_instances, int *num_removed)
+ast_node_t* for_preprocessor(ast_node_t *ast_module, ast_node_t* node, STRING_CACHE_LIST *local_string_cache_list, ast_node_t ***removed_instances, int *num_removed)
 {
 	if(!node)
 		return nullptr;
@@ -158,7 +159,7 @@ ast_node_t* for_preprocessor(ast_node_t *ast_module, ast_node_t* node, ast_node_
 	ast_node_t* new_node = NULL;
 	if(for_loops)
 	{
-		new_node = replace_fors(ast_module, node, removed_instances, num_removed);
+		new_node = replace_fors(ast_module, node, local_string_cache_list, removed_instances, num_removed);
 	}
 	else
 	{
@@ -169,7 +170,7 @@ ast_node_t* for_preprocessor(ast_node_t *ast_module, ast_node_t* node, ast_node_
 	{
 		/* Run this function recursively on the children */
 		for(int i=0; i<new_node->num_children; i++){
-			ast_node_t* new_child = for_preprocessor(ast_module, new_node->children[i], removed_instances, num_removed);
+			ast_node_t* new_child = for_preprocessor(ast_module, new_node->children[i], local_string_cache_list, removed_instances, num_removed);
 
 			/* Cleanup replaced child */
 			if(new_node->children[i] != new_child){
@@ -185,7 +186,7 @@ ast_node_t* for_preprocessor(ast_node_t *ast_module, ast_node_t* node, ast_node_
 /*
  *  (function: replace_fors)
  */
-ast_node_t* replace_fors(ast_node_t *ast_module, ast_node_t* node, ast_node_t ***removed_instances, int *num_removed)
+ast_node_t* replace_fors(ast_node_t *ast_module, ast_node_t* node, STRING_CACHE_LIST *local_string_cache_list, ast_node_t ***removed_instances, int *num_removed)
 {
 	oassert(!is_for_node(node));
 	oassert(node != nullptr);
@@ -204,7 +205,7 @@ ast_node_t* replace_fors(ast_node_t *ast_module, ast_node_t* node, ast_node_t **
 			int num_unrolled_module_instances = 0;
 			int num_original_module_instances = 0;
 
-			ast_node_t* unrolled_for = resolve_for(ast_module, new_node->children[i], &unrolled_module_instances, &num_unrolled_module_instances, &num_original_module_instances);
+			ast_node_t* unrolled_for = resolve_for(ast_module, new_node->children[i], local_string_cache_list, &unrolled_module_instances, &num_unrolled_module_instances, &num_original_module_instances);
 			oassert(unrolled_for != nullptr);
 			free_whole_tree(new_node->children[i]);
 			new_node->children[i] = unrolled_for;
@@ -231,7 +232,7 @@ ast_node_t* replace_fors(ast_node_t *ast_module, ast_node_t* node, ast_node_t **
 /*
  *  (function: resolve_for)
  */
-ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, ast_node_t ****instances, int *num_unrolled, int *num_original)
+ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, STRING_CACHE_LIST *local_string_cache_list, ast_node_t ****instances, int *num_unrolled, int *num_original)
 {
 	oassert(is_for_node(node));
 	oassert(node != nullptr);
@@ -285,6 +286,8 @@ ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, ast_node_t ***
 	}
 
 	free_whole_tree(value);
+
+	body_parent = reduce_expressions(body_parent, local_string_cache_list, NULL, 0);
 	return body_parent;
 }
 

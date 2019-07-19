@@ -1467,16 +1467,6 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
  *-----------------------------------------------------------------------*/
 ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_named_instance, int line_number)
 {
-	if
-	(
-		sc_lookup_string(hard_block_names, function_ref_name) != -1
-		|| !strcmp(function_ref_name, SINGLE_PORT_RAM_string)
-		|| !strcmp(function_ref_name, DUAL_PORT_RAM_string)
-	)
-	{
-		return newHardBlockInstance(function_ref_name, function_named_instance, line_number);
-	}
-
 	// make a unique module name based on its parameter list
 	ast_node_t *function_param_list = function_named_instance->children[2];
 

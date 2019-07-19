@@ -25,5 +25,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define AST_ELABORATE_H
 
 int simplify_ast_module(ast_node_t **ast_module, STRING_CACHE_LIST *local_string_cache_list);
+ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list, long *max_size, long assignment_size);
 
 #endif

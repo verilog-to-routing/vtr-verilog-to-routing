@@ -1994,6 +1994,41 @@ void create_symbol_table_for_module(ast_node_t* module_items, STRING_CACHE_LIST 
 					vtr::free(temp_string);
 				}
 			}
+			else if(module_items->children[i]->type == ASSIGN)
+			{
+				/* might be an implicit declaration */
+				if((module_items->children[i]->children[0]) && (module_items->children[i]->children[0]->type == BLOCKING_STATEMENT))
+				{
+					if((module_items->children[i]->children[0]->children[0]) && (module_items->children[i]->children[0]->children[0]->type == IDENTIFIERS))
+					{ 
+						temp_string = make_full_ref_name(NULL, NULL, NULL, module_items->children[i]->children[0]->children[0]->types.identifier, -1);
+						/* look for that element */
+						sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
+						if( sc_spot == -1 )
+						{
+							sc_spot = sc_add_string(local_symbol_table_sc, temp_string);
+
+							/* store the data which is an idx here */
+							local_symbol_table_sc->data[sc_spot]= module_items->children[i]->children[0];
+
+							/* store the symbol */
+							local_symbol_table = (ast_node_t **)vtr::realloc(local_symbol_table, sizeof(ast_node_t*)*(num_local_symbol_table+1));
+							local_symbol_table[num_local_symbol_table] = (ast_node_t *)module_items->children[i]->children[0];
+							num_local_symbol_table ++;
+
+
+							/* copy the output status over */
+							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_wire = true;
+							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg = false;
+
+							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_integer = false;
+							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_input = false;
+
+						}
+						vtr::free(temp_string);
+					}
+				}
+			}
 		}
 		local_string_cache_list->local_symbol_table = local_symbol_table;
 		local_string_cache_list->num_local_symbol_table = num_local_symbol_table;
@@ -3294,56 +3329,6 @@ signal_list_t *create_output_pin(ast_node_t* var_declare, char *instance_name_pr
  *-------------------------------------------------------------------------------------------*/
 signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list)
 {
-	/* try to resolve */
-	if (assignment->children[1]->type != FUNCTION_INSTANCE)
-	{
-		long assignment_size = get_size_of_variable(assignment->children[0], local_string_cache_list);
-		assignment->children[1] = resolve_node(local_string_cache_list, assignment->children[1], NULL, assignment_size);
-	
-		/* cast to unsigned if necessary */
-		if (node_is_constant(assignment->children[1]))
-		{
-			char *id = NULL;
-			if (assignment->children[0]->type == IDENTIFIERS)
-			{
-				id = assignment->children[0]->types.identifier;
-			}
-			else
-			{
-				id = assignment->children[0]->children[0]->types.identifier;
-			}
-
-			STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
-			long sc_spot = sc_lookup_string(local_symbol_table_sc, id);
-			if (sc_spot > -1)
-			{
-				bool is_signed = ((ast_node_t *)local_symbol_table_sc->data[sc_spot])->types.variable.is_signed;
-				if (!is_signed)
-				{
-					VNumber *temp = assignment->children[1]->types.vnumber;
-					VNumber *to_unsigned = new VNumber(V_UNSIGNED(*temp));
-					assignment->children[1]->types.vnumber = to_unsigned;
-					delete temp;
-				}
-				else
-				{
-					/* leave as is */
-				}
-			}
-		}
-		else
-		{
-			/* signed keyword is not supported, meaning unresolved values will already be handled as
-				unsigned at the netlist level... must update once signed support is added */
-		}
-	}
-	
-	if (assignment->children[0]->type != FUNCTION_INSTANCE)
-	{
-		long assignment_size = get_size_of_variable(assignment->children[0], local_string_cache_list);
-		assignment->children[0] = resolve_node(local_string_cache_list, assignment->children[0], NULL, assignment_size);
-	}
-
 	ast_node_t *left  = assignment->children[0];
 	ast_node_t *right = assignment->children[1];
 
