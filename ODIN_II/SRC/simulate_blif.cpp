@@ -898,7 +898,7 @@ static void compute_and_store_part(int start, int end, int current_stage, stages
 {
 
 	for (int j = start;j >= 0 && j <= end && j < s->counts[current_stage]; j++)
-		if(s->stages[current_stage][j])
+		if(s->stages[current_stage][j] && is_node_ready(s->stages[current_stage][j], cycle) && !is_node_complete(s->stages[current_stage][j], cycle))
 			compute_and_store_value(s->stages[current_stage][j], cycle);
 
 }
@@ -1307,7 +1307,8 @@ static stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, lines_t *l)
 	{
 		nnode_t *node = queue.front();
 		queue.pop();
-		compute_and_store_value(node, cycle);
+		if(node && is_node_ready(node, cycle) && !is_node_complete(node, cycle))
+			compute_and_store_value(node, cycle);
 		// Match node for items passed via -p and add to lines if there's a match.
 		add_additional_items_to_lines(node, l);
 
@@ -1706,7 +1707,6 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 static bool compute_and_store_value(nnode_t *node, int cycle)
 {
 	//double computation_time = wall_time();
-	is_node_ready(node,cycle);
 	operation_list type = is_clock_node(node)?CLOCK_NODE:node->type;
 	switch(type)
 	{
