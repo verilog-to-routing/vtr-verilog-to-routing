@@ -1105,7 +1105,7 @@ void pad_multiplier(nnode_t *node, netlist_t *netlist)
 			// Add new pins to the higher order spots.
 			npin_t *new_pin = allocate_npin();
 			// Pad outputs with a unique and descriptive name to avoid collisions.
-			new_pin->name = append_string("", "unconnected_multiplier_output~%ld", pad_pin_number++);
+			new_pin->name = append_string("", "unconnected_multiplier_output~%d", pad_pin_number++);
 			add_output_pin_to_node(node, new_pin, i + sizeout);
 		}
 		node->output_port_sizes[0] = sizeout + diffout;
