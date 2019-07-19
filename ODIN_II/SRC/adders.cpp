@@ -1129,27 +1129,36 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 			traverse_operation_node(ast_node_next, component_o, oper, &sign);
 			if (sign != 1)
 			{
+				oassert(component_s[0] && component_o[0] && "missing children on operation");
 				switch (oper)
 				{
 					case ADD:
 					case MULTIPLY:
 					{
 						mark1 = strcmp(component_s[0], component_o[0]);
-						if (mark1 == 0)
-							mark2 = strcmp(component_s[1], component_o[1]);
-						else
+						if (component_s[1] && component_o[1])
 						{
-							oassert(component_s[0] && component_o[1] && component_s[1] && component_o[0]);
-							mark1 = strcmp(component_s[0], component_o[1]);
-							mark2 = strcmp(component_s[1], component_o[0]);
+							if (mark1 == 0)
+							{
+								mark2 = strcmp(component_s[1], component_o[1]);
+							}
+							else
+							{
+								mark1 = strcmp(component_s[0], component_o[1]);
+								mark2 = strcmp(component_s[1], component_o[0]);
+							}
 						}
 					}
 					break;
 
 					case MINUS:
+					{
 						mark1 = strcmp(component_s[0], component_o[0]);
-						if (mark1 == 0)
+						if (mark1 == 0 && component_s[1] && component_o[1])
+						{
 							mark2 = strcmp(component_s[1], component_s[1]);
+						}
+					}							
 					break;
 
 					default:
@@ -1157,7 +1166,9 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 					break;
 				}
 				if (mark1 == 0 && mark2 == 0)
+				{
 					flag = 1;
+				}
 			}
 		}
 		for(int i = 0; i < ast_node->num_children; i++)
@@ -1166,6 +1177,9 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 			{
 				vtr::free(component_s[i]);
 			}
+		}
+		for (int i = 0; i < ast_node_next->num_children; i++)
+		{
 			if(ast_node_next->children[i]->type != IDENTIFIERS)
 			{
 				vtr::free(component_o[i]);
