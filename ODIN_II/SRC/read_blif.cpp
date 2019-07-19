@@ -808,6 +808,8 @@ operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FI
 		if (output_bit_map != NULL) vtr::free(output_bit_map);
 		output_bit_map = vtr::strdup(vtr::strtok(NULL,TOKENS, file, buffer));
 	}
+	
+	oassert(output_bit_map);
 
 	if (!strcmp(output_bit_map, One))
 	{
