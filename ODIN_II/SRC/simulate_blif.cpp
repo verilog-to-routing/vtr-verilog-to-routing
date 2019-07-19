@@ -1943,8 +1943,12 @@ static bool compute_and_store_value(nnode_t *node, int cycle)
 					if(prev_value < 0)
 						prev_value = !CLOCK_INITIAL_VALUE;
 
-					signed char cur_value = (cycle % get_clock_ratio(node)) ? prev_value : !prev_value;
-					update_pin_value(node->output_pins[0], cur_value, cycle);
+					int clk_ratio = get_clock_ratio(node);
+					if(clk_ratio != 0)
+					{
+						signed char cur_value = (cycle % clk_ratio) ? prev_value : !prev_value;
+						update_pin_value(node->output_pins[0], cur_value, cycle);
+					}
 				}
 			}
 			else // driven by another node
