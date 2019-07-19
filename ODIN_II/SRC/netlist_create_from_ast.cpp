@@ -2979,7 +2979,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 					/*error_message(NETLIST_ERROR, module_instance->line_number, module_instance->file_number,
 							"This module port %s is unused in module %s", alias_name, module_node->children[0]->types.identifier);*/
                     if(port_size > 1)
-                        warning_message(NETLIST_ERROR, -1, -1, "This module port %s[%ld] is unused in module %s\n", module_instance_var_node->types.identifier, j, module_node->children[0]->types.identifier);
+                        warning_message(NETLIST_ERROR, -1, -1, "This module port %s[%d] is unused in module %s\n", module_instance_var_node->types.identifier, j, module_node->children[0]->types.identifier);
                     else warning_message(NETLIST_ERROR, -1, -1, "This module port %s is unused in module %s\n", module_instance_var_node->types.identifier, module_node->children[0]->types.identifier);
 
 				}
