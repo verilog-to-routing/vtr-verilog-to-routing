@@ -148,7 +148,7 @@ void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t * /
 		{
 			len = strlen(node->name) + 20; /* 6 chars for pin idx */
 			new_name = (char*)vtr::malloc(len);
-			odin_sprintf(new_name, "%s[%ld]", node->name, node->output_pins[i]->pin_node_idx);
+			odin_sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
 			node->output_pins[i]->name = new_name;
 		}
 	}
