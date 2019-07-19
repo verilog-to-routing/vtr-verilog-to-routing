@@ -2039,7 +2039,7 @@ static bool compute_and_store_value(nnode_t *node, int cycle)
 
 	if(!skip_node_from_coverage)
 	{
-		for (int i = 0; i < node->num_output_pins && !covered; i++) 
+		for (int i = 0; i < node->num_output_pins && covered; i++) 
 		{
 			signed char pin_value = get_pin_value(node->output_pins[i],cycle);
 			signed char last_pin_value = get_pin_value(node->output_pins[i],cycle-1);
