@@ -496,7 +496,7 @@ class SdcParseCallback : public sdcparse::Callback {
 
         //Disable any edges between the from and to sets
         for (auto from_pin : from_pins) {
-            for (auto to_pin : from_pins) {
+            for (auto to_pin : to_pins) {
                 tatum::NodeId from_tnode = lookup_.atom_pin_tnode(from_pin);
                 VTR_ASSERT(from_tnode);
 
