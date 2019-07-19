@@ -287,7 +287,7 @@ void check_memories_and_report_distribution()
 		long depth = get_sp_ram_depth(node);
 
 		if (depth > shift_left_value_with_overflow_check(0x1, HARD_RAM_ADDR_LIMIT))
-			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%ld.", node->name, depth, HARD_RAM_ADDR_LIMIT);
+			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%d.", node->name, depth, HARD_RAM_ADDR_LIMIT);
 
 		printf("SPRAM: %zu width %zu depth\n", width, depth);
 
@@ -313,7 +313,7 @@ void check_memories_and_report_distribution()
 		long width = get_dp_ram_width(node);
 		long depth = get_dp_ram_depth(node);
 		if (depth > shift_left_value_with_overflow_check(0x1, HARD_RAM_ADDR_LIMIT))
-			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%ld.", node->name, depth, HARD_RAM_ADDR_LIMIT);
+			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%d.", node->name, depth, HARD_RAM_ADDR_LIMIT);
 
 		printf("DPRAM: %zu width %zu depth\n", width, depth);
 		total_memory_bits += width * depth;
