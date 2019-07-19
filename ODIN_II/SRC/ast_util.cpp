@@ -409,9 +409,6 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 				else if (var_declare->children[3] == NULL)
 				{
 					/* reverse thorugh the range since highest bit in index will be lower in the string indx */
-					var_declare->children[1] = resolve_node(local_string_cache_list, var_declare->children[1], NULL, 0);
-					var_declare->children[2] = resolve_node(local_string_cache_list, var_declare->children[2], NULL, 0);
-					
 					rnode[1] = var_declare->children[1];
 					rnode[2] = var_declare->children[2];
 					oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
@@ -438,9 +435,6 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 		}
 		else if (concat_top->children[i]->type == RANGE_REF)
 		{
-			concat_top->children[i]->children[1] = resolve_node(local_string_cache_list, concat_top->children[i]->children[1], NULL, 0);
-			concat_top->children[i]->children[2] = resolve_node(local_string_cache_list, concat_top->children[i]->children[2], NULL, 0);
-
 			rnode[1] = concat_top->children[i]->children[1];
 			rnode[2] = concat_top->children[i]->children[2];
 			oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
@@ -563,7 +557,6 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 
 	if (var_node->type == ARRAY_REF)
 	{
-		var_node->children[1] = resolve_node(local_string_cache_list, var_node->children[1], NULL, 0);
 		oassert(var_node->children[0]->type == IDENTIFIERS);
 		oassert(var_node->children[1]->type == NUMBERS);
 		return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, (int)var_node->children[1]->types.vnumber->get_value());
@@ -571,9 +564,6 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	else if (var_node->type == RANGE_REF)
 	{		
 		oassert(bit >= 0);
-
-		var_node->children[1] = resolve_node(local_string_cache_list, var_node->children[1], NULL, 0);
-		var_node->children[2] = resolve_node(local_string_cache_list, var_node->children[2], NULL, 0);
 
 		rnode[1] = var_node->children[1];
 		rnode[2] = var_node->children[2];
@@ -630,7 +620,6 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 			if (var_node->types.concat.num_bit_strings == -1)
 			{
 				/* If this hasn't been made into a string list then do it */
-				var_node = resolve_node(local_string_cache_list, var_node, NULL, 0);
 				make_concat_into_list_of_strings(var_node, instance_name_prefix, local_string_cache_list);
 			}
 
@@ -709,18 +698,15 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 	{
 		width = 1;
 		return_string = (char**)vtr::malloc(sizeof(char*));
-		var_node->children[1] = resolve_node(local_string_cache_list, var_node->children[1], NULL, 0);
+
 		rnode[1] = var_node->children[1];
 		oassert(rnode[1] && rnode[1]->type == NUMBERS);
 		oassert(var_node->children[0]->type == IDENTIFIERS);
+
 		return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[1]->types.vnumber->get_value());	
 	}
 	else if (var_node->type == RANGE_REF)
 	{
-		var_node->children[0] = resolve_node(local_string_cache_list, var_node->children[0], NULL, 0);
-		var_node->children[1] = resolve_node(local_string_cache_list, var_node->children[1], NULL, 0);
-		var_node->children[2] = resolve_node(local_string_cache_list, var_node->children[2], NULL, 0);
-
 		rnode[0] = var_node->children[0];
 		rnode[1] = var_node->children[1];
 		rnode[2] = var_node->children[2];
@@ -744,66 +730,55 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 		/* need to look in the symbol table for details about this identifier (i.e. is it a port) */
 		long sc_spot;
 
-		// try and resolve var_node
-		var_node = resolve_node(local_string_cache_list, var_node, NULL, 0);
+		ast_node_t *sym_node = NULL;
+		char *temp_string = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier, -1);
 
-		if (var_node->type != NUMBERS)
+		if ((sc_spot = sc_lookup_string(function_local_symbol_table_sc, temp_string)) > -1)
 		{
-			ast_node_t *sym_node = NULL;
-			char *temp_string = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier, -1);
-
-            if ((sc_spot = sc_lookup_string(function_local_symbol_table_sc, temp_string)) > -1)
-			{
-                sym_node = (ast_node_t*)function_local_symbol_table_sc->data[sc_spot];
-			}
-		    else if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) > -1)
-			{
-                sym_node = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
-			}
-            else 
-			{
-                error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", temp_string);
-            }
-			
-			vtr::free(temp_string);
-
-			if (sym_node && sym_node->children && sym_node->type)
-			{
-				if (sym_node->children[1] == NULL || sym_node->type == BLOCKING_STATEMENT)
-				{
-					width = 1;
-					return_string = (char**)vtr::malloc(sizeof(char*)*width);
-					return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier, -1);
-				}
-				else if (sym_node->children[2] != NULL && sym_node->children[3] == NULL)
-				{
-					int index = 0;
-					sym_node->children[1] = resolve_node(local_string_cache_list, sym_node->children[1], NULL, 0);
-					sym_node->children[2] = resolve_node(local_string_cache_list, sym_node->children[2], NULL, 0);
-
-					rnode[1] = sym_node->children[1];
-					rnode[2] = sym_node->children[2];
-					oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
-					width = (rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value() + 1);
-					return_string = (char**)vtr::malloc(sizeof(char*)*width);
-					for (i = 0; i < width; i++)
-					{
-						return_string[index] = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier,
-							i+rnode[2]->types.vnumber->get_value());
-						index++;
-					}
-				}
-
-				else if (sym_node->children[3] != NULL)
-				{
-					oassert(false);
-				}
-			}
+			sym_node = (ast_node_t*)function_local_symbol_table_sc->data[sc_spot];
 		}
-		else
+		else if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) > -1)
 		{
-			width = var_node->types.vnumber->size();
-			return_string = get_name_of_pins_number(var_node, 0, width);
+			sym_node = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
+		}
+		else 
+		{
+			error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", temp_string);
+		}
+		
+		vtr::free(temp_string);
+
+		if (sym_node && sym_node->children && sym_node->type)
+		{
+			if (sym_node->children[1] == NULL || sym_node->type == BLOCKING_STATEMENT)
+			{
+				width = 1;
+				return_string = (char**)vtr::malloc(sizeof(char*)*width);
+				return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier, -1);
+			}
+			else if (sym_node->children[2] != NULL && sym_node->children[3] == NULL)
+			{
+				int index = 0;
+
+				rnode[1] = sym_node->children[1];
+				rnode[2] = sym_node->children[2];
+				oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
+
+				width = (rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value() + 1);
+				return_string = (char**)vtr::malloc(sizeof(char*)*width);
+
+				for (i = 0; i < width; i++)
+				{
+					return_string[index] = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier,
+						i+rnode[2]->types.vnumber->get_value());
+					index++;
+				}
+			}
+
+			else if (sym_node->children[3] != NULL)
+			{
+				oassert(false);
+			}
 		}
 	}
 	else if (var_node->type == NUMBERS)
@@ -821,8 +796,6 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 		{
 			if (var_node->types.concat.num_bit_strings == -1)
 			{
-				/* If this hasn't been made into a string list then do it */
-				var_node = resolve_node(local_string_cache_list, var_node, NULL, 0);
 				make_concat_into_list_of_strings(var_node, instance_name_prefix, local_string_cache_list);
 			}
 
@@ -959,9 +932,6 @@ long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cach
 	}
 	else if (var_declare && var_declare->children[1] && var_declare->children[2])
 	{
-		var_declare->children[1] = resolve_node(local_string_cache_list, var_declare->children[1], NULL, 0);
-		var_declare->children[2] = resolve_node(local_string_cache_list, var_declare->children[2], NULL, 0);
-		
 		ast_node_t *node_max = var_declare->children[1];
 		ast_node_t *node_min = var_declare->children[2];
 
@@ -974,165 +944,6 @@ long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cach
 
 	oassert(assignment_size != 0);
 	return assignment_size;
-}
-
-/*----------------------------------------------------------------------------
- * (function: resolve_node)
- *--------------------------------------------------------------------------*/
-/**
- * Recursively resolves an IDENTIFIER to a parameter into its actual value,
- * by looking it up in the local_param_table_sc
- * Also try and fold any BINARY_OPERATIONs now that an IDENTIFIER has been
- * resolved
- */
-ast_node_t *resolve_node(STRING_CACHE_LIST *local_string_cache_list, ast_node_t *node, long *max_size, long assignment_size)
-{
-	bool top_case = false;
-	
-	long my_max = 0;
-	if (max_size == NULL)
-	{
-		max_size = &my_max;
-		top_case = true;
-	}
-
-	if (node)
-	{
-		oassert(node->type != NO_ID);
-
-		if (node->type == NUMBERS)
-		{
-			oassert(node->types.vnumber && "missing vnumber");
-			if (node->types.vnumber->size() > (*max_size))
-			{
-				*max_size = node->types.vnumber->size();
-			}
-		}
-		else if (node->type == IDENTIFIERS)
-		{
-			// have to check symbol table AND parameter table for sizes
-			if (local_string_cache_list->local_symbol_table_sc || local_string_cache_list->function_local_symbol_table_sc)
-			{
-				long var_size = get_size_of_variable(node, local_string_cache_list);
-				if (var_size > *max_size)
-				{
-					*max_size = var_size;
-				}
-			}
-		}
-
-		for (size_t i = 0; i < node->num_children; i++)
-		{
-			node->children[i] = resolve_node(local_string_cache_list, node->children[i], max_size, assignment_size);
-		}
-
-		ast_node_t *newNode = NULL;
-		switch (node->type)
-		{
-			case NUMBERS:
-			{
-				if (top_case && assignment_size > 0) 
-				{
-					VNumber *temp = node->types.vnumber;
-					node->types.vnumber = new VNumber(*temp, assignment_size);
-					delete temp;
-				}
-				return node;
-			}
-			break;
-			
-			case REPLICATE:
-			{
-				oassert(node_is_constant(node->children[0])); // should be taken care of in parse
-				if( node->children[0]->types.vnumber->is_dont_care_string() )
-				{
-					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-						"%s","Passing a non constant value to replication command, i.e. 2'bx1{...}");
-				}
-
-				int64_t value = node->children[0]->types.vnumber->get_value();
-				if(value <= 0)
-				{
-					// todo, if this is part of a concat, it is valid
-					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-						"%s","Passing a number less than or equal to 0 for replication");
-				}
-
-				newNode = create_node_w_type(CONCATENATE, node->line_number, node->file_number);
-				for (size_t i = 0; i < value; i++)
-				{
-					add_child_to_node(newNode, ast_node_deep_copy(node->children[1]));
-				}
-				node = free_whole_tree(node);
-				node = newNode;
-			} //fallthrough
-			
-			case CONCATENATE:
-			{
-				// for params only
-				// TODO: this is a hack, concats cannot be folded in place as it breaks netlist expand from ast,
-				// to fix we need to move the node resolution before netlist create from ast.
-				if(assignment_size == -1 && node->num_children > 0)
-				{
-					size_t index = 1;
-					size_t last_index = 0;
-					
-					while(index < node->num_children)
-					{
-						bool previous_is_constant = node_is_constant(node->children[last_index]);
-						bool current_is_constant = node_is_constant(node->children[index]);
-
-						if(previous_is_constant && current_is_constant)
-						{
-							VNumber new_value = V_CONCAT({*(node->children[last_index]->types.vnumber), *(node->children[index]->types.vnumber)});
-
-							node->children[index] = free_whole_tree(node->children[index]);
-
-							delete node->children[last_index]->types.vnumber;
-							node->children[last_index]->types.vnumber = new VNumber(new_value);
-						}
-						else
-						{
-							last_index += 1;
-							previous_is_constant = current_is_constant;
-							node->children[last_index] = node->children[index];
-						}
-						index += 1;
-					}
-
-					node->num_children = last_index+1;
-
-					if(node->num_children == 1)
-					{
-						ast_node_t *tmp = node->children[0];
-						node->children[0] = NULL;
-						free_whole_tree(node);
-						node = tmp;
-					}
-				}
-
-				break;
-			}
-			
-			default:
-				break;
-		}
-
-		if (node_is_constant(newNode)){
-			/* resize as needed */
-			if (assignment_size > 0)
-			{
-				*max_size = assignment_size;
-			}
-
-			/* clean up */
-			free_resolved_children(node);
-			
-			change_to_number_node(node, VNumber(*(newNode->types.vnumber), *max_size));
-			newNode = free_whole_tree(newNode);
-		}
-	}
-	return node;
 }
 
 /*----------------------------------------------------------------------------

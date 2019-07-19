@@ -141,8 +141,6 @@ int simplify_ast_module(ast_node_t **ast_module, STRING_CACHE_LIST *local_string
 // this should replace ^^
 ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list, long *max_size, long assignment_size)
 {
-	// this will replace resolve_node which occurs all over the place in the code...
-
 	if (node)
 	{
 		STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
@@ -173,9 +171,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 					}
 
 					/* resolve right-hand side */
-					node->children[5] = reduce_expressions(node->children[5], local_string_cache_list, NULL, 0);
-					node->children[5] = resolve_node(local_string_cache_list, node->children[5], NULL, -1);
-
+					node->children[5] = reduce_expressions(node->children[5], local_string_cache_list, NULL, -1);
 					oassert(node->children[5]->type == NUMBERS);
 
 					/* this forces parameter values as unsigned, since we don't currently support signed keyword...
@@ -206,8 +202,6 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 						if (newNode->type != NUMBERS)
 						{
 							newNode = reduce_expressions(newNode, local_string_cache_list, NULL, assignment_size);
-							newNode = resolve_node(local_string_cache_list, newNode, NULL, -1);
-
 							oassert(newNode->type == NUMBERS);
 
 							/* this forces parameter values as unsigned, since we don't currently support signed keyword...
@@ -247,13 +241,21 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				if (node->children[1]->type != FUNCTION_INSTANCE)
 				{
 					node->children[0] = reduce_expressions(node->children[0], local_string_cache_list, NULL, 0);
-					node->children[0] = resolve_node(local_string_cache_list, node->children[0], NULL, 0);
 
 					assignment_size = get_size_of_variable(node->children[0], local_string_cache_list);
 					max_size = (long*)calloc(1, sizeof(long));
 					
-					node->children[1] = reduce_expressions(node->children[1], local_string_cache_list, max_size, assignment_size);
-					node->children[1] = resolve_node(local_string_cache_list, node->children[1], max_size, assignment_size);
+					if (node->children[1]->type != NUMBERS)
+					{
+						node->children[1] = reduce_expressions(node->children[1], local_string_cache_list, max_size, assignment_size);
+					}
+					else
+					{
+						VNumber *temp = node->children[1]->types.vnumber;
+						node->children[1]->types.vnumber = new VNumber(*temp, assignment_size);
+						delete temp;
+					}
+
 					vtr::free(max_size);
 
 					/* cast to unsigned if necessary */
@@ -403,10 +405,80 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				}
 				break;
 			}
-			case CONCATENATE:
-				break;
 			case REPLICATE:
+			{
+				oassert(node_is_constant(node->children[0])); // should be taken care of in parse
+				if( node->children[0]->types.vnumber->is_dont_care_string() )
+				{
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Passing a non constant value to replication command, i.e. 2'bx1{...}");
+				}
+
+				int64_t value = node->children[0]->types.vnumber->get_value();
+				if(value <= 0)
+				{
+					// todo, if this is part of a concat, it is valid
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Passing a number less than or equal to 0 for replication");
+				}
+
+				ast_node_t *new_node = create_node_w_type(CONCATENATE, node->line_number, node->file_number);
+				for (size_t i = 0; i < value; i++)
+				{
+					add_child_to_node(new_node, ast_node_deep_copy(node->children[1]));
+				}
+				node = free_whole_tree(node);
+				node = new_node;
+			} 
+			//fallthrough
+			case CONCATENATE:
+			{
+				resolve_concat_sizes(node, local_string_cache_list);
+
+				// for params only
+				// TODO: this is a hack, concats cannot be folded in place as it breaks netlist expand from ast,
+				// to fix we need to move the node resolution before netlist create from ast.
+				if(assignment_size == -1 && node->num_children > 0)
+				{
+					size_t index = 1;
+					size_t last_index = 0;
+					
+					while(index < node->num_children)
+					{
+						bool previous_is_constant = node_is_constant(node->children[last_index]);
+						bool current_is_constant = node_is_constant(node->children[index]);
+
+						if(previous_is_constant && current_is_constant)
+						{
+							VNumber new_value = V_CONCAT({*(node->children[last_index]->types.vnumber), *(node->children[index]->types.vnumber)});
+
+							node->children[index] = free_whole_tree(node->children[index]);
+
+							delete node->children[last_index]->types.vnumber;
+							node->children[last_index]->types.vnumber = new VNumber(new_value);
+						}
+						else
+						{
+							last_index += 1;
+							previous_is_constant = current_is_constant;
+							node->children[last_index] = node->children[index];
+						}
+						index += 1;
+					}
+
+					node->num_children = last_index+1;
+
+					if(node->num_children == 1)
+					{
+						ast_node_t *tmp = node->children[0];
+						node->children[0] = NULL;
+						free_whole_tree(node);
+						node = tmp;
+					}
+				}
+
 				break;
+			}
 			case IDENTIFIERS:
 			{
 				// look up to resolve unresolved range refs
@@ -450,10 +522,14 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 			}
 			case NUMBERS:
 			{
-				if (max_size && node->types.vnumber->size() > (*max_size))
+				if (max_size)
 				{
-					*max_size = node->types.vnumber->size();
+					if (node->types.vnumber->size() > (*max_size))
+					{
+						*max_size = node->types.vnumber->size();
+					}
 				}
+
 				break;
 			}
 			case IF_Q:
