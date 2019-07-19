@@ -1377,7 +1377,7 @@ void connect_output_pin_to_node(int *width, int current_pin, int output_pin_id, 
 		else
 		{
 			current_adder->output_pins[output_pin_id] = allocate_npin();
-			current_adder->output_pins[output_pin_id]->name = append_string("", "%s~dummy_output~%ld", current_adder->name, output_pin_id);
+			current_adder->output_pins[output_pin_id]->name = append_string("", "%s~dummy_output~%d", current_adder->name, output_pin_id);
 		}
 	}
 }
