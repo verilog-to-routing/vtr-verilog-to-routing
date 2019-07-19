@@ -1741,7 +1741,7 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 		&& input_list->pins[i]->net != verilog_netlist->one_net
 		&& input_list->pins[i]->net != verilog_netlist->pad_net)
 		{
-			warning_message(NETLIST_ERROR, -1, -1, "Signal %s is not driven. padding with ground\n", input_list->pins[i]);
+			warning_message(NETLIST_ERROR, -1, -1, "Signal %s is not driven. padding with ground\n", input_list->pins[i]->name);
 			add_fanout_pin_to_net(verilog_netlist->zero_net, input_list->pins[i]);
 		}
 
