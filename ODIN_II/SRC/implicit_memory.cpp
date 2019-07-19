@@ -250,7 +250,7 @@ void add_dummy_output_port_to_implicit_memory(implicit_memory *memory, int size,
 	{
 		npin_t *dummy_pin = allocate_npin();
 		// Pad outputs with a unique and descriptive name to avoid collisions.
-		dummy_pin->name = append_string("", "dummy_implicit_memory_output~%ld", dummy_output_pin_number++);
+		dummy_pin->name = append_string("", "dummy_implicit_memory_output~%d", dummy_output_pin_number++);
 		add_pin_to_signal_list(signals, dummy_pin);
 	}
 
