@@ -64,7 +64,7 @@ void check_netlist(int verbosity) {
         error += check_clb_conn(blk_id, num_conn);
         error += check_clb_internal_nets(blk_id);
         if (error >= ERROR_THRESHOLD) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+            VPR_ERROR(VPR_ERROR_OTHER,
                       "Too many errors in netlist, exiting.\n");
         }
     }
@@ -72,7 +72,7 @@ void check_netlist(int verbosity) {
     error += check_for_duplicated_names();
 
     if (error != 0) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+        VPR_ERROR(VPR_ERROR_OTHER,
                   "Found %d fatal Errors in the input netlist.\n", error);
     }
 }

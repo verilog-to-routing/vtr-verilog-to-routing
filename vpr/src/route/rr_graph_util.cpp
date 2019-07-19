@@ -44,9 +44,9 @@ int seg_index_of_sblock(int from_node, int to_node) {
                 return (device_ctx.rr_nodes[to_node].xhigh());
             }
         } else {
-            vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                      "in seg_index_of_sblock: to_node %d is of type %d.\n",
-                      to_node, to_rr_type);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "in seg_index_of_sblock: to_node %d is of type %d.\n",
+                            to_node, to_rr_type);
             return OPEN; //Should not reach here once thrown
         }
     }
@@ -61,17 +61,17 @@ int seg_index_of_sblock(int from_node, int to_node) {
                 return (device_ctx.rr_nodes[to_node].yhigh());
             }
         } else {
-            vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                      "in seg_index_of_sblock: to_node %d is of type %d.\n",
-                      to_node, to_rr_type);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "in seg_index_of_sblock: to_node %d is of type %d.\n",
+                            to_node, to_rr_type);
             return OPEN; //Should not reach here once thrown
         }
     }
     /* End from_rr_type is CHANY */
     else {
-        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                  "in seg_index_of_sblock: from_node %d is of type %d.\n",
-                  from_node, from_rr_type);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "in seg_index_of_sblock: from_node %d is of type %d.\n",
+                        from_node, from_rr_type);
         return OPEN; //Should not reach here once thrown
     }
 }

@@ -369,8 +369,8 @@ static void load_rr_indexed_data_T_values(int index_start,
             switches_buffered[cost_index] = buffered;
         } else {
             if (switches_buffered[cost_index] != buffered) {
-                vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-                          "Expecting all wire-to-wire switches of wire segments with cost index (%d) to have same 'buffered' value (%d), but found segment switch with different 'buffered' value (%d)\n", cost_index, switches_buffered[cost_index], buffered);
+                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                                "Expecting all wire-to-wire switches of wire segments with cost index (%d) to have same 'buffered' value (%d), but found segment switch with different 'buffered' value (%d)\n", cost_index, switches_buffered[cost_index], buffered);
             }
         }
     }

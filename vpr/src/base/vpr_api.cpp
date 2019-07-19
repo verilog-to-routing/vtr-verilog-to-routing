@@ -933,7 +933,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
     } else if (directionality == BI_DIRECTIONAL) {
         /* no adjustments need to be made here */
     } else {
-        vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Unrecognized directionality: %d\n", (int)directionality);
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unrecognized directionality: %d\n", (int)directionality);
     }
 }
 

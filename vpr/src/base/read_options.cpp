@@ -1803,16 +1803,16 @@ static bool verify_args(const t_options& args) {
      */
     if (args.read_rr_graph_file.provenance() == Provenance::SPECIFIED
         && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "--route_chan_width option must be specified if --read_rr_graph is requested (%s)\n",
-                  args.read_rr_graph_file.argument_name().c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "--route_chan_width option must be specified if --read_rr_graph is requested (%s)\n",
+                        args.read_rr_graph_file.argument_name().c_str());
     }
 
     if (!args.enable_clustering_pin_feasibility_filter && (args.target_external_pin_util.provenance() == Provenance::SPECIFIED)) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "%s option must be enabled for %s to have any effect\n",
-                  args.enable_clustering_pin_feasibility_filter.argument_name().c_str(),
-                  args.target_external_pin_util.argument_name().c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "%s option must be enabled for %s to have any effect\n",
+                        args.enable_clustering_pin_feasibility_filter.argument_name().c_str(),
+                        args.target_external_pin_util.argument_name().c_str());
     }
 
     return true;

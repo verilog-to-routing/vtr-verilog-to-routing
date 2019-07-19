@@ -72,8 +72,8 @@ void SetupVPR(t_options* Options,
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     if (Options->CircuitName.value() == "") {
-        vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
-                  "No blif file found in arguments (did you specify an architecture file?)\n");
+        VPR_FATAL_ERROR(VPR_ERROR_BLIF_F,
+                        "No blif file found in arguments (did you specify an architecture file?)\n");
     }
 
     alloc_and_load_output_file_names(Options->CircuitName);
@@ -355,26 +355,26 @@ static void SetupAnnealSched(const t_options& Options,
                              t_annealing_sched* AnnealSched) {
     AnnealSched->alpha_t = Options.PlaceAlphaT;
     if (AnnealSched->alpha_t >= 1 || AnnealSched->alpha_t <= 0) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "alpha_t must be between 0 and 1 exclusive.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_t must be between 0 and 1 exclusive.\n");
     }
 
     AnnealSched->exit_t = Options.PlaceExitT;
     if (AnnealSched->exit_t <= 0) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "exit_t must be greater than 0.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "exit_t must be greater than 0.\n");
     }
 
     AnnealSched->init_t = Options.PlaceInitT;
     if (AnnealSched->init_t <= 0) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "init_t must be greater than 0.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater than 0.\n");
     }
 
     if (AnnealSched->init_t < AnnealSched->exit_t) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "init_t must be greater or equal to than exit_t.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater or equal to than exit_t.\n");
     }
 
     AnnealSched->inner_num = Options.PlaceInnerNum;
     if (AnnealSched->inner_num <= 0) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "inner_num must be greater than 0.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "inner_num must be greater than 0.\n");
     }
 
     AnnealSched->type = Options.anneal_sched_type;

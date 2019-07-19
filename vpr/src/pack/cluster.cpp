@@ -2046,16 +2046,16 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
     if (!success) {
         //Explored all candidates
         if (molecule->type == MOLECULE_FORCED_PACK) {
-            vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                      "Can not find any logic block that can implement molecule.\n"
-                      "\tPattern %s %s\n",
-                      molecule->pack_pattern->name,
-                      root_atom_name.c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Can not find any logic block that can implement molecule.\n"
+                            "\tPattern %s %s\n",
+                            molecule->pack_pattern->name,
+                            root_atom_name.c_str());
         } else {
-            vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                      "Can not find any logic block that can implement molecule.\n"
-                      "\tAtom %s (%s)\n",
-                      root_atom_name.c_str(), root_model->name);
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Can not find any logic block that can implement molecule.\n"
+                            "\tAtom %s (%s)\n",
+                            root_atom_name.c_str(), root_model->name);
         }
     }
 
@@ -2094,8 +2094,8 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
      * blocks it returns ClusterBlockId::INVALID().                                */
 
     if (gain_mode == HILL_CLIMBING) {
-        vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                  "Hill climbing not supported yet, error out.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                        "Hill climbing not supported yet, error out.\n");
     }
 
     // 1. Find unpacked molecule based on criticality and strong connectedness (connected by low fanout nets) with current cluster
@@ -2340,18 +2340,18 @@ static void check_clustering() {
         //Each atom should be part of a pb
         const t_pb* atom_pb = atom_ctx.lookup.atom_pb(blk_id);
         if (!atom_pb) {
-            vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                      "Atom block %s is not mapped to a pb\n",
-                      atom_ctx.nlist.block_name(blk_id).c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Atom block %s is not mapped to a pb\n",
+                            atom_ctx.nlist.block_name(blk_id).c_str());
         }
 
         //Check the reverse mapping is consistent
         if (atom_ctx.lookup.pb_atom(atom_pb) != blk_id) {
-            vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                      "pb %s does not contain atom block %s but atom block %s maps to pb.\n",
-                      atom_pb->name,
-                      atom_ctx.nlist.block_name(blk_id).c_str(),
-                      atom_ctx.nlist.block_name(blk_id).c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "pb %s does not contain atom block %s but atom block %s maps to pb.\n",
+                            atom_pb->name,
+                            atom_ctx.nlist.block_name(blk_id).c_str(),
+                            atom_ctx.nlist.block_name(blk_id).c_str());
         }
 
         VTR_ASSERT(atom_ctx.nlist.block_name(blk_id) == atom_pb->name);
@@ -2364,15 +2364,15 @@ static void check_clustering() {
 
         ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(blk_id);
         if (clb_index == ClusterBlockId::INVALID()) {
-            vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                      "Atom %s is not mapped to a CLB\n",
-                      atom_ctx.nlist.block_name(blk_id).c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Atom %s is not mapped to a CLB\n",
+                            atom_ctx.nlist.block_name(blk_id).c_str());
         }
 
         if (cur_pb != cluster_ctx.clb_nlist.block_pb(clb_index)) {
-            vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                      "CLB %s does not match CLB contained by pb %s.\n",
-                      cur_pb->name, atom_pb->name);
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "CLB %s does not match CLB contained by pb %s.\n",
+                            cur_pb->name, atom_pb->name);
         }
     }
 
@@ -2383,9 +2383,9 @@ static void check_clustering() {
 
     for (auto blk_id : atom_ctx.nlist.blocks()) {
         if (!atoms_checked.count(blk_id)) {
-            vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                      "Atom block %s not found in any cluster.\n",
-                      atom_ctx.nlist.block_name(blk_id).c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Atom block %s not found in any cluster.\n",
+                            atom_ctx.nlist.block_name(blk_id).c_str());
         }
     }
 }
@@ -2403,15 +2403,15 @@ static void check_cluster_atom_blocks(t_pb* pb, std::unordered_set<AtomBlockId>&
         auto blk_id = atom_ctx.lookup.pb_atom(pb);
         if (blk_id) {
             if (blocks_checked.count(blk_id)) {
-                vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                          "pb %s contains atom block %s but atom block is already contained in another pb.\n",
-                          pb->name, atom_ctx.nlist.block_name(blk_id).c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                "pb %s contains atom block %s but atom block is already contained in another pb.\n",
+                                pb->name, atom_ctx.nlist.block_name(blk_id).c_str());
             }
             blocks_checked.insert(blk_id);
             if (pb != atom_ctx.lookup.atom_pb(blk_id)) {
-                vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                          "pb %s contains atom block %s but atom block does not link to pb.\n",
-                          pb->name, atom_ctx.nlist.block_name(blk_id).c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                "pb %s contains atom block %s but atom block does not link to pb.\n",
+                                pb->name, atom_ctx.nlist.block_name(blk_id).c_str());
             }
         }
     } else {

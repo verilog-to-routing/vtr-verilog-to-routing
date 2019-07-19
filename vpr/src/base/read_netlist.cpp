@@ -199,9 +199,9 @@ ClusteredNetlist read_netlist(const char* net_file,
         /* Error check */
         for (auto blk_id : atom_ctx.nlist.blocks()) {
             if (atom_ctx.lookup.atom_pb(blk_id) == nullptr) {
-                vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
-                          ".blif file and .net file do not match, .net file missing atom %s.\n",
-                          atom_ctx.nlist.block_name(blk_id).c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_NET_F,
+                                ".blif file and .net file do not match, .net file missing atom %s.\n",
+                                atom_ctx.nlist.block_name(blk_id).c_str());
             }
         }
         /* TODO: Add additional check to make sure net connections match */
@@ -425,9 +425,9 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
         /* A primitive type */
         AtomBlockId blk_id = atom_ctx.nlist.find_block(pb->name);
         if (!blk_id) {
-            vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
-                      ".net file and .blif file do not match, encountered unknown primitive %s in .net file.\n",
-                      pb->name);
+            VPR_FATAL_ERROR(VPR_ERROR_NET_F,
+                            ".net file and .blif file do not match, encountered unknown primitive %s in .net file.\n",
+                            pb->name);
         }
 
         //Update atom netlist mapping
@@ -657,9 +657,9 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route, 
                         //For connected pins look-up the inter-block net index associated with it
                         AtomNetId net_id = atom_ctx.nlist.find_net(pins[i].c_str());
                         if (!net_id) {
-                            vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
-                                      ".blif and .net do not match, unknown net %s found in .net file.\n.",
-                                      pins[i].c_str());
+                            VPR_FATAL_ERROR(VPR_ERROR_NET_F,
+                                            ".blif and .net do not match, unknown net %s found in .net file.\n.",
+                                            pins[i].c_str());
                         }
                         //Mark the associated inter-block net
                         pb_route.insert(std::make_pair(rr_node_index, t_pb_route()));
@@ -737,9 +737,9 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route, 
                     if (strcmp(pins[i].c_str(), "open") != 0) {
                         AtomNetId net_id = atom_ctx.nlist.find_net(pins[i].c_str());
                         if (!net_id) {
-                            vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
-                                      ".blif and .net do not match, unknown net %s found in .net file.\n",
-                                      pins[i].c_str());
+                            VPR_FATAL_ERROR(VPR_ERROR_NET_F,
+                                            ".blif and .net do not match, unknown net %s found in .net file.\n",
+                                            pins[i].c_str());
                         }
                         pb_route.insert(std::make_pair(rr_node_index, t_pb_route()));
                         pb_route[rr_node_index].atom_net_id = net_id;
@@ -956,10 +956,10 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
                     count[clb_net_id]++;
 
                     if (count[clb_net_id] > (int)clb_nlist.net_sinks(clb_net_id).size()) {
-                        vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
-                                  "net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n",
-                                  clb_nlist.net_name(clb_net_id).c_str(), size_t(clb_net_id), count[clb_net_id],
-                                  clb_nlist.net_sinks(clb_net_id).size());
+                        VPR_FATAL_ERROR(VPR_ERROR_NET_F,
+                                        "net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n",
+                                        clb_nlist.net_name(clb_net_id).c_str(), size_t(clb_net_id), count[clb_net_id],
+                                        clb_nlist.net_sinks(clb_net_id).size());
                     }
 
                     //Asserts the ClusterBlockId is the same when ClusterNetId & pin BitIndex is provided

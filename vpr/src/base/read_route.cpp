@@ -414,9 +414,9 @@ static void format_pin_info(string& pb_name, string& port_name, int& pb_pin_num,
     getline(pb_info, port_name, '[');
     pb_info >> pb_pin_num;
     if (!pb_info) {
-        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                  "Format of this pin info %s is incorrect",
-                  input.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Format of this pin info %s is incorrect",
+                        input.c_str());
     }
 }
 
@@ -427,9 +427,9 @@ static string format_name(string name) {
         name.erase(name.end() - 1);
         return name;
     } else {
-        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                  "%s should be enclosed by parenthesis",
-                  name.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "%s should be enclosed by parenthesis",
+                        name.c_str());
         return nullptr;
     }
 }

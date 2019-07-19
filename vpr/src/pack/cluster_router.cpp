@@ -247,7 +247,7 @@ void add_atom_as_target(t_lb_router_data* router_data, const AtomBlockId blk_id)
     std::map<AtomBlockId, bool>& atoms_added = *router_data->atoms_added;
 
     if (atoms_added.count(blk_id) > 0) {
-        vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Atom %s added twice to router\n", atom_ctx.nlist.block_name(blk_id).c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Atom %s added twice to router\n", atom_ctx.nlist.block_name(blk_id).c_str());
     }
 
     pb = atom_ctx.lookup.atom_pb(blk_id);

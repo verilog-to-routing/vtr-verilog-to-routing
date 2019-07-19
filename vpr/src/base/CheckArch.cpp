@@ -63,8 +63,8 @@ static void CheckSwitches(const t_arch& Arch) {
      * See rr_graph.c:alloc_and_load_rr_switch_inf for more info */
     if (ipin_cblock_switch_index != UNDEFINED) {
         if (!Arch.Switches[ipin_cblock_switch_index].fixed_Tdel()) {
-            vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-                      "Not currently allowing an ipin cblock switch to have fanin dependent values");
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                            "Not currently allowing an ipin cblock switch to have fanin dependent values");
         }
     }
 }

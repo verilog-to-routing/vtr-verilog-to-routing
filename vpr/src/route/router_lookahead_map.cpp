@@ -295,7 +295,7 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
     int result = UNDEFINED;
 
     if (rr_type != CHANX && rr_type != CHANY) {
-        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Must start lookahead routing from CHANX or CHANY node\n");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Must start lookahead routing from CHANX or CHANY node\n");
     }
 
     /* determine which direction the wire should go in based on the start & target coordinates */
