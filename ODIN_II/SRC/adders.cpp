@@ -392,9 +392,9 @@ void define_add_function(nnode_t *node, FILE *out)
 	for (i = 0; i < node->num_output_pins; i++)
 	{
 		if(i < node->output_port_sizes[0])
-			j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->outputs->next->name, i , node->output_pins[i]->name);
+			j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->next->name, i , node->output_pins[i]->name);
 		else
-			j = odin_sprintf(buffer, " %s[%ld]=%s", hard_adders->outputs->name, i - node->output_port_sizes[0], node->output_pins[i]->name);
+			j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->name, i - node->output_port_sizes[0], node->output_pins[i]->name);
 		if (count + j > 79)
 		{
 			fprintf(out, "\\\n");
