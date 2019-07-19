@@ -4064,7 +4064,7 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
 			else if (!get_next_vector(current_out, buffer2))
 			{
 				error = true;
-				warning_message(SIMULATION_ERROR, 0, -1,"Simulation produced fewer than %ld vectors. \n", num_vectors);
+				warning_message(SIMULATION_ERROR, 0, -1,"Simulation produced fewer than %d vectors. \n", num_vectors);
 				break;
 			}
 			// The headers differ.
