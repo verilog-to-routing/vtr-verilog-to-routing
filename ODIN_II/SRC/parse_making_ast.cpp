@@ -1356,7 +1356,7 @@ ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t
     aux_name = (char *)vtr::calloc(char_qntd,sizeof(char));
     unique_name = (char *)vtr::calloc(char_qntd,sizeof(char));
     strcpy(unique_name,"function_instance_");
-    odin_sprintf(aux_name,"%ld",size_function_instantiations_by_module);
+    odin_sprintf(aux_name,"%d",size_function_instantiations_by_module);
     strcat(unique_name,aux_name);
 	vtr::free(aux_name);
 
