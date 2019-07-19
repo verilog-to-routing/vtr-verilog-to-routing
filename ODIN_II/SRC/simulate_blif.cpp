@@ -4219,7 +4219,8 @@ static char *get_mif_filename(nnode_t *node)
 {
 	char buffer[BUFFER_MAX_SIZE];
 	buffer[0] = 0;
-	strcat(buffer, node->name);
+	if(strlen(node->name) < BUFFER_MAX_SIZE)
+		strcat(buffer, node->name);
 
 	char *filename = strrchr(buffer, '+');
 	if (filename) filename += 1;
