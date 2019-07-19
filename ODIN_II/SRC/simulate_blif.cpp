@@ -1676,7 +1676,7 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
  
 		if (inserted !=1)
 		{
-			error_message(SIMULATION_ERROR,1475,-1,"Node %ld is not assigned for simulation!",node_id);
+			error_message(SIMULATION_ERROR,1475,-1,"Node %d is not assigned for simulation!",node_id);
 
 		}
  
