@@ -766,6 +766,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				oassert(false);
 				break;
 			case MODULE:
+				oassert(child_skip_list);
 				local_string_cache_list->local_symbol_table_sc = sc_new_string_cache();
 				local_string_cache_list->num_local_symbol_table = 0;
 				local_string_cache_list->local_symbol_table = NULL;
@@ -775,6 +776,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
 				break;
 			case FUNCTION:
+				oassert(child_skip_list);
    				/* set the skip list */
 				child_skip_list[0] = true; /* skip the identifier */
 				child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
@@ -937,6 +939,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				break;
 			}
 			case ALWAYS:
+				oassert(child_skip_list);
 				/* evaluate if this is a sensitivity list with posedges/negedges (=SEQUENTIAL) or none (=COMBINATIONAL) */
 				local_clock_list = evaluate_sensitivity_list(node->children[0], instance_name_prefix, local_string_cache_list);
 				child_skip_list[0] = true;
@@ -954,6 +957,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				skip_children = true;
 				break;
 			case HARD_BLOCK:
+				oassert(child_skip_list);
 				/* set the skip list */
 				child_skip_list[0] = true; /* skip the identifier */
 				child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
