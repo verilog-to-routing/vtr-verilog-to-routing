@@ -2125,18 +2125,25 @@ nnode_t **get_parents_of(nnode_t *node, int *num_parents)
 	int count = 0;
 	int i;
 
+	oassert(node);
+	
 	for (i = 0; i < node->num_input_pins; i++)
 	{
 		npin_t *pin = node->input_pins[i];
-		nnet_t *net = pin->net;
-
-		if (pin && net && net->driver_pin->node)
+		if(pin)
 		{
-			nnode_t *parent_node = net->driver_pin->node;
-			//char *parent_node_name = get_pin_name(parent_node->name);
+			nnet_t *net = pin->net;
+			if(net && net->driver_pin)
+			{
+				if (net->driver_pin->node)
+				{
+					nnode_t *parent_node = net->driver_pin->node;
+					//char *parent_node_name = get_pin_name(parent_node->name);
 
-			parents = (nnode_t **)vtr::realloc(parents, sizeof(nnode_t*) * (count + 1));
-			parents[count++] = parent_node;
+					parents = (nnode_t **)vtr::realloc(parents, sizeof(nnode_t*) * (count + 1));
+					parents[count++] = parent_node;
+				}
+			}
 		}
 	}
 	*num_parents = count;
