@@ -176,11 +176,6 @@ static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id);
 static void draw_reset_blk_colors();
 static void draw_reset_blk_color(ClusterBlockId blk_id);
 
-static inline bool LOD_screen_area_test_square(float width, float screen_area_threshold);
-static inline bool internal_LOD_screen_area_test(ezgl::rectangle test, float screen_area_threshold);
-static inline bool default_triangle_LOD_screen_area_test();
-static inline bool triangle_LOD_screen_area_test(float arrow_size);
-
 static inline void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer &g);
 static inline ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height, ezgl::renderer &g);
 static inline ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height, float width, float height_scale, ezgl::renderer &g);
@@ -233,79 +228,60 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
     
 }
 
-void draw_main_canvas(ezgl::renderer &g){
-    auto start = std::chrono::high_resolution_clock::now();
-    
-    g.set_line_width(0);
-    g.set_line_dash(ezgl::line_dash::none);
+void draw_main_canvas(ezgl::renderer &g){ 
+    t_draw_state* draw_state = get_draw_state_vars();
 
-    for(int i = 0; i < 1000*1000; i++){
-        int offsetY = 2*i % 2000;
-        int offsetX = 10*(2*i / 2000) % 2000;
-        g.draw_line({1+offsetX, offsetY}, {9+offsetX, offsetY+0});
+    g.set_font_size(14);
+    
+    draw_block_pin_util();
+    drawplace(g);
+    draw_internal_draw_subblk(g);
+    
+    if (draw_state->pic_on_screen == PLACEMENT) {
+        switch (draw_state->show_nets) {
+            case DRAW_NETS:
+                drawnets(g);
+                break;
+            case DRAW_LOGICAL_CONNECTIONS:
+                break;
+            default:
+                break;
+        }
+        
+    } else { /* ROUTING on screen */
+        
+        switch (draw_state->show_nets) {
+            case DRAW_NETS:
+                drawroute(ALL_NETS, g);
+                break;
+            case DRAW_LOGICAL_CONNECTIONS:
+                // fall through
+            default:
+                draw_rr(g);
+                break;
+        }
+        
+        draw_congestion(g);
+        
+        draw_routing_costs(g);
+        
+        draw_router_rr_costs(g);
+        
+        draw_routing_util(g);
+        
+        draw_routing_bb(g);
     }
     
+    draw_placement_macros(g);
     
-    auto end = std::chrono::high_resolution_clock::now();
-    auto timeDiff = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);    
-    std::cout << "--------------0 width solid time : " << timeDiff.count() << " s--------------" << std::endl;
-
+    draw_crit_path(g);
     
-//    
-//    t_draw_state* draw_state = get_draw_state_vars();
-//
-//    
-//    g.set_font_size(14);
-//    
-//    draw_block_pin_util();
-//    drawplace(g);
-//    draw_internal_draw_subblk(g);
-//    
-//    if (draw_state->pic_on_screen == PLACEMENT) {
-//        switch (draw_state->show_nets) {
-//            case DRAW_NETS:
-//                drawnets(g);
-//                break;
-//            case DRAW_LOGICAL_CONNECTIONS:
-//                break;
-//            default:
-//                break;
-//        }
-//        
-//    } else { /* ROUTING on screen */
-//        
-//        switch (draw_state->show_nets) {
-//            case DRAW_NETS:
-//                drawroute(ALL_NETS, g);
-//                break;
-//            case DRAW_LOGICAL_CONNECTIONS:
-//                // fall through
-//            default:
-//                draw_rr(g);
-//                break;
-//        }
-//        
-//        draw_congestion(g);
-//        
-//        draw_routing_costs(g);
-//        
-//        draw_router_rr_costs(g);
-//        
-//        draw_routing_util(g);
-//        
-//        draw_routing_bb(g);
-//    }
-//    
-//    draw_placement_macros(g);
-//    
-//    draw_crit_path(g);
-//    
-//    draw_logical_connections(g);
-//    
-//    if (draw_state->color_map) {
-//        draw_color_map_legend(*draw_state->color_map, g);
-//        draw_state->color_map.reset(); //Free color map in preparation for next redraw
-//    }
+    draw_logical_connections(g);
+    
+    if (draw_state->color_map) {
+        draw_color_map_legend(*draw_state->color_map, g);
+        draw_state->color_map.reset(); //Free color map in preparation for next redraw
+    }
     
 }
 
@@ -1253,11 +1229,6 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g) 
         g.set_line_width(0);
     }
     
-    // draw the arrows and small lines iff zoomed in really far.
-    if (default_triangle_LOD_screen_area_test() == false) {
-        return;
-    }
-    
     e_side mux_dir = TOP;
     int coord_min = -1;
     int coord_max = -1;
@@ -1926,11 +1897,6 @@ static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer &g) 
     
     t_draw_coords* draw_coords = get_draw_coords_vars();
     
-    //exit early unless zoomed in really far.
-    if (LOD_screen_area_test_square(draw_coords->pin_size, MIN_VISIBLE_AREA) == false) {
-        return;
-    }
-    
     float xcen, ycen;
     char str[vtr::bufsize];
     auto& device_ctx = g_vpr_ctx.device();
@@ -2553,10 +2519,10 @@ void act_on_key_press(ezgl::application *app, GdkEventKey *event, char *key_name
 void act_on_mouse_press(ezgl::application *app, GdkEventButton *event, double x, double y) {
   app->update_message("Mouse Clicked");
 
-  std::cout << "User clicked the ";
+//  std::cout << "User clicked the ";
 
   if (event->button == 1){
-    std::cout << "left ";
+//    std::cout << "left ";
     
     if(window_mode){
         //click on any two points to form new window rectangle bound
@@ -2590,20 +2556,13 @@ void act_on_mouse_press(ezgl::application *app, GdkEventButton *event, double x,
     }
     
   }else if (event->button == 2)
-    std::cout << "middle ";
+//    std::cout << "middle ";
+      ;
   else if (event->button == 3)
-    std::cout << "right ";
+//    std::cout << "right ";
+      ;
 
-  std::cout << "mouse button at coordinates (" << x << "," << y << ") ";
-
-  if ((event->state & GDK_CONTROL_MASK) && (event->state & GDK_SHIFT_MASK))
-    std::cout << "with control and shift pressed ";
-  else if (event->state & GDK_CONTROL_MASK)
-    std::cout << "with control pressed ";
-  else if (event->state & GDK_SHIFT_MASK)
-    std::cout << "with shift pressed ";
-
-  std::cout << std::endl;
+//  std::cout << "mouse button at coordinates (" << x << "," << y << ") " << std::endl;
   
       
     /* This routine is called when the user clicks in the graphics area. *
@@ -2892,50 +2851,6 @@ void draw_triangle_along_line(ezgl::renderer &g, float xend, float yend, float x
     g.fill_poly(poly);
 }
 
-static inline bool LOD_screen_area_test_square(float width, float screen_area_threshold) {
-    
-    //Since world coordinates get clipped when converted to screen (at high zoom levels),
-    //we can not pick an arbitrary world root coordinate for the rectangle we want to test,
-    //as clipping could cause it's area to go to zero when we convert from world to screen
-    //coordinates.
-    //
-    //Instead we specify an on-screen location for the rectangle we plan to test
-    ezgl::camera & camera = (application.get_canvas(application.get_main_canvas_id()))->get_camera();
-    ezgl::point2d lower_left(0, 0); //Pick one corner of the screen
-    
-    //Offset by the width
-    ezgl::point2d upper_right = lower_left + ezgl::point2d(width, width);
-    
-    
-    
-    ezgl::rectangle world_rect (
-            camera.world_to_screen({lower_left.x, lower_left.y}), 
-            camera.world_to_screen({upper_right.x, upper_right.y})
-            );
-            
-    return internal_LOD_screen_area_test(world_rect, screen_area_threshold); 
-}
-
-static inline bool internal_LOD_screen_area_test(ezgl::rectangle test, float screen_area_threshold) {
-    /**
-     * screen_area_threshold is in (screen pixels)^2. I suggest something around 3
-     *
-     * If the _screen_ area of the rectangle (passed in as world coordinates)
-     * is less than screen_area_threshold then this function returns false. When
-     * this function returns false it means that bounding box passed in will
-     * occupy less than (screen_area_threshold pixels)^2 on the screen.
-     */
-    return test.area() < screen_area_threshold;
-}
-
-static inline bool default_triangle_LOD_screen_area_test() {
-    return triangle_LOD_screen_area_test(DEFAULT_ARROW_SIZE);
-}
-
-static inline bool triangle_LOD_screen_area_test(float arrow_size) {
-    return LOD_screen_area_test_square(arrow_size*0.66, MIN_VISIBLE_AREA);
-}
-
 static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer &g) {
     
     /* This routine draws an edge from the pin_node to the chan_node (CHANX or   *
@@ -3006,15 +2921,11 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer &g
     
     //don't draw the ex, or triangle unless zoomed in really far
     if (chan_rr.direction() == BI_DIRECTION || !is_opin(pin_rr.pin_num(), grid_type)) {
-        if (LOD_screen_area_test_square(draw_coords->pin_size*1.3,MIN_VISIBLE_AREA) == true) {
-            draw_x(x2, y2, 0.7 * draw_coords->pin_size, g);
-        }
+        draw_x(x2, y2, 0.7 * draw_coords->pin_size, g);
     } else {
-        if (default_triangle_LOD_screen_area_test() == true) {
-            float xend = x2 + (x1 - x2) / 10.;
-            float yend = y2 + (y1 - y2) / 10.;
-            draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
-        }
+        float xend = x2 + (x1 - x2) / 10.;
+        float yend = y2 + (y1 - y2) / 10.;
+        draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
     }
 }
 
@@ -3034,11 +2945,9 @@ static void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer &g) {
     
     g.draw_line({x1, y1}, {x2, y2});
     
-    if (default_triangle_LOD_screen_area_test() == true) {
-        float xend = x2 + (x1 - x2) / 10.;
-        float yend = y2 + (y1 - y2) / 10.;
-        draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
-    }
+    float xend = x2 + (x1 - x2) / 10.;
+    float yend = y2 + (y1 - y2) / 10.;
+    draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
 }
 
 static inline void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer &g) {
