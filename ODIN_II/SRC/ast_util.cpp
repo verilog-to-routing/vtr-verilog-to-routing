@@ -614,7 +614,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	{
 		return_string = get_name_of_pin_number(var_node, bit);
 	}
-	else if (var_node->type == CONCATENATE)
+	else if (var_node->type == CONCATENATE && bit >= 0)
 	{
 		if (var_node->types.concat.num_bit_strings == 0)
 		{
