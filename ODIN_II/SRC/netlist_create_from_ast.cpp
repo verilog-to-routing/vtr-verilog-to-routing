@@ -3914,29 +3914,36 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 	for (i = 0; i < memory_inputs->count; i++)
 	{
 		npin_t *pin = memory_inputs->pins[i];
-		implicit_memory *memory = lookup_implicit_memory_input(pin->name);
-		nnode_t *node = memory->node;
-
-		for (j = 0; j < node->num_input_pins; j++)
+		if(pin->name)
 		{
-			npin_t *original_pin = node->input_pins[j];
-			if (original_pin->name && pin->name && !strcmp(original_pin->name, pin->name))
+			implicit_memory *memory = lookup_implicit_memory_input(pin->name);
+			
+			if(memory)
 			{
-				pin->mapping = original_pin->mapping;
-				add_input_pin_to_node(node, pin, j);
-				break;
-			}
-		}
+				nnode_t *node = memory->node;
 
-		if (!memory->clock_added)
-		{
-			npin_t *clock_pin = allocate_npin();
-			add_fanout_pin_to_net(clock_net, clock_pin);
-			signal_list_t *clock = init_signal_list();
-			add_pin_to_signal_list(clock, clock_pin);
-			add_input_port_to_implicit_memory(memory, clock, "clk");
-			free_signal_list(clock);
-			memory->clock_added = true;
+				for (j = 0; j < node->num_input_pins; j++)
+				{
+					npin_t *original_pin = node->input_pins[j];
+					if (original_pin->name && !strcmp(original_pin->name, pin->name))
+					{
+						pin->mapping = original_pin->mapping;
+						add_input_pin_to_node(node, pin, j);
+						break;
+					}
+				}
+
+				if (!memory->clock_added)
+				{
+					npin_t *clock_pin = allocate_npin();
+					add_fanout_pin_to_net(clock_net, clock_pin);
+					signal_list_t *clock = init_signal_list();
+					add_pin_to_signal_list(clock, clock_pin);
+					add_input_port_to_implicit_memory(memory, clock, "clk");
+					free_signal_list(clock);
+					memory->clock_added = true;
+				}
+			}
 		}
 	}
 	free_signal_list(memory_inputs);
