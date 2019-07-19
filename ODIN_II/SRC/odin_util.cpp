@@ -759,7 +759,7 @@ short get_bit(short in){
 
 void passed_verify_i_o_availabilty(nnode_t *node, int expected_input_size, int expected_output_size, const char *current_src, int line_src) {
 	if(!node)
-		error_message(SIMULATION_ERROR, -1, -1, "node unavailable @%s::%s", current_src, line_src);
+		error_message(SIMULATION_ERROR, -1, -1, "node unavailable @%s::%d", current_src, line_src);
 
 	std::stringstream err_message;
 	int error=0;
