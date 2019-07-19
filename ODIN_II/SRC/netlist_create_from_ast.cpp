@@ -325,9 +325,11 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 
 	/* now that parameters are all updated, resolve them */
 	STRING_CACHE_LIST *local_string_cache_list = (STRING_CACHE_LIST*)vtr::calloc(1, sizeof(STRING_CACHE_LIST));
+	oassert(local_string_cache_list);
 	local_string_cache_list->local_param_table_sc = local_param_table_sc;
 	
 	STRING_CACHE_LIST *parent_string_cache_list = (STRING_CACHE_LIST*)vtr::calloc(1, sizeof(STRING_CACHE_LIST));
+	oassert(parent_string_cache_list);
 	parent_string_cache_list->local_param_table_sc = parent_param_table_sc; // to check parent parameters
 
 	for (i = 0; i < parameter_num; i++) 
@@ -343,7 +345,7 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 		ast_node_t *node = (ast_node_t *)local_param_table_sc->data[sc_spot];
 		oassert(node);
 		node = resolve_node(local_string_cache_list, node, NULL, -1);
-		if (node->type != NUMBERS && parent_string_cache_list) 
+		if (node->type != NUMBERS) 
 		{
 			node = resolve_node(parent_string_cache_list, node, NULL, -1); // may contain parameters from parent
 		}
