@@ -34,8 +34,6 @@ set(VTR_VERSION_PRERELEASE "dev")
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 include(FilesToDirs)
 
-list(APPEND CMAKE_MODULE_PATH
-     ./GCR_CMake/macros)
 
 #
 #

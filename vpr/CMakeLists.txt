@@ -32,7 +32,7 @@ set(
 )
 
 list(APPEND CMAKE_MODULE_PATH
-     ../GCR_CMake/macros)
+     ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/libezgl/gcr-cmake/macros)
 
 #
 # Build Configuration
