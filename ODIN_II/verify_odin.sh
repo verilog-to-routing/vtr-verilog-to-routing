@@ -564,7 +564,7 @@ function sim() {
 
 	##########################################
 	# setup defaults
-	DEFAULT_CMD_PARAM="${_adder_definition_flag} ${_simulation_threads_flag} ${_batch_sim_flag}"
+	DEFAULT_CMD_PARAM="${_adder_definition_flag} ${_simulation_threads_flag} ${use_batch_sim}"
 	DEFAULT_WRAPPER_CMD="${use_timeout} ${use_low_ressource} ${use_valgrind} ${use_perf} ${use_color}"
 
 	if [ "_${with_custom_args}" == "_1" ]
