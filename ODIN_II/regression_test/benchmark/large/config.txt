@@ -1,1 +1,3 @@
---arch_list memories --no_threading
+--arch_list memories 
+--no_threading 
+--disable_simulation

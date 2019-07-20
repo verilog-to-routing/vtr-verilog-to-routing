@@ -26,9 +26,9 @@ NEW_RUN_DIR="${REGRESSION_DIR}/run001/"
 ##############################################
 # Arch Sweep Arrays to use during benchmarking
 DEFAULT_ARCH="${VTR_ROOT_DIR}/libs/libarchfpga/arch/sample_arch.xml"
-MEM_ARCH="${VTR_ROOT_DIR}/vtr_flow/arch/timing/k6_N10_mem32K_40nm.xml"
-SMALL_ARCH_SWEEP="${DEFAULT_ARCH} ${MEM_ARCH}"
-FULL_ARCH_SWEEP=$(find ${VTR_ROOT_DIR}/vtr_flow/arch/timing -maxdepth 1 | grep xml)
+MEM_ARCH="${VTR_ROOT_DIR}/vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml"
+SMALL_ARCH_SWEEP="no_arch ${DEFAULT_ARCH} ${MEM_ARCH}"
+FULL_ARCH_SWEEP=$(find ${VTR_ROOT_DIR}/vtr_flow/arch/timing -maxdepth 1 | grep xml | grep mem)
 
 ##############################################
 # Include more generic names here for better vector generation
@@ -42,7 +42,7 @@ _TEST=""
 _NUMBER_OF_PROCESS="1"
 _SIM_THREADS="1"
 _VECTORS="100"
-_TIMEOUT="1200"
+_TIMEOUT="1200s"
 _ADDER_DEF="default"
 _SIM_COUNT="1"
 _RUN_DIR_OVERRIDE=""
@@ -55,6 +55,7 @@ _BEST_COVERAGE_OFF="on"
 _BATCH_SIM="off"
 _USE_PERF="off"
 _FORCE_SIM="off"
+_COLORIZE="off"
 
 ##############################################
 # Exit Functions
@@ -117,7 +118,7 @@ printf "Called program with $INPUT
 		-j|--nb_of_process < N >        $(_prt_cur_arg ${_NUMBER_OF_PROCESS}) Number of process requested to be used
 		-s|--sim_threads < N >          $(_prt_cur_arg ${_SIM_THREADS}) Use multithreaded simulation using N threads
 		-V|--vectors < N >              $(_prt_cur_arg ${_VECTORS}) Use N vectors to generate per simulation
-		-T|--timeout < N sec >          $(_prt_cur_arg ${_TIMEOUT}) Timeout a simulation/synthesis after N seconds
+		-T|--timeout < N[s|m|h] >       $(_prt_cur_arg ${_TIMEOUT}) Timeout a simulation/synthesis after N seconds
 		-a|--adder_def < /abs/path >    $(_prt_cur_arg ${_ADDER_DEF}) Use template to build adders
 		-n|--simulation_count < N >     $(_prt_cur_arg ${_SIM_COUNT}) Allow to run the simulation N times to benchmark the simulator
 		-d|--output_dir < /abs/path >   $(_prt_cur_arg ${_RUN_DIR_OVERRIDE}) Change the run directory output
@@ -132,6 +133,7 @@ printf "Called program with $INPUT
 		-b|--batch_sim                  $(_prt_cur_arg ${_BATCH_SIM}) Use Batch mode multithreaded simulation
 		-p|--perf                       $(_prt_cur_arg ${_USE_PERF}) Use Perf for monitoring execution
 		-f|--force_simulate             $(_prt_cur_arg ${_FORCE_SIM}) Force the simulation to be executed regardless of the config
+		-C|--colorize             		$(_prt_cur_arg ${_COLORIZE}) Turn on pretty print for stdout
 
 "
 }
@@ -145,8 +147,9 @@ printf "
 								*small_sweep     use a small set of timing architecture
 								*full_sweep  	 sweep the whole vtr directory *** WILL FAIL ***
 								*default         use the sample_arch.xml
-				--simulate                       request simulation to be ran
+				--disable_simulation             request simulation NOT to be ran
 				--no_threading                   do not use multithreading for this test ** useful if you have large test **
+				--source [relative_path]         change where the benchmark files are, (relative to this config file) <default: ./>
 "
 }
 
@@ -287,38 +290,16 @@ function flag_is_number() {
 	esac
 }
 
-
-# boolean type flags
-_low_ressource_flag=""
-_valgrind_flag=""
-_batch_sim_flag=""
-_use_best_coverage_flag=""
-_perf_flag=""
-
-# number type flags
-_vector_flag=""
-_timeout_flag=""
-_simulation_threads_flag=""
-
-_adder_definition_flag=""
-
 function _set_if() {
 	[ "$1" == "on" ] && echo "$2" || echo ""
 }
 
-function _set_flag() {
-	_low_ressource_flag=$(_set_if ${_LIMIT_RESSOURCE} "--limit_ressource")
-	_valgrind_flag=$(_set_if ${_VALGRIND} "--tool valgrind")
-	_batch_sim_flag=$(_set_if ${_BATCH_SIM} "--batch")
-	_use_best_coverage_flag=$(_set_if ${_BEST_COVERAGE_OFF} "--best_coverage")
-	_perf_flag=$(_set_if ${_USE_PERF} "--tool perf")
-	
-	_vector_flag="-g ${_VECTORS}"
-	_timeout_flag="--time_limit ${_TIMEOUT}s"
-	_simulation_threads_flag=$([ "${_SIM_THREADS}" != "1" ] && echo "-j ${_SIM_THREADS}")
+function _echo_args() {
+	echo $@ | tr '\n' ' ' | tr -s ' '
+}
 
-	_adder_definition_flag="--adder_type ${_ADDER_DEF}"
-
+function _cat_args() {
+	_echo_args "$(cat $1)"
 }
 
 function parse_args() {
@@ -409,6 +390,10 @@ function parse_args() {
 				shift
 
 		# Boolean flags
+			;;-C|--colorize)		
+				_COLORIZE="on"
+				echo "colorizing the output"
+
 			;;-g|--generate_bench)		
 				_GENERATE_BENCH="on"
 				echo "generating output vector for test given predefined input"
@@ -463,10 +448,30 @@ function sim() {
 	arch_list="no_arch"
 	with_sim="0"
 	threads=${_NUMBER_OF_PROCESS}
-	DEFAULT_CMD_PARAM="${_adder_definition_flag} ${_simulation_threads_flag} ${_batch_sim_flag}"
+	test_src="./"
+
+	# default flags
+	_low_ressource_flag="--limit_ressource"
+	_valgrind_flag="--tool valgrind"
+	_batch_sim_flag="--batch"
+	_best_coverage_flag="--best_coverage"
+	_perf_flag="--tool perf"
+	_colorize_flag="--colorize"
+
+	use_timeout="--time_limit ${_TIMEOUT}"
+	use_valgrind=$(_set_if ${_VALGRIND} ${_valgrind_flag})
+	use_low_ressource=$(_set_if ${_LIMIT_RESSOURCE} ${_low_ressource_flag})
+	use_batch_sim=$(_set_if ${_BATCH_SIM} ${_batch_sim_flag})
+	use_best_coverage=$(_set_if ${_BEST_COVERAGE_OFF} ${_best_coverage_flag})
+	use_perf=$(_set_if ${_USE_PERF} ${_perf_flag})
+	use_color=$(_set_if ${_COLORIZE} ${_colorize_flag})
+
+	_vector_flag="-g ${_VECTORS}"
+	_simulation_threads_flag=$([ "${_SIM_THREADS}" != "1" ] && echo "-j ${_SIM_THREADS}")
+	_adder_definition_flag="--adder_type ${_ADDER_DEF}"
 
 	_SYNTHESIS="on"
-	_SIMULATE=${_FORCE_SIM}
+	_SIMULATE="on"
 
 	if [ ! -d "$1" ]
 	then
@@ -479,6 +484,11 @@ function sim() {
 	while [[ "$#" > 0 ]]
 	do 
 		case $1 in
+			--source)
+				test_src=$2
+				shift
+				;;
+
 			--custom_args_file) 
 				with_custom_args=1
 				;;
@@ -506,13 +516,18 @@ function sim() {
 				shift
 				;;
 
-			--simulate)
-				_SIMULATE="on"
+			--disable_simulation)
+				_SIMULATE=${_FORCE_SIM}
 				;;
 
 			--no_threading)
 				echo "This test will not be multithreaded"
 				threads="1"
+				;;
+
+			--valgrind)
+				echo "This test will be ran with valgrind"
+				use_valgrind=${_valgrind_flag}
 				;;
 
 			*)
@@ -526,8 +541,22 @@ function sim() {
 
 	###########################################
 	# run custom benchmark
-	bench_type=${benchmark_dir##*/}
+	real_bench="${benchmark_dir}"
+	benchmark_dir="${benchmark_dir}/${test_src}"
+	if [ "_${benchmark_dir}" == "_" ] || [ ! -d ${benchmark_dir} ]; then
+		echo "invalid benchmark directory parameter passed: ${benchmark_dir} from ${test_src}"
+		ctrl_c
+	fi
+
+	benchmark_dir=$(readlink -f "${benchmark_dir}")
+	bench_type=${real_bench##*/}
 	echo " BENCHMARK IS: ${bench_type}"
+
+
+	##########################################
+	# setup defaults
+	DEFAULT_CMD_PARAM="${_adder_definition_flag} ${_simulation_threads_flag} ${_batch_sim_flag}"
+	DEFAULT_WRAPPER_CMD="${use_timeout} ${use_low_ressource} ${use_valgrind} ${use_perf} ${use_color}"
 
 	if [ "_${with_custom_args}" == "_1" ]
 	then
@@ -550,21 +579,14 @@ function sim() {
 											--log_file ${DIR}/odin.log
 											--test_name ${TEST_FULL_REF}
 											--failure_log ${global_odin_failure}.log
-											${_timeout_flag}
-											${_low_ressource_flag}
-											${_valgrind_flag}"
-											
-				if [ "${_USE_PERF}" == "on" ]
-				then
-					wrapper_odin_command="${wrapper_odin_command} ${_perf_flag} ${DIR}/perf.data"
-				fi
+											${DEFAULT_WRAPPER_CMD}"
 
 				odin_command="${DEFAULT_CMD_PARAM}
-								$(cat ${dir}/odin.args | tr '\n' ' ') 
+								$( _cat_args "${dir}/odin.args" ) 
 								-o ${blif_file} 
 								-sim_dir ${DIR}"
 
-				echo $(echo "${wrapper_odin_command} ${odin_command}" | tr '\n' ' ' | tr -s ' ' ) > ${DIR}/odin_param
+				_echo_args "${wrapper_odin_command} ${odin_command}" > ${DIR}/odin_param
 			fi
 		done
 
@@ -587,12 +609,9 @@ function sim() {
 			basename=""
 			case "${benchmark}" in
 				*.v)
-					_SYNTHESIS="on"
 					basename=${benchmark%.v}
 				;;
 				*.blif)
-					# this is a blif file
-					_SYNTHESIS="off"
 					basename=${benchmark%.blif}
 				;;
 				*)
@@ -620,7 +639,19 @@ function sim() {
 				TEST_FULL_REF="${bench_type}/${test_name}/${arch_name}"
 
 				DIR="${NEW_RUN_DIR}/${TEST_FULL_REF}"
-				blif_file="${DIR}/odin.blif"
+				blif_file=""
+
+				case "${benchmark}" in
+					*.v)
+						_SYNTHESIS="on"
+						blif_file="${DIR}/odin.blif"
+					;;
+					*.blif)
+						# this is a blif file
+						_SYNTHESIS="off"
+						blif_file=${benchmark}
+					;;
+				esac
 
 
 				#build commands
@@ -634,14 +665,7 @@ function sim() {
 												--log_file ${DIR}/synthesis.log
 												--test_name ${TEST_FULL_REF}
 												--failure_log ${global_synthesis_failure}.log
-												${_timeout_flag}
-												${_low_ressource_flag}
-												${_valgrind_flag}"
-
-					if [ "${_USE_PERF}" == "on" ]
-					then
-						wrapper_synthesis_command="${wrapper_synthesis_command} ${_perf_flag} ${DIR}/perf.data"
-					fi
+												${DEFAULT_WRAPPER_CMD}"
 
 					synthesis_command="${DEFAULT_CMD_PARAM}
 										${arch_cmd}
@@ -649,7 +673,7 @@ function sim() {
 										-o ${blif_file}
 										-sim_dir ${DIR}"
 
-					echo $(echo "${wrapper_synthesis_command} ${synthesis_command}"  | tr '\n' ' ' | tr -s ' ') > ${DIR}/cmd_param
+					_echo_args "${wrapper_synthesis_command} ${synthesis_command}" > ${DIR}/cmd_param
 				fi
 
 				if [ "${_SIMULATE}" == "on" ]
@@ -658,14 +682,7 @@ function sim() {
 											--log_file ${DIR}/simulation.log
 											--test_name ${TEST_FULL_REF}
 											--failure_log ${global_simulation_failure}.log
-											${_timeout_flag}
-											${_low_ressource_flag}
-											${_valgrind_flag}"
-
-					if [ "${_USE_PERF}" == "on" ]
-					then
-						wrapper_simulation_command="${wrapper_simulation_command} ${_perf_flag} ${DIR}/perf.data"
-					fi
+											${DEFAULT_WRAPPER_CMD}"
 
 					simulation_command="${DEFAULT_CMD_PARAM}
 											${arch_cmd}
@@ -675,7 +692,7 @@ function sim() {
 
 					if [ "${_GENERATE_BENCH}" == "on" ] || [ ! -f ${input_vector_file} ]
 					then
-						simulation_command="${simulation_command} ${_use_best_coverage_flag} ${_vector_flag}"
+						simulation_command="${simulation_command} ${use_best_coverage} ${_vector_flag}"
 					else
 						simulation_command="${simulation_command} -t ${input_vector_file}"
 						if [ "${_GENERATE_OUTPUT}" == "off" ] && [ -f ${output_vector_file} ]
@@ -684,7 +701,7 @@ function sim() {
 						fi
 					fi
 
-					echo $(echo "${wrapper_simulation_command} ${simulation_command}" | tr '\n' ' ' | tr -s ' ') > ${DIR}/sim_param
+					_echo_args "${wrapper_simulation_command} ${simulation_command}" > ${DIR}/sim_param
 				fi
 
 			done
@@ -872,7 +889,7 @@ function run_sim_on_directory() {
 		config_help
 	else
 		create_temp
-		sim ${BENCHMARK_DIR}/${test_dir} $(cat ${BENCHMARK_DIR}/${test_dir}/config.txt)
+		sim "${BENCHMARK_DIR}/${test_dir}" $(_cat_args "${BENCHMARK_DIR}/${test_dir}/config.txt")
 	fi
 }
 
@@ -907,7 +924,6 @@ START=`get_current_time`
 init_temp
 
 parse_args $INPUT
-_set_flag
 
 if [ "_${_TEST}" == "_" ]
 then
