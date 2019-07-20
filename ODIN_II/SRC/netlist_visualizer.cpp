@@ -310,7 +310,6 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 
 /*---------------------------------------------------------------------------------------------
  * (function: backward_traversal_net_graph_display()
- *	TODO check if stack of node is freed
  *-------------------------------------------------------------------------------------------*/
 void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *node)
 {
@@ -393,4 +392,9 @@ void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t 
 		/* process next element in net */
 		index_in_stack ++;
 	}
+	for(int i = 0; i < num_stack_of_nodes; i++)
+	{
+		free_nnode(stack_of_nodes[i]);
+	}
+	vtr::free(stack_of_nodes);
 }
