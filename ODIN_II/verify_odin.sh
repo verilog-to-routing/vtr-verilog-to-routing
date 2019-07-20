@@ -25,9 +25,13 @@ NEW_RUN_DIR="${REGRESSION_DIR}/run001/"
 
 ##############################################
 # Arch Sweep Arrays to use during benchmarking
+NO_ARCH="no_arch"
 DEFAULT_ARCH="${VTR_ROOT_DIR}/libs/libarchfpga/arch/sample_arch.xml"
-MEM_ARCH="${VTR_ROOT_DIR}/vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml"
-SMALL_ARCH_SWEEP="no_arch ${DEFAULT_ARCH} ${MEM_ARCH}"
+CHAIN_ARCH="${VTR_ROOT_DIR}/vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml"
+MEM_ARCH="${VTR_ROOT_DIR}/vtr_flow/arch/timing/k6_N10_mem32K_40nm.xml"
+
+SMALL_ARCH_SWEEP="${DEFAULT_ARCH} ${MEM_ARCH}"
+VALGRIND_ARCH_SWEEP="${CHAIN_ARCH}"
 FULL_ARCH_SWEEP=$(find ${VTR_ROOT_DIR}/vtr_flow/arch/timing -maxdepth 1 | grep xml | grep mem)
 
 ##############################################
@@ -145,6 +149,7 @@ printf "
 				--arch_list	[list_name]*
 								*memories        use VTR k6_N10_mem32k architecture
 								*small_sweep     use a small set of timing architecture
+								*valgrind_sweep  use a small set of arch with hardblocks
 								*full_sweep  	 sweep the whole vtr directory *** WILL FAIL ***
 								*default         use the sample_arch.xml
 				--disable_simulation             request simulation NOT to be ran
@@ -445,7 +450,7 @@ function sim() {
 	####################################
 	# parse the function commands passed
 	with_custom_args="0"
-	arch_list="no_arch"
+	arch_list=${NO_ARCH}
 	with_sim="0"
 	threads=${_NUMBER_OF_PROCESS}
 	test_src="./"
@@ -501,6 +506,10 @@ function sim() {
 
 					small_sweep)
 						arch_list="${SMALL_ARCH_SWEEP}"
+						;;
+
+					valgrind_sweep)
+						arch_list="${VALGRIND_ARCH_SWEEP}"
 						;;
 
 					full_sweep)

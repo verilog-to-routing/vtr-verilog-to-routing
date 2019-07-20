@@ -30,7 +30,7 @@ if [ ! -f ${EXEC} ]; then
 fi
 
 TIME_EXEC=$($SHELL -c "which time") 
-VALGRIND_EXEC="valgrind --leak-check=full --max-stackframe=128000000 --error-exitcode=1"
+VALGRIND_EXEC="valgrind --leak-check=full --max-stackframe=128000000 --errors-for-leak-kinds=none --error-exitcode=1 --track-origins=yes"
 PERF_EXEC="perf stat record -a -d -d -d -o"
 GDB_EXEC="gdb --args"
 LOG=""

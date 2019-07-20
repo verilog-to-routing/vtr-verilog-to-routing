@@ -1,4 +1,4 @@
---arch_list small_sweep 
+--arch_list valgrind_sweep
 --disable_simulation 
 --source ../operators 
 --valgrind
