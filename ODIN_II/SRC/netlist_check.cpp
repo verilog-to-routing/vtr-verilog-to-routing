@@ -761,9 +761,9 @@ void levelize_backwards_clean_checking_for_liveness(short ast_based, netlist_t *
 					{
 						/* one of these nodes was not visited on the backward analysis */
 						if (ast_based)
-							warning_message(NETLIST_ERROR, current_node->related_ast_node->line_number, current_node->related_ast_node->file_number, "Liveness check on backward pass.  Node %s is missing a driving pin idx %ld\n", current_node->name, k);
+							warning_message(NETLIST_ERROR, current_node->related_ast_node->line_number, current_node->related_ast_node->file_number, "Liveness check on backward pass.  Node %s is missing a driving pin idx %d\n", current_node->name, k);
 						else
-							warning_message(NETLIST_ERROR, -1, -1, "Liveness check on backward pass.  Node %s is missing a driving pin idx %ld\n", current_node->name, k);
+							warning_message(NETLIST_ERROR, -1, -1, "Liveness check on backward pass.  Node %s is missing a driving pin idx %d\n", current_node->name, k);
 					}
 
 					/* free the data and reset to be used elsewhere */
