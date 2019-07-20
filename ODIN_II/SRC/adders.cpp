@@ -281,15 +281,15 @@ void add_the_blackbox_for_adds(FILE *out)
 		{
 			if (i < adds->size_a)
 			{
-				count = count + odin_sprintf(buffer, " %s[%ld]", pa, i);
+				count = count + odin_sprintf(buffer, " %s[%d]", pa, i);
 			}
 			else if(i < hard_add_inputs - adds->size_cin && i >= adds->size_a)
 			{
-				count = count + odin_sprintf(buffer, " %s[%ld]", pb, i - adds->size_a);
+				count = count + odin_sprintf(buffer, " %s[%d]", pb, i - adds->size_a);
 			}
 			else
 			{
-				count = count + odin_sprintf(buffer, " %s[%ld]", pcin, i - adds->size_a - adds->size_b);
+				count = count + odin_sprintf(buffer, " %s[%d]", pcin, i - adds->size_a - adds->size_b);
 			}
 			if (count > 78)
 				count = fprintf(out, " \\\n %s", buffer) - 3;
@@ -305,11 +305,11 @@ void add_the_blackbox_for_adds(FILE *out)
 		{
 			if (i < adds->size_cout)
 			{
-				count = count + odin_sprintf(buffer, " %s[%ld]", pcout, i);
+				count = count + odin_sprintf(buffer, " %s[%d]", pcout, i);
 			}
 			else
 			{
-				count = count + odin_sprintf(buffer, " %s[%ld]", psumout, i - adds->size_cout);
+				count = count + odin_sprintf(buffer, " %s[%d]", psumout, i - adds->size_cout);
 			}
 
 			if (count > 78)
