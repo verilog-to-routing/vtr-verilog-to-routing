@@ -4094,7 +4094,7 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
 					trim_string(buffer1, "\n\t");
 					trim_string(buffer2, "\n\t");
 					error = true;
-					warning_message(SIMULATION_ERROR, 0, -1, "Vector %ld mismatch:\n"
+					warning_message(SIMULATION_ERROR, 0, -1, "Vector %d mismatch:\n"
 							"\t%s in %s\n"
 							"\t%s in %s\n",
 							cycle, buffer2, OUTPUT_VECTOR_FILE_NAME, buffer1, output_vector_file
@@ -4104,7 +4104,7 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
 				{
 					trim_string(buffer1, "\n\t");
 					trim_string(buffer2, "\n\t");
-					warning_message(SIMULATION_ERROR, 0, -1, "Vector %ld equivalent but output vector has bits set when expecting don't care :\n"
+					warning_message(SIMULATION_ERROR, 0, -1, "Vector %d equivalent but output vector has bits set when expecting don't care :\n"
 							"\t%s in %s\n"
 							"\t%s in %s\n",
 							cycle, buffer2, OUTPUT_VECTOR_FILE_NAME, buffer1, output_vector_file
