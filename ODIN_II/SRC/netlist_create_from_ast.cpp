@@ -3676,6 +3676,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		if (left_memory)
 		{
 			// Index all inputs to the left memory for implicit memory direct assignment.
+			oassert(in_1);			
 			int i;
 			for (i = 0; i < in_1->count; i++)
 			{
