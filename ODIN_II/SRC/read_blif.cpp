@@ -787,9 +787,9 @@ operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FI
 		fsetpos(file,&pos);
 
 		char *ptr = vtr::strtok(buffer,"\t\n", file, buffer);
-		if      (!strcmp(ptr," 0")) return GND_NODE;
+		if      (!ptr) 				return GND_NODE;
 		else if (!strcmp(ptr," 1")) return VCC_NODE;
-		else if (!ptr)              return GND_NODE;
+		else if (!strcmp(ptr," 0")) return GND_NODE;
 		else                        return VCC_NODE;
 	}
 
