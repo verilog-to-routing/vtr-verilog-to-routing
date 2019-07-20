@@ -11,8 +11,10 @@ long shift_left_value_with_overflow_check(long input_value, long shift_by);
 
 std::string get_file_extension(std::string input_file);
 
-const char *node_name_based_on_op(nnode_t *node);
 const char *name_based_on_op(operation_list op);
+const char *name_based_on_ids(ids op);
+const char *node_name_based_on_op(nnode_t *node);
+const char *ast_node_name_based_on_ids(ast_node_t *node);
 
 char *make_signal_name(char *signal_name, int bit);
 char *make_full_ref_name(const char *previous, const char *module_name, const char *module_instance_name, const char *signal_name, long bit);

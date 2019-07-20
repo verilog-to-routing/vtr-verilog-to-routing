@@ -39,7 +39,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 char **get_name_of_pins_number(ast_node_t *var_node, int start, int width);
 char *get_name_of_pin_number(ast_node_t *var_node, int bit);
-const char *get_enum_to_string(ast_node_t *node);
 void update_tree_tag(ast_node_t *node, int cases, int tagged);
 
 // HIGH LEVEL AST TAG
@@ -648,7 +647,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	{
 		return_string = NULL;
 
-		error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unsupported variable type. var_node->type = %s\n", get_enum_to_string(var_node));
+		error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unsupported variable type. var_node->type = %s\n", ast_node_name_based_on_ids(var_node));
 	}
 
 	return return_string;
@@ -1816,81 +1815,3 @@ long resolve_concat_sizes(ast_node_t *node_top, STRING_CACHE_LIST *local_string_
 
 	return concatenation_size;
 }
-
-const char *get_enum_to_string(ast_node_t *node)
-{
-	switch (node->type)
-	{
-		case (NO_ID): return "NO_ID";
-		case(FILE_ITEMS): return "FILE_ITEMS";
-		case (MODULE): return "MODULE";
-		case (SPECIFY): return "SPECIFY";
-		case (INPUT): return "INPUT";
-		case (OUTPUT): return "OUTPUT";
-		case (INOUT): return "INOUT";
-		case (WIRE): return "WIRE";
-		case (REG): return "REG";
-		case (INTEGER): return "INTEGER";
-		case (GENVAR): return "GENVAR";
-		case (PARAMETER): return "PARAMETER";
-		case (LOCALPARAM): return "LOCALPARAM";
-		case (INITIALS): return "INITIALS";
-		case (PORT): return "PORT";
-		case (MODULE_ITEMS): return "MODULE_ITEMS";
-		case (VAR_DECLARE): return "VAR_DECLARE";
-		case (VAR_DECLARE_LIST): return "VAR_DECLARE_LIST";
-		case (ASSIGN): return "ASSIGN";
-		case (FUNCTION): return "FUNCTION";
-		case (FUNCTION_ITEMS): return "FUNCTION_ITEMS";
-		case (GATE): return"GATE";
-		case (GATE_INSTANCE): return "GATE_INSTANCE";		
-		case (ONE_GATE_INSTANCE): return "ONE_GATE_INSTNCE";
-		case (MODULE_CONNECT_LIST): return "MODULE_CONNECT_LIST";
-		case (MODULE_CONNECT): return "MODULE_CONNECT";
-		case (MODULE_PARAMETER_LIST): return "MODULE_PARAMETER_LIST";
-		case (MODULE_PARAMETER): return "MODULE_PARAMETER";
-		case (MODULE_NAMED_INSTANCE): return "MODULE_NAMED_INSTANCE";
-		case (MODULE_INSTANCE): return "MODULE_INSTANCE";
-		case (MODULE_MASTER_INSTANCE): return "MODULE_MASTER_INSTANCE";
-		case (ONE_MODULE_INSTANCE): return "ONE_MODULE_INSTANCE";	
-		case (FUNCTION_NAMED_INSTANCE): return "FUNCTION_NAMED_INSTANCE";
-		case (FUNCTION_INSTANCE): return "FUNCTION_INSTANCE";
-		case (SPECIFY_ITEMS): return "SPECIFY_ITEMS";
-		case (SPECIFY_PARAMETER): return "SPECIFY_PARAMETER";
-		case (SPECIFY_PAL_CONNECTION_STATEMENT): return "SPECIFY_PAL_CONNECTION_STATEMENT";
-		case (SPECIFY_PAL_CONNECT_LIST): return "SPECIFY_PAL_CONNECT_LIST";
-		case (BLOCK): return "BLOCK";
-		case (NON_BLOCKING_STATEMENT): return "NON_BLOCKING_STATEMENT";
-		case (BLOCKING_STATEMENT): return "BLOCKING_STATEMENT";
-		case (ASSIGNING_LIST): return "ASSIGNING_LIST";
-		case (CASE): return "CASE";
-		case (CASE_LIST): return "CASE_LIST";
-		case (CASE_ITEM): return "CASE_ITEM";
-		case (CASE_DEFAULT): return "CASE_DEFAULT";
-		case (ALWAYS): return "ALWAYS";
-		case (GENERATE): return "GENERATE";
-		case (IF): return "IF";
-		case (IF_Q): return "IF_Q";
-		case (FOR): return "FOR";
-		case (WHILE): return "WHILE";
-		case (DELAY_CONTROL): return "DELAY_CONTROL";
-		case (POSEDGE): return "POSEDGE";
-		case (NEGEDGE): return "NEGEDGE";
-		case (BINARY_OPERATION): return "BINARY_OPERATION";
-		case (UNARY_OPERATION): return "UNARY_OPERATION";
-		case (ARRAY_REF): return "ARRAY_REF";
-		case (RANGE_REF): return "RANGE_REF";
-		case (CONCATENATE): return "CONCATENATE";
-		case (REPLICATE): return "REPLICATE";
-		case (IDENTIFIERS): return "IDENTIFIERS";
-		case (NUMBERS): return "NUMBERS";
-		case (HARD_BLOCK): return "HARD_BLOCK";
-		case (HARD_BLOCK_NAMED_INSTANCE): return "HARD_BLOCK_NAMED_INSTANCE";
-		case (HARD_BLOCK_CONNECT_LIST): return "HARD_BLOCK_CONNECT_LIST";
-		case (HARD_BLOCK_CONNECT): return "HARD_BLOCK_CONNECT";
-		case (RAM): return"RAM";
-		case (ids_END): return "ids_END";
-		default: return "UNSUPPORTED";
-	}
-}
-

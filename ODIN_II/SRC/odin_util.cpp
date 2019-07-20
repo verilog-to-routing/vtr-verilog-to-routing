@@ -70,7 +70,22 @@ std::string get_file_extension(std::string input_file)
  *-------------------------------------------------------------------------------------------*/
 const char *name_based_on_op(operation_list op)
 {
+	oassert(op < operation_list_END &&
+		"OUT OF BOUND operation_list!");
+
 	return operation_list_STR[op][ODIN_STRING_TYPE];
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: name_based_on_ids)
+ * 	Get the string version of an operation
+ *-------------------------------------------------------------------------------------------*/
+const char *name_based_on_ids(ids op)
+{
+	oassert(op < ids_END &&
+		"OUT OF BOUND ids!");
+
+	return ids_STR[op];
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -81,6 +96,16 @@ const char *node_name_based_on_op(nnode_t *node)
 {
 	return name_based_on_op(node->type);
 }
+
+/*---------------------------------------------------------------------------------------------
+ * (function: node_name_based_on_ids)
+ * 	Get the string version of a ast node
+ *-------------------------------------------------------------------------------------------*/
+const char *ast_node_name_based_on_ids(ast_node_t *node)
+{
+	return name_based_on_ids(node->type);
+}
+
 
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
