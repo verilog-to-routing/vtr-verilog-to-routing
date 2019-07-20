@@ -1944,11 +1944,13 @@ static bool compute_and_store_value(nnode_t *node, int cycle)
 						prev_value = !CLOCK_INITIAL_VALUE;
 
 					int clk_ratio = get_clock_ratio(node);
-					if(clk_ratio != 0)
+					if(clk_ratio == 0)
 					{
-						signed char cur_value = (cycle % clk_ratio) ? prev_value : !prev_value;
-						update_pin_value(node->output_pins[0], cur_value, cycle);
+						error_message(SIMULATION_ERROR,-1,-1,"clock(%s) as a 0 valued ratio", node->name);
 					}
+					
+					signed char cur_value = (cycle % clk_ratio) ? prev_value : !prev_value;
+					update_pin_value(node->output_pins[0], cur_value, cycle);
 				}
 			}
 			else // driven by another node
