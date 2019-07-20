@@ -408,7 +408,6 @@ void define_logical_function(nnode_t *node, FILE *out)
 {
 	int i, j;
 	char *temp_string;
-	int flag = 0;
 
 	fprintf(out, ".names");
 
@@ -574,8 +573,6 @@ void define_logical_function(nnode_t *node, FILE *out)
 	}
 
 	fprintf(out, "\n");
-	if (flag == 1)
-		output_blif_pin_connect(node, out);
 }
 
 /*------------------------------------------------------------------------
@@ -584,7 +581,6 @@ void define_logical_function(nnode_t *node, FILE *out)
 void define_set_input_logical_function(nnode_t *node, const char *bit_output, FILE *out)
 {
 	int i;
-	int flag = 0;
 
 	fprintf(out, ".names");
 
@@ -661,8 +657,6 @@ void define_set_input_logical_function(nnode_t *node, const char *bit_output, FI
 		fprintf(out, "\n");
 	}
 
-	if ((flag == 1) && (node->type == HARD_IP))
-		output_blif_pin_connect(node, out);
 }
 
 
@@ -835,22 +829,4 @@ void define_decoded_mux(nnode_t *node, FILE *out)
 	}
 
 	fprintf(out, "\n");
-}
-
-/*--------------------------------------------------------------------------
- * (function: output_blif_pin_connect)
- *------------------------------------------------------------------------*/
-void output_blif_pin_connect(nnode_t *node, FILE *out)
-{
-	int i;
-
-	/* printout all the port hookups */
-	for (i = 0; i < node->num_input_pins; i++)
-	{
-		/* Find pins that need to be connected -- KEN */
-		if (node->input_pins[i]->net->driver_pin->name != NULL)
-			fprintf(out, ".names %s %s\n1 1\n\n", node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i]->net->driver_pin->name);
-	}
-
-	return;
 }
