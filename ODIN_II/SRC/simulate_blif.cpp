@@ -415,7 +415,7 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	used_time = std::numeric_limits<double>::max();
 	number_of_workers = global_args.parralelized_simulation.value();
 	if(number_of_workers >1 )
-		warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with maximum of %ld threads", number_of_workers);
+		warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with maximum of %d threads", number_of_workers);
 	
 	found_best_time = false;
 
