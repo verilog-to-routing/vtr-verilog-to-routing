@@ -1727,7 +1727,7 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 {
 	long num_inputs = input_list->count;
 	if ( num_inputs > SOFT_RAM_ADDR_LIMIT)
-		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Memory %s of depth 2^%ld exceeds ODIN bound of 2^%ld.\nMust use an FPGA architecture that contains embedded hard block memories", node->name, num_inputs, SOFT_RAM_ADDR_LIMIT);
+		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Memory %s of depth 2^%ld exceeds ODIN bound of 2^%d.\nMust use an FPGA architecture that contains embedded hard block memories", node->name, num_inputs, SOFT_RAM_ADDR_LIMIT);
 
 	// Number of outputs is 2^num_inputs
 	long num_outputs = shift_left_value_with_overflow_check(0x1, num_inputs);
