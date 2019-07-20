@@ -418,6 +418,7 @@ char* search_clock_name(FILE* file)
 	fgetpos(file,&pos);
 	rewind(file);
 
+	char *to_return = NULL;
 	char ** input_names = NULL;
 	int input_names_count = 0;
 	int found = 0;
@@ -430,7 +431,7 @@ char* search_clock_name(FILE* file)
 		if(feof(file))
 			break;
 
-		char *ptr;
+		char *ptr = NULL;
 		if((ptr = vtr::strtok(buffer, TOKENS, file, buffer)))
 		{
 			if(!strcmp(ptr,".end"))
@@ -469,8 +470,25 @@ char* search_clock_name(FILE* file)
 	file_line_number = last_line;
 	fsetpos(file,&pos);
 
-	if (found) return input_names[0];
-	else       return vtr::strdup(DEFAULT_CLOCK_NAME);
+	if (found)
+	{
+		to_return = input_names[0];
+	}
+	else
+	{
+		to_return = vtr::strdup(DEFAULT_CLOCK_NAME);
+		for(int i = 0; i < input_names_count; i++)
+		{
+			if(input_names[i])
+			{
+				vtr::free(input_names[i]);
+			}
+		}
+	}  
+			
+	vtr::free(input_names);   
+
+	return to_return; 
 }
 
 
