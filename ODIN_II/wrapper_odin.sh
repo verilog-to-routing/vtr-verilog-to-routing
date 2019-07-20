@@ -30,7 +30,7 @@ if [ ! -f ${EXEC} ]; then
 fi
 
 TIME_EXEC=$($SHELL -c "which time") 
-VALGRIND_EXEC="valgrind --leak-check=full --max-stackframe=128000000 --errors-for-leak-kinds=none --error-exitcode=1 --track-origins=yes"
+VALGRIND_EXEC="valgrind --leak-check=full --max-stackframe=128000000 --error-exitcode=1 --track-origins=yes"
 PERF_EXEC="perf stat record -a -d -d -d -o"
 GDB_EXEC="gdb --args"
 LOG=""
@@ -116,14 +116,6 @@ function restrict_ressource {
 	dump_log
 }
 
-RED=""
-NO_COLOR=""
-if [[ ! -f /dev/stdout ]]
-then
-	RED="\033[0;31m"
-	NO_COLOR="\033[0m"
-fi
-
 function pretty_print_status() {
 
 	RESULT=$1
@@ -133,11 +125,16 @@ function pretty_print_status() {
 	if [ "_$RESULT" == "_" ]
 	then
 		printf "  ${empty_line} ${TEST_NAME}\n"
-	elif [ "_$RESULT" == "_Ok" ] || [ "_${COLORIZE_OUTPUT}" == "_off" ]
+	elif [ "_${COLORIZE_OUTPUT}" == "_off" ]
 	then
 		printf "  ${RESULT}${line:${#RESULT}} ${TEST_NAME}\n"
 	else
-		printf "  \033[0;31m${RESULT}${line:${#RESULT}}\033[0m ${TEST_NAME}\n"
+		if [ "_$RESULT" == "_Ok" ]
+		then
+			printf "  \033[0;32m${RESULT}${line:${#RESULT}}\033[0m ${TEST_NAME}\n"
+		else
+			printf "  \033[0;31m${RESULT}${line:${#RESULT}}\033[0m ${TEST_NAME}\n"
+		fi
 	fi
 }
 function display() {
@@ -292,16 +289,13 @@ then
 	EXIT_STATUS=0
 else
 	# check for valgrind leaks
-	ERROR_COUNT=$(cat ${LOG_FILE} | grep "ERROR SUMMARY:" | awk '{print $4}')
-
-	case $2 in
-		''|*[!0-9]*) 
-			display "failed"
-		;;
-		*)
-			display "leak" "${ERROR_COUNT}"
-		;;
-	esac
+	ERROR_COUNT="$(cat ${LOG_FILE} | grep 'ERROR SUMMARY:' | awk '{print $4}' | grep -E '^\-?[0-9]+$')"
+	if [ "_${ERROR_COUNT}" != "_" ]
+	then
+		display "leak" "${ERROR_COUNT}"
+	else
+		display "failed"
+	fi
 
 
 	EXIT_STATUS=1
