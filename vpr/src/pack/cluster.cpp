@@ -3391,6 +3391,12 @@ static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_co
         VTR_LOG("  %-12s : %d\n", pb_type.first.c_str(), pb_type.second);
     }
     VTR_LOG("\n");
+
+    auto it = pb_type_count.find("fle1");
+    if (it != pb_type_count.end()) {
+        VTR_LOG("  Total number of ALMs used         : %d\n\n", pb_type_count["fle1"] + pb_type_count["fle2"]);
+    }
+
 }
 
 /**
