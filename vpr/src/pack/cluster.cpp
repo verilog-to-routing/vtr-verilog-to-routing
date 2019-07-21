@@ -38,6 +38,7 @@
 #include <cstring>
 #include <ctime>
 #include <map>
+#include <queue>
 #include <algorithm>
 #include <fstream>
 using namespace std;
