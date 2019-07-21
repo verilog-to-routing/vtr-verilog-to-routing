@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
 #include <queue>
 #include <utility>
 using namespace std;
@@ -127,6 +128,15 @@ static bool molecule_is_hierarchical(const t_pack_molecule* molecule);
 static bool valid_second_level_placement(const AtomBlockId first_level_block, const AtomBlockId block_id, const t_pack_molecule* molecule);
 
 static AtomBlockId is_second_level_block(const t_pack_pattern_block* pattern_block, const t_pack_molecule* molecule);
+
+static bool check_alm_input_limitation(t_pack_molecule* molecule);
+
+static void get_block_input_nets(const AtomBlockId block_id, std::unordered_set<AtomNetId>& nets);
+
+static int get_pb_placement_index(t_pack_pattern_block* pattern_block, std::string pb_name);
+
+static void modify_molecule(t_pack_molecule* molecule, t_pack_pattern_block* pattern_block);
+
 /*****************************************/
 /*Function Definitions					 */
 /*****************************************/
@@ -1102,7 +1112,7 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
                 // add this driver block id with its corresponding pattern block to the queue
                 // only if it's driving the cin port. To avoid adding blocks by tracking the adder
                 // inputs port which will result in a molecule that cannot be placed
-                if (molecule->is_chain() && port_model == cin_port_model) {
+                if (molecule->is_chain() && (port_model == cin_port_model || block_connection->from_block->pb_type->model != molecule->pack_pattern->chain_root_pins[0][0]->parent_node->pb_type->model)) {
                     pattern_block_queue.push(std::make_pair(block_connection->from_block, driver_blk_id));
                 }
             }
@@ -1123,10 +1133,84 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
     // if all non-optional positions in the pack pattern have atoms
     // mapped to them, then this molecule is valid
     if (molecule->is_chain()) {
-        if (chain_input_is_reachable(molecule, atom_molecules))
-            return check_second_level_chain(molecule, atom_molecules);
+        if (chain_input_is_reachable(molecule, atom_molecules) && check_second_level_chain(molecule, atom_molecules))
+            return check_alm_input_limitation(molecule);
         else
             return false;
+    }
+
+    return true;
+}
+
+
+static bool check_alm_input_limitation(t_pack_molecule* molecule) {
+
+    std::string pattern_name(molecule->pack_pattern->name);
+    if (pattern_name.find("lut_chain") != 0) return true;
+
+    auto block_id = molecule->atom_block_ids[molecule->root];
+    auto pattern_block = molecule->pack_pattern->root_block;
+
+    auto cin_pin = molecule->pack_pattern->chain_root_pins[0][0];
+    auto cin_port = cin_pin->port;
+    auto cin_port_model = cin_port->model_port;
+
+    std::string alm_name = "fle";
+
+    auto placement_index = get_pb_placement_index(pattern_block, alm_name);
+    //VTR_ASSERT(placement_index != -1);
+
+    std::unordered_set<AtomNetId> nets;
+    while(true) {
+       auto connection = pattern_block->connections;
+       // get the unique net ids feeding the adders
+       while (connection) {
+           if (connection->to_block == pattern_block && connection->to_pin->port->model_port != cin_port_model) {
+               auto lut_id = molecule->atom_block_ids[connection->from_block->block_id];
+               if (lut_id) {
+                   get_block_input_nets(lut_id, nets);
+               } else {
+                   auto port_id = g_vpr_ctx.atom().nlist.find_atom_port(block_id, connection->to_pin->port->model_port);
+                   if (port_id) {
+                       auto net_id = g_vpr_ctx.atom().nlist.port_net(port_id, connection->to_pin->pin_number);
+                       if (net_id)
+                           nets.insert(net_id);
+                   }
+               }
+           }
+           connection = connection->next;
+       }
+
+       if (nets.size() == 0) break;
+       // go to the next pattern block if it is still in the same ALM
+       connection = pattern_block->connections;
+       bool found_to_block = false;
+       while (connection) {
+           if (connection->from_block == pattern_block && connection->to_pin->port->model_port == cin_port_model) {
+               auto new_placement_index = get_pb_placement_index(connection->to_block, alm_name);
+               if (placement_index != new_placement_index) {
+                   if (nets.size() > 8) {
+                       VTR_LOG("Placement index: %d (%d)\n", placement_index, nets.size());
+                       for (const auto net : nets) {
+                           VTR_LOG("%d %s\n", net, g_vpr_ctx.atom().nlist.net_name(net).c_str());
+                       }
+                       VTR_LOG("\n");
+                       modify_molecule(molecule, pattern_block);
+                       check_alm_input_limitation(molecule);
+                   }
+                   nets.clear();
+                   placement_index = new_placement_index;
+               }
+               pattern_block = connection->to_block;
+               block_id = molecule->atom_block_ids[pattern_block->block_id];
+               found_to_block = true;
+               break;
+           }
+           connection = connection->next;
+       }
+       if (!found_to_block) {
+           break;
+       }
     }
 
     return true;
@@ -1168,6 +1252,79 @@ static AtomBlockId is_second_level_block(const t_pack_pattern_block* pattern_blo
     }
 
     return AtomBlockId::INVALID();
+}
+
+static void modify_molecule(t_pack_molecule* molecule, t_pack_pattern_block* pattern_block) {
+    auto cin_pin = molecule->pack_pattern->chain_root_pins[0][0];
+    auto cin_port = cin_pin->port;
+    auto cin_port_model = cin_port->model_port;
+
+    auto connection = pattern_block->connections;
+    bool node_removed = false;
+    while(true) {
+        connection = pattern_block->connections;
+        // get the unique net ids feeding the adders
+        while (connection) {
+           if (connection->to_block == pattern_block && connection->to_pin->port->model_port != cin_port_model) {
+               if (molecule->atom_block_ids[connection->from_block->block_id]) {
+                   molecule->atom_block_ids[connection->from_block->block_id] = AtomBlockId::INVALID();
+                   node_removed = true;
+                   break;
+               }
+           }
+           connection = connection->next;
+        }
+        if (node_removed) break;
+
+        connection = pattern_block->connections;
+
+        while (connection) {
+            if (connection->to_block == pattern_block && connection->to_pin->port->model_port == cin_port_model) {
+                pattern_block = connection->from_block;
+                break;
+            }
+            connection = connection->next;
+        }
+    }
+
+}
+
+static void get_block_input_nets(const AtomBlockId block_id, std::unordered_set<AtomNetId>& nets) {
+    const auto& atom_ctx = g_vpr_ctx.atom();
+    for (const auto& pin_id : atom_ctx.nlist.block_input_pins(block_id)) {
+         auto port_id = atom_ctx.nlist.pin_port(pin_id);
+         auto bit_index = atom_ctx.nlist.pin_port_bit(pin_id);
+         nets.insert(atom_ctx.nlist.port_net(port_id, bit_index));
+     }
+}
+
+static int get_pb_placement_index(t_pack_pattern_block* pattern_block, std::string pb_name) {
+
+    auto connection = pattern_block->connections;
+
+    while(connection) {
+        if (connection->to_block == pattern_block) break;
+        connection = connection->next;
+    }
+
+    VTR_ASSERT(connection);
+
+    auto input_pin = connection->to_pin;
+    auto parent_node = input_pin->parent_node;
+
+    std::string parent_name(parent_node->pb_type->name);
+
+    while (parent_node && parent_name != pb_name) {
+        parent_node = parent_node->parent_pb_graph_node;
+        if (!parent_node) break;
+        std::string name(parent_node->pb_type->name);
+        parent_name = name;
+    }
+
+    //VTR_ASSERT(parent_node);
+    if (!parent_node)
+        return -1;
+    return parent_node->placement_index;
 }
 
 /**
@@ -1771,6 +1928,7 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
     // there is no need to proceed with the search
     if (chain_input_pins.size() == 1) {
         update_chain_root_pins(chain_pattern, chain_input_pins);
+        chain_pattern->chain_exit_pins.push_back(find_chain_exit_pin(chain_input_pins[0], chain_pattern->index));
         return;
     }
 
