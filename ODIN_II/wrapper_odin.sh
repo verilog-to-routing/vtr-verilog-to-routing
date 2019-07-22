@@ -43,6 +43,52 @@ TOOL_SPECIFIED="off"
 USE_TIMEOUT="on"
 CANCEL_LOGS="off"
 COLORIZE_OUTPUT="off"
+	
+function print_exit_type() {
+	CODE="$1"
+	if [ "$1" > "128" ]
+	then
+		CODE="$(( $1 - 128 ))"
+	fi
+
+	case $CODE in
+		0)		echo "NO_ERROR"
+		;;1)	echo "SIGHUP"
+		;;2)	echo "SIGINT"
+		;;3)	echo "SIGQUIT"
+		;;4)	echo "SIGILL"
+		;;5)	echo "SIGTRAP"
+		;;6)	echo "SIGABRT"
+		;;7)	echo "SIGBUS"
+		;;8)	echo "SIGFPE"
+		;;9)	echo "SIGKILL"
+		;;10)	echo "SIGUSR1"
+		;;11)	echo "SIGSEGV"
+		;;12)	echo "SIGUSR2"
+		;;13)	echo "SIGPIPE"
+		;;14)	echo "SIGALRM"
+		;;15)	echo "SIGTERM"
+		;;16)	echo "SIGSTKFLT"
+		;;17)	echo "SIGCHLD"
+		;;18)	echo "SIGCONT"
+		;;19)	echo "SIGSTOP"
+		;;20)	echo "SIGTSTP"
+		;;21)	echo "SIGTTIN"
+		;;22)	echo "SIGTTOU"
+		;;23)	echo "SIGURG"
+		;;24)	echo "SIGXCPU"
+		;;25)	echo "SIGXFSZ"
+		;;26)	echo "SIGVTALRM"
+		;;27)	echo "SIGPROF"
+		;;28)	echo "SIGWINCH"
+		;;29)	echo "SIGIO"
+		;;30)	echo "SIGPWR"
+		;;31)	echo "SIGSYS"
+		;;127)	echo "Errored"
+		;;*)	echo "${CODE}"
+		;;
+	esac
+}
 
 
 function help() {
@@ -119,8 +165,8 @@ function restrict_ressource {
 function pretty_print_status() {
 
 	RESULT=$1
-	line=$(printf '\040%.0s\056%.0s' {1..16})
-	empty_line=$(printf '\040%.0s\040%.0s' {1..16})
+	line=$(printf '\040%.0s\056%.0s' {1..32})
+	empty_line=$(printf '\040%.0s\040%.0s' {1..32})
 
 	if [ "_$RESULT" == "_" ]
 	then
@@ -138,27 +184,30 @@ function pretty_print_status() {
 	fi
 }
 function display() {
-	# we display status to std out if there is a log file
-	case $1 in
-		running)			pretty_print_status "";;
-		passed)				pretty_print_status "Ok";;
-		*)
-			case $1 in
-				failed)		pretty_print_status "Failed";;
-				timeout)	pretty_print_status "Timeout";;
-				leak)
-					if [ "$2" == "1" ]
-					then
-						pretty_print_status "[$2]Leak"
-					else
-						pretty_print_status "[$2]Leaks"
-					fi
-					;;
-				*);;
-			esac
-			[ "_${FAILURE_FILE}" != "_" ] && echo "${TEST_NAME}" >> ${FAILURE_FILE}
-		;;
-	esac
+	EXIT_MESSAGE="Ok"
+	EXIT_ERROR_TYPE=$( print_exit_type "$1" )
+	LEAK_MESSAGE=""
+
+	# check for valgrind leaks
+	ERROR_COUNT="$(cat ${LOG_FILE} | grep 'ERROR SUMMARY:' | awk '{print $4}' | grep -E '^\-?[0-9]+$')"
+	if [ "_${ERROR_COUNT}" != "_" ]
+	then
+		if [ "${ERROR_COUNT}" == "1" ]
+		then
+			LEAK_MESSAGE="[${ERROR_COUNT}]Leak"
+		else
+			LEAK_MESSAGE="[${ERROR_COUNT}]Leaks"
+		fi
+	fi
+
+	if [ "_$1" == "_0" ]
+	then
+		pretty_print_status "Ok"
+	else
+		pretty_print_status "Failed ${LEAK_MESSAGE} exit:$1 \"${EXIT_ERROR_TYPE}\""
+	fi
+
+	[ "_${FAILURE_FILE}" != "_" ] && echo "${TEST_NAME}" >> ${FAILURE_FILE}
 }
 
 #########################################################
@@ -268,8 +317,7 @@ then
 	EXEC="timeout ${TIME_LIMIT} ${EXEC}"
 fi
 
-display "running"
-dump_log
+pretty_print_status ""
 
 if [ "${CANCEL_LOGS}" == "off" ]
 then
@@ -283,21 +331,13 @@ else
 	${EXEC}
 fi
 
-if [ "$?" == "0" ] 
+EXIT_CODE="$?"
+display "${EXIT_CODE}"
+
+if [ "${EXIT_CODE}" == "0" ] 
 then
-	display "passed"
 	EXIT_STATUS=0
 else
-	# check for valgrind leaks
-	ERROR_COUNT="$(cat ${LOG_FILE} | grep 'ERROR SUMMARY:' | awk '{print $4}' | grep -E '^\-?[0-9]+$')"
-	if [ "_${ERROR_COUNT}" != "_" ]
-	then
-		display "leak" "${ERROR_COUNT}"
-	else
-		display "failed"
-	fi
-
-
 	EXIT_STATUS=1
 fi
 
@@ -306,6 +346,5 @@ then
 	rm -f ${LOG_FILE}
 fi
 
-dump_log
 exit ${EXIT_STATUS}
 ### end here
