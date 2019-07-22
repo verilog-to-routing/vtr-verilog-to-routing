@@ -128,16 +128,428 @@ void remove_generate(ast_node_t *node)
 	}
 }
 
-int simplify_ast_module(ast_node_t **ast_module)
+int simplify_ast_module(ast_node_t **ast_module, STRING_CACHE_LIST *local_string_cache_list)
 {
-	/* for loop support */
-	unroll_loops(ast_module);
-	/* remove unused node preventing module instantiation */
+	/* resolve constant expressions */
+	*ast_module = reduce_expressions(*ast_module, local_string_cache_list, NULL, 0);
+	unroll_loops(ast_module, local_string_cache_list);
 	remove_generate(*ast_module);
-	/* simplify assignment expressions */
-	//reduce_assignment_expression(*ast_module);
 
 	return 1;
+}
+
+// this should replace ^^
+ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list, long *max_size, long assignment_size)
+{
+	if (node)
+	{
+		STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
+		STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
+
+		switch (node->type)
+		{
+			case MODULE:
+			{
+				// skip identifier
+				node->children[1] = reduce_expressions(node->children[1], local_string_cache_list, NULL, 0);
+				node->children[2] = reduce_expressions(node->children[2], local_string_cache_list, NULL, 0);
+				return node;
+			}
+			case FUNCTION:
+			{
+				return node;
+			}
+			case VAR_DECLARE:
+			{
+				if (node->types.variable.is_parameter || node->types.variable.is_localparam)
+				{
+					bool is_stored = false;
+					long sc_spot = sc_lookup_string(local_param_table_sc, node->children[0]->types.identifier);
+					if (sc_spot != -1 && ((ast_node_t*)local_param_table_sc->data[sc_spot]) == node->children[5])
+					{
+						is_stored = true;
+					}
+
+					/* resolve right-hand side */
+					node->children[5] = reduce_expressions(node->children[5], local_string_cache_list, NULL, 0);
+					oassert(node->children[5]->type == NUMBERS);
+
+					/* this forces parameter values as unsigned, since we don't currently support signed keyword...
+						must be changed once support is added */
+					VNumber *temp = node->children[5]->types.vnumber;
+					VNumber *to_unsigned = new VNumber(V_UNSIGNED(*temp));
+					node->children[5]->types.vnumber = to_unsigned;
+					delete temp;
+
+					if (is_stored)
+					{
+						local_param_table_sc->data[sc_spot] = (void *) node->children[5];
+					}
+
+					return node;
+				}
+				break;
+			}
+			case IDENTIFIERS:
+			{
+				if (local_param_table_sc != NULL && node->types.identifier)
+				{
+					long sc_spot = sc_lookup_string(local_param_table_sc, node->types.identifier);
+					if (sc_spot != -1)
+					{
+						ast_node_t *newNode = ast_node_deep_copy((ast_node_t *)local_param_table_sc->data[sc_spot]);
+
+						if (newNode->type != NUMBERS)
+						{
+							newNode = reduce_expressions(newNode, local_string_cache_list, NULL, assignment_size);
+							oassert(newNode->type == NUMBERS);
+
+							/* this forces parameter values as unsigned, since we don't currently support signed keyword...
+							must be changed once support is added */
+							VNumber *temp = newNode->types.vnumber;
+							VNumber *to_unsigned = new VNumber(V_UNSIGNED(*temp));
+							newNode->types.vnumber = to_unsigned;
+							delete temp;
+							
+							if (newNode->type != NUMBERS)
+							{
+								error_message(NETLIST_ERROR, node->line_number, node->file_number, "Parameter %s is not a constant expression\n", node->types.identifier);
+							}
+						}
+
+						node = free_whole_tree(node);
+						node = newNode;
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+			case FOR:
+				// look ahead for parameters
+				break;
+			case WHILE:
+				// look ahead for parameters
+				break;
+			case GENERATE:
+				break;
+			case BLOCKING_STATEMENT:
+			case NON_BLOCKING_STATEMENT:
+			{
+				/* try to resolve */
+				if (node->children[1]->type != FUNCTION_INSTANCE)
+				{
+					node->children[0] = reduce_expressions(node->children[0], local_string_cache_list, NULL, 0);
+
+					assignment_size = get_size_of_variable(node->children[0], local_string_cache_list);
+					max_size = (long*)calloc(1, sizeof(long));
+					
+					if (node->children[1]->type != NUMBERS)
+					{
+						node->children[1] = reduce_expressions(node->children[1], local_string_cache_list, max_size, assignment_size);
+					}
+					else
+					{
+						VNumber *temp = node->children[1]->types.vnumber;
+						node->children[1]->types.vnumber = new VNumber(*temp, assignment_size);
+						delete temp;
+					}
+
+					vtr::free(max_size);
+
+					/* cast to unsigned if necessary */
+					if (node_is_constant(node->children[1]))
+					{
+						char *id = NULL;
+						if (node->children[0]->type == IDENTIFIERS)
+						{
+							id = node->children[0]->types.identifier;
+						}
+						else
+						{
+							id = node->children[0]->children[0]->types.identifier;
+						}
+
+						long sc_spot = sc_lookup_string(local_symbol_table_sc, id);
+						if (sc_spot > -1)
+						{
+							bool is_signed = ((ast_node_t *)local_symbol_table_sc->data[sc_spot])->types.variable.is_signed;
+							if (!is_signed)
+							{
+								VNumber *temp = node->children[1]->types.vnumber;
+								VNumber *to_unsigned = new VNumber(V_UNSIGNED(*temp));
+								node->children[1]->types.vnumber = to_unsigned;
+								delete temp;
+							}
+							else
+							{
+								/* leave as is */
+							}
+						}
+					}
+					else
+					{
+						/* signed keyword is not supported, meaning unresolved values will already be handled as
+							unsigned at the netlist level... must update once signed support is added */
+					}
+					
+					assignment_size = 0;
+				}
+
+				return node;
+			}
+			case BINARY_OPERATION:
+			case UNARY_OPERATION:
+				break;
+			case CONCATENATE:
+				break;
+			case REPLICATE:
+				break;
+			case NUMBERS:
+				break;
+			case IF_Q:
+				break;
+			case IF:
+				break;
+			case CASE:
+				break;
+			case RANGE_REF:
+			case ARRAY_REF:
+				break;
+			case MODULE_INSTANCE:
+				// flip hard blocks
+				break;
+			default:
+				break;
+		}
+
+		/* recurse */
+		for (int i = 0; i < node->num_children; i++)
+		{
+			node->children[i] = reduce_expressions(node->children[i], local_string_cache_list, max_size, assignment_size);
+		}
+
+		/* post-amble */
+		switch (node->type)
+		{
+			case FOR:
+				// unroll
+				//unroll_loops(node->children[i]); // change this function (dont have to go through whole tree)
+				// recurse for operation resolution
+				break;
+			case WHILE:
+				// unroll
+				// recurse (simplify_ast?)
+			case GENERATE:
+				/* remove unused node preventing module instantiation */
+				//remove_generate(node->children[i]); // change this function (dont have to go through whole tree)
+				break;
+			case BINARY_OPERATION:
+			{
+				ast_node_t *new_node = fold_binary(&node);
+				if (node_is_constant(new_node))
+				{
+					/* resize as needed */
+					long new_size;
+					long this_size = new_node->types.vnumber->size();
+
+					if (assignment_size > 0)
+					{
+						new_size = assignment_size;
+					}
+					else if (max_size)
+					{
+						new_size = *max_size;
+					}
+					else
+					{
+						new_size = this_size;
+					}
+
+					/* clean up */
+					free_resolved_children(node);
+												
+					change_to_number_node(node, VNumber(*(new_node->types.vnumber), new_size));
+					new_node = free_whole_tree(new_node);
+				}
+				break;
+			}
+			case UNARY_OPERATION:
+			{
+				ast_node_t *new_node = fold_unary(&node);
+				if (node_is_constant(new_node))
+				{
+					/* resize as needed */
+					long new_size;
+					long this_size = new_node->types.vnumber->size();
+
+					if (assignment_size > 0)
+					{
+						new_size = assignment_size;
+					}
+					else if (max_size)
+					{
+						new_size = *max_size;
+					}
+					else
+					{
+						new_size = this_size;
+					}
+
+					/* clean up */
+					free_resolved_children(node);
+					
+					change_to_number_node(node, VNumber(*(new_node->types.vnumber), new_size));
+					new_node = free_whole_tree(new_node);
+				}
+				break;
+			}
+			case REPLICATE:
+			{
+				oassert(node_is_constant(node->children[0])); // should be taken care of in parse
+				if( node->children[0]->types.vnumber->is_dont_care_string() )
+				{
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Passing a non constant value to replication command, i.e. 2'bx1{...}");
+				}
+
+				int64_t value = node->children[0]->types.vnumber->get_value();
+				if(value <= 0)
+				{
+					// todo, if this is part of a concat, it is valid
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Passing a number less than or equal to 0 for replication");
+				}
+
+				ast_node_t *new_node = create_node_w_type(CONCATENATE, node->line_number, node->file_number);
+				for (size_t i = 0; i < value; i++)
+				{
+					add_child_to_node(new_node, ast_node_deep_copy(node->children[1]));
+				}
+				node = free_whole_tree(node);
+				node = new_node;
+			} 
+			//fallthrough to resolve concatenation
+			case CONCATENATE:
+			{
+				resolve_concat_sizes(node, local_string_cache_list);
+
+				// for params only
+				// TODO: this is a hack, concats cannot be folded in place as it breaks netlist expand from ast,
+				// to fix we need to move the node resolution before netlist create from ast.
+				if(node->num_children > 0)
+				{
+					size_t index = 1;
+					size_t last_index = 0;
+					
+					while(index < node->num_children)
+					{
+						bool previous_is_constant = node_is_constant(node->children[last_index]);
+						bool current_is_constant = node_is_constant(node->children[index]);
+
+						if(previous_is_constant && current_is_constant)
+						{
+							VNumber new_value = V_CONCAT({*(node->children[last_index]->types.vnumber), *(node->children[index]->types.vnumber)});
+
+							node->children[index] = free_whole_tree(node->children[index]);
+
+							delete node->children[last_index]->types.vnumber;
+							node->children[last_index]->types.vnumber = new VNumber(new_value);
+						}
+						else
+						{
+							last_index += 1;
+							previous_is_constant = current_is_constant;
+							node->children[last_index] = node->children[index];
+						}
+						index += 1;
+					}
+
+					node->num_children = last_index+1;
+
+					if(node->num_children == 1)
+					{
+						ast_node_t *tmp = node->children[0];
+						node->children[0] = NULL;
+						free_whole_tree(node);
+						node = tmp;
+					}
+				}
+
+				break;
+			}
+			case IDENTIFIERS:
+			{
+				// look up to resolve unresolved range refs
+				ast_node_t *var_node = NULL;
+
+				oassert(node->types.identifier);
+				long sc_spot = sc_lookup_string(local_symbol_table_sc, node->types.identifier);
+				if (sc_spot > -1)
+				{
+					var_node = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
+
+					if (var_node->children[1] != NULL)
+					{
+						var_node->children[1] = reduce_expressions(var_node->children[1], local_string_cache_list, NULL, 0);
+						var_node->children[2] = reduce_expressions(var_node->children[2], local_string_cache_list, NULL, 0);
+					}
+					if (var_node->children[3] != NULL)
+					{
+						var_node->children[3] = reduce_expressions(var_node->children[3], local_string_cache_list, NULL, 0);
+						var_node->children[4] = reduce_expressions(var_node->children[4], local_string_cache_list, NULL, 0);
+					}
+					if (var_node->num_children == 8 && var_node->children[5])
+					{
+						var_node->children[5] = reduce_expressions(var_node->children[5], local_string_cache_list, NULL, 0);
+						var_node->children[6] = reduce_expressions(var_node->children[6], local_string_cache_list, NULL, 0);
+					}
+
+					local_symbol_table_sc->data[sc_spot] = (void *)var_node;
+				}
+
+				if (max_size)
+				{
+					long var_size = get_size_of_variable(node, local_string_cache_list);
+					if (var_size > *max_size)
+					{
+						*max_size = var_size;
+					}
+				}
+
+				break;
+			}
+			case NUMBERS:
+			{
+				if (max_size)
+				{
+					if (node->types.vnumber->size() > (*max_size))
+					{
+						*max_size = node->types.vnumber->size();
+					}
+				}
+
+				break;
+			}
+			case IF_Q:
+				break;
+			case IF:
+				break;
+			case CASE:
+				break;
+			case RANGE_REF:
+			case ARRAY_REF:
+				break;
+			case MODULE_INSTANCE:
+				// flip hard blocks
+				break;
+			default:
+				break;
+		}
+	}
+
+	return node;
 }
 
 // /*---------------------------------------------------------------------------
