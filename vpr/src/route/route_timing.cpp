@@ -1939,15 +1939,25 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
      */
     auto& device_ctx = g_vpr_ctx.device();
 
-    //Switch info
+    //Info for the switch connecting from_node to_node
     int iswitch = device_ctx.rr_nodes[from_node].edge_switch(iconn);
     bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered();
     float switch_R = device_ctx.rr_switch_inf[iswitch].R;
     float switch_Tdel = device_ctx.rr_switch_inf[iswitch].Tdel;
+    float switch_Cinternal = device_ctx.rr_switch_inf[iswitch].Cinternal;
 
-    //Node info
+    //To node info
     float node_C = device_ctx.rr_nodes[to_node].C();
     float node_R = device_ctx.rr_nodes[to_node].R();
+
+    //From node info
+    float from_node_R = device_ctx.rr_nodes[from_node].R();
+
+    //Once a connection has been made between from_node and to_node, depending on the switch, Tdel may increase due to the internal capacitance of that switch. Even though this delay physically affects from_node, we are making the adjustment on the to_node, because we know the connection used.
+
+    //To adjust for the time delay, we will need to compute the product of the Rdel that is associated with from_node and the internal capacitance of the switch. First, we will calculate Rdel_adjust. Just like in the computation for Rdel, we consider only half of from_node's resistance.
+
+    float Rdel_adjust = to->R_upstream - 0.5 * from_node_R;
 
     //Update R_upstream
     if (switch_buffered) {
@@ -1962,6 +1972,9 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     //Calculate delay
     float Rdel = to->R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
     float Tdel = switch_Tdel + Rdel * node_C;
+
+    //Now we will adjust the Tdel to account for the delay caused by the internal capacitance.
+    Tdel += Rdel_adjust * switch_Cinternal;
 
     //Update the backward cost (upstream already included)
     to->backward_path_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost

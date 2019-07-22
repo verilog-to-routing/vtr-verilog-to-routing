@@ -234,11 +234,13 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data& loc_data)
             rr_switch.R = get_attribute(SwitchSubnode, "R", loc_data).as_float();
             rr_switch.Cin = get_attribute(SwitchSubnode, "Cin", loc_data).as_float();
             rr_switch.Cout = get_attribute(SwitchSubnode, "Cout", loc_data).as_float();
+            rr_switch.Cinternal = get_attribute(SwitchSubnode, "Cinternal", loc_data).as_float();
             rr_switch.Tdel = get_attribute(SwitchSubnode, "Tdel", loc_data).as_float();
         } else {
             rr_switch.R = 0;
             rr_switch.Cin = 0;
             rr_switch.Cout = 0;
+            rr_switch.Cinternal = 0;
             rr_switch.Tdel = 0;
         }
         SwitchSubnode = get_single_child(Switch, "sizing", loc_data);

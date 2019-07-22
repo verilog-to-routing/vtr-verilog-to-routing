@@ -3070,15 +3070,18 @@ static void ProcessSwitches(pugi::xml_node Parent,
         }
         arch_switch.name = vtr::strdup(switch_name);
 
-        /* Figure out the type of switch. */
+        /* Figure out the type of switch */
+        /* As noted above, due to their configuration of pass transistors feeding into a buffer,
+         * only multiplexers and tristate buffers have an internal capacitance element.         */
+
         SwitchType type = SwitchType::MUX;
         if (0 == strcmp(type_name, "mux")) {
             type = SwitchType::MUX;
-            expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Tdel", "buf_size", "power_buf_size", "mux_trans_size"}, " with type '"s + type_name + "'"s, loc_data);
+            expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Cinternal", "Tdel", "buf_size", "power_buf_size", "mux_trans_size"}, " with type '"s + type_name + "'"s, loc_data);
 
         } else if (0 == strcmp(type_name, "tristate")) {
             type = SwitchType::TRISTATE;
-            expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Tdel", "buf_size", "power_buf_size"}, " with type '"s + type_name + "'"s, loc_data);
+            expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Cinternal", "Tdel", "buf_size", "power_buf_size"}, " with type '"s + type_name + "'"s, loc_data);
 
         } else if (0 == strcmp(type_name, "buffer")) {
             type = SwitchType::BUFFER;
@@ -3091,7 +3094,6 @@ static void ProcessSwitches(pugi::xml_node Parent,
         } else if (0 == strcmp(type_name, "short")) {
             type = SwitchType::SHORT;
             expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Tdel"}, " with type "s + type_name + "'"s, loc_data);
-
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                            "Invalid switch type '%s'.\n", type_name);
@@ -3102,6 +3104,10 @@ static void ProcessSwitches(pugi::xml_node Parent,
 
         ReqOpt COUT_REQD = TIMING_ENABLE_REQD;
         ReqOpt CIN_REQD = TIMING_ENABLE_REQD;
+        // We have defined the Cinternal parameter as optional, so that the user may specify an
+        // architecture without Cinternal without breaking the program flow.
+        ReqOpt CINTERNAL_REQD = OPTIONAL;
+
         if (arch_switch.type() == SwitchType::SHORT) {
             //Cin/Cout are optional on shorts, since they really only have one capacitance
             CIN_REQD = OPTIONAL;
@@ -3109,6 +3115,7 @@ static void ProcessSwitches(pugi::xml_node Parent,
         }
         arch_switch.Cin = get_attribute(Node, "Cin", loc_data, CIN_REQD).as_float(0);
         arch_switch.Cout = get_attribute(Node, "Cout", loc_data, COUT_REQD).as_float(0);
+        arch_switch.Cinternal = get_attribute(Node, "Cinternal", loc_data, CINTERNAL_REQD).as_float(0);
 
         if (arch_switch.type() == SwitchType::MUX) {
             //Only muxes have mux transistors

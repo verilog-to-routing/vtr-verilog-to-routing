@@ -283,18 +283,19 @@ static void load_rr_indexed_data_T_values(int index_start,
                                           t_rr_type rr_type,
                                           int nodes_per_chan,
                                           const t_rr_node_indices& L_rr_node_indices) {
-    /* Loads the average propagation times through segments of each index type  *
-     * for either all CHANX segment types or all CHANY segment types.  It does  *
-     * this by looking at all the segments in one channel in the middle of the  *
-     * array and averaging the R and C values of all segments of the same type  *
-     * and using them to compute average delay values for this type of segment. */
+    /* Loads the average propagation times through segments of each index type   *
+     * for either all CHANX segment types or all CHANY segment types.  It does   *
+     * this by looking at all the segments in one channel in the middle of the   *
+     * array and averaging the R, C, and Cinternal values of all segments of the *
+     * same type and using them to compute average delay values for this type of *
+     * segment. */
 
     int itrack, inode, cost_index;
-    float *C_total, *R_total;                /* [0..device_ctx.rr_indexed_data.size() - 1] */
-    double *switch_R_total, *switch_T_total; /* [0..device_ctx.rr_indexed_data.size() - 1] */
+    float *C_total, *R_total;                                         /* [0..device_ctx.rr_indexed_data.size() - 1] */
+    double *switch_R_total, *switch_T_total, *switch_Cinternal_total; /* [0..device_ctx.rr_indexed_data.size() - 1] */
     short* switches_buffered;
     int* num_nodes_of_index; /* [0..device_ctx.rr_indexed_data.size() - 1] */
-    float Rnode, Cnode, Rsw, Tsw;
+    float Rnode, Cnode, Rsw, Tsw, Cinternalsw;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -305,11 +306,12 @@ static void load_rr_indexed_data_T_values(int index_start,
     /* August 2014: Not all wire-to-wire switches connecting from some wire segment will
      * necessarily have the same delay. i.e. a mux with less inputs will have smaller delay
      * than a mux with a greater number of inputs. So to account for these differences we will
-     * get the average R/Tdel values by first averaging them for a single wire segment (first
-     * for loop below), and then by averaging this value over all wire segments in the channel
+     * get the average R/Tdel/Cinternal values by first averaging them for a single wire segment
+     * (first for loop below), and then by averaging this value over all wire segments in the channel
      * (second for loop below) */
     switch_R_total = (double*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(double));
     switch_T_total = (double*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(double));
+    switch_Cinternal_total = (double*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(double));
     switches_buffered = (short*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(short));
 
     /* initialize switches_buffered array */
@@ -334,15 +336,17 @@ static void load_rr_indexed_data_T_values(int index_start,
         int num_edges = device_ctx.rr_nodes[inode].num_edges();
         double avg_switch_R = 0;
         double avg_switch_T = 0;
+        double avg_switch_Cinternal = 0;
         int num_switches = 0;
         short buffered = UNDEFINED;
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int to_node_index = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
-            /* want to get C/R/Tdel of switches that connect this track segment to other track segments */
+            /* want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments */
             if (device_ctx.rr_nodes[to_node_index].type() == CHANX || device_ctx.rr_nodes[to_node_index].type() == CHANY) {
                 int switch_index = device_ctx.rr_nodes[inode].edge_switch(iedge);
                 avg_switch_R += device_ctx.rr_switch_inf[switch_index].R;
                 avg_switch_T += device_ctx.rr_switch_inf[switch_index].Tdel;
+                avg_switch_Cinternal += device_ctx.rr_switch_inf[switch_index].Cinternal;
 
                 num_switches++;
             }
@@ -356,9 +360,10 @@ static void load_rr_indexed_data_T_values(int index_start,
 
         avg_switch_R /= num_switches;
         avg_switch_T /= num_switches;
+        avg_switch_Cinternal /= num_switches;
         switch_R_total[cost_index] += avg_switch_R;
         switch_T_total[cost_index] += avg_switch_T;
-
+        switch_Cinternal_total[cost_index] += avg_switch_Cinternal;
         if (buffered == UNDEFINED) {
             /* this segment does not have any outgoing edges to other general routing wires */
             continue;
@@ -386,13 +391,22 @@ static void load_rr_indexed_data_T_values(int index_start,
             Cnode = C_total[cost_index] / num_nodes_of_index[cost_index];
             Rsw = (float)switch_R_total[cost_index] / num_nodes_of_index[cost_index];
             Tsw = (float)switch_T_total[cost_index] / num_nodes_of_index[cost_index];
+            Cinternalsw = (float)switch_Cinternal_total[cost_index] / num_nodes_of_index[cost_index];
 
             if (switches_buffered[cost_index]) {
-                device_ctx.rr_indexed_data[cost_index].T_linear = Tsw + Rsw * Cnode
-                                                                  + 0.5 * Rnode * Cnode;
+                // Here, we are computing the linear time delay for buffered switches. Tlinear is
+                // the estimated sum of the intrinsic time delay of the switch and the two transient
+                // responses. The key assumption behind the estimate is that one switch will be turned on
+                // from each wire and so we will correspondingly add one load for internal capacitance.
+                // The first transient response is the product between the resistance of the switch with
+                // the combined capacitance of the node and internal capacitance of the switch. The
+                // second transient response is the result of the Rnode being distributed halfway along a
+                // wire segment's length times the total capacitance.
+                device_ctx.rr_indexed_data[cost_index].T_linear = Tsw + Rsw * (Cinternalsw + Cnode)
+                                                                  + 0.5 * Rnode * (Cnode + Cinternalsw);
                 device_ctx.rr_indexed_data[cost_index].T_quadratic = 0.;
                 device_ctx.rr_indexed_data[cost_index].C_load = 0.;
-            } else { /* Pass transistor */
+            } else { /* Pass transistor, does not have an internal capacitance*/
                 device_ctx.rr_indexed_data[cost_index].C_load = Cnode;
 
                 /* See Dec. 23, 1997 notes for deriviation of formulae. */
