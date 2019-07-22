@@ -21,11 +21,7 @@ using namespace std;
  * about the partial routing during timing-driven routing, so the routines
  * in this module are used to keep a tree representation of the partial
  * routing during timing-driven routing.  This allows rapid incremental
- * timing analysis.  The net_delay module does timing analysis in one step
- * (not incrementally as pieces of the routing are added).  I could probably
- * one day remove a lot of net_delay.c and call the corresponding routines
- * here, but it's useful to have a from-scratch delay calculator to check
- * the results of this one.                                                  */
+ * timing analysis.                                                          */
 
 /********************** Variables local to this module ***********************/
 
@@ -642,6 +638,7 @@ void free_route_tree(t_rt_node* rt_node) {
     if (!rr_node_to_rt_node.empty()) {
         rr_node_to_rt_node.at(rt_node->inode) = nullptr;
     }
+
     free_rt_node(rt_node);
 }
 
@@ -720,7 +717,13 @@ t_rt_node* traceback_to_route_tree(t_trace* head) {
     while (trace) { //Each branch
         trace = traceback_to_route_tree_branch(trace, rr_node_to_rt);
     }
+    // Due to the recursive nature of traceback_to_route_tree_branch,
+    // the source node is not properly configured.
+    // Here, for the source we set the parent node and switch to be
+    // nullptr and OPEN respectively.
 
+    rr_node_to_rt[head->index]->parent_node = nullptr;
+    rr_node_to_rt[head->index]->parent_switch = OPEN;
     return rr_node_to_rt[head->index];
 }
 

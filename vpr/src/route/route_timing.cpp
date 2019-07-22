@@ -841,6 +841,7 @@ void free_timing_driven_route_structs(float* pin_criticality, int* sink_order, t
     free(sink_order + 1);
     // coverity[offset_free : Intentional]
     free(rt_node_of_sink + 1);
+
     free_route_tree_timing_structs();
 }
 
