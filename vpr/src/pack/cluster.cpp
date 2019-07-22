@@ -349,21 +349,21 @@ static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const Atom
 static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string, int>& pb_type_count);
 
 static void update_alm_and_alut_counts(const t_pb* pb, const t_type_ptr logic_block_type,
-                             const t_pb_type* alm_pb_type, std::vector<int>& alm_count,
-                             const t_pb_type* alut_pb_type, std::vector<int>& alut_count);
+                             std::vector<t_pb_type*>& alm_pb_types, std::vector<int>& alm_count,
+                             std::vector<t_pb_type*>& alut_pb_types, std::vector<int>& alut_count);
 
 static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count);
 
 static t_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types);
 
-static t_pb_graph_node* identify_alm_block_type(t_type_ptr logic_block_type);
+static std::vector<t_pb_graph_node*> identify_alm_block_type(t_type_ptr logic_block_type);
 
 static bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name);
 
-static void print_alm_and_alut_count(const t_pb_type* alm_type, std::vector<int>& alm_count,
-                                     const t_pb_type* alut_type, std::vector<int>& alut_count);
+static void print_alm_and_alut_count(std::vector<t_pb_type*>& alm_types, std::vector<int>& alm_count,
+                                     std::vector<t_pb_type*>& alut_types, std::vector<int>& alut_count);
 
-static t_pb_type* identify_alut_block_type(t_pb_graph_node* alm_node);
+static std::vector<t_pb_type*> identify_alut_block_type(std::vector<t_pb_graph_node*>& alm_nodes);
 
 /*****************************************/
 /*globally accessible function*/
@@ -490,10 +490,13 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
     // find the cluster type that has lut primitives
     auto logic_block_type = identify_logic_block_type(primitive_candidate_block_types);
     // find an ALM-like pb_type within the found logic_block_type
-    auto alm_pb_graph_node = identify_alm_block_type(logic_block_type);
-    auto alm_pb_type = (alm_pb_graph_node)? alm_pb_graph_node->pb_type : nullptr;
+    auto alm_pb_graph_nodes = identify_alm_block_type(logic_block_type);
+    // find the pb_type of each alm node
+    std::vector<t_pb_type*> alm_pb_types;
+    for (const auto& alm_pb_node : alm_pb_graph_nodes)
+        alm_pb_types.push_back(alm_pb_node->pb_type);
     // find an ALUT-like pb_type within the found alm_pb_type
-    auto alut_pb_type = identify_alut_block_type(alm_pb_graph_node);
+    auto alut_pb_types = identify_alut_block_type(alm_pb_graph_nodes);
 
     blocks_since_last_analysis = 0;
     num_blocks_hill_added = 0;
@@ -748,7 +751,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                 // update the pb type count by counting the used pb types in this packed cluster
                 update_pb_type_count(cur_pb, pb_type_count);
                 // update the data structure holding the alm counts
-                update_alm_and_alut_counts(cur_pb, logic_block_type, alm_pb_type, alm_count, alut_pb_type, alut_count);
+                update_alm_and_alut_counts(cur_pb, logic_block_type, alm_pb_types, alm_count, alut_pb_types, alut_count);
                 free_pb_stats_recursive(cur_pb);
             } else {
                 /* Free up data structures and requeue used molecules */
@@ -769,7 +772,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
     print_pb_type_count(pb_type_count);
 
     // if this architecture has an ALM-like physical block, report its usage
-    print_alm_and_alut_count(alm_pb_type, alm_count, alut_pb_type, alut_count);
+    print_alm_and_alut_count(alm_pb_types, alm_count, alut_pb_types, alut_count);
 
     /****************************************************************
      * Free Data Structures
@@ -3391,12 +3394,6 @@ static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_co
         VTR_LOG("  %-12s : %d\n", pb_type.first.c_str(), pb_type.second);
     }
     VTR_LOG("\n");
-
-    auto it = pb_type_count.find("fle1");
-    if (it != pb_type_count.end()) {
-        VTR_LOG("  Total number of ALMs used         : %d\n\n", pb_type_count["fle1"] + pb_type_count["fle2"]);
-    }
-
 }
 
 /**
@@ -3421,123 +3418,146 @@ static t_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector
  * is found by searching a cluster type to find the first pb_type (from the top
  * of the hierarchy clb->alm) that has more than one instance within the cluster.
  */
-static t_pb_graph_node* identify_alm_block_type(t_type_ptr logic_block_type) {
+static std::vector<t_pb_graph_node*> identify_alm_block_type(t_type_ptr logic_block_type) {
     // if there is no CLB-like cluster, then there is no ALM-like pb_block
     if (!logic_block_type)
-        return nullptr;
+        return {};
+
+    std::vector<t_pb_graph_node*> alm_nodes;
 
     // search down the hierarchy starting from the pb_graph_head
     auto pb_graph_node = logic_block_type->pb_graph_head;
 
     while (pb_graph_node->child_pb_graph_nodes) {
-        // if this pb_graph_node has more than one mode or more than one pb_type in the default mode return
-        // nullptr since the logic block of this architecture is not a CLB-like logic block
-        if (pb_graph_node->pb_type->num_modes > 1 || pb_graph_node->pb_type->modes[0].num_pb_type_children > 1)
-            return nullptr;
+        // if this pb_graph_node has more than one mode return nullptr since
+        // the logic block of this architecture is not a CLB-like logic block
+        if (pb_graph_node->pb_type->num_modes > 1)
+            return {};
         // explore the only child of this pb_graph_node
+        for (int i = 0; i < pb_graph_node->pb_type->modes[0].num_pb_type_children; i++) {
+            const auto pb_node = &pb_graph_node->child_pb_graph_nodes[0][i][0];
+            // if the child node has more than one instance in the
+            // cluster then this is the pb_type similar to an ALM
+            if (pb_node->pb_type->num_pb > 1) {
+                alm_nodes.push_back(pb_node);
+            }
+        }
+
+        if (alm_nodes.size()) break;
         pb_graph_node = &pb_graph_node->child_pb_graph_nodes[0][0][0];
-        // if the child node has more than one instance in the
-        // cluster then this is the pb_type similar to an ALM
-        if (pb_graph_node->pb_type->num_pb > 1)
-            return pb_graph_node;
     }
 
-    return nullptr;
+    return alm_nodes;
 }
 
 
-static t_pb_type* identify_alut_block_type(t_pb_graph_node* alm_node) {
+static std::vector<t_pb_type*> identify_alut_block_type(std::vector<t_pb_graph_node*>& alm_nodes) {
     // if there is no alm-like logic block, then there is no ALUT-like pb_block
-    if (!alm_node)
-        return nullptr;
+    if (alm_nodes.empty())
+        return {};
+
+    std::vector<t_pb_type*> alut_pb_types;
 
     // search down the hierarchy starting from the pb_graph_head
-    std::queue<t_pb_graph_node*> pb_graph_nodes;
-    pb_graph_nodes.push(alm_node);
+    for (const auto& alm_node : alm_nodes) {
+        std::queue<t_pb_graph_node*> pb_graph_nodes;
+        pb_graph_nodes.push(alm_node);
 
-    while(pb_graph_nodes.size()) {
-        const auto pb_graph_node = pb_graph_nodes.front();
-        pb_graph_nodes.pop();
-        for (int mode = 0; mode < pb_graph_node->pb_type->num_modes; mode++) {
-            if (pb_graph_node->child_pb_graph_nodes[mode][0][0].pb_type->num_pb > 1) {
-                return pb_graph_node->child_pb_graph_nodes[mode][0][0].pb_type;
-            } else {
-                pb_graph_nodes.push(&pb_graph_node->child_pb_graph_nodes[mode][0][0]);
+        while(pb_graph_nodes.size()) {
+            const auto pb_graph_node = pb_graph_nodes.front();
+            pb_graph_nodes.pop();
+            for (int mode = 0; mode < pb_graph_node->pb_type->num_modes; mode++) {
+                if (pb_graph_node->child_pb_graph_nodes[mode][0][0].pb_type->num_pb > 1) {
+                    alut_pb_types.push_back(pb_graph_node->child_pb_graph_nodes[mode][0][0].pb_type);
+                    break;
+                } else {
+                    pb_graph_nodes.push(&pb_graph_node->child_pb_graph_nodes[mode][0][0]);
+                }
             }
         }
     }
 
-    return nullptr;
+    return alut_pb_types;
 }
 
 /**
  * This function updates the alm_count data structure from the given packed cluster
  */
 static void update_alm_and_alut_counts(const t_pb* pb, const t_type_ptr logic_block_type,
-                             const t_pb_type* alm_pb_type, std::vector<int>& alm_count,
-                             const t_pb_type* alut_pb_type, std::vector<int>& alut_count) {
+                             std::vector<t_pb_type*>& alm_pb_types, std::vector<int>& alm_count,
+                             std::vector<t_pb_type*>& alut_pb_types, std::vector<int>& alut_count) {
     // if this cluster doesn't contain ALMs or there
     // are no alms in this architecture, ignore it
-    if (!logic_block_type || pb->pb_graph_node != logic_block_type->pb_graph_head || !alm_pb_type)
+    if (!logic_block_type || pb->pb_graph_node != logic_block_type->pb_graph_head || alm_pb_types.empty())
         return;
 
     const std::string lut(".names");
     const std::string ff(".latch");
     const std::string adder("adder");
 
-    auto parent_pb = pb;
+    for (size_t type = 0; type < alm_pb_types.size(); type++) {
 
-    // go down the hierarchy till the parent physical block of the ALM is found
-    while (parent_pb->child_pbs[0][0].pb_graph_node->pb_type != alm_pb_type) {
-        parent_pb = &parent_pb->child_pbs[0][0];
-    }
-
-    // iterate over all the ALMs and update the ALM count accordingly
-    for (int ialm = 0; ialm < parent_pb->get_num_children_of_type(0); ialm++) {
-        if (!parent_pb->child_pbs[0][ialm].name)
-            continue;
-
-        auto alm_used_lut = pb_used_for_blif_model(&parent_pb->child_pbs[0][ialm], lut);
-        auto alm_used_adder = pb_used_for_blif_model(&parent_pb->child_pbs[0][ialm], adder);
-        auto alm_used_ff = pb_used_for_blif_model(&parent_pb->child_pbs[0][ialm], ff);
-
-        // First type of ALMs: used for logic and registers
-        if ((alm_used_lut || alm_used_adder) && alm_used_ff) {
-            alm_count[0]++;
-            // Second type of ALMs: used for logic only
-        } else if (alm_used_lut || alm_used_adder) {
-            alm_count[1]++;
-            // Third type of ALMs: used for registers only
-        } else if (alm_used_ff) {
-            alm_count[2]++;
-        }
-
-        auto alm_parent_pb = &parent_pb->child_pbs[0][ialm];
-        while (alm_parent_pb->child_pbs &&
-               alm_parent_pb->child_pbs[0][0].pb_graph_node->pb_type != alut_pb_type) {
-            alm_parent_pb = &alm_parent_pb->child_pbs[0][0];
-        }
-
-        if (!alm_parent_pb->child_pbs) continue;
-
-        for (int ialut = 0; ialut < alm_parent_pb->get_num_children_of_type(0); ialut++) {
-            if (!alm_parent_pb->child_pbs[0][ialut].name) continue;
-                auto alut_used_lut = pb_used_for_blif_model(&alm_parent_pb->child_pbs[0][ialut], lut);
-                auto alut_used_adder = pb_used_for_blif_model(&alm_parent_pb->child_pbs[0][ialut], adder);
-                auto alut_used_ff = pb_used_for_blif_model(&alm_parent_pb->child_pbs[0][ialut], ff);
-
-                // First type of ALMs: used for logic and registers
-                if ((alut_used_lut || alut_used_adder) && alut_used_ff) {
-                    alut_count[0]++;
-                    // Second type of ALMs: used for logic only
-                } else if (alut_used_lut || alut_used_adder) {
-                    alut_count[1]++;
-                    // Third type of ALMs: used for registers only
-                } else if (alut_used_ff) {
-                    alut_count[2]++;
+        auto parent_pb = pb;
+        int type_id = -1;
+        // go down the hierarchy till the parent physical block of the ALM is found
+        while (true) {
+            for (int i = 0; i < parent_pb->get_num_child_types(); i++) {
+                if (parent_pb->child_pbs[i][0].pb_graph_node->pb_type == alm_pb_types[type]) {
+                    type_id = i;
+                    break;
                 }
+            }
+            if (type_id != -1) break;
+            parent_pb = &parent_pb->child_pbs[0][0];
         }
 
+        // iterate over all the ALMs and update the ALM count accordingly
+        for (int ialm = 0; ialm < parent_pb->get_num_children_of_type(type_id); ialm++) {
+            if (!parent_pb->child_pbs[type_id][ialm].name)
+                continue;
+
+            auto alm_used_lut = pb_used_for_blif_model(&parent_pb->child_pbs[type_id][ialm], lut);
+            auto alm_used_adder = pb_used_for_blif_model(&parent_pb->child_pbs[type_id][ialm], adder);
+            auto alm_used_ff = pb_used_for_blif_model(&parent_pb->child_pbs[type_id][ialm], ff);
+
+            // First type of ALMs: used for logic and registers
+            if ((alm_used_lut || alm_used_adder) && alm_used_ff) {
+                alm_count[0]++;
+                // Second type of ALMs: used for logic only
+            } else if (alm_used_lut || alm_used_adder) {
+                alm_count[1]++;
+                // Third type of ALMs: used for registers only
+            } else if (alm_used_ff) {
+                alm_count[2]++;
+            }
+
+            auto alm_parent_pb = &parent_pb->child_pbs[type_id][ialm];
+            while (alm_parent_pb->child_pbs &&
+                   alm_parent_pb->child_pbs[0][0].pb_graph_node->pb_type != alut_pb_types[type]) {
+                alm_parent_pb = &alm_parent_pb->child_pbs[0][0];
+            }
+
+            if (!alm_parent_pb->child_pbs) continue;
+
+            for (int ialut = 0; ialut < alm_parent_pb->get_num_children_of_type(0); ialut++) {
+                if (!alm_parent_pb->child_pbs[0][ialut].name) continue;
+                    auto alut_used_lut = pb_used_for_blif_model(&alm_parent_pb->child_pbs[0][ialut], lut);
+                    auto alut_used_adder = pb_used_for_blif_model(&alm_parent_pb->child_pbs[0][ialut], adder);
+                    auto alut_used_ff = pb_used_for_blif_model(&alm_parent_pb->child_pbs[0][ialut], ff);
+
+                    // First type of ALMs: used for logic and registers
+                    if ((alut_used_lut || alut_used_adder) && alut_used_ff) {
+                        alut_count[0]++;
+                        // Second type of ALMs: used for logic only
+                    } else if (alut_used_lut || alut_used_adder) {
+                        alut_count[1]++;
+                        // Third type of ALMs: used for registers only
+                    } else if (alut_used_ff) {
+                        alut_count[2]++;
+                    }
+            }
+
+        }
     }
 }
 
@@ -3576,12 +3596,12 @@ static bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name) 
 /**
  * Print the alm count data strurture
  */
-static void print_alm_and_alut_count(const t_pb_type* alm_type, std::vector<int>& alm_count,
-                                     const t_pb_type* alut_type, std::vector<int>& alut_count) {
+static void print_alm_and_alut_count(std::vector<t_pb_type*>& alm_types, std::vector<int>& alm_count,
+                                     std::vector<t_pb_type*>& alut_types, std::vector<int>& alut_count) {
     // ignore if no alm type
-    if (!alm_type) return;
+    if (alm_types.empty()) return;
 
-    std::string alm_name(alm_type->name);
+    std::string alm_name(alm_types[0]->name);
 
     VTR_LOG("\nDetailed %s (ALM-like) count...\n", alm_name.c_str());
     VTR_LOG("  Total number of ALMs used             : %d\n", alm_count[0] + alm_count[1] + alm_count[2]);
@@ -3590,9 +3610,9 @@ static void print_alm_and_alut_count(const t_pb_type* alm_type, std::vector<int>
     VTR_LOG("  (C) ALMs used for registers only      : %d\n", alm_count[2]);
     VTR_LOG("  (D) ALMs used for logic (A) + (B)     : %d\n\n", alm_count[0] + alm_count[1]);
 
-    if (!alut_type) return;
+    if (alut_types.empty()) return;
 
-    std::string alut_name(alut_type->name);
+    std::string alut_name(alut_types[0]->name);
 
     VTR_LOG("\nDetailed %s (ALUT-like) count...\n", alut_name.c_str());
     VTR_LOG("  Total number of ALUTs used             : %d\n", alut_count[0] + alut_count[1] + alut_count[2]);
