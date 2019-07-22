@@ -1,6 +1,9 @@
 %include "vpr_standard.txt"
 
 num_alms;vpr.out;\s*Total number of ALMs used\s*:\s*(\d+)
+num_alms_logic;vpr.out;\s*\(D\) ALMs used for logic \(A\) \+ \(B\)\s*:\s*(\d+)
+num_aluts;vpr.out;\s*Total number of ALUTs used\s*:\s*(\d+)
+num_aluts_logic;vpr.out;\s*\(D\) ALUTs used for logic \(A\) \+ \(B\)\s*:\s*(\d+)
 num_luts;vpr.out;6-LUT\s*:\s*(\d+)
 num_add_blocks;odin.out;The Total Number of Hard Block adders: (\d+)
 max_add_chain_length;odin.out;The Number of Hard Block adders in the Longest Chain: (\d+)
