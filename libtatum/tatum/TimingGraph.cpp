@@ -331,13 +331,15 @@ void TimingGraph::force_levelize() {
     //placed in a previous level (indicating that the node goes in the current level)
     //
     //Also initialize the first level (nodes with no fanin)
+    //
+    //Note: We consider *all* edges, even those marked as disabled by timing constraints.
+    //This produces a valid levelization which is independent of the timing constraints,
+    //and which avoids some potential issues. For instance, treating an internal node with 
+    //all disabled input edges from being treated as a primary input.
     std::vector<int> node_fanin_remaining(nodes().size());
     for(NodeId node_id : nodes()) {
-        size_t node_fanin = 0;
-        for(EdgeId edge : node_in_edges(node_id)) {
-            if(edge_disabled(edge)) continue;
-            ++node_fanin;
-        }
+        size_t node_fanin = node_in_edges(node_id).size();
+
         node_fanin_remaining[size_t(node_id)] = node_fanin;
 
         //Initialize the first level
@@ -369,8 +371,6 @@ void TimingGraph::force_levelize() {
         for(const NodeId node_id : level_nodes_[LevelId(level_idx)]) {
             //Inspect the fanout
             for(EdgeId edge_id : node_out_edges(node_id)) {
-                if(edge_disabled(edge_id)) continue;
-
                 NodeId sink_node = edge_sink_node(edge_id);
 
                 //Decrement the fanin count
