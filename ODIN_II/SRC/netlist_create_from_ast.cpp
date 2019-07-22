@@ -90,7 +90,7 @@ void create_all_driver_nets_in_this_function(char *instance_name_prefix, STRING_
 
 void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix);
 void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix);
-nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list);
+nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_prefix);
 nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instance_name_prefix);
 
 void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_prefix, int outport_size, STRING_CACHE_LIST *local_string_cache_list);
@@ -136,10 +136,6 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list);
 
 void look_for_clocks(netlist_t *netlist);
-
-void convert_multi_to_single_dimentional_array(ast_node_t *node, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list);
-char *make_chunk_size_name(char *instance_name_prefix, char *array_name);
-ast_node_t *get_chunk_size_node(char *instance_name_prefix, char *array_name, STRING_CACHE_LIST *local_string_cache_list);
 
 /*----------------------------------------------------------------------------
  * (function: create_param_table_for_module)
@@ -411,6 +407,7 @@ void create_netlist()
 	verilog_netlist = allocate_netlist();
 
 	STRING_CACHE_LIST *top_sc_list = (STRING_CACHE_LIST*)vtr::calloc(1, sizeof(STRING_CACHE_LIST));
+	top_sc_list->instance_name_prefix = vtr::strdup(top_module->children[0]->types.identifier);
 
 	/* create the parameter table for the top module */
 	top_sc_list->local_param_table_sc = create_param_table_for_module(NULL, top_module->children[2], top_string, NULL);
@@ -435,6 +432,7 @@ void create_netlist()
 	top_sc_list->local_symbol_table_sc = sc_free_string_cache(top_sc_list->local_symbol_table_sc);
 	top_sc_list->num_local_symbol_table = 0;
 	top_sc_list->local_symbol_table = (ast_node_t **)vtr::free(top_sc_list->local_symbol_table);
+	top_sc_list->instance_name_prefix = (char *)vtr::free(top_sc_list->instance_name_prefix);
 
 	vtr::free(top_sc_list);
 
@@ -653,7 +651,8 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
 				((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2],
 				temp_instance_name, local_param_table_sc);
 
-			STRING_CACHE_LIST *module_string_cache_list = (STRING_CACHE_LIST*)calloc(1, sizeof(STRING_CACHE_LIST));
+			STRING_CACHE_LIST *module_string_cache_list = (STRING_CACHE_LIST*)vtr::calloc(1, sizeof(STRING_CACHE_LIST));
+			module_string_cache_list->instance_name_prefix = vtr::strdup(temp_instance_name);
 			module_string_cache_list->local_param_table_sc = module_param_table_sc;
 
 			// create the symbol table for the instantiated module
@@ -675,7 +674,8 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
 			module_string_cache_list->local_symbol_table_sc = sc_free_string_cache(module_string_cache_list->local_symbol_table_sc);
 			module_string_cache_list->num_local_symbol_table = 0;
 			module_string_cache_list->local_symbol_table = (ast_node_t **)vtr::free(module_string_cache_list->local_symbol_table);
-			
+			module_string_cache_list->instance_name_prefix = (char *)vtr::free(module_string_cache_list->instance_name_prefix);
+
 			vtr::free(module_string_cache_list);
 		}
         for (k = 0; k < (*current_module)->types.function.size_function_instantiations; k++)
@@ -705,7 +705,8 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
 				((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2],
 				temp_instance_name, local_param_table_sc);
 
-			STRING_CACHE_LIST *function_string_cache_list = (STRING_CACHE_LIST*)calloc(1, sizeof(STRING_CACHE_LIST));
+			STRING_CACHE_LIST *function_string_cache_list = (STRING_CACHE_LIST*)vtr::calloc(1, sizeof(STRING_CACHE_LIST));
+			function_string_cache_list->instance_name_prefix = vtr::strdup(temp_instance_name);
 			function_string_cache_list->local_param_table_sc = function_param_table_sc;
 
 			// create the symbol table for the instantiated function
@@ -727,6 +728,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
 			function_string_cache_list->function_local_symbol_table_sc = sc_free_string_cache(function_string_cache_list->function_local_symbol_table_sc);
 			function_string_cache_list->num_local_symbol_table = 0;
 			function_string_cache_list->function_local_symbol_table = (ast_node_t **)vtr::free(function_string_cache_list->function_local_symbol_table);
+			function_string_cache_list->instance_name_prefix = (char *)vtr::free(function_string_cache_list->instance_name_prefix);
 
 			vtr::free(function_string_cache_list);
 		}
@@ -1187,7 +1189,7 @@ void create_all_driver_nets_in_this_module(char *instance_name_prefix, STRING_CA
 		   )
 		{
 			/* create nets based on this driver as the name */
-			define_nets_with_driver(local_symbol_table[i], instance_name_prefix, local_string_cache_list);
+			define_nets_with_driver(local_symbol_table[i], instance_name_prefix);
 		}
 
 	}
@@ -1228,7 +1230,7 @@ void create_all_driver_nets_in_this_function(char *instance_name_prefix, STRING_
 		   )
 		{
 			/* create nets based on this driver as the name */
-			define_nets_with_driver(function_local_symbol_table[i], instance_name_prefix, local_string_cache_list);
+			define_nets_with_driver(function_local_symbol_table[i], instance_name_prefix);
 		}
 
 	}
@@ -1488,80 +1490,14 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
  * (function: define_nets_with_driver)
  * Given a register declaration, this function defines it as a driver.
  *-------------------------------------------------------------------------------------------*/
-nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list)
+nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_prefix)
 {
 	int i;
 	char *temp_string = NULL;
 	long sc_spot;
 	nnet_t *new_net = NULL;
 
-	// pack 2d array into 1d
-	if (var_declare->num_children == 8 
-	&& var_declare->children[5] 
-	&& var_declare->children[6])
-	{
-		ast_node_t *node_max2  = var_declare->children[3];
-		ast_node_t *node_min2  = var_declare->children[4];
-
-		ast_node_t *node_max3  = var_declare->children[5];
-		ast_node_t *node_min3  = var_declare->children[6];
-
-		oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);		
-		oassert(node_min3->type == NUMBERS && node_max3->type == NUMBERS);
-
-		long addr_min = node_min2->types.vnumber->get_value();
-		long addr_max = node_max2->types.vnumber->get_value();
-
-		long addr_min1= node_min3->types.vnumber->get_value();
-		long addr_max1= node_max3->types.vnumber->get_value();
-
-		if((addr_min > addr_max) || (addr_min1 > addr_max1))
-		{
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support arrays declared [m:n] where m is less than n.");
-		}	
-		else if((addr_min < 0 || addr_max < 0) || (addr_min1 < 0 || addr_max1 < 0))
-		{
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
-					"Odin doesn't support negative number in index.");
-		}
-
-		char *name = var_declare->children[0]->types.identifier;
-
-		if (addr_min != 0 || addr_min1 != 0)
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
-					"%s: right memory address index must be zero\n", name);
-
-		long addr_chunk_size = (addr_max1 - addr_min1 + 1);
-		ast_node_t *new_node = create_tree_node_number(addr_chunk_size, var_declare->children[0]->line_number, var_declare->children[0]->file_number);
-
-		STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
-
-		temp_string = make_chunk_size_name(instance_name_prefix, name);
-
-		if ((sc_spot = sc_add_string(local_param_table_sc, temp_string)) == -1)
-			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
-					"%s: name conflicts with Odin internal reference\n", temp_string);
-
-		vtr::free(temp_string);
-		temp_string = NULL;
-
-		local_param_table_sc->data[sc_spot] = (void *)new_node;
-
-		long new_address_max = (addr_max - addr_min + 1)*addr_chunk_size -1;
-
-		change_to_number_node(var_declare->children[3], new_address_max);
-		change_to_number_node(var_declare->children[4], 0);
-
-		var_declare->children[5] = free_whole_tree(var_declare->children[5]);
-		var_declare->children[6] = free_whole_tree(var_declare->children[6]);
-
-		var_declare->children[5] = var_declare->children[7];
-		var_declare->children[7] = NULL; 
-
-		var_declare->num_children -= 2;
-	}
-
+	
 	if (var_declare->children[1] == NULL || var_declare->type == BLOCKING_STATEMENT)
 	{
 		/* FOR single driver signal since spots 1, 2, 3, 4 are NULL */
@@ -1649,7 +1585,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		}
 	}
 	/* Implicit memory */
-	else if (var_declare->children[3] != NULL)
+	else if (var_declare->children[3] != NULL && var_declare->types.variable.is_memory)
 	{
 		ast_node_t *node_max1  = var_declare->children[1];
 		ast_node_t *node_min1  = var_declare->children[2];
@@ -1827,7 +1763,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 			verilog_netlist->num_top_input_nodes++;
 		}
 	}
-	else if (var_declare->children[3] != NULL)
+	else if (var_declare->types.variable.is_memory)
 	{
 		/* Implicit memory */
 		error_message(NETLIST_ERROR, var_declare->children[3]->line_number, var_declare->children[3]->file_number, "%s\n", "Unhandled implicit memory in define_nodes_and_nets_with_driver");
@@ -3291,11 +3227,6 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
 							"Invalid addressing mode for implicit memory %s.\n", right_memory->name);
 
-		if(right->num_children > 2 && right->children[2] != NULL)
-		{
-			convert_multi_to_single_dimentional_array(right, instance_name_prefix, local_string_cache_list);
-		}
-
 		signal_list_t* address = netlist_expand_ast_of_module(&(right->children[1]), instance_name_prefix, local_string_cache_list);
 		// Pad/shrink the address to the depth of the memory.
 		
@@ -3391,11 +3322,6 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		}
 		else
 		{
-			if(left->num_children > 2 && left->children[2] != NULL)
-			{
-				convert_multi_to_single_dimentional_array(left, instance_name_prefix, local_string_cache_list);
-			}
-
 			// Make sure the memory is addressed.
 			signal_list_t* address = netlist_expand_ast_of_module(&(left->children[1]), instance_name_prefix, local_string_cache_list);
 
@@ -6044,73 +5970,4 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix, 
 		add_list = insert_in_vptr_list(add_list, block_node);
 
 	return return_list;
-}
-
-void convert_multi_to_single_dimentional_array(ast_node_t *node, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list)
-{
-	char *array_name = NULL;
-	ast_node_t *array_row = NULL;
-	ast_node_t *array_col = NULL;
-	ast_node_t *array_size = NULL;
-
-	ast_node_t *new_node_1 = NULL;
-	ast_node_t *new_node_2 = NULL;
-
-	array_name = make_full_ref_name(NULL, NULL, NULL, node->children[0]->types.identifier, -1);
-	array_size = get_chunk_size_node(instance_name_prefix, array_name, local_string_cache_list);
-	array_row = node->children[1];
-	array_col = node->children[2];
-
-	// build the new AST
-	new_node_1 = newBinaryOperation(MULTIPLY, array_row, array_size, node->children[0]->line_number);
-	new_node_2 = newBinaryOperation(ADD, new_node_1, array_col, node->children[0]->line_number);
-
-	vtr::free(array_name);
-
-	node->children[1] = new_node_2;
-	node->children[2] = NULL;
-	node->num_children -= 1;
-
-	return;
-}
-
-/*--------------------------------------------------------------------------
- * (function: make_chunk_size_name)
- * 	This function creates a string to reference a 2D array chunk size for
- * 	1D array indexing.
- *------------------------------------------------------------------------*/
-char *make_chunk_size_name(char *instance_name_prefix, char *array_name)
-{
-	std::string to_return(instance_name_prefix);
-	to_return += "__";
-	to_return += array_name;
-	to_return += "_____CHUNK_SIZE_DEFINE";
-	return vtr::strdup(to_return.c_str());
-}
-
-/*--------------------------------------------------------------------------
- * (function: get_chunk_size_node)
- * 	This function gets the chunk size node for a 2D array, to be used for
- *	1D array indexing.
- *------------------------------------------------------------------------*/
-ast_node_t *get_chunk_size_node(char *instance_name_prefix, char *array_name, STRING_CACHE_LIST *local_string_cache_list)
-{
-	ast_node_t *array_size = NULL;
-	long sc_spot;
-	STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
-	char *temp_string = NULL;
-
-	temp_string = make_chunk_size_name(instance_name_prefix, array_name);
-
-	// look up chunk size
-	sc_spot = sc_lookup_string(local_param_table_sc, temp_string);
-	oassert(sc_spot != -1);
-	if (sc_spot != -1)
-	{
-		array_size = ast_node_deep_copy((ast_node_t *)local_param_table_sc->data[sc_spot]);
-	}
-
-	vtr::free(temp_string);
-
-	return array_size;
 }

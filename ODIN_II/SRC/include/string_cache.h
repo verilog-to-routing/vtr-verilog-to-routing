@@ -42,6 +42,8 @@ struct STRING_CACHE_LIST{
 	struct ast_node_t **function_local_symbol_table;
 	int num_local_symbol_table;
 	int function_num_local_symbol_table;
+
+	char *instance_name_prefix;
 };
 
 /* creates the hash where it is indexed by a string and the void ** holds the data */

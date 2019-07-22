@@ -1465,15 +1465,16 @@ ast_node_t * fold_conditional(ast_node_t **node)
 /*---------------------------------------------------------------------------------------------
  * (function: node_is_constant)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *node_is_constant(ast_node_t *node){
+bool node_is_constant(ast_node_t *node)
+{
 	if (node && 
 		node->type == NUMBERS && 
 		node->types.vnumber != nullptr &&
 		!(node->types.vnumber->is_dont_care_string()))
 	{
-		return node;
+		return true;
 	}
-	return NULL;
+	return false;
 }
 
 /*---------------------------------------------------------------------------

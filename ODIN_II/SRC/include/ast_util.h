@@ -41,7 +41,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list);
 long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list);
 
-ast_node_t *node_is_constant(ast_node_t *node);
+bool node_is_constant(ast_node_t *node);
 ast_node_t *fold_binary(ast_node_t **node);
 ast_node_t *fold_unary(ast_node_t **node);
 ast_node_t * fold_conditional(ast_node_t **node);
