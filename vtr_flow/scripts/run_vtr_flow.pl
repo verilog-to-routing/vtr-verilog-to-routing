@@ -507,6 +507,10 @@ if (    $starting_stage <= $stage_idx_abc
 	and $ending_stage >= $stage_idx_abc
 	and !$error_code )
 {
+	#added so that valgrind will not run on abc and perl because of existing memory errors
+	my $skip_valgrind = $valgrind;
+	$valgrind = 0;
+
 	my @clock_list;
 
 	if ( $flow_type )
@@ -672,10 +676,6 @@ if (    $starting_stage <= $stage_idx_abc
 
 		if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
 
-		#added so that valgrind will not run on abc because of existing memory errors
-		my $skip_valgrind = $valgrind;
-		$valgrind = 0;
-
 		$q = &system_with_timeout( $abc_path, "abc".$domain_itter.".out", $timeout, $temp_dir, "-c",
 			$abc_commands);
 
@@ -689,9 +689,6 @@ if (    $starting_stage <= $stage_idx_abc
 			$error_code = 1;
 			last ABC_OPTIMIZATION;
 		}
-
-		#restore the current valgrind flag
-		$valgrind = $skip_valgrind;
 
 		if ( $flow_type != 3 and exists  $clock_list[$domain_itter] )
 		{
@@ -750,6 +747,9 @@ if (    $starting_stage <= $stage_idx_abc
 		system "rm -f ${temp_dir}*.v";
 		system "rm -f ${temp_dir}*.rc";
 	}
+
+	#restore the current valgrind flag
+	$valgrind = $skip_valgrind;
 }
 
 #################################################################################
@@ -822,9 +822,16 @@ if (    $starting_stage <= $stage_idx_ace
 
 		if ( -e $ace_raw_output_blif_path and $q eq "success") {
 
+			#added so that valgrind will not run on perl because of existing memory errors
+			my $skip_valgrind = $valgrind;
+			$valgrind = 0;
+
             # Restore Multi-Clock Latch Information from ODIN II that was striped out by ACE
             $q = &system_with_timeout($restore_multiclock_info_script, "restore_multiclock_latch_information.ace.out", $timeout, $temp_dir,
                     $odin_output_file_name, $ace_raw_output_blif_name, $ace_output_blif_name);
+
+			#restore the current valgrind flag
+			$valgrind = $skip_valgrind;
 
             if ($q ne "success") {
                 $error_status = "failed: to restore multi-clock latch info";
