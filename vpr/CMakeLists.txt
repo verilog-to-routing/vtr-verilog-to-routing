@@ -64,12 +64,10 @@ set(VPR_COMPILE_OPTIONS_FLAGS
     "-Werror"
     )
 
-set(CXX_VERSION $ENV{CXX})
-
-if (VPR_COMPILE_OPTIONS STREQUAL "strict" AND CXX_VERSION STREQUAL "g++-6")
+if (VPR_COMPILE_OPTIONS STREQUAL "strict")
     message(STATUS "VPR: building with strict flags")
     foreach(flag ${VPR_COMPILE_OPTIONS_FLAGS})
-        message(STATUS "Adding CXX flag: ${flag}")
+        message(STATUS "\tAdding CXX flag: ${flag}")
         target_compile_options(libvpr PUBLIC ${flag})
         target_compile_options(vpr PUBLIC ${flag})
     endforeach()
