@@ -55,7 +55,6 @@ addons:
     - gcc-8
     - g++-9
     - gcc-9
-    - clang-3.6
     - clang-6.0
     - clang-8
 
@@ -129,12 +128,6 @@ jobs:
       name: "GCC 9 (Latest Release)"
       env:
          - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
-      script:
-        - ./.github/travis/build.sh
-    - stage: Build Compatibility
-      name: "clang-3.6 (Earliest supported)"
-      env:
-         - MATRIX_EVAL="CC=clang-3.6 && CXX=clang++-3.6"
       script:
         - ./.github/travis/build.sh
     - stage: Build Compatibility

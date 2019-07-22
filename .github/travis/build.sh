@@ -5,9 +5,11 @@ set -e
 
 $SPACER
 
+VPR_FLAGS="-DVPR_COMPILE_OPTIONS=strict"
+
 start_section "vtr.build" "${GREEN}Building..${NC}"
 export FAILURE=0
-make -k CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on" -j2 || export FAILURE=1
+make -k CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on $VPR_FLAGS" -j2 || export FAILURE=1
 end_section "vtr.build"
 
 # When the build fails, produce the failure output in a clear way

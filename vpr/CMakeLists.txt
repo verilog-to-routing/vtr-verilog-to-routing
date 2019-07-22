@@ -5,6 +5,8 @@ project("vpr")
 #
 # VPR Build Options
 #
+set(VPR_COMPILE_OPTIONS "none" CACHE STRING "Specify whether vpr uses strict compiling options, e.g. -Werror")
+set(CACHE VPR_COMPILE_OPTIONS PROPERTY STRING strict none)
 
 set(VPR_EXECUTION_ENGINE "auto" CACHE STRING "Specify the framework for (potential) parallel execution")
 set_property(CACHE VPR_EXECUTION_ENGINE PROPERTY STRINGS auto serial tbb)
@@ -52,6 +54,23 @@ target_link_libraries(vpr
 get_target_property(VPR_USES_IPO vpr INTERPROCEDURAL_OPTIMIZATION)
 if (VPR_USES_IPO)
     set_target_properties(vpr PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
+endif()
+
+#
+# VPR compiler options
+#
+set(VPR_COMPILE_OPTIONS_FLAGS
+    #GCC-like
+    "-Werror"
+    )
+
+if (VPR_COMPILE_OPTIONS STREQUAL "strict")
+    message(STATUS "VPR: building with strict flags")
+    foreach(flag ${VPR_COMPILE_OPTIONS_FLAGS})
+        message(STATUS "Adding CXX flag: ${flag}")
+        target_compile_options(libvpr PUBLIC ${flag})
+        target_compile_options(vpr PUBLIC ${flag})
+    endforeach()
 endif()
 
 #
