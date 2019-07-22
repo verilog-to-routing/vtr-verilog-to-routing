@@ -171,7 +171,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 					}
 
 					/* resolve right-hand side */
-					node->children[5] = reduce_expressions(node->children[5], local_string_cache_list, NULL, -1);
+					node->children[5] = reduce_expressions(node->children[5], local_string_cache_list, NULL, 0);
 					oassert(node->children[5]->type == NUMBERS);
 
 					/* this forces parameter values as unsigned, since we don't currently support signed keyword...
@@ -430,7 +430,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				node = free_whole_tree(node);
 				node = new_node;
 			} 
-			//fallthrough
+			//fallthrough to resolve concatenation
 			case CONCATENATE:
 			{
 				resolve_concat_sizes(node, local_string_cache_list);
@@ -438,7 +438,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				// for params only
 				// TODO: this is a hack, concats cannot be folded in place as it breaks netlist expand from ast,
 				// to fix we need to move the node resolution before netlist create from ast.
-				if(assignment_size == -1 && node->num_children > 0)
+				if(node->num_children > 0)
 				{
 					size_t index = 1;
 					size_t last_index = 0;
