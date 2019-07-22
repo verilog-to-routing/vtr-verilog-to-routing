@@ -21,8 +21,12 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 #include "odin_types.h"
+#include "odin_globals.h"
+#include "memories.h"
+#include "hard_blocks.h"
 #include "implicit_memory.h"
 #include "node_creation_library.h"
+#include "netlist_utils.h"
 #include "odin_util.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -88,12 +92,12 @@ char is_valid_implicit_memory_reference_ast(char *instance_name_prefix, ast_node
 {
 	if (node && node->num_children == 2 && node->type == ARRAY_REF
 			&& lookup_implicit_memory_reference_ast(instance_name_prefix, node))
-		return TRUE;
+		return true;
 	else if (node && node->num_children == 3 && node->type == ARRAY_REF
 			&& lookup_implicit_memory_reference_ast(instance_name_prefix, node))
-		return TRUE;
+		return true;
 	else
-		return FALSE;
+		return false;
 }
 
 /*
@@ -139,8 +143,8 @@ implicit_memory *create_implicit_memory_block(int data_width, long memory_depth,
 	memory->addr_width = addr_width;
 	memory->memory_depth = memory_depth;
 	memory->data_width = data_width;
-	memory->clock_added = FALSE;
-	memory->output_added = FALSE;
+	memory->clock_added = false;
+	memory->output_added = false;
 	memory->name = full_name;
 
 	implicit_memories.insert({std::string(full_name), memory});
@@ -246,7 +250,7 @@ void add_dummy_output_port_to_implicit_memory(implicit_memory *memory, int size,
 	{
 		npin_t *dummy_pin = allocate_npin();
 		// Pad outputs with a unique and descriptive name to avoid collisions.
-		dummy_pin->name = append_string("", "dummy_implicit_memory_output~%ld", dummy_output_pin_number++);
+		dummy_pin->name = append_string("", "dummy_implicit_memory_output~%d", dummy_output_pin_number++);
 		add_pin_to_signal_list(signals, dummy_pin);
 	}
 
@@ -264,15 +268,15 @@ void finalize_implicit_memory(implicit_memory *memory)
 {
 	nnode_t *node = memory->node;
 
-	char has_addr1 = FALSE;
-	char has_addr2 = FALSE;
-	char has_data1 = FALSE;
-	char has_data2 = FALSE;
-	char has_we1   = FALSE;
-	char has_we2   = FALSE;
-	char has_clk   = FALSE;
-	char has_out1  = FALSE;
-	char has_out2  = FALSE;
+	bool has_addr1 = false;
+	bool has_addr2 = false;
+	bool has_data1 = false;
+	bool has_data2 = false;
+	bool has_we1   = false;
+	bool has_we2   = false;
+	bool has_clk   = false;
+	bool has_out1  = false;
+	bool has_out2  = false;
 
 	// Determine which input ports are present.
 	int i;
@@ -280,19 +284,19 @@ void finalize_implicit_memory(implicit_memory *memory)
 	{
 		npin_t *pin = node->input_pins[i];
 		if (!strcmp(pin->mapping, "addr1"))
-			has_addr1 = TRUE;
+			has_addr1 = true;
 		else if (!strcmp(pin->mapping, "addr2"))
-			has_addr2 = TRUE;
+			has_addr2 = true;
 		else if (!strcmp(pin->mapping, "data1"))
-			has_data1 = TRUE;
+			has_data1 = true;
 		else if (!strcmp(pin->mapping, "data2"))
-			has_data2 = TRUE;
+			has_data2 = true;
 		else if (!strcmp(pin->mapping, "we1"))
-			has_we1 = TRUE;
+			has_we1 = true;
 		else if (!strcmp(pin->mapping, "we2"))
-			has_we2 = TRUE;
+			has_we2 = true;
 		else if (!strcmp(pin->mapping, "clk"))
-			has_clk = TRUE;
+			has_clk = true;
 	}
 
 	// Determine which output ports are present.
@@ -300,9 +304,9 @@ void finalize_implicit_memory(implicit_memory *memory)
 	{
 		npin_t *pin = node->output_pins[i];
 		if (!strcmp(pin->mapping, "out1"))
-			has_out1 = TRUE;
+			has_out1 = true;
 		else if (!strcmp(pin->mapping, "out2"))
-			has_out2 = TRUE;
+			has_out2 = true;
 	}
 
 	if (!has_clk)

@@ -90,10 +90,10 @@ void ClockRib::set_metal_layer(MetalLayer metal_layer) {
 
 void ClockRib::set_initial_wire_location(int start_x, int end_x, int y) {
     if (end_x <= start_x) {
-        VPR_THROW(VPR_ERROR_ROUTE,
-                  "Clock Network wire cannot have negtive or zero length. "
-                  "Wire end: %d < wire start: %d\n",
-                  end_x, start_x);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Clock Network wire cannot have negtive or zero length. "
+                        "Wire end: %d < wire start: %d\n",
+                        end_x, start_x);
     }
 
     x_chan_wire.start = start_x;
@@ -104,8 +104,8 @@ void ClockRib::set_initial_wire_location(int start_x, int end_x, int y) {
 void ClockRib::set_wire_repeat(int repeat_x, int repeat_y) {
     if (repeat_x <= 0 || repeat_y <= 0) {
         // Avoid an infinte loop when creating ribs
-        VPR_THROW(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
-                  repeat_x, repeat_y);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
+                        repeat_x, repeat_y);
     }
 
     repeat.x = repeat_x;
@@ -336,10 +336,10 @@ void ClockSpine::set_metal_layer(MetalLayer metal_layer) {
 
 void ClockSpine::set_initial_wire_location(int start_y, int end_y, int x) {
     if (end_y <= start_y) {
-        VPR_THROW(VPR_ERROR_ROUTE,
-                  "Clock Network wire cannot have negtive or zero length. "
-                  "Wire end: %d < wire start: %d\n",
-                  end_y, start_y);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Clock Network wire cannot have negtive or zero length. "
+                        "Wire end: %d < wire start: %d\n",
+                        end_y, start_y);
     }
 
     y_chan_wire.start = start_y;
@@ -350,8 +350,8 @@ void ClockSpine::set_initial_wire_location(int start_y, int end_y, int x) {
 void ClockSpine::set_wire_repeat(int repeat_x, int repeat_y) {
     if (repeat_x <= 0 || repeat_y <= 0) {
         // Avoid an infinte loop when creating spines
-        VPR_THROW(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
-                  repeat_x, repeat_y);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
+                        repeat_x, repeat_y);
     }
 
     repeat.x = repeat_x;
@@ -571,7 +571,7 @@ void ClockHTree::create_segments(std::vector<t_segment_inf>& segment_inf) {
     //Remove unused parameter warning
     (void)segment_inf;
 
-    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "HTrees are not yet supported.\n");
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "HTrees are not yet supported.\n");
 }
 void ClockHTree::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
                                                                      int num_segments) {
@@ -579,5 +579,5 @@ void ClockHTree::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
     (void)clock_graph;
     (void)num_segments;
 
-    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "HTrees are not yet supported.\n");
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "HTrees are not yet supported.\n");
 }

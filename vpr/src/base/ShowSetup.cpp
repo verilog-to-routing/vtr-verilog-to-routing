@@ -116,7 +116,7 @@ static void ShowRoutingArch(const t_det_routing_arch& RoutingArch) {
             VTR_LOG("UNI_DIRECTIONAL\n");
             break;
         default:
-            vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "<Unknown>\n");
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "<Unknown>\n");
             break;
     }
 
@@ -194,7 +194,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 VTR_LOG("NO_TIMING\n");
                 break;
             default:
-                vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "<Unknown>\n");
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "<Unknown>\n");
         }
 
         VTR_LOG("RouterOpts.base_cost_type: ");
@@ -215,7 +215,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 VTR_LOG("DEMAND_ONLY\n");
                 break;
             default:
-                vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown base_cost_type\n");
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown base_cost_type\n");
         }
 
         VTR_LOG("RouterOpts.fixed_channel_width: ");
@@ -354,7 +354,7 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
                 VTR_LOG("USER '%s'\n", PlacerOpts.pad_loc_file.c_str());
                 break;
             default:
-                vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown I/O pad location type\n");
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown I/O pad location type\n");
         }
 
         VTR_LOG("PlacerOpts.place_cost_exp: %f\n", PlacerOpts.place_cost_exp);
@@ -399,7 +399,7 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
     } else if (PackerOpts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
         VTR_LOG("auto\n");
     } else {
-        vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown packer allow_unrelated_clustering\n");
+        VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown packer allow_unrelated_clustering\n");
     }
     VTR_LOG("PackerOpts.alpha_clustering: %f\n", PackerOpts.alpha);
     VTR_LOG("PackerOpts.beta_clustering: %f\n", PackerOpts.beta);
@@ -424,7 +424,7 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
             VTR_LOG("BLEND2\n");
             break;
         default:
-            vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown packer cluster_seed_type\n");
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown packer cluster_seed_type\n");
     }
     VTR_LOG("PackerOpts.connection_driven: %s", (PackerOpts.connection_driven ? "true\n" : "false\n"));
     VTR_LOG("PackerOpts.global_clocks: %s", (PackerOpts.global_clocks ? "true\n" : "false\n"));

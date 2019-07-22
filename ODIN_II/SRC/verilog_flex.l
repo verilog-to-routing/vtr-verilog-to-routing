@@ -37,7 +37,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define PRINT_TOKEN {printf("%d %s\n", yylineno, yytext);}
 #define UNSUPPORTED_TOKEN {printf("Unsuported token::"); PRINT_TOKEN }
 #define MP {if (to_view_parse) PRINT_TOKEN}
-char* standardize_number(const char* input);
 
 %}
 
@@ -48,8 +47,26 @@ char* standardize_number(const char* input);
 %option noinput
 %option never-interactive
 %option nounistd
+%option nodefault
+%option yylineno
+
+vBIN [Bb][_]*[ZzXx0-1][ZzXx0-1_]*
+vOCT [Oo][_]*[ZzXx0-7][ZzXx0-7_]*
+vDEC [Dd][_]*[[:digit:]][[:digit:]_]*
+vHEX [Hh][_]*[ZzXx[:xdigit:]][ZzXx[:xdigit:]_]*
+vINT [[:digit:]][[:digit:]_]*
+vWORD [[:alpha:]_][[:alnum:]_$]*
+vSTRING ["][^"]*["]  
+
+	/**
+	* add \" to vPUNCT when support is added for strings
+	* update the bison file also when changing this 
+	*/
+vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
 %%
+
+<INITIAL>`timescale.*$              { MP; continue;}
 
 	/*	Keywords	*/
 <INITIAL>"always"			{ MP; return vALWAYS;}
@@ -58,7 +75,6 @@ char* standardize_number(const char* input);
 <INITIAL>"begin"			{ MP; return vBEGIN;}
 <INITIAL>"case"				{ MP; return vCASE;}
 <INITIAL>"default"			{ MP; return vDEFAULT;}
-<INITIAL>"`define"[^\n]*	{ MP; continue; }
 <INITIAL>"defparam"			{ MP; return vDEFPARAM;}
 <INITIAL>"else"				{ MP; return vELSE;}
 <INITIAL>"end"				{ MP; return vEND;}
@@ -87,6 +103,7 @@ char* standardize_number(const char* input);
 <INITIAL>"localparam"		{ MP; return vLOCALPARAM;}
 <INITIAL>"posedge"			{ MP; return vPOSEDGE;}
 <INITIAL>"reg"				{ MP; return vREG;}
+<INITIAL>"signed"			{ MP; return vSIGNED;}
 <INITIAL>"specify"			{ MP; return vSPECIFY;}
 <INITIAL>"while"			{ MP; return vWHILE;}
 <INITIAL>"wire"				{ MP; return vWIRE;}
@@ -141,7 +158,6 @@ char* standardize_number(const char* input);
 <INITIAL>"rtranif0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"rtranif1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"small"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
-<INITIAL>"signed"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"strong0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"strong1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"supply0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
@@ -186,60 +202,38 @@ char* standardize_number(const char* input);
 	/*	unsupported Operators	*/
 <INITIAL>"&&&"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 
-
 	/*	C functions	*/
 <INITIAL>"$clog2"			{MP; return vCLOG2;}
+<INITIAL>"$unsigned"		{MP; return voUNSIGNED;}
+<INITIAL>"$signed"			{MP; return voSIGNED;}
+
+<INITIAL>[\$]{vWORD}		{MP; return vCFUNC;}
+
+	/* Delay */
+<INITIAL>#{vINT}					{ MP; yylval.num_value = vtr::strdup(yytext+1); return vDELAY_ID; }
+
+	/* Integers */
+<INITIAL>{vINT}						{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+
+	/* Strings */
+<INITIAL>{vSTRING}				{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+
+	/* Numbers */
+<INITIAL>[[:digit:]]*'[sS]?{vBIN}	{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>[[:digit:]]*'[sS]?{vHEX}	{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>[[:digit:]]*'[sS]?{vOCT}	{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>[[:digit:]]*'[sS]?{vDEC}	{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
 
 	/*	operands	*/
-<INITIAL>`?[a-zA-Z_][a-zA-Z0-9_]*				{ MP; yylval.id_name = vtr::strdup(yytext); return vSYMBOL_ID; }
-
-	/*	signed numbers	*/
-<INITIAL>[0-9]+'[sS][bB][0-1_]*						{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_BINARY; }
-<INITIAL>[0-9]+'[sS][hH][a-fA-F0-9_]*				{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_HEXADECIMAL; }
-<INITIAL>[0-9]+'[sS][oO][0-7_]*						{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_OCTAL; }
-<INITIAL>[0-9]+'[sS][dD][0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_DECIMAL; }
-<INITIAL>'[sS][bB][0-1_]*							{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_BINARY; }
-<INITIAL>'[sS][hH][a-fA-F0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_HEXADECIMAL; }
-<INITIAL>'[sS][oO][0-7_]*							{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_OCTAL; }
-<INITIAL>'[sS][dD][0-9_]*							{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_DECIMAL; }
-
-<INITIAL>[0-9_]+									{ MP; yylval.num_value = standardize_number(yytext); return vINTEGRAL; }
-
-	/*	unsigned Numbers	*/
-<INITIAL>[0-9]+'[bB][0-1_]*						{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_BINARY; }
-<INITIAL>[0-9]+'[hH][a-fA-F0-9_]*				{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_HEXADECIMAL; }
-<INITIAL>[0-9]+'[oO][0-7_]*						{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_OCTAL; }
-<INITIAL>[0-9]+'[dD][0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_DECIMAL; }
-<INITIAL>'[bB][0-1_]*							{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_BINARY; }
-<INITIAL>'[hH][a-fA-F0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_HEXADECIMAL; }
-<INITIAL>'[oO][0-7_]*							{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_OCTAL; }
-<INITIAL>'[dD][0-9_]*							{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_DECIMAL; }
-
-
-<INITIAL>#[0-9]+								{ MP; yylval.num_value = vtr::strdup(yytext+1); return vDELAY_ID; }
+<INITIAL>{vWORD}					{ MP; yylval.id_name = vtr::strdup(yytext); return vSYMBOL_ID; }
 
 	/* return operators */
-<INITIAL>[}{;:\[\],()#=.@&!?<>%|^~+*/-]			{ MP; return yytext[0]; }
+<INITIAL>{vPUNCT}					{ MP; return yytext[0]; }
 
 	/* general stuff */
-<INITIAL>[\f\r\t\b ]+				{ continue;}					/* ignore spaces */
-<INITIAL,COMMENT>"\n"				{ yylineno++; continue;}		/* catch lines */
-<INITIAL>`timescale.*$              { MP; continue;}
+[[:space:]]+						/* ignore spaces */
 
-	/* Get the comments */
-<INITIAL>"/*"						{ MP; BEGIN COMMENT; continue;} /* begin state where we eat everything for comments*/
-<COMMENT>.							{ continue;}
-<COMMENT>"*/"						{ BEGIN 0; continue;}
-<INITIAL>"//"[^\n]*					{ MP; continue;}
-
-
-<*>.|\n		{ printf("Missing verilog.l rule: Default rule invoked in state %d\nLine %d::\"%s\"\n", YY_START, yylineno, yytext); }
+	/* catch all */
+.									{ UNSUPPORTED_TOKEN; }
 
 %%
-
-char* standardize_number(const char* input)
-{
-	std::string input_number(input);
-	input_number.erase(std::remove(input_number.begin(), input_number.end(), '_'), input_number.end());
-	return vtr::strdup(input_number.c_str());
-}

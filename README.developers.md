@@ -402,7 +402,7 @@ $ ../scripts/run_vtr_task.pl regression_tests/vtr_reg_weekly/vtr_reg_titan
 #Several days later... they complete
 
 #Parse the results
-$ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_nightly/vtr_reg_titan
+$ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_weekly/vtr_reg_titan
 
 #The run directory should now contain a summary parse_results.txt file
 $ head -5 vtr_reg_nightly/vtr_reg_qor_chain/latest/parse_results.txt

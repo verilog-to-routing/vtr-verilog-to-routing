@@ -246,7 +246,7 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
         old_macro_it = old_macro_blocks.begin();
         new_macro_it = std::find(new_macro_blocks.begin(), new_macro_blocks.end(), *old_macro_it);
         // if matching is from the middle of the two macros, then combining macros is not possible
-        if (new_macro_it == old_macro_blocks.end()) {
+        if (new_macro_it == new_macro_blocks.end()) {
             return false;
         }
     }
@@ -521,7 +521,7 @@ static void validate_macros(const std::vector<t_pl_macro>& macros) {
                 msg << "  Macro #: " << imacro << "\n";
             }
 
-            VPR_THROW(VPR_ERROR_PLACE, msg.str().c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, msg.str().c_str());
         }
     }
 }

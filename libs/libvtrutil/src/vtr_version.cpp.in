@@ -16,4 +16,5 @@ namespace vtr {
     const char* VCS_REVISION_SHORT = "@VTR_VCS_REVISION_SHORT@";
     const char* COMPILER = "@VTR_COMPILER_INFO@";
     const char* BUILD_TIMESTAMP = "@VTR_BUILD_TIMESTAMP@";
+    const char* BUILD_INFO = "@VTR_BUILD_INFO@";
 }

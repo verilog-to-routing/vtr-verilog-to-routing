@@ -26,7 +26,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <algorithm>
 #include <cmath>
+#include <string>
 #include "odin_types.h"
+#include "odin_util.h"
 #include "node_creation_library.h"
 #include "multipliers.h"
 #include "netlist_utils.h"
@@ -38,6 +40,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "vtr_memory.h"
 #include "vtr_list.h"
+#include "vtr_util.h"
 
 
 using vtr::t_linked_vptr;
@@ -395,39 +398,55 @@ void declare_hard_multiplier(nnode_t *node)
  *-------------------------------------------------------------------------*/
 void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
-	char *new_name;
-	int len, sanity, i;
+	oassert(node
+	 && "node is NULL to instanciate hard multiplier");
 
 	declare_hard_multiplier(node);
 
-	/* Need to give node proper name */
-	len = strlen(node->name);
-	len = len + 20; /* 20 chars should hold mul specs */
-	new_name = (char*)vtr::malloc(len);
-
-	/* wide input first :) */
-	if (node->input_port_sizes[0] > node->input_port_sizes[1])
-		sanity = odin_sprintf(new_name, "%s_%d_%d_%d", node->name, node->input_port_sizes[0], node->input_port_sizes[1], node->output_port_sizes[0]);
-	else
-		sanity = odin_sprintf(new_name, "%s_%d_%d_%d", node->name, node->input_port_sizes[1], node->input_port_sizes[0], node->output_port_sizes[0]);
-
-	if (len <= sanity) /* buffer not large enough */
-		oassert(FALSE);
-
-	/* Give names to the output pins */
-	for (i = 0; i < node->num_output_pins;  i++)
-	{
-		if (node->output_pins[i]->name)
-		{
-			vtr::free(node->output_pins[i]->name);
-		}
-		len = strlen(node->name) + 6; /* 6 chars for pin idx */
-		new_name = (char*)vtr::malloc(len);
-		odin_sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
-		node->output_pins[i]->name = new_name;
+	std::string node_name = "";
+	if( node->name )
+	{	
+		node_name = node->name;
+		vtr::free(node->name);
+		node->name = NULL;
 	}
-	vtr::free(node->name);
-	node->name = new_name;
+
+	if(node->num_output_pins <= 0)
+	{
+		/* wide input first :) */
+		int portA = 0;
+		int portB = 1;
+		if (node->input_port_sizes[1] > node->input_port_sizes[0])
+		{
+			portA = 1;
+			portB = 0;
+		}
+		std::string tmp(
+			node_name +
+			"_" + std::to_string(node->input_port_sizes[portA]) +
+			"_" + std::to_string(node->input_port_sizes[portB]) +
+			"_" + std::to_string(node->output_port_sizes[0])
+		);
+		node->name = vtr::strdup(tmp.c_str());
+	}
+	else
+	{
+		/* Give names to the output pins */
+		for (int i = 0; i < node->num_output_pins;  i++)
+		{
+			if (node->output_pins[i]->name)
+			{
+				vtr::free(node->output_pins[i]->name);
+			}
+			//build the output string
+			std::string tmp( 
+				node_name + 
+				"[" + std::to_string(node->output_pins[i]->pin_node_idx) + "]"
+			);
+			node->output_pins[i]->name = vtr::strdup(tmp.c_str());
+		}
+		node->name = vtr::strdup(node->output_pins[node->num_output_pins-1]->name);
+	}
 	node->traverse_visited = mark;
 	return;
 }
@@ -512,6 +531,8 @@ void add_the_blackbox_for_mults(FILE *out)
 
 		muls = muls->next;
 	}
+	
+	free_multipliers();
 }
 
 /*-------------------------------------------------------------------------
@@ -529,7 +550,7 @@ void define_mult_function(nnode_t *node, FILE *out)
 	oassert(node->input_port_sizes[1] > 0);
 	oassert(node->output_port_sizes[0] > 0);
 
-	int flip = FALSE;
+	int flip = false;
 
 	if (configuration.fixed_hard_multiplier != 0)
 	{
@@ -542,14 +563,14 @@ void define_mult_function(nnode_t *node, FILE *out)
 			count += fprintf(out, " mult_%d_%d_%d", node->input_port_sizes[0],
 				node->input_port_sizes[1], node->output_port_sizes[0]);
 
-			flip = FALSE;
+			flip = false;
 		}
 		else
 		{
 			count += fprintf(out, " mult_%d_%d_%d", node->input_port_sizes[1],
 				node->input_port_sizes[0], node->output_port_sizes[0]);
 
-			flip = TRUE;
+			flip = true;
 		}
 	}
 
@@ -1084,7 +1105,7 @@ void pad_multiplier(nnode_t *node, netlist_t *netlist)
 			// Add new pins to the higher order spots.
 			npin_t *new_pin = allocate_npin();
 			// Pad outputs with a unique and descriptive name to avoid collisions.
-			new_pin->name = append_string("", "unconnected_multiplier_output~%ld", pad_pin_number++);
+			new_pin->name = append_string("", "unconnected_multiplier_output~%d", pad_pin_number++);
 			add_output_pin_to_node(node, new_pin, i + sizeout);
 		}
 		node->output_port_sizes[0] = sizeout + diffout;
@@ -1413,5 +1434,22 @@ void clean_multipliers()
 	while (mult_list != NULL)
 		mult_list = delete_in_vptr_list(mult_list);
 	return;
+}
+
+void free_multipliers()
+{
+	if(hard_multipliers && hard_multipliers->instances)
+	{
+		t_multiplier *tmp = (t_multiplier *)hard_multipliers->instances;
+		
+		while(tmp != NULL)
+		{
+			t_multiplier *tmp2 = tmp->next;
+			vtr::free(tmp);
+			tmp = tmp2;
+		}	
+		
+		hard_multipliers->instances = NULL;
+	}
 }
 

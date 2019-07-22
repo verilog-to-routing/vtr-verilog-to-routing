@@ -10,6 +10,7 @@
 #include "atom_netlist_fwd.h"
 
 std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
+                                           const t_analysis_opts& analysis_opts,
                                            const t_arch* arch,
                                            t_pack_molecule* molecule_head,
                                            int num_models,

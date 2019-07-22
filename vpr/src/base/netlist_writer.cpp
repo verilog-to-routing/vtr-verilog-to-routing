@@ -722,8 +722,8 @@ class BlackBoxInst : public Instance {
         if (iter != output_port_conns_.end()) {
             return iter->second.size();
         }
-        vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
-                  "Could not find port %s on %s of type %s\n", port_name.c_str(), inst_name_.c_str(), type_name_.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
+                        "Could not find port %s on %s of type %s\n", port_name.c_str(), inst_name_.c_str(), type_name_.c_str());
 
         return -1; //Suppress warning
     }
@@ -1309,8 +1309,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 } else if (port_class == "write_en2") {
                     port_name = "we2";
                 } else {
-                    vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
-                              "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
+                    VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
+                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
                 }
 
                 input_port_conns[port_name].push_back(net);
@@ -1346,8 +1346,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 } else if (port_class == "data_out2") {
                     port_name = "out2";
                 } else {
-                    vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
-                              "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
+                    VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
+                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
                 }
                 output_port_conns[port_name].push_back(net);
                 ports_tcq[port_name] = pin->tco_max;
@@ -1375,8 +1375,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     VTR_ASSERT(pb_graph_node->num_clock_pins[iport] == 1); //Expect a single clock pin
                     input_port_conns["clock"].push_back(net);
                 } else {
-                    vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
-                              "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
+                    VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
+                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
                 }
             }
         }
@@ -1863,8 +1863,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
             } else if (*names_first_row_output_iter == '0') {
                 encoding_on_set = false;
             } else {
-                vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
-                          "Invalid .names truth-table character '%c'. Must be one of '1', '0' or '-'. \n", *names_first_row_output_iter);
+                VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
+                                "Invalid .names truth-table character '%c'. Must be one of '1', '0' or '-'. \n", *names_first_row_output_iter);
             }
         }
 
@@ -1888,8 +1888,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
         } else if (*output_val_iter == '0') {
             VTR_ASSERT(!encoding_on_set);
         } else {
-            vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
-                      "Invalid .names encoding both ON and OFF set\n");
+            VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
+                            "Invalid .names encoding both ON and OFF set\n");
         }
 
         //Extract the input values for this row
@@ -1905,8 +1905,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
             } else if (names_row[i] == '-') {
                 input_val = vtr::LogicValue::DONT_CARE;
             } else {
-                vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
-                          "Invalid .names truth-table character '%c'. Must be one of '1', '0' or '-'. \n", names_row[i]);
+                VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
+                                "Invalid .names truth-table character '%c'. Must be one of '1', '0' or '-'. \n", names_row[i]);
             }
 
             input_values[i] = input_val;

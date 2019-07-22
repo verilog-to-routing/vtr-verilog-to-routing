@@ -176,7 +176,7 @@ t_pack_patterns* alloc_and_load_pack_patterns(int* num_packing_patterns) {
     //Sanity check, every pattern should have a root block
     for (size_t i = 0; i < pattern_names.size(); ++i) {
         if (list_of_packing_patterns[i].root_block == nullptr) {
-            VPR_THROW(VPR_ERROR_ARCH, "Failed to find root block for pack pattern %s", list_of_packing_patterns[i].name);
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find root block for pack pattern %s", list_of_packing_patterns[i].name);
         }
     }
 
@@ -563,14 +563,14 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                         if (expansion_edge->output_pins[i]->output_edges[j]->pack_pattern_indices[k] == curr_pattern_index) {
                             if (found == true) {
                                 /* Check assumption that each forced net has only one fan-out */
-                                vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                                          "Invalid packing pattern defined.  Multi-fanout nets not supported when specifying pack patterns.\n"
-                                          "Problem on %s[%d].%s[%d] for pattern %s\n",
-                                          expansion_edge->output_pins[i]->parent_node->pb_type->name,
-                                          expansion_edge->output_pins[i]->parent_node->placement_index,
-                                          expansion_edge->output_pins[i]->port->name,
-                                          expansion_edge->output_pins[i]->pin_number,
-                                          list_of_packing_patterns[curr_pattern_index].name);
+                                VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                                "Invalid packing pattern defined.  Multi-fanout nets not supported when specifying pack patterns.\n"
+                                                "Problem on %s[%d].%s[%d] for pattern %s\n",
+                                                expansion_edge->output_pins[i]->parent_node->pb_type->name,
+                                                expansion_edge->output_pins[i]->parent_node->placement_index,
+                                                expansion_edge->output_pins[i]->port->name,
+                                                expansion_edge->output_pins[i]->pin_number,
+                                                list_of_packing_patterns[curr_pattern_index].name);
                             }
                             found = true;
                             forward_expand_pack_pattern_from_edge(expansion_edge->output_pins[i]->output_edges[j],
@@ -708,9 +708,9 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                 destination_block->connections = pack_pattern_connection;
 
                 if (source_block == destination_block) {
-                    vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                              "Invalid packing pattern defined. Source and destination block are the same (%s).\n",
-                              source_block->pb_type->name);
+                    VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                    "Invalid packing pattern defined. Source and destination block are the same (%s).\n",
+                                    source_block->pb_type->name);
                 }
             }
 
@@ -1187,8 +1187,8 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const 
 
     if (!best) {
         auto& atom_ctx = g_vpr_ctx.atom();
-        VPR_THROW(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
-                  atom_ctx.nlist.block_model(blk_id)->name);
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
+                        atom_ctx.nlist.block_model(blk_id)->name);
     }
 
     return best;

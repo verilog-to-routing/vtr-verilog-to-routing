@@ -1,6 +1,8 @@
 #include <cstring>
 #include <unordered_set>
 #include <regex>
+#include <algorithm>
+
 using namespace std;
 
 #include "vtr_assert.h"
@@ -18,7 +20,6 @@ using namespace std;
 #include "string.h"
 #include "pack_types.h"
 #include "device_grid.h"
-#include <algorithm>
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
@@ -99,7 +100,7 @@ const t_model* find_model(const t_model* models, const std::string& name, bool r
     }
 
     if (required) {
-        VPR_THROW(VPR_ERROR_ARCH, "Failed to find architecture modedl '%s'\n", name.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find architecture modedl '%s'\n", name.c_str());
     }
 
     return nullptr;
@@ -117,7 +118,7 @@ const t_model_ports* find_model_port(const t_model* model, const std::string& na
     }
 
     if (required) {
-        VPR_THROW(VPR_ERROR_ARCH, "Failed to find port '%s; on architecture modedl '%s'\n", name.c_str(), model->name);
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find port '%s; on architecture modedl '%s'\n", name.c_str(), model->name);
     }
 
     return nullptr;
@@ -165,28 +166,28 @@ void sync_grid_to_blocks() {
             || (blk_x + cluster_ctx.clb_nlist.block_type(blk_id)->width - 1) > int(device_ctx.grid.width() - 1)
             || (blk_y + cluster_ctx.clb_nlist.block_type(blk_id)->height - 1) > int(device_ctx.grid.height() - 1)
             || blk_z < 0 || blk_z > (cluster_ctx.clb_nlist.block_type(blk_id)->capacity)) {
-            VPR_THROW(VPR_ERROR_PLACE, "Block %zu is at invalid location (%d, %d, %d).\n",
-                      size_t(blk_id), blk_x, blk_y, blk_z);
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Block %zu is at invalid location (%d, %d, %d).\n",
+                            size_t(blk_id), blk_x, blk_y, blk_z);
         }
 
         /* Check types match */
         if (cluster_ctx.clb_nlist.block_type(blk_id) != device_ctx.grid[blk_x][blk_y].type) {
-            VPR_THROW(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n",
-                      blk_x, blk_y,
-                      cluster_ctx.clb_nlist.block_type(blk_id)->name,
-                      device_ctx.grid[blk_x][blk_y].type->name);
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n",
+                            blk_x, blk_y,
+                            cluster_ctx.clb_nlist.block_type(blk_id)->name,
+                            device_ctx.grid[blk_x][blk_y].type->name);
         }
 
         /* Check already in use */
         if ((EMPTY_BLOCK_ID != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])
             && (INVALID_BLOCK_ID != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])) {
-            VPR_THROW(VPR_ERROR_PLACE, "Location (%d, %d, %d) is used more than once.\n",
-                      blk_x, blk_y, blk_z);
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Location (%d, %d, %d) is used more than once.\n",
+                            blk_x, blk_y, blk_z);
         }
 
         if (device_ctx.grid[blk_x][blk_y].width_offset != 0 || device_ctx.grid[blk_x][blk_y].height_offset != 0) {
-            VPR_THROW(VPR_ERROR_PLACE, "Large block not aligned in placment for cluster_ctx.blocks %lu at (%d, %d, %d).",
-                      size_t(blk_id), blk_x, blk_y, blk_z);
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Large block not aligned in placment for cluster_ctx.blocks %lu at (%d, %d, %d).",
+                            size_t(blk_id), blk_x, blk_y, blk_z);
         }
 
         /* Set the block */
@@ -772,12 +773,12 @@ InstPort parse_inst_port(std::string str) {
     auto& device_ctx = g_vpr_ctx.device();
     t_type_descriptor* blk_type = find_block_type_by_name(inst_port.instance_name(), device_ctx.block_types, device_ctx.num_block_types);
     if (!blk_type) {
-        VPR_THROW(VPR_ERROR_ARCH, "Failed to find block type named %s", inst_port.instance_name().c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find block type named %s", inst_port.instance_name().c_str());
     }
 
     const t_port* port = find_pb_graph_port(blk_type->pb_graph_head, inst_port.port_name());
     if (!port) {
-        VPR_THROW(VPR_ERROR_ARCH, "Failed to find port %s on block type %s", inst_port.port_name().c_str(), inst_port.instance_name().c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find port %s on block type %s", inst_port.port_name().c_str(), inst_port.instance_name().c_str());
     }
 
     if (inst_port.port_low_index() == InstPort::UNSPECIFIED) {
@@ -789,10 +790,10 @@ InstPort parse_inst_port(std::string str) {
     } else {
         if (inst_port.port_low_index() < 0 || inst_port.port_low_index() >= port->num_pins
             || inst_port.port_high_index() < 0 || inst_port.port_high_index() >= port->num_pins) {
-            VPR_THROW(VPR_ERROR_ARCH, "Pin indices [%d:%d] on port %s of block type %s out of expected range [%d:%d]",
-                      inst_port.port_low_index(), inst_port.port_high_index(),
-                      inst_port.port_name().c_str(), inst_port.instance_name().c_str(),
-                      0, port->num_pins - 1);
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Pin indices [%d:%d] on port %s of block type %s out of expected range [%d:%d]",
+                            inst_port.port_low_index(), inst_port.port_high_index(),
+                            inst_port.port_name().c_str(), inst_port.instance_name().c_str(),
+                            0, port->num_pins - 1);
         }
     }
     return inst_port;
@@ -1511,7 +1512,7 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId, t_pack_m
                         // have modified the chain_id value based on the stale packing
                         // then reset the chain id and the first packed molecule pointer
                         // this is packing is being reset
-                        if (cur_molecule->type == MOLECULE_FORCED_PACK && cur_molecule->pack_pattern->is_chain && cur_molecule->chain_info->is_long_chain && cur_molecule->chain_info->first_packed_molecule == cur_molecule) {
+                        if (cur_molecule->is_chain() && cur_molecule->chain_info->is_long_chain && cur_molecule->chain_info->first_packed_molecule == cur_molecule) {
                             cur_molecule->chain_info->first_packed_molecule = nullptr;
                             cur_molecule->chain_info->chain_id = -1;
                         }
@@ -1777,7 +1778,7 @@ void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int
     int ichar, match_count;
 
     if (vtr::split(src_string).size() > 1) {
-        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
+        VPR_THROW(VPR_ERROR_ARCH,
                   "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
     }
 
@@ -1790,8 +1791,8 @@ void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int
         if (strlen(src_string) + 1 <= MAX_STRING_LEN + 1) {
             strcpy(source_string, src_string);
         } else {
-            vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-                      "Pin name exceeded buffer size of %zu characters", MAX_STRING_LEN + 1);
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                            "Pin name exceeded buffer size of %zu characters", MAX_STRING_LEN + 1);
         }
         for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
             if (source_string[ichar] == '.')
@@ -1877,9 +1878,9 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 
             // Check whether the pins are marked, errors out if so
             if (direct_type_from_blk_pin[itype][iblk_pin] != OPEN) {
-                vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-                          "[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n",
-                          line, src_string);
+                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                                "[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n",
+                                line, src_string);
             } else {
                 direct_type_from_blk_pin[itype][iblk_pin] = direct_type;
             }

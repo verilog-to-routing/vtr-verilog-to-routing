@@ -242,7 +242,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
     }
 
     if (*max_chan_width % fac != 0) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Routing channel width must be divisible by %d (channel width was %d)", fac, *max_chan_width);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Routing channel width must be divisible by %d (channel width was %d)", fac, *max_chan_width);
     }
 
     /* Map segment type fractions and groupings to counts of tracks */
@@ -1335,10 +1335,10 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
             break;
 
         default:
-            vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                      "Bad rr_node passed to get_rr_node_index.\n"
-                      "Request for type=%d ptc=%d at (%d, %d).\n",
-                      rr_type, ptc, x, y);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Bad rr_node passed to get_rr_node_index.\n"
+                            "Request for type=%d ptc=%d at (%d, %d).\n",
+                            rr_type, ptc, x, y);
     }
 
     return ((unsigned)ptc < lookup.size() ? lookup[ptc] : -1);
@@ -2046,9 +2046,9 @@ static void get_switch_type(bool is_from_sblock,
         int second_switch = max(to_node_switch, from_node_switch);
 
         if (used < 2) {
-            VPR_THROW(VPR_ERROR_ROUTE,
-                      "Expected 2 switches (forward and back) between RR nodes (found %d switches, min switch index: %d max switch index: %d)",
-                      used, first_switch, second_switch);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Expected 2 switches (forward and back) between RR nodes (found %d switches, min switch index: %d max switch index: %d)",
+                            used, first_switch, second_switch);
         }
 
         int switch_to_use = first_switch;

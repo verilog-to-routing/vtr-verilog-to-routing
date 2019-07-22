@@ -225,7 +225,7 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
             // If the number of illegal modes equals the number of available mode for a specific pb_graph_node it means that no cluster can be generated. This resuts
             // in a fatal error.
             if ((int)pb_graph_node->illegal_modes.size() >= pb_graph_node->pb_type->num_modes) {
-                VPR_THROW(VPR_ERROR_PACK, "There are no more available modes to be used. Routing Failed!");
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, "There are no more available modes to be used. Routing Failed!");
             }
 
             return true;
@@ -247,7 +247,7 @@ void add_atom_as_target(t_lb_router_data* router_data, const AtomBlockId blk_id)
     std::map<AtomBlockId, bool>& atoms_added = *router_data->atoms_added;
 
     if (atoms_added.count(blk_id) > 0) {
-        vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Atom %s added twice to router\n", atom_ctx.nlist.block_name(blk_id).c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Atom %s added twice to router\n", atom_ctx.nlist.block_name(blk_id).c_str());
     }
 
     pb = atom_ctx.lookup.atom_pb(blk_id);

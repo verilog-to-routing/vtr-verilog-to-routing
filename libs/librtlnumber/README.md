@@ -6,5 +6,4 @@ Authors: Aaron Graham (aaron.graham@unb.ca, aarongraham9@gmail.com),
            for the Reconfigurable Computing Research Lab at the
             Univerity of New Brunswick in Fredericton, New Brunswick, Canada
 
-Arbitrary Length Verilog Number Library that can Handle 'X' and 'Z' inputs.
-
+Arbitrary Length Verilog Number Library that can Handle `X` and `Z` inputs.

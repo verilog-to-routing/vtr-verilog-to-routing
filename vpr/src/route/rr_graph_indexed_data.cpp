@@ -179,12 +179,16 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 
         } else if (base_cost_type == DELAY_NORMALIZED_FREQUENCY) {
             int seg_index = device_ctx.rr_indexed_data[index].seg_index;
+
+            VTR_ASSERT(total_segments > 0);
             float freq_fac = float(rr_segment_counts[seg_index]) / total_segments;
 
             device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac / freq_fac;
 
         } else if (base_cost_type == DELAY_NORMALIZED_LENGTH_FREQUENCY) {
             int seg_index = device_ctx.rr_indexed_data[index].seg_index;
+
+            VTR_ASSERT(total_segments > 0);
             float freq_fac = float(rr_segment_counts[seg_index]) / total_segments;
 
             //Base cost = delay_norm / (len * freq)
@@ -194,7 +198,7 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
             device_ctx.rr_indexed_data[index].base_cost = (delay_normalization_fac / device_ctx.rr_indexed_data[index].inv_length) * (1 + (1 - freq_fac));
 
         } else {
-            VPR_THROW(VPR_ERROR_ROUTE, "Unrecognized base cost type");
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unrecognized base cost type");
         }
     }
 
@@ -370,8 +374,8 @@ static void load_rr_indexed_data_T_values(int index_start,
             switches_buffered[cost_index] = buffered;
         } else {
             if (switches_buffered[cost_index] != buffered) {
-                vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-                          "Expecting all wire-to-wire switches of wire segments with cost index (%d) to have same 'buffered' value (%d), but found segment switch with different 'buffered' value (%d)\n", cost_index, switches_buffered[cost_index], buffered);
+                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                                "Expecting all wire-to-wire switches of wire segments with cost index (%d) to have same 'buffered' value (%d), but found segment switch with different 'buffered' value (%d)\n", cost_index, switches_buffered[cost_index], buffered);
             }
         }
     }

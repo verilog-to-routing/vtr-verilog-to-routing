@@ -444,9 +444,9 @@ static void build_rr_graph(const t_graph_type graph_type,
     *Warnings = RR_GRAPH_NO_WARN;
 
     /* Decode the graph_type */
-    bool is_global_graph = (GRAPH_GLOBAL == graph_type ? true : false);
-    bool use_full_seg_groups = (GRAPH_UNIDIR_TILEABLE == graph_type ? true : false);
-    enum e_directionality directionality = (GRAPH_BIDIR == graph_type ? BI_DIRECTIONAL : UNI_DIRECTIONAL);
+    bool is_global_graph = ((GRAPH_GLOBAL == graph_type) ? true : false);
+    bool use_full_seg_groups = ((GRAPH_UNIDIR_TILEABLE == graph_type) ? true : false);
+    enum e_directionality directionality = ((GRAPH_BIDIR == graph_type) ? BI_DIRECTIONAL : UNI_DIRECTIONAL);
     if (is_global_graph) {
         directionality = BI_DIRECTIONAL;
     }
@@ -790,8 +790,8 @@ static void alloc_and_load_rr_switch_inf(const int num_arch_switches, const floa
         /* only have one ipin cblock switch. OK. */
         (*wire_to_rr_ipin_switch) = arch_switch_fanins[wire_to_arch_ipin_switch][UNDEFINED];
     } else if (arch_switch_fanins[wire_to_arch_ipin_switch].size() != 0) {
-        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-                  "Not currently allowing an ipin cblock switch to have multiple fan-ins");
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                        "Not currently allowing an ipin cblock switch to have multiple fan-ins");
     } else {
         //This likely indicates that no connection block has been constructed, indicating significant issues with
         //the generated RR graph.
@@ -1083,17 +1083,17 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
                     VTR_ASSERT(fc_spec.fc_value_type == e_fc_value_type::ABSOLUTE);
 
                     if (std::fmod(fc_spec.fc_value, fac) != 0.) {
-                        VPR_THROW(VPR_ERROR_ROUTE, "Absolute Fc value must be a multiple of %d (was %f) between block pin '%s' and wire segment '%s'",
-                                  fac, fc_spec.fc_value,
-                                  block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
-                                  segment_inf[iseg].name.c_str());
+                        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Absolute Fc value must be a multiple of %d (was %f) between block pin '%s' and wire segment '%s'",
+                                        fac, fc_spec.fc_value,
+                                        block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
+                                        segment_inf[iseg].name.c_str());
                     }
 
                     if (fc_spec.fc_value < fac) {
-                        VPR_THROW(VPR_ERROR_ROUTE, "Absolute Fc value must be at least %d (was %f) between block pin '%s' to wire segment %s",
-                                  fac, fc_spec.fc_value,
-                                  block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
-                                  segment_inf[iseg].name.c_str());
+                        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Absolute Fc value must be at least %d (was %f) between block pin '%s' to wire segment %s",
+                                        fac, fc_spec.fc_value,
+                                        block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
+                                        segment_inf[iseg].name.c_str());
                     }
 
                     total_connections = vtr::nint(fc_spec.fc_value) * fc_spec.pins.size();
@@ -1474,11 +1474,13 @@ static void build_rr_sinks_sources(const int i,
                         if (class_inf[iclass].type == RECEIVER) {
                             //Connect the input pin to the sink
                             inode = get_rr_node_index(L_rr_node_indices, i + width_offset, j + height_offset, IPIN, ipin, side);
+
                             int to_node = get_rr_node_index(L_rr_node_indices, i, j, SINK, iclass);
 
                             //Add info about the edge to be created
                             rr_edges_to_create.emplace_back(inode, to_node, delayless_switch);
 
+                            VTR_ASSERT(inode >= 0);
                             L_rr_node[inode].set_cost_index(IPIN_COST_INDEX);
                             L_rr_node[inode].set_type(IPIN);
 

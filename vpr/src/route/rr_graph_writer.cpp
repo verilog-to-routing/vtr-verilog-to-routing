@@ -41,8 +41,8 @@ void write_rr_graph(const char* file_name, const std::vector<t_segment_inf>& seg
 
     /* Prints out general info for easy error checking*/
     if (!fp.is_open() || !fp.good()) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "couldn't open file \"%s\" for generating RR graph file\n", file_name);
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "couldn't open file \"%s\" for generating RR graph file\n", file_name);
     }
     cout << "Writing RR graph" << endl;
     fp << "<rr_graph tool_name=\"vpr\" tool_version=\"" << vtr::VERSION << "\" tool_comment=\"Generated from arch file "
@@ -180,7 +180,7 @@ void write_rr_switches(fstream& fp) {
         } else if (rr_switch.type() == SwitchType::BUFFER) {
             fp << "\" type=\"buffer";
         } else {
-            VPR_THROW(VPR_ERROR_ROUTE, "Invalid switch type %d\n", rr_switch.type());
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid switch type %d\n", rr_switch.type());
         }
         fp << "\"";
 
@@ -208,10 +208,8 @@ void write_rr_block_types(fstream& fp) {
 
         fp << "\t\t<block_type id=\"" << btype.index;
 
-        /*since the < symbol is not allowed in xml format, converted to only print "EMPTY"*/
-        if (btype.name) {
-            fp << "\" name=\"" << btype.name;
-        }
+        VTR_ASSERT(btype.name);
+        fp << "\" name=\"" << btype.name;
 
         fp << "\" width=\"" << btype.width << "\" height=\"" << btype.height << "\">" << endl;
 

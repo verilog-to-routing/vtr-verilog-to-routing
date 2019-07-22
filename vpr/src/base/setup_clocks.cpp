@@ -101,13 +101,13 @@ void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& s
                 break;
             }
             case e_clock_type::H_TREE: {
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "HTrees not yet supported.\n");
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER, "HTrees not yet supported.\n");
                 break;
             }
             default: {
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                          "Found unsupported clock network type for '%s' clock network",
-                          clock_network_arch.name.c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Found unsupported clock network type for '%s' clock network",
+                                clock_network_arch.name.c_str());
             }
         }
     }
@@ -184,11 +184,11 @@ MetalLayer get_metal_layer_from_name(
     auto itter = clock_metal_layers.find(metal_layer_name);
 
     if (itter == clock_metal_layers.end()) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "Metal layer '%s' for clock network '%s' not found. Check to make sure that it is"
-                  "included in the clock architecture description",
-                  metal_layer_name.c_str(),
-                  clock_network_name.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Metal layer '%s' for clock network '%s' not found. Check to make sure that it is"
+                        "included in the clock architecture description",
+                        metal_layer_name.c_str(),
+                        clock_network_name.c_str());
     }
 
     // Metal layer was found. Copy over from arch description to proper data type

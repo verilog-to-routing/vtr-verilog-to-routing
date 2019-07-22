@@ -72,8 +72,8 @@ void SetupVPR(t_options* Options,
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     if (Options->CircuitName.value() == "") {
-        vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
-                  "No blif file found in arguments (did you specify an architecture file?)\n");
+        VPR_FATAL_ERROR(VPR_ERROR_BLIF_F,
+                        "No blif file found in arguments (did you specify an architecture file?)\n");
     }
 
     alloc_and_load_output_file_names(Options->CircuitName);
@@ -128,12 +128,12 @@ void SetupVPR(t_options* Options,
     VTR_ASSERT(device_ctx.EMPTY_TYPE != nullptr);
 
     if (device_ctx.input_types.empty()) {
-        VPR_THROW(VPR_ERROR_ARCH,
+        VPR_ERROR(VPR_ERROR_ARCH,
                   "Architecture contains no top-level block type containing '.input' models");
     }
 
     if (device_ctx.output_types.empty()) {
-        VPR_THROW(VPR_ERROR_ARCH,
+        VPR_ERROR(VPR_ERROR_ARCH,
                   "Architecture contains no top-level block type containing '.output' models");
     }
 
@@ -355,26 +355,26 @@ static void SetupAnnealSched(const t_options& Options,
                              t_annealing_sched* AnnealSched) {
     AnnealSched->alpha_t = Options.PlaceAlphaT;
     if (AnnealSched->alpha_t >= 1 || AnnealSched->alpha_t <= 0) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "alpha_t must be between 0 and 1 exclusive.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_t must be between 0 and 1 exclusive.\n");
     }
 
     AnnealSched->exit_t = Options.PlaceExitT;
     if (AnnealSched->exit_t <= 0) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "exit_t must be greater than 0.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "exit_t must be greater than 0.\n");
     }
 
     AnnealSched->init_t = Options.PlaceInitT;
     if (AnnealSched->init_t <= 0) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "init_t must be greater than 0.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater than 0.\n");
     }
 
     if (AnnealSched->init_t < AnnealSched->exit_t) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "init_t must be greater or equal to than exit_t.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater or equal to than exit_t.\n");
     }
 
     AnnealSched->inner_num = Options.PlaceInnerNum;
     if (AnnealSched->inner_num <= 0) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "inner_num must be greater than 0.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "inner_num must be greater than 0.\n");
     }
 
     AnnealSched->type = Options.anneal_sched_type;
@@ -411,6 +411,7 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->prioritize_transitive_connectivity = Options.pack_prioritize_transitive_connectivity;
     PackerOpts->high_fanout_threshold = Options.pack_high_fanout_threshold;
     PackerOpts->transitive_fanout_threshold = Options.pack_transitive_fanout_threshold;
+    PackerOpts->feasible_block_array_size = Options.pack_feasible_block_array_size;
 
     //TODO: document?
     PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
@@ -513,7 +514,7 @@ static int find_ipin_cblock_switch_index(const t_arch& Arch) {
     for (int i = 0; i < Arch.num_switches; ++i) {
         if (Arch.Switches[i].name == Arch.ipin_cblock_switch_name) {
             if (ipin_cblock_switch_index != UNDEFINED) {
-                VPR_THROW(VPR_ERROR_ARCH, "Found duplicate switches named '%s'\n", Arch.ipin_cblock_switch_name.c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Found duplicate switches named '%s'\n", Arch.ipin_cblock_switch_name.c_str());
             } else {
                 ipin_cblock_switch_index = i;
             }
@@ -521,7 +522,7 @@ static int find_ipin_cblock_switch_index(const t_arch& Arch) {
     }
 
     if (ipin_cblock_switch_index == UNDEFINED) {
-        VPR_THROW(VPR_ERROR_ARCH, "Failed to find connection block input pin switch named '%s'\n", Arch.ipin_cblock_switch_name.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find connection block input pin switch named '%s'\n", Arch.ipin_cblock_switch_name.c_str());
     }
     return ipin_cblock_switch_index;
 }

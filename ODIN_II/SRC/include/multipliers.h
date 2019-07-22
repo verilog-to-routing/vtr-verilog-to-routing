@@ -25,13 +25,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "read_xml_arch_file.h"
 
-typedef struct s_multiplier
+struct t_multiplier
 {
 	int size_a;
 	int size_b;
 	int size_out;
-	struct s_multiplier *next;
-} t_multiplier;
+	struct t_multiplier *next;
+} ;
 
 extern t_model *hard_multipliers;
 extern vtr::t_linked_vptr *mult_list;
@@ -48,6 +48,7 @@ extern void define_mult_function(nnode_t *node, FILE *out);
 extern void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *netlist);
 extern void iterate_multipliers(netlist_t *netlist);
 extern void clean_multipliers();
+extern void free_multipliers();
 
 #endif // MULTIPLIERS_H
 

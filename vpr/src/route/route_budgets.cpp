@@ -105,7 +105,7 @@ void route_budgets::load_initial_budgets() {
 void route_budgets::load_route_budgets(vtr::vector<ClusterNetId, float*>& net_delay,
                                        std::shared_ptr<SetupTimingInfo> timing_info,
                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                       t_router_opts router_opts) {
+                                       const t_router_opts& router_opts) {
     /*This function loads the routing budgets depending on the option selected by the user
      * the default is to use the minimax algorithm. Other options include disabling this feature
      * or scale the delay by the criticality*/
@@ -456,7 +456,7 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
 void route_budgets::allocate_slack_using_delays_and_criticalities(vtr::vector<ClusterNetId, float*>& net_delay,
                                                                   std::shared_ptr<SetupTimingInfo> timing_info,
                                                                   const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                                                  t_router_opts router_opts) {
+                                                                  const t_router_opts& router_opts) {
     /*Simplifies the budget calculation. The pin criticality describes 1-slack ratio
      * which is deemed a valid way to arrive at the delay budget for a connection. Thus
      * the maximum delay budget = delay through this connection / pin criticality.
@@ -606,8 +606,8 @@ void route_budgets::print_route_budget() {
 
     /* Prints out general info for easy error checking*/
     if (!fp.is_open() || !fp.good()) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "could not open \"route_budget.txt\" for generating route budget file\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "could not open \"route_budget.txt\" for generating route budget file\n");
     }
 
     fp << "Minimum Delay Budgets:" << endl;

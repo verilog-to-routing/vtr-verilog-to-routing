@@ -36,6 +36,7 @@ static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<st
 static std::string high_fanout_thresholds_to_string(const t_pack_high_fanout_thresholds& hf_thresholds);
 
 bool try_pack(t_packer_opts* packer_opts,
+              const t_analysis_opts* analysis_opts,
               const t_arch* arch,
               const t_model* user_models,
               const t_model* library_models,
@@ -121,15 +122,18 @@ bool try_pack(t_packer_opts* packer_opts,
 
     while (true) {
         //Cluster the netlist
-        auto num_type_instances = do_clustering(*packer_opts, arch, list_of_pack_molecules, num_models,
-                                                is_clock,
-                                                atom_molecules,
-                                                expected_lowest_cost_pb_gnode,
-                                                allow_unrelated_clustering,
-                                                balance_block_type_util,
-                                                lb_type_rr_graphs,
-                                                target_external_pin_util,
-                                                high_fanout_thresholds);
+        auto num_type_instances = do_clustering(
+            *packer_opts,
+            *analysis_opts,
+            arch, list_of_pack_molecules, num_models,
+            is_clock,
+            atom_molecules,
+            expected_lowest_cost_pb_gnode,
+            allow_unrelated_clustering,
+            balance_block_type_util,
+            lb_type_rr_graphs,
+            target_external_pin_util,
+            high_fanout_thresholds);
 
         //Try to size/find a device
         bool fits_on_device = try_size_device_grid(*arch, num_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
@@ -168,7 +172,7 @@ bool try_pack(t_packer_opts* packer_opts,
                 resource_avail += std::string(iter->first->name) + ": " + std::to_string(grid.num_instances(iter->first));
             }
 
-            VPR_THROW(VPR_ERROR_OTHER, "Failed to find device which satisifies resource requirements required: %s (available %s)", resource_reqs.c_str(), resource_avail.c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Failed to find device which satisifies resource requirements required: %s (available %s)", resource_reqs.c_str(), resource_avail.c_str());
         }
 
         //Reset clustering for re-packing
@@ -276,7 +280,7 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_type_ptr, 
 
         float num_instances = itr->second;
         float util = 0.;
-        if (num_instances != 0) {
+        if (device_ctx.grid.num_instances(type) != 0) {
             util = num_instances / device_ctx.grid.num_instances(type);
         }
         type_util[type] = util;
@@ -351,7 +355,7 @@ static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::st
             } else {
                 std::stringstream msg;
                 msg << "In valid block pin utilization specification '" << spec << "' (expected at most one ':' between block name and values";
-                VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
             }
 
             auto elements = vtr::split(values, ",");
@@ -363,18 +367,18 @@ static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::st
             } else {
                 std::stringstream msg;
                 msg << "Invalid conversion from '" << spec << "' to external pin util (expected either a single float value, or two float values separted by a comma)";
-                VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
             }
 
             if (target_ext_pin_util.input_pin_util < 0. || target_ext_pin_util.input_pin_util > 1.) {
                 std::stringstream msg;
                 msg << "Out of range target input pin utilization '" << target_ext_pin_util.input_pin_util << "' (expected within range [0.0, 1.0])";
-                VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
             }
             if (target_ext_pin_util.output_pin_util < 0. || target_ext_pin_util.output_pin_util > 1.) {
                 std::stringstream msg;
                 msg << "Out of range target output pin utilization '" << target_ext_pin_util.output_pin_util << "' (expected within range [0.0, 1.0])";
-                VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
             }
 
             if (block_type.empty()) {
@@ -382,7 +386,7 @@ static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::st
                 if (default_set) {
                     std::stringstream msg;
                     msg << "Only one default pin utilization should be specified";
-                    VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+                    VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
                 }
                 targets.set_default_pin_util(target_ext_pin_util);
                 default_set = true;
@@ -390,7 +394,7 @@ static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::st
                 if (seen_block_types.count(block_type)) {
                     std::stringstream msg;
                     msg << "Only one pin utilization should be specified for block type '" << block_type << "'";
-                    VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+                    VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
                 }
 
                 targets.set_block_pin_util(block_type, target_ext_pin_util);
@@ -465,7 +469,7 @@ static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<st
             } else {
                 std::stringstream msg;
                 msg << "In valid block high fanout threshold specification '" << spec << "' (expected at most one ':' between block name and value";
-                VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
             }
 
             int threshold = vtr::atoi(value);
@@ -475,7 +479,7 @@ static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<st
                 if (default_set) {
                     std::stringstream msg;
                     msg << "Only one default high fanout threshold should be specified";
-                    VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+                    VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
                 }
                 high_fanout_thresholds.set_default(threshold);
                 default_set = true;
@@ -483,7 +487,7 @@ static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<st
                 if (seen_block_types.count(block_type)) {
                     std::stringstream msg;
                     msg << "Only one high fanout threshold should be specified for block type '" << block_type << "'";
-                    VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+                    VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
                 }
 
                 high_fanout_thresholds.set(block_type, threshold);

@@ -931,6 +931,24 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gen_grp.add_argument<std::string>(args.disable_errors, "--disable_errors")
+        .help(
+            "Parses a list of functions for which the errors are going to be treated as warnings.\n"
+            "Each function in the list is delimited by `:`\n"
+            "This option should be only used for development purposes.")
+        .default_value("");
+
+    gen_grp.add_argument<std::string>(args.suppress_warnings, "--suppress_warnings")
+        .help(
+            "Parses a list of functions for which the warnings will be suppressed on stdout.\n"
+            "The first element of the list is the name of the output log file with the suppressed warnings.\n"
+            "The output log file can be omitted to completely suppress warnings.\n"
+            "The file name and the list of functions is separated by `,`. If no output log file is specified,\n"
+            "the comma is not needed.\n"
+            "Each function in the list is delimited by `:`\n"
+            "This option should be only used for development purposes.")
+        .default_value("");
+
     auto& file_grp = parser.add_argument_group("file options");
 
     file_grp.add_argument(args.BlifFile, "--circuit_file")
@@ -1163,6 +1181,14 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     pack_grp.add_argument(args.pack_transitive_fanout_threshold, "--pack_transitive_fanout_threshold")
         .help("Packer transitive fanout threshold")
         .default_value("4")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    pack_grp.add_argument(args.pack_feasible_block_array_size, "--pack_feasible_block_array_size")
+        .help(
+            "This value is used to determine the max size of the\n"
+            "priority queue for candidates that pass the early filter\n"
+            "legality test but not the more detailed routing test\n")
+        .default_value("30")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
@@ -1777,16 +1803,16 @@ static bool verify_args(const t_options& args) {
      */
     if (args.read_rr_graph_file.provenance() == Provenance::SPECIFIED
         && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "--route_chan_width option must be specified if --read_rr_graph is requested (%s)\n",
-                  args.read_rr_graph_file.argument_name().c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "--route_chan_width option must be specified if --read_rr_graph is requested (%s)\n",
+                        args.read_rr_graph_file.argument_name().c_str());
     }
 
     if (!args.enable_clustering_pin_feasibility_filter && (args.target_external_pin_util.provenance() == Provenance::SPECIFIED)) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "%s option must be enabled for %s to have any effect\n",
-                  args.enable_clustering_pin_feasibility_filter.argument_name().c_str(),
-                  args.target_external_pin_util.argument_name().c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "%s option must be enabled for %s to have any effect\n",
+                        args.enable_clustering_pin_feasibility_filter.argument_name().c_str(),
+                        args.target_external_pin_util.argument_name().c_str());
     }
 
     return true;

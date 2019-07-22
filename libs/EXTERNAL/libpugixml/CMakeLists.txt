@@ -20,6 +20,6 @@ set(PUGIXML_SUPPRESS_FLAGS -w)
 target_compile_options(libpugixml PRIVATE ${PUGIXML_SUPPRESS_FLAGS})
 
 #Enable compact mode which reduces memory usage.
-add_definitions(-DPUGIXML_COMPACT)
+target_compile_definitions(libpugixml PRIVATE PUGIXML_COMPACT)
 
 install(TARGETS libpugixml DESTINATION bin)

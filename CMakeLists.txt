@@ -30,7 +30,11 @@ option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 option(WITH_LIBRTLNUMBER "Enable build with librtlnumber" OFF)
-option(ODIN_DEBUG "Enable building oding with extra debug flags" OFF)
+
+option(ODIN_DEBUG "Enable building odin with debug flags" OFF)
+option(ODIN_WARN "Enable building odin with extra warning flags" OFF)
+option(ODIN_COVERAGE "Enable building odin with coverage flags" OFF)
+option(ODIN_TIDY "Enable building odin with clang tidy" OFF)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 0)
@@ -83,7 +87,7 @@ if (VTR_IPO_BUILD STREQUAL "on")
         message(ERROR "Building with IPO unsupported with this compiler!")
     endif()
 elseif(VTR_IPO_BUILD STREQUAL "auto")
-    if (IPO_SUPPORTED)
+    if (IPO_SUPPORTED AND NOT CMAKE_BUILD_TYPE STREQUAL "debug")
         message(STATUS "Building with IPO: on (auto)")
         set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
     else()
@@ -181,6 +185,19 @@ foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
     if(CXX_COMPILER_SUPPORTS_${flag})
         #Flag supported, so enable it
         set(FLEX_BISON_WARN_SUPPRESS_FLAGS "${FLEX_BISON_WARN_SUPPRESS_FLAGS} ${flag}")
+    endif()
+endforeach()
+
+#Suppress IPO link warnings
+set(IPO_LINK_WARN_SUPRESS_FLAGS " ")
+set(IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK 
+    "-Wno-null-dereference"
+    )
+foreach(flag ${IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK})
+    CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
+    if(CXX_COMPILER_SUPPORTS_${flag})
+        #Flag supported, so enable it
+        set(IPO_LINK_WARN_SUPRESS_FLAGS "${IPO_LINK_WARN_SUPRESS_FLAGS} ${flag}")
     endif()
 endforeach()
 

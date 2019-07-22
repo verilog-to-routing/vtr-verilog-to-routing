@@ -207,7 +207,7 @@ void get_serial_num() {
     VTR_LOG("Serial number (magic cookie) for the routing is: %d\n", serial_num);
 }
 
-void try_graph(int width_fac, t_router_opts router_opts, t_det_routing_arch* det_routing_arch, std::vector<t_segment_inf>& segment_inf, t_chan_width_dist chan_width_dist, t_direct_inf* directs, int num_directs) {
+void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_arch* det_routing_arch, std::vector<t_segment_inf>& segment_inf, t_chan_width_dist chan_width_dist, t_direct_inf* directs, int num_directs) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     t_graph_type graph_type;
@@ -508,8 +508,8 @@ void init_route_structs(int bb_factor) {
      * really were.                                                           */
 
     if (heap_tail != 1) {
-        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                  "in init_route_structs. Heap is not empty.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "in init_route_structs. Heap is not empty.\n");
     }
 }
 
@@ -558,8 +558,8 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_
 
     auto rr_type = device_ctx.rr_nodes[node].type();
     if (rr_type != SINK) {
-        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                  "in traceback_branch: Expected type = SINK (%d).\n");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "in traceback_branch: Expected type = SINK (%d).\n");
     }
 
     //We construct the main traceback by walking from the given node back to the source,
@@ -1486,9 +1486,9 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
                             break;
 
                         default:
-                            vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                                      "in print_route: Unexpected traceback element type: %d (%s).\n",
-                                      rr_type, device_ctx.rr_nodes[inode].type_string());
+                            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                            "in print_route: Unexpected traceback element type: %d (%s).\n",
+                                            rr_type, device_ctx.rr_nodes[inode].type_string());
                             break;
                     }
 
@@ -1748,7 +1748,7 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
 
             //Verify that the next element (branch point) has been already seen in the traceback so far
             if (!seen_rr_nodes.count(next->index)) {
-                VPR_THROW(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);
             } else {
                 //Recurse along the new branch
                 return validate_traceback_recurr(next, seen_rr_nodes);
@@ -1769,16 +1769,16 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
                     //Verify that the switch matches
                     int rr_iswitch = device_ctx.rr_nodes[trace->index].edge_switch(iedge);
                     if (trace->iswitch != rr_iswitch) {
-                        VPR_THROW(VPR_ERROR_ROUTE, "Traceback mismatched switch type: traceback %d rr_graph %d (RR nodes %d -> %d)\n",
-                                  trace->iswitch, rr_iswitch,
-                                  trace->index, to_node);
+                        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback mismatched switch type: traceback %d rr_graph %d (RR nodes %d -> %d)\n",
+                                        trace->iswitch, rr_iswitch,
+                                        trace->index, to_node);
                     }
                     break;
                 }
             }
 
             if (!found) {
-                VPR_THROW(VPR_ERROR_ROUTE, "Traceback no RR edge between RR nodes %d -> %d\n", trace->index, next->index);
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback no RR edge between RR nodes %d -> %d\n", trace->index, next->index);
             }
 
             //Recurse
@@ -1898,7 +1898,7 @@ static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& t
             missing_from_trace_nodes.size(),
             vtr::join(missing_from_trace_nodes, ", ").c_str());
 
-        VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
         return false;
     }
 

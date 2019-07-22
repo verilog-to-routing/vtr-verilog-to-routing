@@ -24,6 +24,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <math.h>
 #include "odin_globals.h"
+#include "odin_types.h"
 #include "odin_util.h"
 
 #include "netlist_utils.h"
@@ -286,7 +287,7 @@ void check_memories_and_report_distribution()
 		long depth = get_sp_ram_depth(node);
 
 		if (depth > shift_left_value_with_overflow_check(0x1, HARD_RAM_ADDR_LIMIT))
-			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%ld.", node->name, depth, HARD_RAM_ADDR_LIMIT);
+			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%d.", node->name, depth, HARD_RAM_ADDR_LIMIT);
 
 		printf("SPRAM: %zu width %zu depth\n", width, depth);
 
@@ -312,7 +313,7 @@ void check_memories_and_report_distribution()
 		long width = get_dp_ram_width(node);
 		long depth = get_dp_ram_depth(node);
 		if (depth > shift_left_value_with_overflow_check(0x1, HARD_RAM_ADDR_LIMIT))
-			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%ld.", node->name, depth, HARD_RAM_ADDR_LIMIT);
+			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%d.", node->name, depth, HARD_RAM_ADDR_LIMIT);
 
 		printf("DPRAM: %zu width %zu depth\n", width, depth);
 		total_memory_bits += width * depth;
@@ -435,7 +436,12 @@ void split_sp_memory_depth(nnode_t *node, int split_size)
 		connect_nodes(not_g, 0, mux, 1);
 
 		npin_t *pin = signals->out->pins[i];
+		if(pin->name)
+			vtr::free(pin->name);
 		pin->name = mux->name;
+		
+		if(pin->mapping)
+			vtr::free(pin->mapping);
 		pin->mapping = NULL;
 
 		remap_pin_to_new_node(pin, mux, 0);
@@ -653,7 +659,7 @@ void split_sp_memory_width(nnode_t *node, int target_size)
 		for (i = 0; i < num_memories; i++)
 		{
 			nnode_t *new_node = allocate_nnode();
-			new_node->name = append_string(node->name, "-%ld",i);
+			new_node->name = append_string(node->name, "-%d",i);
 			sp_memory_list = insert_in_vptr_list(sp_memory_list, new_node);
 
 			/* Copy properties from the original node */
@@ -778,7 +784,7 @@ void split_dp_memory_width(nnode_t *node, int target_size)
 		for (i = 0; i < num_memories; i++)
 		{
 			nnode_t *new_node = allocate_nnode();
-			new_node->name = append_string(node->name, "-%ld",i);
+			new_node->name = append_string(node->name, "-%d",i);
 			dp_memory_list = insert_in_vptr_list(dp_memory_list, new_node);
 
 			/* Copy properties from the original node */
@@ -896,7 +902,7 @@ void split_dp_memory_width(nnode_t *node, int target_size)
 				}
 				else
 				{
-					oassert(FALSE);
+					oassert(false);
 				}
 			}
 		}
@@ -1721,7 +1727,7 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 {
 	long num_inputs = input_list->count;
 	if ( num_inputs > SOFT_RAM_ADDR_LIMIT)
-		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Memory %s of depth 2^%ld exceeds ODIN bound of 2^%ld.\nMust use an FPGA architecture that contains embedded hard block memories", node->name, num_inputs, SOFT_RAM_ADDR_LIMIT);
+		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Memory %s of depth 2^%ld exceeds ODIN bound of 2^%d.\nMust use an FPGA architecture that contains embedded hard block memories", node->name, num_inputs, SOFT_RAM_ADDR_LIMIT);
 
 	// Number of outputs is 2^num_inputs
 	long num_outputs = shift_left_value_with_overflow_check(0x1, num_inputs);
@@ -1735,7 +1741,7 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 		&& input_list->pins[i]->net != verilog_netlist->one_net
 		&& input_list->pins[i]->net != verilog_netlist->pad_net)
 		{
-			warning_message(NETLIST_ERROR, -1, -1, "Signal %s is not driven. padding with ground\n", input_list->pins[i]);
+			warning_message(NETLIST_ERROR, -1, -1, "Signal %s is not driven. padding with ground\n", input_list->pins[i]->name);
 			add_fanout_pin_to_net(verilog_netlist->zero_net, input_list->pins[i]);
 		}
 

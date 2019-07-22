@@ -2,7 +2,9 @@
 #define VPR_UTILS_H
 
 #include <vector>
+#include <string>
 #include <regex>
+
 #include "vpr_types.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"

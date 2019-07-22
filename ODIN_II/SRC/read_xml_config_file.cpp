@@ -50,7 +50,7 @@ void set_default_optimization_settings(config_t *config);
  *
  * See config_t in types.h to see the data structures used in this read.
  *-----------------------------------------------------------------------*/
-void read_config_file(char *file_name)
+void read_config_file(const char *file_name)
 {
 	pugi::xml_node config, next;
 
@@ -121,13 +121,13 @@ void read_outputs(pugi::xml_node a_node, config_t *config, const pugiutil::loc_d
 	child = get_single_child(a_node, "output_type", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		config->output_type = vtr::strdup(child.child_value());
+		config->output_type = child.child_value();
 	}
 
 	child = get_single_child(a_node, "output_path_and_name", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		global_args.output_file.set(vtr::strdup(child.child_value()), argparse::Provenance::SPECIFIED);
+		global_args.output_file.set(child.child_value(), argparse::Provenance::SPECIFIED);
 	}
 
 	child = get_single_child(a_node, "target", loc_data, OPTIONAL);
@@ -137,11 +137,11 @@ void read_outputs(pugi::xml_node a_node, config_t *config, const pugiutil::loc_d
 		if (child != NULL)
 		{
 			/* Two arch files specified? */
-			if (global_args.arch_file != NULL)
+			if (global_args.arch_file.value() != "")
 			{
 				error_message(ARG_ERROR, -1, -1, "%s", "Error: Arch file specified in config file AND command line\n");
 			}
-			global_args.arch_file.set(vtr::strdup(child.child_value()), argparse::Provenance::SPECIFIED);
+			global_args.arch_file.set(child.child_value(), argparse::Provenance::SPECIFIED);
 		}
 	}
 	return;
@@ -169,19 +169,13 @@ void read_debug_switches(pugi::xml_node a_node, config_t *config, const pugiutil
 	child = get_single_child(a_node, "debug_output_path", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		config->debug_output_path = std::string(child.child_value());
+		config->debug_output_path = child.child_value();
 	}
 
 	child = get_single_child(a_node, "print_parse_tokens", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
 		config->print_parse_tokens = atoi(child.child_value());
-	}
-
-	child = get_single_child(a_node, "output_preproc_source", loc_data, OPTIONAL);
-	if (child != NULL)
-	{
-		config->output_preproc_source = atoi(child.child_value());
 	}
 
 	return;
@@ -196,8 +190,8 @@ void set_default_optimization_settings(config_t *config)
 	config->fixed_hard_multiplier = 0;
 	config->mult_padding = -1; /* unconn */
 	config->split_hard_multiplier = 1;
-	config->split_memory_width = FALSE;
-	config->split_memory_depth = FALSE;
+	config->split_memory_width = false;
+	config->split_memory_depth = false;
 	config->min_hard_adder = 0;
 	config->fixed_hard_adder = 0;
 	config->split_hard_adder = 1;

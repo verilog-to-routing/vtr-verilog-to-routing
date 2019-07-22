@@ -595,7 +595,7 @@ class SdcParseCallback : public sdcparse::Callback {
         setup_constraint = sdc_units_to_seconds(setup_constraint);
 
         if (setup_constraint < 0.) {
-            VPR_THROW(VPR_ERROR_SDC,
+            VPR_ERROR(VPR_ERROR_SDC,
                       "Setup constraint %g for transfers from clock '%s' to clock '%s' is negative."
                       " Requires data to arrive before launch edge (No time travelling allowed!)",
                       setup_constraint,

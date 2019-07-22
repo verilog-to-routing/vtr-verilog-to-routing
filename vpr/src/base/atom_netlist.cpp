@@ -138,7 +138,7 @@ AtomPortId AtomNetlist::create_port(const AtomBlockId blk_id, const t_model_port
     } else if (model_port->dir == OUT_PORT) {
         type = PortType::OUTPUT;
     } else {
-        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Unrecognized model port type");
+        VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST, "Unrecognized model port type");
     }
 
     if (!port_id) {

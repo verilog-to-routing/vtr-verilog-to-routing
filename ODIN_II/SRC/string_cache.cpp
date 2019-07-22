@@ -204,7 +204,7 @@ STRING_CACHE * sc_free_string_cache(STRING_CACHE * sc)
     sc->string = NULL;
     if(sc->data != NULL)
 	{
-//	    vtr::free(sc->data);
+	    vtr::free(sc->data);
 	    sc->data = NULL;
 	}
     if(sc->string_hash != NULL)

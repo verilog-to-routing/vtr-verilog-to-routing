@@ -213,7 +213,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                             break;
 
                         default:
-                            vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            VPR_ERROR(VPR_ERROR_ROUTE,
                                       "in count_routing_transistors:\n"
                                       "\tUnexpected connection from node %d (type %s) to node %d (type %s).\n",
                                       from_node, rr_node_typename[from_rr_type], to_node, rr_node_typename[to_rr_type]);
@@ -403,14 +403,14 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                                             "BUFFER has fan in %d (expected 1)\n",
                                             fan_in);
                                         msg += "  " + describe_rr_node(to_node);
-                                        VPR_THROW(VPR_ERROR_OTHER, msg.c_str());
+                                        VPR_FATAL_ERROR(VPR_ERROR_OTHER, msg.c_str());
                                     }
 
                                     //This is a non-configurable buffer, so there are no mux transistors,
                                     //only the buffer area
                                     ntrans += device_ctx.rr_switch_inf[switch_index].buf_size;
                                 } else {
-                                    VPR_THROW(VPR_ERROR_OTHER, "Unexpected switch type %d while calculating area of uni-directional routing", switch_type);
+                                    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Unexpected switch type %d while calculating area of uni-directional routing", switch_type);
                                 }
                                 chan_node_switch_done[to_node] = true;
                             }
@@ -430,7 +430,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                             break;
 
                         default:
-                            vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            VPR_ERROR(VPR_ERROR_ROUTE,
                                       "in count_routing_transistors:\n"
                                       "\tUnexpected connection from node %d (type %d) to node %d (type %d).\n",
                                       from_node, from_rr_type, to_node, to_rr_type);
@@ -693,7 +693,7 @@ static float trans_per_R(float Rtrans, float R_minW_trans) {
          * transistors are taken into account (extra spacing needed for N-wells) */
         trans_area = 0.518 + 0.127 * drive_strength + 0.428 * sqrt(drive_strength);
     } else {
-        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Unrecognized transistor area model: %d\n", (int)trans_area_eq);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unrecognized transistor area model: %d\n", (int)trans_area_eq);
     }
 
     return (trans_area);

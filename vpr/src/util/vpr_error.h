@@ -1,8 +1,11 @@
 #ifndef VPR_ERROR_H
 #define VPR_ERROR_H
 
-#include "vtr_error.h"
 #include <cstdarg>
+#include <string>
+#include <unordered_set>
+
+#include "vtr_error.h"
 
 enum e_vpr_error {
     VPR_ERROR_UNKNOWN = 0,
@@ -45,6 +48,11 @@ class VprError : public vtr::VtrError {
     t_vpr_error_type type_;
 };
 
+// This function is used to save into the functions_to_demote set
+// all the function names which contain VPR_THROW errors that are
+// going to be demoted to be VTR_LOG_WARN
+void map_error_activation_status(std::string function_name);
+
 //VPR error reporting routines
 //
 //Note that we mark these functions with the C++11 attribute 'noreturn'
@@ -52,14 +60,62 @@ class VprError : public vtr::VtrError {
 //reduce false-positive compiler warnings
 [[noreturn]] void vpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
 [[noreturn]] void vvpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, va_list args);
+[[noreturn]] void vpr_throw_msg(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, std::string msg);
+
+void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, const char* psz_func_name, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
+
+//Figure out what macro to use to get the name of the current function
+// We default to __func__ which is defined in C99
+//
+// g++ > 2.6 define __PRETTY_FUNC__ which includes class/namespace/overload
+// information, so we prefer to use it if possible
+#define VPR_THROW_FUNCTION __func__
+#ifdef __GNUC__
+#    ifdef __GNUC_MINOR__
+#        if __GNUC__ >= 2 && __GNUC_MINOR__ > 6
+#            undef VPR_THROW_FUNCTION
+#            define VPR_THROW_FUNCTION __PRETTY_FUNCTION__
+#        endif
+#    endif
+#endif
 
 /*
- * Macro wrapper around vpr_throw() which automatically
- * specifies file and line number of call site.
+ * Unconditionally throws a VprError condition with automatically specified
+ * file and line number of the call site.
+ *
+ * It is preferred to use either VPR_FATAL_ERROR(), or VPR_ERROR() to capture
+ * the intention behind the throw.
+ *
+ * This macro is a wrapper around vpr_throw().
  */
 #define VPR_THROW(type, ...)                              \
     do {                                                  \
         vpr_throw(type, __FILE__, __LINE__, __VA_ARGS__); \
+    } while (false)
+
+/*
+ * VPR_FATAL_ERROR() is used to signal an *unconditional* fatal error which should
+ * stop the program.
+ *
+ * This macro is a wrapper around VPR_THOW()
+ */
+#define VPR_FATAL_ERROR(...)    \
+    do {                        \
+        VPR_THROW(__VA_ARGS__); \
+    } while (false)
+
+/*
+ * VPR_ERROR() is used to signal an error (potentially non-fatal) which by
+ * default stops the program, but may be suppressed (i.e. converted to a
+ * warning).
+ *
+ * This macro is a wrapper around vpr_throw_opt() which automatically
+ * specifies file and line number of call site.
+ *
+ */
+#define VPR_ERROR(type, ...)                                                                \
+    do {                                                                                    \
+        vpr_throw_opt(type, VPR_THROW_FUNCTION, __func__, __FILE__, __LINE__, __VA_ARGS__); \
     } while (false)
 
 #endif

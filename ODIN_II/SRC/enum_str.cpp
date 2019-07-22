@@ -5,12 +5,6 @@ const char *file_extension_supported_STR[] =
 	".v"
 };
 
-const char *signedness_STR[] =
-{
-	"SIGNED",
-	"UNSIGNED"
-};
-
 const char *edge_type_e_STR[] =
 {
 	"UNDEFINED_SENSITIVITY",
@@ -83,7 +77,7 @@ const char *operation_list_STR[][2] =
 	{"MULTIPLY",        "MUL"}, // *
 	{"DIVIDE",          "DIV"}, // /
 	{"MODULO",          "MOD"}, // %
-	{"OP_POW",          "POW"}, // **
+	{"POWER",          "POW"}, // **
 	{"LT",              "LT"}, // <
 	{"GT",              "GT"}, // >
 	{"LOGICAL_EQUAL",   "lEQ"}, // ==
@@ -106,6 +100,8 @@ const char *operation_list_STR[][2] =
 	{"GENERIC",         "GEN"}, /*added for the unknown node type */
 	{"FULLADDER",       "FlADD"},
 	{"CLOG2",			"CL2"}, // $clog2
+	{"UNSIGNED",		"UNSG"}, // $unsigned
+	{"SIGNED",			"SG"}, // $signed
 	{"ERROR OOB",		"OOB"} // should not reach this
 };
 
@@ -184,6 +180,7 @@ const char *ids_STR []=
 	"ARRAY_REF",
 	"RANGE_REF",
 	"CONCATENATE",
+	"REPLICATE",
 	/* basic identifiers */
 	"IDENTIFIERS",
 	"NUMBERS",

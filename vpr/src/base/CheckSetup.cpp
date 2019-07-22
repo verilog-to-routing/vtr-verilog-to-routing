@@ -18,14 +18,14 @@ void CheckSetup(const t_packer_opts& PackerOpts,
     int Tmp;
 
     if (!Timing.timing_analysis_enabled && PackerOpts.timing_driven) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "Packing cannot be timing driven without timing analysis enabled\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Packing cannot be timing driven without timing analysis enabled\n");
     }
 
     if ((GLOBAL == RouterOpts.route_type)
         && (TIMING_DRIVEN == RouterOpts.router_algorithm)) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "The global router does not support timing-drvien routing.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "The global router does not support timing-drvien routing.\n");
     }
 
     if ((GLOBAL == RouterOpts.route_type)
@@ -40,26 +40,26 @@ void CheckSetup(const t_packer_opts& PackerOpts,
     if ((false == Timing.timing_analysis_enabled)
         && (PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE)) {
         /* May work, not tested */
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "Timing analysis must be enabled for timing-driven placement.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Timing analysis must be enabled for timing-driven placement.\n");
     }
 
     if (!PlacerOpts.doPlacement && (USER == PlacerOpts.pad_loc_type)) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "A pad location file requires that placement is enabled.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "A pad location file requires that placement is enabled.\n");
     }
 
     if (RouterOpts.doRouting) {
         if ((TIMING_DRIVEN == RouterOpts.router_algorithm)
             && (false == Timing.timing_analysis_enabled)) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "Cannot perform timing-driven routing when timing analysis is disabled.\n");
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Cannot perform timing-driven routing when timing analysis is disabled.\n");
         }
 
         if ((false == Timing.timing_analysis_enabled)
             && (DEMAND_ONLY != RouterOpts.base_cost_type)) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "base_cost_type must be demand_only when timing analysis is disabled.\n");
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "base_cost_type must be demand_only when timing analysis is disabled.\n");
         }
     }
 
@@ -67,8 +67,8 @@ void CheckSetup(const t_packer_opts& PackerOpts,
         if ((Chans.chan_x_dist.type != UNIFORM)
             || (Chans.chan_y_dist.type != UNIFORM)
             || (Chans.chan_x_dist.peak != Chans.chan_y_dist.peak)) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "Detailed routing currently only supported on FPGAs with all channels of equal width.\n");
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Detailed routing currently only supported on FPGAs with all channels of equal width.\n");
         }
     }
 
@@ -76,30 +76,30 @@ void CheckSetup(const t_packer_opts& PackerOpts,
         Tmp = Segments[i].arch_opin_switch;
         auto& device_ctx = g_vpr_ctx.device();
         if (false == device_ctx.arch_switch_inf[Tmp].buffered()) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "arch_opin_switch (#%d) of segment type #%d is not buffered.\n", Tmp, i);
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "arch_opin_switch (#%d) of segment type #%d is not buffered.\n", Tmp, i);
         }
     }
 
     if ((PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) && PlacerOpts.place_chan_width < 0) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "Place channel width must be positive.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Place channel width must be positive.\n");
     }
     if ((RouterOpts.fixed_channel_width != NO_FIXED_CHANNEL_WIDTH) && RouterOpts.fixed_channel_width < 0) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "Routing channel width must be positive.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Routing channel width must be positive.\n");
     }
 
     if (UNI_DIRECTIONAL == RoutingArch.directionality) {
         if ((RouterOpts.fixed_channel_width != NO_FIXED_CHANNEL_WIDTH)
             && (RouterOpts.fixed_channel_width % 2 > 0)) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "Routing channel width must be even for unidirectional.\n");
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Routing channel width must be even for unidirectional.\n");
         }
         if ((PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH)
             && (PlacerOpts.place_chan_width % 2 > 0)) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "Place channel width must be even for unidirectional.\n");
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Place channel width must be even for unidirectional.\n");
         }
     }
 }

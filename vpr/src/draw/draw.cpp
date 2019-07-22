@@ -1301,8 +1301,8 @@ void draw_rr() {
                 break;
 
             default:
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                          "in draw_rr: Unexpected rr_node type: %d.\n", device_ctx.rr_nodes[inode].type());
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "in draw_rr: Unexpected rr_node type: %d.\n", device_ctx.rr_nodes[inode].type());
         }
     }
 
@@ -1505,7 +1505,7 @@ static void draw_rr_edges(int inode) {
                         draw_pin_to_pin(inode, to_node);
                         break;
                     default:
-                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                        VPR_ERROR(VPR_ERROR_OTHER,
                                   "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
                                   inode, from_type, to_node, to_type);
                         break;
@@ -1568,7 +1568,7 @@ static void draw_rr_edges(int inode) {
                         break;
 
                     default:
-                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                        VPR_ERROR(VPR_ERROR_OTHER,
                                   "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
                                   inode, from_type, to_node, to_type);
                         break;
@@ -1631,7 +1631,7 @@ static void draw_rr_edges(int inode) {
                         break;
 
                     default:
-                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                        VPR_ERROR(VPR_ERROR_OTHER,
                                   "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
                                   inode, from_type, to_node, to_type);
                         break;
@@ -1639,7 +1639,7 @@ static void draw_rr_edges(int inode) {
                 break;
 
             default: /* from_type */
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                VPR_ERROR(VPR_ERROR_OTHER,
                           "draw_rr_edges called with node %d of type %d.\n",
                           inode, from_type);
                 break;
@@ -2041,8 +2041,8 @@ void draw_get_rr_pin_coords(const t_rr_node* node, float* xcen, float* ycen) {
             break;
 
         default:
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "in draw_get_rr_pin_coords: Unexpected side %s.\n", node->side_string());
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "in draw_get_rr_pin_coords: Unexpected side %s.\n", node->side_string());
             break;
     }
 
@@ -2215,7 +2215,7 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
                         break;
                     }
                     default: {
-                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                        VPR_ERROR(VPR_ERROR_OTHER,
                                   "Unexpected connection from an rr_node of type %d to one of type %d.\n",
                                   prev_type, rr_type);
                     }
@@ -2249,7 +2249,7 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
                         break;
                     }
                     default: {
-                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                        VPR_ERROR(VPR_ERROR_OTHER,
                                   "Unexpected connection from an rr_node of type %d to one of type %d.\n",
                                   prev_type, rr_type);
                     }
@@ -2288,7 +2288,7 @@ static int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, c
             return (chany_track[i][j]);
 
         default:
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+            VPR_ERROR(VPR_ERROR_OTHER,
                       "in get_track_num: Unexpected node type %d for node %d.\n", rr_type, inode);
             return OPEN;
     }
@@ -2908,7 +2908,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
             break;
         }
         default: {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+            VPR_ERROR(VPR_ERROR_OTHER,
                       "in draw_pin_to_chan_edge: Invalid channel node %d.\n", chan_node);
         }
     }
@@ -3545,7 +3545,7 @@ static float get_router_rr_cost(const t_rr_node_route_inf node_inf, e_draw_route
         return node_inf.path_cost - node_inf.backward_path_cost;
     }
 
-    VPR_THROW(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
+    VPR_FATAL_ERROR(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
 }
 
 static void draw_router_rr_costs() {

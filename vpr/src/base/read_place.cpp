@@ -21,9 +21,9 @@ void read_place(const char* net_file,
                 const DeviceGrid& grid) {
     std::ifstream fstream(place_file);
     if (!fstream) {
-        vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__,
-                  "'%s' - Cannot open place file.\n",
-                  place_file);
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE_F,
+                        "'%s' - Cannot open place file.\n",
+                        place_file);
     }
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -154,9 +154,9 @@ void read_user_pad_loc(const char* pad_loc_file) {
     VTR_LOG("\n");
     VTR_LOG("Reading locations of IO pads from '%s'.\n", pad_loc_file);
     fp = fopen(pad_loc_file, "r");
-    if (!fp) vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__,
-                       "'%s' - Cannot find IO pads location file.\n",
-                       pad_loc_file);
+    if (!fp) VPR_FATAL_ERROR(VPR_ERROR_PLACE_F,
+                             "'%s' - Cannot find IO pads location file.\n",
+                             pad_loc_file);
 
     hash_table = alloc_hash_table();
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {

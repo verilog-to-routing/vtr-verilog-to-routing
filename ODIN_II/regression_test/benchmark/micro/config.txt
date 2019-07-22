@@ -1,1 +1,1 @@
---arch_list small_sweep --simulate
+--arch_list small_sweep

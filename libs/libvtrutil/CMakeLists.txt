@@ -22,12 +22,32 @@ if(NOT DEFINED VTR_VERSION_PATCH)
     set(VTR_VERSION_PATCH 0)
 endif()
 
-set(VTR_BUILD_TYPE "${CMAKE_BUILD_TYPE}")
+set(VTR_BUILD_INFO "${CMAKE_BUILD_TYPE}")
 if (CMAKE_INTERPROCEDURAL_OPTIMIZATION)
-    set(VTR_BUILD_TYPE "${VTR_BUILD_TYPE} IPO")
+    set(VTR_BUILD_INFO "${VTR_BUILD_INFO} IPO")
 endif()
+
 if (VPR_PGO_CONFIG STREQUAL "prof_use")
-    set(VTR_BUILD_TYPE "${VTR_BUILD_TYPE} PGO")
+    set(VTR_BUILD_INFO "${VTR_BUILD_INFO} PGO")
+elseif (VPR_PGO_CONFIG STREQUAL "prof_gen")
+    set(VTR_BUILD_INFO "${VTR_BUILD_INFO} PGOgen")
+endif()
+
+set(VTR_BUILD_INFO "${VTR_BUILD_INFO} VTR_ASSERT_LEVEL=${VTR_ASSERT_LEVEL}")
+
+if (VTR_ENABLE_SANITIZE)
+    set(VTR_BUILD_INFO "${VTR_BUILD_INFO} sanitizers")
+endif()
+if (VTR_ENABLE_PROFILING)
+    set(VTR_BUILD_INFO "${VTR_BUILD_INFO} gprof")
+endif()
+
+if (VTR_ENABLE_COVERAGE)
+    set(VTR_BUILD_INFO "${VTR_BUILD_INFO} gcov")
+endif()
+
+if (VTR_ENABLE_DEBUG_LOGGING)
+    set(VTR_BUILD_INFO "${VTR_BUILD_INFO} debug_logging")
 endif()
 
 # We always update the vtr_version.cpp file every time the project is built, 
@@ -53,7 +73,7 @@ add_custom_command(OUTPUT ${VTR_VERSION_FILE_OUT}
                     -D VTR_VERSION_PATCH=${VTR_VERSION_PATCH}
                     -D VTR_VERSION_PRERELEASE=${VTR_VERSION_PRERELEASE}
                     -D VTR_COMPILER_INFO=${VTR_COMPILER_INFO}
-                    -D VTR_BUILD_TYPE=${VTR_BUILD_TYPE}
+                    -D VTR_BUILD_INFO=${VTR_BUILD_INFO}
                     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/configure_version.cmake
     MAIN_DEPENDENCY ${VTR_VERSION_FILE_IN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

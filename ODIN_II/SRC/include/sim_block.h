@@ -1,3 +1,6 @@
+#ifndef SIM_BLOCK_H
+#define SIM_BLOCK_H
+
 #include "odin_types.h"
 
 /*
@@ -9,3 +12,5 @@
 	The method encompasses the rising edge and falling edge of one clock tick.
 */
 void simulate_block_cycle(int cycle, int num_input_pins, int *inputs, int num_output_pins, int *outputs);
+
+#endif

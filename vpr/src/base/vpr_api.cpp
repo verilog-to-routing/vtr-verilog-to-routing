@@ -103,12 +103,13 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 
 /* Display general VPR information */
 void vpr_print_title() {
-    VTR_LOG("\n");
     VTR_LOG("VPR FPGA Placement and Routing.\n");
     VTR_LOG("Version: %s\n", vtr::VERSION);
     VTR_LOG("Revision: %s\n", vtr::VCS_REVISION);
     VTR_LOG("Compiled: %s\n", vtr::BUILD_TIMESTAMP);
     VTR_LOG("Compiler: %s\n", vtr::COMPILER);
+    VTR_LOG("Build Info: %s\n", vtr::BUILD_INFO);
+    VTR_LOG("\n");
     VTR_LOG("University of Toronto\n");
     VTR_LOG("verilogtorouting.org\n");
     VTR_LOG("vtr-users@googlegroups.com\n");
@@ -212,6 +213,35 @@ void vpr_init(const int argc, const char** argv, t_options* options, t_vpr_setup
 
     /* Determine whether echo is on or off */
     setEchoEnabled(options->CreateEchoFile);
+
+    /*
+     * Initialize the functions names for which VPR_ERRORs
+     * are demoted to VTR_LOG_WARNs
+     */
+    for (std::string func_name : vtr::split(options->disable_errors, std::string(":"))) {
+        map_error_activation_status(func_name);
+    }
+
+    /*
+     * Initialize the functions names for which
+     * warnings are being suppressed
+     */
+    std::vector<std::string> split_warning_option = vtr::split(options->suppress_warnings, std::string(","));
+    std::string warn_log_file;
+    std::string warn_functions;
+    // If no log file name is provided, the specified warning
+    // to suppress are not output anywhere.
+    if (split_warning_option.size() == 1) {
+        warn_functions = split_warning_option[0];
+    } else if (split_warning_option.size() == 2) {
+        warn_log_file = split_warning_option[0];
+        warn_functions = split_warning_option[1];
+    }
+
+    set_noisy_warn_log_file(warn_log_file);
+    for (std::string func_name : vtr::split(warn_functions, std::string(":"))) {
+        add_warnings_to_suppress(func_name);
+    }
 
     /* Read in arch and circuit */
     SetupVPR(options,
@@ -391,7 +421,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     for (int i = 0; i < device_ctx.num_block_types; ++i) {
         auto type = &device_ctx.block_types[i];
         float util = 0.;
-        if (num_type_instances[type] != 0) {
+        if (device_ctx.grid.num_instances(type) != 0) {
             util = float(num_type_instances[type]) / device_ctx.grid.num_instances(type);
         }
         VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type->name);
@@ -498,8 +528,10 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                  + wtoi_switch_del); /* multiply by 4 to get a more conservative estimate */
     }
 
-    return try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models,
-                    vpr_setup.library_models, inter_cluster_delay, vpr_setup.PackerRRGraph);
+    return try_pack(&vpr_setup.PackerOpts, &vpr_setup.AnalysisOpts,
+                    &arch, vpr_setup.user_models,
+                    vpr_setup.library_models, inter_cluster_delay,
+                    vpr_setup.PackerRRGraph);
 }
 
 void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -681,7 +713,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
     vtr::ScopedStartFinishTimer timer("Routing");
 
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width || fixed_channel_width <= 0) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when routing at fixed channel width (was %d)", fixed_channel_width);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when routing at fixed channel width (was %d)", fixed_channel_width);
     }
 
     bool status = try_route(fixed_channel_width,
@@ -732,7 +764,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              vtr::vector<ClusterNetId, float*>& net_delay) {
     vtr::ScopedStartFinishTimer timer("Load Routing");
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
     }
 
     auto& filename_opts = vpr_setup.FileNameOpts;
@@ -901,7 +933,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
     } else if (directionality == BI_DIRECTIONAL) {
         /* no adjustments need to be made here */
     } else {
-        vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Unrecognized directionality: %d\n", (int)directionality);
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unrecognized directionality: %d\n", (int)directionality);
     }
 }
 
@@ -1045,13 +1077,13 @@ void vpr_check_arch(const t_arch& Arch) {
 }
 
 /* Verify settings don't conflict or otherwise not make sense */
-void vpr_check_setup(const t_packer_opts PackerOpts,
-                     const t_placer_opts PlacerOpts,
-                     const t_router_opts RouterOpts,
-                     const t_det_routing_arch RoutingArch,
+void vpr_check_setup(const t_packer_opts& PackerOpts,
+                     const t_placer_opts& PlacerOpts,
+                     const t_router_opts& RouterOpts,
+                     const t_det_routing_arch& RoutingArch,
                      const std::vector<t_segment_inf>& Segments,
-                     const t_timing_inf Timing,
-                     const t_chan_width_dist Chans) {
+                     const t_timing_inf& Timing,
+                     const t_chan_width_dist& Chans) {
     CheckSetup(PackerOpts, PlacerOpts, RouterOpts, RoutingArch,
                Segments, Timing, Chans);
 }
@@ -1091,7 +1123,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
     //Check the first index to see if a pointer exists
     //TODO: Implement a better error check
     if (route_ctx.trace.empty()) {
-        VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
+        VPR_FATAL_ERROR(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
     }
 
     vtr::vector<ClusterNetId, float*> net_delay;
@@ -1124,8 +1156,10 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 
         //Timing stats
         VTR_LOG("\n");
-        generate_hold_timing_stats(*timing_info, *analysis_delay_calc, vpr_setup.AnalysisOpts);
-        generate_setup_timing_stats(*timing_info, *analysis_delay_calc, vpr_setup.AnalysisOpts);
+        generate_hold_timing_stats(/*prefix=*/"", *timing_info,
+                                   *analysis_delay_calc, vpr_setup.AnalysisOpts);
+        generate_setup_timing_stats(/*prefix=*/"", *timing_info,
+                                    *analysis_delay_calc, vpr_setup.AnalysisOpts);
 
         //Write the post-syntesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
@@ -1155,7 +1189,7 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup,
                           const RouteStatus& route_status) {
     /* Ensure we are only using 1 clock */
     if (timing_info.critical_paths().size() != 1) {
-        VPR_THROW(VPR_ERROR_POWER, "Power analysis only supported on single-clock circuits");
+        VPR_FATAL_ERROR(VPR_ERROR_POWER, "Power analysis only supported on single-clock circuits");
     }
 
     auto& power_ctx = g_vpr_ctx.mutable_power();

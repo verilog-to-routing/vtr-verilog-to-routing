@@ -83,8 +83,8 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
         if (exists_ok) {
             return false;
         } else {
-            vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                      "in alloc_route_tree_timing_structs: old structures already exist.\n");
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "in alloc_route_tree_timing_structs: old structures already exist.\n");
         }
     }
 
@@ -272,7 +272,7 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
     inode = hptr->index;
 
     //if (device_ctx.rr_nodes[inode].type() != SINK) {
-    //vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+    //VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
     //"in add_subtree_to_route_tree. Expected type = SINK (%d).\n"
     //"Got type = %d.",  SINK, device_ctx.rr_nodes[inode].type());
     //}
@@ -612,7 +612,7 @@ bool verify_route_tree(t_rt_node* root) {
 
 bool verify_route_tree_recurr(t_rt_node* node, std::set<int>& seen_nodes) {
     if (seen_nodes.count(node->inode)) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Duplicate route tree nodes found for node %d", node->inode);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Duplicate route tree nodes found for node %d", node->inode);
     }
 
     seen_nodes.insert(node->inode);
@@ -1346,8 +1346,8 @@ bool verify_traceback_route_tree_equivalent(const t_trace* head, const t_rt_node
         if (prev_switch != OPEN) {
             //Not end of branch
             if (!route_tree_connections.count(conn)) {
-                VPR_THROW(VPR_ERROR_ROUTE, "Route tree missing traceback connection: node %d -> %d (switch %d)\n",
-                          prev_node, to_node, prev_switch);
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Route tree missing traceback connection: node %d -> %d (switch %d)\n",
+                                prev_node, to_node, prev_switch);
             } else {
                 route_tree_connections.erase(conn); //Remove found connections
             }
@@ -1364,7 +1364,7 @@ bool verify_traceback_route_tree_equivalent(const t_trace* head, const t_rt_node
             msg += vtr::string_fmt("\tnode %d -> %d (switch %d)\n", prev_node, to_node, prev_switch);
         }
 
-        VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
     }
 
     return true;

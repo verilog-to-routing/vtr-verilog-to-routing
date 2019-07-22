@@ -50,6 +50,8 @@ struct t_options {
     argparse::ArgValue<e_clock_modeling> clock_modeling;
     argparse::ArgValue<bool> exit_before_pack;
     argparse::ArgValue<bool> strict_checks;
+    argparse::ArgValue<std::string> disable_errors;
+    argparse::ArgValue<std::string> suppress_warnings;
 
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;
@@ -72,6 +74,7 @@ struct t_options {
     argparse::ArgValue<std::vector<std::string>> target_external_pin_util;
     argparse::ArgValue<bool> pack_prioritize_transitive_connectivity;
     argparse::ArgValue<int> pack_transitive_fanout_threshold;
+    argparse::ArgValue<int> pack_feasible_block_array_size;
     argparse::ArgValue<std::vector<std::string>> pack_high_fanout_threshold;
     argparse::ArgValue<int> pack_verbosity;
 

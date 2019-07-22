@@ -173,14 +173,14 @@ void depth_first_traverse_until_next_ff_or_output(nnode_t *node, nnode_t *callin
 	if ((calling_node != NULL) && ((node->type == FF_NODE) || (node->type == OUTPUT_NODE)))
 	{
 		/* IF - the this node is the end of a sequential level then the node before needs to be stored */
-		if (calling_node->sequential_terminator == FALSE)
+		if (calling_node->sequential_terminator == false)
 		{
 			/* IF - it hasn't been stored before */
 			netlist->num_at_sequential_level_combinational_termination_node[netlist->num_sequential_level_combinational_termination_nodes-1] ++;
 			netlist->sequential_level_combinational_termination_node[netlist->num_sequential_level_combinational_termination_nodes-1] = (nnode_t**)vtr::realloc(netlist->sequential_level_combinational_termination_node[netlist->num_sequential_level_combinational_termination_nodes-1],sizeof(nnode_t*)*netlist->num_at_sequential_level_combinational_termination_node[netlist->num_sequential_level_combinational_termination_nodes-1]);
 			netlist->sequential_level_combinational_termination_node[netlist->num_sequential_level_combinational_termination_nodes-1][netlist->num_at_sequential_level_combinational_termination_node[netlist->num_sequential_level_combinational_termination_nodes-1]-1] = calling_node;
 			/* mark the node locally */
-			calling_node->sequential_terminator = TRUE;
+			calling_node->sequential_terminator = true;
 		}
 	}
 
@@ -298,7 +298,7 @@ void depth_first_traverse_check_if_forward_leveled(nnode_t *node, int traverse_m
 				if ((next_node->forward_level == -1) && (next_node->type != FF_NODE))
 				{
 					graphVizOutputCombinationalNet(configuration.debug_output_path, "combo_loop", COMBO_LOOP_ERROR, /*next_node);*/ find_node_at_top_of_combo_loop(next_node));
-					oassert(FALSE);
+					oassert(false);
 				}
 
 				/* recursive call point */
@@ -316,8 +316,8 @@ void levelize_forwards(netlist_t *netlist)
 {
 	int i, j, k;
 	int cur_for_level;
-	short more_levels = TRUE;
-	short all_visited = TRUE;
+	short more_levels = true;
+	short all_visited = true;
 
 	/* add all the POs and FFs POs as forward level 0 */
 	cur_for_level = 0;
@@ -434,17 +434,17 @@ void levelize_forwards(netlist_t *netlist)
 					fanouts_visited[current_node->output_pins[j]->net->fanout_pins[k]->pin_node_idx] = cur_for_level;
 
 					/* check if they've all been marked */
-					all_visited = TRUE;
+					all_visited = true;
 					for (idx = 0; idx < output_node->num_input_pins; idx++)
 					{
 						if (fanouts_visited[idx] == -1)
 						{
-							all_visited = FALSE;
+							all_visited = false;
 							break;
 						}
 					}
 
-					if ((all_visited == TRUE) && (output_node->type != FF_NODE))
+					if ((all_visited == true) && (output_node->type != FF_NODE))
 					{
 						/* This one has been visited by everyone */
 						netlist->forward_levels[cur_for_level+1] = (nnode_t**)vtr::realloc(netlist->forward_levels[cur_for_level+1], sizeof(nnode_t*)*(netlist->num_at_forward_level[cur_for_level+1]+1));
@@ -466,7 +466,7 @@ void levelize_forwards(netlist_t *netlist)
 		else
 		{
 			/* ELSE - we've levelized forwards */
-			more_levels = FALSE;
+			more_levels = false;
 		}
 	}
 }
@@ -477,8 +477,8 @@ void levelize_forwards_clean_checking_for_combo_loop_and_liveness(short ast_base
 {
 	int i, j, k;
 	int cur_for_level;
-	short more_levels = TRUE;
-	short all_visited = TRUE;
+	short more_levels = true;
+	short all_visited = true;
 
 	cur_for_level = 0;
 
@@ -522,23 +522,23 @@ void levelize_forwards_clean_checking_for_combo_loop_and_liveness(short ast_base
 						output_node->node_data = NULL;
 
 						/* check if they've all been marked */
-						all_visited = TRUE;
+						all_visited = true;
 						for (idx = 0; idx < output_node->num_input_pins; idx++)
 						{
 							if (fanouts_visited[idx] == -1)
 							{
-								all_visited = FALSE;
+								all_visited = false;
 								break;
 							}
 						}
 
-						if (all_visited == FALSE)
+						if (all_visited == false)
 						{
 							/* Combo node since one of the outputs hasn'y been visisted. */
 							if (ast_based)
 								error_message(NETLIST_ERROR, output_node->related_ast_node->line_number, output_node->related_ast_node->file_number, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %ld.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
 							else
-								error_message(NETLIST_ERROR, -1, -1, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %ld.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
+								error_message(NETLIST_ERROR, -1, -1, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %d.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
 						}
 						/* free the data and reset to be used elsewhere */
 						vtr::free(fanouts_visited);
@@ -565,7 +565,7 @@ void levelize_forwards_clean_checking_for_combo_loop_and_liveness(short ast_base
 		else
 		{
 			/* ELSE - we've levelized forwards */
-			more_levels = FALSE;
+			more_levels = false;
 		}
 	}
 }
@@ -578,8 +578,8 @@ void levelize_backwards(netlist_t *netlist)
 {
 	int i, j, k;
 	int cur_back_level;
-	short more_levels = TRUE;
-	short all_visited = TRUE;
+	short more_levels = true;
+	short all_visited = true;
 
 	/* add all the POs and FFs POs as backward level 0 */
 	cur_back_level = 0;
@@ -663,17 +663,17 @@ void levelize_backwards(netlist_t *netlist)
 				}
 
 				/* check if they've all been marked */
-				all_visited = TRUE;
+				all_visited = true;
 				for (k = 0; k < fanout_net->num_fanout_pins; k++)
 				{
 					if ((fanout_net->fanout_pins[k] != NULL) && (fanout_net->fanout_pins[k]->node != NULL) && (fanouts_visited[k] == -1))
 					{
-						all_visited = FALSE;
+						all_visited = false;
 						break;
 					}
 				}
 
-				if ((all_visited == TRUE) && (fanout_net->driver_pin->node->type != FF_NODE))
+				if ((all_visited == true) && (fanout_net->driver_pin->node->type != FF_NODE))
 				{
 					/* This one has been visited by everyone */
 					if (fanout_net->driver_pin->node->backward_level == -1)
@@ -698,7 +698,7 @@ void levelize_backwards(netlist_t *netlist)
 		else
 		{
 			/* ELSE - we've levelized backwards */
-			more_levels = FALSE;
+			more_levels = false;
 		}
 	}
 }
@@ -710,8 +710,8 @@ void levelize_backwards_clean_checking_for_liveness(short ast_based, netlist_t *
 {
 	int i, j, k;
 	int cur_back_level;
-	short more_levels = TRUE;
-	short all_visited = TRUE;
+	short more_levels = true;
+	short all_visited = true;
 
 	cur_back_level = 0;
 
@@ -747,23 +747,23 @@ void levelize_backwards_clean_checking_for_liveness(short ast_based, netlist_t *
 					fanout_net->net_data = NULL;
 
 					/* check if they've all been marked */
-					all_visited = TRUE;
+					all_visited = true;
 					for (k = 0; k < fanout_net->num_fanout_pins; k++)
 					{
 						if ((fanout_net->fanout_pins[k] != NULL) && (fanout_net->fanout_pins[k]->node != NULL) && (fanouts_visited[k] == -1))
 						{
-							all_visited = FALSE;
+							all_visited = false;
 							break;
 						}
 					}
 
-					if (all_visited == FALSE)
+					if (all_visited == false)
 					{
 						/* one of these nodes was not visited on the backward analysis */
 						if (ast_based)
-							warning_message(NETLIST_ERROR, current_node->related_ast_node->line_number, current_node->related_ast_node->file_number, "Liveness check on backward pass.  Node %s is missing a driving pin idx %ld\n", current_node->name, k);
+							warning_message(NETLIST_ERROR, current_node->related_ast_node->line_number, current_node->related_ast_node->file_number, "Liveness check on backward pass.  Node %s is missing a driving pin idx %d\n", current_node->name, k);
 						else
-							warning_message(NETLIST_ERROR, -1, -1, "Liveness check on backward pass.  Node %s is missing a driving pin idx %ld\n", current_node->name, k);
+							warning_message(NETLIST_ERROR, -1, -1, "Liveness check on backward pass.  Node %s is missing a driving pin idx %d\n", current_node->name, k);
 					}
 
 					/* free the data and reset to be used elsewhere */
@@ -782,7 +782,7 @@ void levelize_backwards_clean_checking_for_liveness(short ast_based, netlist_t *
 		else
 		{
 			/* ELSE - we've levelized backwards */
-			more_levels = FALSE;
+			more_levels = false;
 		}
 	}
 }
@@ -798,25 +798,25 @@ nnode_t *find_node_at_top_of_combo_loop(nnode_t *start_node)
 	int *fanouts_visited;
 	short all_visited;
 
-	while(TRUE)
+	while(true)
 	{
 		oassert(next_node->unique_node_data_id == LEVELIZE);
 		fanouts_visited = (int*)next_node->node_data;
 		next_node->node_data = NULL;
 
 		/* check if they've all been marked */
-		all_visited = TRUE;
+		all_visited = true;
 		for (i = 0; i < next_node->num_input_pins; i++)
 		{
 			if (fanouts_visited[i] == -1)
 			{
-				all_visited = FALSE;
+				all_visited = false;
 				idx_missed = i;
 				break;
 			}
 		}
 
-		if (all_visited == FALSE)
+		if (all_visited == false)
 		{
 			if (next_node->input_pins[idx_missed]->net->driver_pin->node->backward_level < next_node->backward_level)
 				/* IF - the next node has a lower backward level than this node suggests that it is

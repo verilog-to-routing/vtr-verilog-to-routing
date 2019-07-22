@@ -40,8 +40,8 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
         } else if (name_ext[1] == ".eblif") {
             circuit_format = e_circuit_format::EBLIF;
         } else {
-            VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Failed to determine file format for '%s' expected .blif or .eblif extension",
-                      circuit_file);
+            VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST, "Failed to determine file format for '%s' expected .blif or .eblif extension",
+                            circuit_file);
         }
     }
 
@@ -86,11 +86,6 @@ static void process_circuit(AtomNetlist& netlist,
                             bool should_sweep_constant_primary_outputs,
                             int verbosity) {
     {
-        vtr::ScopedStartFinishTimer t("Mark constant generators");
-        mark_constant_generators(netlist, const_gen_inference_method, verbosity);
-    }
-
-    {
         vtr::ScopedStartFinishTimer t("Clean circuit");
 
         //Clean-up lut buffers
@@ -118,6 +113,7 @@ static void process_circuit(AtomNetlist& netlist,
                         should_sweep_dangling_nets,
                         should_sweep_dangling_blocks,
                         should_sweep_constant_primary_outputs,
+                        const_gen_inference_method,
                         verbosity);
     }
 

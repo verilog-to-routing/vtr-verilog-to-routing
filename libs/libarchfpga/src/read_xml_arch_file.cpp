@@ -1020,11 +1020,11 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type* pb_type, t_mode* mo
     class_name = vtr::strdup(Prop);
 
     if (class_name) {
-        if (0 == strcmp(class_name, "lut")) {
+        if (0 == strcmp(class_name, PB_TYPE_CLASS_STRING[LUT_CLASS])) {
             pb_type->class_type = LUT_CLASS;
-        } else if (0 == strcmp(class_name, "flipflop")) {
+        } else if (0 == strcmp(class_name, PB_TYPE_CLASS_STRING[LATCH_CLASS])) {
             pb_type->class_type = LATCH_CLASS;
-        } else if (0 == strcmp(class_name, "memory")) {
+        } else if (0 == strcmp(class_name, PB_TYPE_CLASS_STRING[MEMORY_CLASS])) {
             pb_type->class_type = MEMORY_CLASS;
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
