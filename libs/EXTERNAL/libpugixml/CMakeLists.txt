@@ -19,7 +19,10 @@ set_target_properties(libpugixml PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 set(PUGIXML_SUPPRESS_FLAGS -w)
 target_compile_options(libpugixml PRIVATE ${PUGIXML_SUPPRESS_FLAGS})
 
-#Enable compact mode which reduces memory usage.
-target_compile_definitions(libpugixml PRIVATE PUGIXML_COMPACT)
+#Do not use compact mode with sanitize flags on as pugi structs are not alligned and causes errors.
+if(NOT VTR_ENABLE_SANITIZE)
+    #Enable compact mode which reduces memory usage.
+    target_compile_definitions(libpugixml PRIVATE PUGIXML_COMPACT)
+endif()
 
 install(TARGETS libpugixml DESTINATION bin)
