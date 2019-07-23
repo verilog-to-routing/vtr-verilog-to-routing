@@ -2626,6 +2626,8 @@ static void compute_hard_ip_node(nnode_t *node, int cycle)
 		node->simulate_block_cycle = func_pointer;
 
 		vtr::free(filename);
+		vtr::free(handle);
+		vtr::free(error);
 	}
 
 	int i;
