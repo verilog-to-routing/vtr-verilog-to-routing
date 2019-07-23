@@ -1908,9 +1908,12 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 	//if the instance never showed before, dealt with this parameter in function convert_ast_to_netlist_recursing_via_modules
 	if(flag == 0)
 	{
-		new_node->shared_node = false;
-		return new_node;
-	//	add_child_to_node(new_node, symbol_node);
+		if(new_node)
+		{
+			new_node->shared_node = false;
+			return new_node;
+		//	add_child_to_node(new_node, symbol_node);
+		}
 	}
 	return NULL;
 }
