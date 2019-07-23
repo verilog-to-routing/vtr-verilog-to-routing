@@ -2,8 +2,6 @@ eval "${MATRIX_EVAL}"
 export "CC=$CC"
 export "CXX=$CXX"
 
-eval "${VPR_FLAGS_EVAL}"
-
 # Some colors, use it like following;
 # echo -e "Hello ${YELLOW}yellow${NC}"
 GRAY='\033[0;30m'

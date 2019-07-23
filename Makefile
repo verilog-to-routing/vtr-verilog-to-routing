@@ -16,6 +16,7 @@
 #    release_pgo	#Perform a 2-stage build with profile-guided compiler optimization
 #    release		#Build with compiler optimization
 #    debug			#Build with debug info and no compiler optimization
+#    strict			#Build VPR with warnings treated as errors
 BUILD_TYPE ?= release
 
 #Convert to lower case for consistency
@@ -87,13 +88,24 @@ ifneq (,$(findstring pgo,$(BUILD_TYPE)))
 	#
 	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_use $(SOURCE_DIR)"
 	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_use $(SOURCE_DIR)
-else #BUILD_TYPE not containing 'pgo'
+else
+ifeq ($(BUILD_TYPE),strict)
+	#BUILD_TYPE containing 'strict'
+	#
+	#Configure for standard strict build with VPR warning treated as errors
+	#
+	@echo "Performing standard strict build..."
+	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_COMPILE_OPTIONS=strict $(SOURCE_DIR)"
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_COMPILE_OPTIONS=strict $(SOURCE_DIR)
+else
+	#BUILD_TYPE not containing 'pgo'
 	#
 	#Configure for standard build
 	#
 	@echo "Performing standard build..."
 	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) $(SOURCE_DIR)"
 	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) $(SOURCE_DIR)
+endif
 endif #BUILD_TYPE
 	#
 	#Final build
