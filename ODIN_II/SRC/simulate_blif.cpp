@@ -301,6 +301,8 @@ void simulate_netlist(netlist_t *netlist)
 
 	// Print statistics.
 	print_simulation_stats(sim_data->stages, sim_data->num_vectors, sim_data->total_time, sim_data->simulation_time);
+
+	sim_data = terminate_simulation(sim_data);
 }
 
 
