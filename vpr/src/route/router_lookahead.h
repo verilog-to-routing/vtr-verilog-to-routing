@@ -37,16 +37,13 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(
 class ClassicLookahead : public RouterLookahead {
   public:
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
-    void compute(const std::vector<t_segment_inf>& segment_inf) override {
-        (void)segment_inf;
+    void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }
 
-    void read(const std::string& file) override {
-        (void)file;
+    void read(const std::string& /*file*/) override {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::read unimplemented");
     }
-    void write(const std::string& file) const override {
-        (void)file;
+    void write(const std::string& /*file*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::write unimplemented");
     }
 
@@ -58,12 +55,10 @@ class MapLookahead : public RouterLookahead {
   protected:
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
-    void read(const std::string& file) override {
-        (void)file;
+    void read(const std::string& /*file*/) override {
         VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::read unimplemented");
     }
-    void write(const std::string& file) const override {
-        (void)file;
+    void write(const std::string& /*file*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::write unimplemented");
     }
 };
@@ -71,14 +66,13 @@ class MapLookahead : public RouterLookahead {
 class NoOpLookahead : public RouterLookahead {
   protected:
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
-    void compute(const std::vector<t_segment_inf>& segment_inf) override {
-        (void)segment_inf;
+    void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }
-    void read(const std::string& file) override {
-        (void)file;
+    void read(const std::string& /*file*/) override {
+        VPR_THROW(VPR_ERROR_ROUTE, "Read not supported for NoOpLookahead");
     }
-    void write(const std::string& file) const override {
-        (void)file;
+    void write(const std::string& /*file*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "Write not supported for NoOpLookahead");
     }
 };
 
