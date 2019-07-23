@@ -592,7 +592,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	else if (var_node->type == IDENTIFIERS)
 	{
 		long sc_spot;
-		int pin_index;
+		int pin_index = 0;
 
 		if ((sc_spot = sc_lookup_string(local_symbol_table_sc, var_node->types.identifier)) == -1)
 		{
