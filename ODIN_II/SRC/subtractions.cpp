@@ -138,6 +138,11 @@ void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t * /
 	// else
 	// 	sanity = odin_sprintf(new_name, "%s", node->name);
 
+	if(new_name)
+	{
+		vtr::free(new_name);
+	}
+	
 	if (len <= sanity) /* buffer not large enough */
 		oassert(false);
 
