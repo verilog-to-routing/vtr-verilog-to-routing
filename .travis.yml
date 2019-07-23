@@ -78,7 +78,7 @@ jobs:
       name: "Building VtR"
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
-        - BUILD_TYPE=strict
+        - BUILD_TYPE=release
       script:
         - ./.github/travis/build.sh
     - stage: Test
@@ -113,14 +113,14 @@ jobs:
       name: "GCC 5 (Ubuntu Xenial - 16.04)"
       env:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
-        - BUILD_TYPE=strict
+        - BUILD_TYPE=release_strict
       script:
         - ./.github/travis/build.sh
     - stage: Build Compatibility
       name: "GCC 6 (Debian Stretch)"
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
-        - BUILD_TYPE=strict
+        - BUILD_TYPE=release_strict
       script:
         - ./.github/travis/build.sh
     - stage: Build Compatibility

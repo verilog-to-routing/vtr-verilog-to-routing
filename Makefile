@@ -22,14 +22,19 @@ BUILD_TYPE ?= release
 #Convert to lower case for consistency
 BUILD_TYPE := $(shell echo $(BUILD_TYPE) | tr '[:upper:]' '[:lower:]')
 
-#Trim any _pgo in the build type name (since it would not match any of
+#Trim any _pgo or _strict in the build type name (since it would not match any of
 #CMake's standard build types)
-CMAKE_BUILD_TYPE := $(shell echo $(BUILD_TYPE) | sed 's/_\?pgo//')
+CMAKE_BUILD_TYPE := $(shell echo $(BUILD_TYPE) | sed 's/_\?pgo//' | sed 's/_\?strict//')
 
 #Allows users to pass parameters to cmake
 #  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
 override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G 'Unix Makefiles' ${CMAKE_PARAMS}
 
+#Are we doing a strict (i.e. warnings as errors) build?
+ifneq (,$(findstring strict,$(BUILD_TYPE)))
+	#Configure for strict build with VPR warning treated as errors
+override CMAKE_PARAMS := -DVPR_COMPILE_OPTIONS=strict ${CMAKE_PARAMS}
+endif #Strict build type
 
 # -s : Suppresss makefile output (e.g. entering/leaving directories)
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
@@ -88,24 +93,13 @@ ifneq (,$(findstring pgo,$(BUILD_TYPE)))
 	#
 	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_use $(SOURCE_DIR)"
 	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_PGO_CONFIG=prof_use $(SOURCE_DIR)
-else
-ifeq ($(BUILD_TYPE),strict)
-	#BUILD_TYPE containing 'strict'
-	#
-	#Configure for standard strict build with VPR warning treated as errors
-	#
-	@echo "Performing standard strict build..."
-	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_COMPILE_OPTIONS=strict $(SOURCE_DIR)"
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_COMPILE_OPTIONS=strict $(SOURCE_DIR)
-else
-	#BUILD_TYPE not containing 'pgo'
+else #BUILD_TYPE not containing 'pgo'
 	#
 	#Configure for standard build
 	#
 	@echo "Performing standard build..."
 	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) $(SOURCE_DIR)"
 	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) $(SOURCE_DIR)
-endif
 endif #BUILD_TYPE
 	#
 	#Final build
