@@ -51,6 +51,8 @@ addons:
     - gcc-5
     - g++-6
     - gcc-6
+    - g++-7
+    - gcc-7
     - g++-8
     - gcc-8
     - g++-9
@@ -121,6 +123,12 @@ jobs:
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
         - BUILD_TYPE=release_strict
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "GCC 7 (Ubuntu Bionic - 18.04)"
+      env:
+         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
       script:
         - ./.github/travis/build.sh
     - stage: Build Compatibility
