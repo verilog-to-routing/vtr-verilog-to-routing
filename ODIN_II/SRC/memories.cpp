@@ -1227,7 +1227,7 @@ void pad_memory_output_port(nnode_t *node, netlist_t * /*netlist*/, t_model *mod
 			// Add new pins to the higher order spots.
 			npin_t *new_pin = allocate_npin();
 			// Pad outputs with a unique and descriptive name to avoid collisions.
-			new_pin->name = append_string("", "unconnected_memory_output~%ld", pad_pin_number++);
+			new_pin->name = append_string("", "unconnected_memory_output~%d", pad_pin_number++);
 			new_pin->mapping = vtr::strdup(port_name);
 			add_output_pin_to_node(node, new_pin, i);
 		}
