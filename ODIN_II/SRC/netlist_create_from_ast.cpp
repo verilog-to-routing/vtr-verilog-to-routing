@@ -3875,18 +3875,24 @@ void terminate_continuous_assignment(ast_node_t *node, signal_list_t* assignment
 	for (i = 0; i < memory_inputs->count; i++)
 	{
 		npin_t *pin = memory_inputs->pins[i];
-		implicit_memory *memory = lookup_implicit_memory_input(pin->name);
-		nnode_t *node2 = memory->node;
-
-		int j;
-		for (j = 0; j < node2->num_input_pins; j++)
+		if(pin->name)
 		{
-			npin_t *original_pin = node2->input_pins[j];
-			if (original_pin->name && pin->name && !strcmp(original_pin->name, pin->name))
+			implicit_memory *memory = lookup_implicit_memory_input(pin->name);
+			if(memory)
 			{
-				pin->mapping = original_pin->mapping;
-				add_input_pin_to_node(node2, pin, j);
-				break;
+				nnode_t *node2 = memory->node;
+
+				int j;
+				for (j = 0; j < node2->num_input_pins; j++)
+				{
+					npin_t *original_pin = node2->input_pins[j];
+					if (original_pin->name && !strcmp(original_pin->name, pin->name))
+					{
+						pin->mapping = original_pin->mapping;
+						add_input_pin_to_node(node2, pin, j);
+						break;
+					}
+				}
 			}
 		}
 	}
