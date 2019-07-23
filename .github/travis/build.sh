@@ -7,13 +7,13 @@ $SPACER
 
 start_section "vtr.build" "${GREEN}Building..${NC}"
 export FAILURE=0
-make -k CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on $VPR_FLAGS" -j2 || export FAILURE=1
+make -k BUILD_TYPE=${BUILD_TYPE} CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on" -j2 || export FAILURE=1
 end_section "vtr.build"
 
 # When the build fails, produce the failure output in a clear way
 if [ $FAILURE -ne 0 ]; then
 	start_section "vtr.failure" "${RED}Build failure output..${NC}"
-	make CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on $VPR_FLAGS" -j1
+	make CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on" -j1
 	end_section "vtr.failure"
 	exit 1
 fi

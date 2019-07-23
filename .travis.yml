@@ -77,7 +77,8 @@ jobs:
     - stage: Build
       name: "Building VtR"
       env:
-        - VPR_FLAGS_EVAL="VPR_FLAGS=-DVPR_COMPILE_OPTIONS=strict"
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+        - BUILD_TYPE=strict
       script:
         - ./.github/travis/build.sh
     - stage: Test
@@ -112,14 +113,14 @@ jobs:
       name: "GCC 5 (Ubuntu Xenial - 16.04)"
       env:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
-        - VPR_FLAGS_EVAL="VPR_FLAGS=-DVPR_COMPILE_OPTIONS=strict"
+        - BUILD_TYPE=strict
       script:
         - ./.github/travis/build.sh
     - stage: Build Compatibility
       name: "GCC 6 (Debian Stretch)"
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
-        - VPR_FLAGS_EVAL="VPR_FLAGS=-DVPR_COMPILE_OPTIONS=strict"
+        - BUILD_TYPE=strict
       script:
         - ./.github/travis/build.sh
     - stage: Build Compatibility
