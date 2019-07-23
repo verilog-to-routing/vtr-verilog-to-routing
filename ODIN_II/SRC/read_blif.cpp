@@ -312,14 +312,11 @@ void create_latch_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 		/* supported added for the ABC .latch output without control */
 		if(input_token_count == 3)
 		{
-			char *clock_name = search_clock_name(file);
 			input_token_count = 5;
 			names = (char**)vtr::realloc(names, sizeof(char*) * input_token_count);
 
-			if(clock_name) names[3] = vtr::strdup(clock_name);
-			else           names[3] = NULL;
-
-			names[4] = vtr::strdup(names[2]);
+			names[3] = search_clock_name(file);
+			names[4] = names[2];
 			names[2] = vtr::strdup("re");
 		}
 		else
