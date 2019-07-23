@@ -60,6 +60,7 @@ _BATCH_SIM="off"
 _USE_PERF="off"
 _FORCE_SIM="off"
 _COLORIZE="off"
+_VERBOSE="off"
 
 ##############################################
 # Exit Functions
@@ -138,6 +139,7 @@ printf "Called program with $INPUT
 		-p|--perf                       $(_prt_cur_arg ${_USE_PERF}) Use Perf for monitoring execution
 		-f|--force_simulate             $(_prt_cur_arg ${_FORCE_SIM}) Force the simulation to be executed regardless of the config
 		-C|--colorize             		$(_prt_cur_arg ${_COLORIZE}) Turn on pretty print for stdout
+		--verbose						$(_prt_cur_arg ${_VERBOSE}) Turn on verbosity levels for odin wrapper
 
 "
 }
@@ -434,6 +436,10 @@ function parse_args() {
 			;;-f|--force_simulate)   
 				_FORCE_SIM="on"
 				echo "Forcing Simulation"         
+			
+			;;--verbose)
+				_VERBOSE="on"
+				echo "Turning on verbosity levels"
 
 			;;*) 
 				echo "Unknown parameter passed: $1"
@@ -462,6 +468,7 @@ function sim() {
 	_best_coverage_flag="--best_coverage"
 	_perf_flag="--tool perf"
 	_colorize_flag="--colorize"
+	_verbosity_flag="--verbose"
 
 	use_timeout="--time_limit ${_TIMEOUT}"
 	use_valgrind=$(_set_if ${_VALGRIND} ${_valgrind_flag})
@@ -470,6 +477,7 @@ function sim() {
 	use_best_coverage=$(_set_if ${_BEST_COVERAGE_OFF} ${_best_coverage_flag})
 	use_perf=$(_set_if ${_USE_PERF} ${_perf_flag})
 	use_color=$(_set_if ${_COLORIZE} ${_colorize_flag})
+	use_verbosity=$(_set_if ${_VERBOSE} ${_verbosity_flag})
 
 	_vector_flag="-g ${_VECTORS}"
 	_simulation_threads_flag=$([ "${_SIM_THREADS}" != "1" ] && echo "-j ${_SIM_THREADS}")
@@ -565,7 +573,7 @@ function sim() {
 	##########################################
 	# setup defaults
 	DEFAULT_CMD_PARAM="${_adder_definition_flag} ${_simulation_threads_flag} ${use_batch_sim}"
-	DEFAULT_WRAPPER_CMD="${use_timeout} ${use_low_ressource} ${use_valgrind} ${use_perf} ${use_color}"
+	DEFAULT_WRAPPER_CMD="${use_timeout} ${use_low_ressource} ${use_valgrind} ${use_perf} ${use_color} ${use_verbosity}"
 
 	if [ "_${with_custom_args}" == "_1" ]
 	then

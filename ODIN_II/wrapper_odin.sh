@@ -1,5 +1,4 @@
 #!/bin/bash
-trap ctrl_c INT SIGINT SIGTERM
 SHELL=/bin/bash
 QUIT=0
 
@@ -11,6 +10,7 @@ export TIME="\
 	Minor PF:          %R
 	Major PF:          %F
 	Context Switch:    %c+%w
+	Program Exit Code: %x
 "
 
 ##############################################
@@ -29,20 +29,72 @@ if [ ! -f ${EXEC} ]; then
 	exit 120
 fi
 
+TIMEOUT_EXEC="timeout"
 TIME_EXEC=$($SHELL -c "which time") 
 VALGRIND_EXEC="valgrind --leak-check=full --max-stackframe=128000000 --error-exitcode=1 --track-origins=yes"
 PERF_EXEC="perf stat record -a -d -d -d -o"
 GDB_EXEC="gdb --args"
+
 LOG=""
 LOG_FILE=""
 TEST_NAME="odin"
 FAILURE_FILE=""
-EXIT_STATUS=3
+
+USE_TEMP_LOG="off"
+RESTRICT_RESSOURCE="off"
 TIME_LIMIT="86400s" #default to a full day
 TOOL_SPECIFIED="off"
 USE_TIMEOUT="on"
-CANCEL_LOGS="off"
+USE_TIME="on"
+USE_LOGS="on"
 COLORIZE_OUTPUT="off"
+VERBOSE="off"
+	
+function print_exit_type() {
+	CODE="$1"
+	if [[ $1 -ge 128 ]]
+	then
+		CODE="$(( $1 - 128 ))"
+	fi
+
+	case $CODE in
+		0)		echo "NO_ERROR"
+		;;1)	echo "SIGHUP"
+		;;2)	echo "SIGINT"
+		;;3)	echo "SIGQUIT"
+		;;4)	echo "SIGILL"
+		;;5)	echo "SIGTRAP"
+		;;6)	echo "SIGABRT"
+		;;7)	echo "SIGBUS"
+		;;8)	echo "SIGFPE"
+		;;9)	echo "SIGKILL"
+		;;10)	echo "SIGUSR1"
+		;;11)	echo "SIGSEGV"
+		;;12)	echo "SIGUSR2"
+		;;13)	echo "SIGPIPE"
+		;;14)	echo "SIGALRM"
+		;;15)	echo "SIGTERM"
+		;;16)	echo "SIGSTKFLT"
+		;;17)	echo "SIGCHLD"
+		;;18)	echo "SIGCONT"
+		;;19)	echo "SIGSTOP"
+		;;20)	echo "SIGTSTP"
+		;;21)	echo "SIGTTIN"
+		;;22)	echo "SIGTTOU"
+		;;23)	echo "SIGURG"
+		;;24)	echo "SIGXCPU"
+		;;25)	echo "SIGXFSZ"
+		;;26)	echo "SIGVTALRM"
+		;;27)	echo "SIGPROF"
+		;;28)	echo "SIGWINCH"
+		;;29)	echo "SIGIO"
+		;;30)	echo "SIGPWR"
+		;;31)	echo "SIGSYS"
+		;;127)	echo "Errored"
+		;;*)	echo "${CODE}"
+		;;
+	esac
+}
 
 
 function help() {
@@ -57,6 +109,7 @@ Usage: ./wrapper_odin.sh [options] CMD
 			--time_limit                                * stops Odin after X seconds
 			--limit_ressource				            * limit ressource usage using ulimit -m (25% of hrdw memory) and nice value of 19
 			--colorize                                  * colorize the output
+			--verbose									* dump th log to stdout
 "
 }
 
@@ -67,16 +120,16 @@ function log_it {
 
 function dump_log {
 	#print to destination log if set
+	
 	if [ "_${LOG}" != "_" ]
 	then
-		if [ "_${LOG_FILE}" != "_" ]
+		if [ "${USE_LOGS}" == "on" ]
 		then
-			echo "${LOG}" > ${LOG_FILE}
-			echo "" > ${LOG_FILE}
+			printf "${LOG}\n" >> ${LOG_FILE}
 		else
-			echo "${LOG}"
-			echo ""
+			printf "${LOG}\n"
 		fi
+
 		LOG=""
 	fi
 
@@ -95,6 +148,7 @@ function ctrl_c() {
 		exit 1
 	done
 }
+trap ctrl_c INT SIGINT SIGTERM
 
 #this hopefully will force to swap more
 function restrict_ressource {
@@ -119,8 +173,8 @@ function restrict_ressource {
 function pretty_print_status() {
 
 	RESULT=$1
-	line=$(printf '\040%.0s\056%.0s' {1..16})
-	empty_line=$(printf '\040%.0s\040%.0s' {1..16})
+	line=$(printf '\040%.0s\056%.0s' {1..36})
+	empty_line=$(printf '\040%.0s\040%.0s' {1..36})
 
 	if [ "_$RESULT" == "_" ]
 	then
@@ -138,27 +192,36 @@ function pretty_print_status() {
 	fi
 }
 function display() {
-	# we display status to std out if there is a log file
-	case $1 in
-		running)			pretty_print_status "";;
-		passed)				pretty_print_status "Ok";;
-		*)
-			case $1 in
-				failed)		pretty_print_status "Failed";;
-				timeout)	pretty_print_status "Timeout";;
-				leak)
-					if [ "$2" == "1" ]
-					then
-						pretty_print_status "[$2]Leak"
-					else
-						pretty_print_status "[$2]Leaks"
-					fi
-					;;
-				*);;
-			esac
-			[ "_${FAILURE_FILE}" != "_" ] && echo "${TEST_NAME}" >> ${FAILURE_FILE}
-		;;
+
+	CAUGHT_EXIT_CODE="$1"
+	LEAK_MESSAGE=""
+	
+	# check for valgrind leaks
+	LEAK_COUNT="$(cat ${LOG_FILE} | grep 'ERROR SUMMARY:' | awk '{print $4}' | grep -E '^\-?[0-9]+$')"
+	case "_${LEAK_COUNT}" in
+		_|_0)	LEAK_MESSAGE=""
+		;;_1)	LEAK_MESSAGE="[${LEAK_COUNT}]Leak"
+		;;*)	LEAK_MESSAGE="[${LEAK_COUNT}]Leaks"
 	esac
+
+	# check for uncaught errors
+	if [ "_${CAUGHT_EXIT_CODE}" == "_0" ]
+	then
+		ERROR_CATCH="$(cat ${LOG_FILE} | grep 'Program Exit Code:' | awk '{print $4}' | grep -E '^\-?[0-9]+$')"
+		[ "_${ERROR_CATCH}" != "_" ] && CAUGHT_EXIT_CODE="${ERROR_CATCH}"
+	fi
+
+	EXIT_ERROR_TYPE=$( print_exit_type "${CAUGHT_EXIT_CODE}" )
+
+
+	if [ "_${CAUGHT_EXIT_CODE}" == "_0" ] && [ "_${LEAK_MESSAGE}" == "_" ]
+	then
+		pretty_print_status "Ok"
+	else
+		pretty_print_status "Failed ${LEAK_MESSAGE} exit:$1 \"${EXIT_ERROR_TYPE}\""
+		[ "_${FAILURE_FILE}" != "_" ] && echo "${TEST_NAME}" >> ${FAILURE_FILE}
+	fi
+
 }
 
 #########################################################
@@ -194,7 +257,11 @@ do
 			;;
 
 		--limit_ressource) 
-			restrict_ressource 
+			RESTRICT_RESSOURCE="on" 
+			;;
+
+		--verbose)
+			VERBOSE="on"
 			;;
 
 		--colorize)
@@ -202,7 +269,6 @@ do
 			;;
 
 		--tool)
-			USE_TIMEOUT="off"
 
 			if [ ${TOOL_SPECIFIED} == "on" ]; then
 				echo "can only run one tool at a time"
@@ -214,18 +280,13 @@ do
 						EXEC="${VALGRIND_EXEC} ${EXEC}"
 						;;
 					gdb)
-						CANCEL_LOGS="on"
+						USE_TIMEOUT="off"
+						USE_LOGS="off"
 						EXEC="${GDB_EXEC} ${EXEC}"
 						;;
 					perf)
-						if [ "_$3" == "_" ]; then
-							echo "You must pass an output file for perf to log"
-							help
-							exit 99
-						else
-							EXEC="${PERF_EXEC} $3 ${EXEC}"
-							shift
-						fi
+						EXEC="${PERF_EXEC} ${EXEC}"
+						shift
 						;;
 					*)
 						echo "Invalid tool $2 passed in"
@@ -244,61 +305,67 @@ do
 	shift 
 done
 
-ODIN_ARGS=$(echo $@)
+ODIN_ARGS="$(echo $@)"
 EXEC="${EXEC} ${ODIN_ARGS}"
-USE_TEMP_LOG="off"
 
 log_it "Starting Odin with: ${ODIN_ARGS}"
-dump_log
 
-if [ "${CANCEL_LOGS}" == "off" ]
+if [ "${RESTRICT_RESSOURCE}" == "on" ]
+then
+	restrict_ressource
+fi
+
+if [ "${USE_LOGS}" == "on" ]
 then
 	if [ "_${LOG_FILE}" == "_" ]
 	then
 		LOG_FILE=$(mktemp)
 		USE_TEMP_LOG="on"
+		log_it "using temporary logs\n"
+	elif [ -f ${LOG_FILE} ]
+	then
+		rm -f ${LOG_FILE}
+		log_it "removing old log file\n"
 	fi
+
+	if [ ! -f ${LOG_FILE} ]
+	then
+		touch ${LOG_FILE}
+		log_it "creating new log file\n"
+	fi
+fi
+
+if [ "${USE_TIME}" == "on" ]
+then
 	EXEC="${TIME_EXEC} --output=${LOG_FILE} --append ${EXEC}"
-else
-	EXEC="${TIME_EXEC} ${EXEC}"
+	log_it "running with /bin/time\n"
 fi
 
 if [ "${USE_TIMEOUT}" == "on" ]
 then
 	EXEC="timeout ${TIME_LIMIT} ${EXEC}"
+	log_it "running with timeout ${TIME_LIMIT}\n"
 fi
 
-display "running"
 dump_log
 
-if [ "${CANCEL_LOGS}" == "off" ]
+pretty_print_status ""
+
+EXIT_STATUS=0 
+if [ "${USE_LOGS}" == "on" ]
 then
-	if [ ${USE_TEMP_LOG} == "on" ]
-	then
-		${EXEC} &2>1 | tee ${LOG_FILE}
-	else
-		${EXEC} &>> ${LOG_FILE}
-	fi
+	${EXEC} &>> ${LOG_FILE} || EXIT_STATUS=1
+
 else
-	${EXEC}
+	${EXEC} || EXIT_STATUS=1
 fi
 
-if [ "$?" == "0" ] 
+EXIT_CODE="$?"
+display "${EXIT_CODE}"
+
+if [ "${EXIT_STATUS}" != "0" ] && [ "${USE_LOGS}" == "on" ] && [ "${VERBOSE}" == "on" ]
 then
-	display "passed"
-	EXIT_STATUS=0
-else
-	# check for valgrind leaks
-	ERROR_COUNT="$(cat ${LOG_FILE} | grep 'ERROR SUMMARY:' | awk '{print $4}' | grep -E '^\-?[0-9]+$')"
-	if [ "_${ERROR_COUNT}" != "_" ]
-	then
-		display "leak" "${ERROR_COUNT}"
-	else
-		display "failed"
-	fi
-
-
-	EXIT_STATUS=1
+	cat ${LOG_FILE}
 fi
 
 if [ ${USE_TEMP_LOG} == "on" ]
@@ -306,6 +373,5 @@ then
 	rm -f ${LOG_FILE}
 fi
 
-dump_log
 exit ${EXIT_STATUS}
 ### end here
