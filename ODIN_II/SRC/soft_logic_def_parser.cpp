@@ -100,7 +100,8 @@ void read_soft_def_file(t_model *hard_adder_models)
 				break;
 			
 			std::vector<std::string> tokens;
-			char *temp_str = strtok(vtr::strdup(line.c_str()),",");
+			char *line_dup = vtr::strdup(line.c_str());
+			char *temp_str = strtok(line_dup,",");
 			while(1)
 			{				
 				if(!temp_str)
@@ -142,6 +143,7 @@ void read_soft_def_file(t_model *hard_adder_models)
 					soft_def_map[key_map] = def;
 				}
 			}
+			vtr::free(line_dup);
 		}
 		fclose(input_file);
 
