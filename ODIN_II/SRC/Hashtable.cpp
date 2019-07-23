@@ -36,16 +36,7 @@ void Hashtable::destroy_free_items()
 
 void Hashtable::add(std::string key, void *item)
 {
-	auto v = this->my_map.find(key);
-	//what if key already exists ??
-	if(v == this->my_map.end())
-	{
-		this->my_map.insert({key,item});
-	}
-	else
-	{
-		this->my_map.insert({key,item});
-	}
+	this->my_map.insert({key,item});
 }
 
 void* Hashtable::remove(std::string key)
