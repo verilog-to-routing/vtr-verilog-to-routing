@@ -413,19 +413,21 @@ sub run_odin_test {
 
   my $return_status = 0;
 	if ( $token eq "odin_reg_micro" ) {
-		$return_status = system("./verify_odin.sh --clean --test micro --nb_of_process $num_cpu");
+		$return_status = system("./verify_odin.sh --clean --verbose --test micro --nb_of_process $num_cpu");
 	} elsif ( $token eq "odin_reg" ) {
-		$return_status = system("./verify_odin.sh --clean --test full --nb_of_process $num_cpu");
+		$return_status = system("./verify_odin.sh --clean --verbose --test full --nb_of_process $num_cpu");
 	} elsif ( $token eq "odin_reg_large" ) {
-		$return_status = system("./verify_odin.sh --clean --test large --nb_of_process $num_cpu");
+		$return_status = system("./verify_odin.sh --clean --verbose --test large --nb_of_process $num_cpu");
 	} elsif ( $token eq "odin_reg_operators" ) {
-		$return_status = system("./verify_odin.sh --clean --test operators --nb_of_process $num_cpu");
+		$return_status = system("./verify_odin.sh --clean --verbose --test operators --nb_of_process $num_cpu");
+	} elsif ( $token eq "odin_reg_valgrind_operators" ) {
+		$return_status = system("./verify_odin.sh --clean --verbose --test valgrind_operators --nb_of_process $num_cpu");
 	} elsif ( $token eq "odin_reg_arch" ) {
-		$return_status = system("./verify_odin.sh --clean --test arch --nb_of_process $num_cpu");
+		$return_status = system("./verify_odin.sh --clean --verbose --test arch --nb_of_process $num_cpu");
 	} elsif ( $token eq "odin_reg_syntax" ) {
-		$return_status = system("./verify_odin.sh --clean --test syntax --nb_of_process $num_cpu");
+		$return_status = system("./verify_odin.sh --clean --verbose --test syntax --nb_of_process $num_cpu");
 	} elsif ( $token eq "odin_reg_full" ) {
-		$return_status = system("./verify_odin.sh --clean --test full_suite --nb_of_process $num_cpu");
+		$return_status = system("./verify_odin.sh --clean --verbose --test full_suite --nb_of_process $num_cpu");
 	} else {
     die("Unrecognized odin test $token");
   }

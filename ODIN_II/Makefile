@@ -94,7 +94,7 @@ cppcheck:
 	cppcheck . 1> /dev/null 
 
 test:
-	./verify_odin.sh --test pre_commit --nb_of_process $(NB_OF_PROCESS) --limit_ressource --colorize
+	./verify_odin.sh --test pre_commit --nb_of_process $(NB_OF_PROCESS) --limit_ressource --colorize --verbose
 
 large_test:
-	./verify_odin.sh --test pre_merge --nb_of_process $(NB_OF_PROCESS) --limit_ressource --colorize
+	./verify_odin.sh --test pre_merge --nb_of_process $(NB_OF_PROCESS) --limit_ressource --colorize --verbose
