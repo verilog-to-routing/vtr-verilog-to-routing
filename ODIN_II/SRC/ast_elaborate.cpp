@@ -41,15 +41,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <vector>
 #include <stack>
 
-#define read_node  1
-#define write_node 2
+// #define read_node  1
+// #define write_node 2
 
-#define e_data  1
-#define e_operation 2
-#define e_variable 3
+// #define e_data  1
+// #define e_operation 2
+// #define e_variable 3
 
-#define N 64
-#define Max_size 64
+// #define N 64
+// #define Max_size 64
 
 // long count_id = 0;
 // long count_assign = 0;
@@ -117,23 +117,31 @@ int simplify_ast_module(ast_node_t **ast_module, STRING_CACHE_LIST *local_string
 // this should replace ^^
 ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list, long *max_size, long assignment_size)
 {
+	short *child_skip_list = NULL; // list of children not to traverse into
+	short skip_children = false; // skips the DFS completely if true
+
 	if (node)
 	{
 		STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
 		STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
+		
+		if (node->num_children > 0)
+		{
+			child_skip_list = (short*)vtr::calloc(node->num_children, sizeof(short));
+		}
 
 		switch (node->type)
 		{
 			case MODULE:
 			{
 				// skip identifier
-				node->children[1] = reduce_expressions(node->children[1], local_string_cache_list, NULL, 0);
-				node->children[2] = reduce_expressions(node->children[2], local_string_cache_list, NULL, 0);
-				return node;
+				child_skip_list[0] = true;
+				break;
 			}
 			case FUNCTION:
 			{
-				return node;
+				skip_children = true;
+				break;
 			}
 			case VAR_DECLARE:
 			{
@@ -162,7 +170,12 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 						local_param_table_sc->data[sc_spot] = (void *) node->children[5];
 					}
 
-					return node;
+					skip_children = true;
+				}
+				else
+				{
+					// skip identifier
+					child_skip_list[0] = true;
 				}
 				break;
 			}
@@ -196,11 +209,8 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 						node = free_whole_tree(node);
 						node = newNode;
 					}
-					else
-					{
-						break;
-					}
 				}
+				break;
 			}
 			case FOR:
 				// look ahead for parameters
@@ -224,6 +234,12 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 					if (node->children[1]->type != NUMBERS)
 					{
 						node->children[1] = reduce_expressions(node->children[1], local_string_cache_list, max_size, assignment_size);
+						if (node->children[1] == NULL)
+						{
+							/* resulting from replication of zero */
+							error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+								"%s","Cannot perform assignment with nonexistent value");
+						}
 					}
 					else
 					{
@@ -273,15 +289,44 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 					assignment_size = 0;
 				}
 
-				return node;
+				skip_children = true;
+				break;
 			}
 			case BINARY_OPERATION:
+				break;
 			case UNARY_OPERATION:
 				break;
 			case CONCATENATE:
 				break;
 			case REPLICATE:
+			{
+				node->children[0] = reduce_expressions(node->children[0], local_string_cache_list, NULL, 0);
+				if (!(node_is_constant(node->children[0])))
+				{
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Replication constant must be a constant expression");
+				}
+
+				ast_node_t *new_node = NULL;
+				int64_t value = node->children[0]->types.vnumber->get_value();
+				if (value > 0)
+				{
+					new_node = create_node_w_type(CONCATENATE, node->line_number, node->file_number);				
+					for (size_t i = 0; i < value; i++)
+					{
+						add_child_to_node(new_node, ast_node_deep_copy(node->children[1]));
+					}
+				}
+
+				node->children[1] = free_whole_tree(node->children[1]);
+				node->children[1] = NULL;
+				node->num_children--;
+
+				node->children[0] = free_whole_tree(node->children[0]);
+				node->children[0] = new_node;
+
 				break;
+			}
 			case NUMBERS:
 				break;
 			case IF_Q:
@@ -300,10 +345,17 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				break;
 		}
 
-		/* recurse */
-		for (int i = 0; i < node->num_children; i++)
+		if (skip_children == false)
 		{
-			node->children[i] = reduce_expressions(node->children[i], local_string_cache_list, max_size, assignment_size);
+			/* traverse all the children */
+			for (int i = 0; i < node->num_children; i++)
+			{
+				if (child_skip_list[i] == false)
+				{
+					/* recurse */
+					node->children[i] = reduce_expressions(node->children[i], local_string_cache_list, max_size, assignment_size);
+				}
+			}
 		}
 
 		/* post-amble */
@@ -336,6 +388,13 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 			}
 			case BINARY_OPERATION:
 			{
+				if (node->children[0] == NULL || node->children[1] == NULL)
+				{
+					/* resulting from replication of zero */
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Cannot perform operation with nonexistent value");
+				}
+
 				ast_node_t *new_node = fold_binary(&node);
 				if (node_is_constant(new_node))
 				{
@@ -366,6 +425,13 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 			}
 			case UNARY_OPERATION:
 			{
+				if (node->children[0] == NULL)
+				{
+					/* resulting from replication of zero */
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Cannot perform operation with nonexistent value");
+				}
+
 				ast_node_t *new_node = fold_unary(&node);
 				if (node_is_constant(new_node))
 				{
@@ -396,44 +462,37 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 			}
 			case REPLICATE:
 			{
-				oassert(node_is_constant(node->children[0])); // should be taken care of in parse
-				if( node->children[0]->types.vnumber->is_dont_care_string() )
-				{
-					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-						"%s","Passing a non constant value to replication command, i.e. 2'bx1{...}");
-				}
-
-				int64_t value = node->children[0]->types.vnumber->get_value();
-				if(value <= 0)
-				{
-					// todo, if this is part of a concat, it is valid
-					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-						"%s","Passing a number less than or equal to 0 for replication");
-				}
-
-				ast_node_t *new_node = create_node_w_type(CONCATENATE, node->line_number, node->file_number);
-				for (size_t i = 0; i < value; i++)
-				{
-					add_child_to_node(new_node, ast_node_deep_copy(node->children[1]));
-				}
+				/* remove intermediate REPLICATE node */
+				ast_node_t *child = node->children[0];
+				node->children[0] = NULL;
 				node = free_whole_tree(node);
-				node = new_node;
-			} 
-			/* fallthrough to resolve new CONCATENATE */
+				node = child;
+				break;
+			}
 			case CONCATENATE:
 			{
 				resolve_concat_sizes(node, local_string_cache_list);
 
-				// for params only
-				// TODO: this is a hack, concats cannot be folded in place as it breaks netlist expand from ast,
-				// to fix we need to move the node resolution before netlist create from ast.
-				if(node->num_children > 0)
+				if (node->num_children > 0)
 				{
 					size_t index = 1;
 					size_t last_index = 0;
 					
-					while(index < node->num_children)
+					while (index < node->num_children)
 					{
+						if (node->children[last_index] == NULL)
+						{
+							/* resulting from replication of zero */
+							remove_child_from_node(node, last_index);
+							continue;
+						}
+						if (node->children[index] == NULL)
+						{
+							/* resulting from replication of zero */
+							remove_child_from_node(node, last_index);
+							continue;
+						}
+
 						bool previous_is_constant = node_is_constant(node->children[last_index]);
 						bool current_is_constant = node_is_constant(node->children[index]);
 
@@ -457,12 +516,18 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 
 					node->num_children = last_index+1;
 
-					if(node->num_children == 1)
+					if (node->num_children == 1 && node->children[0] != NULL)
 					{
 						ast_node_t *tmp = node->children[0];
 						node->children[0] = NULL;
 						free_whole_tree(node);
 						node = tmp;
+					}
+					else if (node->num_children < 2)
+					{
+						/* resulting replication(s) of zero */
+						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+							"%s","Cannot concatenate zero bitstrings");
 					}
 				}
 
@@ -522,7 +587,10 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				break;
 			}
 			case IF_Q:
+			{
+				fold_conditional(&node);
 				break;
+			}
 			case IF:
 				break;
 			case CASE:
@@ -552,6 +620,11 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				break;
 			default:
 				break;
+		}
+
+		if (child_skip_list)
+		{
+			child_skip_list = (short*)vtr::free(child_skip_list);
 		}
 	}
 

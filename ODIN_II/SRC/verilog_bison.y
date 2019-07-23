@@ -104,7 +104,7 @@ int yylex(void);
 %type <node> module_connection always statement function_statement blocking_assignment
 %type <node> non_blocking_assignment conditional_statement case_statement case_item_list case_items seq_block
 %type <node> stmt_list delay_control event_expression_list event_expression loop_statement
-%type <node> expression primary probable_expression_list expression_list module_parameter
+%type <node> expression primary expression_list module_parameter
 %type <node> list_of_module_parameters localparam_declaration
 %type <node> specify_block list_of_specify_items specify_item specparam_declaration
 %type <node> specify_pal_connect_declaration c_function_expression_list c_function
@@ -574,72 +574,66 @@ event_expression:
 	;
 
 expression:
-	primary										{$$ = $1;}
-	| '+' expression %prec UADD					{$$ = newUnaryOperation(ADD, $2, yylineno);}
-	| '-' expression %prec UMINUS				{$$ = newUnaryOperation(MINUS, $2, yylineno);}
-	| '~' expression %prec UNOT					{$$ = newUnaryOperation(BITWISE_NOT, $2, yylineno);}
-	| '&' expression %prec UAND					{$$ = newUnaryOperation(BITWISE_AND, $2, yylineno);}
-	| '|' expression %prec UOR					{$$ = newUnaryOperation(BITWISE_OR, $2, yylineno);}
-	| voNAND expression %prec UNAND				{$$ = newUnaryOperation(BITWISE_NAND, $2, yylineno);}
-	| voNOR expression %prec UNOR				{$$ = newUnaryOperation(BITWISE_NOR, $2, yylineno);}
-	| voXNOR  expression %prec UXNOR			{$$ = newUnaryOperation(BITWISE_XNOR, $2, yylineno);}
-	| '!' expression %prec ULNOT				{$$ = newUnaryOperation(LOGICAL_NOT, $2, yylineno);}
-	| '^' expression %prec UXOR					{$$ = newUnaryOperation(BITWISE_XOR, $2, yylineno);}
-	| vCLOG2 '(' expression ')'					{$$ = newUnaryOperation(CLOG2, $3, yylineno);}
-	| voUNSIGNED '(' expression ')'				{$$ = newUnaryOperation(UNSIGNED, $3, yylineno);}
-	| voSIGNED '(' expression ')'				{$$ = newUnaryOperation(SIGNED, $3, yylineno);}
-	| expression '^' expression					{$$ = newBinaryOperation(BITWISE_XOR, $1, $3, yylineno);}
-	| expression voPOWER expression				{$$ = newBinaryOperation(POWER,$1, $3, yylineno);}
-	| expression '*' expression					{$$ = newBinaryOperation(MULTIPLY, $1, $3, yylineno);}
-	| expression '/' expression					{$$ = newBinaryOperation(DIVIDE, $1, $3, yylineno);}
-	| expression '%' expression					{$$ = newBinaryOperation(MODULO, $1, $3, yylineno);}
-	| expression '+' expression					{$$ = newBinaryOperation(ADD, $1, $3, yylineno);}
-	| expression '-' expression					{$$ = newBinaryOperation(MINUS, $1, $3, yylineno);}
-	| expression '&' expression					{$$ = newBinaryOperation(BITWISE_AND, $1, $3, yylineno);}
-	| expression '|' expression					{$$ = newBinaryOperation(BITWISE_OR, $1, $3, yylineno);}
-	| expression voNAND expression				{$$ = newBinaryOperation(BITWISE_NAND, $1, $3, yylineno);}
-	| expression voNOR expression				{$$ = newBinaryOperation(BITWISE_NOR, $1, $3, yylineno);}
-	| expression voXNOR expression				{$$ = newBinaryOperation(BITWISE_XNOR, $1, $3, yylineno);}
-	| expression '<' expression					{$$ = newBinaryOperation(LT, $1, $3, yylineno);}
-	| expression '>' expression					{$$ = newBinaryOperation(GT, $1, $3, yylineno);}
-	| expression voSRIGHT expression			{$$ = newBinaryOperation(SR, $1, $3, yylineno);}
-	| expression voASRIGHT expression			{$$ = newBinaryOperation(ASR, $1, $3, yylineno);}
-	| expression voSLEFT expression				{$$ = newBinaryOperation(SL, $1, $3, yylineno);}
-	| expression voEQUAL expression				{$$ = newBinaryOperation(LOGICAL_EQUAL, $1, $3, yylineno);}
-	| expression voNOTEQUAL expression			{$$ = newBinaryOperation(NOT_EQUAL, $1, $3, yylineno);}
-	| expression voLTE expression				{$$ = newBinaryOperation(LTE, $1, $3, yylineno);}
-	| expression voGTE expression				{$$ = newBinaryOperation(GTE, $1, $3, yylineno);}
-	| expression voCASEEQUAL expression			{$$ = newBinaryOperation(CASE_EQUAL, $1, $3, yylineno);}
-	| expression voCASENOTEQUAL expression		{$$ = newBinaryOperation(CASE_NOT_EQUAL, $1, $3, yylineno);}
-	| expression voOROR expression				{$$ = newBinaryOperation(LOGICAL_OR, $1, $3, yylineno);}
-	| expression voANDAND expression			{$$ = newBinaryOperation(LOGICAL_AND, $1, $3, yylineno);}
-	| expression '?' expression ':' expression	{$$ = newIfQuestion($1, $3, $5, yylineno);}
-	| function_instantiation					{$$ = $1;}
-	| '(' expression ')'						{$$ = $2;}
-	| '{' expression '{' probable_expression_list '}' '}'	{$$ = newListReplicate( $2, $4 ); }
-	| c_function								{$$ = $1;}
+	primary												{$$ = $1;}
+	| '+' expression %prec UADD						{$$ = newUnaryOperation(ADD, $2, yylineno);}
+	| '-' expression %prec UMINUS					{$$ = newUnaryOperation(MINUS, $2, yylineno);}
+	| '~' expression %prec UNOT						{$$ = newUnaryOperation(BITWISE_NOT, $2, yylineno);}
+	| '&' expression %prec UAND						{$$ = newUnaryOperation(BITWISE_AND, $2, yylineno);}
+	| '|' expression %prec UOR						{$$ = newUnaryOperation(BITWISE_OR, $2, yylineno);}
+	| voNAND expression %prec UNAND					{$$ = newUnaryOperation(BITWISE_NAND, $2, yylineno);}
+	| voNOR expression %prec UNOR					{$$ = newUnaryOperation(BITWISE_NOR, $2, yylineno);}
+	| voXNOR  expression %prec UXNOR				{$$ = newUnaryOperation(BITWISE_XNOR, $2, yylineno);}
+	| '!' expression %prec ULNOT					{$$ = newUnaryOperation(LOGICAL_NOT, $2, yylineno);}
+	| '^' expression %prec UXOR						{$$ = newUnaryOperation(BITWISE_XOR, $2, yylineno);}
+	| vCLOG2 '(' expression ')'						{$$ = newUnaryOperation(CLOG2, $3, yylineno);}
+	| voUNSIGNED '(' expression ')'					{$$ = newUnaryOperation(UNSIGNED, $3, yylineno);}
+	| voSIGNED '(' expression ')'					{$$ = newUnaryOperation(SIGNED, $3, yylineno);}
+	| expression '^' expression						{$$ = newBinaryOperation(BITWISE_XOR, $1, $3, yylineno);}
+	| expression voPOWER expression					{$$ = newBinaryOperation(POWER,$1, $3, yylineno);}
+	| expression '*' expression						{$$ = newBinaryOperation(MULTIPLY, $1, $3, yylineno);}
+	| expression '/' expression						{$$ = newBinaryOperation(DIVIDE, $1, $3, yylineno);}
+	| expression '%' expression						{$$ = newBinaryOperation(MODULO, $1, $3, yylineno);}
+	| expression '+' expression						{$$ = newBinaryOperation(ADD, $1, $3, yylineno);}
+	| expression '-' expression						{$$ = newBinaryOperation(MINUS, $1, $3, yylineno);}
+	| expression '&' expression						{$$ = newBinaryOperation(BITWISE_AND, $1, $3, yylineno);}
+	| expression '|' expression						{$$ = newBinaryOperation(BITWISE_OR, $1, $3, yylineno);}
+	| expression voNAND expression					{$$ = newBinaryOperation(BITWISE_NAND, $1, $3, yylineno);}
+	| expression voNOR expression					{$$ = newBinaryOperation(BITWISE_NOR, $1, $3, yylineno);}
+	| expression voXNOR expression					{$$ = newBinaryOperation(BITWISE_XNOR, $1, $3, yylineno);}
+	| expression '<' expression						{$$ = newBinaryOperation(LT, $1, $3, yylineno);}
+	| expression '>' expression						{$$ = newBinaryOperation(GT, $1, $3, yylineno);}
+	| expression voSRIGHT expression				{$$ = newBinaryOperation(SR, $1, $3, yylineno);}
+	| expression voASRIGHT expression				{$$ = newBinaryOperation(ASR, $1, $3, yylineno);}
+	| expression voSLEFT expression					{$$ = newBinaryOperation(SL, $1, $3, yylineno);}
+	| expression voEQUAL expression					{$$ = newBinaryOperation(LOGICAL_EQUAL, $1, $3, yylineno);}
+	| expression voNOTEQUAL expression				{$$ = newBinaryOperation(NOT_EQUAL, $1, $3, yylineno);}
+	| expression voLTE expression					{$$ = newBinaryOperation(LTE, $1, $3, yylineno);}
+	| expression voGTE expression					{$$ = newBinaryOperation(GTE, $1, $3, yylineno);}
+	| expression voCASEEQUAL expression				{$$ = newBinaryOperation(CASE_EQUAL, $1, $3, yylineno);}
+	| expression voCASENOTEQUAL expression			{$$ = newBinaryOperation(CASE_NOT_EQUAL, $1, $3, yylineno);}
+	| expression voOROR expression					{$$ = newBinaryOperation(LOGICAL_OR, $1, $3, yylineno);}
+	| expression voANDAND expression				{$$ = newBinaryOperation(LOGICAL_AND, $1, $3, yylineno);}
+	| expression '?' expression ':' expression		{$$ = newIfQuestion($1, $3, $5, yylineno);}
+	| function_instantiation						{$$ = $1;}
+	| '(' expression ')'							{$$ = $2;}
+	| '{' expression '{' expression_list '}' '}'	{$$ = newListReplicate( $2, $4 ); }
+	| c_function									{$$ = $1;}
 	;
 
 primary:
-	vNUMBER										{$$ = newNumberNode($1, yylineno);}
-	| vSYMBOL_ID										{$$ = newSymbolNode($1, yylineno);}
-	| vSYMBOL_ID '[' expression ']'								{$$ = newArrayRef($1, $3, yylineno);}
-	| vSYMBOL_ID '[' expression ']' '[' expression ']'					{$$ = newArrayRef2D($1, $3, $6, yylineno);}
-	| vSYMBOL_ID '[' expression vPLUS_COLON expression ']'					{$$ = newPlusColonRangeRef($1, $3, $5, yylineno);}
-	| vSYMBOL_ID '[' expression vMINUS_COLON expression ']'					{$$ = newMinusColonRangeRef($1, $3, $5, yylineno);}
-	| vSYMBOL_ID '[' expression ':' expression ']'						{$$ = newRangeRef($1, $3, $5, yylineno);}
+	vNUMBER													{$$ = newNumberNode($1, yylineno);}
+	| vSYMBOL_ID											{$$ = newSymbolNode($1, yylineno);}
+	| vSYMBOL_ID '[' expression ']'							{$$ = newArrayRef($1, $3, yylineno);}
+	| vSYMBOL_ID '[' expression ']' '[' expression ']'		{$$ = newArrayRef2D($1, $3, $6, yylineno);}
+	| vSYMBOL_ID '[' expression vPLUS_COLON expression ']'	{$$ = newPlusColonRangeRef($1, $3, $5, yylineno);}
+	| vSYMBOL_ID '[' expression vMINUS_COLON expression ']'	{$$ = newMinusColonRangeRef($1, $3, $5, yylineno);}
+	| vSYMBOL_ID '[' expression ':' expression ']'			{$$ = newRangeRef($1, $3, $5, yylineno);}
 	| vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newRangeRef2D($1, $3, $5, $8, $10, yylineno);}
-	| '{' probable_expression_list '}'							{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
+	| '{' expression_list '}'								{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
 	;
-
-probable_expression_list:
-	expression				{$$ = $1;}
-	| expression_list ',' expression	{$$ = newList_entry($1, $3); /* note this will be in order lsb = greatest to msb = 0 in the node child list */}
-	;
-
 expression_list:
 	expression_list ',' expression	{$$ = newList_entry($1, $3); /* note this will be in order lsb = greatest to msb = 0 in the node child list */}
-	| expression			{$$ = newList(CONCATENATE, $1);}
+	| expression					{$$ = newList(CONCATENATE, $1);}
 	;
 
  c_function:

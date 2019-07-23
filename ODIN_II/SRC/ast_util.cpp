@@ -344,6 +344,32 @@ void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child)
 }
 
 /*---------------------------------------------------------------------------------------------
+ * (function: remove_child_from_node)
+ *-------------------------------------------------------------------------------------------*/
+void remove_child_from_node(ast_node_t* node, int index)
+{
+	if (index < 0 || index >= node->num_children)
+		return;
+
+	ast_node_t **new_child_list = (ast_node_t **)vtr::calloc(node->num_children-1, sizeof(ast_node_t *));
+	for (int i = 0; i < index; i++)
+	{
+		new_child_list[i] = node->children[i];
+	}
+
+	if (node->children[index]) free_whole_tree(node->children[index]);
+
+	for (int i = index; i < (node->num_children - 1); i++)
+	{
+		new_child_list[i] = node->children[i+1];
+	}
+
+	node->children = (ast_node_t**)vtr::free(node->children);
+	node->children = new_child_list;
+	node->num_children --;
+}
+
+/*---------------------------------------------------------------------------------------------
  * (function: expand_node_list_at)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t **expand_node_list_at(ast_node_t **list, long old_size, long to_add, long start_idx)
@@ -1531,63 +1557,66 @@ long resolve_concat_sizes(ast_node_t *node_top, STRING_CACHE_LIST *local_string_
 {
 	long concatenation_size = 0;
 
-	switch (node_top->type)
+	if (node_top)
 	{
-		case CONCATENATE:
+		switch (node_top->type)
 		{
-			for (int i = 0; i < node_top->num_children; i++)
+			case CONCATENATE:
 			{
-				concatenation_size += resolve_concat_sizes(node_top->children[i], local_string_cache_list);
+				for (int i = 0; i < node_top->num_children; i++)
+				{
+					concatenation_size += resolve_concat_sizes(node_top->children[i], local_string_cache_list);
+				}
 			}
-		}
-		break;
+			break;
 
-		case IDENTIFIERS:
-		case ARRAY_REF:
-		case RANGE_REF:
-		{
-			concatenation_size += get_size_of_variable(node_top, local_string_cache_list);
-		}
-		break;
-
-		case BINARY_OPERATION:
-		case UNARY_OPERATION:
-		{
-			long max_size = 0;
-			for (int i = 0; i < node_top->num_children; i++)
+			case IDENTIFIERS:
+			case ARRAY_REF:
+			case RANGE_REF:
 			{
-				long this_size = resolve_concat_sizes(node_top->children[i], local_string_cache_list);
-				if (this_size > max_size) max_size = this_size;
+				concatenation_size += get_size_of_variable(node_top, local_string_cache_list);
 			}
-			concatenation_size += max_size;
-		}
-		break;
+			break;
 
-		case IF_Q:
-		{
-			/* check true/false expressions */
-			long true_length = resolve_concat_sizes(node_top->children[1], local_string_cache_list);
-			long false_length = resolve_concat_sizes(node_top->children[2], local_string_cache_list);
-			concatenation_size += (true_length > false_length) ? true_length : false_length;
-		}
-		break;
-
-		case NUMBERS:
-		{
-			/* verify that the number that this represents is sized */
-			if (!(node_top->types.vnumber->is_defined_size()))
+			case BINARY_OPERATION:
+			case UNARY_OPERATION:
 			{
-				error_message(NETLIST_ERROR, node_top->line_number, node_top->file_number, "%s", "Unsized constants cannot be concatenated.\n");
+				long max_size = 0;
+				for (int i = 0; i < node_top->num_children; i++)
+				{
+					long this_size = resolve_concat_sizes(node_top->children[i], local_string_cache_list);
+					if (this_size > max_size) max_size = this_size;
+				}
+				concatenation_size += max_size;
 			}
-			concatenation_size += node_top->types.vnumber->size();
-		}
-		break;
+			break;
 
-		default:
-		{
-			error_message(NETLIST_ERROR, node_top->line_number, node_top->file_number, "%s", "Unsupported operation within a concatenation.\n");
+			case IF_Q:
+			{
+				/* check true/false expressions */
+				long true_length = resolve_concat_sizes(node_top->children[1], local_string_cache_list);
+				long false_length = resolve_concat_sizes(node_top->children[2], local_string_cache_list);
+				concatenation_size += (true_length > false_length) ? true_length : false_length;
+			}
+			break;
+
+			case NUMBERS:
+			{
+				/* verify that the number that this represents is sized */
+				if (!(node_top->types.vnumber->is_defined_size()))
+				{
+					error_message(NETLIST_ERROR, node_top->line_number, node_top->file_number, "%s", "Unsized constants cannot be concatenated.\n");
+				}
+				concatenation_size += node_top->types.vnumber->size();
+			}
+			break;
+
+			default:
+			{
+				error_message(NETLIST_ERROR, node_top->line_number, node_top->file_number, "%s", "Unsupported operation within a concatenation.\n");
+			}
 		}
 	}
-
+	
 	return concatenation_size;
 }
