@@ -1853,6 +1853,9 @@ void create_symbol_table_for_module(ast_node_t* module_items, STRING_CACHE_LIST 
 	ast_node_t **local_symbol_table = local_string_cache_list->local_symbol_table;
 	int num_local_symbol_table = local_string_cache_list->num_local_symbol_table;
 
+	ast_node_t **implicit_declarations = NULL;
+	int num_implicit_declarations = 0;
+
 	/* search for VAR_DECLARE_LISTS */
 	if (module_items->num_children > 0)
 	{
@@ -1966,30 +1969,55 @@ void create_symbol_table_for_module(ast_node_t* module_items, STRING_CACHE_LIST 
 						sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
 						if( sc_spot == -1 )
 						{
-							sc_spot = sc_add_string(local_symbol_table_sc, temp_string);
-
-							/* store the data which is an idx here */
-							local_symbol_table_sc->data[sc_spot]= module_items->children[i]->children[0];
-
-							/* store the symbol */
-							local_symbol_table = (ast_node_t **)vtr::realloc(local_symbol_table, sizeof(ast_node_t*)*(num_local_symbol_table+1));
-							local_symbol_table[num_local_symbol_table] = (ast_node_t *)module_items->children[i]->children[0];
-							num_local_symbol_table ++;
-
-
-							/* copy the output status over */
-							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_wire = true;
-							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg = false;
-
-							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_integer = false;
-							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_input = false;
-
+							implicit_declarations = (ast_node_t **)vtr::realloc(implicit_declarations, sizeof(ast_node_t*)*(num_implicit_declarations+1));
+							implicit_declarations[0] = module_items->children[i]->children[0]->children[0];
+							num_implicit_declarations++;
 						}
 						vtr::free(temp_string);
 					}
 				}
 			}
 		}
+
+		/* add implicit declarations to string cache */
+		for (i = 0; i < num_implicit_declarations; i++)
+		{
+			ast_node_t *node = implicit_declarations[i];
+			sc_spot = sc_add_string(local_symbol_table_sc, node->types.identifier);
+			oassert(sc_spot > -1);
+
+			if (local_symbol_table_sc->data[sc_spot] == NULL)
+			{
+				ast_node_t *var_declare = create_node_w_type(VAR_DECLARE, node->line_number, node->file_number);
+			
+				/* copy the output status over */
+				var_declare->types.variable.is_wire = true;
+				var_declare->types.variable.is_reg = false;
+
+				var_declare->types.variable.is_integer = false;
+				var_declare->types.variable.is_input = false;
+				
+				allocate_children_to_node(var_declare, { node, NULL, NULL, NULL, NULL, NULL });
+
+				/* store the data which is an idx here */
+				local_symbol_table_sc->data[sc_spot] = (void *)var_declare;
+
+				/* store the symbol */
+				local_symbol_table = (ast_node_t **)vtr::realloc(local_symbol_table, sizeof(ast_node_t*)*(num_local_symbol_table+1));
+				local_symbol_table[num_local_symbol_table] = (ast_node_t *)var_declare;
+				num_local_symbol_table ++;
+			}
+			else
+			{
+				/* net was declared later; do nothing */
+			}
+		}
+
+		if (implicit_declarations)
+		{
+			vtr::free(implicit_declarations);
+		}
+
 		local_string_cache_list->local_symbol_table = local_symbol_table;
 		local_string_cache_list->num_local_symbol_table = num_local_symbol_table;
 	}
