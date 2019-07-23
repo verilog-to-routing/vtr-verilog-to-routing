@@ -658,7 +658,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
 void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 {
 	/* Storing the names of the input and the final output in array names */
-	char *ptr;
+	char *ptr = NULL;
 	char **names = NULL; // stores the names of the input and the output, last name stored would be of the output
 	int input_count = 0;
 	char buffer[READ_BLIF_BUFFER];
@@ -680,6 +680,11 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 	)
 	{
 		skip_reading_bit_map = true;
+		free_nnode(new_node);
+		for(int i = 0; i < input_count; i++)
+		{
+			vtr::free(names[i]);
+		}
 	}
 	else
 	{
@@ -778,9 +783,9 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 
 		output_nets_hash->add(new_node->name, new_net);
 
-		/* Free the char** names */
-		vtr::free(names);
 	}
+	/* Free the char** names */
+	vtr::free(names);
 }
 
 /*
