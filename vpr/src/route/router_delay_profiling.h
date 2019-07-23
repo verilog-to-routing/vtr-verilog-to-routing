@@ -6,9 +6,9 @@
 
 #include <vector>
 
-class RouterDelayProfile {
+class RouterDelayProfiler {
   public:
-    RouterDelayProfile(
+    RouterDelayProfiler(
         e_router_lookahead router_lookahead_type,
         std::string write_lookahead,
         std::string read_lookahead,

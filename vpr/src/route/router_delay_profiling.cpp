@@ -9,7 +9,7 @@
 
 static t_rt_node* setup_routing_resources_no_net(int source_node);
 
-RouterDelayProfile::RouterDelayProfile(
+RouterDelayProfiler::RouterDelayProfiler(
     e_router_lookahead router_lookahead_type,
     std::string write_lookahead,
     std::string read_lookahead,
@@ -19,7 +19,7 @@ RouterDelayProfile::RouterDelayProfile(
         write_lookahead, read_lookahead, segment_inf);
 }
 
-bool RouterDelayProfile::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) const {
+bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) const {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *

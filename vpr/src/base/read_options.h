@@ -30,8 +30,8 @@ struct t_options {
     argparse::ArgValue<std::string> write_placement_delay_lookup;
     argparse::ArgValue<std::string> read_placement_delay_lookup;
 
-    argparse::ArgValue<std::string> write_lookahead;
-    argparse::ArgValue<std::string> read_lookahead;
+    argparse::ArgValue<std::string> write_router_lookahead;
+    argparse::ArgValue<std::string> read_router_lookahead;
 
     /* Stage Options */
     argparse::ArgValue<bool> do_packing;

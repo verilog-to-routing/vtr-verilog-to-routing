@@ -955,8 +955,8 @@ struct t_router_opts {
     std::string first_iteration_timing_report_file;
     bool strict_checks;
 
-    std::string write_lookahead;
-    std::string read_lookahead;
+    std::string write_router_lookahead;
+    std::string read_router_lookahead;
 };
 
 struct t_analysis_opts {
