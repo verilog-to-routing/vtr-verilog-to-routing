@@ -673,21 +673,21 @@ void levelize_backwards(netlist_t *netlist)
 					}
 				}
 
-				if ((all_visited == true) && fanout_net->driver_pin)
+				if( all_visited 
+				&&  fanout_net->driver_pin
+				&&  fanout_net->driver_pin->node 
+				&&  fanout_net->driver_pin->node->type != FF_NODE)
 				{
-					if(fanout_net->driver_pin->node && (fanout_net->driver_pin->node->type != FF_NODE))
+					/* This one has been visited by everyone */
+					if (fanout_net->driver_pin->node->backward_level == -1)
 					{
-						/* This one has been visited by everyone */
-						if (fanout_net->driver_pin->node->backward_level == -1)
-						{
-							/* already added to a list...this means that we won't have the correct ordering */
-							netlist->backward_levels[cur_back_level+1] = (nnode_t**)vtr::realloc(netlist->backward_levels[cur_back_level+1], sizeof(nnode_t*)*(netlist->num_at_backward_level[cur_back_level+1]+1));
-							netlist->backward_levels[cur_back_level+1][netlist->num_at_backward_level[cur_back_level+1]] = fanout_net->driver_pin->node;
-							netlist->num_at_backward_level[cur_back_level+1]++;
-						}
-
-						fanout_net->driver_pin->node->backward_level = cur_back_level+1;
+						/* already added to a list...this means that we won't have the correct ordering */
+						netlist->backward_levels[cur_back_level+1] = (nnode_t**)vtr::realloc(netlist->backward_levels[cur_back_level+1], sizeof(nnode_t*)*(netlist->num_at_backward_level[cur_back_level+1]+1));
+						netlist->backward_levels[cur_back_level+1][netlist->num_at_backward_level[cur_back_level+1]] = fanout_net->driver_pin->node;
+						netlist->num_at_backward_level[cur_back_level+1]++;
 					}
+
+					fanout_net->driver_pin->node->backward_level = cur_back_level+1;
 				}
 			}
 		}
