@@ -347,15 +347,8 @@ void define_add_function(nnode_t *node, FILE *out)
 	oassert(node->output_port_sizes[1] > 0);
 
 	/* Write out th	bec_csla 	= 3 	// binary to excess carry Select Addere model adder  */
-	if (configuration.fixed_hard_adder != 0)
-	{
-		count += fprintf(out, " adder");
-	}
-	else
-	{
-		count += fprintf(out, " adder");
-	}
-
+	count += fprintf(out, " adder");
+	
 	/* Write the input pins*/
 	for (i = 0;  i < node->num_input_pins; i++)
 	{
