@@ -27,20 +27,6 @@
           </packing>
         </child>
         <child>
-          <object class="GtkEntry" id="TextInput">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="tooltip_text" translatable="yes">search</property>
-            <property name="halign">start</property>
-            <property name="primary_icon_stock">gtk-find</property>
-            <property name="placeholder_text" translatable="yes">Search...</property>
-          </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">0</property>
-          </packing>
-        </child>
-        <child>
           <object class="GtkGrid" id="InnerGrid">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
@@ -51,30 +37,13 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="relief">none</property>
                 <property name="use_stock">True</property>
                 <property name="image_position">right</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
                 <property name="top_attach">12</property>
-                <property name="height">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="ExistButton">
-                <property name="label">gtk-quit</property>
-                <property name="use_action_appearance">False</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="relief">none</property>
-                <property name="use_stock">True</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">12</property>
-                <property name="height">2</property>
+                <property name="width">2</property>
               </packing>
             </child>
             <child>
@@ -156,6 +125,12 @@
             <child>
               <placeholder/>
             </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
           </object>
           <packing>
             <property name="left_attach">7</property>
@@ -169,7 +144,6 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="relief">none</property>
             <property name="use_stock">True</property>
           </object>
           <packing>
@@ -188,6 +162,9 @@
             <property name="top_attach">4</property>
             <property name="width">7</property>
           </packing>
+        </child>
+        <child>
+          <placeholder/>
         </child>
         <child>
           <placeholder/>

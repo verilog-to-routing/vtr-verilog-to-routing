@@ -3734,4 +3734,3 @@ static void draw_placement_macros(ezgl::renderer &g) {
         
     }
 }
-
