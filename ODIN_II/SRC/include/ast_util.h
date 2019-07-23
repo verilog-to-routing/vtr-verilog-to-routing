@@ -18,6 +18,7 @@ void initial_node(ast_node_t *node, ids id, int line_number, int file_number, in
 void allocate_children_to_node(ast_node_t* node, std::vector<ast_node_t *> children_list);
 void add_child_to_node(ast_node_t* node, ast_node_t *child);
 void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child);
+void remove_child_from_node(ast_node_t* node, int index);
 ast_node_t **expand_node_list_at(ast_node_t **list, long old_size, long to_add, long start_idx);
 void move_ast_node(ast_node_t *src, ast_node_t *dest, ast_node_t *node);
 ast_node_t *ast_node_deep_copy(ast_node_t *node);
@@ -41,7 +42,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list);
 long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list);
 
-ast_node_t *node_is_constant(ast_node_t *node);
+bool node_is_constant(ast_node_t *node);
 ast_node_t *fold_binary(ast_node_t **node);
 ast_node_t *fold_unary(ast_node_t **node);
 ast_node_t * fold_conditional(ast_node_t **node);
