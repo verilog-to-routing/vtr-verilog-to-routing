@@ -4133,7 +4133,7 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
 		if (!error && get_next_vector(existing_out, buffer1))
 		{
 			error = true;
-			warning_message(SIMULATION_ERROR, 0, -1,"%s contains more than %ld vectors.\n", output_vector_file, num_vectors);
+			warning_message(SIMULATION_ERROR, 0, -1,"%s contains more than %d vectors.\n", output_vector_file, num_vectors);
 		}
 
 		fclose(existing_out);
