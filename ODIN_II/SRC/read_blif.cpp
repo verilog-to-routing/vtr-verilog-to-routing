@@ -792,239 +792,321 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 *-------------------------------------------------------------------------------------------*/
 operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 {
+	operation_list to_return = operation_list_END;
+
 	fpos_t pos;
 	int last_line = file_line_number;
 	const char *One = "1";
 	const char *Zero = "0";
 	fgetpos(file,&pos);
 
+	char **bit_map = NULL;
+	char *output_bit_map = NULL;// to distinguish whether for the bit_map output is 1 or 0
+	int line_count_bitmap = 0; //stores the number of lines in a particular bit map
+	char buffer[READ_BLIF_BUFFER];
+
 	if(!input_count)
 	{
-		char buffer[READ_BLIF_BUFFER];
 		vtr::fgets (buffer, READ_BLIF_BUFFER, file);
 
 		file_line_number = last_line;
 		fsetpos(file,&pos);
 
 		char *ptr = vtr::strtok(buffer,"\t\n", file, buffer);
-		if      (!ptr) 				return GND_NODE;
-		else if (!strcmp(ptr," 1")) return VCC_NODE;
-		else if (!strcmp(ptr," 0")) return GND_NODE;
-		else                        return VCC_NODE;
-	}
-
-	char **bit_map = NULL;
-	char *output_bit_map = NULL;// to distinguish whether for the bit_map output is 1 or 0
-	int line_count_bitmap = 0; //stores the number of lines in a particular bit map
-	char buffer[READ_BLIF_BUFFER];
-	while(1)
-	{
-		vtr::fgets (buffer, READ_BLIF_BUFFER, file);
-		if(!(buffer[0] == '0' || buffer[0] == '1' || buffer[0] == '-'))
-			break;
-
-		bit_map = (char**)vtr::realloc(bit_map,sizeof(char*) * (line_count_bitmap + 1));
-		bit_map[line_count_bitmap++] = vtr::strdup(vtr::strtok(buffer,TOKENS, file, buffer));
-		if (output_bit_map != NULL) vtr::free(output_bit_map);
-		output_bit_map = vtr::strdup(vtr::strtok(NULL,TOKENS, file, buffer));
-	}
-	
-	oassert(output_bit_map);
-
-	if (!strcmp(output_bit_map, One))
-	{
-		vtr::free(output_bit_map);
-		output_bit_map = vtr::strdup(One);
-		node->generic_output = 1;
+		if(!ptr) 				
+		{
+			to_return = GND_NODE;
+		}
+		else if(!strcmp(ptr," 1")) 
+		{
+			to_return = VCC_NODE;
+		}
+		else if(!strcmp(ptr," 0"))
+		{
+			to_return = GND_NODE;
+		} 
+		else    
+		{
+			to_return = VCC_NODE;
+		}                    
 	}
 	else
 	{
-		vtr::free(output_bit_map);
-		output_bit_map = vtr::strdup(Zero);
-		node->generic_output = 0;
-	}
-
-	file_line_number = last_line;
-	fsetpos(file,&pos);
-
-	/*Patern recognition for faster simulation*/
-	if(node->generic_output){
-		//On-gate recognition
-		//TODO move off-logic parts to appropriate code block
-		/* Single line bit map : */
-		if(line_count_bitmap == 1)
+		while(1)
 		{
-			// GT
-			if(!strcmp(bit_map[0],"100"))
-				return GT;
+			vtr::fgets (buffer, READ_BLIF_BUFFER, file);
+			if(!(buffer[0] == '0' || buffer[0] == '1' || buffer[0] == '-'))
+				break;
 
-			// LT
-			if(!strcmp(bit_map[0],"010"))
-				return LT;
-
-			/* LOGICAL_AND and LOGICAL_NAND for ABC*/
-			int i;
-			for(i = 0; i < input_count && bit_map[0][i] == '1'; i++);
-
-			if(i == input_count)
-			{
-				if (!strcmp(output_bit_map,"1"))
-					return LOGICAL_AND;
-				else if (!strcmp(output_bit_map,"0"))
-					return LOGICAL_NAND;
-			}
-
-			/* BITWISE_NOT */
-			if(!strcmp(bit_map[0],"0"))
-				return BITWISE_NOT;
-
-			/* LOGICAL_NOR and LOGICAL_OR for ABC */
-			for(i = 0; i < input_count && bit_map[0][i] == '0'; i++);
-			if(i == input_count)
-			{
-				if (!strcmp(output_bit_map,"1"))
-					return LOGICAL_NOR;
-				else if (!strcmp(output_bit_map,"0"))
-					return LOGICAL_OR;
-			}
+			bit_map = (char**)vtr::realloc(bit_map,sizeof(char*) * (line_count_bitmap + 1));
+			bit_map[line_count_bitmap++] = vtr::strdup(vtr::strtok(buffer,TOKENS, file, buffer));
+			if (output_bit_map != NULL) vtr::free(output_bit_map);
+			output_bit_map = vtr::strdup(vtr::strtok(NULL,TOKENS, file, buffer));
 		}
-		/* Assumption that bit map is in order when read from blif */
-		else if(line_count_bitmap == 2)
-		{
-			/* LOGICAL_XOR */
-			if((strcmp(bit_map[0],"01")==0) && (strcmp(bit_map[1],"10")==0)) return LOGICAL_XOR;
-			/* LOGICAL_XNOR */
-			if((strcmp(bit_map[0],"00")==0) && (strcmp(bit_map[1],"11")==0)) return LOGICAL_XNOR;
-		}
-		else if (line_count_bitmap == 4)
-		{
-			/* ADDER_FUNC */
-			if (
-					   (!strcmp(bit_map[0],"001"))
-					&& (!strcmp(bit_map[1],"010"))
-					&& (!strcmp(bit_map[2],"100"))
-					&& (!strcmp(bit_map[3],"111"))
-			)
-				return ADDER_FUNC;
-			/* CARRY_FUNC */
-			if(
-					   (!strcmp(bit_map[0],"011"))
-					&& (!strcmp(bit_map[1],"101"))
-					&& (!strcmp(bit_map[2],"110"))
-					&& (!strcmp(bit_map[3],"111"))
-			)
-				return 	CARRY_FUNC;
-			/* LOGICAL_XOR */
-			if(
-					   (!strcmp(bit_map[0],"001"))
-					&& (!strcmp(bit_map[1],"010"))
-					&& (!strcmp(bit_map[2],"100"))
-					&& (!strcmp(bit_map[3],"111"))
-			)
-				return 	LOGICAL_XOR;
-			/* LOGICAL_XNOR */
-			if(
-					   (!strcmp(bit_map[0],"000"))
-					&& (!strcmp(bit_map[1],"011"))
-					&& (!strcmp(bit_map[2],"101"))
-					&& (!strcmp(bit_map[3],"110"))
-			)
-				return 	LOGICAL_XNOR;
-		}
+		
+		oassert(output_bit_map);
 
+		file_line_number = last_line;
+		fsetpos(file,&pos);
 
-		if(line_count_bitmap == input_count)
+		/*Patern recognition for faster simulation*/
+		if(!strcmp(output_bit_map, One))
 		{
-			/* LOGICAL_OR */
-			int i;
-			for(i = 0; i < line_count_bitmap; i++)
+			//On-gate recognition
+			//TODO move off-logic parts to appropriate code block
+
+			vtr::free(output_bit_map);
+			output_bit_map = vtr::strdup(One);
+			node->generic_output = 1;
+
+			/* Single line bit map : */
+			if(line_count_bitmap == 1)
 			{
-				if(bit_map[i][i] == '1')
+				// GT
+				if(!strcmp(bit_map[0],"100"))
 				{
-					int j;
-					for(j = 1; j < input_count; j++)
-						if(bit_map[i][(i+j)% input_count]!='-')
-							break;
-
-					if(j != input_count)
-						break;
+					to_return = GT;
 				}
+
+				// LT
+				else if(!strcmp(bit_map[0],"010"))
+				{
+					to_return = LT;
+				}
+
+				/* LOGICAL_AND and LOGICAL_NAND for ABC*/
 				else
 				{
-					break;
+					int i;
+					for(i = 0; i < input_count && bit_map[0][i] == '1'; i++);
+
+					if(i == input_count)
+					{
+						if (!strcmp(output_bit_map,"1"))
+						{
+							to_return = LOGICAL_AND;
+						}
+						else if (!strcmp(output_bit_map,"0"))
+						{
+							to_return = LOGICAL_NAND;
+						}
+					}
+
+					/* BITWISE_NOT */
+					if(!strcmp(bit_map[0],"0") && to_return == operation_list_END)
+					{
+						to_return = BITWISE_NOT;
+					}
+					/* LOGICAL_NOR and LOGICAL_OR for ABC */
+					for(i = 0; i < input_count && bit_map[0][i] == '0'; i++);
+
+					if(i == input_count && to_return == operation_list_END)
+					{
+						if (!strcmp(output_bit_map,"1"))
+						{
+							to_return = LOGICAL_NOR;
+						}
+						else if (!strcmp(output_bit_map,"0"))
+						{
+							to_return = LOGICAL_OR;
+						}
+					}
 				}
 			}
-
-			if(i == line_count_bitmap)
-				return LOGICAL_OR;
-
-			/* LOGICAL_NAND */
-			for(i = 0; i < line_count_bitmap; i++)
+			/* Assumption that bit map is in order when read from blif */
+			else if(line_count_bitmap == 2)
 			{
-				if(bit_map[i][i]=='0')
-				{
-					int j;
-					for(j = 1; j < input_count; j++)
-						if(bit_map[i][(i+j)% input_count]!='-')
-							break;
-
-					if(j != input_count) break;
+				/* LOGICAL_XOR */
+				if((strcmp(bit_map[0],"01")==0) && (strcmp(bit_map[1],"10")==0))
+				{ 
+					to_return = LOGICAL_XOR;
 				}
-				else
+				/* LOGICAL_XNOR */
+				else if((strcmp(bit_map[0],"00")==0) && (strcmp(bit_map[1],"11")==0)) 
 				{
-					break;
+					to_return = LOGICAL_XNOR;
 				}
 			}
-
-			if(i == line_count_bitmap)
-				return LOGICAL_NAND;
-		}
-
-		/* MUX_2 */
-		if(line_count_bitmap*2 == input_count)
-		{
-			int i;
-			for(i = 0; i < line_count_bitmap; i++)
+			else if (line_count_bitmap == 4)
 			{
+				/* ADDER_FUNC */
 				if (
-						   (bit_map[i][i]=='1')
-						&& (bit_map[i][i+line_count_bitmap] =='1')
+						(!strcmp(bit_map[0],"001"))
+						&& (!strcmp(bit_map[1],"010"))
+						&& (!strcmp(bit_map[2],"100"))
+						&& (!strcmp(bit_map[3],"111"))
 				)
 				{
-					int j;
-					for (j = 1; j < line_count_bitmap; j++)
+					to_return = ADDER_FUNC;
+				}
+				/* CARRY_FUNC */
+				else if(
+						(!strcmp(bit_map[0],"011"))
+						&& (!strcmp(bit_map[1],"101"))
+						&& (!strcmp(bit_map[2],"110"))
+						&& (!strcmp(bit_map[3],"111"))
+				)
+				{
+					to_return = 	CARRY_FUNC;
+				}
+				/* LOGICAL_XOR */
+				else if(
+						(!strcmp(bit_map[0],"001"))
+						&& (!strcmp(bit_map[1],"010"))
+						&& (!strcmp(bit_map[2],"100"))
+						&& (!strcmp(bit_map[3],"111"))
+				)
+				{
+					to_return = 	LOGICAL_XOR;
+				}
+				/* LOGICAL_XNOR */
+				else if(
+						(!strcmp(bit_map[0],"000"))
+						&& (!strcmp(bit_map[1],"011"))
+						&& (!strcmp(bit_map[2],"101"))
+						&& (!strcmp(bit_map[3],"110"))
+				)
+				{
+					to_return = 	LOGICAL_XNOR;
+				}
+			}
+
+
+			if(line_count_bitmap == input_count && to_return == operation_list_END)
+			{
+				/* LOGICAL_OR */
+				int i;
+				for(i = 0; i < line_count_bitmap; i++)
+				{
+					if(bit_map[i][i] == '1')
 					{
-						if (
-								   (bit_map[i][ (i+j) % line_count_bitmap] != '-')
-								|| (bit_map[i][((i+j) % line_count_bitmap) + line_count_bitmap] != '-')
-						)
+						int j;
+						for(j = 1; j < input_count; j++)
+						{
+							if(bit_map[i][(i+j)% input_count]!='-')
+							{
+								break;
+							}
+						}
+
+						if(j != input_count)
+						{
+							break;
+						}
+					}
+					else
+					{
+						break;
+					}
+				}
+
+				if(i == line_count_bitmap)
+				{
+					to_return = LOGICAL_OR;
+				}
+				else
+				{
+
+					/* LOGICAL_NAND */
+					for(i = 0; i < line_count_bitmap; i++)
+					{
+						if(bit_map[i][i]=='0')
+						{
+							int j;
+							for(j = 1; j < input_count; j++)
+							{
+								if(bit_map[i][(i+j)% input_count]!='-')
+								{
+									break;
+								}
+							}
+
+							if(j != input_count) 
+							{
+								break;
+							}
+						}
+						else
 						{
 							break;
 						}
 					}
 
-					if(j != input_count)
-						break;
-				}
-				else
-				{
-					break;
+					if(i == line_count_bitmap)
+					{
+						to_return = LOGICAL_NAND;
+					}
 				}
 			}
 
-			if(i == line_count_bitmap)
-				return MUX_2;
+			/* MUX_2 */
+			if(line_count_bitmap*2 == input_count && to_return == operation_list_END)
+			{
+				int i;
+				for(i = 0; i < line_count_bitmap; i++)
+				{
+					if((bit_map[i][i]=='1') && (bit_map[i][i+line_count_bitmap] =='1'))
+					{
+						int j;
+						for (j = 1; j < line_count_bitmap; j++)
+						{
+							if (
+									(bit_map[i][ (i+j) % line_count_bitmap] != '-')
+									|| (bit_map[i][((i+j) % line_count_bitmap) + line_count_bitmap] != '-')
+							)
+							{
+								break;
+							}
+						}
+
+						if(j != input_count)
+						{
+							break;
+						}
+					}
+					else
+					{
+						break;
+					}
+				}
+
+				if(i == line_count_bitmap)
+				{
+					to_return = MUX_2;
+				}
+			}
+		} 
+		else
+		{
+			//Off-gate recognition
+			//TODO
+
+			vtr::free(output_bit_map);
+			output_bit_map = vtr::strdup(Zero);
+			node->generic_output = 0;
 		}
-	} else if (node->generic_output == 0){
-		//Off-gate recognition
-		//TODO
+
+		/* assigning the bit_map to the node if it is GENERIC */
+		if(to_return == operation_list_END)
+		{
+			node->bit_map = bit_map;
+			node->bit_map_line_count = line_count_bitmap;
+			to_return = GENERIC;
+		}
 	}
-
-	 /* assigning the bit_map to the node if it is GENERIC */
-
-	node->bit_map = bit_map;
-	node->bit_map_line_count = line_count_bitmap;
-	return GENERIC;
+	if(output_bit_map)
+	{
+		vtr::free(output_bit_map);
+	}
+	if(bit_map)
+	{
+		for(int i = 0; i < line_count_bitmap; i++)
+		{
+			vtr::free(bit_map[i]);
+		}
+		vtr::free(bit_map);
+	}
+	return to_return;
 }
 
 /*
