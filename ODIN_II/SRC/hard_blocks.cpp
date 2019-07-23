@@ -264,7 +264,7 @@ void output_hard_blocks(FILE *out)
 					if (hb_ports->size == 1)
 						count = count + odin_sprintf(buffer, " %s", hb_ports->name);
 					else
-						count = count + odin_sprintf(buffer, " %s[%ld]", hb_ports->name, i);
+						count = count + odin_sprintf(buffer, " %s[%d]", hb_ports->name, i);
 
 					if (count >= 78)
 						count = fprintf(out, " \\\n%s", buffer) - 3;
@@ -283,7 +283,7 @@ void output_hard_blocks(FILE *out)
 					if (hb_ports->size == 1)
 						count = count + odin_sprintf(buffer, " %s", hb_ports->name);
 					else
-						count = count + odin_sprintf(buffer, " %s[%ld]", hb_ports->name, i);
+						count = count + odin_sprintf(buffer, " %s[%d]", hb_ports->name, i);
 
 					if (count >= 78)
 						count = fprintf(out, " \\\n%s", buffer) - 3;
