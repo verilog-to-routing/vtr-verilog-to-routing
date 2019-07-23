@@ -2837,6 +2837,21 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 			continue;
 		}
 
+		/* IF the designer users port names then make sure they line up */
+		// TODO: This code may need to be moved down the line
+		if (i > 0 && module_instance_list->children[i]->children[0] != NULL)
+		{
+			if (strcmp(module_instance_list->children[i]->children[0]->types.identifier, module_var_node->children[0]->types.identifier) != 0)
+			{
+				// TODO: This error message may not be correct. If assigning by name, the order should not matter
+				error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
+						"This module entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
+						module_instance_list->children[i]->children[0]->types.identifier,
+						module_var_node->children[0]->types.identifier
+				);
+			}
+		}
+
 		/* calculate the port details */
 		if (module_var_node->children[1] == NULL)
 		{
@@ -3007,21 +3022,6 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				    }
                 }
 
-				/* IF the designer uses port names then make sure they line up */
-				if (module_instance_list->children[i]->children[0] != NULL)
-				{
-					if (strcmp(module_instance_list->children[i]->children[0]->types.identifier,
-							module_var_node->children[0]->types.identifier) != 0
-					)
-					{
-						error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
-								"This module entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
-								module_instance_list->children[i]->children[0]->types.identifier,
-								module_var_node->children[0]->types.identifier
-						);
-					}
-				}
-
 				vtr::free(full_name);
 				vtr::free(alias_name);
 			}
@@ -3112,19 +3112,6 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 
 				/* add this alias for the net */
 				output_nets_sc->data[sc_spot_input_new] = output_nets_sc->data[sc_spot_output];
-
-				/* IF the designer users port names then make sure they line up */
-				if (i > 0 && module_instance_list->children[i]->children[0] != NULL)
-				{
-					if (strcmp(module_instance_list->children[i]->children[0]->types.identifier, module_var_node->children[0]->types.identifier) != 0)
-					{
-						error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
-								"This module entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
-								module_instance_list->children[i]->children[0]->types.identifier,
-								module_var_node->children[0]->types.identifier
-						);
-					}
-				}
 
 		        /* make the inplicit output list and hook up the outputs */
 				vtr::free(full_name);
