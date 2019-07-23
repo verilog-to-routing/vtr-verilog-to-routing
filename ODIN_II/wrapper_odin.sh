@@ -34,6 +34,7 @@ TIME_EXEC=$($SHELL -c "which time")
 VALGRIND_EXEC="valgrind --leak-check=full --max-stackframe=128000000 --error-exitcode=1 --track-origins=yes"
 PERF_EXEC="perf stat record -a -d -d -d -o"
 GDB_EXEC="gdb --args"
+EXEC_PREFIX=""
 
 LOG=""
 LOG_FILE=""
@@ -90,6 +91,7 @@ function print_exit_type() {
 		;;29)	echo "SIGIO"
 		;;30)	echo "SIGPWR"
 		;;31)	echo "SIGSYS"
+		;;124)	echo "Timeout"
 		;;127)	echo "Errored"
 		;;*)	echo "${CODE}"
 		;;
@@ -211,6 +213,13 @@ function display() {
 		[ "_${ERROR_CATCH}" != "_" ] && CAUGHT_EXIT_CODE="${ERROR_CATCH}"
 	fi
 
+	# check for uncaught errors
+	if [ "_${CAUGHT_EXIT_CODE}" == "_0" ]
+	then
+		ERROR_CATCH="$(cat ${LOG_FILE} | grep 'Command terminated by signal:' | awk '{print $5}' | grep -E '^\-?[0-9]+$')"
+		[ "_${ERROR_CATCH}" != "_" ] && CAUGHT_EXIT_CODE="${ERROR_CATCH}"
+	fi
+
 	EXIT_ERROR_TYPE=$( print_exit_type "${CAUGHT_EXIT_CODE}" )
 
 
@@ -277,15 +286,15 @@ do
 			else
 				case $2 in
 					valgrind)
-						EXEC="${VALGRIND_EXEC} ${EXEC}"
+						EXEC_PREFIX="${VALGRIND_EXEC} ${EXEC_PREFIX}"
 						;;
 					gdb)
 						USE_TIMEOUT="off"
 						USE_LOGS="off"
-						EXEC="${GDB_EXEC} ${EXEC}"
+						EXEC_PREFIX="${GDB_EXEC} ${EXEC_PREFIX}"
 						;;
 					perf)
-						EXEC="${PERF_EXEC} ${EXEC}"
+						EXEC_PREFIX="${PERF_EXEC} ${EXEC_PREFIX}"
 						shift
 						;;
 					*)
@@ -337,13 +346,13 @@ fi
 
 if [ "${USE_TIME}" == "on" ]
 then
-	EXEC="${TIME_EXEC} --output=${LOG_FILE} --append ${EXEC}"
+	EXEC_PREFIX="${TIME_EXEC} --output=${LOG_FILE} --append ${EXEC_PREFIX}"
 	log_it "running with /bin/time\n"
 fi
 
 if [ "${USE_TIMEOUT}" == "on" ]
 then
-	EXEC="timeout ${TIME_LIMIT} ${EXEC}"
+	EXEC_PREFIX="timeout ${TIME_LIMIT} ${EXEC_PREFIX}"
 	log_it "running with timeout ${TIME_LIMIT}\n"
 fi
 
@@ -351,17 +360,21 @@ dump_log
 
 pretty_print_status ""
 
-EXIT_STATUS=0 
 if [ "${USE_LOGS}" == "on" ]
 then
-	${EXEC} &>> ${LOG_FILE} || EXIT_STATUS=1
-
+	${EXEC_PREFIX} ${EXEC} &>> ${LOG_FILE}
 else
-	${EXEC} || EXIT_STATUS=1
+	${EXEC_PREFIX} ${EXEC}
 fi
+EXIT_CODE=$?
 
-EXIT_CODE="$?"
 display "${EXIT_CODE}"
+
+EXIT_STATUS=0
+if [ "${EXIT_CODE}" != "0" ]
+then
+	EXIT_STATUS=1
+fi
 
 if [ "${EXIT_STATUS}" != "0" ] && [ "${USE_LOGS}" == "on" ] && [ "${VERBOSE}" == "on" ]
 then
