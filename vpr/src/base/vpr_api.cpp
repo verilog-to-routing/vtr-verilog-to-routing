@@ -340,24 +340,21 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     vpr_create_device(vpr_setup, arch);
 
     vpr_init_graphics(vpr_setup, arch);
-
     { //Place
         bool place_success = vpr_place_flow(vpr_setup, arch);
 
         if (!place_success) {
+            std::cout << "failed placement" << std::endl;
             return false; //Unimplementable
         }
     }
-
     RouteStatus route_status;
     { //Route
         route_status = vpr_route_flow(vpr_setup, arch);
     }
-
     { //Analysis
         vpr_analysis_flow(vpr_setup, arch, route_status);
     }
-
     vpr_close_graphics(vpr_setup);
 
     return route_status.success();
@@ -826,21 +823,16 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     /* Startup X graphics */
+    
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type);
     if (vpr_setup.ShowGraphics) {
-        std::stringstream msg;
-        msg << "VPR: Versatile Place and Route for FPGAs";
-        msg << " (" << vtr::getcwd() << ")";
-        init_graphics(msg.str().c_str(), WHITE);
         alloc_draw_structs(&arch);
     }
 }
 
 void vpr_close_graphics(const t_vpr_setup& vpr_setup) {
     /* Close down X Display */
-    if (vpr_setup.ShowGraphics)
-        close_graphics();
     free_draw_structs();
 }
 

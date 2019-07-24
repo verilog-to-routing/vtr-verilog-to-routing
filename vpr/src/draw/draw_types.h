@@ -26,6 +26,12 @@
 #include "vtr_color_map.h"
 #include "vtr_vector.h"
 
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
+#include "ezgl/color.hpp"
+
+
 enum e_draw_crit_path {
     DRAW_NO_CRIT_PATH,
     DRAW_CRIT_PATH_FLYLINES,
@@ -122,8 +128,8 @@ enum e_edge_dir {
  *					 highlighting routing resources on rr_graph
  */
 typedef struct {
-    t_color color;
-    bool node_highlighted;
+	ezgl::color color;
+	bool node_highlighted;
 } t_draw_rr_node;
 
 /* Structure used to store state variables that control drawing and
@@ -173,9 +179,9 @@ struct t_draw_state {
     int gr_automode = 0;
     e_route_type draw_route_type = GLOBAL;
     char default_message[vtr::bufsize];
-    vtr::vector<ClusterNetId, t_color> net_color;
-    vtr::vector<ClusterBlockId, t_color> block_color;
-    t_draw_rr_node* draw_rr_node = nullptr;
+    vtr::vector<ClusterNetId, ezgl::color> net_color;
+    vtr::vector<ClusterBlockId, ezgl::color> block_color;
+    t_draw_rr_node *draw_rr_node = nullptr;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
     std::unique_ptr<const vtr::ColorMap> color_map = nullptr;
@@ -191,10 +197,9 @@ struct t_draw_state {
  * information for all sub-blocks inside. This includes
  * the bounding box for drawing each sub-block. */
 struct t_draw_pb_type_info {
-    std::vector<t_bound_box> subblk_array;
-
-    t_bound_box get_pb_bbox(const t_pb_graph_node& pb_gnode);
-    t_bound_box& get_pb_bbox_ref(const t_pb_graph_node& pb_gnode);
+    std::vector<ezgl::rectangle> subblk_array;
+    ezgl::rectangle get_pb_bbox(const t_pb_graph_node& pb_gnode);
+    ezgl::rectangle& get_pb_bbox_ref(const t_pb_graph_node& pb_gnode);
 };
 
 /* Structure used to store coordinates and dimensions for
@@ -204,7 +209,7 @@ struct t_draw_pb_type_info {
  * (tile_x[0],tile_y[0]) at the lower left corner of the FPGA
  * to (tile_x[device_ctx.grid.width()-1]+tile_width, tile_y[device_ctx.grid.height()-1]+tile_width) in
  * the upper right corner.
- * tile_width: Width (and height) of a grid_tile.
+ * tile_width: Width (and height) of a grid_tile.s
  *			 Set when init_draw_coords is called.
  * gap_size: distance of the gap between two adjacent
  *           clbs; the literal channel "width" .
@@ -219,7 +224,6 @@ struct t_draw_coords {
     float pin_size;
 
     std::vector<t_draw_pb_type_info> blk_info;
-
     t_draw_coords();
 
     float get_tile_width();
@@ -229,23 +233,23 @@ struct t_draw_coords {
      * Retrieve the bounding box for the given pb in the given
      * clb, from this data structure
      */
-    t_bound_box get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode);
-    t_bound_box get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_pb_graph_node& pb_gnode);
+    ezgl::rectangle get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode);
+    ezgl::rectangle get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_pb_graph_node& pb_gnode);
 
     /**
      * Return a bounding box for the given pb in the given
      * clb with absolute coordinates, that can be directtly drawn.
      */
-    t_bound_box get_absolute_pb_bbox(const ClusterBlockId clb_index, const t_pb_graph_node* pb_gnode);
+    ezgl::rectangle get_absolute_pb_bbox(const ClusterBlockId clb_index, const t_pb_graph_node* pb_gnode);
 
     /**
      * Return a bounding box for the clb at device_ctx.grid[grid_x][grid_y].blocks[sub_block_index],
      * even if it is empty.
      */
-    t_bound_box get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_type_ptr type);
-    t_bound_box get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index);
+    ezgl::rectangle get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_type_ptr type);
+    ezgl::rectangle get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index);
 
-  private:
+private:
     float tile_width;
     friend void init_draw_coords(float);
 };

@@ -16,10 +16,20 @@ option(VPR_USE_SIGNAL_HANDLER "Should VPR use a signal handler to intercept sign
 set(VPR_PGO_CONFIG "none" CACHE STRING "Configure VPR Profile-Guided Optimization (PGO). prof_gen: built executable will produce profiling info, prof_use: built executable will be optimized based on generated profiling info, none: disable pgo")
 set_property(CACHE VPR_PGO_CONFIG PROPERTY STRINGS prof_gen prof_use none)
 
+set(
+  RESOURCE_LIST
+  # Strip all the whitespace characters from ui file
+  STRIPBLANKS main.ui
+)
+
+list(APPEND CMAKE_MODULE_PATH
+     ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/libezgl/gcr-cmake/macros)
+
 #
 # Build Configuration
 #
 include(CheckCXXSymbolExists)
+include(GlibCompileResourcesSupport)
 
 #Collect the source files
 file(GLOB_RECURSE EXEC_SOURCES src/main.cpp)
@@ -30,7 +40,9 @@ files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 #Create the library
 add_library(libvpr STATIC
              ${LIB_HEADERS}
-             ${LIB_SOURCES})
+             ${LIB_SOURCES}
+)
+
 target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
@@ -40,13 +52,14 @@ target_link_libraries(libvpr
                         libarchfpga
                         libsdcparse
                         libblifparse
-                        libeasygl
+                       	ezgl
+			libeasygl
                         libtatum
                         libargparse
                         libpugixml)
 
 #Create the executable
-add_executable(vpr ${EXEC_SOURCES})
+add_executable(vpr ${EXEC_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/resources.C)
 target_link_libraries(vpr
                         libvpr)
 
@@ -56,6 +69,32 @@ if (VPR_USES_IPO)
     set_target_properties(vpr PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
 endif()
 
+compile_gresources(
+  # input: the name of our resources
+  RESOURCE_FILE
+  # output: the filename of the generated XML file
+  XML_OUT
+  # generate C code to be compiled with our program
+  TYPE
+    EMBED_C
+  # specify the name of the C file that is generated
+  TARGET
+    resources.C
+  # specify the resource prefix (used in the code)
+  PREFIX
+    /ezgl
+  # input: specify the list of files to compile into resources
+  RESOURCES
+    ${RESOURCE_LIST}
+)
+
+
+add_custom_target(
+  resource ALL
+  DEPENDS
+    ${RESOURCE_FILE}
+)
+
 #
 # VPR compiler options
 #
@@ -63,16 +102,6 @@ set(VPR_COMPILE_OPTIONS_FLAGS
     #GCC-like
     "-Werror"
     )
-
-if (VPR_COMPILE_OPTIONS STREQUAL "strict")
-    message(STATUS "VPR: building with strict flags")
-    foreach(flag ${VPR_COMPILE_OPTIONS_FLAGS})
-        message(STATUS "\tAdding CXX flag: ${flag}")
-        target_compile_options(libvpr PRIVATE ${flag})
-        target_compile_options(vpr PRIVATE ${flag})
-        target_link_libraries(vpr ${flag})
-    endforeach()
-endif()
 
 #
 # Profile Guilded Optimization Configuration
@@ -111,6 +140,16 @@ elseif (VPR_PGO_CONFIG STREQUAL "none")
     #Pass
 else()
     message(ERROR "Unsupported VPR_PGO_CONFIG '${VPR_PGO_CONFIG}'")
+endif()
+
+if (VPR_COMPILE_OPTIONS STREQUAL "strict")
+    message(STATUS "VPR: building with strict flags")
+    foreach(flag ${VPR_COMPILE_OPTIONS_FLAGS})
+        message(STATUS "\tAdding CXX flag: ${flag}")
+        target_compile_options(libvpr PRIVATE ${flag})
+        target_compile_options(vpr PRIVATE ${flag})
+        target_link_libraries(vpr ${flag})
+    endforeach()
 endif()
 
     find_package(TBB)
@@ -164,6 +203,7 @@ if (VPR_USE_SIGNAL_HANDLER)
 endif()
 
 install(TARGETS vpr libvpr DESTINATION bin)
+
 
 #
 # Unit Tests
