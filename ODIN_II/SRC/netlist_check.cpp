@@ -536,7 +536,7 @@ void levelize_forwards_clean_checking_for_combo_loop_and_liveness(short ast_base
 						{
 							/* Combo node since one of the outputs hasn'y been visisted. */
 							if (ast_based)
-								error_message(NETLIST_ERROR, output_node->related_ast_node->line_number, output_node->related_ast_node->file_number, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %ld.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
+								error_message(NETLIST_ERROR, output_node->related_ast_node->line_number, output_node->related_ast_node->file_number, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %d.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
 							else
 								error_message(NETLIST_ERROR, -1, -1, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %d.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
 						}
