@@ -1142,64 +1142,126 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
     return true;
 }
 
+static void print_nets(std::unordered_set<AtomNetId>& nets) {
+    for (const auto net : nets) {
+       VTR_LOG("%d %s\n", net, g_vpr_ctx.atom().nlist.net_name(net).c_str());
+    }
+    VTR_LOG("\n");
+}
+
+// get the number of ALM inputs feeding the LUTs. The assumption is
+// ALMs with 4-LUT has 6 inputs feeding LUTs, however, ALMs with 3-LUTs
+// has 8 inputs feeding LUTs. This is a very specific assumption targeting
+// the architectures in this study
+static size_t get_alm_inputs_feeding_luts(t_pack_molecule* molecule) {
+
+    auto pattern_block = molecule->pack_pattern->root_block;
+    auto cin_pin = molecule->pack_pattern->chain_root_pins[0][0];
+    auto cin_port = cin_pin->port;
+    auto cin_port_model = cin_port->model_port;
+
+    auto connection = pattern_block->connections;
+
+    while (connection) {
+       if (connection->to_block == pattern_block && connection->to_pin->port->model_port != cin_port_model) {
+           auto lut_pb_type = connection->from_pin->parent_node->pb_type;
+           auto lut_input_pins = lut_pb_type->num_input_pins;
+           return (lut_input_pins == 3)? 8 : 6;
+       }
+       connection = connection->next;
+    }
+
+    VTR_ASSERT(false);
+    return 0;
+
+}
 
 static bool check_alm_input_limitation(t_pack_molecule* molecule) {
 
     std::string pattern_name(molecule->pack_pattern->name);
     if (pattern_name.find("lut_chain") != 0) return true;
 
+    auto& atom_ctx = g_vpr_ctx.atom();
+
     auto block_id = molecule->atom_block_ids[molecule->root];
     auto pattern_block = molecule->pack_pattern->root_block;
+
+    const auto ALM_INPUTS = get_alm_inputs_feeding_luts(molecule);
 
     auto cin_pin = molecule->pack_pattern->chain_root_pins[0][0];
     auto cin_port = cin_pin->port;
     auto cin_port_model = cin_port->model_port;
 
     std::string alm_name = "fle";
+    if (get_pb_placement_index(pattern_block, alm_name) == -1)
+        alm_name = "fle1";
+    std::string alut_name = "ble5";
+    auto alm_placement_index = get_pb_placement_index(pattern_block, alm_name);
+    auto alut_placement_index = get_pb_placement_index(pattern_block, alut_name);
 
-    auto placement_index = get_pb_placement_index(pattern_block, alm_name);
-    //VTR_ASSERT(placement_index != -1);
+    std::unordered_set<AtomNetId> alm_nets;
+    std::unordered_set<AtomNetId> alut_nets;
 
-    std::unordered_set<AtomNetId> nets;
     while(true) {
        auto connection = pattern_block->connections;
        // get the unique net ids feeding the adders
+       VTR_LOG("\n%s\n", atom_ctx.nlist.block_name(molecule->atom_block_ids[pattern_block->block_id]).c_str());
        while (connection) {
            if (connection->to_block == pattern_block && connection->to_pin->port->model_port != cin_port_model) {
-               auto lut_id = molecule->atom_block_ids[connection->from_block->block_id];
+               auto& lut_id = molecule->atom_block_ids[connection->from_block->block_id];
                if (lut_id) {
-                   get_block_input_nets(lut_id, nets);
+                   get_block_input_nets(lut_id, alm_nets);
+                   get_block_input_nets(lut_id, alut_nets);
+                   VTR_LOG("LUT %s (%zu)\n", atom_ctx.nlist.block_name(lut_id).c_str(), atom_ctx.nlist.block_input_pins(lut_id).size());
+                   if (atom_ctx.nlist.block_input_pins(lut_id).empty()) {
+                       alm_nets.insert((AtomNetId) 0);
+                       alut_nets.insert((AtomNetId) 0);
+                   }
                } else {
-                   auto port_id = g_vpr_ctx.atom().nlist.find_atom_port(block_id, connection->to_pin->port->model_port);
+                   auto port_id = atom_ctx.nlist.find_atom_port(block_id, connection->to_pin->port->model_port);
                    if (port_id) {
-                       auto net_id = g_vpr_ctx.atom().nlist.port_net(port_id, connection->to_pin->pin_number);
-                       if (net_id)
-                           nets.insert(net_id);
+                       auto net_id = atom_ctx.nlist.port_net(port_id, connection->to_pin->pin_number);
+                       if (net_id) {
+                           alm_nets.insert(net_id);
+                           alut_nets.insert(net_id);
+                       }
                    }
                }
            }
            connection = connection->next;
        }
 
-       if (nets.size() == 0) break;
+       if (alm_nets.empty()) break;
+
+       VTR_LOG("Placement index: %d->%d (%d)\n", alm_placement_index, alut_placement_index, alm_nets.size());
+       print_nets(alm_nets);
        // go to the next pattern block if it is still in the same ALM
        connection = pattern_block->connections;
        bool found_to_block = false;
        while (connection) {
            if (connection->from_block == pattern_block && connection->to_pin->port->model_port == cin_port_model) {
-               auto new_placement_index = get_pb_placement_index(connection->to_block, alm_name);
-               if (placement_index != new_placement_index) {
-                   if (nets.size() > 8) {
-                       VTR_LOG("Placement index: %d (%d)\n", placement_index, nets.size());
-                       for (const auto net : nets) {
-                           VTR_LOG("%d %s\n", net, g_vpr_ctx.atom().nlist.net_name(net).c_str());
-                       }
-                       VTR_LOG("\n");
+               auto alm_new_placement_index = get_pb_placement_index(connection->to_block, alm_name);
+               auto alut_new_placement_index = get_pb_placement_index(connection->to_block, alut_name);
+               if (alm_placement_index != alm_new_placement_index) {
+                   if (alm_nets.size() > ALM_INPUTS || alut_nets.size() > 4) {
+                       VTR_LOG("Placement index: %d->%d (%d)\n", alm_placement_index, alut_placement_index, alm_nets.size());
+                       print_nets(alm_nets);
                        modify_molecule(molecule, pattern_block);
-                       check_alm_input_limitation(molecule);
+                       return check_alm_input_limitation(molecule);
                    }
-                   nets.clear();
-                   placement_index = new_placement_index;
+                   alut_nets.clear();
+                   alm_nets.clear();
+                   alm_placement_index = alm_new_placement_index;
+                   alut_placement_index = alut_new_placement_index;
+               } else if (alut_placement_index != alut_new_placement_index) {
+                   if (alut_nets.size() > 4) {
+                       VTR_LOG("Placement index: %d->%d (%d)\n", alm_placement_index, alut_placement_index, alut_nets.size());
+                       print_nets(alm_nets);
+                       modify_molecule(molecule, pattern_block);
+                       return check_alm_input_limitation(molecule);
+                   }
+                   alut_nets.clear();
+                   alut_placement_index = alut_new_placement_index;
                }
                pattern_block = connection->to_block;
                block_id = molecule->atom_block_ids[pattern_block->block_id];
@@ -1261,12 +1323,13 @@ static void modify_molecule(t_pack_molecule* molecule, t_pack_pattern_block* pat
 
     auto connection = pattern_block->connections;
     bool node_removed = false;
-    while(true) {
+    while(pattern_block->block_id != molecule->root) {
         connection = pattern_block->connections;
         // get the unique net ids feeding the adders
         while (connection) {
            if (connection->to_block == pattern_block && connection->to_pin->port->model_port != cin_port_model) {
-               if (molecule->atom_block_ids[connection->from_block->block_id]) {
+               auto& lut_id = molecule->atom_block_ids[connection->from_block->block_id];
+               if (lut_id && g_vpr_ctx.atom().nlist.block_input_pins(lut_id).size() > 1) {
                    molecule->atom_block_ids[connection->from_block->block_id] = AtomBlockId::INVALID();
                    node_removed = true;
                    break;
@@ -1274,7 +1337,7 @@ static void modify_molecule(t_pack_molecule* molecule, t_pack_pattern_block* pat
            }
            connection = connection->next;
         }
-        if (node_removed) break;
+        if (node_removed) return;
 
         connection = pattern_block->connections;
 
@@ -1287,14 +1350,14 @@ static void modify_molecule(t_pack_molecule* molecule, t_pack_pattern_block* pat
         }
     }
 
+    VTR_ASSERT(false);
+
 }
 
 static void get_block_input_nets(const AtomBlockId block_id, std::unordered_set<AtomNetId>& nets) {
     const auto& atom_ctx = g_vpr_ctx.atom();
     for (const auto& pin_id : atom_ctx.nlist.block_input_pins(block_id)) {
-         auto port_id = atom_ctx.nlist.pin_port(pin_id);
-         auto bit_index = atom_ctx.nlist.pin_port_bit(pin_id);
-         nets.insert(atom_ctx.nlist.port_net(port_id, bit_index));
+         nets.insert(atom_ctx.nlist.pin_net(pin_id));
      }
 }
 
