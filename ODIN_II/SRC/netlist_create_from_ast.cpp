@@ -779,6 +779,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				oassert(false);
 				break;
 			case MODULE:
+				oassert(child_skip_list);	
 				/* set the skip list */
 				child_skip_list[0] = true; /* skip the identifier */
 				child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
@@ -810,6 +811,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				/* process elements in the list */
 				if (node->num_children > 0)
 				{
+					oassert(child_skip_list);
 					for (i = 0; i < node->num_children; i++)
 					{
 						/*if (node->children[i]->type == VAR_DECLARE_LIST)
@@ -823,7 +825,6 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
                             long j;
                             for(j = 0; j < node->children[i]->num_children; j++)
 							{
-
 							    /* make the aliases for all the drivers as they're passed through modules */
 							    connect_module_instantiation_and_alias(INSTANTIATE_DRIVERS, node->children[i]->children[j], instance_name_prefix, local_string_cache_list);
                             }
@@ -842,6 +843,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 			case BLOCK:
 				if (node->num_children > 0)
 				{
+					oassert(child_skip_list);
 					for (i = 0; i < node->num_children; i++)
 					{
 						if (node->children[i]->type == MODULE_INSTANCE)
@@ -862,11 +864,17 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				}
 				break;
             case VAR_DECLARE_LIST:
-                for(i = 0; i < node->num_children; i++) {
-                    if(node->children[i]->types.variable.is_parameter == 1 || !node->children[i]->children[5]){
-                        child_skip_list[i] = true;
-                    }
-                }
+				if(node->num_children > 0)
+				{
+					oassert(child_skip_list);
+					for(i = 0; i < node->num_children; i++) 
+					{
+						if((node->children[i]->types.variable.is_parameter == 1 || !node->children[i]->children[5]))
+						{
+							child_skip_list[i] = true;
+						}
+					}
+				}
                 break;
             case VAR_DECLARE:
                 if(node->types.variable.is_parameter == 0 && node->children[5]){
@@ -886,6 +894,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 				/* process elements in the list */
 				if (node->num_children > 0)
 				{
+					oassert(child_skip_list);
 					for (i = 0; i < node->num_children; i++)
 					{
                         //printf("   node->children[i]->type %ld\n",node->children[i]->type);
@@ -974,7 +983,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 			/* traverse all the children */
 			for (i = 0; i < node->num_children; i++)
 			{
-				if (child_skip_list[i] == false)
+				if (child_skip_list && child_skip_list[i] == false)
 				{
 					/* recursively call through the tree going to each instance.  This is depth first traverse. */
 					children_signal_list[i] = netlist_expand_ast_of_module(&(node->children[i]), instance_name_prefix, local_string_cache_list);
