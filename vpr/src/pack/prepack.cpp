@@ -1142,7 +1142,8 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
     return true;
 }
 
-static void print_nets(std::unordered_set<AtomNetId>& nets) {
+static void print_nets(std::unordered_set<AtomNetId>& nets, int alm_placement_index, int alut_placement_index) {
+    VTR_LOG("Placement index: %d->%d (%d)\n", alm_placement_index, alut_placement_index, nets.size());
     for (const auto net : nets) {
        VTR_LOG("%d %s\n", net, g_vpr_ctx.atom().nlist.net_name(net).c_str());
     }
@@ -1233,8 +1234,7 @@ static bool check_alm_input_limitation(t_pack_molecule* molecule) {
 
        if (alm_nets.empty()) break;
 
-       VTR_LOG("Placement index: %d->%d (%d)\n", alm_placement_index, alut_placement_index, alm_nets.size());
-       print_nets(alm_nets);
+       print_nets(alm_nets, alm_placement_index, alut_placement_index);
        // go to the next pattern block if it is still in the same ALM
        connection = pattern_block->connections;
        bool found_to_block = false;
@@ -1244,8 +1244,7 @@ static bool check_alm_input_limitation(t_pack_molecule* molecule) {
                auto alut_new_placement_index = get_pb_placement_index(connection->to_block, alut_name);
                if (alm_placement_index != alm_new_placement_index) {
                    if (alm_nets.size() > ALM_INPUTS || alut_nets.size() > 4) {
-                       VTR_LOG("Placement index: %d->%d (%d)\n", alm_placement_index, alut_placement_index, alm_nets.size());
-                       print_nets(alm_nets);
+                       print_nets(alm_nets, alm_placement_index, alut_placement_index);
                        modify_molecule(molecule, pattern_block);
                        return check_alm_input_limitation(molecule);
                    }
@@ -1255,8 +1254,7 @@ static bool check_alm_input_limitation(t_pack_molecule* molecule) {
                    alut_placement_index = alut_new_placement_index;
                } else if (alut_placement_index != alut_new_placement_index) {
                    if (alut_nets.size() > 4) {
-                       VTR_LOG("Placement index: %d->%d (%d)\n", alm_placement_index, alut_placement_index, alut_nets.size());
-                       print_nets(alm_nets);
+                       print_nets(alm_nets, alm_placement_index, alut_placement_index);
                        modify_molecule(molecule, pattern_block);
                        return check_alm_input_limitation(molecule);
                    }
@@ -1270,7 +1268,13 @@ static bool check_alm_input_limitation(t_pack_molecule* molecule) {
            }
            connection = connection->next;
        }
+
        if (!found_to_block) {
+           if (alm_nets.size() > ALM_INPUTS || alut_nets.size() > 4) {
+               print_nets(alm_nets, alm_placement_index, alut_placement_index);
+               modify_molecule(molecule, pattern_block);
+               return check_alm_input_limitation(molecule);
+           }
            break;
        }
     }
@@ -1323,7 +1327,8 @@ static void modify_molecule(t_pack_molecule* molecule, t_pack_pattern_block* pat
 
     auto connection = pattern_block->connections;
     bool node_removed = false;
-    while(pattern_block->block_id != molecule->root) {
+
+    while (true) {
         connection = pattern_block->connections;
         // get the unique net ids feeding the adders
         while (connection) {
@@ -1340,18 +1345,17 @@ static void modify_molecule(t_pack_molecule* molecule, t_pack_pattern_block* pat
         if (node_removed) return;
 
         connection = pattern_block->connections;
-
+        bool found_from_block = false;
         while (connection) {
             if (connection->to_block == pattern_block && connection->to_pin->port->model_port == cin_port_model) {
                 pattern_block = connection->from_block;
+                found_from_block = true;
                 break;
             }
             connection = connection->next;
         }
+        VTR_ASSERT(found_from_block);
     }
-
-    VTR_ASSERT(false);
-
 }
 
 static void get_block_input_nets(const AtomBlockId block_id, std::unordered_set<AtomNetId>& nets) {
