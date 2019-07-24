@@ -130,6 +130,7 @@ void read_soft_def_file(t_model *hard_adder_models)
 				|| (soft_hard != "hard" && soft_hard != "soft"))
 				{
 					error =1;
+					vtr::free(line_dup);
 					break;
 				}
 				else
