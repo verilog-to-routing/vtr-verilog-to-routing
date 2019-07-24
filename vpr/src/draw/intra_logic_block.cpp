@@ -146,15 +146,6 @@ void draw_internal_init_blk() {
     }
 }
 
-        draw_internal_load_coords(type_descriptor_index, pb_graph_head_node,
-                                  clb_bbox.get_width(), clb_bbox.get_height());
-
-        /* Determine the max number of sub_block levels in the FPGA */
-        draw_state->max_sub_blk_lvl = max(draw_internal_find_max_lvl(*type_desc.pb_type),
-                                          draw_state->max_sub_blk_lvl);
-    }
-}
-
 
 void draw_internal_draw_subblk(ezgl::renderer &g) {
     t_draw_state* draw_state = get_draw_state_vars();

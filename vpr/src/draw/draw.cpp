@@ -211,10 +211,6 @@ void toggle_window_mode(GtkWidget *widget, ezgl::application *app);
 
 /********************** Subroutine definitions ******************************/
 
-void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type) {
-    /* Call accessor functions to retrieve global variables. */
-    t_draw_state* draw_state = get_draw_state_vars();
-
 void init_graphics_state(bool show_graphics_val, int gr_automode_val,
         enum e_route_type route_type)
 {
@@ -1569,9 +1565,6 @@ static void draw_x(float x, float y, float size, ezgl::renderer &g) {
     g.draw_line({x - size, y - size}, {x + size, y + size});
 }
 
-static void draw_x(float x, float y, float size) {
-    /* Draws an X centered at (x,y).  The width and height of the X are each    *
-     * 2 * size.                                                                */
 static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
         int chany_node, int chany_track, enum e_edge_dir edge_dir,
         short switch_type, ezgl::renderer &g) {
@@ -1636,7 +1629,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
     
     g.draw_line({x1, y1}, {x2, y2});
     
-=    if (draw_state->draw_rr_toggle == DRAW_ALL_RR || draw_state->draw_rr_node[chanx_node].node_highlighted) {
+    if (draw_state->draw_rr_toggle == DRAW_ALL_RR || draw_state->draw_rr_node[chanx_node].node_highlighted) {
         if (edge_dir == FROM_X_TO_Y) {
             draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered(), device_ctx.rr_switch_inf[switch_type].configurable(), g);
         } else {
@@ -1811,10 +1804,10 @@ static void draw_chany_to_chany_edge(int from_node, int to_node,
     }
 
     /* UDSD Modification by WMF End */
-    drawline(x1, y1, x2, y2);
+    g.draw_line({x1, y1}, {x2, y2});
 
     if (draw_state->draw_rr_toggle == DRAW_ALL_RR || draw_state->draw_rr_node[from_node].node_highlighted) {
-        draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered(), device_ctx.rr_switch_inf[switch_type].configurable());
+        draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered(), device_ctx.rr_switch_inf[switch_type].configurable(), g);
     }
 }
 
@@ -2745,9 +2738,6 @@ static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) 
         draw_state->block_color[blk_id] = SELECTED_COLOR;
     }
 }
-
-        if (net_id == ClusterNetId::INVALID())
-            continue;
 
 static void deselect_all() {
     // Sets the color of all clbs, nets and rr_nodes to the default.
