@@ -371,8 +371,8 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 					free_resolved_children(node);
 												
 					change_to_number_node(node, VNumber(*(new_node->types.vnumber), new_size));
-					new_node = free_whole_tree(new_node);
 				}
+				new_node = free_whole_tree(new_node);
 				break;
 			}
 			case UNARY_OPERATION:
@@ -401,8 +401,8 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 					free_resolved_children(node);
 					
 					change_to_number_node(node, VNumber(*(new_node->types.vnumber), new_size));
-					new_node = free_whole_tree(new_node);
 				}
+				new_node = free_whole_tree(new_node);
 				break;
 			}
 			case REPLICATE:
