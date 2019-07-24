@@ -475,60 +475,53 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 
 				if (node->num_children > 0)
 				{
-					size_t index = 1;
-					size_t last_index = 0;
-					
-					while (index < node->num_children)
-					{
-						if (node->children[last_index] == NULL)
-						{
-							/* resulting from replication of zero */
-							remove_child_from_node(node, last_index);
-							continue;
-						}
-						if (node->children[index] == NULL)
-						{
-							/* resulting from replication of zero */
-							remove_child_from_node(node, last_index);
-							continue;
-						}
+					size_t current = 0;
+					size_t previous = -1;
+					bool previous_is_constant = false;
 
-						bool previous_is_constant = node_is_constant(node->children[last_index]);
-						bool current_is_constant = node_is_constant(node->children[index]);
+					while (current < node->num_children)
+					{
+						bool current_is_constant = node_is_constant(node->children[current]);
 
 						if(previous_is_constant && current_is_constant)
 						{
-							VNumber new_value = V_CONCAT({*(node->children[last_index]->types.vnumber), *(node->children[index]->types.vnumber)});
+							VNumber new_value = V_CONCAT({*(node->children[previous]->types.vnumber), *(node->children[current]->types.vnumber)});
 
-							node->children[index] = free_whole_tree(node->children[index]);
+							node->children[current] = free_whole_tree(node->children[current]);
 
-							delete node->children[last_index]->types.vnumber;
-							node->children[last_index]->types.vnumber = new VNumber(new_value);
+							delete node->children[previous]->types.vnumber;
+							node->children[previous]->types.vnumber = new VNumber(new_value);
 						}
-						else
+						else if(node->children[current] != NULL)
 						{
-							last_index += 1;
+							previous += 1;
 							previous_is_constant = current_is_constant;
-							node->children[last_index] = node->children[index];
+							node->children[previous] = node->children[current];
 						}
-						index += 1;
+						current += 1;
 					}
 
-					node->num_children = last_index+1;
+					node->num_children = previous+1;
 
-					if (node->num_children == 1 && node->children[0] != NULL)
+					if (node->num_children == 0)
+					{
+						// could we simply warn and continue ? any ways we can recover rather than fail?
+						/* resulting replication(s) of zero */
+						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+							"%s","Cannot concatenate zero bitstrings");
+						
+						// free_whole_tree(node);
+						// node = NULL;
+					}
+					// node was all constant
+					if (node->num_children == 1)
 					{
 						ast_node_t *tmp = node->children[0];
 						node->children[0] = NULL;
 						free_whole_tree(node);
 						node = tmp;
 					}
-					else if (node->num_children < 2)
-					{
-						/* resulting replication(s) of zero */
-						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-							"%s","Cannot concatenate zero bitstrings");
-					}
+
 				}
 
 				break;
