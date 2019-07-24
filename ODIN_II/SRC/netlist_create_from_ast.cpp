@@ -428,6 +428,10 @@ void create_netlist()
 	free_implicit_memory_index_and_finalize_memories();
 	create_top_output_nodes(top_module, top_string);
 
+	for(i = 0; i < top_sc_list->local_param_table_sc->size; i++)
+	{
+		free_whole_tree((ast_node_t *)top_sc_list->local_param_table_sc->data[i]);
+	}
 	top_sc_list->local_param_table_sc = sc_free_string_cache(top_sc_list->local_param_table_sc);
 	top_sc_list->local_symbol_table_sc = sc_free_string_cache(top_sc_list->local_symbol_table_sc);
 	top_sc_list->num_local_symbol_table = 0;
