@@ -3676,7 +3676,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			}
 			nnet_t *net = (nnet_t *)output_nets_sc->data[sc_spot];
 			//looking for dependence according to with the type of statement (non-blocking or blocking)
-			list_dependence_pin[i] = copy_input_npin(pin);
+			list_dependence_pin[i] =(pin);
 			if(pin->node) list_dependence_type[i] = pin->node->related_ast_node->type;
 
 			/* clean up non-blocking */
