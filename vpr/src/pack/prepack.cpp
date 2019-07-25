@@ -1180,7 +1180,7 @@ static size_t get_alm_inputs_feeding_luts(t_pack_molecule* molecule) {
 static bool check_alm_input_limitation(t_pack_molecule* molecule) {
 
     std::string pattern_name(molecule->pack_pattern->name);
-    if (pattern_name.find("lut_chain") != 0) return true;
+    if (pattern_name.find("lut_chain") == std::string::npos) return true;
 
     auto& atom_ctx = g_vpr_ctx.atom();
 
