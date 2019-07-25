@@ -117,7 +117,7 @@ static void load_one_net_delay(vtr::vector<ClusterNetId, float*>& net_delay, Clu
     load_one_net_delay_recurr(rt_root, net_id);           // recursively traverse the tree and load entries into the inode_to_Tdel map
 
     for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-        inode = route_ctx.net_rr_terminals[net_id][ipin];                // look for the index of the rr node that corresponds to the sink that was used to route a certain connection.
+        inode = route_ctx.net_rr_terminals[net_id][ipin]; // look for the index of the rr node that corresponds to the sink that was used to route a certain connection.
         auto itr = inode_to_Tdel_map.find(inode);
         VTR_ASSERT(itr != inode_to_Tdel_map.end());
 

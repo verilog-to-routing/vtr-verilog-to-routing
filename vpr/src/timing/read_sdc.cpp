@@ -597,7 +597,7 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     //Returns the setup constraint in seconds
-    tatum::Time calculate_setup_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain, AtomPinId to_pin=AtomPinId::INVALID()) const {
+    tatum::Time calculate_setup_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain, AtomPinId to_pin = AtomPinId::INVALID()) const {
         //Calculate the period-based constraint, including the effect of multi-cycle paths
         float min_launch_to_capture_time = calculate_min_launch_to_capture_edge_time(launch_domain, capture_domain);
 
@@ -660,7 +660,7 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     //Returns the hold constraint in seconds
-    tatum::Time calculate_hold_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain, AtomPinId to_pin=AtomPinId::INVALID()) const {
+    tatum::Time calculate_hold_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain, AtomPinId to_pin = AtomPinId::INVALID()) const {
         float min_launch_to_capture_time = calculate_min_launch_to_capture_edge_time(launch_domain, capture_domain);
 
         auto iter = sdc_clocks_.find(capture_domain);
@@ -792,7 +792,7 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     //Returns the cycle number (after launch) where the setup check occurs
-    int setup_capture_cycle(tatum::DomainId from, tatum::DomainId to, AtomPinId to_pin=AtomPinId::INVALID()) const {
+    int setup_capture_cycle(tatum::DomainId from, tatum::DomainId to, AtomPinId to_pin = AtomPinId::INVALID()) const {
         //The setup capture cycle is the setup mcp value
 
         //Any domain pair + pin-specific (possibly wildcard) override
@@ -814,7 +814,7 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     //Returns the cycle number (after launch) where the hold check occurs
-    int hold_capture_cycle(tatum::DomainId from, tatum::DomainId to, AtomPinId to_pin=AtomPinId::INVALID()) const {
+    int hold_capture_cycle(tatum::DomainId from, tatum::DomainId to, AtomPinId to_pin = AtomPinId::INVALID()) const {
         //Default: hold captures the cycle before setup is captured
         //For the default setup mcp this implies capturing the same
         //cycle as launch
