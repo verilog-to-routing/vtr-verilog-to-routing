@@ -118,7 +118,10 @@ static void load_one_net_delay(vtr::vector<ClusterNetId, float*>& net_delay, Clu
 
     for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
         inode = route_ctx.net_rr_terminals[net_id][ipin];                // look for the index of the rr node that corresponds to the sink that was used to route a certain connection.
-        net_delay[net_id][ipin] = inode_to_Tdel_map.find(inode)->second; // search for the value of Tdel in the inode map and load into net_delay
+        auto itr = inode_to_Tdel_map.find(inode);
+        VTR_ASSERT(itr != inode_to_Tdel_map.end());
+
+        net_delay[net_id][ipin] = itr->second; // search for the value of Tdel in the inode map and load into net_delay
     }
     free_route_tree(rt_root);  // free the route tree
     inode_to_Tdel_map.clear(); // clear the map
