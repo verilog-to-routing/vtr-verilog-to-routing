@@ -475,25 +475,25 @@ ast_node_t *find_top_module()
 	{
 		for (j = 0; j < ast_modules[i]->types.module.size_module_instantiations; j++)
 		{
-			/* Check to see if the module is a hard block - a hard block is
-				never the top level! */
-
-			if ((sc_spot = sc_lookup_string(hard_block_names, ast_modules[i]->types.module.module_instantiations_instance[j]->children[0]->types.identifier)) == -1)
+			// get the module index from the string cache
+			sc_spot = sc_lookup_string(module_names_to_idx,
+							ast_modules[i]->types.module.module_instantiations_instance[j]->children[0]->types.identifier);
+			if ((sc_spot) != -1)
 			{
-				// get the module index from the string cache
-				if ((sc_spot = sc_lookup_string(module_names_to_idx,
-								ast_modules[i]->types.module.module_instantiations_instance[j]->children[0]->types.identifier)) == -1)
-				{
+				/* use that number to mark this module as instantiated */
+				ast_modules[((ast_node_t*)module_names_to_idx->data[sc_spot])->types.module.index]->types.module.is_instantiated = true;
+			}
+			/* Check to see if the module is a hard block - a hard block is never the top level! */
+			else if ((sc_spot = sc_lookup_string(hard_block_names, 
+							ast_modules[i]->types.module.module_instantiations_instance[j]->children[0]->types.identifier)) == -1)
+			{
 					error_message(NETLIST_ERROR,
 							ast_modules[i]->line_number,
 							ast_modules[i]->file_number,
 							"Can't find module name (%s)\n",
 							ast_modules[i]->types.module.module_instantiations_instance[j]->children[0]->types.identifier);
-				}
-
-				/* use that number to mark this module as instantiated */
-				ast_modules[((ast_node_t*)module_names_to_idx->data[sc_spot])->types.module.index]->types.module.is_instantiated = true;
 			}
+			
 		}
 	}
 
@@ -517,25 +517,37 @@ ast_node_t *find_top_module()
 			current_module = ast_modules[i]->children[0]->types.identifier;
 		}
 
-		if( desired_module != "" && current_module == desired_module)
+		if(current_module != "")
 		{
-			// append the name
-			module_name_list = std::string("\t") + current_module;
-			found_top = i;
-			found_desired_module = true;
-			number_of_top_modules = 1;
-			break;
-		}
-		else if ((ast_modules[i]->types.module.is_instantiated == false))
-		{
-			// append the name
-			module_name_list += std::string("\t") + current_module;
+			if( desired_module != "" && current_module == desired_module)
+			{
+				// append the name
+				module_name_list = std::string("\t") + current_module;
+				found_top = i;
+				found_desired_module = true;
+				number_of_top_modules = 1;
+				break;
+			}
+			else if ((ast_modules[i]->types.module.is_instantiated == false))
+			{
+				/**
+				 * Check to see if the module is a hard block 
+				 * a hard block is never the top level!
+				 * if there is only one module, then this is our top and should not collide 
+				 */
+				if ( num_modules == 1
+				||	-1 == ( sc_spot = sc_lookup_string(hard_block_names, current_module.c_str())))
+				{
+					// append the name
+					module_name_list += std::string("\t") + current_module;
 
-			if(number_of_top_modules > 0)
-				module_name_list += "\n";
+					if(number_of_top_modules > 0)
+						module_name_list += "\n";
 
-			number_of_top_modules += 1;
-			found_top = i;
+					number_of_top_modules += 1;
+					found_top = i;
+				}
+			}
 		}
 	}
 
