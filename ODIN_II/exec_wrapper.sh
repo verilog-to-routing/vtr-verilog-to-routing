@@ -1,33 +1,19 @@
 #!/bin/bash
 SHELL=/bin/bash
-QUIT=0
 
-export TIME="\
-	Elapsed Time:      %e Seconds
-	CPU:               %P
-	Max Memory:        %M KiB
-	Average Memory:    %K KiB
-	Minor PF:          %R
-	Major PF:          %F
-	Context Switch:    %c+%w
-	Program Exit Code: %x
-"
+THIS_SCRIPT_PATH=$(readlink -f $0)
+THIS_DIR=$(dirname ${THIS_SCRIPT_PATH})
+REGRESSION_DIR="${THIS_DIR}/regression_test"
+REG_LIB="${REGRESSION_DIR}/.library"
+
+source ${REG_LIB}/handle_exit.sh
+source  ${REG_LIB}/time_format.sh
+
+export EXIT_NAME="$0"
 
 ##############################################
 # grab the input args
 INPUT=$@
-
-##############################################
-# grab the absolute Paths
-THIS_SCRIPT=$(readlink -f $0)
-THIS_SCRIPT_EXEC=$(basename ${THIS_SCRIPT})
-ODIN_ROOT_DIR=$(dirname ${THIS_SCRIPT})
-
-EXEC="${ODIN_ROOT_DIR}/odin_II"
-if [ ! -f ${EXEC} ]; then
-	echo "Unable to find the odin executable at ${EXEC}"
-	exit 120
-fi
 
 TIMEOUT_EXEC="timeout"
 TIME_EXEC=$($SHELL -c "which time") 
@@ -36,9 +22,9 @@ PERF_EXEC="perf stat record -a -d -d -d -o"
 GDB_EXEC="gdb --args"
 EXEC_PREFIX=""
 
+TEST_NAME="N/A"
 LOG=""
 LOG_FILE=""
-TEST_NAME="odin"
 FAILURE_FILE=""
 
 USE_TEMP_LOG="off"
@@ -103,7 +89,7 @@ function help() {
 printf "
 Called program with $[INPUT]
 
-Usage: ./wrapper_odin.sh [options] CMD
+Usage: ./exec_wrapper.sh [options] <path/to/arguments.file>
 			--tool [ gdb, valgrind, perf ]              * run with one of the specified tool and only one
 			--log_file                                  * output status to a log file
 			--test_name                                 * label the test for pretty print
@@ -111,7 +97,7 @@ Usage: ./wrapper_odin.sh [options] CMD
 			--time_limit                                * stops Odin after X seconds
 			--limit_ressource				            * limit ressource usage using ulimit -m (25% of hrdw memory) and nice value of 19
 			--colorize                                  * colorize the output
-			--verbose									* dump th log to stdout
+			--verbose									* output the log to stdout
 "
 }
 
@@ -136,21 +122,6 @@ function dump_log {
 	fi
 
 }
-
-function ctrl_c() {
-	trap '' INT SIGINT SIGTERM
-	QUIT=1
-
-	while [ "_${QUIT}" != "_0" ]
-	do
-		echo "** ODIN WRAPPER EXITED FORCEFULLY **"
-		jobs -p | xargs kill &> /dev/null
-		pkill odin_II &> /dev/null
-		#should be dead by now
-		exit 1
-	done
-}
-trap ctrl_c INT SIGINT SIGTERM
 
 #this hopefully will force to swap more
 function restrict_ressource {
@@ -245,6 +216,7 @@ fi
 while [[ "$#" > 0 ]]
 do 
 	case $1 in
+
 		--log_file)
 			LOG_FILE=$2
 			shift
@@ -252,6 +224,7 @@ do
 
 		--test_name)
 			TEST_NAME=$2
+			export EXIT_NAME="${TEST_NAME}"
 			shift
 			;;
 
@@ -261,19 +234,23 @@ do
 			;;
 		
 		--time_limit)
+			log_it "Using timelimit on ressource"
 			TIME_LIMIT=$2
 			shift
 			;;
 
 		--limit_ressource) 
+			log_it "Using limit on ressource"
 			RESTRICT_RESSOURCE="on" 
 			;;
 
 		--verbose)
+			log_it "Using verbose output"
 			VERBOSE="on"
 			;;
 
 		--colorize)
+			log_it "Using colorized output"
 			COLORIZE_OUTPUT="on"
 			;;
 
@@ -314,11 +291,8 @@ do
 	shift 
 done
 
-ODIN_ARGS="$(echo $@)"
-EXEC="${EXEC} ${ODIN_ARGS}"
-
-log_it "Starting Odin with: ${ODIN_ARGS}"
-
+ARG_FILE=$1
+	
 if [ "${RESTRICT_RESSOURCE}" == "on" ]
 then
 	restrict_ressource
@@ -355,18 +329,27 @@ then
 	EXEC_PREFIX="timeout ${TIME_LIMIT} ${EXEC_PREFIX}"
 	log_it "running with timeout ${TIME_LIMIT}\n"
 fi
-
 dump_log
 
 pretty_print_status ""
 
-if [ "${USE_LOGS}" == "on" ]
+
+_ARGS=""
+EXIT_CODE="-1"
+if [ "_${ARG_FILE}" == "_" ] || [ ! -f "${ARG_FILE}" ]
 then
-	${EXEC_PREFIX} ${EXEC} &>> ${LOG_FILE}
+	log_it "Must define a path to a valid argument file"
+	dump_log
 else
-	${EXEC_PREFIX} ${EXEC}
+	_ARGS=$(cat ${ARG_FILE})
+	if [ "${USE_LOGS}" == "on" ]
+	then
+		${EXEC_PREFIX} ${_ARGS} &>> ${LOG_FILE}
+	else
+		${EXEC_PREFIX} ${_ARGS}
+	fi
+	EXIT_CODE=$?
 fi
-EXIT_CODE=$?
 
 display "${EXIT_CODE}"
 
