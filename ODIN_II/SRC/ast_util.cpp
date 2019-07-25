@@ -1455,7 +1455,7 @@ ast_node_t * fold_conditional(ast_node_t **node)
 	if(!node || !(*node))
 		return NULL;
 
-	operation_list op_id = (*node)->types.operation.op;
+	ids op_id = (*node)->type;
 	ast_node_t *to_return = NULL;
 
 	switch (op_id)
