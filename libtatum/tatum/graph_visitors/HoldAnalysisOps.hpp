@@ -20,7 +20,11 @@ class HoldAnalysisOps : public CommonAnalysisOps {
             : CommonAnalysisOps(num_tags, num_slacks) {}
 
         Time clock_constraint(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
-            return tc.hold_constraint(src_id, sink_id); 
+            return tc.hold_constraint(src_id, sink_id, NodeId::INVALID()); 
+        }
+
+        Time clock_constraint(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id, const NodeId capture_node) { 
+            return tc.hold_constraint(src_id, sink_id, capture_node); 
         }
 
         Time clock_uncertainty(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 

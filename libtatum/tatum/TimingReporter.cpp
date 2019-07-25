@@ -286,7 +286,9 @@ void TimingReporter::report_timing_path(std::ostream& os, const TimingPath& timi
         path_helper.reset_path();
 
         req_path = report_timing_clock_capture_subpath(os, path_helper, timing_path.clock_capture_path(), 
-                                                       path_info.launch_domain(), path_info.capture_domain(), path_info.type());
+                                                       path_info.launch_domain(), path_info.capture_domain(),
+                                                       path_info.endpoint(),
+                                                       path_info.type());
 
         const TimingPathElem& path_elem = timing_path.data_required_element();
 
@@ -427,7 +429,7 @@ void TimingReporter::report_skew_path(std::ostream& os, const SkewPath& skew_pat
 
     path_helper.reset_path();
 
-    Time data_capture_time = report_timing_clock_capture_subpath(os, path_helper, capture_path, skew_path.launch_domain, skew_path.capture_domain, timing_type);
+    Time data_capture_time = report_timing_clock_capture_subpath(os, path_helper, capture_path, skew_path.launch_domain, skew_path.capture_domain, skew_path.data_capture_node, timing_type);
     TATUM_ASSERT(nearly_equal(data_capture_time, skew_path.clock_capture_arrival));
 
     path_helper.update_print_path_no_incr(os, "data capture", data_capture_time);
@@ -463,7 +465,7 @@ Time TimingReporter::report_timing_clock_launch_subpath(std::ostream& os,
         path_helper.update_print_path(os, point, path);
     }
 
-    return report_timing_clock_subpath(os, path_helper, subpath, domain, timing_type, path);
+    return report_timing_clock_subpath(os, path_helper, subpath, domain, timing_type, path, Time(0.));
 }
 
 Time TimingReporter::report_timing_clock_capture_subpath(std::ostream& os,
@@ -471,22 +473,32 @@ Time TimingReporter::report_timing_clock_capture_subpath(std::ostream& os,
                                                         const TimingSubPath& subpath,
                                                         DomainId launch_domain,
                                                         DomainId capture_domain,
+                                                        NodeId capture_node,
                                                         TimingType timing_type) const {
     Time path(0.);
-
+    Time offset(0.); //Offset required since the clock launch tag doesn't have the actual (potentially 
+                     //capture node dependent) constraint annotated. We determine this up front by
+                     //looking up the actual constraint and add it into the subpath printed as an offset.
+                     //Note that the required times 'path' values are correct it is only the increments
+                     //which need to be offset when being reported (with the exception of the original
+                     //rising edge).
     {
         //Launch clock origin
         if (timing_type == TimingType::SETUP) {
-            path += timing_constraints_.setup_constraint(launch_domain, capture_domain);
+            path = timing_constraints_.setup_constraint(launch_domain, capture_domain, capture_node);
+            offset = path - timing_constraints_.setup_constraint(launch_domain, capture_domain);
         } else {
             TATUM_ASSERT(timing_type == TimingType::HOLD);
-            path += timing_constraints_.hold_constraint(launch_domain, capture_domain);
+            path = timing_constraints_.hold_constraint(launch_domain, capture_domain, capture_node);
+            offset = path - timing_constraints_.hold_constraint(launch_domain, capture_domain);
         }
+
+        //os << "[offset]" << tatum::detail::to_printable_string(offset, 1e-9,3)  << "\n";
         std::string point = "clock " + timing_constraints_.clock_domain_name(capture_domain) + " (rise edge)";
         path_helper.update_print_path(os, point, path);
     }
 
-    path = report_timing_clock_subpath(os, path_helper, subpath, capture_domain, timing_type, path);
+    path = report_timing_clock_subpath(os, path_helper, subpath, capture_domain, timing_type, path, offset);
 
     {
         //Uncertainty
@@ -498,7 +510,7 @@ Time TimingReporter::report_timing_clock_capture_subpath(std::ostream& os,
             uncertainty = Time(timing_constraints_.hold_clock_uncertainty(launch_domain, capture_domain));
         }
         path += uncertainty;
-        path_helper.update_print_path(os, "clock uncertainty", path);
+        path_helper.update_print_path(os, "clock uncertainty", path + offset);
     }
 
     return path;
@@ -509,7 +521,8 @@ Time TimingReporter::report_timing_clock_subpath(std::ostream& os,
                                                  const TimingSubPath& subpath,
                                                  DomainId domain,
                                                  TimingType timing_type,
-                                                 Time path) const {
+                                                 Time path,
+                                                 Time offset) const {
     {
         //Launch clock latency
         Time latency;
@@ -560,7 +573,7 @@ Time TimingReporter::report_timing_clock_subpath(std::ostream& os,
 
         path = path_elem.tag().time();
 
-        path_helper.update_print_path(os, point, path);
+        path_helper.update_print_path(os, point, path + offset);
     }
 
     return path;

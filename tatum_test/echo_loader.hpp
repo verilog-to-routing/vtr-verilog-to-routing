@@ -35,8 +35,8 @@ public:
     void add_min_input_constraint(int node_id, int domain_id, float constraint) override;
     void add_min_output_constraint(int node_id, int domain_id, float constraint) override;
     void add_max_output_constraint(int node_id, int domain_id, float constraint) override;
-    void add_setup_constraint(int src_domain_id, int sink_domain_id, float constraint) override;
-    void add_hold_constraint(int src_domain_id, int sink_domain_id, float constraint) override;
+    void add_setup_constraint(int src_domain_id, int sink_domain_id, int capture_node, float constraint) override;
+    void add_hold_constraint(int src_domain_id, int sink_domain_id, int capture_node, float constraint) override;
     void add_setup_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) override;
     void add_hold_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) override;
     void add_early_source_latency(int domain_id, float latency) override;

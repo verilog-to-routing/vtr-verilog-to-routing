@@ -160,8 +160,13 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
         auto constraint = kv.second;
         if(constraint.valid()) {
             os << " type: SETUP_CONSTRAINT";
-            os << " launch_domain: " << size_t(key.src_domain_id);
-            os << " capture_domain: " << size_t(key.sink_domain_id);
+            os << " launch_domain: " << size_t(key.domain_pair.src_domain_id);
+            os << " capture_domain: " << size_t(key.domain_pair.sink_domain_id);
+            if (key.capture_node) {
+                os << " capture_node: " << size_t(key.capture_node);
+            } else {
+                os << " capture_node: -1";
+            }
             os << " constraint: " << constraint;
             os << "\n";
         }
@@ -172,8 +177,13 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
         auto constraint = kv.second;
         if(constraint.valid()) {
             os << " type: HOLD_CONSTRAINT";
-            os << " launch_domain: " << size_t(key.src_domain_id);
-            os << " capture_domain: " << size_t(key.sink_domain_id);
+            os << " launch_domain: " << size_t(key.domain_pair.src_domain_id);
+            os << " capture_domain: " << size_t(key.domain_pair.sink_domain_id);
+            if (key.capture_node) {
+                os << " capture_node: " << size_t(key.capture_node);
+            } else {
+                os << " capture_node: -1";
+            }
             os << " constraint: " << constraint;
             os << "\n";
         }

@@ -186,6 +186,8 @@ Args parse_args(int argc, char** argv) {
                     args.opt_graph_layout = arg_val;
                 } else if (argv[i] == std::string("--verify")) { 
                     args.verify = arg_val;
+                } else if (argv[i] == std::string("--print_sizes")) { 
+                    args.print_sizes = arg_val;
                 } else if (argv[i] == std::string("--report")) { 
                     args.report = arg_val;
                 } else if (argv[i] == std::string("--debug_dot_node")) { 
