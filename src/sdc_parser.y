@@ -279,6 +279,8 @@ cmd_set_multicycle_path: CMD_SET_MULTICYCLE_PATH                  { $$ = SetMult
     | cmd_set_multicycle_path ARG_TO   LSPAR cmd_get_clocks RSPAR { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, $4, FromToType::TO); }
     | cmd_set_multicycle_path ARG_FROM LCPAR stringGroup RCPAR    { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, $4, FromToType::FROM); }
     | cmd_set_multicycle_path ARG_TO   LCPAR stringGroup RCPAR    { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, $4, FromToType::TO); }
+    | cmd_set_multicycle_path ARG_FROM LSPAR cmd_get_pins RSPAR   { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, $4, FromToType::FROM); }
+    | cmd_set_multicycle_path ARG_TO   LSPAR cmd_get_pins RSPAR   { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, $4, FromToType::TO); }
     | cmd_set_multicycle_path ARG_FROM     string                 { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, 
                                                                           make_sdc_string_group(sdcparse::StringGroupType::STRING, $3), 
                                                                           FromToType::FROM);
