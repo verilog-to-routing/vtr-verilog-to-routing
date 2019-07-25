@@ -94,7 +94,7 @@ cppcheck:
 	cppcheck . 1> /dev/null 
 
 test:
-	./verify_odin.sh --test pre_commit --nb_of_process $(NB_OF_PROCESS)
+	./verify_odin.sh -t regression_test/benchmark/suite/pre_commit -j $(NB_OF_PROCESS)
 
 large_test:
-	./verify_odin.sh --test pre_merge --nb_of_process $(NB_OF_PROCESS)
+	./verify_odin.sh -t regression_test/benchmark/suite/pre_merge -j $(NB_OF_PROCESS)

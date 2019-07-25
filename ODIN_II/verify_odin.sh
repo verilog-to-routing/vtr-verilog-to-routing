@@ -29,12 +29,12 @@ NEW_RUN_DIR="${REGRESSION_DIR}/run001/"
 ##############################################
 # Exit Functions
 function exit_program() {
-
+	
 	FAIL_COUNT="0"
 	if [ -f ${NEW_RUN_DIR}/test_failures.log ]; then
 		FAIL_COUNT=$(wc -l ${NEW_RUN_DIR}/test_failures.log | cut -d ' ' -f 1)
 	fi
-	
+
 	FAILURE=$(( ${FAIL_COUNT} ))
 	
 	if [ "_${FAILURE}" != "_0" ]
@@ -157,7 +157,7 @@ function init_temp() {
 
 function create_temp() {
 	if [ ! -d ${NEW_RUN_DIR} ]; then
-		echo "running benchmark @${NEW_RUN_DIR}"
+		echo "Benchmark result location: $(realpath --relative-to=${PWD} ${NEW_RUN_DIR})"
 		mkdir -p ${NEW_RUN_DIR}
 
 		unlink ${REGRESSION_DIR}/latest &> /dev/null || /bin/true
@@ -249,7 +249,6 @@ function parse_args() {
 				fi
 
 				_TEST="$2"
-				echo "Running test $2"
 				shift
 
 			;;-d|--output_dir)
@@ -279,6 +278,7 @@ function parse_args() {
 				fi
 				
 				_CONFIG_OVERRIDE=$2
+				echo "Reading override from ${_CONFIG_OVERRIDE}"
 
 				shift
 
@@ -504,6 +504,7 @@ function populate_arg_from_file() {
 
 function sim() {
 
+
 	###########################################
 	# find the benchmark
 	benchmark_dir=$1
@@ -511,23 +512,22 @@ function sim() {
 	then
 		echo "invalid benchmark directory parameter passed: ${benchmark_dir}"
 		_exit_with_code "-1"
-	elif [ ! -f ${benchmark_dir}/.conf ]
+	elif [ ! -f ${benchmark_dir}/task.conf ]
 	then
-		echo "invalid benchmark directory parameter passed: ${benchmark_dir}, contains no .conf file"
+		echo "invalid benchmark directory parameter passed: ${benchmark_dir}, contains no task.conf file"
 		config_help
 		_exit_with_code "-1"
 	fi
 
 	benchmark_dir=$(readlink -f "${benchmark_dir}")
-	bench_name=${benchmark_dir##*/}
-	echo " BENCHMARK IS: ${bench_name}"
-
+	bench_name=$(basename ${benchmark_dir})
+	echo "Task is: ${bench_name}"
 
 	##########################################
 	# setup the parameters
 
 	init_args_for_test
-	populate_arg_from_file "${benchmark_dir}/.conf"
+	populate_arg_from_file "${benchmark_dir}/task.conf"
 
 	##########################################
 	# use the overrides from the user
@@ -539,7 +539,6 @@ function sim() {
 			echo "Passed in an invalid global configuration file ${_CONFIG_OVERRIDE}"
 			_exit_with_code "-1"
 		else
-			echo "Reading override from ${_CONFIG_OVERRIDE}"
 			populate_arg_from_file "${_CONFIG_OVERRIDE}"
 		fi
 	fi
@@ -719,20 +718,18 @@ function sim() {
 			fi
 
 		done
-	done
+	done	
 
 	#synthesize the circuits
 	SYNTH_LIST="$(find ${NEW_RUN_DIR}/${bench_name}/ -name ${wrapper_synthesis_file_name})"
 	if [ "${_SYNTHESIS}" == "on" ] && [ "_${SYNTH_LIST}" != "_" ]
 	then
-		echo " ========= Synthesizing Circuits"
-
-		#run the synthesis in parallel
 		find ${NEW_RUN_DIR}/${bench_name}/ -name ${wrapper_synthesis_file_name} | xargs -n1 -P${_threads} -I cmd_file ${SHELL} -c '$(cat cmd_file)'
 
 		# disable the test on failure
 		disable_failed ${global_synthesis_failure}
-		mv_failed ${global_synthesis_failure}
+		mv_failed ${global_synthesis_failure}		
+
 	fi
 
 	SIM_LIST="$(find ${NEW_RUN_DIR}/${bench_name}/ -name ${wrapper_simulation_file_name})"
@@ -771,65 +768,32 @@ function sim() {
 		done
 
 	fi
+
 }
 
-HEAVY_LIST=(
-	"full"
-	"large"
-)
-
-LIGHT_LIST=(
-	"operators"
-	"arch"
-	"micro"	
-	"syntax"
-	"FIR"
-)
-
-for items in $(find ${BENCHMARK_DIR}/other/* -type d)
-do
-	LIGHT_LIST="${LIGHT_LIST} other/$(basename ${items})" 
-done
-
-function run_on_directory() {
+function run_task() {
 	test_dir=$1
 
 	if [ ! -d ${test_dir} ]
 	then
 		echo "${test_dir} Not Found! Skipping this test"
-	elif [ ! -f "${test_dir}/.conf" ] && [ ${_GENERATE_CONFIG} == "off" ]
+	elif [ ! -f "${test_dir}/task.conf" ] 
 	then
-		echo "no config file found in the directory ${test_dir}"
-		echo "please make sure a .conf file exist, you can use '--build_config' to generate one"
-		config_help
-		help
-	else
 		if [ ${_GENERATE_CONFIG} == "on" ]
 		then
-			echo "generating config file for ${test_dir}"
-			echo_bm_conf ${test_dir} > ${test_dir}/.conf
+			new_test_dir="${BENCHMARK_DIR}/task/generated_$(basename ${test_dir})"
+			echo "generating config file for ${test_dir} @ ${new_test_dir}"
+			mkdir -p ${new_test_dir}
+			echo_bm_conf ${test_dir} > ${new_test_dir}/task.conf
 		else
-			create_temp
-			sim "${test_dir}"
+			echo "no config file found in the directory ${test_dir}"
+			echo "please make sure a .conf file exist, you can use '--build_config' to generate one"
+			config_help
 		fi
+	else
+		create_temp
+		sim "${test_dir}"
 	fi
-}
-
-function run_light_suite() {
-	for test_dir in ${LIGHT_LIST[@]}; do
-		run_on_directory "${BENCHMARK_DIR}/${test_dir}"
-	done
-}
-
-function run_heavy_suite() {
-	for test_dir in ${HEAVY_LIST[@]}; do
-		run_on_directory "${BENCHMARK_DIR}/${test_dir}"
-	done
-}
-
-function run_all() {
-	run_light_suite
-	run_heavy_suite
 }
 
 function run_vtr_reg() {
@@ -838,6 +802,38 @@ function run_vtr_reg() {
 	cd ${THIS_DIR}
 }
 
+task_list=()
+
+function run_suite() {
+	while [ "_${task_list}" != "_" ]
+	do
+		current_input="${task_list[0]}"
+		task_list=( "${task_list[@]:1}" )
+
+		case "_${current_input}" in
+			_)
+				;;
+
+			_vtr_reg_*)
+				run_vtr_reg ${current_input}
+				;;
+
+			*)
+				current_input="${THIS_DIR}/${current_input}"
+				if [ ! -d "${current_input}" ]
+				then
+					echo "Invalid Directory for task: ${current_input}"
+				elif [ -f "${current_input}/task_list.conf" ]
+				then
+					task_list=( $(cat ${current_input}/task_list.conf) ${task_list[@]} )
+				elif [ -f "${current_input}/task.conf" ]
+				then
+					run_task "${current_input}"
+				fi
+				;;
+		esac
+	done
+}
 #########################################################
 #	START HERE
 
@@ -859,49 +855,21 @@ then
 	_exit_with_code "-1"
 fi
 
-echo "Benchmark is: ${_TEST}"
-case "_${_TEST}" in
+if [ "_${_TEST}" == "_" ]
+then
+	echo "No test is passed in must pass a test directory containing either a task_list.conf or a task.conf"
+	help
+	_exit_with_code "-1"
+fi
 
-	_)
-		echo "No input test!"
-		help
-		_exit_with_code "-1"
-		;;
+_TEST=$(readlink -f ${_TEST})
+_TEST=$(realpath --relative-to=${THIS_DIR} ${_TEST})
 
-	_full_suite)
-		run_all
-		;;	
-		
-	_heavy_suite)
-		run_heavy_suite
-		;;
+echo "Task: ${_TEST}"
 
-	_light_suite)
-		run_light_suite
-		;;
+task_list=( "${_TEST}" )
 
-	_vtr_reg_*)
-		run_vtr_reg ${_TEST}
-		;;
-
-	_pre_commit)
-		run_all
-		run_vtr_reg vtr_reg_basic
-		run_vtr_reg vtr_reg_valgrind_small
-		;;
-
-	_pre_merge)
-		run_all
-		run_vtr_reg vtr_reg_basic
-		run_vtr_reg vtr_reg_strong
-		run_vtr_reg vtr_reg_valgrind_small
-		run_vtr_reg vtr_reg_valgrind
-		;;
-
-	*)
-		run_on_directory "${BENCHMARK_DIR}/${_TEST}"
-		;;
-esac
+run_suite
 
 print_time_since $START
 

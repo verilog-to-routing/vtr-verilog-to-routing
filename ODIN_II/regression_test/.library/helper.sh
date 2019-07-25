@@ -35,3 +35,10 @@ function _echo_args() {
 function _cat_args() {
 	_echo_args "$(cat $1)"
 }
+
+function fetch_cursor_position() {
+  local pos
+
+  IFS='[;' read -p $'\e[6n' -d R -a pos -rs || echo "failed with error: $? ; ${pos[*]}"
+  echo "${pos[1]}:${pos[2]}"
+}
