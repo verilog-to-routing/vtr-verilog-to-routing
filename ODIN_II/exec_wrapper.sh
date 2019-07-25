@@ -8,6 +8,7 @@ REG_LIB="${REGRESSION_DIR}/.library"
 
 source ${REG_LIB}/handle_exit.sh
 source  ${REG_LIB}/time_format.sh
+source  ${REG_LIB}/helper.sh
 
 export EXIT_NAME="$0"
 
@@ -35,7 +36,7 @@ USE_TIMEOUT="on"
 USE_TIME="on"
 USE_LOGS="on"
 COLORIZE_OUTPUT="off"
-VERBOSE="off"
+VERBOSE="0"
 	
 function print_exit_type() {
 	CODE="$1"
@@ -97,7 +98,7 @@ Usage: ./exec_wrapper.sh [options] <path/to/arguments.file>
 			--time_limit                                * stops Odin after X seconds
 			--limit_ressource				            * limit ressource usage using ulimit -m (25% of hrdw memory) and nice value of 19
 			--colorize                                  * colorize the output
-			--verbose									* output the log to stdout
+			--verbosity [0, 1, 2]						* [0] no output, [1] output on error, [2] output the log to stdout
 "
 }
 
@@ -210,7 +211,7 @@ function display() {
 if [[ "$#" == 0 ]]
 then
 	help
-	exit 0
+	_exit_with_code "-1"
 fi
 
 while [[ "$#" > 0 ]]
@@ -244,9 +245,19 @@ do
 			RESTRICT_RESSOURCE="on" 
 			;;
 
-		--verbose)
-			log_it "Using verbose output"
-			VERBOSE="on"
+		--verbosity)
+			_flag_is_number "$2"
+			case "_$2" in
+				_0)	VERBOSE="0";;
+				_1) VERBOSE="1";;
+				_2) VERBOSE="2";;
+				*)
+					echo "verbosity level is invalid: $2"
+					help
+					_exit_with_code "-1"
+				;;
+			esac
+			log_it "Using verbose output level $2"
 			;;
 
 		--colorize)
@@ -259,7 +270,7 @@ do
 			if [ ${TOOL_SPECIFIED} == "on" ]; then
 				echo "can only run one tool at a time"
 				help
-				exit 99
+				_exit_with_code "-1"
 			else
 				case $2 in
 					valgrind)
@@ -277,7 +288,7 @@ do
 					*)
 						echo "Invalid tool $2 passed in"
 						help
-						exit 99
+						_exit_with_code "-1"
 						;;
 				esac
 				TOOL_SPECIFIED="on"
@@ -344,7 +355,12 @@ else
 	_ARGS=$(cat ${ARG_FILE})
 	if [ "${USE_LOGS}" == "on" ]
 	then
-		${EXEC_PREFIX} ${_ARGS} &>> ${LOG_FILE}
+		if [ "${VERBOSE}" > "1" ]
+		then
+			${EXEC_PREFIX} ${_ARGS} 2>&1 | tee ${LOG_FILE}
+		else
+			${EXEC_PREFIX} ${_ARGS} &>> ${LOG_FILE}
+		fi
 	else
 		${EXEC_PREFIX} ${_ARGS}
 	fi
@@ -359,7 +375,7 @@ then
 	EXIT_STATUS=1
 fi
 
-if [ "${EXIT_STATUS}" != "0" ] && [ "${USE_LOGS}" == "on" ] && [ "${VERBOSE}" == "on" ]
+if [ "${EXIT_STATUS}" != "0" ] && [ "${USE_LOGS}" == "on" ] && [ "${VERBOSE}" == "1" ]
 then
 	cat ${LOG_FILE}
 fi

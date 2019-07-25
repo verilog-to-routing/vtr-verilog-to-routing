@@ -9,6 +9,7 @@ REG_LIB="${REGRESSION_DIR}/.library"
 
 source ${REG_LIB}/handle_exit.sh
 source ${REG_LIB}/helper.sh
+source ${REG_LIB}/conf_generate.sh
 
 export EXIT_NAME="$0"
 
@@ -21,7 +22,7 @@ WRAPPER_EXEC="${THIS_DIR}/exec_wrapper.sh"
 ODIN_EXEC="${THIS_DIR}/odin_II"
 
 
-BENCHMARK_DIR="${REGRESSION_DIR}/benchmark/"
+BENCHMARK_DIR="${REGRESSION_DIR}/benchmark"
 TEST_DIR_LIST=$(ls -d ${BENCHMARK_DIR}/*/ | sed "s/\/$//g" | xargs -n1 -I TEST_FILE /bin/bash -c 'printf "$(basename TEST_FILE) "')
 NEW_RUN_DIR="${REGRESSION_DIR}/run001/"
 
@@ -78,6 +79,7 @@ fi
 
 _GENERATE_BENCH="off"
 _GENERATE_OUTPUT="off"
+_GENERATE_CONFIG="off"
 _FORCE_SIM="off"
 
 function help() {
@@ -89,7 +91,7 @@ printf "Called program with $INPUT
 
 	OPTIONS:
 		-h|--help                       $(_prt_cur_arg off) print this
-		-t|--test < test name >         $(_prt_cur_arg ${_TEST}) Test name is one of ( ${TEST_DIR_LIST} heavy_suite light_suite full_suite vtr_basic vtr_strong pre_commit failures debug_sim debug_synth)
+		-t|--test < test name >         $(_prt_cur_arg ${_TEST}) Test name is one of ( ${TEST_DIR_LIST} heavy_suite light_suite full_suite vtr_basic vtr_strong pre_commit pre_merge)
 		-j|--nb_of_process < N >        $(_prt_cur_arg ${_NUMBER_OF_PROCESS}) Number of process requested to be used
 		-d|--output_dir < /abs/path >   $(_prt_cur_arg ${_RUN_DIR_OVERRIDE}) Change the run directory output
 		-C|--config <path/to/config>	$(_prt_cur_arg ${_CONFIG_OVERRIDE}) Change the run directory output
@@ -97,6 +99,7 @@ printf "Called program with $INPUT
 	FLAGS:
 		-g|--generate_bench             $(_prt_cur_arg ${_GENERATE_BENCH}) Generate input and output vector for test
 		-o|--generate_output            $(_prt_cur_arg ${_GENERATE_OUTPUT}) Generate output vector for test given its input vector
+		-b|--build_config				$(_prt_cur_arg ${_GENERATE_CONFIG}) Generate a config file for a given directory
 		-c|--clean                      $(_prt_cur_arg off ) Clean temporary directory
 		-f|--force_simulate             $(_prt_cur_arg ${_FORCE_SIM}) Force the simulation to be executed regardless of the config
 "
@@ -307,6 +310,10 @@ function parse_args() {
 			;;-o|--generate_output)		
 				_GENERATE_OUTPUT="on"
 				echo "generating input and output vector for test"
+
+			;;-b|--build_config)		
+				_GENERATE_CONFIG="on"
+				echo "generating a config file for test directory"
 
 			;;-c|--clean)				
 				echo "Cleaning temporary run in directory"
@@ -539,6 +546,7 @@ function sim() {
 	# parse the function commands passed
 	_threads=${_NUMBER_OF_PROCESS}
 
+	_CONCAT_CIRCUIT_LIST="off"
 	_SYNTHESIS="on"
 	_SIMULATE="on"
 
@@ -547,6 +555,11 @@ function sim() {
 	for _regression_param in ${_regression_params}
 	do
 		case ${_regression_param} in
+
+			--concat_circuit_list)
+				_CONCAT_CIRCUIT_LIST="on"
+				;;
+
 			--disable_simulation)
 				echo "This test will not be simulated"
 				if [ "_${_FORCE_SIM}" == "on" ] 
@@ -562,8 +575,13 @@ function sim() {
 				echo "This test will not be multithreaded"
 				_threads="1"
 				;;
+				
+			--include_default_arch)
+				_arch_list="no_arch"
+				;;
+
 			*)
-				echo "Unknown internal parameter passed: $1"
+				echo "Unknown internal parameter passed: ${_regression_param}"
 				config_help 
 				_exit_with_code "-1"
 				;;
@@ -578,40 +596,50 @@ function sim() {
 	wrapper_synthesis_file_name="wrapper_synthesis_params"
 	wrapper_simulation_file_name="wrapper_simulation_params"
 
+	circuit_list_temp=""
+	if [ ${_CONCAT_CIRCUIT_LIST} == "on" ]
+	then
+		circuit_list_temp="$(echo ${_circuit_list} | sed 's/\n/ /g')"
+		_circuit_list=${bench_name}
+	fi
+
 	for circuit in $(echo ${_circuit_list})
-	do
-		test_name=${circuit##*/}
-		
+	do		
 
 		input_verilog_file=""
 		input_blif_file=""
 		
 		basename=""
 		circuit_without_extension=""
-		case "${test_name}" in
+		case "${circuit}" in
 			*.v)
-				basename="${test_name%.v}"
-				circuit_without_extension="${circuit%.v}"
+				basename="${circuit%.v}"
 				input_verilog_file="${circuit}"
 				_SYNTHESIS="on"
 			;;
 			*.blif)
-				basename="${test_name%.blif}"
-				circuit_without_extension="${circuit%.blif}"
+				basename="${circuit%.blif}"
 				input_blif_file="${circuit}"
 				# disable synthesis for blif files
 				_SYNTHESIS="off"
 			;;
 			*)
-				echo "Invalid circuit passed in: ${circuit}, skipping"
-				continue
+				if [ ${_CONCAT_CIRCUIT_LIST} == "on" ]
+				then
+					basename="${circuit}"
+					input_verilog_file="${circuit_list_temp}"
+					_SYNTHESIS="on"
+				else
+					echo "Invalid circuit passed in: ${circuit}, skipping"
+					continue
+				fi
 			;;
 		esac
 
 
 		# lookup for input and output vector files to do comparison
-		input_vector_file="${circuit_without_extension}_input"
-		output_vector_file="${circuit_without_extension}_output"
+		input_vector_file="${benchmark_dir}/${basename}_input"
+		output_vector_file="${benchmark_dir}/${basename}_output"
 
 		for arches in $(echo ${_arch_list})
 		do
@@ -624,7 +652,7 @@ function sim() {
 			arch_basename=${arches%.xml}
 			arch_name=${arch_basename##*/}
 
-			TEST_FULL_REF="${bench_name}/${test_name}/${arch_name}"
+			TEST_FULL_REF="${bench_name}/${basename}/${arch_name}"
 			DIR="${NEW_RUN_DIR}/${TEST_FULL_REF}"
 			mkdir -p $DIR
 
@@ -677,7 +705,7 @@ function sim() {
 
 				if [ "${_GENERATE_BENCH}" == "on" ] || [ ! -f ${input_vector_file} ]
 				then
-					simulation_command="${simulation_command} --best_coverage -g 100"
+					simulation_command="${simulation_command}"
 				else
 					simulation_command="${simulation_command} -t ${input_vector_file}"
 					if [ "${_GENERATE_OUTPUT}" == "off" ] && [ -f ${output_vector_file} ]
@@ -752,11 +780,15 @@ HEAVY_LIST=(
 LIGHT_LIST=(
 	"operators"
 	"arch"
-	"other"
 	"micro"	
 	"syntax"
 	"FIR"
 )
+
+for items in $(find ${BENCHMARK_DIR}/other/* -type d)
+do
+	LIGHT_LIST="${LIGHT_LIST} other/$(basename ${items})" 
+done
 
 function run_on_directory() {
 	test_dir=$1
@@ -764,14 +796,21 @@ function run_on_directory() {
 	if [ ! -d ${test_dir} ]
 	then
 		echo "${test_dir} Not Found! Skipping this test"
-	elif [ ! -f "${test_dir}/.conf" ]
+	elif [ ! -f "${test_dir}/.conf" ] && [ ${_GENERATE_CONFIG} == "off" ]
 	then
 		echo "no config file found in the directory ${test_dir}"
-		echo "please make sure a .conf file exist"
+		echo "please make sure a .conf file exist, you can use '--build_config' to generate one"
 		config_help
+		help
 	else
-		create_temp
-		sim "${test_dir}"
+		if [ ${_GENERATE_CONFIG} == "on" ]
+		then
+			echo "generating config file for ${test_dir}"
+			echo_bm_conf ${test_dir} > ${test_dir}/.conf
+		else
+			create_temp
+			sim "${test_dir}"
+		fi
 	fi
 }
 
