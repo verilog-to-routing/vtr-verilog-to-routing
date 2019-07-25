@@ -606,6 +606,7 @@ function sim() {
 
 	for circuit in $(echo ${_circuit_list})
 	do		
+		circuit_dir=$(dirname ${circuit})
 		test_name=${circuit##*/}
 		input_verilog_file=""
 		input_blif_file=""
@@ -638,8 +639,8 @@ function sim() {
 
 
 		# lookup for input and output vector files to do comparison
-		input_vector_file="${benchmark_dir}/${basename}_input"
-		output_vector_file="${benchmark_dir}/${basename}_output"
+		input_vector_file="${circuit_dir}/${basename}_input"
+		output_vector_file="${circuit_dir}/${basename}_output"
 
 		for arches in $(echo ${_arch_list})
 		do
