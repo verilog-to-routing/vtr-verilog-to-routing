@@ -2338,7 +2338,6 @@ static void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set
  */
 static bool highlight_rr_nodes(float x, float y) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
 
     char message[250] = "";
 

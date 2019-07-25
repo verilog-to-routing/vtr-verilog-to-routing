@@ -844,7 +844,7 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     }
 }
 
-void vpr_close_graphics(const t_vpr_setup& vpr_setup) {
+void vpr_close_graphics(const t_vpr_setup& /*vpr_setup*/) {
     /* Close down X Display */
     free_draw_structs();
 }
