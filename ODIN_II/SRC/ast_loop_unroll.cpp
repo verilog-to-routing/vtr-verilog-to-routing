@@ -74,6 +74,7 @@ void update_module_instantiations(ast_node_t *ast_module, ast_node_t ****new_ins
 
 				long sc_spot = sc_add_string(module_names_to_idx, new_instance_name);
 				oassert(sc_spot != -1);
+				module_names_to_idx->data[sc_spot] = (*new_instances)[i][j];
 
 				vtr::free(new_instance_name);
 			}		
@@ -99,6 +100,7 @@ void update_module_instantiations(ast_node_t *ast_module, ast_node_t ****new_ins
 
 				long sc_spot = sc_add_string(module_names_to_idx, new_instance_name);
 				oassert(sc_spot != -1);
+				module_names_to_idx->data[sc_spot] = (*new_instances)[i][j];
 
 				vtr::free(new_instance_name);
 			}

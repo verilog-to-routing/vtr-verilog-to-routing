@@ -51,6 +51,8 @@ addons:
     - gcc-5
     - g++-6
     - gcc-6
+    - g++-7
+    - gcc-7
     - g++-8
     - gcc-8
     - g++-9
@@ -60,27 +62,29 @@ addons:
 
 cache:
   ccache: true
-  directories:
-    - /home/travis/vtr-build
-    - /home/travis/vtr
+  #directories:
+    #- /home/travis/vtr-build
+    #- /home/travis/vtr
 
 env:
   - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
 
 stages:
-  - Build
+  #- Build
   - Test
   - Build Compatibility
 
 jobs:
   include:
-    - stage: Build
-      name: "Building VtR"
-      env:
-        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
-        - BUILD_TYPE=strict
-      script:
-        - ./.github/travis/build.sh
+    #Build stage disabled for now due to caching issues
+    #- stage: Build
+      #name: "Building VtR"
+      #env:
+        #- MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+        #- BUILD_TYPE=release
+      #script:
+        #- ./.github/travis/build.sh
+
     - stage: Test
       name: "Code Formatting"
       script:
@@ -88,39 +92,52 @@ jobs:
     - stage: Test
       name: "C++ Unit Tests"
       script:
+        - ./.github/travis/build.sh
         - ./.github/travis/unittest.sh
     - stage: Test
       name: "Basic Regression Tests"
       script:
+        - ./.github/travis/build.sh
         - ./run_reg_test.pl vtr_reg_basic -j2
     - stage: Test
       name: "Strong Regression Tests"
       script:
+        - ./.github/travis/build.sh
         - ./run_reg_test.pl vtr_reg_strong -j2
     - stage: Test
       name: "Basic Valgrind Memory Tests"
       script:
+        - ./.github/travis/build.sh
         - ./run_reg_test.pl vtr_reg_valgrind_small -j2
     - stage: Test
       name: "ODIN-II Micro Tests"
       script:
+        - ./.github/travis/build.sh
         - ./run_reg_test.pl odin_reg_micro -j2
     - stage: Test
       name: "ODIN-II Operators Tests"
       script:
+        - ./.github/travis/build.sh
         - ./run_reg_test.pl odin_reg_operators -j2
+
     - stage: Build Compatibility
       name: "GCC 5 (Ubuntu Xenial - 16.04)"
       env:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
-        - BUILD_TYPE=strict
+        - BUILD_TYPE=release_strict
       script:
         - ./.github/travis/build.sh
     - stage: Build Compatibility
       name: "GCC 6 (Debian Stretch)"
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
-        - BUILD_TYPE=strict
+        - BUILD_TYPE=release_strict
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "GCC 7 (Ubuntu Bionic - 18.04)"
+      env:
+         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
       script:
         - ./.github/travis/build.sh
     - stage: Build Compatibility

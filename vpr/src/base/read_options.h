@@ -5,6 +5,7 @@
 #include "vpr_types.h"
 #include "constant_nets.h"
 #include "argparse_value.hpp"
+#include "argparse.hpp"
 
 struct t_options {
     /* File names */
@@ -150,6 +151,9 @@ struct t_options {
     argparse::ArgValue<bool> timing_report_skew;
 };
 
+argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args);
 t_options read_options(int argc, const char** argv);
+void set_conditional_defaults(t_options& args);
+bool verify_args(const t_options& args);
 
 #endif

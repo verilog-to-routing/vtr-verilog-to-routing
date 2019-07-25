@@ -99,6 +99,7 @@ uncertainty:                    { return tatumparse::Parser::make_UNCERTAINTY();
 latency:                        { return tatumparse::Parser::make_LATENCY(); }
 launch_domain:                  { return tatumparse::Parser::make_LAUNCH_DOMAIN(); }
 capture_domain:                 { return tatumparse::Parser::make_CAPTURE_DOMAIN(); }
+capture_node:                   { return tatumparse::Parser::make_CAPTURE_NODE(); }
 
 delay_model:                    { return tatumparse::Parser::make_DELAY_MODEL(); }
 min_delay:                      { return tatumparse::Parser::make_MIN_DELAY(); }

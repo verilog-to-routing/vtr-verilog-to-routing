@@ -44,6 +44,8 @@
  * Main VPR Operations 
  */
 void vpr_init(const int argc, const char** argv, t_options* options, t_vpr_setup* vpr_setup, t_arch* arch);
+void vpr_initialize_logging();
+void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_arch* arch);
 
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch); //Run the VPR CAD flow
 

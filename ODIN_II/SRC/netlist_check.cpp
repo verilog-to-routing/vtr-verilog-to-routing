@@ -536,7 +536,7 @@ void levelize_forwards_clean_checking_for_combo_loop_and_liveness(short ast_base
 						{
 							/* Combo node since one of the outputs hasn'y been visisted. */
 							if (ast_based)
-								error_message(NETLIST_ERROR, output_node->related_ast_node->line_number, output_node->related_ast_node->file_number, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %ld.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
+								error_message(NETLIST_ERROR, output_node->related_ast_node->line_number, output_node->related_ast_node->file_number, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %d.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
 							else
 								error_message(NETLIST_ERROR, -1, -1, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %d.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
 						}
@@ -622,69 +622,74 @@ void levelize_backwards(netlist_t *netlist)
 		for (i = 0; i < netlist->num_at_backward_level[cur_back_level]; i++)
 		{
 			nnode_t *current_node = netlist->backward_levels[cur_back_level][i];
-			if (current_node == NULL)
-				continue;
-
-			/* at each node visit all the inputs */
-			for (j = 0; j < current_node->num_input_pins; j++)
+			if (current_node)
 			{
-				int *fanouts_visited;
-				if (current_node->input_pins[j] == NULL)
-					continue;
-
-				/* visit the fanout point */
-				nnet_t *fanout_net = current_node->input_pins[j]->net;
-
-				if (fanout_net->net_data == NULL)
+				/* at each node visit all the inputs */
+				for (j = 0; j < current_node->num_input_pins; j++)
 				{
-					int idx;
-					/* if this fanout hasn't been visited yet this will be null */
-					fanouts_visited = (int*)vtr::malloc(sizeof(int)*(fanout_net->num_fanout_pins));
-
-					for (idx = 0; idx < fanout_net->num_fanout_pins; idx++)
+					int *fanouts_visited = NULL;
+					if (current_node->input_pins[j])
 					{
-						fanouts_visited[idx] = -1;
+						/* visit the fanout point */
+						nnet_t *fanout_net = current_node->input_pins[j]->net;
+						if (fanout_net)
+						{
+							if (fanout_net->net_data == NULL)
+							{
+								int idx;
+								/* if this fanout hasn't been visited yet this will be null */
+								fanouts_visited = (int*)vtr::malloc(sizeof(int)*(fanout_net->num_fanout_pins));
+
+								for (idx = 0; idx < fanout_net->num_fanout_pins; idx++)
+								{
+									fanouts_visited[idx] = -1;
+								}
+
+								fanout_net->net_data = (void*)fanouts_visited;
+								fanout_net->unique_net_data_id = LEVELIZE;
+							}
+							else
+							{
+								/* ELSE - get the list */
+								fanouts_visited = (int*)fanout_net->net_data;
+								oassert(fanout_net->unique_net_data_id == LEVELIZE);
+							}
+
+							/* mark this entry as visited */
+							if(fanout_net->driver_pin != NULL)
+							{
+								fanouts_visited[current_node->input_pins[j]->pin_net_idx] = cur_back_level;
+							}
+
+							/* check if they've all been marked */
+							all_visited = true;
+							for (k = 0; k < fanout_net->num_fanout_pins && all_visited; k++)
+							{
+								all_visited = ( !( 
+									fanout_net->fanout_pins[k]
+									&&  fanout_net->fanout_pins[k]->node 
+									&&  fanouts_visited[k] == -1
+								));
+							}
+
+							if( all_visited 
+							&&  fanout_net->driver_pin
+							&&  fanout_net->driver_pin->node 
+							&&  fanout_net->driver_pin->node->type != FF_NODE)
+							{
+								/* This one has been visited by everyone */
+								if (fanout_net->driver_pin->node->backward_level == -1)
+								{
+									/* already added to a list...this means that we won't have the correct ordering */
+									netlist->backward_levels[cur_back_level+1] = (nnode_t**)vtr::realloc(netlist->backward_levels[cur_back_level+1], sizeof(nnode_t*)*(netlist->num_at_backward_level[cur_back_level+1]+1));
+									netlist->backward_levels[cur_back_level+1][netlist->num_at_backward_level[cur_back_level+1]] = fanout_net->driver_pin->node;
+									netlist->num_at_backward_level[cur_back_level+1]++;
+								}
+
+								fanout_net->driver_pin->node->backward_level = cur_back_level+1;
+							}
+						}
 					}
-
-					fanout_net->net_data = (void*)fanouts_visited;
-					fanout_net->unique_net_data_id = LEVELIZE;
-				}
-				else
-				{
-					/* ELSE - get the list */
-					fanouts_visited = (int*)fanout_net->net_data;
-					oassert(fanout_net->unique_net_data_id == LEVELIZE);
-				}
-
-				/* mark this entry as visited */
-				if(fanout_net->driver_pin != NULL)
-				{
-					fanouts_visited[current_node->input_pins[j]->pin_net_idx] = cur_back_level;
-				}
-
-				/* check if they've all been marked */
-				all_visited = true;
-				for (k = 0; k < fanout_net->num_fanout_pins; k++)
-				{
-					if ((fanout_net->fanout_pins[k] != NULL) && (fanout_net->fanout_pins[k]->node != NULL) && (fanouts_visited[k] == -1))
-					{
-						all_visited = false;
-						break;
-					}
-				}
-
-				if ((all_visited == true) && (fanout_net->driver_pin->node->type != FF_NODE))
-				{
-					/* This one has been visited by everyone */
-					if (fanout_net->driver_pin->node->backward_level == -1)
-					{
-						/* already added to a list...this means that we won't have the correct ordering */
-						netlist->backward_levels[cur_back_level+1] = (nnode_t**)vtr::realloc(netlist->backward_levels[cur_back_level+1], sizeof(nnode_t*)*(netlist->num_at_backward_level[cur_back_level+1]+1));
-						netlist->backward_levels[cur_back_level+1][netlist->num_at_backward_level[cur_back_level+1]] = fanout_net->driver_pin->node;
-						netlist->num_at_backward_level[cur_back_level+1]++;
-					}
-
-					fanout_net->driver_pin->node->backward_level = cur_back_level+1;
 				}
 			}
 		}

@@ -13,10 +13,6 @@
 using argparse::ConvertedValue;
 using argparse::Provenance;
 
-static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args);
-static void set_conditional_defaults(t_options& args);
-static bool verify_args(const t_options& args);
-
 //Read and process VPR's command-line aruments
 t_options read_options(int argc, const char** argv) {
     t_options args = t_options(); //Explicitly initialize for zero initialization
@@ -752,7 +748,7 @@ struct ParseReducer {
     }
 };
 
-static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
+argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description =
         "Implements the specified circuit onto the target FPGA architecture"
         " by performing packing/placement/routing, and analyzes the result.\n"
@@ -1644,7 +1640,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     return parser;
 }
 
-static void set_conditional_defaults(t_options& args) {
+void set_conditional_defaults(t_options& args) {
     //Some arguments are set conditionally based on other options.
     //These are resolved here.
 
@@ -1807,7 +1803,7 @@ static void set_conditional_defaults(t_options& args) {
     }
 }
 
-static bool verify_args(const t_options& args) {
+bool verify_args(const t_options& args) {
     /*
      * Check for conflicting paramaters
      */

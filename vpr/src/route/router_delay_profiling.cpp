@@ -18,6 +18,7 @@ bool calculate_delay(int source_node, int sink_node, const t_router_opts& router
     auto& route_ctx = g_vpr_ctx.routing();
 
     t_rt_node* rt_root = setup_routing_resources_no_net(source_node);
+    enable_router_debug(router_opts, ClusterNetId(), sink_node);
 
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(1);

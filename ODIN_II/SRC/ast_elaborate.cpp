@@ -41,15 +41,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <vector>
 #include <stack>
 
-#define read_node  1
-#define write_node 2
+// #define read_node  1
+// #define write_node 2
 
-#define e_data  1
-#define e_operation 2
-#define e_variable 3
+// #define e_data  1
+// #define e_operation 2
+// #define e_variable 3
 
-#define N 64
-#define Max_size 64
+// #define N 64
+// #define Max_size 64
 
 // long count_id = 0;
 // long count_assign = 0;
@@ -100,40 +100,16 @@ OTHER DEALINGS IN THE SOFTWARE.
 // void check_operation(enode *begin, enode *end);
 // bool check_mult_bracket(std::vector<int> list);
 
-void remove_generate(ast_node_t *node);
-
-void remove_generate(ast_node_t *node)
-{
-	for(int i=0; i<node->num_children; i++)
-	{
-		if(!node->children[i])
-			continue;
-		ast_node_t* candidate = node->children[i];
-		ast_node_t* body_parent = nullptr;
-
-		if(candidate->type == GENERATE)
-		{
-			for(int j = 0; j<candidate->num_children; j++)
-			{
-				ast_node_t* new_child = ast_node_deep_copy(candidate->children[j]);
-				body_parent = body_parent ? newList_entry(body_parent, new_child) : newList(BLOCK, new_child);
-			}
-			node->children[i] = body_parent;
-			free_whole_tree(candidate);
-		} 
-		else 
-		{
-			remove_generate(candidate);
-		}
-	}
-}
+void convert_2D_to_1D_array(ast_node_t **var_declare, STRING_CACHE_LIST *local_string_cache_list);
+void convert_2D_to_1D_array_ref(ast_node_t **node, STRING_CACHE_LIST *local_string_cache_list);
+char *make_chunk_size_name(char *instance_name_prefix, char *array_name);
+ast_node_t *get_chunk_size_node(char *instance_name_prefix, char *array_name, STRING_CACHE_LIST *local_string_cache_list);
 
 int simplify_ast_module(ast_node_t **ast_module, STRING_CACHE_LIST *local_string_cache_list)
 {
 	/* resolve constant expressions */
 	*ast_module = reduce_expressions(*ast_module, local_string_cache_list, NULL, 0);
 	unroll_loops(ast_module, local_string_cache_list);
-	remove_generate(*ast_module);
 
 	return 1;
 }
@@ -141,23 +117,31 @@ int simplify_ast_module(ast_node_t **ast_module, STRING_CACHE_LIST *local_string
 // this should replace ^^
 ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list, long *max_size, long assignment_size)
 {
+	short *child_skip_list = NULL; // list of children not to traverse into
+	short skip_children = false; // skips the DFS completely if true
+
 	if (node)
 	{
 		STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
 		STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
+		
+		if (node->num_children > 0)
+		{
+			child_skip_list = (short*)vtr::calloc(node->num_children, sizeof(short));
+		}
 
 		switch (node->type)
 		{
 			case MODULE:
 			{
 				// skip identifier
-				node->children[1] = reduce_expressions(node->children[1], local_string_cache_list, NULL, 0);
-				node->children[2] = reduce_expressions(node->children[2], local_string_cache_list, NULL, 0);
-				return node;
+				child_skip_list[0] = true;
+				break;
 			}
 			case FUNCTION:
 			{
-				return node;
+				skip_children = true;
+				break;
 			}
 			case VAR_DECLARE:
 			{
@@ -186,7 +170,12 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 						local_param_table_sc->data[sc_spot] = (void *) node->children[5];
 					}
 
-					return node;
+					skip_children = true;
+				}
+				else
+				{
+					// skip identifier
+					child_skip_list[0] = true;
 				}
 				break;
 			}
@@ -220,11 +209,8 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 						node = free_whole_tree(node);
 						node = newNode;
 					}
-					else
-					{
-						break;
-					}
 				}
+				break;
 			}
 			case FOR:
 				// look ahead for parameters
@@ -248,6 +234,12 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 					if (node->children[1]->type != NUMBERS)
 					{
 						node->children[1] = reduce_expressions(node->children[1], local_string_cache_list, max_size, assignment_size);
+						if (node->children[1] == NULL)
+						{
+							/* resulting from replication of zero */
+							error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+								"%s","Cannot perform assignment with nonexistent value");
+						}
 					}
 					else
 					{
@@ -297,15 +289,44 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 					assignment_size = 0;
 				}
 
-				return node;
+				skip_children = true;
+				break;
 			}
 			case BINARY_OPERATION:
+				break;
 			case UNARY_OPERATION:
 				break;
 			case CONCATENATE:
 				break;
 			case REPLICATE:
+			{
+				node->children[0] = reduce_expressions(node->children[0], local_string_cache_list, NULL, 0);
+				if (!(node_is_constant(node->children[0])))
+				{
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Replication constant must be a constant expression");
+				}
+
+				ast_node_t *new_node = NULL;
+				int64_t value = node->children[0]->types.vnumber->get_value();
+				if (value > 0)
+				{
+					new_node = create_node_w_type(CONCATENATE, node->line_number, node->file_number);				
+					for (size_t i = 0; i < value; i++)
+					{
+						add_child_to_node(new_node, ast_node_deep_copy(node->children[1]));
+					}
+				}
+
+				node->children[1] = free_whole_tree(node->children[1]);
+				node->children[1] = NULL;
+				node->num_children--;
+
+				node->children[0] = free_whole_tree(node->children[0]);
+				node->children[0] = new_node;
+
 				break;
+			}
 			case NUMBERS:
 				break;
 			case IF_Q:
@@ -324,15 +345,34 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				break;
 		}
 
-		/* recurse */
-		for (int i = 0; i < node->num_children; i++)
+		if (skip_children == false)
 		{
-			node->children[i] = reduce_expressions(node->children[i], local_string_cache_list, max_size, assignment_size);
+			/* traverse all the children */
+			for (int i = 0; i < node->num_children; i++)
+			{
+				if (child_skip_list[i] == false)
+				{
+					/* recurse */
+					node->children[i] = reduce_expressions(node->children[i], local_string_cache_list, max_size, assignment_size);
+				}
+			}
 		}
 
 		/* post-amble */
 		switch (node->type)
 		{
+			case VAR_DECLARE:
+			{
+				// pack 2d array into 1d
+				if (node->num_children == 8 
+				&& node->children[5] 
+				&& node->children[6])
+				{
+					convert_2D_to_1D_array(&node, local_string_cache_list);
+				}
+				
+				break;
+			}
 			case FOR:
 				// unroll
 				//unroll_loops(node->children[i]); // change this function (dont have to go through whole tree)
@@ -342,11 +382,19 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				// unroll
 				// recurse (simplify_ast?)
 			case GENERATE:
-				/* remove unused node preventing module instantiation */
-				//remove_generate(node->children[i]); // change this function (dont have to go through whole tree)
+			{
+				node->type = BLOCK;
 				break;
+			}
 			case BINARY_OPERATION:
 			{
+				if (node->children[0] == NULL || node->children[1] == NULL)
+				{
+					/* resulting from replication of zero */
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Cannot perform operation with nonexistent value");
+				}
+
 				ast_node_t *new_node = fold_binary(&node);
 				if (node_is_constant(new_node))
 				{
@@ -371,12 +419,19 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 					free_resolved_children(node);
 												
 					change_to_number_node(node, VNumber(*(new_node->types.vnumber), new_size));
-					new_node = free_whole_tree(new_node);
 				}
+				new_node = free_whole_tree(new_node);
 				break;
 			}
 			case UNARY_OPERATION:
 			{
+				if (node->children[0] == NULL)
+				{
+					/* resulting from replication of zero */
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Cannot perform operation with nonexistent value");
+				}
+
 				ast_node_t *new_node = fold_unary(&node);
 				if (node_is_constant(new_node))
 				{
@@ -401,80 +456,72 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 					free_resolved_children(node);
 					
 					change_to_number_node(node, VNumber(*(new_node->types.vnumber), new_size));
-					new_node = free_whole_tree(new_node);
 				}
+				new_node = free_whole_tree(new_node);
 				break;
 			}
 			case REPLICATE:
 			{
-				oassert(node_is_constant(node->children[0])); // should be taken care of in parse
-				if( node->children[0]->types.vnumber->is_dont_care_string() )
-				{
-					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-						"%s","Passing a non constant value to replication command, i.e. 2'bx1{...}");
-				}
-
-				int64_t value = node->children[0]->types.vnumber->get_value();
-				if(value <= 0)
-				{
-					// todo, if this is part of a concat, it is valid
-					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-						"%s","Passing a number less than or equal to 0 for replication");
-				}
-
-				ast_node_t *new_node = create_node_w_type(CONCATENATE, node->line_number, node->file_number);
-				for (size_t i = 0; i < value; i++)
-				{
-					add_child_to_node(new_node, ast_node_deep_copy(node->children[1]));
-				}
+				/* remove intermediate REPLICATE node */
+				ast_node_t *child = node->children[0];
+				node->children[0] = NULL;
 				node = free_whole_tree(node);
-				node = new_node;
-			} 
-			//fallthrough to resolve concatenation
+				node = child;
+				break;
+			}
 			case CONCATENATE:
 			{
 				resolve_concat_sizes(node, local_string_cache_list);
 
-				// for params only
-				// TODO: this is a hack, concats cannot be folded in place as it breaks netlist expand from ast,
-				// to fix we need to move the node resolution before netlist create from ast.
-				if(node->num_children > 0)
+				if (node->num_children > 0)
 				{
-					size_t index = 1;
-					size_t last_index = 0;
-					
-					while(index < node->num_children)
+					size_t current = 0;
+					size_t previous = -1;
+					bool previous_is_constant = false;
+
+					while (current < node->num_children)
 					{
-						bool previous_is_constant = node_is_constant(node->children[last_index]);
-						bool current_is_constant = node_is_constant(node->children[index]);
+						bool current_is_constant = node_is_constant(node->children[current]);
 
 						if(previous_is_constant && current_is_constant)
 						{
-							VNumber new_value = V_CONCAT({*(node->children[last_index]->types.vnumber), *(node->children[index]->types.vnumber)});
+							VNumber new_value = V_CONCAT({*(node->children[previous]->types.vnumber), *(node->children[current]->types.vnumber)});
 
-							node->children[index] = free_whole_tree(node->children[index]);
+							node->children[current] = free_whole_tree(node->children[current]);
 
-							delete node->children[last_index]->types.vnumber;
-							node->children[last_index]->types.vnumber = new VNumber(new_value);
+							delete node->children[previous]->types.vnumber;
+							node->children[previous]->types.vnumber = new VNumber(new_value);
 						}
-						else
+						else if(node->children[current] != NULL)
 						{
-							last_index += 1;
+							previous += 1;
 							previous_is_constant = current_is_constant;
-							node->children[last_index] = node->children[index];
+							node->children[previous] = node->children[current];
 						}
-						index += 1;
+						current += 1;
 					}
 
-					node->num_children = last_index+1;
+					node->num_children = previous+1;
 
-					if(node->num_children == 1)
+					if (node->num_children == 0)
+					{
+						// could we simply warn and continue ? any ways we can recover rather than fail?
+						/* resulting replication(s) of zero */
+						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+							"%s","Cannot concatenate zero bitstrings");
+						
+						// free_whole_tree(node);
+						// node = NULL;
+					}
+					// node was all constant
+					if (node->num_children == 1)
 					{
 						ast_node_t *tmp = node->children[0];
 						node->children[0] = NULL;
 						free_whole_tree(node);
 						node = tmp;
 					}
+
 				}
 
 				break;
@@ -533,23 +580,185 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				break;
 			}
 			case IF_Q:
+			{
+				fold_conditional(&node);
 				break;
+			}
 			case IF:
 				break;
 			case CASE:
 				break;
 			case RANGE_REF:
-			case ARRAY_REF:
+			{
 				break;
+			}
+			case ARRAY_REF:
+			{
+				bool is_constant_ref = node_is_constant(node->children[1]) && 
+								(node->num_children == 3 ? node_is_constant(node->children[2]) : true);
+
+				if (!is_constant_ref)
+				{
+					// this must be an implicit memory
+					long sc_spot = sc_lookup_string(local_symbol_table_sc, node->children[0]->types.identifier);
+					oassert(sc_spot > -1);
+					((ast_node_t *)local_symbol_table_sc->data[sc_spot])->types.variable.is_memory = true;
+				}
+
+				if (node->num_children == 3) convert_2D_to_1D_array_ref(&node, local_string_cache_list);
+				break;
+			}
 			case MODULE_INSTANCE:
 				// flip hard blocks
 				break;
 			default:
 				break;
 		}
+
+		if (child_skip_list)
+		{
+			child_skip_list = (short*)vtr::free(child_skip_list);
+		}
 	}
 
 	return node;
+}
+
+void convert_2D_to_1D_array(ast_node_t **var_declare, STRING_CACHE_LIST *local_string_cache_list)
+{
+	char *instance_name_prefix = local_string_cache_list->instance_name_prefix;
+	ast_node_t *node_max2  = (*var_declare)->children[3];
+	ast_node_t *node_min2  = (*var_declare)->children[4];
+
+	ast_node_t *node_max3  = (*var_declare)->children[5];
+	ast_node_t *node_min3  = (*var_declare)->children[6];
+
+	oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);		
+	oassert(node_min3->type == NUMBERS && node_max3->type == NUMBERS);
+
+	long addr_min = node_min2->types.vnumber->get_value();
+	long addr_max = node_max2->types.vnumber->get_value();
+
+	long addr_min1= node_min3->types.vnumber->get_value();
+	long addr_max1= node_max3->types.vnumber->get_value();
+
+	if((addr_min > addr_max) || (addr_min1 > addr_max1))
+	{
+		error_message(NETLIST_ERROR, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number, "%s",
+				"Odin doesn't support arrays declared [m:n] where m is less than n.");
+	}	
+	else if((addr_min < 0 || addr_max < 0) || (addr_min1 < 0 || addr_max1 < 0))
+	{
+		error_message(NETLIST_ERROR, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number, "%s",
+				"Odin doesn't support negative number in index.");
+	}
+
+	char *name = (*var_declare)->children[0]->types.identifier;
+
+	if (addr_min != 0 || addr_min1 != 0)
+		error_message(NETLIST_ERROR, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number,
+				"%s: right memory address index must be zero\n", name);
+
+	long addr_chunk_size = (addr_max1 - addr_min1 + 1);
+	ast_node_t *new_node = create_tree_node_number(addr_chunk_size, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number);
+
+	STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
+	long sc_spot;
+
+	char *temp_string = make_chunk_size_name(instance_name_prefix, name);
+
+	if ((sc_spot = sc_add_string(local_param_table_sc, temp_string)) == -1)
+		error_message(NETLIST_ERROR, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number,
+				"%s: name conflicts with Odin internal reference\n", temp_string);
+
+	vtr::free(temp_string);
+	temp_string = NULL;
+
+	local_param_table_sc->data[sc_spot] = (void *)new_node;
+
+	long new_address_max = (addr_max - addr_min + 1)*addr_chunk_size -1;
+
+	change_to_number_node((*var_declare)->children[3], new_address_max);
+	change_to_number_node((*var_declare)->children[4], 0);
+
+	(*var_declare)->children[5] = free_whole_tree((*var_declare)->children[5]);
+	(*var_declare)->children[6] = free_whole_tree((*var_declare)->children[6]);
+
+	(*var_declare)->children[5] = (*var_declare)->children[7];
+	(*var_declare)->children[7] = NULL; 
+
+	(*var_declare)->num_children -= 2;
+}
+
+void convert_2D_to_1D_array_ref(ast_node_t **node, STRING_CACHE_LIST *local_string_cache_list)
+{
+	char *array_name = NULL;
+	ast_node_t *array_row = NULL;
+	ast_node_t *array_col = NULL;
+	ast_node_t *array_size = NULL;
+
+	ast_node_t *new_node_1 = NULL;
+	ast_node_t *new_node_2 = NULL;
+
+	char *instance_name_prefix = local_string_cache_list->instance_name_prefix;
+
+	array_name = vtr::strdup((*node)->children[0]->types.identifier);
+	array_size = get_chunk_size_node(instance_name_prefix, array_name, local_string_cache_list);
+	array_row = (*node)->children[1];
+	array_col = (*node)->children[2];
+
+	// build the new AST
+	new_node_1 = newBinaryOperation(MULTIPLY, array_row, array_size, (*node)->children[0]->line_number);
+	new_node_2 = newBinaryOperation(ADD, new_node_1, array_col, (*node)->children[0]->line_number);
+
+	vtr::free(array_name);
+
+	(*node)->children[1] = new_node_2;
+	(*node)->children[2] = NULL;
+	(*node)->num_children -= 1;
+
+	return;
+}
+
+/*--------------------------------------------------------------------------
+ * (function: make_chunk_size_name)
+ * 	This function creates a string to reference a 2D array chunk size for
+ * 	1D array indexing.
+ *------------------------------------------------------------------------*/
+char *make_chunk_size_name(char *instance_name_prefix, char *array_name)
+{
+	std::string to_return(instance_name_prefix);
+	to_return += "__";
+	to_return += array_name;
+	to_return += "_____CHUNK_SIZE_DEFINE";
+	return vtr::strdup(to_return.c_str());
+}
+
+/*--------------------------------------------------------------------------
+ * (function: get_chunk_size_node)
+ * 	This function gets the chunk size node for a 2D array, to be used for
+ *	1D array indexing.
+ *------------------------------------------------------------------------*/
+ast_node_t *get_chunk_size_node(char *instance_name_prefix, char *array_name, STRING_CACHE_LIST *local_string_cache_list)
+{
+	ast_node_t *array_size = NULL;
+	long sc_spot;
+	STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
+	char *temp_string = NULL;
+
+	temp_string = make_chunk_size_name(instance_name_prefix, array_name);
+
+	// look up chunk size
+	sc_spot = sc_lookup_string(local_param_table_sc, temp_string);
+	oassert(sc_spot != -1);
+	if (sc_spot != -1)
+	{
+		array_size = ast_node_deep_copy((ast_node_t *)local_param_table_sc->data[sc_spot]);
+	}
+
+	vtr::free(temp_string);
+
+	return array_size;
 }
 
 // /*---------------------------------------------------------------------------
