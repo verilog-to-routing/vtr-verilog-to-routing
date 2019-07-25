@@ -278,13 +278,7 @@ function parse_args() {
 					_exit_with_code "-1"
 				fi
 				
-				_CONFIG_OVERRIDE=$(readlink -f $2)
-
-				if [ ! -f "${_CONFIG_OVERRIDE}" ]
-				then
-					echo "File ${_CONFIG_OVERRIDE} does not exist"
-					_exit_with_code "-1"
-				fi
+				_CONFIG_OVERRIDE=$2
 
 				shift
 
@@ -342,6 +336,15 @@ _synthesis_params=""
 _simulation_params=""
 _circuit_list=""
 _arch_list=""
+
+init_args_for_test() {
+	_regression_params=""
+	_script_params=""
+	_synthesis_params=""
+	_simulation_params=""
+	_circuit_list=""
+	_arch_list=""
+}
 
 function populate_arg_from_file() {
 
@@ -522,16 +525,23 @@ function sim() {
 
 	##########################################
 	# setup the parameters
+
+	init_args_for_test
 	populate_arg_from_file "${benchmark_dir}/.conf"
 
 	##########################################
-	# use the default overrides or the one from the user
-	if [ -f ${_CONFIG_OVERRIDE} ]
+	# use the overrides from the user
+	if [ "_${_CONFIG_OVERRIDE}" != "_" ]
 	then
-		populate_arg_from_file "${_CONFIG_OVERRIDE}"
-	else
-		echo "Passed in an invalid global configuration file ${_CONFIG_OVERRIDE}"
-		_exit_with_code "-1"
+		_CONFIG_OVERRIDE=$(readlink -f ${_CONFIG_OVERRIDE})
+		if [ ! -f ${_CONFIG_OVERRIDE} ] 
+		then
+			echo "Passed in an invalid global configuration file ${_CONFIG_OVERRIDE}"
+			_exit_with_code "-1"
+		else
+			echo "Reading override from ${_CONFIG_OVERRIDE}"
+			populate_arg_from_file "${_CONFIG_OVERRIDE}"
+		fi
 	fi
 
 	####################################
@@ -569,7 +579,7 @@ function sim() {
 				;;
 				
 			--include_default_arch)
-				_arch_list="no_arch"
+				_arch_list="no_arch ${_arch_list}"
 				;;
 
 			*)
@@ -597,20 +607,19 @@ function sim() {
 
 	for circuit in $(echo ${_circuit_list})
 	do		
-
+		test_name=${circuit##*/}
 		input_verilog_file=""
 		input_blif_file=""
 		
 		basename=""
-		circuit_without_extension=""
-		case "${circuit}" in
+		case "${test_name}" in
 			*.v)
-				basename="${circuit%.v}"
+				basename="${test_name%.v}"
 				input_verilog_file="${circuit}"
 				_SYNTHESIS="on"
 			;;
 			*.blif)
-				basename="${circuit%.blif}"
+				basename="${test_name%.blif}"
 				input_blif_file="${circuit}"
 				# disable synthesis for blif files
 				_SYNTHESIS="off"
@@ -618,7 +627,7 @@ function sim() {
 			*)
 				if [ ${_CONCAT_CIRCUIT_LIST} == "on" ]
 				then
-					basename="${circuit}"
+					basename="${test_name}"
 					input_verilog_file="${circuit_list_temp}"
 					_SYNTHESIS="on"
 				else

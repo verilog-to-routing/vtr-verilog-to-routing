@@ -234,18 +234,15 @@ do
 			;;
 		
 		--time_limit)
-			log_it "Using timelimit on ressource"
 			TIME_LIMIT=$2
 			shift
 			;;
 
 		--limit_ressource) 
-			log_it "Using limit on ressource"
 			RESTRICT_RESSOURCE="on" 
 			;;
 
 		--verbosity)
-			_flag_is_number "$2"
 			case "_$2" in
 				_0)	VERBOSE="0";;
 				_1) VERBOSE="1";;
@@ -256,7 +253,9 @@ do
 					_exit_with_code "-1"
 				;;
 			esac
-			log_it "Using verbose output level $2"
+			log_it "Using verbose output level ${VERBOSE}\n"
+			
+			shift
 			;;
 
 		--tool)
@@ -307,7 +306,7 @@ fi
 if [[ -t 1 ]] && [[ -t 2 ]] && [[ ! -p /dev/stdout ]] && [[ ! -p /dev/stderr ]]
 then
 	COLORIZE_OUTPUT="on"
-	log_it "Using colorized output"
+	log_it "Using colorized output\n"
 fi
 
 if [ "${USE_LOGS}" == "on" ]
@@ -356,7 +355,7 @@ else
 	_ARGS=$(cat ${ARG_FILE})
 	if [ "${USE_LOGS}" == "on" ]
 	then
-		if [ "${VERBOSE}" > "1" ]
+		if [ "${VERBOSE}" == "2" ]
 		then
 			${EXEC_PREFIX} ${_ARGS} 2>&1 | tee ${LOG_FILE}
 		else
