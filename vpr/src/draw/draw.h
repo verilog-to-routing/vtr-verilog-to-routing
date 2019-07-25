@@ -11,6 +11,9 @@
 #include "draw_color.h"
 
 
+extern ezgl::application::settings settings;
+extern ezgl::application application;
+
 void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type pic_on_screen_val,
 		std::shared_ptr<SetupTimingInfo> timing_info);
 
@@ -51,8 +54,23 @@ ezgl::color to_ezgl_color(vtr::Color<float> color);
 ezgl::color to_ezgl_color(t_color color);
 ezgl::color to_ezgl_color(color_types color_enum);
 
-//ezgl functions
 void draw_screen();
 
+// search bar related functions defined in search_bar.cpp
+void search_and_highlight(GtkWidget *widget, ezgl::application *app);
+bool highlight_rr_nodes(int hit_node);
+void auto_zoom_rr_node(int rr_node_id);
+void highlight_blocks(ClusterBlockId clb_index);
+void highlight_nets(ClusterNetId net_id);
+void highlight_nets(std::string net_name);
+void highlight_blocks(std::string block_name);
+
+// search bar related functions defined in draw.cpp
+ezgl::rectangle draw_get_rr_chan_bbox(int inode);
+void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id);
+void highlight_nets(char *message, int hit_node);
+void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
+std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
+void deselect_all();
 
 #endif /* DRAW_H */

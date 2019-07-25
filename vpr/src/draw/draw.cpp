@@ -41,6 +41,7 @@ using namespace std;
 #include "hsl.h"
 #include "route_export.h"
 
+
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
 			  * track CPU runtime.														   */
 #include <time.h>
@@ -106,7 +107,6 @@ extern int num_pl_macros;
 
 /************************** File Scope Variables ****************************/
 
-std::string rr_highlight_message;
 ezgl::application::settings settings;
 ezgl::application application(settings);
 
@@ -114,9 +114,7 @@ bool window_mode = false;
 bool window_point_1_collected = false;
 ezgl::point2d point_1(0,0);
 ezgl::rectangle initial_world;
-ezgl::rectangle search_node;
-std::string search_type_info = "";
-std::string search_id_info = "";
+
 
 /********************** Subroutines local to this module ********************/
 void toggle_nets(GtkWidget *widget, ezgl::application *app);
@@ -129,7 +127,6 @@ void toggle_crit_path(GtkWidget *widget, ezgl::application *app);
 void toggle_block_pin_util(GtkWidget *widget, ezgl::application *app);
 void toggle_router_rr_costs(GtkWidget *widget, ezgl::application *app);
 void toggle_placement_macros(GtkWidget *widget, ezgl::application *app);
-void search_and_highlight(GtkWidget *widget, ezgl::application *app);
 
 static void drawplace(ezgl::renderer &g);
 static void drawnets(ezgl::renderer &g);
@@ -140,8 +137,6 @@ static void draw_routing_bb(ezgl::renderer &g);
 static void draw_routing_util(ezgl::renderer &g);
 static void draw_crit_path(ezgl::renderer &g);
 static void draw_placement_macros(ezgl::renderer &g);
-
-static void deselect_all();
 
 void act_on_key_press(ezgl::application *app, GdkEventKey *event, char *key_name);
 void act_on_mouse_press(ezgl::application *app, GdkEventButton *event, double x, double y);
@@ -154,7 +149,6 @@ static void draw_rr_edges(int from_node, ezgl::renderer &g);
 static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer &g);
 static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g);
 static void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer &g);
-static ezgl::rectangle draw_get_rr_chan_bbox(int inode);
 static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer &g);
 static void draw_x(float x, float y, float size, ezgl::renderer &g);
 static void draw_pin_to_pin(int opin, int ipin, ezgl::renderer &g);
@@ -169,22 +163,12 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_
         short switch_type, ezgl::renderer &g);
 static int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track);
 static bool draw_if_net_highlighted (ClusterNetId inet);
-static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
-static void highlight_nets(char *message, int hit_node);
-static void highlight_nets(ClusterNetId net_id);
-static void highlight_nets(std::string net_name);
 static int draw_check_rr_node_hit (float click_x, float click_y);
-static std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
 static void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set<int>& expanded_nodes);
 static bool highlight_rr_nodes(float x, float y);
-static bool highlight_rr_nodes(int hit_node);
-static void highlight_blocks(ClusterBlockId clb_index);
-static void highlight_blocks(std::string block_name);
 static void highlight_blocks(double x, double y);
-static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id);
 static void draw_reset_blk_colors();
 static void draw_reset_blk_color(ClusterBlockId blk_id);
-static void auto_zoom_rr_node(int rr_node_id);
 
 static inline bool LOD_screen_area_test_square(float width, float screen_area_threshold);
 static inline bool internal_LOD_screen_area_test(ezgl::rectangle test, float screen_area_threshold);
@@ -1855,7 +1839,7 @@ static void draw_chany_to_chany_edge(int from_node, int to_node,
  * wire has been clicked on by the user.
  * TODO: Fix this for global routing, currently for detailed only.
  */
-static ezgl::rectangle draw_get_rr_chan_bbox (int inode) {
+ezgl::rectangle draw_get_rr_chan_bbox (int inode) {
     double left = 0, right = 0, top = 0, bottom = 0;
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
@@ -2288,7 +2272,7 @@ static bool draw_if_net_highlighted (ClusterNetId inet) {
 /* If an rr_node has been clicked on, it will be highlighted in MAGENTA.
  * If so, and toggle nets is selected, highlight the whole net in that colour.
  */
-static void highlight_nets(char *message, int hit_node) {
+void highlight_nets(char *message, int hit_node) {
     t_trace *tptr;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -2321,7 +2305,7 @@ static void highlight_nets(char *message, int hit_node) {
  * fan_in into the node in blue and fan_out from the node in red. If de-highlighted,
  * de-highlight its fan_in and fan_out.
  */
-static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
+void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
     
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
@@ -2432,13 +2416,13 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
     return hit_node;
 }
 
-static std::set<int> draw_expand_non_configurable_rr_nodes(int from_node) {
+std::set<int> draw_expand_non_configurable_rr_nodes(int from_node) {
     std::set<int> expanded_nodes;
     draw_expand_non_configurable_rr_nodes_recurr(from_node, expanded_nodes);
     return expanded_nodes;
 }
 
-static void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set<int>& expanded_nodes) {
+void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set<int>& expanded_nodes) {
     auto& device_ctx = g_vpr_ctx.device();
     
     expanded_nodes.insert(from_node);
@@ -2481,28 +2465,9 @@ static bool highlight_rr_nodes(float x, float y) {
 #if defined(X11) && !defined(__MINGW32__)
 void act_on_key_press(ezgl::application *app, GdkEventKey *event, char *key_name) {
     //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
-//    switch(*key_name) {
-//        case 'S': {// Left Shift or Right Shift to zoom in
-//            float zoom_factor = get_zoom_factor();
-//            zoom_factor += (zoom_factor - 1.);
-//            zoom_factor = std::min(8.f, zoom_factor); //Clip maximum zoom factor
-//            VTR_LOG("Increasing graphics zoom factor to %f\n", zoom_factor);
-//            ezgl::zoom_in(app->get_canvas(app->get_main_canvas_id()), zoom_factor);
-//            break;
-//        } case 'C': {// Left Control or Right Control to zoom out
-//            float zoom_factor = get_zoom_factor();
-//            zoom_factor -= (zoom_factor - 1.) / 2;
-//            zoom_factor = std::max(1.0001f, zoom_factor); //Clip minimum zoom factor
-//            VTR_LOG("Decreasing graphics zoom factor to %f\n", zoom_factor);
-//            ezgl::zoom_out(app->get_canvas(app->get_main_canvas_id()), zoom_factor);
-//            break;
-//        } default:
-//            break; //Unrecognized
-//    }
-    
     std::string key(key_name);
     
-    if (key == "Return"){ // can also press enter to trigger search bar
+    if (key == "Return"){ // press enter to trigger the search bar
         GtkButton* search = (GtkButton*) app->get_object("Search");
         gtk_button_clicked (search);
     }
@@ -2632,19 +2597,14 @@ void act_on_mouse_move(ezgl::application *app, GdkEventButton *event, double x, 
             std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
             app->update_message(msg.c_str());
         } else {
-            //No rr node moused over, reset message
-            if(!rr_highlight_message.empty()) {
-                app->update_message(rr_highlight_message.c_str());
-            } else {
-                app->update_message(draw_state->default_message);
-            }
+            app->update_message(draw_state->default_message);
         }
     }
     event = event; // just for hiding warning message
 }
 
 
-static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) {
+void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) {
     int k, iclass;
     ClusterBlockId fanblk;
     
@@ -2704,7 +2664,7 @@ static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) 
 }
 
 
-static void deselect_all() {
+void deselect_all() {
     // Sets the color of all clbs, nets and rr_nodes to the default.
     // as well as clearing the highlighed sub-block
     
@@ -3727,174 +3687,6 @@ static void draw_placement_macros(ezgl::renderer &g) {
     }
 }
 
-void search_and_highlight(GtkWidget *widget, ezgl::application *app) {
-    t_draw_coords* draw_coords = get_draw_coords_vars();
-    t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    
-    // get ID from search bar
-    GtkEntry* text_entry = (GtkEntry *) app->get_object("TextInput");
-    const char* text = gtk_entry_get_text(text_entry);
-    std::string user_input = text;
-    std::stringstream ss(user_input);
-    
-    GObject* combo_box = (GObject*) app->get_object("SearchType");
-    gchar* type = gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT(combo_box));
-    std::string search_type(type);
-    
-    //reset first
-    deselect_all();
-    
-    if(search_type == "RR Node ID") {
-        // reset search
-        search_node = {{0, 0},{0, 0}};
-
-        int rr_node_id = -1;
-        ss >> rr_node_id;
-        
-        if(rr_node_id < 0 || rr_node_id >= device_ctx.rr_nodes.size()) {
-            std::cout << "node " << rr_node_id << " not exist (exceed the bound)" << std::endl;
-            app->refresh_drawing();
-            return;
-        }
-        
-        
-        highlight_rr_nodes(rr_node_id); 
-        auto_zoom_rr_node(rr_node_id);
-    }
-    
-    else if(search_type == "Block ID") {
-        
-        int block_id = -1;
-        ss >> block_id;
-        
-        highlight_blocks((ClusterBlockId) block_id);
-    }
-    
-    else if(search_type == "Block Name") {
-        std::string block_name = "";
-        ss >> block_name;
-        
-        highlight_blocks((std::string) block_name);
-    }
-    
-    else if(search_type == "Net ID") {
-        int net_id = -1;
-        ss >> net_id;
-        
-        highlight_nets((ClusterNetId) net_id);
-    }
-    
-    else if(search_type == "Net Name") {
-        std::string net_name = "";
-        ss >> net_name;
-        
-        highlight_nets((std::string) net_name);
-    }
-    app->refresh_drawing();
-}
-
-static bool highlight_rr_nodes(int hit_node) {
-    t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    
-    char message[250] = "";
-    
-    if (hit_node != OPEN) {
-        auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
-        for (auto node : nodes) {
-            
-            if (draw_state->draw_rr_node[node].color != ezgl::MAGENTA) {
-                /* If the node hasn't been clicked on before, highlight it
-                 * in magenta.
-                 */
-                draw_state->draw_rr_node[node].color = ezgl::MAGENTA;
-                draw_state->draw_rr_node[node].node_highlighted = true;
-                
-            } else {
-                //Using white color to represent de-highlighting (or
-                //de-selecting) of node.
-                draw_state->draw_rr_node[node].color = ezgl::WHITE;
-                draw_state->draw_rr_node[node].node_highlighted = false;
-            }
-            
-            //Print info about all nodes to terminal
-            print_rr_node(stdout, device_ctx.rr_nodes, node);
-        }
-        
-        //Show info about *only* hit node to graphics
-        std::string info = describe_rr_node(hit_node);
-        
-        sprintf(message, "Selected %s", info.c_str());
-        rr_highlight_message = message;
-        
-        if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
-            // If rr_graph is shown, highlight the fan-in/fan-outs for
-            // this node.
-            draw_highlight_fan_in_fan_out(nodes);
-        }
-    } else {
-        application.update_message(draw_state->default_message);
-        rr_highlight_message = "";
-        application.refresh_drawing();
-        return false; //No hit
-    }
-    
-    if (draw_state->show_nets)
-        highlight_nets(message, hit_node);
-    else
-        application.update_message(message);
-    
-    application.refresh_drawing();
-    return true;
-}
-
-
-static void auto_zoom_rr_node(int rr_node_id) {
-    t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    ezgl::rectangle rr_node;
-    
-    // find the location of the node
-    switch (device_ctx.rr_nodes[rr_node_id].type()) {
-        case IPIN:
-        case OPIN:
-        {
-            int i = device_ctx.rr_nodes[rr_node_id].xlow();
-            int j = device_ctx.rr_nodes[rr_node_id].ylow();
-            t_type_ptr type = device_ctx.grid[i][j].type;
-            int width_offset = device_ctx.grid[i][j].width_offset;
-            int height_offset = device_ctx.grid[i][j].height_offset;
-            int ipin = device_ctx.rr_nodes[rr_node_id].ptc_num();
-            float xcen, ycen;
-
-            int iside;
-            for (iside = 0; iside < 4; iside++) {
-                if (type->pinloc[width_offset][height_offset][iside][ipin]) {
-                    draw_get_rr_pin_coords(rr_node_id, &xcen, &ycen);
-                        rr_node = {{xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
-                                {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size}};
-                }
-            }
-            break;
-        }
-        case CHANX:
-        case CHANY:
-        {
-                rr_node = draw_get_rr_chan_bbox(rr_node_id);
-            break;
-        }
-        default:
-            break;
-    }
-    
-    // zoom to the node
-    ezgl::point2d offset = {rr_node.width()*1.5, rr_node.height()*1.5};
-    ezgl::rectangle zoom_view = {rr_node.m_first - offset, rr_node.m_second + offset};
-    (application.get_canvas(application.get_main_canvas_id()))->get_camera().set_world(zoom_view);
-    
-}
-
  static void highlight_blocks(double x, double y) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     
@@ -3964,82 +3756,4 @@ static void auto_zoom_rr_node(int rr_node_id) {
     application.update_message(msg);
     
     application.refresh_drawing();
-}
-
-static void highlight_blocks(ClusterBlockId clb_index) {    
-    char msg[vtr::bufsize];
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    
-    /// determine block ///
-    ezgl::rectangle clb_bbox;
-
-    VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
-    
-    ezgl::point2d point_in_clb = clb_bbox.bottom_left();
-    highlight_sub_block(point_in_clb, clb_index, cluster_ctx.clb_nlist.block_pb(clb_index));
-    
-    
-    if (get_selected_sub_block_info().has_selection()) {
-        t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
-        sprintf(msg, "sub-block %s (a \"%s\") selected",
-                selected_subblock->name, selected_subblock->pb_graph_node->pb_type->name);
-    } else {
-        /* Highlight block and fan-in/fan-outs. */
-        draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
-        sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[clb_index].loc.x, place_ctx.block_locs[clb_index].loc.y);
-    }
-    
-    application.update_message(msg);
-    
-    application.refresh_drawing();
-}
-
-
-static void highlight_nets(ClusterNetId net_id) {
-    t_trace *tptr;
-    auto& route_ctx = g_vpr_ctx.routing();
-    
-    t_draw_state* draw_state = get_draw_state_vars();
-    
-    if(route_ctx.trace.size() == 0) return;
-    
-    for (tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
-        draw_state->net_color[net_id] = ezgl::MAGENTA;
-    }
-}
-
-
-static void highlight_nets(std::string net_name) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    ClusterNetId net_id = ClusterNetId::INVALID();
-    
-    for (auto i : cluster_ctx.clb_nlist.nets()) {
-        if(cluster_ctx.clb_nlist.net_name(i).c_str() == net_name){
-            net_id = i;
-            break;
-        }
-    }
-            
-    if(net_id == ClusterNetId::INVALID()) return; //name not exist
-    
-    highlight_nets(net_id);//found net
-}
-
-
-static void highlight_blocks(std::string block_name) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    ClusterBlockId block_id = ClusterBlockId::INVALID();
-        
-    for (auto i : cluster_ctx.clb_nlist.blocks()) {
-        if(cluster_ctx.clb_nlist.block_name(i).c_str() == block_name){
-            block_id = i;
-            break;
-        }
-    }
-            
-    if(block_id == ClusterBlockId::INVALID()) return; //name not exist
-    
-    highlight_blocks(block_id);//found block
 }
