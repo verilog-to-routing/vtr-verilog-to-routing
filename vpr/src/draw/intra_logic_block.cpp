@@ -34,22 +34,23 @@ using namespace std;
 #include "draw_global.h"
 #include "graphics.h"
 #include "draw.h"
+#include "draw_color.h"
 
 /************************* Subroutines local to this file. *******************************/
 
 static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, float parent_width, float parent_height);
-static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height);
 static int draw_internal_find_max_lvl(const t_pb_type& pb_type);
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_bound_box& parent_bbox, const t_type_ptr type);
+static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height);
+static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_type_ptr type, ezgl::renderer& g);
 static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_type_ptr type);
 
-void draw_selected_pb_flylines();
-void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms);
+void draw_selected_pb_flylines(ezgl::renderer& g);
+void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezgl::renderer& g);
 std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb);
 void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 
-void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin);
-t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const t_point& local_pt, int max_depth);
+void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin, ezgl::renderer& g);
+t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
 
 /************************* Subroutine definitions begin *********************************/
 
@@ -102,29 +103,32 @@ void draw_internal_init_blk() {
         int num_sub_tiles = type_desc.capacity;
 
         // set the clb dimensions
-        t_bound_box& clb_bbox = draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0);
+        ezgl::rectangle& clb_bbox = draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0);
+        ezgl::point2d bot_left = clb_bbox.bottom_left();
+        ezgl::point2d top_right = clb_bbox.top_right();
 
         // note, that all clbs of the same type are the same size,
         // and that consequently we have *one* model for each type.
-        clb_bbox.bottom_left() = t_point(0, 0);
+        bot_left = {0, 0};
         if (size_t(type_desc.width) > device_ctx.grid.width() || size_t(type_desc.height) > device_ctx.grid.height()) {
             // in this case, the clb certainly wont't fit, but this prevents
             // an out-of-bounds access, and provides some sort of (probably right)
             // value
-            clb_bbox.top_right() = t_point(
+            top_right = ezgl::point2d(
                 (draw_coords->tile_x[1] - draw_coords->tile_x[0]) * (type_desc.width - 1),
                 (draw_coords->tile_y[1] - draw_coords->tile_y[0]) * (type_desc.height - 1));
         } else {
-            clb_bbox.top_right() = t_point(
+            top_right = ezgl::point2d(
                 draw_coords->tile_x[type_desc.width - 1],
                 draw_coords->tile_y[type_desc.height - 1]);
         }
-        clb_bbox.top_right() += t_point(
+        top_right += ezgl::point2d(
             draw_coords->get_tile_width() / num_sub_tiles,
             draw_coords->get_tile_width());
 
+        clb_bbox = ezgl::rectangle(bot_left, top_right);
         draw_internal_load_coords(type_descriptor_index, pb_graph_head_node,
-                                  clb_bbox.get_width(), clb_bbox.get_height());
+                                  clb_bbox.width(), clb_bbox.height());
 
         /* Determine the max number of sub_block levels in the FPGA */
         draw_state->max_sub_blk_lvl = max(draw_internal_find_max_lvl(*type_desc.pb_type),
@@ -132,7 +136,7 @@ void draw_internal_init_blk() {
     }
 }
 
-void draw_internal_draw_subblk() {
+void draw_internal_draw_subblk(ezgl::renderer& g) {
     t_draw_state* draw_state = get_draw_state_vars();
     if (!draw_state->show_blk_internal) {
         return;
@@ -162,15 +166,13 @@ void draw_internal_draw_subblk() {
                 /* Safety check, that physical blocks exists in the CLB */
                 if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr)
                     continue;
-
-                draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb(bnum), t_bound_box(0, 0, 0, 0), cluster_ctx.clb_nlist.block_type(bnum));
+                draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb(bnum), ezgl::rectangle({0, 0}, 0, 0), cluster_ctx.clb_nlist.block_type(bnum), g);
             }
         }
     }
-
     //Draw the atom-level net flylines for the selected pb
     //(inputs: blue, outputs: red, internal: orange)
-    draw_selected_pb_flylines();
+    draw_selected_pb_flylines(g);
 }
 
 /* This function traverses through the pb_graph of a certain physical block type and
@@ -192,7 +194,6 @@ static int draw_internal_find_max_lvl(const t_pb_type& pb_type) {
             max_levels = max(draw_internal_find_max_lvl(mode.pb_type_children[j]), max_levels);
         }
     }
-
     return max_levels;
 }
 
@@ -254,7 +255,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     auto& place_ctx = g_vpr_ctx.placement();
 
     // get the bbox for this pb type
-    t_bound_box& pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
+    ezgl::rectangle& pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
 
     const float FRACTION_PARENT_PADDING_X = 0.01;
 
@@ -264,6 +265,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 
     const float FRACTION_CHILD_MARGIN_X = 0.025;
     const float FRACTION_CHILD_MARGIN_Y = 0.04;
+    double left, bot, right, top;
 
     int capacity = device_ctx.block_types[type_descrip_index].capacity;
     if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && place_ctx.grid_blocks[1][0].usage != 0
@@ -289,8 +291,8 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     child_height = parent_drawing_height / num_pb;
 
     /* The starting point to draw the physical block. */
-    pb_bbox.left() = child_width * type_index + sub_tile_x + FRACTION_CHILD_MARGIN_X * child_width;
-    pb_bbox.bottom() = child_height * pb_index + sub_tile_y + FRACTION_CHILD_MARGIN_Y * child_height;
+    left = child_width * type_index + sub_tile_x + FRACTION_CHILD_MARGIN_X * child_width;
+    bot = child_height * pb_index + sub_tile_y + FRACTION_CHILD_MARGIN_Y * child_height;
 
     /* Leave some space between different pb_types. */
     child_width *= 1 - FRACTION_CHILD_MARGIN_X * 2;
@@ -298,8 +300,10 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     child_height *= 1 - FRACTION_CHILD_MARGIN_Y * 2;
 
     /* Endpoint for drawing the pb_type */
-    pb_bbox.right() = pb_bbox.left() + child_width;
-    pb_bbox.top() = pb_bbox.bottom() + child_height;
+    right = left + child_width;
+    top = bot + child_height;
+
+    pb_bbox = ezgl::rectangle({right, top}, {left, bot});
 
     *blk_width = child_width;
     *blk_height = child_height;
@@ -311,73 +315,72 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
  * which a netlist block can map to, and draws each sub-block inside its parent block. With
  * each click on the "Blk Internal" button, a new level is shown.
  */
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_bound_box& parent_bbox, const t_type_ptr type) {
+static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_type_ptr type, ezgl::renderer& g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
     t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
     t_pb_type* pb_type = pb->pb_graph_node->pb_type;
-    t_bound_box abs_bbox = draw_coords->get_pb_bbox(clb_index, *pb->pb_graph_node) + parent_bbox.bottom_left();
+    ezgl::rectangle temp = draw_coords->get_pb_bbox(clb_index, *pb->pb_graph_node);
+    ezgl::rectangle abs_bbox = temp + parent_bbox.bottom_left();
 
     // if we've gone too far, don't draw anything
     if (pb_type->depth > draw_state->show_blk_internal) {
         return;
     }
-
     /// first draw box ///
 
     if (pb_type->depth == 0) {
         if (!is_top_lvl_block_highlighted(clb_index, type)) {
             // if this is a top level pb, and only if it isn't selected (ie. a funny colour),
             // overwrite it. (but stil draw the text)
-            setcolor(WHITE);
-            fillrect(abs_bbox);
-            setcolor(BLACK);
-            setlinestyle(SOLID);
-            drawrect(abs_bbox);
+
+            g.set_color(ezgl::WHITE);
+            g.fill_rectangle(abs_bbox);
+            g.set_color(ezgl::BLACK);
+            g.set_line_dash(ezgl::line_dash::none);
+            g.draw_rectangle(abs_bbox);
         }
     } else {
         if (pb->name != nullptr) {
             // If block is used, draw it in colour with solid border.
-
-            setlinestyle(SOLID);
+            g.set_line_dash(ezgl::line_dash::none);
 
             // type_index indicates what type of block.
             const int type_index = type->index;
 
             // determine default background color
             if (sel_sub_info.is_selected(pb->pb_graph_node, clb_index)) {
-                setcolor(SELECTED_COLOR);
+                g.set_color(SELECTED_COLOR);
             } else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb_index)) {
-                setcolor(DRIVES_IT_COLOR);
+                g.set_color(DRIVES_IT_COLOR);
             } else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb_index)) {
-                setcolor(DRIVEN_BY_IT_COLOR);
+                g.set_color(DRIVEN_BY_IT_COLOR);
             } else if (pb_type->depth != draw_state->show_blk_internal && pb->child_pbs != nullptr) {
-                setcolor(WHITE); // draw anthing else that will have a child as white
+                g.set_color(ezgl::WHITE); // draw anything else that will have a child as white
             } else if (type_index < 3) {
-                setcolor(LIGHTGREY);
+                g.set_color(blk_LIGHTGREY);
             } else if (type_index < 3 + MAX_BLOCK_COLOURS) {
-                setcolor(BISQUE + MAX_BLOCK_COLOURS + type_index - 3);
+                g.set_color((block_colors[MAX_BLOCK_COLOURS + type_index - 3]));
             } else {
-                setcolor(BISQUE + 2 * MAX_BLOCK_COLOURS - 1);
+                g.set_color((block_colors[2 * MAX_BLOCK_COLOURS - 1]));
             }
         } else {
             // If block is not used, draw as empty block (ie. white
             // background with dashed border).
 
-            setlinestyle(DASHED);
-            setcolor(WHITE);
+            g.set_line_dash(ezgl::line_dash::asymmetric_5_3);
+            g.set_color(ezgl::WHITE);
         }
-
-        fillrect(abs_bbox);
-        setcolor(BLACK);
-        drawrect(abs_bbox);
+        g.fill_rectangle(abs_bbox);
+        g.set_color(ezgl::BLACK);
+        g.draw_rectangle(abs_bbox);
     }
 
     /// then draw text ///
 
     if (pb->name != nullptr) {
-        setfontsize(16); // note: calc_text_xbound(...) assumes this is 16
+        g.set_font_size(16); // note: calc_text_xbound(...) assumes this is 16
         if (pb_type->depth == draw_state->show_blk_internal || pb->child_pbs == nullptr) {
             // If this pb is at the lowest displayed level, or has no more children, then
             // label it in the center with its type and name
@@ -389,28 +392,30 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_b
 
             sprintf(blk_tag, "%s(%s)", pb_type->name, pb->name);
 
-            drawtext(
-                t_point(abs_bbox.get_xcenter(), abs_bbox.get_ycenter()),
+            g.draw_text(
+                abs_bbox.center(),
                 blk_tag,
-                abs_bbox);
+                abs_bbox.width(),
+                abs_bbox.height());
 
             free(blk_tag);
         } else {
             // else (ie. has chilren, and isn't at the lowest displayed level)
             // just label its type, and put it up at the top so we can see it
-            drawtext(
-                t_point(
-                    abs_bbox.get_xcenter(),
-                    abs_bbox.top() - (abs_bbox.get_height()) / 15.0),
+            g.draw_text(
+                ezgl::point2d(abs_bbox.center_x(),
+                              abs_bbox.top() - (abs_bbox.height()) / 15.0),
                 pb_type->name,
-                abs_bbox);
+                abs_bbox.width(),
+                abs_bbox.height());
         }
     } else {
         // If child block is not used, label it only by its type
-        drawtext(
-            t_point(abs_bbox.get_xcenter(), abs_bbox.get_ycenter()),
+        g.draw_text(
+            abs_bbox.center(),
             pb_type->name,
-            abs_bbox);
+            abs_bbox.width(),
+            abs_bbox.height());
     }
 
     /// now recurse on the child pbs. ///
@@ -440,31 +445,30 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_b
             if (pb_child_type == nullptr || pb_child_type->num_modes == 0) {
                 continue;
             }
-
             // now recurse
-            draw_internal_pb(clb_index, child_pb, abs_bbox, type);
+            draw_internal_pb(clb_index, child_pb, abs_bbox, type, g);
         }
     }
 }
 
-void draw_selected_pb_flylines() {
+void draw_selected_pb_flylines(ezgl::renderer& g) {
     t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
     const t_pb* pb = sel_sub_info.get_selected_pb();
 
     if (pb) {
         auto atoms = collect_pb_atoms(pb);
-        draw_atoms_fanin_fanout_flylines(atoms);
+        draw_atoms_fanin_fanout_flylines(atoms, g);
     }
 }
 
-void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms) {
+void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezgl::renderer& g) {
     std::set<AtomBlockId> atoms_set(atoms.begin(), atoms.end());
 
     auto& atom_nl = g_vpr_ctx.atom().nlist;
 
-    setlinestyle(SOLID);
-    setlinewidth(2);
+    g.set_line_dash(ezgl::line_dash::none);
+    g.set_line_width(2);
 
     for (AtomBlockId blk : atoms) {
         for (AtomPinId ipin : atom_nl.block_input_pins(blk)) {
@@ -474,16 +478,16 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms) {
             AtomBlockId net_driver_blk = atom_nl.pin_block(net_driver);
 
             if (atoms_set.count(net_driver_blk)) {
-                setcolor(ORANGE); //Internal
+                g.set_color(ezgl::ORANGE); //Internal
             } else {
-                setcolor(BLUE); //External input
+                g.set_color(ezgl::BLUE); //External input
             }
 
-            t_point start = atom_pin_draw_coord(net_driver);
-            t_point end = atom_pin_draw_coord(ipin);
-            drawline(start, end);
-            draw_triangle_along_line(start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-            draw_triangle_along_line(start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+            ezgl::point2d start = atom_pin_draw_coord(net_driver);
+            ezgl::point2d end = atom_pin_draw_coord(ipin);
+            g.draw_line(start, end);
+            draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
+            draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
         }
 
         for (AtomPinId opin : atom_nl.block_output_pins(blk)) {
@@ -493,16 +497,16 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms) {
                 AtomBlockId net_sink_blk = atom_nl.pin_block(net_sink);
 
                 if (atoms_set.count(net_sink_blk)) {
-                    setcolor(ORANGE); //Internal
+                    g.set_color(ezgl::ORANGE); //Internal
                 } else {
-                    setcolor(RED); //External output
+                    g.set_color(ezgl::RED); //External output
                 }
 
-                t_point start = atom_pin_draw_coord(opin);
-                t_point end = atom_pin_draw_coord(net_sink);
-                drawline(start, end);
-                draw_triangle_along_line(start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-                draw_triangle_along_line(start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+                ezgl::point2d start = atom_pin_draw_coord(opin);
+                ezgl::point2d end = atom_pin_draw_coord(net_sink);
+                g.draw_line(start, end);
+                draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
+                draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
             }
         }
     }
@@ -535,11 +539,13 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms) {
     }
 }
 
-void draw_logical_connections() {
+void draw_logical_connections(ezgl::renderer& g) {
     const t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();
     t_draw_state* draw_state = get_draw_state_vars();
 
     auto& atom_ctx = g_vpr_ctx.atom();
+
+    g.set_line_dash(ezgl::line_dash::none);
 
     // iterate over all the atom nets
     for (auto net_id : atom_ctx.nlist.nets()) {
@@ -557,16 +563,16 @@ void draw_logical_connections() {
             ClusterBlockId sink_clb = atom_ctx.lookup.atom_clb(sink_blk_id);
 
             if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
-                setcolor(DRIVES_IT_COLOR);
+                g.set_color(DRIVES_IT_COLOR);
             } else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {
-                setcolor(DRIVEN_BY_IT_COLOR);
+                g.set_color(DRIVEN_BY_IT_COLOR);
             } else if (draw_state->show_nets == DRAW_LOGICAL_CONNECTIONS && (draw_state->showing_sub_blocks() || src_clb != sink_clb)) {
-                setcolor(BLACK); // if showing all, draw the other ones in black
+                g.set_color(ezgl::BLACK); // if showing all, draw the other ones in black
             } else {
                 continue; // not showing all, and not the sperified block, so skip
             }
 
-            draw_one_logical_connection(driver_pin_id, sink_pin_id);
+            draw_one_logical_connection(driver_pin_id, sink_pin_id, g);
         }
     }
 }
@@ -583,11 +589,7 @@ void draw_logical_connections() {
  * The search inputs parameter tells this function to search
  * inputs (if true) or outputs (if false).
  */
-void find_pin_index_at_model_scope(
-    const AtomPinId pin_id,
-    const AtomBlockId blk_id,
-    int* pin_index,
-    int* total_pins) {
+void find_pin_index_at_model_scope(const AtomPinId pin_id, const AtomBlockId blk_id, int* pin_index, int* total_pins) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     AtomPortId port_id = atom_ctx.nlist.pin_port(pin_id);
@@ -628,13 +630,12 @@ void find_pin_index_at_model_scope(
  * The *_abs_bbox parameters are for mild optmization, as the absolute bbox can be calculated
  * more effeciently elsewhere.
  */
-void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin) {
-    t_point src_point = atom_pin_draw_coord(src_pin);
-    t_point sink_point = atom_pin_draw_coord(sink_pin);
+void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin, ezgl::renderer& g) {
+    ezgl::point2d src_point = atom_pin_draw_coord(src_pin);
+    ezgl::point2d sink_point = atom_pin_draw_coord(sink_pin);
 
     // draw a link connecting the pins.
-    drawline(src_point.x, src_point.y,
-             sink_point.x, sink_point.y);
+    g.draw_line(src_point, sink_point);
 
     auto& atom_ctx = g_vpr_ctx.atom();
     if (atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(src_pin)) == atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(sink_pin))) {
@@ -642,14 +643,14 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
         float center_x = (src_point.x + sink_point.x) / 2;
         float center_y = (src_point.y + sink_point.y) / 2;
 
-        draw_triangle_along_line(
-            center_x, center_y,
-            src_point.x, sink_point.x,
-            src_point.y, sink_point.y);
+        draw_triangle_along_line(g,
+                                 center_x, center_y,
+                                 src_point.x, sink_point.x,
+                                 src_point.y, sink_point.y);
     } else {
         // if they are not, put 2 near each end
-        draw_triangle_along_line(src_point, sink_point, 0.05);
-        draw_triangle_along_line(src_point, sink_point, 0.95);
+        draw_triangle_along_line(g, src_point, sink_point, 0.05);
+        draw_triangle_along_line(g, src_point, sink_point, 0.95);
     }
 }
 
@@ -663,20 +664,20 @@ static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_ty
     draw_state = get_draw_state_vars();
 
     if (type->index < 3) {
-        if (draw_state->block_color[blk_id] == LIGHTGREY)
+        if (draw_state->block_color[blk_id] == to_ezgl_color(LIGHTGREY))
             return false;
     } else if (type->index < 3 + MAX_BLOCK_COLOURS) {
-        if (draw_state->block_color[blk_id] == (color_types)(BISQUE + MAX_BLOCK_COLOURS + type->index - 3))
+        if (draw_state->block_color[blk_id] == to_ezgl_color((color_types)(BISQUE + MAX_BLOCK_COLOURS + type->index - 3)))
             return false;
     } else {
-        if (draw_state->block_color[blk_id] == (color_types)(BISQUE + 2 * MAX_BLOCK_COLOURS - 1))
+        if (draw_state->block_color[blk_id] == to_ezgl_color((color_types)(BISQUE + 2 * MAX_BLOCK_COLOURS - 1)))
             return false;
     }
 
     return true;
 }
 
-int highlight_sub_block(const t_point& point_in_clb, ClusterBlockId clb_index, t_pb* pb) {
+int highlight_sub_block(const ezgl::point2d& point_in_clb, ClusterBlockId clb_index, t_pb* pb) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     int max_depth = draw_state->show_blk_internal;
@@ -696,11 +697,7 @@ int highlight_sub_block(const t_point& point_in_clb, ClusterBlockId clb_index, t
  * the given location. local_pt is relative to the given pb, and pb should
  * be in clb.
  */
-t_pb* highlight_sub_block_helper(
-    const ClusterBlockId clb_index,
-    t_pb* pb,
-    const t_point& local_pt,
-    int max_depth) {
+t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
@@ -728,10 +725,10 @@ t_pb* highlight_sub_block_helper(
             t_pb_graph_node* pb_child_node = child_pb->pb_graph_node;
 
             // get the bbox for this child
-            const t_bound_box& bbox = draw_coords->get_pb_bbox(clb_index, *pb_child_node);
+            const ezgl::rectangle& bbox = draw_coords->get_pb_bbox(clb_index, *pb_child_node);
 
             // If child block is being used, check if it intersects
-            if (child_pb->name != nullptr && bbox.intersects(local_pt)) {
+            if (child_pb->name != nullptr && bbox.contains(local_pt)) {
                 // check farther down the graph, see if we can find
                 // something more specific.
                 t_pb* subtree_result = highlight_sub_block_helper(
@@ -752,7 +749,6 @@ t_pb* highlight_sub_block_helper(
 t_selected_sub_block_info& get_selected_sub_block_info() {
     // used to keep track of the selected sub-block.
     static t_selected_sub_block_info selected_sub_block_info;
-
     return selected_sub_block_info;
 }
 
@@ -765,6 +761,7 @@ t_selected_sub_block_info::t_selected_sub_block_info() {
 }
 
 template<typename HashType>
+
 void add_all_children(const t_pb* pb, const ClusterBlockId clb_index, std::unordered_set<t_selected_sub_block_info::gnode_clb_pair, HashType>& set) {
     if (pb == nullptr) {
         return;
@@ -870,14 +867,12 @@ t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(ClusterBlockId clb_index
 
 t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const AtomPinId atom_pin) {
     auto& atom_ctx = g_vpr_ctx.atom();
-
     clb_index = atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(atom_pin));
     pb_gnode = atom_ctx.lookup.atom_pb_graph_node(atom_ctx.nlist.pin_block(atom_pin));
 }
 
 bool t_selected_sub_block_info::clb_pin_tuple::operator==(const clb_pin_tuple& rhs) const {
-    return clb_index == rhs.clb_index
-           && pb_gnode == rhs.pb_gnode;
+    return clb_index == rhs.clb_index && pb_gnode == rhs.pb_gnode;
 }
 
 /*

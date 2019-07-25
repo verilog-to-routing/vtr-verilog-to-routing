@@ -24,4 +24,9 @@
         internal_path="libs/EXTERNAL/libtatum" 
         external_url="https://github.com/kmurray/tatum.git" 
         default_external_ref="master"/>
+    <subtree 
+        name="libezgl" 
+        internal_path="libs/EXTERNAL/libezgl" 
+        external_url="https://github.com/mariobadr/ezgl.git" 
+        default_external_ref="master"/>
 </subtrees>
