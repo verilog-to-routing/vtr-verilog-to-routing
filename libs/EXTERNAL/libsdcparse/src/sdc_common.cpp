@@ -323,7 +323,7 @@ void sdc_set_multicycle_path_set_mcp_value(Callback& callback, const Lexer& lexe
 void sdc_set_multicycle_path_add_to_from_group(Callback& callback, const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path, 
                                                                      StringGroup group, 
                                                                      FromToType to_from_dir) {
-    assert(group.type == StringGroupType::CLOCK || group.type == StringGroupType::STRING);
+    assert(group.type == StringGroupType::CLOCK || group.type == StringGroupType::STRING || group.type == StringGroupType::PIN);
 
     //Error checking
     if(to_from_dir == FromToType::FROM) {

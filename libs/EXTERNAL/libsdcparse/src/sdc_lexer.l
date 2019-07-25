@@ -56,7 +56,7 @@ FLOAT_EXP ([eE][-+]?{DIGIT10}+)
 FLOAT_NUMBER ({NAN}|([-+]?({INF}|({FLOAT_BASE}{FLOAT_EXP}?))))
 INT_NUMBER ([-+]?{DIGIT10}+)
 ALPHA [a-zA-Z_]
-SYMBOL [-~|:*\\/]
+SYMBOL [-~|:*\\/^]
 ID_FIRST ({ALPHA})
 ID_MID ({ALPHA}|{DIGIT10}|{SYMBOL})
 ID_INDEX (\[{DIGIT10}+\])
