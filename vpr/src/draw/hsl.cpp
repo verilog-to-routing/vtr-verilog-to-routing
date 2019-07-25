@@ -3,7 +3,6 @@
 float hue2rgb(float v1, float v2, float vH);
 
 hsl color2hsl(ezgl::color color) {
-
     float r = color.red / 255.;
     float g = color.green / 255.;
     float b = color.blue / 255.;

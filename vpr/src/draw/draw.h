@@ -10,9 +10,7 @@
 #include "ezgl/graphics.hpp"
 #include "draw_color.h"
 
-
-void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type pic_on_screen_val,
-		std::shared_ptr<SetupTimingInfo> timing_info);
+void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> timing_info);
 
 void alloc_draw_structs(const t_arch* arch);
 
@@ -27,9 +25,9 @@ void free_draw_structs();
 void draw_get_rr_pin_coords(int inode, float* xcen, float* ycen);
 void draw_get_rr_pin_coords(const t_rr_node* node, float* xcen, float* ycen);
 
-void draw_triangle_along_line(ezgl::renderer &g, ezgl::point2d start, ezgl::point2d end, float relative_position=1., float arrow_size=DEFAULT_ARROW_SIZE);
-void draw_triangle_along_line(ezgl::renderer &g, ezgl::point2d loc, ezgl::point2d start, ezgl::point2d end, float arrow_size=DEFAULT_ARROW_SIZE);
-void draw_triangle_along_line(ezgl::renderer &g, float xend, float yend, float x1 ,float x2, float y1, float y2, float arrow_size=DEFAULT_ARROW_SIZE);
+void draw_triangle_along_line(ezgl::renderer& g, ezgl::point2d start, ezgl::point2d end, float relative_position = 1., float arrow_size = DEFAULT_ARROW_SIZE);
+void draw_triangle_along_line(ezgl::renderer& g, ezgl::point2d loc, ezgl::point2d start, ezgl::point2d end, float arrow_size = DEFAULT_ARROW_SIZE);
+void draw_triangle_along_line(ezgl::renderer& g, float xend, float yend, float x1, float x2, float y1, float y2, float arrow_size = DEFAULT_ARROW_SIZE);
 
 const ezgl::color SELECTED_COLOR = ezgl::GREEN;
 const ezgl::color DRIVES_IT_COLOR = ezgl::RED;
@@ -52,6 +50,5 @@ ezgl::color to_ezgl_color(color_types color_enum);
 
 //ezgl functions
 void draw_screen();
-
 
 #endif /* DRAW_H */

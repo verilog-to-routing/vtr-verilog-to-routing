@@ -58,13 +58,13 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block
     auto& device_ctx = g_vpr_ctx.device();
     const int clb_type_id = device_ctx.grid[grid_x][grid_y].type->index;
     t_draw_pb_type_info& blk_type_info = this->blk_info.at(clb_type_id);
-    
+
     ezgl::rectangle result = blk_type_info.get_pb_bbox(pb_gnode);
-    
+
     // if getting clb bbox, apply location info.
     if (pb_gnode.is_root()) {
-        float sub_blk_offset = this->tile_width * (sub_block_index/(float)device_ctx.grid[grid_x][grid_y].type->capacity);
-        
+        float sub_blk_offset = this->tile_width * (sub_block_index / (float)device_ctx.grid[grid_x][grid_y].type->capacity);
+
         result += ezgl::point2d(this->tile_x[grid_x], this->tile_y[grid_y]);
         if (sub_block_index != 0) {
             result += ezgl::point2d(sub_blk_offset, 0);
@@ -75,7 +75,7 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block
 
 ezgl::rectangle t_draw_coords::get_absolute_pb_bbox(const ClusterBlockId clb_index, const t_pb_graph_node* pb_gnode) {
     ezgl::rectangle result = this->get_pb_bbox(clb_index, *pb_gnode);
-    
+
     // go up the graph, adding the parent bboxes to the result,
     // ie. make it relative to one level higher each time.
     while (pb_gnode && !pb_gnode->is_root()) {
@@ -83,7 +83,7 @@ ezgl::rectangle t_draw_coords::get_absolute_pb_bbox(const ClusterBlockId clb_ind
         result += parents_bbox.bottom_left();
         pb_gnode = pb_gnode->parent_pb_graph_node;
     }
-    
+
     return result;
 }
 
