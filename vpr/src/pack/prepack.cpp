@@ -1113,6 +1113,7 @@ static bool check_alm_input_limitation(t_pack_molecule* molecule) {
     auto pattern_block = molecule->pack_pattern->root_block;
 
     const auto ALM_INPUTS = get_alm_inputs_feeding_luts(molecule);
+    const size_t ALUT_INPUTs = (ALM_INPUTS == 8)? 5 : 4;
 
     auto cin_pin = molecule->pack_pattern->chain_root_pins[0][0];
     auto cin_port = cin_pin->port;
@@ -1169,7 +1170,7 @@ static bool check_alm_input_limitation(t_pack_molecule* molecule) {
                auto alm_new_placement_index = get_pb_placement_index(connection->to_block, alm_name);
                auto alut_new_placement_index = get_pb_placement_index(connection->to_block, alut_name);
                if (alm_placement_index != alm_new_placement_index) {
-                   if (alm_nets.size() > ALM_INPUTS || alut_nets.size() > 4) {
+                   if (alm_nets.size() > ALM_INPUTS || alut_nets.size() > ALUT_INPUTs) {
                        print_nets(alm_nets, alm_placement_index, alut_placement_index);
                        modify_molecule(molecule, pattern_block);
                        return check_alm_input_limitation(molecule);
@@ -1179,7 +1180,7 @@ static bool check_alm_input_limitation(t_pack_molecule* molecule) {
                    alm_placement_index = alm_new_placement_index;
                    alut_placement_index = alut_new_placement_index;
                } else if (alut_placement_index != alut_new_placement_index) {
-                   if (alut_nets.size() > 4) {
+                   if (alut_nets.size() > ALUT_INPUTs) {
                        print_nets(alm_nets, alm_placement_index, alut_placement_index);
                        modify_molecule(molecule, pattern_block);
                        return check_alm_input_limitation(molecule);
