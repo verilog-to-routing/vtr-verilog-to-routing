@@ -724,6 +724,8 @@ function sim() {
 	SYNTH_LIST="$(find ${NEW_RUN_DIR}/${bench_name}/ -name ${wrapper_synthesis_file_name})"
 	if [ "${_SYNTHESIS}" == "on" ] && [ "_${SYNTH_LIST}" != "_" ]
 	then
+		echo " ========= Synthesis Tests"
+
 		find ${NEW_RUN_DIR}/${bench_name}/ -name ${wrapper_synthesis_file_name} | xargs -n1 -P${_threads} -I cmd_file ${SHELL} -c '$(cat cmd_file)'
 
 		# disable the test on failure
@@ -735,7 +737,7 @@ function sim() {
 	SIM_LIST="$(find ${NEW_RUN_DIR}/${bench_name}/ -name ${wrapper_simulation_file_name})"
 	if [ "${_SIMULATE}" == "on" ] && [ "_${SIM_LIST}" != "_" ]
 	then
-		echo " ========= Simulating Circuits"
+		echo " ========= Simulation Tests"
 
 		#run the simulation in parallel
 		find ${NEW_RUN_DIR}/${bench_name}/ -name ${wrapper_simulation_file_name} | xargs -n1 -P${_threads} -I cmd_file ${SHELL} -c '$(cat cmd_file)'
