@@ -354,6 +354,10 @@ class SdcParseCallback : public sdcparse::Callback {
             to_clocks = get_clocks(cmd.to);
         } else if (cmd.to.type == sdcparse::StringGroupType::PIN) {
             to_pins = get_pins(cmd.to);
+            if (to_pins.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "set_multicycle_path requires non-empty pin set for -to [get_pins ...]");
+            }
         } else {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "set_multicycle_path only supports specifying clocks or pins for -to");
