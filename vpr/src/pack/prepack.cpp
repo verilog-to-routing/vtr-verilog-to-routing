@@ -1214,6 +1214,7 @@ static bool check_alm_input_limitation(t_pack_molecule* molecule) {
                    get_block_input_nets(lut_id, alm_nets);
                    get_block_input_nets(lut_id, alut_nets);
                    VTR_LOG("LUT %s (%zu)\n", atom_ctx.nlist.block_name(lut_id).c_str(), atom_ctx.nlist.block_input_pins(lut_id).size());
+                   if (atom_ctx.nlist.block_input_pins(lut_id).size() > 2) return false;
                    if (atom_ctx.nlist.block_input_pins(lut_id).empty()) {
                        alm_nets.insert((AtomNetId) 0);
                        alut_nets.insert((AtomNetId) 0);
