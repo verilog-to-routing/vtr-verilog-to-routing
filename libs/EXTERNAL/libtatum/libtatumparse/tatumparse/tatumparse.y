@@ -139,6 +139,7 @@ using namespace tatumparse;
 %token LATENCY "latency:"
 %token LAUNCH_DOMAIN "launch_domain:"
 %token CAPTURE_DOMAIN "capture_domain:"
+%token CAPTURE_NODE "capture_node:"
 
 %token DELAY_MODEL "delay_model:"
 %token MIN_DELAY "min_delay:"
@@ -184,6 +185,7 @@ using namespace tatumparse;
 %type <int> DomainId
 %type <int> LaunchDomainId
 %type <int> CaptureDomainId
+%type <int> CaptureNodeId
 %type <float> Constraint
 %type <float> Uncertainty
 %type <float> Latency
@@ -224,8 +226,10 @@ Constraints: TIMING_CONSTRAINTS EOL { callback.start_constraints(); }
            | Constraints TYPE MIN_INPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_min_input_constraint($4, $5, $6); }
            | Constraints TYPE MAX_OUTPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_max_output_constraint($4, $5, $6); }
            | Constraints TYPE MIN_OUTPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_min_output_constraint($4, $5, $6); }
-           | Constraints TYPE SETUP_CONSTRAINT LaunchDomainId CaptureDomainId Constraint EOL { callback.add_setup_constraint($4, $5, $6); }
-           | Constraints TYPE HOLD_CONSTRAINT LaunchDomainId CaptureDomainId Constraint EOL { callback.add_hold_constraint($4, $5, $6); }
+           | Constraints TYPE SETUP_CONSTRAINT LaunchDomainId CaptureDomainId Constraint EOL { callback.add_setup_constraint($4, $5, -1, $6); }
+           | Constraints TYPE HOLD_CONSTRAINT LaunchDomainId CaptureDomainId Constraint EOL { callback.add_hold_constraint($4, $5, -1, $6); }
+           | Constraints TYPE SETUP_CONSTRAINT LaunchDomainId CaptureDomainId CaptureNodeId Constraint EOL { callback.add_setup_constraint($4, $5, $6, $7); }
+           | Constraints TYPE HOLD_CONSTRAINT LaunchDomainId CaptureDomainId CaptureNodeId Constraint EOL { callback.add_hold_constraint($4, $5, $6, $7); }
            | Constraints TYPE SETUP_UNCERTAINTY LaunchDomainId CaptureDomainId Uncertainty EOL { callback.add_setup_uncertainty($4, $5, $6); }
            | Constraints TYPE HOLD_UNCERTAINTY LaunchDomainId CaptureDomainId Uncertainty EOL { callback.add_hold_uncertainty($4, $5, $6); }
            | Constraints TYPE EARLY_SOURCE_LATENCY DomainId Latency EOL { callback.add_early_source_latency($4, $5); }
@@ -262,6 +266,7 @@ HoldTime: HOLD_TIME Number { $$ = $2; }
 DomainId: DOMAIN INT { $$ = $2; }
 LaunchDomainId: LAUNCH_DOMAIN INT { $$ = $2; }
 CaptureDomainId: CAPTURE_DOMAIN INT { $$ = $2; }
+CaptureNodeId: CAPTURE_NODE INT { $$ = $2; }
 Constraint: CONSTRAINT Number { $$ = $2; }
 Uncertainty: UNCERTAINTY Number { $$ = $2; }
 Latency: LATENCY Number { $$ = $2; }
