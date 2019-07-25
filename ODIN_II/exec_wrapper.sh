@@ -37,7 +37,7 @@ USE_TIME="on"
 USE_LOGS="on"
 COLORIZE_OUTPUT="off"
 VERBOSE="0"
-	
+
 function print_exit_type() {
 	CODE="$1"
 	if [[ $1 -ge 128 ]]
@@ -97,7 +97,6 @@ Usage: ./exec_wrapper.sh [options] <path/to/arguments.file>
 			--failure_log                               * output the display label to a file if there was a failure
 			--time_limit                                * stops Odin after X seconds
 			--limit_ressource				            * limit ressource usage using ulimit -m (25% of hrdw memory) and nice value of 19
-			--colorize                                  * colorize the output
 			--verbosity [0, 1, 2]						* [0] no output, [1] output on error, [2] output the log to stdout
 "
 }
@@ -260,11 +259,6 @@ do
 			log_it "Using verbose output level $2"
 			;;
 
-		--colorize)
-			log_it "Using colorized output"
-			COLORIZE_OUTPUT="on"
-			;;
-
 		--tool)
 
 			if [ ${TOOL_SPECIFIED} == "on" ]; then
@@ -307,6 +301,13 @@ ARG_FILE=$1
 if [ "${RESTRICT_RESSOURCE}" == "on" ]
 then
 	restrict_ressource
+fi
+
+
+if [[ -t 1 ]] && [[ -t 2 ]] && [[ ! -p /dev/stdout ]] && [[ ! -p /dev/stderr ]]
+then
+	COLORIZE_OUTPUT="on"
+	log_it "Using colorized output"
 fi
 
 if [ "${USE_LOGS}" == "on" ]

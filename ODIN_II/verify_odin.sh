@@ -68,14 +68,6 @@ _SIM_COUNT="1"
 _RUN_DIR_OVERRIDE=""
 
 _CONFIG_OVERRIDE=""
-if [[ -t 1 ]] && [[ -t 2 ]] && [[ ! -p /dev/stdout ]] && [[ ! -p /dev/stderr ]]
-then
-	echo "Using pretty output"
-	_CONFIG_OVERRIDE="${REG_LIB}/default.conf"
-else
-	echo "Using plain output"
-	_CONFIG_OVERRIDE="${REG_LIB}/plain_default.conf"
-fi
 
 _GENERATE_BENCH="off"
 _GENERATE_OUTPUT="off"
@@ -94,7 +86,7 @@ printf "Called program with $INPUT
 		-t|--test < test name >         $(_prt_cur_arg ${_TEST}) Test name is one of ( ${TEST_DIR_LIST} heavy_suite light_suite full_suite vtr_basic vtr_strong pre_commit pre_merge)
 		-j|--nb_of_process < N >        $(_prt_cur_arg ${_NUMBER_OF_PROCESS}) Number of process requested to be used
 		-d|--output_dir < /abs/path >   $(_prt_cur_arg ${_RUN_DIR_OVERRIDE}) Change the run directory output
-		-C|--config <path/to/config>	$(_prt_cur_arg ${_CONFIG_OVERRIDE}) Change the run directory output
+		-C|--config <path/to/config>	$(_prt_cur_arg ${_CONFIG_OVERRIDE}) Add a config override file
 
 	FLAGS:
 		-g|--generate_bench             $(_prt_cur_arg ${_GENERATE_BENCH}) Generate input and output vector for test

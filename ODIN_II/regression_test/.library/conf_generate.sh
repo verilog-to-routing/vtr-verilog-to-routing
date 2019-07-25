@@ -57,8 +57,8 @@ ${circuit_list_input}"
 ########################
 
 regression_params=--include_default_arch
-script_params= --verbose
-simulation_params= -g 2
+script_params= --verbose --time_limit 3600s
+simulation_params= -L reset rst -H we -g 2
 
 # setup the architecture
 arch_dir=../vtr_flow/arch/timing
