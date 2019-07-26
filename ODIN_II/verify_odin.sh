@@ -502,6 +502,29 @@ function populate_arg_from_file() {
 
 }
 
+function formated_find() {
+	find $1/ -name $2 | sed 's:\s+|\n+: :g' | sed 's:^\s*|\s*$::g'
+}
+
+function run_bench_in_parallel() {
+	echo
+	header=$1
+	thread_count=$2
+	failure_dir=$3
+	_LIST="${@:4}"
+
+	if [ "_${_LIST}" != "_" ]
+	then
+		echo " ========= ${header} Tests"
+
+		#run the simulation in parallel
+		echo ${_LIST} | xargs -d ' ' -l1 -n1 -P${thread_count} -I cmd_file ${SHELL} -c '$(cat cmd_file)'
+		# disable the test on failure
+		disable_failed ${failure_dir}
+		mv_failed ${failure_dir}
+	fi
+}
+
 function sim() {
 
 
@@ -546,10 +569,11 @@ function sim() {
 	####################################
 	# parse the function commands passed
 	_threads=${_NUMBER_OF_PROCESS}
-
-	_CONCAT_CIRCUIT_LIST="off"
-	_SYNTHESIS="on"
-	_SIMULATE="on"
+	_generate_bench="off"
+	_generate_output="off"
+	_concat_circuit_list="off"
+	_synthesis="on"
+	_simulation="on"
 
 	##########################################
 	# populate the wrapper command using the configs
@@ -558,7 +582,17 @@ function sim() {
 		case ${_regression_param} in
 
 			--concat_circuit_list)
-				_CONCAT_CIRCUIT_LIST="on"
+				_concat_circuit_list="on"
+				;;
+
+			--generate_bench)
+				echo "This test will have the input and output regenerated"
+				_generate_bench="on"
+				;;
+
+			--generate_output)
+				echo "This test will have the output regenerated"
+				_generate_output="on"
 				;;
 
 			--disable_simulation)
@@ -566,9 +600,9 @@ function sim() {
 				if [ "_${_FORCE_SIM}" == "on" ] 
 				then
 					echo "WARNING: This test will be forcefully simulated, unexpected results may occur"
-					_SIMULATE="on"
+					_simulation="on"
 				else
-					_SIMULATE="off"
+					_simulation="off"
 				fi
 				;;
 	
@@ -595,10 +629,12 @@ function sim() {
 	global_simulation_failure="${NEW_RUN_DIR}/simulation_failures"
 
 	wrapper_synthesis_file_name="wrapper_synthesis_params"
-	wrapper_simulation_file_name="wrapper_simulation_params"
+	wrapper_simulation_generate_io_file_name="wrapper_simulation_generate_io_file_name"
+	wrapper_simulation_generate_output_file_name="wrapper_simulation_generate_output_file_name"
+	wrapper_simulation_predefined_io_file_name="wrapper_simulation_predefined_io_file_name"
 
 	circuit_list_temp=""
-	if [ ${_CONCAT_CIRCUIT_LIST} == "on" ]
+	if [ ${_concat_circuit_list} == "on" ]
 	then
 		circuit_list_temp="$(echo ${_circuit_list} | sed 's/\n/ /g')"
 		_circuit_list=${bench_name}
@@ -606,40 +642,38 @@ function sim() {
 
 	for circuit in $(echo ${_circuit_list})
 	do		
-		test_name=${circuit##*/}
+		circuit_dir=$(dirname ${circuit})
+		circuit_file=$(basename ${circuit})
 		input_verilog_file=""
 		input_blif_file=""
 		
-		basename=""
-		case "${test_name}" in
+		case "${circuit_file}" in
 			*.v)
-				basename="${test_name%.v}"
 				input_verilog_file="${circuit}"
-				_SYNTHESIS="on"
+				_synthesis="on"
 			;;
 			*.blif)
-				basename="${test_name%.blif}"
 				input_blif_file="${circuit}"
 				# disable synthesis for blif files
-				_SYNTHESIS="off"
+				_synthesis="off"
 			;;
 			*)
-				if [ ${_CONCAT_CIRCUIT_LIST} == "on" ]
+				if [ ${_concat_circuit_list} == "on" ]
 				then
-					basename="${test_name}"
 					input_verilog_file="${circuit_list_temp}"
-					_SYNTHESIS="on"
+					_synthesis="on"
 				else
 					echo "Invalid circuit passed in: ${circuit}, skipping"
 					continue
 				fi
 			;;
 		esac
+		circuit_name="${circuit_file%.*}"
 
 
 		# lookup for input and output vector files to do comparison
-		input_vector_file="${benchmark_dir}/${basename}_input"
-		output_vector_file="${benchmark_dir}/${basename}_output"
+		input_vector_file="${circuit_dir}/${circuit_name}_input"
+		output_vector_file="${circuit_dir}/${circuit_name}_output"
 
 		for arches in $(echo ${_arch_list})
 		do
@@ -649,30 +683,28 @@ function sim() {
 				arch_cmd="-a ${arches}"
 			fi
 
-			arch_basename=${arches%.xml}
-			arch_name=${arch_basename##*/}
+			arch_name=$(basename ${arches%.*})
 
-			TEST_FULL_REF="${bench_name}/${basename}/${arch_name}"
+			TEST_FULL_REF="${bench_name}/${circuit_name}/${arch_name}"
 			DIR="${NEW_RUN_DIR}/${TEST_FULL_REF}"
 			mkdir -p $DIR
 
 			###############################
 			# Synthesis
-			if [ "${_SYNTHESIS}" == "on" ]
+			if [ "${_synthesis}" == "on" ]
 			then
 			
 				# if synthesis was on, we need to specify a blif output name
-				input_blif_file="${DIR}/${basename}.blif"
+				input_blif_file="${DIR}/${circuit_name}.blif"
 
 				synthesis_params_file=${DIR}/synthesis_params
 
-				echo "${WRAPPER_EXEC}
+				wrapper_command="${WRAPPER_EXEC}
 						${_script_params}
 						--log_file ${DIR}/synthesis.log
 						--test_name ${TEST_FULL_REF}
 						--failure_log ${global_synthesis_failure}.log
-						${synthesis_params_file}
-				" > ${DIR}/${wrapper_synthesis_file_name}
+						${synthesis_params_file}"
 
 				synthesis_command="${ODIN_EXEC} 
 									${_synthesis_params}
@@ -682,20 +714,21 @@ function sim() {
 									-sim_dir ${DIR}"
 
 				_echo_args "${synthesis_command}" > ${synthesis_params_file}
+				_echo_args "${wrapper_command}"  > ${DIR}/${wrapper_synthesis_file_name}
 				
 			fi
-
-			if [ "${_SIMULATE}" == "on" ]
+			###############################
+			# Simulation
+			if [ "${_simulation}" == "on" ]
 			then
 				simulation_params_file=${DIR}/simulation_params
 
-				echo "${WRAPPER_EXEC}
-						${_script_params}
-						--log_file ${DIR}/simulation.log
-						--test_name ${TEST_FULL_REF}
-						--failure_log ${global_simulation_failure}.log
-						${simulation_params_file}
-				" > ${DIR}/${wrapper_simulation_file_name}
+				wrapper_command="${WRAPPER_EXEC}
+									${_script_params}
+									--log_file ${DIR}/simulation.log
+									--test_name ${TEST_FULL_REF}
+									--failure_log ${global_simulation_failure}.log
+									${simulation_params_file}"
 
 				simulation_command="${ODIN_EXEC} 
 										${_simulation_params}
@@ -705,49 +738,64 @@ function sim() {
 
 				if [ "${_GENERATE_BENCH}" == "on" ] || [ ! -f ${input_vector_file} ]
 				then
-					simulation_command="${simulation_command}"
+					_echo_args "${simulation_command}" > ${simulation_params_file}
+					_echo_args "${wrapper_command}" > ${DIR}/${wrapper_simulation_generate_io_file_name}
+
+				elif [ "${_GENERATE_OUTPUT}" == "on" ] || [ ! -f ${output_vector_file} ]
+				then
+					_echo_args "${simulation_command} -t ${input_vector_file}" > ${simulation_params_file}
+					_echo_args "${wrapper_command}" > ${DIR}/${wrapper_simulation_generate_output_file_name}
+
 				else
-					simulation_command="${simulation_command} -t ${input_vector_file}"
-					if [ "${_GENERATE_OUTPUT}" == "off" ] && [ -f ${output_vector_file} ]
-					then
-						simulation_command="${simulation_command} -T ${output_vector_file}"
-					fi
+					_echo_args "${simulation_command} -t ${input_vector_file} -T ${output_vector_file}" > ${simulation_params_file}
+					_echo_args "${wrapper_command}" > ${DIR}/${wrapper_simulation_predefined_io_file_name}
+
 				fi
 
-				_echo_args "${simulation_command}" > ${simulation_params_file}
 			fi
 
 		done
 	done	
 
 	#synthesize the circuits
-	SYNTH_LIST="$(find ${NEW_RUN_DIR}/${bench_name}/ -name ${wrapper_synthesis_file_name})"
-	if [ "${_SYNTHESIS}" == "on" ] && [ "_${SYNTH_LIST}" != "_" ]
+	if [ "${_synthesis}" == "on" ]
 	then
-		echo " ========= Synthesis Tests"
+		run_bench_in_parallel \
+			"Synthesis" \
+			"${_threads}" \
+			"${global_synthesis_failure}" \
+			"$(formated_find ${NEW_RUN_DIR}/${bench_name} ${wrapper_synthesis_file_name})"
+	fi
 
-		find ${NEW_RUN_DIR}/${bench_name}/ -name ${wrapper_synthesis_file_name} | xargs -n1 -P${_threads} -I cmd_file ${SHELL} -c '$(cat cmd_file)'
+	if [ "${_simulation}" == "on" ]
+	then
 
-		# disable the test on failure
-		disable_failed ${global_synthesis_failure}
-		mv_failed ${global_synthesis_failure}		
+		run_bench_in_parallel \
+			"Generate_IO_Simulation" \
+			"${_threads}" \
+			"${global_simulation_failure}" \
+			"$(formated_find ${NEW_RUN_DIR}/${bench_name} ${wrapper_simulation_generate_io_file_name})"
+			
+		run_bench_in_parallel \
+			"Generate_Output_Simulation" \
+			"${_threads}" \
+			"${global_simulation_failure}" \
+			"$(formated_find ${NEW_RUN_DIR}/${bench_name} ${wrapper_simulation_generate_output_file_name})"
+
+		run_bench_in_parallel \
+			"Predefined_IO_Simulation" \
+			"${_threads}" \
+			"${global_simulation_failure}" \
+			"$(formated_find ${NEW_RUN_DIR}/${bench_name} ${wrapper_simulation_predefined_io_file_name})"
 
 	fi
 
-	SIM_LIST="$(find ${NEW_RUN_DIR}/${bench_name}/ -name ${wrapper_simulation_file_name})"
-	if [ "${_SIMULATE}" == "on" ] && [ "_${SIM_LIST}" != "_" ]
+	INPUT_VECTOR_LIST="$(find ${NEW_RUN_DIR}/${bench_name}/ -name input_vectors)"
+	if [ "${_simulation}" == "on" ] && [ "_${INPUT_VECTOR_LIST}" != "_" ]
 	then
-		echo " ========= Simulation Tests"
-
-		#run the simulation in parallel
-		find ${NEW_RUN_DIR}/${bench_name}/ -name ${wrapper_simulation_file_name} | xargs -n1 -P${_threads} -I cmd_file ${SHELL} -c '$(cat cmd_file)'
-
-		# disable the test on failure
-		disable_failed ${global_simulation_failure}
-		mv_failed ${global_simulation_failure}
-
 		mkdir -p ${NEW_RUN_DIR}/${bench_name}/vectors
-		# move the vectors
+
+		# move the input vectors
 		for sim_input_vectors in $(find ${NEW_RUN_DIR}/${bench_name}/ -name "input_vectors")
 		do
 			BM_DIR=$(dirname ${sim_input_vectors})
@@ -757,8 +805,14 @@ function sim() {
 			mv ${sim_input_vectors} ${BM_DIR}/${BM_NAME}
 			
 		done
+	fi
 
-		# move the vectors
+	OUTPUT_VECTOR_LIST="$(find ${NEW_RUN_DIR}/${bench_name}/ -name output_vectors)"
+	if [ "${_simulation}" == "on" ] && [ "_${OUTPUT_VECTOR_LIST}" != "_" ]
+	then
+		mkdir -p ${NEW_RUN_DIR}/${bench_name}/vectors
+
+		# move the output vectors
 		for sim_output_vectors in $(find ${NEW_RUN_DIR}/${bench_name}/ -name "output_vectors")
 		do
 			BM_DIR=$(dirname ${sim_output_vectors})
@@ -768,7 +822,6 @@ function sim() {
 			mv ${sim_output_vectors} ${BM_DIR}/${BM_NAME}
 
 		done
-
 	fi
 
 }
