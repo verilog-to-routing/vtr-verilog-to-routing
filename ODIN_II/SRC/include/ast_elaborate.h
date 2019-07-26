@@ -21,8 +21,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
-int simplify_ast();
-int simplify_ast_module(ast_node_t *ast_module);
+int simplify_ast_module(ast_node_t **ast_module);
 void optimize_for_tree();
 void search_for_node(ast_node_t *root, std::vector<ast_node_t *> list_for_node, std::vector<ast_node_t *> list_parent);
 ast_node_t *get_copy_tree(ast_node_t *node, long virtual_value, std::string virtual_name);

@@ -89,7 +89,7 @@ int type_of_circuit;
 /* PROTOTYPES */
 void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name, char *parent_module);
 
-void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, char *instance_name, int level);
+void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, char *instance_name, int level);
 signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_name_prefix);
 
 void create_all_driver_nets_in_this_module(char *instance_name_prefix);
@@ -365,10 +365,6 @@ void create_netlist()
 		oassert(ast_modules[i]->type == MODULE);
 	}
 
-
-	// TODO Alex - unroll_loops() needs to be moved to simplify_ast_module()
-	simplify_ast();
-
 	/* we will find the top module */
 	top_module = find_top_module();
 
@@ -391,7 +387,7 @@ void create_netlist()
 	/* now recursively parse the modules by going through the tree of modules starting at top */
 	create_top_driver_nets(top_module, top_string);
 	init_implicit_memory_index();
-	convert_ast_to_netlist_recursing_via_modules(top_module, top_string, 0);
+	convert_ast_to_netlist_recursing_via_modules(&top_module, top_string, 0);
 	free_implicit_memory_index_and_finalize_memories();
 	create_top_output_nodes(top_module, top_string);
 
@@ -482,15 +478,16 @@ ast_node_t *find_top_module()
  * 	Recurses through modules by depth first traversal of the tree of modules.  Expands
  * 	the netlists at each level.
  *-------------------------------------------------------------------------------------------*/
-void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, char *instance_name, int level)
+void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, char *instance_name, int level)
 {
 	signal_list_t *list = NULL;
 
 	/* BASE CASE is when there are no other instantiations of modules in this module */
-	if (current_module->types.module.size_module_instantiations == 0 &&
-		current_module->types.function.size_function_instantiations == 0)
+	if ((*current_module)->types.module.size_module_instantiations == 0 &&
+		(*current_module)->types.function.size_function_instantiations == 0)
 	{
-		list = netlist_expand_ast_of_module(current_module, instance_name);
+		simplify_ast_module(current_module);
+		list = netlist_expand_ast_of_module(*current_module, instance_name);
 	}
 	else
 	{
@@ -498,32 +495,32 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 		long i, j;
 		int k;
 		//check for defparam
-		for(i = 0; i <current_module->num_children; i++)
+		for(i = 0; i <(*current_module)->num_children; i++)
 		{
-			if(current_module->children[i]->type == MODULE_ITEMS || current_module->children[i]->type == FUNCTION_ITEMS)
+			if((*current_module)->children[i]->type == MODULE_ITEMS || (*current_module)->children[i]->type == FUNCTION_ITEMS)
 			{
-				for(j = 0; j < current_module->children[i]->num_children; j++)
+				for(j = 0; j < (*current_module)->children[i]->num_children; j++)
 				{
-					if(current_module->children[i]->children[j]->type == MODULE_PARAMETER)
+					if((*current_module)->children[i]->children[j]->type == MODULE_PARAMETER)
 					{
 						int flag = 0;
-						for(k = 0; k < current_module->types.module.size_module_instantiations; k++)
+						for(k = 0; k < (*current_module)->types.module.size_module_instantiations; k++)
 						{
-							if(current_module->types.module.module_instantiations_instance[k]->children[1])
+							if((*current_module)->types.module.module_instantiations_instance[k]->children[1])
 							{
-								ast_node_t *module_instance = current_module->types.module.module_instantiations_instance[k]->children[1];
-								if(strcmp(module_instance->children[0]->types.identifier, current_module->children[i]->children[j]->types.identifier) == 0)
+								ast_node_t *module_instance = (*current_module)->types.module.module_instantiations_instance[k]->children[1];
+								if(strcmp(module_instance->children[0]->types.identifier, (*current_module)->children[i]->children[j]->types.identifier) == 0)
 								{
 
 									if(module_instance->children[2])
 									{
-										move_ast_node(current_module->children[i], module_instance->children[2], current_module->children[i]->children[j]);
+										move_ast_node((*current_module)->children[i], module_instance->children[2], (*current_module)->children[i]->children[j]);
 									}
 									else
 									{
 										ast_node_t* new_node = create_node_w_type(MODULE_PARAMETER_LIST, module_instance->line_number, current_parse_file);
 										module_instance->children[2] = new_node;
-										move_ast_node(current_module->children[i], module_instance->children[2], current_module->children[i]->children[j]);
+										move_ast_node((*current_module)->children[i], module_instance->children[2], (*current_module)->children[i]->children[j]);
 									}
 									flag = 1;
 									break;
@@ -532,85 +529,85 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 						}
 						if(flag == 0)
 						{
-							error_message(NETLIST_ERROR, current_module->line_number, current_module->file_number,
-									"Can't find module name %s\n", current_module->children[i]->children[j]->types.identifier);
+							error_message(NETLIST_ERROR, (*current_module)->line_number, (*current_module)->file_number,
+									"Can't find module name %s\n", (*current_module)->children[i]->children[j]->types.identifier);
 						}
 					}
 				}
 			}
 		}
-		for (k = 0; k < current_module->types.module.size_module_instantiations; k++)
+		for (k = 0; k < (*current_module)->types.module.size_module_instantiations; k++)
 		{
 			/* make the stringed up module instance name - instance name is
 			 * MODULE_INSTANCE->MODULE_NAMED_INSTANCE(child[1])->IDENTIFIER(child[0]).
 			 * module name is MODULE_INSTANCE->IDENTIFIER(child[0])
 			 */
 			char *temp_instance_name = make_full_ref_name(instance_name,
-					current_module->types.module.module_instantiations_instance[k]->children[0]->types.identifier,
-					current_module->types.module.module_instantiations_instance[k]->children[1]->children[0]->types.identifier,
+					(*current_module)->types.module.module_instantiations_instance[k]->children[0]->types.identifier,
+					(*current_module)->types.module.module_instantiations_instance[k]->children[1]->children[0]->types.identifier,
 					NULL, -1);
 
 			long sc_spot;
 			/* lookup the name of the module associated with this instantiated point */
-			if ((sc_spot = sc_lookup_string(module_names_to_idx, current_module->types.module.module_instantiations_instance[k]->children[0]->types.identifier)) == -1)
+			if ((sc_spot = sc_lookup_string(module_names_to_idx, (*current_module)->types.module.module_instantiations_instance[k]->children[0]->types.identifier)) == -1)
 			{
-				error_message(NETLIST_ERROR, current_module->line_number, current_module->file_number,
-						"Can't find module name %s\n", current_module->types.module.module_instantiations_instance[k]->children[0]->types.identifier);
+				error_message(NETLIST_ERROR, (*current_module)->line_number, (*current_module)->file_number,
+						"Can't find module name %s\n", (*current_module)->types.module.module_instantiations_instance[k]->children[0]->types.identifier);
 			}
 
-			ast_node_t *parent_parameter_list = current_module->types.module.module_instantiations_instance[k]->children[1]->children[2];
+			ast_node_t *parent_parameter_list = (*current_module)->types.module.module_instantiations_instance[k]->children[1]->children[2];
 			// create the parameter table for the instantiated module
 			create_param_table_for_module(parent_parameter_list,
 				/* module_items */
 				((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2],
-				temp_instance_name, current_module->children[0]->types.identifier);
+				temp_instance_name, (*current_module)->children[0]->types.identifier);
 
 			simplify_ast_module(current_module);
 
 			/* recursive call point */
-			convert_ast_to_netlist_recursing_via_modules(((ast_node_t*)module_names_to_idx->data[sc_spot]), temp_instance_name, level+1);
+			convert_ast_to_netlist_recursing_via_modules(((ast_node_t**)&module_names_to_idx->data[sc_spot]), temp_instance_name, level+1);
 
 			/* free the string */
 			vtr::free(temp_instance_name);
 		}
-        for (k = 0; k < current_module->types.function.size_function_instantiations; k++)
+        for (k = 0; k < (*current_module)->types.function.size_function_instantiations; k++)
 		{
 			/* make the stringed up module instance name - instance name is
 			 * MODULE_INSTANCE->MODULE_NAMED_INSTANCE(child[1])->IDENTIFIER(child[0]).
 			 * module name is MODULE_INSTANCE->IDENTIFIER(child[0])
 			 */
 			char *temp_instance_name = make_full_ref_name(instance_name,
-					current_module->types.function.function_instantiations_instance[k]->children[0]->types.identifier,
-					current_module->types.function.function_instantiations_instance[k]->children[1]->children[0]->types.identifier,
+					(*current_module)->types.function.function_instantiations_instance[k]->children[0]->types.identifier,
+					(*current_module)->types.function.function_instantiations_instance[k]->children[1]->children[0]->types.identifier,
 					NULL, -1);
 
             long sc_spot;
 			/* lookup the name of the module associated with this instantiated point */
-			if ((sc_spot = sc_lookup_string(module_names_to_idx, current_module->types.function.function_instantiations_instance[k]->children[0]->types.identifier)) == -1)
+			if ((sc_spot = sc_lookup_string(module_names_to_idx, (*current_module)->types.function.function_instantiations_instance[k]->children[0]->types.identifier)) == -1)
 			{
-				error_message(NETLIST_ERROR, current_module->line_number, current_module->file_number,
-						"Can't find module name %s\n", current_module->types.function.function_instantiations_instance[k]->children[0]->types.identifier);
+				error_message(NETLIST_ERROR, (*current_module)->line_number, (*current_module)->file_number,
+						"Can't find module name %s\n", (*current_module)->types.function.function_instantiations_instance[k]->children[0]->types.identifier);
 			}
 
-			ast_node_t *parent_parameter_list = current_module->types.function.function_instantiations_instance[k]->children[1]->children[2];
+			ast_node_t *parent_parameter_list = (*current_module)->types.function.function_instantiations_instance[k]->children[1]->children[2];
 
 			// create the parameter table for the instantiated module
 			create_param_table_for_module(parent_parameter_list,
 				/* module_items */
 				((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2],
-				temp_instance_name, current_module->children[0]->types.identifier);
+				temp_instance_name, (*current_module)->children[0]->types.identifier);
 
 			simplify_ast_module(current_module);
 
 			/* recursive call point */
-			convert_ast_to_netlist_recursing_via_modules(((ast_node_t*)module_names_to_idx->data[sc_spot]), temp_instance_name, level+1);
+			convert_ast_to_netlist_recursing_via_modules(((ast_node_t**)&module_names_to_idx->data[sc_spot]), temp_instance_name, level+1);
 
 			/* free the string */
 			vtr::free(temp_instance_name);
 		}
 
 		/* once we've done everyone lower, we can do this module */
-		list = netlist_expand_ast_of_module(current_module, instance_name);
+		list = netlist_expand_ast_of_module(*current_module, instance_name);
 	}
 
 	if (list) free_signal_list(list);

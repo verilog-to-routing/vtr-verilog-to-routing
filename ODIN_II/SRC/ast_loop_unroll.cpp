@@ -15,28 +15,12 @@
 /*
  *  (function: unroll_loops)
  */
-void unroll_loops()
+void unroll_loops(ast_node_t **ast_module)
 {
-    /* preprocess each module */
-	long i;
-	for (i = 0; i < num_modules; i++)
-	{
-        ast_node_t* module = for_preprocessor(ast_modules[i]);
-        if(module != ast_modules[i])
-            free_whole_tree(ast_modules[i]);
-        ast_modules[i] = module;
-    }
-}
-
-/*
- *  (function: unroll_loops)
- */
-void unroll_loops(ast_node_t *ast_module)
-{
-    ast_node_t* module = for_preprocessor(ast_module);
-    if(module != ast_module)
-        free_whole_tree(ast_module);
-    ast_module = module;
+    ast_node_t* module = for_preprocessor(*ast_module);
+    if(module != *ast_module)
+        free_whole_tree(*ast_module);
+    *ast_module = module;
 }
 
 /*

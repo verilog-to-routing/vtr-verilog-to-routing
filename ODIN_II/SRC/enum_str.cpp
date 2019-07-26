@@ -99,7 +99,8 @@ const char *operation_list_STR[][2] =
 	{"PAD_NODE",        "PAD"},
 	{"HARD_IP",         "HARD"},
 	{"GENERIC",         "GEN"}, /*added for the unknown node type */
-	{"FULLADDER",       "FlADD"}
+	{"FULLADDER",       "FlADD"},
+	{"CLOG2",			"CL2"} // $clog2
 };
 
 const char *ids_STR []= 

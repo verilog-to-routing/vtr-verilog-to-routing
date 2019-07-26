@@ -710,11 +710,11 @@ To add a new external subtree to VTR do the following:
     ```
     which shows libfoo is now recognized.
 
-2. Run `./dev/update_external_subtrees.py $SUBTREE_NAME` to add the subtree.
+2. Run `./dev/external_subtrees.py --update $SUBTREE_NAME` to add the subtree.
 
     For the `libfoo` example above this would be:
     ```shell
-    ./dev/update_external_subtrees.py libfoo
+    ./dev/external_subtrees.py --update libfoo
     ```
 
     This will create two commits to the repository.

@@ -383,13 +383,11 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 	FILE *source = remove_comments(original_source);
 
 	source = format_verilog_file(source);
-
 	int line_number = 1;
 	veri_flag_stack *skip = (veri_flag_stack *)vtr::calloc(1, sizeof(veri_flag_stack));;
 	char line[MaxLine];
 	char *token;
 	veri_include *new_include = NULL;
-
 
 	while (NULL != fgets(line, MaxLine, source))
 	{
@@ -689,6 +687,7 @@ int pop(veri_flag_stack *stack)
 	}
 	return 0;
 }
+
 void push(veri_flag_stack *stack, int flag)
 {
 	if(stack != NULL)
@@ -700,137 +699,212 @@ void push(veri_flag_stack *stack, int flag)
 		stack->top = new_node;
 	}
 }
-FILE *format_verilog_file(FILE *source)
+
+/*
+* Prints out different parts of port declaration to buffers
+* defined in format_verilog_file().
+* Format: [input|output|inout [reg|wire] [size]] <variable_name>
+*/
+void format_port_declaration(char **subtoken, char *dec, char *postDec, char *IOTypeDec, size_t *i, size_t *j, size_t *k)
 {
-	FILE *destination = tmpfile();
-	char searchString [4][7]= {"input","output","reg","wire"};
-	char templine[MaxLine] = { 0 };
-	char *line = templine;
-	char ch;
-	unsigned i;
-	char temp[10];
-	int j;
-	static const char *pattern = "\\binput\\b|\\boutput\\b|\\breg\\b|\\bwire\\b";
-	i = 0;
-	while( (ch = getc(source) ) != ';')
+	bool directionDefined = false;
+	*subtoken = trim(*subtoken);
+	std::string str(*subtoken);
+	// I/O direction
+	if(str.find("input ") == 0 || str.find("output ") == 0 || str.find("inout ") == 0)
 	{
-		line[i++] = ch;
-		if (ch == '`')
+		directionDefined = true;
+		char * temp = NULL;
+		while(**subtoken != ' ')
 		{
-			while( (ch = getc(source)) != '\n')
-			{
-				line[i++] = ch;
-			}
-			line[i] = '\n';
-			fputs(line,destination);
-			i = 0;
+			postDec[(*j)++] = **subtoken;
+			(*subtoken)++;
 		}
-
-	}
-	line[i++] = ch;
-	line[i] = '\0';
-	std::string sub_line = find_substring(line,"module",2);
-	sprintf(line,"%s",sub_line.c_str());
-	line = search_replace(line,"\n","",2);
-
-	if (! validate_string_regex(line, pattern))
-	{
-		free(line);
-	 	rewind(source);
-		return source;
-	}
-	for (i = 0; i < 4; i++)
-	{
-		char *line_cpy = vtr::strdup(line);
-		free(line);
-		line = search_replace(line_cpy,searchString[i],"",2);
-		vtr::free(line_cpy);
-	}
-	i = 0;
-	while (i < strnlen(line, MaxLine))
-	{
-		if(line[i] == '[')
+		postDec[(*j)++] = ' ';
+		(*subtoken)++;
+		std::string str(*subtoken);
+		// I/O type
+		if(str.find("reg[") == 0 || str.find("reg ") == 0 || str.find("wire[") == 0 || str.find("wire ") == 0)
 		{
-			j = 0;
-			while(line[i] != ']')
+			temp = *subtoken;
+			do { 
+				(*subtoken)++;
+			} while (**subtoken != ' ' && **subtoken != '[');
+			if(**subtoken == ' ')
 			{
-				temp[j++] = line[i];
-				i++;
+				(*subtoken)++;
 			}
-			temp[j++] = line[i];
-			temp[j] = '\0';
-			line = search_replace(line,temp,"",2);
-			i = 0;
+			do {
+				IOTypeDec[(*k)++] = *temp;
+				temp++;
+			} while (*temp != '\0');
+			IOTypeDec[(*k)++] = ';';
+			IOTypeDec[(*k)++] = '\n';
+		}
+		// I/O size
+		if(**subtoken == '[')
+		{
+			while(**subtoken != ']')
+			{
+				postDec[(*j)++] = **subtoken;
+				(*subtoken)++;
+			}
+			postDec[(*j)++] = ']';
+			(*subtoken)++;
+		}
+	}
+	if(**subtoken == ' ')
+	{
+		(*subtoken)++;
+	}
+	// Variable name
+	while(**subtoken != NULL)
+	{
+		if(directionDefined)
+		{
+			postDec[(*j)++] = **subtoken;
+		}
+		dec[(*i)++] = **subtoken;
+		(*subtoken)++;
+	}
+	if(directionDefined)
+	{
+		postDec[(*j)++] = ';';
+		postDec[(*j)++] = '\n';
+	}
+}
+
+/*
+* Tokenizes a module declaration repeatedly, passing tokens to
+* format_port_declaration() for formatting.
+*/
+void format_module_declaration(FILE *destination, char *buf, char *dec, char *postDec, char *IOTypeDec, char *decPtr, char *postDecPtr, char *IOTypeDecPtr, size_t *i, size_t *j, size_t *k)
+{
+	char * token = NULL;
+	char * subtoken = NULL;
+	*i = 0;
+	token = std::strtok(buf, "(");
+	while(*token != '\0')
+	{
+		dec[(*i)++] = *token;
+		(token)++;
+	}
+	dec[(*i)++] = '(';
+	dec[(*i)++] = '\n';
+
+	token = std::strtok(NULL, ")");
+	subtoken = std::strtok(token, ",");
+	while(subtoken != NULL)
+	{
+		format_port_declaration(&subtoken, dec, postDec, IOTypeDec, i, j, k);
+		subtoken = std::strtok(NULL, ",");
+		if(subtoken == NULL)
+		{
+			dec[(*i)++] = ')';
+			dec[(*i)++] = ';';
 		}
 		else
-			i++;
+		{
+			dec[(*i)++] = ',';
+		}
+		dec[(*i)++] = '\n';
 	}
-	fputs(line, destination);
-	vtr::free(line);
-	rewind(source);
-	destination = format_verilog_variable(source,destination);
+	dec[*i] = '\0';
+	postDec[*j] = '\0';
+	IOTypeDec[*k] = '\0';
+	fputs(decPtr,destination);
+	fputs(postDecPtr,destination);
+	fputs(IOTypeDecPtr,destination);
+	*i = 0;
+	*j = 0;
+	*k = 0;
+	IOTypeDec[*k] = '\0';
+}
+
+FILE *format_verilog_file(FILE *source)
+{
+	typedef enum State {
+		LINE_PROCESSING,
+		MODULE_SETUP,
+		MODULE_REFORMATTING
+	} State;
+	State currentState = LINE_PROCESSING;
+	FILE *destination = tmpfile();
+	char buf[UPPER_BUFFER_LIMIT] = { 0 }; // Temporary input buffer
+	char dec[UPPER_BUFFER_LIMIT] = { 0 }; // Module declaration buffer
+	char postDec[UPPER_BUFFER_LIMIT] = { 0 }; // Post-declaration buffer
+	char IOTypeDec[UPPER_BUFFER_LIMIT] = { 0 }; // Register and wire re-declaration buffer
+	char * bufPtr = buf;
+	char * decPtr = dec;
+	char * postDecPtr = postDec;
+	char * IOTypeDecPtr = IOTypeDec;
+	size_t i = 0;
+	size_t j = 0;
+	size_t k = 0;
+	bool getNextLine = true;
+	char * exitFlag = fgets(buf, UPPER_BUFFER_LIMIT, source);
+	int pos = 0;
+
+	while(exitFlag != NULL)
+	{
+		switch(currentState) {
+			case LINE_PROCESSING: 
+			{
+				std::string str(buf);
+				pos = str.find_first_not_of(" ");
+				if((str.find("module") == pos && isspace(buf[pos+6])) || (str.find("macromodule") == pos && isspace(buf[pos+11])))
+				{
+					currentState = MODULE_SETUP;
+					getNextLine = false;
+				}
+				else
+				{
+					fputs(bufPtr,destination);
+				}
+				break;
+			}
+			case MODULE_SETUP: 
+			{
+				while(buf[i] != '\n' && buf[i] != ')')
+				{
+					i++;
+				}
+				if(buf[i] == ')')
+				{
+					getNextLine = false;
+					currentState = MODULE_REFORMATTING;
+				}
+				else
+				{
+					i++;
+				}
+				break;
+			}
+			case MODULE_REFORMATTING: 
+			{
+				format_module_declaration(destination, buf, dec, postDec, IOTypeDec, decPtr, postDecPtr, IOTypeDecPtr, &i, &j, &k);
+				currentState = LINE_PROCESSING;
+				break;
+			}
+		}
+		if(getNextLine)
+		{
+			if(i >= UPPER_BUFFER_LIMIT - 1)
+			{
+				// No space left in buffer -- quit
+				fprintf(stderr, "Buffer limit reached - returning destination FILE pointer\n\n");
+				rewind(destination);
+				return destination;
+			}
+			exitFlag = fgets(&buf[i], UPPER_BUFFER_LIMIT - i, source);
+		}
+		else
+		{
+			getNextLine = true;
+		}
+	}
 	rewind(destination);
 	return destination;
 }
 
-FILE *format_verilog_variable(FILE * src, FILE *dest)
-{
-	char ch;
-	int i;
-	char line[MaxLine];
-	char *tempLine;
-	char *pos;
-	while( (ch = getc(src) ) != ';')
-	{
-		if(ch == '(')
-		{
-			i = 0;
-			while( (ch = getc(src) ) != ')')
-			{
-				if (ch == ',')
-				{
-					line[i++] = ';';
-					line[i] = '\0';
-					pos = strstr(line,"reg");
-					if (pos != NULL)
-					{
-						tempLine = search_replace(line,"reg","",2);
-						fputs(tempLine,dest);
-						tempLine = search_replace(line,"output","",2);
-						fputs(tempLine,dest);
-					}
-					else
-					{
-						fputs(line, dest);
-					}
-					i = 0;
-				}
-				else
-					line[i++] = ch;
-			}
-			line[i-1] = ';';
-			line[i] = '\0';
-			pos = strstr(line,"reg");
-			if (pos != NULL)
-			{
-				tempLine = search_replace(line,"reg","",2);
-				fputs(tempLine,dest);
-				tempLine = search_replace(line,"output","",2);
-				fputs(tempLine,dest);
-			}
-			else
-			{
-				fputs(line, dest);
-			}
-		}
-	}
-	while( (ch = getc(src) ) != EOF)
-	{
-		fputc(ch, dest);
-	}
-	return dest;
-}
-
 /* ------------------------------------------------------------------------- */
-
-
