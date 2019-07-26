@@ -874,13 +874,17 @@ function run_suite() {
 				;;
 
 			*)
-				current_input="${THIS_DIR}/${current_input}"
 				if [ ! -d "${current_input}" ]
 				then
 					echo "Invalid Directory for task: ${current_input}"
 				elif [ -f "${current_input}/task_list.conf" ]
 				then
-					task_list=( $(cat ${current_input}/task_list.conf) ${task_list[@]} )
+					for input_path in $(cat ${current_input}/task_list.conf)
+					do
+						input_path=$(ls -d -1 ${THIS_DIR}/${input_path})
+						task_list=( ${task_list[@]} ${input_path[@]} )
+					done
+					
 				elif [ -f "${current_input}/task.conf" ]
 				then
 					run_task "${current_input}"
@@ -918,7 +922,6 @@ then
 fi
 
 _TEST=$(readlink -f ${_TEST})
-_TEST=$(realapath_from  ${_TEST} ${THIS_DIR})
 
 echo "Task: ${_TEST}"
 
