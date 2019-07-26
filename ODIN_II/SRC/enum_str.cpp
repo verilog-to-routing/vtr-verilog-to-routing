@@ -164,7 +164,6 @@ const char *ids_STR []=
 	"CASE_ITEM",
 	"CASE_DEFAULT",
 	"ALWAYS",
-	"GENERATE",
 	"IF",
 	"IF_Q",
 	"FOR",

@@ -315,38 +315,35 @@ void add_child_to_node(ast_node_t* node, ast_node_t *child)
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: add_child_to_node)
+ * (function: add_child_to_node_at_index)
  *-------------------------------------------------------------------------------------------*/
-void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child)
+void add_child_to_node_at_index(ast_node_t* node, ast_node_t *child, int index)
 {
-    long i;
-    ast_node_t *ref, *ref1;
-	/* Handle case where we have an empty statement. */
-	if (child == NULL)
+	if (index < 0 || index > node->num_children)
 		return;
 
+	ast_node_t **new_child_list = (ast_node_t **)vtr::calloc(node->num_children+1, sizeof(ast_node_t *));
+	for (int i = 0; i < index; i++)
+	{
+		new_child_list[i] = node->children[i];
+	}
 
+	new_child_list[index] = child;
 
-	/* allocate space for the children */
-	node->children = (ast_node_t**)vtr::realloc(node->children, sizeof(ast_node_t*)*(node->num_children+1));
-    node->num_children ++;
+	for (int i = index+1; i <= node->num_children; i++)
+	{
+		new_child_list[i] = node->children[i-1];
+	}
 
-    ref = node->children[0];
-
-    for(i = 1; i < node->num_children; i++){
-        ref1 = node->children[i];
-        node->children[i] = ref;
-        ref = ref1;
-    }
-
-    node->children[0] = child;
-
+	node->children = (ast_node_t**)vtr::free(node->children);
+	node->children = new_child_list;
+	node->num_children ++;
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: remove_child_from_node)
+ * (function: remove_child_from_node_at_index)
  *-------------------------------------------------------------------------------------------*/
-void remove_child_from_node(ast_node_t* node, int index)
+void remove_child_from_node_at_index(ast_node_t* node, int index)
 {
 	if (index < 0 || index >= node->num_children)
 		return;
@@ -1039,7 +1036,7 @@ ast_node_t *ast_node_deep_copy(ast_node_t *node){
 	if (node && node_copy)
 	{
 		//Create a new child list;
-		node_copy->children = (ast_node_t**)vtr::malloc(sizeof(ast_node_t*)*node->num_children);
+		node_copy->children = (ast_node_t**)vtr::calloc(node->num_children, sizeof(ast_node_t*));
 
 		//Recursively copy its children
 		for(long i = 0; i < node->num_children; i++){
@@ -1062,7 +1059,7 @@ ast_node_t *ast_node_copy(ast_node_t *node){
 	}
 
 	//Copy node
-	node_copy = (ast_node_t *)vtr::malloc(sizeof(ast_node_t));
+	node_copy = (ast_node_t *)vtr::calloc(1, sizeof(ast_node_t));
 	memcpy(node_copy, node, sizeof(ast_node_t));	
 
 	//Copy contents
@@ -1400,7 +1397,7 @@ ast_node_t *fold_binary(ast_node_t **node)
 				break;
 
 			case LOGICAL_EQUAL:
-				vresult = V_LE(voperand_0, voperand_1);
+				vresult = V_EQUAL(voperand_0, voperand_1);
 				success = true;
 				break;
 
@@ -1448,55 +1445,13 @@ ast_node_t *fold_binary(ast_node_t **node)
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: calculate_ternary)
- *-------------------------------------------------------------------------------------------*/
-ast_node_t * fold_conditional(ast_node_t **node)
-{
-	if(!node || !(*node))
-		return NULL;
-
-	ids op_id = (*node)->type;
-	ast_node_t *to_return = NULL;
-
-	switch (op_id)
-	{
-		case IF_Q:
-		{
-			ast_node_t *child_condition = (*node)->children[0];
-			if(node_is_constant(child_condition))
-			{
-				VNumber condition = *(child_condition->types.vnumber);
-
-				if(V_TRUE(condition))
-				{
-					to_return = ast_node_deep_copy((*node)->children[1]);
-				}
-				else if(V_FALSE(condition))
-				{
-					to_return = ast_node_deep_copy((*node)->children[2]);
-				}
-				// otherwise we keep it as is to build the circuitry
-			}
-			break;
-		}
-		default:
-		{
-			break;
-		}
-	}
-
-	return to_return;
-}
-
-/*---------------------------------------------------------------------------------------------
  * (function: node_is_constant)
  *-------------------------------------------------------------------------------------------*/
 bool node_is_constant(ast_node_t *node)
 {
 	if (node && 
 		node->type == NUMBERS && 
-		node->types.vnumber != nullptr &&
-		!(node->types.vnumber->is_dont_care_string()))
+		node->types.vnumber != nullptr)
 	{
 		return true;
 	}

@@ -17,8 +17,8 @@ void initial_node(ast_node_t *node, ids id, int line_number, int file_number, in
 
 void allocate_children_to_node(ast_node_t* node, std::vector<ast_node_t *> children_list);
 void add_child_to_node(ast_node_t* node, ast_node_t *child);
-void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child);
-void remove_child_from_node(ast_node_t* node, int index);
+void add_child_to_node_at_index(ast_node_t* node, ast_node_t *child, int index);
+void remove_child_from_node_at_index(ast_node_t* node, int index);
 ast_node_t **expand_node_list_at(ast_node_t **list, long old_size, long to_add, long start_idx);
 void move_ast_node(ast_node_t *src, ast_node_t *dest, ast_node_t *node);
 ast_node_t *ast_node_deep_copy(ast_node_t *node);
@@ -45,7 +45,6 @@ long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cach
 bool node_is_constant(ast_node_t *node);
 ast_node_t *fold_binary(ast_node_t **node);
 ast_node_t *fold_unary(ast_node_t **node);
-ast_node_t * fold_conditional(ast_node_t **node);
 
 long clog2(long value_in, int length);
 long resolve_concat_sizes(ast_node_t *node_top, STRING_CACHE_LIST *local_string_cache_list);

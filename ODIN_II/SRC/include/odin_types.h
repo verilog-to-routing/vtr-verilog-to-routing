@@ -300,7 +300,6 @@ enum ids
 	CASE_ITEM,
 	CASE_DEFAULT,
 	ALWAYS,
-	GENERATE,
 	IF,
 	IF_Q,
 	FOR,
