@@ -20,7 +20,6 @@ addons:
     - build-essential
     - cmake
     - ctags
-    - coreutils
     - curl
     - doxygen
     - flex
