@@ -26,7 +26,7 @@ function echo_bm_conf() {
         else
             path_to_exec=$(find ${_temp_bm_dir} -name ${_reg_exec_name})
             path_to_exec=$(dirname ${path_to_exec})
-            realative_path_from_exec=$(realpath --relative-to=${path_to_exec} ${_input_bm_dir})
+            realative_path_from_exec=$(realapath_from ${_input_bm_dir} ${path_to_exec} )
 
             _bm_name=$(basename ${realative_path_from_exec})
 
@@ -34,7 +34,7 @@ function echo_bm_conf() {
             circuit_list_input=""
             for files in $(find ${_input_bm_dir} -type f -name "*.v")
             do
-                circuit_path=$(realpath --relative-to=${_input_bm_dir} ${files})
+                circuit_path=$(realapath_from ${files} ${_input_bm_dir} )
                 circuit_list_input="\
 circuit_list_add=${circuit_path}
 ${circuit_list_input}"
@@ -42,7 +42,7 @@ ${circuit_list_input}"
 
             for files in $(find ${_input_bm_dir} -type f -name "*.blif")
             do
-                circuit_path=$(realpath --relative-to=${_input_bm_dir} ${files})
+                circuit_path=$(realapath_from ${files} ${_input_bm_dir} )
                 circuit_list_input="\
 circuit_list_add=${circuit_path}
 ${circuit_list_input}"

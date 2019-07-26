@@ -157,7 +157,7 @@ function init_temp() {
 
 function create_temp() {
 	if [ ! -d ${NEW_RUN_DIR} ]; then
-		echo "Benchmark result location: $(realpath --relative-to=${PWD} ${NEW_RUN_DIR})"
+		echo "Benchmark result location: ${NEW_RUN_DIR}"
 		mkdir -p ${NEW_RUN_DIR}
 
 		unlink ${REGRESSION_DIR}/latest &> /dev/null || /bin/true
@@ -918,7 +918,7 @@ then
 fi
 
 _TEST=$(readlink -f ${_TEST})
-_TEST=$(realpath --relative-to=${THIS_DIR} ${_TEST})
+_TEST=$(realapath_from  ${_TEST} ${THIS_DIR})
 
 echo "Task: ${_TEST}"
 
