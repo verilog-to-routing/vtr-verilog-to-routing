@@ -528,7 +528,7 @@ ast_node_t *find_top_module()
 				number_of_top_modules = 1;
 				break;
 			}
-			else if ((ast_modules[i]->types.module.is_instantiated == false))
+			else if (!(ast_modules[i]->types.module.is_instantiated))
 			{
 				/**
 				 * Check to see if the module is a hard block 
