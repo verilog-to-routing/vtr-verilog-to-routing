@@ -1087,7 +1087,7 @@ void match_node(t_linked_vptr *place, operation_list oper)
 					if (mark == 1)
 					{
 						merge_nodes(node, next_node);
-						remove_list_node(pre, next);
+						remove_list_node(pre, next);	
 					}
 				}
 			}
@@ -1301,6 +1301,10 @@ void reallocate_pins(nnode_t *node, nnode_t *next_node)
 				pin = input_node->input_pins[pin_idx];
 				add_fanout_pin_to_net(net, pin);
 			}
+			else
+			{
+				free_npin(next_node->output_pins[i]->net->fanout_pins[j]);
+			}
 
 		}
 	}
@@ -1311,12 +1315,12 @@ void reallocate_pins(nnode_t *node, nnode_t *next_node)
  *-------------------------------------------------------------------------*/
 void free_op_nodes(nnode_t *node)
 {
-	int i;
-	for (i = 0; i < node->num_output_pins; i++)
+	for (int i = 0; i < node->num_output_pins; i++)
 	{
 		if (node->output_pins[i]->net != NULL)
-			vtr::free(node->output_pins[i]->net->fanout_pins);
-		vtr::free(node->output_pins[i]->net);
+		{
+			free_nnet(node->output_pins[i]->net);
+		}
 	}
 	free_nnode(node);
 
