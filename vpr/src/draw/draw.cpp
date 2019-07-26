@@ -3132,6 +3132,8 @@ static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_
     //Traced from sink to source, but we want to draw from source to sink
     std::reverse(rr_nodes_on_path.begin(), rr_nodes_on_path.end());
 
+    free_route_tree(rt_root);
+
     if (allocated_route_tree_structs) {
         free_route_tree_timing_structs();
     }
