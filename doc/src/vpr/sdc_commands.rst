@@ -193,7 +193,7 @@ The default hold multicycle is one less than the setup multicycle path (e.g. the
 
 .. code-block:: tcl
 
-    #Create a 4 cycle setup check, and 3 cycle hold check from clkA to clkB
+    #Create a 4 cycle setup check, and 0 cycle hold check from clkA to clkB
     set_multicycle_path -from [get_clocks {clkA}] -to [get_clocks {clkB}] 4
 
     #Create a 3 cycle setup check from clk to clk2
@@ -205,7 +205,10 @@ The default hold multicycle is one less than the setup multicycle path (e.g. the
     # position before the previous setup setup_multicycle_path was applied
     set_multicycle_path -hold -from [get_clocks {clk}] -to [get_clocks {clk2}] 2
 
-.. note:: Multicycles are supported between entire clock domains, but *not* between individual registers.
+    #Create a multicycle to a specific pin
+    set_multicycle_path -to [get_pins {my_inst.in\[0\]}] 2
+
+.. note:: Multicycles are supported between entire clock domains, and ending at specific registers.
 
 .. sdc:command:: set_multicycle_path
 
@@ -237,6 +240,12 @@ The default hold multicycle is one less than the setup multicycle path (e.g. the
 
         **Default:** All clocks
 
+    .. sdc:option:: -to [get_pins <pin list or regexes>]
+
+        Specifies the sink/capture netlist pins to which the multicycle is applied.
+
+        **Required:** No
+
     .. sdc:option:: <path_multiplier>
 
         The number of cycles that apply to the specified path(s).
@@ -244,6 +253,8 @@ The default hold multicycle is one less than the setup multicycle path (e.g. the
         **Required:** Yes
 
 .. note:: If neither :sdc:option:`-setup` nor :sdc:option:`-hold` the setup multicycle is set to ``path_multiplier`` and the hold multicycle offset to ``0``.
+
+.. note:: Only a single -to option can be specified (either clocks or pins, but not both).
 
 
 set_input_delay/set_output_delay

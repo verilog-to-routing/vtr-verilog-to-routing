@@ -1,16 +1,24 @@
 #ifndef ODIN_UTIL_H
 #define ODIN_UTIL_H
+
+#include <string>
+
 #include "odin_types.h"
 
-#define MAX_BUF 256
+#define MAX_BUF 2048
 
 long shift_left_value_with_overflow_check(long input_value, long shift_by);
 
-const char *node_name_based_on_op(nnode_t *node);
+std::string get_file_extension(std::string input_file);
+
 const char *name_based_on_op(operation_list op);
+const char *name_based_on_ids(ids op);
+const char *node_name_based_on_op(nnode_t *node);
+const char *ast_node_name_based_on_ids(ast_node_t *node);
 
 char *make_signal_name(char *signal_name, int bit);
 char *make_full_ref_name(const char *previous, const char *module_name, const char *module_instance_name, const char *signal_name, long bit);
+char *make_full_name_w_o_array_ref(const char *previous, const char *module_name, const char *module_instance_name);
 
 char *twos_complement(char *str);
 int is_string_of_radix(char *string, int radix);
@@ -45,6 +53,7 @@ char *get_pin_name  (char *name);
 char *get_port_name (char *name);
 int get_pin_number  (char *name);
 short get_bit(char in);
+short get_bit(short in);
 char *search_replace(char *src, const char *sKey, const char *rKey, int flag);
 bool validate_string_regex(const char *str, const char *pattern);
 std::string find_substring(char *src,const char *sKey,int flag);
@@ -61,7 +70,7 @@ void trim_string(char* string, const char *chars);
 bool only_one_is_true(std::vector<bool> tested);
 int odin_sprintf (char *s, const char *format, ...);
 
-void passed_verify_i_o_availabilty(struct nnode_t_t *node, int expected_input_size, int expected_output_size, const char *current_src, int line_src);
+void passed_verify_i_o_availabilty(nnode_t *node, int expected_input_size, int expected_output_size, const char *current_src, int line_src);
 
 
 #endif

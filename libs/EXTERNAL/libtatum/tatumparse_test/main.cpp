@@ -79,11 +79,11 @@ class PrintCallback : public tp::Callback {
     void add_min_output_constraint(int node_id, int domain_id,  float constraint) override {
         fprintf(stdout, " type: MIN_OUTPUT_CONSTRAINT node: %d domain: %d constraint: %g\n", node_id, domain_id, constraint);
     }
-    void add_setup_constraint(int src_domain_id, int sink_domain_id, float constraint) override {
-        fprintf(stdout, " type: SETUP_CONSTRAINT src_domain: %d sink_domain: %d constraint: %g\n", src_domain_id, sink_domain_id, constraint);
+    void add_setup_constraint(int src_domain_id, int sink_domain_id, int capture_node, float constraint) override {
+        fprintf(stdout, " type: SETUP_CONSTRAINT src_domain: %d sink_domain: %d capture_node: %d constraint: %g\n", src_domain_id, sink_domain_id, capture_node, constraint);
     }
-    void add_hold_constraint(int src_domain_id, int sink_domain_id, float constraint) override {
-        fprintf(stdout, " type: HOLD_CONSTRAINT src_domain: %d sink_domain: %d constraint: %g\n", src_domain_id, sink_domain_id, constraint);
+    void add_hold_constraint(int src_domain_id, int sink_domain_id, int capture_node, float constraint) override {
+        fprintf(stdout, " type: HOLD_CONSTRAINT src_domain: %d sink_domain: %d capture_node: %d constraint: %g\n", src_domain_id, sink_domain_id, capture_node, constraint);
     }
     void add_setup_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) override {
         fprintf(stdout, " type: SETUP_UNCERTAINTY src_domain: %d sink_domain: %d uncertainty: %g\n", src_domain_id, sink_domain_id, uncertainty);
@@ -181,8 +181,8 @@ class NopCallback : public tp::Callback {
         void add_min_input_constraint(int /*node_id*/, int /*domain_id*/, float /*constraint*/) override {}
         void add_max_output_constraint(int /*node_id*/, int /*domain_id*/, float /*constraint*/) override {}
         void add_min_output_constraint(int /*node_id*/, int /*domain_id*/, float /*constraint*/) override {}
-        void add_setup_constraint(int /*src_domain_id*/, int /*sink_domain_id*/, float /*constraint*/) override {}
-        void add_hold_constraint(int /*src_domain_id*/, int /*sink_domain_id*/, float /*constraint*/) override {}
+        void add_setup_constraint(int /*src_domain_id*/, int /*sink_domain_id*/, int /*capture_node*/, float /*constraint*/) override {}
+        void add_hold_constraint(int /*src_domain_id*/, int /*sink_domain_id*/, int /*capture_node*/, float /*constraint*/) override {}
         void add_setup_uncertainty(int /*src_domain_id*/, int /*sink_domain_id*/, float /*uncertainty*/) override {}
         void add_hold_uncertainty(int /*src_domain_id*/, int /*sink_domain_id*/, float /*uncertainty*/) override {}
         void add_early_source_latency(int /*domain_id*/, float /*latency*/) override {}

@@ -1,3 +1,0 @@
--V regression_test/benchmark/other/multi_edge_reader_writer/multi_edge_reader_writer.v
--L reset 
--g 100

@@ -63,7 +63,6 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     vpr_init(sizeof(argv)/sizeof(argv[0]), argv,
               &options, &vpr_setup, &arch);
 
-    vpr_setup.gen_netlist_as_blif     = false;
     vpr_setup.PackerOpts.doPacking    = STAGE_LOAD;
     vpr_setup.PlacerOpts.doPlacement  = STAGE_LOAD;
     vpr_setup.RouterOpts.doRouting    = STAGE_LOAD;
@@ -82,11 +81,14 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     std::set<std::tuple<int, int, short>> routing_edges;
     bool found_lut5 = false;
     bool found_lut6 = false;
+    bool found_mux1 = false;
+    bool found_mux2 = false;
     while(fasm_string) {
         // Should see something like:
         // CLB.FLE0.N2_LUT5
         // CLB.FLE8.LUT5_1.LUT[31:0]=32'b00000000000000010000000000000000
         // CLB.FLE9.OUT_MUX.LUT
+        // CLB.FLE9.DISABLE_FF
         // CLB.FLE9.LUT6[63:0]=64'b0000000000000000000000000000000100000000000000000000000000000000
         // 3634_3690_0
         std::string line;
@@ -96,10 +98,18 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
             continue;
         }
 
+        if(!found_mux1 && line == "CLB.FLE9.OUT_MUX.LUT") {
+            found_mux1 = true;
+        }
+        if(!found_mux2 && line == "CLB.FLE9.DISABLE_FF") {
+            found_mux2 = true;
+        }
+
         if(line.find("CLB") != std::string::npos) {
             auto pos = line.find("LUT[");
             if(pos != std::string::npos) {
-                CHECK_THAT(line.substr(pos), Equals("LUT[31:0]=32'b00000000000000010000000000000000"));
+                CHECK_THAT(line.substr(pos), Equals(
+                           "LUT[31:0]=32'b00000000000000010000000000000000"));
                 found_lut5 = true;
             }
 
@@ -138,6 +148,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
     CHECK(found_lut5);
     CHECK(found_lut6);
+    CHECK(found_mux1);
+    CHECK(found_mux2);
 
     vpr_free_all(arch, vpr_setup);
 }

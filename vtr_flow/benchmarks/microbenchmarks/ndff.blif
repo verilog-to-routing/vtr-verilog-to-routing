@@ -1,0 +1,14 @@
+.model top
+.inputs clk cen ina inb
+.outputs outa outb outc outd
+.names $false
+.names $true
+1
+.names $undef
+.subckt DFFE clk=clk data=ina cen=cen out=ina_n1
+.subckt DFF clk=clk data=ina_n1 out=outa
+.subckt DFFN clk=clk data=ina_n1 out=outc
+.subckt DFFNE clk=clk data=inb cen=ina out=inb_n1
+.subckt DFF clk=clk data=inb_n1 out=outb
+.subckt DFFN clk=clk data=inb_n1 out=outd
+.end

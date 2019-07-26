@@ -89,8 +89,8 @@ class Callback {
         virtual void add_min_input_constraint(int node_id, int domain_id, float constraint) = 0;
         virtual void add_max_output_constraint(int node_id, int domain_id, float constraint) = 0;
         virtual void add_min_output_constraint(int node_id, int domain_id, float constraint) = 0;
-        virtual void add_setup_constraint(int src_domain_id, int sink_domain_id, float constraint) = 0;
-        virtual void add_hold_constraint(int src_domain_id, int sink_domain_id, float constraint) = 0;
+        virtual void add_setup_constraint(int src_domain_id, int sink_domain_id, int capture_domain, float constraint) = 0;
+        virtual void add_hold_constraint(int src_domain_id, int sink_domain_id, int capture_domain, float constraint) = 0;
         virtual void add_setup_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) = 0;
         virtual void add_hold_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) = 0;
         virtual void add_early_source_latency(int domain_id, float latency) = 0;

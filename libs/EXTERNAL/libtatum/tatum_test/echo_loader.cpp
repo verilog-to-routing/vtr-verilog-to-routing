@@ -54,12 +54,12 @@ void EchoLoader::add_min_output_constraint(int node_id, int domain_id, float con
     tc_->set_output_constraint(tatum::NodeId(node_id), tatum::DomainId(domain_id), tatum::DelayType::MIN, tatum::Time(constraint));
 }
 
-void EchoLoader::add_setup_constraint(int src_domain_id, int sink_domain_id, float constraint) {
-    tc_->set_setup_constraint(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), tatum::Time(constraint));
+void EchoLoader::add_setup_constraint(int src_domain_id, int sink_domain_id, int capture_node, float constraint) {
+    tc_->set_setup_constraint(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), tatum::NodeId(capture_node), tatum::Time(constraint));
 }
 
-void EchoLoader::add_hold_constraint(int src_domain_id, int sink_domain_id, float constraint) {
-    tc_->set_hold_constraint(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), tatum::Time(constraint));
+void EchoLoader::add_hold_constraint(int src_domain_id, int sink_domain_id, int capture_node,float constraint) {
+    tc_->set_hold_constraint(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), tatum::NodeId(capture_node), tatum::Time(constraint));
 }
 
 void EchoLoader::add_setup_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) {

@@ -1,13 +1,13 @@
 /**
- VPR is a CAD tool used to conduct FPGA architecture exploration.  It takes, as input, a technology-mapped netlist and a description of the FPGA architecture being investigated.
- VPR then generates a packed, placed, and routed FPGA (in .net, .place, and .route files respectively) that implements the input netlist.
-
- This file is where VPR starts execution.
-
- Key files in VPR:
- 1.  libarchfpga/physical_types.h - Data structures that define the properties of the FPGA architecture
- 2.  vpr_types.h - Very major file that defines the core data structures used in VPR.  This includes detailed architecture information, user netlist data structures, and data structures that describe the mapping between those two.
- 3.  globals.h - Defines the global variables used by VPR.
+ * VPR is a CAD tool used to conduct FPGA architecture exploration.  It takes, as input, a technology-mapped netlist and a description of the FPGA architecture being investigated.
+ * VPR then generates a packed, placed, and routed FPGA (in .net, .place, and .route files respectively) that implements the input netlist.
+ *
+ * This file is where VPR starts execution.
+ *
+ * Key files in VPR:
+ * 1.  libarchfpga/physical_types.h - Data structures that define the properties of the FPGA architecture
+ * 2.  vpr_types.h - Very major file that defines the core data structures used in VPR.  This includes detailed architecture information, user netlist data structures, and data structures that describe the mapping between those two.
+ * 3.  globals.h - Defines the global variables used by VPR.
  */
 
 #include <cstdio>
@@ -42,7 +42,7 @@ using namespace std;
  * 3.  Place-and-route and timing analysis
  * 4.  Clean up
  */
-int main(int argc, const char **argv) {
+int main(int argc, const char** argv) {
     vtr::ScopedFinishTimer t("The entire flow of VPR");
 
     t_options Options = t_options();
@@ -81,7 +81,7 @@ int main(int argc, const char **argv) {
         VTR_LOG("VPR suceeded\n");
 
     } catch (const tatum::Error& tatum_error) {
-        VTR_LOG_ERROR( "%s\n", format_tatum_error(tatum_error).c_str());
+        VTR_LOG_ERROR("%s\n", format_tatum_error(tatum_error).c_str());
 
         return ERROR_EXIT_CODE;
 
@@ -95,7 +95,7 @@ int main(int argc, const char **argv) {
         }
 
     } catch (const vtr::VtrError& vtr_error) {
-        VTR_LOG_ERROR( "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());
+        VTR_LOG_ERROR("%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());
 
         return ERROR_EXIT_CODE;
     }
@@ -103,7 +103,3 @@ int main(int argc, const char **argv) {
     /* Signal success to scripts */
     return SUCCESS_EXIT_CODE;
 }
-
-
-
-

@@ -32,6 +32,7 @@ size_t sweep_iterative(AtomNetlist& netlist,
                        bool should_sweep_dangling_blocks,
                        bool should_sweep_dangling_nets,
                        bool should_sweep_constant_primary_outputs,
+                       e_const_gen_inference const_gen_inference_method,
                        int verbosity);
 
 //Sweeps blocks that have no fanout

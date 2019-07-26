@@ -86,8 +86,7 @@ float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
 
 float find_node_setup_slack(const tatum::SetupTimingAnalyzer& setup_analyzer, tatum::NodeId node, tatum::DomainId launch_domain, tatum::DomainId capture_domain) {
     for (const auto& tag : setup_analyzer.setup_slacks(node)) {
-        if (tag.launch_clock_domain() == launch_domain &&
-                tag.capture_clock_domain() == capture_domain) {
+        if (tag.launch_clock_domain() == launch_domain && tag.capture_clock_domain() == capture_domain) {
             return tag.time().value();
         }
     }
@@ -170,7 +169,6 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
 
     VTR_LOG("Setup slack histogram:\n");
     print_histogram(create_setup_slack_histogram(setup_analyzer));
-
 
     if (crit_paths.size() > 1) {
         //Multi-clock
@@ -256,7 +254,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
                 weighted_cpd /= total_intra_domain_fanout;
             }
             double fanout_weighted_geomean_intra_domain_cpd = vtr::geomean(fanout_weighted_intra_domain_cpds.begin(),
-                    fanout_weighted_intra_domain_cpds.end());
+                                                                           fanout_weighted_intra_domain_cpds.end());
             VTR_LOG("Fanout-weighted geomean non-virtual intra-domain period: %g ns (%g MHz)\n",
                     sec_to_nanosec(fanout_weighted_geomean_intra_domain_cpd),
                     sec_to_mhz(fanout_weighted_geomean_intra_domain_cpd));
@@ -281,13 +279,13 @@ float find_hold_total_negative_slack(const tatum::HoldTimingAnalyzer& hold_analy
         }
     }
     return tns;
-
 }
 
 tatum::NodeId find_origin_node_for_hold_slack(const tatum::TimingTags::tag_range arrival_tags,
-        const tatum::TimingTags::tag_range required_tags, float slack) {
+                                              const tatum::TimingTags::tag_range required_tags,
+                                              float slack) {
     /*Given the slack, arrival, and required tags of a certain timing node,
-     its origin node is found*/
+     * its origin node is found*/
     for (tatum::TimingTag arrival_tag : arrival_tags) {
         for (tatum::TimingTag required_tag : required_tags) {
             if (arrival_tag.time().value() - required_tag.time().value() == slack) {
@@ -302,8 +300,8 @@ tatum::NodeId find_origin_node_for_hold_slack(const tatum::TimingTags::tag_range
 
 float find_total_negative_slack_within_clb_blocks(const tatum::HoldTimingAnalyzer& hold_analyzer) {
     /*Some negative slack are found within short paths in clb blocks. This cannot be optimized
-     by the router. This function is used to measure the effectiveness of the router's
-     hold time optimizer*/
+     * by the router. This function is used to measure the effectiveness of the router's
+     * hold time optimizer*/
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -329,18 +327,18 @@ float find_total_negative_slack_within_clb_blocks(const tatum::HoldTimingAnalyze
 
             ClusterBlockId clb_src_block = atom_ctx.lookup.atom_clb(atom_src_block);
             VTR_ASSERT(clb_src_block);
-			ClusterBlockId clb_sink_block = atom_ctx.lookup.atom_clb(atom_sink_block);
+            ClusterBlockId clb_sink_block = atom_ctx.lookup.atom_clb(atom_sink_block);
             VTR_ASSERT(clb_sink_block);
 
             const t_pb_graph_pin* sink_gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(pin);
             VTR_ASSERT(sink_gpin);
 
             int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
-			ClusterNetId net_id;
-			int sink_block_pin_index, sink_net_pin_index;
+            ClusterNetId net_id;
+            int sink_block_pin_index, sink_net_pin_index;
             std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin(clb_sink_block, sink_pb_route_id);
 
-            if(net_id == ClusterNetId::INVALID() && sink_block_pin_index == -1 && sink_net_pin_index == -1) {
+            if (net_id == ClusterNetId::INVALID() && sink_block_pin_index == -1 && sink_net_pin_index == -1) {
                 /*Does not go out of the cluster*/
                 if (clb_sink_block == clb_src_block) {
                     if (slack < 0.) {
@@ -461,7 +459,6 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints, cons
 
             if (worst_slack == std::numeric_limits<float>::infinity()) continue; //No path
 
-
             VTR_LOG("  %s to %s worst hold slack: %g ns\n",
                     constraints.clock_domain_name(domain).c_str(),
                     constraints.clock_domain_name(domain).c_str(),
@@ -494,7 +491,6 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints, cons
 std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     std::map<tatum::DomainId, size_t> fanouts;
     for (tatum::NodeId node : timing_graph.nodes()) {
-
         tatum::NodeType type = timing_graph.node_type(node);
         if (type == tatum::NodeType::SOURCE || type == tatum::NodeType::SINK) {
             for (auto tag : setup_analyzer.setup_tags(node, tatum::TagType::DATA_ARRIVAL)) {
@@ -515,7 +511,6 @@ std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& 
 
 //Return the criticality of a net's pin in the CLB netlist
 float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin) {
-
     //There may be multiple atom netlist pins connected to this CLB pin
     float clb_pin_crit = 0.;
     for (const auto atom_pin : pin_lookup.connected_atom_pins(clb_pin)) {
@@ -542,16 +537,14 @@ float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, cons
 // Note that unlike in Wainberg, we calculate the relaxed criticality as a post-processing step.
 
 float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_req,
-        const std::map<DomainPair, float>& domains_worst_slack,
-        const tatum::TimingTags::tag_range tags) {
+                               const std::map<DomainPair, float>& domains_worst_slack,
+                               const tatum::TimingTags::tag_range tags) {
     //Allowable round-off tolerance during criticality calculation
     constexpr float CRITICALITY_ROUND_OFF_TOLERANCE = 1e-4;
-
 
     //Record the maximum criticality over all the tags
     float max_crit = 0.;
     for (const auto& tag : tags) {
-
         VTR_ASSERT_MSG(tag.type() == tatum::TagType::SLACK, "Tags must be slacks to calculate criticality");
 
         float slack = tag.time().value();
@@ -561,7 +554,6 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
         auto iter = domains_max_req.find(domain_pair);
         VTR_ASSERT_MSG(iter != domains_max_req.end(), "Require the maximum required time for clock domain pair");
         float max_req = iter->second;
-
 
         iter = domains_worst_slack.find(domain_pair);
         VTR_ASSERT_MSG(iter != domains_worst_slack.end(), "Require the worst slack for clock domain pair");
@@ -583,15 +575,14 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
         if (max_req > 0.) {
             //Standard case
             crit = 1. - (slack / max_req);
-            
+
         } else if (max_req == 0. && slack == 0.) {
             //Special case to avoid divide by zero
             crit = 1.;
         } else {
             std::string msg = vtr::string_fmt("Invalid maximum required time %g (expected >= 0). Shifted slack was %g.", max_req, slack);
-            VPR_THROW(VPR_ERROR_TIMING, msg.c_str());
+            VPR_ERROR(VPR_ERROR_TIMING, msg.c_str());
         }
-
 
         //Soft check for reasonable criticality values
         VTR_ASSERT_MSG(crit >= 0. - CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be negative");

@@ -3,7 +3,6 @@
 #include "vpr_types.h" //For t_trace
 
 t_traceback::t_traceback(const t_traceback& other) {
-
     VTR_ASSERT((other.head == nullptr && other.tail == nullptr) || (other.head && other.tail && other.tail->next == nullptr));
 
     //Deep-copy of traceback
@@ -26,7 +25,7 @@ t_traceback::t_traceback(const t_traceback& other) {
     //We may have gotten the last t_trace element from a free list,
     //make sure it's next ptr gets set to null
     if (prev) {
-        prev->next = nullptr; 
+        prev->next = nullptr;
     }
 
     tail = prev;

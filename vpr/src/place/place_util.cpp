@@ -17,8 +17,8 @@ static vtr::Matrix<t_grid_blocks> init_grid_blocks() {
     auto& device_ctx = g_vpr_ctx.device();
 
     auto grid_blocks = vtr::Matrix<t_grid_blocks>({device_ctx.grid.width(), device_ctx.grid.height()});
-    for(size_t x = 0; x < device_ctx.grid.width(); ++x) {
-        for(size_t y = 0; y < device_ctx.grid.height(); ++y) {
+    for (size_t x = 0; x < device_ctx.grid.width(); ++x) {
+        for (size_t y = 0; y < device_ctx.grid.height(); ++y) {
             auto type = device_ctx.grid[x][y].type;
 
             int capacity = type->capacity;

@@ -5,7 +5,6 @@
 #include "ezgl/application.hpp"
 #include "ezgl/graphics.hpp"
 
-
 static constexpr ezgl::color blk_BISQUE(0xFF, 0xE4, 0xC4);
 static constexpr ezgl::color blk_LIGHTGREY(0xD3, 0xD3, 0xD3);
 static constexpr ezgl::color blk_LIGHTSKYBLUE(0x87, 0xCE, 0xFA);
@@ -156,14 +155,12 @@ static constexpr ezgl::color blk_DARKGREY(0xA9, 0xA9, 0xA9);
 static constexpr ezgl::color blk_ORANGE(0xFF, 0xA5, 0x00);
 static constexpr ezgl::color blk_ALICEBLUE(0xF0, 0xF8, 0xFF);
 
-
-
 //The colours used to draw block types
-const std::vector<ezgl::color> block_colors {
+const std::vector<ezgl::color> block_colors{
     //This first set of colours is somewhat curated to yield
     //a nice colour pallette
     blk_BISQUE, //EMPTY type is usually the type with index 0, so this colour
-            //usually unused
+                //usually unused
     blk_LIGHTGREY,
     blk_LIGHTSKYBLUE,
     blk_THISTLE,
@@ -318,11 +315,5 @@ const std::vector<ezgl::color> block_colors {
     blk_ORANGE,
     blk_ALICEBLUE,
 };
-
-
-
-
-
-
 
 #endif /* DRAW_COLOR_H */

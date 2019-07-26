@@ -32,7 +32,6 @@ use strict;
 use Cwd;
 use File::Spec;
 use List::Util;
-use List::MoreUtils qw(uniq);
 use Scalar::Util;
 
 # Function Prototypes
@@ -410,34 +409,33 @@ sub run_quick_test {
 sub run_odin_test {
 	$token = shift;
 
-	chdir ("ODIN_II") or die "Failed to change to directory ./ODIN_II: $!";
-
-  my $return_status = 0;
+  	my $odin_cmd = "ODIN_II/verify_odin.sh --clean -C ODIN_II/regression_test/.library/output_on_error.conf --nb_of_process $num_cpu --test ODIN_II/regression_test/benchmark/";
+  	my $return_status = 0;
 	if ( $token eq "odin_reg_micro" ) {
-		$return_status = system("./verify_odin.sh --clean --test micro --nb_of_process $num_cpu");
+		$return_status = system($odin_cmd."suite/light_suite");
 	} elsif ( $token eq "odin_reg" ) {
-		$return_status = system("./verify_odin.sh --clean --test full --nb_of_process $num_cpu");
+		$return_status = system($odin_cmd."task/full");
 	} elsif ( $token eq "odin_reg_large" ) {
-		$return_status = system("./verify_odin.sh --clean --test large --nb_of_process $num_cpu");
+		$return_status = system($odin_cmd."task/large");
 	} elsif ( $token eq "odin_reg_operators" ) {
-		$return_status = system("./verify_odin.sh --clean --test operators --nb_of_process $num_cpu");
+		$return_status = system($odin_cmd."task/operators");
+	} elsif ( $token eq "odin_reg_valgrind_operators" ) {
+		$return_status = system($odin_cmd."task/valgrind_operators");
 	} elsif ( $token eq "odin_reg_arch" ) {
-		$return_status = system("./verify_odin.sh --clean --test arch --nb_of_process $num_cpu");
+		$return_status = system($odin_cmd."task/arch");
 	} elsif ( $token eq "odin_reg_syntax" ) {
-		$return_status = system("./verify_odin.sh --clean --test syntax --nb_of_process $num_cpu");
+		$return_status = system($odin_cmd."task/syntax");
 	} elsif ( $token eq "odin_reg_full" ) {
-		$return_status = system("./verify_odin.sh --clean --test full_suite --nb_of_process $num_cpu");
+		$return_status = system($odin_cmd."suite/full_suite");
 	} else {
-    die("Unrecognized odin test $token");
-  }
+    	die("Unrecognized odin test $token");
+  	}
 
-	chdir ("..");
-
-  #Perl is obtuse, and requires you to manually shift the return value by 8 bits
-  #to get the real exit code from a call to system(). There must be a better way to do this....
+	#Perl is obtuse, and requires you to manually shift the return value by 8 bits
+	#to get the real exit code from a call to system(). There must be a better way to do this....
 	# odin return the number of failure as its exit code
-  my $exit_code = $return_status >> 8;
-  return $exit_code;
+	my $exit_code = $return_status >> 8;
+	return $exit_code;
 }
 
 sub trim($) {
@@ -445,4 +443,9 @@ sub trim($) {
 	$string =~ s/^\s+//;
 	$string =~ s/\s+$//;
 	return $string;
+}
+
+sub uniq {
+  my %seen;
+  return grep { !$seen{$_}++ } @_;
 }

@@ -46,8 +46,6 @@ using namespace std;
 
 
 void search_and_highlight(GtkWidget *widget, ezgl::application *app) {
-    t_draw_coords* draw_coords = get_draw_coords_vars();
-    t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     
     // get ID from search bar
@@ -111,11 +109,11 @@ void search_and_highlight(GtkWidget *widget, ezgl::application *app) {
     else
         return;
     app->refresh_drawing();
+    widget = widget; // just for hiding warning message
 }
 
 bool highlight_rr_nodes(int hit_node) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
     
     char message[250] = "";
     
@@ -137,7 +135,7 @@ bool highlight_rr_nodes(int hit_node) {
                 draw_state->draw_rr_node[node].node_highlighted = false;
             }
             //Print info about all nodes to terminal
-            print_rr_node(stdout, device_ctx.rr_nodes, node);
+            VTR_LOG("%s\n", describe_rr_node(node).c_str());
         }
         
         //Show info about *only* hit node to graphics
@@ -213,7 +211,6 @@ void auto_zoom_rr_node(int rr_node_id) {
 
 void highlight_blocks(ClusterBlockId clb_index) {    
     char msg[vtr::bufsize];
-    auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     

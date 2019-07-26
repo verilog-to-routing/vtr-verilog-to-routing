@@ -147,8 +147,10 @@ public:
 
     // Constructors and equality operations have the obvious meaning.
     t_color(uint_fast8_t r, uint_fast8_t g, uint_fast8_t b, uint_fast8_t a = 255);
-    t_color(const t_color& src);
-    t_color();
+    t_color(const t_color& src) = default;
+    t_color() = default;
+    t_color& operator=(const t_color&) = default;
+
     bool operator==(const t_color& rhs) const;
     bool operator!=(const t_color& rhs) const;
 

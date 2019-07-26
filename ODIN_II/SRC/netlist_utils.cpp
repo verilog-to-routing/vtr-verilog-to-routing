@@ -64,7 +64,7 @@ nnode_t* allocate_nnode() {
 	new_node->forward_level = -1;
 	new_node->backward_level = -1;
 	new_node->sequential_level = -1;
-	new_node->sequential_terminator = FALSE;
+	new_node->sequential_terminator = false;
 
 	new_node->internal_netlist = NULL;
 
@@ -75,15 +75,15 @@ nnode_t* allocate_nnode() {
 	new_node->bit_map= NULL;
 	new_node->bit_map_line_count=0;
 
-	new_node->in_queue = FALSE;
+	new_node->in_queue = false;
 
 	new_node->undriven_pins = 0;
 	new_node->num_undriven_pins = 0;
 
 	new_node->ratio = 1;
-	new_node->edge_type = RISING_EDGE_SENSITIVITY;
+	new_node->edge_type = UNDEFINED_SENSITIVITY;
 
-	new_node->has_initial_value = FALSE;
+	new_node->has_initial_value = false;
 	new_node->initial_value = 0;
 
 	new_node->generic_output = -1;
@@ -144,7 +144,7 @@ void allocate_more_input_pins(nnode_t *node, int width)
 
 	if (width <= 0)
 	{
-		error_message(NETLIST_ERROR, -1, -1, "tried adding input pins for width %ld <= 0 %s\n", width, node->name);
+		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "tried adding input pins for width %d <= 0 %s\n", width, node->name);
 		return;
 	}
 
@@ -166,7 +166,7 @@ void allocate_more_output_pins(nnode_t *node, int width)
 
 	if (width <= 0)
 	{
-		error_message(NETLIST_ERROR, -1, -1, "tried adding output pins for width %ld <= 0 %s\n", width, node->name);
+		error_message(NETLIST_ERROR, -1, -1, "tried adding output pins for width %d <= 0 %s\n", width, node->name);
 		return;
 	}
 
@@ -218,10 +218,8 @@ npin_t* allocate_npin() {
 
 	new_pin->coverage = 0;
 
-	new_pin->is_default = FALSE;
-	new_pin->is_implied = FALSE;
-
-	new_pin->ace_info = NULL;
+	new_pin->is_default = false;
+	new_pin->is_implied = false;
 
 	return new_pin;
 }
@@ -290,12 +288,12 @@ nnet_t* allocate_nnet()
 	new_net->driver_pin = NULL;
 	new_net->fanout_pins = NULL;
 	new_net->num_fanout_pins = 0;
-	new_net->combined = FALSE;
+	new_net->combined = false;
 
 	new_net->net_data = NULL;
 	new_net->unique_net_data_id = -1;
 
-	new_net->has_initial_value = FALSE;
+	new_net->has_initial_value = false;
 	new_net->initial_value = 0;
 
 	return new_net;
@@ -440,7 +438,7 @@ void combine_nets(nnet_t *output_net, nnet_t* input_net, netlist_t *netlist)
 	/* in case there are any fanouts in output net (should only be zero and one nodes */
 	join_nets(input_net, output_net);
 	/* mark that this is combined */
-	input_net->combined = TRUE;
+	input_net->combined = true;
 
 	/* Need to keep the initial value data when we combine the nets */
 	input_net->has_initial_value = output_net->has_initial_value;
@@ -607,8 +605,8 @@ signal_list_t *init_signal_list()
 
 	list->count = 0;
 	list->pins = NULL;
-	list->is_memory = FALSE;
-	list->is_adder = FALSE;
+	list->is_memory = false;
+	list->is_adder = false;
 
 	return list;
 }
@@ -631,12 +629,17 @@ signal_list_t *combine_lists(signal_list_t **signal_lists, int num_signal_lists)
 {
 	int i;
 	for (i = 1; i < num_signal_lists; i++)
-	{
-		int j;
-		for (j = 0; j < signal_lists[i]->count; j++)
-			add_pin_to_signal_list(signal_lists[0], signal_lists[i]->pins[j]);
+	{		
+		if (signal_lists[i])
+		{
+			int j;
+			for (j = 0; j < signal_lists[i]->count; j++)
+			{
+				add_pin_to_signal_list(signal_lists[0], signal_lists[i]->pins[j]);
+			}
 
-		free_signal_list(signal_lists[i]);
+			free_signal_list(signal_lists[i]);
+		}
 	}
 
 	return signal_lists[0];
@@ -948,8 +951,6 @@ netlist_t* allocate_netlist()
 	new_netlist->nets_sc = sc_new_string_cache();
 	new_netlist->out_pins_sc = sc_new_string_cache();
 	new_netlist->nodes_sc = sc_new_string_cache();
-
-	new_netlist->stats = NULL;
 
 	return new_netlist;
 }

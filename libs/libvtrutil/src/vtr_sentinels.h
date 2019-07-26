@@ -14,27 +14,27 @@ namespace vtr {
 //The sentinel value is the default constructed value of the type
 template<class T>
 class DefaultSentinel {
-    public:
-        constexpr static T INVALID() { return T(); }
+  public:
+    constexpr static T INVALID() { return T(); }
 };
 
 //Specialization for pointer types
 template<class T>
 class DefaultSentinel<T*> {
-    public:
-        constexpr static T* INVALID() { return nullptr; }
+  public:
+    constexpr static T* INVALID() { return nullptr; }
 };
 
 //The sentile value is a specified value of the type
 template<class T, T val>
 class CustomSentinel {
-    public:
-        constexpr static T INVALID() { return T(val); }
+  public:
+    constexpr static T INVALID() { return T(val); }
 };
 
 //The common case where -1 is used as the sentinel value
 template<class T>
-using MinusOneSentinel = CustomSentinel<T,-1>;
+using MinusOneSentinel = CustomSentinel<T, -1>;
 
-} //namespace
+} // namespace vtr
 #endif

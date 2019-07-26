@@ -1,0 +1,14 @@
+.model top
+.inputs clk cen ina inb
+.outputs outa outb outc outd
+.names $false
+.names $true
+1
+.names $undef
+.subckt DFF clk=clk data=ina out=outa
+.param test_param "PARAM_TEST"
+.attr test_attr "ATTR_TEST"
+.subckt DFF clk=clk data=inb out=outb
+.param test_param "PARAM_TEST"
+.attr test_attr "ATTR_TEST"
+.end

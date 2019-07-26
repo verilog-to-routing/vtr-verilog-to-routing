@@ -19,7 +19,7 @@ class AtomLookup;
  * vtr_strong_id.h for details.
  */
 
- //Type tags for Ids
+//Type tags for Ids
 struct atom_block_id_tag;
 struct atom_net_id_tag;
 struct atom_port_id_tag;
@@ -42,9 +42,9 @@ typedef unsigned BitIndex;
 
 //The type of a block in the AtomNetlist
 enum class AtomBlockType : char {
-    INPAD,          //A primary input
-    OUTPAD,         //A primary output
-    BLOCK           //A basic atom block (LUT, FF, blackbox etc.)
+    INPAD,  //A primary input
+    OUTPAD, //A primary output
+    BLOCK   //A basic atom block (LUT, FF, blackbox etc.)
 };
 
 #endif

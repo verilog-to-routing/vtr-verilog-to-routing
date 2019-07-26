@@ -116,7 +116,6 @@ my $verify_rr_graph         = 0;
 my $check_route             = 0;
 my $check_place             = 0;
 my $use_old_abc_script      = 0;
-my $abc_use_dc2             = 1;
 my $run_name = "";
 my $expect_fail = 0;
 my $verbosity = 0;
@@ -129,8 +128,8 @@ my $crit_path_router_iterations = undef;
 
 ##########
 # ABC flow modifiers
-my $flow_type = 0;
-my $use_new_latches_restoration_script = 0;
+my $flow_type = 2; #Use iterative black-boxing flow for multi-clock circuits
+my $use_new_latches_restoration_script = 1;
 my $odin_run_simulation = 0;
 
 while ( scalar(@ARGV) != 0 ) { #While non-empty
@@ -179,8 +178,6 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
             $check_place = 1;
     } elsif ( $token eq "-use_old_abc_script"){
             $use_old_abc_script = 1;
-    } elsif ( $token eq "-abc_use_dc2"){
-            $abc_use_dc2 = shift(@ARGV);
     } elsif ( $token eq "-name"){
             $run_name = shift(@ARGV);
     } elsif ( $token eq "-expect_fail"){
@@ -373,8 +370,8 @@ if (!defined $lut_size) {
     $lut_size = xml_find_LUT_Kvalue($xml_tree);
 }
 if ( $lut_size < 1 ) {
-	$error_status = "failed: cannot determine arch LUT k-value";
-	$error_code = 1;
+    $error_status = "failed: cannot determine arch LUT k-value";
+    $error_code = 1;
 }
 
 # Get memory size
@@ -451,7 +448,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 	if ( !$error_code ) {
 		if ( $use_odin_xml_config ) {
 			$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
-				"-c", $odin_config_file_name, 
+				"-c", $odin_config_file_name,
 				"--adder_type", $odin_adder_config_path,
                 $odin_adder_cin_global,
 				"-U0");
@@ -492,8 +489,8 @@ if (    $starting_stage <= $stage_idx_abc
 			"-g", "100",
 			"--best_coverage",
 			"-U0");	#ABC sets DC bits as 0
-			
-		if ( $q ne "success") 
+
+		if ( $q ne "success")
 		{
 			$odin_run_simulation = 0;
 			print "\tfailed to include simulation\n";
@@ -510,6 +507,10 @@ if (    $starting_stage <= $stage_idx_abc
 	and $ending_stage >= $stage_idx_abc
 	and !$error_code )
 {
+	#added so that valgrind will not run on abc and perl because of existing memory errors
+	my $skip_valgrind = $valgrind;
+	$valgrind = 0;
+
 	my @clock_list;
 
 	if ( $flow_type )
@@ -533,14 +534,14 @@ if (    $starting_stage <= $stage_idx_abc
 		open ($clock_list_file, "<", $temp_dir.$clk_list_filename) or die "Unable to open \"".$clk_list_filename."\": $! \n";
 		#read line and strip whitespace of line
 		my $line = "";
-		while(($line = <$clock_list_file>)) 
+		while(($line = <$clock_list_file>))
 		{
 			$line =~ s/^\s+|\s+$//g;
 			if($line =~ /^latch/)
 			{
 				#get the initial value out (last char)
 				push(@clock_list , $line);
-			}	
+			}
 		}
 	}
 
@@ -580,13 +581,13 @@ if (    $starting_stage <= $stage_idx_abc
 		{
 			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
-					"--clk_list", $clock_list[$domain_itter], "--input", $input_blif, "--output", $pre_abc_blif);	
+					"--clk_list", $clock_list[$domain_itter], "--input", $input_blif, "--output", $pre_abc_blif);
 
 			if ($q ne "success") {
 				$error_status = "failed: to black box the clock <".$clock_list[$domain_itter]."> for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
 				$error_code = 1;
 				last ABC_OPTIMIZATION;
-			}	
+			}
 		}
 		else
 		{
@@ -675,10 +676,6 @@ if (    $starting_stage <= $stage_idx_abc
 
 		if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
 
-		#added so that valgrind will not run on abc because of existing memory errors
-		my $skip_valgrind = $valgrind;
-		$valgrind = 0;
-
 		$q = &system_with_timeout( $abc_path, "abc".$domain_itter.".out", $timeout, $temp_dir, "-c",
 			$abc_commands);
 
@@ -692,9 +689,6 @@ if (    $starting_stage <= $stage_idx_abc
 			$error_code = 1;
 			last ABC_OPTIMIZATION;
 		}
-
-		#restore the current valgrind flag
-		$valgrind = $skip_valgrind;
 
 		if ( $flow_type != 3 and exists  $clock_list[$domain_itter] )
 		{
@@ -753,6 +747,9 @@ if (    $starting_stage <= $stage_idx_abc
 		system "rm -f ${temp_dir}*.v";
 		system "rm -f ${temp_dir}*.rc";
 	}
+
+	#restore the current valgrind flag
+	$valgrind = $skip_valgrind;
 }
 
 #################################################################################
@@ -825,9 +822,16 @@ if (    $starting_stage <= $stage_idx_ace
 
 		if ( -e $ace_raw_output_blif_path and $q eq "success") {
 
+			#added so that valgrind will not run on perl because of existing memory errors
+			my $skip_valgrind = $valgrind;
+			$valgrind = 0;
+
             # Restore Multi-Clock Latch Information from ODIN II that was striped out by ACE
             $q = &system_with_timeout($restore_multiclock_info_script, "restore_multiclock_latch_information.ace.out", $timeout, $temp_dir,
                     $odin_output_file_name, $ace_raw_output_blif_name, $ace_output_blif_name);
+
+			#restore the current valgrind flag
+			$valgrind = $skip_valgrind;
 
             if ($q ne "success") {
                 $error_status = "failed: to restore multi-clock latch info";
@@ -904,7 +908,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
     my $explicit_analysis_vpr_stage = (grep(/^--analysis$/, @forwarded_vpr_args));
 
     #If no VPR stages are explicitly specified, then all stages run by default
-    my $implicit_all_vpr_stage = !($explicit_pack_vpr_stage 
+    my $implicit_all_vpr_stage = !($explicit_pack_vpr_stage
                                    or $explicit_place_vpr_stage
                                    or $explicit_route_vpr_stage
                                    or $explicit_analysis_vpr_stage);
@@ -926,7 +930,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
         my $do_routing = ($explicit_route_vpr_stage or $implicit_all_vpr_stage);
 
         if ($do_routing) {
-            # Critical path delay and wirelength is nonsensical at minimum channel width because congestion constraints 
+            # Critical path delay and wirelength is nonsensical at minimum channel width because congestion constraints
             # dominate the cost function.
             #
             # Additional channel width needs to be added so that there is a reasonable trade-off between delay and area.
@@ -990,7 +994,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
             $error_code = 1;
         }
 
-        #Run vpr again with additional parameters. 
+        #Run vpr again with additional parameters.
         #This is used to ensure that files generated by VPR can be re-loaded by it
         my $do_second_vpr_run = ($verify_rr_graph or $check_route or $check_place);
 

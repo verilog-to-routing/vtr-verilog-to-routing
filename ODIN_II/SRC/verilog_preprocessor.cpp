@@ -9,16 +9,82 @@
 #include "odin_util.h"
 #include <stdbool.h>
 #include <regex>
+#include <string>
+
+#include "odin_buffer.hpp"
+
+#define DefaultSize 20
+
+/* Structs */
+struct veri_include
+{
+	char *path;
+	struct veri_include *included_from;
+	int	line;
+};
+
+struct veri_define
+{
+	char *symbol;
+	char *value;
+	int line;
+	veri_include *defined_in;
+};
+
+struct veri_Includes
+{
+	veri_include **included_files;
+	int current_size;
+	int current_index;
+};
+
+struct veri_Defines
+{
+	veri_define **defined_constants;
+	int current_size;
+	int current_index;
+};
+
+/* Stack for tracking conditional branches --------------------------------- */
+struct veri_flag_node
+{
+	int flag;
+	struct veri_flag_node *next;
+};
+
+struct veri_flag_stack
+{
+	veri_flag_node *top;
+} ;
+
+void clean_veri_define(veri_define *current);
+void clean_veri_include(veri_include *current);
+
+/* Adding/Removing includes or defines */
+int add_veri_define(char *symbol, char *value, int line, veri_include *included_from);
+char* ret_veri_definedval(const char *symbol);
+int veri_is_defined(const char * symbol);
+veri_include* add_veri_include(const char *path, int line, veri_include *included_from);
+
+/* Preprocessor ------------------------------------------------------------- */
+void veri_preproc_bootstraped(FILE *source, FILE *preproc_producer, veri_include *current_include);
+
+/* stack methods */
+int top(veri_flag_stack *stack);
+int pop(veri_flag_stack *stack);
+void push(veri_flag_stack *stack, int flag);
+
+/* General Utility methods ------------------------------------------------- */
+static char* get_line(FILE *source, bool *eof, bool *multiline_comment, const char *one_line_comment, const char *n_line_comment_ST, const char *n_line_comment_END);
+
 
 /* Globals */
 struct veri_Includes veri_includes;
 struct veri_Defines veri_defines;
 
-/* Function declarations */
-FILE* open_source_file(char* filename, std::string parent_path);
-FILE *remove_comments(FILE *source);
-FILE *format_verilog_file(FILE *source);
-FILE *format_verilog_variable(FILE * src, FILE *dest);
+const char symbol_char[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789";
+
+
 /*
  * Initialize the preprocessor by allocating sufficient memory and setting sane values
  */
@@ -173,7 +239,7 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 
 	/* Create the new define and initalize it. */
 	new_def->symbol = (char *)vtr::strdup(symbol);
-	new_def->value = (value == NULL)? NULL : (char *)vtr::strdup(value);
+	new_def->value = (value == NULL)? vtr::strdup("") : (char *)vtr::strdup(value);
 	new_def->line = line;
 	new_def->defined_in = defined_in;
 
@@ -226,7 +292,7 @@ veri_include* add_veri_include(const char *path, int line, veri_include *include
  * Retrieve the value associated, if any, with the given symbol. If the symbol is not present or no
  * value is associated with the symbol then NULL is returned.
  */
-char* ret_veri_definedval(char *symbol)
+char* ret_veri_definedval(const char *symbol)
 {
 	int is_defined = veri_is_defined(symbol);
 	if(0 <= is_defined)
@@ -240,7 +306,7 @@ char* ret_veri_definedval(char *symbol)
 /*
  * Returns a non-negative integer if the symbol has been previously defined.
  */
-int veri_is_defined(char * symbol)
+int veri_is_defined(const char * symbol)
 {
 	int i;
 	veri_define *def_iterator = veri_defines.defined_constants[0];
@@ -257,39 +323,6 @@ int veri_is_defined(char * symbol)
 }
 
 /*
- * Return an open file handle
- * if the file is not in the pwd try the paths indicated by char* list_of_file_names int current_parse_file
- *
- * Return NULL if unable to find and open the file
- */
-FILE* open_source_file(char* filename, std::string path)
-{
-	auto loc = path.find_last_of('/');
-	if (loc != std::string::npos) /* No other path to try to find the file */
-		path = path.substr(0,loc+1);
-	
-	path += filename;
-
-	// look in the directory where the file with the include directory resides in
-	FILE* src_file = fopen(path.c_str(), "r");
-	if (src_file != NULL)
-		return src_file;
-
-	// else Look for the file in the PWD as a last resort TODO: this should go away... not standard behavior
-	src_file = fopen(filename, "r");
-	if (src_file != NULL)
-	{
-		fprintf(stderr, "Warning: Unable to find %s, opening in current working directory instead\n",
-				path.c_str());
-		return src_file;
-	}
-
-
-
-	return NULL;
-}
-
-/*
  * Bootstraps our preprocessor
  */
 FILE* veri_preproc(FILE *source)
@@ -299,7 +332,6 @@ FILE* veri_preproc(FILE *source)
 	extern int current_parse_file;
 	FILE *preproc_producer = NULL;
 
-	/* Was going to use filename to prevent duplication but the global var isn't used in the case of a config value */
 	veri_include *veri_initial = add_veri_include(configuration.list_of_file_names[current_parse_file].c_str(), 0, NULL);
 	if (veri_initial == NULL)
 	{
@@ -307,8 +339,12 @@ FILE* veri_preproc(FILE *source)
 		return source;
 	}
 
-	preproc_producer = tmpfile();
-	preproc_producer = freopen(NULL, "r+", preproc_producer);
+	std::string file_out = 	configuration.debug_output_path 
+						+ "/" 
+						+ strip_path_and_ext(configuration.list_of_file_names[current_parse_file]).c_str() 
+						+ "_preproc.v";
+
+	preproc_producer = fopen(file_out.c_str(), "w+");
 
 	if (preproc_producer == NULL)
 	{
@@ -322,344 +358,294 @@ FILE* veri_preproc(FILE *source)
 
 	veri_preproc_bootstraped(source, preproc_producer, veri_initial);
 	rewind(preproc_producer);
+	
 	return preproc_producer;
 }
 
-/*
- * Returns a new temporary file with the comments removed.
- * Preserves the line numbers by keeping newlines in place.
- */
-FILE *remove_comments(FILE *source)
+const char *preproc_symbol_e_STR[] = 
 {
-	FILE *destination = tmpfile();
-	destination = freopen(NULL, "r+", destination);
-	rewind(source);
+	"include",
+	"define",
+	"undef",
+	"ifdef",
+	"ifndef",
+	"else",
+	"endif",
+	"preproc_symbol_e_END"
+};
 
-	char line[MaxLine];
-	int in_multiline_comment = FALSE;
-	while (fgets(line, MaxLine, source))
+enum preproc_symbol_e
+{
+	PREPROC_INCLUDE,
+	PREPROC_DEFINE,
+	PREPROC_UNDEF,
+	PREPROC_IFDEF,
+	PREPROC_IFNDEF,
+	PREPROC_ELSE,
+	PREPROC_ENDIF,
+	preproc_symbol_e_END
+};
+
+static preproc_symbol_e get_preproc_directive(const char *in)
+{
+	preproc_symbol_e to_return = preproc_symbol_e_END;
+
+	if(in && strlen(in) > 0)
 	{
-		unsigned int i;
-		for (i = 0; i < strnlen(line, MaxLine); i++)
+		for(int i=0 ; i < (int)preproc_symbol_e_END; i++)
 		{
-			if (!in_multiline_comment)
+			if(! strcmp(preproc_symbol_e_STR[i], in) )
 			{
-				// For a single line comment, skip the rest of the line.
-				if (line[i] == '/' && line[i+1] == '/')
-				{
-					break;
-				}
-				// For a multi-line comment, set the flag and skip over the *.
-				else if (line[i] == '/' && line[i+1] == '*')
-				{
-					i++; // Skip the *.
-					in_multiline_comment = TRUE;
-				}
-				else
-				{
-					if (line[i] != '\n')
-						fputc(line[i], destination);
-				}
-			}
-			else
-			{
-				// If we're in a multi-line comment, search for the */
-				if (line[i] == '*' && line[i+1] == '/')
-				{
-					i++; // Skip the /
-					in_multiline_comment = FALSE;
-				}
+				to_return = (preproc_symbol_e) i;
+				break;
 			}
 		}
-		fputc('\n', destination);
 	}
-	rewind(destination);
-	return destination;
+	return to_return;
 }
 
 void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, veri_include *current_include)
 {
-	// Strip the comments from the source file producing a temporary source file.
-	FILE *source = remove_comments(original_source);
 
-	source = format_verilog_file(source);
+	rewind(original_source);
+
 	int line_number = 1;
-	veri_flag_stack *skip = (veri_flag_stack *)vtr::calloc(1, sizeof(veri_flag_stack));;
-	char line[MaxLine];
-	char *token;
+	veri_flag_stack *skip = (veri_flag_stack *)vtr::calloc(1, sizeof(veri_flag_stack));
+
 	veri_include *new_include = NULL;
 
-	while (NULL != fgets(line, MaxLine, source))
+	char *line = NULL;
+	buffered_reader_t reader = buffered_reader_t(original_source, "//", "/*", "*/");
+
+	while ((line = reader.get_line()))
 	{
-		//fprintf(stderr, "%s:%ld\t%s", current_include->path,line_number, line);
-		char proc_line[MaxLine] ;
-		char symbol[MaxLine] ;
-		char *p_proc_line = proc_line ;
-		char *last_pch, *pch, *pch_end ;
-		// advance past all whitespace
-		last_pch = trim(line) ;
-		// start searching for backtick
-		pch = strchr( last_pch, '`' ) ;
-		while ( pch ) {
-			// if symbol found, copy everything from end of last_pch to here
-			strncpy( p_proc_line, last_pch, pch - last_pch ) ;
-			p_proc_line += pch - last_pch ;
-			*p_proc_line = '\0' ;
-
-			// find the end of the symbol
-			for(pch_end = pch+1 ; pch_end && ( isalnum(*pch_end) || *pch_end == '_' ); pch_end++){}
-
-			// copy symbol into array
-			strncpy( symbol, pch+1, pch_end - (pch+1) ) ;
-			*(symbol + (pch_end - (pch+1))) = '\0' ;
-
-			char* value = ret_veri_definedval( symbol ) ;
-			if ( !value ) {		// symbol not found, just pass it through
-				value = symbol;
-				*p_proc_line++ = '`' ;
-			}
-			vtr::strncpy( p_proc_line, value, MaxLine) ;
-			p_proc_line += strlen( value ) ;
-
-			last_pch = pch_end ;
-			pch = strchr( last_pch+1, '`' ) ;
-		}
-		vtr::strncpy( p_proc_line, last_pch, MaxLine) ;
-		vtr::strncpy( line, proc_line, MaxLine) ;
-
-		//fprintf(stderr, "%s:%ld\t%s\n", current_include->path,line_number, line);
-
-		/* Preprocessor directives have a backtick on the first column. */
-		if (line[0] == '`')
+		// fprintf(stderr, "%s:%ld\t%s\n", current_include->path,line_number, line);
+		if( strlen(line) > 0 )
 		{
-			token = trim((char *)strtok(line, " \t"));
-			//printf("preproc first token: %s\n", token);
-			/* If we encounter an `included directive we want to recurse using included_file and
-			 * new_include in place of source and current_include
-			 */
-			if (top(skip) < 1 && strcmp(token, "`include") == 0)
-			{
-				token = trim((char *)strtok(NULL, "\""));
-				FILE *included_file = open_source_file(token,current_include->path);
+			std::string proc_line(line);
 
-				/* If we failed to open the included file handle the error */
-				if (!included_file)
+			// start searching for backticks
+			std::size_t pch = proc_line.find_first_of('`') ;
+
+			while ( pch != std::string::npos)
+			{			
+				std::size_t end_pch = proc_line.find_first_not_of(symbol_char, pch+1);
+				if (end_pch != std::string::npos)
 				{
-					warning_message(PARSE_ERROR, -1, -1, "Unable to open file %s included on line %d of %s\n",
-						token, line_number, current_include->path);
-					perror("included_file : fopen");
-					/*return erro or exit ? */
-				}
-				else if (NULL != (new_include = add_veri_include(token, line_number, current_include)))
-				{
-					printf("Including file %s\n", new_include->path);
-					veri_preproc_bootstraped(included_file, preproc_producer, new_include);
-				}
-				fclose(included_file);
-				/* If last included file has no newline an error could result so we add one. */
-				fputc('\n', preproc_producer);
-			}
-			/* If we encounter a `define directive we want to add it and its value if any to our
-			 * symbol table.
-			 */
-			else if (top(skip) < 1 && strcmp(token, "`define") == 0)
-			{
-				char *value = NULL;
+					// skip the backtick
+					std::string symbol = proc_line.substr(pch+1, (end_pch-pch)-1);
 
-				/* strtok is destructive to the original string which we need to retain unchanged, this fixes it. */
-				fprintf(preproc_producer, "`define %s\n", line + 1 + strnlen(line, MaxLine));
-				//printf("\tIn define: %s", token + 1 + strnlen(token, MaxLine));
-
-				token = trim(strtok(NULL, " \t"));
-				//printf("token is: %s\n", token);
-
-				// symbol value can potentially be to the end of the line!
-				value = trim(strtok(NULL, "\r\n"));
-				//printf("value is: %s\n", value);
-
-				if ( value ) {
-					// trim it again just in case
-					value = trim(value);
-				}
-				add_veri_define(token, value, line_number, current_include);
-			}
-			/* If we encounter a `undef preprocessor directive we want to remove the corresponding
-			 * symbol from our lookup table.
-			 */
-			else if (top(skip) < 1 && strcmp(token, "`undef") == 0)
-			{
-				int is_defined = 0;
-				/* strtok is destructive to the original string which we need to retain unchanged, this fixes it. */
-				fprintf(preproc_producer, "`undef %s", line + 1 + strnlen(line, MaxLine));
-
-				token = trim(strtok(NULL, " \t"));
-
-				is_defined = veri_is_defined(token);
-
-				if(is_defined >= 0)
-				{
-					clean_veri_define(veri_defines.defined_constants[is_defined]);
-					veri_defines.defined_constants[is_defined] = veri_defines.defined_constants[veri_defines.current_index];
-					veri_defines.defined_constants[veri_defines.current_index--] = NULL;
-				}
-			}
-			else if (strcmp(token, "`ifdef") == 0)
-			{
-				// if parent is not skipped
-				if ( top(skip) < 1 ) {
-					int is_defined = 0;
-
-					token = trim(strtok(NULL, " \t"));
-					is_defined = veri_is_defined(token);
-					if(is_defined < 0) //If we are unable to locate the symbol in the table
+					// verify that this is not a preprocessor directive
+					if( get_preproc_directive(symbol.c_str()) == preproc_symbol_e_END)
 					{
-						push(skip, 1);
-					}
-					else
-					{
-						push(skip, 0);
+						// get value from lookup table
+						char* value = ret_veri_definedval( symbol.c_str() ) ;
+						if (value != NULL)
+						{
+							proc_line.erase(pch, (end_pch-pch));
+							proc_line.insert(pch, value);
+						}
 					}
 				}
-				// otherwise inherit skip from parent (use 2)
-				else {
-					push( skip, 2 ) ;
-				}
-			}
-			else if (strcmp(token, "`ifndef") == 0)
-			{
-				// if parent is not skipped
-				if ( top(skip) < 1 ) {
-					int is_defined = 0;
+							
+				// find next backtick
+				pch = proc_line.find_first_of('`',  pch+1) ;
 
-					token = trim(strtok(NULL, " \t"));
-					is_defined = veri_is_defined(token);
-					if(is_defined >= 0) //If we are able to locate the symbol in the table
-					{
-						push(skip, 1);
-					}
-					else
-					{
-						push(skip, 0);
-					}
-				}
-				// otherwise inherit skip from parent (use 2)
-				else {
-					push( skip, 2 ) ;
-				}
 			}
-			else if (strcmp(token, "`else") == 0)
+
+			if(! proc_line.empty())
 			{
-				// if skip was 0 (prev. ifdef was 1)
-				if(top(skip) < 1)
+				vtr::free(line);
+				line = vtr::strdup(proc_line.c_str());
+		
+				// fprintf(stderr, "%s:%ld\t%s\n", current_include->path,line_number, line);
+
+				/* Preprocessor directives have a backtick on the first column. */
+				if (line[0] == '`')
 				{
-					// then set to 0
-					pop(skip) ;
-					push(skip, 1);
+					char *token = strtok(line, " ");
+
+					// skip the backtick to find the type
+					switch( get_preproc_directive(&token[1]) )
+					{
+						case PREPROC_INCLUDE:
+						{
+							if(top(skip) < 1)
+							{
+								/**
+								 *  If we encounter an `included directive we want to recurse using included_file and
+								 * new_include in place of source and current_include
+								 */	
+
+								token = strtok(NULL, "\"");
+
+								std::string current_path = current_include->path;
+								auto loc = current_path.find_last_of('/');
+								if (loc != std::string::npos) /* No other path to try to find the file */
+								{
+									current_path = current_path.substr(0,loc+1);
+								}
+								else
+								{
+									current_path = "";
+								}
+
+								std::string file_path = current_path + token;
+								
+								FILE* included_file = fopen(file_path.c_str(), "r");
+		
+
+								/* If we failed to open the included file handle the error */
+								if (!included_file)
+								{
+									warning_message(PARSE_ERROR, -1, -1, "Unable to open file %s included on line %d of %s\n",
+										token, line_number, current_include->path);
+									perror("included_file : fopen");
+									/*return erro or exit ? */
+								}
+								else if (NULL != (new_include = add_veri_include(file_path.c_str(), line_number, current_include)))
+								{
+									printf("Including file %s\n", new_include->path);
+									veri_preproc_bootstraped(included_file, preproc_producer, new_include);
+								}
+								fclose(included_file);
+								/* If last included file has no newline an error could result so we add one. */
+							}
+							break;
+						}
+						case PREPROC_DEFINE:
+						{
+							if(top(skip) < 1)
+							{
+								token = strtok(NULL, " ");
+								size_t len = strlen(token);
+								char *value = &(token[len+1]);
+								
+								if(get_preproc_directive(value) != preproc_symbol_e_END)
+								{
+									printf("Warning! trying to override preprocessor restricted keyword is not allowed\n");
+								}
+								else
+								{
+									// symbol value can potentially be to the end of the line!
+									add_veri_define(token, value, line_number, current_include);
+								}
+							}
+							break;
+						}
+						case PREPROC_UNDEF:
+						{
+							if(top(skip) < 1)
+							{
+								token = strtok(NULL, " ");
+								int is_defined = veri_is_defined(token);
+								if(is_defined >= 0)
+								{
+									clean_veri_define(veri_defines.defined_constants[is_defined]);
+									veri_defines.defined_constants[is_defined] = veri_defines.defined_constants[veri_defines.current_index];
+									veri_defines.defined_constants[veri_defines.current_index--] = NULL;
+								}
+							}
+							break;
+						}
+						case PREPROC_IFDEF:
+						{
+							// if parent is not skipped
+							if ( top(skip) < 1 ) 
+							{
+								token = strtok(NULL, " ");
+								int is_defined = veri_is_defined(token);
+								if(is_defined < 0) //If we are unable to locate the symbol in the table
+								{
+									push(skip, 1);
+								}
+								else
+								{
+									push(skip, 0);
+								}
+							}
+							// otherwise inherit skip from parent (use 2)
+							else 
+							{
+								push( skip, 2 ) ;
+							}
+							break;
+						}
+						case PREPROC_IFNDEF:
+						{
+							// if parent is not skipped
+							if ( top(skip) < 1 ) 
+							{
+								token = strtok(NULL, " ");
+								int is_defined = veri_is_defined(token);
+								if(is_defined >= 0) //If we are able to locate the symbol in the table
+								{
+									push(skip, 1);
+								}
+								else
+								{
+									push(skip, 0);
+								}
+							}
+							// otherwise inherit skip from parent (use 2)
+							else 
+							{
+								push( skip, 2 ) ;
+							}
+							break;
+						}
+						case PREPROC_ELSE:
+						{
+							// if skip was 0 (prev. ifdef was 1)
+							if(top(skip) < 1)
+							{
+								// then set to 0
+								pop(skip) ;
+								push(skip, 1);
+							}
+							// only when prev skip was 1 do we set to 0 now
+							else if (top(skip) == 1)
+							{
+								pop(skip) ;
+								push(skip, 0);
+							}
+							// but if it's 2 (parent ifdef is 1)
+							else 
+							{
+								// then do nothing
+							}
+							break;
+						}
+						case PREPROC_ENDIF:
+						{
+							pop(skip);
+							break;
+						}
+						default:
+						{
+							/* Leave unhandled preprocessor directives in place. */
+							if (top(skip) < 1)
+							{
+								fprintf(preproc_producer, "%s %s", line, line + 1 + strlen(line));
+							}
+
+							break;
+						}
+					}
 				}
-				// only when prev skip was 1 do we set to 0 now
-				else if (top(skip) == 1)
+				else if(top(skip) < 1)
 				{
-					pop(skip) ;
-					push(skip, 0);
+					fprintf(preproc_producer, "%s", line);							
 				}
-				// but if it's 2 (parent ifdef is 1)
-				else {
-					// then do nothing
-				}
-			}
-			else if (strcmp(token, "`endif") == 0)
-			{
-				pop(skip);
-			}
-			/* Leave unhandled preprocessor directives in place. */
-			else if (top(skip) < 1)
-			{
-				fprintf(preproc_producer, "%s %s\n", line, line + 1 + strnlen(line, MaxLine));
 			}
 		}
-		else if(top(skip) < 1)
-		{
-			if(strnlen(line, MaxLine) <= 0)
-			{
-				/* There is nothing to print */
-				fprintf(preproc_producer, "\n");
-			}
-			else if( fprintf(preproc_producer, "%s\n", line) < 0)//fputs(line, preproc_producer)
-			{
-				/* There was an error writing to the stream */
-			}
-		}
+
+		fprintf(preproc_producer,"\n");
 		line_number++;
-		token = NULL;
+		vtr::free(line);
 	}
-	fclose(source);
 	vtr::free(skip);
 }
-
-/* General Utility methods ------------------------------------------------- */
-#define UPPER_BUFFER_LIMIT 32728
-bool is_whitespace(const char in)
-{
-	return (in == ' ' || in == '\t' || in == '\n' || in == '\r');
-}
-
-/**
- * the trim function remove consequent whitespace and remove trailing whitespace
- */
-char *trim(char *input_str)
-{
-	return trim(input_str, UPPER_BUFFER_LIMIT);
-}
-
-char* trim(char *input_string, size_t n)
-{
-	size_t upper_limit = (n < 1)?  UPPER_BUFFER_LIMIT: (n > UPPER_BUFFER_LIMIT)? UPPER_BUFFER_LIMIT: n;
-	if (!input_string)
-		return input_string;
-  
-	int head = 0;
-	int tail = 0;
-	char current = ' ';
-	char previous = ' ';
-
-	// trim head and compress
-	while( tail < upper_limit && input_string[tail] != '\0' )
-	{
-		previous = current;
-		current = input_string[tail];
-		input_string[tail] = '\0';
-
-		tail += 1;
-
-		if( is_whitespace(current) )
-		{
-			if( ! is_whitespace(previous) )
-			{
-				input_string[head] = ' ';
-				head += 1;	
-			}
-		}
-		else
-		{
-			input_string[head] = current;
-			head += 1;	
-		}
-	}
-	input_string[head] = '\0';
-
-	// trim tail end
-	while( head >= 0 
-	&& (input_string[head] == '\0' || is_whitespace(input_string[head]) ) )
-	{
-		input_string[head] = '\0';
-		head -= 1;
-	}
-
-	return input_string;
-}
-/* ------------------------------------------------------------------------- */
-
-
 
 /* stack methods ------------------------------------------------------------*/
 
@@ -699,212 +685,3 @@ void push(veri_flag_stack *stack, int flag)
 		stack->top = new_node;
 	}
 }
-
-/*
-* Prints out different parts of port declaration to buffers
-* defined in format_verilog_file().
-* Format: [input|output|inout [reg|wire] [size]] <variable_name>
-*/
-void format_port_declaration(char **subtoken, char *dec, char *postDec, char *IOTypeDec, size_t *i, size_t *j, size_t *k)
-{
-	bool directionDefined = false;
-	*subtoken = trim(*subtoken);
-	std::string str(*subtoken);
-	// I/O direction
-	if(str.find("input ") == 0 || str.find("output ") == 0 || str.find("inout ") == 0)
-	{
-		directionDefined = true;
-		char * temp = NULL;
-		while(**subtoken != ' ')
-		{
-			postDec[(*j)++] = **subtoken;
-			(*subtoken)++;
-		}
-		postDec[(*j)++] = ' ';
-		(*subtoken)++;
-		std::string str(*subtoken);
-		// I/O type
-		if(str.find("reg[") == 0 || str.find("reg ") == 0 || str.find("wire[") == 0 || str.find("wire ") == 0)
-		{
-			temp = *subtoken;
-			do { 
-				(*subtoken)++;
-			} while (**subtoken != ' ' && **subtoken != '[');
-			if(**subtoken == ' ')
-			{
-				(*subtoken)++;
-			}
-			do {
-				IOTypeDec[(*k)++] = *temp;
-				temp++;
-			} while (*temp != '\0');
-			IOTypeDec[(*k)++] = ';';
-			IOTypeDec[(*k)++] = '\n';
-		}
-		// I/O size
-		if(**subtoken == '[')
-		{
-			while(**subtoken != ']')
-			{
-				postDec[(*j)++] = **subtoken;
-				(*subtoken)++;
-			}
-			postDec[(*j)++] = ']';
-			(*subtoken)++;
-		}
-	}
-	if(**subtoken == ' ')
-	{
-		(*subtoken)++;
-	}
-	// Variable name
-	while(**subtoken != NULL)
-	{
-		if(directionDefined)
-		{
-			postDec[(*j)++] = **subtoken;
-		}
-		dec[(*i)++] = **subtoken;
-		(*subtoken)++;
-	}
-	if(directionDefined)
-	{
-		postDec[(*j)++] = ';';
-		postDec[(*j)++] = '\n';
-	}
-}
-
-/*
-* Tokenizes a module declaration repeatedly, passing tokens to
-* format_port_declaration() for formatting.
-*/
-void format_module_declaration(FILE *destination, char *buf, char *dec, char *postDec, char *IOTypeDec, char *decPtr, char *postDecPtr, char *IOTypeDecPtr, size_t *i, size_t *j, size_t *k)
-{
-	char * token = NULL;
-	char * subtoken = NULL;
-	*i = 0;
-	token = std::strtok(buf, "(");
-	while(*token != '\0')
-	{
-		dec[(*i)++] = *token;
-		(token)++;
-	}
-	dec[(*i)++] = '(';
-	dec[(*i)++] = '\n';
-
-	token = std::strtok(NULL, ")");
-	subtoken = std::strtok(token, ",");
-	while(subtoken != NULL)
-	{
-		format_port_declaration(&subtoken, dec, postDec, IOTypeDec, i, j, k);
-		subtoken = std::strtok(NULL, ",");
-		if(subtoken == NULL)
-		{
-			dec[(*i)++] = ')';
-			dec[(*i)++] = ';';
-		}
-		else
-		{
-			dec[(*i)++] = ',';
-		}
-		dec[(*i)++] = '\n';
-	}
-	dec[*i] = '\0';
-	postDec[*j] = '\0';
-	IOTypeDec[*k] = '\0';
-	fputs(decPtr,destination);
-	fputs(postDecPtr,destination);
-	fputs(IOTypeDecPtr,destination);
-	*i = 0;
-	*j = 0;
-	*k = 0;
-	IOTypeDec[*k] = '\0';
-}
-
-FILE *format_verilog_file(FILE *source)
-{
-	typedef enum State {
-		LINE_PROCESSING,
-		MODULE_SETUP,
-		MODULE_REFORMATTING
-	} State;
-	State currentState = LINE_PROCESSING;
-	FILE *destination = tmpfile();
-	char buf[UPPER_BUFFER_LIMIT] = { 0 }; // Temporary input buffer
-	char dec[UPPER_BUFFER_LIMIT] = { 0 }; // Module declaration buffer
-	char postDec[UPPER_BUFFER_LIMIT] = { 0 }; // Post-declaration buffer
-	char IOTypeDec[UPPER_BUFFER_LIMIT] = { 0 }; // Register and wire re-declaration buffer
-	char * bufPtr = buf;
-	char * decPtr = dec;
-	char * postDecPtr = postDec;
-	char * IOTypeDecPtr = IOTypeDec;
-	size_t i = 0;
-	size_t j = 0;
-	size_t k = 0;
-	bool getNextLine = true;
-	char * exitFlag = fgets(buf, UPPER_BUFFER_LIMIT, source);
-	int pos = 0;
-
-	while(exitFlag != NULL)
-	{
-		switch(currentState) {
-			case LINE_PROCESSING: 
-			{
-				std::string str(buf);
-				pos = str.find_first_not_of(" ");
-				if((str.find("module") == pos && isspace(buf[pos+6])) || (str.find("macromodule") == pos && isspace(buf[pos+11])))
-				{
-					currentState = MODULE_SETUP;
-					getNextLine = false;
-				}
-				else
-				{
-					fputs(bufPtr,destination);
-				}
-				break;
-			}
-			case MODULE_SETUP: 
-			{
-				while(buf[i] != '\n' && buf[i] != ')')
-				{
-					i++;
-				}
-				if(buf[i] == ')')
-				{
-					getNextLine = false;
-					currentState = MODULE_REFORMATTING;
-				}
-				else
-				{
-					i++;
-				}
-				break;
-			}
-			case MODULE_REFORMATTING: 
-			{
-				format_module_declaration(destination, buf, dec, postDec, IOTypeDec, decPtr, postDecPtr, IOTypeDecPtr, &i, &j, &k);
-				currentState = LINE_PROCESSING;
-				break;
-			}
-		}
-		if(getNextLine)
-		{
-			if(i >= UPPER_BUFFER_LIMIT - 1)
-			{
-				// No space left in buffer -- quit
-				fprintf(stderr, "Buffer limit reached - returning destination FILE pointer\n\n");
-				rewind(destination);
-				return destination;
-			}
-			exitFlag = fgets(&buf[i], UPPER_BUFFER_LIMIT - i, source);
-		}
-		else
-		{
-			getNextLine = true;
-		}
-	}
-	rewind(destination);
-	return destination;
-}
-
-/* ------------------------------------------------------------------------- */

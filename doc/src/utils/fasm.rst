@@ -1,12 +1,15 @@
+.. _genfasm:
+
 FPGA Assembly (FASM) Output Support
 ===================================
 
-After VPR has generated a place and routed design, the ``genfasm`` utility can
-emit a FASM_ file to represent design via FASM metadata encoded in the VPR
-architecture definition and routing graph.  The output FASM file can then be
-converted into the target architecture via architecture specific tooling.
+After VPR has generated a placed and routed design, the ``genfasm`` utility can
+emit a FASM_ file to represent the design at a level detailed enough to allow generation of a bitstream to program a device. This FASM output file is enabled by FASM metadata encoded in the VPR
+architecture definition and routing graph.  The output FASM file can be
+converted into a bitstream format suitable to program the target architecture via architecture specific tooling. Current devices that can be programmed using the vpr + fasm flow include Lattice iCE40 and Xilinx Artix-7 devices, with work on more devices underway. More information on supported devices is available from the Symbiflow_ website.
 
 .. _FASM: https://github.com/SymbiFlow/fasm
+.. _Symbiflow: https://symbiflow.github.io
 
 FASM metadata
 -------------
@@ -148,6 +151,13 @@ example:
      </meta>
    </metadata>
 
+FASM LUT metadata must be attached to the ``<pb_type>`` at or within the
+``<mode>`` tag directly above the ``<pb_type>`` with ``blif_model=".names"``.
+Do note that there is an implicit ``<mode>`` tag within intermediate
+``<pb_type>`` when no explicit ``<mode>`` tag is present. The FASM LUT
+metadata tags will not be recognized attached inside of ``<pb_type>``'s higher
+above the leaf type.
+
 When specifying a FASM features with more than one bit, explicitly specify the
 bit range being set.  This is required because "genfasm" does not have access
 to the actual bit database, and would otherwise not have the width of the
@@ -222,6 +232,20 @@ can also be used with the ``<direct>`` tag in the same way, example:
         </meta>
       </metadata>
     </direct>
+
+If multiple FASM features are required for a mux, they can be specified using
+comma's as a seperator.  Example:
+
+.. code-block:: xml
+
+    <mux name="D5FFMUX" input="BLK_IG-COMMON_SLICE.DX BLK_IG-COMMON_SLICE.DO5" output="BLK_BB-SLICE_FF.D5[3]" >
+      <metadata>
+        <meta name="fasm_mux">
+          BLK_IG-COMMON_SLICE.DO5 : D5FFMUX.IN_A
+          BLK_IG-COMMON_SLICE.DX : D5FFMUX.IN_B, D5FF.OTHER_FEATURE
+        </meta>
+      </metadata>
+    </mux>
 
 Passing parameters through to the FASM Output
 ---------------------------------------------

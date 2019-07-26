@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.9)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 include(HeadersToIncludeDirs)
 
@@ -48,6 +48,19 @@ set_target_properties(libblifparse PROPERTIES PREFIX "") #Avoid extra 'lib' pref
 #Create the test executable
 add_executable(blifparse_test src/main.cpp)
 target_link_libraries(blifparse_test libblifparse)
+
+#Suppress IPO link warnings
+get_target_property(USES_IPO blifparse_test INTERPROCEDURAL_OPTIMIZATION)
+if (USES_IPO)
+    set(IPO_LINK_WARN_FLAGS_TO_CHECK "-Wno-null-dereference")
+    foreach(flag ${IPO_LINK_WARN_FLAGS_TO_CHECK})
+        CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
+        if(CXX_COMPILER_SUPPORTS_${flag})
+            #Flag supported, so enable it
+            set_target_properties(blifparse_test PROPERTIES LINK_FLAGS ${flag})
+        endif()
+    endforeach()
+endif()
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     #Add the tests if we are the root project

@@ -29,11 +29,11 @@ static t_draw_coords draw_coords;
 /* This accessor function returns pointer to the global variable
  * draw_coords. Use this function to access draw_coords.
  */
-t_draw_coords *get_draw_coords_vars() {
-	return &draw_coords;
+t_draw_coords* get_draw_coords_vars() {
+    return &draw_coords;
 }
 
 /* Use this function to access draw_state. */
-t_draw_state *get_draw_state_vars() {
-	return &draw_state;
+t_draw_state* get_draw_state_vars() {
+    return &draw_state;
 }

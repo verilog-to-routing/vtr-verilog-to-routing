@@ -21,18 +21,19 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include<stdlib.h>
-#include<string.h>
-#include<stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 #include "odin_globals.h"
+#include "odin_util.h"
 #include "read_blif.h"
 #include "string_cache.h"
-#include "netlist_utils.h"
 
 #include "netlist_utils.h"
 #include "odin_types.h"
 #include "Hashtable.hpp"
 #include "netlist_check.h"
+#include "node_creation_library.h"
 #include "simulate_blif.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -48,25 +49,25 @@ long file_line_number;
 int line_count;
 
 // Stores pin names of the form port[pin]
-typedef struct {
+struct hard_block_pins{
 	int count;
 	char **names;
 	// Maps name to index.
 	Hashtable *index;
-} hard_block_pins;
+};
 
 // Stores port names, and their sizes.
-typedef struct {
+struct hard_block_ports{
 	char *signature;
 	int count;
 	int *sizes;
 	char **names;
 	// Maps portname to index.
 	Hashtable *index;
-} hard_block_ports;
+};
 
 // Stores all information pertaining to a hard block model. (.model)
-typedef struct {
+struct hard_block_model{
 	char *name;
 
 	hard_block_pins *inputs;
@@ -74,15 +75,15 @@ typedef struct {
 
 	hard_block_ports *input_ports;
 	hard_block_ports *output_ports;
-} hard_block_model;
+};
 
 // A cache structure for models.
-typedef struct {
+struct hard_block_models{
 	hard_block_model **models;
 	int count;
 	// Maps name to model
 	Hashtable *index;
-} hard_block_models;
+};
 
 
 netlist_t * blif_netlist;
@@ -197,7 +198,7 @@ int read_tokens (char *buffer, hard_block_models *models, FILE *file, Hashtable 
 
 	if (token)
 	{
-		if(skip_reading_bit_map && !token && ((token[0] == '0') || (token[0] == '1') || (token[0] == '-')))
+		if(skip_reading_bit_map && ((token[0] == '0') || (token[0] == '1') || (token[0] == '-')))
 		{
 			dum_parse(buffer, file);
 		}
@@ -294,15 +295,15 @@ void create_latch_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 	char ** names = NULL;       // Store the names of the tokens
 	int input_token_count = 0; /*to keep track whether controlling clock is specified or not */
 	/*input_token_count=3 it is not and =5 it is */
-	char *ptr;
+	char *ptr = NULL;
+
 	char buffer[READ_BLIF_BUFFER];
 	while ((ptr = vtr::strtok (NULL, TOKENS, file, buffer)) != NULL)
 	{
-		if(input_token_count == 0)
-			names = (char**)vtr::malloc((sizeof(char*)));
-		else
-			names = (char**)vtr::realloc(names, (sizeof(char*))* (input_token_count + 1));
-		names[input_token_count++] = vtr::strdup(ptr);
+		input_token_count += 1;
+		names = (char**)vtr::realloc(names, (sizeof(char*))* (input_token_count));
+		
+		names[input_token_count-1] = vtr::strdup(ptr);
 	}
 
 	/* assigning the new_node */
@@ -311,14 +312,11 @@ void create_latch_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 		/* supported added for the ABC .latch output without control */
 		if(input_token_count == 3)
 		{
-			char *clock_name = search_clock_name(file);
 			input_token_count = 5;
 			names = (char**)vtr::realloc(names, sizeof(char*) * input_token_count);
 
-			if(clock_name) names[3] = vtr::strdup(clock_name);
-			else           names[3] = NULL;
-
-			names[4] = vtr::strdup(names[2]);
+			names[3] = search_clock_name(file);
+			names[4] = names[2];
 			names[2] = vtr::strdup("re");
 		}
 		else
@@ -338,6 +336,7 @@ void create_latch_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 	nnode_t *new_node = allocate_nnode();
 	new_node->related_ast_node = NULL;
 	new_node->type = FF_NODE;
+	new_node->edge_type = edge_type_blif_enum(names[2]);
 
 	/* Read in the initial value of the latch.
 	   Possible values from a blif file are:
@@ -416,6 +415,7 @@ char* search_clock_name(FILE* file)
 	fgetpos(file,&pos);
 	rewind(file);
 
+	char *to_return = NULL;
 	char ** input_names = NULL;
 	int input_names_count = 0;
 	int found = 0;
@@ -428,7 +428,7 @@ char* search_clock_name(FILE* file)
 		if(feof(file))
 			break;
 
-		char *ptr;
+		char *ptr = NULL;
 		if((ptr = vtr::strtok(buffer, TOKENS, file, buffer)))
 		{
 			if(!strcmp(ptr,".end"))
@@ -467,8 +467,25 @@ char* search_clock_name(FILE* file)
 	file_line_number = last_line;
 	fsetpos(file,&pos);
 
-	if (found) return input_names[0];
-	else       return vtr::strdup(DEFAULT_CLOCK_NAME);
+	if (found)
+	{
+		to_return = input_names[0];
+	}
+	else
+	{
+		to_return = vtr::strdup(DEFAULT_CLOCK_NAME);
+		for(int i = 0; i < input_names_count; i++)
+		{
+			if(input_names[i])
+			{
+				vtr::free(input_names[i]);
+			}
+		}
+	}  
+			
+	vtr::free(input_names);   
+
+	return to_return; 
 }
 
 
@@ -494,8 +511,8 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
   	}
 
 	// Split the name parameters at the equals sign.
-	char **mappings = (char**)vtr::malloc(sizeof(char*) * count);
-	char **names    = (char**)vtr::malloc(sizeof(char*) * count);
+	char **mappings = (char**)vtr::calloc(count, sizeof(char*));
+	char **names    = (char**)vtr::calloc(count, sizeof(char*));
 	int i = 0;
 	for (i = 0; i < count; i++)
 	{
@@ -518,7 +535,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
 	hard_block_ports *ports = get_hard_block_ports(mappings, count);
 
 	// Look up the model in the models cache.
- 	hard_block_model *model;
+ 	hard_block_model *model = NULL;
  	if (!(model = get_hard_block_model(subcircuit_name, ports, models)))
  	{
  		// If the model isn's present, scan ahead and find it.
@@ -638,7 +655,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
 void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 {
 	/* Storing the names of the input and the final output in array names */
-	char *ptr;
+	char *ptr = NULL;
 	char **names = NULL; // stores the names of the input and the output, last name stored would be of the output
 	int input_count = 0;
 	char buffer[READ_BLIF_BUFFER];
@@ -660,6 +677,11 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 	)
 	{
 		skip_reading_bit_map = true;
+		free_nnode(new_node);
+		for(int i = 0; i < input_count; i++)
+		{
+			vtr::free(names[i]);
+		}
 	}
 	else
 	{
@@ -758,9 +780,9 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 
 		output_nets_hash->add(new_node->name, new_net);
 
-		/* Free the char** names */
-		vtr::free(names);
 	}
+	/* Free the char** names */
+	vtr::free(names);
 }
 
 /*
@@ -770,237 +792,321 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 *-------------------------------------------------------------------------------------------*/
 operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 {
+	operation_list to_return = operation_list_END;
+
 	fpos_t pos;
 	int last_line = file_line_number;
 	const char *One = "1";
 	const char *Zero = "0";
 	fgetpos(file,&pos);
 
+	char **bit_map = NULL;
+	char *output_bit_map = NULL;// to distinguish whether for the bit_map output is 1 or 0
+	int line_count_bitmap = 0; //stores the number of lines in a particular bit map
+	char buffer[READ_BLIF_BUFFER];
+
 	if(!input_count)
 	{
-		char buffer[READ_BLIF_BUFFER];
 		vtr::fgets (buffer, READ_BLIF_BUFFER, file);
 
 		file_line_number = last_line;
 		fsetpos(file,&pos);
 
 		char *ptr = vtr::strtok(buffer,"\t\n", file, buffer);
-		if      (!strcmp(ptr," 0")) return GND_NODE;
-		else if (!strcmp(ptr," 1")) return VCC_NODE;
-		else if (!ptr)              return GND_NODE;
-		else                        return VCC_NODE;
-	}
-
-	char **bit_map = NULL;
-	char *output_bit_map = NULL;// to distinguish whether for the bit_map output is 1 or 0
-	int line_count_bitmap = 0; //stores the number of lines in a particular bit map
-	char buffer[READ_BLIF_BUFFER];
-	while(1)
-	{
-		vtr::fgets (buffer, READ_BLIF_BUFFER, file);
-		if(!(buffer[0] == '0' || buffer[0] == '1' || buffer[0] == '-'))
-			break;
-
-		bit_map = (char**)vtr::realloc(bit_map,sizeof(char*) * (line_count_bitmap + 1));
-		bit_map[line_count_bitmap++] = vtr::strdup(vtr::strtok(buffer,TOKENS, file, buffer));
-		if (output_bit_map != NULL) vtr::free(output_bit_map);
-		output_bit_map = vtr::strdup(vtr::strtok(NULL,TOKENS, file, buffer));
-	}
-
-	if (!strcmp(output_bit_map, One))
-	{
-		vtr::free(output_bit_map);
-		output_bit_map = vtr::strdup(One);
-		node->generic_output = 1;
+		if(!ptr) 				
+		{
+			to_return = GND_NODE;
+		}
+		else if(!strcmp(ptr," 1")) 
+		{
+			to_return = VCC_NODE;
+		}
+		else if(!strcmp(ptr," 0"))
+		{
+			to_return = GND_NODE;
+		} 
+		else    
+		{
+			to_return = VCC_NODE;
+		}                    
 	}
 	else
 	{
-		vtr::free(output_bit_map);
-		output_bit_map = vtr::strdup(Zero);
-		node->generic_output = 0;
-	}
-
-	file_line_number = last_line;
-	fsetpos(file,&pos);
-
-	/*Patern recognition for faster simulation*/
-	if(node->generic_output){
-		//On-gate recognition
-		//TODO move off-logic parts to appropriate code block
-		/* Single line bit map : */
-		if(line_count_bitmap == 1)
+		while(1)
 		{
-			// GT
-			if(!strcmp(bit_map[0],"100"))
-				return GT;
+			vtr::fgets (buffer, READ_BLIF_BUFFER, file);
+			if(!(buffer[0] == '0' || buffer[0] == '1' || buffer[0] == '-'))
+				break;
 
-			// LT
-			if(!strcmp(bit_map[0],"010"))
-				return LT;
-
-			/* LOGICAL_AND and LOGICAL_NAND for ABC*/
-			int i;
-			for(i = 0; i < input_count && bit_map[0][i] == '1'; i++);
-
-			if(i == input_count)
-			{
-				if (!strcmp(output_bit_map,"1"))
-					return LOGICAL_AND;
-				else if (!strcmp(output_bit_map,"0"))
-					return LOGICAL_NAND;
-			}
-
-			/* BITWISE_NOT */
-			if(!strcmp(bit_map[0],"0"))
-				return BITWISE_NOT;
-
-			/* LOGICAL_NOR and LOGICAL_OR for ABC */
-			for(i = 0; i < input_count && bit_map[0][i] == '0'; i++);
-			if(i == input_count)
-			{
-				if (!strcmp(output_bit_map,"1"))
-					return LOGICAL_NOR;
-				else if (!strcmp(output_bit_map,"0"))
-					return LOGICAL_OR;
-			}
+			bit_map = (char**)vtr::realloc(bit_map,sizeof(char*) * (line_count_bitmap + 1));
+			bit_map[line_count_bitmap++] = vtr::strdup(vtr::strtok(buffer,TOKENS, file, buffer));
+			if (output_bit_map != NULL) vtr::free(output_bit_map);
+			output_bit_map = vtr::strdup(vtr::strtok(NULL,TOKENS, file, buffer));
 		}
-		/* Assumption that bit map is in order when read from blif */
-		else if(line_count_bitmap == 2)
-		{
-			/* LOGICAL_XOR */
-			if((strcmp(bit_map[0],"01")==0) && (strcmp(bit_map[1],"10")==0)) return LOGICAL_XOR;
-			/* LOGICAL_XNOR */
-			if((strcmp(bit_map[0],"00")==0) && (strcmp(bit_map[1],"11")==0)) return LOGICAL_XNOR;
-		}
-		else if (line_count_bitmap == 4)
-		{
-			/* ADDER_FUNC */
-			if (
-					   (!strcmp(bit_map[0],"001"))
-					&& (!strcmp(bit_map[1],"010"))
-					&& (!strcmp(bit_map[2],"100"))
-					&& (!strcmp(bit_map[3],"111"))
-			)
-				return ADDER_FUNC;
-			/* CARRY_FUNC */
-			if(
-					   (!strcmp(bit_map[0],"011"))
-					&& (!strcmp(bit_map[1],"101"))
-					&& (!strcmp(bit_map[2],"110"))
-					&& (!strcmp(bit_map[3],"111"))
-			)
-				return 	CARRY_FUNC;
-			/* LOGICAL_XOR */
-			if(
-					   (!strcmp(bit_map[0],"001"))
-					&& (!strcmp(bit_map[1],"010"))
-					&& (!strcmp(bit_map[2],"100"))
-					&& (!strcmp(bit_map[3],"111"))
-			)
-				return 	LOGICAL_XOR;
-			/* LOGICAL_XNOR */
-			if(
-					   (!strcmp(bit_map[0],"000"))
-					&& (!strcmp(bit_map[1],"011"))
-					&& (!strcmp(bit_map[2],"101"))
-					&& (!strcmp(bit_map[3],"110"))
-			)
-				return 	LOGICAL_XNOR;
-		}
+		
+		oassert(output_bit_map);
 
+		file_line_number = last_line;
+		fsetpos(file,&pos);
 
-		if(line_count_bitmap == input_count)
+		/*Patern recognition for faster simulation*/
+		if(!strcmp(output_bit_map, One))
 		{
-			/* LOGICAL_OR */
-			int i;
-			for(i = 0; i < line_count_bitmap; i++)
+			//On-gate recognition
+			//TODO move off-logic parts to appropriate code block
+
+			vtr::free(output_bit_map);
+			output_bit_map = vtr::strdup(One);
+			node->generic_output = 1;
+
+			/* Single line bit map : */
+			if(line_count_bitmap == 1)
 			{
-				if(bit_map[i][i] == '1')
+				// GT
+				if(!strcmp(bit_map[0],"100"))
 				{
-					int j;
-					for(j = 1; j < input_count; j++)
-						if(bit_map[i][(i+j)% input_count]!='-')
-							break;
-
-					if(j != input_count)
-						break;
+					to_return = GT;
 				}
+
+				// LT
+				else if(!strcmp(bit_map[0],"010"))
+				{
+					to_return = LT;
+				}
+
+				/* LOGICAL_AND and LOGICAL_NAND for ABC*/
 				else
 				{
-					break;
+					int i;
+					for(i = 0; i < input_count && bit_map[0][i] == '1'; i++);
+
+					if(i == input_count)
+					{
+						if (!strcmp(output_bit_map,"1"))
+						{
+							to_return = LOGICAL_AND;
+						}
+						else if (!strcmp(output_bit_map,"0"))
+						{
+							to_return = LOGICAL_NAND;
+						}
+					}
+
+					/* BITWISE_NOT */
+					if(!strcmp(bit_map[0],"0") && to_return == operation_list_END)
+					{
+						to_return = BITWISE_NOT;
+					}
+					/* LOGICAL_NOR and LOGICAL_OR for ABC */
+					for(i = 0; i < input_count && bit_map[0][i] == '0'; i++);
+
+					if(i == input_count && to_return == operation_list_END)
+					{
+						if (!strcmp(output_bit_map,"1"))
+						{
+							to_return = LOGICAL_NOR;
+						}
+						else if (!strcmp(output_bit_map,"0"))
+						{
+							to_return = LOGICAL_OR;
+						}
+					}
 				}
 			}
-
-			if(i == line_count_bitmap)
-				return LOGICAL_OR;
-
-			/* LOGICAL_NAND */
-			for(i = 0; i < line_count_bitmap; i++)
+			/* Assumption that bit map is in order when read from blif */
+			else if(line_count_bitmap == 2)
 			{
-				if(bit_map[i][i]=='0')
-				{
-					int j;
-					for(j = 1; j < input_count; j++)
-						if(bit_map[i][(i+j)% input_count]!='-')
-							break;
-
-					if(j != input_count) break;
+				/* LOGICAL_XOR */
+				if((strcmp(bit_map[0],"01")==0) && (strcmp(bit_map[1],"10")==0))
+				{ 
+					to_return = LOGICAL_XOR;
 				}
-				else
+				/* LOGICAL_XNOR */
+				else if((strcmp(bit_map[0],"00")==0) && (strcmp(bit_map[1],"11")==0)) 
 				{
-					break;
+					to_return = LOGICAL_XNOR;
 				}
 			}
-
-			if(i == line_count_bitmap)
-				return LOGICAL_NAND;
-		}
-
-		/* MUX_2 */
-		if(line_count_bitmap*2 == input_count)
-		{
-			int i;
-			for(i = 0; i < line_count_bitmap; i++)
+			else if (line_count_bitmap == 4)
 			{
+				/* ADDER_FUNC */
 				if (
-						   (bit_map[i][i]=='1')
-						&& (bit_map[i][i+line_count_bitmap] =='1')
+						(!strcmp(bit_map[0],"001"))
+						&& (!strcmp(bit_map[1],"010"))
+						&& (!strcmp(bit_map[2],"100"))
+						&& (!strcmp(bit_map[3],"111"))
 				)
 				{
-					int j;
-					for (j = 1; j < line_count_bitmap; j++)
+					to_return = ADDER_FUNC;
+				}
+				/* CARRY_FUNC */
+				else if(
+						(!strcmp(bit_map[0],"011"))
+						&& (!strcmp(bit_map[1],"101"))
+						&& (!strcmp(bit_map[2],"110"))
+						&& (!strcmp(bit_map[3],"111"))
+				)
+				{
+					to_return = 	CARRY_FUNC;
+				}
+				/* LOGICAL_XOR */
+				else if(
+						(!strcmp(bit_map[0],"001"))
+						&& (!strcmp(bit_map[1],"010"))
+						&& (!strcmp(bit_map[2],"100"))
+						&& (!strcmp(bit_map[3],"111"))
+				)
+				{
+					to_return = 	LOGICAL_XOR;
+				}
+				/* LOGICAL_XNOR */
+				else if(
+						(!strcmp(bit_map[0],"000"))
+						&& (!strcmp(bit_map[1],"011"))
+						&& (!strcmp(bit_map[2],"101"))
+						&& (!strcmp(bit_map[3],"110"))
+				)
+				{
+					to_return = 	LOGICAL_XNOR;
+				}
+			}
+
+
+			if(line_count_bitmap == input_count && to_return == operation_list_END)
+			{
+				/* LOGICAL_OR */
+				int i;
+				for(i = 0; i < line_count_bitmap; i++)
+				{
+					if(bit_map[i][i] == '1')
 					{
-						if (
-								   (bit_map[i][ (i+j) % line_count_bitmap] != '-')
-								|| (bit_map[i][((i+j) % line_count_bitmap) + line_count_bitmap] != '-')
-						)
+						int j;
+						for(j = 1; j < input_count; j++)
+						{
+							if(bit_map[i][(i+j)% input_count]!='-')
+							{
+								break;
+							}
+						}
+
+						if(j != input_count)
+						{
+							break;
+						}
+					}
+					else
+					{
+						break;
+					}
+				}
+
+				if(i == line_count_bitmap)
+				{
+					to_return = LOGICAL_OR;
+				}
+				else
+				{
+
+					/* LOGICAL_NAND */
+					for(i = 0; i < line_count_bitmap; i++)
+					{
+						if(bit_map[i][i]=='0')
+						{
+							int j;
+							for(j = 1; j < input_count; j++)
+							{
+								if(bit_map[i][(i+j)% input_count]!='-')
+								{
+									break;
+								}
+							}
+
+							if(j != input_count) 
+							{
+								break;
+							}
+						}
+						else
 						{
 							break;
 						}
 					}
 
-					if(j != input_count)
-						break;
-				}
-				else
-				{
-					break;
+					if(i == line_count_bitmap)
+					{
+						to_return = LOGICAL_NAND;
+					}
 				}
 			}
 
-			if(i == line_count_bitmap)
-				return MUX_2;
+			/* MUX_2 */
+			if(line_count_bitmap*2 == input_count && to_return == operation_list_END)
+			{
+				int i;
+				for(i = 0; i < line_count_bitmap; i++)
+				{
+					if((bit_map[i][i]=='1') && (bit_map[i][i+line_count_bitmap] =='1'))
+					{
+						int j;
+						for (j = 1; j < line_count_bitmap; j++)
+						{
+							if (
+									(bit_map[i][ (i+j) % line_count_bitmap] != '-')
+									|| (bit_map[i][((i+j) % line_count_bitmap) + line_count_bitmap] != '-')
+							)
+							{
+								break;
+							}
+						}
+
+						if(j != input_count)
+						{
+							break;
+						}
+					}
+					else
+					{
+						break;
+					}
+				}
+
+				if(i == line_count_bitmap)
+				{
+					to_return = MUX_2;
+				}
+			}
+		} 
+		else
+		{
+			//Off-gate recognition
+			//TODO
+
+			vtr::free(output_bit_map);
+			output_bit_map = vtr::strdup(Zero);
+			node->generic_output = 0;
 		}
-	} else if (node->generic_output == 0){
-		//Off-gate recognition
-		//TODO
+
+		/* assigning the bit_map to the node if it is GENERIC */
+		if(to_return == operation_list_END)
+		{
+			node->bit_map = bit_map;
+			node->bit_map_line_count = line_count_bitmap;
+			to_return = GENERIC;
+		}
 	}
-
-	 /* assigning the bit_map to the node if it is GENERIC */
-
-	node->bit_map = bit_map;
-	node->bit_map_line_count = line_count_bitmap;
-	return GENERIC;
+	if(output_bit_map)
+	{
+		vtr::free(output_bit_map);
+	}
+	if(bit_map)
+	{
+		for(int i = 0; i < line_count_bitmap; i++)
+		{
+			vtr::free(bit_map[i]);
+		}
+		vtr::free(bit_map);
+	}
+	return to_return;
 }
 
 /*
@@ -1278,13 +1384,13 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 			// match .model followed buy the subcircuit name.
 			if (token && !strcmp(token,".model") && !strcmp(vtr::strtok(NULL,TOKENS, file, buffer), name_subckt))
 			{
-				model = (hard_block_model *)vtr::malloc(sizeof(hard_block_model));
+				model = (hard_block_model *)vtr::calloc(1, sizeof(hard_block_model));
 				model->name = vtr::strdup(name_subckt);
-				model->inputs = (hard_block_pins *)vtr::malloc(sizeof(hard_block_pins));
+				model->inputs = (hard_block_pins *)vtr::calloc(1, sizeof(hard_block_pins));
 				model->inputs->count = 0;
 				model->inputs->names = NULL;
 
-				model->outputs = (hard_block_pins *)vtr::malloc(sizeof(hard_block_pins));
+				model->outputs = (hard_block_pins *)vtr::calloc(1, sizeof(hard_block_pins));
 				model->outputs->count = 0;
 				model->outputs->names = NULL;
 
@@ -1391,7 +1497,7 @@ Hashtable *index_names(char **names, int count)
 	Hashtable *index = new Hashtable();
 	for (long i = 0; i < count; i++)
 	{
-		int *offset = (int *)vtr::malloc(sizeof(int));
+		int *offset = (int *)vtr::calloc(1, sizeof(int));
 		*offset = i;
 		index->add(names[i], offset);
 	}
@@ -1419,10 +1525,10 @@ Hashtable *associate_names(char **names1, char **names2, int count)
 hard_block_ports *get_hard_block_ports(char **pins, int count)
 {
 	// Count the input port sizes.
-	hard_block_ports *ports = (hard_block_ports *)vtr::malloc(sizeof(hard_block_ports));
+	hard_block_ports *ports = (hard_block_ports *)vtr::calloc(1, sizeof(hard_block_ports));
 	ports->count = 0;
-	ports->sizes = 0;
-	ports->names = 0;
+	ports->sizes = NULL;
+	ports->names = NULL;
 	char *prev_portname = 0;
 	int i;
 	for (i = 0; i < count; i++)
@@ -1519,7 +1625,7 @@ char *generate_hard_block_ports_signature(hard_block_ports *ports)
 	for (j = 0; j < ports->count; j++)
 	{
 		char buffer1[READ_BLIF_BUFFER];
-		odin_sprintf(buffer1, "%s_%ld_", ports->names[j], ports->sizes[j]);
+		odin_sprintf(buffer1, "%s_%d_", ports->names[j], ports->sizes[j]);
 		strcat(buffer, buffer1);
 	}
 	return vtr::strdup(buffer);
@@ -1574,13 +1680,26 @@ long get_hard_block_pin_number(char *original_name)
  */
 void add_hard_block_model(hard_block_model *m, hard_block_ports *ports, hard_block_models *models)
 {
-	char needle[READ_BLIF_BUFFER];
-	needle[0] = '\0';
-	strcat(needle, m->name);
-	strcat(needle, ports->signature);
-	models->models = (hard_block_model **)vtr::realloc(models->models, (models->count * sizeof(hard_block_model *)) + 1);
-	models->models[models->count++] = m;
-	models->index->add(needle, m);
+	if(models && m)
+	{
+		char needle[READ_BLIF_BUFFER] = { 0 };
+
+		if(m->name && ports && ports->signature)
+			sprintf(needle, "%s%s", m->name, ports->signature);
+		else if(m->name) 
+			sprintf(needle, "%s", m->name);
+		else if(ports && ports->signature)
+			sprintf(needle, "%s", ports->signature);
+		
+		if(strlen(needle) > 0)
+		{
+			models->count += 1;
+
+			models->models = (hard_block_model **)vtr::realloc(models->models, models->count * sizeof(hard_block_model *));
+			models->models[models->count-1] = m;
+			models->index->add(needle, m);
+		}
+	}
 }
 
 /*
@@ -1589,11 +1708,20 @@ void add_hard_block_model(hard_block_model *m, hard_block_ports *ports, hard_blo
  */
 hard_block_model *get_hard_block_model(char *name, hard_block_ports *ports, hard_block_models *models)
 {
-	char needle[READ_BLIF_BUFFER];
-	needle[0] = '\0';
-	strcat(needle, name);
-	strcat(needle, ports->signature);
-	return (hard_block_model *)models->index->get(needle);
+	hard_block_model *to_return = NULL;
+	char needle[READ_BLIF_BUFFER] = { 0 };
+
+	if(name && ports && ports->signature)
+		sprintf(needle, "%s%s", name, ports->signature);
+	else if(name) 
+		sprintf(needle, "%s", name);
+	else if(ports && ports->signature)
+		sprintf(needle, "%s", ports->signature);
+	
+	if(strlen(needle) > 0) 
+		to_return = (hard_block_model *)models->index->get(needle);
+
+	return to_return;
 }
 
 /*
@@ -1601,8 +1729,8 @@ hard_block_model *get_hard_block_model(char *name, hard_block_ports *ports, hard
  */
 hard_block_models *create_hard_block_models()
 {
-	hard_block_models *m = (hard_block_models *)vtr::malloc(sizeof(hard_block_models));
-	m->models = 0;
+	hard_block_models *m = (hard_block_models *)vtr::calloc(1, sizeof(hard_block_models));
+	m->models = NULL;
 	m->count  = 0;
 	m->index  = new Hashtable();
 

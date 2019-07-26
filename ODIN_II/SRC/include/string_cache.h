@@ -21,7 +21,7 @@
  */
 
 
-typedef struct {
+struct STRING_CACHE{
 	long size;
 	long string_hash_size;
 	long free;
@@ -31,7 +31,20 @@ typedef struct {
 	void **data;
 	long *string_hash;
 	long *next_string;
-} STRING_CACHE;
+};
+
+struct STRING_CACHE_LIST{
+	STRING_CACHE *local_param_table_sc;
+	STRING_CACHE *local_symbol_table_sc;
+	STRING_CACHE *function_local_symbol_table_sc;
+
+	struct ast_node_t **local_symbol_table;
+	struct ast_node_t **function_local_symbol_table;
+	int num_local_symbol_table;
+	int function_num_local_symbol_table;
+
+	char *instance_name_prefix;
+};
 
 /* creates the hash where it is indexed by a string and the void ** holds the data */
 STRING_CACHE *sc_new_string_cache(void);
@@ -41,6 +54,8 @@ long sc_lookup_string(STRING_CACHE *sc, const char * string);
 long sc_add_string(STRING_CACHE *sc, const char *string);
 int sc_valid_id(STRING_CACHE *sc, long string_id);
 void * sc_do_alloc(long, long);
+bool sc_remove_string(STRING_CACHE * sc, const char *string);
+
 /* free the cache */
 STRING_CACHE * sc_free_string_cache(STRING_CACHE *sc);
 

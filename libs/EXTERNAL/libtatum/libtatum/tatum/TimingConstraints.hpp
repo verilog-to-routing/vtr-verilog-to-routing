@@ -22,9 +22,9 @@ namespace tatum {
 class TimingConstraints {
     public: //Types
         typedef tatum::util::linear_map<DomainId,DomainId>::const_iterator domain_iterator;
-        typedef std::map<DomainPair,Time>::const_iterator clock_constraint_iterator;
+        typedef std::map<NodeDomainPair,Time>::const_iterator clock_constraint_iterator;
         typedef std::map<DomainPair,Time>::const_iterator clock_uncertainty_iterator;
-        typedef std::map<NodeId,IoConstraint>::const_iterator io_constraint_iterator;
+        typedef std::multimap<NodeId,IoConstraint>::const_iterator io_constraint_iterator;
         typedef std::map<DomainId,Time>::const_iterator source_latency_iterator;
         typedef std::unordered_set<NodeId>::const_iterator constant_generator_iterator;
 
@@ -63,13 +63,13 @@ class TimingConstraints {
         ///Indicates whether the paths between src_domain and sink_domain should be analyzed
         ///\param src_domain The ID of the source (launch) clock domain
         ///\param sink_domain The ID of the sink (capture) clock domain
-        bool should_analyze(const DomainId src_domain, const DomainId sink_domain) const;
+        bool should_analyze(const DomainId src_domain, const DomainId sink_domain, const NodeId capture_node=NodeId::INVALID()) const;
 
-        ///\returns The setup (max) constraint between src_domain and sink_domain
-        Time setup_constraint(const DomainId src_domain, const DomainId sink_domain) const;
+        ///\returns The setup (max) constraint between src_domain and sink_domain at the specified capture_node_id
+        Time setup_constraint(const DomainId src_domain, const DomainId sink_domain, const NodeId capture_node=NodeId::INVALID()) const;
 
-        ///\returns The hold (min) constraint between src_domain and sink_domain
-        Time hold_constraint(const DomainId src_domain, const DomainId sink_domain) const;
+        ///\returns The hold (min) constraint between src_domain and sink_domain at the specified capture_node_id
+        Time hold_constraint(const DomainId src_domain, const DomainId sink_domain, const NodeId capture_node=NodeId::INVALID()) const;
         
         ///\returns The setup clock uncertainty between src_domain and sink_domain (defaults to zero if unspecified)
         Time setup_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain) const;
@@ -126,9 +126,11 @@ class TimingConstraints {
 
         ///Sets the setup constraint between src_domain and sink_domain with value constraint
         void set_setup_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint);
+        void set_setup_constraint(const DomainId src_domain, const DomainId sink_domain, const NodeId capture_node, const Time constraint);
 
         ///Sets the hold constraint between src_domain and sink_domain with value constraint
         void set_hold_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint);
+        void set_hold_constraint(const DomainId src_domain, const DomainId sink_domain, const NodeId capture_node, const Time constraint);
 
         ///Sets the setup clock uncertainty between src_domain and sink_domain with value uncertainty
         void set_setup_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain, const Time uncertainty);
@@ -156,7 +158,7 @@ class TimingConstraints {
         void remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_map);
 
     private:
-        typedef std::map<NodeId,IoConstraint>::iterator mutable_io_constraint_iterator;
+        typedef std::multimap<NodeId,IoConstraint>::iterator mutable_io_constraint_iterator;
     private:
         ///\returns A valid domain id if the node is a clock source
         DomainId find_node_source_clock_domain(const NodeId node_id) const;
@@ -172,8 +174,11 @@ class TimingConstraints {
 
         std::unordered_set<NodeId> constant_generators_;
 
-        std::map<DomainPair,Time> setup_constraints_;
-        std::map<DomainPair,Time> hold_constraints_;
+        //The setup/hold constraints between clock domains and sink nodes
+        //If the key's capture_node is INVALID() it is treated as a wildcard (i.e. default)
+        //constraint
+        std::map<NodeDomainPair,Time> setup_constraints_;
+        std::map<NodeDomainPair,Time> hold_constraints_;
 
         std::map<DomainPair,Time> setup_clock_uncertainties_;
         std::map<DomainPair,Time> hold_clock_uncertainties_;
@@ -195,17 +200,23 @@ struct DomainPair {
     DomainPair(DomainId src, DomainId sink): src_domain_id(src), sink_domain_id(sink) {}
 
     friend bool operator<(const DomainPair& lhs, const DomainPair& rhs) {
-        if(lhs.src_domain_id < rhs.src_domain_id) {
-            return true;
-        } else if(lhs.src_domain_id == rhs.src_domain_id 
-                  && lhs.sink_domain_id < rhs.sink_domain_id) {
-            return true;
-        }
-        return false;
+        return std::tie(lhs.src_domain_id, lhs.sink_domain_id) < std::tie(rhs.src_domain_id, rhs.sink_domain_id);
     }
 
     DomainId src_domain_id;
     DomainId sink_domain_id;
+};
+
+struct NodeDomainPair {
+    NodeDomainPair(DomainId src, DomainId sink, NodeId to_node)
+        : domain_pair(src, sink), capture_node(to_node) {}
+
+    friend bool operator<(const NodeDomainPair& lhs, const NodeDomainPair& rhs) {
+        return std::tie(lhs.capture_node, lhs.domain_pair) < std::tie(rhs.capture_node, rhs.domain_pair);
+    }
+
+    DomainPair domain_pair;
+    NodeId capture_node; //Should be treated as a wild-card if capture_node is NodeId::INVALID()
 };
 
 struct IoConstraint {

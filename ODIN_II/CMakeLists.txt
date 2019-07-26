@@ -1,15 +1,23 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.9)
 
 project("ODIN_II")
-
-#base extra flags for odin
-set(ODIN_EXTRA_FLAGS 
-    ""  # nothing for now
-)
 
 if(ODIN_DEBUG)
 
     message("*** Compiling with Odin debug flags")
+
+    set(ODIN_EXTRA_FLAGS
+        "-g"
+        "-ggdb"
+        "-O0"
+        ${ODIN_EXTRA_FLAGS}
+    )
+
+endif()
+
+if(ODIN_WARN)
+
+    message("*** Compiling with Odin with extra warning flags")
 
     set(ODIN_REF_FLAGS
         "-Wchkp"                    # Warn about memory access errors found by Pointer Bounds Checker
@@ -32,17 +40,31 @@ if(ODIN_DEBUG)
     )
 
     set(ODIN_EXTRA_FLAGS
-        "-g"
-        "-ggdb"
-        "-O0"
-        ""
         ${ODIN_EXTRA_FLAGS}
-    ##############
-    # comment out the flag set you do not wish to see added below
-    #
         ${ODIN_REF_FLAGS}
         ${ODIN_SIGN_FLAGS}
         ${ODIN_LIMITS_FLAGS}
+    )
+
+endif()
+
+if(ODIN_TIDY)
+    set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=-*,readability-*")
+endif()
+
+if(ODIN_COVERAGE)
+
+    message("*** Compiling with Odin Coverage flags")
+
+    set(ODIN_EXTRA_FLAGS
+        "-g"
+        "-fprofile-arcs"
+        "-ftest-coverage"
+        ${ODIN_EXTRA_FLAGS}
+    )
+
+    set(ODIN_EXTRA_LINK_FLAGS
+        "-lgcov --coverage"
     )
 
 endif()
@@ -65,11 +87,13 @@ files_to_dirs(BISON_VerilogParser_OUTPUT_HEADER PARSER_INCLUDE_DIRS)
 
 include(CheckCXXSymbolExists)
 
+set(LIB_INCLUDE_DIRS "SRC/include")
+
 #Collect the source files
 file(GLOB_RECURSE EXEC_SOURCES main.cpp)
 file(GLOB_RECURSE LIB_SOURCES SRC/*.cpp)
-file(GLOB_RECURSE LIB_HEADERS SRC/include/*.h)
-files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
+file(GLOB_RECURSE LIB_HEADERS_H ${LIB_INCLUDE_DIRS}/*.h)
+file(GLOB_RECURSE LIB_HEADERS_HPP ${LIB_INCLUDE_DIRS}/*.hpp)
 
 #Treat .c as CXX
 set_source_files_properties(${FLEX_VerilogLexer_OUTPUTS} ${BISON_VerilogParser_OUTPUT_SOURCE} PROPERTIES LANGUAGE CXX)
@@ -85,13 +109,28 @@ include_directories(${LIB_INCLUDE_DIRS} ${PARSER_INCLUDE_DIRS})
 
 #Create the library
 add_library(libodin_ii STATIC
-             ${LIB_HEADERS}
+             ${LIB_HEADERS_H}
+             ${LIB_HEADERS_HPP}
              ${LIB_SOURCES}
              ${FLEX_VerilogLexer_OUTPUTS} 
              ${BISON_VerilogParser_OUTPUT_SOURCE})
 
 target_include_directories(libodin_ii PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libodin_ii PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
+
+target_link_libraries(libodin_ii
+                        libvtrutil
+                        librtlnumber
+                        libarchfpga
+                        libabc
+                        libargparse
+                        ${CMAKE_DL_LIBS})
+
+#Create the executable
+add_executable(odin_II ${EXEC_SOURCES})
+
+target_link_libraries(odin_II
+                        libodin_ii)
 
 #################################
 # INCLUDE EXTRA ODIN FLAGS IS EXECUTED HERE
@@ -106,34 +145,23 @@ foreach(ODIN_FLAG ${ODIN_EXTRA_FLAGS})
     if(FLAG_TEST)
         message("-- Performing Test CXX_SUPPORT_FLAG${ODIN_FLAG} - Success")
         target_compile_options(libodin_ii PRIVATE ${ODIN_FLAG})
+        target_compile_options(odin_II PRIVATE ${ODIN_FLAG})
     else()
         message("-- Performing Test CXX_SUPPORT_FLAG${ODIN_FLAG} - Failure")
     endif()
 
 endforeach()
 
-if(WITH_LIBRTLNUMBER)
-target_link_libraries(libodin_ii
-                        libvtrutil
-                        librtlnumber
-                        libarchfpga
-                        libabc
-                        libargparse
-                        ${CMAKE_DL_LIBS})
-else()
-target_link_libraries(libodin_ii
-                        libvtrutil
-                        libarchfpga
-                        libabc
-                        libargparse
-                        ${CMAKE_DL_LIBS})
+#add extra link flags for odin
+if(ODIN_EXTRA_LINK_FLAGS)
+    set_target_properties(libodin_ii PROPERTIES LINK_FLAGS ${ODIN_EXTRA_LINK_FLAGS})
+    set_target_properties(odin_II PROPERTIES LINK_FLAGS ${ODIN_EXTRA_LINK_FLAGS})
 endif()
 
-#Create the executable
-add_executable(odin_II ${EXEC_SOURCES})
-
-target_link_libraries(odin_II
-                        libodin_ii)
-
+#Supress IPO link warnings if IPO is enabled
+get_target_property(ODIN_USES_IPO odin_II INTERPROCEDURAL_OPTIMIZATION)
+if (ODIN_USES_IPO)
+    set_target_properties(odin_II PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
+endif()
 
 install(TARGETS odin_II libodin_ii DESTINATION bin)

@@ -4,7 +4,6 @@
 #include <vector>
 
 TEST_CASE("Range Ops", "[vtr_range]") {
-
     std::vector<int> vec = {1, 2, 3};
 
     {
@@ -38,6 +37,5 @@ TEST_CASE("Range Ops", "[vtr_range]") {
         auto range = vtr::make_range(vec.begin(), vec.begin());
         REQUIRE(range.size() == 0);
         REQUIRE(range.empty());
-
     }
 }

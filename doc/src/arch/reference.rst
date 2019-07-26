@@ -611,7 +611,7 @@ Switches
 The tags within the ``<switchlist>`` tag specifies the switches used to connect wires and pins together.
 
 .. arch:tag::
-    <switch type="{mux|tristate|pass_gate|short|buffer}" name="string" R="float" Cin="float" Cout="float" Tdel="float" buf_size="{auto|float}" mux_trans_size="float", power_buf_size="int"/>
+    <switch type="{mux|tristate|pass_gate|short|buffer}" name="string" R="float" Cin="float" Cout="float" Cinternal="float" Tdel="float" buf_size="{auto|float}" mux_trans_size="float", power_buf_size="int"/>
 
     Describes a switch in the routing architecture.
 
@@ -619,7 +619,7 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
 
     .. code-block:: xml
 
-        <switch type="mux" name="my_awsome_mux" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+        <switch type="mux" name="my_awesome_mux" R="551" Cin=".77e-15" Cout="4e-15" Cinternal="5e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
 
 
     :req_param type:
@@ -655,6 +655,26 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
     :req_param Cin:  Input capacitance of the switch.
     :req_param Cout:  Output capacitance of the switch.
 
+    :opt_param Cinternal: 
+        Since multiplexers and tristate buffers are modeled as a       
+        parallel stream of pass transistors feeding into a buffer,     
+        we would expect an additional "internal capacitance" to arise when the    
+        pass transistor is enabled and the signal must propogate to    
+        the buffer. See diagram of one stream below:: 
+        
+            Pass Transistor                                          
+                      |                                                   
+                    -----                                                 
+                    -----      Buffer                                     
+                   |     |       |\                                       
+             ------       -------| \--------                              
+               |             |   | /    |                                 
+             =====         ===== |/   =====                               
+             =====         =====      =====                               
+               |             |          |                                 
+             Input C    Internal C    Output C                             
+    
+        .. note:: Only specify a value for multiplexers and/or tristate switches.
 
     :opt_param Tdel:
 
@@ -698,7 +718,7 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
 
         .. code-block:: xml
 
-            <switch type="mux" name="my_mux" R="522" Cin="3.1e-15" Cout="3e-15" mux_trans_size="1.7" buf_size="23">
+            <switch type="mux" name="my_mux" R="522" Cin="3.1e-15" Cout="3e-15" Cinternal="5e-15" mux_trans_size="1.7" buf_size="23">
                 <Tdel num_inputs="12" delay="8.00e-11"/>
                 <Tdel num_inputs="15" delay="8.4e-11"/>
                 <Tdel num_inputs="20" delay="9.4e-11"/>

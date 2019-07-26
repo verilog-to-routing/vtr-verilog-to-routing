@@ -39,27 +39,53 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 #include <regex>
 #include <stdbool.h>
-/*---------------------------------------------------------------------------------------------
- * (function: node_name_based_on_op)
- * 	Get the string version of a node
- *-------------------------------------------------------------------------------------------*/
+
+
 long shift_left_value_with_overflow_check(long input_value, long shift_by)
 {
 	if(shift_by < 0)
 		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that is negative [%ld]\n",shift_by);
 	else if(shift_by >= ODIN_STD_BITWIDTH-1 )
-		error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that will overflow the maximum size of %d [%ld]\n", shift_by, ODIN_STD_BITWIDTH-1);
+		warning_message(NETLIST_ERROR, -1, -1, "requesting a shift left that will overflow the maximum size of %ld [%ld]\n", shift_by, ODIN_STD_BITWIDTH-1);
 
 	return input_value << shift_by;
 }
 
+std::string get_file_extension(std::string input_file)
+{
+	auto dot_location = input_file.find_last_of('.');
+	if( dot_location != std::string::npos )
+	{
+		return input_file.substr(dot_location);
+	}
+	else
+	{
+		return "";
+	}
+}
+
 /*---------------------------------------------------------------------------------------------
- * (function: node_name_based_on_op)
- * 	Get the string version of a node
+ * (function: name_based_on_op)
+ * 	Get the string version of an operation
  *-------------------------------------------------------------------------------------------*/
 const char *name_based_on_op(operation_list op)
 {
+	oassert(op < operation_list_END &&
+		"OUT OF BOUND operation_list!");
+
 	return operation_list_STR[op][ODIN_STRING_TYPE];
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: name_based_on_ids)
+ * 	Get the string version of an operation
+ *-------------------------------------------------------------------------------------------*/
+const char *name_based_on_ids(ids op)
+{
+	oassert(op < ids_END &&
+		"OUT OF BOUND ids!");
+
+	return ids_STR[op];
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -70,6 +96,16 @@ const char *node_name_based_on_op(nnode_t *node)
 {
 	return name_based_on_op(node->type);
 }
+
+/*---------------------------------------------------------------------------------------------
+ * (function: node_name_based_on_ids)
+ * 	Get the string version of a ast node
+ *-------------------------------------------------------------------------------------------*/
+const char *ast_node_name_based_on_ids(ast_node_t *node)
+{
+	return name_based_on_ids(node->type);
+}
+
 
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
@@ -114,6 +150,33 @@ char *make_full_ref_name(const char *previous, const char *module_name, const ch
 		return_string	<< "~" << std::dec << bit ;
 	}
 	return vtr::strdup(return_string.str().c_str());
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: make_full_name_w_o_array_ref)
+// {previous_string}.module_name+instance_name
+ *-------------------------------------------------------------------------------------------*/
+char *make_full_name_w_o_array_ref(const char *previous, const char *module_name, const char *module_instance_name)
+{
+
+	std::stringstream return_string;
+	if(previous)								 
+		return_string << previous;
+
+	if(module_name) 							 
+		return_string	<< "." << module_name << "+" << module_instance_name;
+		
+
+	std::string name = return_string.str();
+
+	size_t idx = name.find_first_of('[', 0);
+	if (idx != std::string::npos)
+	{
+		// delete array refs
+		name.erase(idx, std::string::npos);
+	}
+	
+	return vtr::strdup(name.c_str());
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -214,11 +277,11 @@ long convert_dec_string_of_size_to_long(char *orig_string, int /*size*/)
 long convert_string_of_radix_to_long(char *orig_string, int radix)
 {
 	if (!is_string_of_radix(orig_string, radix))
-		error_message(PARSE_ERROR, -1, -1, "Invalid base %ld number: %s.\n", radix, orig_string);
+		error_message(PARSE_ERROR, -1, -1, "Invalid base %d number: %s.\n", radix, orig_string);
 
 	long number = strtoll(orig_string, NULL, radix);
 	if (number == LLONG_MAX || number == LLONG_MIN)
-		error_message(PARSE_ERROR, -1, -1, "This base %ld number (%s) is too long for Odin\n", radix, orig_string);
+		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
 
 	return number;
 }
@@ -234,7 +297,7 @@ int is_string_of_radix(char *string, int radix)
 	else if (radix == 2)
 		return is_binary_string(string);
 	else
-		return FALSE;
+		return false;
 }
 
 /*
@@ -433,68 +496,68 @@ char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, cha
 }
 
 /*
- * Returns TRUE if the given string contains only '0' to '9' and 'a' through 'f'
+ * Returns true if the given string contains only '0' to '9' and 'a' through 'f'
  */
 int is_hex_string(char *string)
 {
 	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
 		if (!((string[i] >= '0' && string[i] <= '9') || (tolower(string[i]) >= 'a' && tolower(string[i]) <= 'f')))
-			return FALSE;
+			return false;
 
-	return TRUE;
+	return true;
 }
 
 /*
- * Returns TRUE if the given string contains only '0' to '9' and 'a' through 'f'
+ * Returns true if the given string contains only '0' to '9' and 'a' through 'f'
  */
 int is_dont_care_string(char *string)
 {
 	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
-        if(string[i] != 'x') return FALSE;
+        if(string[i] != 'x') return false;
 		//if (!((string[i] >= '0' && string[i] <= '9') || (tolower(string[i]) >= 'a' && tolower(string[i]) <= 'f')))
-		//	return FALSE;
+		//	return false;
 
-	return TRUE;
+	return true;
 }
 /*
- * Returns TRUE if the string contains only '0' to '9'
+ * Returns true if the string contains only '0' to '9'
  */
 int is_decimal_string(char *string)
 {
 	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
 		if (!(string[i] >= '0' && string[i] <= '9'))
-			return FALSE;
+			return false;
 
-	return TRUE;
+	return true;
 }
 
 /*
- * Returns TRUE if the string contains only '0' to '7'
+ * Returns true if the string contains only '0' to '7'
  */
 int is_octal_string(char *string)
 {
 	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
 		if (!(string[i] >= '0' && string[i] <= '7'))
-			return FALSE;
+			return false;
 
-	return TRUE;
+	return true;
 }
 
 /*
- * Returns TRUE if the string contains only '0's and '1's.
+ * Returns true if the string contains only '0's and '1's.
  */
 int is_binary_string(char *string)
 {
 	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
 		if (!(string[i] >= '0' && string[i] <= '1'))
-			return FALSE;
+			return false;
 
-	return TRUE;
+	return true;
 }
 
 /*
@@ -708,9 +771,20 @@ short get_bit(char in){
     return -1;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: to_bit)
+ *-------------------------------------------------------------------------------------------*/
+short get_bit(short in){
+	if(in == 0 || in == 1)
+		return in;
+	fprintf(stderr,"not a valid bit\n");
+    return -1;
+}
+
+
 void passed_verify_i_o_availabilty(nnode_t *node, int expected_input_size, int expected_output_size, const char *current_src, int line_src) {
 	if(!node)
-		error_message(SIMULATION_ERROR, -1, -1, "node unavailable @%s::%s", current_src, line_src);
+		error_message(SIMULATION_ERROR, -1, -1, "node unavailable @%s::%d", current_src, line_src);
 
 	std::stringstream err_message;
 	int error=0;
@@ -811,10 +885,8 @@ void print_time(double time)
  */
 double wall_time()
 {
-	typedef std::chrono::system_clock Time;
-	typedef std::chrono::duration<double> dsec;
-	auto time_point = Time::now();
-	dsec time_since_epoch = time_point.time_since_epoch();
+	auto time_point = std::chrono::system_clock::now();
+	std::chrono::duration<double> time_since_epoch = time_point.time_since_epoch();
 
 	return time_since_epoch.count();
 }
@@ -906,13 +978,14 @@ void trim_string(char* string, const char *chars)
 	{
 		int length;
 		while((length = strlen(string)))
-		{	int trimmed = FALSE;
+		{	
+			bool trimmed = false;
 			unsigned int i;
 			for (i = 0; i < strlen(chars); i++)
 			{
 				if (string[length-1] == chars[i])
 				{
-					trimmed = TRUE;
+					trimmed = true;
 					string[length-1] = '\0';
 					break;
 				}
@@ -969,7 +1042,7 @@ int odin_sprintf (char *s, const char *format, ...)
     {
         va_end(args_copy) ;
         va_end(args) ;
-        return -BUFFER_MAX_SIZE;
+        return -1;
     }
 
 }

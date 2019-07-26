@@ -1,17 +1,22 @@
 language: cpp
 
-#dist: trusty
-sudo: false
+dist: trusty
 addons:
   apt:
     sources:
-    - ubuntu-toolchain-r-test # For newer GCC
     - george-edison55-precise-backports # For cmake
+    - llvm-toolchain-precise-3.6
+    - llvm-toolchain-trusty-6.0
+    - llvm-toolchain-trusty-7 # For clang-format-7
+    - llvm-toolchain-trusty-8
+    - ubuntu-toolchain-r-test
     packages:
     - autoconf
     - automake
     - bash
     - bison
+    - binutils
+    - binutils-gold
     - build-essential
     - cmake
     - ctags
@@ -19,17 +24,16 @@ addons:
     - doxygen
     - flex
     - fontconfig
-    - gcc-6
-    - g++-6
-    - gcc-4.9
     - gdb
     - git
     - gperf
     - libcairo2-dev
+    - libgtk-3-dev
     - libevent-dev
     - libfontconfig1-dev
     - liblist-moreutils-perl
     - libncurses5-dev
+#    - libtbb-dev
     - libx11-dev
     - libxft-dev
     - libxml++2.6-dev
@@ -40,18 +44,134 @@ addons:
     - valgrind
     - zip
     - qt5-default
+    - clang-format-7
+    # All the compilers!
+    - g++-4.9
+    - gcc-4.9
+    - g++-5
+    - gcc-5
+    - g++-6
+    - gcc-6
+    - g++-7
+    - gcc-7
+    - g++-8
+    - gcc-8
+    - g++-9
+    - gcc-9
+    - clang-6.0
+    - clang-8
 
-before_install:
- - source .travis/common.sh
+cache:
+  ccache: true
+  #directories:
+    #- /home/travis/vtr-build
+    #- /home/travis/vtr
 
-install:
- - ./.travis/install.sh
+env:
+  - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+
+stages:
+  #- Build
+  - Test
+  - Build Compatibility
+
+jobs:
+  include:
+    #Build stage disabled for now due to caching issues
+    #- stage: Build
+      #name: "Building VtR"
+      #env:
+        #- MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+        #- BUILD_TYPE=release
+      #script:
+        #- ./.github/travis/build.sh
+
+    - stage: Test
+      name: "Code Formatting"
+      script:
+        - ./dev/check-format.sh
+    - stage: Test
+      name: "C++ Unit Tests"
+      script:
+        - ./.github/travis/build.sh
+        - ./.github/travis/unittest.sh
+    - stage: Test
+      name: "Basic Regression Tests"
+      script:
+        - ./.github/travis/build.sh
+        - ./run_reg_test.pl vtr_reg_basic -j2
+    - stage: Test
+      name: "Strong Regression Tests"
+      script:
+        - ./.github/travis/build.sh
+        - ./run_reg_test.pl vtr_reg_strong -j2
+    - stage: Test
+      name: "Basic Valgrind Memory Tests"
+      script:
+        - ./.github/travis/build.sh
+        - ./run_reg_test.pl vtr_reg_valgrind_small -j2
+    - stage: Test
+      name: "ODIN-II Micro Tests"
+      script:
+        - ./.github/travis/build.sh
+        - ./run_reg_test.pl odin_reg_micro -j2
+    - stage: Test
+      name: "ODIN-II Operators Tests"
+      script:
+        - ./.github/travis/build.sh
+        - ./run_reg_test.pl odin_reg_operators -j2
+
+    - stage: Build Compatibility
+      name: "GCC 5 (Ubuntu Xenial - 16.04)"
+      env:
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - BUILD_TYPE=release_strict
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "GCC 6 (Debian Stretch)"
+      env:
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+        - BUILD_TYPE=release_strict
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "GCC 7 (Ubuntu Bionic - 18.04)"
+      env:
+         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "GCC 8 (Ubuntu Latest)"
+      env:
+         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "GCC 9 (Latest Release)"
+      env:
+         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "clang-6.0 (Debian + Ubuntu common)"
+      env:
+         - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+      script:
+        - ./.github/travis/build.sh
+    - stage: Build Compatibility
+      name: "clang-8 (Latest Release)"
+      env:
+         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+      script:
+        - ./.github/travis/build.sh
+
+before_script:
+  - source .github/travis/common.sh
+  - ./.github/travis/setup.sh
+
+after_script:
+  - ./.github/travis/setup.sh
 
 script:
-  - ./.travis/script.sh
-
-after_failure:
-  - ./.travis/after_failure.sh
-
-after_success:
-  - ./.travis/after_success.sh
+  - true

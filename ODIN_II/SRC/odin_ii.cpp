@@ -79,14 +79,14 @@ t_type_descriptor* type_descriptors;
 int block_tag;
 int num_types=0;
 
-typedef enum
+enum ODIN_ERROR_CODE
 {
 	SUCCESS,
 	ERROR_PARSE_ARCH,
 	ERROR_SYNTHESIS,
 	ERROR_PARSE_BLIF,
 
-}ODIN_ERROR_CODE;
+};
 
 static ODIN_ERROR_CODE synthesize_verilog()
 {
@@ -103,10 +103,11 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	/* get odin soft_logic definition file */
 	read_soft_def_file(hard_adders);
 
-	global_param_table_sc = sc_new_string_cache();
+	module_names_to_idx = sc_new_string_cache();
 
 	/* parse to abstract syntax tree */
 	printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
+	init_parser();
 	parse_to_ast();
 	/**
 	 *  Note that the entry point for ast optimzations is done per module with the
@@ -114,7 +115,7 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	 */
 
 	/* after the ast is made potentially do tagging for downstream links to verilog */
-	if (global_args.high_level_block)
+	if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
 		add_tag_data();
 
 	/**
@@ -171,21 +172,21 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	/* Find any unused logic in the netlist and remove it */
 	remove_unused_logic(verilog_netlist);
 
-	sc_free_string_cache(global_param_table_sc);
-
-
 	/**
 	 *	point for outputs.  This includes soft and hard mapping all structures to the
 		*	target format.  Some of these could be considred optimizations 
 		*/
-	char *output_file = global_args.output_file;
 	printf("Outputting the netlist to the specified output format\n");
-
 	
-	output_blif(output_file, verilog_netlist);
+	output_blif(global_args.output_file.value().c_str(), verilog_netlist);
+
+	module_names_to_idx = sc_free_string_cache(module_names_to_idx);
+	
+	cleanup_parser();
+
 	elaboration_time = wall_time() - elaboration_time;
 
-	printf("Successful High-level synthesis by Odin\n\tBlif file available at %s\n\tRan in ",output_file);
+	printf("Successful High-level synthesis by Odin\n\tBlif file available at %s\n\tRan in ",global_args.output_file.value().c_str());
 	print_time(elaboration_time);
 	printf("\n");
 	printf("--------------------------------------------------------------------\n");
@@ -201,7 +202,7 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	return SUCCESS;
 }
 
-struct netlist_t_t *start_odin_ii(int argc,char **argv)
+netlist_t *start_odin_ii(int argc,char **argv)
 {
 
 	/* Some initialization */
@@ -227,19 +228,19 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 	get_options(argc, argv);
 
 	/* read the confirguration file .. get options presets the config values just in case theyr'e not read in with config file */
-	if (global_args.config_file != NULL)
+	if (global_args.config_file.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		printf("Reading Configuration file\n");
-		read_config_file(global_args.config_file);
+		read_config_file(global_args.config_file.value().c_str());
 	}
 
 	/* read the FPGA architecture file */
-	if (global_args.arch_file != NULL)
+	if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		printf("Reading FPGA Architecture file\n");
 		try 
 		{
-			XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types);
+			XmlReadArch(global_args.arch_file.value().c_str(), false, &Arch, &type_descriptors, &num_types);
 		} 
 		catch(vtr::VtrError& vtr_error) 
 		{
@@ -249,7 +250,7 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 	}
 
 	/* do High level Synthesis */
-	if (!global_args.blif_file)
+	if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED)
 	{
 		ODIN_ERROR_CODE error_code = synthesize_verilog();
 		if(error_code)
@@ -264,17 +265,16 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 	 */
 	netlist_t *odin_netlist = NULL;
 
-	if(global_args.blif_file
+	if(global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED
 	|| global_args.interactive_simulation 
 	|| global_args.sim_num_test_vectors 
-	|| global_args.sim_vector_input_file)
+	|| global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		// if we started with a verilog file read the output that was made since
 		// the simulator can only simulate blifs
-		if(!global_args.blif_file)
+		if(global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED)
 		{
-			char *output_file = global_args.output_file;
-			configuration.list_of_file_names = { std::string(output_file) };
+			configuration.list_of_file_names = { global_args.output_file };
 			current_parse_file =0;
 		}
 
@@ -291,7 +291,7 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 
 	/* Simulate netlist */
 	if(odin_netlist && !global_args.interactive_simulation
-	&& (global_args.sim_num_test_vectors || global_args.sim_vector_input_file))
+	&& (global_args.sim_num_test_vectors || (global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) ))
 	{
 		printf("Netlist Simulation Begin\n");
 		simulate_netlist(odin_netlist);
@@ -372,7 +372,7 @@ void get_options(int argc, char** argv) {
 
 	output_grp.add_argument(global_args.output_file, "-o")
 			.help("Output file path")
-			.default_value("temp/default_out.blif")
+			.default_value("default_out.blif")
 			.metavar("OUTPUT_FILE_PATH")
 			;
 
@@ -406,12 +406,6 @@ void get_options(int argc, char** argv) {
 			.action(argparse::Action::STORE_TRUE)
 			;
 
-	other_grp.add_argument(global_args.black_box_latches, "--black_box_latches")
-			.help("Output all Latches as Black Boxes")
-			.default_value("false")
-			.action(argparse::Action::STORE_TRUE)
-			;
-
 	other_grp.add_argument(global_args.adder_def, "--adder_type")
 			.help("input file defining adder_type, default is to use \"optimized\" values, use \"ripple\" to fall back onto simple ripple adder")
 			.default_value("default")
@@ -422,6 +416,11 @@ void get_options(int argc, char** argv) {
             .help("Defines if the first cin of an adder/subtractor is connected to a global gnd/vdd instead of a dummy adder generating a gnd/vdd.")
             .default_value("false")
             .action(argparse::Action::STORE_TRUE)
+            ;
+
+    other_grp.add_argument(global_args.top_level_module_name, "--top_module")
+            .help("Allow to overwrite the top level module that odin would use")
+			.metavar("TOP_LEVEL_MODULE_NAME")
             ;
 
 	auto& rand_sim_grp = parser.add_argument_group("random simulation options");
@@ -479,6 +478,13 @@ void get_options(int argc, char** argv) {
 			.help("Number of threads allowed for simulator to use")
 			.default_value("1")
 			.metavar("PARALEL NODE COUNT")
+			;
+
+	other_sim_grp.add_argument(global_args.parralelized_simulation_in_batch, "--batch")
+			.help("use batch mode simultation")
+			.default_value("false")
+			.action(argparse::Action::STORE_TRUE)
+			.metavar("BATCH FLAG")
 			;
 
 	other_sim_grp.add_argument(global_args.sim_directory, "-sim_dir")
@@ -540,9 +546,9 @@ void get_options(int argc, char** argv) {
 
 	//Check required options
 	if(!only_one_is_true({	
-		global_args.config_file,					//have a config file
-		global_args.blif_file,						//have a blif file
-		!global_args.verilog_files.value().empty()	//have a verilog input list
+		global_args.config_file.provenance() == argparse::Provenance::SPECIFIED,					//have a config file
+		global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED,						//have a blif file
+		global_args.verilog_files.value().size() > 0												//have a verilog input list
 	})){
 		parser.print_usage();
 		error_message(ARG_ERROR,0,-1, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
@@ -551,10 +557,22 @@ void get_options(int argc, char** argv) {
 	//adjust thread count
 	int thread_requested = global_args.parralelized_simulation;
 	int max_thread = std::thread::hardware_concurrency();
-	global_args.parralelized_simulation.set(
-			std::min( 	std::min(CONCURENCY_LIMIT, max_thread) , 
-						std::max(1, thread_requested))
-		,argparse::Provenance::SPECIFIED);
+
+	// the old multithreaded mode can only use as many thread as the buffer size
+	if (!global_args.parralelized_simulation_in_batch)
+	{
+		global_args.parralelized_simulation.set(
+			std::max(1, std::min( thread_requested, std::min( CONCURENCY_LIMIT, max_thread )))
+			,argparse::Provenance::SPECIFIED
+		);
+	}
+	else
+	{
+		global_args.parralelized_simulation.set(
+			std::max(1, std::min( thread_requested, max_thread) )
+			,argparse::Provenance::SPECIFIED
+		);
+	}
 
 	//Allow some config values to be overriden from command line
 	if (!global_args.verilog_files.value().empty())
@@ -562,7 +580,7 @@ void get_options(int argc, char** argv) {
 		//parse comma separated list of verilog files
 		configuration.list_of_file_names = global_args.verilog_files.value();
 	}
-	else if(global_args.blif_file)
+	else if(global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		configuration.list_of_file_names = { std::string(global_args.blif_file) };
 	}
@@ -602,9 +620,9 @@ void set_default_config()
 	configuration.output_ast_graphs = 0;
 	configuration.output_netlist_graphs = 0;
 	configuration.print_parse_tokens = 0;
-	configuration.output_preproc_source = 1;
+	configuration.output_preproc_source = 0; // TODO: unused
 	configuration.debug_output_path = std::string(DEFAULT_OUTPUT);
-	configuration.arch_file = NULL;
+	configuration.arch_file = "";
 
 	configuration.fixed_hard_multiplier = 0;
 	configuration.split_hard_multiplier = 0;
