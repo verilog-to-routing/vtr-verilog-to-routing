@@ -40,6 +40,17 @@
 #include "rr_graph2.h"
 #include "timing_place_lookup.h"
 
+struct t_route_util_options {
+    /* Router diag tool Options */
+    argparse::ArgValue<int> source_rr_node;
+    argparse::ArgValue<int> sink_rr_node;
+    argparse::ArgValue<bool> profile_source;
+
+    t_options options;
+};
+
+t_route_util_options read_route_util_options(int argc, const char** argv);
+
 /*
  * Exit codes to signal success/failure to scripts
  * calling vpr
@@ -206,15 +217,6 @@ static t_chan_width setup_chan_width(t_router_opts router_opts,
 
     return init_chan(width_fac, chan_width_dist);
 }
-
-struct t_route_util_options {
-    /* Router diag tool Options */
-    argparse::ArgValue<int> source_rr_node;
-    argparse::ArgValue<int> sink_rr_node;
-    argparse::ArgValue<bool> profile_source;
-
-    t_options options;
-};
 
 t_route_util_options read_route_util_options(int argc, const char** argv) {
     //Explicitly initialize for zero initialization

@@ -97,28 +97,49 @@ DomainId TimingConstraints::find_clock_domain(const std::string& name) const {
     return DomainId::INVALID();
 }
 
-bool TimingConstraints::should_analyze(const DomainId src_domain, const DomainId sink_domain) const {
+bool TimingConstraints::should_analyze(const DomainId src_domain, const DomainId sink_domain, const NodeId capture_node) const {
     TATUM_ASSERT(src_domain);
     TATUM_ASSERT(sink_domain);
-    return setup_constraints_.count(DomainPair(src_domain, sink_domain)) 
-           || hold_constraints_.count(DomainPair(src_domain, sink_domain));
+
+    //If there is a domain pair + capture node or domain pair constraint then it should be analyzed
+    return setup_constraints_.count(NodeDomainPair(src_domain, sink_domain, capture_node)) 
+           || setup_constraints_.count(NodeDomainPair(src_domain, sink_domain, NodeId::INVALID())) 
+           || hold_constraints_.count(NodeDomainPair(src_domain, sink_domain, capture_node))
+           || hold_constraints_.count(NodeDomainPair(src_domain, sink_domain, NodeId::INVALID()));
 }
 
-Time TimingConstraints::hold_constraint(const DomainId src_domain, const DomainId sink_domain) const {
-    auto iter = hold_constraints_.find(DomainPair(src_domain, sink_domain));
-    if(iter == hold_constraints_.end()) {
-        return std::numeric_limits<Time>::quiet_NaN();
+Time TimingConstraints::hold_constraint(const DomainId src_domain, const DomainId sink_domain, const NodeId capture_node) const {
+    //Try to find the capture node-specific constraint
+    auto iter = hold_constraints_.find(NodeDomainPair(src_domain, sink_domain, capture_node));
+    if(iter != hold_constraints_.end()) {
+        return iter->second;
     }
 
-    return iter->second;
+    //If no capture node specific constraint was found, fallback to the domain pair constriant
+    iter = hold_constraints_.find(NodeDomainPair(src_domain, sink_domain, NodeId::INVALID()));
+    if(iter != hold_constraints_.end()) {
+        return iter->second;
+    }
+
+    //No constraint found
+    return std::numeric_limits<Time>::quiet_NaN();
 }
-Time TimingConstraints::setup_constraint(const DomainId src_domain, const DomainId sink_domain) const {
-    auto iter = setup_constraints_.find(DomainPair(src_domain, sink_domain));
-    if(iter == setup_constraints_.end()) {
-        return std::numeric_limits<Time>::quiet_NaN();
+
+Time TimingConstraints::setup_constraint(const DomainId src_domain, const DomainId sink_domain, const NodeId capture_node) const {
+    //Try to find the capture node-specific constraint
+    auto iter = setup_constraints_.find(NodeDomainPair(src_domain, sink_domain, capture_node));
+    if(iter != setup_constraints_.end()) {
+        return iter->second;
     }
 
-    return iter->second;
+    //If no capture node specific constraint was found, fallback to the domain pair constriant
+    iter = setup_constraints_.find(NodeDomainPair(src_domain, sink_domain, NodeId::INVALID()));
+    if(iter != setup_constraints_.end()) {
+        return iter->second;
+    }
+
+    //No constraint found
+    return std::numeric_limits<Time>::quiet_NaN();
 }
 
 Time TimingConstraints::setup_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain) const {
@@ -283,12 +304,19 @@ DomainId TimingConstraints::create_clock_domain(const std::string name) {
 }
 
 void TimingConstraints::set_setup_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint) {
-    auto key = DomainPair(src_domain, sink_domain);
+    set_setup_constraint(src_domain, sink_domain, NodeId::INVALID(), constraint);
+}
+void TimingConstraints::set_setup_constraint(const DomainId src_domain, const DomainId sink_domain, const NodeId capture_node, const Time constraint) {
+    auto key = NodeDomainPair(src_domain, sink_domain, capture_node);
     setup_constraints_[key] = constraint;
 }
 
 void TimingConstraints::set_hold_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint) {
-    auto key = DomainPair(src_domain, sink_domain);
+    set_hold_constraint(src_domain, sink_domain, NodeId::INVALID(), constraint);
+}
+
+void TimingConstraints::set_hold_constraint(const DomainId src_domain, const DomainId sink_domain, const NodeId capture_node, const Time constraint) {
+    auto key = NodeDomainPair(src_domain, sink_domain, capture_node);
     hold_constraints_[key] = constraint;
 }
 
@@ -432,8 +460,9 @@ void TimingConstraints::print_constraints() const {
     for(auto kv : setup_constraints()) {
         auto key = kv.first;
         Time constraint = kv.second;
-        cout << "SRC: " << key.src_domain_id;
-        cout << " SINK: " << key.sink_domain_id;
+        cout << "SRC: " << key.domain_pair.src_domain_id;
+        cout << " SINK: " << key.domain_pair.sink_domain_id;
+        cout << " CAPTURE_NODE: " << key.capture_node;
         cout << " Constraint: " << constraint;
         cout << endl;
     }
@@ -441,8 +470,9 @@ void TimingConstraints::print_constraints() const {
     for(auto kv : hold_constraints()) {
         auto key = kv.first;
         Time constraint = kv.second;
-        cout << "SRC: " << key.src_domain_id;
-        cout << " SINK: " << key.sink_domain_id;
+        cout << "SRC: " << key.domain_pair.src_domain_id;
+        cout << " SINK: " << key.domain_pair.sink_domain_id;
+        cout << " CAPTURE_NODE: " << key.capture_node;
         cout << " Constraint: " << constraint;
         cout << endl;
     }

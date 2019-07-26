@@ -43,6 +43,7 @@ set(VTR_VERSION_PRERELEASE "rc1")
 
 include(FilesToDirs)
 
+
 #
 #
 # Determine compiler configuration

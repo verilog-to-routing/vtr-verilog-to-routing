@@ -115,6 +115,7 @@ class TimingReporter {
                                                  const TimingSubPath& subpath,
                                                  DomainId launch_domain,
                                                  DomainId capture_domain,
+                                                 NodeId capture_node,
                                                  TimingType timing_type) const;
 
         Time report_timing_data_arrival_subpath(std::ostream& os,
@@ -137,7 +138,8 @@ class TimingReporter {
                                          const TimingSubPath& subpath,
                                          DomainId domain,
                                          TimingType timing_type,
-                                         Time path) const;
+                                         Time path,
+                                         Time offset) const;
 
         bool nearly_equal(const tatum::Time& lhs, const tatum::Time& rhs) const;
 

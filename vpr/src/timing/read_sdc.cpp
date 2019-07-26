@@ -335,12 +335,32 @@ class SdcParseCallback : public sdcparse::Callback {
     void set_multicycle_path(const sdcparse::SetMulticyclePath& cmd) override {
         ++num_commands_;
 
-        auto from_clocks = get_clocks(cmd.from);
-        auto to_clocks = get_clocks(cmd.to);
+        std::set<tatum::DomainId> from_clocks;
+        std::set<tatum::DomainId> to_clocks;
+        std::set<AtomPinId> to_pins;
 
-        if (from_clocks.empty() && to_clocks.empty()) {
+        if (cmd.from.type == sdcparse::StringGroupType::CLOCK
+            || cmd.from.type == sdcparse::StringGroupType::STRING) {
+            //Treat raw strings (i.e. no get_clocks) as clocks
+            from_clocks = get_clocks(cmd.from);
+        } else {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "set_multicycle_path must specify at least one -from or -to clock");
+                      "set_multicycle_path only supports specifying clocks for -from");
+        }
+
+        if (cmd.to.type == sdcparse::StringGroupType::CLOCK
+            || cmd.to.type == sdcparse::StringGroupType::STRING) {
+            //Treat raw strings (i.e. no get_clocks) as clocks
+            to_clocks = get_clocks(cmd.to);
+        } else if (cmd.to.type == sdcparse::StringGroupType::PIN) {
+            to_pins = get_pins(cmd.to);
+            if (to_pins.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "set_multicycle_path requires non-empty pin set for -to [get_pins ...]");
+            }
+        } else {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "set_multicycle_path only supports specifying clocks or pins for -to");
         }
 
         if (from_clocks.empty()) {
@@ -349,6 +369,11 @@ class SdcParseCallback : public sdcparse::Callback {
 
         if (to_clocks.empty()) {
             to_clocks = get_all_clocks();
+        }
+
+        if (to_pins.empty()) {
+            //Treat INVALID pin as wildcard
+            to_pins = {AtomPinId::INVALID()};
         }
 
         int setup_mcp = cmd.mcp_value;
@@ -368,14 +393,16 @@ class SdcParseCallback : public sdcparse::Callback {
 
         for (auto from_clock : from_clocks) {
             for (auto to_clock : to_clocks) {
-                auto domain_pair = std::make_pair(from_clock, to_clock);
+                for (auto to_pin : to_pins) {
+                    auto node_domain = std::make_tuple(from_clock, to_clock, to_pin);
 
-                if (is_setup) {
-                    setup_mcp_overrides_[domain_pair] = setup_mcp;
-                }
+                    if (is_setup) {
+                        setup_mcp_overrides_[node_domain] = setup_mcp;
+                    }
 
-                if (is_hold) {
-                    hold_mcp_overrides_[domain_pair] = hold_mcp;
+                    if (is_hold) {
+                        hold_mcp_overrides_[node_domain] = hold_mcp;
+                    }
                 }
             }
         }
@@ -528,23 +555,49 @@ class SdcParseCallback : public sdcparse::Callback {
 
                 if (disabled_domain_pairs_.count(domain_pair)) continue;
 
-                //Setup
-                tatum::Time setup_constraint = calculate_setup_constraint(launch_clock, capture_clock);
-                VTR_ASSERT(setup_constraint.valid());
+                //Setup -- default
+                {
+                    tatum::Time setup_constraint = calculate_setup_constraint(launch_clock, capture_clock);
+                    VTR_ASSERT(setup_constraint.valid());
 
-                tc_.set_setup_constraint(launch_clock, capture_clock, setup_constraint);
+                    tc_.set_setup_constraint(launch_clock, capture_clock, setup_constraint);
+                }
 
-                //Hold
-                tatum::Time hold_constraint = calculate_hold_constraint(launch_clock, capture_clock);
-                VTR_ASSERT(hold_constraint.valid());
+                //Setup -- capture pin overrides
+                for (auto pin : setup_capture_pins_with_overrides()) {
+                    tatum::Time setup_constraint = calculate_setup_constraint(launch_clock, capture_clock, pin);
+                    VTR_ASSERT(setup_constraint.valid());
 
-                tc_.set_hold_constraint(launch_clock, capture_clock, hold_constraint);
+                    tatum::NodeId tnode = lookup_.atom_pin_tnode(pin);
+                    VTR_ASSERT(tnode);
+
+                    tc_.set_setup_constraint(launch_clock, capture_clock, tnode, setup_constraint);
+                }
+
+                //Hold -- default
+                {
+                    tatum::Time hold_constraint = calculate_hold_constraint(launch_clock, capture_clock);
+                    VTR_ASSERT(hold_constraint.valid());
+
+                    tc_.set_hold_constraint(launch_clock, capture_clock, hold_constraint);
+                }
+
+                //Setup -- capture pin overrides
+                for (auto pin : hold_capture_pins_with_overrides()) {
+                    tatum::Time hold_constraint = calculate_hold_constraint(launch_clock, capture_clock, pin);
+                    VTR_ASSERT(hold_constraint.valid());
+
+                    tatum::NodeId tnode = lookup_.atom_pin_tnode(pin);
+                    VTR_ASSERT(tnode);
+
+                    tc_.set_hold_constraint(launch_clock, capture_clock, tnode, hold_constraint);
+                }
             }
         }
     }
 
     //Returns the setup constraint in seconds
-    tatum::Time calculate_setup_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
+    tatum::Time calculate_setup_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain, AtomPinId to_pin = AtomPinId::INVALID()) const {
         //Calculate the period-based constraint, including the effect of multi-cycle paths
         float min_launch_to_capture_time = calculate_min_launch_to_capture_edge_time(launch_domain, capture_domain);
 
@@ -559,7 +612,7 @@ class SdcParseCallback : public sdcparse::Callback {
         // how many extra capture cycles need to be added to the constraint.
         //
         // By default the setup capture cycle 1, specifying a capture 1 cycle after launch
-        int extra_cycles = setup_capture_cycle(launch_domain, capture_domain) - 1;
+        int extra_cycles = setup_capture_cycle(launch_domain, capture_domain, to_pin) - 1;
         float period_based_setup_constraint = min_launch_to_capture_time + capture_period * extra_cycles;
 
         //Warn the user if we added negative cycles
@@ -607,7 +660,7 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     //Returns the hold constraint in seconds
-    tatum::Time calculate_hold_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
+    tatum::Time calculate_hold_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain, AtomPinId to_pin = AtomPinId::INVALID()) const {
         float min_launch_to_capture_time = calculate_min_launch_to_capture_edge_time(launch_domain, capture_domain);
 
         auto iter = sdc_clocks_.find(capture_domain);
@@ -623,7 +676,7 @@ class SdcParseCallback : public sdcparse::Callback {
         // For the default hold check is one cycle before the setup check
         // For the default setup check (1) this means extra_cycles is -1 (i.e. the hold capture check occurs against
         // the capture edge *before* the launch edge)
-        int extra_cycles = hold_capture_cycle(launch_domain, capture_domain) - 1;
+        int extra_cycles = hold_capture_cycle(launch_domain, capture_domain, to_pin) - 1;
         float period_based_hold_constraint = min_launch_to_capture_time + capture_period * extra_cycles;
 
         //By default the period-based constraint is the constraint
@@ -739,30 +792,36 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     //Returns the cycle number (after launch) where the setup check occurs
-    int setup_capture_cycle(tatum::DomainId from, tatum::DomainId to) const {
-        //Default: capture one cycle after launch
-        int setup_path_mult = 1;
+    int setup_capture_cycle(tatum::DomainId from, tatum::DomainId to, AtomPinId to_pin = AtomPinId::INVALID()) const {
+        //The setup capture cycle is the setup mcp value
 
-        //Any overrides
-        auto key = std::make_pair(from, to);
+        //Any domain pair + pin-specific (possibly wildcard) override
+        auto key = std::make_tuple(from, to, to_pin);
         auto iter = setup_mcp_overrides_.find(key);
         if (iter != setup_mcp_overrides_.end()) {
-            setup_path_mult = iter->second;
+            return iter->second;
         }
 
-        //The setup capture cycle is the setup mcp value
-        return setup_path_mult;
+        //Pin-specific override not found, look for Domain pair overrides
+        key = std::make_tuple(from, to, AtomPinId::INVALID());
+        iter = setup_mcp_overrides_.find(key);
+        if (iter != setup_mcp_overrides_.end()) {
+            return iter->second;
+        }
+
+        //Default: capture one cycle after launch
+        return 1;
     }
 
     //Returns the cycle number (after launch) where the hold check occurs
-    int hold_capture_cycle(tatum::DomainId from, tatum::DomainId to) const {
+    int hold_capture_cycle(tatum::DomainId from, tatum::DomainId to, AtomPinId to_pin = AtomPinId::INVALID()) const {
         //Default: hold captures the cycle before setup is captured
         //For the default setup mcp this implies capturing the same
         //cycle as launch
         int hold_offset = 1;
 
-        //Any overrides?
-        auto key = std::make_pair(from, to);
+        //Any domain pair + pin-specific (possibly wildcard) override
+        auto key = std::make_tuple(from, to, to_pin);
         auto iter = hold_mcp_overrides_.find(key);
         if (iter != hold_mcp_overrides_.end()) {
             //Note that we add the override to the default hold_mcp of 1 to match
@@ -772,10 +831,17 @@ class SdcParseCallback : public sdcparse::Callback {
             //  J. Bhasker, R. Chadha, "Static Timing Analysis for Nanometer
             //      Designs A Practical Approach", Springer, 2009
             hold_offset += iter->second;
+        } else {
+            //Pin-specific override not found, look for Domain pair overrides
+            key = std::make_tuple(from, to, AtomPinId::INVALID());
+            iter = hold_mcp_overrides_.find(key);
+            if (iter != hold_mcp_overrides_.end()) {
+                hold_offset += iter->second;
+            }
         }
 
         //The hold capture cycle is the setup capture cycle minus the hold mcp value
-        return setup_capture_cycle(from, to) - hold_offset;
+        return setup_capture_cycle(from, to, to_pin) - hold_offset;
     }
 
     std::set<AtomPinId> get_ports(const sdcparse::StringGroup& port_group) {
@@ -894,6 +960,32 @@ class SdcParseCallback : public sdcparse::Callback {
         return val / unit_scale_;
     }
 
+    std::set<AtomPinId> setup_capture_pins_with_overrides() {
+        std::set<AtomPinId> pins;
+
+        for (auto kv : setup_mcp_overrides_) {
+            pins.insert(std::get<2>(kv.first));
+        }
+
+        //We use the invalid pin as a placehold for the default constraint,
+        //so it should not be included in the set of pins with overrides.
+        pins.erase(AtomPinId::INVALID());
+        return pins;
+    }
+
+    std::set<AtomPinId> hold_capture_pins_with_overrides() {
+        std::set<AtomPinId> pins;
+
+        for (auto kv : hold_mcp_overrides_) {
+            pins.insert(std::get<2>(kv.first));
+        }
+
+        //We use the invalid pin as a placehold for the default constraint,
+        //so it should not be included in the set of pins with overrides.
+        pins.erase(AtomPinId::INVALID());
+        return pins;
+    }
+
   private:
     const AtomNetlist& netlist_;
     const AtomLookup& lookup_;
@@ -914,8 +1006,8 @@ class SdcParseCallback : public sdcparse::Callback {
     std::map<std::pair<tatum::DomainId, tatum::DomainId>, float> setup_override_constraints_;
     std::map<std::pair<tatum::DomainId, tatum::DomainId>, float> hold_override_constraints_;
 
-    std::map<std::pair<tatum::DomainId, tatum::DomainId>, int> setup_mcp_overrides_;
-    std::map<std::pair<tatum::DomainId, tatum::DomainId>, int> hold_mcp_overrides_;
+    std::map<std::tuple<tatum::DomainId, tatum::DomainId, AtomPinId>, int> setup_mcp_overrides_;
+    std::map<std::tuple<tatum::DomainId, tatum::DomainId, AtomPinId>, int> hold_mcp_overrides_;
 };
 
 std::unique_ptr<tatum::TimingConstraints> read_sdc(const t_timing_inf& timing_inf,

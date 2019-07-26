@@ -1,15 +1,14 @@
 regression_test/run*
 regression_test/latest
 
-temp
-*.v
-*.blif
-*.dot
-*.do
-*.xml
-*_input
-*_output
-*_vectors
-*_activity
-
-!regression_test/benchmark
+/temp
+/*.v
+/*.blif
+/*.dot
+/*.do
+/*.xml
+/*_input
+/*_output
+/*_vectors
+/*_activity
+/*.log

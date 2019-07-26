@@ -1,4 +1,0 @@
---arch_list valgrind_sweep
---disable_simulation 
---source ../../../../vtr_flow/benchmarks/verilog
---valgrind
