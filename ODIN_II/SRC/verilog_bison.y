@@ -91,7 +91,7 @@ int yylex(void);
 %nonassoc vELSE
 
 %type <node> source_text items module list_of_module_items list_of_function_items module_item function_item module_parameters module_ports
-%type <node> list_of_parameter_declaration parameter_declaration list_of_port_declaration port_declaration signed_port_declaration defparam_declaration
+%type <node> list_of_parameter_declaration parameter_declaration specparam_declaration list_of_port_declaration port_declaration signed_port_declaration defparam_declaration
 %type <node> function_declaration function_input_declaration
 %type <node> input_declaration output_declaration inout_declaration variable_list function_output_variable function_id_and_output_variable
 %type <node> integer_type_variable_list variable integer_type_variable
@@ -106,9 +106,9 @@ int yylex(void);
 %type <node> stmt_list delay_control event_expression_list event_expression loop_statement
 %type <node> expression primary expression_list module_parameter
 %type <node> list_of_module_parameters localparam_declaration
-%type <node> specify_block list_of_specify_items specify_item specparam_declaration
-%type <node> specify_pal_connect_declaration c_function_expression_list c_function
-%type <node> initial_block parallel_connection list_of_blocking_assignment
+%type <node> specify_block list_of_specify_items
+%type <node> c_function_expression_list c_function
+%type <node> initial_block list_of_blocking_assignment
 %type <node> list_of_generate_items generate_item generate loop_generate_construct if_generate_construct 
 %type <node> case_generate_construct case_generate_item_list case_generate_items generate_block
 
@@ -230,10 +230,21 @@ initial_block:
 	vINITIAL statement	{$$ = newInitial($2, yylineno); }
 	;
 
+	/* Specify is unsynthesizable, we discard everything within */
 specify_block:
 	vSPECIFY list_of_specify_items vENDSPECIFY	{$$ = $2;}
 	;
 
+list_of_specify_items:
+	list_of_specify_items specparam_declaration			{$$ = $2;}
+	| specparam_declaration								{$$ = $1;}
+	;
+
+specparam_declaration:
+	'(' primary voPAL expression ')' '=' primary ';'	{free_whole_tree($2); free_whole_tree($4); free_whole_tree($7); $$ = NULL;}
+	| vSPECPARAM variable_list ';'						{free_whole_tree($2); $$ = NULL;}
+	;
+	
 list_of_function_items:
 	list_of_function_items function_item	{$$ = newList_entry($1, $2);}
 	| function_item				{$$ = newList(FUNCTION_ITEMS, $1);}
@@ -502,24 +513,6 @@ conditional_statement:
 	| vIF '(' expression ')' statement vELSE statement			{$$ = newIf($3, $5, $7, yylineno);}
 	;
 
-list_of_specify_items:
-	list_of_specify_items specify_item	{$$ = newList_entry($1, $2);}
-	| specify_item				{$$ = newList(SPECIFY_ITEMS, $1);}
-	;
-
-specify_item:
-	specify_pal_connect_declaration	{$$ = newList(SPECIFY_PAL_CONNECT_LIST, $1);}
-	| specparam_declaration		{$$ = free_whole_tree($1);}
-	;
-
-specify_pal_connect_declaration:
-	'(' parallel_connection ')' '=' primary ';'	{$$ = newParallelConnection($2, $5, yylineno);}
-	;
-
-specparam_declaration:
-	vSPECPARAM variable_list ';'	{$$ = $2;}
-	;
-
 blocking_assignment:
 	primary '=' expression			{$$ = newBlocking($1, $3, yylineno);}
 	| primary '=' vDELAY_ID expression	{$$ = newBlocking($1, $4, yylineno);}
@@ -530,9 +523,6 @@ non_blocking_assignment:
 	| primary voLTE vDELAY_ID expression	{$$ = newNonBlocking($1, $4, yylineno);}
 	;
 
-parallel_connection:
-	primary voPAL expression	{$$ = NULL;}
-	;
 
 case_item_list:
 	case_item_list case_items	{$$ = newList_entry($1, $2);}
