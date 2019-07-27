@@ -52,6 +52,7 @@ int min_mult = 0;
 int *mults = NULL;
 
 void record_mult_distribution(nnode_t *node);
+void terminate_mult_distribution();
 void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b, nnode_t *node_a, nnode_t *node_b);
 void init_multiplier_adder(nnode_t *node, nnode_t *parent, int a, int b);
 void split_multiplier_a(nnode_t *node, int a0, int a1, int b);
@@ -275,14 +276,9 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
  *-------------------------------------------------------------------------*/
 void init_mult_distribution()
 {
-	int i, j;
-
 	oassert(hard_multipliers != NULL);
-	mults = (int *)vtr::malloc(sizeof(int) * (hard_multipliers->inputs->size + 1) * (1 + hard_multipliers->inputs->next->size));
-	for (i = 0; i <= hard_multipliers->inputs->size; i++)
-		for (j = 0; j <= hard_multipliers->inputs->next->size; j++)
-			mults[i * hard_multipliers->inputs->size + j] = 0;
-	return;
+	int len = ( 1 + hard_multipliers->inputs->size ) * ( 1 + hard_multipliers->inputs->next->size );
+	mults = (int *)vtr::calloc(len, sizeof(int));
 }
 
 /*---------------------------------------------------------------------------
@@ -327,7 +323,7 @@ void report_mult_distribution()
 	}
 	printf("\n");
 	printf("\nTotal # of multipliers = %ld\n", num_total);
-	return;
+	vtr::free(mults);
 }
 
 /*---------------------------------------------------------------------------

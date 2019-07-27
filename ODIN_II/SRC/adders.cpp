@@ -67,13 +67,10 @@ void init_split_adder(nnode_t *node, nnode_t *ptr, int a, int sizea, int b, int 
  *-------------------------------------------------------------------------*/
 void init_add_distribution()
 {
-	int i, j;
 	oassert(hard_adders != NULL);
-	j = hard_adders->inputs->size + hard_adders->inputs->next->size;
-	adder = (int *)vtr::malloc(sizeof(int) * (j + 1));
-	for (i = 0; i <= j; i++)
-		adder[i] = 0;
-	return;
+
+	int len = hard_adders->inputs->size + hard_adders->inputs->next->size + 1;
+	adder = (int *)vtr::calloc(len, sizeof(int));
 }
 
 /*---------------------------------------------------------------------------
@@ -121,7 +118,7 @@ void report_add_distribution()
 	printf("\n");
 	printf("\nGeometric mean adder/subtractor chain length: %.2f\n", geomean_addsub_length);
 
-	return;
+	vtr::free(adder);
 }
 
 /*---------------------------------------------------------------------------
