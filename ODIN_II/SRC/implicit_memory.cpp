@@ -394,5 +394,6 @@ void collapse_implicit_memory_to_single_port_ram(implicit_memory *memory)
 	}
 
 	ast_node_t *ast_node = node->related_ast_node;
+	vtr::free(ast_node->children[0]->types.identifier);
 	ast_node->children[0]->types.identifier = vtr::strdup(SINGLE_PORT_RAM_string);
 }
