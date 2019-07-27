@@ -41,7 +41,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "arch_util.h"
 
-#include "soft_logic_def_parser.h"
 #include "odin_globals.h"
 #include "odin_types.h"
 #include "netlist_utils.h"
@@ -99,9 +98,6 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	find_hard_adders();
 	//find_hard_adders_for_sub();
 	register_hard_blocks();
-
-	/* get odin soft_logic definition file */
-	read_soft_def_file(hard_adders);
 
 	module_names_to_idx = sc_new_string_cache();
 
@@ -407,9 +403,9 @@ void get_options(int argc, char** argv) {
 			;
 
 	other_grp.add_argument(global_args.adder_def, "--adder_type")
-			.help("input file defining adder_type, default is to use \"optimized\" values, use \"ripple\" to fall back onto simple ripple adder")
-			.default_value("default")
-			.metavar("INPUT_FILE")
+			.help("DEPRECATED")
+			.default_value("N/A")
+			.metavar("N/A")
 			;
 
     other_grp.add_argument(global_args.adder_cin_global, "--adder_cin_global")
@@ -481,7 +477,7 @@ void get_options(int argc, char** argv) {
 			;
 
 	other_sim_grp.add_argument(global_args.parralelized_simulation_in_batch, "--batch")
-			.help("use batch mode simultation")
+			.help("DEPRECATED")
 			.default_value("false")
 			.action(argparse::Action::STORE_TRUE)
 			.metavar("BATCH FLAG")
@@ -558,21 +554,10 @@ void get_options(int argc, char** argv) {
 	int thread_requested = global_args.parralelized_simulation;
 	int max_thread = std::thread::hardware_concurrency();
 
-	// the old multithreaded mode can only use as many thread as the buffer size
-	if (!global_args.parralelized_simulation_in_batch)
-	{
-		global_args.parralelized_simulation.set(
-			std::max(1, std::min( thread_requested, std::min( CONCURENCY_LIMIT, max_thread )))
-			,argparse::Provenance::SPECIFIED
-		);
-	}
-	else
-	{
-		global_args.parralelized_simulation.set(
-			std::max(1, std::min( thread_requested, max_thread) )
-			,argparse::Provenance::SPECIFIED
-		);
-	}
+	global_args.parralelized_simulation.set(
+		std::max(1, std::min( thread_requested, std::min( (CONCURENCY_LIMIT-1) , max_thread )))
+		,argparse::Provenance::SPECIFIED
+	);
 
 	//Allow some config values to be overriden from command line
 	if (!global_args.verilog_files.value().empty())
@@ -603,10 +588,6 @@ void get_options(int argc, char** argv) {
 
 	if (configuration.debug_output_path == DEFAULT_OUTPUT) {
 		configuration.debug_output_path = std::string(global_args.sim_directory);
-	}
-
-	if (global_args.adder_def.provenance() == argparse::Provenance::SPECIFIED) {
-		printf("using experimental soft_logic optimization \n");
 	}
 }
 

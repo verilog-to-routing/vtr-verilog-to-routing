@@ -869,7 +869,7 @@ function run_suite() {
 			_)
 				;;
 
-			_vtr_reg_*)
+			_*vtr_reg_*)
 				run_vtr_reg ${current_input}
 				;;
 
@@ -881,7 +881,7 @@ function run_suite() {
 				then
 					for input_path in $(cat ${current_input}/task_list.conf)
 					do
-						input_path=$(ls -d -1 ${THIS_DIR}/${input_path})
+						input_path=$(ls -d -1 ${THIS_DIR}/${input_path} 2> /dev/null)
 						task_list=( ${task_list[@]} ${input_path[@]} )
 					done
 					
