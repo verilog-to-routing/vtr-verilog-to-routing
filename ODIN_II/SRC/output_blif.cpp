@@ -297,7 +297,7 @@ void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *f
 	}
 }
 /*-------------------------------------------------------------------
- * (function: partial_map_node)
+ * (function: output_node)
  * 	Depending on node type, figures out what to print for this node
  *------------------------------------------------------------------*/
 void output_node(nnode_t *node, short /*traverse_number*/, FILE *fp)

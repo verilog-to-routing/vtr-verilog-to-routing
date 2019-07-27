@@ -38,7 +38,6 @@ void join_nets(nnet_t *net, nnet_t* input_net);
 
 void remap_pin_to_new_net(npin_t *pin, nnet_t *new_net);
 void remap_pin_to_new_node(npin_t *pin, nnode_t *new_node, int pin_idx);
-void remap_pin_to_new_node_range(npin_t *pin, nnode_t *new_node, int pin_range_start, int pin_range_end);
 
 
 signal_list_t *init_signal_list();

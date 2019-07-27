@@ -43,7 +43,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_util.h"
 
 void depth_first_traversal_to_partial_map(short marker_value, netlist_t *netlist);
-void depth_first_traverse_parital_map(nnode_t *node, int traverse_mark_number, netlist_t *netlist);
+void depth_first_traverse_partial_map(nnode_t *node, int traverse_mark_number, netlist_t *netlist);
 
 void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist);
 
@@ -87,23 +87,21 @@ void depth_first_traversal_to_partial_map(short marker_value, netlist_t *netlist
 	{
 		if (netlist->top_input_nodes[i] != NULL)
 		{
-			depth_first_traverse_parital_map(netlist->top_input_nodes[i], marker_value, netlist);
+			depth_first_traverse_partial_map(netlist->top_input_nodes[i], marker_value, netlist);
 		}
 	}
 	/* now traverse the ground and vcc pins  */
-	depth_first_traverse_parital_map(netlist->gnd_node, marker_value, netlist);
-	depth_first_traverse_parital_map(netlist->vcc_node, marker_value, netlist);
-	depth_first_traverse_parital_map(netlist->pad_node, marker_value, netlist);
+	depth_first_traverse_partial_map(netlist->gnd_node, marker_value, netlist);
+	depth_first_traverse_partial_map(netlist->vcc_node, marker_value, netlist);
+	depth_first_traverse_partial_map(netlist->pad_node, marker_value, netlist);
 }
 
 /*---------------------------------------------------------------------------------------------
  * (function: depth_first_traverse)
  *-------------------------------------------------------------------------------------------*/
-void depth_first_traverse_parital_map(nnode_t *node, int traverse_mark_number, netlist_t *netlist)
+void depth_first_traverse_partial_map(nnode_t *node, int traverse_mark_number, netlist_t *netlist)
 {
 	int i, j;
-	nnode_t *next_node;
-	nnet_t *next_net;
 
 	if (node->traverse_visited != traverse_mark_number)
 	{
@@ -114,21 +112,23 @@ void depth_first_traverse_parital_map(nnode_t *node, int traverse_mark_number, n
 
 		for (i = 0; i < node->num_output_pins; i++)
 		{
-			if (node->output_pins[i]->net == NULL)
-				continue;
-
-			next_net = node->output_pins[i]->net;
-			for (j = 0; j < next_net->num_fanout_pins; j++)
+			if (node->output_pins[i]->net)
 			{
-				if (next_net->fanout_pins[j] == NULL)
-					continue;
-
-				next_node = next_net->fanout_pins[j]->node;
-				if (next_node == NULL)
-					continue;
-
-				/* recursive call point */
-				depth_first_traverse_parital_map(next_node, traverse_mark_number, netlist);
+				nnet_t *next_net = node->output_pins[i]->net;
+				if(next_net->fanout_pins)
+				{
+					for (j = 0; j < next_net->num_fanout_pins; j++)
+					{
+						if (next_net->fanout_pins[j])
+						{
+							if (next_net->fanout_pins[j]->node)
+							{
+							/* recursive call point */
+								depth_first_traverse_partial_map(next_net->fanout_pins[j]->node, traverse_mark_number, netlist);
+							}
+						}
+					}
+				}
 			}
 		}
 
@@ -1134,14 +1134,20 @@ void instantiate_arithmetic_shift_right(nnode_t *node, short mark, netlist_t *ne
 	}
 	buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
 	/* connect inputs to outputs */
-	for(i = width - 2; i >= shift_size; i--)
+	for(i = width - 1; i >= shift_size; i--)
 	{
 		// connect higher input pin to lower output pin
 		remap_pin_to_new_node(node->input_pins[i], buf_node, i-shift_size);
 	}
-	/* connect first pin to outputs that don't have inputs connected */
-	i = width - 1;
-	remap_pin_to_new_node_range(node->input_pins[i], buf_node, i, i-shift_size);
+	
+	int pad_bit = width - 1 - shift_size;
+
+	/* connect pad_bit pin to outputs that don't have inputs connected */
+	for(i = width - 1; i >= width - shift_size; i--)
+	{
+		add_input_pin_to_node(buf_node, copy_input_npin(buf_node->input_pins[pad_bit]), i);
+	}
+
 	for(i = 0; i < shift_size; i++)
 	{
 		/* demap the node from the net */
@@ -1154,4 +1160,13 @@ void instantiate_arithmetic_shift_right(nnode_t *node, short mark, netlist_t *ne
 	}
 	/* instantiate the buffer */
 	instantiate_buffer(buf_node, mark, netlist);
+
+
+	/* clean up */
+	for (i = 0; i < buf_node->num_input_pins; i++) {
+		buf_node->output_pins[i]->net = free_nnet(buf_node->output_pins[i]->net);
+		buf_node->input_pins[i] = free_npin(buf_node->input_pins[i]);
+	}
+	free_nnode(buf_node);
+	free_nnode(node);
 }
