@@ -448,8 +448,8 @@ module_parameter:
 
 // 5 Behavioral Statements	{$$ = NULL;}
 always:
-	vALWAYS delay_control statement	{$$ = newAlways($2, $3, yylineno);}
-	;
+	vALWAYS delay_control statement 					{$$ = newAlways($2, $3, yylineno);}
+	| vALWAYS statement									{$$ = newAlways(NULL, $2, yylineno);}
 
 generate:
 	vGENERATE list_of_generate_items vENDGENERATE	{$$ = newGenerate($2, yylineno);}
