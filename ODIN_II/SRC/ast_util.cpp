@@ -1103,7 +1103,7 @@ static void expand_power(ast_node_t **node)
 		} 
 		else 
 		{
-			new_node = expression1;
+			new_node = ast_node_deep_copy(expression1);
 			for (int i=1; i < len; i++)
 			{
 				ast_node_t *temp_node = create_node_w_type(BINARY_OPERATION, (*node)->line_number, (*node)->file_number);
@@ -1114,7 +1114,7 @@ static void expand_power(ast_node_t **node)
 			}
 		}
 	}
-	//free_whole_tree(*node);
+	free_whole_tree(*node);
 	*node = new_node;
 }
 
@@ -1286,7 +1286,7 @@ ast_node_t *fold_unary(ast_node_t **node)
 /*---------------------------------------------------------------------------------------------
  * (function: calculate_binary)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t * fold_binary(ast_node_t **node)
+ast_node_t *fold_binary(ast_node_t **node)
 {
 	if(!node || !(*node))
 		return NULL;
