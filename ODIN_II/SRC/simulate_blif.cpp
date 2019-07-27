@@ -225,39 +225,6 @@ static nnode_t *print_update_trace(nnode_t *bottom_node, int cycle);
 int number_of_workers = 0;
 int num_of_clock = 0;
 
-std::atomic<bool> exit_threads;
-struct simulation_request_t
-{
-	int start = 0;
-	int end = 0;
-	int current_stage = 0;
-	stages_t *s = NULL;
-	int cycle = -1;
-	std::atomic_flag request_ready = ATOMIC_FLAG_INIT; //cheap lock
-}thread_request_list[CONCURENCY_LIMIT] = { 0 };
-
-static void compute_and_store_part_server(simulation_request_t *request);
-
-static void lock_request(simulation_request_t *request)
-{
-	while(std::atomic_flag_test_and_set_explicit(&(request->request_ready), std::memory_order_acquire))
-	{ /* spin lock */ }
-}
-
-static void release_request(simulation_request_t *request)
-{
-	std::atomic_flag_clear_explicit(&request->request_ready, std::memory_order_release);
-}
-
-static void init_request(simulation_request_t *request, int start, int end, int current_stage, stages_t *s, int cycle)
-{
-	request->start = start;
-	request->end = end;
-	request->current_stage = current_stage;
-	request->s = s;
-	request->cycle = cycle;
-}
-
 /*
  * Performs simulation.
  */
