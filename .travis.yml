@@ -115,11 +115,6 @@ jobs:
       script:
         - ./.github/travis/build.sh
         - ./run_reg_test.pl odin_reg_micro -j2
-    - stage: Test
-      name: "ODIN-II Operators Tests"
-      script:
-        - ./.github/travis/build.sh
-        - ./run_reg_test.pl odin_reg_operators -j2
 
     - stage: Build Compatibility
       name: "GCC 5 (Ubuntu Xenial - 16.04)"
