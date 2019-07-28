@@ -1232,21 +1232,24 @@ Analysis Options
               * ``14`` ps input pin of a ``io`` block to ``.output``.
 
             In the initial description we referred to the existence of global nets, which also occur in this net:
-                
-            clk.inpad[0] (.input at (4,2))                                   0.000     0.000
-            | (intra 'io' routing)                                           0.042     0.042
-            | (inter-block routing:global net)                               0.000     0.042
-            | (intra 'clb' routing)                                          0.000     0.042
-            FFC.clk[0] (.latch at (3,3))                                     0.000     0.042
+            
+            .. code-block:: none
+
+                clk.inpad[0] (.input at (4,2))                                   0.000     0.000
+                | (intra 'io' routing)                                           0.042     0.042
+                | (inter-block routing:global net)                               0.000     0.042
+                | (intra 'clb' routing)                                          0.000     0.042
+                FFC.clk[0] (.latch at (3,3))                                     0.000     0.042
 
             Global nets are unrouted nets, and their route trees happen to be null.
             
             Finally, is interesting to note that the consecutive channel components may not seem to connect. There are two types of occurences:
 
-            1. The preceding channel's ending coordinates extend past the following channel's starting coordinates (example from a different path): 
-               | (chany:2113 unnamed_segment_0 length:2 (1, 3) -> (1, 1))       0.116     0.405
-               | (chanx:2027 unnamed_segment_0 length:0 (1, 2) -> (1, 2))       0.078     0.482
-               It is possible that by opening a switch between (1,2) to (1,1),  CHANY:2113 actually only extends from (1,3) to (1,2).
+            1. The preceding channel's ending coordinates extend past the following channel's starting coordinates (example from a different path):
+            .. code-block:: none
+                | (chany:2113 unnamed_segment_0 length:2 (1, 3) -> (1, 1))       0.116     0.405
+                | (chanx:2027 unnamed_segment_0 length:0 (1, 2) -> (1, 2))       0.078     0.482
+                It is possible that by opening a switch between (1,2) to (1,1), CHANY:2113 actually only extends from (1,3) to (1,2).
 
             2. The preceding channel's ending coordinates have no relation to the following channel's starting coordinates.
                There is no logical contradiction, but for clarification, it is best to see an explanation of the VPR coordinate system.
@@ -1258,7 +1261,8 @@ Analysis Options
  
  Illustration of Path #2 with insight into the coordinate system.
 
-:numref:`fig_path_2` shows the routing resources used in Path #2 and their locations on the FPGA.  
+:numref:`fig_path_2` shows the routing resources used in Path #2 and their locations on the FPGA.
+
 1. The signal emerges from near the top-right corner of the block to_FFC (OPIN:1479)  and joins the topmost horizontal segment of length 1 (CHANX:2073). 
 2. The signal proceeds to the left, then connects to the outermost, blue vertical segment of length 0 (CHANY:2139). 
 3. The signal continues downward and attaches to the horizontal segment of length 1 (CHANX:2040). 
