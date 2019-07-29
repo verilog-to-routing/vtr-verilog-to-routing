@@ -57,7 +57,7 @@ void draw_screen();
 // search bar related functions
 ezgl::rectangle draw_get_rr_chan_bbox(int inode);
 void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id);
-void highlight_nets(char *message, int hit_node);
+void highlight_nets(char* message, int hit_node);
 void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
 std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
 void deselect_all();

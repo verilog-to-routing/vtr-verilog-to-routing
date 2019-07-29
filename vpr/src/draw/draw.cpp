@@ -42,7 +42,6 @@ using namespace std;
 #include "route_export.h"
 #include "search_bar.h"
 
-
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
 #    include <time.h>
@@ -114,59 +113,53 @@ ezgl::application application(settings);
 
 bool window_mode = false;
 bool window_point_1_collected = false;
-ezgl::point2d point_1(0,0);
+ezgl::point2d point_1(0, 0);
 ezgl::rectangle initial_world;
 std::string rr_highlight_message;
 
-
 /********************** Subroutines local to this module ********************/
-void toggle_nets(GtkWidget *widget, ezgl::application *app);
-void toggle_rr(GtkWidget *widget, ezgl::application *app);
-void toggle_congestion(GtkWidget *widget, ezgl::application *app);
-void toggle_routing_congestion_cost(GtkWidget *widget, ezgl::application *app);
-void toggle_routing_bounding_box(GtkWidget *widget, ezgl::application *app);
-void toggle_routing_util(GtkWidget *widget, ezgl::application *app);
-void toggle_crit_path(GtkWidget *widget, ezgl::application *app);
-void toggle_block_pin_util(GtkWidget *widget, ezgl::application *app);
-void toggle_router_rr_costs(GtkWidget *widget, ezgl::application *app);
-void toggle_placement_macros(GtkWidget *widget, ezgl::application *app);
+void toggle_nets(GtkWidget* widget, ezgl::application* app);
+void toggle_rr(GtkWidget* widget, ezgl::application* app);
+void toggle_congestion(GtkWidget* widget, ezgl::application* app);
+void toggle_routing_congestion_cost(GtkWidget* widget, ezgl::application* app);
+void toggle_routing_bounding_box(GtkWidget* widget, ezgl::application* app);
+void toggle_routing_util(GtkWidget* widget, ezgl::application* app);
+void toggle_crit_path(GtkWidget* widget, ezgl::application* app);
+void toggle_block_pin_util(GtkWidget* widget, ezgl::application* app);
+void toggle_router_rr_costs(GtkWidget* widget, ezgl::application* app);
+void toggle_placement_macros(GtkWidget* widget, ezgl::application* app);
 
-static void drawplace(ezgl::renderer &g);
-static void drawnets(ezgl::renderer &g);
-static void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer &g);
-static void draw_congestion(ezgl::renderer &g);
-static void draw_routing_costs(ezgl::renderer &g);
-static void draw_routing_bb(ezgl::renderer &g);
-static void draw_routing_util(ezgl::renderer &g);
-static void draw_crit_path(ezgl::renderer &g);
-static void draw_placement_macros(ezgl::renderer &g);
+static void drawplace(ezgl::renderer& g);
+static void drawnets(ezgl::renderer& g);
+static void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer& g);
+static void draw_congestion(ezgl::renderer& g);
+static void draw_routing_costs(ezgl::renderer& g);
+static void draw_routing_bb(ezgl::renderer& g);
+static void draw_routing_util(ezgl::renderer& g);
+static void draw_crit_path(ezgl::renderer& g);
+static void draw_placement_macros(ezgl::renderer& g);
 
-void act_on_key_press(ezgl::application *app, GdkEventKey *event, char *key_name);
-void act_on_mouse_press(ezgl::application *app, GdkEventButton *event, double x, double y);
-void act_on_mouse_move(ezgl::application *app, GdkEventButton *event, double x, double y);
+void act_on_key_press(ezgl::application* app, GdkEventKey* event, char* key_name);
+void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y);
+void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, double y);
 
-static void draw_routed_net(ClusterNetId net, ezgl::renderer &g);
-void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer &g);
-static void draw_rr(ezgl::renderer &g);
-static void draw_rr_edges(int from_node, ezgl::renderer &g);
-static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer &g);
-static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer &g);
-static void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer &g);
-static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer &g);
-static void draw_x(float x, float y, float size, ezgl::renderer &g);
-static void draw_pin_to_pin(int opin, int ipin, ezgl::renderer &g);
-static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y,
-        bool buffered, bool switch_configurable, ezgl::renderer &g);
-static void draw_chany_to_chany_edge(int from_node, int to_node,
-        int to_track, short switch_type, ezgl::renderer &g);
-static void draw_chanx_to_chanx_edge(int from_node, int to_node,
-        int to_track, short switch_type, ezgl::renderer &g);
-static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_node,
-        int chany_track, enum e_edge_dir edge_dir,
-        short switch_type, ezgl::renderer &g);
+static void draw_routed_net(ClusterNetId net, ezgl::renderer& g);
+void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer& g);
+static void draw_rr(ezgl::renderer& g);
+static void draw_rr_edges(int from_node, ezgl::renderer& g);
+static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer& g);
+static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer& g);
+static void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer& g);
+static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer& g);
+static void draw_x(float x, float y, float size, ezgl::renderer& g);
+static void draw_pin_to_pin(int opin, int ipin, ezgl::renderer& g);
+static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered, bool switch_configurable, ezgl::renderer& g);
+static void draw_chany_to_chany_edge(int from_node, int to_node, int to_track, short switch_type, ezgl::renderer& g);
+static void draw_chanx_to_chanx_edge(int from_node, int to_node, int to_track, short switch_type, ezgl::renderer& g);
+static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_node, int chany_track, enum e_edge_dir edge_dir, short switch_type, ezgl::renderer& g);
 static int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track);
-static bool draw_if_net_highlighted (ClusterNetId inet);
-static int draw_check_rr_node_hit (float click_x, float click_y);
+static bool draw_if_net_highlighted(ClusterNetId inet);
+static int draw_check_rr_node_hit(float click_x, float click_y);
 
 static void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set<int>& expanded_nodes);
 static bool highlight_rr_nodes(float x, float y);
@@ -220,7 +213,6 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->gr_automode = gr_automode_val;
     draw_state->draw_route_type = route_type;
 }
-
 
 void draw_main_canvas(ezgl::renderer& g) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -276,7 +268,6 @@ void draw_main_canvas(ezgl::renderer& g) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
-
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -286,18 +277,17 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app) {
     GtkButton* window = (GtkButton*)app->get_object("Window");
     gtk_button_set_label(window, "Window");
     g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
-    
-    GtkButton* search = (GtkButton*) app->get_object("Search");
+
+    GtkButton* search = (GtkButton*)app->get_object("Search");
     gtk_button_set_label(search, "Search");
     g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
-           
-    GObject* search_type = (GObject*) app->get_object("SearchType");
+
+    GObject* search_type = (GObject*)app->get_object("SearchType");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID");
-
 
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
@@ -346,18 +336,17 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app) {
     GtkButton* window = (GtkButton*)app->get_object("Window");
     gtk_button_set_label(window, "Window");
     g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
-    
-    GtkButton* search = (GtkButton*) app->get_object("Search");
+
+    GtkButton* search = (GtkButton*)app->get_object("Search");
     gtk_button_set_label(search, "Search RR Node");
     g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
-    
-    GObject* search_type = (GObject*) app->get_object("SearchType");
+
+    GObject* search_type = (GObject*)app->get_object("SearchType");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID");
-    
 
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
@@ -1122,7 +1111,6 @@ static void draw_routing_bb(ezgl::renderer& g) {
     application.update_message(msg.c_str());
 }
 
-
 void draw_rr(ezgl::renderer& g) {
     /* Draws the routing resources that exist in the FPGA, if the user wants *
      * them drawn.                                                           */
@@ -1795,8 +1783,7 @@ static void draw_chany_to_chany_edge(int from_node, int to_node, int to_track, s
  * wire has been clicked on by the user.
  * TODO: Fix this for global routing, currently for detailed only.
  */
-ezgl::rectangle draw_get_rr_chan_bbox (int inode) {
-
+ezgl::rectangle draw_get_rr_chan_bbox(int inode) {
     double left = 0, right = 0, top = 0, bottom = 0;
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
@@ -2209,8 +2196,8 @@ static bool draw_if_net_highlighted(ClusterNetId inet) {
 /* If an rr_node has been clicked on, it will be highlighted in MAGENTA.
  * If so, and toggle nets is selected, highlight the whole net in that colour.
  */
-void highlight_nets(char *message, int hit_node) {
-    t_trace *tptr;
+void highlight_nets(char* message, int hit_node) {
+    t_trace* tptr;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -2241,7 +2228,6 @@ void highlight_nets(char *message, int hit_node) {
  * de-highlight its fan_in and fan_out.
  */
 void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
-
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -2376,22 +2362,21 @@ static bool highlight_rr_nodes(float x, float y) {
     }
 
     // Check which rr_node (if any) was clicked on.
-    int hit_node = draw_check_rr_node_hit (x, y);
-    
-    return highlight_rr_nodes(hit_node);
+    int hit_node = draw_check_rr_node_hit(x, y);
 
+    return highlight_rr_nodes(hit_node);
 }
 
 #if defined(X11) && !defined(__MINGW32__)
 void act_on_key_press(ezgl::application* app, GdkEventKey* event, char* key_name) {
     //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
     std::string key(key_name);
-    
-    if (key == "Return"){ // press enter to trigger the search bar
-        GtkButton* search = (GtkButton*) app->get_object("Search");
-        gtk_button_clicked (search);
+
+    if (key == "Return") { // press enter to trigger the search bar
+        GtkButton* search = (GtkButton*)app->get_object("Search");
+        gtk_button_clicked(search);
     }
-    
+
     event = event; // just for hiding warning message
 }
 #else
@@ -2466,7 +2451,7 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
     if (highlight_rr_nodes(x, y)) {
         return; //Selected an rr node
     }
-    
+
     highlight_blocks(x, y);
 }
 
@@ -2498,7 +2483,7 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, 
             std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
             app->update_message(msg.c_str());
         } else {
-            if(!rr_highlight_message.empty()) {
+            if (!rr_highlight_message.empty()) {
                 update_message(rr_highlight_message.c_str());
             } else {
                 app->update_message(draw_state->default_message);
@@ -2507,7 +2492,6 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, 
     }
     event = event; // just for hiding warning message
 }
-
 
 void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) {
     int k, iclass;
@@ -2563,7 +2547,6 @@ void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) {
         draw_state->block_color[blk_id] = SELECTED_COLOR;
     }
 }
-
 
 void deselect_all() {
     // Sets the color of all clbs, nets and rr_nodes to the default.
@@ -3513,25 +3496,25 @@ static void draw_placement_macros(ezgl::renderer& g) {
     }
 }
 
- static void highlight_blocks(double x, double y) {
+static void highlight_blocks(double x, double y) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    
+
     char msg[vtr::bufsize];
     ClusterBlockId clb_index = EMPTY_BLOCK_ID;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
-    
+
     /// determine block ///
     ezgl::rectangle clb_bbox;
-    
+
     // iterate over grid x
     for (size_t i = 0; i < device_ctx.grid.width(); ++i) {
         if (draw_coords->tile_x[i] > x) {
             break; // we've gone to far in the x direction
         }
         // iterate over grid y
-        for(size_t j = 0; j < device_ctx.grid.height(); ++j) {
+        for (size_t j = 0; j < device_ctx.grid.height(); ++j) {
             if (draw_coords->tile_y[j] > y) {
                 break; // we've gone to far in the y direction
             }
@@ -3556,19 +3539,19 @@ static void draw_placement_macros(ezgl::renderer& g) {
             break; // we've found something
         }
     }
-    
+
     if (clb_index == EMPTY_BLOCK_ID) {
         //Nothing found
         return;
     }
-    
+
     VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
-    
+
     // note: this will clear the selected sub-block if show_blk_internal is 0,
     // or if it doesn't find anything
     ezgl::point2d point_in_clb = ezgl::point2d(x, y) - clb_bbox.bottom_left();
     highlight_sub_block(point_in_clb, clb_index, cluster_ctx.clb_nlist.block_pb(clb_index));
-    
+
     if (get_selected_sub_block_info().has_selection()) {
         t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
         sprintf(msg, "sub-block %s (a \"%s\") selected",
@@ -3578,8 +3561,8 @@ static void draw_placement_macros(ezgl::renderer& g) {
         draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
         sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[clb_index].loc.x, place_ctx.block_locs[clb_index].loc.y);
     }
-    
+
     application.update_message(msg);
-    
+
     application.refresh_drawing();
 }
