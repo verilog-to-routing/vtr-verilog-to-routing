@@ -3326,7 +3326,7 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
     // cluster might need to start at the top of the cluster as their input can be
     // driven by a global gnd or vdd. Therefore even if this is not a long chain
     // but its input pin is driven by a net, the placement legality is checked.
-    auto chain_id = molecule->chain_info->chain_id;
+    auto chain_id = (molecule->pack_pattern->chain_root_pins.size() > 1)? molecule->chain_info->chain_id : 0;
     if (is_long_chain || chain_net_id || chain_id != -1) {
         // if this chain has a chain id assigned to it (implies is_long_chain too)
         if (chain_id != -1) {
