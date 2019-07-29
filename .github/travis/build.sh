@@ -20,18 +20,18 @@ fi
 
 $SPACER
 
-start_section "vtr.build" "${GREEN}Installing..${NC}"
-make install
-mkdir $PREFIX/lib
-mv $PREFIX/bin/*.a $PREFIX/lib/
-end_section "vtr.build"
+#start_section "vtr.build" "${GREEN}Installing..${NC}"
+#make install
+#mkdir $PREFIX/lib
+#mv $PREFIX/bin/*.a $PREFIX/lib/
+#end_section "vtr.build"
 
-$SPACER
+#$SPACER
 
-start_section "vtr.du" "${GREEN}Disk usage..${NC}"
-du -h $PREFIX
-find $PREFIX | sort && ldd $PREFIX/bin/vpr
+#start_section "vtr.du" "${GREEN}Disk usage..${NC}"
+#du -h $PREFIX
+#find $PREFIX | sort && ldd $PREFIX/bin/vpr
 
-end_section "vtr.du"
+#end_section "vtr.du"
 
 $SPACER
