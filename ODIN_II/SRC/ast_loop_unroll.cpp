@@ -27,7 +27,7 @@ void unroll_loops(ast_node_t **ast_module, STRING_CACHE_LIST *local_string_cache
 	int num_removed = 0;
 
 	ast_node_t* module = for_preprocessor((*ast_module), (*ast_module), local_string_cache_list, &removed_instances, &num_removed);
-	
+
 	for (int i = 0; i < num_removed; i++)
 	{
 		free_whole_tree(removed_instances[i]);
@@ -59,6 +59,12 @@ void update_module_instantiations(ast_node_t *ast_module, ast_node_t ****new_ins
 			(*module_instantiations) = expand_node_list_at(*module_instantiations, *module_instantiations_size, (*num_unrolled) - 1, idx + 1);
 			(*module_instantiations_size) = (*module_instantiations_size) + ((*num_unrolled) - 1);
 
+			/* grab original instance */
+			char *original_instance_name = (*new_instances)[i][0]->children[0]->types.identifier;
+
+			long sc_spot_2 = sc_lookup_string(module_names_to_idx, original_instance_name);
+			oassert(sc_spot_2 > -1);
+
 			/* free the "template" instance */
 			free_whole_tree((*new_instances)[i][0]);
 
@@ -74,7 +80,11 @@ void update_module_instantiations(ast_node_t *ast_module, ast_node_t ****new_ins
 
 				long sc_spot = sc_add_string(module_names_to_idx, new_instance_name);
 				oassert(sc_spot != -1);
-				module_names_to_idx->data[sc_spot] = (*new_instances)[i][j];
+				module_names_to_idx->data[sc_spot] = (void *)ast_node_deep_copy((ast_node_t*)module_names_to_idx->data[sc_spot_2]);
+
+				ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_modules)*(sc_spot+1));
+				ast_modules[sc_spot] = (ast_node_t *)module_names_to_idx->data[sc_spot];
+				ast_modules[sc_spot]->types.module.index = sc_spot;
 
 				vtr::free(new_instance_name);
 			}		
@@ -84,6 +94,12 @@ void update_module_instantiations(ast_node_t *ast_module, ast_node_t ****new_ins
 		{
 			(*module_instantiations) = expand_node_list_at(*module_instantiations, *module_instantiations_size, (*num_unrolled), idx + 1);
 			(*module_instantiations_size) = (*module_instantiations_size) + ((*num_unrolled));
+
+			/* grab original instance */
+			char *original_instance_name = (*new_instances)[i][0]->children[0]->types.identifier;
+
+			long sc_spot_2 = sc_lookup_string(module_names_to_idx, original_instance_name);
+			oassert(sc_spot_2 > -1);
 
 			/* free the "template" instance */
 			free_whole_tree((*new_instances)[i][0]);
@@ -100,7 +116,11 @@ void update_module_instantiations(ast_node_t *ast_module, ast_node_t ****new_ins
 
 				long sc_spot = sc_add_string(module_names_to_idx, new_instance_name);
 				oassert(sc_spot != -1);
-				module_names_to_idx->data[sc_spot] = (*new_instances)[i][j];
+				module_names_to_idx->data[sc_spot] = ast_node_deep_copy((ast_node_t*)module_names_to_idx->data[sc_spot_2]);
+
+				ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_modules)*(sc_spot+1));
+				ast_modules[sc_spot] = (ast_node_t *)module_names_to_idx->data[sc_spot];
+				ast_modules[sc_spot]->types.module.index = sc_spot;
 
 				vtr::free(new_instance_name);
 			}
@@ -288,8 +308,7 @@ ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, STRING_CACHE_L
 	}
 
 	free_whole_tree(value);
-
-	body_parent = reduce_expressions(body_parent, local_string_cache_list, NULL, 0);
+	body_parent = reduce_expressions(body_parent, local_string_cache_list, NULL, 0, false);
 	return body_parent;
 }
 
@@ -567,7 +586,8 @@ ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node
 	for(long i = 0; i<copy->num_children; i++)
 	{
 		ast_node_t* child = copy->children[i];
-		if (child) {
+		if (child) 
+		{
 			if(child->type == IDENTIFIERS)
 			{
 				if(!strcmp(child->types.identifier, pre->children[0]->types.identifier))
@@ -637,6 +657,11 @@ ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node
 					copy->children[i]->children[1] = replace_named_module(child->children[1], value);
 					oassert(copy->children[i]->children[1]);
 
+					/* find and replace iteration symbol for port connections and parameters */
+					ast_node_t *named_instance = child->children[1];
+					copy->children[i]->children[1] = dup_and_fill_body(ast_module, named_instance, pre, value, error_code, instances, num_unrolled, num_original, is_nested);
+					free_whole_tree(named_instance);
+
 					/* then add it to the table of unrolled instances */
 					(*instances)[idx] = (ast_node_t**)vtr::realloc((*instances)[idx], sizeof(ast_node_t*)*((*num_unrolled)+2));
 					(*instances)[idx][(*num_unrolled)+1] = ast_node_deep_copy(copy->children[i]);
@@ -646,25 +671,37 @@ ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node
 					/* give this unrolled instance a unique name */
 					copy->children[i]->children[1] = replace_named_module(child->children[1], value);
 					oassert(copy->children[i]->children[1]);
+
+					/* find and replace iteration symbol for port connections and parameters */
+					ast_node_t *named_instance = child->children[1];
+					copy->children[i]->children[1] = dup_and_fill_body(ast_module, named_instance, pre, value, error_code, instances, num_unrolled, num_original, is_nested);
+					free_whole_tree(named_instance);
 				}
 			} 
 
 			if(child && child->num_children > 0)
 			{
-				for (int j = 0; j < copy->children[i]->num_children; j++)
+				if (child->type == MODULE_INSTANCE && child->children[0]->type != MODULE_INSTANCE)
 				{
-					if (copy->children[i]->children[j] != child->children[j]) free_whole_tree(copy->children[i]->children[j]);
-				}
-				if (!is_for_node(child))
-				{
-					copy->children[i] = dup_and_fill_body(ast_module, child, pre, value, error_code, instances, num_unrolled, num_original, is_nested);
-					free_whole_tree(child);
+					/* already been unrolled; do nothing */
 				}
 				else
 				{
-					// go in and update this iteration symbol, instance names if applicable
-					copy->children[i] = dup_and_fill_body(ast_module, child, pre, value, error_code, instances, num_unrolled, num_original, true);
-					free_whole_tree(child);
+					for (int j = 0; j < copy->children[i]->num_children; j++)
+					{
+						if (copy->children[i]->children[j] != child->children[j]) free_whole_tree(copy->children[i]->children[j]);
+					}
+					if (!is_for_node(child))
+					{
+						copy->children[i] = dup_and_fill_body(ast_module, child, pre, value, error_code, instances, num_unrolled, num_original, is_nested);
+						free_whole_tree(child);
+					}
+					else
+					{
+						// go in and update this iteration symbol, instance names if applicable
+						copy->children[i] = dup_and_fill_body(ast_module, child, pre, value, error_code, instances, num_unrolled, num_original, true);
+						free_whole_tree(child);
+					}
 				}
 			}
 		}

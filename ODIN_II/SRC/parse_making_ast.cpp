@@ -873,7 +873,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					case GENVAR:
 						oassert(is_signed && "Genvars must always be signed");
 						symbol_list->children[i]->types.variable.is_signed = is_signed;			
-						symbol_list->children[i]->types.variable.is_integer = true; // TODO: flip to is_genvar
+						symbol_list->children[i]->types.variable.is_genvar = true;
 						break;
 					default:
 						oassert(false);
@@ -1268,20 +1268,6 @@ ast_node_t *newAlways(ast_node_t *delay_control, ast_node_t *statement, int line
 
 	return new_node;
 }
-
-/*---------------------------------------------------------------------------------------------
- * (function: newGenerate)
- *-------------------------------------------------------------------------------------------*/
-ast_node_t *newGenerate(ast_node_t *instantiations, int line_number)
-{
-	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(GENERATE, line_number, current_parse_file);
-	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, { instantiations });
-
-	return new_node;
-}
-
 /*---------------------------------------------------------------------------------------------
  * (function: newModuleConnection)
  *-------------------------------------------------------------------------------------------*/
@@ -1645,7 +1631,7 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 	/* ports are expected to be in module items */
 	if (port_declarations)
 	{
-		add_child_at_the_beginning_of_the_node(list_of_module_items, port_declarations);
+		add_child_to_node_at_index(list_of_module_items, port_declarations, 0);
 	}
 
 	/* parameters are expected to be in module items */
@@ -1682,7 +1668,7 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 				}
 			}
 		}
-		if(!variable_found) add_child_at_the_beginning_of_the_node(list_of_module_items, module_variables_not_defined[i]);
+		if(!variable_found) add_child_to_node_at_index(list_of_module_items, module_variables_not_defined[i], 0);
 		else 				free_whole_tree(module_variables_not_defined[i]);
 	}
 
@@ -1730,7 +1716,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 
 	markAndProcessSymbolListWith(FUNCTION, OUTPUT, output_node, list_of_ports->children[0]->types.variable.is_signed);
 
-	add_child_at_the_beginning_of_the_node(list_of_module_items, output_node);
+	add_child_to_node_at_index(list_of_module_items, output_node, 0);
 
 	label = (char *)vtr::calloc(strlen(list_of_ports->children[0]->children[0]->types.identifier)+10,sizeof(char));
 
@@ -1763,7 +1749,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 	ast_node_t *port_declarations = resolve_ports(FUNCTION, list_of_ports);
 	if (port_declarations)
 	{
-		add_child_at_the_beginning_of_the_node(list_of_module_items, port_declarations);
+		add_child_to_node_at_index(list_of_module_items, port_declarations, 0);
 	}
 
 	/* allocate child nodes to this node */
