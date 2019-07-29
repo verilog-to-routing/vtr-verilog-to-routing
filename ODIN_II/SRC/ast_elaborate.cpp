@@ -618,6 +618,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 
 				break;
 			}
+			case IF_Q:
 			case IF:
 			{
 				ast_node_t *child_condition = node->children[0];
@@ -636,14 +637,14 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 						to_return = node->children[2];
 						node->children[2] = NULL;
 					}
-					else if (is_generate_region)
+					else if (node->type == IF && is_generate_region)
 					{
 						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
 							"%s","Could not resolve conditional generate construct");
 					}
 					// otherwise we keep it as is to build the circuitry
 				}
-				else if (is_generate_region)
+				else if (node->type == IF && is_generate_region)
 				{
 					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
 						"%s","Could not resolve conditional generate construct");
