@@ -1426,7 +1426,7 @@ t_rt_node* find_sink_rt_node_recurr(t_rt_node* node, int sink_rr_inode) {
 
     for (t_linked_rt_edge* edge = node->u.child_list; edge != nullptr; edge = edge->next) {
         found_node = find_sink_rt_node_recurr(edge->child, sink_rr_inode); //process each of the children
-
+        VTR_ASSERT(found_node);
         if (found_node->inode == sink_rr_inode) {
             //If the sink has been found downstream in the branch, we would like to immediately exit the search
             return found_node;
