@@ -695,6 +695,11 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 								error_message(NETLIST_ERROR, node->line_number, node->file_number, 
 									"%s","Could not resolve conditional generate construct");
 							}
+							else
+							{
+								/* encountered non-constant item - don't continue searching */
+								break;
+							}
 						}
 					}
 
