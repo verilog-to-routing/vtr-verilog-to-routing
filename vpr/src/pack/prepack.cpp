@@ -137,6 +137,7 @@ static int get_pb_placement_index(t_pack_pattern_block* pattern_block, std::stri
 
 static void modify_molecule(t_pack_molecule* molecule, t_pack_pattern_block* pattern_block);
 
+static bool check_lut_chain_molecules(t_pack_molecule* molecule);
 /*****************************************/
 /*Function Definitions					 */
 /*****************************************/
@@ -1133,10 +1134,9 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
     // if all non-optional positions in the pack pattern have atoms
     // mapped to them, then this molecule is valid
     if (molecule->is_chain()) {
-        if (chain_input_is_reachable(molecule, atom_molecules) && check_second_level_chain(molecule, atom_molecules))
-            return check_alm_input_limitation(molecule);
-        else
-            return false;
+        return chain_input_is_reachable(molecule, atom_molecules)
+               && check_alm_input_limitation(molecule)
+               && check_lut_chain_molecules(molecule);
     }
 
     return true;
@@ -1148,6 +1148,64 @@ static void print_nets(std::unordered_set<AtomNetId>& nets, int alm_placement_in
        VTR_LOG("%d %s\n", net, g_vpr_ctx.atom().nlist.net_name(net).c_str());
     }
     VTR_LOG("\n");
+}
+
+static bool check_lut_chain_molecules(t_pack_molecule* molecule) {
+
+    std::string pattern_name(molecule->pack_pattern->name);
+    if (pattern_name.find("lut_chain") == std::string::npos) return true;
+
+    auto pattern_block = molecule->pack_pattern->root_block;
+    auto cin_pin = molecule->pack_pattern->chain_root_pins[0][0];
+    auto cin_port = cin_pin->port;
+    auto cin_port_model = cin_port->model_port;
+
+    auto connection = pattern_block->connections;
+    t_pb_type* lut_pb_type = nullptr;
+
+    while (connection) {
+       if (connection->to_block == pattern_block && connection->to_pin->port->model_port != cin_port_model) {
+           lut_pb_type = connection->from_pin->parent_node->pb_type;
+           break;
+       }
+       connection = connection->next;
+    }
+
+    VTR_ASSERT(lut_pb_type);
+
+
+    std::queue<t_pack_pattern_block*> pattern_block_queue;
+    pattern_block_queue.push(pattern_block);
+
+    std::vector<bool> visited_blocks(molecule->num_blocks);
+
+    // do breadth first search to find the block that matches block_id
+    while (!pattern_block_queue.empty()) {
+        pattern_block = pattern_block_queue.front();
+        pattern_block_queue.pop();
+
+        // ignore if a nullptr or is already visited
+        if (!pattern_block || visited_blocks[pattern_block->block_id])
+            continue;
+
+        if (molecule->atom_block_ids[pattern_block->block_id] &&
+            pattern_block->pb_type == lut_pb_type)
+            return true;
+
+        visited_blocks[pattern_block->block_id] = true;
+
+        auto block_connections = pattern_block->connections;
+
+        // add all the blocks in the list of connections to the queue
+        while (block_connections) {
+            pattern_block_queue.push(block_connections->from_block);
+            pattern_block_queue.push(block_connections->to_block);
+            block_connections = block_connections->next;
+        }
+    }
+
+    return false;
+
 }
 
 // get the number of ALM inputs feeding the LUTs. The assumption is
