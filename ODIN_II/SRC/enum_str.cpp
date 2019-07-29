@@ -167,6 +167,7 @@ const char *ids_STR []=
 	"IF",
 	"IF_Q",
 	"FOR",
+	"UNROLLED_FOR",
 	"WHILE",
 	/* Delay Control */
 	"DELAY_CONTROL",

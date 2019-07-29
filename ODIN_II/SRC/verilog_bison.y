@@ -480,7 +480,7 @@ case_generate_items:
 	;
 
 generate_block:
-	generate_item										{$$ = $1;}
+	generate_item										{$$ = newList(BLOCK, $1);}
 	| vBEGIN list_of_generate_items vEND				{$$ = $2;}
 	| vBEGIN ':' vSYMBOL_ID list_of_generate_items vEND	{free($3); $$ = $4;}
 	;

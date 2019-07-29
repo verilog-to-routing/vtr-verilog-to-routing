@@ -251,6 +251,54 @@ ast_node_t* replace_fors(ast_node_t *ast_module, ast_node_t* node, STRING_CACHE_
 	return new_node;
 }
 
+void unroll_for_loop(ast_node_t* node, ast_node_t *parent, STRING_CACHE_LIST *local_string_cache_list, ast_node_t ***removed_instances, int *num_removed)
+{
+	oassert(node && node->type == FOR);
+
+	ast_node_t ***unrolled_module_instances = NULL;
+	int num_unrolled_module_instances = 0;
+	int num_original_module_instances = 0;
+
+	char *module_id = local_string_cache_list->instance_name_prefix;
+	long sc_spot = sc_lookup_string(module_names_to_idx, module_id);
+	oassert(sc_spot > -1);
+	ast_node_t *ast_module = (ast_node_t *)module_names_to_idx->data[sc_spot];
+
+	ast_node_t* unrolled_for = resolve_for(ast_module, node, local_string_cache_list, &unrolled_module_instances, &num_unrolled_module_instances, &num_original_module_instances);
+	oassert(unrolled_for != nullptr);
+	
+	/* update parent */
+	for (int i = 0; i < parent->num_children; i++)
+	{
+		if (node == parent->children[i])
+		{
+			int j;
+			for (j = i; j < (unrolled_for->num_children + i); j++)
+			{
+				add_child_to_node_at_index(parent, unrolled_for->children[j-i], j);
+			}
+
+			oassert(j == (unrolled_for->num_children + i) && parent->children[j] == node);
+			remove_child_from_node_at_index(parent, j);
+		}
+	}
+	
+	/* update module instantiations in this loop */
+	if (unrolled_module_instances)
+	{
+		update_module_instantiations(ast_module, &unrolled_module_instances, removed_instances, &num_unrolled_module_instances, &num_original_module_instances, num_removed);
+		
+		for (int i = 0; i < num_original_module_instances; i++)
+		{
+			vtr::free(unrolled_module_instances[i]);
+		}
+		vtr::free(unrolled_module_instances);
+
+		num_unrolled_module_instances = 0;
+		num_original_module_instances = 0;
+	}
+}
+
 /*
  *  (function: resolve_for)
  */
@@ -308,7 +356,7 @@ ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node, STRING_CACHE_L
 	}
 
 	free_whole_tree(value);
-	body_parent = reduce_expressions(body_parent, local_string_cache_list, NULL, 0, false);
+	body_parent = reduce_expressions(body_parent, NULL, local_string_cache_list, NULL, 0, false);
 	return body_parent;
 }
 

@@ -112,18 +112,19 @@ int simplify_ast_module(ast_node_t **ast_module, STRING_CACHE_LIST *local_string
 {
 	/* resolve constant expressions */
 	bool is_module = (*ast_module)->type == MODULE ? true : false;
-	*ast_module = reduce_expressions(*ast_module, local_string_cache_list, NULL, 0, is_module);
-	unroll_loops(ast_module, local_string_cache_list);
+	*ast_module = reduce_expressions(*ast_module, NULL, local_string_cache_list, NULL, 0, is_module);
+	//unroll_loops(ast_module, local_string_cache_list);
 	update_string_caches(local_string_cache_list);
 
 	return 1;
 }
 
 // this should replace ^^
-ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list, long *max_size, long assignment_size, bool is_generate_region)
+ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACHE_LIST *local_string_cache_list, long *max_size, long assignment_size, bool is_generate_region)
 {
 	short *child_skip_list = NULL; // list of children not to traverse into
 	short skip_children = false; // skips the DFS completely if true
+	ast_node_t **replaced_module_instances = NULL;
 
 	if (node)
 	{
@@ -160,7 +161,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 					}
 
 					/* resolve right-hand side */
-					node->children[5] = reduce_expressions(node->children[5], local_string_cache_list, NULL, 0, is_generate_region);
+					node->children[5] = reduce_expressions(node->children[5], node, local_string_cache_list, NULL, 0, is_generate_region);
 					oassert(node->children[5]->type == NUMBERS);
 
 					/* this forces parameter values as unsigned, since we don't currently support signed keyword...
@@ -195,7 +196,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 
 						if (newNode->type != NUMBERS)
 						{
-							newNode = reduce_expressions(newNode, local_string_cache_list, NULL, assignment_size, is_generate_region);
+							newNode = reduce_expressions(newNode, parent, local_string_cache_list, NULL, assignment_size, is_generate_region);
 							oassert(newNode->type == NUMBERS);
 
 							/* this forces parameter values as unsigned, since we don't currently support signed keyword...
@@ -219,17 +220,51 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 			}
 			case FOR:
 			{
+				// look ahead for parameters in loop conditions
+				node->children[0] = reduce_expressions(node->children[0], node, local_string_cache_list, max_size, assignment_size, is_generate_region);
+				node->children[1] = reduce_expressions(node->children[1], node, local_string_cache_list, max_size, assignment_size, is_generate_region);
+				node->children[2] = reduce_expressions(node->children[2], node, local_string_cache_list, max_size, assignment_size, is_generate_region);
+				
+				// update skip list
+				child_skip_list[0] = true;
+				child_skip_list[1] = true;
+				child_skip_list[2] = true;
+
+				// if this is a loop generate construct, verify constant expressions
 				if (is_generate_region)
 				{
+					ast_node_t *iterator = NULL;
+					ast_node_t *initial = node->children[0];
+					ast_node_t *compare_expression = node->children[1];
+					ast_node_t *terminal = node->children[2];
+
 					char **genvar_list = NULL;
 					verify_genvars(node, local_string_cache_list, &genvar_list, 0);
 					if (genvar_list) vtr::free(genvar_list);
+
+					long sc_spot = sc_lookup_string(local_symbol_table_sc, initial->children[0]->types.identifier);
+					oassert(sc_spot > -1);
+
+					iterator = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
+
+					if ( !(node_is_constant(initial->children[1]))
+						|| !(node_is_constant(compare_expression->children[1]))
+						|| !(verify_terminal(terminal->children[1], iterator))
+					)
+					{
+						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+							"%s","Loop generate construct conditions must be constant expressions");
+					}
 				}
-				// look ahead for parameters
+				
+				// unroll loops
+				ast_node_t **instances_to_remove = NULL;
+				int num_instances_to_remove = 0;
+				unroll_for_loop(node, parent, local_string_cache_list, &instances_to_remove, &num_instances_to_remove);
+
 				break;
 			}
 			case WHILE:
-				// look ahead for parameters
 				break;
 			case BLOCKING_STATEMENT:
 			case NON_BLOCKING_STATEMENT:
@@ -237,14 +272,14 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				/* try to resolve */
 				if (node->children[1]->type != FUNCTION_INSTANCE)
 				{
-					node->children[0] = reduce_expressions(node->children[0], local_string_cache_list, NULL, 0, is_generate_region);
+					node->children[0] = reduce_expressions(node->children[0], node, local_string_cache_list, NULL, 0, is_generate_region);
 
 					assignment_size = get_size_of_variable(node->children[0], local_string_cache_list);
 					max_size = (long*)calloc(1, sizeof(long));
 					
 					if (node->children[1]->type != NUMBERS)
 					{
-						node->children[1] = reduce_expressions(node->children[1], local_string_cache_list, max_size, assignment_size, is_generate_region);
+						node->children[1] = reduce_expressions(node->children[1], node, local_string_cache_list, max_size, assignment_size, is_generate_region);
 						if (node->children[1] == NULL)
 						{
 							/* resulting from replication of zero */
@@ -311,7 +346,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				break;
 			case REPLICATE:
 			{
-				node->children[0] = reduce_expressions(node->children[0], local_string_cache_list, NULL, 0, is_generate_region);
+				node->children[0] = reduce_expressions(node->children[0], node, local_string_cache_list, NULL, 0, is_generate_region);
 				if (!(node_is_constant(node->children[0])))
 				{
 					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
@@ -367,15 +402,27 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				break;
 		}
 
-		if (skip_children == false)
+		if (node->num_children > 0 && skip_children == false)
 		{
+			/* use while loop and boolean to prevent optimizations
+				since number of children may change during recursion */
+
+			bool done = false;
+			int i = 0;
+
 			/* traverse all the children */
-			for (int i = 0; i < node->num_children; i++)
+			while (done == false)
 			{
 				if (child_skip_list[i] == false)
 				{
 					/* recurse */
-					node->children[i] = reduce_expressions(node->children[i], local_string_cache_list, max_size, assignment_size, is_generate_region);
+					node->children[i] = reduce_expressions(node->children[i], node, local_string_cache_list, max_size, assignment_size, is_generate_region);
+				}
+
+				i++;
+				if (i == node->num_children)
+				{
+					done = true;
 				}
 			}
 		}
@@ -396,34 +443,8 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				break;
 			}
 			case FOR:
-			{
-				if (is_generate_region)
-				{
-					ast_node_t *iterator = NULL;
-					ast_node_t *initial = node->children[0];
-					ast_node_t *compare_expression = node->children[1];
-					ast_node_t *terminal = node->children[2];
-
-					long sc_spot = sc_lookup_string(local_symbol_table_sc, initial->children[0]->types.identifier);
-					oassert(sc_spot > -1);
-
-					iterator = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
-
-					if ( !(node_is_constant(initial->children[1]))
-						|| !(node_is_constant(compare_expression->children[1]))
-						|| !(verify_terminal(terminal->children[1], iterator))
-					)
-					{
-						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-							"%s","Loop generate construct conditions must be constant expressions");
-					}
-				}
-
-				//unroll_loops(node); // TODO change this function (dont have to go through whole tree)
 				break;
-			}
 			case WHILE:
-				// unroll
 				break;
 			case BINARY_OPERATION:
 			{
@@ -578,18 +599,18 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 
 					if (var_node->children[1] != NULL)
 					{
-						var_node->children[1] = reduce_expressions(var_node->children[1], local_string_cache_list, NULL, 0, is_generate_region);
-						var_node->children[2] = reduce_expressions(var_node->children[2], local_string_cache_list, NULL, 0, is_generate_region);
+						var_node->children[1] = reduce_expressions(var_node->children[1], var_node, local_string_cache_list, NULL, 0, is_generate_region);
+						var_node->children[2] = reduce_expressions(var_node->children[2], var_node, local_string_cache_list, NULL, 0, is_generate_region);
 					}
 					if (var_node->children[3] != NULL)
 					{
-						var_node->children[3] = reduce_expressions(var_node->children[3], local_string_cache_list, NULL, 0, is_generate_region);
-						var_node->children[4] = reduce_expressions(var_node->children[4], local_string_cache_list, NULL, 0, is_generate_region);
+						var_node->children[3] = reduce_expressions(var_node->children[3], var_node, local_string_cache_list, NULL, 0, is_generate_region);
+						var_node->children[4] = reduce_expressions(var_node->children[4], var_node, local_string_cache_list, NULL, 0, is_generate_region);
 					}
 					if (var_node->num_children == 8 && var_node->children[5])
 					{
-						var_node->children[5] = reduce_expressions(var_node->children[5], local_string_cache_list, NULL, 0, is_generate_region);
-						var_node->children[6] = reduce_expressions(var_node->children[6], local_string_cache_list, NULL, 0, is_generate_region);
+						var_node->children[5] = reduce_expressions(var_node->children[5], var_node, local_string_cache_list, NULL, 0, is_generate_region);
+						var_node->children[6] = reduce_expressions(var_node->children[6], var_node, local_string_cache_list, NULL, 0, is_generate_region);
 					}
 
 					local_symbol_table_sc->data[sc_spot] = (void *)var_node;
@@ -803,7 +824,7 @@ void update_string_caches(STRING_CACHE_LIST *local_string_cache_list)
 			|| var_declare->num_children == 8
 		)
 		{
-			reduce_expressions(var_declare, local_string_cache_list, NULL, 0, false);
+			reduce_expressions(var_declare, NULL, local_string_cache_list, NULL, 0, false);
 		}
 	}
 }
@@ -993,6 +1014,11 @@ void verify_genvars(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list
 
 			long sc_spot = sc_lookup_string(local_symbol_table_sc, iterator->types.identifier);
 			if (sc_spot < 0)
+			{
+				error_message(NETLIST_ERROR, iterator->line_number, iterator->file_number, 
+					"Missing declaration of this symbol %s\n", iterator->types.identifier);
+			}
+			else if (!((ast_node_t *)local_symbol_table_sc->data[sc_spot])->types.variable.is_genvar)
 			{
 				error_message(NETLIST_ERROR, node->line_number, node->file_number, 
 					"%s","Iterator for loop generate construct must be declared as a genvar");
