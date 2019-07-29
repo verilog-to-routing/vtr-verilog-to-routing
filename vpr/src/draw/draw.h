@@ -9,7 +9,7 @@
 #include "ezgl/application.hpp"
 #include "ezgl/graphics.hpp"
 #include "draw_color.h"
-
+#include "search_bar.h"
 
 extern ezgl::application::settings settings;
 extern ezgl::application application;
@@ -54,16 +54,7 @@ ezgl::color to_ezgl_color(color_types color_enum);
 
 void draw_screen();
 
-// search bar related functions defined in search_bar.cpp
-void search_and_highlight(GtkWidget *widget, ezgl::application *app);
-bool highlight_rr_nodes(int hit_node);
-void auto_zoom_rr_node(int rr_node_id);
-void highlight_blocks(ClusterBlockId clb_index);
-void highlight_nets(ClusterNetId net_id);
-void highlight_nets(std::string net_name);
-void highlight_blocks(std::string block_name);
-
-// search bar related functions defined in draw.cpp
+// search bar related functions
 ezgl::rectangle draw_get_rr_chan_bbox(int inode);
 void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id);
 void highlight_nets(char *message, int hit_node);

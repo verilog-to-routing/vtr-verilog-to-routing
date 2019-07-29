@@ -40,6 +40,7 @@ using namespace std;
 #include "tatum/report/TimingPathCollector.hpp"
 #include "hsl.h"
 #include "route_export.h"
+#include "search_bar.h"
 
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
@@ -115,7 +116,7 @@ bool window_mode = false;
 bool window_point_1_collected = false;
 ezgl::point2d point_1(0,0);
 ezgl::rectangle initial_world;
-
+std::string rr_highlight_message;
 
 
 /********************** Subroutines local to this module ********************/
@@ -2368,8 +2369,6 @@ void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set<int>& 
 static bool highlight_rr_nodes(float x, float y) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    char message[250] = "";
-
     if (draw_state->draw_rr_toggle == DRAW_NO_RR && !draw_state->show_nets) {
         application.update_message(draw_state->default_message);
         application.refresh_drawing();
@@ -2458,12 +2457,6 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
 
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    char msg[vtr::bufsize];
-    ClusterBlockId clb_index = EMPTY_BLOCK_ID;
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-
     /* Control + mouse click to select multiple nets. */
     if (!(event->state & GDK_CONTROL_MASK))
         deselect_all();
@@ -2505,7 +2498,11 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, 
             std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
             app->update_message(msg.c_str());
         } else {
-            app->update_message(draw_state->default_message);
+            if(!rr_highlight_message.empty()) {
+                update_message(rr_highlight_message.c_str());
+            } else {
+                app->update_message(draw_state->default_message);
+            }
         }
     }
     event = event; // just for hiding warning message

@@ -22,6 +22,7 @@ using namespace std;
 #include "tatum/report/TimingPathCollector.hpp"
 #include "hsl.h"
 #include "route_export.h"
+#include "search_bar.h"
 
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
@@ -44,6 +45,7 @@ using namespace std;
 #include "route_util.h"
 #include "place_macro.h"
 
+extern std::string rr_highlight_message;
 
 void search_and_highlight(GtkWidget *widget, ezgl::application *app) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -66,7 +68,7 @@ void search_and_highlight(GtkWidget *widget, ezgl::application *app) {
         int rr_node_id = -1;
         ss >> rr_node_id;
         
-        if(rr_node_id < 0 || rr_node_id >= device_ctx.rr_nodes.size()) {
+        if(rr_node_id < 0 || int (rr_node_id >= device_ctx.rr_nodes.size())) {
             // rr node not exist
             app->refresh_drawing();
             return;
@@ -142,6 +144,7 @@ bool highlight_rr_nodes(int hit_node) {
         std::string info = describe_rr_node(hit_node);
         
         sprintf(message, "Selected %s", info.c_str());
+        rr_highlight_message = message;
         
         if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
             // If rr_graph is shown, highlight the fan-in/fan-outs for
@@ -150,6 +153,7 @@ bool highlight_rr_nodes(int hit_node) {
         }
     } else {
         application.update_message(draw_state->default_message);
+        rr_highlight_message = "";
         application.refresh_drawing();
         return false; //No hit
     }
@@ -245,7 +249,7 @@ void highlight_nets(ClusterNetId net_id) {
     
     t_draw_state* draw_state = get_draw_state_vars();
     
-    if(route_ctx.trace.size() == 0) return;
+    if(int(route_ctx.trace.size()) == 0) return;
     
     for (tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
         draw_state->net_color[net_id] = ezgl::MAGENTA;
@@ -255,15 +259,10 @@ void highlight_nets(ClusterNetId net_id) {
 
 void highlight_nets(std::string net_name) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    ClusterNetId net_id = ClusterNetId::INVALID();
     
-    for (auto i : cluster_ctx.clb_nlist.nets()) {
-        if(cluster_ctx.clb_nlist.net_name(i).c_str() == net_name){
-            net_id = i;
-            break;
-        }
-    }
-            
+    ClusterNetId net_id = ClusterNetId::INVALID();
+    net_id = cluster_ctx.clb_nlist.find_net(net_name);
+    
     if(net_id == ClusterNetId::INVALID()) return; //name not exist
     
     highlight_nets(net_id);//found net
@@ -272,14 +271,9 @@ void highlight_nets(std::string net_name) {
 
 void highlight_blocks(std::string block_name) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    
     ClusterBlockId block_id = ClusterBlockId::INVALID();
-        
-    for (auto i : cluster_ctx.clb_nlist.blocks()) {
-        if(cluster_ctx.clb_nlist.block_name(i).c_str() == block_name){
-            block_id = i;
-            break;
-        }
-    }
+    block_id = cluster_ctx.clb_nlist.find_block(block_name);
             
     if(block_id == ClusterBlockId::INVALID()) return; //name not exist
     
