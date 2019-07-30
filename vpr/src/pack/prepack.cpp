@@ -1835,6 +1835,12 @@ static AtomBlockId get_adder_driver_block(const AtomBlockId block_id, const t_pa
             dummy_adder = driver_id;
     }
 
+    // if this atom it driven by another atom that is part of a molecule
+    // then no more exploring should be done since this is then an extension
+    // of this previous molecule
+    if (atom_molecules.find(driver_id) != atom_molecules.end())
+        return AtomBlockId::INVALID();
+
     // Either this adder is not driven by another adder from the cin port or is driven by a dummy adder, therefore we need to
     // check ports a and b of the adder first to reach the top of the adder tree.
     for (int iport = 0; iport < block_pb_graph_node->num_input_ports; iport++) {
