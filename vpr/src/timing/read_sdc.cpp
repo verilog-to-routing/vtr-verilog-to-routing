@@ -528,7 +528,6 @@ class SdcParseCallback : public sdcparse::Callback {
                                   netlist_.pin_name(to_pin).c_str());
                     tc_.set_constant_generator(to_tnode);
                 }
-
             }
         }
     }

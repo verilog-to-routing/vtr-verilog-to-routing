@@ -118,7 +118,7 @@ ezgl::rectangle initial_world;
 std::string rr_highlight_message;
 
 /********************** Subroutines local to this module ********************/
-void toggle_nets(GtkWidget*/*widget*/, ezgl::application* app);
+void toggle_nets(GtkWidget* /*widget*/, ezgl::application* app);
 void toggle_rr(GtkWidget* /*widget*/, ezgl::application* app);
 void toggle_congestion(GtkWidget* /*widget*/, ezgl::application* app);
 void toggle_routing_congestion_cost(GtkWidget* /*widget*/, ezgl::application* app);
@@ -2425,7 +2425,7 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
      * removed.  Note that even though global nets are not drawn, their  *
      * fanins and fanouts are highlighted when you click on a block      *
      * attached to them.                                                 */
-    
+
     /* Control + mouse click to select multiple nets. */
     if (!(event->state & GDK_CONTROL_MASK))
         deselect_all();
