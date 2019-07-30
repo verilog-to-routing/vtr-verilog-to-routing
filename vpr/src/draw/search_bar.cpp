@@ -46,7 +46,7 @@ using namespace std;
 
 extern std::string rr_highlight_message;
 
-void search_and_highlight(GtkWidget* widget, ezgl::application* app) {
+void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     auto& device_ctx = g_vpr_ctx.device();
 
     // get ID from search bar
@@ -107,7 +107,6 @@ void search_and_highlight(GtkWidget* widget, ezgl::application* app) {
     else
         return;
     app->refresh_drawing();
-    widget = widget; // just for hiding warning message
 }
 
 bool highlight_rr_nodes(int hit_node) {

@@ -118,16 +118,16 @@ ezgl::rectangle initial_world;
 std::string rr_highlight_message;
 
 /********************** Subroutines local to this module ********************/
-void toggle_nets(GtkWidget* widget, ezgl::application* app);
-void toggle_rr(GtkWidget* widget, ezgl::application* app);
-void toggle_congestion(GtkWidget* widget, ezgl::application* app);
-void toggle_routing_congestion_cost(GtkWidget* widget, ezgl::application* app);
-void toggle_routing_bounding_box(GtkWidget* widget, ezgl::application* app);
-void toggle_routing_util(GtkWidget* widget, ezgl::application* app);
-void toggle_crit_path(GtkWidget* widget, ezgl::application* app);
-void toggle_block_pin_util(GtkWidget* widget, ezgl::application* app);
-void toggle_router_rr_costs(GtkWidget* widget, ezgl::application* app);
-void toggle_placement_macros(GtkWidget* widget, ezgl::application* app);
+void toggle_nets(GtkWidget*/*widget*/, ezgl::application* app);
+void toggle_rr(GtkWidget* /*widget*/, ezgl::application* app);
+void toggle_congestion(GtkWidget* /*widget*/, ezgl::application* app);
+void toggle_routing_congestion_cost(GtkWidget* /*widget*/, ezgl::application* app);
+void toggle_routing_bounding_box(GtkWidget* /*widget*/, ezgl::application* app);
+void toggle_routing_util(GtkWidget* /*widget*/, ezgl::application* app);
+void toggle_crit_path(GtkWidget* /*widget*/, ezgl::application* app);
+void toggle_block_pin_util(GtkWidget* /*widget*/, ezgl::application* app);
+void toggle_router_rr_costs(GtkWidget* /*widget*/, ezgl::application* app);
+void toggle_placement_macros(GtkWidget* /*widget*/, ezgl::application* app);
 
 static void drawplace(ezgl::renderer& g);
 static void drawnets(ezgl::renderer& g);
@@ -197,7 +197,7 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app);
 void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app);
 void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app);
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app);
-void toggle_window_mode(GtkWidget* widget, ezgl::application* app);
+void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 
 /********************** Subroutine definitions ******************************/
 
@@ -439,17 +439,14 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     }
 }
 
-void toggle_window_mode(GtkWidget* widget, ezgl::application* app) {
-    (void)widget;
-    (void)app;
+void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/) {
     window_mode = true;
 }
 
-void toggle_nets(GtkWidget* widget, ezgl::application* app) {
+void toggle_nets(GtkWidget* /*widget*/, ezgl::application* app) {
     /* Enables/disables drawing of nets when a the user clicks on a button.    *
      * Also disables drawing of routing resources.  See graphics.c for details *
      * of how buttons work.                                                    */
-    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
 
     enum e_draw_nets new_state;
@@ -471,14 +468,13 @@ void toggle_nets(GtkWidget* widget, ezgl::application* app) {
     app->update_message(draw_state->default_message);
     app->refresh_drawing();
 }
-void toggle_rr(GtkWidget* widget, ezgl::application* app) {
+void toggle_rr(GtkWidget* /*widget*/, ezgl::application* app) {
     /* Cycles through the options for viewing the routing resources available   *
      * in an FPGA.  If a routing isn't on screen, the routing graph hasn't been *
      * built, and this routine doesn't switch the view. Otherwise, this routine *
      * switches to the routing resource view.  Clicking on the toggle cycles    *
      * through the options:  DRAW_NO_RR, DRAW_ALL_RR, DRAW_ALL_BUT_BUFFERS_RR,  *
      * DRAW_NODES_AND_SBOX_RR, and DRAW_NODES_RR.                               */
-    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
 
     enum e_draw_rr_toggle new_state = (enum e_draw_rr_toggle)(((int)draw_state->draw_rr_toggle + 1)
@@ -490,9 +486,8 @@ void toggle_rr(GtkWidget* widget, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void toggle_congestion(GtkWidget* widget, ezgl::application* app) {
+void toggle_congestion(GtkWidget* /*widget*/, ezgl::application* app) {
     /* Turns the congestion display on and off.   */
-    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
 
     e_draw_congestion new_state = (enum e_draw_congestion)(((int)draw_state->show_congestion + 1)
@@ -507,9 +502,8 @@ void toggle_congestion(GtkWidget* widget, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void toggle_routing_congestion_cost(GtkWidget* widget, ezgl::application* app) {
+void toggle_routing_congestion_cost(GtkWidget* /*widget*/, ezgl::application* app) {
     //Turns routing congestion costs on and off
-    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
     e_draw_routing_costs new_state = (enum e_draw_routing_costs)(((int)draw_state->show_routing_costs + 1)
                                                                  % ((int)DRAW_ROUTING_COST_MAX));
@@ -523,8 +517,7 @@ void toggle_routing_congestion_cost(GtkWidget* widget, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void toggle_routing_bounding_box(GtkWidget* widget, ezgl::application* app) {
-    (void)widget;
+void toggle_routing_bounding_box(GtkWidget* /*widget*/, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     auto& route_ctx = g_vpr_ctx.routing();
@@ -545,8 +538,7 @@ void toggle_routing_bounding_box(GtkWidget* widget, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void toggle_routing_util(GtkWidget* widget, ezgl::application* app) {
-    (void)widget;
+void toggle_routing_util(GtkWidget* /*widget*/, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     e_draw_routing_util new_state = (enum e_draw_routing_util)(((int)draw_state->show_routing_util + 1) % ((int)DRAW_ROUTING_UTIL_MAX));
@@ -558,8 +550,7 @@ void toggle_routing_util(GtkWidget* widget, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void toggle_blk_internal(GtkWidget* widget, ezgl::application* app) {
-    (void)widget;
+void toggle_blk_internal(GtkWidget* /*widget*/, ezgl::application* app) {
     t_draw_state* draw_state;
 
     /* Call accessor function to retrieve global variables. */
@@ -576,8 +567,7 @@ void toggle_blk_internal(GtkWidget* widget, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void toggle_block_pin_util(GtkWidget* widget, ezgl::application* app) {
-    (void)widget;
+void toggle_block_pin_util(GtkWidget* /*widget*/, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     e_draw_block_pin_util new_state = (enum e_draw_block_pin_util)(((int)draw_state->show_blk_pin_util + 1) % ((int)DRAW_PIN_UTIL_MAX));
@@ -591,8 +581,7 @@ void toggle_block_pin_util(GtkWidget* widget, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void toggle_placement_macros(GtkWidget* widget, ezgl::application* app) {
-    (void)widget;
+void toggle_placement_macros(GtkWidget* /*widget*/, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     e_draw_placement_macros new_state = (enum e_draw_placement_macros)(((int)draw_state->show_placement_macros + 1) % ((int)DRAW_PLACEMENT_MACROS_MAX));
@@ -602,8 +591,7 @@ void toggle_placement_macros(GtkWidget* widget, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void toggle_crit_path(GtkWidget* widget, ezgl::application* app) {
-    (void)widget;
+void toggle_crit_path(GtkWidget* /*widget*/, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (draw_state->pic_on_screen == PLACEMENT) {
@@ -643,8 +631,7 @@ void toggle_crit_path(GtkWidget* widget, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void toggle_router_rr_costs(GtkWidget* widget, ezgl::application* app) {
-    (void)widget;
+void toggle_router_rr_costs(GtkWidget* /*widget*/, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     e_draw_router_rr_cost new_state = (enum e_draw_router_rr_cost)(((int)draw_state->show_router_rr_cost + 1)
