@@ -114,9 +114,6 @@ static t_pack_pattern_block* get_atom_pattern_block(const t_pack_molecule* molec
 static bool chain_input_is_reachable(const t_pack_molecule* molecule,
                                      const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules);
 
-static bool check_second_level_chain(const t_pack_molecule* molecule,
-                                     const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules);
-
 static t_pb_graph_node* get_driver_pb_graph_node(const t_pack_molecule* prev_molecule, const AtomBlockId driver_block);
 
 static int get_forced_chain_id(t_pack_molecule* molecule, const t_pack_molecule* prev_molecule, const AtomBlockId driver_block_id);
@@ -1505,60 +1502,6 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id, const t_model_p
     return AtomBlockId::INVALID();
 }
 
-/**
- * This function checks the second level chain either starts at the same position
- * or after the first level. Since the root block of the molecule is the first adder
- * in the first level chain, having a second chain that starts earlier will not allow
- * the driver of it's cin to reach it.
- */
-static bool check_second_level_chain(const t_pack_molecule* molecule,
-                                     const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules) {
-    const auto cout_pin_model = molecule->pack_pattern->chain_exit_pins[0]->port->model_port;
-    const auto root_block = molecule->pack_pattern->root_block;
-    auto connection = root_block->connections;
-    // get the id of the very first atom in the second level of chain
-    AtomBlockId second_root;
-
-    // iterate over all the connections of the root block
-    while (connection) {
-        // if this connection is driven by sumout port of the root block then, the block
-        // connected to this pin is the second root
-        if (connection->from_block == root_block && connection->from_pin->port->model_port != cout_pin_model) {
-            VTR_ASSERT(connection->from_pin->parent_node->pb_type == connection->to_pin->parent_node->pb_type);
-            second_root = molecule->atom_block_ids[connection->to_block->block_id];
-            break;
-        }
-        connection = connection->next;
-    }
-
-    // if there is no atom placed in the position of the second root
-    // then this case will not happen for this molecule
-    if (!second_root) return true;
-
-    // get the driver of this atom
-
-    const auto& chain_root_pins = molecule->pack_pattern->chain_root_pins;
-    // get the model of the cin port of the adder primitive
-    const auto cin_port_model = chain_root_pins[0][0]->port->model_port;
-    // get the pin number of the cin pin within the cin port
-    const auto cin_pin_number = chain_root_pins[0][0]->pin_number;
-    // get the atom block driving the root block of this molecule
-    const auto driver_block = g_vpr_ctx.atom().nlist.find_atom_pin_driver(second_root, cin_port_model, cin_pin_number);
-
-    auto driver_molecule_it = atom_molecules.find(driver_block);
-    // if the driver block is not in molecule yet
-    // then the block is driven by a constant net
-    // which will not cause a problem in routing
-    if (driver_molecule_it == atom_molecules.end())
-        return false;
-
-    auto driver_molecule = driver_molecule_it->second;
-
-    if (driver_molecule->type != MOLECULE_FORCED_PACK)
-        return false;
-
-    return true;
-}
 
 /**
  * This function checks if the cin of the root block is driven by another atom
