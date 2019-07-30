@@ -815,7 +815,7 @@ void hookup_output_pins_from_signal_list(nnode_t *node, int n_start_idx, signal_
 	}
 }
 
-void depth_traverse_count(nnode_t *node, int *count, int traverse_mark_number);
+void depth_traverse_count(nnode_t *node, int *count, short traverse_mark_number);
 /*---------------------------------------------------------------------------------------------
  * (function: count_nodes_in_netlist)
  *-------------------------------------------------------------------------------------------*/
@@ -842,7 +842,7 @@ int count_nodes_in_netlist(netlist_t *netlist)
 /*---------------------------------------------------------------------------------------------
  * (function: depth_first_traverse)
  *-------------------------------------------------------------------------------------------*/
-void depth_traverse_count(nnode_t *node, int *count, int traverse_mark_number)
+void depth_traverse_count(nnode_t *node, int *count, short traverse_mark_number)
 {
 	int i, j;
 	nnode_t *next_node;
