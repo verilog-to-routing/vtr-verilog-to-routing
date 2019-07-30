@@ -440,15 +440,16 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 }
 
 void toggle_window_mode(GtkWidget* widget, ezgl::application* app) {
+    (void)widget;
+    (void)app;
     window_mode = true;
-    widget = widget; // just for hiding warning message
-    app = app;       // just for hiding warning message
 }
 
 void toggle_nets(GtkWidget* widget, ezgl::application* app) {
     /* Enables/disables drawing of nets when a the user clicks on a button.    *
      * Also disables drawing of routing resources.  See graphics.c for details *
      * of how buttons work.                                                    */
+    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
 
     enum e_draw_nets new_state;
@@ -469,7 +470,6 @@ void toggle_nets(GtkWidget* widget, ezgl::application* app) {
     draw_state->show_nets = new_state;
     app->update_message(draw_state->default_message);
     app->refresh_drawing();
-    widget = widget; // just for hiding warning message
 }
 void toggle_rr(GtkWidget* widget, ezgl::application* app) {
     /* Cycles through the options for viewing the routing resources available   *
@@ -478,7 +478,7 @@ void toggle_rr(GtkWidget* widget, ezgl::application* app) {
      * switches to the routing resource view.  Clicking on the toggle cycles    *
      * through the options:  DRAW_NO_RR, DRAW_ALL_RR, DRAW_ALL_BUT_BUFFERS_RR,  *
      * DRAW_NODES_AND_SBOX_RR, and DRAW_NODES_RR.                               */
-
+    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
 
     enum e_draw_rr_toggle new_state = (enum e_draw_rr_toggle)(((int)draw_state->draw_rr_toggle + 1)
@@ -488,11 +488,11 @@ void toggle_rr(GtkWidget* widget, ezgl::application* app) {
 
     app->update_message(draw_state->default_message);
     app->refresh_drawing();
-    widget = widget; // just for hiding warning message
 }
 
 void toggle_congestion(GtkWidget* widget, ezgl::application* app) {
     /* Turns the congestion display on and off.   */
+    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
 
     e_draw_congestion new_state = (enum e_draw_congestion)(((int)draw_state->show_congestion + 1)
@@ -505,11 +505,11 @@ void toggle_congestion(GtkWidget* widget, ezgl::application* app) {
     }
 
     app->refresh_drawing();
-    widget = widget; // just for hiding warning message
 }
 
 void toggle_routing_congestion_cost(GtkWidget* widget, ezgl::application* app) {
     //Turns routing congestion costs on and off
+    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
     e_draw_routing_costs new_state = (enum e_draw_routing_costs)(((int)draw_state->show_routing_costs + 1)
                                                                  % ((int)DRAW_ROUTING_COST_MAX));
@@ -521,10 +521,10 @@ void toggle_routing_congestion_cost(GtkWidget* widget, ezgl::application* app) {
         app->update_message(draw_state->default_message);
     }
     app->refresh_drawing();
-    widget = widget; // just for hiding warning message
 }
 
 void toggle_routing_bounding_box(GtkWidget* widget, ezgl::application* app) {
+    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
 
     auto& route_ctx = g_vpr_ctx.routing();
@@ -543,10 +543,10 @@ void toggle_routing_bounding_box(GtkWidget* widget, ezgl::application* app) {
         app->update_message(draw_state->default_message);
     }
     app->refresh_drawing();
-    widget = widget; // just for hiding warning message
 }
 
 void toggle_routing_util(GtkWidget* widget, ezgl::application* app) {
+    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
 
     e_draw_routing_util new_state = (enum e_draw_routing_util)(((int)draw_state->show_routing_util + 1) % ((int)DRAW_ROUTING_UTIL_MAX));
@@ -556,10 +556,10 @@ void toggle_routing_util(GtkWidget* widget, ezgl::application* app) {
         app->update_message(draw_state->default_message);
     }
     app->refresh_drawing();
-    widget = widget; // just for hiding warning message
 }
 
 void toggle_blk_internal(GtkWidget* widget, ezgl::application* app) {
+    (void)widget;
     t_draw_state* draw_state;
 
     /* Call accessor function to retrieve global variables. */
@@ -574,10 +574,10 @@ void toggle_blk_internal(GtkWidget* widget, ezgl::application* app) {
         draw_state->show_blk_internal = 0;
 
     app->refresh_drawing();
-    widget = widget; // just for hiding warning message
 }
 
 void toggle_block_pin_util(GtkWidget* widget, ezgl::application* app) {
+    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
 
     e_draw_block_pin_util new_state = (enum e_draw_block_pin_util)(((int)draw_state->show_blk_pin_util + 1) % ((int)DRAW_PIN_UTIL_MAX));
@@ -589,10 +589,10 @@ void toggle_block_pin_util(GtkWidget* widget, ezgl::application* app) {
         app->update_message(draw_state->default_message);
     }
     app->refresh_drawing();
-    widget = widget; // just for hiding warning message
 }
 
 void toggle_placement_macros(GtkWidget* widget, ezgl::application* app) {
+    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
 
     e_draw_placement_macros new_state = (enum e_draw_placement_macros)(((int)draw_state->show_placement_macros + 1) % ((int)DRAW_PLACEMENT_MACROS_MAX));
@@ -600,10 +600,10 @@ void toggle_placement_macros(GtkWidget* widget, ezgl::application* app) {
     draw_state->show_placement_macros = new_state;
 
     app->refresh_drawing();
-    widget = widget; // just for hiding warning message
 }
 
 void toggle_crit_path(GtkWidget* widget, ezgl::application* app) {
+    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (draw_state->pic_on_screen == PLACEMENT) {
@@ -641,10 +641,10 @@ void toggle_crit_path(GtkWidget* widget, ezgl::application* app) {
     }
 
     app->refresh_drawing();
-    widget = widget; // just for hiding warning message
 }
 
 void toggle_router_rr_costs(GtkWidget* widget, ezgl::application* app) {
+    (void)widget;
     t_draw_state* draw_state = get_draw_state_vars();
 
     e_draw_router_rr_cost new_state = (enum e_draw_router_rr_cost)(((int)draw_state->show_router_rr_cost + 1)
@@ -655,7 +655,6 @@ void toggle_router_rr_costs(GtkWidget* widget, ezgl::application* app) {
         app->update_message(draw_state->default_message);
     }
     app->refresh_drawing();
-    widget = widget; // just for hiding warning message
 }
 
 void alloc_draw_structs(const t_arch* arch) {
@@ -2439,9 +2438,7 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
      * removed.  Note that even though global nets are not drawn, their  *
      * fanins and fanouts are highlighted when you click on a block      *
      * attached to them.                                                 */
-
-    t_draw_coords* draw_coords = get_draw_coords_vars();
-
+    
     /* Control + mouse click to select multiple nets. */
     if (!(event->state & GDK_CONTROL_MASK))
         deselect_all();
