@@ -9,6 +9,10 @@
 #include "ezgl/application.hpp"
 #include "ezgl/graphics.hpp"
 #include "draw_color.h"
+#include "search_bar.h"
+
+extern ezgl::application::settings settings;
+extern ezgl::application application;
 
 void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> timing_info);
 
@@ -48,7 +52,14 @@ ezgl::color to_ezgl_color(vtr::Color<float> color);
 ezgl::color to_ezgl_color(t_color color);
 ezgl::color to_ezgl_color(color_types color_enum);
 
-//ezgl functions
 void draw_screen();
+
+// search bar related functions
+ezgl::rectangle draw_get_rr_chan_bbox(int inode);
+void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id);
+void highlight_nets(char* message, int hit_node);
+void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
+std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
+void deselect_all();
 
 #endif /* DRAW_H */
