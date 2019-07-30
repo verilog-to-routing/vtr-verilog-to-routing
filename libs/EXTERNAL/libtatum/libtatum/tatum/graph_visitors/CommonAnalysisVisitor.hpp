@@ -73,7 +73,17 @@ class CommonAnalysisVisitor : public GraphVisitor {
 template<class AnalysisOps>
 bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     //Logical Input
-    TATUM_ASSERT_MSG(tg.node_in_edges(node_id).size() == 0, "Logical input has input edges: timing graph not levelized.");
+
+    //We expect this function to only be called on nodes in the first level of the timing graph
+    //These nodes must have no un-disabled input edges (else they shouldn't be in the first level).
+    //In the normal case (primary input) there are no incoming edges. However if set_disable_timing
+    //was used it may be that the edges were explicitly disabled. We therefore verify that there are
+    //no un-disabled edges in the fanin of the current node.
+    TATUM_ASSERT_MSG(tg.node_num_active_in_edges(node_id) == 0, "Logical input has non-disabled input edges: timing graph not levelized.");
+
+    //
+    //We now generate the various clock/data launch tags associated with the arrival time traversal
+    //
 
     NodeType node_type = tg.node_type(node_id);
 

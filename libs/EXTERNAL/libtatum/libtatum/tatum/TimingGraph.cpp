@@ -125,6 +125,15 @@ void find_transitive_fanin_nodes_recurr(const TimingGraph& tg,
                                         size_t max_depth=std::numeric_limits<size_t>::max(), 
                                         size_t depth=0);
 
+size_t TimingGraph::node_num_active_in_edges(const NodeId node) const {
+    size_t active_edges = 0;
+    for (EdgeId edge : node_in_edges(node)) {
+        if (!edge_disabled(edge)) {
+            ++active_edges;
+        }
+    }
+    return active_edges;
+}
 
 EdgeId TimingGraph::node_clock_capture_edge(const NodeId node) const {
 

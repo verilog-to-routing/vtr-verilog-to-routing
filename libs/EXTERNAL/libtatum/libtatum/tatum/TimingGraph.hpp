@@ -92,6 +92,9 @@ class TimingGraph {
         ///\returns A range of all in-coming edges the node drives
         edge_range node_in_edges(const NodeId id) const { return tatum::util::make_range(node_in_edges_[id].begin(), node_in_edges_[id].end()); }
 
+        ///\param id The Node id
+        ///\returns The number of active (undisabled) edges terminating at the node
+        size_t node_num_active_in_edges(const NodeId id) const;
 
         ///\param id The node id
         ///\returns The edge id corresponding to the incoming clock capture edge, or EdgeId::INVALID() if none
