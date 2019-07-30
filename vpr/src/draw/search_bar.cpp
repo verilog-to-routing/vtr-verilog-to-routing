@@ -66,7 +66,7 @@ void search_and_highlight(GtkWidget* widget, ezgl::application* app) {
         int rr_node_id = -1;
         ss >> rr_node_id;
 
-        if (rr_node_id < 0 || int(rr_node_id >= device_ctx.rr_nodes.size())) {
+        if (rr_node_id < 0 || rr_node_id >= int(device_ctx.rr_nodes.size())) {
             // rr node not exist
             app->refresh_drawing();
             return;
