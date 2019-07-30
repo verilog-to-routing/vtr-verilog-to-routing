@@ -517,6 +517,18 @@ class SdcParseCallback : public sdcparse::Callback {
 
                 //Mark the edge in the timing graph as disabled
                 tg_.disable_edge(edge);
+
+                //If we have disabled all incoming edges of the to_tnode we need to mark
+                //it as a constant generator to avoid causing errors during timing analysis
+                //(since the node will appear in the first level of the timing graph but is not
+                //a primary input).
+                if (tg_.node_num_active_in_edges(to_tnode) == 0) {
+                    VTR_LOGF_WARN(fname_.c_str(), lineno_,
+                                  "set_disable_timing caused pin '%s' to have no active incoming edges. It is being marked as a constant generator.\n",
+                                  netlist_.pin_name(to_pin).c_str());
+                    tc_.set_constant_generator(to_tnode);
+                }
+
             }
         }
     }
