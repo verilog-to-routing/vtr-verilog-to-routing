@@ -1,6 +1,29 @@
 <architecture>
   <models/>
 
+  <tiles>
+    <tile name="io" capacity="8">
+      <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+
+      <!-- IOs go on the periphery of the FPGA, for consistency,
+          make it physically equivalent on all sides so that only one definition of I/Os is needed.
+          If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA
+        -->
+      <pinlocations pattern="custom">
+        <loc side="left">io.outpad io.inpad io.clock</loc>
+        <loc side="top">io.outpad io.inpad io.clock</loc>
+        <loc side="right">io.outpad io.inpad io.clock</loc>
+        <loc side="bottom">io.outpad io.inpad io.clock</loc>
+      </pinlocations>
+    </tile>
+    <tile name="clb">
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+
+      <pinlocations pattern="spread"/>
+    </tile>
+  </tiles>
+
   <layout>
     <fixed_layout height="10" width="10" name="test" >
       <perimeter type="io" priority="100">
@@ -42,7 +65,7 @@
   </segmentlist>
 
   <complexblocklist>
-    <pb_type name="io" capacity="8">
+    <pb_type name="io">
       <input name="outpad" num_pins="1"/>
       <output name="inpad" num_pins="1"/>
       <clock name="clock" num_pins="1"/>
@@ -74,21 +97,7 @@
           </direct>
         </interconnect>
       </mode>
-
-      <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-
-      <!-- IOs go on the periphery of the FPGA, for consistency,
-          make it physically equivalent on all sides so that only one definition of I/Os is needed.
-          If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA
-        -->
-      <pinlocations pattern="custom">
-        <loc side="left">io.outpad io.inpad io.clock</loc>
-        <loc side="top">io.outpad io.inpad io.clock</loc>
-        <loc side="right">io.outpad io.inpad io.clock</loc>
-        <loc side="bottom">io.outpad io.inpad io.clock</loc>
-      </pinlocations>
-
+      
       <!-- Place I/Os on the sides of the FPGA -->
       <power method="ignore"/>
     </pb_type>
@@ -257,10 +266,6 @@
         <direct name="clbouts1" input="fle[9:0].out[0:0]" output="clb.O[9:0]"/>
         <direct name="clbouts2" input="fle[9:0].out[1:1]" output="clb.O[19:10]"/>
       </interconnect>
-
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-
-      <pinlocations pattern="spread"/>
     </pb_type>
   </complexblocklist>
   <power>
