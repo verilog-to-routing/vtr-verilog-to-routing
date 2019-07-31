@@ -663,6 +663,17 @@ class Netlist {
     //Returns a range consisting of all pins in the netlist
     pin_range pins() const;
 
+    
+    /*
+     * id Checks
+     */
+    bool valid_block_id(BlockId block_id) const;
+    bool valid_port_id(PortId port_id) const;
+    bool valid_port_bit(PortId port_id, BitIndex port_bit) const;
+    bool valid_pin_id(PinId pin_id) const;
+    bool valid_net_id(NetId net_id) const;
+    
+    
     /*
      * Lookups
      */
@@ -884,11 +895,6 @@ class Netlist {
     bool verify_lookups() const;
 
     //Validates that the specified ID is valid in the current netlist state
-    bool valid_block_id(BlockId block_id) const;
-    bool valid_port_id(PortId port_id) const;
-    bool valid_port_bit(PortId port_id, BitIndex port_bit) const;
-    bool valid_pin_id(PinId pin_id) const;
-    bool valid_net_id(NetId net_id) const;
     bool valid_string_id(StringId string_id) const;
 
   protected: //Protected virtual functions implemented in derived classes

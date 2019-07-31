@@ -48,6 +48,7 @@ extern std::string rr_highlight_message;
 
 void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     // get ID from search bar
     GtkEntry* text_entry = (GtkEntry*)app->get_object("TextInput");
@@ -65,9 +66,11 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     if (search_type == "RR Node ID") {
         int rr_node_id = -1;
         ss >> rr_node_id;
-
+        
+        // valid rr node id check
         if (rr_node_id < 0 || rr_node_id >= int(device_ctx.rr_nodes.size())) {
             // rr node not exist
+//            warning_window("no!");
             app->refresh_drawing();
             return;
         }
@@ -79,7 +82,12 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     else if (search_type == "Block ID") {
         int block_id = -1;
         ss >> block_id;
-
+        // valid block id check
+        if(!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id))) {
+            app->refresh_drawing();
+            return;
+        }
+        
         highlight_blocks((ClusterBlockId)block_id);
     }
 
@@ -93,7 +101,13 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     else if (search_type == "Net ID") {
         int net_id = -1;
         ss >> net_id;
-
+        
+        // valid net id check
+        if(!cluster_ctx.clb_nlist.valid_net_id(ClusterBlockId(net_id))) {
+            app->refresh_drawing();
+            return;
+        }
+        
         highlight_nets((ClusterNetId)net_id);
     }
 
@@ -264,4 +278,28 @@ void highlight_blocks(std::string block_name) {
     if (block_id == ClusterBlockId::INVALID()) return; //name not exist
 
     highlight_blocks(block_id); //found block
+}
+
+void warning_window(const char* message){
+    GObject *main_window;
+    GtkWidget *content_area;
+    GtkWidget *label;
+    GtkWidget *dialog;
+    
+    main_window = application.get_object(application.get_main_window_id().c_str());
+    dialog = gtk_message_dialog_new(GTK_WINDOW(main_window),
+            GTK_DIALOG_DESTROY_WITH_PARENT,
+            GTK_MESSAGE_INFO,
+            GTK_BUTTONS_OK,
+            "Error");
+    content_area = gtk_message_dialog_get_message_area(GTK_MESSAGE_DIALOG(dialog));
+    label = gtk_label_new(message);
+    gtk_container_add(GTK_CONTAINER(content_area), label);
+    gtk_widget_show_all(dialog);
+    
+    g_signal_connect(
+            GTK_DIALOG(dialog),
+            "response",
+            NULL,
+            NULL);
 }
