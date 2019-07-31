@@ -1170,14 +1170,9 @@ ast_node_t *newBlocking(ast_node_t *expression1, ast_node_t *expression2, int li
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number)
 {
-	char *label;
-	ast_node_t *node;
+    char *label = vtr::strdup(expression1->types.identifier);
 
-    label = (char *)vtr::calloc(strlen(expression1->types.identifier)+10,sizeof(char));
-
-	strcpy(label,expression1->types.identifier);
-
-	node = newSymbolNode(label,line_number);
+	ast_node_t *node = newSymbolNode(label,line_number);
 
     expression2->children[1]->children[1]->children[0] = newModuleConnection(NULL,  node, line_number);
 
@@ -1339,15 +1334,10 @@ ast_node_t *newModuleNamedInstance(char* unique_name, ast_node_t *module_connect
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t *module_parameter_list, int line_number)
 {
-    char *unique_name, *aux_name;
-    int char_qntd = 100;
+	std::string buffer("function_instance_");
+	buffer += std::to_string(size_function_instantiations_by_module);
 
-    aux_name = (char *)vtr::calloc(char_qntd,sizeof(char));
-    unique_name = (char *)vtr::calloc(char_qntd,sizeof(char));
-    strcpy(unique_name,"function_instance_");
-    odin_sprintf(aux_name,"%d",size_function_instantiations_by_module);
-    strcat(unique_name,aux_name);
-	vtr::free(aux_name);
+	char *unique_name = vtr::strdup(buffer.c_str());
 
     ast_node_t *symbol_node = newSymbolNode(unique_name, line_number);
 
@@ -1469,6 +1459,8 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
 	function_instantiations_instance_by_module[size_function_instantiations_by_module] = new_node;
 	size_function_instantiations_by_module++;
 
+	vtr::free(function_ref_name);
+
 	return new_node;
 }
 
@@ -1486,9 +1478,7 @@ ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, a
 		symbol_node = newSymbolNode(gate_instance_name, line_number);
 	}
 
-	char *newChar;
-	newChar = (char *)vtr::calloc(strlen(expression1->types.identifier)+10,sizeof(char));
-	strcpy(newChar,expression1->types.identifier);
+	char *newChar = vtr::strdup(expression1->types.identifier);
 	ast_node_t *newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
 	ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar);
 	ast_node_t *newVarMaked = markAndProcessSymbolListWith(MODULE,WIRE, newVarList, false);
@@ -1519,11 +1509,7 @@ ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *
 		symbol_node = newSymbolNode(gate_instance_name, line_number);
 	}
 
-    char *newChar;
-
-    newChar = (char *)vtr::calloc(strlen(expression1->types.identifier)+10,sizeof(char));
-
-    strcpy(newChar,expression1->types.identifier);
+    char *newChar = vtr::strdup(expression1->types.identifier);
 
     ast_node_t *newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
 
@@ -1697,20 +1683,11 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 
 	long i,j;
 	long sc_spot;
-	char *function_name;
-	char *label;
 	ast_node_t *var_node;
 	ast_node_t *symbol_node, *output_node;
 
 
-	function_name = (char *)vtr::calloc(strlen(list_of_ports->children[0]->children[0]->types.identifier)+10,sizeof(char));
-	strcpy(function_name,list_of_ports->children[0]->children[0]->types.identifier);
-
-	label = (char *)vtr::calloc(strlen(list_of_ports->children[0]->children[0]->types.identifier)+10,sizeof(char));
-
-	strcpy(label,list_of_ports->children[0]->children[0]->types.identifier);
-
-	list_of_ports->children[0]->children[0]->types.identifier = label;
+	char *function_name = vtr::strdup(list_of_ports->children[0]->children[0]->types.identifier);
 
 	output_node = newList(VAR_DECLARE_LIST, list_of_ports->children[0]);
 
@@ -1718,9 +1695,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 
 	add_child_to_node_at_index(list_of_module_items, output_node, 0);
 
-	label = (char *)vtr::calloc(strlen(list_of_ports->children[0]->children[0]->types.identifier)+10,sizeof(char));
-
-	strcpy(label,list_of_ports->children[0]->children[0]->types.identifier);
+	char *label = vtr::strdup(list_of_ports->children[0]->children[0]->types.identifier);
 
 	var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
 
@@ -1731,8 +1706,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 		if(list_of_module_items->children[i]->type == VAR_DECLARE_LIST){
 			for(j = 0; j < list_of_module_items->children[i]->num_children; j++) {
 				if(list_of_module_items->children[i]->children[j]->types.variable.is_input){
-                    label = (char *)vtr::calloc(strlen(list_of_module_items->children[i]->children[j]->children[0]->types.identifier)+10,sizeof(char));
-                    strcpy(label,list_of_module_items->children[i]->children[j]->children[0]->types.identifier);
+                    label = vtr::strdup(list_of_module_items->children[i]->children[j]->children[0]->types.identifier);
                     var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
 					newList_entry(list_of_ports,var_node);
 				}
