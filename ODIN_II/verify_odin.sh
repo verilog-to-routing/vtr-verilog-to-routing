@@ -677,17 +677,20 @@ function sim() {
 
 		for arches in $(echo ${_arch_list})
 		do
-			arch_cmd=""
-			if [ -e ${arches} ]
-			then
-				arch_cmd="-a ${arches}"
-			fi
-
 			arch_name=$(basename ${arches%.*})
 
 			TEST_FULL_REF="${bench_name}/${circuit_name}/${arch_name}"
 			DIR="${NEW_RUN_DIR}/${TEST_FULL_REF}"
 			mkdir -p $DIR
+
+			arch_cmd=""
+			if [ -e ${arches} ]
+			then
+				NEW_ARCH="${DIR}/${arch_name}"
+				`python3 vtr_flow/scripts/add_tiles.py --arch_xml ${arches} > ${NEW_ARCH}`
+				arch_cmd="-a ${NEW_ARCH}"
+			fi
+
 
 			###############################
 			# Synthesis
