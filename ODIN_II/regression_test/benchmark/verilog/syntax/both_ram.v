@@ -1,6 +1,6 @@
 // DEFINES
 `define WIDTH 8         // Bit width 
-`define DEPTH 3         // Bit depth
+`define DEPTH 16         // Bit depth
 
 module  pram(
   clock,
