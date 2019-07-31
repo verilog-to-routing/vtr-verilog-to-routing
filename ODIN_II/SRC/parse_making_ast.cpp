@@ -805,8 +805,8 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list, bool is_signed)
 {
 	long i;
-	ast_node_t *range_min = 0;
-	ast_node_t *range_max = 0;
+	ast_node_t *range_min = NULL;
+	ast_node_t *range_max = NULL;
 
 
 	if(symbol_list)
@@ -1291,16 +1291,12 @@ ast_node_t *newModuleConnection(char* id, ast_node_t *expression, int line_numbe
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number)
 {
-	ast_node_t *symbol_node;
+	ast_node_t *symbol_node = NULL;
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(MODULE_PARAMETER, line_number, current_parse_file);
 	if (id != NULL)
 	{
 		symbol_node = newSymbolNode(id, line_number);
-	}
-	else
-	{
-		symbol_node = NULL;
 	}
 
 	/* allocate child nodes to this node */
@@ -1809,7 +1805,7 @@ void next_module()
 ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 {
 	ast_node_t *new_node = NULL;
-	ast_node_t *ref_node;
+	ast_node_t *ref_node = NULL;
 	char *module_instance_name = NULL;
 	long i;
 	int j;
@@ -1821,14 +1817,12 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 			for(i = 0; i < val->num_children - 1; i++)
 			{
 				oassert(val->children[i]->num_children > 0);
-				if(i == 0 && val->num_children > 2)
-					module_instance_name = val->children[i]->children[0]->types.identifier;
-				else if(i == 0 && val->num_children == 2)
-					module_instance_name = val->children[i]->children[0]->types.identifier;
+				if(i == 0 && val->num_children >= 2)
+					module_instance_name = vtr::strdup(val->children[i]->children[0]->types.identifier);
 				else
 				{
 					module_instance_name = strcat(module_instance_name, ".");
-					module_instance_name = strcat(module_instance_name, val->children[i]->children[0]->types.identifier);
+					module_instance_name = strcat(module_instance_name, vtr::strdup(val->children[i]->children[0]->types.identifier));
 				}
 			}
 			new_node = val->children[(val->num_children - 1)];
@@ -1839,6 +1833,9 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 			new_node->children[5]->types.variable.is_parameter = true;
 			new_node->children[5]->shared_node = true;
 			new_node->types.identifier = module_instance_name;
+
+			val->children[(val->num_children - 1)] = NULL;
+			val = free_whole_tree(val);			
 		}
 	}
 	//flag = 0 can't find the instance

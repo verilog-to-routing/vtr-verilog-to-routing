@@ -198,6 +198,7 @@ module_item:
 	| specify_block			{$$ = $1;}
 	| generate_item			{$$ = $1;}
 	| generate				{$$ = $1;}
+	| defparam_declaration	{$$ = $1;}
 	;
 
 list_of_generate_items:
