@@ -3,12 +3,13 @@ Debugging Aids
 
 .. program:: vpr
 
-.. note:: This section is only relevant to developers modifying VPR
+.. note:: This section is most relevant to developers modifying VPR
+
+The ``report_timing.setup.rpt`` file lists details about the critical path of a circuit, and is very useful for determining why your circuit is so fast or so slow.
 
 To access detailed echo files from VPR’s operation, use the command-line option :vpr:option:`--echo_file` ``on``.
 After parsing the netlist and architecture files, VPR dumps out an image of its internal data structures into echo files (typically ending in ``.echo``).
 These files can be examined to be sure that VPR is parsing the input files as you expect.
-The ``critical_path.echo`` file lists details about the critical path of a circuit, and is very useful for determining why your circuit is so fast or so slow.
 
 If the preprocessor flag ``DEBUG`` is defined in ``vpr_types.h``, some additional sanity checks are performed during a run.
 ``DEBUG`` only slows execution by 1 to 2%.
