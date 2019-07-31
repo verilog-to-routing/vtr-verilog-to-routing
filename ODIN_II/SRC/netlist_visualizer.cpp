@@ -34,7 +34,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
-void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_number);
+void depth_first_traverse_visualize(nnode_t *node, FILE *fp, short traverse_mark_number);
 void depth_first_traversal_graph_display(FILE *out, short marker_value, netlist_t *netllist);
 
 void forward_traversal_net_graph_display(FILE *out, short marker_value, nnode_t *node);
@@ -87,7 +87,7 @@ void depth_first_traversal_graph_display(FILE *out, short marker_value, netlist_
 /*---------------------------------------------------------------------------------------------
  * (function: depth_first_traverse)
  *-------------------------------------------------------------------------------------------*/
-void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_number)
+void depth_first_traverse_visualize(nnode_t *node, FILE *fp, short traverse_mark_number)
 {
 	int i, j;
 	nnode_t *next_node;
