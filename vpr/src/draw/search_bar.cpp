@@ -70,7 +70,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         // valid rr node id check
         if (rr_node_id < 0 || rr_node_id >= int(device_ctx.rr_nodes.size())) {
             // rr node not exist
-//            warning_window("no!");
+            warning_window("no!");
             app->refresh_drawing();
             return;
         }
@@ -103,7 +103,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         ss >> net_id;
         
         // valid net id check
-        if(!cluster_ctx.clb_nlist.valid_net_id(ClusterBlockId(net_id))) {
+        if(!cluster_ctx.clb_nlist.valid_net_id(ClusterNetId(net_id))) {
             app->refresh_drawing();
             return;
         }
