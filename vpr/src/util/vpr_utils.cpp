@@ -221,9 +221,9 @@ void sync_grid_to_blocks() {
         if (logic_type != physical_type) {
             if (!try_sync_equivalent_tiles(blk_id, logic_type, physical_type)) {
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n",
-                          blk_x, blk_y,
-                          cluster_ctx.clb_nlist.block_type(blk_id)->name,
-                          device_ctx.grid[blk_x][blk_y].type->name);
+                                blk_x, blk_y,
+                                cluster_ctx.clb_nlist.block_type(blk_id)->name,
+                                device_ctx.grid[blk_x][blk_y].type->name);
             }
         }
 

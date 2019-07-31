@@ -3282,20 +3282,20 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
 
         if (no_free_locations) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, __FILE__, __LINE__,
-                      "Initial placement failed.\n"
-                      "Could not place macro length %d with head block %s (#%zu); not enough free locations.\n"
-                      "VPR cannot auto-size for your circuit, please resize the FPGA manually.\n",
-                      pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id));
+                            "Initial placement failed.\n"
+                            "Could not place macro length %d with head block %s (#%zu); not enough free locations.\n"
+                            "VPR cannot auto-size for your circuit, please resize the FPGA manually.\n",
+                            pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id));
         }
 
         // If macro could not be placed even after exhaustive placement, error out
         if (macro_placed == false) {
             // Error out
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, __FILE__, __LINE__,
-                      "Initial placement failed.\n"
-                      "Could not place macro length %d with head block %s (#%zu); not enough free locations.\n"
-                      "Please manually size the FPGA because VPR can't do this yet.\n",
-                      pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id));
+                            "Initial placement failed.\n"
+                            "Could not place macro length %d with head block %s (#%zu); not enough free locations.\n"
+                            "Please manually size the FPGA because VPR can't do this yet.\n",
+                            pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id));
         } else {
             // This macro has been placed successfully, proceed to place the next macro
             continue;
@@ -3363,9 +3363,9 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
             // Check if there were no available locations
             if (no_free_locations) {
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE, __FILE__, __LINE__,
-                          "Initial placement failed.\n"
-                          "Could not place block %s (#%zu); no free locations\n",
-                          cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id));
+                                "Initial placement failed.\n"
+                                "Could not place block %s (#%zu); no free locations\n",
+                                cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id));
             }
         }
     }
