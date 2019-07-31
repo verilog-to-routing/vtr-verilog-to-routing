@@ -113,18 +113,15 @@ int simplify_ast_module(ast_node_t **ast_module, STRING_CACHE_LIST *local_string
 	/* resolve constant expressions */
 	bool is_module = (*ast_module)->type == MODULE ? true : false;
 	*ast_module = reduce_expressions(*ast_module, NULL, local_string_cache_list, NULL, 0, is_module);
-	//unroll_loops(ast_module, local_string_cache_list);
 	update_string_caches(local_string_cache_list);
 
 	return 1;
 }
 
-// this should replace ^^
 ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACHE_LIST *local_string_cache_list, long *max_size, long assignment_size, bool is_generate_region)
 {
 	short *child_skip_list = NULL; // list of children not to traverse into
 	short skip_children = false; // skips the DFS completely if true
-	ast_node_t **replaced_module_instances = NULL;
 
 	if (node)
 	{
@@ -257,11 +254,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACH
 					}
 				}
 				
-				// unroll loops
-				ast_node_t **instances_to_remove = NULL;
-				int num_instances_to_remove = 0;
-				unroll_for_loop(node, parent, local_string_cache_list, &instances_to_remove, &num_instances_to_remove);
-
+				node = unroll_for_loop(node, parent, local_string_cache_list);
 				break;
 			}
 			case WHILE:
@@ -381,11 +374,116 @@ ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACH
 			case NUMBERS:
 				break;
 			case IF_Q:
-				break;
 			case IF:
+			{
+				ast_node_t *to_return = NULL;
+
+				node->children[0] = reduce_expressions(node->children[0], node, local_string_cache_list, NULL, 0, is_generate_region);
+				ast_node_t *child_condition = node->children[0];
+				if(node_is_constant(child_condition))
+				{
+					VNumber condition = *(child_condition->types.vnumber);
+
+					if(V_TRUE(condition))
+					{
+						to_return = node->children[1];
+						node->children[1] = NULL;
+					}
+					else if(V_FALSE(condition))
+					{
+						to_return = node->children[2];
+						node->children[2] = NULL;
+					}
+					else if (node->type == IF && is_generate_region)
+					{
+						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+							"%s","Could not resolve conditional generate construct");
+					}
+					// otherwise we keep it as is to build the circuitry
+				}
+				else if (node->type == IF && is_generate_region)
+				{
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Could not resolve conditional generate construct");
+				}
+
+				if (to_return)
+				{
+					free_whole_tree(node);
+					node = to_return;
+				}
 				break;
+			}
+			
 			case CASE:
+			{
+				ast_node_t *to_return = NULL;
+
+				node->children[0] = reduce_expressions(node->children[0], node, local_string_cache_list, NULL, 0, is_generate_region);
+				ast_node_t *child_condition = node->children[0];
+				if(node_is_constant(child_condition))
+				{
+					ast_node_t *case_list = node->children[1];
+					for (int i = 0; i < case_list->num_children; i++)
+					{
+						ast_node_t *item = case_list->children[i];
+						if (i == case_list->num_children - 1 && item->type == CASE_DEFAULT)
+						{
+							to_return = item->children[0];
+							item->children[0] = NULL;
+						}
+						else
+						{
+							if (item->type != CASE_ITEM)
+							{
+								error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+									"%s","Default case must only be the last case");
+							}
+
+							item->children[0] = reduce_expressions(item->children[0], item, local_string_cache_list, NULL, 0, is_generate_region);
+							if (node_is_constant(item->children[0]))
+							{
+								VNumber eval = V_CASE_EQUAL(*(child_condition->types.vnumber), *(item->children[0]->types.vnumber));
+								if (V_TRUE(eval))
+								{
+									to_return = item->children[1];
+									item->children[1] = NULL;
+									break;
+								}
+							}
+							else if (is_generate_region)
+							{
+								error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+									"%s","Could not resolve conditional generate construct");
+							}
+							else
+							{
+								/* encountered non-constant item - don't continue searching */
+								break;
+							}
+						}
+					}
+
+					if (to_return)
+					{
+						free_whole_tree(node);
+						node = to_return;
+					}
+					else if (is_generate_region)
+					{
+						/* no case */
+						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+							"%s","Could not resolve conditional generate construct");
+					}
+				}
+				else if (is_generate_region)
+				{
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Could not resolve conditional generate construct");
+				}
+
 				break;
+			}
 			case RANGE_REF:
 			case ARRAY_REF:
 				break;
@@ -413,14 +511,33 @@ ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACH
 			/* traverse all the children */
 			while (done == false)
 			{
+				int num_original_children = node->num_children;
 				if (child_skip_list[i] == false)
 				{
 					/* recurse */
-					node->children[i] = reduce_expressions(node->children[i], node, local_string_cache_list, max_size, assignment_size, is_generate_region);
+					ast_node_t *old_child = node->children[i];
+					ast_node_t *new_child = reduce_expressions(old_child, node, local_string_cache_list, max_size, assignment_size, is_generate_region);
+					node->children[i] = new_child;
+
+					if (old_child != new_child)
+					{
+						/* recurse on this child again in case it can be further reduced 
+							(e.g. resolved generate constructs) */
+						i--;
+					}
 				}
 
-				i++;
-				if (i == node->num_children)
+				if (num_original_children != node->num_children)
+				{
+					child_skip_list = (short *)vtr::realloc(child_skip_list, sizeof(short)*node->num_children);
+					for (int j = num_original_children; j < node->num_children; j++)
+					{
+						child_skip_list[j] = false;
+					}
+				}
+
+				i++;				
+				if (i >= node->num_children)
 				{
 					done = true;
 				}
@@ -430,6 +547,44 @@ ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACH
 		/* post-amble */
 		switch (node->type)
 		{
+			case MODULE_INSTANCE:
+			{
+				/* this should be encountered once generate constructs are resolved, so we don't have
+					stray instances that never get instantiated */
+
+				/* TODO: handle hard block instantiation here! */
+
+				if (node->num_children == 2)
+				{
+					char *instance_name_prefix = local_string_cache_list->instance_name_prefix;
+
+					long sc_spot = sc_lookup_string(module_names_to_idx, instance_name_prefix);
+					ast_node_t *module = (ast_node_t *)module_names_to_idx->data[sc_spot];
+
+					int num_instances = module->types.module.size_module_instantiations;
+					char *new_instance_name = node->children[1]->children[0]->types.identifier;
+					bool found = false;
+					for (int i = 0; i < num_instances; i++)
+					{
+						ast_node_t *temp_instance_node = module->types.module.module_instantiations_instance[i];
+						char *temp_instance_name = temp_instance_node->children[1]->children[0]->types.identifier;
+						if (strcmp(new_instance_name, temp_instance_name) == 0)
+						{
+							found = true;
+						}
+					}
+
+					if (found) 
+					{
+						break;
+					}
+
+					module->types.module.module_instantiations_instance = (ast_node_t **)vtr::realloc(module->types.module.module_instantiations_instance, sizeof(ast_node_t*)*(num_instances+1));
+					module->types.module.module_instantiations_instance[num_instances] = node;
+					module->types.module.size_module_instantiations++;
+				}
+				break;
+			}
 			case VAR_DECLARE:
 			{
 				// pack 2d array into 1d
@@ -639,110 +794,6 @@ ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACH
 
 				break;
 			}
-			case IF_Q:
-			case IF:
-			{
-				ast_node_t *child_condition = node->children[0];
-				ast_node_t *to_return = NULL;
-				if(node_is_constant(child_condition))
-				{
-					VNumber condition = *(child_condition->types.vnumber);
-
-					if(V_TRUE(condition))
-					{
-						to_return = node->children[1];
-						node->children[1] = NULL;
-					}
-					else if(V_FALSE(condition))
-					{
-						to_return = node->children[2];
-						node->children[2] = NULL;
-					}
-					else if (node->type == IF && is_generate_region)
-					{
-						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-							"%s","Could not resolve conditional generate construct");
-					}
-					// otherwise we keep it as is to build the circuitry
-				}
-				else if (node->type == IF && is_generate_region)
-				{
-					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-						"%s","Could not resolve conditional generate construct");
-				}
-
-				if (to_return)
-				{
-					free_whole_tree(node);
-					node = to_return;
-				}
-				break;
-			}
-			case CASE:
-			{
-				ast_node_t *child_condition = node->children[0];
-				ast_node_t *to_return = NULL;
-				if(node_is_constant(child_condition))
-				{
-					ast_node_t *case_list = node->children[1];
-					for (int i = 0; i < case_list->num_children; i++)
-					{
-						ast_node_t *item = case_list->children[i];
-						if (i == case_list->num_children - 1 && item->type == CASE_DEFAULT)
-						{
-							to_return = item->children[0];
-							item->children[0] = NULL;
-						}
-						else
-						{
-							if (item->type != CASE_ITEM)
-							{
-								error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-									"%s","Default case must only be the last case");
-							}
-
-							if (node_is_constant(item->children[0]))
-							{
-								VNumber eval = V_CASE_EQUAL(*(child_condition->types.vnumber), *(item->children[0]->types.vnumber));
-								if (V_TRUE(eval))
-								{
-									to_return = item->children[1];
-									item->children[1] = NULL;
-									break;
-								}
-							}
-							else if (is_generate_region)
-							{
-								error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-									"%s","Could not resolve conditional generate construct");
-							}
-							else
-							{
-								/* encountered non-constant item - don't continue searching */
-								break;
-							}
-						}
-					}
-
-					if (to_return)
-					{
-						free_whole_tree(node);
-						node = to_return;
-					}
-					else if (is_generate_region)
-					{
-						/* no case */
-						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-							"%s","Could not resolve conditional generate construct");
-					}
-				}
-				else if (is_generate_region)
-				{
-					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-						"%s","Could not resolve conditional generate construct");
-				} 
-				break;
-			}
 			case RANGE_REF:
 			{
 				bool is_constant_ref = node_is_constant(node->children[1]);
@@ -755,6 +806,15 @@ ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACH
 				if (is_constant_ref)
 				{
 					is_constant_ref = is_constant_ref && !(node->children[2]->types.vnumber->is_dont_care_string());
+				}
+
+				if (!is_constant_ref)
+				{
+					/* note: indexed part-selects (-: and +:) should support non-constant base expressions, 
+							 e.g. my_var[some_input+:3] = 4'b0101, but we don't support it right now... */
+
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+							"%s","Part-selects can only contain constant expressions");
 				}
 
 				break;
@@ -787,9 +847,6 @@ ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACH
 				if (node->num_children == 3) convert_2D_to_1D_array_ref(&node, local_string_cache_list);
 				break;
 			}
-			case MODULE_INSTANCE:
-				// flip hard blocks
-				break;
 			case ALWAYS: // fallthrough
 			case INITIALS:
 			{

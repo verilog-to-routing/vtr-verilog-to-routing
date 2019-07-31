@@ -496,7 +496,7 @@ statement:
 	| non_blocking_assignment ';'								{$$ = $1;}
 	| conditional_statement										{$$ = $1;}
 	| case_statement											{$$ = $1;}
-	| loop_statement											{$$ = $1;}
+	| loop_statement											{$$ = newList(BLOCK, $1);}
 	| ';'														{$$ = NULL;}
 	;
 
