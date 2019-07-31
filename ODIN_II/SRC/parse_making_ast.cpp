@@ -1443,8 +1443,6 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
 	function_instantiations_instance_by_module[size_function_instantiations_by_module] = new_node;
 	size_function_instantiations_by_module++;
 
-	vtr::free(function_ref_name);
-
 	return new_node;
 }
 
@@ -1817,6 +1815,7 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 			new_node->children[5]->types.variable.is_parameter = true;
 			new_node->children[5]->shared_node = true;
 			new_node->types.identifier = module_instance_name;
+			new_node->line_number = line_number;
 
 			val->children[(val->num_children - 1)] = NULL;
 			val = free_whole_tree(val);			
