@@ -69,8 +69,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         
         // valid rr node id check
         if (rr_node_id < 0 || rr_node_id >= int(device_ctx.rr_nodes.size())) {
-            // rr node not exist
-            warning_window("no!");
+            warning_window("Invalid RR Node ID");
             app->refresh_drawing();
             return;
         }
@@ -84,6 +83,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         ss >> block_id;
         // valid block id check
         if(!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id))) {
+            warning_window("Invalid Block ID");
             app->refresh_drawing();
             return;
         }
@@ -104,6 +104,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         
         // valid net id check
         if(!cluster_ctx.clb_nlist.valid_net_id(ClusterNetId(net_id))) {
+            warning_window("Invalid Net ID");
             app->refresh_drawing();
             return;
         }
@@ -264,8 +265,11 @@ void highlight_nets(std::string net_name) {
     ClusterNetId net_id = ClusterNetId::INVALID();
     net_id = cluster_ctx.clb_nlist.find_net(net_name);
 
-    if (net_id == ClusterNetId::INVALID()) return; //name not exist
-
+    if (net_id == ClusterNetId::INVALID()) {
+         warning_window("Invalid Net Name");
+        return; //name not exist
+    }
+    
     highlight_nets(net_id); //found net
 }
 
@@ -275,7 +279,10 @@ void highlight_blocks(std::string block_name) {
     ClusterBlockId block_id = ClusterBlockId::INVALID();
     block_id = cluster_ctx.clb_nlist.find_block(block_name);
 
-    if (block_id == ClusterBlockId::INVALID()) return; //name not exist
+    if (block_id == ClusterBlockId::INVALID()){
+        warning_window("Invalid Block Name");
+        return; //name not exist
+    }
 
     highlight_blocks(block_id); //found block
 }
