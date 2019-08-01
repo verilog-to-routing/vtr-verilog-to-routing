@@ -663,7 +663,6 @@ class Netlist {
     //Returns a range consisting of all pins in the netlist
     pin_range pins() const;
 
-    
     /*
      * ID Checks
      * 
@@ -674,8 +673,7 @@ class Netlist {
     bool valid_port_bit(PortId port_id, BitIndex port_bit) const;
     bool valid_pin_id(PinId pin_id) const;
     bool valid_net_id(NetId net_id) const;
-    
-    
+
     /*
      * Lookups
      */

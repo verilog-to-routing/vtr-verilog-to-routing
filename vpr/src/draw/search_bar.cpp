@@ -66,7 +66,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     if (search_type == "RR Node ID") {
         int rr_node_id = -1;
         ss >> rr_node_id;
-        
+
         // valid rr node id check
         if (rr_node_id < 0 || rr_node_id >= int(device_ctx.rr_nodes.size())) {
             warning_dialog_box("Invalid RR Node ID");
@@ -81,14 +81,14 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     else if (search_type == "Block ID") {
         int block_id = -1;
         ss >> block_id;
-        
+
         // valid block id check
-        if(!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id))) {
+        if (!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id))) {
             warning_dialog_box("Invalid Block ID");
             app->refresh_drawing();
             return;
         }
-        
+
         highlight_blocks((ClusterBlockId)block_id);
     }
 
@@ -102,14 +102,14 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     else if (search_type == "Net ID") {
         int net_id = -1;
         ss >> net_id;
-        
+
         // valid net id check
-        if(!cluster_ctx.clb_nlist.valid_net_id(ClusterNetId(net_id))) {
+        if (!cluster_ctx.clb_nlist.valid_net_id(ClusterNetId(net_id))) {
             warning_dialog_box("Invalid Net ID");
             app->refresh_drawing();
             return;
         }
-        
+
         highlight_nets((ClusterNetId)net_id);
     }
 
@@ -267,10 +267,10 @@ void highlight_nets(std::string net_name) {
     net_id = cluster_ctx.clb_nlist.find_net(net_name);
 
     if (net_id == ClusterNetId::INVALID()) {
-         warning_dialog_box("Invalid Net Name");
+        warning_dialog_box("Invalid Net Name");
         return; //name not exist
     }
-    
+
     highlight_nets(net_id); //found net
 }
 
@@ -280,7 +280,7 @@ void highlight_blocks(std::string block_name) {
     ClusterBlockId block_id = ClusterBlockId::INVALID();
     block_id = cluster_ctx.clb_nlist.find_block(block_name);
 
-    if (block_id == ClusterBlockId::INVALID()){
+    if (block_id == ClusterBlockId::INVALID()) {
         warning_dialog_box("Invalid Block Name");
         return; //name not exist
     }
@@ -288,30 +288,30 @@ void highlight_blocks(std::string block_name) {
     highlight_blocks(block_id); //found block
 }
 
-void warning_dialog_box(const char* message){
-    GObject *main_window; // parent window over which to add the dialog
-    GtkWidget *content_area; // content area of the dialog
-    GtkWidget *label; // label to display a message
-    GtkWidget *dialog;
+void warning_dialog_box(const char* message) {
+    GObject* main_window;    // parent window over which to add the dialog
+    GtkWidget* content_area; // content area of the dialog
+    GtkWidget* label;        // label to display a message
+    GtkWidget* dialog;
     // get a pointer to the main window
     main_window = application.get_object(application.get_main_window_id().c_str());
     // create a dialog window modal with no button
     dialog = gtk_message_dialog_new(GTK_WINDOW(main_window),
-            GTK_DIALOG_DESTROY_WITH_PARENT,
-            GTK_MESSAGE_INFO,
-            GTK_BUTTONS_NONE,
-            "Error");
+                                    GTK_DIALOG_DESTROY_WITH_PARENT,
+                                    GTK_MESSAGE_INFO,
+                                    GTK_BUTTONS_NONE,
+                                    "Error");
     // create a label and attach it to content area of the dialog
     content_area = gtk_message_dialog_get_message_area(GTK_MESSAGE_DIALOG(dialog));
     label = gtk_label_new(message);
     gtk_container_add(GTK_CONTAINER(content_area), label);
     // show the label & child widget of the dialog
     gtk_widget_show_all(dialog);
-    
+
     g_signal_connect_swapped(dialog,
-            "response",
-            G_CALLBACK(gtk_widget_destroy),
-            dialog);
-    
+                             "response",
+                             G_CALLBACK(gtk_widget_destroy),
+                             dialog);
+
     return;
 }

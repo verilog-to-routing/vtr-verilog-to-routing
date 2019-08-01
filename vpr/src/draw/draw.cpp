@@ -1961,7 +1961,7 @@ static void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer& g) {
 static void draw_routed_net(ClusterNetId net_id, ezgl::renderer& g) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    
+
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Don't draw. */
@@ -1969,7 +1969,7 @@ static void draw_routed_net(ClusterNetId net_id, ezgl::renderer& g) {
 
     if (route_ctx.trace[net_id].head == nullptr) /* No routing.  Skip.  (Allows me to draw */
         return;                                  /* partially complete routes).            */
-    
+
     t_trace* tptr = route_ctx.trace[net_id].head; /* SOURCE to start */
     int inode = tptr->index;
 
