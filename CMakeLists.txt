@@ -35,7 +35,7 @@ option(ODIN_DEBUG "Enable building oding with extra debug flags" OFF)
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 0)
 set(VTR_VERSION_PATCH 0)
-set(VTR_VERSION_PRERELEASE "rc1")
+set(VTR_VERSION_PRERELEASE "rc2")
 
 include(FilesToDirs)
 
