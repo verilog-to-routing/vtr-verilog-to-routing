@@ -196,7 +196,6 @@ void alloc_routing_structs(t_chan_width chan_width,
                     router_opts.trim_empty_channels,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
-                    router_opts.lookahead_type,
                     directs, num_directs,
                     &warnings);
 
