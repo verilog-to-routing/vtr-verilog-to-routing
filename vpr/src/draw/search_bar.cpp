@@ -308,5 +308,10 @@ void warning_dialog_box(const char* message){
     // show the label & child widget of the dialog
     gtk_widget_show_all(dialog);
     
+    g_signal_connect_swapped(dialog,
+            "response",
+            G_CALLBACK(gtk_widget_destroy),
+            dialog);
+    
     return;
 }
