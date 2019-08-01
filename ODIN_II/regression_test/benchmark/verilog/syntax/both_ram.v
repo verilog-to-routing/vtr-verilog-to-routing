@@ -60,7 +60,7 @@ dual_port_ram inst2(
   .addr2(address2)
 );
 
-single_port_ram inst1(
+single_port_ram inst3(
   .we(wren1),
   .clk(clock),
   .data(value_in),
