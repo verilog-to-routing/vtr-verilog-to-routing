@@ -33,8 +33,8 @@ include(GlibCompileResourcesSupport)
 
 #Collect the source files
 file(GLOB_RECURSE EXEC_SOURCES src/main.cpp)
-file(GLOB_RECURSE LIB_SOURCES src/*/*.cpp)
-file(GLOB_RECURSE LIB_HEADERS src/*/*.h)
+file(GLOB_RECURSE LIB_SOURCES src/*/*.cpp src/*/*/*.cpp)
+file(GLOB_RECURSE LIB_HEADERS src/*/*.h src/*/*/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
 #Create the library
