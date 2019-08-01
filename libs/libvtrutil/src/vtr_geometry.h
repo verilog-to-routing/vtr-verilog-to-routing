@@ -52,6 +52,13 @@ class Point {
     friend bool operator== <>(Point<T> lhs, Point<T> rhs);
     friend bool operator!= <>(Point<T> lhs, Point<T> rhs);
     friend bool operator< <>(Point<T> lhs, Point<T> rhs);
+  public: //Mutators
+    /* Set x and y values */
+    void set(T x_val, T y_val);
+    void set_x(T x_val);
+    void set_y(T y_val);
+    /* Swap x and y values */
+    void swap();
 
   private:
     T x_;
@@ -64,6 +71,7 @@ class Rect {
   public: //Constructors
     Rect(T left_val, T bottom_val, T right_val, T top_val);
     Rect(Point<T> bottom_left_val, Point<T> top_right_val);
+    Rect();
 
   public: //Accessors
     //Co-ordinates
