@@ -1,5 +1,4 @@
-# require at least CMake version 3.0.2
-cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.9 FATAL_ERROR)
 
 # create the project
 project(
@@ -20,6 +19,12 @@ endif()
 # we also rely on glib to compile the GTK resource files
 # a set of macros has been developed by Makman2 on GitHub to help with this
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gcr-cmake/macros)
+
+#Is ezgl the root cmake project?
+set(IS_ROOT_PROJECT TRUE)
+if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+    set(IS_ROOT_PROJECT FALSE)
+endif()
 
 # include the configuration/compile time options for this library
 include(options.cmake)
@@ -47,6 +52,13 @@ add_library(
 target_include_directories(
   ${PROJECT_NAME}
   PUBLIC include
+)
+
+#Treat GTK/X11 headers as system headers so they
+#do not generate compilation warnings
+target_include_directories(
+  ${PROJECT_NAME}
+  SYSTEM
   PUBLIC ${GTK3_INCLUDE_DIRS}
   PUBLIC ${X11_INCLUDE_DIRS}
 )
