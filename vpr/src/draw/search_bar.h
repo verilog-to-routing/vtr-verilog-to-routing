@@ -17,6 +17,8 @@ void highlight_blocks(ClusterBlockId clb_index);
 void highlight_nets(ClusterNetId net_id);
 void highlight_nets(std::string net_name);
 void highlight_blocks(std::string block_name);
-void warning_window(const char* message);
+
+/*function below pops up a dialog box with no button, showing the input warning message*/
+void warning_dialog_box(const char* message);
 
 #endif /* SEARCH_BAR_H */
