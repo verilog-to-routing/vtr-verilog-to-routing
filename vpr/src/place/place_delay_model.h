@@ -32,7 +32,7 @@ class PlaceDelayModel {
     // May be unimplemented, in which case method should throw an exception.
     virtual void write(const std::string& file) const = 0;
 
-    // Read place delay model to specified file.
+    // Read place delay model from specified file.
     // May be unimplemented, in which case method should throw an exception.
     virtual void read(const std::string& file) = 0;
 };

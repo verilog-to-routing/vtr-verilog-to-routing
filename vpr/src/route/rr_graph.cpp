@@ -1392,6 +1392,8 @@ void free_rr_graph() {
     device_ctx.rr_node_metadata.clear();
 
     device_ctx.rr_edge_metadata.clear();
+
+    invalidate_router_lookahead_cache();
 }
 
 static void build_rr_sinks_sources(const int i,
