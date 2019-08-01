@@ -382,6 +382,8 @@ ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node
 		ast_node_t* child = copy->children[i];
 		if (child) 
 		{
+			bool is_unrolled = false;
+
 			if(child->type == IDENTIFIERS)
 			{
 				if(!strcmp(child->types.identifier, pre->children[0]->types.identifier))
@@ -401,15 +403,13 @@ ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node
 				ast_node_t *named_instance = child->children[1];
 				copy->children[i]->children[1] = dup_and_fill_body(ast_module, named_instance, pre, value, error_code);
 				free_whole_tree(named_instance);
+
+				is_unrolled = true;
 			} 
 
 			if(child && child->num_children > 0)
 			{
-				if (child->type == MODULE_INSTANCE && child->children[0]->type != MODULE_INSTANCE)
-				{
-					/* already unrolled; do nothing */
-				}
-				else
+				if (!is_unrolled)
 				{
 					for (int j = 0; j < copy->children[i]->num_children; j++)
 					{
