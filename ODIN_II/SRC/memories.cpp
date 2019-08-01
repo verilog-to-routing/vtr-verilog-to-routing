@@ -149,7 +149,10 @@ void remap_input_port_to_memory(nnode_t *node, signal_list_t *signals, const cha
 	for (i = 0; i < signals->count; i++, j++)
 	{
 		npin_t *pin = signals->pins[i];
-		pin->mapping = vtr::strdup(port_name);
+		if(strcmp(pin->mapping, port_name))
+		{
+			pin->mapping = vtr::strdup(port_name);
+		}
 		remap_pin_to_new_node(pin, node, j);
 	}
 }
@@ -185,6 +188,10 @@ void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, const ch
 		npin_t *pin = signalsvar->pins[i];
 		//if (pin->node && pin->node->input_pins && pin->node->input_pins[pin->pin_node_idx])
 		//	pin->node->input_pins[pin->pin_node_idx] = NULL;
+		if(pin->mapping)
+		{
+			vtr::free(pin->mapping);
+		}
 		pin->mapping = vtr::strdup(port_name);
 		//if (pin->node)
 		//	remap_pin_to_new_node(pin, node, j);
@@ -220,7 +227,10 @@ void remap_output_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char 
 	for (i = 0; i < signalsvar->count; i++, j++)
 	{
 		npin_t *pin = signalsvar->pins[i];
-		pin->mapping = vtr::strdup(port_name);
+		if(strcmp(pin->mapping, port_name))
+		{
+			pin->mapping = vtr::strdup(port_name);
+		}
 		remap_pin_to_new_node(pin, node, j);
 	}
 }
@@ -254,6 +264,10 @@ void add_output_port_to_memory(nnode_t *node, signal_list_t *signals, const char
 	for (i = 0; i < signals->count; i++, j++)
 	{
 		npin_t *pin = signals->pins[i];
+		if(pin->mapping)
+		{
+			vtr::free(pin->mapping);
+		}
 		pin->mapping = vtr::strdup(port_name);
 		add_output_pin_to_node(node, pin, j);
 	}
@@ -447,9 +461,17 @@ void split_sp_memory_depth(nnode_t *node, int split_size)
 		remap_pin_to_new_node(pin, mux, 0);
 
 		connect_nodes(new_mem_node1, i, mux, 2);
+		if(new_mem_node1->output_pins[i]->mapping)
+		{
+			vtr::free(new_mem_node1->output_pins[i]->mapping);
+		}
 		new_mem_node1->output_pins[i]->mapping = vtr::strdup("out");
 
 		connect_nodes(new_mem_node2, i, mux, 3);
+		if(new_mem_node2->output_pins[i]->mapping)
+		{
+			vtr::free(new_mem_node2->output_pins[i]->mapping);
+		}
 		new_mem_node2->output_pins[i]->mapping = vtr::strdup("out");
 	}
 
@@ -586,15 +608,31 @@ void split_dp_memory_depth(nnode_t *node, int split_size)
 		connect_nodes(not_g, 0, mux, 1);
 
 		npin_t *pin = signals->out1->pins[i];
+		if(pin->name)
+		{
+			vtr::free(pin->name);
+		}
 		pin->name = mux->name;
+		if(pin->mapping)
+		{
+			vtr::free(pin->mapping);
+		}
 		pin->mapping = NULL;
 
 		remap_pin_to_new_node(pin, mux, 0);
 
 		connect_nodes(new_mem_node1, i, mux, 2);
+		if(new_mem_node1->output_pins[i]->mapping)
+		{
+			vtr::free(new_mem_node1->output_pins[i]->mapping);
+		}
 		new_mem_node1->output_pins[i]->mapping = vtr::strdup("out1");
 
 		connect_nodes(new_mem_node2, i, mux, 3);
+		if(new_mem_node2->output_pins[i]->mapping)
+		{
+			vtr::free(new_mem_node2->output_pins[i]->mapping);
+		}
 		new_mem_node2->output_pins[i]->mapping = vtr::strdup("out1");
 	}
 
@@ -610,15 +648,31 @@ void split_dp_memory_depth(nnode_t *node, int split_size)
 		int pin_index = new_mem_node1->output_port_sizes[0] + i;
 
 		npin_t *pin = signals->out2->pins[i];
+		if(pin->name)
+		{
+			vtr::free(pin->name);
+		}
 		pin->name = mux->name;
+		if(pin->mapping)
+		{
+			vtr::free(pin->mapping);
+		}
 		pin->mapping = NULL;
 
 		remap_pin_to_new_node(pin, mux, 0);
 
 		connect_nodes(new_mem_node1, pin_index, mux, 2);
+		if(new_mem_node1->output_pins[pin_index]->mapping)
+		{
+			vtr::free(new_mem_node1->output_pins[pin_index]->mapping);
+		}
 		new_mem_node1->output_pins[pin_index]->mapping = vtr::strdup("out2");
 
 		connect_nodes(new_mem_node2, pin_index, mux, 3);
+		if(new_mem_node2->output_pins[pin_index]->mapping)
+		{
+			vtr::free(new_mem_node2->output_pins[pin_index]->mapping);
+		}
 		new_mem_node2->output_pins[pin_index]->mapping = vtr::strdup("out2");
 	}
 
@@ -1271,6 +1325,10 @@ void pad_memory_input_port(nnode_t *node, netlist_t *netlist, t_model *model, co
 		for (i = port_index + port_size; i < port_index + target_size; i++)
 		{
 			add_input_pin_to_node(node, get_pad_pin(netlist), i);
+			if(node->input_pins[i]->mapping)
+			{
+				vtr::free(node->input_pins[i]->mapping);
+			}
 			node->input_pins[i]->mapping = vtr::strdup(port_name);
 		}
 

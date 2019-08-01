@@ -240,19 +240,32 @@ npin_t* free_npin(npin_t* to_free) {
 }
 
 /*-------------------------------------------------------------------------
+ * (function: copy_npin)
+ * 	Copies a pin
+ *  Should only be called by the parent functions,
+ *  copy_input_npin & copy_output_npin
+ *-----------------------------------------------------------------------*/
+static npin_t *copy_npin(npin_t *copy_pin)
+{
+	npin_t *new_pin = allocate_npin();
+	new_pin->name = copy_pin->name ? vtr::strdup(copy_pin->name) : NULL;
+	new_pin->type = copy_pin->type;
+	new_pin->mapping = copy_pin->mapping ? vtr::strdup(copy_pin->mapping) : NULL;
+	new_pin->is_default = copy_pin->is_default;
+
+	return new_pin;
+}
+
+/*-------------------------------------------------------------------------
  * (function: copy_output_npin)
  * 	Copies an output pin
  *-----------------------------------------------------------------------*/
 npin_t* copy_output_npin(npin_t* copy_pin)
 {
-	npin_t *new_pin = allocate_npin();
+	npin_t *new_pin = copy_npin(copy_pin);
 	oassert(copy_pin->type == OUTPUT);
-
-	new_pin->name = copy_pin->name;
-	new_pin->type = copy_pin->type;
 	new_pin->net = copy_pin->net;
-	new_pin->mapping = copy_pin->mapping;
-	new_pin->is_default = copy_pin->is_default;
+
 	return new_pin;
 }
 
@@ -262,13 +275,8 @@ npin_t* copy_output_npin(npin_t* copy_pin)
  *-----------------------------------------------------------------------*/
 npin_t* copy_input_npin(npin_t* copy_pin)
 {
-	npin_t *new_pin = allocate_npin();
+	npin_t *new_pin = copy_npin(copy_pin);
 	oassert(copy_pin->type == INPUT);
-
-	new_pin->name = copy_pin->name?vtr::strdup(copy_pin->name):0;
-	new_pin->type = copy_pin->type;
-	new_pin->mapping = copy_pin->mapping?vtr::strdup(copy_pin->mapping):0;
-	new_pin->is_default = copy_pin->is_default;
 	if (copy_pin->net != NULL)
 	{
 		add_fanout_pin_to_net(copy_pin->net, new_pin);
