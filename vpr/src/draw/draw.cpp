@@ -222,7 +222,7 @@ void draw_main_canvas(ezgl::renderer& g) {
     draw_block_pin_util();
     drawplace(g);
     draw_internal_draw_subblk(g);
-    
+
     if (draw_state->pic_on_screen == PLACEMENT) {
         switch (draw_state->show_nets) {
             case DRAW_NETS:
