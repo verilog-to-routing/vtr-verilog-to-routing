@@ -60,7 +60,8 @@ constexpr int ERROR_EXIT_CODE = 1; //Something went wrong internally
 constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g. SIGINT/ctr-C)
 
 static void do_one_route(int source_node, int sink_node,
-        const t_router_opts& router_opts) {
+        const t_router_opts& router_opts,
+        const std::vector<t_segment_inf>& segment_inf) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -92,7 +93,12 @@ static void do_one_route(int source_node, int sink_node,
 
     std::vector<int> modified_rr_node_inf;
     RouterStats router_stats;
-    auto router_lookahead = make_router_lookahead(router_opts.lookahead_type);
+    auto router_lookahead = make_router_lookahead(
+            router_opts.lookahead_type,
+            router_opts.write_router_lookahead,
+            router_opts.read_router_lookahead,
+            segment_inf
+            );
     t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, *router_lookahead, modified_rr_node_inf, router_stats);
 
     bool found_path = (cheapest != nullptr);
@@ -123,10 +129,19 @@ static void do_one_route(int source_node, int sink_node,
 }
 
 static void profile_source(int source_rr_node,
-        const t_router_opts& router_opts) {
+        const t_router_opts& router_opts,
+        const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Profiling source");
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
+
+    auto router_lookahead = make_router_lookahead(
+            router_opts.lookahead_type,
+            router_opts.write_router_lookahead,
+            router_opts.read_router_lookahead,
+            segment_inf
+            );
+    RouterDelayProfiler profiler(router_lookahead.get());
 
     int start_x = 0;
     int end_x = grid.width() - 1;
@@ -162,7 +177,7 @@ static void profile_source(int source_rr_node,
                     vtr::ScopedStartFinishTimer delay_timer(vtr::string_fmt(
                         "Routing Src: %d Sink: %d", source_rr_node,
                         sink_rr_node));
-                    successfully_routed = calculate_delay(source_rr_node, sink_rr_node,
+                    successfully_routed = profiler.calculate_delay(source_rr_node, sink_rr_node,
                                                         router_opts,
                                                         &delays[sink_x][sink_y]);
                 }
@@ -284,12 +299,15 @@ int main(int argc, const char **argv) {
         if(route_options.profile_source) {
             profile_source(
                 route_options.source_rr_node,
-                vpr_setup.RouterOpts
+                vpr_setup.RouterOpts,
+                vpr_setup.Segments
                 );
         } else {
             do_one_route(
-                    route_options.source_rr_node, route_options.sink_rr_node,
-                    vpr_setup.RouterOpts);
+                    route_options.source_rr_node, 
+                    route_options.sink_rr_node,
+                    vpr_setup.RouterOpts,
+                    vpr_setup.Segments);
         }
         free_routing_structs();
 

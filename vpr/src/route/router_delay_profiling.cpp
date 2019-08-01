@@ -10,14 +10,8 @@
 static t_rt_node* setup_routing_resources_no_net(int source_node);
 
 RouterDelayProfiler::RouterDelayProfiler(
-    e_router_lookahead router_lookahead_type,
-    std::string write_lookahead,
-    std::string read_lookahead,
-    const std::vector<t_segment_inf>& segment_inf) {
-    router_lookahead_ = make_router_lookahead(
-        router_lookahead_type,
-        write_lookahead, read_lookahead, segment_inf);
-}
+    const RouterLookahead* lookahead)
+    : router_lookahead_(lookahead) {}
 
 bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) const {
     /* Returns true as long as found some way to hook up this net, even if that *
