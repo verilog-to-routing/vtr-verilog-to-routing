@@ -65,7 +65,7 @@ static ezgl::rectangle initial_world{{0, 0}, 1100, 1150};
  *
  * @return the exit status of the application run.
  */
-int main(int argc, char **argv)
+int main(int /*argc*/, char **/*argv*/)
 {
   ezgl::application::settings settings;
 
@@ -513,7 +513,7 @@ void act_on_mouse_press(ezgl::application *application, GdkEventButton *event, d
  * The current mouse position in the main canvas' world coordinate system is returned
  * A pointer to the application and the entire GDK event are also returned
  */
-void act_on_mouse_move(ezgl::application *application, GdkEventButton *event, double x, double y)
+void act_on_mouse_move(ezgl::application */*application*/, GdkEventButton */*event*/, double x, double y)
 {
   std::cout << "Mouse move at coordinates (" << x << "," << y << ") "<< std::endl;
 }
@@ -523,7 +523,7 @@ void act_on_mouse_move(ezgl::application *application, GdkEventButton *event, do
  * The name of the key pressed is returned (0-9, a-z, A-Z, Up, Down, Left, Right, Shift_R, Control_L, space, Tab, ...)
  * A pointer to the application and the entire GDK event are also returned
  */
-void act_on_key_press(ezgl::application *application, GdkEventKey *event, char *key_name)
+void act_on_key_press(ezgl::application *application, GdkEventKey */*event*/, char *key_name)
 {
   application->update_message("Key Pressed");
 
@@ -533,7 +533,7 @@ void act_on_key_press(ezgl::application *application, GdkEventKey *event, char *
 /**
  * A callback function to test the Test button
  */
-void test_button(GtkWidget *widget, ezgl::application *application)
+void test_button(GtkWidget */*widget*/, ezgl::application *application)
 {
   // Update the status bar message
   application->update_message("Test Button Pressed");
