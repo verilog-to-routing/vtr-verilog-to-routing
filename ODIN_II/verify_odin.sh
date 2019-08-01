@@ -869,8 +869,8 @@ function run_suite() {
 			_)
 				;;
 
-			_*vtr_reg_*)
-				run_vtr_reg ${current_input}
+			*/vtr_reg_*)
+				run_vtr_reg $(basename ${current_input})
 				;;
 
 			*)
