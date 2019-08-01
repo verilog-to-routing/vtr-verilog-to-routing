@@ -5,6 +5,7 @@
 #include "capnp/message.h"
 #include "kj/array.h"
 
+// Platform independent mmap, useful for reading large capnp's.
 class MmapFile {
   public:
     explicit MmapFile(const std::string& file);

@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "vpr_error.h"
+#include "vtr_error.h"
 #include "kj/filesystem.h"
 
 void writeMessageToFile(const std::string& file, ::capnp::MessageBuilder* builder) {
@@ -17,6 +17,6 @@ void writeMessageToFile(const std::string& file, ::capnp::MessageBuilder* builde
         auto f_app = kj::newFileAppender(std::move(f));
         capnp::writeMessage(*f_app, *builder);
     } catch (kj::Exception& e) {
-        vpr_throw(VPR_ERROR_OTHER, e.getFile(), e.getLine(), e.getDescription().cStr());
+        throw vtr::VtrError(e.getDescription().cStr(), e.getFile(), e.getLine());
     }
 }

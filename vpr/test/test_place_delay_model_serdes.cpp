@@ -4,6 +4,7 @@
 
 namespace {
 
+#ifdef VTR_ENABLE_CAPNPROTO
 static constexpr const char kDeltaDelayBin[] = "test_delta_delay.bin";
 static constexpr const char kOverrideDelayBin[] = "test_override_delay.bin";
 
@@ -81,5 +82,6 @@ TEST_CASE("round_trip_override_delay_model", "[vpr]") {
     CHECK(model2.get_delay_override(1, 2, 3, 4, 5, 6) == -1);
     CHECK(model2.get_delay_override(2, 2, 3, 4, 5, 6) == -2);
 }
+#endif
 
 } // namespace

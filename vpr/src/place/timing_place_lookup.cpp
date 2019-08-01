@@ -837,8 +837,8 @@ static bool verify_delta_delays(const vtr::Matrix<float>& delta_delays) {
 }
 
 void OverrideDelayModel::compute_override_delay_model(
-        const RouterDelayProfiler& route_profiler,
-        const t_router_opts &router_opts) {
+    const RouterDelayProfiler& route_profiler,
+    const t_router_opts& router_opts) {
     t_router_opts router_opts2 = router_opts;
     router_opts2.astar_fac = 0.;
 

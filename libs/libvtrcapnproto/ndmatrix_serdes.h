@@ -6,6 +6,19 @@
 #include "vpr_error.h"
 #include "matrix.capnp.h"
 
+// Generic function to convert from Matrix capnproto message to vtr::NdMatrix.
+//
+// Template arguments:
+//  N = Number of matrix dimensions, must be fixed.
+//  CapType = Source capnproto message type that is a single element the
+//            Matrix capnproto message.
+//  CType = Target C++ type that is a single element of vtr::NdMatrix.
+//
+// Arguments:
+//  m_out = Target vtr::NdMatrix.
+//  m_in = Source capnproto message reader.
+//  copy_fun = Function to convert from CapType to CType.
+//
 template<size_t N, typename CapType, typename CType>
 void ToNdMatrix(
     vtr::NdMatrix<CType, N>* m_out,
@@ -38,6 +51,19 @@ void ToNdMatrix(
     }
 }
 
+// Generic function to convert from vtr::NdMatrix to Matrix capnproto message.
+//
+// Template arguments:
+//  N = Number of matrix dimensions, must be fixed.
+//  CapType = Target capnproto message type that is a single element the
+//            Matrix capnproto message.
+//  CType = Source C++ type that is a single element of vtr::NdMatrix.
+//
+// Arguments:
+//  m_out = Target capnproto message builder.
+//  m_in = Source vtr::NdMatrix.
+//  copy_fun = Function to convert from CType to CapType.
+//
 template<size_t N, typename CapType, typename CType>
 void FromNdMatrix(
     typename Matrix<CapType>::Builder* m_out,

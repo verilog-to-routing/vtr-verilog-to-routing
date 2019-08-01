@@ -27,6 +27,7 @@ option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
 option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
+option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VPR." ON)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 option(WITH_LIBRTLNUMBER "Enable build with librtlnumber" OFF)
@@ -125,6 +126,7 @@ else()
         "-Wmissing-include-dirs"        #Warn if a user include directory is missing
         "-Wredundant-decls"             #Warn if there are overlapping declarations
         "-Wswitch-default"              #Warn if a switch has no default
+        "-Wundef"                       #Warn if #if() preprocessor refers to an undefined directive
         "-Wunused"                      #Warn about unused variables/parameters
         "-Wunused-variable"             #Warn about variables that are not used
         "-Wunused-parameter"            #Warn about function parameters which are unused

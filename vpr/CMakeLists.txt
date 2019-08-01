@@ -37,19 +37,17 @@ file(GLOB_RECURSE LIB_SOURCES src/*/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
-capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
-    src/util/place_delay_model.capnp
-    src/util/matrix.capnp)
+if(${VTR_ENABLE_CAPNPROTO})
+    add_definitions("-DVTR_ENABLE_CAPNPROTO")
+endif()
 
 #Create the library
 add_library(libvpr STATIC
-             ${CAPNP_SRCS}
              ${LIB_HEADERS}
              ${LIB_SOURCES}
 )
 
 target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
-target_include_directories(libvpr PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/src/util)
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Specify link-time dependancies
@@ -58,12 +56,16 @@ target_link_libraries(libvpr
                         libarchfpga
                         libsdcparse
                         libblifparse
-                       	ezgl
-			libeasygl
+                        ezgl
+                        libeasygl
                         libtatum
                         libargparse
                         libpugixml
-                        CapnProto::capnp)
+                        )
+
+if(${VTR_ENABLE_CAPNPROTO})
+    target_link_libraries(libvpr libvtrcapnproto)
+endif()
 
 #Create the executable
 add_executable(vpr ${EXEC_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/resources.C)
