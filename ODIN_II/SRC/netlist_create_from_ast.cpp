@@ -149,7 +149,7 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 {
 	/* with the top module we need to visit the entire ast tree */
 	long i, j;
-	char *temp_string;
+	char *temp_string = NULL;
 	char **temp_parameter_list = NULL;
 	ast_node_t **temp_localparam_list = NULL;
 	long sc_spot;
@@ -199,6 +199,7 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 							temp_parameter_list = (char**) vtr::realloc(temp_parameter_list, sizeof(char*)*parameter_num);
 						
 						temp_parameter_list[parameter_num-1] = temp_string;
+						temp_string = NULL;
 					}
 					else if (var_declare->types.variable.is_localparam)
 					{
@@ -211,6 +212,10 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 							temp_localparam_list = (ast_node_t**) vtr::realloc(temp_localparam_list, sizeof(ast_node_t*)*localparam_num);
 						
 						temp_localparam_list[localparam_num-1] = var_declare;
+					}
+					if(temp_string)
+					{
+						vtr::free(temp_string);
 					}
 				}
 			}
@@ -314,10 +319,14 @@ STRING_CACHE *create_param_table_for_module(ast_node_t* parent_parameter_list, a
 		sc_spot = sc_add_string(local_param_table_sc, temp_string);
 		local_param_table_sc->data[sc_spot] = (void *)temp_localparam_list[i]->children[5];
 
+		if(temp_string)
+		{
+			vtr::free(temp_string);
+		}
 		/* add to temp param list */
-		parameter_num++;
-		temp_parameter_list = (char**) vtr::realloc(temp_parameter_list, sizeof(char*)*parameter_num);
-		temp_parameter_list[parameter_num-1] = temp_string;
+		// parameter_num++;
+		// temp_parameter_list = (char**) vtr::realloc(temp_parameter_list, sizeof(char*)*parameter_num);
+		// temp_parameter_list[parameter_num-1] = temp_string;
 	}
 
 	/* clean up */
