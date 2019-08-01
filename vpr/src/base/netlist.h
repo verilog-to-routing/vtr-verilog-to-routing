@@ -665,7 +665,9 @@ class Netlist {
 
     
     /*
-     * id Checks
+     * ID Checks
+     * 
+     * Validates that the specified ID is valid in the current netlist state
      */
     bool valid_block_id(BlockId block_id) const;
     bool valid_port_id(PortId port_id) const;
