@@ -19,6 +19,7 @@
 #include "clock_network_builders.h"
 #include "clock_connection_builders.h"
 #include "route_traceback.h"
+#include "router_lookahead.h"
 #include "place_macro.h"
 
 //A Context is collection of state relating to a particular part of VPR
@@ -271,6 +272,14 @@ struct RoutingContext : public Context {
 
     //SHA256 digest of the .route file (used for unique identification and consistency checking)
     std::string routing_id;
+
+    // Cache of router lookahead object.
+    std::unique_ptr<RouterLookahead> cached_router_lookahead_;
+
+    // Parameters used for cached router lookahead object.
+    e_router_lookahead cached_router_lookahead_type_;
+    std::string cached_lookahead_file_;
+    std::vector<t_segment_inf> cached_segment_inf_;
 };
 
 //This object encapsulates VPR's state. There is typically a single instance which is

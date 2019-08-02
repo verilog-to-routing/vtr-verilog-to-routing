@@ -300,6 +300,7 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(const t_router_opts& router_opts,
                              const t_analysis_opts& analysis_opts,
+                             const std::vector<t_segment_inf>& segment_inf,
                              vtr::vector<ClusterNetId, float*>& net_delay,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
@@ -354,7 +355,11 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
 
     route_budgets budgeting_inf;
 
-    auto router_lookahead = make_router_lookahead(router_opts.lookahead_type);
+    const auto* router_lookahead = get_cached_router_lookahead(
+        router_opts.lookahead_type,
+        router_opts.write_router_lookahead,
+        router_opts.read_router_lookahead,
+        segment_inf);
 
     /*
      * Routing parameters
@@ -1367,7 +1372,9 @@ std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(t_rt_n
                                                                           RouterStats& router_stats) {
     //Add the route tree to the heap with no specific target node
     int target_node = OPEN;
-    auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP);
+    auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP,
+                                                  /*write_lookahead=*/"", /*read_lookahead=*/"",
+                                                  /*segment_inf=*/{});
     add_route_tree_to_heap(rt_root, target_node, cost_params, *router_lookahead, router_stats);
     heap_::build_heap(); // via sifting down everything
 
@@ -1387,7 +1394,9 @@ static std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(const
                                                                            t_bb bounding_box,
                                                                            std::vector<int>& modified_rr_node_inf,
                                                                            RouterStats& router_stats) {
-    auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP);
+    auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP,
+                                                  /*write_lookahead=*/"", /*read_lookahead=*/"",
+                                                  /*segment_inf=*/{});
 
     auto& device_ctx = g_vpr_ctx.device();
     std::vector<t_heap> cheapest_paths(device_ctx.rr_nodes.size());

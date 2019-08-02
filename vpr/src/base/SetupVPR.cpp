@@ -349,6 +349,9 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->first_iteration_timing_report_file = Options.router_first_iteration_timing_report_file;
 
     RouterOpts->strict_checks = Options.strict_checks;
+
+    RouterOpts->write_router_lookahead = Options.write_router_lookahead;
+    RouterOpts->read_router_lookahead = Options.read_router_lookahead;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -477,6 +480,9 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->rlim_escape_fraction = Options.place_rlim_escape_fraction;
 
     PlacerOpts->strict_checks = Options.strict_checks;
+
+    PlacerOpts->write_placement_delay_lookup = Options.write_placement_delay_lookup;
+    PlacerOpts->read_placement_delay_lookup = Options.read_placement_delay_lookup;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

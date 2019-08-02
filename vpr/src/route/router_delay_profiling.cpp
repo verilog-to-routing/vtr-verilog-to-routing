@@ -9,7 +9,11 @@
 
 static t_rt_node* setup_routing_resources_no_net(int source_node);
 
-bool calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
+RouterDelayProfiler::RouterDelayProfiler(
+    const RouterLookahead* lookahead)
+    : router_lookahead_(lookahead) {}
+
+bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) const {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -41,8 +45,9 @@ bool calculate_delay(int source_node, int sink_node, const t_router_opts& router
 
     std::vector<int> modified_rr_node_inf;
     RouterStats router_stats;
-    auto router_lookahead = make_router_lookahead(router_opts.lookahead_type);
-    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, *router_lookahead, modified_rr_node_inf, router_stats);
+    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root,
+                                                                      sink_node, cost_params, bounding_box, *router_lookahead_,
+                                                                      modified_rr_node_inf, router_stats);
 
     bool found_path = (cheapest != nullptr);
     if (found_path) {
@@ -125,7 +130,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
     for (int sink_rr_node = 0; sink_rr_node < (int) device_ctx.rr_nodes.size(); ++sink_rr_node) {
 
         float astar_delay = std::numeric_limits<float>::quiet_NaN();
-        if (sink_rr_node == src_rr_node) { 
+        if (sink_rr_node == src_rr_node) {
             astar_delay = 0.;
         } else {
             calculate_delay(src_rr_node, sink_rr_node, router_opts, &astar_delay);
@@ -191,7 +196,6 @@ void alloc_routing_structs(t_chan_width chan_width,
                     router_opts.trim_empty_channels,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
-                    router_opts.lookahead_type,
                     directs, num_directs,
                     &warnings);
 

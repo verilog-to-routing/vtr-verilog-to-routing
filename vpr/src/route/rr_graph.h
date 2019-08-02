@@ -37,7 +37,6 @@ void create_rr_graph(const t_graph_type graph_type,
                      const bool trim_empty_channels,
                      const bool trim_obs_channels,
                      const enum e_clock_modeling clock_modeling,
-                     const e_router_lookahead router_lookahead_type,
                      const t_direct_inf* directs,
                      const int num_directs,
                      int* Warnings);

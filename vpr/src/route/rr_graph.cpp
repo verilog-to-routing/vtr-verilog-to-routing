@@ -322,7 +322,6 @@ void create_rr_graph(const t_graph_type graph_type,
                      const bool trim_empty_channels,
                      const bool trim_obs_channels,
                      const enum e_clock_modeling clock_modeling,
-                     const e_router_lookahead router_lookahead_type,
                      const t_direct_inf* directs,
                      const int num_directs,
                      int* Warnings) {
@@ -379,10 +378,6 @@ void create_rr_graph(const t_graph_type graph_type,
     process_non_config_sets(non_config_rr_sets);
 
     print_rr_graph_stats();
-
-    if (router_lookahead_type == e_router_lookahead::MAP) {
-        compute_router_lookahead(segment_inf.size());
-    }
 
     //Write out rr graph file if needed
     if (!det_routing_arch->write_rr_graph_filename.empty()) {
@@ -1385,6 +1380,8 @@ void free_rr_graph() {
     device_ctx.rr_node_metadata.clear();
 
     device_ctx.rr_edge_metadata.clear();
+
+    invalidate_router_lookahead_cache();
 }
 
 static void build_rr_sinks_sources(const int i,

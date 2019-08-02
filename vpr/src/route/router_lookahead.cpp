@@ -8,7 +8,7 @@
 static int get_expected_segs_to_target(int inode, int target_node, int* num_segs_ortho_dir_ptr);
 static int round_up(float x);
 
-std::unique_ptr<RouterLookahead> make_router_lookahead(e_router_lookahead router_lookahead_type) {
+static std::unique_ptr<RouterLookahead> make_router_lookahead_object(e_router_lookahead router_lookahead_type) {
     if (router_lookahead_type == e_router_lookahead::CLASSIC) {
         return std::make_unique<ClassicLookahead>();
     } else if (router_lookahead_type == e_router_lookahead::MAP) {
@@ -19,6 +19,26 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(e_router_lookahead router
 
     VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unrecognized router lookahead type");
     return nullptr;
+}
+
+std::unique_ptr<RouterLookahead> make_router_lookahead(
+    e_router_lookahead router_lookahead_type,
+    std::string write_lookahead,
+    std::string read_lookahead,
+    const std::vector<t_segment_inf>& segment_inf) {
+    std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(router_lookahead_type);
+
+    if (read_lookahead.empty()) {
+        router_lookahead->compute(segment_inf);
+    } else {
+        router_lookahead->read(read_lookahead);
+    }
+
+    if (!write_lookahead.empty()) {
+        router_lookahead->write(write_lookahead);
+    }
+
+    return router_lookahead;
 }
 
 float ClassicLookahead::get_expected_cost(int current_node, int target_node, const t_conn_cost_params& params, float R_upstream) const {
@@ -79,6 +99,10 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
     } else { /* Change this if you want to investigate route-throughs */
         return (0.);
     }
+}
+
+void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
+    compute_router_lookahead(segment_inf.size());
 }
 
 float NoOpLookahead::get_expected_cost(int /*current_node*/, int /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
@@ -168,4 +192,39 @@ static int get_expected_segs_to_target(int inode, int target_node, int* num_segs
     }
 
     return (num_segs_same_dir);
+}
+
+void invalidate_router_lookahead_cache() {
+    auto& router_ctx = g_vpr_ctx.mutable_routing();
+    router_ctx.cached_router_lookahead_.reset();
+    router_ctx.cached_lookahead_file_.clear();
+    router_ctx.cached_segment_inf_.clear();
+}
+
+const RouterLookahead* get_cached_router_lookahead(
+    e_router_lookahead router_lookahead_type,
+    std::string write_lookahead,
+    std::string read_lookahead,
+    const std::vector<t_segment_inf>& segment_inf) {
+    auto& router_ctx = g_vpr_ctx.routing();
+
+    // Check if cache is valid.
+    if (
+        router_ctx.cached_router_lookahead_ && read_lookahead == router_ctx.cached_lookahead_file_ && segment_inf == router_ctx.cached_segment_inf_) {
+    } else {
+        // Cache is not valid, compute cached object.
+        auto& mut_router_ctx = g_vpr_ctx.mutable_routing();
+
+        invalidate_router_lookahead_cache();
+
+        mut_router_ctx.cached_router_lookahead_ = make_router_lookahead(
+            router_lookahead_type,
+            write_lookahead,
+            read_lookahead,
+            segment_inf);
+        mut_router_ctx.cached_lookahead_file_ = read_lookahead;
+        mut_router_ctx.cached_segment_inf_ = segment_inf;
+    }
+
+    return router_ctx.cached_router_lookahead_.get();
 }

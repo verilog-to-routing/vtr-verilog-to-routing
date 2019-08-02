@@ -237,7 +237,6 @@ void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_ar
                     router_opts.trim_empty_channels,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
-                    router_opts.lookahead_type,
                     directs, num_directs,
                     &warning_count);
 }
@@ -289,7 +288,6 @@ bool try_route(int width_fac,
                     router_opts.trim_empty_channels,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
-                    router_opts.lookahead_type,
                     directs, num_directs,
                     &warning_count);
 
@@ -318,6 +316,7 @@ bool try_route(int width_fac,
 
         success = try_timing_driven_route(router_opts,
                                           analysis_opts,
+                                          segment_inf,
                                           net_delay,
                                           netlist_pin_lookup,
                                           timing_info,
