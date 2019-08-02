@@ -2,7 +2,6 @@
 #include <cmath>
 #include <memory>
 #include <fstream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -36,6 +35,9 @@ using namespace std;
 #include "timing_info.h"
 #include "tatum/echo_writer.hpp"
 #include "tatum/TimingReporter.hpp"
+
+using std::min;
+using std::max;
 
 /************** Types and defines local to place.c ***************************/
 
