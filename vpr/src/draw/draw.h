@@ -1,9 +1,12 @@
 #ifndef DRAW_H
 #define DRAW_H
 
+#ifndef NO_GRAPHICS
+
 #include "easygl_constants.h"
 #include "graphics.h"
 #include "draw_global.h"
+
 
 #include "ezgl/point.hpp"
 #include "ezgl/application.hpp"
@@ -61,5 +64,7 @@ void highlight_nets(char* message, int hit_node);
 void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
 std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
 void deselect_all();
+
+#endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */

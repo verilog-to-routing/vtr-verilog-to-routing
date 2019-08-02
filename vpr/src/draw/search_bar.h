@@ -1,6 +1,8 @@
 #ifndef SEARCH_BAR_H
 #define SEARCH_BAR_H
 
+#ifndef NO_GRAPHICS
+
 #include "easygl_constants.h"
 #include "graphics.h"
 #include "draw_global.h"
@@ -17,5 +19,7 @@ void highlight_blocks(ClusterBlockId clb_index);
 void highlight_nets(ClusterNetId net_id);
 void highlight_nets(std::string net_name);
 void highlight_blocks(std::string block_name);
+
+#endif /* NO_GRAPHICS */
 
 #endif /* SEARCH_BAR_H */

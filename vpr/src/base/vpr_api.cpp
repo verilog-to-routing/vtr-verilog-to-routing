@@ -704,10 +704,11 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         if (router_opts.switch_usage_analysis) {
             print_switch_usage();
         }
-
+        
+#ifndef NO_GRAPHICS       
         //Update interactive graphics
         update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
-
+#endif /* NO_GRAPHICS */
         free_net_delay(net_delay, &net_delay_ch);
     }
 

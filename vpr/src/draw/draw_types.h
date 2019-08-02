@@ -27,8 +27,7 @@
 #include "vtr_vector.h"
 
 #include "ezgl/point.hpp"
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
+#include "ezgl/rectangle.hpp"
 #include "ezgl/color.hpp"
 
 enum e_draw_crit_path {

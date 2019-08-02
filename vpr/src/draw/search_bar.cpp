@@ -1,3 +1,5 @@
+#ifndef NO_GRAPHICS
+
 #include <cstdio>
 #include <sstream>
 using namespace std;
@@ -265,3 +267,5 @@ void highlight_blocks(std::string block_name) {
 
     highlight_blocks(block_id); //found block
 }
+
+#endif /* NO_GRAPHICS */

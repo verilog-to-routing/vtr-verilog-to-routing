@@ -52,6 +52,8 @@ using namespace std;
 #    include <sys/time.h>
 #endif
 
+#ifndef NO_GRAPHICS
+
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
 #if defined(X11) && !defined(__MINGW32__)
@@ -3552,3 +3554,5 @@ static void highlight_blocks(double x, double y) {
 
     application.refresh_drawing();
 }
+
+#endif /* NO_GRAPHICS */

@@ -15,8 +15,11 @@
 #include <unordered_set>
 
 #include "ezgl/point.hpp"
-#include "ezgl/application.hpp"
+
+#ifndef NO_GRAPHICS 
 #include "ezgl/graphics.hpp"
+#include "ezgl/application.hpp"
+#endif /* NO_GRAPHICS */
 
 struct t_selected_sub_block_info {
     struct clb_pin_tuple {
@@ -91,8 +94,9 @@ struct t_selected_sub_block_info {
  * the maximum level of sub-blocks that exists in the pb_graph, internals drawing
  * will be disabled.
  */
+#ifndef NO_GRAPHICS 
 void toggle_blk_internal(GtkWidget* widget, ezgl::application* app);
-
+#endif /* NO_GRAPHICS */
 /* This function pre-allocates space to store bounding boxes for all sub-blocks. Each
  * sub-block is identified by its descriptor_type and a unique pin ID in the type.
  */
@@ -106,7 +110,9 @@ void draw_internal_init_blk();
 /* Top-level drawing routine for internal sub-blocks. The function traverses through all
  * grid tiles and calls helper function to draw inside each block.
  */
+#ifndef NO_GRAPHICS 
 void draw_internal_draw_subblk(ezgl::renderer& g);
+#endif /* NO_GRAPHICS */
 
 /* Determines which part of a block to highlight, and stores it,
  * so that the other subblock drawing functions will obey it.
@@ -124,7 +130,9 @@ t_selected_sub_block_info& get_selected_sub_block_info();
  * If the draw state says to show all logical connections, it will,
  * and if there is a selected sub-block, it will highlight it's conections
  */
+#ifndef NO_GRAPHICS 
 void draw_logical_connections(ezgl::renderer& g);
+#endif /* NO_GRAPHICS */
 
 void find_pin_index_at_model_scope(const AtomPinId the_pin, const AtomBlockId lblk, int* pin_index, int* total_pins);
 

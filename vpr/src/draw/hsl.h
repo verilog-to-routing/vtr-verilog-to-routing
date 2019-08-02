@@ -2,7 +2,7 @@
 #define HSL_H
 
 #include "graphics_types.h"
-#include "ezgl/graphics.hpp"
+#include "ezgl/color.hpp"
 
 struct hsl {
     double h; // hue            a fraction between 0 and 1

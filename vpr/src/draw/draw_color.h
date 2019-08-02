@@ -1,6 +1,8 @@
 #ifndef DRAW_COLOR_H
 #define DRAW_COLOR_H
 
+#ifndef NO_GRAPHICS
+
 #include "ezgl/point.hpp"
 #include "ezgl/application.hpp"
 #include "ezgl/graphics.hpp"
@@ -315,5 +317,7 @@ const std::vector<ezgl::color> block_colors{
     blk_ORANGE,
     blk_ALICEBLUE,
 };
+
+#endif /* NO_GRAPHICS */
 
 #endif /* DRAW_COLOR_H */
