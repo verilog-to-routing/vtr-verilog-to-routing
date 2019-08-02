@@ -56,6 +56,98 @@ static cairo_t *create_context(cairo_surface_t *p_surface)
   return context;
 }
 
+bool canvas::print_pdf(const char *file_name)
+{
+  cairo_surface_t *surface;
+  cairo_t *context;
+
+  // create pdf surface based on canvas size
+  int const width = gtk_widget_get_allocated_width(m_drawing_area);
+  int const height = gtk_widget_get_allocated_height(m_drawing_area);
+  surface = cairo_pdf_surface_create(file_name, width, height);
+
+  if(surface == NULL)
+    return false; // failed to create due to errors such as out of memory
+  context = create_context(surface);
+
+  // draw on the newly created pdf surface & context
+  cairo_set_source_rgb(context, m_background_color.red / 255.0, m_background_color.green / 255.0,
+      m_background_color.blue / 255.0);
+  cairo_paint(context);
+
+  using namespace std::placeholders;
+  renderer g(context, std::bind(&camera::world_to_screen, m_camera, _1), &m_camera, surface);
+  m_draw_callback(g);
+
+  // free surface & context
+  cairo_surface_destroy(surface);
+  cairo_destroy(context);
+
+  return true;
+}
+
+bool canvas::print_svg(const char *file_name)
+{
+  cairo_surface_t *surface;
+  cairo_t *context;
+
+  // create svg surface based on canvas size
+  int const width = gtk_widget_get_allocated_width(m_drawing_area);
+  int const height = gtk_widget_get_allocated_height(m_drawing_area);
+  surface = cairo_svg_surface_create(file_name, width, height);
+
+  if(surface == NULL)
+    return false; // failed to create due to errors such as out of memory
+  context = create_context(surface);
+
+  // draw on the newly created svg surface & context
+  cairo_set_source_rgb(context, m_background_color.red / 255.0, m_background_color.green / 255.0,
+      m_background_color.blue / 255.0);
+  cairo_paint(context);
+
+  using namespace std::placeholders;
+  renderer g(context, std::bind(&camera::world_to_screen, m_camera, _1), &m_camera, surface);
+  m_draw_callback(g);
+
+  // free surface & context
+  cairo_surface_destroy(surface);
+  cairo_destroy(context);
+
+  return true;
+}
+
+bool canvas::print_png(const char *file_name)
+{
+  cairo_surface_t *surface;
+  cairo_t *context;
+
+  // create png surface based on canvas size
+  int const width = gtk_widget_get_allocated_width(m_drawing_area);
+  int const height = gtk_widget_get_allocated_height(m_drawing_area);
+  surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
+
+  if(surface == NULL)
+    return false; // failed to create due to errors such as out of memory
+  context = create_context(surface);
+
+  // draw on the newly created png surface & context
+  cairo_set_source_rgb(context, m_background_color.red / 255.0, m_background_color.green / 255.0,
+      m_background_color.blue / 255.0);
+  cairo_paint(context);
+  using namespace std::placeholders;
+  renderer g(context, std::bind(&camera::world_to_screen, m_camera, _1), &m_camera, surface);
+  m_draw_callback(g);
+
+  // create png output file
+  cairo_surface_write_to_png(surface, file_name);
+
+  // free surface & context
+  cairo_surface_destroy(surface);
+  cairo_destroy(context);
+
+  return true;
+}
+
 gboolean canvas::configure_event(GtkWidget *widget, GdkEventConfigure *, gpointer data)
 {
   // User data should have been set during the signal connection.
@@ -101,9 +193,14 @@ gboolean canvas::draw_surface(GtkWidget *, cairo_t *context, gpointer data)
   return FALSE;
 }
 
-canvas::canvas(std::string canvas_id, draw_canvas_fn draw_callback, rectangle coordinate_system, color background_color)
-    : m_canvas_id(std::move(canvas_id)), m_draw_callback(draw_callback), m_camera(coordinate_system),
-      m_background_color(background_color)
+canvas::canvas(std::string canvas_id,
+    draw_canvas_fn draw_callback,
+    rectangle coordinate_system,
+    color background_color)
+    : m_canvas_id(std::move(canvas_id))
+    , m_draw_callback(draw_callback)
+    , m_camera(coordinate_system)
+    , m_background_color(background_color)
 {
 }
 
@@ -157,8 +254,8 @@ void canvas::initialize(GtkWidget *drawing_area)
 void canvas::redraw()
 {
   // Clear the screen and set the background color
-  cairo_set_source_rgb(m_context, m_background_color.red / 255.0,
-		       m_background_color.green / 255.0, m_background_color.blue / 255.0);
+  cairo_set_source_rgb(m_context, m_background_color.red / 255.0, m_background_color.green / 255.0,
+      m_background_color.blue / 255.0);
   cairo_paint(m_context);
 
   using namespace std::placeholders;
@@ -177,4 +274,4 @@ renderer canvas::create_temporary_renderer()
 
   return g;
 }
-}
+} // namespace ezgl
