@@ -44,8 +44,8 @@
  */
 
 #ifndef RR_GRAPH_OBJ_FWD_H
-#define RR_GRAPH_OBJ_FWD_H
-#include "vtr_strong_id.h"
+#    define RR_GRAPH_OBJ_FWD_H
+#    include "vtr_strong_id.h"
 
 class RRGraph;
 
@@ -62,10 +62,10 @@ typedef vtr::StrongId<rr_segment_id_tag, short> RRSegmentId;
 /* Create an alias to the open NodeId
  * Useful in identifying if a node exist in a rr_graph
  */
-#define RRGRAPH_OPEN_NODE_ID RRNodeId(-1)
-#define RRGRAPH_OPEN_EDGE_ID RREdgeId(-1)
-#define RRGRAPH_OPEN_SWITCH_ID RRSwitchId(-1)
-#define RRGRAPH_OPEN_SEGMENT_ID RRSegmentId(-1)
+#    define RRGRAPH_OPEN_NODE_ID RRNodeId(-1)
+#    define RRGRAPH_OPEN_EDGE_ID RREdgeId(-1)
+#    define RRGRAPH_OPEN_SWITCH_ID RRSwitchId(-1)
+#    define RRGRAPH_OPEN_SEGMENT_ID RRSegmentId(-1)
 
 #endif
 

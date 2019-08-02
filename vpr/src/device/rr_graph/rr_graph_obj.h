@@ -59,7 +59,7 @@
  * avoid compilation error when this headers are included in more than 1 times 
  */
 #ifndef RR_GRAPH_OBJ_H
-#define RR_GRAPH_OBJ_H
+#    define RR_GRAPH_OBJ_H
 
 /*
  * Notes in include header files in a head file 
@@ -68,25 +68,25 @@
  */
 /* Header files should be included in a sequence */
 /* Standard header files required go first */
-#include <limits>
-#include <vector>
+#    include <limits>
+#    include <vector>
 
 /* EXTERNAL library header files go second*/
-#include "vtr_vector.h"
-#include "vtr_range.h"
-#include "vtr_geometry.h"
-#include "arch_types.h"
+#    include "vtr_vector.h"
+#    include "vtr_range.h"
+#    include "vtr_geometry.h"
+#    include "arch_types.h"
 
 /* VPR header files go second*/
-#include "vpr_types.h"
-#include "rr_graph_fwd.h"
+#    include "vpr_types.h"
+#    include "rr_graph_fwd.h"
 
 class RRGraph {
   public: //Types
-    typedef vtr::vector<RRNodeId,RRNodeId>::const_iterator node_iterator;
-    typedef vtr::vector<RREdgeId,RREdgeId>::const_iterator edge_iterator;
-    typedef vtr::vector<RRSwitchId,RRSwitchId>::const_iterator switch_iterator;
-    typedef vtr::vector<RRSegmentId,RRSegmentId>::const_iterator segment_iterator;
+    typedef vtr::vector<RRNodeId, RRNodeId>::const_iterator node_iterator;
+    typedef vtr::vector<RREdgeId, RREdgeId>::const_iterator edge_iterator;
+    typedef vtr::vector<RRSwitchId, RRSwitchId>::const_iterator switch_iterator;
+    typedef vtr::vector<RRSegmentId, RRSegmentId>::const_iterator segment_iterator;
 
     typedef vtr::Range<node_iterator> node_range;
     typedef vtr::Range<edge_iterator> edge_range;
@@ -133,9 +133,9 @@ class RRGraph {
     float node_C(RRNodeId node) const;
     RRSegmentId node_segment(RRNodeId node) const; /* get the segment id of a rr_node */
 
-    short node_num_configurable_in_edges(RRNodeId node) const; /* get the number of configurable input edges of a node */
-    short node_num_non_configurable_in_edges(RRNodeId node) const; /* get the number of non-configurable input edges of a node */
-    short node_num_configurable_out_edges(RRNodeId node) const; /* get the number of configurable output edges of a node */
+    short node_num_configurable_in_edges(RRNodeId node) const;      /* get the number of configurable input edges of a node */
+    short node_num_non_configurable_in_edges(RRNodeId node) const;  /* get the number of non-configurable input edges of a node */
+    short node_num_configurable_out_edges(RRNodeId node) const;     /* get the number of configurable output edges of a node */
     short node_num_non_configurable_out_edges(RRNodeId node) const; /* get the number of non-configurable output edges of a node */
 
     /* Get a node-to-node switch */
@@ -169,16 +169,16 @@ class RRGraph {
 
     //Utilities
     RREdgeId find_edge(RRNodeId src_node, RRNodeId sink_node) const;
-    RRNodeId find_node(short x, short y, t_rr_type type, int ptc, e_side side=NUM_SIDES) const;
+    RRNodeId find_node(short x, short y, t_rr_type type, int ptc, e_side side = NUM_SIDES) const;
     node_range find_nodes(short x, short y, t_rr_type type, int ptc) const;
     RRNodeId find_chan_node(short x, short y, t_rr_type type, int ptc) const;
     short chan_num_tracks(short x, short y, t_rr_type type) const;
 
     bool is_dirty() const;
 
-  public: /* Echos */
+  public:                                 /* Echos */
     void print_node(RRNodeId node) const; /* Print the detailed information of a node */
-  public: /* Checkers */
+  public:                                 /* Checkers */
     /* Node-level checking */
     bool check_node_segment(RRNodeId node) const;
     bool check_node_duplicated_edges(RRNodeId node) const;
@@ -202,10 +202,10 @@ class RRGraph {
     bool check_edge_src_nodes() const;
     bool check_edge_sink_nodes() const;
     bool check_duplicated_edges() const; /* identify and report any duplicated edges between two nodes */
-    bool check_dangling_nodes() const; /* identify if there is any dangling nodes in the graph */
+    bool check_dangling_nodes() const;   /* identify if there is any dangling nodes in the graph */
 
-    /* Full set checking using listed checking functions*/ 
-    bool check() const; 
+    /* Full set checking using listed checking functions*/
+    bool check() const;
 
   public: //Mutators
     /* reserve the lists of nodes, edges, switches etc */
@@ -245,14 +245,14 @@ class RRGraph {
 
     /* Edge related */
     /* classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) */
-    void partition_node_in_edges(RRNodeId node); 
+    void partition_node_in_edges(RRNodeId node);
     /* classify the output edges of each node to be configurable (1st part) and non-configurable (2nd part) */
-    void partition_node_out_edges(RRNodeId node); 
-    void partition_in_edges(); /* classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) */
+    void partition_node_out_edges(RRNodeId node);
+    void partition_in_edges();  /* classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) */
     void partition_out_edges(); /* classify the output edges of each node to be configurable (1st part) and non-configurable (2nd part) */
-    void partition_edges(); /* classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) */
-    void load_switch_C(); /* configure the C of each node with the C of each incoming edge switch */
-  
+    void partition_edges();     /* classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) */
+    void load_switch_C();       /* configure the C of each node with the C of each incoming edge switch */
+
     void compress();
     bool validate();
 
@@ -261,6 +261,7 @@ class RRGraph {
     void clear_switches();
     void clear_segments();
     void clear();
+
   private: //Internal
     void set_dirty();
     void clear_dirty();
@@ -291,58 +292,57 @@ class RRGraph {
     bool valid_segment_id(RRSegmentId segment_id) const;
 
     //Compression related
-    void build_id_maps(vtr::vector<RRNodeId,RRNodeId>& node_id_map,
-                       vtr::vector<RREdgeId,RREdgeId>& edge_id_map);
-    void clean_nodes(const vtr::vector<RRNodeId,RRNodeId>& node_id_map);
-    void clean_edges(const vtr::vector<RREdgeId,RREdgeId>& edge_id_map);
-    void rebuild_node_refs(const vtr::vector<RREdgeId,RREdgeId>& edge_id_map);
+    void build_id_maps(vtr::vector<RRNodeId, RRNodeId>& node_id_map,
+                       vtr::vector<RREdgeId, RREdgeId>& edge_id_map);
+    void clean_nodes(const vtr::vector<RRNodeId, RRNodeId>& node_id_map);
+    void clean_edges(const vtr::vector<RREdgeId, RREdgeId>& edge_id_map);
+    void rebuild_node_refs(const vtr::vector<RREdgeId, RREdgeId>& edge_id_map);
 
   private: //Data
-
     //Node related data
-    vtr::vector<RRNodeId,RRNodeId> node_ids_; 
-    vtr::vector<RRNodeId,t_rr_type> node_types_;
+    vtr::vector<RRNodeId, RRNodeId> node_ids_;
+    vtr::vector<RRNodeId, t_rr_type> node_types_;
 
-    vtr::vector<RRNodeId,vtr::Rect<short>> node_bounding_boxes_;
+    vtr::vector<RRNodeId, vtr::Rect<short>> node_bounding_boxes_;
 
-    vtr::vector<RRNodeId,short> node_capacities_;
-    vtr::vector<RRNodeId,short> node_ptc_nums_;
-    vtr::vector<RRNodeId,short> node_cost_indices_;
-    vtr::vector<RRNodeId,e_direction> node_directions_;
-    vtr::vector<RRNodeId,e_side> node_sides_;
-    vtr::vector<RRNodeId,float> node_Rs_;
-    vtr::vector<RRNodeId,float> node_Cs_;
-    vtr::vector<RRNodeId,RRSegmentId> node_segments_; /* Segment ids for each node */
+    vtr::vector<RRNodeId, short> node_capacities_;
+    vtr::vector<RRNodeId, short> node_ptc_nums_;
+    vtr::vector<RRNodeId, short> node_cost_indices_;
+    vtr::vector<RRNodeId, e_direction> node_directions_;
+    vtr::vector<RRNodeId, e_side> node_sides_;
+    vtr::vector<RRNodeId, float> node_Rs_;
+    vtr::vector<RRNodeId, float> node_Cs_;
+    vtr::vector<RRNodeId, RRSegmentId> node_segments_; /* Segment ids for each node */
     /* Record the dividing point between configurable and non-configurable edges for each node */
-    vtr::vector<RRNodeId,size_t> node_num_non_configurable_in_edges_; 
-    vtr::vector<RRNodeId,size_t> node_num_non_configurable_out_edges_; 
+    vtr::vector<RRNodeId, size_t> node_num_non_configurable_in_edges_;
+    vtr::vector<RRNodeId, size_t> node_num_non_configurable_out_edges_;
 
-    vtr::vector<RRNodeId,std::vector<RREdgeId>> node_in_edges_;
-    vtr::vector<RRNodeId,std::vector<RREdgeId>> node_out_edges_;
+    vtr::vector<RRNodeId, std::vector<RREdgeId>> node_in_edges_;
+    vtr::vector<RRNodeId, std::vector<RREdgeId>> node_out_edges_;
 
     //Edge related data
-    vtr::vector<RREdgeId,RREdgeId> edge_ids_;
-    vtr::vector<RREdgeId,RRNodeId> edge_src_nodes_;
-    vtr::vector<RREdgeId,RRNodeId> edge_sink_nodes_;
-    vtr::vector<RREdgeId,RRSwitchId> edge_switches_;
+    vtr::vector<RREdgeId, RREdgeId> edge_ids_;
+    vtr::vector<RREdgeId, RRNodeId> edge_src_nodes_;
+    vtr::vector<RREdgeId, RRNodeId> edge_sink_nodes_;
+    vtr::vector<RREdgeId, RRSwitchId> edge_switches_;
 
     //Switch related data
-    // Note that so far there has been no need to remove 
+    // Note that so far there has been no need to remove
     // switches, so no such facility exists
-    vtr::vector<RRSwitchId,RRSwitchId> switch_ids_;
-    vtr::vector<RRSwitchId,t_rr_switch_inf> switches_;
+    vtr::vector<RRSwitchId, RRSwitchId> switch_ids_;
+    vtr::vector<RRSwitchId, t_rr_switch_inf> switches_;
 
     /* Segment relatex data 
      * Segment info should be corrected annotated for each rr_node
      * whose type is CHANX and CHANY
-     */   
-    vtr::vector<RRSegmentId,RRSegmentId> segment_ids_;
-    vtr::vector<RRSegmentId,t_segment_inf> segments_;
+     */
+    vtr::vector<RRSegmentId, RRSegmentId> segment_ids_;
+    vtr::vector<RRSegmentId, t_segment_inf> segments_;
 
     //Misc.
     bool dirty_ = false;
 
-    //Fast look-up 
+    //Fast look-up
     typedef std::vector<std::vector<std::vector<std::vector<std::vector<RRNodeId>>>>> NodeLookup;
     mutable NodeLookup node_lookup_; //[0..xmax][0..ymax][0..NUM_TYPES-1][0..ptc_max][0..NUM_SIDES-1]
 };
