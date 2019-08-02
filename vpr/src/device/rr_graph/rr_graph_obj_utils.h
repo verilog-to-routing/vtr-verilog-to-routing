@@ -4,10 +4,10 @@
 #include "vtr_vector_map.h"
 
 /*
-*
-* Templated utility functions for cleaning and reordering IdMaps
-*
-*/
+ *
+ * Templated utility functions for cleaning and reordering IdMaps
+ *
+ */
 
 //Returns true if all elements are contiguously ascending values (i.e. equal to their index)
 template<typename Container>
