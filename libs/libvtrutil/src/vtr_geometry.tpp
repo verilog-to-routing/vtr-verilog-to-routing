@@ -39,23 +39,23 @@ bool operator<(Point<T> lhs, Point<T> rhs) {
 //Mutators
 template<class T>
 void Point<T>::set(T x_val, T y_val) {
-	x_ = x_val;
-	y_ = y_val;
+    x_ = x_val;
+    y_ = y_val;
 }
 
 template<class T>
 void Point<T>::set_x(T x_val) {
-	x_ = x_val;
+    x_ = x_val;
 }
 
 template<class T>
 void Point<T>::set_y(T y_val) {
-	y_ = y_val;
+    y_ = y_val;
 }
 
 template<class T>
 void Point<T>::swap() {
-	std::swap(x_, y_);
+    std::swap(x_, y_);
 }
 
 /*
