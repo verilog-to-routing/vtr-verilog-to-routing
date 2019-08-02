@@ -562,9 +562,9 @@ RRGraph::node_range RRGraph::find_nodes(short x, short y, t_rr_type type, int pt
     }
 
     /* IMPORTANT!!! 
-   * check x, y, type, ptc if they are in the range
-   * if not, return a zero range 
-   */
+     * check x, y, type, ptc if they are in the range
+     * if not, return a zero range 
+     */
     size_t itype = type;
 
     /* Check if x, y, type and ptc, side is valid */
@@ -792,8 +792,8 @@ bool RRGraph::check_node_in_edges(RRNodeId node) const {
             continue;
         }
         /* Reach here, it means there is something wrong! 
-     * Print a warning  
-     */
+         * Print a warning  
+         */
         VTR_LOG_WARN("Edge %d is in the input edge list of node %d while the node is not in edge's sink node list!\n",
                      size_t(edge), size_t(node));
         all_valid = false;
@@ -819,8 +819,8 @@ bool RRGraph::check_node_out_edges(RRNodeId node) const {
             continue;
         }
         /* Reach here, it means there is something wrong! 
-     * Print a warning  
-     */
+         * Print a warning  
+         */
         VTR_LOG_WARN("Edge %d is in the output edge list of node %d while the node is not in edge's source node list!\n",
                      size_t(edge), size_t(node));
         all_valid = false;
@@ -851,8 +851,8 @@ bool RRGraph::check_nodes_in_edges() const {
             continue;
         }
         /* Reach here, it means there is something wrong! 
-     * Print a warning  
-     */
+         * Print a warning  
+         */
         all_valid = false;
     }
     return all_valid;
@@ -866,8 +866,8 @@ bool RRGraph::check_nodes_out_edges() const {
             continue;
         }
         /* Reach here, it means there is something wrong! 
-     * Print a warning  
-     */
+         * Print a warning  
+         */
         all_valid = false;
     }
     return all_valid;
@@ -905,8 +905,8 @@ bool RRGraph::check_edge_src_nodes() const {
             continue;
         }
         /* Reach here, it means there is something wrong! 
-     * Print a warning  
-     */
+         * Print a warning  
+         */
         VTR_LOG_WARN("Edge %d has a invalid source node %d!\n",
                      size_t(edge), size_t(edge_src_node(edge)));
         all_valid = false;
@@ -922,8 +922,8 @@ bool RRGraph::check_edge_sink_nodes() const {
             continue;
         }
         /* Reach here, it means there is something wrong! 
-     * Print a warning  
-     */
+         * Print a warning  
+         */
         VTR_LOG_WARN("Edge %d has a invalid sink node %d!\n",
                      size_t(edge), size_t(edge_sink_node(edge)));
         all_valid = false;
@@ -962,8 +962,8 @@ bool RRGraph::check_node_duplicated_edges(RRNodeId node) const {
 bool RRGraph::check_duplicated_edges() const {
     bool no_duplication = true;
     /* For each node:
-   * Search input edges, see there are two edges with same id or address 
-   */
+     * Search input edges, see there are two edges with same id or address 
+     */
     for (auto node : nodes()) {
         if (false == check_node_duplicated_edges(node)) {
             no_duplication = false;
@@ -979,9 +979,9 @@ bool RRGraph::check_duplicated_edges() const {
 bool RRGraph::check_dangling_nodes() const {
     bool no_dangling = true;
     /* For each node: 
-   * check if the number of input edges and output edges are both 0
-   * If so, this is a dangling nodes and report 
-   */
+     * check if the number of input edges and output edges are both 0
+     * If so, this is a dangling nodes and report 
+     */
     for (auto node : nodes()) {
         if ((0 == this->node_fan_in(node))
             && (0 == this->node_fan_out(node))) {
@@ -1369,7 +1369,7 @@ void RRGraph::partition_node_in_edges(RRNodeId node) {
     size_t num_non_conf_edges = node_in_edges_[node].size() - num_conf_edges; //Note we calculate using the size_t to get full range
 
     /* Check that within allowable range (no overflow when stored as num_non_configurable_edges_
-   */
+     */
     VTR_ASSERT_MSG(num_non_conf_edges <= node_in_edges_[node].size(),
                    "Exceeded RR node maximum number of non-configurable input edges");
 
@@ -1390,7 +1390,7 @@ void RRGraph::partition_node_out_edges(RRNodeId node) {
     size_t num_non_conf_edges = node_out_edges_[node].size() - num_conf_edges; //Note we calculate using the size_t to get full range
 
     /* Check that within allowable range (no overflow when stored as num_non_configurable_edges_
-   */
+     */
     VTR_ASSERT_MSG(num_non_conf_edges <= node_out_edges_[node].size(),
                    "Exceeded RR node maximum number of non-configurable output edges");
 
@@ -1680,8 +1680,8 @@ void RRGraph::clean_nodes(const vtr::vector<RRNodeId, RRNodeId>& node_id_map) {
 
     node_types_ = clean_and_reorder_values(node_types_, node_id_map);
     /* FIXME: the following usage of clean_and_reorder_values causes compilation error, 
-   * Comment now and see if there is any further errors 
-   */
+     * Comment now and see if there is any further errors 
+     */
     node_bounding_boxes_ = clean_and_reorder_values(node_bounding_boxes_, node_id_map);
 
     node_capacities_ = clean_and_reorder_values(node_capacities_, node_id_map);
