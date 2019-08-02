@@ -53,60 +53,60 @@
 
 //Accessors
 RRGraph::node_range RRGraph::nodes() const {
-  return vtr::make_range(node_ids_.begin(), node_ids_.end());
+    return vtr::make_range(node_ids_.begin(), node_ids_.end());
 }
 
 RRGraph::edge_range RRGraph::edges() const {
-  return vtr::make_range(edge_ids_.begin(), edge_ids_.end());
+    return vtr::make_range(edge_ids_.begin(), edge_ids_.end());
 }
 
 RRGraph::switch_range RRGraph::switches() const {
-  return vtr::make_range(switch_ids_.begin(), switch_ids_.end());
+    return vtr::make_range(switch_ids_.begin(), switch_ids_.end());
 }
 
 RRGraph::segment_range RRGraph::segments() const {
-  return vtr::make_range(segment_ids_.begin(), segment_ids_.end());
+    return vtr::make_range(segment_ids_.begin(), segment_ids_.end());
 }
 
 //Node attributes
 t_rr_type RRGraph::node_type(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  return node_types_[node];
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    return node_types_[node];
 }
 
 size_t RRGraph::node_index(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  return size_t(node); 
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    return size_t(node);
 }
 
 const char* RRGraph::node_type_string(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  return rr_node_typename[node_type(node)];
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    return rr_node_typename[node_type(node)];
 }
 
 short RRGraph::node_xlow(RRNodeId node) const {
-  return node_bounding_box(node).xmin();
+    return node_bounding_box(node).xmin();
 }
 
 short RRGraph::node_ylow(RRNodeId node) const {
-  return node_bounding_box(node).ymin();
+    return node_bounding_box(node).ymin();
 }
 
 short RRGraph::node_xhigh(RRNodeId node) const {
-  return node_bounding_box(node).xmax();
+    return node_bounding_box(node).xmax();
 }
 
 short RRGraph::node_yhigh(RRNodeId node) const {
-  return node_bounding_box(node).ymax();
+    return node_bounding_box(node).ymax();
 }
 
 short RRGraph::node_length(RRNodeId node) const {
-  return std::max(node_xhigh(node) - node_xlow(node), node_yhigh(node) - node_ylow(node));
+    return std::max(node_xhigh(node) - node_xlow(node), node_yhigh(node) - node_ylow(node));
 }
 
 vtr::Rect<short> RRGraph::node_bounding_box(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  return node_bounding_boxes_[node];
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    return node_bounding_boxes_[node];
 }
 
 /* Node starting and ending points */
@@ -119,16 +119,16 @@ vtr::Rect<short> RRGraph::node_bounding_box(RRNodeId node) const {
  * (xhigh, yhigh) should be the starting point 
  ***********************************************************************/
 vtr::Point<size_t> RRGraph::node_start_coordinator(RRNodeId node) const {
-  /* Make sure we have CHANX or CHANY */
-  VTR_ASSERT ( (CHANX == node_type(node)) ||(CHANY == node_type(node)) );
- 
-  vtr::Point<size_t> start_coordinator(node_xlow(node), node_ylow(node));
+    /* Make sure we have CHANX or CHANY */
+    VTR_ASSERT((CHANX == node_type(node)) || (CHANY == node_type(node)));
 
-  if (DEC_DIRECTION == node_direction(node)) {
-    start_coordinator.set(node_xhigh(node), node_yhigh(node));
-  }
+    vtr::Point<size_t> start_coordinator(node_xlow(node), node_ylow(node));
 
-  return start_coordinator;
+    if (DEC_DIRECTION == node_direction(node)) {
+        start_coordinator.set(node_xhigh(node), node_yhigh(node));
+    }
+
+    return start_coordinator;
 }
 
 /************************************************************************
@@ -140,111 +140,111 @@ vtr::Point<size_t> RRGraph::node_start_coordinator(RRNodeId node) const {
  * (xlow, ylow) should be the ending point 
  ***********************************************************************/
 vtr::Point<size_t> RRGraph::node_end_coordinator(RRNodeId node) const {
-  /* Make sure we have CHANX or CHANY */
-  VTR_ASSERT ( (CHANX == node_type(node)) ||(CHANY == node_type(node)) );
- 
-  vtr::Point<size_t> end_coordinator(node_xlow(node), node_ylow(node));
+    /* Make sure we have CHANX or CHANY */
+    VTR_ASSERT((CHANX == node_type(node)) || (CHANY == node_type(node)));
 
-  if (DEC_DIRECTION == node_direction(node)) {
-    end_coordinator.set(node_xlow(node), node_ylow(node));
-  }
+    vtr::Point<size_t> end_coordinator(node_xlow(node), node_ylow(node));
 
-  return end_coordinator;
+    if (DEC_DIRECTION == node_direction(node)) {
+        end_coordinator.set(node_xlow(node), node_ylow(node));
+    }
+
+    return end_coordinator;
 }
 
 short RRGraph::node_fan_in(RRNodeId node) const {
-  return node_in_edges(node).size();
+    return node_in_edges(node).size();
 }
 
 short RRGraph::node_fan_out(RRNodeId node) const {
-  return node_out_edges(node).size();
+    return node_out_edges(node).size();
 }
 
 short RRGraph::node_capacity(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  return node_capacities_[node];
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    return node_capacities_[node];
 }
 
 short RRGraph::node_ptc_num(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  return node_ptc_nums_[node];
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    return node_ptc_nums_[node];
 }
 
 short RRGraph::node_pin_num(RRNodeId node) const {
-  VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, 
-             "Pin number valid only for IPIN/OPIN RR nodes");
-  return node_ptc_num(node);
+    VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN,
+                   "Pin number valid only for IPIN/OPIN RR nodes");
+    return node_ptc_num(node);
 }
 
 short RRGraph::node_track_num(RRNodeId node) const {
-  VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, 
-             "Track number valid only for CHANX/CHANY RR nodes");
-  return node_ptc_num(node);
+    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY,
+                   "Track number valid only for CHANX/CHANY RR nodes");
+    return node_ptc_num(node);
 }
 
 short RRGraph::node_class_num(RRNodeId node) const {
-  VTR_ASSERT_MSG(node_type(node) == SOURCE || node_type(node) == SINK, "Class number valid only for SOURCE/SINK RR nodes");
-  return node_ptc_num(node);
+    VTR_ASSERT_MSG(node_type(node) == SOURCE || node_type(node) == SINK, "Class number valid only for SOURCE/SINK RR nodes");
+    return node_ptc_num(node);
 }
 
 short RRGraph::node_cost_index(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  return node_cost_indices_[node];
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    return node_cost_indices_[node];
 }
 
 e_direction RRGraph::node_direction(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direction valid only for CHANX/CHANY RR nodes");
-  return node_directions_[node];
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direction valid only for CHANX/CHANY RR nodes");
+    return node_directions_[node];
 }
 
 const char* RRGraph::node_direction_string(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direction valid only for CHANX/CHANY RR nodes");
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direction valid only for CHANX/CHANY RR nodes");
 
-  if (INC_DIRECTION == node_direction(node)) {
-    return "INC_DIR";
-  } else if (DEC_DIRECTION == node_direction(node)) {
-    return "DEC_DIR";
-  } else if (BI_DIRECTION == node_direction(node)) {
-    return "BI_DIR";
-  }
+    if (INC_DIRECTION == node_direction(node)) {
+        return "INC_DIR";
+    } else if (DEC_DIRECTION == node_direction(node)) {
+        return "DEC_DIR";
+    } else if (BI_DIRECTION == node_direction(node)) {
+        return "BI_DIR";
+    }
 
-  VTR_ASSERT(NO_DIRECTION == node_direction(node));
-  return "NO_DIR";
+    VTR_ASSERT(NO_DIRECTION == node_direction(node));
+    return "NO_DIR";
 }
 
 e_side RRGraph::node_side(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side valid only for IPIN/OPIN RR nodes");
-  return node_sides_[node];
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side valid only for IPIN/OPIN RR nodes");
+    return node_sides_[node];
 }
 
 const char* RRGraph::node_side_string(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side valid only for IPIN/OPIN RR nodes");
-  return SIDE_STRING[node_side(node)];
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side valid only for IPIN/OPIN RR nodes");
+    return SIDE_STRING[node_side(node)];
 }
 
 /* Get the resistance of a node */
 float RRGraph::node_R(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  return node_Rs_[node];
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    return node_Rs_[node];
 }
 
 /* Get the capacitance of a node */
 float RRGraph::node_C(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  return node_Cs_[node];
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    return node_Cs_[node];
 }
 
 /*
  * Get a segment id of a node in rr_graph 
  */
 RRSegmentId RRGraph::node_segment(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
+    VTR_ASSERT_SAFE(valid_node_id(node));
 
-  return node_segments_[node];
+    return node_segments_[node];
 }
 
 /* 
@@ -254,18 +254,18 @@ RRSegmentId RRGraph::node_segment(RRNodeId node) const {
  * This can avoid unneccessary walkthrough
  */
 short RRGraph::node_num_configurable_in_edges(RRNodeId node) const {
-  /* Ensure a valid node id */
-  VTR_ASSERT_SAFE(valid_node_id(node));
+    /* Ensure a valid node id */
+    VTR_ASSERT_SAFE(valid_node_id(node));
 
-  /* Each all the edges ends at this node */
-  short iedge = 0;
-  for (auto edge : node_in_edges(node)) {
-    if (true == edge_is_configurable(edge)) {
-      ++iedge;
+    /* Each all the edges ends at this node */
+    short iedge = 0;
+    for (auto edge : node_in_edges(node)) {
+        if (true == edge_is_configurable(edge)) {
+            ++iedge;
+        }
     }
-  }
 
-  return iedge;
+    return iedge;
 }
 
 /* 
@@ -275,18 +275,18 @@ short RRGraph::node_num_configurable_in_edges(RRNodeId node) const {
  * This can avoid unneccessary walkthrough
  */
 short RRGraph::node_num_configurable_out_edges(RRNodeId node) const {
-  /* Ensure a valid node id */
-  VTR_ASSERT_SAFE(valid_node_id(node));
+    /* Ensure a valid node id */
+    VTR_ASSERT_SAFE(valid_node_id(node));
 
-  /* Each all the edges ends at this node */
-  short iedge = 0;
-  for (auto edge : node_out_edges(node)) {
-    if (true == edge_is_configurable(edge)) {
-      ++iedge;
+    /* Each all the edges ends at this node */
+    short iedge = 0;
+    for (auto edge : node_out_edges(node)) {
+        if (true == edge_is_configurable(edge)) {
+            ++iedge;
+        }
     }
-  }
 
-  return iedge;
+    return iedge;
 }
 
 /* 
@@ -296,18 +296,18 @@ short RRGraph::node_num_configurable_out_edges(RRNodeId node) const {
  * This can avoid unneccessary walkthrough
  */
 short RRGraph::node_num_non_configurable_in_edges(RRNodeId node) const {
-  /* Ensure a valid node id */
-  VTR_ASSERT_SAFE(valid_node_id(node));
+    /* Ensure a valid node id */
+    VTR_ASSERT_SAFE(valid_node_id(node));
 
-  /* Each all the edges ends at this node */
-  short iedge = 0;
-  for (auto edge : node_in_edges(node)) {
-    if (true == edge_is_non_configurable(edge)) {
-      ++iedge;
+    /* Each all the edges ends at this node */
+    short iedge = 0;
+    for (auto edge : node_in_edges(node)) {
+        if (true == edge_is_non_configurable(edge)) {
+            ++iedge;
+        }
     }
-  }
 
-  return iedge;
+    return iedge;
 }
 
 /* 
@@ -317,466 +317,462 @@ short RRGraph::node_num_non_configurable_in_edges(RRNodeId node) const {
  * This can avoid unneccessary walkthrough
  */
 short RRGraph::node_num_non_configurable_out_edges(RRNodeId node) const {
-  /* Ensure a valid node id */
-  VTR_ASSERT_SAFE(valid_node_id(node));
+    /* Ensure a valid node id */
+    VTR_ASSERT_SAFE(valid_node_id(node));
 
-  /* Each all the edges ends at this node */
-  short iedge = 0;
-  for (auto edge : node_out_edges(node)) {
-    if (true == edge_is_non_configurable(edge)) {
-      ++iedge;
-    }  
-  }
+    /* Each all the edges ends at this node */
+    short iedge = 0;
+    for (auto edge : node_out_edges(node)) {
+        if (true == edge_is_non_configurable(edge)) {
+            ++iedge;
+        }
+    }
 
-  return iedge;
+    return iedge;
 }
 
 /* Get the edge id that connects two nodes */
 RREdgeId RRGraph::get_node_to_node_edge(RRNodeId from_node, RRNodeId to_node) const {
-  /* Make sure we will access a valid node */
-  VTR_ASSERT_SAFE(valid_node_id(from_node));
-  VTR_ASSERT_SAFE(valid_node_id(to_node));
+    /* Make sure we will access a valid node */
+    VTR_ASSERT_SAFE(valid_node_id(from_node));
+    VTR_ASSERT_SAFE(valid_node_id(to_node));
 
-  /* check the output edges of from_node  */
-  for (auto edge : node_out_edges(from_node)) {
-    /* Check if the sink node of the edge is the to_node */
-    if (to_node == edge_sink_node(edge)) { 
-      return edge; /* we find it return here */
-    } 
-  } 
-  /* We find nothing, return an RRGRAPH_OPEN ID */
-  return RRGRAPH_OPEN_EDGE_ID;
+    /* check the output edges of from_node  */
+    for (auto edge : node_out_edges(from_node)) {
+        /* Check if the sink node of the edge is the to_node */
+        if (to_node == edge_sink_node(edge)) {
+            return edge; /* we find it return here */
+        }
+    }
+    /* We find nothing, return an RRGRAPH_OPEN ID */
+    return RRGRAPH_OPEN_EDGE_ID;
 }
 
 /* Get the switch id that connects two nodes */
 RRSwitchId RRGraph::get_node_to_node_switch(RRNodeId from_node, RRNodeId to_node) const {
-  /* Make sure we will access a valid node */
-  VTR_ASSERT_SAFE(valid_node_id(from_node));
-  VTR_ASSERT_SAFE(valid_node_id(to_node));
+    /* Make sure we will access a valid node */
+    VTR_ASSERT_SAFE(valid_node_id(from_node));
+    VTR_ASSERT_SAFE(valid_node_id(to_node));
 
-  RREdgeId edge = get_node_to_node_edge(from_node, to_node);
-  if (RRGRAPH_OPEN_EDGE_ID == edge) {
-    /* edge is open, we return an RRGRAPH_OPEN_ID*/
-    return RRGRAPH_OPEN_SWITCH_ID;
-  } else {
-    return edge_switch(edge); 
-  }
+    RREdgeId edge = get_node_to_node_edge(from_node, to_node);
+    if (RRGRAPH_OPEN_EDGE_ID == edge) {
+        /* edge is open, we return an RRGRAPH_OPEN_ID*/
+        return RRGRAPH_OPEN_SWITCH_ID;
+    } else {
+        return edge_switch(edge);
+    }
 }
 
 /* Get the list of configurable edges from the input edges of a given node 
  * And return the range(iterators) of the list 
  */
 RRGraph::edge_range RRGraph::node_configurable_in_edges(RRNodeId node) const {
-  /* Make sure we will access a valid node */
-  VTR_ASSERT_SAFE(valid_node_id(node));
+    /* Make sure we will access a valid node */
+    VTR_ASSERT_SAFE(valid_node_id(node));
 
-  /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
-  auto begin = node_in_edges(node).begin();  
+    /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
+    auto begin = node_in_edges(node).begin();
 
-  /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
-  auto end = node_in_edges(node).end() -  node_num_non_configurable_in_edges_[node];  
+    /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
+    auto end = node_in_edges(node).end() - node_num_non_configurable_in_edges_[node];
 
-  return vtr::make_range(begin, end); 
+    return vtr::make_range(begin, end);
 }
 
 /* Get the list of configurable edges from the input edges of a given node 
  * And return the range(iterators) of the list 
  */
 RRGraph::edge_range RRGraph::node_non_configurable_in_edges(RRNodeId node) const {
-  /* Make sure we will access a valid node */
-  VTR_ASSERT_SAFE(valid_node_id(node));
+    /* Make sure we will access a valid node */
+    VTR_ASSERT_SAFE(valid_node_id(node));
 
-  /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
-  auto begin = node_in_edges(node).end() - node_num_non_configurable_in_edges_[node];  
+    /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
+    auto begin = node_in_edges(node).end() - node_num_non_configurable_in_edges_[node];
 
-  /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
-  auto end = node_in_edges(node).end();  
+    /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
+    auto end = node_in_edges(node).end();
 
-  return vtr::make_range(begin, end); 
+    return vtr::make_range(begin, end);
 }
 
 /* Get the list of configurable edges from the input edges of a given node 
  * And return the range(iterators) of the list 
  */
 RRGraph::edge_range RRGraph::node_configurable_out_edges(RRNodeId node) const {
-  /* Make sure we will access a valid node */
-  VTR_ASSERT_SAFE(valid_node_id(node));
+    /* Make sure we will access a valid node */
+    VTR_ASSERT_SAFE(valid_node_id(node));
 
-  /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
-  auto begin = node_out_edges(node).begin();  
+    /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
+    auto begin = node_out_edges(node).begin();
 
-  /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
-  auto end = node_out_edges(node).end() - node_num_non_configurable_out_edges_[node];  
+    /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
+    auto end = node_out_edges(node).end() - node_num_non_configurable_out_edges_[node];
 
-  return vtr::make_range(begin, end); 
+    return vtr::make_range(begin, end);
 }
 
 /* Get the list of configurable edges from the input edges of a given node 
  * And return the range(iterators) of the list 
  */
 RRGraph::edge_range RRGraph::node_non_configurable_out_edges(RRNodeId node) const {
-  /* Make sure we will access a valid node */
-  VTR_ASSERT_SAFE(valid_node_id(node));
+    /* Make sure we will access a valid node */
+    VTR_ASSERT_SAFE(valid_node_id(node));
 
-  /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
-  auto begin = node_out_edges(node).end() - node_num_non_configurable_out_edges_[node];  
+    /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
+    auto begin = node_out_edges(node).end() - node_num_non_configurable_out_edges_[node];
 
-  /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
-  auto end = node_out_edges(node).end();  
+    /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
+    auto end = node_out_edges(node).end();
 
-  return vtr::make_range(begin, end); 
+    return vtr::make_range(begin, end);
 }
 
 RRGraph::edge_range RRGraph::node_out_edges(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  return vtr::make_range(node_out_edges_[node].begin(), node_out_edges_[node].end());
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    return vtr::make_range(node_out_edges_[node].begin(), node_out_edges_[node].end());
 }
 
 RRGraph::edge_range RRGraph::node_in_edges(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  return vtr::make_range(node_in_edges_[node].begin(), node_in_edges_[node].end());
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    return vtr::make_range(node_in_edges_[node].begin(), node_in_edges_[node].end());
 }
 
 //Edge attributes
 size_t RRGraph::edge_index(RREdgeId edge) const {
-  VTR_ASSERT_SAFE(valid_edge_id(edge));
-  return size_t(edge); 
+    VTR_ASSERT_SAFE(valid_edge_id(edge));
+    return size_t(edge);
 }
 
 RRNodeId RRGraph::edge_src_node(RREdgeId edge) const {
-  VTR_ASSERT_SAFE(valid_edge_id(edge));
-  return edge_src_nodes_[edge];
+    VTR_ASSERT_SAFE(valid_edge_id(edge));
+    return edge_src_nodes_[edge];
 }
 RRNodeId RRGraph::edge_sink_node(RREdgeId edge) const {
-  VTR_ASSERT_SAFE(valid_edge_id(edge));
-  return edge_sink_nodes_[edge];
+    VTR_ASSERT_SAFE(valid_edge_id(edge));
+    return edge_sink_nodes_[edge];
 }
 
 RRSwitchId RRGraph::edge_switch(RREdgeId edge) const {
-  VTR_ASSERT_SAFE(valid_edge_id(edge));
-  return edge_switches_[edge];
+    VTR_ASSERT_SAFE(valid_edge_id(edge));
+    return edge_switches_[edge];
 }
 
 /* Check if the edge is a configurable edge (programmble) */
 bool RRGraph::edge_is_configurable(RREdgeId edge) const {
-  /* Make sure we have a valid edge id */
-  VTR_ASSERT_SAFE(valid_edge_id(edge));
+    /* Make sure we have a valid edge id */
+    VTR_ASSERT_SAFE(valid_edge_id(edge));
 
-  auto iswitch = edge_switch(edge);
+    auto iswitch = edge_switch(edge);
 
-  return switches_[iswitch].configurable();
+    return switches_[iswitch].configurable();
 }
 
 /* Check if the edge is a non-configurable edge (hardwired) */
 bool RRGraph::edge_is_non_configurable(RREdgeId edge) const {
-  /* Make sure we have a valid edge id */
-  VTR_ASSERT_SAFE(valid_edge_id(edge));
-  return !edge_is_configurable(edge);
+    /* Make sure we have a valid edge id */
+    VTR_ASSERT_SAFE(valid_edge_id(edge));
+    return !edge_is_configurable(edge);
 }
 
 size_t RRGraph::switch_index(RRSwitchId switch_id) const {
-  VTR_ASSERT_SAFE(valid_switch_id(switch_id));
-  return size_t(switch_id); 
+    VTR_ASSERT_SAFE(valid_switch_id(switch_id));
+    return size_t(switch_id);
 }
 
 /*
  * Get a switch from the rr_switch list with a given id  
  */
 const t_rr_switch_inf& RRGraph::get_switch(RRSwitchId switch_id) const {
-  VTR_ASSERT_SAFE(valid_switch_id(switch_id));
-  return switches_[switch_id]; 
+    VTR_ASSERT_SAFE(valid_switch_id(switch_id));
+    return switches_[switch_id];
 }
 
 size_t RRGraph::segment_index(RRSegmentId segment_id) const {
-  VTR_ASSERT_SAFE(valid_segment_id(segment_id));
-  return size_t(segment_id); 
+    VTR_ASSERT_SAFE(valid_segment_id(segment_id));
+    return size_t(segment_id);
 }
 
 /*
  * Get a segment from the segment list with a given id  
  */
 const t_segment_inf& RRGraph::get_segment(RRSegmentId segment_id) const {
-  VTR_ASSERT_SAFE(valid_segment_id(segment_id));
-  return segments_[segment_id]; 
+    VTR_ASSERT_SAFE(valid_segment_id(segment_id));
+    return segments_[segment_id];
 }
 
 RREdgeId RRGraph::find_edge(RRNodeId src_node, RRNodeId sink_node) const {
-  for (auto edge : node_out_edges(src_node)) {
-    if (edge_sink_node(edge) == sink_node) {
-        return edge;
+    for (auto edge : node_out_edges(src_node)) {
+        if (edge_sink_node(edge) == sink_node) {
+            return edge;
+        }
     }
-  }
 
-  //Not found
-  return RREdgeId::INVALID();
+    //Not found
+    return RREdgeId::INVALID();
 }
 
 RRNodeId RRGraph::find_node(short x, short y, t_rr_type type, int ptc, e_side side) const {
-  if (!valid_fast_node_lookup()) {
-    build_fast_node_lookup();
-  }
-  size_t itype = type;
-  size_t iside = side;
+    if (!valid_fast_node_lookup()) {
+        build_fast_node_lookup();
+    }
+    size_t itype = type;
+    size_t iside = side;
 
-  /* Check if x, y, type and ptc, side is valid */
-  if ( (x < 0)  /* See if x is smaller than the index of first element */
-    || (size_t(x) > node_lookup_.size() - 1) ) { /* See if x is large than the index of last element */
-    /* Return a zero range! */
-    return RRGRAPH_OPEN_NODE_ID;
-  }
+    /* Check if x, y, type and ptc, side is valid */
+    if ((x < 0)                                     /* See if x is smaller than the index of first element */
+        || (size_t(x) > node_lookup_.size() - 1)) { /* See if x is large than the index of last element */
+        /* Return a zero range! */
+        return RRGRAPH_OPEN_NODE_ID;
+    }
 
-  /* Check if x, y, type and ptc, side is valid */
-  if ( (y < 0)  /* See if y is smaller than the index of first element */
-    || (size_t(y) > node_lookup_[x].size() - 1) ) { /* See if y is large than the index of last element */
-    /* Return a zero range! */
-    return RRGRAPH_OPEN_NODE_ID;
-  }
+    /* Check if x, y, type and ptc, side is valid */
+    if ((y < 0)                                        /* See if y is smaller than the index of first element */
+        || (size_t(y) > node_lookup_[x].size() - 1)) { /* See if y is large than the index of last element */
+        /* Return a zero range! */
+        return RRGRAPH_OPEN_NODE_ID;
+    }
 
-  /* Check if x, y, type and ptc, side is valid */
-  /* itype is always larger than -1, we can skip checking */
-  if (itype > node_lookup_[x][y].size() - 1)  { /* See if type is large than the index of last element */
-    /* Return a zero range! */
-    return RRGRAPH_OPEN_NODE_ID;
-  }
+    /* Check if x, y, type and ptc, side is valid */
+    /* itype is always larger than -1, we can skip checking */
+    if (itype > node_lookup_[x][y].size() - 1) { /* See if type is large than the index of last element */
+        /* Return a zero range! */
+        return RRGRAPH_OPEN_NODE_ID;
+    }
 
-  /* Check if x, y, type and ptc, side is valid */
-  if ( (ptc < 0)  /* See if ptc is smaller than the index of first element */
-    || (size_t(ptc) > node_lookup_[x][y][type].size() - 1) ) { /* See if ptc is large than the index of last element */
-    /* Return a zero range! */
-    return RRGRAPH_OPEN_NODE_ID;
-  }
+    /* Check if x, y, type and ptc, side is valid */
+    if ((ptc < 0)                                                 /* See if ptc is smaller than the index of first element */
+        || (size_t(ptc) > node_lookup_[x][y][type].size() - 1)) { /* See if ptc is large than the index of last element */
+        /* Return a zero range! */
+        return RRGRAPH_OPEN_NODE_ID;
+    }
 
-  /* Check if x, y, type and ptc, side is valid */
-  /* iside is always larger than -1, we can skip checking */
-  if (iside > node_lookup_[x][y][type][ptc].size() - 1) { /* See if side is large than the index of last element */
-    /* Return a zero range! */
-    return RRGRAPH_OPEN_NODE_ID;
-  }
+    /* Check if x, y, type and ptc, side is valid */
+    /* iside is always larger than -1, we can skip checking */
+    if (iside > node_lookup_[x][y][type][ptc].size() - 1) { /* See if side is large than the index of last element */
+        /* Return a zero range! */
+        return RRGRAPH_OPEN_NODE_ID;
+    }
 
-  return node_lookup_[x][y][itype][ptc][iside];
+    return node_lookup_[x][y][itype][ptc][iside];
 }
 
 RRGraph::node_range RRGraph::find_nodes(short x, short y, t_rr_type type, int ptc) const {
-  if (!valid_fast_node_lookup()) {
-    build_fast_node_lookup();
-  }
+    if (!valid_fast_node_lookup()) {
+        build_fast_node_lookup();
+    }
 
-  /* IMPORTANT!!! 
+    /* IMPORTANT!!! 
    * check x, y, type, ptc if they are in the range
    * if not, return a zero range 
    */
-  size_t itype = type;
+    size_t itype = type;
 
-  /* Check if x, y, type and ptc, side is valid */
-  if ( (x < 0)  /* See if x is smaller than the index of first element */
-    || (size_t(x) > node_lookup_.size() - 1) ) { /* See if x is large than the index of last element */
-    /* Return a zero range! */
-    const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
-    return vtr::make_range(zero_range.begin(), zero_range.end());
-  }
+    /* Check if x, y, type and ptc, side is valid */
+    if ((x < 0)                                     /* See if x is smaller than the index of first element */
+        || (size_t(x) > node_lookup_.size() - 1)) { /* See if x is large than the index of last element */
+        /* Return a zero range! */
+        const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
+        return vtr::make_range(zero_range.begin(), zero_range.end());
+    }
 
-  /* Check if x, y, type and ptc, side is valid */
-  if ( (y < 0)  /* See if y is smaller than the index of first element */
-    || (size_t(y) > node_lookup_[x].size() - 1) ) { /* See if y is large than the index of last element */
-    /* Return a zero range! */
-    const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
-    return vtr::make_range(zero_range.begin(), zero_range.end());
-  }
+    /* Check if x, y, type and ptc, side is valid */
+    if ((y < 0)                                        /* See if y is smaller than the index of first element */
+        || (size_t(y) > node_lookup_[x].size() - 1)) { /* See if y is large than the index of last element */
+        /* Return a zero range! */
+        const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
+        return vtr::make_range(zero_range.begin(), zero_range.end());
+    }
 
-  /* Check if x, y, type and ptc, side is valid */
-  /* itype is always larger than -1, we can skip checking */
-  if (itype > node_lookup_[x][y].size() - 1)  { /* See if type is large than the index of last element */
-    /* Return a zero range! */
-    const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
-    return vtr::make_range(zero_range.begin(), zero_range.end());
-  }
+    /* Check if x, y, type and ptc, side is valid */
+    /* itype is always larger than -1, we can skip checking */
+    if (itype > node_lookup_[x][y].size() - 1) { /* See if type is large than the index of last element */
+        /* Return a zero range! */
+        const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
+        return vtr::make_range(zero_range.begin(), zero_range.end());
+    }
 
-  /* Check if x, y, type and ptc, side is valid */
-  if ( (ptc < 0)  /* See if ptc is smaller than the index of first element */
-    || (size_t(ptc) > node_lookup_[x][y][type].size() - 1) ) { /* See if ptc is large than the index of last element */
-    /* Return a zero range! */
-    const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
-    return vtr::make_range(zero_range.begin(), zero_range.end());
-  }
+    /* Check if x, y, type and ptc, side is valid */
+    if ((ptc < 0)                                                 /* See if ptc is smaller than the index of first element */
+        || (size_t(ptc) > node_lookup_[x][y][type].size() - 1)) { /* See if ptc is large than the index of last element */
+        /* Return a zero range! */
+        const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
+        return vtr::make_range(zero_range.begin(), zero_range.end());
+    }
 
-  const auto& matching_nodes = node_lookup_[x][y][type][ptc];
+    const auto& matching_nodes = node_lookup_[x][y][type][ptc];
 
-  return vtr::make_range(matching_nodes.begin(), matching_nodes.end());
+    return vtr::make_range(matching_nodes.begin(), matching_nodes.end());
 }
 
 RRNodeId RRGraph::find_chan_node(short x, short y, t_rr_type type, int ptc) const {
-  /* Must be CHANX or CHANY */
-  VTR_ASSERT_MSG(CHANX == type || CHANY == type, 
-                 "Required node_type to be CHANX or CHANY!");
-  if (!valid_fast_node_lookup()) {
-    build_fast_node_lookup();
-  }
+    /* Must be CHANX or CHANY */
+    VTR_ASSERT_MSG(CHANX == type || CHANY == type,
+                   "Required node_type to be CHANX or CHANY!");
+    if (!valid_fast_node_lookup()) {
+        build_fast_node_lookup();
+    }
 
-  /* Check if x, y, type and ptc is valid */
-  if ( (x < 0)  /* See if x is smaller than the index of first element */
-    || (size_t(x) > node_lookup_.size() - 1) ) { /* See if x is large than the index of last element */
-    /* Return a zero range! */
-    return RRGRAPH_OPEN_NODE_ID;
-  }
+    /* Check if x, y, type and ptc is valid */
+    if ((x < 0)                                     /* See if x is smaller than the index of first element */
+        || (size_t(x) > node_lookup_.size() - 1)) { /* See if x is large than the index of last element */
+        /* Return a zero range! */
+        return RRGRAPH_OPEN_NODE_ID;
+    }
 
-  /* Check if x, y, type and ptc is valid */
-  if ( (y < 0)  /* See if y is smaller than the index of first element */
-    || (size_t(y) > node_lookup_[x].size() - 1) ) { /* See if y is large than the index of last element */
-    /* Return a zero range! */
-    return RRGRAPH_OPEN_NODE_ID;
-  }
+    /* Check if x, y, type and ptc is valid */
+    if ((y < 0)                                        /* See if y is smaller than the index of first element */
+        || (size_t(y) > node_lookup_[x].size() - 1)) { /* See if y is large than the index of last element */
+        /* Return a zero range! */
+        return RRGRAPH_OPEN_NODE_ID;
+    }
 
-  /* Check if x, y, type and ptc is valid */
-  if ((size_t(type) > node_lookup_[x][y].size() - 1) ) { /* See if type is large than the index of last element */
-    /* Return a zero range! */
-    return RRGRAPH_OPEN_NODE_ID;
-  }
+    /* Check if x, y, type and ptc is valid */
+    if ((size_t(type) > node_lookup_[x][y].size() - 1)) { /* See if type is large than the index of last element */
+        /* Return a zero range! */
+        return RRGRAPH_OPEN_NODE_ID;
+    }
 
-  /* Check if x, y, type and ptc is valid */
-  if ( (ptc < 0)  /* See if ptc is smaller than the index of first element */
-    || (size_t(ptc) > node_lookup_[x][y][type].size() - 1) ) { /* See if ptc is large than the index of last element */
-    /* Return a zero range! */
-    return RRGRAPH_OPEN_NODE_ID;
-  }
+    /* Check if x, y, type and ptc is valid */
+    if ((ptc < 0)                                                 /* See if ptc is smaller than the index of first element */
+        || (size_t(ptc) > node_lookup_[x][y][type].size() - 1)) { /* See if ptc is large than the index of last element */
+        /* Return a zero range! */
+        return RRGRAPH_OPEN_NODE_ID;
+    }
 
-  /* check if SIDES is a zero vector */
-  if (0 == node_lookup_[x][y][type][ptc].size()) {
-    /* Return a zero range! */
-    return RRGRAPH_OPEN_NODE_ID;
-  }
+    /* check if SIDES is a zero vector */
+    if (0 == node_lookup_[x][y][type][ptc].size()) {
+        /* Return a zero range! */
+        return RRGRAPH_OPEN_NODE_ID;
+    }
 
-  return node_lookup_[x][y][type][ptc][NUM_SIDES];
+    return node_lookup_[x][y][type][ptc][NUM_SIDES];
 }
 
 /* Find the channel width (number of tracks) of a channel [x][y] */
 short RRGraph::chan_num_tracks(short x, short y, t_rr_type type) const {
-  /* Must be CHANX or CHANY */
-  VTR_ASSERT_MSG(CHANX == type || CHANY == type, 
-                 "Required node_type to be CHANX or CHANY!");
-  if (!valid_fast_node_lookup()) {
-    build_fast_node_lookup();
-  }
+    /* Must be CHANX or CHANY */
+    VTR_ASSERT_MSG(CHANX == type || CHANY == type,
+                   "Required node_type to be CHANX or CHANY!");
+    if (!valid_fast_node_lookup()) {
+        build_fast_node_lookup();
+    }
 
-  /* Check if x, y, type and ptc is valid */
-  if ( (x < 0)  /* See if x is smaller than the index of first element */
-    || (size_t(x) > node_lookup_.size() - 1) ) { /* See if x is large than the index of last element */
-    /* Return a zero range! */
-    return 0;
-  }
+    /* Check if x, y, type and ptc is valid */
+    if ((x < 0)                                     /* See if x is smaller than the index of first element */
+        || (size_t(x) > node_lookup_.size() - 1)) { /* See if x is large than the index of last element */
+        /* Return a zero range! */
+        return 0;
+    }
 
-  /* Check if x, y, type and ptc is valid */
-  if ( (y < 0)  /* See if y is smaller than the index of first element */
-    || (size_t(y) > node_lookup_[x].size() - 1) ) { /* See if y is large than the index of last element */
-    /* Return a zero range! */
-    return 0;
-  }
+    /* Check if x, y, type and ptc is valid */
+    if ((y < 0)                                        /* See if y is smaller than the index of first element */
+        || (size_t(y) > node_lookup_[x].size() - 1)) { /* See if y is large than the index of last element */
+        /* Return a zero range! */
+        return 0;
+    }
 
-  /* Check if x, y, type and ptc is valid */
-  if ((size_t(type) > node_lookup_[x][y].size() - 1) ) { /* See if type is large than the index of last element */
-    /* Return a zero range! */
-    return 0;
-  }
+    /* Check if x, y, type and ptc is valid */
+    if ((size_t(type) > node_lookup_[x][y].size() - 1)) { /* See if type is large than the index of last element */
+        /* Return a zero range! */
+        return 0;
+    }
 
-  const auto& matching_nodes = node_lookup_[x][y][type];
+    const auto& matching_nodes = node_lookup_[x][y][type];
 
-  return vtr::make_range(matching_nodes.begin(), matching_nodes.end()).size();
+    return vtr::make_range(matching_nodes.begin(), matching_nodes.end()).size();
 }
 
 /* This function aims to print basic information about a node */
 void RRGraph::print_node(RRNodeId node) const {
+    VTR_LOG("Node id: %d\n", node_index(node));
+    VTR_LOG("Node type: %s\n", node_type_string(node));
+    VTR_LOG("Node xlow: %d\n", node_xlow(node));
+    VTR_LOG("Node ylow: %d\n", node_ylow(node));
+    VTR_LOG("Node xhigh: %d\n", node_xhigh(node));
+    VTR_LOG("Node yhigh: %d\n", node_yhigh(node));
+    VTR_LOG("Node ptc: %d\n", node_ptc_num(node));
+    VTR_LOG("Node num in_edges: %d\n", node_in_edges(node).size());
+    VTR_LOG("Node num out_edges: %d\n", node_out_edges(node).size());
 
-  VTR_LOG("Node id: %d\n", node_index(node)); 
-  VTR_LOG("Node type: %s\n", node_type_string(node)); 
-  VTR_LOG("Node xlow: %d\n", node_xlow(node)); 
-  VTR_LOG("Node ylow: %d\n", node_ylow(node)); 
-  VTR_LOG("Node xhigh: %d\n", node_xhigh(node)); 
-  VTR_LOG("Node yhigh: %d\n", node_yhigh(node)); 
-  VTR_LOG("Node ptc: %d\n", node_ptc_num(node)); 
-  VTR_LOG("Node num in_edges: %d\n", node_in_edges(node).size()); 
-  VTR_LOG("Node num out_edges: %d\n", node_out_edges(node).size()); 
-
-  return;
+    return;
 }
 
 /* Check if the segment id of a node is in range */
 bool RRGraph::check_node_segment(RRNodeId node) const {
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  /* Only CHANX and CHANY requires a valid segment id */
-  if ( (CHANX == node_type(node)) 
-    || (CHANY == node_type(node)) ) {
-    return valid_segment_id(node_segments_[node]);  
-  } else {
-    return true;
-  }
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    /* Only CHANX and CHANY requires a valid segment id */
+    if ((CHANX == node_type(node))
+        || (CHANY == node_type(node))) {
+        return valid_segment_id(node_segments_[node]);
+    } else {
+        return true;
+    }
 }
-
 
 /* Check if the segment id of every node is in range */
 bool RRGraph::check_node_segments() const {
-  bool all_valid = true;
-  for (auto node : nodes()) {
-    if (true == check_node_segment(node)) {
-      continue;
+    bool all_valid = true;
+    for (auto node : nodes()) {
+        if (true == check_node_segment(node)) {
+            continue;
+        }
+        /* Reach here it means we find an invalid segment id */
+        all_valid = false;
+        /* Print a warning! */
+        VTR_LOG_WARN("Node %d has an invalid segment id (%d)!\n",
+                     size_t(node), size_t(node_segment(node)));
     }
-    /* Reach here it means we find an invalid segment id */ 
-    all_valid = false;
-    /* Print a warning! */
-    VTR_LOG_WARN("Node %d has an invalid segment id (%d)!\n", 
-                 size_t(node), size_t(node_segment(node)));
-  }
-  return all_valid;
-} 
+    return all_valid;
+}
 
 /* Check if the switch id of a edge is in range */
 bool RRGraph::check_edge_switch(RREdgeId edge) const {
-  VTR_ASSERT_SAFE(valid_edge_id(edge));
-  return valid_switch_id(edge_switches_[edge]);  
+    VTR_ASSERT_SAFE(valid_edge_id(edge));
+    return valid_switch_id(edge_switches_[edge]);
 }
-
 
 /* Check if the switch id of every edge is in range */
 bool RRGraph::check_edge_switches() const {
-  bool all_valid = true;
-  for (auto edge : edges()) {
-    if (true == check_edge_switch(edge)) {
-      continue;
+    bool all_valid = true;
+    for (auto edge : edges()) {
+        if (true == check_edge_switch(edge)) {
+            continue;
+        }
+        /* Reach here it means we find an invalid segment id */
+        all_valid = false;
+        /* Print a warning! */
+        VTR_LOG_WARN("Edge %d has an invalid switch id (%d)!\n",
+                     size_t(edge), size_t(edge_switch(edge)));
     }
-    /* Reach here it means we find an invalid segment id */ 
-    all_valid = false;
-    /* Print a warning! */
-    VTR_LOG_WARN("Edge %d has an invalid switch id (%d)!\n", 
-                 size_t(edge), size_t(edge_switch(edge)));
-  }
-  return all_valid;
-} 
+    return all_valid;
+}
 
 /* Check if a node is in the list of source_nodes of a edge */
 bool RRGraph::check_node_is_edge_src(RRNodeId node, RREdgeId edge) const {
-  /* Assure a valid node id */
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  /* assure a valid edge id */
-  VTR_ASSERT_SAFE(valid_edge_id(edge));
-  /* find if the node is the src */
-  if (node == edge_src_node(edge)) {
-    return true; /* confirmed source node*/
-  } else {
-    return false; /* not a source */
-  }
+    /* Assure a valid node id */
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    /* assure a valid edge id */
+    VTR_ASSERT_SAFE(valid_edge_id(edge));
+    /* find if the node is the src */
+    if (node == edge_src_node(edge)) {
+        return true; /* confirmed source node*/
+    } else {
+        return false; /* not a source */
+    }
 }
 
 /* Check if a node is in the list of sink_nodes of a edge */
 bool RRGraph::check_node_is_edge_sink(RRNodeId node, RREdgeId edge) const {
-  /* Assure a valid node id */
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  /* assure a valid edge id */
-  VTR_ASSERT_SAFE(valid_edge_id(edge));
-  /* find if the node is the sink */
-  if (node == edge_sink_node(edge)) {
-    return true; /* confirmed source node*/
-  } else {
-    return false; /* not a source */
-  }
-
+    /* Assure a valid node id */
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    /* assure a valid edge id */
+    VTR_ASSERT_SAFE(valid_edge_id(edge));
+    /* find if the node is the sink */
+    if (node == edge_sink_node(edge)) {
+        return true; /* confirmed source node*/
+    } else {
+        return false; /* not a source */
+    }
 }
 
 /* This function will check if a node has valid input edges
@@ -784,26 +780,26 @@ bool RRGraph::check_node_is_edge_sink(RRNodeId node, RREdgeId edge) const {
  * 2. Check the node is in the list of edge_sink_node
  */
 bool RRGraph::check_node_in_edges(RRNodeId node) const {
-  bool all_valid = true;
-  /* Assure a valid node id */
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  /* Check each edge */
-  for (auto edge : node_in_edges(node)) {
-    /* assure a valid edge id */
-    VTR_ASSERT_SAFE(valid_edge_id(edge));
-    /* check the node is in the list of edge_sink_node */
-    if (true == check_node_is_edge_sink(node, edge)) {
-      continue;
-    }
-    /* Reach here, it means there is something wrong! 
+    bool all_valid = true;
+    /* Assure a valid node id */
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    /* Check each edge */
+    for (auto edge : node_in_edges(node)) {
+        /* assure a valid edge id */
+        VTR_ASSERT_SAFE(valid_edge_id(edge));
+        /* check the node is in the list of edge_sink_node */
+        if (true == check_node_is_edge_sink(node, edge)) {
+            continue;
+        }
+        /* Reach here, it means there is something wrong! 
      * Print a warning  
      */
-    VTR_LOG_WARN("Edge %d is in the input edge list of node %d while the node is not in edge's sink node list!\n", 
-                 size_t(edge), size_t(node));
-    all_valid = false;
-  }
+        VTR_LOG_WARN("Edge %d is in the input edge list of node %d while the node is not in edge's sink node list!\n",
+                     size_t(edge), size_t(node));
+        all_valid = false;
+    }
 
-  return all_valid;
+    return all_valid;
 }
 
 /* This function will check if a node has valid output edges
@@ -811,129 +807,128 @@ bool RRGraph::check_node_in_edges(RRNodeId node) const {
  * 2. Check the node is in the list of edge_source_node
  */
 bool RRGraph::check_node_out_edges(RRNodeId node) const {
-  bool all_valid = true;
-  /* Assure a valid node id */
-  VTR_ASSERT_SAFE(valid_node_id(node));
-  /* Check each edge */
-  for (auto edge : node_out_edges(node)) {
-    /* assure a valid edge id */
-    VTR_ASSERT_SAFE(valid_edge_id(edge));
-    /* check the node is in the list of edge_sink_node */
-    if (true == check_node_is_edge_src(node, edge)) {
-      continue;
-    }
-    /* Reach here, it means there is something wrong! 
+    bool all_valid = true;
+    /* Assure a valid node id */
+    VTR_ASSERT_SAFE(valid_node_id(node));
+    /* Check each edge */
+    for (auto edge : node_out_edges(node)) {
+        /* assure a valid edge id */
+        VTR_ASSERT_SAFE(valid_edge_id(edge));
+        /* check the node is in the list of edge_sink_node */
+        if (true == check_node_is_edge_src(node, edge)) {
+            continue;
+        }
+        /* Reach here, it means there is something wrong! 
      * Print a warning  
      */
-    VTR_LOG_WARN("Edge %d is in the output edge list of node %d while the node is not in edge's source node list!\n", 
-                 size_t(edge), size_t(node));
-    all_valid = false;
-  }
+        VTR_LOG_WARN("Edge %d is in the output edge list of node %d while the node is not in edge's source node list!\n",
+                     size_t(edge), size_t(node));
+        all_valid = false;
+    }
 
-  return all_valid;
+    return all_valid;
 }
 
 /* check all the edges of a node */
 bool RRGraph::check_node_edges(RRNodeId node) const {
-  bool all_valid = true;
+    bool all_valid = true;
 
-  if (false == check_node_in_edges(node)) {
-    all_valid = false;
-  }
-  if (false == check_node_out_edges(node)) {
-    all_valid = false;
-  }
+    if (false == check_node_in_edges(node)) {
+        all_valid = false;
+    }
+    if (false == check_node_out_edges(node)) {
+        all_valid = false;
+    }
 
-  return all_valid;
+    return all_valid;
 }
 
 /* check if all the nodes' input edges are valid */
 bool RRGraph::check_nodes_in_edges() const {
-  bool all_valid = true;
-  for (auto node : nodes()) {
-    if (true == check_node_in_edges(node)) {
-      continue;
-    }
-    /* Reach here, it means there is something wrong! 
+    bool all_valid = true;
+    for (auto node : nodes()) {
+        if (true == check_node_in_edges(node)) {
+            continue;
+        }
+        /* Reach here, it means there is something wrong! 
      * Print a warning  
      */
-    all_valid = false;
-  }
-  return all_valid;
+        all_valid = false;
+    }
+    return all_valid;
 }
 
 /* check if all the nodes' output edges are valid */
 bool RRGraph::check_nodes_out_edges() const {
-  bool all_valid = true;
-  for (auto node : nodes()) {
-    if (true == check_node_out_edges(node)) {
-      continue;
-    }
-    /* Reach here, it means there is something wrong! 
+    bool all_valid = true;
+    for (auto node : nodes()) {
+        if (true == check_node_out_edges(node)) {
+            continue;
+        }
+        /* Reach here, it means there is something wrong! 
      * Print a warning  
      */
-    all_valid = false;
-  }
-  return all_valid;
+        all_valid = false;
+    }
+    return all_valid;
 }
 
 /* check all the edges of every node */
 bool RRGraph::check_nodes_edges() const {
-  bool all_valid = true;
+    bool all_valid = true;
 
-  if (false == check_nodes_in_edges()) {
-    all_valid = false;
-  }
-  if (false == check_nodes_out_edges()) {
-    all_valid = false;
-  }
+    if (false == check_nodes_in_edges()) {
+        all_valid = false;
+    }
+    if (false == check_nodes_out_edges()) {
+        all_valid = false;
+    }
 
-  return all_valid;
-
+    return all_valid;
 }
 
 /* Check if source node of a edge is valid */
 bool RRGraph::check_edge_src_node(RREdgeId edge) const {
-  return valid_node_id(edge_src_node(edge));
+    return valid_node_id(edge_src_node(edge));
 }
 
 /* Check if sink node of a edge is valid */
 bool RRGraph::check_edge_sink_node(RREdgeId edge) const {
-  return valid_node_id(edge_sink_node(edge));
+    return valid_node_id(edge_sink_node(edge));
 }
 
 /* Check if source nodes of a edge are all valid */
 bool RRGraph::check_edge_src_nodes() const {
-  bool all_valid = true;
-  for (auto edge : edges()) {
-    if (true == check_edge_src_node(edge)) {
-      continue;
-    }
-    /* Reach here, it means there is something wrong! 
+    bool all_valid = true;
+    for (auto edge : edges()) {
+        if (true == check_edge_src_node(edge)) {
+            continue;
+        }
+        /* Reach here, it means there is something wrong! 
      * Print a warning  
      */
-    VTR_LOG_WARN("Edge %d has a invalid source node %d!\n", 
-                 size_t(edge), size_t(edge_src_node(edge)));
-    all_valid = false;
-  }
-  return all_valid;
+        VTR_LOG_WARN("Edge %d has a invalid source node %d!\n",
+                     size_t(edge), size_t(edge_src_node(edge)));
+        all_valid = false;
+    }
+    return all_valid;
 }
 
 /* Check if source nodes of a edge are all valid */
 bool RRGraph::check_edge_sink_nodes() const {
-  bool all_valid = true;
-  for (auto edge : edges()) {
-    if (true == check_edge_sink_node(edge)) {
-      continue;
-    }
-    /* Reach here, it means there is something wrong! 
+    bool all_valid = true;
+    for (auto edge : edges()) {
+        if (true == check_edge_sink_node(edge)) {
+            continue;
+        }
+        /* Reach here, it means there is something wrong! 
      * Print a warning  
      */
-    VTR_LOG_WARN("Edge %d has a invalid sink node %d!\n", 
-                 size_t(edge), size_t(edge_sink_node(edge)));
-    all_valid = false;
-  }
-  return all_valid;
+        VTR_LOG_WARN("Edge %d has a invalid sink node %d!\n",
+                     size_t(edge), size_t(edge_sink_node(edge)));
+        all_valid = false;
+    }
+    return all_valid;
 }
 
 /* This function aims at checking any duplicated edges (with same EdgeId) 
@@ -941,501 +936,491 @@ bool RRGraph::check_edge_sink_nodes() const {
  * We will walkthrough the input edges of a node and see if there is any duplication
  */
 bool RRGraph::check_node_duplicated_edges(RRNodeId node) const {
-  bool no_duplication = true;
-  /* Check each input edges */
-  for (size_t iedge = 0; iedge < node_in_edges_[node].size(); ++iedge) {
-    for (size_t jedge = iedge + 1; jedge < node_in_edges_[node].size(); ++jedge) {
-      if (node_in_edges_[node][iedge] != node_in_edges_[node][jedge]) {
-        /* Normal case, continue */
-        continue;
-      }
-      /* Reach here it means we find some duplicated edges and report errors */ 
-      /* Print a warning! */
-      VTR_LOG_WARN("Node %d has duplicated input edges (edgeId:%d and %d)!\n", 
-                   size_t(node), iedge, jedge);
-      this->print_node(node);
-      no_duplication = false;
+    bool no_duplication = true;
+    /* Check each input edges */
+    for (size_t iedge = 0; iedge < node_in_edges_[node].size(); ++iedge) {
+        for (size_t jedge = iedge + 1; jedge < node_in_edges_[node].size(); ++jedge) {
+            if (node_in_edges_[node][iedge] != node_in_edges_[node][jedge]) {
+                /* Normal case, continue */
+                continue;
+            }
+            /* Reach here it means we find some duplicated edges and report errors */
+            /* Print a warning! */
+            VTR_LOG_WARN("Node %d has duplicated input edges (edgeId:%d and %d)!\n",
+                         size_t(node), iedge, jedge);
+            this->print_node(node);
+            no_duplication = false;
+        }
     }
-  }
-  
-  return no_duplication;
-}
 
+    return no_duplication;
+}
 
 /* Check the whole Routing Resource Graph  
  * identify and report any duplicated edges between two nodes 
  */
 bool RRGraph::check_duplicated_edges() const {
-  bool no_duplication = true;
-  /* For each node:
+    bool no_duplication = true;
+    /* For each node:
    * Search input edges, see there are two edges with same id or address 
    */
-  for (auto node : nodes()) {
-    if (false == check_node_duplicated_edges(node)) {
-      no_duplication = false;
+    for (auto node : nodes()) {
+        if (false == check_node_duplicated_edges(node)) {
+            no_duplication = false;
+        }
     }
-  }
 
-  return no_duplication;
+    return no_duplication;
 }
 
 /* 
  * identify and report any duplicated edges between two nodes 
  */
 bool RRGraph::check_dangling_nodes() const {
-  bool no_dangling = true;
-  /* For each node: 
+    bool no_dangling = true;
+    /* For each node: 
    * check if the number of input edges and output edges are both 0
    * If so, this is a dangling nodes and report 
    */
-  for (auto node : nodes()) {
-    if (  (0 == this->node_fan_in(node))
-       && (0 == this->node_fan_out(node)) ) {
-      /* Print a warning! */
-      VTR_LOG_WARN("Node %s is dangling (zero fan-in and zero fan-out)!\n", 
-                   node);
-      VTR_LOG_WARN("Node details for debugging:\n");
-      this->print_node(node);
-      no_dangling = false;
+    for (auto node : nodes()) {
+        if ((0 == this->node_fan_in(node))
+            && (0 == this->node_fan_out(node))) {
+            /* Print a warning! */
+            VTR_LOG_WARN("Node %s is dangling (zero fan-in and zero fan-out)!\n",
+                         node);
+            VTR_LOG_WARN("Node details for debugging:\n");
+            this->print_node(node);
+            no_dangling = false;
+        }
     }
-  } 
 
-  return no_dangling;
+    return no_dangling;
 }
 
 /* This function should be used when nodes, edges, switches and segments have been used after 
  * We will build the fast_lookup, partition edges and check 
  */
 bool RRGraph::check() const {
-  bool check_flag = true;
-  size_t num_err = 0;
+    bool check_flag = true;
+    size_t num_err = 0;
 
-  if (!valid_fast_node_lookup()) {
-    build_fast_node_lookup();
-  }
+    if (!valid_fast_node_lookup()) {
+        build_fast_node_lookup();
+    }
 
-  /* Fundamental check */
-  if (false == check_nodes_edges()) {
-    VTR_LOG_WARN("Fail in checking edges connected to each node!\n");
-    check_flag = false;
-    num_err++;
-  }
+    /* Fundamental check */
+    if (false == check_nodes_edges()) {
+        VTR_LOG_WARN("Fail in checking edges connected to each node!\n");
+        check_flag = false;
+        num_err++;
+    }
 
-  if (false == check_node_segments()) { 
-    VTR_LOG_WARN("Fail in checking segment IDs of nodes !\n");
-    check_flag = false;
-    num_err++;
-  }
+    if (false == check_node_segments()) {
+        VTR_LOG_WARN("Fail in checking segment IDs of nodes !\n");
+        check_flag = false;
+        num_err++;
+    }
 
-  if (false == check_edge_src_nodes()) {
-    VTR_LOG_WARN("Fail in checking source nodes of edges !\n");
-    check_flag = false;
-    num_err++;
-  }
+    if (false == check_edge_src_nodes()) {
+        VTR_LOG_WARN("Fail in checking source nodes of edges !\n");
+        check_flag = false;
+        num_err++;
+    }
 
-  if (false == check_edge_sink_nodes()) {
-    VTR_LOG_WARN("Fail in checking sink nodes of edges !\n");
-    check_flag = false;
-    num_err++;
-  }
+    if (false == check_edge_sink_nodes()) {
+        VTR_LOG_WARN("Fail in checking sink nodes of edges !\n");
+        check_flag = false;
+        num_err++;
+    }
 
-  if (false == check_edge_switches()) {
-    VTR_LOG_WARN("Fail in checking switch IDs of edges !\n");
-    check_flag = false;
-    num_err++;
-  }
+    if (false == check_edge_switches()) {
+        VTR_LOG_WARN("Fail in checking switch IDs of edges !\n");
+        check_flag = false;
+        num_err++;
+    }
 
+    /* Advanced check */
+    if (false == check_duplicated_edges()) {
+        VTR_LOG_WARN("Fail in checking duplicated edges !\n");
+        check_flag = false;
+        num_err++;
+    }
 
-  /* Advanced check */
-  if (false == check_duplicated_edges()) {
-    VTR_LOG_WARN("Fail in checking duplicated edges !\n");
-    check_flag = false;
-    num_err++;
-  }
+    if (false == check_dangling_nodes()) {
+        VTR_LOG_WARN("Fail in checking dangling nodes !\n");
+        check_flag = false;
+        num_err++;
+    }
 
-  if (false == check_dangling_nodes()) {
-    VTR_LOG_WARN("Fail in checking dangling nodes !\n");
-    check_flag = false;
-    num_err++;
-  }
+    VTR_LOG("Checked Routing Resource graph with %d errors !\n",
+            num_err);
 
-  VTR_LOG("Checked Routing Resource graph with %d errors !\n", 
-          num_err);
-
-  return check_flag;
+    return check_flag;
 }
 
 bool RRGraph::is_dirty() const {
-  return dirty_;
+    return dirty_;
 }
 
 void RRGraph::set_dirty() {
-  dirty_ = true;
+    dirty_ = true;
 }
 
 void RRGraph::clear_dirty() {
-  dirty_ = false;
+    dirty_ = false;
 }
 
 /* Reserve a list of nodes */
 void RRGraph::reserve_nodes(int num_nodes) {
-  /* Reserve the full set of vectors related to nodes */
-  /* Basic information */
-  this->node_ids_.reserve(num_nodes);  
-  this->node_types_.reserve(num_nodes);  
-  this->node_bounding_boxes_.reserve(num_nodes);  
-  this->node_capacities_.reserve(num_nodes);  
-  this->node_ptc_nums_.reserve(num_nodes);  
-  this->node_directions_.reserve(num_nodes);  
-  this->node_sides_.reserve(num_nodes);  
-  this->node_Rs_.reserve(num_nodes);  
-  this->node_Cs_.reserve(num_nodes);  
-  this->node_segments_.reserve(num_nodes);  
-  this->node_num_non_configurable_in_edges_.reserve(num_nodes); 
-  this->node_num_non_configurable_out_edges_.reserve(num_nodes); 
- 
-  /* Edge-relate vectors */
-  this->node_in_edges_.reserve(num_nodes);  
-  this->node_out_edges_.reserve(num_nodes);  
+    /* Reserve the full set of vectors related to nodes */
+    /* Basic information */
+    this->node_ids_.reserve(num_nodes);
+    this->node_types_.reserve(num_nodes);
+    this->node_bounding_boxes_.reserve(num_nodes);
+    this->node_capacities_.reserve(num_nodes);
+    this->node_ptc_nums_.reserve(num_nodes);
+    this->node_directions_.reserve(num_nodes);
+    this->node_sides_.reserve(num_nodes);
+    this->node_Rs_.reserve(num_nodes);
+    this->node_Cs_.reserve(num_nodes);
+    this->node_segments_.reserve(num_nodes);
+    this->node_num_non_configurable_in_edges_.reserve(num_nodes);
+    this->node_num_non_configurable_out_edges_.reserve(num_nodes);
 
-  return; 
+    /* Edge-relate vectors */
+    this->node_in_edges_.reserve(num_nodes);
+    this->node_out_edges_.reserve(num_nodes);
+
+    return;
 }
 
 /* Reserve a list of edges */
 void RRGraph::reserve_edges(int num_edges) {
-  /* Reserve the full set of vectors related to edges */
-  this->edge_ids_.reserve(num_edges);  
-  this->edge_src_nodes_.reserve(num_edges);  
-  this->edge_sink_nodes_.reserve(num_edges);  
-  this->edge_switches_.reserve(num_edges);  
+    /* Reserve the full set of vectors related to edges */
+    this->edge_ids_.reserve(num_edges);
+    this->edge_src_nodes_.reserve(num_edges);
+    this->edge_sink_nodes_.reserve(num_edges);
+    this->edge_switches_.reserve(num_edges);
 
-  return; 
+    return;
 }
 
 /* Reserve a list of switches */
 void RRGraph::reserve_switches(int num_switches) {
-  this->switch_ids_.reserve(num_switches);  
-  this->switches_.reserve(num_switches);  
+    this->switch_ids_.reserve(num_switches);
+    this->switches_.reserve(num_switches);
 
-  return; 
+    return;
 }
 
 /* Reserve a list of segments */
 void RRGraph::reserve_segments(int num_segments) {
+    this->segment_ids_.reserve(num_segments);
+    this->segments_.reserve(num_segments);
 
-  this->segment_ids_.reserve(num_segments);  
-  this->segments_.reserve(num_segments);  
-
-  return; 
+    return;
 }
 
 /* Mutators */
 RRNodeId RRGraph::create_node(t_rr_type type) {
-  //Allocate an ID
-  RRNodeId node_id = RRNodeId(node_ids_.size());
+    //Allocate an ID
+    RRNodeId node_id = RRNodeId(node_ids_.size());
 
-  //Initialize the attributes
-  node_ids_.push_back(node_id);
-  node_types_.push_back(type);
+    //Initialize the attributes
+    node_ids_.push_back(node_id);
+    node_types_.push_back(type);
 
-  node_bounding_boxes_.emplace_back(-1, -1, -1, -1);
+    node_bounding_boxes_.emplace_back(-1, -1, -1, -1);
 
-  node_capacities_.push_back(-1);
-  node_ptc_nums_.push_back(-1);
-  node_cost_indices_.push_back(-1);
-  node_directions_.push_back(NO_DIRECTION);
-  node_sides_.push_back(NUM_SIDES);
-  node_Rs_.push_back(0.);
-  node_Cs_.push_back(0.);
+    node_capacities_.push_back(-1);
+    node_ptc_nums_.push_back(-1);
+    node_cost_indices_.push_back(-1);
+    node_directions_.push_back(NO_DIRECTION);
+    node_sides_.push_back(NUM_SIDES);
+    node_Rs_.push_back(0.);
+    node_Cs_.push_back(0.);
 
-  node_in_edges_.emplace_back(); //Initially empty
-  node_out_edges_.emplace_back(); //Initially empty
+    node_in_edges_.emplace_back();  //Initially empty
+    node_out_edges_.emplace_back(); //Initially empty
 
-  node_num_non_configurable_in_edges_.emplace_back(); //Initially empty
-  node_num_non_configurable_out_edges_.emplace_back(); //Initially empty
+    node_num_non_configurable_in_edges_.emplace_back();  //Initially empty
+    node_num_non_configurable_out_edges_.emplace_back(); //Initially empty
 
-  invalidate_fast_node_lookup();
+    invalidate_fast_node_lookup();
 
-  VTR_ASSERT(validate_sizes());
+    VTR_ASSERT(validate_sizes());
 
-  return node_id;
+    return node_id;
 }
 
 RREdgeId RRGraph::create_edge(RRNodeId source, RRNodeId sink, RRSwitchId switch_id) {
-  VTR_ASSERT(valid_node_id(source));
-  VTR_ASSERT(valid_node_id(sink));
-  VTR_ASSERT(valid_switch_id(switch_id));
+    VTR_ASSERT(valid_node_id(source));
+    VTR_ASSERT(valid_node_id(sink));
+    VTR_ASSERT(valid_switch_id(switch_id));
 
-  //Allocate an ID
-  RREdgeId edge_id = RREdgeId(edge_ids_.size());
+    //Allocate an ID
+    RREdgeId edge_id = RREdgeId(edge_ids_.size());
 
-  //Initialize the attributes
-  edge_ids_.push_back(edge_id);
+    //Initialize the attributes
+    edge_ids_.push_back(edge_id);
 
-  edge_src_nodes_.push_back(source);
-  edge_sink_nodes_.push_back(sink);
-  edge_switches_.push_back(switch_id);
+    edge_src_nodes_.push_back(source);
+    edge_sink_nodes_.push_back(sink);
+    edge_switches_.push_back(switch_id);
 
-  //Add the edge to the nodes
-  node_out_edges_[source].push_back(edge_id);
-  node_in_edges_[sink].push_back(edge_id);
+    //Add the edge to the nodes
+    node_out_edges_[source].push_back(edge_id);
+    node_in_edges_[sink].push_back(edge_id);
 
-  VTR_ASSERT(validate_sizes());
+    VTR_ASSERT(validate_sizes());
 
-  return edge_id;
+    return edge_id;
 }
 
 RRSwitchId RRGraph::create_switch(t_rr_switch_inf switch_info) {
-  //Allocate an ID
-  RRSwitchId switch_id = RRSwitchId(switch_ids_.size());
-  switch_ids_.push_back(switch_id);
+    //Allocate an ID
+    RRSwitchId switch_id = RRSwitchId(switch_ids_.size());
+    switch_ids_.push_back(switch_id);
 
-  switches_.push_back(switch_info);
+    switches_.push_back(switch_info);
 
-  return switch_id;
+    return switch_id;
 }
 
 /* Create segment */
 RRSegmentId RRGraph::create_segment(t_segment_inf segment_info) {
-  //Allocate an ID
-  RRSegmentId segment_id = RRSegmentId(segment_ids_.size());
-  segment_ids_.push_back(segment_id);
+    //Allocate an ID
+    RRSegmentId segment_id = RRSegmentId(segment_ids_.size());
+    segment_ids_.push_back(segment_id);
 
-  segments_.push_back(segment_info);
+    segments_.push_back(segment_info);
 
-  return segment_id;
+    return segment_id;
 }
 
 void RRGraph::remove_node(RRNodeId node) {
-  //Invalidate all connected edges
-  // TODO: consider removal of self-loop edges?
-  for (auto edge : node_in_edges(node)) {
-    remove_edge(edge);
-  }
-  for (auto edge : node_out_edges(node)) {
-    remove_edge(edge);
-  }
+    //Invalidate all connected edges
+    // TODO: consider removal of self-loop edges?
+    for (auto edge : node_in_edges(node)) {
+        remove_edge(edge);
+    }
+    for (auto edge : node_out_edges(node)) {
+        remove_edge(edge);
+    }
 
-  //Mark node invalid
-  node_ids_[node] = RRNodeId::INVALID();
+    //Mark node invalid
+    node_ids_[node] = RRNodeId::INVALID();
 
-  //Invalidate the node look-up
-  invalidate_fast_node_lookup();
+    //Invalidate the node look-up
+    invalidate_fast_node_lookup();
 
-  set_dirty();
+    set_dirty();
 }
 
 void RRGraph::remove_edge(RREdgeId edge) {
-  RRNodeId src_node = edge_src_node(edge);
-  RRNodeId sink_node = edge_sink_node(edge);
+    RRNodeId src_node = edge_src_node(edge);
+    RRNodeId sink_node = edge_sink_node(edge);
 
-  //Invalidate node to edge references
-  // TODO: consider making this optional (e.g. if called from remove_node)
-  for (size_t i = 0; i < node_out_edges_[src_node].size(); ++i) {
-    if (node_out_edges_[src_node][i] == edge) {
-        node_out_edges_[src_node][i] = RREdgeId::INVALID();
-        break;
+    //Invalidate node to edge references
+    // TODO: consider making this optional (e.g. if called from remove_node)
+    for (size_t i = 0; i < node_out_edges_[src_node].size(); ++i) {
+        if (node_out_edges_[src_node][i] == edge) {
+            node_out_edges_[src_node][i] = RREdgeId::INVALID();
+            break;
+        }
     }
-  }
-  for (size_t i = 0; i < node_in_edges_[sink_node].size(); ++i) {
-    if (node_in_edges_[sink_node][i] == edge) {
-        node_in_edges_[sink_node][i] = RREdgeId::INVALID();
-        break;
+    for (size_t i = 0; i < node_in_edges_[sink_node].size(); ++i) {
+        if (node_in_edges_[sink_node][i] == edge) {
+            node_in_edges_[sink_node][i] = RREdgeId::INVALID();
+            break;
+        }
     }
-  }
 
-  //Mark edge invalid
-  edge_ids_[edge] = RREdgeId::INVALID();
+    //Mark edge invalid
+    edge_ids_[edge] = RREdgeId::INVALID();
 
-  set_dirty();
+    set_dirty();
 }
 
 void RRGraph::set_node_xlow(RRNodeId node, short xlow) {
-  VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT(valid_node_id(node));
 
-  auto& orig_bb = node_bounding_boxes_[node];
-  node_bounding_boxes_[node] = vtr::Rect<short>(xlow, orig_bb.ymin(), orig_bb.xmax(), orig_bb.ymax());
+    auto& orig_bb = node_bounding_boxes_[node];
+    node_bounding_boxes_[node] = vtr::Rect<short>(xlow, orig_bb.ymin(), orig_bb.xmax(), orig_bb.ymax());
 }
 
 void RRGraph::set_node_ylow(RRNodeId node, short ylow) {
-  VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT(valid_node_id(node));
 
-  auto& orig_bb = node_bounding_boxes_[node];
-  node_bounding_boxes_[node] = vtr::Rect<short>(orig_bb.xmin(), ylow, orig_bb.xmax(), orig_bb.ymax());
+    auto& orig_bb = node_bounding_boxes_[node];
+    node_bounding_boxes_[node] = vtr::Rect<short>(orig_bb.xmin(), ylow, orig_bb.xmax(), orig_bb.ymax());
 }
 
 void RRGraph::set_node_xhigh(RRNodeId node, short xhigh) {
-  VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT(valid_node_id(node));
 
-  auto& orig_bb = node_bounding_boxes_[node];
-  node_bounding_boxes_[node] = vtr::Rect<short>(orig_bb.xmin(), orig_bb.ymin(), xhigh, orig_bb.ymax());
+    auto& orig_bb = node_bounding_boxes_[node];
+    node_bounding_boxes_[node] = vtr::Rect<short>(orig_bb.xmin(), orig_bb.ymin(), xhigh, orig_bb.ymax());
 }
 
 void RRGraph::set_node_yhigh(RRNodeId node, short yhigh) {
-  VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT(valid_node_id(node));
 
-  auto& orig_bb = node_bounding_boxes_[node];
-  node_bounding_boxes_[node] = vtr::Rect<short>(orig_bb.xmin(), orig_bb.ymin(), orig_bb.xmax(), yhigh);
+    auto& orig_bb = node_bounding_boxes_[node];
+    node_bounding_boxes_[node] = vtr::Rect<short>(orig_bb.xmin(), orig_bb.ymin(), orig_bb.xmax(), yhigh);
 }
 
 void RRGraph::set_node_bounding_box(RRNodeId node, vtr::Rect<short> bb) {
-  VTR_ASSERT(valid_node_id(node));
-  
-  node_bounding_boxes_[node] = bb;
+    VTR_ASSERT(valid_node_id(node));
+
+    node_bounding_boxes_[node] = bb;
 }
 
 void RRGraph::set_node_capacity(RRNodeId node, short capacity) {
-  VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT(valid_node_id(node));
 
-  node_capacities_[node] = capacity;
+    node_capacities_[node] = capacity;
 }
 
-
 void RRGraph::set_node_ptc_num(RRNodeId node, short ptc) {
-  VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT(valid_node_id(node));
 
-  node_ptc_nums_[node] = ptc;
+    node_ptc_nums_[node] = ptc;
 }
 
 void RRGraph::set_node_pin_num(RRNodeId node, short pin_id) {
-  VTR_ASSERT(valid_node_id(node));
-  VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Pin number valid only for IPIN/OPIN RR nodes");
+    VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Pin number valid only for IPIN/OPIN RR nodes");
 
-  set_node_ptc_num(node, pin_id);
+    set_node_ptc_num(node, pin_id);
 }
 
 void RRGraph::set_node_track_num(RRNodeId node, short track_id) {
-  VTR_ASSERT(valid_node_id(node));
-  VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Track number valid only for CHANX/CHANY RR nodes");
+    VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Track number valid only for CHANX/CHANY RR nodes");
 
-  set_node_ptc_num(node, track_id);
+    set_node_ptc_num(node, track_id);
 }
 
 void RRGraph::set_node_class_num(RRNodeId node, short class_id) {
-  VTR_ASSERT(valid_node_id(node));
-  VTR_ASSERT_MSG(node_type(node) == SOURCE || node_type(node) == SINK, "Class number valid only for SOURCE/SINK RR nodes");
+    VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT_MSG(node_type(node) == SOURCE || node_type(node) == SINK, "Class number valid only for SOURCE/SINK RR nodes");
 
-  set_node_ptc_num(node, class_id);
+    set_node_ptc_num(node, class_id);
 }
 
-
 void RRGraph::set_node_cost_index(RRNodeId node, short cost_index) {
-  VTR_ASSERT(valid_node_id(node));
-  node_cost_indices_[node] = cost_index;
+    VTR_ASSERT(valid_node_id(node));
+    node_cost_indices_[node] = cost_index;
 }
 
 void RRGraph::set_node_direction(RRNodeId node, e_direction direction) {
-  VTR_ASSERT(valid_node_id(node));
-  VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direct can only be specified on CHANX/CNAY rr nodes");
+    VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direct can only be specified on CHANX/CNAY rr nodes");
 
-  node_directions_[node] = direction;
+    node_directions_[node] = direction;
 }
 
 void RRGraph::set_node_side(RRNodeId node, e_side side) {
-  VTR_ASSERT(valid_node_id(node));
-  VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side can only be specified on IPIN/OPIN rr nodes");
+    VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side can only be specified on IPIN/OPIN rr nodes");
 
-  node_sides_[node] = side;
+    node_sides_[node] = side;
 }
 
 void RRGraph::set_node_R(RRNodeId node, float R) {
-  VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT(valid_node_id(node));
 
-  node_Rs_[node] = R;
+    node_Rs_[node] = R;
 }
 
 void RRGraph::set_node_C(RRNodeId node, float C) {
-  VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT(valid_node_id(node));
 
-  node_Cs_[node] = C;
+    node_Cs_[node] = C;
 }
 
 /*
  * Set a segment id for a node in rr_graph 
  */
 void RRGraph::set_node_segment(RRNodeId node, RRSegmentId segment_id) {
-  VTR_ASSERT(valid_node_id(node));
+    VTR_ASSERT(valid_node_id(node));
 
-  /* Only CHANX and CHANY requires a valid segment id */
-  if ( (CHANX == node_type(node)) 
-    || (CHANY == node_type(node)) ) {
-    VTR_ASSERT(valid_segment_id(segment_id));
-  }
+    /* Only CHANX and CHANY requires a valid segment id */
+    if ((CHANX == node_type(node))
+        || (CHANY == node_type(node))) {
+        VTR_ASSERT(valid_segment_id(segment_id));
+    }
 
-  node_segments_[node] = segment_id;
+    node_segments_[node] = segment_id;
 
-  return; 
+    return;
 }
 
 /* For a given node in a rr_graph
  * classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) 
  */
 void RRGraph::partition_node_in_edges(RRNodeId node) {
+    //Partition the edges so the first set of edges are all configurable, and the later are not
+    auto first_non_config_edge = std::partition(node_in_edges_[node].begin(), node_in_edges_[node].end(),
+                                                [&](const RREdgeId edge) { return edge_is_configurable(edge); }); /* Condition to partition edges */
 
-  //Partition the edges so the first set of edges are all configurable, and the later are not
-  auto first_non_config_edge = std::partition(node_in_edges_[node].begin(), node_in_edges_[node].end(), 
-                                              [&](const RREdgeId edge) { return edge_is_configurable(edge); } ); /* Condition to partition edges */
+    size_t num_conf_edges = std::distance(node_in_edges_[node].begin(), first_non_config_edge);
+    size_t num_non_conf_edges = node_in_edges_[node].size() - num_conf_edges; //Note we calculate using the size_t to get full range
 
-  size_t num_conf_edges = std::distance(node_in_edges_[node].begin(), first_non_config_edge);
-  size_t num_non_conf_edges = node_in_edges_[node].size() - num_conf_edges; //Note we calculate using the size_t to get full range
-
-  /* Check that within allowable range (no overflow when stored as num_non_configurable_edges_
+    /* Check that within allowable range (no overflow when stored as num_non_configurable_edges_
    */
-  VTR_ASSERT_MSG(num_non_conf_edges <= 
-                 node_in_edges_[node].size(),
-                 "Exceeded RR node maximum number of non-configurable input edges");
+    VTR_ASSERT_MSG(num_non_conf_edges <= node_in_edges_[node].size(),
+                   "Exceeded RR node maximum number of non-configurable input edges");
 
-  node_num_non_configurable_in_edges_[node] = num_non_conf_edges; //Narrowing
+    node_num_non_configurable_in_edges_[node] = num_non_conf_edges; //Narrowing
 
-  return;
+    return;
 }
 
 /* For a given node in a rr_graph
  * classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) 
  */
 void RRGraph::partition_node_out_edges(RRNodeId node) {
+    //Partition the edges so the first set of edges are all configurable, and the later are not
+    auto first_non_config_edge = std::partition(node_out_edges_[node].begin(), node_out_edges_[node].end(),
+                                                [&](const RREdgeId edge) { return edge_is_configurable(edge); }); /* Condition to partition edges */
 
-  //Partition the edges so the first set of edges are all configurable, and the later are not
-  auto first_non_config_edge = std::partition(node_out_edges_[node].begin(), node_out_edges_[node].end(),
-                                              [&](const RREdgeId edge) { return edge_is_configurable(edge); } ); /* Condition to partition edges */
+    size_t num_conf_edges = std::distance(node_out_edges_[node].begin(), first_non_config_edge);
+    size_t num_non_conf_edges = node_out_edges_[node].size() - num_conf_edges; //Note we calculate using the size_t to get full range
 
-  size_t num_conf_edges = std::distance(node_out_edges_[node].begin(), first_non_config_edge);
-  size_t num_non_conf_edges = node_out_edges_[node].size() - num_conf_edges; //Note we calculate using the size_t to get full range
-
-  /* Check that within allowable range (no overflow when stored as num_non_configurable_edges_
+    /* Check that within allowable range (no overflow when stored as num_non_configurable_edges_
    */
-  VTR_ASSERT_MSG(num_non_conf_edges <= 
-                 node_out_edges_[node].size(),
-                 "Exceeded RR node maximum number of non-configurable output edges");
+    VTR_ASSERT_MSG(num_non_conf_edges <= node_out_edges_[node].size(),
+                   "Exceeded RR node maximum number of non-configurable output edges");
 
-  node_num_non_configurable_out_edges_[node] = num_non_conf_edges; //Narrowing
+    node_num_non_configurable_out_edges_[node] = num_non_conf_edges; //Narrowing
 
-  return;
+    return;
 }
-
 
 /* For all nodes in a rr_graph  
  * classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) 
  */
 void RRGraph::partition_in_edges() {
-  /* For each node */
-  for (auto node : nodes()) {
-   this->partition_node_in_edges(node);
-  }
+    /* For each node */
+    for (auto node : nodes()) {
+        this->partition_node_in_edges(node);
+    }
 
-  return;
+    return;
 }
 
 /* For all nodes in a rr_graph  
  * classify the output edges of each node to be configurable (1st part) and non-configurable (2nd part) 
  */
 void RRGraph::partition_out_edges() {
-  /* For each node */
-  for (auto node : nodes()) {
-   this->partition_node_out_edges(node);
-  }
+    /* For each node */
+    for (auto node : nodes()) {
+        this->partition_node_out_edges(node);
+    }
 
-  return;
+    return;
 }
 
 /* For all nodes in a rr_graph  
@@ -1443,12 +1428,12 @@ void RRGraph::partition_out_edges() {
  * to be configurable (1st part) and non-configurable (2nd part) 
  */
 void RRGraph::partition_edges() {
-  /* Partition input edges */
-  this->partition_in_edges();
-  /* Partition output edges */
-  this->partition_out_edges();
+    /* Partition input edges */
+    this->partition_in_edges();
+    /* Partition output edges */
+    this->partition_out_edges();
 
-  return;
+    return;
 }
 
 /* 
@@ -1462,343 +1447,342 @@ void RRGraph::partition_edges() {
  * 2. It still requires a large amount of device information  
  */
 void RRGraph::load_switch_C() {
-  return;
-} 
+    return;
+}
 
 void RRGraph::build_fast_node_lookup() const {
-  invalidate_fast_node_lookup();
+    invalidate_fast_node_lookup();
 
-  for (auto node : nodes()) {
-    size_t x = node_xlow(node);
-    if (x >= node_lookup_.size()) {
-      node_lookup_.resize(x + 1);
+    for (auto node : nodes()) {
+        size_t x = node_xlow(node);
+        if (x >= node_lookup_.size()) {
+            node_lookup_.resize(x + 1);
+        }
+
+        size_t y = node_ylow(node);
+        if (y >= node_lookup_[x].size()) {
+            node_lookup_[x].resize(y + 1);
+        }
+
+        size_t itype = node_type(node);
+        if (itype >= node_lookup_[x][y].size()) {
+            node_lookup_[x][y].resize(itype + 1);
+        }
+
+        size_t ptc = node_ptc_num(node);
+        if (ptc >= node_lookup_[x][y][itype].size()) {
+            node_lookup_[x][y][itype].resize(ptc + 1);
+        }
+
+        size_t iside = -1;
+        if (node_type(node) == OPIN || node_type(node) == IPIN) {
+            iside = node_side(node);
+        } else {
+            iside = NUM_SIDES;
+        }
+
+        if (iside >= node_lookup_[x][y][itype][ptc].size()) {
+            node_lookup_[x][y][itype][ptc].resize(iside + 1);
+        }
+
+        //Save node in lookup
+        node_lookup_[x][y][itype][ptc][iside] = node;
     }
-
-    size_t y = node_ylow(node);
-    if (y >= node_lookup_[x].size()) {
-      node_lookup_[x].resize(y + 1);
-    }
-
-    size_t itype = node_type(node);
-    if (itype >= node_lookup_[x][y].size()) {
-      node_lookup_[x][y].resize(itype + 1);
-    }
-
-    size_t ptc = node_ptc_num(node);
-    if (ptc >= node_lookup_[x][y][itype].size()) {
-      node_lookup_[x][y][itype].resize(ptc + 1);
-    }
-
-    size_t iside = -1;
-    if (node_type(node) == OPIN || node_type(node) == IPIN) {
-      iside = node_side(node); 
-    } else {
-      iside = NUM_SIDES;
-    }
-
-    if (iside >= node_lookup_[x][y][itype][ptc].size()) {
-      node_lookup_[x][y][itype][ptc].resize(iside + 1);
-    }
-
-    //Save node in lookup
-    node_lookup_[x][y][itype][ptc][iside] = node;
-  }
 }
 
 void RRGraph::invalidate_fast_node_lookup() const {
-  node_lookup_.clear();
+    node_lookup_.clear();
 }
 
 bool RRGraph::valid_fast_node_lookup() const {
-  return !node_lookup_.empty();
+    return !node_lookup_.empty();
 }
 
 bool RRGraph::validate() {
-  bool success = true;
-  success &= validate_sizes();
-  success &= validate_crossrefs();
-  success &= validate_invariants();
+    bool success = true;
+    success &= validate_sizes();
+    success &= validate_crossrefs();
+    success &= validate_invariants();
 
-  return success;
+    return success;
 }
 
 bool RRGraph::valid_node_id(RRNodeId node) const {
-  return size_t(node) < node_ids_.size() && node_ids_[node] == node;
+    return size_t(node) < node_ids_.size() && node_ids_[node] == node;
 }
 
 bool RRGraph::valid_edge_id(RREdgeId edge) const {
-  return size_t(edge) < edge_ids_.size() && edge_ids_[edge] == edge;
+    return size_t(edge) < edge_ids_.size() && edge_ids_[edge] == edge;
 }
 
 /* check if a given switch id is valid or not */
 bool RRGraph::valid_switch_id(RRSwitchId switch_id) const {
-  /* TODO: should we check the index of switch[id] matches ? */
-  return size_t(switch_id) < switches_.size();
+    /* TODO: should we check the index of switch[id] matches ? */
+    return size_t(switch_id) < switches_.size();
 }
 
 /* check if a given segment id is valid or not */
 bool RRGraph::valid_segment_id(RRSegmentId segment_id) const {
-  /* TODO: should we check the index of segment[id] matches ? */
-  return size_t(segment_id) < segments_.size();
+    /* TODO: should we check the index of segment[id] matches ? */
+    return size_t(segment_id) < segments_.size();
 }
 
 bool RRGraph::validate_sizes() const {
-  return validate_node_sizes() && validate_edge_sizes();
+    return validate_node_sizes() && validate_edge_sizes();
 }
 
 bool RRGraph::validate_node_sizes() const {
-  return node_types_.size() == node_ids_.size()
-    && node_bounding_boxes_.size() == node_ids_.size()
-    && node_capacities_.size() == node_ids_.size()
-    && node_ptc_nums_.size() == node_ids_.size()
-    && node_cost_indices_.size() == node_ids_.size()
-    && node_directions_.size() == node_ids_.size()
-    && node_sides_.size() == node_ids_.size()
-    && node_Rs_.size() == node_ids_.size()
-    && node_Cs_.size() == node_ids_.size()
-    && node_in_edges_.size() == node_ids_.size()
-    && node_out_edges_.size() == node_ids_.size();
+    return node_types_.size() == node_ids_.size()
+           && node_bounding_boxes_.size() == node_ids_.size()
+           && node_capacities_.size() == node_ids_.size()
+           && node_ptc_nums_.size() == node_ids_.size()
+           && node_cost_indices_.size() == node_ids_.size()
+           && node_directions_.size() == node_ids_.size()
+           && node_sides_.size() == node_ids_.size()
+           && node_Rs_.size() == node_ids_.size()
+           && node_Cs_.size() == node_ids_.size()
+           && node_in_edges_.size() == node_ids_.size()
+           && node_out_edges_.size() == node_ids_.size();
 }
 
 bool RRGraph::validate_edge_sizes() const {
-  return edge_src_nodes_.size() == edge_ids_.size()
-    && edge_sink_nodes_.size() == edge_ids_.size()
-    && edge_switches_.size() == edge_ids_.size();
+    return edge_src_nodes_.size() == edge_ids_.size()
+           && edge_sink_nodes_.size() == edge_ids_.size()
+           && edge_switches_.size() == edge_ids_.size();
 }
 
 bool RRGraph::validate_crossrefs() const {
-  bool success = true;
+    bool success = true;
 
-  success &= validate_node_edge_crossrefs();
+    success &= validate_node_edge_crossrefs();
 
-  return success;
-
+    return success;
 }
 
 bool RRGraph::validate_node_edge_crossrefs() const {
+    //Check Forward (node to edge)
+    for (auto node : nodes()) {
+        //For each node edge check that the source/sink are consistent
+        for (auto edge : node_in_edges(node)) {
+            auto sink_node = edge_sink_node(edge);
+            if (sink_node != node) {
+                std::string msg = vtr::string_fmt("Mismatched node in-edge cross referrence: RR Edge %zu, RR Node != RR Edge Sink: (%zu != %zu)", size_t(edge), size_t(node), size_t(sink_node));
+                VTR_LOG(msg.c_str());
+            }
+        }
 
-  //Check Forward (node to edge)
-  for (auto node : nodes()) {
-    //For each node edge check that the source/sink are consistent
-    for (auto edge : node_in_edges(node)) {
-        auto sink_node = edge_sink_node(edge);
-        if (sink_node != node) {
-            std::string msg = vtr::string_fmt("Mismatched node in-edge cross referrence: RR Edge %zu, RR Node != RR Edge Sink: (%zu != %zu)", size_t(edge), size_t(node), size_t(sink_node));
-            VTR_LOG(msg.c_str());
+        for (auto edge : node_out_edges(node)) {
+            auto src_node = edge_src_node(edge);
+            if (src_node != node) {
+                std::string msg = vtr::string_fmt("Mismatched node out-edge cross referrence: RR Edge %zu, RR Node != RR Edge Source: (%zu != %zu)", size_t(edge), size_t(node), size_t(src_node));
+                VTR_LOG(msg.c_str());
+            }
         }
     }
 
-    for (auto edge : node_out_edges(node)) {
+    //Check Backward (edge to node)
+    for (auto edge : edges()) {
+        //For each edge, check that the edge exists in the appropriate node in/out edge list
         auto src_node = edge_src_node(edge);
-        if (src_node != node) {
-            std::string msg = vtr::string_fmt("Mismatched node out-edge cross referrence: RR Edge %zu, RR Node != RR Edge Source: (%zu != %zu)", size_t(edge), size_t(node), size_t(src_node));
+        auto sink_node = edge_sink_node(edge);
+
+        auto src_out_edges = node_out_edges(src_node);
+        auto sink_in_edges = node_in_edges(sink_node);
+
+        auto itr = std::find(src_out_edges.begin(), src_out_edges.end(), edge);
+        if (itr == src_out_edges.end()) { //Not found
+            std::string msg = vtr::string_fmt(
+                "Mismatched edge node cross reference:"
+                " RR Edge %zu not found with associated source RR Node %zu",
+                size_t(edge), size_t(src_node));
+            VTR_LOG(msg.c_str());
+        }
+
+        itr = std::find(sink_in_edges.begin(), sink_in_edges.end(), edge);
+        if (itr == sink_in_edges.end()) { //Not found
+            std::string msg = vtr::string_fmt(
+                "Mismatched edge node cross reference:"
+                " RR Edge %zu not found with associated sink RR Node %zu",
+                size_t(edge), size_t(sink_node));
             VTR_LOG(msg.c_str());
         }
     }
-  }
 
-  //Check Backward (edge to node)
-  for (auto edge : edges()) {
-    //For each edge, check that the edge exists in the appropriate node in/out edge list
-    auto src_node = edge_src_node(edge);
-    auto sink_node = edge_sink_node(edge);
-    
-    auto src_out_edges = node_out_edges(src_node);
-    auto sink_in_edges = node_in_edges(sink_node);
-
-    auto itr = std::find(src_out_edges.begin(), src_out_edges.end(), edge);
-    if (itr == src_out_edges.end()) { //Not found
-        std::string msg = vtr::string_fmt("Mismatched edge node cross reference:"
-                                          " RR Edge %zu not found with associated source RR Node %zu",
-                                          size_t(edge), size_t(src_node));
-        VTR_LOG(msg.c_str());
-    }
-
-    itr = std::find(sink_in_edges.begin(), sink_in_edges.end(), edge);
-    if (itr == sink_in_edges.end()) { //Not found
-        std::string msg = vtr::string_fmt("Mismatched edge node cross reference:"
-                                          " RR Edge %zu not found with associated sink RR Node %zu",
-                                          size_t(edge), size_t(sink_node));
-        VTR_LOG(msg.c_str());
-    }
-  }
-
-  return true;
+    return true;
 }
 
 bool RRGraph::validate_invariants() const {
-  bool success = true;
+    bool success = true;
 
-  success &= validate_unique_edges_invariant();
+    success &= validate_unique_edges_invariant();
 
-  return success;
+    return success;
 }
 
 bool RRGraph::validate_unique_edges_invariant() const {
-  //Check that there is only ever a single (unidirectional) edge between two nodes
-  std::map<std::pair<RRNodeId,RRNodeId>, std::vector<RREdgeId>> edge_map;
-  for (auto edge : edges()) {
-    auto src_node = edge_src_node(edge);
-    auto sink_node = edge_sink_node(edge);
+    //Check that there is only ever a single (unidirectional) edge between two nodes
+    std::map<std::pair<RRNodeId, RRNodeId>, std::vector<RREdgeId>> edge_map;
+    for (auto edge : edges()) {
+        auto src_node = edge_src_node(edge);
+        auto sink_node = edge_sink_node(edge);
 
-    //Save the edge
-    edge_map[std::make_pair(src_node, sink_node)].push_back(edge);
-  }
-
-  //Report any multiple edges
-  for (auto kv : edge_map) {
-    if (kv.second.size() > 1) {
-
-        std::string msg = vtr::string_fmt("Multiple edges found from RR Node %zu -> %zu", 
-                                          size_t(kv.first.first), size_t(kv.first.second));
-
-        msg += " (Edges: ";
-        auto mult_edges = kv.second;
-        for (size_t i = 0; i < mult_edges.size(); ++i) {
-            msg += std::to_string(size_t(mult_edges[i]));
-            if (i != mult_edges.size() - 1) {
-                msg += ", ";
-            }
-        }
-        msg += ")";
-
-        VTR_LOG(msg.c_str());
+        //Save the edge
+        edge_map[std::make_pair(src_node, sink_node)].push_back(edge);
     }
-  }
 
-  return true;
+    //Report any multiple edges
+    for (auto kv : edge_map) {
+        if (kv.second.size() > 1) {
+            std::string msg = vtr::string_fmt("Multiple edges found from RR Node %zu -> %zu",
+                                              size_t(kv.first.first), size_t(kv.first.second));
+
+            msg += " (Edges: ";
+            auto mult_edges = kv.second;
+            for (size_t i = 0; i < mult_edges.size(); ++i) {
+                msg += std::to_string(size_t(mult_edges[i]));
+                if (i != mult_edges.size() - 1) {
+                    msg += ", ";
+                }
+            }
+            msg += ")";
+
+            VTR_LOG(msg.c_str());
+        }
+    }
+
+    return true;
 }
 
 void RRGraph::compress() {
-  vtr::vector<RRNodeId,RRNodeId> node_id_map(node_ids_.size());
-  vtr::vector<RREdgeId,RREdgeId> edge_id_map(edge_ids_.size());
+    vtr::vector<RRNodeId, RRNodeId> node_id_map(node_ids_.size());
+    vtr::vector<RREdgeId, RREdgeId> edge_id_map(edge_ids_.size());
 
-  build_id_maps(node_id_map, edge_id_map);
+    build_id_maps(node_id_map, edge_id_map);
 
-  clean_nodes(node_id_map);
-  clean_edges(edge_id_map);
+    clean_nodes(node_id_map);
+    clean_edges(edge_id_map);
 
-  rebuild_node_refs(edge_id_map);
+    rebuild_node_refs(edge_id_map);
 
-  invalidate_fast_node_lookup();
+    invalidate_fast_node_lookup();
 
-  clear_dirty();
+    clear_dirty();
 }
 
-void RRGraph::build_id_maps(vtr::vector<RRNodeId,RRNodeId>& node_id_map,
-                        vtr::vector<RREdgeId,RREdgeId>& edge_id_map) {
-  node_id_map = compress_ids(node_ids_);
-  edge_id_map = compress_ids(edge_ids_);
+void RRGraph::build_id_maps(vtr::vector<RRNodeId, RRNodeId>& node_id_map,
+                            vtr::vector<RREdgeId, RREdgeId>& edge_id_map) {
+    node_id_map = compress_ids(node_ids_);
+    edge_id_map = compress_ids(edge_ids_);
 }
 
-void RRGraph::clean_nodes(const vtr::vector<RRNodeId,RRNodeId>& node_id_map) {
-  node_ids_ = clean_and_reorder_ids(node_id_map);
+void RRGraph::clean_nodes(const vtr::vector<RRNodeId, RRNodeId>& node_id_map) {
+    node_ids_ = clean_and_reorder_ids(node_id_map);
 
-  node_types_ = clean_and_reorder_values(node_types_, node_id_map);
-  /* FIXME: the following usage of clean_and_reorder_values causes compilation error, 
+    node_types_ = clean_and_reorder_values(node_types_, node_id_map);
+    /* FIXME: the following usage of clean_and_reorder_values causes compilation error, 
    * Comment now and see if there is any further errors 
    */
-  node_bounding_boxes_ = clean_and_reorder_values(node_bounding_boxes_, node_id_map);
+    node_bounding_boxes_ = clean_and_reorder_values(node_bounding_boxes_, node_id_map);
 
-  node_capacities_ = clean_and_reorder_values(node_capacities_, node_id_map);
-  node_ptc_nums_ = clean_and_reorder_values(node_ptc_nums_, node_id_map);
-  node_cost_indices_ = clean_and_reorder_values(node_cost_indices_, node_id_map);
-  node_directions_ = clean_and_reorder_values(node_directions_, node_id_map);
-  node_sides_ = clean_and_reorder_values(node_sides_, node_id_map);
-  node_Rs_ = clean_and_reorder_values(node_Rs_, node_id_map);
-  node_Cs_ = clean_and_reorder_values(node_Cs_, node_id_map);
+    node_capacities_ = clean_and_reorder_values(node_capacities_, node_id_map);
+    node_ptc_nums_ = clean_and_reorder_values(node_ptc_nums_, node_id_map);
+    node_cost_indices_ = clean_and_reorder_values(node_cost_indices_, node_id_map);
+    node_directions_ = clean_and_reorder_values(node_directions_, node_id_map);
+    node_sides_ = clean_and_reorder_values(node_sides_, node_id_map);
+    node_Rs_ = clean_and_reorder_values(node_Rs_, node_id_map);
+    node_Cs_ = clean_and_reorder_values(node_Cs_, node_id_map);
 
-  VTR_ASSERT(validate_node_sizes());
+    VTR_ASSERT(validate_node_sizes());
 
-  VTR_ASSERT_MSG(are_contiguous(node_ids_), "Ids should be contiguous");
-  VTR_ASSERT_MSG(all_valid(node_ids_), "All Ids should be valid");
+    VTR_ASSERT_MSG(are_contiguous(node_ids_), "Ids should be contiguous");
+    VTR_ASSERT_MSG(all_valid(node_ids_), "All Ids should be valid");
 }
 
-void RRGraph::clean_edges(const vtr::vector<RREdgeId,RREdgeId>& edge_id_map) {
-  edge_ids_ = clean_and_reorder_ids(edge_id_map);
+void RRGraph::clean_edges(const vtr::vector<RREdgeId, RREdgeId>& edge_id_map) {
+    edge_ids_ = clean_and_reorder_ids(edge_id_map);
 
-  edge_src_nodes_ = clean_and_reorder_values(edge_src_nodes_, edge_id_map);
-  edge_sink_nodes_ = clean_and_reorder_values(edge_sink_nodes_, edge_id_map);
-  edge_switches_ = clean_and_reorder_values(edge_switches_, edge_id_map);
+    edge_src_nodes_ = clean_and_reorder_values(edge_src_nodes_, edge_id_map);
+    edge_sink_nodes_ = clean_and_reorder_values(edge_sink_nodes_, edge_id_map);
+    edge_switches_ = clean_and_reorder_values(edge_switches_, edge_id_map);
 
-  VTR_ASSERT(validate_edge_sizes());
+    VTR_ASSERT(validate_edge_sizes());
 
-  VTR_ASSERT_MSG(are_contiguous(edge_ids_), "Ids should be contiguous");
-  VTR_ASSERT_MSG(all_valid(edge_ids_), "All Ids should be valid");
+    VTR_ASSERT_MSG(are_contiguous(edge_ids_), "Ids should be contiguous");
+    VTR_ASSERT_MSG(all_valid(edge_ids_), "All Ids should be valid");
 }
 
-void RRGraph::rebuild_node_refs(const vtr::vector<RREdgeId,RREdgeId>& edge_id_map) {
-  for (const auto& node : nodes()) {
-    node_in_edges_[node] = update_valid_refs(node_in_edges_[node], edge_id_map);
-    node_out_edges_[node] = update_valid_refs(node_out_edges_[node], edge_id_map);
+void RRGraph::rebuild_node_refs(const vtr::vector<RREdgeId, RREdgeId>& edge_id_map) {
+    for (const auto& node : nodes()) {
+        node_in_edges_[node] = update_valid_refs(node_in_edges_[node], edge_id_map);
+        node_out_edges_[node] = update_valid_refs(node_out_edges_[node], edge_id_map);
 
-    VTR_ASSERT_MSG(all_valid(node_in_edges_[node]), "All Ids should be valid");
-    VTR_ASSERT_MSG(all_valid(node_out_edges_[node]), "All Ids should be valid");
-  }
+        VTR_ASSERT_MSG(all_valid(node_in_edges_[node]), "All Ids should be valid");
+        VTR_ASSERT_MSG(all_valid(node_out_edges_[node]), "All Ids should be valid");
+    }
 }
 
 /* Empty all the vectors related to nodes */
 void RRGraph::clear_nodes() {
-  node_ids_.clear();
+    node_ids_.clear();
 
-  node_types_.clear();
-  node_bounding_boxes_.clear();
+    node_types_.clear();
+    node_bounding_boxes_.clear();
 
-  node_capacities_.clear();
-  node_ptc_nums_.clear();
-  node_cost_indices_.clear();
-  node_directions_.clear();
-  node_sides_.clear();
-  node_Rs_.clear();
-  node_Cs_.clear();
-  node_segments_.clear();
+    node_capacities_.clear();
+    node_ptc_nums_.clear();
+    node_cost_indices_.clear();
+    node_directions_.clear();
+    node_sides_.clear();
+    node_Rs_.clear();
+    node_Cs_.clear();
+    node_segments_.clear();
 
-  node_num_non_configurable_in_edges_.clear();
-  node_num_non_configurable_out_edges_.clear();
+    node_num_non_configurable_in_edges_.clear();
+    node_num_non_configurable_out_edges_.clear();
 
-  node_in_edges_.clear();
-  node_out_edges_.clear();
+    node_in_edges_.clear();
+    node_out_edges_.clear();
 
-  /* clean node_look_up */
-  node_lookup_.clear();
+    /* clean node_look_up */
+    node_lookup_.clear();
 
-  return;
+    return;
 }
 
 /* Empty all the vectors related to edges */
 void RRGraph::clear_edges() {
-  edge_ids_.clear();
-  edge_src_nodes_.clear();
-  edge_sink_nodes_.clear();
-  edge_switches_.clear();
+    edge_ids_.clear();
+    edge_src_nodes_.clear();
+    edge_sink_nodes_.clear();
+    edge_switches_.clear();
 
-  return;
+    return;
 }
 
 /* Empty all the vectors related to switches */
 void RRGraph::clear_switches() {
-  switch_ids_.clear();
-  switches_.clear();
+    switch_ids_.clear();
+    switches_.clear();
 
-  return;
+    return;
 }
 
 /* Empty all the vectors related to segments */
 void RRGraph::clear_segments() {
-  segment_ids_.clear();
-  segments_.clear();
+    segment_ids_.clear();
+    segments_.clear();
 
-  return;
+    return;
 }
 
 /* Clean the rr_graph */
 void RRGraph::clear() {
-  clear_nodes();
-  clear_edges();
-  clear_switches();
-  clear_segments();
+    clear_nodes();
+    clear_edges();
+    clear_switches();
+    clear_segments();
 
-  return;
+    return;
 }
 
 /************************************************************
