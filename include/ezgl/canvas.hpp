@@ -25,6 +25,8 @@
 #include "ezgl/color.hpp"
 
 #include <cairo.h>
+#include <cairo-pdf.h>
+#include <cairo-svg.h>
 #include <gtk/gtk.h>
 
 #include <string>
@@ -103,7 +105,20 @@ public:
    * The created renderer should be used only in the same callback in which it was created
    */
   renderer create_temporary_renderer();
-
+  
+  /**
+   * print_pdf, print_svg, and print_png generate a PDF, SVG, or PNG output file showing 
+   * all the graphical content of the current canvas. 
+   * 
+   * @param file_name   name of the output file
+   * @return            returns true if the function has successfully generated the output file, otherwise
+   *                    failed due to errors such as out of memory occurs. 
+   */
+  bool print_pdf(const char *file_name);
+  bool print_svg(const char *file_name);
+  bool print_png(const char *file_name);
+  
+  
 protected:
   // Only the ezgl::application can create and initialize a canvas object.
   friend class application;
