@@ -36,8 +36,8 @@
 #include "tatum/echo_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
-using std::min;
 using std::max;
+using std::min;
 
 /************** Types and defines local to place.c ***************************/
 
