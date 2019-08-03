@@ -870,48 +870,64 @@ function run_vtr_reg() {
 	cd ${THIS_DIR}
 }
 
+input_list=()
 task_list=()
+vtr_reg_list=()
 
 function run_suite() {
-	while [ "_${task_list}" != "_" ]
+	while [ "_${input_list}" != "_" ]
 	do
-		current_input="${task_list[0]}"
-		task_list=( "${task_list[@]:1}" )
+		current_input="${input_list[0]}"
+		input_list=( "${input_list[@]:1}" )
 
-		echo "current: ${current_input}"
-		case "_${current_input}" in
-			_)
-				;;
+		if [ -d "${current_input}" ]
+		then
+			if [ -f "${current_input}/task_list.conf" ]
+			then
 
-			*vtr_reg_*)
-				run_vtr_reg $(basename ${current_input})
-				;;
-
-			*)
-				if [ ! -d "${current_input}" ]
-				then
-					echo "Invalid Directory for task: ${current_input}"
-				elif [ -f "${current_input}/task_list.conf" ]
-				then
-					for input_path in $(cat ${current_input}/task_list.conf)
-					do
-						case "_${input_path}" in
-							_);;
-							*vtr_reg_*);;
-							*)
-								input_path=$(ls -d -1 ${THIS_DIR}/${input_path} 2> /dev/null)
-								;;
-						esac
-
-						task_list=( ${task_list[@]} ${input_path[@]} )
-					done
+				for input_path in $(cat ${current_input}/task_list.conf)
+				do
+					case "_${input_path}" in
+						_);;
+						*vtr_reg_*);;
+						*)
+							# bash expand when possible
+							input_path=$(ls -d -1 ${THIS_DIR}/${input_path} 2> /dev/null)
+							;;
+					esac
 					
-				elif [ -f "${current_input}/task.conf" ]
-				then
-					run_task "${current_input}"
-				fi
-				;;
-		esac
+					input_list=( ${input_list[@]} ${input_path[@]} )
+				done
+				
+			elif [ -f "${current_input}/task.conf" ]
+			then
+				task_list=( ${task_list[@]} ${current_input} )
+			else
+				echo "Invalid Directory for task: ${current_input}"
+			fi
+		else
+			case "_${current_input}" in
+				*vtr_reg_*)
+					vtr_reg_list=( ${vtr_reg_list[@]} ${current_input} )
+					;;
+
+				*)
+					# bash expand when possible
+					echo "no such Directory for task: ${current_input}"
+					;;
+			esac
+		fi
+
+	done
+
+	for task in ${task_list}
+	do
+		run_task "${task}"
+	done
+
+	for vtr_reg in ${vtr_reg_list}
+	do
+		run_vtr_reg ${vtr_reg}
 	done
 }
 #########################################################
@@ -946,7 +962,7 @@ _TEST=$(readlink -f ${_TEST})
 
 echo "Task: ${_TEST}"
 
-task_list=( "${_TEST}" )
+input_list=( "${_TEST}" )
 
 run_suite
 
