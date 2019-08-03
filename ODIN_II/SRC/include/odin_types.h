@@ -393,10 +393,8 @@ struct ast_node_t
 	int file_number = -1;
 	int related_module_id = -1;
 
-	short shared_node;
 	void *hb_port;
 	void *net_node;
-	short is_read_write;
 
 };
 

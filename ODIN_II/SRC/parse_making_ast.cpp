@@ -776,8 +776,7 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 	sc_spot = sc_add_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier);
 	
 	this_defines_sc[this_num_modules]->data[sc_spot] = (void*)parameter->children[5];
-	/* mark the node as shared so we don't delete it */
-	parameter->children[5]->shared_node = true;
+
 
 	if (id == PARAMETER)
 	{
@@ -1789,46 +1788,38 @@ void next_module()
 ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 {
 	ast_node_t *new_node = NULL;
-	char *module_instance_name = NULL;
-	long i;
-	//long sc_spot;
+
 	if(val)
 	{
 		if(val->num_children > 1)
 		{
-			for(i = 0; i < val->num_children - 1; i++)
+			std::string module_instance_name = "";
+			for(long i = 0; i < val->num_children - 1; i++)
 			{
 				oassert(val->children[i]->num_children > 0);
-				if(i == 0 && val->num_children >= 2)
-					module_instance_name = vtr::strdup(val->children[i]->children[0]->types.identifier);
-				else
+
+				if( i != 0 || val->num_children < 2 )
 				{
-					module_instance_name = strcat(module_instance_name, ".");
-					module_instance_name = strcat(module_instance_name, vtr::strdup(val->children[i]->children[0]->types.identifier));
+					module_instance_name += ".";
 				}
+
+				module_instance_name += val->children[i]->children[0]->types.identifier;
 			}
+
 			new_node = val->children[(val->num_children - 1)];
 
 			new_node->type = MODULE_PARAMETER;
 			new_node->types.variable.is_parameter = true;
-			new_node->shared_node = true;
 			new_node->children[5]->types.variable.is_parameter = true;
-			new_node->children[5]->shared_node = true;
-			new_node->types.identifier = module_instance_name;
+			new_node->types.identifier = vtr::strdup(module_instance_name.c_str());
 			new_node->line_number = line_number;
 
 			val->children[(val->num_children - 1)] = NULL;
 			val = free_whole_tree(val);			
 		}
 	}
-	
-	if(new_node)
-	{
-		new_node->shared_node = false;
-		return new_node;
-	//	add_child_to_node(new_node, symbol_node);
-	}
-	return NULL;
+
+	return new_node;
 }
 
 /* --------------------------------------------------------------------------------------------
