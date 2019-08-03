@@ -920,12 +920,12 @@ function run_suite() {
 
 	done
 
-	for task in ${task_list}
+	for task in "${task_list[@]}"
 	do
 		run_task "${task}"
 	done
 
-	for vtr_reg in ${vtr_reg_list}
+	for vtr_reg in "${vtr_reg_list[@]}"
 	do
 		run_vtr_reg ${vtr_reg}
 	done
