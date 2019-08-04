@@ -137,6 +137,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACH
 		{
 			case MODULE:
 			{
+				oassert(child_skip_list);
 				// skip identifier
 				child_skip_list[0] = true;
 				break;
@@ -177,6 +178,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACH
 				}
 				else
 				{
+					oassert(child_skip_list);
 					// skip identifier
 					child_skip_list[0] = true;
 				}
@@ -217,6 +219,8 @@ ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACH
 			}
 			case FOR:
 			{
+				oassert(child_skip_list);
+
 				// look ahead for parameters in loop conditions
 				node->children[0] = reduce_expressions(node->children[0], node, local_string_cache_list, max_size, assignment_size, is_generate_region);
 				node->children[1] = reduce_expressions(node->children[1], node, local_string_cache_list, max_size, assignment_size, is_generate_region);
@@ -500,7 +504,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACH
 				break;
 		}
 
-		if (node->num_children > 0 && skip_children == false)
+		if (child_skip_list && node->num_children > 0 && skip_children == false)
 		{
 			/* use while loop and boolean to prevent optimizations
 				since number of children may change during recursion */

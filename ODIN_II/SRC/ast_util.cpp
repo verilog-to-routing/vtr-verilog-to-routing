@@ -1427,10 +1427,8 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->file_number = file_number;
 	new_node->far_tag = 0;
 	new_node->high_number = 0;
-	new_node->shared_node = false;
 	new_node->hb_port = 0;
 	new_node->net_node = 0;
-	new_node->is_read_write = 0;
 	new_node->types.vnumber = nullptr;
 	new_node->types.identifier = NULL;
 }
