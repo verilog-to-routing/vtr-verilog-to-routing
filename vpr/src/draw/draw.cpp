@@ -198,6 +198,7 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app);
 void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app);
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app);
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
+void save_graphics(const char* file_type, const char* file_name);
 
 /********************** Subroutine definitions ******************************/
 
@@ -3551,4 +3552,15 @@ static void highlight_blocks(double x, double y) {
     application.update_message(msg);
 
     application.refresh_drawing();
+}
+
+void save_graphics(const char* file_type, const char* file_name) {
+    if(std::strcmp(file_type, "none") == 0) // same
+        return;
+    else if(std::strcmp(file_type, "pdf") == 0)
+        application.get_canvas(application.get_main_canvas_id())->print_pdf(file_name);
+    else if(std::strcmp(file_type, "png") == 0)
+        application.get_canvas(application.get_main_canvas_id())->print_png(file_name);
+    else if(std::strcmp(file_type, "svg") == 0)
+        application.get_canvas(application.get_main_canvas_id())->print_svg(file_name);
 }

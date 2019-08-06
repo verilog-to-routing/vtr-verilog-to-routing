@@ -1293,6 +1293,7 @@ struct t_vpr_setup {
     float constant_net_delay;            /* timing information when place and route not run */
     bool ShowGraphics;                   /* option to show graphics */
     int GraphPause;                      /* user interactiveness graphics option */
+    std::string SaveGraphics;            /* option to save graphical contents to pdf, png, or svg */
     t_power_opts PowerOpts;
     std::string device_layout;
     e_constant_net_method constant_net_method; //How constant nets should be handled

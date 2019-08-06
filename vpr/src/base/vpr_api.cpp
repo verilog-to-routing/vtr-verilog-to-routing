@@ -78,6 +78,7 @@ using namespace std;
 #include "arch_util.h"
 
 #include "log.h"
+#include "iostream"
 
 #ifdef VPR_USE_TBB
 #    include <tbb/task_scheduler_init.h>
@@ -276,8 +277,9 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->Timing,
              &vpr_setup->ShowGraphics,
              &vpr_setup->GraphPause,
+             vpr_setup->SaveGraphics,
              &vpr_setup->PowerOpts);
-
+    
     /* Check inputs are reasonable */
     CheckArch(*arch);
 
@@ -1054,6 +1056,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
                    int* GraphPause,
+                   std::string SaveGraphics,
                    t_power_opts* PowerOpts) {
     SetupVPR(Options,
              TimingEnabled,
@@ -1074,6 +1077,7 @@ void vpr_setup_vpr(t_options* Options,
              Timing,
              ShowGraphics,
              GraphPause,
+             SaveGraphics,
              PowerOpts);
 }
 

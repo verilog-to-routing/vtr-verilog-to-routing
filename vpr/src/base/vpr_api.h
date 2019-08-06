@@ -122,6 +122,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
                    int* GraphPause,
+                   std::string SaveGraphics,
                    t_power_opts* PowerOpts);
 
 /* Check inputs are reasonable */
