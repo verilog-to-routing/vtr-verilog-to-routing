@@ -253,6 +253,57 @@ struct t_compressed_block_grid {
 //the may be physically far apart
 static std::vector<t_compressed_block_grid> f_compressed_block_grids;
 
+std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr, vtr::fclose);
+
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+
+#    define LOG_MOVE_STATS(t, b_from, b_to, from_type, to_type,      \
+                           from_macro_blk_cnt, to_macro_blk_cnt,     \
+                           delta_cost, delta_bb_cost, delta_td_cost, \
+                           outcome, reason)                          \
+        do {                                                         \
+            if (f_move_stats_file) {                                 \
+                fprintf(f_move_stats_file.get(),                     \
+                        "%g,%d,%d,%s,%s,"                            \
+                        "%d,%d,"                                     \
+                        "%g,%g,%g,"                                  \
+                        "%s,%s\n",                                   \
+                        t, b_from, b_to, from_type, to_type,         \
+                        from_macro_blk_cnt, to_macro_blk_cnt,        \
+                        delta_cost, delta_bb_cost, delta_td_cost,    \
+                        outcome, reason);                            \
+            }                                                        \
+        } while (false)
+
+#    define LOG_MOVE_STATS_HEADER()                                \
+        do {                                                       \
+            if (f_move_stats_file) {                               \
+                fprintf(f_move_stats_file.get(),                   \
+                        "temp,from_blk,to_blk,from_type,to_type,"  \
+                        "from_macro_blk_count,to_macro_blk_count," \
+                        "delta_cost,delta_bb_cost,delta_td_cost,"  \
+                        "outcome,reason\n");                       \
+            }                                                      \
+        } while (false)
+
+#else
+
+#    define LOG_MOVE_STATS(t, b_from, b_to, from_type, to_type,      \
+                           from_macro_blk_cnt, to_macro_blk_cnt,     \
+                           delta_cost, delta_bb_cost, delta_td_cost, \
+                           outcome, reason)                          \
+        do {                                                         \
+        } while (false)
+
+#    define LOG_MOVE_STATS_HEADER()                      \
+        do {                                             \
+            fprintf(f_move_stats_file.get(),             \
+                    "VTR_ENABLE_DEBUG_LOGGING disabled " \
+                    "-- No move stats recorded\n");      \
+        } while (false)
+
+#endif
+
 /********************* Static subroutines local to place.c *******************/
 #ifdef VERBOSE
 static void print_clb_placement(const char* fname);
@@ -640,6 +691,11 @@ void try_place(const t_placer_opts& placer_opts,
                    annealing_sched, move_lim, rlim,
                    *place_delay_model,
                    placer_opts);
+
+    if (!placer_opts.move_stats_file.empty()) {
+        f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(vtr::fopen(placer_opts.move_stats_file.c_str(), "w"), vtr::fclose);
+        LOG_MOVE_STATS_HEADER();
+    }
 
     tot_iter = 0;
     moves_since_cost_recompute = 0;
@@ -1724,6 +1780,12 @@ static e_swap_result try_swap(float t,
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
+        LOG_MOVE_STATS(t,
+                       int(size_t(b_from)), -1,
+                       cluster_ctx.clb_nlist.block_type(b_from)->name, "",
+                       -1, -1,
+                       std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(),
+                       "ABORTED", "no movable block");
         return ABORTED; //No movable block found
     }
 
@@ -1739,12 +1801,22 @@ static e_swap_result try_swap(float t,
     }
 
     t_pl_loc to;
-    if (!find_to(cluster_ctx.clb_nlist.block_type(b_from), rlim, from, to))
-        return REJECTED;
+    if (!find_to(cluster_ctx.clb_nlist.block_type(b_from), rlim, from, to)) {
+        LOG_MOVE_STATS(t,
+                       int(size_t(b_from)), -1,
+                       cluster_ctx.clb_nlist.block_type(b_from)->name, "",
+                       -1, -1,
+                       std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(),
+                       "ABORTED", "no to block");
+        return ABORTED;
+    }
+
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+    ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+#endif
 
 #if 0
     auto& grid = g_vpr_ctx.device().grid;
-	ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
 	VTR_LOG( "swap [%d][%d][%d] %s block %zu \"%s\" <=> [%d][%d][%d] %s block ",
 		from.x, from.y, from.z, grid[from.x][from.y].type->name, size_t(b_from), (b_from ? cluster_ctx.clb_nlist.block_name(b_from).c_str() : ""),
 		to.x, to.y, to.z, grid[to.x][to.y].type->name);
@@ -1827,11 +1899,24 @@ static e_swap_result try_swap(float t,
         check_place(*costs, delay_model, place_algorithm);
 #endif
 
+        LOG_MOVE_STATS(t,
+                       int(size_t(b_from)), (b_to ? int(size_t(b_to)) : -1),
+                       cluster_ctx.clb_nlist.block_type(b_from)->name, (b_to ? cluster_ctx.clb_nlist.block_type(b_to)->name : "EMPTY"),
+                       -1, -1,
+                       delta_c, bb_delta_c, timing_delta_c,
+                       (keep_switch ? "ACCEPTED" : "REJECTED"), "");
         return (keep_switch);
     } else {
         VTR_ASSERT_SAFE(move_outcome == e_propose_move::ABORT);
 
         clear_move_blocks();
+
+        LOG_MOVE_STATS(t,
+                       int(size_t(b_from)), (b_to ? int(size_t(b_to)) : -1),
+                       cluster_ctx.clb_nlist.block_type(b_from)->name, (b_to ? cluster_ctx.clb_nlist.block_type(b_to)->name : "EMPTY"),
+                       -1, -1,
+                       std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(),
+                       "ABORTED", "illegal move");
 
         return ABORTED;
     }
