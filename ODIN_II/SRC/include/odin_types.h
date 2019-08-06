@@ -162,6 +162,7 @@ extern const char *ids_STR [];
 enum file_extension_supported
 {
 	VERILOG,
+	SYSTEM_VERILOG,
 	file_extension_supported_END
 };
 
