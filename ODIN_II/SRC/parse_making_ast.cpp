@@ -55,9 +55,6 @@ STRING_CACHE *functions_outputs_sc;
 STRING_CACHE *module_names_to_idx;
 STRING_CACHE *instantiated_modules;
 
-ast_node_t **block_instantiations_instance;
-int size_block_instantiations;
-
 ast_node_t **module_variables_not_defined;
 int size_module_variables_not_defined;
 ast_node_t **function_instantiations_instance;
@@ -79,7 +76,6 @@ short to_view_parse;
  * File-scope function declarations
  */
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number);
-ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
 ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list);
 
 
@@ -166,33 +162,6 @@ BASIC PARSING FUNCTIONS
  --------------------------------------------------------------------------------------------
  --------------------------------------------------------------------------------------------*/
 
-/*----------------------------------------------------------------------------
- * (function: cleanup_hard_blocks)
- *   This function will correctly label nodes in the AST as being part of a
- *   hard block and not a module. This needs to be done post parsing since
- *   there are no language differences between hard blocks and modules.
- *--------------------------------------------------------------------------*/
-void cleanup_hard_blocks()
-{
-	int i;
-	long j;
-	ast_node_t *block_node, *instance_node, *connect_list_node;
-
-	for (i = 0; i < size_block_instantiations; i++)
-	{
-		block_node = block_instantiations_instance[i];
-		instance_node = block_node->children[1];
-		instance_node->type = HARD_BLOCK_NAMED_INSTANCE;
-		connect_list_node = instance_node->children[1];
-		connect_list_node->type = HARD_BLOCK_CONNECT_LIST;
-
-		for (j = 0; j < connect_list_node->num_children; j++)
-		{
-			connect_list_node->children[j]->type = HARD_BLOCK_CONNECT;
-		}
-	}
-	return;
-}
 
 /*---------------------------------------------------------------------------------------------
  * (function: init_parser)
@@ -214,8 +183,6 @@ void init_parser()
   	size_function_instantiations = 0;
   	function_instantiations_instance_by_module = NULL;
 	size_function_instantiations_by_module = 0;
-	block_instantiations_instance = NULL;
-	size_block_instantiations = 0;
 
 	/* keeps track of all the ast roots */
 	all_file_items_list = NULL;
@@ -280,7 +247,6 @@ void next_parsed_verilog_file(ast_node_t *file_items_list)
 	long i;
 	/* optimization entry point */
 	printf("Optimizing module by AST based optimizations\n");
-	cleanup_hard_blocks();
 	if (configuration.output_ast_graphs == 1)
 	{
 		/* IF - we want outputs for the graphViz files of each module */
@@ -1356,10 +1322,16 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
 	// allocate child nodes to this node
 	allocate_children_to_node(new_node, { symbol_node, module_named_instance });
 
-	// store the hard block symbol name that this calls in a list that will at the end be asociated with the hard block node
-	block_instantiations_instance = (ast_node_t **)vtr::realloc(block_instantiations_instance, sizeof(ast_node_t*)*(size_block_instantiations+1));
-	block_instantiations_instance[size_block_instantiations] = new_node;
-	size_block_instantiations++;
+	// mark as hard block
+	module_named_instance->type = HARD_BLOCK_NAMED_INSTANCE;
+
+	ast_node_t *connect_list_node = module_named_instance->children[1];
+	connect_list_node->type = HARD_BLOCK_CONNECT_LIST;
+
+	for (int i = 0; i < connect_list_node->num_children; i++)
+	{
+		connect_list_node->children[i]->type = HARD_BLOCK_CONNECT;
+	}
 
 	return new_node;
 }
@@ -1383,20 +1355,6 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 				module_named_instance->children[i]->children[0]->types.identifier);
 		}
 		module_instances_sc->data[sc_spot] = module_named_instance->children[i];
-
-		if
-		(
-			sc_lookup_string(hard_block_names, module_ref_name) != -1
-			|| !strcmp(module_ref_name, SINGLE_PORT_RAM_string)
-			|| !strcmp(module_ref_name, DUAL_PORT_RAM_string)
-		)
-		{
-			ast_node_t *instance = ast_node_deep_copy(module_named_instance->children[i]);
-			free_whole_tree(new_master_node);
-			free_whole_tree(module_named_instance);
-			
-			return newHardBlockInstance(module_ref_name, instance, line_number);
-		}
 
 		ast_node_t *symbol_node = newSymbolNode(module_ref_name, line_number);
 

@@ -47,6 +47,7 @@ extern void add_the_blackbox_for_mults(FILE *out);
 extern void define_mult_function(nnode_t *node, FILE *out);
 extern void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *netlist);
 extern void iterate_multipliers(netlist_t *netlist);
+extern bool is_ast_multiplier(ast_node_t *node);
 extern void clean_multipliers();
 extern void free_multipliers();
 
