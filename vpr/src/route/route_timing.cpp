@@ -510,7 +510,19 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
         /*
          * Are we finished?
          */
-        if (routing_is_feasible && !(itry == 1) && timing_info->hold_worst_negative_slack() == 0) {
+
+        //check if the shared ptr is null
+
+        bool check_timing_info = false;
+
+        if (routing_is_feasible && !timing_info) {
+            check_timing_info = true;
+        }
+        else if (routing_is_feasible && !(itry == 1) && timing_info->hold_worst_negative_slack() == 0) {
+            check_timing_info = true;
+        }
+
+        if (check_timing_info) {
             auto& router_ctx = g_vpr_ctx.routing();
 
             if (is_better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
