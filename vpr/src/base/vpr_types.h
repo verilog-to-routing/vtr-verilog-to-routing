@@ -791,6 +791,13 @@ enum class e_reducer {
     GEOMEAN
 };
 
+enum class e_file_type {
+    PDF,
+    PNG,
+    SVG,
+    NONE
+};
+
 struct t_placer_opts {
     enum e_place_algorithm place_algorithm;
     float timing_tradeoff;

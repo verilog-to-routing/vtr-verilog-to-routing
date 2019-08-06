@@ -202,7 +202,7 @@ void save_graphics(const char* file_type, const char* file_name);
 
 /********************** Subroutine definitions ******************************/
 
-void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type) {
+void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, std::string save_graphics) {
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -213,6 +213,9 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->show_graphics = show_graphics_val;
     draw_state->gr_automode = gr_automode_val;
     draw_state->draw_route_type = route_type;
+    draw_state->save_graphics = save_graphics;
+    std::cout << "string is 1:" <<  draw_state->save_graphics << std::endl;
+    std::cout << "string is 2:" <<  save_graphics << std::endl;
 }
 
 void draw_main_canvas(ezgl::renderer& g) {
@@ -269,6 +272,9 @@ void draw_main_canvas(ezgl::renderer& g) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
+    
+    std::cout << "string is :" <<  draw_state->save_graphics << std::endl;
+    save_graphics(draw_state->save_graphics.c_str(), "test");
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -3554,13 +3560,22 @@ static void highlight_blocks(double x, double y) {
     application.refresh_drawing();
 }
 
-void save_graphics(const char* file_type, const char* file_name) {
+void save_graphics(const char* file_type, const char* file_name) {  
+    std::cout << "save_graphics!" << std::endl;
+    
+    std::cout << "pdf compare: " << std::strcmp(file_type, "pdf") << std::endl;
+    
+    
     if(std::strcmp(file_type, "none") == 0) // same
         return;
-    else if(std::strcmp(file_type, "pdf") == 0)
+    else if(std::strcmp(file_type, "pdf") == 0){
+        std::cout << "pdf saved!" << std::endl;
         application.get_canvas(application.get_main_canvas_id())->print_pdf(file_name);
-    else if(std::strcmp(file_type, "png") == 0)
+    }
+    else if(std::strcmp(file_type, "png") == 0){
         application.get_canvas(application.get_main_canvas_id())->print_png(file_name);
-    else if(std::strcmp(file_type, "svg") == 0)
+    }
+    else if(std::strcmp(file_type, "svg") == 0){
         application.get_canvas(application.get_main_canvas_id())->print_svg(file_name);
+    }
 }

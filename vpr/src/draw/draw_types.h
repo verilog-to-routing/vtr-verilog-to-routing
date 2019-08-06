@@ -184,6 +184,7 @@ struct t_draw_state {
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
     std::unique_ptr<const vtr::ColorMap> color_map = nullptr;
+    std::string save_graphics = "none";
 
     t_draw_state() = default;
 
