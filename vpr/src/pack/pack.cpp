@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <stdlib.h>
+#include <sstream>
 using namespace std;
 
 #include "vtr_assert.h"
