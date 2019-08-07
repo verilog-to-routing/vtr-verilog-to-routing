@@ -912,7 +912,7 @@ void convert_2D_to_1D_array(ast_node_t **var_declare, STRING_CACHE_LIST *local_s
 	ast_node_t *node_max2  = (*var_declare)->children[3];
 	ast_node_t *node_min2  = (*var_declare)->children[4];
 
-	ast_node_t *node_max3  = (*var_dqeclare)->children[5];
+	ast_node_t *node_max3  = (*var_declare)->children[5];
 	ast_node_t *node_min3  = (*var_declare)->children[6];
 
 	oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);		
