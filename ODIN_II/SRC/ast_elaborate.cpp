@@ -114,7 +114,7 @@ ast_node_t *get_chunk_size_node(char *instance_name_prefix, char *array_name, ST
 bool verify_terminal(ast_node_t *top, ast_node_t *iterator);
 void verify_genvars(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list, char ***other_genvars, int num_genvars);
 
-ast_node_t *look_for_matching_hard_block(ast_node_t *node, char *hard_block_name);
+ast_node_t *look_for_matching_hard_block(ast_node_t *node, char *hard_block_name, STRING_CACHE_LIST *local_string_cache_list);
 ast_node_t *look_for_matching_soft_logic(ast_node_t *node, char *hard_block_name);
 
 
@@ -249,7 +249,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACH
 						|| !strcmp(module_ref_name, DUAL_PORT_RAM_string)
 					)
 					{
-						ast_node_t *hb_node = look_for_matching_hard_block(node->children[0], module_ref_name);
+						ast_node_t *hb_node = look_for_matching_hard_block(node->children[0], module_ref_name, local_string_cache_list);
 						if (hb_node != node->children[0])
 						{
 							free_whole_tree(node);
@@ -1226,7 +1226,7 @@ void verify_genvars(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list
 	}
 }
 
-ast_node_t *look_for_matching_hard_block(ast_node_t *node, char *hard_block_name)
+ast_node_t *look_for_matching_hard_block(ast_node_t *node, char *hard_block_name, STRING_CACHE_LIST *local_string_cache_list)
 {
 	t_model *hb_model = find_hard_block(hard_block_name);
 	bool is_hb = true;
@@ -1238,7 +1238,6 @@ ast_node_t *look_for_matching_hard_block(ast_node_t *node, char *hard_block_name
 	}
 	else
 	{
-	
 		t_model_ports *hb_input_ports = hb_model->inputs;
 		t_model_ports *hb_output_ports = hb_model->outputs;
 
@@ -1257,6 +1256,7 @@ ast_node_t *look_for_matching_hard_block(ast_node_t *node, char *hard_block_name
 			hb_output_ports = hb_output_ports->next;
 		}
 
+
 		ast_node_t *connect_list = node->children[1]->children[1];
 
 		/* first check if the number of ports match up */
@@ -1265,9 +1265,12 @@ ast_node_t *look_for_matching_hard_block(ast_node_t *node, char *hard_block_name
 			is_hb = false;
 		}
 		
+
 		if (is_hb && connect_list->children[0]->children[0] != NULL)
 		{
-			/* if all port names match up, this is a hard block */
+			/* number of ports match and ports were passed in by name;
+			 * if all port names match up, this is a hard block */
+
 			for (int i = 0; i < connect_list->num_children && is_hb; i++)
 			{
 				oassert(connect_list->children[i]->children[0]);
@@ -1289,42 +1292,165 @@ ast_node_t *look_for_matching_hard_block(ast_node_t *node, char *hard_block_name
 				}
 				else
 				{
-					continue; // matching input was found
+					/* matching input was found; move on to the next port connection */
+					continue;
 				}
 
 				if (hb_output_ports == NULL)
 				{
-					is_hb = false; // ports don't match up
+					/* name doesn't match up with any of the defined ports; this is not a hard block */
+					is_hb = false;
 				}
 				else
 				{
-					continue; // matching output was found
+					/* matching output was found; move on to the next port connection */
+					continue; 
 				}
 			}
 		}
 		else if (is_hb)
 		{
-			/* number of ports match, so default to a hard block */
+			/* number of ports match and ports were passed in by ordered list; 
+			 * this is risky, but we will try to do some "smart" mapping to mark inputs and outputs 
+			 * by evaluating the port connections to determine the order */
+
 			warning_message(NETLIST_ERROR, connect_list->line_number, connect_list->file_number, 
-				"Converting this instance to a hard block (%s) - unnamed port connections will be matched according to hard block specification\n", hard_block_name);
+				"Attempting to convert this instance to a hard block (%s) -	unnamed port connections will be matched according to hard block specification and may produce unexpected results\n", hard_block_name);
+
+			t_model_ports *hb_ports_1 = NULL, *hb_ports_2 = NULL;
+			bool is_input, is_output;
+			int num_ports;
 
 			hb_input_ports = hb_model->inputs;
 			hb_output_ports = hb_model->outputs;
-			int i = 0;
 
-			while (hb_output_ports)
+			/* decide whether to look for inputs or outputs based on what there are less of */
+			if (num_hb_inputs <= num_hb_outputs)
+			{
+				is_input = true;
+				is_output = false;
+				num_ports = num_hb_inputs;
+			}
+			else
+			{
+				is_input = false;
+				is_output = true;
+				num_ports = num_hb_outputs;
+			}
+
+			STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
+
+			int i;
+
+			/* look through the first N (num_ports) port connections to look for a match */
+			for (i = 0; i < num_ports; i++)
+			{
+				char *port_id = connect_list->children[i]->children[1]->types.identifier;
+				long sc_spot = sc_lookup_string(local_symbol_table_sc, port_id);
+				oassert(sc_spot > -1);
+				ast_node_t *var_declare = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
+
+				if (var_declare->types.variable.is_output == is_output
+					&& var_declare->types.variable.is_input == is_input)
+				{
+					/* found a match! check if it's an input or output */
+					if (is_input)
+					{
+						hb_ports_1 = hb_model->inputs;
+						hb_ports_2 = hb_model->outputs;
+					}
+					else
+					{
+						hb_ports_1 = hb_model->outputs;
+						hb_ports_2 = hb_model->inputs;
+					}
+					break;
+				}
+				else if (var_declare->types.variable.is_output != is_output
+					&& var_declare->types.variable.is_input != is_input)
+				{
+					/* found the opposite of what we were looking for */
+					if (is_input)
+					{
+						hb_ports_1 = hb_model->outputs;
+						hb_ports_2 = hb_model->inputs;
+					}
+					else
+					{
+						hb_ports_1 = hb_model->inputs;
+						hb_ports_2 = hb_model->outputs;
+					}
+					break;
+				}
+			}
+
+			/* if a match hasn't been found yet, look through the last N (num_ports) port connections */
+			if (!(hb_ports_1 && hb_ports_2))
+			{
+				for (i = connect_list->num_children - num_ports; i < connect_list->num_children; i++)
+				{
+					char *port_id = connect_list->children[i]->children[1]->types.identifier;
+					long sc_spot = sc_lookup_string(local_symbol_table_sc, port_id);
+					oassert(sc_spot > -1);
+					ast_node_t *var_declare = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
+
+					if (var_declare->types.variable.is_output == is_output
+						&& var_declare->types.variable.is_input == is_input)
+					{
+						/* found a match! since we're at the other end, inputs/outputs should be reversed */
+						if (is_input)
+						{
+							hb_ports_1 = hb_model->outputs;
+							hb_ports_2 = hb_model->inputs;
+						}
+						else
+						{
+							hb_ports_1 = hb_model->inputs;
+							hb_ports_2 = hb_model->outputs;
+						}
+						break;
+					}
+					else if (var_declare->types.variable.is_output != is_output
+						&& var_declare->types.variable.is_input != is_input)
+					{
+						/* found the opposite of what we were looking for */
+						if (is_input)
+						{
+							hb_ports_1 = hb_model->inputs;
+							hb_ports_2 = hb_model->outputs;
+						}
+						else
+						{
+							hb_ports_1 = hb_model->outputs;
+							hb_ports_2 = hb_model->inputs;
+						}
+						break;
+					}
+				}
+			}
+
+			/* if a match hasn't been found, then there is no way to tell what should be done first;
+			 * we will default to inputs first, then outputs after (this is an arbitrary decision) */
+			if (!(hb_ports_1 && hb_ports_2))
+			{
+				hb_ports_1 = hb_model->inputs;
+				hb_ports_2 = hb_model->outputs;
+			}
+
+			/* attach new port identifiers for later reference when building the hard block */
+			i = 0;
+			while (hb_ports_1)
 			{
 				oassert(connect_list->children[i] && !connect_list->children[i]->children[0]);
-				connect_list->children[i]->children[0] = newSymbolNode(vtr::strdup(hb_output_ports->name), connect_list->line_number);
-				hb_output_ports = hb_output_ports->next;
+				connect_list->children[i]->children[0] = newSymbolNode(vtr::strdup(hb_ports_1->name), connect_list->line_number);
+				hb_ports_1 = hb_ports_1->next;
 				i++;
 			}
-			
-			while (hb_input_ports)
+			while (hb_ports_2)
 			{
 				oassert(connect_list->children[i] && !connect_list->children[i]->children[0]);
-				connect_list->children[i]->children[0] = newSymbolNode(vtr::strdup(hb_input_ports->name), connect_list->line_number);
-				hb_input_ports = hb_input_ports->next;
+				connect_list->children[i]->children[0] = newSymbolNode(vtr::strdup(hb_ports_2->name), connect_list->line_number);
+				hb_ports_2 = hb_ports_2->next;
 				i++;
 			}
 		}
