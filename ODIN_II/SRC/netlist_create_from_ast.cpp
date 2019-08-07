@@ -5616,6 +5616,8 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix, 
 			return create_soft_dual_port_ram_block(block, instance_name_prefix, local_string_cache_list);
 	}
 
+	/* TODO: create_soft_adder_block()/create_soft_multiplier_block()??? */
+
 	if (!hb_model)
 	{
 		error_message(NETLIST_ERROR, block->line_number, block->file_number,
@@ -5784,6 +5786,8 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix, 
 			}
 		}
 	}
+
+	hb_ports = hb_model->outputs;
 
 	/* IF a multiplier - need to process the output pins now */
 	/* Size of the output is estimated to be size of the inputs added */

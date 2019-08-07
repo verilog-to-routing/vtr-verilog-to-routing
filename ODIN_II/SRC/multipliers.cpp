@@ -1419,6 +1419,35 @@ void split_soft_multiplier(nnode_t *node, netlist_t *netlist) {
 	vtr::free(node);
 }
 
+bool is_ast_multiplier(ast_node_t *node)
+{
+	bool is_mult;
+	ast_node_t *instance = node->children[1];
+	is_mult = 	(!strcmp(node->children[0]->types.identifier, "multiply")) 
+				 && (instance->children[1]->num_children == 3);
+
+	ast_node_t *connect_list = instance->children[1];
+	if (is_mult && connect_list->children[0]->children[0])
+	{
+		/* port connections were passed by name; verify port names */
+		for (int i = 0; i < connect_list->num_children && is_mult; i++)
+		{
+			char *id = connect_list->children[i]->children[0]->types.identifier; 
+
+			if ((strcmp(id, "a") != 0) &&
+				(strcmp(id, "b") != 0) &&
+				(strcmp(id, "out") != 0)
+			)
+			{
+				is_mult = false;
+				break;
+			}
+		}
+	}
+
+	return is_mult;
+}
+
 /*-------------------------------------------------------------------------
  * (function: clean_multipliers)
  *
