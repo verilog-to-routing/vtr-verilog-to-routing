@@ -3805,12 +3805,6 @@ e_propose_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& /*aff
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
-        //LOG_MOVE_STATS(t,
-        //int(size_t(b_from)), -1,
-        //cluster_ctx.clb_nlist.block_type(b_from)->name, "",
-        //-1, -1,
-        //std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(),
-        //"ABORTED", "no movable block");
         return e_propose_move::ABORT; //No movable block found
     }
 
@@ -3824,12 +3818,6 @@ e_propose_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& /*aff
 
     t_pl_loc to;
     if (!find_to(cluster_ctx.clb_nlist.block_type(b_from), rlim, from, to)) {
-        //LOG_MOVE_STATS(t,
-        //int(size_t(b_from)), -1,
-        //cluster_ctx.clb_nlist.block_type(b_from)->name, "",
-        //-1, -1,
-        //std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(),
-        //"ABORTED", "no to block");
         return e_propose_move::ABORT;
     }
 
