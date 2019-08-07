@@ -893,10 +893,26 @@ void update_string_caches(STRING_CACHE_LIST *local_string_cache_list)
 void convert_2D_to_1D_array(ast_node_t **var_declare, STRING_CACHE_LIST *local_string_cache_list)
 {
 	char *instance_name_prefix = local_string_cache_list->instance_name_prefix;
+
+	ast_node_t **local_symbol_table = local_string_cache_list->local_symbol_table;
+	int num_local_symbol_table = local_string_cache_list->num_local_symbol_table;
+	int index_to_update = -1;
+
+	/* Searches for the matching node in the symbol table so that it can be updated in place */
+
+	for(int i = 0; i < num_local_symbol_table; i++)
+	{
+		if(local_symbol_table[i]->unique_count == (*var_declare)->unique_count)
+		{
+			index_to_update = i;
+			break;
+		}
+	}
+
 	ast_node_t *node_max2  = (*var_declare)->children[3];
 	ast_node_t *node_min2  = (*var_declare)->children[4];
 
-	ast_node_t *node_max3  = (*var_declare)->children[5];
+	ast_node_t *node_max3  = (*var_dqeclare)->children[5];
 	ast_node_t *node_min3  = (*var_declare)->children[6];
 
 	oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);		
@@ -922,9 +938,11 @@ void convert_2D_to_1D_array(ast_node_t **var_declare, STRING_CACHE_LIST *local_s
 	char *name = (*var_declare)->children[0]->types.identifier;
 
 	if (addr_min != 0 || addr_min1 != 0)
+	{
 		error_message(NETLIST_ERROR, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number,
 				"%s: right memory address index must be zero\n", name);
-
+	}
+	
 	long addr_chunk_size = (addr_max1 - addr_min1 + 1);
 	ast_node_t *new_node = create_tree_node_number(addr_chunk_size, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number);
 
@@ -933,9 +951,13 @@ void convert_2D_to_1D_array(ast_node_t **var_declare, STRING_CACHE_LIST *local_s
 
 	char *temp_string = make_chunk_size_name(instance_name_prefix, name);
 
-	if ((sc_spot = sc_add_string(local_param_table_sc, temp_string)) == -1)
+	sc_spot = sc_add_string(local_param_table_sc, temp_string);
+	
+	if(local_param_table_sc->data[sc_spot] != NULL)
+	{
 		error_message(NETLIST_ERROR, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number,
 				"%s: name conflicts with Odin internal reference\n", temp_string);
+	}
 
 	vtr::free(temp_string);
 	temp_string = NULL;
@@ -954,6 +976,20 @@ void convert_2D_to_1D_array(ast_node_t **var_declare, STRING_CACHE_LIST *local_s
 	(*var_declare)->children[7] = NULL; 
 
 	(*var_declare)->num_children -= 2;
+
+	/* Updates the matching symbol table node in place */
+
+	if(index_to_update != -1)
+	{
+		local_symbol_table[index_to_update]->children[5] = free_whole_tree(local_symbol_table[index_to_update]->children[5]);
+		local_symbol_table[index_to_update]->children[6] = free_whole_tree(local_symbol_table[index_to_update]->children[6]);
+
+		local_symbol_table[index_to_update]->children[5] = local_symbol_table[index_to_update]->children[7];
+		local_symbol_table[index_to_update]->children[7] = NULL; 
+
+		local_symbol_table[index_to_update]->num_children -= 2;
+	}
+
 }
 
 void convert_2D_to_1D_array_ref(ast_node_t **node, STRING_CACHE_LIST *local_string_cache_list)
