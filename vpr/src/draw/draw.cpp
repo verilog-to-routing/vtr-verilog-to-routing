@@ -61,6 +61,7 @@ using namespace std;
 #include "rr_graph.h"
 #include "route_util.h"
 #include "place_macro.h"
+#include "vtr_path.h"
 
 /****************************** Define Macros *******************************/
 
@@ -198,7 +199,7 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app);
 void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app);
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app);
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
-void save_graphics(const char* file_type, const char* file_name);
+void save_graphics(std::string* save_str);
 
 /********************** Subroutine definitions ******************************/
 
@@ -214,8 +215,6 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->gr_automode = gr_automode_val;
     draw_state->draw_route_type = route_type;
     draw_state->save_graphics = save_graphics;
-    std::cout << "string is 1:" <<  draw_state->save_graphics << std::endl;
-    std::cout << "string is 2:" <<  save_graphics << std::endl;
 }
 
 void draw_main_canvas(ezgl::renderer& g) {
@@ -273,8 +272,13 @@ void draw_main_canvas(ezgl::renderer& g) {
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
     
-    std::cout << "string is :" <<  draw_state->save_graphics << std::endl;
-    save_graphics(draw_state->save_graphics.c_str(), "test");
+//    if(draw_state->save_graphics != "none") {
+//        std::string file_type = draw_state->save_graphics;
+//        draw_state->save_graphics = "none";
+//        save_graphics(file_type.c_str(), "test_test");
+//    }
+    
+    save_graphics(&(draw_state->save_graphics));
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -288,6 +292,11 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app) {
     GtkButton* search = (GtkButton*)app->get_object("Search");
     gtk_button_set_label(search, "Search");
     g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
+    
+    GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
+//    gtk_button_set_label(save, "SaveGraphics");
+    g_signal_connect(save, "clicked", G_CALLBACK(search_and_highlight), app);
+    
 
     GObject* search_type = (GObject*)app->get_object("SearchType");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
@@ -296,6 +305,7 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app) {
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID");
 
+    
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
     app->create_button("Blk Pin Util", 4, toggle_block_pin_util);
@@ -3560,22 +3570,35 @@ static void highlight_blocks(double x, double y) {
     application.refresh_drawing();
 }
 
-void save_graphics(const char* file_type, const char* file_name) {  
-    std::cout << "save_graphics!" << std::endl;
+void save_graphics(std::string* save_str) {  
+    t_draw_state* draw_state = get_draw_state_vars();
     
-    std::cout << "pdf compare: " << std::strcmp(file_type, "pdf") << std::endl;
-    
-    
-    if(std::strcmp(file_type, "none") == 0) // same
+    if (draw_state->save_graphics == "none")
         return;
-    else if(std::strcmp(file_type, "pdf") == 0){
-        std::cout << "pdf saved!" << std::endl;
-        application.get_canvas(application.get_main_canvas_id())->print_pdf(file_name);
+    
+    std::array<std::string, 2> input_data = vtr::split_ext(draw_state->save_graphics);
+    
+    std::string file_name = input_data.front(); 
+    std::string extension = input_data.back();
+    
+    // reset the status to avoid infinite loop
+    draw_state->save_graphics = "none";
+    
+    if (extension == ".pdf"){
+        application.get_canvas(application.get_main_canvas_id())->print_pdf(file_name.c_str());
+        return;
     }
-    else if(std::strcmp(file_type, "png") == 0){
-        application.get_canvas(application.get_main_canvas_id())->print_png(file_name);
+    else if (extension == ".png") {
+        application.get_canvas(application.get_main_canvas_id())->print_png(file_name.c_str());
+        return;
     }
-    else if(std::strcmp(file_type, "svg") == 0){
-        application.get_canvas(application.get_main_canvas_id())->print_svg(file_name);
+    else if (extension == ".svg") {
+        application.get_canvas(application.get_main_canvas_id())->print_svg(file_name.c_str());
+        return;
     }
+    else {
+        //invalid input format
+        ;
+    }
+    
 }
