@@ -403,7 +403,7 @@ static e_swap_result try_swap(float t,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
-                              const PlaceDelayModel& delay_model,
+                              const PlaceDelayModel* delay_model,
                               float rlim_escape_fraction,
                               enum e_place_algorithm place_algorithm,
                               float timing_tradeoff);
@@ -411,11 +411,11 @@ static e_swap_result try_swap(float t,
 static ClusterBlockId pick_from_block();
 
 static void check_place(const t_placer_costs& costs,
-                        const PlaceDelayModel& delay_model,
+                        const PlaceDelayModel* delay_model,
                         enum e_place_algorithm place_algorithm);
 
 static int check_placement_costs(const t_placer_costs& costs,
-                                 const PlaceDelayModel& delay_model,
+                                 const PlaceDelayModel* delay_model,
                                  enum e_place_algorithm place_algorithm);
 static int check_placement_consistency();
 static int check_block_placement_consistency();
@@ -426,7 +426,7 @@ static float starting_t(t_placer_costs* costs,
                         t_annealing_sched annealing_sched,
                         int max_moves,
                         float rlim,
-                        const PlaceDelayModel& delay_model,
+                        const PlaceDelayModel* delay_model,
                         MoveGenerator& move_generator,
                         const t_placer_opts& placer_opts);
 
@@ -442,15 +442,15 @@ static double get_std_dev(int n, double sum_x_squared, double av_x);
 
 static double recompute_bb_cost();
 
-static float comp_td_point_to_point_delay(const PlaceDelayModel& delay_model, ClusterNetId net_id, int ipin);
+static float comp_td_point_to_point_delay(const PlaceDelayModel* delay_model, ClusterNetId net_id, int ipin);
 
-static void comp_td_point_to_point_delays(const PlaceDelayModel& delay_model);
+static void comp_td_point_to_point_delays(const PlaceDelayModel* delay_model);
 
 static void update_td_cost();
 
 static bool driven_by_moved_block(const ClusterNetId net);
 
-static void comp_td_costs(const PlaceDelayModel& delay_model, double* timing_cost);
+static void comp_td_costs(const PlaceDelayModel* delay_model, double* timing_cost);
 
 static e_swap_result assess_swap(double delta_c, double t);
 
@@ -460,12 +460,12 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new);
 
 static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new, int xold, int yold, int xnew, int ynew);
 
-static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel& delay_model, double& bb_delta_c, double& timing_delta_c);
+static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel* delay_model, double& bb_delta_c, double& timing_delta_c);
 
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
 
 static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId blk, const ClusterPinId blk_pin);
-static void update_td_delta_costs(const PlaceDelayModel& delay_model, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost);
+static void update_td_delta_costs(const PlaceDelayModel* delay_model, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost);
 
 static double get_net_cost(ClusterNetId net_id, t_bb* bb_ptr);
 
@@ -482,7 +482,7 @@ static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
                                                float crit_exponent,
                                                int* outer_crit_iter_count,
                                                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                               const PlaceDelayModel& delay_model,
+                                               const PlaceDelayModel* delay_model,
                                                SetupTimingInfo& timing_info);
 
 static void placement_inner_loop(float t,
@@ -496,11 +496,11 @@ static void placement_inner_loop(float t,
                                  t_placer_prev_inverse_costs* prev_inverse_costs,
                                  int* moves_since_cost_recompute,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                 const PlaceDelayModel& delay_model,
+                                 const PlaceDelayModel* delay_model,
                                  MoveGenerator& move_generator,
                                  SetupTimingInfo& timing_info);
 
-static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel& delay_model, t_placer_costs* costs);
+static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel* delay_model, t_placer_costs* costs);
 
 static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, double& std_dev, const t_placer_costs& costs, const int move_lim);
 
@@ -613,7 +613,7 @@ void try_place(const t_placer_opts& placer_opts,
         VTR_LOG("\n");
 
         //Update the point-to-point delays from the initial placement
-        comp_td_point_to_point_delays(*place_delay_model);
+        comp_td_point_to_point_delays(place_delay_model.get());
 
         /*
          * Initialize timing analysis
@@ -641,7 +641,7 @@ void try_place(const t_placer_opts& placer_opts,
         }
 
         /*now we can properly compute costs  */
-        comp_td_costs(*place_delay_model, &costs.timing_cost); /*also updates values in point_to_point_delay */
+        comp_td_costs(place_delay_model.get(), &costs.timing_cost); /*also updates values in point_to_point_delay */
 
         outer_crit_iter_count = 1;
 
@@ -662,7 +662,7 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
     //Sanity check that initial placement is legal
-    check_place(costs, *place_delay_model, placer_opts.place_algorithm);
+    check_place(costs, place_delay_model.get(), placer_opts.place_algorithm);
 
     //Initial pacement statistics
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n",
@@ -719,7 +719,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     t = starting_t(&costs, &prev_inverse_costs,
                    annealing_sched, move_lim, rlim,
-                   *place_delay_model,
+                   place_delay_model.get(),
                    *move_generator,
                    placer_opts);
 
@@ -742,7 +742,7 @@ void try_place(const t_placer_opts& placer_opts,
                                            crit_exponent,
                                            &outer_crit_iter_count,
                                            netlist_pin_lookup,
-                                           *place_delay_model,
+                                           place_delay_model.get(),
                                            *timing_info);
 
         placement_inner_loop(t, rlim, placer_opts,
@@ -751,7 +751,7 @@ void try_place(const t_placer_opts& placer_opts,
                              &prev_inverse_costs,
                              &moves_since_cost_recompute,
                              netlist_pin_lookup,
-                             *place_delay_model,
+                             place_delay_model.get(),
                              *move_generator,
                              *timing_info);
 
@@ -797,7 +797,7 @@ void try_place(const t_placer_opts& placer_opts,
                                        crit_exponent,
                                        &outer_crit_iter_count,
                                        netlist_pin_lookup,
-                                       *place_delay_model,
+                                       place_delay_model.get(),
                                        *timing_info);
 
     t = 0; /* freeze out */
@@ -810,7 +810,7 @@ void try_place(const t_placer_opts& placer_opts,
                          &prev_inverse_costs,
                          &moves_since_cost_recompute,
                          netlist_pin_lookup,
-                         *place_delay_model,
+                         place_delay_model.get(),
                          *move_generator,
                          *timing_info);
 
@@ -836,7 +836,7 @@ void try_place(const t_placer_opts& placer_opts,
     }
 #endif
 
-    check_place(costs, *place_delay_model, placer_opts.place_algorithm);
+    check_place(costs, place_delay_model.get(), placer_opts.place_algorithm);
 
     //Some stats
     VTR_LOG("\n");
@@ -850,7 +850,7 @@ void try_place(const t_placer_opts& placer_opts,
             for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
                 set_timing_place_crit(net_id, ipin, 0); /*dummy crit values */
         }
-        comp_td_costs(*place_delay_model, &costs.timing_cost); /*computes point_to_point_delay */
+        comp_td_costs(place_delay_model.get(), &costs.timing_cost); /*computes point_to_point_delay */
     }
 
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -927,7 +927,7 @@ static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
                                                float crit_exponent,
                                                int* outer_crit_iter_count,
                                                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                               const PlaceDelayModel& delay_model,
+                                               const PlaceDelayModel* delay_model,
                                                SetupTimingInfo& timing_info) {
     if (placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
         return;
@@ -971,7 +971,7 @@ static void placement_inner_loop(float t,
                                  t_placer_prev_inverse_costs* prev_inverse_costs,
                                  int* moves_since_cost_recompute,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                 const PlaceDelayModel& delay_model,
+                                 const PlaceDelayModel* delay_model,
                                  MoveGenerator& move_generator,
                                  SetupTimingInfo& timing_info) {
     int inner_crit_iter_count, inner_iter;
@@ -1051,7 +1051,7 @@ static void placement_inner_loop(float t,
     /* Inner loop ends */
 }
 
-static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel& delay_model, t_placer_costs* costs) {
+static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel* delay_model, t_placer_costs* costs) {
     double new_bb_cost = recompute_bb_cost();
     if (fabs(new_bb_cost - costs->bb_cost) > costs->bb_cost * ERROR_TOL) {
         std::string msg = vtr::string_fmt("in recompute_costs_from_scratch: new_bb_cost = %g, old bb_cost = %g\n",
@@ -1174,7 +1174,7 @@ static float starting_t(t_placer_costs* costs,
                         t_annealing_sched annealing_sched,
                         int max_moves,
                         float rlim,
-                        const PlaceDelayModel& delay_model,
+                        const PlaceDelayModel* delay_model,
                         MoveGenerator& move_generator,
                         const t_placer_opts& placer_opts) {
     /* Finds the starting temperature (hot condition).              */
@@ -1793,7 +1793,7 @@ static e_swap_result try_swap(float t,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
-                              const PlaceDelayModel& delay_model,
+                              const PlaceDelayModel* delay_model,
                               float rlim_escape_fraction,
                               enum e_place_algorithm place_algorithm,
                               float timing_tradeoff) {
@@ -1947,7 +1947,7 @@ static ClusterBlockId pick_from_block() {
 //and updates their bounding box.
 //
 //Returns the number of affected nets.
-static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel& delay_model, double& bb_delta_c, double& timing_delta_c) {
+static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel* delay_model, double& bb_delta_c, double& timing_delta_c) {
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -2034,7 +2034,7 @@ static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId
     }
 }
 
-static void update_td_delta_costs(const PlaceDelayModel& delay_model, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost) {
+static void update_td_delta_costs(const PlaceDelayModel* delay_model, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
@@ -2240,7 +2240,7 @@ static double recompute_bb_cost() {
 }
 
 /*returns the delay of one point to point connection */
-static float comp_td_point_to_point_delay(const PlaceDelayModel& delay_model, ClusterNetId net_id, int ipin) {
+static float comp_td_point_to_point_delay(const PlaceDelayModel* delay_model, ClusterNetId net_id, int ipin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -2270,12 +2270,12 @@ static float comp_td_point_to_point_delay(const PlaceDelayModel& delay_model, Cl
          *       In particular this aproach does not accurately capture the effect of fast
          *       carry-chain connections.
          */
-        delay_source_to_sink = delay_model.delay(source_x,
-                                                 source_y,
-                                                 source_block_ipin,
-                                                 sink_x,
-                                                 sink_y,
-                                                 sink_block_ipin);
+        delay_source_to_sink = delay_model->delay(source_x,
+                                                  source_y,
+                                                  source_block_ipin,
+                                                  sink_x,
+                                                  sink_y,
+                                                  sink_block_ipin);
         if (delay_source_to_sink < 0) {
             VPR_ERROR(VPR_ERROR_PLACE,
                       "in comp_td_point_to_point_delay: Bad delay_source_to_sink value %g from %s (at %d,%d) to %s (at %d,%d)\n"
@@ -2292,7 +2292,7 @@ static float comp_td_point_to_point_delay(const PlaceDelayModel& delay_model, Cl
 }
 
 //Recompute all point to point delays, updating point_to_point_delay
-static void comp_td_point_to_point_delays(const PlaceDelayModel& delay_model) {
+static void comp_td_point_to_point_delays(const PlaceDelayModel* delay_model) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -2355,7 +2355,7 @@ static bool driven_by_moved_block(const ClusterNetId net) {
     return false;
 }
 
-static void comp_td_costs(const PlaceDelayModel& delay_model, double* timing_cost) {
+static void comp_td_costs(const PlaceDelayModel* delay_model, double* timing_cost) {
     /* Computes the cost (from scratch) from the delays and criticalities    *
      * of all point to point connections, we define the timing cost of       *
      * each connection as criticality*delay.                                 */
@@ -3533,7 +3533,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 }
 
 static void check_place(const t_placer_costs& costs,
-                        const PlaceDelayModel& delay_model,
+                        const PlaceDelayModel* delay_model,
                         enum e_place_algorithm place_algorithm) {
     /* Checks that the placement has not confused our data structures. *
      * i.e. the clb and block structures agree about the locations of  *
@@ -3559,7 +3559,7 @@ static void check_place(const t_placer_costs& costs,
 }
 
 static int check_placement_costs(const t_placer_costs& costs,
-                                 const PlaceDelayModel& delay_model,
+                                 const PlaceDelayModel* delay_model,
                                  enum e_place_algorithm place_algorithm) {
     int error = 0;
     double bb_cost_check;
