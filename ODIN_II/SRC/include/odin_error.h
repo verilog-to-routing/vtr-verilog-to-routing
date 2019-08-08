@@ -43,6 +43,7 @@ static inline void _verbose_assert(bool condition, const char *condition_str, co
 void _log_message(odin_error error_type, long line_number, long file, bool soft_error, const char *function_file_name, long function_line, const char *function_name, const char *message, ...);
 
 #define error_message(error_type, line_number, file, message, ...) _log_message(error_type, line_number, file, false, __FILE__, __LINE__, __func__, message, __VA_ARGS__)
+#define possible_error_message(error_type, line_number, file, message, ...) _log_message(error_type, line_number, file, global_args.permissive.value(), __FILE__, __LINE__, __func__, message, __VA_ARGS__)
 #define warning_message(error_type, line_number, file, message, ...) _log_message(error_type, line_number, file, true, __FILE__, __LINE__, __func__, message, __VA_ARGS__)
 
 #endif

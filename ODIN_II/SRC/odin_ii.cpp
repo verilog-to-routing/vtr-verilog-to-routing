@@ -396,6 +396,12 @@ void get_options(int argc, char** argv) {
 			.metavar("ARCHITECTURE_FILE")
 			;
 
+	other_grp.add_argument(global_args.permissive, "--permissive")
+			.help("Turn possible_error_messages into warning_messages ... unexpected behaviour may occur")
+			.default_value("false")
+			.action(argparse::Action::STORE_TRUE)
+			;
+
 	other_grp.add_argument(global_args.write_netlist_as_dot, "-G")
 			.help("Output netlist graph in graphviz .dot format")
 			.default_value("false")
@@ -606,6 +612,11 @@ void get_options(int argc, char** argv) {
 	if(configuration.debug_output_path == DEFAULT_OUTPUT)
 	{
 		configuration.debug_output_path = global_args.sim_directory;
+	}
+
+	if(global_args.permissive.value())
+	{
+		warning_message(ARG_ERROR,-1,-1, "%s", "Permissive flag is ON. Undefined behaviour may occur\n");
 	}
 }
 
