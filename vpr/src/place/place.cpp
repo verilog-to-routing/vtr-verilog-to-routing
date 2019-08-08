@@ -644,6 +644,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     tot_iter = 0;
     moves_since_cost_recompute = 0;
+    int num_temps = 0;
 
     /* Outer loop of the simmulated annealing begins */
     while (exit_crit(t, costs.cost, annealing_sched) == 0) {
@@ -676,6 +677,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         oldt = t; /* for finding and printing alpha. */
         update_t(&t, rlim, success_rat, annealing_sched);
+        ++num_temps;
 
         if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
             critical_path = timing_info->least_slack_critical_path();
@@ -698,6 +700,7 @@ void try_place(const t_placer_opts& placer_opts,
                                 * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
                             + placer_opts.td_place_exp_first;
         }
+
 #ifdef VERBOSE
         if (getEchoEnabled()) {
             print_clb_placement("first_iteration_clb_placement.echo");
@@ -731,6 +734,8 @@ void try_place(const t_placer_opts& placer_opts,
                          *timing_info);
 
     tot_iter += move_lim;
+    ++num_temps;
+
     calc_placer_stats(stats, success_rat, std_dev, costs, move_lim);
 
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
@@ -818,6 +823,7 @@ void try_place(const t_placer_opts& placer_opts,
     float reject_rate = (float)num_swap_rejected / total_swap_attempts;
     float accept_rate = (float)num_swap_accepted / total_swap_attempts;
     float abort_rate = (float)num_swap_aborted / total_swap_attempts;
+    VTR_LOG("Placement number of temperatures: %d\n", num_temps);
     VTR_LOG("Placement total # of swap attempts: %*d\n", num_swap_print_digits, total_swap_attempts);
     VTR_LOG("\tSwaps accepted: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_accepted, 100 * accept_rate);
     VTR_LOG("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_rejected, 100 * reject_rate);
