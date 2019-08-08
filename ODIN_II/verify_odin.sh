@@ -91,29 +91,15 @@ printf "Called program with $INPUT
 	FLAGS:
 		-g|--generate_bench             $(_prt_cur_arg ${_GENERATE_BENCH}) Generate input and output vector for test
 		-o|--generate_output            $(_prt_cur_arg ${_GENERATE_OUTPUT}) Generate output vector for test given its input vector
-		-b|--build_config				$(_prt_cur_arg ${_GENERATE_CONFIG}) Generate a config file for a given directory
+		-b|--build_config               $(_prt_cur_arg ${_GENERATE_CONFIG}) Generate a config file for a given directory
 		-c|--clean                      $(_prt_cur_arg off ) Clean temporary directory
 		-f|--force_simulate             $(_prt_cur_arg ${_FORCE_SIM}) Force the simulation to be executed regardless of the config
+
+	CONFIG FILE HELP:
 "
-}
 
-function config_help() {
-printf "
-	*.conf is a list of key=value set
-	'#' are used for comments
+config_help
 
-	the following key are available:
-
-		circuit_dir
-		circuit_list_add
-		arch_dir
-		arch_list_add
-		script_params
-		synthesis_params
-		simulation_params
-		regression_params
-
-"
 }
 
 ###############################################
@@ -336,6 +322,34 @@ _synthesis_params=""
 _simulation_params=""
 _circuit_list=""
 _arch_list=""
+
+function config_help() {
+printf "
+	*.conf is a list of key=value set
+	'#' are used for comments
+
+	the following key=value, ... are available:
+
+			circuit_dir             = < path/to/circuit/dir >
+			circuit_list_add        = < circuit file path relative to [circuit_dir] >
+			arch_dir                = < path/to/arch/dir >
+			arch_list_add           = < architecture file path relative to [arch_dir] >
+			script_synthesis_params = [see exec_wrapper.sh options]
+			script_simulation_params= [see exec_wrapper.sh options]
+			synthesis_params        = [see Odin options]	
+			simulation_params       = [see Odin options]
+			regression_params       = 
+			{
+				--concat_circuit_list    # concatenate the circuit list and pass it straight through to odin
+				--generate_bench         # generate input and output vectors from scratch
+				--generate_output        # generate output vectors only if input vectors already exist
+				--disable_simulation     # disable the simulation for this task
+				--disable_parallel_jobs  # disable running circuit/task pairs in parralel
+				--include_default_arch   # run odin also without architecture file
+			}
+
+"
+}
 
 init_args_for_test() {
 	_regression_params=""
