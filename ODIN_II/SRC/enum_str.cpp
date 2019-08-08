@@ -2,7 +2,8 @@
 
 const char *file_extension_supported_STR[] =
 {
-	".v"
+	".v",
+	".vh"
 };
 
 const char *edge_type_e_STR[] =

@@ -78,34 +78,6 @@ short to_view_parse;
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list);
 
-
-static void assert_supported_file_extension(std::string input_file, int file_number)
-{
-	bool supported = false;
-	std::string extension = get_file_extension(input_file);
-	for(int i = 0; i< file_extension_supported_END && ! supported; i++)
-	{
-		supported = (extension == std::string(file_extension_supported_STR[i]) );
-	}
-
-	if(! supported)
-	{
-		std::string supported_extension_list = "";
-		for(int i=0; i<file_extension_supported_END; i++)
-		{
-			supported_extension_list += " "; 
-			supported_extension_list += file_extension_supported_STR[i];
-		}
-
-		error_message(ARG_ERROR, -1, file_number, 
-			"File (%s) has an unsupported extension (%s), Odin only support { %s }",
-			input_file.c_str(),
-			extension.c_str(),
-			supported_extension_list.c_str()
-			);
-	}
-}
-
 /*---------------------------------------------------------------------------------------------
  * (function: parse_to_ast)
  *-------------------------------------------------------------------------------------------*/
@@ -808,12 +780,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], is_signed);
 						break;
 					case WIRE:
-						if ((symbol_list->children[i]->num_children == 6 && symbol_list->children[i]->children[5] != NULL)
-							|| (symbol_list->children[i]->num_children == 8 && symbol_list->children[i]->children[7] != NULL))
-						{
-							error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
-									"Nets cannot be initialized\n");
-						}
 						if (is_signed)
 						{
 							/* cannot support signed nets right now */

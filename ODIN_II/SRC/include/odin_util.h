@@ -11,6 +11,7 @@ long shift_left_value_with_overflow_check(long input_value, long shift_by);
 
 std::string get_file_extension(std::string input_file);
 void create_directory(std::string path);
+void assert_supported_file_extension(std::string input_file, int file_number);
 
 const char *name_based_on_op(operation_list op);
 const char *name_based_on_ids(ids op);

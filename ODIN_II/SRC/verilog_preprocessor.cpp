@@ -505,6 +505,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 								}
 								else if (NULL != (new_include = add_veri_include(file_path.c_str(), line_number, current_include)))
 								{
+									assert_supported_file_extension(file_path, -1);
 									printf("Including file %s\n", new_include->path);
 									veri_preproc_bootstraped(included_file, preproc_producer, new_include);
 								}
