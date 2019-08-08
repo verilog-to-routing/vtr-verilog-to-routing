@@ -86,6 +86,33 @@ void create_directory(std::string path)
 	}
 }
 
+void assert_supported_file_extension(std::string input_file, int file_number)
+{
+	bool supported = false;
+	std::string extension = get_file_extension(input_file);
+	for(int i = 0; i< file_extension_supported_END && ! supported; i++)
+	{
+		supported = (extension == std::string(file_extension_supported_STR[i]) );
+	}
+
+	if(! supported)
+	{
+		std::string supported_extension_list = "";
+		for(int i=0; i<file_extension_supported_END; i++)
+		{
+			supported_extension_list += " "; 
+			supported_extension_list += file_extension_supported_STR[i];
+		}
+
+		error_message(ARG_ERROR, -1, file_number, 
+			"File (%s) has an unsupported extension (%s), Odin only support { %s }",
+			input_file.c_str(),
+			extension.c_str(),
+			supported_extension_list.c_str()
+			);
+	}
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: name_based_on_op)
  * 	Get the string version of an operation
