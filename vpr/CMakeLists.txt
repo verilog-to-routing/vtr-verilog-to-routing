@@ -16,20 +16,41 @@ option(VPR_USE_SIGNAL_HANDLER "Should VPR use a signal handler to intercept sign
 set(VPR_PGO_CONFIG "none" CACHE STRING "Configure VPR Profile-Guided Optimization (PGO). prof_gen: built executable will produce profiling info, prof_use: built executable will be optimized based on generated profiling info, none: disable pgo")
 set_property(CACHE VPR_PGO_CONFIG PROPERTY STRINGS prof_gen prof_use none)
 
-set(
-  RESOURCE_LIST
-  # Strip all the whitespace characters from ui file
-  STRIPBLANKS main.ui
-)
+set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
+set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
 
-list(APPEND CMAKE_MODULE_PATH
-     ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/libezgl/gcr-cmake/macros)
+
+# check if GTK and X11 installed and decide turn on/off graphics
+if (VPR_USE_EZGL STREQUAL "auto")
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 QUIET gtk+-3.0)
+    pkg_check_modules(X11 QUIET x11)
+
+    if(GTK3_FOUND AND X11_FOUND)
+        set(VPR_USE_EZGL "on")
+    else()
+        set(VPR_USE_EZGL "off")
+    endif()
+endif()
+
+
+if (VPR_USE_EZGL STREQUAL "on")
+    set(
+        RESOURCE_LIST
+        # Strip all the whitespace characters from ui file
+        STRIPBLANKS main.ui
+    )
+
+    list(APPEND CMAKE_MODULE_PATH
+         ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/libezgl/gcr-cmake/macros)
+
+    include(GlibCompileResourcesSupport)
+endif()
 
 #
 # Build Configuration
 #
 include(CheckCXXSymbolExists)
-include(GlibCompileResourcesSupport)
 
 #Collect the source files
 file(GLOB_RECURSE EXEC_SOURCES src/main.cpp)
@@ -57,11 +78,42 @@ target_link_libraries(libvpr
                         libtatum
                         libargparse
                         libpugixml)
+target_link_libraries(vpr
+                        libvpr)
+
+
+if (VPR_USE_EZGL STREQUAL "on")
+    target_link_libraries(ezgl)
+
+    compile_gresources(
+      # input: the name of our resources
+      RESOURCE_FILE
+      # output: the filename of the generated XML file
+      XML_OUT
+      # generate C code to be compiled with our program
+      TYPE
+        EMBED_C
+      # specify the name of the C file that is generated
+      TARGET
+        resources.C
+      # specify the resource prefix (used in the code)
+      PREFIX
+        /ezgl
+      # input: specify the list of files to compile into resources
+      RESOURCES
+        ${RESOURCE_LIST}
+    )
+
+
+    add_custom_target(
+      resource ALL
+      DEPENDS
+        ${RESOURCE_FILE}
+    )
+endif()
 
 #Create the executable
 add_executable(vpr ${EXEC_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/resources.C)
-target_link_libraries(vpr
-                        libvpr)
 
 #Supress IPO link warnings if IPO is enabled
 get_target_property(VPR_USES_IPO vpr INTERPROCEDURAL_OPTIMIZATION)
@@ -69,31 +121,7 @@ if (VPR_USES_IPO)
     set_target_properties(vpr PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
 endif()
 
-compile_gresources(
-  # input: the name of our resources
-  RESOURCE_FILE
-  # output: the filename of the generated XML file
-  XML_OUT
-  # generate C code to be compiled with our program
-  TYPE
-    EMBED_C
-  # specify the name of the C file that is generated
-  TARGET
-    resources.C
-  # specify the resource prefix (used in the code)
-  PREFIX
-    /ezgl
-  # input: specify the list of files to compile into resources
-  RESOURCES
-    ${RESOURCE_LIST}
-)
 
-
-add_custom_target(
-  resource ALL
-  DEPENDS
-    ${RESOURCE_FILE}
-)
 
 #
 # VPR compiler options
