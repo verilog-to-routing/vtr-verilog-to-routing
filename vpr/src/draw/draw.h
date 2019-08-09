@@ -10,6 +10,7 @@
 #include "ezgl/graphics.hpp"
 #include "draw_color.h"
 #include "search_bar.h"
+#include "save_graphics.h"
 
 extern ezgl::application::settings settings;
 extern ezgl::application application;

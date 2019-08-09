@@ -41,6 +41,7 @@ using namespace std;
 #include "hsl.h"
 #include "route_export.h"
 #include "search_bar.h"
+#include "save_graphics.h"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
@@ -61,7 +62,6 @@ using namespace std;
 #include "rr_graph.h"
 #include "route_util.h"
 #include "place_macro.h"
-#include "vtr_path.h"
 
 /****************************** Define Macros *******************************/
 
@@ -199,10 +199,7 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app);
 void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app);
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app);
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
-void save_graphics(std::string &extension, std::string &file_name);
-void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/);
-void save_graphics_from_command_option();
-void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer data);
+
 /********************** Subroutine definitions ******************************/
 
 void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, std::string save_graphics) {
@@ -273,12 +270,6 @@ void draw_main_canvas(ezgl::renderer& g) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
-    
-//    if(draw_state->save_graphics != "none") {
-//        std::string file_type = draw_state->save_graphics;
-//        draw_state->save_graphics = "none";
-//        save_graphics(file_type.c_str(), "test_test");
-//    }
     
     save_graphics_from_command_option();
 }
@@ -3575,135 +3566,4 @@ static void highlight_blocks(double x, double y) {
     application.update_message(msg);
 
     application.refresh_drawing();
-}
-
-void save_graphics_from_command_option() {  
-    t_draw_state* draw_state = get_draw_state_vars();
-    
-    if (draw_state->save_graphics == "none")
-        return;
-    
-    std::array<std::string, 2> input_data = vtr::split_ext(draw_state->save_graphics);
-    
-    std::string file_name = input_data.front(); 
-    std::string extension = input_data.back();
-    
-    // reset the status to avoid infinite loop
-    draw_state->save_graphics = "none";
-    
-    save_graphics(extension, file_name);
-    
-}
-
-void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer data) {  
-    auto dialog = static_cast<GtkWidget *>(data);
-    
-    if(response_id == GTK_RESPONSE_ACCEPT) {
-        GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-        GList* list_of_widgets = gtk_container_get_children(GTK_CONTAINER(content_area));
-        GtkWidget* combo_box;
-        GtkWidget* text_entry;
-        std::string file_name; 
-        std::string extension;
-
-        // loop through the list to find the combo box and the text entry
-        GList* current = list_of_widgets;
-        while (current != NULL) {
-            GList* next = current->next;
-            if(gtk_widget_get_name(static_cast<GtkWidget *>(current->data)) == "file_name_text_entry"){
-                // found text entry
-                text_entry = static_cast<GtkWidget *>(current->data);
-            }
-            if(gtk_widget_get_name(static_cast<GtkWidget *>(current->data)) == "file_name_combo_box"){
-                // found combo box
-                combo_box = static_cast<GtkWidget *>(current->data);
-            }
-            current = next;
-        }
-
-        // get the data from the text entry and combo box
-        file_name = gtk_entry_get_text(GTK_ENTRY(text_entry));
-        extension = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_box));
-
-        //save the graphics
-        save_graphics(extension, file_name);
-
-        // free dynamically allocated list
-        g_list_free(list_of_widgets);
-    }
-    
-    // free widget
-    gtk_widget_destroy(dialog);
-        
-}
-
-void save_graphics(std::string &extension, std::string &file_name){
-    if (extension == ".pdf"){
-        application.get_canvas(application.get_main_canvas_id())->print_pdf(file_name.c_str());
-        return;
-    }
-    else if (extension == ".png") {
-        application.get_canvas(application.get_main_canvas_id())->print_png(file_name.c_str());
-        return;
-    }
-    else if (extension == ".svg") {
-        application.get_canvas(application.get_main_canvas_id())->print_svg(file_name.c_str());
-        return;
-    }
-    else {
-        //invalid input format
-        ;
-    }
-}
-
-
-void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/) {
-    GObject* main_window; 
-    GtkWidget* content_area; 
-    GtkWidget* text_entry; 
-    GtkWidget* label;   
-    GtkWidget* dialog;
-    GtkWidget* combo_box;
-    
-    // get a pointer to the main window
-    main_window = application.get_object(application.get_main_window_id().c_str());
-    
-    // create a dialog window modal
-    dialog = gtk_dialog_new_with_buttons("Save Graphics Contents",
-            GTK_WINDOW(main_window),
-            GTK_DIALOG_DESTROY_WITH_PARENT,
-            ("_Save"),
-            GTK_RESPONSE_ACCEPT,
-            ("_Cancel"),
-            GTK_RESPONSE_REJECT,
-            NULL);
-    
-    // create elements
-    label = gtk_label_new("Enter file name:");
-    text_entry = gtk_entry_new();
-    combo_box = gtk_combo_box_text_new();
-    
-    // set name for text entry and combo box for later data extraction
-    gtk_widget_set_name (combo_box, "file_name_text_entry");
-    gtk_widget_set_name (combo_box, "file_name_combo_box");
-    
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_box), "pdf");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_box), "png");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_box), "svg");
-    
-    g_signal_connect_swapped(GTK_DIALOG(dialog),
-                             "response",
-                             G_CALLBACK(save_graphics_from_button),
-                             GTK_DIALOG(dialog));
-    
-    // attach elements to the content area of the dialog
-    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-    gtk_container_add(GTK_CONTAINER(content_area), label);
-    gtk_container_add(GTK_CONTAINER(content_area), text_entry);
-    gtk_container_add(GTK_CONTAINER(content_area), combo_box);
-    
-    // show the label & child widget of the dialog
-    gtk_widget_show_all(dialog);
-    
-    return;
 }
