@@ -8,6 +8,8 @@
 #ifndef INTRA_LOGIC_BLOCK_H
 #define INTRA_LOGIC_BLOCK_H
 
+#ifndef NO_GRAPHICS 
+
 #include "vpr_types.h"
 #include "draw_types.h"
 #include "atom_netlist_fwd.h"
@@ -130,10 +132,11 @@ t_selected_sub_block_info& get_selected_sub_block_info();
  * If the draw state says to show all logical connections, it will,
  * and if there is a selected sub-block, it will highlight it's conections
  */
-#ifndef NO_GRAPHICS 
+
 void draw_logical_connections(ezgl::renderer& g);
-#endif /* NO_GRAPHICS */
 
 void find_pin_index_at_model_scope(const AtomPinId the_pin, const AtomBlockId lblk, int* pin_index, int* total_pins);
+
+#endif /* NO_GRAPHICS */
 
 #endif /* INTRA_LOGIC_BLOCK_H */

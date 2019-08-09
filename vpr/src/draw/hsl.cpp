@@ -1,3 +1,5 @@
+#ifndef NO_GRAPHICS 
+
 #include "hsl.h"
 
 float hue2rgb(float v1, float v2, float vH);
@@ -85,3 +87,5 @@ float hue2rgb(float v1, float v2, float vH) {
     if ((3 * vH) < 2) return v1 + (v2 - v1) * ((2. / 3.) - vH) * 6;
     return (v1);
 }
+
+#endif /* NO_GRAPHICS */

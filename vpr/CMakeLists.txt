@@ -28,8 +28,10 @@ if (VPR_USE_EZGL STREQUAL "auto")
 
     if(GTK3_FOUND AND X11_FOUND)
         set(VPR_USE_EZGL "on")
+	message(STATUS "set to on!!!!!")
     else()
         set(VPR_USE_EZGL "off")
+	message(STATUS "set to off!!!!!")
     endif()
 endif()
 
@@ -73,17 +75,15 @@ target_link_libraries(libvpr
                         libarchfpga
                         libsdcparse
                         libblifparse
-                       	ezgl
 			libeasygl
                         libtatum
                         libargparse
                         libpugixml)
-target_link_libraries(vpr
-                        libvpr)
 
-
+#link graphics library only when graphics set to on
 if (VPR_USE_EZGL STREQUAL "on")
-    target_link_libraries(ezgl)
+    target_link_libraries(libvpr 
+			     ezgl)
 
     compile_gresources(
       # input: the name of our resources
@@ -110,10 +110,15 @@ if (VPR_USE_EZGL STREQUAL "on")
       DEPENDS
         ${RESOURCE_FILE}
     )
+
+    #Create the executable with resources
+    add_executable(vpr ${CMAKE_CURRENT_BINARY_DIR}/resources.C)
+else()
+    add_executable(vpr ${EXEC_SOURCES})
 endif()
 
-#Create the executable
-add_executable(vpr ${EXEC_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/resources.C)
+target_link_libraries(vpr libvpr)
+
 
 #Supress IPO link warnings if IPO is enabled
 get_target_property(VPR_USES_IPO vpr INTERPROCEDURAL_OPTIMIZATION)

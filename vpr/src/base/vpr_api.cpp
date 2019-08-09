@@ -789,8 +789,9 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
 
         timing_info->update();
     }
-
+#ifndef NO_GRAPHICS
     init_draw_coords(fixed_channel_width);
+#endif
 
     return RouteStatus(is_legal, fixed_channel_width);
 }
@@ -830,24 +831,32 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     router_opts.lookahead_type,
                     arch.Directs, arch.num_directs,
                     &warnings);
-
+#ifndef NO_GRAPHICS
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(chan_width_fac);
+#endif
+
 }
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     /* Startup X graphics */
-
+#ifndef NO_GRAPHICS
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type);
     if (vpr_setup.ShowGraphics) {
         alloc_draw_structs(&arch);
     }
+#else
+    (void) vpr_setup;
+    (void) arch;
+#endif
 }
 
 void vpr_close_graphics(const t_vpr_setup& /*vpr_setup*/) {
+#ifndef NO_GRAPHICS    
     /* Close down X Display */
     free_draw_structs();
+#endif
 }
 
 /* Since the parameters of a switch may change as a function of its fanin,

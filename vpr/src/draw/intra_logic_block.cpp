@@ -18,6 +18,9 @@
  * Date: May 2014
  */
 
+
+#ifndef NO_GRAPHICS
+
 #include <cstdio>
 #include <algorithm>
 #include <string.h>
@@ -897,3 +900,5 @@ bool t_selected_sub_block_info::gnode_clb_pair::operator==(const gnode_clb_pair&
     return clb_index == rhs.clb_index
            && pb_gnode == rhs.pb_gnode;
 }
+
+#endif // NO_GRAPHICS

@@ -16,6 +16,8 @@
 #ifndef DRAW_TYPES_H
 #define DRAW_TYPES_H
 
+#ifndef NO_GRAPHICS
+
 #include <vector>
 #include <memory>
 #include "clustered_netlist.h"
@@ -251,5 +253,7 @@ struct t_draw_coords {
     float tile_width;
     friend void init_draw_coords(float);
 };
+
+#endif // NO_GRAPHICS
 
 #endif

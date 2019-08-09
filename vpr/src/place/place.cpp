@@ -512,8 +512,9 @@ void try_place(const t_placer_opts& placer_opts,
                                      directs, num_directs);
 
     initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file.c_str());
+#ifndef NO_GRAPHICS 
     init_draw_coords((float)width_fac);
-
+#endif /* NO_GRAPHICS */
     //Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, pb_gpin_lookup);
 
