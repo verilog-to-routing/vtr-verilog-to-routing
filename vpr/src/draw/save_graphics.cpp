@@ -11,20 +11,17 @@ using namespace std;
 
 
 
-void save_graphics_from_command_option() {  
+void save_graphics_from_command_option(std::string file_name) {  
     t_draw_state* draw_state = get_draw_state_vars();
-    
-    if (draw_state->save_graphics == "none")
+    std::cout << file_name << " in save_graphics_from_command_option!!!" << std::endl;
+    std::cout << " draw_state->save_graphics is !!!" << draw_state->save_graphics << std::endl;
+    if (draw_state->save_graphics == false)
         return;
-    
-    std::array<std::string, 2> input_data = vtr::split_ext(draw_state->save_graphics);
-    
-    std::string file_name = input_data.front(); 
-    std::string extension = input_data.back();
-    
+
     // reset the status 
-    draw_state->save_graphics = "none";
+    draw_state->save_graphics = false;
     
+    std::string extension = ".pdf";
     save_graphics(extension, file_name);
     
 }
@@ -73,7 +70,9 @@ void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer
 }
 
 void save_graphics(std::string &extension, std::string &file_name){
+    std::cout << file_name << " in save_graphics!!!" << std::endl;
     if (extension == ".pdf"){
+        std::cout << file_name << " saved!!!" << std::endl;
         application.get_canvas(application.get_main_canvas_id())->print_pdf(file_name.c_str());
         return;
     }

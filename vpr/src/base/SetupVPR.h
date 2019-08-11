@@ -25,6 +25,6 @@ void SetupVPR(const t_options* Options,
               t_timing_inf* Timing,
               bool* ShowGraphics,
               int* GraphPause,
-              std::string* SaveGraphics,
+              bool* SaveGraphics,
               t_power_opts* PowerOpts);
 #endif

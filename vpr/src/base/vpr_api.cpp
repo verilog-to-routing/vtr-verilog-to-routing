@@ -838,7 +838,6 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     /* Startup X graphics */
-    std::cout << "vpr_setup.SaveGraphics : " << vpr_setup.SaveGraphics << std::endl;
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics);
     if (vpr_setup.ShowGraphics) {
@@ -1056,7 +1055,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
                    int* GraphPause,
-                   std::string* SaveGraphics,
+                   bool* SaveGraphics,
                    t_power_opts* PowerOpts) {
     SetupVPR(Options,
              TimingEnabled,

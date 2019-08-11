@@ -202,7 +202,7 @@ void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 
 /********************** Subroutine definitions ******************************/
 
-void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, std::string save_graphics) {
+void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics) {
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -214,6 +214,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->gr_automode = gr_automode_val;
     draw_state->draw_route_type = route_type;
     draw_state->save_graphics = save_graphics;
+    std::cout << "draw_state->save_graphics = save_graphics;" << draw_state->save_graphics << std::endl;
 }
 
 void draw_main_canvas(ezgl::renderer& g) {
@@ -235,7 +236,7 @@ void draw_main_canvas(ezgl::renderer& g) {
             default:
                 break;
         }
-
+        save_graphics_from_command_option("vpr_placement");
     } else { /* ROUTING on screen */
 
         switch (draw_state->show_nets) {
@@ -258,6 +259,8 @@ void draw_main_canvas(ezgl::renderer& g) {
         draw_routing_util(g);
 
         draw_routing_bb(g);
+        
+        save_graphics_from_command_option("vpr_routing");
     }
 
     draw_placement_macros(g);
@@ -271,7 +274,6 @@ void draw_main_canvas(ezgl::renderer& g) {
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
     
-    save_graphics_from_command_option();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -287,7 +289,6 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app) {
     g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
     
     GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
-//    gtk_button_set_label(save, "SaveGraphics");
     g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box), app);
     
 

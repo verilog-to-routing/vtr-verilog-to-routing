@@ -839,11 +839,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .choices({"0", "1", "2"})
         .show_in(argparse::ShowIn::HELP_ONLY);
         
-    gfx_grp.add_argument(args.save_graphics, "--save")
+    gfx_grp.add_argument<bool, ParseOnOff>(args.show_graphics, "--save_graphics")
         .help("Save all graphical contents to a PDF, PNG, or SVG output file")
-        .metavar("FILE_NAME")
-        .default_value("none");
-
+        .default_value("off");
 
     auto& gen_grp = parser.add_argument_group("general options");
 
