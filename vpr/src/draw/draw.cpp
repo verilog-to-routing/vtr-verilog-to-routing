@@ -41,6 +41,7 @@ using namespace std;
 #include "hsl.h"
 #include "route_export.h"
 #include "search_bar.h"
+#include "timing_info.h"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
@@ -444,7 +445,11 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     } else {
         application.refresh_drawing();
     }
-    
+    #else
+	(void) setup_timing_info;
+	(void) priority;
+	(void) msg;
+	(void) pic_on_screen_val;
     #endif //NO_GRAPHICS
 }
 

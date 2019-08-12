@@ -1,6 +1,9 @@
 #ifndef DRAW_H
 #define DRAW_H
 
+
+#include "timing_info.h"
+
 #ifndef NO_GRAPHICS
 
 #include "easygl_constants.h"
