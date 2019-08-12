@@ -11,21 +11,6 @@ using namespace std;
 
 
 
-void save_graphics_from_command_option(std::string file_name) {  
-    t_draw_state* draw_state = get_draw_state_vars();
-    std::cout << file_name << " in save_graphics_from_command_option!!!" << std::endl;
-    std::cout << " draw_state->save_graphics is !!!" << draw_state->save_graphics << std::endl;
-    if (draw_state->save_graphics == false)
-        return;
-
-    // reset the status 
-    draw_state->save_graphics = false;
-    
-    std::string extension = ".pdf";
-    save_graphics(extension, file_name);
-    
-}
-
 void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer data) {  
     auto dialog = static_cast<GtkWidget *>(data);
     
@@ -70,9 +55,7 @@ void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer
 }
 
 void save_graphics(std::string &extension, std::string &file_name){
-    std::cout << file_name << " in save_graphics!!!" << std::endl;
     if (extension == ".pdf"){
-        std::cout << file_name << " saved!!!" << std::endl;
         application.get_canvas(application.get_main_canvas_id())->print_pdf(file_name.c_str());
         return;
     }

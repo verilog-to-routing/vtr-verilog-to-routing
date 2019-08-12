@@ -217,6 +217,7 @@ void SetupVPR(const t_options* Options,
 
     *ShowGraphics = Options->show_graphics;
     
+    std::cout << "save_graphics in SetupVPR is " << Options->save_graphics << std::endl;
     *SaveGraphics = Options->save_graphics;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
