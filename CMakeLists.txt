@@ -28,6 +28,10 @@ option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
 option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 
+#Allow the user to decide weather to compile the graphics library
+set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
+set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
+
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 option(WITH_LIBRTLNUMBER "Enable build with librtlnumber" OFF)
 
@@ -294,6 +298,26 @@ enable_testing()
 #       or we should really search for readline correctly.
 #       For now just disable readline.
 set(READLINE_FOUND FALSE)
+
+
+# set VPR_USE_EZGL in the root of VTR to decide whether to add 
+# subdirectory of graphics library, which prevents users 
+# without gtk/x11 libraries installed to build. VPR_USE_EZGL is 
+# being used in both the vpr CMakeLists and libs/EXTERNAL CMakeLists.
+#
+# check if GTK and X11 are installed and turn on/off graphics
+if (VPR_USE_EZGL STREQUAL "auto")
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 QUIET gtk+-3.0)
+    pkg_check_modules(X11 QUIET x11)
+
+    if(GTK3_FOUND AND X11_FOUND)
+        set(VPR_USE_EZGL "on")
+    else()
+        set(VPR_USE_EZGL "off")
+    endif()
+endif()
+
 
 #Add the various sub-projects
 add_subdirectory(libs)

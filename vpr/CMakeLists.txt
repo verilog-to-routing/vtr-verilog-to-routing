@@ -16,25 +16,6 @@ option(VPR_USE_SIGNAL_HANDLER "Should VPR use a signal handler to intercept sign
 set(VPR_PGO_CONFIG "none" CACHE STRING "Configure VPR Profile-Guided Optimization (PGO). prof_gen: built executable will produce profiling info, prof_use: built executable will be optimized based on generated profiling info, none: disable pgo")
 set_property(CACHE VPR_PGO_CONFIG PROPERTY STRINGS prof_gen prof_use none)
 
-set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
-set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
-
-
-# check if GTK and X11 installed and decide turn on/off graphics
-if (VPR_USE_EZGL STREQUAL "auto")
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(GTK3 QUIET gtk+-3.0)
-    pkg_check_modules(X11 QUIET x11)
-
-    if(GTK3_FOUND AND X11_FOUND)
-        set(VPR_USE_EZGL "on")
-	message(STATUS "set to on!!!!!")
-    else()
-        set(VPR_USE_EZGL "off")
-	message(STATUS "set to off!!!!!")
-    endif()
-endif()
-
 
 if (VPR_USE_EZGL STREQUAL "on")
     set(
@@ -112,10 +93,11 @@ if (VPR_USE_EZGL STREQUAL "on")
     )
 
     #Create the executable with resources
-    add_executable(vpr ${CMAKE_CURRENT_BINARY_DIR}/resources.C)
-else()
-    add_executable(vpr ${EXEC_SOURCES})
+    list(APPEND EXEC_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/resources.C)
+
 endif()
+
+add_executable(vpr ${EXEC_SOURCES})
 
 target_link_libraries(vpr libvpr)
 
