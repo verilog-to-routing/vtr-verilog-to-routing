@@ -609,10 +609,8 @@ void try_place(const t_placer_opts& placer_opts,
 
     sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
             costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
-#ifndef NO_GRAPHICS 
     //Draw the initial placement
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
-#endif /* NO_GRAPHICS */
     move_lim = (int)(annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
     /* Sometimes I want to run the router with a random placement.  Avoid *
@@ -686,9 +684,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
                 costs.cost, costs.bb_cost, costs.timing_cost, t);
-#ifndef NO_GRAPHICS 
         update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info);
-#endif /* NO_GRAPHICS */
         update_rlim(&rlim, success_rat, device_ctx.grid);
 
         if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
@@ -805,9 +801,7 @@ void try_place(const t_placer_opts& placer_opts,
             costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
     VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, \n",
             costs.cost, costs.bb_cost, costs.timing_cost);
-#ifndef NO_GRAPHICS 
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
-#endif /* NO_GRAPHICS */
     // Print out swap statistics
     size_t total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
     VTR_ASSERT(total_swap_attempts > 0);
@@ -3669,9 +3663,7 @@ static void update_screen_debug();
 //This function with no arguments is useful for calling from a debugger to
 //look at the intermediate implemetnation state.
 static void update_screen_debug() {
-#ifndef NO_GRAPHICS 
     update_screen(ScreenUpdatePriority::MAJOR, "DEBUG", PLACEMENT, nullptr);
-#endif /* NO_GRAPHICS */
 }
 #endif
 

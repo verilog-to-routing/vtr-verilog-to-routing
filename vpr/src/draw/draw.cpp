@@ -270,6 +270,7 @@ void draw_main_canvas(ezgl::renderer& g) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
+    
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -369,8 +370,12 @@ void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app) 
     initial_setup_NO_PICTURE_to_ROUTING(app);
     app->create_button("Crit. Path", 6, toggle_crit_path);
 }
+#endif //NO_GRAPHICS
+
 
 void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> setup_timing_info) {
+    #ifndef NO_GRAPHICS
+
     /* Updates the screen if the user has requested graphics.  The priority  *
      * value controls whether or not the Proceed button must be clicked to   *
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
@@ -439,8 +444,11 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     } else {
         application.refresh_drawing();
     }
+    
+    #endif //NO_GRAPHICS
 }
 
+#ifndef NO_GRAPHICS
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/) {
     window_mode = true;
 }

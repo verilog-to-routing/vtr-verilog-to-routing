@@ -17,8 +17,11 @@
 extern ezgl::application::settings settings;
 extern ezgl::application application;
 
+#endif /* NO_GRAPHICS */
+
 void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> timing_info);
 
+#ifndef NO_GRAPHICS
 void alloc_draw_structs(const t_arch* arch);
 
 //Initializes the drawing locations.

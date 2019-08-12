@@ -495,16 +495,12 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
 
         prev_iter_cumm_time = iter_cumm_time;
 
-#ifndef NO_GRAPHICS 
         //Update graphics
         if (itry == 1) {
             update_screen(first_iteration_priority, "Routing...", ROUTING, timing_info);
         } else {
             update_screen(ScreenUpdatePriority::MINOR, "Routing...", ROUTING, timing_info);
         }
-#else
-        (void) first_iteration_priority;
-#endif /* NO_GRAPHICS */
         
         if (router_opts.save_routing_per_iteration) {
             std::string filename = vtr::string_fmt("iteration_%03d.route", itry);
@@ -1101,11 +1097,9 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
                 cluster_ctx.clb_nlist.block_name(sink_block).c_str(),
                 cluster_ctx.clb_nlist.net_name(net_id).c_str(),
                 size_t(net_id));
-#ifndef NO_GRAPHICS 
         if (f_router_debug) {
             update_screen(ScreenUpdatePriority::MAJOR, "Unable to route connection.", ROUTING, nullptr);
         }
-#endif /* NO_GRAPHICS */
         return false;
     } else {
         //Record final link to target
@@ -1134,11 +1128,9 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
-#ifndef NO_GRAPHICS
     if (f_router_debug) {
         update_screen(ScreenUpdatePriority::MAJOR, "Routed connection successfully", ROUTING, nullptr);
     }
-#endif /* NO_GRAPHICS */
     free_heap_data(cheapest);
     pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
     empty_heap();
