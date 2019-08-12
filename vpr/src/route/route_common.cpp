@@ -293,7 +293,7 @@ bool try_route(int width_fac,
                     directs, num_directs,
                     &warning_count);
 
-#ifndef NO_GRAPHICS 
+#ifndef NO_GRAPHICS
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(width_fac);
 #endif /* NO_GRAPHICS */

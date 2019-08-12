@@ -57,17 +57,17 @@ using namespace std;
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#if defined(X11) && !defined(__MINGW32__)
-#    include <X11/keysym.h>
-#endif
+#    if defined(X11) && !defined(__MINGW32__)
+#        include <X11/keysym.h>
+#    endif
 
-#include "rr_graph.h"
-#include "route_util.h"
-#include "place_macro.h"
+#    include "rr_graph.h"
+#    include "route_util.h"
+#    include "place_macro.h"
 
 /****************************** Define Macros *******************************/
 
-#define DEFAULT_RR_NODE_COLOR ezgl::BLACK
+#    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 //The arrow head position for turning/straight-thru connections in a switch box
@@ -271,7 +271,6 @@ void draw_main_canvas(ezgl::renderer& g) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
-    
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -373,9 +372,8 @@ void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app) 
 }
 #endif //NO_GRAPHICS
 
-
 void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> setup_timing_info) {
-    #ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
 
     /* Updates the screen if the user has requested graphics.  The priority  *
      * value controls whether or not the Proceed button must be clicked to   *
@@ -445,12 +443,12 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     } else {
         application.refresh_drawing();
     }
-    #else
-	(void) setup_timing_info;
-	(void) priority;
-	(void) msg;
-	(void) pic_on_screen_val;
-    #endif //NO_GRAPHICS
+#else
+    (void)setup_timing_info;
+    (void)priority;
+    (void)msg;
+    (void)pic_on_screen_val;
+#endif //NO_GRAPHICS
 }
 
 #ifndef NO_GRAPHICS
@@ -2368,7 +2366,7 @@ static bool highlight_rr_nodes(float x, float y) {
     return highlight_rr_nodes(hit_node);
 }
 
-#if defined(X11) && !defined(__MINGW32__)
+#    if defined(X11) && !defined(__MINGW32__)
 void act_on_key_press(ezgl::application* app, GdkEventKey* event, char* key_name) {
     //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
     std::string key(key_name);
@@ -2380,11 +2378,11 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* event, char* key_name
 
     event = event; // just for hiding warning message
 }
-#else
+#    else
 void act_on_key_press(ezgl::application* app, GdkEventKey* event, char* key_name) {
     //Nothing to do
 }
-#endif
+#    endif
 
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
     app->update_message("Mouse Clicked");

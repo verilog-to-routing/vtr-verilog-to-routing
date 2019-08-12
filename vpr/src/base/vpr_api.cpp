@@ -704,7 +704,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         if (router_opts.switch_usage_analysis) {
             print_switch_usage();
         }
-      
+
         //Update interactive graphics
         update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
         free_net_delay(net_delay, &net_delay_ch);
@@ -833,7 +833,6 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(chan_width_fac);
 #endif
-
 }
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -845,13 +844,13 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
         alloc_draw_structs(&arch);
     }
 #else
-    (void) vpr_setup;
-    (void) arch;
+    (void)vpr_setup;
+    (void)arch;
 #endif
 }
 
 void vpr_close_graphics(const t_vpr_setup& /*vpr_setup*/) {
-#ifndef NO_GRAPHICS    
+#ifndef NO_GRAPHICS
     /* Close down X Display */
     free_draw_structs();
 #endif

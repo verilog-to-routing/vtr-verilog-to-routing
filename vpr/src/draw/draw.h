@@ -1,21 +1,19 @@
 #ifndef DRAW_H
 #define DRAW_H
 
-
 #include "timing_info.h"
 
 #ifndef NO_GRAPHICS
 
-#include "easygl_constants.h"
-#include "graphics.h"
-#include "draw_global.h"
+#    include "easygl_constants.h"
+#    include "graphics.h"
+#    include "draw_global.h"
 
-
-#include "ezgl/point.hpp"
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
-#include "draw_color.h"
-#include "search_bar.h"
+#    include "ezgl/point.hpp"
+#    include "ezgl/application.hpp"
+#    include "ezgl/graphics.hpp"
+#    include "draw_color.h"
+#    include "search_bar.h"
 
 extern ezgl::application::settings settings;
 extern ezgl::application application;

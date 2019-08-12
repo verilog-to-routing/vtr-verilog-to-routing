@@ -3,9 +3,9 @@
 
 #ifndef NO_GRAPHICS
 
-#include "ezgl/point.hpp"
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
+#    include "ezgl/point.hpp"
+#    include "ezgl/application.hpp"
+#    include "ezgl/graphics.hpp"
 
 static constexpr ezgl::color blk_BISQUE(0xFF, 0xE4, 0xC4);
 static constexpr ezgl::color blk_LIGHTGREY(0xD3, 0xD3, 0xD3);

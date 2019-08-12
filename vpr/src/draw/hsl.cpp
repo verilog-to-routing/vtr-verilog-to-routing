@@ -1,6 +1,6 @@
-#ifndef NO_GRAPHICS 
+#ifndef NO_GRAPHICS
 
-#include "hsl.h"
+#    include "hsl.h"
 
 float hue2rgb(float v1, float v2, float vH);
 

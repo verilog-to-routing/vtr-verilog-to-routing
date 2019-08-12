@@ -18,19 +18,19 @@
 
 #ifndef NO_GRAPHICS
 
-#include <vector>
-#include <memory>
-#include "clustered_netlist.h"
-#include "timing_info_fwd.h"
-#include "vtr_util.h"
-#include "graphics.h"
-#include "vpr_types.h"
-#include "vtr_color_map.h"
-#include "vtr_vector.h"
+#    include <vector>
+#    include <memory>
+#    include "clustered_netlist.h"
+#    include "timing_info_fwd.h"
+#    include "vtr_util.h"
+#    include "graphics.h"
+#    include "vpr_types.h"
+#    include "vtr_color_map.h"
+#    include "vtr_vector.h"
 
-#include "ezgl/point.hpp"
-#include "ezgl/rectangle.hpp"
-#include "ezgl/color.hpp"
+#    include "ezgl/point.hpp"
+#    include "ezgl/rectangle.hpp"
+#    include "ezgl/color.hpp"
 
 enum e_draw_crit_path {
     DRAW_NO_CRIT_PATH,

@@ -3,14 +3,14 @@
 
 #ifndef NO_GRAPHICS
 
-#include "easygl_constants.h"
-#include "graphics.h"
-#include "draw_global.h"
+#    include "easygl_constants.h"
+#    include "graphics.h"
+#    include "draw_global.h"
 
-#include "ezgl/point.hpp"
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
-#include "draw_color.h"
+#    include "ezgl/point.hpp"
+#    include "ezgl/application.hpp"
+#    include "ezgl/graphics.hpp"
+#    include "draw_color.h"
 
 void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app);
 bool highlight_rr_nodes(int hit_node);

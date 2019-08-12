@@ -13,15 +13,15 @@
 
 #ifndef NO_GRAPHICS
 
-#include "draw_types.h"
+#    include "draw_types.h"
 
-#define MAX_BLOCK_COLOURS 5
+#    define MAX_BLOCK_COLOURS 5
 
 constexpr float DEFAULT_ARROW_SIZE = 0.3;
 
 // a very small area, in (screen pixels)^2
 // used for level of detail culling
-#define MIN_VISIBLE_AREA 3.0
+#    define MIN_VISIBLE_AREA 3.0
 
 t_draw_coords* get_draw_coords_vars();
 t_draw_state* get_draw_state_vars();

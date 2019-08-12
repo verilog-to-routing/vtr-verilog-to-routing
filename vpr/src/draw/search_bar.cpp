@@ -1,50 +1,50 @@
 #ifndef NO_GRAPHICS
 
-#include <cstdio>
-#include <sstream>
+#    include <cstdio>
+#    include <sstream>
 using namespace std;
 
-#include "vtr_assert.h"
-#include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
-#include "vtr_color_map.h"
+#    include "vtr_assert.h"
+#    include "vtr_ndoffsetmatrix.h"
+#    include "vtr_memory.h"
+#    include "vtr_log.h"
+#    include "vtr_color_map.h"
 
-#include "vpr_utils.h"
-#include "vpr_error.h"
+#    include "vpr_utils.h"
+#    include "vpr_error.h"
 
-#include "globals.h"
-#include "graphics.h"
-#include "draw_color.h"
-#include "draw.h"
-#include "read_xml_arch_file.h"
-#include "draw_global.h"
-#include "intra_logic_block.h"
-#include "atom_netlist.h"
-#include "tatum/report/TimingPathCollector.hpp"
-#include "hsl.h"
-#include "route_export.h"
-#include "search_bar.h"
+#    include "globals.h"
+#    include "graphics.h"
+#    include "draw_color.h"
+#    include "draw.h"
+#    include "read_xml_arch_file.h"
+#    include "draw_global.h"
+#    include "intra_logic_block.h"
+#    include "atom_netlist.h"
+#    include "tatum/report/TimingPathCollector.hpp"
+#    include "hsl.h"
+#    include "route_export.h"
+#    include "search_bar.h"
 
-#ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-              * track CPU runtime.														   */
-#    include <time.h>
-#else /* For X11. The clock() function in time.h will not output correct time difference   *
-       * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-       * which means tracking CPU time will not be the same as the actual wall clock time. *
-       * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
-#endif
+#    ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
+                  * track CPU runtime.														   */
+#        include <time.h>
+#    else /* For X11. The clock() function in time.h will not output correct time difference   *
+           * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
+           * which means tracking CPU time will not be the same as the actual wall clock time. *
+           * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
+#        include <sys/time.h>
+#    endif
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#if defined(X11) && !defined(__MINGW32__)
-#    include <X11/keysym.h>
-#endif
+#    if defined(X11) && !defined(__MINGW32__)
+#        include <X11/keysym.h>
+#    endif
 
-#include "rr_graph.h"
-#include "route_util.h"
-#include "place_macro.h"
+#    include "rr_graph.h"
+#    include "route_util.h"
+#    include "place_macro.h"
 
 extern std::string rr_highlight_message;
 

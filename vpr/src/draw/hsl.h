@@ -1,10 +1,10 @@
 #ifndef HSL_H
 #define HSL_H
 
-#ifndef NO_GRAPHICS 
+#ifndef NO_GRAPHICS
 
-#include "graphics_types.h"
-#include "ezgl/color.hpp"
+#    include "graphics_types.h"
+#    include "ezgl/color.hpp"
 
 struct hsl {
     double h; // hue            a fraction between 0 and 1

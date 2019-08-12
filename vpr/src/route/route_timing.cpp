@@ -501,7 +501,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
         } else {
             update_screen(ScreenUpdatePriority::MINOR, "Routing...", ROUTING, timing_info);
         }
-        
+
         if (router_opts.save_routing_per_iteration) {
             std::string filename = vtr::string_fmt("iteration_%03d.route", itry);
             print_route(nullptr, filename.c_str());
