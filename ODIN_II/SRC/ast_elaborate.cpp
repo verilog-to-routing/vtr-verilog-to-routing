@@ -29,6 +29,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_types.h"
 #include "adders.h"
 #include "ast_util.h"
+#include "odin_util.h"
 #include "ast_elaborate.h"
 #include "ast_loop_unroll.h"
 #include "hard_blocks.h"
@@ -1002,12 +1003,11 @@ void update_string_caches(STRING_CACHE_LIST *local_string_cache_list)
 
 void convert_2D_to_1D_array(ast_node_t **var_declare, STRING_CACHE_LIST *local_string_cache_list)
 {
-	char *instance_name_prefix = local_string_cache_list->instance_name_prefix;
-	ast_node_t *node_max2  = (*var_declare)->children[3];
-	ast_node_t *node_min2  = (*var_declare)->children[4];
+	ast_node_t *node_max2  = reduce_expressions((*var_declare)->children[3], (*var_declare), local_string_cache_list, NULL, 0, true);
+	ast_node_t *node_min2  = reduce_expressions((*var_declare)->children[4], (*var_declare), local_string_cache_list, NULL, 0, true);
 
-	ast_node_t *node_max3  = (*var_declare)->children[5];
-	ast_node_t *node_min3  = (*var_declare)->children[6];
+	ast_node_t *node_max3  = reduce_expressions((*var_declare)->children[5], (*var_declare), local_string_cache_list, NULL, 0, true);
+	ast_node_t *node_min3  = reduce_expressions((*var_declare)->children[6], (*var_declare), local_string_cache_list, NULL, 0, true);
 
 	oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);		
 	oassert(node_min3->type == NUMBERS && node_max3->type == NUMBERS);
@@ -1032,25 +1032,14 @@ void convert_2D_to_1D_array(ast_node_t **var_declare, STRING_CACHE_LIST *local_s
 	char *name = (*var_declare)->children[0]->types.identifier;
 
 	if (addr_min != 0 || addr_min1 != 0)
+	{
 		error_message(NETLIST_ERROR, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number,
 				"%s: right memory address index must be zero\n", name);
-
+	}
+	
 	long addr_chunk_size = (addr_max1 - addr_min1 + 1);
-	ast_node_t *new_node = create_tree_node_number(addr_chunk_size, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number);
 
-	STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
-	long sc_spot;
-
-	char *temp_string = make_chunk_size_name(instance_name_prefix, name);
-
-	if ((sc_spot = sc_add_string(local_param_table_sc, temp_string)) == -1)
-		error_message(NETLIST_ERROR, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number,
-				"%s: name conflicts with Odin internal reference\n", temp_string);
-
-	vtr::free(temp_string);
-	temp_string = NULL;
-
-	local_param_table_sc->data[sc_spot] = (void *)new_node;
+	(*var_declare)->chunk_size = addr_chunk_size;
 
 	long new_address_max = (addr_max - addr_min + 1)*addr_chunk_size -1;
 
@@ -1064,78 +1053,40 @@ void convert_2D_to_1D_array(ast_node_t **var_declare, STRING_CACHE_LIST *local_s
 	(*var_declare)->children[7] = NULL; 
 
 	(*var_declare)->num_children -= 2;
+
 }
+
 
 void convert_2D_to_1D_array_ref(ast_node_t **node, STRING_CACHE_LIST *local_string_cache_list)
 {
-	char *array_name = NULL;
-	ast_node_t *array_row = NULL;
-	ast_node_t *array_col = NULL;
-	ast_node_t *array_size = NULL;
+	STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
 
-	ast_node_t *new_node_1 = NULL;
-	ast_node_t *new_node_2 = NULL;
+	char * temp_string = make_full_ref_name(NULL, NULL, NULL, (*node)->children[0]->types.identifier, -1);
 
-	char *instance_name_prefix = local_string_cache_list->instance_name_prefix;
+	// look up chunk size
+	long sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
+	oassert(sc_spot != -1);
 
-	array_name = vtr::strdup((*node)->children[0]->types.identifier);
-	array_size = get_chunk_size_node(instance_name_prefix, array_name, local_string_cache_list);
-	array_row = (*node)->children[1];
-	array_col = (*node)->children[2];
+	ast_node_t *array_size = ast_node_deep_copy((ast_node_t *)local_symbol_table_sc->data[sc_spot]);
+	
+	change_to_number_node(array_size, array_size->chunk_size);
+
+	ast_node_t *array_row = (*node)->children[1];
+	ast_node_t *array_col = (*node)->children[2];
 
 	// build the new AST
-	new_node_1 = newBinaryOperation(MULTIPLY, array_row, array_size, (*node)->children[0]->line_number);
-	new_node_2 = newBinaryOperation(ADD, new_node_1, array_col, (*node)->children[0]->line_number);
+	ast_node_t *new_node_1 = newBinaryOperation(MULTIPLY, array_row, array_size, (*node)->children[0]->line_number);
+	ast_node_t *new_node_2 = newBinaryOperation(ADD, new_node_1, array_col, (*node)->children[0]->line_number);
 
-	vtr::free(array_name);
+	vtr::free(temp_string);
 
 	(*node)->children[1] = new_node_2;
 	(*node)->children[2] = NULL;
 	(*node)->num_children -= 1;
 
-	return;
+
 }
 
-/*--------------------------------------------------------------------------
- * (function: make_chunk_size_name)
- * 	This function creates a string to reference a 2D array chunk size for
- * 	1D array indexing.
- *------------------------------------------------------------------------*/
-char *make_chunk_size_name(char *instance_name_prefix, char *array_name)
-{
-	std::string to_return(instance_name_prefix);
-	to_return += "__";
-	to_return += array_name;
-	to_return += "_____CHUNK_SIZE_DEFINE";
-	return vtr::strdup(to_return.c_str());
-}
-
-/*--------------------------------------------------------------------------
- * (function: get_chunk_size_node)
- * 	This function gets the chunk size node for a 2D array, to be used for
- *	1D array indexing.
- *------------------------------------------------------------------------*/
-ast_node_t *get_chunk_size_node(char *instance_name_prefix, char *array_name, STRING_CACHE_LIST *local_string_cache_list)
-{
-	ast_node_t *array_size = NULL;
-	long sc_spot;
-	STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
-	char *temp_string = NULL;
-
-	temp_string = make_chunk_size_name(instance_name_prefix, array_name);
-
-	// look up chunk size
-	sc_spot = sc_lookup_string(local_param_table_sc, temp_string);
-	oassert(sc_spot != -1);
-	if (sc_spot != -1)
-	{
-		array_size = ast_node_deep_copy((ast_node_t *)local_param_table_sc->data[sc_spot]);
-	}
-
-	vtr::free(temp_string);
-
-	return array_size;
-}
 
 bool verify_terminal(ast_node_t *top, ast_node_t *iterator)
 {

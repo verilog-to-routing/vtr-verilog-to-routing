@@ -397,6 +397,7 @@ struct ast_node_t
 
 	void *hb_port;
 	void *net_node;
+	long chunk_size;
 
 };
 

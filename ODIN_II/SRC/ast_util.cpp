@@ -1431,6 +1431,7 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->net_node = 0;
 	new_node->types.vnumber = nullptr;
 	new_node->types.identifier = NULL;
+	new_node->chunk_size = 1;
 }
 
 /*---------------------------------------------------------------------------
