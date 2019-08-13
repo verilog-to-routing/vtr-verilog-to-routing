@@ -841,10 +841,8 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 void vpr_close_graphics(const t_vpr_setup& /*vpr_setup*/) {
-#ifndef NO_GRAPHICS
     /* Close down X Display */
     free_draw_structs();
-#endif
 }
 
 /* Since the parameters of a switch may change as a function of its fanin,
