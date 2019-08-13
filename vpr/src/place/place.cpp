@@ -596,7 +596,6 @@ void try_place(const t_placer_opts& placer_opts,
 
     initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file.c_str());
     init_draw_coords((float)width_fac);
-
     //Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, pb_gpin_lookup);
 
@@ -691,10 +690,8 @@ void try_place(const t_placer_opts& placer_opts,
 
     sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
             costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
-
     //Draw the initial placement
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
-
     move_lim = (int)(annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
     /* Sometimes I want to run the router with a random placement.  Avoid *
@@ -894,7 +891,6 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, \n",
             costs.cost, costs.bb_cost, costs.timing_cost);
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
-
     // Print out swap statistics
     size_t total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
     VTR_ASSERT(total_swap_attempts > 0);
