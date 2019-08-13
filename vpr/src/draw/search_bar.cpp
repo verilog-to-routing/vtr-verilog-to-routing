@@ -318,5 +318,4 @@ void warning_dialog_box(const char* message) {
     return;
 }
 
-
 #endif /* NO_GRAPHICS */

@@ -233,7 +233,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
 #ifndef NO_GRAPHICS
 void draw_main_canvas(ezgl::renderer& g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    
+
     g.set_font_size(14);
 
     draw_block_pin_util();
@@ -272,7 +272,6 @@ void draw_main_canvas(ezgl::renderer& g) {
         draw_routing_util(g);
 
         draw_routing_bb(g);
-        
     }
 
     draw_placement_macros(g);
@@ -285,8 +284,6 @@ void draw_main_canvas(ezgl::renderer& g) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
-
-    
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -300,10 +297,9 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app) {
     GtkButton* search = (GtkButton*)app->get_object("Search");
     gtk_button_set_label(search, "Search");
     g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
-    
+
     GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
     g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box), app);
-    
 
     GObject* search_type = (GObject*)app->get_object("SearchType");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
@@ -312,7 +308,6 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app) {
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID");
 
-    
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
     app->create_button("Blk Pin Util", 4, toggle_block_pin_util);
@@ -365,10 +360,9 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app) {
     gtk_button_set_label(search, "Search RR Node");
     g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
 
-    
     GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
     g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box), app);
-    
+
     GObject* search_type = (GObject*)app->get_object("SearchType");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block Name");
@@ -418,36 +412,36 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
             g_vpr_ctx.set_forced_pause(false); //Reset pause flag
         }
         vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
-        
+
         /* If it's the type of picture displayed has changed, set up the proper  *
          * buttons.                                                              */
         if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
-            
-            if(draw_state->save_graphics)   
+
+            if (draw_state->save_graphics)
                 ezgl::set_disable_event_loop(true);
-            else                            
+            else
                 ezgl::set_disable_event_loop(false);
-            
+
             if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
                 draw_state->pic_on_screen = pic_on_screen_val;
                 //Placement first to open
                 if (setup_timing_info) {
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if(draw_state->save_graphics){
+                    if (draw_state->save_graphics) {
                         std::string extension = "pdf";
                         std::string file_name = "vpr_placement";
                         save_graphics(extension, file_name);
-                    }   
+                    }
                     application.run(initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
                 } else {
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if(draw_state->save_graphics){
+                    if (draw_state->save_graphics) {
                         std::string extension = "pdf";
                         std::string file_name = "vpr_placement";
                         save_graphics(extension, file_name);
-                    }  
+                    }
                     application.run(initial_setup_NO_PICTURE_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
                 }
             } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
@@ -456,7 +450,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                 draw_state->pic_on_screen = pic_on_screen_val;
 
                 application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                if(draw_state->save_graphics){
+                if (draw_state->save_graphics) {
                     std::string extension = "pdf";
                     std::string file_name = "vpr_routing";
                     save_graphics(extension, file_name);
@@ -468,7 +462,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
                 //Placement, opening after routing
                 application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                if(draw_state->save_graphics){
+                if (draw_state->save_graphics) {
                     std::string extension = "pdf";
                     std::string file_name = "vpr_placement";
                     save_graphics(extension, file_name);
@@ -482,11 +476,11 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                 if (setup_timing_info) {
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if(draw_state->save_graphics){
+                    if (draw_state->save_graphics) {
                         std::string extension = "pdf";
                         std::string file_name = "vpr_routing";
                         save_graphics(extension, file_name);
-                    }                    
+                    }
                     application.run(initial_setup_NO_PICTURE_to_ROUTING_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
                 } else {
                     draw_state->setup_timing_info = setup_timing_info;

@@ -216,7 +216,7 @@ void SetupVPR(const t_options* Options,
     *GraphPause = Options->GraphPause;
 
     *ShowGraphics = Options->show_graphics;
-    
+
     *SaveGraphics = Options->save_graphics;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {

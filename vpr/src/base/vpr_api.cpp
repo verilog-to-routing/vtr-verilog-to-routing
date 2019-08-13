@@ -279,7 +279,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->GraphPause,
              &vpr_setup->SaveGraphics,
              &vpr_setup->PowerOpts);
-    
+
     /* Check inputs are reasonable */
     CheckArch(*arch);
 
