@@ -110,7 +110,6 @@ float ClassicLookahead::get_expected_cong(int inode, int target_node, const t_co
     t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
 
     if (rr_type == CHANX || rr_type == CHANY) {
-        VTR_ASSERT_SAFE(device_ctx.rr_nodes[inode].type() == CHANX || device_ctx.rr_nodes[inode].type() == CHANY);
 
         int num_segs_ortho_dir = 0;
         int num_segs_same_dir = get_expected_segs_to_target(inode, target_node, &num_segs_ortho_dir);
@@ -127,7 +126,6 @@ float ClassicLookahead::get_expected_cong(int inode, int target_node, const t_co
                         + num_segs_ortho_dir * ortho_data.base_cost
                         + ipin_data.base_cost
                         + sink_data.base_cost;
-
 
         return (1. - params.criticality) * cong_cost;
     //} else if (rr_type == IPIN) {

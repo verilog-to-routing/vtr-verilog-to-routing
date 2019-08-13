@@ -27,4 +27,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params = --echo_file on
+script_params = --echo_file on --max_router_iterations 70

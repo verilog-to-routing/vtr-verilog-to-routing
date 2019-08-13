@@ -511,18 +511,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
          * Are we finished?
          */
 
-        //check if the shared ptr is null
-
-        bool check_timing_info = false;
-
-        if (routing_is_feasible && !timing_info) {
-            check_timing_info = true;
-        }
-        else if (routing_is_feasible && !(itry == 1) && timing_info->hold_worst_negative_slack() == 0) {
-            check_timing_info = true;
-        }
-
-        if (check_timing_info) {
+        if (routing_is_feasible) {
             auto& router_ctx = g_vpr_ctx.routing();
 
             if (is_better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
@@ -664,7 +653,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
         }
 
         if (timing_info) {
-            if (itry % 5 == 1 && itry < 25) {
+            if (itry == 1) {
                 // first iteration sets up the lower bound connection delays since only timing is optimized for
                 connections_inf.set_stable_critical_path_delay(critical_path.delay());
                 connections_inf.set_lower_bound_connection_delays(net_delay);
@@ -1556,7 +1545,7 @@ static t_rt_node* setup_routing_resources(int itry,
     // for nets below a certain size (min_incremental_reroute_fanout), rip up any old routing
     // otherwise, we incrementally reroute by reusing legal parts of the previous iteration
     // convert the previous iteration's traceback into the starting route tree for this iteration
-    if ((int)num_sinks < min_incremental_reroute_fanout || itry == 1 || hold) {
+    if ((int)num_sinks < min_incremental_reroute_fanout || itry == 1) {
         profiling::net_rerouted();
 
         // rip up the whole net
@@ -1745,13 +1734,13 @@ static t_bb add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_no
 
             for (t_rt_node* rt_node : spatial_rt_lookup[bin_x][bin_y]) {
                 if (!rt_node->re_expand) continue; //Some nodes (like IPINs) shouldn't be re-expanded
-		        trace_path.clear();
+		        /*trace_path.clear();
                 trace_path.insert(rt_node->inode);
                 t_rt_node* parent = rt_node->parent_node;
                 while (parent != nullptr) {
                     trace_path.insert(parent->inode);
                     parent = parent->parent_node;
-                }
+                }*/
                 //Put the node onto the heap
                 add_route_tree_node_to_heap(rt_node, target_node, cost_params, router_lookahead, router_stats, trace_path);
 
@@ -1814,7 +1803,7 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
                                         RouterStats& router_stats,
                                         std::set<int> net_rr) {
     int inode = rt_node->inode;
-    float backward_path_cost = cost_params.criticality * rt_node->Tdel + (1. - cost_params.criticality) * get_rr_cong_cost(inode);
+    float backward_path_cost = cost_params.criticality * rt_node->Tdel; //+ (1. - cost_params.criticality) * get_rr_cong_cost(inode);
         
     float R_upstream = rt_node->R_upstream;
     float tot_cost = backward_path_cost
@@ -1848,7 +1837,7 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
         heap_::push_back_node_with_info(inode, expected_total_cost, NO_PREVIOUS, NO_PREVIOUS,
                 backward_path_cost, R_upstream, rt_node->Tdel, path, net_rr);
     }else {
-        tot_cost = backward_path_cost + cost_params.astar_fac * expected_cost;
+       // tot_cost = backward_path_cost + cost_params.astar_fac * expected_cost;
         VTR_LOGV_DEBUG(f_router_debug, "  Adding node %8d to heap from init route tree with cost %g (%s)\n", inode, tot_cost, describe_rr_node(inode).c_str());
 
         heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
