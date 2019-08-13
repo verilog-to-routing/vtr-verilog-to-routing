@@ -24,5 +24,5 @@ void highlight_blocks(std::string block_name);
 void warning_dialog_box(const char* message);
 
 #endif /* NO_GRAPHICS */
-        
+
 #endif /* SEARCH_BAR_H */
