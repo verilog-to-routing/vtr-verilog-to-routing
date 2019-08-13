@@ -235,12 +235,6 @@ void draw_main_canvas(ezgl::renderer& g) {
             default:
                 break;
         }
-//        if(draw_state->save_graphics && !draw_state->placement_saved){
-//            draw_state->placement_saved = true;
-//            std::string extension = ".pdf";
-//            std::string file_name = "vpr_placement";
-//            save_graphics(extension, file_name);
-//        }   
     } else { /* ROUTING on screen */
 
         switch (draw_state->show_nets) {
@@ -264,12 +258,6 @@ void draw_main_canvas(ezgl::renderer& g) {
 
         draw_routing_bb(g);
         
-//        if(draw_state->save_graphics && !draw_state->routing_saved){
-//            draw_state->routing_saved = true;
-//            std::string extension = ".pdf";
-//            std::string file_name = "vpr_routing";
-//            save_graphics(extension, file_name);
-//        }
     }
 
     draw_placement_macros(g);
@@ -283,7 +271,6 @@ void draw_main_canvas(ezgl::renderer& g) {
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
 
-    std::cout << "looping through draw_main_canvas" << std::endl;
     
 }
 
@@ -417,6 +404,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
         /* If it's the type of picture displayed has changed, set up the proper  *
          * buttons.                                                              */
         if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
+            
             if(draw_state->save_graphics)   
                 ezgl::set_disable_event_loop(true);
             else                            
@@ -428,8 +416,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                 if (setup_timing_info) {
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if(draw_state->save_graphics && !draw_state->placement_saved){
-                        draw_state->placement_saved = true;
+                    if(draw_state->save_graphics){
                         std::string extension = ".pdf";
                         std::string file_name = "vpr_placement";
                         save_graphics(extension, file_name);
@@ -438,12 +425,11 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                 } else {
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if(draw_state->save_graphics && !draw_state->placement_saved){
-                        draw_state->placement_saved = true;
+                    if(draw_state->save_graphics){
                         std::string extension = ".pdf";
                         std::string file_name = "vpr_placement";
                         save_graphics(extension, file_name);
-                    }   
+                    }  
                     application.run(initial_setup_NO_PICTURE_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
                 }
             } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
@@ -452,21 +438,23 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                 draw_state->pic_on_screen = pic_on_screen_val;
 
                 application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                if(draw_state->save_graphics && !draw_state->routing_saved){
-                    draw_state->routing_saved = true;
+                if(draw_state->save_graphics){
                     std::string extension = ".pdf";
                     std::string file_name = "vpr_routing";
                     save_graphics(extension, file_name);
                 }
-                
                 application.run(initial_setup_PLACEMENT_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-                
             } else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
                 draw_state->setup_timing_info = setup_timing_info;
                 draw_state->pic_on_screen = pic_on_screen_val;
 
                 //Placement, opening after routing
                 application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                if(draw_state->save_graphics){
+                    std::string extension = ".pdf";
+                    std::string file_name = "vpr_placement";
+                    save_graphics(extension, file_name);
+                }
                 application.run(initial_setup_ROUTING_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
             } else if (pic_on_screen_val == ROUTING
                        && draw_state->pic_on_screen == NO_PICTURE) {
@@ -476,15 +464,24 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                 if (setup_timing_info) {
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                    if(draw_state->save_graphics){
+                        std::string extension = ".pdf";
+                        std::string file_name = "vpr_routing";
+                        save_graphics(extension, file_name);
+                    }                    
                     application.run(initial_setup_NO_PICTURE_to_ROUTING_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
                 } else {
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                    if (draw_state->save_graphics) {
+                        std::string extension = ".pdf";
+                        std::string file_name = "vpr_routing";
+                        save_graphics(extension, file_name);
+                    }
                     application.run(initial_setup_NO_PICTURE_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
                 }
             }
         }
-
     }
 }
 

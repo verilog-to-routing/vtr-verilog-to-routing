@@ -185,8 +185,6 @@ struct t_draw_state {
     const t_arch* arch_info = nullptr;
     std::unique_ptr<const vtr::ColorMap> color_map = nullptr;
     bool save_graphics = false;
-    bool placement_saved = false;
-    bool routing_saved = false;
 
     t_draw_state() = default;
 

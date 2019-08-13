@@ -8,7 +8,7 @@ using namespace std;
 #include "save_graphics.h"
 #include "vtr_path.h"
 
-
+extern ezgl::rectangle initial_world;
 
 
 void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer data) {  
@@ -56,15 +56,15 @@ void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer
 
 void save_graphics(std::string &extension, std::string &file_name){
     if (extension == ".pdf"){
-        application.get_canvas(application.get_main_canvas_id())->print_pdf(file_name.c_str());
+        application.get_canvas(application.get_main_canvas_id())->print_pdf(file_name.c_str(), initial_world.width(), initial_world.height());
         return;
     }
     else if (extension == ".png") {
-        application.get_canvas(application.get_main_canvas_id())->print_png(file_name.c_str());
+        application.get_canvas(application.get_main_canvas_id())->print_png(file_name.c_str(), initial_world.width(), initial_world.height());
         return;
     }
     else if (extension == ".svg") {
-        application.get_canvas(application.get_main_canvas_id())->print_svg(file_name.c_str());
+        application.get_canvas(application.get_main_canvas_id())->print_svg(file_name.c_str(), initial_world.width(), initial_world.height());
         return;
     }
     else {
