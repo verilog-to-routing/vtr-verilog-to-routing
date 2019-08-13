@@ -1975,8 +1975,8 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
         //support the same primitive(s).
         std::stable_sort(candidate_types.begin(), candidate_types.end(),
                          [&](t_type_ptr lhs, t_type_ptr rhs) {
-                             float lhs_util = vtr::safe_ratio(num_used_type_instances[lhs], device_ctx.grid.num_instances(lhs));
-                             float rhs_util = vtr::safe_ratio(num_used_type_instances[rhs], device_ctx.grid.num_instances(rhs));
+                             float lhs_util = vtr::safe_ratio<float>(num_used_type_instances[lhs], device_ctx.grid.num_instances(lhs));
+                             float rhs_util = vtr::safe_ratio<float>(num_used_type_instances[rhs], device_ctx.grid.num_instances(rhs));
                              //Lower util first
                              return lhs_util < rhs_util;
                          });
