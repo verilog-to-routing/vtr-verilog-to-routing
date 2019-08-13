@@ -728,7 +728,6 @@ void free_draw_structs() {
 #endif /* NO_GRAPHICS */
 }
 
-
 void init_draw_coords(float width_val) {
 #ifndef NO_GRAPHICS
     /* Load the arrays containing the left and bottom coordinates of the clbs   *
