@@ -96,7 +96,9 @@ float ClassicLookahead::get_expected_delay(int inode, int target_node, const t_c
                     + ipin_data.T_linear;
 
         return (Tdel);
-        
+    } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
+        return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
+      
     } else { /* Change this if you want to investigate route-throughs */
         return (0.);
     }
@@ -128,13 +130,13 @@ float ClassicLookahead::get_expected_cong(int inode, int target_node, const t_co
 
 
         return (1. - params.criticality) * cong_cost;
-    } else if (rr_type == IPIN) {
+    //} else if (rr_type == IPIN) {
 
-    const auto& ipin_data = device_ctx.rr_indexed_data[IPIN_COST_INDEX];
-    const auto& sink_data = device_ctx.rr_indexed_data[SINK_COST_INDEX];
-
-    float cong_cost =    ipin_data.base_cost
-                      + sink_data.base_cost;
+    //const auto& ipin_data = device_ctx.rr_indexed_data[IPIN_COST_INDEX];
+    //const auto& sink_data = device_ctx.rr_indexed_data[SINK_COST_INDEX];
+    //
+    //float cong_cost =    ipin_data.base_cost
+    //                  + sink_data.base_cost;
     } else {
         return (0.);
     }

@@ -1824,14 +1824,14 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
         float expected_cong = router_lookahead.get_expected_cong(inode, target_node, cost_params, R_upstream);
         
         float expected_total_delay_cost;// = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
-        float expected_total_cong =  expected_cong * cost_params.astar_fac + (1. - cost_params.criticality) * get_rr_cong_cost(inode);
+        float expected_total_cong =  expected_cong  + get_rr_cong_cost(inode);
         float expected_total_delay = expected_delay * cost_params.astar_fac + rt_node->Tdel;
         
         expected_total_delay_cost = cost_params.criticality * expected_total_delay;
         expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * max(0.f,  delay_budget->target_delay - expected_total_delay);
         expected_total_delay_cost += pow(max(0.f, expected_total_delay- delay_budget->max_delay), 2) / 100e-12;
         expected_total_delay_cost += pow(max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
-        expected_total_cost = expected_total_delay_cost + (1. - cost_params.criticality) * expected_total_cong;
+        expected_total_cost = expected_total_delay_cost + expected_cong;
         
         heap_::push_back_node_with_info(inode, expected_total_cost, NO_PREVIOUS, NO_PREVIOUS,
                 backward_path_cost, R_upstream, rt_node->Tdel, path, net_rr);
@@ -2059,6 +2059,10 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
 
     to->backward_delay += Tdel;
     to->backward_cong += get_rr_cong_cost(to_node);
+
+
+    // to->backward_delay += Tdel;
+    // to->backward_cong += get_rr_cong_cost(to_node);
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
@@ -2076,8 +2080,8 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
         float expected_total_delay_cost;// = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
         float expected_total_cong_cost;
         
-        float expected_total_cong =cost_params.astar_fac *  expected_cong + to->backward_cong;
-        float expected_total_delay =cost_params.astar_fac * expected_delay + to->backward_delay;
+        float expected_total_cong =expected_cong + to->backward_cong;
+        float expected_total_delay =cost_params.astar_fac *   expected_delay + to->backward_delay;
         //If budgets specified calculate cost as described by RCV paper:
         //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
         //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
@@ -2089,15 +2093,13 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
         expected_total_delay_cost += pow(max(0.f, expected_total_delay- delay_budget->max_delay), 2) / 100e-12;
         expected_total_delay_cost += pow(max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
         expected_total_cong_cost = (1. - cost_params.criticality) *  expected_total_cong;
-        total_cost = expected_total_delay_cost + expected_total_cong_cost;
+        total_cost = expected_total_delay_cost + expected_total_cong;
     }
     else {
         //Update total cost
         float expected_cost = router_lookahead.get_expected_cost(to_node, target_node, cost_params, to->R_upstream);
         total_cost = to->backward_path_cost + cost_params.astar_fac * expected_cost;
-    }
-
-    to->cost = total_cost;
+    }    to->cost = total_cost;
 }
 
 void update_rr_base_costs(int fanout) {
