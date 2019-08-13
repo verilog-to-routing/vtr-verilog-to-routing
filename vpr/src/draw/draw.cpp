@@ -220,9 +220,9 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->gr_automode = gr_automode_val;
     draw_state->draw_route_type = route_type;
 #else
-    (void) show_graphics_val;
-    (void) gr_automode_val;
-    (void) route_type;
+    (void)show_graphics_val;
+    (void)gr_automode_val;
+    (void)route_type;
 #endif // NO_GRAPHICS
 }
 
@@ -784,7 +784,7 @@ void init_draw_coords(float width_val) {
 
     initial_world = ezgl::rectangle({-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height}, {(1. + VISIBLE_MARGIN) * draw_width, (1. + VISIBLE_MARGIN) * draw_height});
 #else
-    (void) width_val;
+    (void)width_val;
 #endif /* NO_GRAPHICS */
 }
 

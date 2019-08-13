@@ -30,7 +30,6 @@ void alloc_draw_structs(const t_arch* arch);
 
 #ifndef NO_GRAPHICS
 
-
 void free_draw_structs();
 
 void draw_get_rr_pin_coords(int inode, float* xcen, float* ycen);
