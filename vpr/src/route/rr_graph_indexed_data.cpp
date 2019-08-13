@@ -423,5 +423,6 @@ static void load_rr_indexed_data_T_values(int index_start,
     free(R_total);
     free(switch_R_total);
     free(switch_T_total);
+    free(switch_Cinternal_total);
     free(switches_buffered);
 }

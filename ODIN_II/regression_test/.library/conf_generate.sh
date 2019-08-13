@@ -57,7 +57,8 @@ ${circuit_list_input}"
 ########################
 
 regression_params=--include_default_arch
-script_params= --verbose --time_limit 3600s
+script_simulation_params= --verbose --time_limit 3600s
+script_synthesis_params= --verbose --time_limit 3600s
 simulation_params= -L reset rst -H we -g 2
 
 # setup the architecture

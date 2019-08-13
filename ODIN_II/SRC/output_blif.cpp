@@ -345,23 +345,19 @@ void output_node(nnode_t *node, short /*traverse_number*/, FILE *fp)
 			break;
 
 		case MULTIPLY:
-			if (hard_multipliers == NULL)
-				oassert(false); /* should be soft logic! */
+			oassert(hard_multipliers); /* should be soft logic! */
 			define_mult_function(node, fp);
-
 			break;
 
 		//case FULLADDER:
 		case ADD:
-			if (hard_adders == NULL)
-				oassert(false); /* should be soft logic! */
+			oassert(hard_adders); /* should be soft logic! */
 			define_add_function(node, fp);
 			break;
 
 		case MINUS:
 			oassert(hard_adders); /* should be soft logic! */
-			if(hard_adders)
-				define_add_function(node, fp);
+			define_add_function(node, fp);
 			break;
 
 		case MEMORY:

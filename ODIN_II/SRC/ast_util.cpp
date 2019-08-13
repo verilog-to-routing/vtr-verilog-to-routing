@@ -322,21 +322,13 @@ void add_child_to_node_at_index(ast_node_t* node, ast_node_t *child, int index)
 	if (index < 0 || index > node->num_children)
 		return;
 
-	ast_node_t **new_child_list = (ast_node_t **)vtr::calloc(node->num_children+1, sizeof(ast_node_t *));
-	for (int i = 0; i < index; i++)
+	node->children = (ast_node_t **)vtr::realloc(node->children, sizeof(ast_node_t *)*(node->num_children+1));
+	for (int i = node->num_children; i > index; i--)
 	{
-		new_child_list[i] = node->children[i];
+		node->children[i] = node->children[i-1];
 	}
 
-	new_child_list[index] = child;
-
-	for (int i = index+1; i <= node->num_children; i++)
-	{
-		new_child_list[i] = node->children[i-1];
-	}
-
-	node->children = (ast_node_t**)vtr::free(node->children);
-	node->children = new_child_list;
+	node->children[index] = child;
 	node->num_children ++;
 }
 
@@ -348,21 +340,18 @@ void remove_child_from_node_at_index(ast_node_t* node, int index)
 	if (index < 0 || index >= node->num_children)
 		return;
 
-	ast_node_t **new_child_list = (ast_node_t **)vtr::calloc(node->num_children-1, sizeof(ast_node_t *));
-	for (int i = 0; i < index; i++)
+	if (node->children[index])
 	{
-		new_child_list[i] = node->children[i];
+		node->children[index] = free_whole_tree(node->children[index]);
+		node->children[index] = NULL;
 	}
-
-	if (node->children[index]) free_whole_tree(node->children[index]);
 
 	for (int i = index; i < (node->num_children - 1); i++)
 	{
-		new_child_list[i] = node->children[i+1];
+		node->children[i] = node->children[i+1];
+		node->children[i+1] = NULL;
 	}
 
-	node->children = (ast_node_t**)vtr::free(node->children);
-	node->children = new_child_list;
 	node->num_children --;
 }
 
@@ -969,39 +958,6 @@ long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cach
 	return assignment_size;
 }
 
-/*----------------------------------------------------------------------------
- * (function: make_module_param_name)
- *--------------------------------------------------------------------------*/
-/**
- * Make a unique name for a module based on its parameter list
- * e.g. for a "mod #(0,1,2,3) a(b,c,d)" instantiation you get name___0_1_2_3
- */
-char *make_module_param_name(STRING_CACHE */*defines_for_module_sc*/, ast_node_t *module_param_list, char *module_name)
-{
-	char *module_param_name = (char*)vtr::malloc((strlen(module_name)+1024) * sizeof(char));
-	strcpy(module_param_name, module_name);
-
-	if (module_param_list)
-	{
-		long i;
-		oassert(module_param_list->num_children > 0);
-		strcat(module_param_name, "___");
-		for (i = 0; i < module_param_list->num_children; i++)
-		{
-			ast_node_t *node = module_param_list->children[i]->children[5];
-			if (node && node->type == NUMBERS) 
-			{
-				odin_sprintf(module_param_name, "%s_%ld", module_param_name, node->types.vnumber->get_value());
-			}
-		}
-	}
-
-	return module_param_name;
-}
-
-
-
-
 /*---------------------------------------------------------------------------------------------
  * (function: move_ast_node)
  * move node from src to dest
@@ -1471,10 +1427,8 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->file_number = file_number;
 	new_node->far_tag = 0;
 	new_node->high_number = 0;
-	new_node->shared_node = false;
 	new_node->hb_port = 0;
 	new_node->net_node = 0;
-	new_node->is_read_write = 0;
 	new_node->types.vnumber = nullptr;
 	new_node->types.identifier = NULL;
 }

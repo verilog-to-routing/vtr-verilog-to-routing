@@ -145,6 +145,7 @@ else()
         "-Winit-self"                   #Warn about self-initialization
         "-Wcatch-value=3"               #Warn when catch statements don't catch by reference
         "-Wextra-semi"                  #Warn about redudnant semicolons
+        "-Wimplicit-fallthrough=3"      #Warn about case fallthroughs, but allow 'fallthrough' comments to suppress warnings
         #GCC-like optional
         #"-Wsuggest-final-types"         #Suggest where 'final' would help if specified on a type methods
         #"-Wsuggest-final-methods"       #Suggest where 'final' would help if specified on methods

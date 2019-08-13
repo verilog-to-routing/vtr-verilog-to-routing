@@ -1901,8 +1901,24 @@ static void timing_driven_add_to_heap(const t_conn_cost_params cost_params,
                               router_lookahead,
                               next, from_node, to_node, iconn, target_node);
 
-    add_to_heap(next);
-    ++router_stats.heap_pushes;
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    float old_next_total_cost = route_ctx.rr_node_route_inf[to_node].path_cost;
+    float old_next_back_cost = route_ctx.rr_node_route_inf[to_node].backward_path_cost;
+
+    float new_next_total_cost = next->cost;
+    float new_next_back_cost = next->backward_path_cost;
+
+    if (old_next_total_cost > new_next_total_cost && old_next_back_cost > new_next_back_cost) {
+        //Add node to the heap only if the current cost is less than its historic cost, since
+        //there is no point in for the router to expand more expensive paths.
+        add_to_heap(next);
+        ++router_stats.heap_pushes;
+    }
+
+    else {
+        free_heap_data(next);
+    }
 }
 
 //Updates current (path step and costs) to account for the step taken to reach to_node

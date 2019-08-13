@@ -1269,6 +1269,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.place_move_stats_file, "--place_move_stats")
+        .help(
+            "File to write detailed placer move statistics to")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.PlaceTimingTradeoff, "--timing_tradeoff")

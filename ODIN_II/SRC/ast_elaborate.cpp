@@ -27,9 +27,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <math.h>
 #include "odin_types.h"
+#include "adders.h"
 #include "ast_util.h"
 #include "ast_elaborate.h"
 #include "ast_loop_unroll.h"
+#include "hard_blocks.h"
+#include "memories.h"
+#include "multipliers.h"
 #include "parse_making_ast.h"
 #include "verilog_bison.h"
 #include "netlist_create_from_ast.h"
@@ -101,26 +105,30 @@ OTHER DEALINGS IN THE SOFTWARE.
 // bool check_mult_bracket(std::vector<int> list);
 
 void update_string_caches(STRING_CACHE_LIST *local_string_cache_list);
+
 void convert_2D_to_1D_array(ast_node_t **var_declare, STRING_CACHE_LIST *local_string_cache_list);
 void convert_2D_to_1D_array_ref(ast_node_t **node, STRING_CACHE_LIST *local_string_cache_list);
 char *make_chunk_size_name(char *instance_name_prefix, char *array_name);
 ast_node_t *get_chunk_size_node(char *instance_name_prefix, char *array_name, STRING_CACHE_LIST *local_string_cache_list);
+
 bool verify_terminal(ast_node_t *top, ast_node_t *iterator);
 void verify_genvars(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list, char ***other_genvars, int num_genvars);
+
+ast_node_t *look_for_matching_hard_block(ast_node_t *node, char *hard_block_name, STRING_CACHE_LIST *local_string_cache_list);
+ast_node_t *look_for_matching_soft_logic(ast_node_t *node, char *hard_block_name);
+
 
 int simplify_ast_module(ast_node_t **ast_module, STRING_CACHE_LIST *local_string_cache_list)
 {
 	/* resolve constant expressions */
-	bool is_module = (*ast_module)->type == MODULE ? true : false;
-	*ast_module = reduce_expressions(*ast_module, local_string_cache_list, NULL, 0, is_module);
-	unroll_loops(ast_module, local_string_cache_list);
 	update_string_caches(local_string_cache_list);
+	bool is_module = (*ast_module)->type == MODULE ? true : false;
+	*ast_module = reduce_expressions(*ast_module, NULL, local_string_cache_list, NULL, 0, is_module);
 
 	return 1;
 }
 
-// this should replace ^^
-ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list, long *max_size, long assignment_size, bool is_generate_region)
+ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACHE_LIST *local_string_cache_list, long *max_size, long assignment_size, bool is_generate_region)
 {
 	short *child_skip_list = NULL; // list of children not to traverse into
 	short skip_children = false; // skips the DFS completely if true
@@ -139,6 +147,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 		{
 			case MODULE:
 			{
+				oassert(child_skip_list);
 				// skip identifier
 				child_skip_list[0] = true;
 				break;
@@ -146,6 +155,112 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 			case FUNCTION:
 			{
 				skip_children = true;
+				break;
+			}
+			case FUNCTION_INSTANCE:
+			{
+				// check ports
+				ast_node_t *connect_list = node->children[1]->children[1];
+				bool is_ordered_list;
+				if (connect_list->children[1]->children[0]) // skip first connection
+				{
+					is_ordered_list = false; // name was specified
+				}
+				else
+				{
+					is_ordered_list = true;
+				}
+
+				for (int i = 1; i < connect_list->num_children; i++)
+				{
+					if ((connect_list->children[i]->children[0] && is_ordered_list)
+						|| (!connect_list->children[i]->children[0] && !is_ordered_list))
+					{
+						error_message(PARSE_ERROR, node->line_number, node->file_number, 
+								"%s", "Cannot mix port connections by name and port connections by ordered list\n");
+					}
+				}
+
+				skip_children = true;
+
+				break;
+			}
+			case MODULE_ITEMS:
+			{
+				/* look in the string cache for in-line continuous assignments */
+				ast_node_t **local_symbol_table = local_string_cache_list->local_symbol_table;
+				int num_local_symbol_table = local_string_cache_list->num_local_symbol_table;
+
+				for (int i = 0; i < num_local_symbol_table; i++)
+				{
+					ast_node_t *var_declare = local_symbol_table[i];
+					if (var_declare->types.variable.is_wire && var_declare->children[5] != NULL)
+					{
+						/* in-line assignment; split into its own continuous assignment */
+						ast_node_t *id = ast_node_copy(var_declare->children[0]);
+						ast_node_t *val = var_declare->children[5];
+						var_declare->children[5] = NULL;
+
+						ast_node_t *blocking_node = newBlocking(id, val, var_declare->line_number);
+						ast_node_t *assign_node = newList(ASSIGN, blocking_node);
+
+						add_child_to_node(node, assign_node);
+					}
+				}
+
+				break;
+			}
+			case MODULE_INSTANCE:
+			{
+				/* flip hard blocks */
+
+				if (node->num_children == 1)
+				{
+					// check ports
+					ast_node_t *connect_list = node->children[0]->children[1]->children[1];
+					bool is_ordered_list;
+					if (connect_list->children[0]->children[0])
+					{
+						is_ordered_list = false; // name was specified
+					}
+					else
+					{
+						is_ordered_list = true;
+					}
+
+					for (int i = 1; i < connect_list->num_children; i++)
+					{
+						if ((connect_list->children[i]->children[0] && is_ordered_list)
+							|| (!connect_list->children[i]->children[0] && !is_ordered_list))
+						{
+							error_message(PARSE_ERROR, node->line_number, node->file_number, 
+									"%s", "Cannot mix port connections by name and port connections by ordered list\n");
+						}
+					}
+
+					char *module_ref_name = node->children[0]->children[0]->types.identifier;
+					long sc_spot = sc_lookup_string(hard_block_names, module_ref_name);
+
+					/* TODO: strcmp on "multiply", "adder" for soft logic implementation? */
+					if
+					(
+						sc_spot != -1
+						|| !strcmp(module_ref_name, SINGLE_PORT_RAM_string)
+						|| !strcmp(module_ref_name, DUAL_PORT_RAM_string)
+					)
+					{
+						ast_node_t *hb_node = look_for_matching_hard_block(node->children[0], module_ref_name, local_string_cache_list);
+						if (hb_node != node->children[0])
+						{
+							free_whole_tree(node);
+							node = hb_node;
+
+							child_skip_list = (short *)vtr::realloc(child_skip_list, sizeof(short)*node->num_children);
+							child_skip_list[1] = false;
+							break;
+						}
+					}
+				}
 				break;
 			}
 			case VAR_DECLARE:
@@ -160,7 +275,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 					}
 
 					/* resolve right-hand side */
-					node->children[5] = reduce_expressions(node->children[5], local_string_cache_list, NULL, 0, is_generate_region);
+					node->children[5] = reduce_expressions(node->children[5], node, local_string_cache_list, NULL, 0, is_generate_region);
 					oassert(node->children[5]->type == NUMBERS);
 
 					/* this forces parameter values as unsigned, since we don't currently support signed keyword...
@@ -179,6 +294,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				}
 				else
 				{
+					oassert(child_skip_list);
 					// skip identifier
 					child_skip_list[0] = true;
 				}
@@ -195,7 +311,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 
 						if (newNode->type != NUMBERS)
 						{
-							newNode = reduce_expressions(newNode, local_string_cache_list, NULL, assignment_size, is_generate_region);
+							newNode = reduce_expressions(newNode, parent, local_string_cache_list, NULL, assignment_size, is_generate_region);
 							oassert(newNode->type == NUMBERS);
 
 							/* this forces parameter values as unsigned, since we don't currently support signed keyword...
@@ -219,17 +335,49 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 			}
 			case FOR:
 			{
+				oassert(child_skip_list);
+
+				// look ahead for parameters in loop conditions
+				node->children[0] = reduce_expressions(node->children[0], node, local_string_cache_list, max_size, assignment_size, is_generate_region);
+				node->children[1] = reduce_expressions(node->children[1], node, local_string_cache_list, max_size, assignment_size, is_generate_region);
+				node->children[2] = reduce_expressions(node->children[2], node, local_string_cache_list, max_size, assignment_size, is_generate_region);
+				
+				// update skip list
+				child_skip_list[0] = true;
+				child_skip_list[1] = true;
+				child_skip_list[2] = true;
+
+				// if this is a loop generate construct, verify constant expressions
 				if (is_generate_region)
 				{
+					ast_node_t *iterator = NULL;
+					ast_node_t *initial = node->children[0];
+					ast_node_t *compare_expression = node->children[1];
+					ast_node_t *terminal = node->children[2];
+
 					char **genvar_list = NULL;
 					verify_genvars(node, local_string_cache_list, &genvar_list, 0);
 					if (genvar_list) vtr::free(genvar_list);
+
+					long sc_spot = sc_lookup_string(local_symbol_table_sc, initial->children[0]->types.identifier);
+					oassert(sc_spot > -1);
+
+					iterator = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
+
+					if ( !(node_is_constant(initial->children[1]))
+						|| !(node_is_constant(compare_expression->children[1]))
+						|| !(verify_terminal(terminal->children[1], iterator))
+					)
+					{
+						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+							"%s","Loop generate construct conditions must be constant expressions");
+					}
 				}
-				// look ahead for parameters
+				
+				node = unroll_for_loop(node, parent, local_string_cache_list);
 				break;
 			}
 			case WHILE:
-				// look ahead for parameters
 				break;
 			case BLOCKING_STATEMENT:
 			case NON_BLOCKING_STATEMENT:
@@ -237,14 +385,14 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				/* try to resolve */
 				if (node->children[1]->type != FUNCTION_INSTANCE)
 				{
-					node->children[0] = reduce_expressions(node->children[0], local_string_cache_list, NULL, 0, is_generate_region);
+					node->children[0] = reduce_expressions(node->children[0], node, local_string_cache_list, NULL, 0, is_generate_region);
 
 					assignment_size = get_size_of_variable(node->children[0], local_string_cache_list);
 					max_size = (long*)calloc(1, sizeof(long));
 					
 					if (node->children[1]->type != NUMBERS)
 					{
-						node->children[1] = reduce_expressions(node->children[1], local_string_cache_list, max_size, assignment_size, is_generate_region);
+						node->children[1] = reduce_expressions(node->children[1], node, local_string_cache_list, max_size, assignment_size, is_generate_region);
 						if (node->children[1] == NULL)
 						{
 							/* resulting from replication of zero */
@@ -298,9 +446,8 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 					}
 					
 					assignment_size = 0;
+					skip_children = true;
 				}
-
-				skip_children = true;
 				break;
 			}
 			case BINARY_OPERATION:
@@ -311,7 +458,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				break;
 			case REPLICATE:
 			{
-				node->children[0] = reduce_expressions(node->children[0], local_string_cache_list, NULL, 0, is_generate_region);
+				node->children[0] = reduce_expressions(node->children[0], node, local_string_cache_list, NULL, 0, is_generate_region);
 				if (!(node_is_constant(node->children[0])))
 				{
 					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
@@ -346,16 +493,118 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 			case NUMBERS:
 				break;
 			case IF_Q:
-				break;
 			case IF:
+			{
+				ast_node_t *to_return = NULL;
+
+				node->children[0] = reduce_expressions(node->children[0], node, local_string_cache_list, NULL, 0, is_generate_region);
+				ast_node_t *child_condition = node->children[0];
+				if(node_is_constant(child_condition))
+				{
+					VNumber condition = *(child_condition->types.vnumber);
+
+					if(V_TRUE(condition))
+					{
+						to_return = node->children[1];
+						node->children[1] = NULL;
+					}
+					else if(V_FALSE(condition))
+					{
+						to_return = node->children[2];
+						node->children[2] = NULL;
+					}
+					else if (node->type == IF && is_generate_region)
+					{
+						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+							"%s","Could not resolve conditional generate construct");
+					}
+					// otherwise we keep it as is to build the circuitry
+				}
+				else if (node->type == IF && is_generate_region)
+				{
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Could not resolve conditional generate construct");
+				}
+
+				if (to_return)
+				{
+					free_whole_tree(node);
+					node = to_return;
+				}
 				break;
+			}
+			
 			case CASE:
+			{
+				ast_node_t *to_return = NULL;
+
+				node->children[0] = reduce_expressions(node->children[0], node, local_string_cache_list, NULL, 0, is_generate_region);
+				ast_node_t *child_condition = node->children[0];
+				if(node_is_constant(child_condition))
+				{
+					ast_node_t *case_list = node->children[1];
+					for (int i = 0; i < case_list->num_children; i++)
+					{
+						ast_node_t *item = case_list->children[i];
+						if (i == case_list->num_children - 1 && item->type == CASE_DEFAULT)
+						{
+							to_return = item->children[0];
+							item->children[0] = NULL;
+						}
+						else
+						{
+							if (item->type != CASE_ITEM)
+							{
+								error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+									"%s","Default case must only be the last case");
+							}
+
+							item->children[0] = reduce_expressions(item->children[0], item, local_string_cache_list, NULL, 0, is_generate_region);
+							if (node_is_constant(item->children[0]))
+							{
+								VNumber eval = V_CASE_EQUAL(*(child_condition->types.vnumber), *(item->children[0]->types.vnumber));
+								if (V_TRUE(eval))
+								{
+									to_return = item->children[1];
+									item->children[1] = NULL;
+									break;
+								}
+							}
+							else if (is_generate_region)
+							{
+								error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+									"%s","Could not resolve conditional generate construct");
+							}
+							else
+							{
+								/* encountered non-constant item - don't continue searching */
+								break;
+							}
+						}
+					}
+
+					if (to_return)
+					{
+						free_whole_tree(node);
+						node = to_return;
+					}
+					else if (is_generate_region)
+					{
+						/* no case */
+						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+							"%s","Could not resolve conditional generate construct");
+					}
+				}
+				else if (is_generate_region)
+				{
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+						"%s","Could not resolve conditional generate construct");
+				}
+
 				break;
+			}
 			case RANGE_REF:
 			case ARRAY_REF:
-				break;
-			case MODULE_INSTANCE:
-				// flip hard blocks
 				break;
 			case ALWAYS: // fallthrough
 			case INITIALS:
@@ -367,15 +616,46 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				break;
 		}
 
-		if (skip_children == false)
+		if (child_skip_list && node->num_children > 0 && skip_children == false)
 		{
+			/* use while loop and boolean to prevent optimizations
+				since number of children may change during recursion */
+
+			bool done = false;
+			int i = 0;
+
 			/* traverse all the children */
-			for (int i = 0; i < node->num_children; i++)
+			while (done == false)
 			{
+				int num_original_children = node->num_children;
 				if (child_skip_list[i] == false)
 				{
 					/* recurse */
-					node->children[i] = reduce_expressions(node->children[i], local_string_cache_list, max_size, assignment_size, is_generate_region);
+					ast_node_t *old_child = node->children[i];
+					ast_node_t *new_child = reduce_expressions(old_child, node, local_string_cache_list, max_size, assignment_size, is_generate_region);
+					node->children[i] = new_child;
+
+					if (old_child != new_child)
+					{
+						/* recurse on this child again in case it can be further reduced 
+							(e.g. resolved generate constructs) */
+						i--;
+					}
+				}
+
+				if (num_original_children != node->num_children)
+				{
+					child_skip_list = (short *)vtr::realloc(child_skip_list, sizeof(short)*node->num_children);
+					for (int j = num_original_children; j < node->num_children; j++)
+					{
+						child_skip_list[j] = false;
+					}
+				}
+
+				i++;				
+				if (i >= node->num_children)
+				{
+					done = true;
 				}
 			}
 		}
@@ -383,6 +663,42 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 		/* post-amble */
 		switch (node->type)
 		{
+			case MODULE_INSTANCE:
+			{
+				/* this should be encountered once generate constructs are resolved, so we don't have
+					stray instances that never get instantiated */
+
+				if (node->num_children == 2)
+				{
+					char *instance_name_prefix = local_string_cache_list->instance_name_prefix;
+
+					long sc_spot = sc_lookup_string(module_names_to_idx, instance_name_prefix);
+					ast_node_t *module = (ast_node_t *)module_names_to_idx->data[sc_spot];
+
+					int num_instances = module->types.module.size_module_instantiations;
+					char *new_instance_name = node->children[1]->children[0]->types.identifier;
+					bool found = false;
+					for (int i = 0; i < num_instances; i++)
+					{
+						ast_node_t *temp_instance_node = module->types.module.module_instantiations_instance[i];
+						char *temp_instance_name = temp_instance_node->children[1]->children[0]->types.identifier;
+						if (strcmp(new_instance_name, temp_instance_name) == 0)
+						{
+							found = true;
+						}
+					}
+
+					if (found) 
+					{
+						break;
+					}
+
+					module->types.module.module_instantiations_instance = (ast_node_t **)vtr::realloc(module->types.module.module_instantiations_instance, sizeof(ast_node_t*)*(num_instances+1));
+					module->types.module.module_instantiations_instance[num_instances] = node;
+					module->types.module.size_module_instantiations++;
+				}
+				break;
+			}
 			case VAR_DECLARE:
 			{
 				// pack 2d array into 1d
@@ -396,34 +712,8 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				break;
 			}
 			case FOR:
-			{
-				if (is_generate_region)
-				{
-					ast_node_t *iterator = NULL;
-					ast_node_t *initial = node->children[0];
-					ast_node_t *compare_expression = node->children[1];
-					ast_node_t *terminal = node->children[2];
-
-					long sc_spot = sc_lookup_string(local_symbol_table_sc, initial->children[0]->types.identifier);
-					oassert(sc_spot > -1);
-
-					iterator = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
-
-					if ( !(node_is_constant(initial->children[1]))
-						|| !(node_is_constant(compare_expression->children[1]))
-						|| !(verify_terminal(terminal->children[1], iterator))
-					)
-					{
-						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-							"%s","Loop generate construct conditions must be constant expressions");
-					}
-				}
-
-				//unroll_loops(node); // TODO change this function (dont have to go through whole tree)
 				break;
-			}
 			case WHILE:
-				// unroll
 				break;
 			case BINARY_OPERATION:
 			{
@@ -578,18 +868,18 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 
 					if (var_node->children[1] != NULL)
 					{
-						var_node->children[1] = reduce_expressions(var_node->children[1], local_string_cache_list, NULL, 0, is_generate_region);
-						var_node->children[2] = reduce_expressions(var_node->children[2], local_string_cache_list, NULL, 0, is_generate_region);
+						var_node->children[1] = reduce_expressions(var_node->children[1], var_node, local_string_cache_list, NULL, 0, is_generate_region);
+						var_node->children[2] = reduce_expressions(var_node->children[2], var_node, local_string_cache_list, NULL, 0, is_generate_region);
 					}
 					if (var_node->children[3] != NULL)
 					{
-						var_node->children[3] = reduce_expressions(var_node->children[3], local_string_cache_list, NULL, 0, is_generate_region);
-						var_node->children[4] = reduce_expressions(var_node->children[4], local_string_cache_list, NULL, 0, is_generate_region);
+						var_node->children[3] = reduce_expressions(var_node->children[3], var_node, local_string_cache_list, NULL, 0, is_generate_region);
+						var_node->children[4] = reduce_expressions(var_node->children[4], var_node, local_string_cache_list, NULL, 0, is_generate_region);
 					}
 					if (var_node->num_children == 8 && var_node->children[5])
 					{
-						var_node->children[5] = reduce_expressions(var_node->children[5], local_string_cache_list, NULL, 0, is_generate_region);
-						var_node->children[6] = reduce_expressions(var_node->children[6], local_string_cache_list, NULL, 0, is_generate_region);
+						var_node->children[5] = reduce_expressions(var_node->children[5], var_node, local_string_cache_list, NULL, 0, is_generate_region);
+						var_node->children[6] = reduce_expressions(var_node->children[6], var_node, local_string_cache_list, NULL, 0, is_generate_region);
 					}
 
 					local_symbol_table_sc->data[sc_spot] = (void *)var_node;
@@ -618,110 +908,6 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 
 				break;
 			}
-			case IF_Q:
-			case IF:
-			{
-				ast_node_t *child_condition = node->children[0];
-				ast_node_t *to_return = NULL;
-				if(node_is_constant(child_condition))
-				{
-					VNumber condition = *(child_condition->types.vnumber);
-
-					if(V_TRUE(condition))
-					{
-						to_return = node->children[1];
-						node->children[1] = NULL;
-					}
-					else if(V_FALSE(condition))
-					{
-						to_return = node->children[2];
-						node->children[2] = NULL;
-					}
-					else if (node->type == IF && is_generate_region)
-					{
-						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-							"%s","Could not resolve conditional generate construct");
-					}
-					// otherwise we keep it as is to build the circuitry
-				}
-				else if (node->type == IF && is_generate_region)
-				{
-					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-						"%s","Could not resolve conditional generate construct");
-				}
-
-				if (to_return)
-				{
-					free_whole_tree(node);
-					node = to_return;
-				}
-				break;
-			}
-			case CASE:
-			{
-				ast_node_t *child_condition = node->children[0];
-				ast_node_t *to_return = NULL;
-				if(node_is_constant(child_condition))
-				{
-					ast_node_t *case_list = node->children[1];
-					for (int i = 0; i < case_list->num_children; i++)
-					{
-						ast_node_t *item = case_list->children[i];
-						if (i == case_list->num_children - 1 && item->type == CASE_DEFAULT)
-						{
-							to_return = item->children[0];
-							item->children[0] = NULL;
-						}
-						else
-						{
-							if (item->type != CASE_ITEM)
-							{
-								error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-									"%s","Default case must only be the last case");
-							}
-
-							if (node_is_constant(item->children[0]))
-							{
-								VNumber eval = V_CASE_EQUAL(*(child_condition->types.vnumber), *(item->children[0]->types.vnumber));
-								if (V_TRUE(eval))
-								{
-									to_return = item->children[1];
-									item->children[1] = NULL;
-									break;
-								}
-							}
-							else if (is_generate_region)
-							{
-								error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-									"%s","Could not resolve conditional generate construct");
-							}
-							else
-							{
-								/* encountered non-constant item - don't continue searching */
-								break;
-							}
-						}
-					}
-
-					if (to_return)
-					{
-						free_whole_tree(node);
-						node = to_return;
-					}
-					else if (is_generate_region)
-					{
-						/* no case */
-						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-							"%s","Could not resolve conditional generate construct");
-					}
-				}
-				else if (is_generate_region)
-				{
-					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-						"%s","Could not resolve conditional generate construct");
-				} 
-				break;
-			}
 			case RANGE_REF:
 			{
 				bool is_constant_ref = node_is_constant(node->children[1]);
@@ -734,6 +920,15 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				if (is_constant_ref)
 				{
 					is_constant_ref = is_constant_ref && !(node->children[2]->types.vnumber->is_dont_care_string());
+				}
+
+				if (!is_constant_ref)
+				{
+					/* note: indexed part-selects (-: and +:) should support non-constant base expressions, 
+							 e.g. my_var[some_input+:3] = 4'b0101, but we don't support it right now... */
+
+					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
+							"%s","Part-selects can only contain constant expressions");
 				}
 
 				break;
@@ -766,9 +961,6 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				if (node->num_children == 3) convert_2D_to_1D_array_ref(&node, local_string_cache_list);
 				break;
 			}
-			case MODULE_INSTANCE:
-				// flip hard blocks
-				break;
 			case ALWAYS: // fallthrough
 			case INITIALS:
 			{
@@ -803,7 +995,7 @@ void update_string_caches(STRING_CACHE_LIST *local_string_cache_list)
 			|| var_declare->num_children == 8
 		)
 		{
-			reduce_expressions(var_declare, local_string_cache_list, NULL, 0, false);
+			reduce_expressions(var_declare, NULL, local_string_cache_list, NULL, 0, false);
 		}
 	}
 }
@@ -994,6 +1186,11 @@ void verify_genvars(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list
 			long sc_spot = sc_lookup_string(local_symbol_table_sc, iterator->types.identifier);
 			if (sc_spot < 0)
 			{
+				error_message(NETLIST_ERROR, iterator->line_number, iterator->file_number, 
+					"Missing declaration of this symbol %s\n", iterator->types.identifier);
+			}
+			else if (!((ast_node_t *)local_symbol_table_sc->data[sc_spot])->types.variable.is_genvar)
+			{
 				error_message(NETLIST_ERROR, node->line_number, node->file_number, 
 					"%s","Iterator for loop generate construct must be declared as a genvar");
 			}
@@ -1026,6 +1223,270 @@ void verify_genvars(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list
 				verify_genvars(node->children[i], local_string_cache_list, other_genvars, num_genvars);
 			}
 		}
+	}
+}
+
+ast_node_t *look_for_matching_hard_block(ast_node_t *node, char *hard_block_name, STRING_CACHE_LIST *local_string_cache_list)
+{
+	t_model *hb_model = find_hard_block(hard_block_name);
+	bool is_hb = true;
+
+	if (!hb_model)
+	{
+		/* check for soft logic RAM */
+		return look_for_matching_soft_logic(node, hard_block_name);
+	}
+	else
+	{
+		t_model_ports *hb_input_ports = hb_model->inputs;
+		t_model_ports *hb_output_ports = hb_model->outputs;
+
+		int num_hb_inputs = 0;
+		int num_hb_outputs = 0;
+
+		while (hb_input_ports != NULL)
+		{
+			num_hb_inputs++;
+			hb_input_ports = hb_input_ports->next;
+		}
+
+		while (hb_output_ports != NULL)
+		{
+			num_hb_outputs++;
+			hb_output_ports = hb_output_ports->next;
+		}
+
+
+		ast_node_t *connect_list = node->children[1]->children[1];
+
+		/* first check if the number of ports match up */
+		if (connect_list->num_children != (num_hb_inputs + num_hb_outputs))
+		{
+			is_hb = false;
+		}
+		
+
+		if (is_hb && connect_list->children[0]->children[0] != NULL)
+		{
+			/* number of ports match and ports were passed in by name;
+			 * if all port names match up, this is a hard block */
+
+			for (int i = 0; i < connect_list->num_children && is_hb; i++)
+			{
+				oassert(connect_list->children[i]->children[0]);
+				char *id = connect_list->children[i]->children[0]->types.identifier;
+				hb_input_ports = hb_model->inputs;
+				hb_output_ports = hb_model->outputs;
+
+				while ((hb_input_ports != NULL) && (strcmp(hb_input_ports->name, id) != 0))
+				{
+					hb_input_ports = hb_input_ports->next;
+				}
+
+				if (hb_input_ports == NULL)
+				{
+					while ((hb_output_ports != NULL) && (strcmp(hb_output_ports->name, id) != 0))
+					{
+						hb_output_ports = hb_output_ports->next;
+					}
+				}
+				else
+				{
+					/* matching input was found; move on to the next port connection */
+					continue;
+				}
+
+				if (hb_output_ports == NULL)
+				{
+					/* name doesn't match up with any of the defined ports; this is not a hard block */
+					is_hb = false;
+				}
+				else
+				{
+					/* matching output was found; move on to the next port connection */
+					continue; 
+				}
+			}
+		}
+		else if (is_hb)
+		{
+			/* number of ports match and ports were passed in by ordered list; 
+			 * this is risky, but we will try to do some "smart" mapping to mark inputs and outputs 
+			 * by evaluating the port connections to determine the order */
+
+			warning_message(NETLIST_ERROR, connect_list->line_number, connect_list->file_number, 
+				"Attempting to convert this instance to a hard block (%s) -	unnamed port connections will be matched according to hard block specification and may produce unexpected results\n", hard_block_name);
+
+			t_model_ports *hb_ports_1 = NULL, *hb_ports_2 = NULL;
+			bool is_input, is_output;
+			int num_ports;
+
+			hb_input_ports = hb_model->inputs;
+			hb_output_ports = hb_model->outputs;
+
+			/* decide whether to look for inputs or outputs based on what there are less of */
+			if (num_hb_inputs <= num_hb_outputs)
+			{
+				is_input = true;
+				is_output = false;
+				num_ports = num_hb_inputs;
+			}
+			else
+			{
+				is_input = false;
+				is_output = true;
+				num_ports = num_hb_outputs;
+			}
+
+			STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
+
+			int i;
+
+			/* look through the first N (num_ports) port connections to look for a match */
+			for (i = 0; i < num_ports; i++)
+			{
+				char *port_id = connect_list->children[i]->children[1]->types.identifier;
+				long sc_spot = sc_lookup_string(local_symbol_table_sc, port_id);
+				oassert(sc_spot > -1);
+				ast_node_t *var_declare = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
+
+				if (var_declare->types.variable.is_output == is_output
+					&& var_declare->types.variable.is_input == is_input)
+				{
+					/* found a match! check if it's an input or output */
+					if (is_input)
+					{
+						hb_ports_1 = hb_model->inputs;
+						hb_ports_2 = hb_model->outputs;
+					}
+					else
+					{
+						hb_ports_1 = hb_model->outputs;
+						hb_ports_2 = hb_model->inputs;
+					}
+					break;
+				}
+				else if (var_declare->types.variable.is_output != is_output
+					&& var_declare->types.variable.is_input != is_input)
+				{
+					/* found the opposite of what we were looking for */
+					if (is_input)
+					{
+						hb_ports_1 = hb_model->outputs;
+						hb_ports_2 = hb_model->inputs;
+					}
+					else
+					{
+						hb_ports_1 = hb_model->inputs;
+						hb_ports_2 = hb_model->outputs;
+					}
+					break;
+				}
+			}
+
+			/* if a match hasn't been found yet, look through the last N (num_ports) port connections */
+			if (!(hb_ports_1 && hb_ports_2))
+			{
+				for (i = connect_list->num_children - num_ports; i < connect_list->num_children; i++)
+				{
+					char *port_id = connect_list->children[i]->children[1]->types.identifier;
+					long sc_spot = sc_lookup_string(local_symbol_table_sc, port_id);
+					oassert(sc_spot > -1);
+					ast_node_t *var_declare = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
+
+					if (var_declare->types.variable.is_output == is_output
+						&& var_declare->types.variable.is_input == is_input)
+					{
+						/* found a match! since we're at the other end, inputs/outputs should be reversed */
+						if (is_input)
+						{
+							hb_ports_1 = hb_model->outputs;
+							hb_ports_2 = hb_model->inputs;
+						}
+						else
+						{
+							hb_ports_1 = hb_model->inputs;
+							hb_ports_2 = hb_model->outputs;
+						}
+						break;
+					}
+					else if (var_declare->types.variable.is_output != is_output
+						&& var_declare->types.variable.is_input != is_input)
+					{
+						/* found the opposite of what we were looking for */
+						if (is_input)
+						{
+							hb_ports_1 = hb_model->inputs;
+							hb_ports_2 = hb_model->outputs;
+						}
+						else
+						{
+							hb_ports_1 = hb_model->outputs;
+							hb_ports_2 = hb_model->inputs;
+						}
+						break;
+					}
+				}
+			}
+
+			/* if a match hasn't been found, then there is no way to tell what should be done first;
+			 * we will default to inputs first, then outputs after (this is an arbitrary decision) */
+			if (!(hb_ports_1 && hb_ports_2))
+			{
+				hb_ports_1 = hb_model->inputs;
+				hb_ports_2 = hb_model->outputs;
+			}
+
+			/* attach new port identifiers for later reference when building the hard block */
+			i = 0;
+			while (hb_ports_1)
+			{
+				oassert(connect_list->children[i] && !connect_list->children[i]->children[0]);
+				connect_list->children[i]->children[0] = newSymbolNode(vtr::strdup(hb_ports_1->name), connect_list->line_number);
+				hb_ports_1 = hb_ports_1->next;
+				i++;
+			}
+			while (hb_ports_2)
+			{
+				oassert(connect_list->children[i] && !connect_list->children[i]->children[0]);
+				connect_list->children[i]->children[0] = newSymbolNode(vtr::strdup(hb_ports_2->name), connect_list->line_number);
+				hb_ports_2 = hb_ports_2->next;
+				i++;
+			}
+		}
+	}
+
+	if (is_hb)
+	{
+		ast_node_t *instance = ast_node_deep_copy(node->children[1]);
+		char *new_hard_block_name = vtr::strdup(hard_block_name);
+		
+		return newHardBlockInstance(new_hard_block_name, instance, instance->line_number);
+	}
+	else
+	{
+		return look_for_matching_soft_logic(node, hard_block_name);
+	}
+}
+
+ast_node_t *look_for_matching_soft_logic(ast_node_t *node, char *hard_block_name)
+{
+	bool is_hb = true;
+
+	if (!is_ast_sp_ram(node) && !is_ast_dp_ram(node) && !is_ast_adder(node) && !is_ast_multiplier(node))
+	{
+		is_hb = false;
+	}
+
+	if (is_hb)
+	{
+		ast_node_t *instance = ast_node_deep_copy(node->children[1]);
+		char *new_hard_block_name = vtr::strdup(hard_block_name);
+		return newHardBlockInstance(new_hard_block_name, instance, instance->line_number);
+	}
+	else
+	{
+		return node;
 	}
 }
 

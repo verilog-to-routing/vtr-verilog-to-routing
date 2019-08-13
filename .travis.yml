@@ -71,9 +71,14 @@ env:
   - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
 
 stages:
-  #- Build
-  - Test
-  - Build Compatibility
+  # - name: Build
+  #   if: type != cron
+  - name: Test
+    if: type != cron
+  - name: Build Compatibility
+    if: type != cron
+  - name: Build Coverity
+    if: type = cron
 
 jobs:
   include:
@@ -160,6 +165,14 @@ jobs:
          - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
       script:
         - ./.github/travis/build.sh
+    - stage: Build Coverity
+      name: "Coverity Scan"
+      env:
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+        - _COVERITY_URL="https://scan.coverity.com/download/linux64"
+        - _COVERITY_MD5="d0d7d7df9d6609e578f85096a755fb8f"
+      script:
+        - ./.github/travis/cron_build.sh
 
 before_script:
   - source .github/travis/common.sh
