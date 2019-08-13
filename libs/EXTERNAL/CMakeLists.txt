@@ -11,5 +11,5 @@ add_subdirectory(libtatum)
 #VPR_USE_EZGL is initialized in the root CMakeLists. 
 #compile libezgl only if the user asks for or has its dependencies installed.
 if(VPR_USE_EZGL STREQUAL "on")
-add_subdirectory(libezgl)
+    add_subdirectory(libezgl)
 endif()

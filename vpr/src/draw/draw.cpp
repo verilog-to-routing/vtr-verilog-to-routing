@@ -202,9 +202,12 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app);
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app);
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 
+#endif // NO_GRAPHICS
+
 /********************** Subroutine definitions ******************************/
 
 void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type) {
+#ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -215,8 +218,14 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->show_graphics = show_graphics_val;
     draw_state->gr_automode = gr_automode_val;
     draw_state->draw_route_type = route_type;
+#else
+    (void) show_graphics_val;
+    (void) gr_automode_val;
+    (void) route_type;
+#endif // NO_GRAPHICS
 }
 
+#ifndef NO_GRAPHICS
 void draw_main_canvas(ezgl::renderer& g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -708,7 +717,10 @@ void free_draw_structs() {
     }
 }
 
+#endif /* NO_GRAPHICS */
+
 void init_draw_coords(float width_val) {
+#ifndef NO_GRAPHICS
     /* Load the arrays containing the left and bottom coordinates of the clbs   *
      * forming the FPGA.  tile_width_val sets the width and height of a drawn    *
      * clb.                                                                     */
@@ -763,7 +775,12 @@ void init_draw_coords(float width_val) {
     float draw_height = draw_coords->tile_y[device_ctx.grid.height() - 1] + draw_coords->get_tile_width();
 
     initial_world = ezgl::rectangle({-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height}, {(1. + VISIBLE_MARGIN) * draw_width, (1. + VISIBLE_MARGIN) * draw_height});
+#else
+    (void) width_val;
+#endif /* NO_GRAPHICS */
 }
+
+#ifndef NO_GRAPHICS
 
 /* Draws the blocks placed on the proper clbs.  Occupied blocks are darker colours *
  * while empty ones are lighter colours and have a dashed border.      */

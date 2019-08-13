@@ -22,14 +22,16 @@ extern ezgl::application application;
 
 void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> timing_info);
 
-#ifndef NO_GRAPHICS
-void alloc_draw_structs(const t_arch* arch);
-
 //Initializes the drawing locations.
 //FIXME: Currently broken if no rr-graph is loaded
 void init_draw_coords(float clb_width);
 
 void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type);
+
+
+#ifndef NO_GRAPHICS
+void alloc_draw_structs(const t_arch* arch);
+
 
 void free_draw_structs();
 
