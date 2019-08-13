@@ -1122,7 +1122,7 @@ void create_all_driver_nets_in_this_function(char *instance_name_prefix, STRING_
 void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list)
 {
 	/* with the top module we need to visit the entire ast tree */
-	long i, j;
+	long i;
 	long sc_spot;
 	ast_node_t **local_symbol_table = local_string_cache_list->local_symbol_table;
 	long num_local_symbol_table = local_string_cache_list->num_local_symbol_table;
@@ -1132,7 +1132,7 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix, STRI
 	oassert(module_items->type == MODULE_ITEMS);
 
 	/* search the symbol table for inputs to make drivers */
-	if (module_items->children > 0 || local_symbol_table && num_local_symbol_table > 0)
+	if (local_symbol_table && num_local_symbol_table > 0)
 	{
 		for (i = 0; i < num_local_symbol_table; i++)
 		{
@@ -1227,7 +1227,7 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix, STRI
 void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list)
 {
 	/* with the top module we need to visit the entire ast tree */
-	long i, j;
+	long i;
 	int k;
 	long sc_spot;
 	long num_local_symbol_table = local_string_cache_list->num_local_symbol_table;
