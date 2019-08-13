@@ -702,8 +702,8 @@ void alloc_draw_structs(const t_arch* arch) {
 #endif // NO_GRAPHICS
 }
 
-#ifndef NO_GRAPHICS
 void free_draw_structs() {
+#ifndef NO_GRAPHICS
     /* Free everything allocated by alloc_draw_structs. Called after close_graphics() *
      * in vpr_api.c.
      *
@@ -723,9 +723,11 @@ void free_draw_structs() {
         free(draw_state->draw_rr_node);
         draw_state->draw_rr_node = nullptr;
     }
+#else
+    ;
+#endif /* NO_GRAPHICS */
 }
 
-#endif /* NO_GRAPHICS */
 
 void init_draw_coords(float width_val) {
 #ifndef NO_GRAPHICS
