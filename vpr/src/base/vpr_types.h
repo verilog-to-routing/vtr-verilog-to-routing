@@ -38,6 +38,7 @@
 #include "vtr_vector.h"
 #include "vtr_util.h"
 #include "vtr_flat_map.h"
+#include "vtr_cache.h"
 
 /*******************************************************************************
  * Global data types and constants

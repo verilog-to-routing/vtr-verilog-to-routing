@@ -274,12 +274,11 @@ struct RoutingContext : public Context {
     std::string routing_id;
 
     // Cache of router lookahead object.
-    std::unique_ptr<RouterLookahead> cached_router_lookahead_;
-
-    // Parameters used for cached router lookahead object.
-    e_router_lookahead cached_router_lookahead_type_;
-    std::string cached_lookahead_file_;
-    std::vector<t_segment_inf> cached_segment_inf_;
+    //
+    // Cache key: (lookahead type, read lookahead (if any), segment definitions).
+    vtr::Cache<std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>>,
+               RouterLookahead>
+        cached_router_lookahead_;
 };
 
 //This object encapsulates VPR's state. There is typically a single instance which is
