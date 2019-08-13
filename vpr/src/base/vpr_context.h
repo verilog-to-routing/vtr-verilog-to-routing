@@ -194,6 +194,10 @@ struct DeviceContext : public Context {
      * Clock Network
      ********************************************************************/
     t_clock_arch* clock_arch;
+
+    // Name of rrgraph file read (if any).
+    // Used to determine when reading rrgraph if file is already loaded.
+    std::string read_rr_graph_filename;
 };
 
 //State relating to power analysis
