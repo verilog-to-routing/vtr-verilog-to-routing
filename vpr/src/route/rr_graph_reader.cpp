@@ -57,7 +57,7 @@ void process_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const DeviceGrid& grid);
 void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int* wire_to_rr_ipin_switch, const int num_rr_switches);
-void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pugiutil::loc_data& loc_data);
+void process_channels(t_chan_width& chan_width, const DeviceGrid& grid, pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_rr_node_indices(const DeviceGrid& grid);
 void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const bool is_global_graph, const int num_seg_types);
@@ -69,7 +69,6 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
  * structures as well*/
 void load_rr_file(const t_graph_type graph_type,
                   const DeviceGrid& grid,
-                  t_chan_width nodes_per_chan,
                   const std::vector<t_segment_inf>& segment_inf,
                   const enum e_base_cost_type base_cost_type,
                   int* wire_to_rr_ipin_switch,
@@ -131,7 +130,8 @@ void load_rr_file(const t_graph_type graph_type,
         VTR_LOG("Starting build routing resource graph...\n");
 
         next_component = get_first_child(rr_graph, "channels", loc_data);
-        process_channels(nodes_per_chan, next_component, loc_data);
+        t_chan_width nodes_per_chan;
+        process_channels(nodes_per_chan, grid, next_component, loc_data);
 
         /* Decode the graph_type */
         bool is_global_graph = (GRAPH_GLOBAL == graph_type ? true : false);
@@ -177,6 +177,7 @@ void load_rr_file(const t_graph_type graph_type,
         process_seg_id(next_component, loc_data);
 
         device_ctx.chan_width = nodes_per_chan;
+        device_ctx.read_rr_graph_filename = std::string(read_rr_graph_name);
 
         check_rr_graph(graph_type, grid, device_ctx.block_types);
 
@@ -486,7 +487,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
 }
 
 /* All channel info is read in and loaded into device_ctx.chan_width*/
-void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
+void process_channels(t_chan_width& chan_width, const DeviceGrid& grid, pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
     pugi::xml_node channel, channelLists;
 
     channel = get_first_child(parent, "channel", loc_data);
@@ -496,6 +497,8 @@ void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pug
     chan_width.y_min = get_attribute(channel, "y_min", loc_data).as_uint();
     chan_width.x_max = get_attribute(channel, "x_max", loc_data).as_uint();
     chan_width.y_max = get_attribute(channel, "y_max", loc_data).as_uint();
+    chan_width.x_list.resize(grid.height());
+    chan_width.y_list.resize(grid.width());
 
     channelLists = get_first_child(parent, "x_list", loc_data);
     while (channelLists) {
