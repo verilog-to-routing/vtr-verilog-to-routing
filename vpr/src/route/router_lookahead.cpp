@@ -196,9 +196,7 @@ static int get_expected_segs_to_target(int inode, int target_node, int* num_segs
 
 void invalidate_router_lookahead_cache() {
     auto& router_ctx = g_vpr_ctx.mutable_routing();
-    router_ctx.cached_router_lookahead_.reset();
-    router_ctx.cached_lookahead_file_.clear();
-    router_ctx.cached_segment_inf_.clear();
+    router_ctx.cached_router_lookahead_.clear();
 }
 
 const RouterLookahead* get_cached_router_lookahead(
@@ -208,23 +206,22 @@ const RouterLookahead* get_cached_router_lookahead(
     const std::vector<t_segment_inf>& segment_inf) {
     auto& router_ctx = g_vpr_ctx.routing();
 
+    auto cache_key = std::make_tuple(router_lookahead_type, read_lookahead, segment_inf);
+
     // Check if cache is valid.
-    if (
-        router_ctx.cached_router_lookahead_ && read_lookahead == router_ctx.cached_lookahead_file_ && segment_inf == router_ctx.cached_segment_inf_) {
+    const RouterLookahead* router_lookahead = router_ctx.cached_router_lookahead_.get(cache_key);
+    if (router_lookahead) {
+        return router_lookahead;
     } else {
         // Cache is not valid, compute cached object.
         auto& mut_router_ctx = g_vpr_ctx.mutable_routing();
 
-        invalidate_router_lookahead_cache();
-
-        mut_router_ctx.cached_router_lookahead_ = make_router_lookahead(
-            router_lookahead_type,
-            write_lookahead,
-            read_lookahead,
-            segment_inf);
-        mut_router_ctx.cached_lookahead_file_ = read_lookahead;
-        mut_router_ctx.cached_segment_inf_ = segment_inf;
+        return mut_router_ctx.cached_router_lookahead_.set(
+            cache_key,
+            make_router_lookahead(
+                router_lookahead_type,
+                write_lookahead,
+                read_lookahead,
+                segment_inf));
     }
-
-    return router_ctx.cached_router_lookahead_.get();
 }
