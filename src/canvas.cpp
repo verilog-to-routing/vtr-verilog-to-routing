@@ -56,19 +56,26 @@ static cairo_t *create_context(cairo_surface_t *p_surface)
   return context;
 }
 
-bool canvas::print_pdf(const char *file_name)
+bool canvas::print_pdf(const char *file_name, int output_width, int output_height)
 {
-  cairo_surface_t *surface;
+  cairo_surface_t *pdf_surface;
   cairo_t *context;
-
+  int surface_width = 0;
+  int surface_height = 0;
+  
   // create pdf surface based on canvas size
-  int const width = gtk_widget_get_allocated_width(m_drawing_area);
-  int const height = gtk_widget_get_allocated_height(m_drawing_area);
-  surface = cairo_pdf_surface_create(file_name, width, height);
+  if(output_width == 0 && output_height == 0){
+    surface_width = gtk_widget_get_allocated_width(m_drawing_area);
+    surface_height = gtk_widget_get_allocated_height(m_drawing_area);
+  }else{
+      surface_width = output_width;
+      surface_height = output_height;
+  }
+  pdf_surface = cairo_pdf_surface_create(file_name, surface_width, surface_height);
 
-  if(surface == NULL)
+  if(pdf_surface == NULL)
     return false; // failed to create due to errors such as out of memory
-  context = create_context(surface);
+  context = create_context(pdf_surface);
 
   // draw on the newly created pdf surface & context
   cairo_set_source_rgb(context, m_background_color.red / 255.0, m_background_color.green / 255.0,
@@ -76,29 +83,38 @@ bool canvas::print_pdf(const char *file_name)
   cairo_paint(context);
 
   using namespace std::placeholders;
-  renderer g(context, std::bind(&camera::world_to_screen, m_camera, _1), &m_camera, surface);
+  camera pdf_cam = m_camera;
+  pdf_cam.update_widget(surface_width, surface_height);
+  renderer g(context, std::bind(&camera::world_to_screen, pdf_cam, _1), &pdf_cam, pdf_surface);
   m_draw_callback(g);
 
   // free surface & context
-  cairo_surface_destroy(surface);
+  cairo_surface_destroy(pdf_surface);
   cairo_destroy(context);
 
   return true;
 }
 
-bool canvas::print_svg(const char *file_name)
+bool canvas::print_svg(const char *file_name, int output_width, int output_height)
 {
-  cairo_surface_t *surface;
+  cairo_surface_t *svg_surface;
   cairo_t *context;
+  int surface_width = 0;
+  int surface_height = 0;
+  
+  // create pdf surface based on canvas size
+  if(output_width == 0 && output_height == 0){
+    surface_width = gtk_widget_get_allocated_width(m_drawing_area);
+    surface_height = gtk_widget_get_allocated_height(m_drawing_area);
+  }else{
+      surface_width = output_width;
+      surface_height = output_height;
+  }
+  svg_surface = cairo_svg_surface_create(file_name, surface_width, surface_height);
 
-  // create svg surface based on canvas size
-  int const width = gtk_widget_get_allocated_width(m_drawing_area);
-  int const height = gtk_widget_get_allocated_height(m_drawing_area);
-  surface = cairo_svg_surface_create(file_name, width, height);
-
-  if(surface == NULL)
+  if(svg_surface == NULL)
     return false; // failed to create due to errors such as out of memory
-  context = create_context(surface);
+  context = create_context(svg_surface);
 
   // draw on the newly created svg surface & context
   cairo_set_source_rgb(context, m_background_color.red / 255.0, m_background_color.green / 255.0,
@@ -106,43 +122,55 @@ bool canvas::print_svg(const char *file_name)
   cairo_paint(context);
 
   using namespace std::placeholders;
-  renderer g(context, std::bind(&camera::world_to_screen, m_camera, _1), &m_camera, surface);
+  camera svg_cam = m_camera;
+  svg_cam.update_widget(surface_width, surface_height);
+  renderer g(context, std::bind(&camera::world_to_screen, svg_cam, _1), &svg_cam, svg_surface);
   m_draw_callback(g);
 
   // free surface & context
-  cairo_surface_destroy(surface);
+  cairo_surface_destroy(svg_surface);
   cairo_destroy(context);
 
   return true;
 }
 
-bool canvas::print_png(const char *file_name)
+bool canvas::print_png(const char *file_name, int output_width, int output_height)
 {
-  cairo_surface_t *surface;
+  cairo_surface_t *png_surface;
   cairo_t *context;
+  int surface_width = 0;
+  int surface_height = 0;
+  
+  // create pdf surface based on canvas size
+  if(output_width == 0 && output_height == 0){
+    surface_width = gtk_widget_get_allocated_width(m_drawing_area);
+    surface_height = gtk_widget_get_allocated_height(m_drawing_area);
+  }else{
+      surface_width = output_width;
+      surface_height = output_height;
+  }
+  png_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, surface_width, surface_height);
 
-  // create png surface based on canvas size
-  int const width = gtk_widget_get_allocated_width(m_drawing_area);
-  int const height = gtk_widget_get_allocated_height(m_drawing_area);
-  surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
-
-  if(surface == NULL)
+  if(png_surface == NULL)
     return false; // failed to create due to errors such as out of memory
-  context = create_context(surface);
+  context = create_context(png_surface);
 
   // draw on the newly created png surface & context
   cairo_set_source_rgb(context, m_background_color.red / 255.0, m_background_color.green / 255.0,
       m_background_color.blue / 255.0);
   cairo_paint(context);
+
   using namespace std::placeholders;
-  renderer g(context, std::bind(&camera::world_to_screen, m_camera, _1), &m_camera, surface);
+  camera png_cam = m_camera;
+  png_cam.update_widget(surface_width, surface_height);
+  renderer g(context, std::bind(&camera::world_to_screen, png_cam, _1), &png_cam, png_surface);
   m_draw_callback(g);
 
   // create png output file
-  cairo_surface_write_to_png(surface, file_name);
+  cairo_surface_write_to_png(png_surface, file_name);
 
   // free surface & context
-  cairo_surface_destroy(surface);
+  cairo_surface_destroy(png_surface);
   cairo_destroy(context);
 
   return true;
