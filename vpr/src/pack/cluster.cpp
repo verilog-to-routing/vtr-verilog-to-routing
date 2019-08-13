@@ -2630,13 +2630,13 @@ static std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_
 
                 const t_molecule_stats molecule_stats = calc_molecule_stats(mol);
 
-                float pin_ratio = vtr::safe_ratio(molecule_stats.num_pins, max_molecule_stats.num_pins);
-                float input_pin_ratio = vtr::safe_ratio(molecule_stats.num_input_pins, max_molecule_stats.num_input_pins);
-                float output_pin_ratio = vtr::safe_ratio(molecule_stats.num_output_pins, max_molecule_stats.num_output_pins);
-                float used_ext_pin_ratio = vtr::safe_ratio(molecule_stats.num_used_ext_pins, max_molecule_stats.num_used_ext_pins);
-                float used_ext_input_pin_ratio = vtr::safe_ratio(molecule_stats.num_used_ext_inputs, max_molecule_stats.num_used_ext_inputs);
-                float used_ext_output_pin_ratio = vtr::safe_ratio(molecule_stats.num_used_ext_outputs, max_molecule_stats.num_used_ext_outputs);
-                float num_blocks_ratio = vtr::safe_ratio(molecule_stats.num_blocks, max_molecule_stats.num_blocks);
+                float pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_pins, max_molecule_stats.num_pins);
+                float input_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_input_pins, max_molecule_stats.num_input_pins);
+                float output_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_output_pins, max_molecule_stats.num_output_pins);
+                float used_ext_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_used_ext_pins, max_molecule_stats.num_used_ext_pins);
+                float used_ext_input_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_used_ext_inputs, max_molecule_stats.num_used_ext_inputs);
+                float used_ext_output_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_used_ext_outputs, max_molecule_stats.num_used_ext_outputs);
+                float num_blocks_ratio = vtr::safe_ratio<float>(molecule_stats.num_blocks, max_molecule_stats.num_blocks);
                 float criticality = atom_criticality[blk];
 
                 constexpr float PIN_WEIGHT = 0.;
