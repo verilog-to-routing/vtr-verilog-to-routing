@@ -114,9 +114,9 @@ public:
    * @return            returns true if the function has successfully generated the output file, otherwise
    *                    failed due to errors such as out of memory occurs. 
    */
-  bool print_pdf(const char *file_name);
-  bool print_svg(const char *file_name);
-  bool print_png(const char *file_name);
+  bool print_pdf(const char *file_name, int width = 0, int height = 0);
+  bool print_svg(const char *file_name, int width = 0, int height = 0);
+  bool print_png(const char *file_name, int width = 0, int height = 0);
   
   
 protected:
