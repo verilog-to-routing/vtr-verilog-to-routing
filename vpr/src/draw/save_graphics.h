@@ -1,6 +1,9 @@
 #ifndef SAVE_GRAPHICS_H
 #define SAVE_GRAPHICS_H
 
+
+#ifndef NO_GRAPHICS
+
 #include "easygl_constants.h"
 #include "graphics.h"
 #include "draw_global.h"
@@ -13,6 +16,8 @@
 void save_graphics(std::string &extension, std::string &file_name);
 void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer data);
+
+#endif /* NO_GRAPHICS */
 
 #endif /* SAVE_GRAPHICS_H */
 

@@ -709,7 +709,6 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
         //Update interactive graphics
         update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
-
         free_net_delay(net_delay, &net_delay_ch);
     }
 
@@ -790,7 +789,6 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
 
         timing_info->update();
     }
-
     init_draw_coords(fixed_channel_width);
 
     return RouteStatus(is_legal, fixed_channel_width);
@@ -831,7 +829,6 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     router_opts.lookahead_type,
                     arch.Directs, arch.num_directs,
                     &warnings);
-
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(chan_width_fac);
 }

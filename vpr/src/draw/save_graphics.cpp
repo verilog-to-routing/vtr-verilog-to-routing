@@ -1,3 +1,5 @@
+#ifndef NO_GRAPHICS
+
 #include <cstdio>
 #include <sstream>
 using namespace std;
@@ -7,6 +9,7 @@ using namespace std;
 #include "draw_global.h"
 #include "save_graphics.h"
 #include "vtr_path.h"
+#include "search_bar.h"
 
 extern ezgl::rectangle initial_world;
 
@@ -67,8 +70,7 @@ void save_graphics(std::string &extension, std::string &file_name){
         return;
     }
     else {
-        //invalid input format
-        ;
+        warning_dialog_box("Invalid file extension");
     }
 }
 
@@ -123,3 +125,5 @@ void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/)
     
     return;
 }
+
+#endif /* NO_GRAPHICS */

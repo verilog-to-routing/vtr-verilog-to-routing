@@ -1,8 +1,10 @@
 #ifndef HSL_H
 #define HSL_H
 
-#include "graphics_types.h"
-#include "ezgl/graphics.hpp"
+#ifndef NO_GRAPHICS
+
+#    include "graphics_types.h"
+#    include "ezgl/color.hpp"
 
 struct hsl {
     double h; // hue            a fraction between 0 and 1
@@ -13,5 +15,7 @@ struct hsl {
 /* conversions between color (red, green, and blue) and hsl (hue, saturation, and luminesence) */
 hsl color2hsl(ezgl::color in);
 ezgl::color hsl2color(hsl in);
+
+#endif /* NO_GRAPHICS */
 
 #endif

@@ -10,8 +10,10 @@
  * Date: August 21, 2013
  */
 
-#include "draw_global.h"
-#include "draw_types.h"
+#ifndef NO_GRAPHICS
+
+#    include "draw_global.h"
+#    include "draw_types.h"
 
 /*************************** Variables Definition ***************************/
 
@@ -37,3 +39,5 @@ t_draw_coords* get_draw_coords_vars() {
 t_draw_state* get_draw_state_vars() {
     return &draw_state;
 }
+
+#endif // NO_GRAPHICS

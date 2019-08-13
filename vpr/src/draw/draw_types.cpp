@@ -1,8 +1,10 @@
-#include "draw_global.h"
-#include "draw_types.h"
-#include "globals.h"
-#include "vpr_utils.h"
-#include <utility>
+#ifndef NO_GRAPHICS
+
+#    include "draw_global.h"
+#    include "draw_types.h"
+#    include "globals.h"
+#    include "vpr_utils.h"
+#    include <utility>
 
 /*******************************************
  * begin t_draw_state function definitions *
@@ -95,3 +97,5 @@ ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_x, int grid_y, int
     auto& device_ctx = g_vpr_ctx.device();
     return get_pb_bbox(grid_x, grid_y, sub_block_index, *device_ctx.grid[grid_x][grid_y].type->pb_graph_head);
 }
+
+#endif // NO_GRAPHICS

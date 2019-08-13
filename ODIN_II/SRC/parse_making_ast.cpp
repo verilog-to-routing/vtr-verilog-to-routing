@@ -1507,10 +1507,13 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 	long sc_spot;
 	ast_node_t *symbol_node = newSymbolNode(module_name, line_number);
 
-	if(sc_lookup_string(hard_block_names, module_name) != -1)
+	if( sc_lookup_string(hard_block_names, module_name) != -1
+		|| !strcmp(module_name, SINGLE_PORT_RAM_string)
+		|| !strcmp(module_name, DUAL_PORT_RAM_string)
+	)
 	{
-		warning_message(PARSE_ERROR, line_number, current_parse_file, 
-			"Probable module name collision with hard block of the same name -> %s\n", module_name);		
+		error_message(PARSE_ERROR, line_number, current_parse_file, 
+			"Module name collides with hard block of the same name (%s)\n", module_name);		
 	}
 
 	/* create a node for this array reference */

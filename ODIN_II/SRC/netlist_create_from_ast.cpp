@@ -5832,6 +5832,8 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix, 
 			/* add the net to the list of inputs */
 			sc_spot = sc_add_string(input_nets_sc, pin_name);
 			input_nets_sc->data[sc_spot] = (void*)new_net;
+
+			vtr::free(pin_name);
 		}
 		current_out_idx += j;
 	}
@@ -5890,6 +5892,8 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix, 
 			/* add the net to the list of inputs */
 			sc_spot = sc_add_string(input_nets_sc, pin_name);
 			input_nets_sc->data[sc_spot] = (void*)new_net;
+
+			vtr::free(pin_name);
 		}
 		current_out_idx += j;
 	}

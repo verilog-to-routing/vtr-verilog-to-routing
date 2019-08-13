@@ -786,10 +786,10 @@ module rsdec_berl (lambda_out, omega_out, syndrome0, syndrome1, syndrome2, syndr
 	rsdec_berl_multiply x1 (tmp1, lambda7, DI, lambda1, syndrome1, phase0);
 	rsdec_berl_multiply x2 (tmp2, A6, D, lambda2, syndrome2, phase0);
 	rsdec_berl_multiply x3 (tmp3, omega7, DI, lambda3, syndrome3, phase0);
-	multiply x4 (tmp4, lambda4, syndrome4);
-	multiply x5 (tmp5, lambda5, syndrome5);
-	multiply x6 (tmp6, lambda6, syndrome6);
-	multiply x7 (tmp7, lambda7, syndrome7);
+	my_multiply x4 (tmp4, lambda4, syndrome4);
+	my_multiply x5 (tmp5, lambda5, syndrome5);
+	my_multiply x6 (tmp6, lambda6, syndrome6);
+	my_multiply x7 (tmp7, lambda7, syndrome7);
 
 	always @ (posedge clk)// or negedge clrn)
 	begin
@@ -988,11 +988,11 @@ module rsdec_berl_multiply (y, a, b, c, d, e);
 		if (e) q = d;
 		else q = b;
 
-	multiply x0 (y, p, q);
+	my_multiply x0 (y, p, q);
 
 endmodule
 
-module multiply (y, a, b);
+module my_multiply (y, a, b);
 	input [8:0] a, b;
 	output [8:0] y;
 	wire [8:0] y;
@@ -1653,7 +1653,7 @@ module rsdec_chien (error, alpha, lambda, omega, even, D, search, load, shorten,
 	always @ (o0 or o1 or o2 or o3 or o4 or o5 or o6 or o7)
 		numerator = o0 ^ o1 ^ o2 ^ o3 ^ o4 ^ o5 ^ o6 ^ o7;
 
-	multiply m0 (tmp, numerator, D);
+	my_multiply m0 (tmp, numerator, D);
 
 	always @ (even or odd or tmp)
 		if (even == odd) error = tmp;

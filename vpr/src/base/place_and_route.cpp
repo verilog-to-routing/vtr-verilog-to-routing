@@ -356,7 +356,6 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
                     &warnings);
 
     init_draw_coords(final);
-
     restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
 
     if (Fc_clipped) {
