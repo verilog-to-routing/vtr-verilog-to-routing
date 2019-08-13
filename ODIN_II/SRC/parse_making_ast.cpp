@@ -45,18 +45,16 @@ extern int yylineno;
 STRING_CACHE **defines_for_module_sc;
 STRING_CACHE *modules_inputs_sc;
 STRING_CACHE *modules_outputs_sc;
+STRING_CACHE *module_instances_sc;
+
 //for function
 STRING_CACHE **defines_for_function_sc;
 STRING_CACHE *functions_inputs_sc;
 STRING_CACHE *functions_outputs_sc;
 
 STRING_CACHE *module_names_to_idx;
+STRING_CACHE *instantiated_modules;
 
-ast_node_t **block_instantiations_instance;
-int size_block_instantiations;
-
-ast_node_t **module_instantiations_instance;
-int size_module_instantiations;
 ast_node_t **module_variables_not_defined;
 int size_module_variables_not_defined;
 ast_node_t **function_instantiations_instance;
@@ -65,7 +63,6 @@ ast_node_t **function_instantiations_instance_by_module;
 int size_function_instantiations_by_module;
 
 long num_modules;
-long num_instances;
 ast_node_t **ast_modules;
 
 int num_functions;
@@ -79,36 +76,7 @@ short to_view_parse;
  * File-scope function declarations
  */
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number);
-ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
 ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list);
-
-
-static void assert_supported_file_extension(std::string input_file, int file_number)
-{
-	bool supported = false;
-	std::string extension = get_file_extension(input_file);
-	for(int i = 0; i< file_extension_supported_END && ! supported; i++)
-	{
-		supported = (extension == std::string(file_extension_supported_STR[i]) );
-	}
-
-	if(! supported)
-	{
-		std::string supported_extension_list = "";
-		for(int i=0; i<file_extension_supported_END; i++)
-		{
-			supported_extension_list += " "; 
-			supported_extension_list += file_extension_supported_STR[i];
-		}
-
-		error_message(ARG_ERROR, -1, file_number, 
-			"File (%s) has an unsupported extension (%s), Odin only support { %s }",
-			input_file.c_str(),
-			extension.c_str(),
-			supported_extension_list.c_str()
-			);
-	}
-}
 
 /*---------------------------------------------------------------------------------------------
  * (function: parse_to_ast)
@@ -166,33 +134,6 @@ BASIC PARSING FUNCTIONS
  --------------------------------------------------------------------------------------------
  --------------------------------------------------------------------------------------------*/
 
-/*----------------------------------------------------------------------------
- * (function: cleanup_hard_blocks)
- *   This function will correctly label nodes in the AST as being part of a
- *   hard block and not a module. This needs to be done post parsing since
- *   there are no language differences between hard blocks and modules.
- *--------------------------------------------------------------------------*/
-void cleanup_hard_blocks()
-{
-	int i;
-	long j;
-	ast_node_t *block_node, *instance_node, *connect_list_node;
-
-	for (i = 0; i < size_block_instantiations; i++)
-	{
-		block_node = block_instantiations_instance[i];
-		instance_node = block_node->children[1];
-		instance_node->type = HARD_BLOCK_NAMED_INSTANCE;
-		connect_list_node = instance_node->children[1];
-		connect_list_node->type = HARD_BLOCK_CONNECT_LIST;
-
-		for (j = 0; j < connect_list_node->num_children; j++)
-		{
-			connect_list_node->children[j]->type = HARD_BLOCK_CONNECT;
-		}
-	}
-	return;
-}
 
 /*---------------------------------------------------------------------------------------------
  * (function: init_parser)
@@ -205,20 +146,15 @@ void init_parser()
 	defines_for_function_sc = NULL;
 	/* record of each of the individual modules */
 	num_modules = 0; // we're going to record all the modules in a list so we can build a tree of them later
-	num_instances = 0;
 	num_functions = 0;
 	ast_modules = NULL;
 	ast_functions = NULL;
-	module_instantiations_instance = NULL;
 	function_instantiations_instance = NULL;
 	module_variables_not_defined = NULL;
 	size_module_variables_not_defined = 0;
-	size_module_instantiations = 0;
   	size_function_instantiations = 0;
   	function_instantiations_instance_by_module = NULL;
 	size_function_instantiations_by_module = 0;
-	block_instantiations_instance = NULL;
-	size_block_instantiations = 0;
 
 	/* keeps track of all the ast roots */
 	all_file_items_list = NULL;
@@ -257,6 +193,8 @@ void init_parser_for_file()
 	modules_outputs_sc = sc_new_string_cache();
 	functions_inputs_sc = sc_new_string_cache();
 	functions_outputs_sc = sc_new_string_cache();
+	instantiated_modules = sc_new_string_cache();
+	module_instances_sc = sc_new_string_cache();
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -269,6 +207,8 @@ void cleanup_parser_for_file()
 	modules_outputs_sc = sc_free_string_cache(modules_outputs_sc);
 	functions_inputs_sc = sc_free_string_cache(functions_inputs_sc);
 	functions_outputs_sc = sc_free_string_cache(functions_outputs_sc);
+	instantiated_modules = sc_free_string_cache(instantiated_modules);
+	module_instances_sc = sc_free_string_cache(module_instances_sc);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -279,7 +219,6 @@ void next_parsed_verilog_file(ast_node_t *file_items_list)
 	long i;
 	/* optimization entry point */
 	printf("Optimizing module by AST based optimizations\n");
-	cleanup_hard_blocks();
 	if (configuration.output_ast_graphs == 1)
 	{
 		/* IF - we want outputs for the graphViz files of each module */
@@ -376,9 +315,9 @@ static ast_node_t *resolve_symbol_node(ids top_type, ast_node_t *symbol_node)
 			ast_node_t *newNode = NULL;
 			if(top_type == MODULE) 
 			{
-				long sc_spot = sc_lookup_string(defines_for_module_sc[num_modules-num_instances], symbol_node->types.identifier);
+				long sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_node->types.identifier);
 				if(sc_spot != -1)
-					newNode = (ast_node_t *)defines_for_module_sc[num_modules-num_instances]->data[sc_spot];
+					newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
 			}
        		else if(top_type == FUNCTION) 
 			{
@@ -745,7 +684,7 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parameter, bool is_signed)
 {
 	oassert((top_type == MODULE || top_type == FUNCTION) 
-		&& "can only use MODULE or FUNCITON as top type");
+		&& "can only use MODULE or FUNCTION as top type");
 		
 	long sc_spot;
 	STRING_CACHE **this_defines_sc = NULL;
@@ -754,7 +693,7 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 	if (top_type == MODULE)
 	{
 		this_defines_sc = defines_for_module_sc;
-		this_num_modules = num_modules-num_instances;
+		this_num_modules = num_modules;
 
 	}
 	else if (top_type == FUNCTION)
@@ -775,8 +714,7 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 	sc_spot = sc_add_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier);
 	
 	this_defines_sc[this_num_modules]->data[sc_spot] = (void*)parameter->children[5];
-	/* mark the node as shared so we don't delete it */
-	parameter->children[5]->shared_node = true;
+
 
 	if (id == PARAMETER)
 	{
@@ -842,12 +780,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], is_signed);
 						break;
 					case WIRE:
-						if ((symbol_list->children[i]->num_children == 6 && symbol_list->children[i]->children[5] != NULL)
-							|| (symbol_list->children[i]->num_children == 8 && symbol_list->children[i]->children[7] != NULL))
-						{
-							error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
-									"Nets cannot be initialized\n");
-						}
 						if (is_signed)
 						{
 							/* cannot support signed nets right now */
@@ -1356,10 +1288,16 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
 	// allocate child nodes to this node
 	allocate_children_to_node(new_node, { symbol_node, module_named_instance });
 
-	// store the hard block symbol name that this calls in a list that will at the end be asociated with the hard block node
-	block_instantiations_instance = (ast_node_t **)vtr::realloc(block_instantiations_instance, sizeof(ast_node_t*)*(size_block_instantiations+1));
-	block_instantiations_instance[size_block_instantiations] = new_node;
-	size_block_instantiations++;
+	// mark as hard block
+	module_named_instance->type = HARD_BLOCK_NAMED_INSTANCE;
+
+	ast_node_t *connect_list_node = module_named_instance->children[1];
+	connect_list_node->type = HARD_BLOCK_CONNECT_LIST;
+
+	for (int i = 0; i < connect_list_node->num_children; i++)
+	{
+		connect_list_node->children[i]->type = HARD_BLOCK_CONNECT;
+	}
 
 	return new_node;
 }
@@ -1369,51 +1307,22 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
  *-----------------------------------------------------------------------*/
 ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number)
 {
-
 	long i;
 	/* create a node for this array reference */
 	ast_node_t* new_master_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
 	for(i = 0; i < module_named_instance->num_children; i++)
 	{
-		if
-		(
-			sc_lookup_string(hard_block_names, module_ref_name) != -1
-			|| !strcmp(module_ref_name, SINGLE_PORT_RAM_string)
-			|| !strcmp(module_ref_name, DUAL_PORT_RAM_string)
-		)
+		/* check if this name was already used */
+		long sc_spot = sc_add_string(module_instances_sc, module_named_instance->children[i]->children[0]->types.identifier);
+		if (module_instances_sc->data[sc_spot] != NULL)
 		{
-			ast_node_t *instance = ast_node_deep_copy(module_named_instance->children[i]);
-			free_whole_tree(new_master_node);
-			free_whole_tree(module_named_instance);
-			
-			return newHardBlockInstance(module_ref_name, instance, line_number);
+			error_message(PARSE_ERROR, line_number, current_parse_file, 
+				"Module already has an instance with this name (%s)\n", 
+				module_named_instance->children[i]->children[0]->types.identifier);
 		}
+		module_instances_sc->data[sc_spot] = module_named_instance->children[i];
 
-		// make a unique module name based on its parameter list
-		ast_node_t *module_param_list = module_named_instance->children[i]->children[2];
-		char *module_param_name = make_module_param_name(defines_for_module_sc[num_modules-num_instances], module_param_list, module_ref_name);
-		ast_node_t *symbol_node = newSymbolNode(module_param_name, line_number);
-
-		// if this is a parameterised instantiation
-		if (module_param_list)
-		{
-			// which doesn't exist in ast_modules yet
-			long sc_spot;
-			if ((sc_spot = sc_lookup_string(module_names_to_idx, module_param_name)) == -1)
-			{
-				// then add it, but set it to the symbol_node, because the
-				// module in question may not have been parsed yet
-				// later, we convert this symbol node back into a module node
-				ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
-				ast_modules[num_modules] = symbol_node;
-				num_modules++;
-				num_instances++;
-				sc_spot = sc_add_string(module_names_to_idx, module_param_name);
-				module_names_to_idx->data[sc_spot] = symbol_node;
-				defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
-				defines_for_module_sc[num_modules] = NULL;
-			}
-		}
+		ast_node_t *symbol_node = newSymbolNode(module_ref_name, line_number);
 
 		/* create a node for this array reference */
 		ast_node_t* new_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
@@ -1423,14 +1332,20 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 			else add_child_to_node(new_master_node,new_node);
 
 		/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
-		module_instantiations_instance = (ast_node_t **)vtr::realloc(module_instantiations_instance, sizeof(ast_node_t*)*(size_module_instantiations+1));
-		module_instantiations_instance[size_module_instantiations] = new_node;
-		size_module_instantiations++;
+		sc_add_string(instantiated_modules, module_ref_name);
+
+		/* if this module has already been parsed, update */
+		for (int j = 0; j < num_modules; j++)
+		{
+			if (sc_lookup_string(instantiated_modules, ast_modules[j]->children[0]->types.identifier) != -1)
+			{
+				ast_modules[j]->types.module.is_instantiated = true;
+			}
+		}
 	}
 
 	vtr::free(module_named_instance->children);
 	vtr::free(module_named_instance);
-	vtr::free(module_ref_name);
 	return new_master_node;
 }
 
@@ -1439,11 +1354,7 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
  *-----------------------------------------------------------------------*/
 ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_named_instance, int line_number)
 {
-	// make a unique module name based on its parameter list
-	ast_node_t *function_param_list = function_named_instance->children[2];
-
-	char *function_param_name = make_module_param_name(defines_for_module_sc[num_modules-num_instances], function_param_list, function_ref_name);
-	ast_node_t *symbol_node = newSymbolNode(function_param_name, line_number);
+	ast_node_t *symbol_node = newSymbolNode(function_ref_name, line_number);
 
     /* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(FUNCTION_INSTANCE, line_number, current_parse_file);
@@ -1454,8 +1365,6 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
 	function_instantiations_instance_by_module = (ast_node_t **)vtr::realloc(function_instantiations_instance_by_module, sizeof(ast_node_t*)*(size_function_instantiations_by_module+1));
 	function_instantiations_instance_by_module[size_function_instantiations_by_module] = new_node;
 	size_function_instantiations_by_module++;
-
-	vtr::free(function_ref_name);
 
 	return new_node;
 }
@@ -1619,17 +1528,18 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 	/* parameters are expected to be in module items */
 	if (list_of_parameters)
 	{
-		newList_entry(list_of_module_items, list_of_parameters);
+		add_child_to_node_at_index(list_of_module_items, list_of_parameters, 0);
 	}
 
 
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, { symbol_node, list_of_ports, list_of_module_items });
 
-	/* store the list of modules this module instantiates */
-	new_node->types.module.module_instantiations_instance = module_instantiations_instance;
-	new_node->types.module.size_module_instantiations = size_module_instantiations;
-	new_node->types.module.is_instantiated = false;
+	/* check if this module has been instantiated */
+	if (new_node->types.module.is_instantiated == false)
+	{
+		new_node->types.module.is_instantiated = (sc_lookup_string(instantiated_modules, module_name) != -1);
+	}
 	new_node->types.module.index = num_modules;
 
 	new_node->types.function.function_instantiations_instance = function_instantiations_instance_by_module;
@@ -1775,16 +1685,11 @@ void next_function()
 void next_module()
 {
 	num_modules ++;
-	num_instances = 0;
     num_functions = 0;
 
 	/* define the string cache for the next module */
 	defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
 	defines_for_module_sc[num_modules] = sc_new_string_cache();
-
-	/* create a new list for the instantiations list */
-	module_instantiations_instance = NULL;
-	size_module_instantiations = 0;
 
 	function_instantiations_instance_by_module = NULL;
 	size_function_instantiations_by_module = 0;
@@ -1794,9 +1699,11 @@ void next_module()
 	/* old ones are done so clean */
 	sc_free_string_cache(modules_inputs_sc);
 	sc_free_string_cache(modules_outputs_sc);
+	sc_free_string_cache(module_instances_sc);
 	/* make for next module */
 	modules_inputs_sc = sc_new_string_cache();
 	modules_outputs_sc = sc_new_string_cache();
+	module_instances_sc = sc_new_string_cache();
 }
 
 /*--------------------------------------------------------------------------
@@ -1805,74 +1712,38 @@ void next_module()
 ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 {
 	ast_node_t *new_node = NULL;
-	ast_node_t *ref_node = NULL;
-	char *module_instance_name = NULL;
-	long i;
-	int j;
-	//long sc_spot;
+
 	if(val)
 	{
 		if(val->num_children > 1)
 		{
-			for(i = 0; i < val->num_children - 1; i++)
+			std::string module_instance_name = "";
+			for(long i = 0; i < val->num_children - 1; i++)
 			{
 				oassert(val->children[i]->num_children > 0);
-				if(i == 0 && val->num_children >= 2)
-					module_instance_name = vtr::strdup(val->children[i]->children[0]->types.identifier);
-				else
+
+				if( i != 0 || val->num_children < 2 )
 				{
-					module_instance_name = strcat(module_instance_name, ".");
-					module_instance_name = strcat(module_instance_name, vtr::strdup(val->children[i]->children[0]->types.identifier));
+					module_instance_name += ".";
 				}
+
+				module_instance_name += val->children[i]->children[0]->types.identifier;
 			}
+
 			new_node = val->children[(val->num_children - 1)];
 
 			new_node->type = MODULE_PARAMETER;
 			new_node->types.variable.is_parameter = true;
-			new_node->shared_node = true;
 			new_node->children[5]->types.variable.is_parameter = true;
-			new_node->children[5]->shared_node = true;
-			new_node->types.identifier = module_instance_name;
+			new_node->types.identifier = vtr::strdup(module_instance_name.c_str());
+			new_node->line_number = line_number;
 
 			val->children[(val->num_children - 1)] = NULL;
 			val = free_whole_tree(val);			
 		}
 	}
-	//flag = 0 can't find the instance
-	int flag = 0;
-	for(j = 0 ; j < size_module_instantiations ; j++)
-	{
-		if(flag == 0)
-		{
-			ref_node = module_instantiations_instance[j];
-			if(module_instance_name != NULL)
-			{
-				if(strcmp(ref_node->children[1]->children[0]->types.identifier, module_instance_name) == 0)
-				{
-					if(ref_node->children[1]->children[2])
-						add_child_to_node(ref_node->children[1]->children[2], new_node);
-					else
-					{
-						ast_node_t* symbol_node = create_node_w_type(MODULE_PARAMETER_LIST, line_number, current_parse_file);
-						ref_node->children[1]->children[2] = symbol_node;
-						add_child_to_node(ref_node->children[1]->children[2], new_node);
-					}
-					flag = 1;
-				}
-			}
-		}
-	}
-	//if the instance never showed before, dealt with this parameter in function convert_ast_to_netlist_recursing_via_modules
-	if(flag == 0)
-	{
-		if(new_node)
-		{
-			new_node->shared_node = false;
-			return new_node;
-		//	add_child_to_node(new_node, symbol_node);
-		}
-	}
-	return NULL;
+
+	return new_node;
 }
 
 /* --------------------------------------------------------------------------------------------

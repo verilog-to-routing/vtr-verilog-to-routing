@@ -36,7 +36,7 @@ help:
 		large_test		run the complete battery of test before merging changes\n\
 	"
 
-_init:
+_init: clean
 	mkdir -p $(ODIN_BUILD_DIR)
 
 clean:
@@ -44,11 +44,15 @@ clean:
 	$(RM) -Rf $(BUILD_DIR)/CMakeCache.txt
 	$(RM) -Rf $(BUILD_DIR)/ODIN_II
 
-_build_it:
+define _build_it_gen
+_build_it_$(1): _set_$(1)
 	cd $(BUILD_DIR) &&\
 	$(BUILDER)
 
-$(ODIN_BUILD_DIR)/.%.build: clean _init
+$(1): _build_it_$(1)
+endef
+
+$(ODIN_BUILD_DIR)/.%.build: _init
 	touch $@
 
 _set_build: $(ODIN_BUILD_DIR)/.regular.build
@@ -71,15 +75,8 @@ _set_clang_tidy: $(ODIN_BUILD_DIR)/.tidy.build
 	cd $(BUILD_DIR) &&\
 	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_TIDY=on ..
 
-build: _set_build _build_it
-
-debug: _set_debug _build_it
-
-warn: _set_warn _build_it
-
-gcov: _set_gcov _build_it
-
-clang_tidy: _set_clang_tidy _build_it
+BUILD_IT_TARGETS = build debug warn gcov clang_tidy
+$(foreach  t,$(BUILD_IT_TARGETS), $(eval $(call _build_it_gen,$(t))))
 
 scrub:
 	find SRC/ -type f \( -iname \*.gcno -or -iname \*.gcda -or -iname \*.gcov \) -exec rm -f {} \; 

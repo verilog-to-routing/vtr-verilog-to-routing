@@ -1,12 +1,13 @@
 /*********************************** Top-level Summary *************************************
- * This is VPR's main graphics application program. The program interacts with graphics.c,
+ * This is VPR's main graphics application program. The program interacts with ezgl/graphics.hpp,
  * which provides an API for displaying graphics on both X11 and Win32. The most important
- * subroutine in this file is drawscreen(), which is a callback function that X11 or Win32
- * will call whenever the screen needs to be updated. Then, drawscreen() will decide what
- * drawing subroutines to call depending on whether PLACEMENT or ROUTING is shown on screen
- * and whether any of the menu buttons has been triggered. As a note, looks into draw_global.c
- * for understanding the data structures associated with drawing.
+ * subroutine in this file is draw_main_canvas(), which is a callback function that will be called 
+ * whenever the screen needs to be updated. Then, draw_main_canvas() will decide what
+ * drawing subroutines to call depending on whether PLACEMENT or ROUTING is shown on screen.
+ * The initial_setup_X() functions link the menu button signals to the corresponding drawing functions. 
+ * As a note, looks into draw_global.c for understanding the data structures associated with drawing.
  *
+ * 
  * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang
  * Last updated: June 2019
  */
@@ -417,7 +418,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
                     if(draw_state->save_graphics){
-                        std::string extension = ".pdf";
+                        std::string extension = "pdf";
                         std::string file_name = "vpr_placement";
                         save_graphics(extension, file_name);
                     }   
@@ -426,7 +427,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
                     if(draw_state->save_graphics){
-                        std::string extension = ".pdf";
+                        std::string extension = "pdf";
                         std::string file_name = "vpr_placement";
                         save_graphics(extension, file_name);
                     }  
@@ -439,7 +440,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
                 application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
                 if(draw_state->save_graphics){
-                    std::string extension = ".pdf";
+                    std::string extension = "pdf";
                     std::string file_name = "vpr_routing";
                     save_graphics(extension, file_name);
                 }
@@ -451,7 +452,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                 //Placement, opening after routing
                 application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
                 if(draw_state->save_graphics){
-                    std::string extension = ".pdf";
+                    std::string extension = "pdf";
                     std::string file_name = "vpr_placement";
                     save_graphics(extension, file_name);
                 }
@@ -465,7 +466,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
                     if(draw_state->save_graphics){
-                        std::string extension = ".pdf";
+                        std::string extension = "pdf";
                         std::string file_name = "vpr_routing";
                         save_graphics(extension, file_name);
                     }                    
@@ -474,7 +475,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
                     if (draw_state->save_graphics) {
-                        std::string extension = ".pdf";
+                        std::string extension = "pdf";
                         std::string file_name = "vpr_routing";
                         save_graphics(extension, file_name);
                     }

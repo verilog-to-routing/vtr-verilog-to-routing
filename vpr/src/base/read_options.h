@@ -93,6 +93,7 @@ struct t_options {
     argparse::ArgValue<e_pad_loc_type> pad_loc_type;
     argparse::ArgValue<int> PlaceChanWidth;
     argparse::ArgValue<float> place_rlim_escape_fraction;
+    argparse::ArgValue<std::string> place_move_stats_file;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;

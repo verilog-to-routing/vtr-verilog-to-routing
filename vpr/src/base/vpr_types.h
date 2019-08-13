@@ -814,6 +814,7 @@ struct t_placer_opts {
     float td_place_exp_last;
     e_stage_action doPlacement;
     float rlim_escape_fraction;
+    std::string move_stats_file;
 
     PlaceDelayModelType delay_model_type;
     e_reducer delay_model_reducer;

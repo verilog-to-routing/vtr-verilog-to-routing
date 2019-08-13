@@ -450,7 +450,10 @@ void simulate_steps(sim_data_t *sim_data,double min_coverage)
 		}
 		else
 		{
-			current_coverage = cycle/(double)sim_data->num_vectors;
+			double next_coverage = (double)cycle;
+			next_coverage /= (double)sim_data->num_vectors;
+			
+			current_coverage = next_coverage;
 		}
 
 		single_step(sim_data, cycle);

@@ -60,6 +60,7 @@ ast_node_t *newModuleNamedInstance(char* unique_name, ast_node_t *module_connect
 ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t *module_parameter_list, int line_number);
 ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
 ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_named_instance, int line_number);
+ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
 ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number);
 
 /* FUNCTION INSTANCES FUNCTIONS */

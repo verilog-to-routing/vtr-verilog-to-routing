@@ -82,11 +82,11 @@ void free_sp_ram_signals(sp_ram_signals *signalsvar);
 dp_ram_signals *get_dp_ram_signals(nnode_t *node);
 void free_dp_ram_signals(dp_ram_signals *signalsvar);
 
-char is_sp_ram(nnode_t *node);
-char is_dp_ram(nnode_t *node);
+bool is_sp_ram(nnode_t *node);
+bool is_dp_ram(nnode_t *node);
 
-char is_ast_sp_ram(ast_node_t *node);
-char is_ast_dp_ram(ast_node_t *node);
+bool is_ast_sp_ram(ast_node_t *node);
+bool is_ast_dp_ram(ast_node_t *node);
 
 void init_memory_distribution();
 void check_memories_and_report_distribution();

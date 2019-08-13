@@ -24,14 +24,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <string.h>
 #include <sstream>
-#include <thread>
-
-// for mkdir
-#ifdef WIN32
-	#include <direct.h>
-#else
-	#include <sys/stat.h>
-#endif
 
 #include "vtr_error.h"
 #include "vtr_time.h"
@@ -206,28 +198,46 @@ netlist_t *start_odin_ii(int argc,char **argv)
 	zero_string = vtr::strdup(ZERO_GND_ZERO);
 	pad_string = vtr::strdup(ZERO_PAD_ZERO);
 
-	// CREATE OUTPUT DIRECTORY
-	#ifdef WIN32
-		mkdir(DEFAULT_OUTPUT);
-	#else
-		mkdir(DEFAULT_OUTPUT, 0755);
-	#endif
-
 	printf("--------------------------------------------------------------------\n");
 	printf("Welcome to ODIN II version 0.1 - the better High level synthesis tools++ targetting FPGAs (mainly VPR)\n");
 	printf("Email: jamieson.peter@gmail.com and ken@unb.ca for support issues\n\n");
 
-	/* Set up the global arguments to their default. */
-	set_default_config();
 
-	/* get the command line options */
-	get_options(argc, argv);
+	try 
+	{
+		/* Set up the global arguments to their default. */
+		set_default_config();
+
+		/* get the command line options */
+		get_options(argc, argv);
+
+		create_directory(configuration.debug_output_path);
+
+	} 
+	catch(vtr::VtrError& vtr_error) 
+	{
+		printf("Odin Failed Reading The command line argumenrs %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_ARCH);
+		exit(ERROR_PARSE_ARCH);
+	}
+	catch(argparse::ArgParseError& arg_error)
+	{
+		printf("Odin Failed Reading The command line argumenrs %s with exit code%d\n", arg_error.what(), ERROR_PARSE_ARCH);
+		exit(ERROR_PARSE_ARCH);
+	}
 
 	/* read the confirguration file .. get options presets the config values just in case theyr'e not read in with config file */
 	if (global_args.config_file.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		printf("Reading Configuration file\n");
-		read_config_file(global_args.config_file.value().c_str());
+		try 
+		{
+			read_config_file(global_args.config_file.value().c_str());
+		} 
+		catch(vtr::VtrError& vtr_error) 
+		{
+			printf("Odin Failed Reading Configuration file %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_ARCH);
+			exit(ERROR_PARSE_ARCH);
+		}
 	}
 
 	/* read the FPGA architecture file */
@@ -290,6 +300,8 @@ netlist_t *start_odin_ii(int argc,char **argv)
 	&& (global_args.sim_num_test_vectors || (global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) ))
 	{
 		printf("Netlist Simulation Begin\n");
+		create_directory(global_args.sim_directory);
+
 		simulate_netlist(odin_netlist);
 	}
 
@@ -382,6 +394,12 @@ void get_options(int argc, char** argv) {
 	other_grp.add_argument(global_args.arch_file, "-a")
 			.help("VTR FPGA architecture description file (XML)")
 			.metavar("ARCHITECTURE_FILE")
+			;
+
+	other_grp.add_argument(global_args.permissive, "--permissive")
+			.help("Turn possible_error_messages into warning_messages ... unexpected behaviour may occur")
+			.default_value("false")
+			.action(argparse::Action::STORE_TRUE)
 			;
 
 	other_grp.add_argument(global_args.write_netlist_as_dot, "-G")
@@ -586,8 +604,19 @@ void get_options(int argc, char** argv) {
         configuration.adder_cin_global = global_args.adder_cin_global;
     }
 
-	if (configuration.debug_output_path == DEFAULT_OUTPUT) {
-		configuration.debug_output_path = std::string(global_args.sim_directory);
+	if(global_args.sim_directory.value() == DEFAULT_OUTPUT)
+	{
+		global_args.sim_directory.set(configuration.debug_output_path, argparse::Provenance::SPECIFIED);
+	}
+
+	if(configuration.debug_output_path == DEFAULT_OUTPUT)
+	{
+		configuration.debug_output_path = global_args.sim_directory;
+	}
+
+	if(global_args.permissive.value())
+	{
+		warning_message(ARG_ERROR,-1,-1, "%s", "Permissive flag is ON. Undefined behaviour may occur\n");
 	}
 }
 

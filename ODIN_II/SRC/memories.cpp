@@ -1336,28 +1336,84 @@ void pad_memory_input_port(nnode_t *node, netlist_t *netlist, t_model *model, co
 	}
 }
 
-char is_sp_ram(nnode_t *node)
+bool is_sp_ram(nnode_t *node)
 {
 	oassert(node != NULL);
 	oassert(node->type == MEMORY);
-	return is_ast_sp_ram(node->related_ast_node);
+	return !strcmp(node->related_ast_node->children[0]->types.identifier, SINGLE_PORT_RAM_string);
 }
 
-char is_dp_ram(nnode_t *node)
+bool is_dp_ram(nnode_t *node)
 {
 	oassert(node != NULL);
 	oassert(node->type == MEMORY);
-	return is_ast_dp_ram(node->related_ast_node);
+	return !strcmp(node->related_ast_node->children[0]->types.identifier, DUAL_PORT_RAM_string);
 }
 
-char is_ast_sp_ram(ast_node_t *node)
+bool is_ast_sp_ram(ast_node_t *node)
 {
-	return (!strcmp(node->children[0]->types.identifier, SINGLE_PORT_RAM_string));
+	bool is_ram;
+	ast_node_t *instance = node->children[1];
+	is_ram = 	(!strcmp(node->children[0]->types.identifier, SINGLE_PORT_RAM_string)) 
+				 && (instance->children[1]->num_children == 5);
+
+	ast_node_t *connect_list = instance->children[1];
+	if (is_ram && connect_list->children[0]->children[0])
+	{
+		/* port connections were passed by name; verify port names */
+		for (int i = 0; i < connect_list->num_children && is_ram; i++)
+		{
+			char *id = connect_list->children[i]->children[0]->types.identifier; 
+
+			if ((strcmp(id, "we") != 0) &&
+				(strcmp(id, "clk") != 0) &&
+				(strcmp(id, "addr") != 0) &&
+				(strcmp(id, "data") != 0) &&
+				(strcmp(id, "out") != 0)
+			)
+			{
+				is_ram = false;
+				break;
+			}
+		}
+	}
+
+	return is_ram;
 }
 
-char is_ast_dp_ram(ast_node_t *node)
+bool is_ast_dp_ram(ast_node_t *node)
 {
-	return (!strcmp(node->children[0]->types.identifier, DUAL_PORT_RAM_string));
+	bool is_ram;
+	ast_node_t *instance = node->children[1];
+	is_ram = 	(!strcmp(node->children[0]->types.identifier, DUAL_PORT_RAM_string)) 
+				 && (instance->children[1]->num_children == 9);
+
+	ast_node_t *connect_list = instance->children[1];
+	if (is_ram && connect_list->children[0]->children[0])
+	{
+		/* port connections were passed by name; verify port names */
+		for (int i = 0; i < connect_list->num_children && is_ram; i++)
+		{
+			char *id = connect_list->children[i]->children[0]->types.identifier; 
+
+			if ((strcmp(id, "clk") != 0) &&
+				(strcmp(id, "we1") != 0) &&
+				(strcmp(id, "we2") != 0) &&
+				(strcmp(id, "addr1") != 0) &&
+				(strcmp(id, "addr2") != 0) &&
+				(strcmp(id, "data1") != 0) &&
+				(strcmp(id, "data2") != 0) &&
+				(strcmp(id, "out1") != 0) &&
+				(strcmp(id, "out2") != 0)
+			)
+			{
+				is_ram = false;
+				break;
+			}
+		}
+	}
+
+	return is_ram;
 }
 
 sp_ram_signals *get_sp_ram_signals(nnode_t *node)

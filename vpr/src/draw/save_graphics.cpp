@@ -42,7 +42,6 @@ void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer
         // get the data from the text entry and combo box
         file_name = gtk_entry_get_text(GTK_ENTRY(text_entry));
         extension = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_box));
-        extension = "." + extension;
         
         //save the graphics
         save_graphics(extension, file_name);
@@ -55,15 +54,15 @@ void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer
 }
 
 void save_graphics(std::string &extension, std::string &file_name){
-    if (extension == ".pdf"){
+    if (extension == "pdf"){
         application.get_canvas(application.get_main_canvas_id())->print_pdf(file_name.c_str(), initial_world.width(), initial_world.height());
         return;
     }
-    else if (extension == ".png") {
+    else if (extension == "png") {
         application.get_canvas(application.get_main_canvas_id())->print_png(file_name.c_str(), initial_world.width(), initial_world.height());
         return;
     }
-    else if (extension == ".svg") {
+    else if (extension == "svg") {
         application.get_canvas(application.get_main_canvas_id())->print_svg(file_name.c_str(), initial_world.width(), initial_world.height());
         return;
     }
