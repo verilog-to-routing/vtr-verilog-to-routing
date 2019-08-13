@@ -2,6 +2,7 @@
 #define DRAW_H
 
 #include "timing_info.h"
+#include "physical_types.h"
 
 #ifndef NO_GRAPHICS
 
@@ -21,16 +22,13 @@ extern ezgl::application application;
 #endif /* NO_GRAPHICS */
 
 void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> timing_info);
-
 //Initializes the drawing locations.
 //FIXME: Currently broken if no rr-graph is loaded
 void init_draw_coords(float clb_width);
-
 void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type);
-
+void alloc_draw_structs(const t_arch* arch);
 
 #ifndef NO_GRAPHICS
-void alloc_draw_structs(const t_arch* arch);
 
 
 void free_draw_structs();

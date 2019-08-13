@@ -42,6 +42,7 @@ using namespace std;
 #include "route_export.h"
 #include "search_bar.h"
 #include "timing_info.h"
+#include "physical_types.h"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
@@ -666,7 +667,10 @@ void toggle_router_rr_costs(GtkWidget* /*widget*/, ezgl::application* app) {
     app->refresh_drawing();
 }
 
+#endif // NO_GRAPHICS
+
 void alloc_draw_structs(const t_arch* arch) {
+#ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
@@ -693,8 +697,12 @@ void alloc_draw_structs(const t_arch* arch) {
     draw_state->arch_info = arch;
 
     deselect_all(); /* Set initial colors */
+#else
+    (void)arch;
+#endif // NO_GRAPHICS
 }
 
+#ifndef NO_GRAPHICS
 void free_draw_structs() {
     /* Free everything allocated by alloc_draw_structs. Called after close_graphics() *
      * in vpr_api.c.
