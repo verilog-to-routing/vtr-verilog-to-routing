@@ -53,8 +53,41 @@
  *                  virtual nodes (SOURCE or SINK)
  *                  see t_rr_type definition for more details
  *
- * 3. node_bounding_boxes_ : FIXME not sure what is this used for  
- *                           need more inputs
+ * 3. node_bounding_boxes_ : coordinator of a node. (xlow, xhigh, ylow, yhigh)
+ *                           For OPIN/IPIN/SOURCE/SINK, xlow = xhigh and ylow = yhigh
+ *                           FIXME: should confirm if this is still the case when a logic block has a height > 1
+ *                           For CHANX/CHANY, (xlow, ylow) and (xhigh, yhigh) represent
+ *                           where the routing segment starts and ends.
+ *                           Note that our convention alway keeps
+ *                           xlow <= xhigh and ylow <= yhigh
+ *                           Therefore, (xlow, ylow) is a starting point for a CHANX/CHANY in INC_DIRECTION
+ *                           (xhigh, yhigh) is a starting point for a CHANX/CHANY in INC_DIRECTION
+ *                           
+ *                        Example :
+ *                        CHANX in INC_DIRECTION  
+ *                        (xlow, ylow)                (xhigh, yhigh)
+ *                             |                           |
+ *                            \|/                         \|/
+ *                             ---------------------------->
+ *
+ *                        CHANX in DEC_DIRECTION  
+ *                        (xlow, ylow)                (xhigh, yhigh)
+ *                             |                           |
+ *                            \|/                         \|/
+ *                             <----------------------------
+ *
+ *                        CHANY in INC_DIRECTION
+ *                            
+ *                           /|\ <-------(xhigh, yhigh)
+ *                            |
+ *                            |  <-------(xlow, ylow)
+ *
+ *                        CHANY in DEC_DIRECTION
+ *                            
+ *                            |  <-------(xhigh, yhigh)
+ *                            |
+ *                           \|/ <-------(xlow, ylow)
+
  *
  * 4. node_capacities_ : the capacity of a node. How many nets can be mapped
  *                     to the node. Typically, each node has a capacity of 
@@ -179,8 +212,8 @@ class RRGraph {
     short node_length(RRNodeId node) const;
     vtr::Rect<short> node_bounding_box(RRNodeId node) const;
     /* Node starting and ending points */
-    vtr::Point<size_t> node_start_coordinator(RRNodeId node) const;
-    vtr::Point<size_t> node_end_coordinator(RRNodeId node) const;
+    vtr::Point<short> node_start_coordinate(RRNodeId node) const;
+    vtr::Point<short> node_end_coordinate(RRNodeId node) const;
 
     short node_capacity(RRNodeId node) const;
     short node_fan_in(RRNodeId node) const;
@@ -273,6 +306,9 @@ class RRGraph {
 
     /* Full set checking using listed checking functions*/
     bool check() const;
+  public:  //Validators
+    bool valid_node_id(RRNodeId node) const;
+    bool valid_edge_id(RREdgeId edge) const;
 
   public: //Mutators
     /* reserve the lists of nodes, edges, switches etc */
@@ -339,9 +375,6 @@ class RRGraph {
     bool valid_fast_node_lookup() const;
 
     //Validation
-    bool valid_node_id(RRNodeId node) const;
-    bool valid_edge_id(RREdgeId edge) const;
-
     bool validate_sizes() const;
     bool validate_node_sizes() const;
     bool validate_edge_sizes() const;

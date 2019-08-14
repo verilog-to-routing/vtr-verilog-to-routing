@@ -80,18 +80,21 @@ vtr::Rect<short> RRGraph::node_bounding_box(RRNodeId node) const {
  *
  * For routing tracks in DEC_DIRECTION
  * (xhigh, yhigh) should be the starting point 
+ *
+ * For routing tracks in BI_DIRECTION
+ * we always use (xhigh, yhigh)
  ***********************************************************************/
-vtr::Point<size_t> RRGraph::node_start_coordinator(RRNodeId node) const {
+vtr::Point<short> RRGraph::node_start_coordinate(RRNodeId node) const {
     /* Make sure we have CHANX or CHANY */
     VTR_ASSERT((CHANX == node_type(node)) || (CHANY == node_type(node)));
 
-    vtr::Point<size_t> start_coordinator(node_xlow(node), node_ylow(node));
+    vtr::Point<short> start_coordinate(node_xlow(node), node_ylow(node));
 
     if (DEC_DIRECTION == node_direction(node)) {
-        start_coordinator.set(node_xhigh(node), node_yhigh(node));
+        start_coordinate.set(node_xhigh(node), node_yhigh(node));
     }
 
-    return start_coordinator;
+    return start_coordinate;
 }
 
 /************************************************************************
@@ -101,18 +104,21 @@ vtr::Point<size_t> RRGraph::node_start_coordinator(RRNodeId node) const {
  *
  * For routing tracks in DEC_DIRECTION
  * (xlow, ylow) should be the ending point 
+ *
+ * For routing tracks in BI_DIRECTION
+ * we always use (xhigh, yhigh)
  ***********************************************************************/
-vtr::Point<size_t> RRGraph::node_end_coordinator(RRNodeId node) const {
+vtr::Point<short> RRGraph::node_end_coordinate(RRNodeId node) const {
     /* Make sure we have CHANX or CHANY */
     VTR_ASSERT((CHANX == node_type(node)) || (CHANY == node_type(node)));
 
-    vtr::Point<size_t> end_coordinator(node_xlow(node), node_ylow(node));
+    vtr::Point<short> end_coordinate(node_xhigh(node), node_yhigh(node));
 
     if (DEC_DIRECTION == node_direction(node)) {
-        end_coordinator.set(node_xlow(node), node_ylow(node));
+        end_coordinate.set(node_xlow(node), node_ylow(node));
     }
 
-    return end_coordinator;
+    return end_coordinate;
 }
 
 short RRGraph::node_fan_in(RRNodeId node) const {
