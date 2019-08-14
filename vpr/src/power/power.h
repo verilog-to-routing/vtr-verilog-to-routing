@@ -269,13 +269,13 @@ struct t_power_commonly_used {
 /* 1-to-1 data structure with t_rr_node
  */
 struct t_rr_node_power {
-    float* in_dens;           /* Switching density of inputs */
-    float* in_prob;           /* Static probability of inputs */
-    ClusterNetId net_num;     /* Net number using the associated rr_node */
-    short num_inputs;         /* Number of inputs */
-    short selected_input;     /* Input index that is selected */
-    short driver_switch_type; /* Switch type that drives this resource */
-    bool visited;             /* When traversing netlist, need to track whether the node has been processed */
+    float* in_dens;             /* Switching density of inputs */
+    float* in_prob;             /* Static probability of inputs */
+    ClusterNetId net_num;       /* Net number using the associated rr_node */
+    t_edge_size num_inputs;     /* Number of inputs */
+    t_edge_size selected_input; /* Input index that is selected */
+    short driver_switch_type;   /* Switch type that drives this resource */
+    bool visited;               /* When traversing netlist, need to track whether the node has been processed */
 };
 
 /* Architecture information for a multiplexer.

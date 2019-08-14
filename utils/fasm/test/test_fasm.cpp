@@ -34,7 +34,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
         auto &device_ctx = g_vpr_ctx.mutable_device();
         for(size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-            for(int iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); ++iedge) {
+            for(t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); ++iedge) {
                 auto sink_inode = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
                 auto switch_id = device_ctx.rr_nodes[inode].edge_switch(iedge);
                 vpr::add_rr_edge_metadata(inode, sink_inode, switch_id,

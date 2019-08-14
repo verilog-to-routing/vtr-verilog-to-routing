@@ -1528,7 +1528,7 @@ void init_fan_in(std::vector<t_rr_node>& L_rr_node, const int num_rr_nodes) {
 
     //Walk the graph and increment fanin on all downstream nodes
     for (int i = 0; i < num_rr_nodes; i++) {
-        for (int iedge = 0; iedge < L_rr_node[i].num_edges(); iedge++) {
+        for (t_edge_size iedge = 0; iedge < L_rr_node[i].num_edges(); iedge++) {
             int to_node = L_rr_node[i].edge_sink_node(iedge);
 
             L_rr_node[to_node].set_fan_in(L_rr_node[to_node].fan_in() + 1);
@@ -3075,7 +3075,7 @@ t_non_configurable_rr_sets identify_non_configurable_rr_sets() {
 static void expand_non_configurable(int inode, std::set<t_node_edge>& edge_set) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    for (int iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); ++iedge) {
+    for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); ++iedge) {
         bool edge_non_configurable = !device_ctx.rr_nodes[inode].edge_is_configurable(iedge);
 
         if (edge_non_configurable) {

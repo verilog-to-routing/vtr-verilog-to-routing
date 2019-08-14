@@ -258,15 +258,13 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
      * to the routing tree.  It returns the first (most upstream) new rt_node,
      * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
 
-    int inode;
-    short iedge, iswitch = -1;
     t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
     t_linked_rt_edge* linked_rt_edge;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    inode = hptr->index;
+    int inode = hptr->index;
 
     //if (device_ctx.rr_nodes[inode].type() != SINK) {
     //VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -291,8 +289,8 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
 
     std::unordered_set<int> main_branch_visited;
     inode = hptr->u.prev.node;
-    iedge = hptr->u.prev.edge;
-    iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
+    t_edge_size iedge = hptr->u.prev.edge;
+    short iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
 
     /* For all "new" nodes in the main path */
     // inode is node index of previous node

@@ -321,7 +321,7 @@ static bool check_adjacent(int from_node, int to_node) {
      * blocks where adjacency is overridden by the architect */
 
     int from_xlow, from_ylow, to_xlow, to_ylow, from_ptc, to_ptc, iclass;
-    int num_adj, to_xhigh, to_yhigh, from_xhigh, from_yhigh, iconn;
+    int num_adj, to_xhigh, to_yhigh, from_xhigh, from_yhigh;
     bool reached;
     t_rr_type from_type, to_type;
     t_type_ptr from_grid_type, to_grid_type;
@@ -330,7 +330,7 @@ static bool check_adjacent(int from_node, int to_node) {
 
     reached = false;
 
-    for (iconn = 0; iconn < device_ctx.rr_nodes[from_node].num_edges(); iconn++) {
+    for (t_edge_size iconn = 0; iconn < device_ctx.rr_nodes[from_node].num_edges(); iconn++) {
         if (device_ctx.rr_nodes[from_node].edge_sink_node(iconn) == to_node) {
             reached = true;
             break;

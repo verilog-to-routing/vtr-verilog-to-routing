@@ -396,7 +396,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
 
     edges = get_first_child(parent, "edge", loc_data);
     //count the number of edges and store it in a vector
-    vector<int> num_edges_for_node;
+    vector<size_t> num_edges_for_node;
     num_edges_for_node.resize(device_ctx.rr_nodes.size(), 0);
 
     while (edges) {
@@ -408,12 +408,17 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
         }
 
         num_edges_for_node[source_node]++;
-        device_ctx.rr_nodes[source_node].set_num_edges(num_edges_for_node[source_node]);
         edges = edges.next_sibling(edges.name());
     }
 
     //reset this vector in order to start count for num edges again
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+        if (num_edges_for_node[inode] > std::numeric_limits<t_edge_size>::max()) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "source node %d edge count %d is too high",
+                            inode, num_edges_for_node[inode]);
+        }
+        device_ctx.rr_nodes[inode].set_num_edges(num_edges_for_node[inode]);
         num_edges_for_node[inode] = 0;
     }
 

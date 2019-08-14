@@ -574,7 +574,7 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_
 
     std::vector<int> new_nodes_added_to_traceback = {node};
 
-    int iedge = route_ctx.rr_node_route_inf[node].prev_edge;
+    auto iedge = route_ctx.rr_node_route_inf[node].prev_edge;
     int inode = route_ctx.rr_node_route_inf[node].prev_node;
 
     while (inode != NO_PREVIOUS) {
@@ -639,9 +639,9 @@ static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node,
     t_trace* tail = nullptr;
 
     //Record the non-configurable out-going edges
-    std::vector<int> unvisited_non_configurable_edges;
+    std::vector<t_edge_size> unvisited_non_configurable_edges;
     auto& device_ctx = g_vpr_ctx.device();
-    for (int iedge : device_ctx.rr_nodes[node].non_configurable_edges()) {
+    for (auto iedge : device_ctx.rr_nodes[node].non_configurable_edges()) {
         VTR_ASSERT_SAFE(!device_ctx.rr_nodes[node].edge_is_configurable(iedge));
 
         int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
@@ -666,7 +666,7 @@ static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node,
 
     } else {
         //Recursive case: intermediate node with non-configurable edges
-        for (int iedge : unvisited_non_configurable_edges) {
+        for (auto iedge : unvisited_non_configurable_edges) {
             int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
             int iswitch = device_ctx.rr_nodes[node].edge_switch(iedge);
 
@@ -1760,7 +1760,7 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
             auto& device_ctx = g_vpr_ctx.device();
 
             bool found = false;
-            for (int iedge = 0; iedge < device_ctx.rr_nodes[trace->index].num_edges(); ++iedge) {
+            for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[trace->index].num_edges(); ++iedge) {
                 int to_node = device_ctx.rr_nodes[trace->index].edge_sink_node(iedge);
 
                 if (to_node == next->index) {

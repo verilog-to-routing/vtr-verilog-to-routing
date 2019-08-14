@@ -273,7 +273,7 @@ void write_rr_edges(fstream& fp) {
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         auto& node = device_ctx.rr_nodes[inode];
-        for (int iedge = 0; iedge < node.num_edges(); iedge++) {
+        for (t_edge_size iedge = 0; iedge < node.num_edges(); iedge++) {
             fp << "\t\t<edge src_node=\"" << inode << "\" sink_node=\"" << node.edge_sink_node(iedge) << "\" switch_id=\"" << node.edge_switch(iedge) << "\"";
 
             bool wrote_edge_metadata = false;

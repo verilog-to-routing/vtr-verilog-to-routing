@@ -201,6 +201,9 @@ class t_pack_high_fanout_thresholds {
     std::map<std::string, int> overrides_;
 };
 
+/* Type used to express rr_node edge index. */
+typedef uint16_t t_edge_size;
+
 /* these are defined later, but need to declare here because it is used */
 class t_rr_node;
 class t_pack_molecule;
@@ -1201,7 +1204,7 @@ struct t_trace {
  * occ:        The current occupancy of the associated rr node              */
 struct t_rr_node_route_inf {
     int prev_node;
-    short prev_edge;
+    t_edge_size prev_edge;
 
     float pres_cost;
     float acc_cost;
