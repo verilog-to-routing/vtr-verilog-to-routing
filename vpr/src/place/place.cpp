@@ -2,7 +2,6 @@
 #include <cmath>
 #include <memory>
 #include <fstream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -29,6 +28,7 @@ using namespace std;
 #include "histogram.h"
 #include "place_util.h"
 #include "place_delay_model.h"
+#include "move_generator.h"
 
 #include "PlacementDelayCalculator.h"
 #include "VprTimingGraphResolver.h"
@@ -36,6 +36,9 @@ using namespace std;
 #include "timing_info.h"
 #include "tatum/echo_writer.hpp"
 #include "tatum/TimingReporter.hpp"
+
+using std::max;
+using std::min;
 
 /************** Types and defines local to place.c ***************************/
 
@@ -82,11 +85,6 @@ enum e_swap_result {
     ABORTED
 };
 
-enum class e_propose_move {
-    VALID, //Move successful and legal
-    ABORT, //Unable to perform move
-};
-
 enum class e_find_affected_blocks_result {
     VALID,       //Move successful
     ABORT,       //Unable to perform move
@@ -113,6 +111,10 @@ struct t_placer_costs {
 struct t_placer_prev_inverse_costs {
     double bb_cost;
     double timing_cost;
+};
+
+class UniformMoveGenerator : public MoveGenerator {
+    e_propose_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim);
 };
 
 constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
@@ -251,6 +253,81 @@ struct t_compressed_block_grid {
 //the may be physically far apart
 static std::vector<t_compressed_block_grid> f_compressed_block_grids;
 
+std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr, vtr::fclose);
+
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+
+#    define LOG_MOVE_STATS_HEADER()                               \
+        do {                                                      \
+            if (f_move_stats_file) {                              \
+                fprintf(f_move_stats_file.get(),                  \
+                        "temp,from_blk,to_blk,from_type,to_type," \
+                        "blk_count,"                              \
+                        "delta_cost,delta_bb_cost,delta_td_cost," \
+                        "outcome,reason\n");                      \
+            }                                                     \
+        } while (false)
+
+#    define LOG_MOVE_STATS_PROPOSED(t, affected_blocks)                               \
+        do {                                                                          \
+            if (f_move_stats_file) {                                                  \
+                auto& place_ctx = g_vpr_ctx.placement();                              \
+                auto& cluster_ctx = g_vpr_ctx.clustering();                           \
+                ClusterBlockId b_from = affected_blocks.moved_blocks[0].block_num;    \
+                                                                                      \
+                t_pl_loc to = affected_blocks.moved_blocks[0].new_loc;                \
+                ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z]; \
+                                                                                      \
+                t_type_ptr from_type = cluster_ctx.clb_nlist.block_type(b_from);      \
+                t_type_ptr to_type = nullptr;                                         \
+                if (b_to) {                                                           \
+                    to_type = cluster_ctx.clb_nlist.block_type(b_to);                 \
+                }                                                                     \
+                                                                                      \
+                fprintf(f_move_stats_file.get(),                                      \
+                        "%g,"                                                         \
+                        "%d,%d,"                                                      \
+                        "%s,%s,"                                                      \
+                        "%d,",                                                        \
+                        t,                                                            \
+                        int(size_t(b_from)), int(size_t(b_to)),                       \
+                        from_type->name, (to_type ? to_type->name : "EMPTY"),         \
+                        affected_blocks.num_moved_blocks);                            \
+            }                                                                         \
+        } while (false)
+
+#    define LOG_MOVE_STATS_OUTCOME(delta_cost, delta_bb_cost, delta_td_cost, \
+                                   outcome, reason)                          \
+        do {                                                                 \
+            if (f_move_stats_file) {                                         \
+                fprintf(f_move_stats_file.get(),                             \
+                        "%g,%g,%g,"                                          \
+                        "%s,%s\n",                                           \
+                        delta_cost, delta_bb_cost, delta_td_cost,            \
+                        outcome, reason);                                    \
+            }                                                                \
+        } while (false)
+
+#else
+
+#    define LOG_MOVE_STATS_HEADER()                      \
+        do {                                             \
+            fprintf(f_move_stats_file.get(),             \
+                    "VTR_ENABLE_DEBUG_LOGGING disabled " \
+                    "-- No move stats recorded\n");      \
+        } while (false)
+
+#    define LOG_MOVE_STATS_PROPOSED(t, blocks_affected) \
+        do {                                            \
+        } while (false)
+
+#    define LOG_MOVE_STATS_OUTCOME(delta_cost, delta_bb_cost, delta_td_cost, \
+                                   outcome, reason)                          \
+        do {                                                                 \
+        } while (false)
+
+#endif
+
 /********************* Static subroutines local to place.c *******************/
 #ifdef VERBOSE
 static void print_clb_placement(const char* fname);
@@ -325,7 +402,8 @@ static e_swap_result try_swap(float t,
                               t_placer_costs* costs,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
-                              const PlaceDelayModel& delay_model,
+                              MoveGenerator& move_generator,
+                              const PlaceDelayModel* delay_model,
                               float rlim_escape_fraction,
                               enum e_place_algorithm place_algorithm,
                               float timing_tradeoff);
@@ -333,11 +411,11 @@ static e_swap_result try_swap(float t,
 static ClusterBlockId pick_from_block();
 
 static void check_place(const t_placer_costs& costs,
-                        const PlaceDelayModel& delay_model,
+                        const PlaceDelayModel* delay_model,
                         enum e_place_algorithm place_algorithm);
 
 static int check_placement_costs(const t_placer_costs& costs,
-                                 const PlaceDelayModel& delay_model,
+                                 const PlaceDelayModel* delay_model,
                                  enum e_place_algorithm place_algorithm);
 static int check_placement_consistency();
 static int check_block_placement_consistency();
@@ -348,7 +426,8 @@ static float starting_t(t_placer_costs* costs,
                         t_annealing_sched annealing_sched,
                         int max_moves,
                         float rlim,
-                        const PlaceDelayModel& delay_model,
+                        const PlaceDelayModel* delay_model,
+                        MoveGenerator& move_generator,
                         const t_placer_opts& placer_opts);
 
 static void update_t(float* t, float rlim, float success_rat, t_annealing_sched annealing_sched);
@@ -363,15 +442,15 @@ static double get_std_dev(int n, double sum_x_squared, double av_x);
 
 static double recompute_bb_cost();
 
-static float comp_td_point_to_point_delay(const PlaceDelayModel& delay_model, ClusterNetId net_id, int ipin);
+static float comp_td_point_to_point_delay(const PlaceDelayModel* delay_model, ClusterNetId net_id, int ipin);
 
-static void comp_td_point_to_point_delays(const PlaceDelayModel& delay_model);
+static void comp_td_point_to_point_delays(const PlaceDelayModel* delay_model);
 
 static void update_td_cost();
 
 static bool driven_by_moved_block(const ClusterNetId net);
 
-static void comp_td_costs(const PlaceDelayModel& delay_model, double* timing_cost);
+static void comp_td_costs(const PlaceDelayModel* delay_model, double* timing_cost);
 
 static e_swap_result assess_swap(double delta_c, double t);
 
@@ -381,12 +460,12 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new);
 
 static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new, int xold, int yold, int xnew, int ynew);
 
-static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel& delay_model, double& bb_delta_c, double& timing_delta_c);
+static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel* delay_model, double& bb_delta_c, double& timing_delta_c);
 
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
 
 static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId blk, const ClusterPinId blk_pin);
-static void update_td_delta_costs(const PlaceDelayModel& delay_model, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost);
+static void update_td_delta_costs(const PlaceDelayModel* delay_model, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost);
 
 static double get_net_cost(ClusterNetId net_id, t_bb* bb_ptr);
 
@@ -403,7 +482,7 @@ static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
                                                float crit_exponent,
                                                int* outer_crit_iter_count,
                                                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                               const PlaceDelayModel& delay_model,
+                                               const PlaceDelayModel* delay_model,
                                                SetupTimingInfo& timing_info);
 
 static void placement_inner_loop(float t,
@@ -417,10 +496,11 @@ static void placement_inner_loop(float t,
                                  t_placer_prev_inverse_costs* prev_inverse_costs,
                                  int* moves_since_cost_recompute,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                 const PlaceDelayModel& delay_model,
+                                 const PlaceDelayModel* delay_model,
+                                 MoveGenerator& move_generator,
                                  SetupTimingInfo& timing_info);
 
-static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel& delay_model, t_placer_costs* costs);
+static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel* delay_model, t_placer_costs* costs);
 
 static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, double& std_dev, const t_placer_costs& costs, const int move_lim);
 
@@ -484,6 +564,7 @@ void try_place(const t_placer_opts& placer_opts,
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
     std::unique_ptr<PlaceDelayModel> place_delay_model;
+    std::unique_ptr<MoveGenerator> move_generator;
 
     /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
     IntraLbPbPinLookup pb_gpin_lookup(device_ctx.block_types, device_ctx.num_block_types);
@@ -504,6 +585,8 @@ void try_place(const t_placer_opts& placer_opts,
         }
     }
 
+    move_generator = std::make_unique<UniformMoveGenerator>();
+
     width_fac = placer_opts.place_chan_width;
 
     init_chan(width_fac, chan_width_dist);
@@ -513,7 +596,6 @@ void try_place(const t_placer_opts& placer_opts,
 
     initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file.c_str());
     init_draw_coords((float)width_fac);
-
     //Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, pb_gpin_lookup);
 
@@ -530,7 +612,7 @@ void try_place(const t_placer_opts& placer_opts,
         VTR_LOG("\n");
 
         //Update the point-to-point delays from the initial placement
-        comp_td_point_to_point_delays(*place_delay_model);
+        comp_td_point_to_point_delays(place_delay_model.get());
 
         /*
          * Initialize timing analysis
@@ -558,7 +640,7 @@ void try_place(const t_placer_opts& placer_opts,
         }
 
         /*now we can properly compute costs  */
-        comp_td_costs(*place_delay_model, &costs.timing_cost); /*also updates values in point_to_point_delay */
+        comp_td_costs(place_delay_model.get(), &costs.timing_cost); /*also updates values in point_to_point_delay */
 
         outer_crit_iter_count = 1;
 
@@ -579,7 +661,7 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
     //Sanity check that initial placement is legal
-    check_place(costs, *place_delay_model, placer_opts.place_algorithm);
+    check_place(costs, place_delay_model.get(), placer_opts.place_algorithm);
 
     //Initial pacement statistics
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n",
@@ -608,10 +690,8 @@ void try_place(const t_placer_opts& placer_opts,
 
     sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
             costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
-
     //Draw the initial placement
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
-
     move_lim = (int)(annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
     /* Sometimes I want to run the router with a random placement.  Avoid *
@@ -636,8 +716,14 @@ void try_place(const t_placer_opts& placer_opts,
 
     t = starting_t(&costs, &prev_inverse_costs,
                    annealing_sched, move_lim, rlim,
-                   *place_delay_model,
+                   place_delay_model.get(),
+                   *move_generator,
                    placer_opts);
+
+    if (!placer_opts.move_stats_file.empty()) {
+        f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(vtr::fopen(placer_opts.move_stats_file.c_str(), "w"), vtr::fclose);
+        LOG_MOVE_STATS_HEADER();
+    }
 
     tot_iter = 0;
     moves_since_cost_recompute = 0;
@@ -653,7 +739,7 @@ void try_place(const t_placer_opts& placer_opts,
                                            crit_exponent,
                                            &outer_crit_iter_count,
                                            netlist_pin_lookup,
-                                           *place_delay_model,
+                                           place_delay_model.get(),
                                            *timing_info);
 
         placement_inner_loop(t, rlim, placer_opts,
@@ -662,7 +748,8 @@ void try_place(const t_placer_opts& placer_opts,
                              &prev_inverse_costs,
                              &moves_since_cost_recompute,
                              netlist_pin_lookup,
-                             *place_delay_model,
+                             place_delay_model.get(),
+                             *move_generator,
                              *timing_info);
 
         tot_iter += move_lim;
@@ -707,7 +794,7 @@ void try_place(const t_placer_opts& placer_opts,
                                        crit_exponent,
                                        &outer_crit_iter_count,
                                        netlist_pin_lookup,
-                                       *place_delay_model,
+                                       place_delay_model.get(),
                                        *timing_info);
 
     t = 0; /* freeze out */
@@ -720,7 +807,8 @@ void try_place(const t_placer_opts& placer_opts,
                          &prev_inverse_costs,
                          &moves_since_cost_recompute,
                          netlist_pin_lookup,
-                         *place_delay_model,
+                         place_delay_model.get(),
+                         *move_generator,
                          *timing_info);
 
     tot_iter += move_lim;
@@ -745,7 +833,7 @@ void try_place(const t_placer_opts& placer_opts,
     }
 #endif
 
-    check_place(costs, *place_delay_model, placer_opts.place_algorithm);
+    check_place(costs, place_delay_model.get(), placer_opts.place_algorithm);
 
     //Some stats
     VTR_LOG("\n");
@@ -759,7 +847,7 @@ void try_place(const t_placer_opts& placer_opts,
             for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
                 set_timing_place_crit(net_id, ipin, 0); /*dummy crit values */
         }
-        comp_td_costs(*place_delay_model, &costs.timing_cost); /*computes point_to_point_delay */
+        comp_td_costs(place_delay_model.get(), &costs.timing_cost); /*computes point_to_point_delay */
     }
 
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -803,7 +891,6 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, \n",
             costs.cost, costs.bb_cost, costs.timing_cost);
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
-
     // Print out swap statistics
     size_t total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
     VTR_ASSERT(total_swap_attempts > 0);
@@ -836,7 +923,7 @@ static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
                                                float crit_exponent,
                                                int* outer_crit_iter_count,
                                                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                               const PlaceDelayModel& delay_model,
+                                               const PlaceDelayModel* delay_model,
                                                SetupTimingInfo& timing_info) {
     if (placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
         return;
@@ -880,7 +967,8 @@ static void placement_inner_loop(float t,
                                  t_placer_prev_inverse_costs* prev_inverse_costs,
                                  int* moves_since_cost_recompute,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                 const PlaceDelayModel& delay_model,
+                                 const PlaceDelayModel* delay_model,
+                                 MoveGenerator& move_generator,
                                  SetupTimingInfo& timing_info) {
     int inner_crit_iter_count, inner_iter;
 
@@ -895,6 +983,7 @@ static void placement_inner_loop(float t,
     /* Inner loop begins */
     for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
         e_swap_result swap_result = try_swap(t, costs, prev_inverse_costs, rlim,
+                                             move_generator,
                                              delay_model,
                                              placer_opts.rlim_escape_fraction,
                                              placer_opts.place_algorithm,
@@ -958,7 +1047,7 @@ static void placement_inner_loop(float t,
     /* Inner loop ends */
 }
 
-static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel& delay_model, t_placer_costs* costs) {
+static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel* delay_model, t_placer_costs* costs) {
     double new_bb_cost = recompute_bb_cost();
     if (fabs(new_bb_cost - costs->bb_cost) > costs->bb_cost * ERROR_TOL) {
         std::string msg = vtr::string_fmt("in recompute_costs_from_scratch: new_bb_cost = %g, old bb_cost = %g\n",
@@ -1081,7 +1170,8 @@ static float starting_t(t_placer_costs* costs,
                         t_annealing_sched annealing_sched,
                         int max_moves,
                         float rlim,
-                        const PlaceDelayModel& delay_model,
+                        const PlaceDelayModel* delay_model,
+                        MoveGenerator& move_generator,
                         const t_placer_opts& placer_opts) {
     /* Finds the starting temperature (hot condition).              */
 
@@ -1103,6 +1193,7 @@ static float starting_t(t_placer_costs* costs,
 
     for (i = 0; i < move_lim; i++) {
         e_swap_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, costs, prev_inverse_costs, rlim,
+                                             move_generator,
                                              delay_model,
                                              placer_opts.rlim_escape_fraction,
                                              placer_opts.place_algorithm,
@@ -1697,7 +1788,8 @@ static e_swap_result try_swap(float t,
                               t_placer_costs* costs,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
-                              const PlaceDelayModel& delay_model,
+                              MoveGenerator& move_generator,
+                              const PlaceDelayModel* delay_model,
                               float rlim_escape_fraction,
                               enum e_place_algorithm place_algorithm,
                               float timing_tradeoff) {
@@ -1706,9 +1798,6 @@ static e_swap_result try_swap(float t,
      * rlim is the range limiter.                                        *
      * Returns whether the swap is accepted, rejected or aborted.        *
      * Passes back the new value of the cost functions.                  */
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     num_ts_called++;
 
@@ -1719,120 +1808,101 @@ static e_swap_result try_swap(float t,
     double bb_delta_c = 0;
     double timing_delta_c = 0;
 
-    /* Pick a random block to be swapped with another random block.   */
-    ClusterBlockId b_from = pick_from_block();
-    if (!b_from) {
-        return ABORTED; //No movable block found
-    }
-
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
-    auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;
-    VTR_ASSERT(cluster_from_type == grid_from_type);
-
     //Allow some fraction of moves to not be restricted by rlim,
     //in the hopes of better escaping local minima
     if (rlim_escape_fraction > 0. && vtr::frand() < rlim_escape_fraction) {
         rlim = std::numeric_limits<float>::infinity();
     }
 
-    t_pl_loc to;
-    if (!find_to(cluster_ctx.clb_nlist.block_type(b_from), rlim, from, to))
-        return REJECTED;
+    //Generate a new move used to explore the space of possible placements
+    e_propose_move move_outcome = move_generator.propose_move(blocks_affected, rlim);
 
-#if 0
-    auto& grid = g_vpr_ctx.device().grid;
-	ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
-	VTR_LOG( "swap [%d][%d][%d] %s block %zu \"%s\" <=> [%d][%d][%d] %s block ",
-		from.x, from.y, from.z, grid[from.x][from.y].type->name, size_t(b_from), (b_from ? cluster_ctx.clb_nlist.block_name(b_from).c_str() : ""),
-		to.x, to.y, to.z, grid[to.x][to.y].type->name);
-    if (b_to) {
-        VTR_LOG("%zu \"%s\"", size_t(b_to), cluster_ctx.clb_nlist.block_name(b_to).c_str());
-    } else {
-        VTR_LOG("(EMPTY)");
-    }
-    VTR_LOG("\n");
-#endif
+    LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
-    /* Make the switch in order to make computing the new bounding *
-     * box simpler.  If the cost increase is too high, switch them *
-     * back.  (place_ctx.block_locs data structures switched, clbs not switched   *
-     * until success of move is determined.)                       *
-     * Also check that whether those are the only 2 blocks         *
-     * to be moved - check for carry chains and other placement    *
-     * macros.                                                     */
-
-    /* Check whether the from_block is part of a macro first.      *
-     * If it is, the whole macro has to be moved. Calculate the    *
-     * x, y, z offsets of the swap to maintain relative placements *
-     * of the blocks. Abort the swap if the to_block is part of a  *
-     * macro (not supported yet).                                  */
-
-    e_propose_move move_outcome = propose_move(b_from, to);
-
-    if (move_outcome == e_propose_move::VALID) {
-        //Swap the blocks
-        apply_move_blocks();
-
-        // Find all the nets affected by this swap and update thier bounding box
-        int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm, delay_model, bb_delta_c, timing_delta_c);
-
-        if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-            /*in this case we redefine delta_c as a combination of timing and bb.  *
-             *additionally, we normalize all values, therefore delta_c is in       *
-             *relation to 1*/
-
-            delta_c = (1 - timing_tradeoff) * bb_delta_c * prev_inverse_costs->bb_cost
-                      + timing_tradeoff * timing_delta_c * prev_inverse_costs->timing_cost;
-        } else {
-            delta_c = bb_delta_c;
-        }
-
-        /* 1 -> move accepted, 0 -> rejected. */
-        e_swap_result keep_switch = assess_swap(delta_c, t);
-
-        if (keep_switch == ACCEPTED) {
-            costs->cost += delta_c;
-            costs->bb_cost += bb_delta_c;
-
-            if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-                /*update the point_to_point_timing_cost and point_to_point_delay
-                 * values from the temporary values */
-                costs->timing_cost += timing_delta_c;
-
-                update_td_cost();
-            }
-
-            /* update net cost functions and reset flags. */
-            update_move_nets(num_nets_affected);
-
-            /* Update clb data structures since we kept the move. */
-            commit_move_blocks();
-
-        } else { /* Move was rejected.  */
-                 /* Reset the net cost function flags first. */
-            reset_move_nets(num_nets_affected);
-
-            /* Restore the place_ctx.block_locs data structures to their state before the move. */
-            revert_move_blocks();
-        }
-
+    if (move_outcome == e_propose_move::ABORT) {
+        //Proposed move is not legal -- give up on this move
         clear_move_blocks();
 
-        //VTR_ASSERT(check_macro_placement_consistency() == 0);
-#if 0
-        //Check that each accepted swap yields a valid placement
-        check_place(*costs, delay_model, place_algorithm);
-#endif
-
-        return (keep_switch);
-    } else {
-        VTR_ASSERT_SAFE(move_outcome == e_propose_move::ABORT);
-
-        clear_move_blocks();
+        LOG_MOVE_STATS_OUTCOME(std::numeric_limits<float>::quiet_NaN(),
+                               std::numeric_limits<float>::quiet_NaN(),
+                               std::numeric_limits<float>::quiet_NaN(),
+                               "ABORTED", "illegal move");
 
         return ABORTED;
     }
+
+    VTR_ASSERT(move_outcome == e_propose_move::VALID);
+
+    /*
+     * To make evaluating the move simpler (e.g. calculating changed bounding box), 
+     * we first move the blocks to thier new locations (apply the move to 
+     * place_ctx.block_locs) and then computed the change in cost. If the move is 
+     * accepted, the inverse look-up in place_ctx.grid_blocks is updated (committing
+     * the move). If the move is rejected the blocks are returned to their original 
+     * positions (reverting place_ctx.block_locs to its original state).
+     *
+     * Note that the inverse look-up place_ctx.block_locs is only updated until 
+     * after move acceptance is determined, and so should not be used when 
+     * evaluating a move.
+     */
+
+    //Update the block positions
+    apply_move_blocks();
+
+    // Find all the nets affected by this swap and update their costs
+    int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm, delay_model, bb_delta_c, timing_delta_c);
+
+    if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+        /*in this case we redefine delta_c as a combination of timing and bb.  *
+         *additionally, we normalize all values, therefore delta_c is in       *
+         *relation to 1*/
+
+        delta_c = (1 - timing_tradeoff) * bb_delta_c * prev_inverse_costs->bb_cost
+                  + timing_tradeoff * timing_delta_c * prev_inverse_costs->timing_cost;
+    } else {
+        delta_c = bb_delta_c;
+    }
+
+    /* 1 -> move accepted, 0 -> rejected. */
+    e_swap_result keep_switch = assess_swap(delta_c, t);
+
+    if (keep_switch == ACCEPTED) {
+        costs->cost += delta_c;
+        costs->bb_cost += bb_delta_c;
+
+        if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+            /*update the point_to_point_timing_cost and point_to_point_delay
+             * values from the temporary values */
+            costs->timing_cost += timing_delta_c;
+
+            update_td_cost();
+        }
+
+        /* update net cost functions and reset flags. */
+        update_move_nets(num_nets_affected);
+
+        /* Update clb data structures since we kept the move. */
+        commit_move_blocks();
+
+    } else { /* Move was rejected.  */
+             /* Reset the net cost function flags first. */
+        reset_move_nets(num_nets_affected);
+
+        /* Restore the place_ctx.block_locs data structures to their state before the move. */
+        revert_move_blocks();
+    }
+
+    clear_move_blocks();
+
+    //VTR_ASSERT(check_macro_placement_consistency() == 0);
+#if 0
+    //Check that each accepted swap yields a valid placement
+    check_place(*costs, delay_model, place_algorithm);
+#endif
+
+    LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c,
+                           (keep_switch ? "ACCEPTED" : "REJECTED"), "");
+    return (keep_switch);
 }
 
 //Pick a random block to be swapped with another random block.
@@ -1873,7 +1943,7 @@ static ClusterBlockId pick_from_block() {
 //and updates their bounding box.
 //
 //Returns the number of affected nets.
-static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel& delay_model, double& bb_delta_c, double& timing_delta_c) {
+static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel* delay_model, double& bb_delta_c, double& timing_delta_c) {
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1960,7 +2030,7 @@ static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId
     }
 }
 
-static void update_td_delta_costs(const PlaceDelayModel& delay_model, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost) {
+static void update_td_delta_costs(const PlaceDelayModel* delay_model, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
@@ -2166,7 +2236,7 @@ static double recompute_bb_cost() {
 }
 
 /*returns the delay of one point to point connection */
-static float comp_td_point_to_point_delay(const PlaceDelayModel& delay_model, ClusterNetId net_id, int ipin) {
+static float comp_td_point_to_point_delay(const PlaceDelayModel* delay_model, ClusterNetId net_id, int ipin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -2196,12 +2266,12 @@ static float comp_td_point_to_point_delay(const PlaceDelayModel& delay_model, Cl
          *       In particular this aproach does not accurately capture the effect of fast
          *       carry-chain connections.
          */
-        delay_source_to_sink = delay_model.delay(source_x,
-                                                 source_y,
-                                                 source_block_ipin,
-                                                 sink_x,
-                                                 sink_y,
-                                                 sink_block_ipin);
+        delay_source_to_sink = delay_model->delay(source_x,
+                                                  source_y,
+                                                  source_block_ipin,
+                                                  sink_x,
+                                                  sink_y,
+                                                  sink_block_ipin);
         if (delay_source_to_sink < 0) {
             VPR_ERROR(VPR_ERROR_PLACE,
                       "in comp_td_point_to_point_delay: Bad delay_source_to_sink value %g from %s (at %d,%d) to %s (at %d,%d)\n"
@@ -2218,7 +2288,7 @@ static float comp_td_point_to_point_delay(const PlaceDelayModel& delay_model, Cl
 }
 
 //Recompute all point to point delays, updating point_to_point_delay
-static void comp_td_point_to_point_delays(const PlaceDelayModel& delay_model) {
+static void comp_td_point_to_point_delays(const PlaceDelayModel* delay_model) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -2281,7 +2351,7 @@ static bool driven_by_moved_block(const ClusterNetId net) {
     return false;
 }
 
-static void comp_td_costs(const PlaceDelayModel& delay_model, double* timing_cost) {
+static void comp_td_costs(const PlaceDelayModel* delay_model, double* timing_cost) {
     /* Computes the cost (from scratch) from the delays and criticalities    *
      * of all point to point connections, we define the timing cost of       *
      * each connection as criticality*delay.                                 */
@@ -3459,7 +3529,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 }
 
 static void check_place(const t_placer_costs& costs,
-                        const PlaceDelayModel& delay_model,
+                        const PlaceDelayModel* delay_model,
                         enum e_place_algorithm place_algorithm) {
     /* Checks that the placement has not confused our data structures. *
      * i.e. the clb and block structures agree about the locations of  *
@@ -3485,7 +3555,7 @@ static void check_place(const t_placer_costs& costs,
 }
 
 static int check_placement_costs(const t_placer_costs& costs,
-                                 const PlaceDelayModel& delay_model,
+                                 const PlaceDelayModel* delay_model,
                                  enum e_place_algorithm place_algorithm) {
     int error = 0;
     double bb_cost_check;
@@ -3725,4 +3795,40 @@ static void print_place_status(const float t,
 
     VTR_LOG(" %6.3f\n", t / oldt);
     fflush(stdout);
+}
+
+e_propose_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& /*affected_blocks*/, float rlim) {
+    /* Pick a random block to be swapped with another random block.   */
+    ClusterBlockId b_from = pick_from_block();
+    if (!b_from) {
+        return e_propose_move::ABORT; //No movable block found
+    }
+
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    t_pl_loc from = place_ctx.block_locs[b_from].loc;
+    auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
+    auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;
+    VTR_ASSERT(cluster_from_type == grid_from_type);
+
+    t_pl_loc to;
+    if (!find_to(cluster_ctx.clb_nlist.block_type(b_from), rlim, from, to)) {
+        return e_propose_move::ABORT;
+    }
+
+#if 0
+    auto& grid = g_vpr_ctx.device().grid;
+	VTR_LOG( "swap [%d][%d][%d] %s block %zu \"%s\" <=> [%d][%d][%d] %s block ",
+		from.x, from.y, from.z, grid[from.x][from.y].type->name, size_t(b_from), (b_from ? cluster_ctx.clb_nlist.block_name(b_from).c_str() : ""),
+		to.x, to.y, to.z, grid[to.x][to.y].type->name);
+    if (b_to) {
+        VTR_LOG("%zu \"%s\"", size_t(b_to), cluster_ctx.clb_nlist.block_name(b_to).c_str());
+    } else {
+        VTR_LOG("(EMPTY)");
+    }
+    VTR_LOG("\n");
+#endif
+
+    return ::propose_move(b_from, to);
 }

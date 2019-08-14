@@ -55,9 +55,6 @@ STRING_CACHE *functions_outputs_sc;
 STRING_CACHE *module_names_to_idx;
 STRING_CACHE *instantiated_modules;
 
-ast_node_t **block_instantiations_instance;
-int size_block_instantiations;
-
 ast_node_t **module_variables_not_defined;
 int size_module_variables_not_defined;
 ast_node_t **function_instantiations_instance;
@@ -79,36 +76,7 @@ short to_view_parse;
  * File-scope function declarations
  */
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number);
-ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
 ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list);
-
-
-static void assert_supported_file_extension(std::string input_file, int file_number)
-{
-	bool supported = false;
-	std::string extension = get_file_extension(input_file);
-	for(int i = 0; i< file_extension_supported_END && ! supported; i++)
-	{
-		supported = (extension == std::string(file_extension_supported_STR[i]) );
-	}
-
-	if(! supported)
-	{
-		std::string supported_extension_list = "";
-		for(int i=0; i<file_extension_supported_END; i++)
-		{
-			supported_extension_list += " "; 
-			supported_extension_list += file_extension_supported_STR[i];
-		}
-
-		error_message(ARG_ERROR, -1, file_number, 
-			"File (%s) has an unsupported extension (%s), Odin only support { %s }",
-			input_file.c_str(),
-			extension.c_str(),
-			supported_extension_list.c_str()
-			);
-	}
-}
 
 /*---------------------------------------------------------------------------------------------
  * (function: parse_to_ast)
@@ -166,33 +134,6 @@ BASIC PARSING FUNCTIONS
  --------------------------------------------------------------------------------------------
  --------------------------------------------------------------------------------------------*/
 
-/*----------------------------------------------------------------------------
- * (function: cleanup_hard_blocks)
- *   This function will correctly label nodes in the AST as being part of a
- *   hard block and not a module. This needs to be done post parsing since
- *   there are no language differences between hard blocks and modules.
- *--------------------------------------------------------------------------*/
-void cleanup_hard_blocks()
-{
-	int i;
-	long j;
-	ast_node_t *block_node, *instance_node, *connect_list_node;
-
-	for (i = 0; i < size_block_instantiations; i++)
-	{
-		block_node = block_instantiations_instance[i];
-		instance_node = block_node->children[1];
-		instance_node->type = HARD_BLOCK_NAMED_INSTANCE;
-		connect_list_node = instance_node->children[1];
-		connect_list_node->type = HARD_BLOCK_CONNECT_LIST;
-
-		for (j = 0; j < connect_list_node->num_children; j++)
-		{
-			connect_list_node->children[j]->type = HARD_BLOCK_CONNECT;
-		}
-	}
-	return;
-}
 
 /*---------------------------------------------------------------------------------------------
  * (function: init_parser)
@@ -214,8 +155,6 @@ void init_parser()
   	size_function_instantiations = 0;
   	function_instantiations_instance_by_module = NULL;
 	size_function_instantiations_by_module = 0;
-	block_instantiations_instance = NULL;
-	size_block_instantiations = 0;
 
 	/* keeps track of all the ast roots */
 	all_file_items_list = NULL;
@@ -280,7 +219,6 @@ void next_parsed_verilog_file(ast_node_t *file_items_list)
 	long i;
 	/* optimization entry point */
 	printf("Optimizing module by AST based optimizations\n");
-	cleanup_hard_blocks();
 	if (configuration.output_ast_graphs == 1)
 	{
 		/* IF - we want outputs for the graphViz files of each module */
@@ -456,17 +394,17 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 				/* range */
 				if (symbol_list->children[j]->children[1] == NULL)
 				{
-					symbol_list->children[j]->children[1] = this_port->children[1];
-					symbol_list->children[j]->children[2] = this_port->children[2];
-					symbol_list->children[j]->children[3] = this_port->children[3];
-					symbol_list->children[j]->children[4] = this_port->children[4];
+					symbol_list->children[j]->children[1] = ast_node_deep_copy(this_port->children[1]);
+					symbol_list->children[j]->children[2] = ast_node_deep_copy(this_port->children[2]);
+					symbol_list->children[j]->children[3] = ast_node_deep_copy(this_port->children[3]);
+					symbol_list->children[j]->children[4] = ast_node_deep_copy(this_port->children[4]);
 
 					if (this_port->num_children == 8)
 					{
 						symbol_list->children[j]->children = (ast_node_t**) realloc(symbol_list->children[j]->children, sizeof(ast_node_t*)*8);
-						symbol_list->children[j]->children[7] = symbol_list->children[j]->children[5];
-						symbol_list->children[j]->children[5] = this_port->children[5];
-						symbol_list->children[j]->children[6] = this_port->children[6];
+						symbol_list->children[j]->children[7] = ast_node_deep_copy(symbol_list->children[j]->children[5]);
+						symbol_list->children[j]->children[5] = ast_node_deep_copy(this_port->children[5]);
+						symbol_list->children[j]->children[6] = ast_node_deep_copy(this_port->children[6]);
 					}
 				}
 
@@ -776,8 +714,7 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 	sc_spot = sc_add_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier);
 	
 	this_defines_sc[this_num_modules]->data[sc_spot] = (void*)parameter->children[5];
-	/* mark the node as shared so we don't delete it */
-	parameter->children[5]->shared_node = true;
+
 
 	if (id == PARAMETER)
 	{
@@ -823,8 +760,8 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 
 			if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
 			{
-				symbol_list->children[i]->children[1] = range_max;
-				symbol_list->children[i]->children[2] = range_min;
+				symbol_list->children[i]->children[1] = ast_node_deep_copy(range_max);
+				symbol_list->children[i]->children[2] = ast_node_deep_copy(range_min);
 			}
 			
 			if(top_type == MODULE) {
@@ -843,12 +780,6 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], is_signed);
 						break;
 					case WIRE:
-						if ((symbol_list->children[i]->num_children == 6 && symbol_list->children[i]->children[5] != NULL)
-							|| (symbol_list->children[i]->num_children == 8 && symbol_list->children[i]->children[7] != NULL))
-						{
-							error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
-									"Nets cannot be initialized\n");
-						}
 						if (is_signed)
 						{
 							/* cannot support signed nets right now */
@@ -1357,10 +1288,16 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
 	// allocate child nodes to this node
 	allocate_children_to_node(new_node, { symbol_node, module_named_instance });
 
-	// store the hard block symbol name that this calls in a list that will at the end be asociated with the hard block node
-	block_instantiations_instance = (ast_node_t **)vtr::realloc(block_instantiations_instance, sizeof(ast_node_t*)*(size_block_instantiations+1));
-	block_instantiations_instance[size_block_instantiations] = new_node;
-	size_block_instantiations++;
+	// mark as hard block
+	module_named_instance->type = HARD_BLOCK_NAMED_INSTANCE;
+
+	ast_node_t *connect_list_node = module_named_instance->children[1];
+	connect_list_node->type = HARD_BLOCK_CONNECT_LIST;
+
+	for (int i = 0; i < connect_list_node->num_children; i++)
+	{
+		connect_list_node->children[i]->type = HARD_BLOCK_CONNECT;
+	}
 
 	return new_node;
 }
@@ -1384,20 +1321,6 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 				module_named_instance->children[i]->children[0]->types.identifier);
 		}
 		module_instances_sc->data[sc_spot] = module_named_instance->children[i];
-
-		if
-		(
-			sc_lookup_string(hard_block_names, module_ref_name) != -1
-			|| !strcmp(module_ref_name, SINGLE_PORT_RAM_string)
-			|| !strcmp(module_ref_name, DUAL_PORT_RAM_string)
-		)
-		{
-			ast_node_t *instance = ast_node_deep_copy(module_named_instance->children[i]);
-			free_whole_tree(new_master_node);
-			free_whole_tree(module_named_instance);
-			
-			return newHardBlockInstance(module_ref_name, instance, line_number);
-		}
 
 		ast_node_t *symbol_node = newSymbolNode(module_ref_name, line_number);
 
@@ -1584,10 +1507,13 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 	long sc_spot;
 	ast_node_t *symbol_node = newSymbolNode(module_name, line_number);
 
-	if(sc_lookup_string(hard_block_names, module_name) != -1)
+	if( sc_lookup_string(hard_block_names, module_name) != -1
+		|| !strcmp(module_name, SINGLE_PORT_RAM_string)
+		|| !strcmp(module_name, DUAL_PORT_RAM_string)
+	)
 	{
-		warning_message(PARSE_ERROR, line_number, current_parse_file, 
-			"Probable module name collision with hard block of the same name -> %s\n", module_name);		
+		error_message(PARSE_ERROR, line_number, current_parse_file, 
+			"Module name collides with hard block of the same name (%s)\n", module_name);		
 	}
 
 	/* create a node for this array reference */
@@ -1789,46 +1715,38 @@ void next_module()
 ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 {
 	ast_node_t *new_node = NULL;
-	char *module_instance_name = NULL;
-	long i;
-	//long sc_spot;
+
 	if(val)
 	{
 		if(val->num_children > 1)
 		{
-			for(i = 0; i < val->num_children - 1; i++)
+			std::string module_instance_name = "";
+			for(long i = 0; i < val->num_children - 1; i++)
 			{
 				oassert(val->children[i]->num_children > 0);
-				if(i == 0 && val->num_children >= 2)
-					module_instance_name = vtr::strdup(val->children[i]->children[0]->types.identifier);
-				else
+
+				if( i != 0 || val->num_children < 2 )
 				{
-					module_instance_name = strcat(module_instance_name, ".");
-					module_instance_name = strcat(module_instance_name, vtr::strdup(val->children[i]->children[0]->types.identifier));
+					module_instance_name += ".";
 				}
+
+				module_instance_name += val->children[i]->children[0]->types.identifier;
 			}
+
 			new_node = val->children[(val->num_children - 1)];
 
 			new_node->type = MODULE_PARAMETER;
 			new_node->types.variable.is_parameter = true;
-			new_node->shared_node = true;
 			new_node->children[5]->types.variable.is_parameter = true;
-			new_node->children[5]->shared_node = true;
-			new_node->types.identifier = module_instance_name;
+			new_node->types.identifier = vtr::strdup(module_instance_name.c_str());
 			new_node->line_number = line_number;
 
 			val->children[(val->num_children - 1)] = NULL;
 			val = free_whole_tree(val);			
 		}
 	}
-	
-	if(new_node)
-	{
-		new_node->shared_node = false;
-		return new_node;
-	//	add_child_to_node(new_node, symbol_node);
-	}
-	return NULL;
+
+	return new_node;
 }
 
 /* --------------------------------------------------------------------------------------------

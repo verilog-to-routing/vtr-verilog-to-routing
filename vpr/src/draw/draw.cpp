@@ -1,12 +1,13 @@
 /*********************************** Top-level Summary *************************************
- * This is VPR's main graphics application program. The program interacts with graphics.c,
+ * This is VPR's main graphics application program. The program interacts with ezgl/graphics.hpp,
  * which provides an API for displaying graphics on both X11 and Win32. The most important
- * subroutine in this file is drawscreen(), which is a callback function that X11 or Win32
- * will call whenever the screen needs to be updated. Then, drawscreen() will decide what
- * drawing subroutines to call depending on whether PLACEMENT or ROUTING is shown on screen
- * and whether any of the menu buttons has been triggered. As a note, looks into draw_global.c
- * for understanding the data structures associated with drawing.
+ * subroutine in this file is draw_main_canvas(), which is a callback function that will be called 
+ * whenever the screen needs to be updated. Then, draw_main_canvas() will decide what
+ * drawing subroutines to call depending on whether PLACEMENT or ROUTING is shown on screen.
+ * The initial_setup_X() functions link the menu button signals to the corresponding drawing functions. 
+ * As a note, looks into draw_global.c for understanding the data structures associated with drawing.
  *
+ * 
  * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang
  * Last updated: June 2019
  */
@@ -41,6 +42,8 @@ using namespace std;
 #include "hsl.h"
 #include "route_export.h"
 #include "search_bar.h"
+#include "timing_info.h"
+#include "physical_types.h"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
@@ -52,19 +55,21 @@ using namespace std;
 #    include <sys/time.h>
 #endif
 
+#ifndef NO_GRAPHICS
+
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#if defined(X11) && !defined(__MINGW32__)
-#    include <X11/keysym.h>
-#endif
+#    if defined(X11) && !defined(__MINGW32__)
+#        include <X11/keysym.h>
+#    endif
 
-#include "rr_graph.h"
-#include "route_util.h"
-#include "place_macro.h"
+#    include "rr_graph.h"
+#    include "route_util.h"
+#    include "place_macro.h"
 
 /****************************** Define Macros *******************************/
 
-#define DEFAULT_RR_NODE_COLOR ezgl::BLACK
+#    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 //The arrow head position for turning/straight-thru connections in a switch box
@@ -199,9 +204,12 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app);
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app);
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 
+#endif // NO_GRAPHICS
+
 /********************** Subroutine definitions ******************************/
 
 void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type) {
+#ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -212,8 +220,14 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->show_graphics = show_graphics_val;
     draw_state->gr_automode = gr_automode_val;
     draw_state->draw_route_type = route_type;
+#else
+    (void)show_graphics_val;
+    (void)gr_automode_val;
+    (void)route_type;
+#endif // NO_GRAPHICS
 }
 
+#ifndef NO_GRAPHICS
 void draw_main_canvas(ezgl::renderer& g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -367,8 +381,11 @@ void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app) 
     initial_setup_NO_PICTURE_to_ROUTING(app);
     app->create_button("Crit. Path", 6, toggle_crit_path);
 }
+#endif //NO_GRAPHICS
 
 void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> setup_timing_info) {
+#ifndef NO_GRAPHICS
+
     /* Updates the screen if the user has requested graphics.  The priority  *
      * value controls whether or not the Proceed button must be clicked to   *
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
@@ -437,8 +454,15 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     } else {
         application.refresh_drawing();
     }
+#else
+    (void)setup_timing_info;
+    (void)priority;
+    (void)msg;
+    (void)pic_on_screen_val;
+#endif //NO_GRAPHICS
 }
 
+#ifndef NO_GRAPHICS
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/) {
     window_mode = true;
 }
@@ -644,7 +668,10 @@ void toggle_router_rr_costs(GtkWidget* /*widget*/, ezgl::application* app) {
     app->refresh_drawing();
 }
 
+#endif // NO_GRAPHICS
+
 void alloc_draw_structs(const t_arch* arch) {
+#ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
@@ -671,9 +698,13 @@ void alloc_draw_structs(const t_arch* arch) {
     draw_state->arch_info = arch;
 
     deselect_all(); /* Set initial colors */
+#else
+    (void)arch;
+#endif // NO_GRAPHICS
 }
 
 void free_draw_structs() {
+#ifndef NO_GRAPHICS
     /* Free everything allocated by alloc_draw_structs. Called after close_graphics() *
      * in vpr_api.c.
      *
@@ -693,9 +724,13 @@ void free_draw_structs() {
         free(draw_state->draw_rr_node);
         draw_state->draw_rr_node = nullptr;
     }
+#else
+    ;
+#endif /* NO_GRAPHICS */
 }
 
 void init_draw_coords(float width_val) {
+#ifndef NO_GRAPHICS
     /* Load the arrays containing the left and bottom coordinates of the clbs   *
      * forming the FPGA.  tile_width_val sets the width and height of a drawn    *
      * clb.                                                                     */
@@ -750,7 +785,12 @@ void init_draw_coords(float width_val) {
     float draw_height = draw_coords->tile_y[device_ctx.grid.height() - 1] + draw_coords->get_tile_width();
 
     initial_world = ezgl::rectangle({-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height}, {(1. + VISIBLE_MARGIN) * draw_width, (1. + VISIBLE_MARGIN) * draw_height});
+#else
+    (void)width_val;
+#endif /* NO_GRAPHICS */
 }
+
+#ifndef NO_GRAPHICS
 
 /* Draws the blocks placed on the proper clbs.  Occupied blocks are darker colours *
  * while empty ones are lighter colours and have a dashed border.      */
@@ -2353,7 +2393,7 @@ static bool highlight_rr_nodes(float x, float y) {
     return highlight_rr_nodes(hit_node);
 }
 
-#if defined(X11) && !defined(__MINGW32__)
+#    if defined(X11) && !defined(__MINGW32__)
 void act_on_key_press(ezgl::application* app, GdkEventKey* event, char* key_name) {
     //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
     std::string key(key_name);
@@ -2365,11 +2405,11 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* event, char* key_name
 
     event = event; // just for hiding warning message
 }
-#else
+#    else
 void act_on_key_press(ezgl::application* app, GdkEventKey* event, char* key_name) {
     //Nothing to do
 }
-#endif
+#    endif
 
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
     app->update_message("Mouse Clicked");
@@ -3552,3 +3592,5 @@ static void highlight_blocks(double x, double y) {
 
     application.refresh_drawing();
 }
+
+#endif /* NO_GRAPHICS */

@@ -40,6 +40,12 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <regex>
 #include <stdbool.h>
 
+// for mkdir
+#ifdef WIN32
+	#include <direct.h>
+#else
+	#include <sys/stat.h>
+#endif
 
 long shift_left_value_with_overflow_check(long input_value, long shift_by)
 {
@@ -61,6 +67,49 @@ std::string get_file_extension(std::string input_file)
 	else
 	{
 		return "";
+	}
+}
+
+void create_directory(std::string path)
+{
+	// CREATE OUTPUT DIRECTORY
+	int error_code = 0;
+	#ifdef WIN32
+		error_code = mkdir(path.c_str());
+	#else
+		error_code = mkdir(path.c_str(), 0755);
+	#endif
+
+	if(error_code && errno != EEXIST)
+	{
+		error_message(PARSE_ERROR, -1, -1, "Odin Failed to create directory :%s with exit code%d\n", path.c_str(), errno);
+	}
+}
+
+void assert_supported_file_extension(std::string input_file, int file_number)
+{
+	bool supported = false;
+	std::string extension = get_file_extension(input_file);
+	for(int i = 0; i< file_extension_supported_END && ! supported; i++)
+	{
+		supported = (extension == std::string(file_extension_supported_STR[i]) );
+	}
+
+	if(! supported)
+	{
+		std::string supported_extension_list = "";
+		for(int i=0; i<file_extension_supported_END; i++)
+		{
+			supported_extension_list += " "; 
+			supported_extension_list += file_extension_supported_STR[i];
+		}
+
+		possible_error_message(ARG_ERROR, -1, file_number, 
+			"File (%s) has an unsupported extension (%s), Odin only support { %s }",
+			input_file.c_str(),
+			extension.c_str(),
+			supported_extension_list.c_str()
+			);
 	}
 }
 
@@ -854,18 +903,6 @@ std::string find_substring(char *src,const char *sKey,int flag)
 		default:
 			return tmp;
 	}
-}
-
-bool validate_string_regex(const char *str_in, const char *pattern_in)
-{
-	std::string str(str_in);
-    std::regex pattern(pattern_in);
-
-    auto words_begin = std::sregex_iterator(str.begin(), str.end(), pattern);
-	auto words_end = std::sregex_iterator();
-	if (std::distance(words_begin,words_end) > 0)
-		return true;
-	return false;
 }
 
 /*

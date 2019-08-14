@@ -61,4 +61,11 @@ target_link_libraries(blifexplorer
                         ${CMAKE_DL_LIBS}
 )
 
+#Supress IPO link warnings if IPO is enabled
+get_target_property(TEST_BLIFEXPLORER_USES_IPO blifexplorer INTERPROCEDURAL_OPTIMIZATION)
+if (TEST_BLIFEXPLORER_USES_IPO)
+    set_target_properties(blifexplorer PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
+endif()
+
+
 install(TARGETS blifexplorer DESTINATION bin)

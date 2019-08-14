@@ -88,6 +88,7 @@ struct global_args_t
 	argparse::ArgValue<std::string> blif_file;
 	argparse::ArgValue<std::string> output_file;
 	argparse::ArgValue<std::string> arch_file; // Name of the FPGA architecture file
+	argparse::ArgValue<bool> permissive; //turn possible_errors into warnings
 
 	argparse::ArgValue<std::string> high_level_block; //Legacy option, no longer used
 
@@ -162,6 +163,7 @@ extern const char *ids_STR [];
 enum file_extension_supported
 {
 	VERILOG,
+	VERILOG_HEADER,
 	file_extension_supported_END
 };
 
@@ -393,10 +395,9 @@ struct ast_node_t
 	int file_number = -1;
 	int related_module_id = -1;
 
-	short shared_node;
 	void *hb_port;
 	void *net_node;
-	short is_read_write;
+	long chunk_size;
 
 };
 

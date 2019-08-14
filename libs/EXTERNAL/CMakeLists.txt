@@ -7,4 +7,9 @@ add_subdirectory(libargparse)
 add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
-add_subdirectory(libezgl)
+
+#VPR_USE_EZGL is initialized in the root CMakeLists. 
+#compile libezgl only if the user asks for or has its dependencies installed.
+if(VPR_USE_EZGL STREQUAL "on")
+    add_subdirectory(libezgl)
+endif()

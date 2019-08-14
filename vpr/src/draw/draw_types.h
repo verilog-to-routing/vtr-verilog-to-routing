@@ -16,20 +16,21 @@
 #ifndef DRAW_TYPES_H
 #define DRAW_TYPES_H
 
-#include <vector>
-#include <memory>
-#include "clustered_netlist.h"
-#include "timing_info_fwd.h"
-#include "vtr_util.h"
-#include "graphics.h"
-#include "vpr_types.h"
-#include "vtr_color_map.h"
-#include "vtr_vector.h"
+#ifndef NO_GRAPHICS
 
-#include "ezgl/point.hpp"
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
-#include "ezgl/color.hpp"
+#    include <vector>
+#    include <memory>
+#    include "clustered_netlist.h"
+#    include "timing_info_fwd.h"
+#    include "vtr_util.h"
+#    include "graphics.h"
+#    include "vpr_types.h"
+#    include "vtr_color_map.h"
+#    include "vtr_vector.h"
+
+#    include "ezgl/point.hpp"
+#    include "ezgl/rectangle.hpp"
+#    include "ezgl/color.hpp"
 
 enum e_draw_crit_path {
     DRAW_NO_CRIT_PATH,
@@ -252,5 +253,7 @@ struct t_draw_coords {
     float tile_width;
     friend void init_draw_coords(float);
 };
+
+#endif // NO_GRAPHICS
 
 #endif

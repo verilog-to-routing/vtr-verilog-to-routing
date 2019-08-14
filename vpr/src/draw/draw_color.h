@@ -1,9 +1,11 @@
 #ifndef DRAW_COLOR_H
 #define DRAW_COLOR_H
 
-#include "ezgl/point.hpp"
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
+#ifndef NO_GRAPHICS
+
+#    include "ezgl/point.hpp"
+#    include "ezgl/application.hpp"
+#    include "ezgl/graphics.hpp"
 
 static constexpr ezgl::color blk_BISQUE(0xFF, 0xE4, 0xC4);
 static constexpr ezgl::color blk_LIGHTGREY(0xD3, 0xD3, 0xD3);
@@ -315,5 +317,7 @@ const std::vector<ezgl::color> block_colors{
     blk_ORANGE,
     blk_ALICEBLUE,
 };
+
+#endif /* NO_GRAPHICS */
 
 #endif /* DRAW_COLOR_H */

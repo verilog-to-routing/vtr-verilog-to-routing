@@ -1,53 +1,56 @@
-#include <cstdio>
-#include <sstream>
+#ifndef NO_GRAPHICS
+
+#    include <cstdio>
+#    include <sstream>
 using namespace std;
 
-#include "vtr_assert.h"
-#include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
-#include "vtr_color_map.h"
+#    include "vtr_assert.h"
+#    include "vtr_ndoffsetmatrix.h"
+#    include "vtr_memory.h"
+#    include "vtr_log.h"
+#    include "vtr_color_map.h"
 
-#include "vpr_utils.h"
-#include "vpr_error.h"
+#    include "vpr_utils.h"
+#    include "vpr_error.h"
 
-#include "globals.h"
-#include "graphics.h"
-#include "draw_color.h"
-#include "draw.h"
-#include "read_xml_arch_file.h"
-#include "draw_global.h"
-#include "intra_logic_block.h"
-#include "atom_netlist.h"
-#include "tatum/report/TimingPathCollector.hpp"
-#include "hsl.h"
-#include "route_export.h"
-#include "search_bar.h"
+#    include "globals.h"
+#    include "graphics.h"
+#    include "draw_color.h"
+#    include "draw.h"
+#    include "read_xml_arch_file.h"
+#    include "draw_global.h"
+#    include "intra_logic_block.h"
+#    include "atom_netlist.h"
+#    include "tatum/report/TimingPathCollector.hpp"
+#    include "hsl.h"
+#    include "route_export.h"
+#    include "search_bar.h"
 
-#ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-              * track CPU runtime.														   */
-#    include <time.h>
-#else /* For X11. The clock() function in time.h will not output correct time difference   *
-       * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-       * which means tracking CPU time will not be the same as the actual wall clock time. *
-       * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
-#endif
+#    ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
+                  * track CPU runtime.														   */
+#        include <time.h>
+#    else /* For X11. The clock() function in time.h will not output correct time difference   *
+           * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
+           * which means tracking CPU time will not be the same as the actual wall clock time. *
+           * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
+#        include <sys/time.h>
+#    endif
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#if defined(X11) && !defined(__MINGW32__)
-#    include <X11/keysym.h>
-#endif
+#    if defined(X11) && !defined(__MINGW32__)
+#        include <X11/keysym.h>
+#    endif
 
-#include "rr_graph.h"
-#include "route_util.h"
-#include "place_macro.h"
+#    include "rr_graph.h"
+#    include "route_util.h"
+#    include "place_macro.h"
 
 extern std::string rr_highlight_message;
 
 void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     // get ID from search bar
     GtkEntry* text_entry = (GtkEntry*)app->get_object("TextInput");
@@ -66,8 +69,9 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         int rr_node_id = -1;
         ss >> rr_node_id;
 
+        // valid rr node id check
         if (rr_node_id < 0 || rr_node_id >= int(device_ctx.rr_nodes.size())) {
-            // rr node not exist
+            warning_dialog_box("Invalid RR Node ID");
             app->refresh_drawing();
             return;
         }
@@ -79,6 +83,13 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     else if (search_type == "Block ID") {
         int block_id = -1;
         ss >> block_id;
+
+        // valid block id check
+        if (!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id))) {
+            warning_dialog_box("Invalid Block ID");
+            app->refresh_drawing();
+            return;
+        }
 
         highlight_blocks((ClusterBlockId)block_id);
     }
@@ -93,6 +104,13 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     else if (search_type == "Net ID") {
         int net_id = -1;
         ss >> net_id;
+
+        // valid net id check
+        if (!cluster_ctx.clb_nlist.valid_net_id(ClusterNetId(net_id))) {
+            warning_dialog_box("Invalid Net ID");
+            app->refresh_drawing();
+            return;
+        }
 
         highlight_nets((ClusterNetId)net_id);
     }
@@ -250,7 +268,10 @@ void highlight_nets(std::string net_name) {
     ClusterNetId net_id = ClusterNetId::INVALID();
     net_id = cluster_ctx.clb_nlist.find_net(net_name);
 
-    if (net_id == ClusterNetId::INVALID()) return; //name not exist
+    if (net_id == ClusterNetId::INVALID()) {
+        warning_dialog_box("Invalid Net Name");
+        return; //name not exist
+    }
 
     highlight_nets(net_id); //found net
 }
@@ -261,7 +282,40 @@ void highlight_blocks(std::string block_name) {
     ClusterBlockId block_id = ClusterBlockId::INVALID();
     block_id = cluster_ctx.clb_nlist.find_block(block_name);
 
-    if (block_id == ClusterBlockId::INVALID()) return; //name not exist
+    if (block_id == ClusterBlockId::INVALID()) {
+        warning_dialog_box("Invalid Block Name");
+        return; //name not exist
+    }
 
     highlight_blocks(block_id); //found block
 }
+
+void warning_dialog_box(const char* message) {
+    GObject* main_window;    // parent window over which to add the dialog
+    GtkWidget* content_area; // content area of the dialog
+    GtkWidget* label;        // label to display a message
+    GtkWidget* dialog;
+    // get a pointer to the main window
+    main_window = application.get_object(application.get_main_window_id().c_str());
+    // create a dialog window modal with no button
+    dialog = gtk_message_dialog_new(GTK_WINDOW(main_window),
+                                    GTK_DIALOG_DESTROY_WITH_PARENT,
+                                    GTK_MESSAGE_INFO,
+                                    GTK_BUTTONS_NONE,
+                                    "Error");
+    // create a label and attach it to content area of the dialog
+    content_area = gtk_message_dialog_get_message_area(GTK_MESSAGE_DIALOG(dialog));
+    label = gtk_label_new(message);
+    gtk_container_add(GTK_CONTAINER(content_area), label);
+    // show the label & child widget of the dialog
+    gtk_widget_show_all(dialog);
+
+    g_signal_connect_swapped(dialog,
+                             "response",
+                             G_CALLBACK(gtk_widget_destroy),
+                             dialog);
+
+    return;
+}
+
+#endif /* NO_GRAPHICS */

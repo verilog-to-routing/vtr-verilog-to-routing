@@ -91,29 +91,15 @@ printf "Called program with $INPUT
 	FLAGS:
 		-g|--generate_bench             $(_prt_cur_arg ${_GENERATE_BENCH}) Generate input and output vector for test
 		-o|--generate_output            $(_prt_cur_arg ${_GENERATE_OUTPUT}) Generate output vector for test given its input vector
-		-b|--build_config				$(_prt_cur_arg ${_GENERATE_CONFIG}) Generate a config file for a given directory
+		-b|--build_config               $(_prt_cur_arg ${_GENERATE_CONFIG}) Generate a config file for a given directory
 		-c|--clean                      $(_prt_cur_arg off ) Clean temporary directory
 		-f|--force_simulate             $(_prt_cur_arg ${_FORCE_SIM}) Force the simulation to be executed regardless of the config
+
+	CONFIG FILE HELP:
 "
-}
 
-function config_help() {
-printf "
-	*.conf is a list of key=value set
-	'#' are used for comments
+config_help
 
-	the following key are available:
-
-		circuit_dir
-		circuit_list_add
-		arch_dir
-		arch_list_add
-		script_params
-		synthesis_params
-		simulation_params
-		regression_params
-
-"
 }
 
 ###############################################
@@ -208,7 +194,6 @@ function mv_failed() {
 
 	if [ -e ${log_file} ]
 	then
-		echo "Linking failed benchmark in failures $(basename ${failed_dir})"
 
 		for failed_benchmark in $(cat ${log_file})
 		do
@@ -331,15 +316,45 @@ function warn_is_defined() {
 }
 
 _regression_params=""
-_script_params=""
+_script_synthesis_params=""
+_script_simulation_params=""
 _synthesis_params=""
 _simulation_params=""
 _circuit_list=""
 _arch_list=""
 
+function config_help() {
+printf "
+	*.conf is a list of key=value set
+	'#' are used for comments
+
+	the following key=value, ... are available:
+
+			circuit_dir             = < path/to/circuit/dir >
+			circuit_list_add        = < circuit file path relative to [circuit_dir] >
+			arch_dir                = < path/to/arch/dir >
+			arch_list_add           = < architecture file path relative to [arch_dir] >
+			script_synthesis_params = [see exec_wrapper.sh options]
+			script_simulation_params= [see exec_wrapper.sh options]
+			synthesis_params        = [see Odin options]	
+			simulation_params       = [see Odin options]
+			regression_params       = 
+			{
+				--concat_circuit_list    # concatenate the circuit list and pass it straight through to odin
+				--generate_bench         # generate input and output vectors from scratch
+				--generate_output        # generate output vectors only if input vectors already exist
+				--disable_simulation     # disable the simulation for this task
+				--disable_parallel_jobs  # disable running circuit/task pairs in parralel
+				--include_default_arch   # run odin also without architecture file
+			}
+
+"
+}
+
 init_args_for_test() {
 	_regression_params=""
-	_script_params=""
+	_script_synthesis_params=""
+	_script_simulation_params=""
 	_synthesis_params=""
 	_simulation_params=""
 	_circuit_list=""
@@ -351,7 +366,9 @@ function populate_arg_from_file() {
 	_circuit_dir=""
 	_arch_dir=""
 	_circuit_list_add=""
+	_circuit_list_remove=""
 	_arch_list_add=""
+	_arch_list_remove=""
 
 	if [ "_$1" == "_" ] || [ ! -f "$1" ]
 	then
@@ -382,7 +399,7 @@ function populate_arg_from_file() {
 						_circuit_dir="${_value}"
 
 					;;_circuit_list_add)
-						_circuit_list_add="${_circuit_list_add} ${_value}"
+						_circuit_list_add="${_circuit_list_add} ${_value}"					
 
 					;;_arch_dir)
 						warn_is_defined "${_arch_dir}" "${_key}"
@@ -391,8 +408,11 @@ function populate_arg_from_file() {
 					;;_arch_list_add)
 						_arch_list_add="${_arch_list_add} ${_value}"
 
-					;;_script_params)
-						_script_params="${_script_params} ${_value}"
+					;;_script_synthesis_params)
+						_script_synthesis_params="${_script_synthesis_params} ${_value}"
+
+					;;_script_simulation_params)
+						_script_simulation_params="${_script_simulation_params} ${_value}"
 
 					;;_synthesis_params)
 						_synthesis_params="${_synthesis_params} ${_value}"					
@@ -416,7 +436,8 @@ function populate_arg_from_file() {
 	fi
 
 	_regression_params=$(echo "${_regression_params} ")
-	_script_params=$(echo "${_script_params} ")
+	_script_simulation_params=$(echo "${_script_simulation_params} ")
+	_script_synthesis_params=$(echo "${_script_synthesis_params} ")
 	_synthesis_params=$(echo "${_synthesis_params} ")
 	_simulation_params=$(echo "${_simulation_params} ")
 	_circuit_list=$(echo "${_circuit_list} ")
@@ -448,17 +469,22 @@ function populate_arg_from_file() {
 		_exit_with_code "-1"
 	fi
 
-	for circuit_list_item in ${_circuit_list_add}
+	for circuit_list_items in ${_circuit_list_add}
 	do
-		circuit_relative_path="${_circuit_dir}/${circuit_list_item}"
+		circuit_relative_path="${_circuit_dir}/${circuit_list_items}"
 		circuit_real_path=$(readlink -f ${circuit_relative_path})
-		if [ ! -f "${circuit_real_path}" ]
-		then
-			echo "file ${circuit_real_path} not found, skipping"
-		else
-			_circuit_list="${_circuit_list} ${circuit_real_path}"
-		fi
+		for circuit_list_items in ${circuit_real_path}
+		do
+			if [ ! -f "${circuit_list_items}" ]
+			then
+				echo "file ${circuit_list_items} not found, skipping"
+			else
+				_circuit_list="${_circuit_list} ${circuit_list_items}"
+			fi
+		done
+
 	done
+
 	_circuit_list=$(echo ${_circuit_list})
 
 
@@ -485,17 +511,20 @@ function populate_arg_from_file() {
 		_exit_with_code "-1"
 	fi
 	
-	for arch_list_item in ${_arch_list_add}
+
+	for arch_list_items in ${_arch_list_add}
 	do
-		echo 
-		arch_relative_path="${_arch_dir}/${arch_list_item}"
+		arch_relative_path="${_arch_dir}/${arch_list_items}"
 		arch_real_path=$(readlink -f ${arch_relative_path})
-		if [ ! -f "${arch_real_path}" ]
-		then
-			echo "file ${arch_real_path} not found, skipping"
-		else
-			_arch_list="${_arch_list} ${arch_real_path}"
-		fi
+		for arch_list_item in ${arch_real_path}
+		do
+			if [ ! -f "${arch_list_item}" ]
+			then
+				echo "file ${arch_list_item} not found, skipping"
+			else
+				_arch_list="${_arch_list} ${arch_list_item}"
+			fi
+		done
 	done
 
 	_arch_list=$(echo ${_arch_list})
@@ -507,7 +536,6 @@ function formated_find() {
 }
 
 function run_bench_in_parallel() {
-	echo
 	header=$1
 	thread_count=$2
 	failure_dir=$3
@@ -700,7 +728,7 @@ function sim() {
 				synthesis_params_file=${DIR}/synthesis_params
 
 				wrapper_command="${WRAPPER_EXEC}
-						${_script_params}
+						${_script_synthesis_params}
 						--log_file ${DIR}/synthesis.log
 						--test_name ${TEST_FULL_REF}
 						--failure_log ${global_synthesis_failure}.log
@@ -715,7 +743,6 @@ function sim() {
 
 				_echo_args "${synthesis_command}" > ${synthesis_params_file}
 				_echo_args "${wrapper_command}"  > ${DIR}/${wrapper_synthesis_file_name}
-				
 			fi
 			###############################
 			# Simulation
@@ -724,7 +751,7 @@ function sim() {
 				simulation_params_file=${DIR}/simulation_params
 
 				wrapper_command="${WRAPPER_EXEC}
-									${_script_params}
+									${_script_simulation_params}
 									--log_file ${DIR}/simulation.log
 									--test_name ${TEST_FULL_REF}
 									--failure_log ${global_simulation_failure}.log
@@ -857,40 +884,64 @@ function run_vtr_reg() {
 	cd ${THIS_DIR}
 }
 
+input_list=()
 task_list=()
+vtr_reg_list=()
 
 function run_suite() {
-	while [ "_${task_list}" != "_" ]
+	while [ "_${input_list}" != "_" ]
 	do
-		current_input="${task_list[0]}"
-		task_list=( "${task_list[@]:1}" )
+		current_input="${input_list[0]}"
+		input_list=( "${input_list[@]:1}" )
 
-		case "_${current_input}" in
-			_)
-				;;
+		if [ -d "${current_input}" ]
+		then
+			if [ -f "${current_input}/task_list.conf" ]
+			then
 
-			*/vtr_reg_*)
-				run_vtr_reg $(basename ${current_input})
-				;;
-
-			*)
-				if [ ! -d "${current_input}" ]
-				then
-					echo "Invalid Directory for task: ${current_input}"
-				elif [ -f "${current_input}/task_list.conf" ]
-				then
-					for input_path in $(cat ${current_input}/task_list.conf)
-					do
-						input_path=$(ls -d -1 ${THIS_DIR}/${input_path} 2> /dev/null)
-						task_list=( ${task_list[@]} ${input_path[@]} )
-					done
+				for input_path in $(cat ${current_input}/task_list.conf)
+				do
+					case "_${input_path}" in
+						_);;
+						*vtr_reg_*);;
+						*)
+							# bash expand when possible
+							input_path=$(ls -d -1 ${THIS_DIR}/${input_path} 2> /dev/null)
+							;;
+					esac
 					
-				elif [ -f "${current_input}/task.conf" ]
-				then
-					run_task "${current_input}"
-				fi
-				;;
-		esac
+					input_list=( ${input_list[@]} ${input_path[@]} )
+				done
+				
+			elif [ -f "${current_input}/task.conf" ]
+			then
+				task_list=( ${task_list[@]} ${current_input} )
+			else
+				echo "Invalid Directory for task: ${current_input}"
+			fi
+		else
+			case "_${current_input}" in
+				*vtr_reg_*)
+					vtr_reg_list=( ${vtr_reg_list[@]} ${current_input} )
+					;;
+
+				*)
+					# bash expand when possible
+					echo "no such Directory for task: ${current_input}"
+					;;
+			esac
+		fi
+
+	done
+
+	for task in "${task_list[@]}"
+	do
+		run_task "${task}"
+	done
+
+	for vtr_reg in "${vtr_reg_list[@]}"
+	do
+		run_vtr_reg ${vtr_reg}
 	done
 }
 #########################################################
@@ -925,7 +976,7 @@ _TEST=$(readlink -f ${_TEST})
 
 echo "Task: ${_TEST}"
 
-task_list=( "${_TEST}" )
+input_list=( "${_TEST}" )
 
 run_suite
 

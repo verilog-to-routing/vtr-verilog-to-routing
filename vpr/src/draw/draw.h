@@ -1,30 +1,35 @@
 #ifndef DRAW_H
 #define DRAW_H
 
-#include "easygl_constants.h"
-#include "graphics.h"
-#include "draw_global.h"
+#include "timing_info.h"
+#include "physical_types.h"
 
-#include "ezgl/point.hpp"
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
-#include "draw_color.h"
-#include "search_bar.h"
+#ifndef NO_GRAPHICS
+
+#    include "easygl_constants.h"
+#    include "graphics.h"
+#    include "draw_global.h"
+
+#    include "ezgl/point.hpp"
+#    include "ezgl/application.hpp"
+#    include "ezgl/graphics.hpp"
+#    include "draw_color.h"
+#    include "search_bar.h"
 
 extern ezgl::application::settings settings;
 extern ezgl::application application;
 
+#endif /* NO_GRAPHICS */
+
 void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> timing_info);
-
-void alloc_draw_structs(const t_arch* arch);
-
 //Initializes the drawing locations.
 //FIXME: Currently broken if no rr-graph is loaded
 void init_draw_coords(float clb_width);
-
 void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type);
-
+void alloc_draw_structs(const t_arch* arch);
 void free_draw_structs();
+
+#ifndef NO_GRAPHICS
 
 void draw_get_rr_pin_coords(int inode, float* xcen, float* ycen);
 void draw_get_rr_pin_coords(const t_rr_node* node, float* xcen, float* ycen);
@@ -61,5 +66,7 @@ void highlight_nets(char* message, int hit_node);
 void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
 std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
 void deselect_all();
+
+#endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */
