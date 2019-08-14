@@ -26,7 +26,6 @@ using namespace std;
 #include "vpr_utils.h"
 #include "globals.h"
 #include "atom_netlist.h"
-#include "graphics.h"
 #include "read_netlist.h"
 #include "check_netlist.h"
 #include "read_blif.h"

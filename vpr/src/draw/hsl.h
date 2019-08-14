@@ -3,7 +3,6 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "graphics_types.h"
 #    include "ezgl/color.hpp"
 
 struct hsl {

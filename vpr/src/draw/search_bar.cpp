@@ -14,7 +14,6 @@ using namespace std;
 #    include "vpr_error.h"
 
 #    include "globals.h"
-#    include "graphics.h"
 #    include "draw_color.h"
 #    include "draw.h"
 #    include "read_xml_arch_file.h"

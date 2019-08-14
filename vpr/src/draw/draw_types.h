@@ -23,7 +23,6 @@
 #    include "clustered_netlist.h"
 #    include "timing_info_fwd.h"
 #    include "vtr_util.h"
-#    include "graphics.h"
 #    include "vpr_types.h"
 #    include "vtr_color_map.h"
 #    include "vtr_vector.h"

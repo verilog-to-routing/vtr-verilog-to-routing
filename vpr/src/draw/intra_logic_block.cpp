@@ -34,7 +34,6 @@ using namespace std;
 #    include "atom_netlist.h"
 #    include "vpr_utils.h"
 #    include "draw_global.h"
-#    include "graphics.h"
 #    include "draw.h"
 #    include "draw_color.h"
 
@@ -675,7 +674,7 @@ static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_ty
     draw_state = get_draw_state_vars();
 
     if (type->index < 3) {
-        if (draw_state->block_color[blk_id] == to_ezgl_color(LIGHTGREY))
+        if (draw_state->block_color[blk_id] == blk_LIGHTGREY)
             return false;
     } else if (type->index < 3 + MAX_BLOCK_COLOURS) {
         if (draw_state->block_color[blk_id] == to_ezgl_color((color_types)(BISQUE + MAX_BLOCK_COLOURS + type->index - 3)))
