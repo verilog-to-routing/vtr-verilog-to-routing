@@ -5,8 +5,8 @@ project("vpr")
 #
 # VPR Build Options
 #
-set(VPR_COMPILE_OPTIONS "none" CACHE STRING "Specify whether vpr uses strict compiling options, e.g. -Werror")
-set(CACHE VPR_COMPILE_OPTIONS PROPERTY STRING strict none)
+set(VTR_COMPILE_OPTIONS "none" CACHE STRING "Specify whether vpr uses strict compiling options, e.g. -Werror")
+set(CACHE VTR_COMPILE_OPTIONS PROPERTY STRING strict none)
 
 set(VPR_EXECUTION_ENGINE "auto" CACHE STRING "Specify the framework for (potential) parallel execution")
 set_property(CACHE VPR_EXECUTION_ENGINE PROPERTY STRINGS auto serial tbb)
@@ -68,7 +68,7 @@ target_link_libraries(libvpr
 
 #link graphics library only when graphics set to on
 if (VPR_USE_EZGL STREQUAL "on")
-    target_link_libraries(libvpr 
+    target_link_libraries(libvpr
 			     ezgl)
 
     compile_gresources(
@@ -164,7 +164,7 @@ else()
     message(ERROR "Unsupported VPR_PGO_CONFIG '${VPR_PGO_CONFIG}'")
 endif()
 
-if (VPR_COMPILE_OPTIONS STREQUAL "strict")
+if (VTR_COMPILE_OPTIONS STREQUAL "strict")
     message(STATUS "VPR: building with strict flags")
     foreach(flag ${VPR_COMPILE_OPTIONS_FLAGS})
         message(STATUS "\tAdding CXX flag: ${flag}")

@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.9)
 
 project("ODIN_II")
 
+#
+# ODIN_II Build Options
+#
+set(VTR_COMPILE_OPTIONS "none" CACHE STRING "Specify whether ODIN_II uses strict compiling options, e.g. -Werror")
+set(CACHE VTR_COMPILE_OPTIONS PROPERTY STRING strict none)
+
 if(ODIN_DEBUG)
 
     message("*** Compiling with Odin debug flags")
@@ -112,7 +118,7 @@ add_library(libodin_ii STATIC
              ${LIB_HEADERS_H}
              ${LIB_HEADERS_HPP}
              ${LIB_SOURCES}
-             ${FLEX_VerilogLexer_OUTPUTS} 
+             ${FLEX_VerilogLexer_OUTPUTS}
              ${BISON_VerilogParser_OUTPUT_SOURCE})
 
 target_include_directories(libodin_ii PUBLIC ${LIB_INCLUDE_DIRS})
@@ -162,6 +168,21 @@ endif()
 get_target_property(ODIN_USES_IPO odin_II INTERPROCEDURAL_OPTIMIZATION)
 if (ODIN_USES_IPO)
     set_target_properties(odin_II PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
+endif()
+
+set(ODIN_COMPILE_OPTIONS_FLAGS
+    #GCC-like
+    "-Werror"
+    )
+
+#add strict odin compiler flags, if set
+if(VTR_COMPILE_OPTIONS STREQUAL "strict")
+    message(STATUS "ODIN_II: building with strict flags")
+    foreach(ODIN_FLAG ${ODIN_COMPILE_OPTIONS_FLAGS})
+        message(STATUS "\tAdding CXX flag: ${ODIN_FLAG}")
+        target_compile_options(libodin_ii PRIVATE ${ODIN_FLAG})
+        target_compile_options(odin_II PRIVATE ${ODIN_FLAG})
+    endforeach()
 endif()
 
 install(TARGETS odin_II libodin_ii DESTINATION bin)
