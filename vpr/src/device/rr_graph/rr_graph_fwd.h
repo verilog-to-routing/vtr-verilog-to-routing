@@ -1,12 +1,3 @@
-/************************************************************************
- * This file introduces data types and pre-decleration for the RRGraph class 
- * If you want to use RRGraph class. This is a light header file you can include in your source files. 
- ***********************************************************************/
-/* IMPORTANT:
- * The following preprocessing flags are added to 
- * avoid compilation error when this headers are included in more than 1 times 
- */
-
 #ifndef RR_GRAPH_OBJ_FWD_H
 #    define RR_GRAPH_OBJ_FWD_H
 #    include "vtr_strong_id.h"
@@ -33,6 +24,3 @@ typedef vtr::StrongId<rr_segment_id_tag, short> RRSegmentId;
 
 #endif
 
-/************************************************************
- * End Of File (EOF)
- ***********************************************************/

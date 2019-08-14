@@ -18,10 +18,6 @@
  *   Placement and routing should not change any attributes of RRGraph.
  *   Any placement and routing results should be stored in other data structures, such as PlaceContext and RoutingContext. 
  ***********************************************************************/
-/* IMPORTANT:
- * The following preprocessing flags are added to 
- * avoid compilation error when this headers are included in more than 1 times 
- */
 #ifndef RR_GRAPH_OBJ_H
 #    define RR_GRAPH_OBJ_H
 
@@ -312,7 +308,3 @@ class RRGraph {
 };
 
 #endif
-
-/************************************************************
- * End Of File (EOF)
- ***********************************************************/
