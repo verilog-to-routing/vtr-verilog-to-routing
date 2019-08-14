@@ -391,6 +391,7 @@ class RRGraph {
     void build_fast_node_lookup() const;
     void invalidate_fast_node_lookup() const;
     bool valid_fast_node_lookup() const;
+    void initialize_fast_node_lookup() const;
 
     //Validation
     bool validate_sizes() const;

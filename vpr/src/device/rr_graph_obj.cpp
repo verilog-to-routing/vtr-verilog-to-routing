@@ -420,9 +420,7 @@ RREdgeId RRGraph::find_edge(RRNodeId src_node, RRNodeId sink_node) const {
 }
 
 RRNodeId RRGraph::find_node(short x, short y, t_rr_type type, int ptc, e_side side) const {
-    if (!valid_fast_node_lookup()) {
-        build_fast_node_lookup();
-    }
+    initialize_fast_node_lookup();
     size_t itype = type;
     size_t iside = side;
 
@@ -469,9 +467,7 @@ short RRGraph::chan_num_tracks(short x, short y, t_rr_type type) const {
     /* Must be CHANX or CHANY */
     VTR_ASSERT_MSG(CHANX == type || CHANY == type,
                    "Required node_type to be CHANX or CHANY!");
-    if (!valid_fast_node_lookup()) {
-        build_fast_node_lookup();
-    }
+    initialize_fast_node_lookup();
 
     /* Check if x, y, type and ptc is valid */
     if ((x < 0)                                     /* See if x is smaller than the index of first element */
@@ -818,9 +814,7 @@ bool RRGraph::check() const {
     bool check_flag = true;
     size_t num_err = 0;
 
-    if (!valid_fast_node_lookup()) {
-        build_fast_node_lookup();
-    }
+    initialize_fast_node_lookup();
 
     /* Fundamental check */
     if (false == check_nodes_edges()) {
@@ -1052,28 +1046,28 @@ void RRGraph::set_node_xlow(RRNodeId node, short xlow) {
     VTR_ASSERT(valid_node_id(node));
 
     auto& orig_bb = node_bounding_boxes_[node];
-    node_bounding_boxes_[node] = vtr::Rect<short>(xlow, orig_bb.ymin(), orig_bb.xmax(), orig_bb.ymax());
+    node_bounding_boxes_[node].set_xlow(xlow);
 }
 
 void RRGraph::set_node_ylow(RRNodeId node, short ylow) {
     VTR_ASSERT(valid_node_id(node));
 
     auto& orig_bb = node_bounding_boxes_[node];
-    node_bounding_boxes_[node] = vtr::Rect<short>(orig_bb.xmin(), ylow, orig_bb.xmax(), orig_bb.ymax());
+    node_bounding_boxes_[node].set_ylow(ylow);
 }
 
 void RRGraph::set_node_xhigh(RRNodeId node, short xhigh) {
     VTR_ASSERT(valid_node_id(node));
 
     auto& orig_bb = node_bounding_boxes_[node];
-    node_bounding_boxes_[node] = vtr::Rect<short>(orig_bb.xmin(), orig_bb.ymin(), xhigh, orig_bb.ymax());
+    node_bounding_boxes_[node].set_xhigh(xhigh);
 }
 
 void RRGraph::set_node_yhigh(RRNodeId node, short yhigh) {
     VTR_ASSERT(valid_node_id(node));
 
     auto& orig_bb = node_bounding_boxes_[node];
-    node_bounding_boxes_[node] = vtr::Rect<short>(orig_bb.xmin(), orig_bb.ymin(), orig_bb.xmax(), yhigh);
+    node_bounding_boxes_[node].set_yhigh(yhigh);
 }
 
 void RRGraph::set_node_bounding_box(RRNodeId node, vtr::Rect<short> bb) {
@@ -1276,6 +1270,12 @@ void RRGraph::invalidate_fast_node_lookup() const {
 
 bool RRGraph::valid_fast_node_lookup() const {
     return !node_lookup_.empty();
+}
+
+void RRGraph::initialize_fast_node_lookup() const {
+    if (!valid_fast_node_lookup()) {
+        build_fast_node_lookup();
+    }
 }
 
 bool RRGraph::validate() {
