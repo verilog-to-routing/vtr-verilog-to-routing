@@ -19,7 +19,7 @@
  *   Any placement and routing results should be stored in other data structures, such as PlaceContext and RoutingContext. 
  ***********************************************************************/
 #ifndef RR_GRAPH_OBJ_H
-#    define RR_GRAPH_OBJ_H
+#define RR_GRAPH_OBJ_H
 
 /*
  * Notes in include header files in a head file 
@@ -28,18 +28,18 @@
  */
 /* Header files should be included in a sequence */
 /* Standard header files required go first */
-#    include <limits>
-#    include <vector>
+#include <limits>
+#include <vector>
 
 /* EXTERNAL library header files go second*/
-#    include "vtr_vector.h"
-#    include "vtr_range.h"
-#    include "vtr_geometry.h"
-#    include "arch_types.h"
+#include "vtr_vector.h"
+#include "vtr_range.h"
+#include "vtr_geometry.h"
+#include "arch_types.h"
 
 /* VPR header files go second*/
-#    include "vpr_types.h"
-#    include "rr_graph_fwd.h"
+#include "vpr_types.h"
+#include "rr_graph_fwd.h"
 
 class RRGraph {
   public: //Types
