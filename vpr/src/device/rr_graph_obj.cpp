@@ -256,30 +256,13 @@ short RRGraph::node_num_non_configurable_out_edges(RRNodeId node) const {
     return node_non_configurable_out_edges(node).size();
 }
 
-/* Get the edge id that connects two nodes */
-RREdgeId RRGraph::get_node_to_node_edge(RRNodeId from_node, RRNodeId to_node) const {
-    /* Make sure we will access a valid node */
-    VTR_ASSERT_SAFE(valid_node_id(from_node));
-    VTR_ASSERT_SAFE(valid_node_id(to_node));
-
-    /* check the output edges of from_node  */
-    for (auto edge : node_out_edges(from_node)) {
-        /* Check if the sink node of the edge is the to_node */
-        if (to_node == edge_sink_node(edge)) {
-            return edge; /* we find it return here */
-        }
-    }
-    /* We find nothing, return an invalid ID of the EdgeId */
-    return RREdgeId::INVALID();
-}
-
 /* Get the switch id that connects two nodes */
-RRSwitchId RRGraph::get_node_to_node_switch(RRNodeId from_node, RRNodeId to_node) const {
+RRSwitchId RRGraph::find_switch(RRNodeId from_node, RRNodeId to_node) const {
     /* Make sure we will access a valid node */
     VTR_ASSERT_SAFE(valid_node_id(from_node));
     VTR_ASSERT_SAFE(valid_node_id(to_node));
 
-    RREdgeId edge = get_node_to_node_edge(from_node, to_node);
+    RREdgeId edge = find_edge(from_node, to_node);
     if (RREdgeId::INVALID() == edge) {
         /* edge is open, we return an invalid id of RRSwitch */
         return RRSwitchId::INVALID();
@@ -479,98 +462,6 @@ RRNodeId RRGraph::find_node(short x, short y, t_rr_type type, int ptc, e_side si
     }
 
     return node_lookup_[x][y][itype][ptc][iside];
-}
-
-RRGraph::node_range RRGraph::find_nodes(short x, short y, t_rr_type type, int ptc) const {
-    if (!valid_fast_node_lookup()) {
-        build_fast_node_lookup();
-    }
-
-    /* IMPORTANT!!! 
-     * check x, y, type, ptc if they are in the range
-     * if not, return a zero range 
-     */
-    size_t itype = type;
-
-    /* Check if x, y, type and ptc, side is valid */
-    if ((x < 0)                                     /* See if x is smaller than the index of first element */
-        || (size_t(x) > node_lookup_.size() - 1)) { /* See if x is large than the index of last element */
-        /* Return a zero range! */
-        const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
-        return vtr::make_range(zero_range.begin(), zero_range.end());
-    }
-
-    /* Check if x, y, type and ptc, side is valid */
-    if ((y < 0)                                        /* See if y is smaller than the index of first element */
-        || (size_t(y) > node_lookup_[x].size() - 1)) { /* See if y is large than the index of last element */
-        /* Return a zero range! */
-        const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
-        return vtr::make_range(zero_range.begin(), zero_range.end());
-    }
-
-    /* Check if x, y, type and ptc, side is valid */
-    /* itype is always larger than -1, we can skip checking */
-    if (itype > node_lookup_[x][y].size() - 1) { /* See if type is large than the index of last element */
-        /* Return a zero range! */
-        const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
-        return vtr::make_range(zero_range.begin(), zero_range.end());
-    }
-
-    /* Check if x, y, type and ptc, side is valid */
-    if ((ptc < 0)                                                 /* See if ptc is smaller than the index of first element */
-        || (size_t(ptc) > node_lookup_[x][y][type].size() - 1)) { /* See if ptc is large than the index of last element */
-        /* Return a zero range! */
-        const std::vector<RRNodeId> zero_range = std::vector<RRNodeId>();
-        return vtr::make_range(zero_range.begin(), zero_range.end());
-    }
-
-    const auto& matching_nodes = node_lookup_[x][y][type][ptc];
-
-    return vtr::make_range(matching_nodes.begin(), matching_nodes.end());
-}
-
-RRNodeId RRGraph::find_chan_node(short x, short y, t_rr_type type, int ptc) const {
-    /* Must be CHANX or CHANY */
-    VTR_ASSERT_MSG(CHANX == type || CHANY == type,
-                   "Required node_type to be CHANX or CHANY!");
-    if (!valid_fast_node_lookup()) {
-        build_fast_node_lookup();
-    }
-
-    /* Check if x, y, type and ptc is valid */
-    if ((x < 0)                                     /* See if x is smaller than the index of first element */
-        || (size_t(x) > node_lookup_.size() - 1)) { /* See if x is large than the index of last element */
-        /* Return a zero range! */
-        return RRNodeId::INVALID();
-    }
-
-    /* Check if x, y, type and ptc is valid */
-    if ((y < 0)                                        /* See if y is smaller than the index of first element */
-        || (size_t(y) > node_lookup_[x].size() - 1)) { /* See if y is large than the index of last element */
-        /* Return a zero range! */
-        return RRNodeId::INVALID();
-    }
-
-    /* Check if x, y, type and ptc is valid */
-    if ((size_t(type) > node_lookup_[x][y].size() - 1)) { /* See if type is large than the index of last element */
-        /* Return a zero range! */
-        return RRNodeId::INVALID();
-    }
-
-    /* Check if x, y, type and ptc is valid */
-    if ((ptc < 0)                                                 /* See if ptc is smaller than the index of first element */
-        || (size_t(ptc) > node_lookup_[x][y][type].size() - 1)) { /* See if ptc is large than the index of last element */
-        /* Return a zero range! */
-        return RRNodeId::INVALID();
-    }
-
-    /* check if SIDES is a zero vector */
-    if (0 == node_lookup_[x][y][type][ptc].size()) {
-        /* Return a zero range! */
-        return RRNodeId::INVALID();
-    }
-
-    return node_lookup_[x][y][type][ptc][NUM_SIDES];
 }
 
 /* Find the channel width (number of tracks) of a channel [x][y] */
@@ -1337,20 +1228,6 @@ void RRGraph::partition_edges() {
     this->partition_in_edges();
     /* Partition output edges */
     this->partition_out_edges();
-}
-
-/* 
- * configure the capacitance of each node with 
- * the capacitance of each incoming edge switch 
- * TODO: adapt from the function rr_graph_externals
- * Other thoughts: we may have to keep this function outside 
- * for the following reasons:
- * 1. It will sum up capaitances from switches for nodes
- *    But it may change depending on architectures
- * 2. It still requires a large amount of device information  
- */
-void RRGraph::load_switch_C() {
-    return;
 }
 
 void RRGraph::build_fast_node_lookup() const {

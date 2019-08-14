@@ -258,8 +258,7 @@ class RRGraph {
     short node_num_non_configurable_out_edges(RRNodeId node) const; /* get the number of non-configurable output edges of a node */
 
     /* Get a node-to-node switch */
-    RREdgeId get_node_to_node_edge(RRNodeId from_node, RRNodeId to_node) const;
-    RRSwitchId get_node_to_node_switch(RRNodeId from_node, RRNodeId to_node) const;
+    RRSwitchId find_switch(RRNodeId from_node, RRNodeId to_node) const;
 
     /* Get the range (list) of edges related to a given node */
     edge_range node_configurable_in_edges(RRNodeId node) const;
@@ -289,8 +288,6 @@ class RRGraph {
     //Utilities
     RREdgeId find_edge(RRNodeId src_node, RRNodeId sink_node) const;
     RRNodeId find_node(short x, short y, t_rr_type type, int ptc, e_side side = NUM_SIDES) const;
-    node_range find_nodes(short x, short y, t_rr_type type, int ptc) const;
-    RRNodeId find_chan_node(short x, short y, t_rr_type type, int ptc) const;
     short chan_num_tracks(short x, short y, t_rr_type type) const;
 
     bool is_dirty() const;
@@ -325,6 +322,7 @@ class RRGraph {
 
     /* Full set checking using listed checking functions*/
     bool check() const;
+
   public: //Validators
     bool valid_node_id(RRNodeId node) const;
     bool valid_edge_id(RREdgeId edge) const;
@@ -373,7 +371,6 @@ class RRGraph {
     void partition_in_edges();  /* classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) */
     void partition_out_edges(); /* classify the output edges of each node to be configurable (1st part) and non-configurable (2nd part) */
     void partition_edges();     /* classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) */
-    void load_switch_C();       /* configure the C of each node with the C of each incoming edge switch */
 
     void compress();
     bool validate();
