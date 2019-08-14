@@ -1715,4 +1715,3 @@ void RRGraph::clear() {
     clear_switches();
     clear_segments();
 }
-
