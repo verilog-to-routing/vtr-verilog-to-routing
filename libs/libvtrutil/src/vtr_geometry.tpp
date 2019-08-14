@@ -149,11 +149,13 @@ bool operator!=(const Rect<T>& lhs, const Rect<T>& rhs) {
 template<class T>
 void Rect<T>::set_xmin(T xmin_val) {
     bottom_left_.set_x(xmin_val);
+
 } 
 
 template<class T>
 void Rect<T>::set_ymin(T ymin_val) {
     bottom_left_.set_y(ymin_val);
+
 }
 
 template<class T>
