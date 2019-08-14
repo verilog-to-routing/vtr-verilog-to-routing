@@ -168,7 +168,7 @@ class RRGraph {
     segment_range segments() const;
 
     //Node attributes
-    size_t node_index(RRNodeId node) const;
+    size_t node_index(RRNodeId node) const; /* TODO: deprecate this accessor as outside functions should use RRNodeId */
     t_rr_type node_type(RRNodeId node) const;
     const char* node_type_string(RRNodeId node) const;
 
