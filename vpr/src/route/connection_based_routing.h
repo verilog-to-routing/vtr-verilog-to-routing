@@ -86,6 +86,7 @@ class Connection_based_routing_resources {
   public:
     // after timing analysis of 1st iteration, can set a lower bound on connection delay
     void set_lower_bound_connection_delays(vtr::vector<ClusterNetId, float*>& net_delay);
+    void update_lower_bound_connection_delays(vtr::vector<ClusterNetId, float*>& net_delay);
 
     // initialize routing resources at the start of routing to a new net
     void prepare_routing_for_net(ClusterNetId inet) {

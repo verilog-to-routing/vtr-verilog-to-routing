@@ -671,6 +671,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
                 //                }
 
             } else {
+                connections_inf.update_lower_bound_connection_delays(net_delay);
                 bool stable_routing_configuration = true;
 
                 /*
@@ -2269,6 +2270,23 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(vtr::
 
         for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
             net_lower_bound_connection_delay.push_back(net_delay[net_id][ipin]);
+        }
+    }
+}
+
+void Connection_based_routing_resources::update_lower_bound_connection_delays(vtr::vector<ClusterNetId, float*>& net_delay) {
+    /* Update lower bound connection delays if a lower net delay is
+     * discovered. */
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        auto& net_lower_bound_connection_delay = lower_bound_connection_delay[net_id];
+
+        for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
+            net_lower_bound_connection_delay[ipin - 1] = std::min(
+                net_lower_bound_connection_delay[ipin - 1],
+                net_delay[net_id][ipin]);
         }
     }
 }
