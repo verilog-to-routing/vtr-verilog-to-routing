@@ -47,7 +47,7 @@ class t_rr_node {
     //An iterator that dereferences to an edge index
     //
     //Used inconjunction with vtr::Range to return ranges of edge indices
-    class edge_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, short> {
+    class edge_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, t_edge_size> {
       public:
         edge_idx_iterator(value_type init)
             : value_(init) {}
@@ -79,21 +79,21 @@ class t_rr_node {
     edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges() - num_non_configurable_edges())); }
     edge_idx_range non_configurable_edges() const { return vtr::make_range(edge_idx_iterator(num_edges() - num_non_configurable_edges()), edge_idx_iterator(num_edges())); }
 
-    short num_edges() const { return num_edges_; }
-    short num_configurable_edges() const { return num_edges() - num_non_configurable_edges(); }
-    short num_non_configurable_edges() const { return num_non_configurable_edges_; }
+    t_edge_size num_edges() const { return num_edges_; }
+    t_edge_size num_configurable_edges() const { return num_edges() - num_non_configurable_edges(); }
+    t_edge_size num_non_configurable_edges() const { return num_non_configurable_edges_; }
 
-    int edge_sink_node(short iedge) const {
+    int edge_sink_node(t_edge_size iedge) const {
         VTR_ASSERT_SAFE(iedge < num_edges());
         return edges_[iedge].sink_node;
     }
-    short edge_switch(short iedge) const {
+    short edge_switch(t_edge_size iedge) const {
         VTR_ASSERT_SAFE(iedge < num_edges());
         return edges_[iedge].switch_id;
     }
 
-    bool edge_is_configurable(short iedge) const;
-    short fan_in() const;
+    bool edge_is_configurable(t_edge_size iedge) const;
+    t_edge_size fan_in() const;
 
     short xlow() const;
     short ylow() const;
@@ -124,7 +124,7 @@ class t_rr_node {
   public: //Mutators
     void set_type(t_rr_type new_type);
 
-    short add_edge(int sink_node, int iswitch);
+    t_edge_size add_edge(int sink_node, int iswitch);
 
     void shrink_to_fit();
 
@@ -136,11 +136,11 @@ class t_rr_node {
     //are correct.
     void partition_edges();
 
-    void set_num_edges(short); //Note will remove any previous edges
-    void set_edge_sink_node(short iedge, int sink_node);
-    void set_edge_switch(short iedge, short switch_index);
+    void set_num_edges(size_t); //Note will remove any previous edges
+    void set_edge_sink_node(t_edge_size iedge, int sink_node);
+    void set_edge_switch(t_edge_size iedge, short switch_index);
 
-    void set_fan_in(short);
+    void set_fan_in(t_edge_size);
 
     void set_coordinates(short x1, short y1, short x2, short y2);
 
@@ -169,8 +169,8 @@ class t_rr_node {
     //Note: we use a plain array and use small types for sizes to save space vs std::vector
     //      (using std::vector's nearly doubles the size of the class)
     std::unique_ptr<t_rr_edge[]> edges_ = nullptr;
-    uint16_t num_edges_ = 0;
-    uint16_t edges_capacity_ = 0;
+    t_edge_size num_edges_ = 0;
+    t_edge_size edges_capacity_ = 0;
     uint8_t num_non_configurable_edges_ = 0;
 
     int8_t cost_index_ = -1;
@@ -192,7 +192,7 @@ class t_rr_node {
         int16_t track_num;
         int16_t class_num;
     } ptc_;
-    uint16_t fan_in_ = 0;
+    t_edge_size fan_in_ = 0;
     uint16_t capacity_ = 0;
 };
 

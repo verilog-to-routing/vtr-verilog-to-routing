@@ -177,7 +177,7 @@ static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end
 static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, ezgl::color color, ezgl::renderer& g);
 static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_id, const int driver_pin, const int sink_pin);
 static bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path);
-static int find_edge(int prev_inode, int inode);
+static t_edge_size find_edge(int prev_inode, int inode);
 
 static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer& g);
 
@@ -1326,7 +1326,7 @@ static void draw_rr_edges(int inode, ezgl::renderer& g) {
 
     from_ptc_num = device_ctx.rr_nodes[inode].ptc_num();
 
-    for (int iedge = 0, l = device_ctx.rr_nodes[inode].num_edges(); iedge < l; iedge++) {
+    for (t_edge_size iedge = 0, l = device_ctx.rr_nodes[inode].num_edges(); iedge < l; iedge++) {
         to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
         to_type = device_ctx.rr_nodes[to_node].type();
         to_ptc_num = device_ctx.rr_nodes[to_node].ptc_num();
@@ -2044,7 +2044,7 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
         int prev_node = rr_nodes_to_draw[i - 1];
         auto prev_type = device_ctx.rr_nodes[prev_node].type();
 
-        int iedge = find_edge(prev_node, inode);
+        auto iedge = find_edge(prev_node, inode);
         auto switch_type = device_ctx.rr_nodes[prev_node].edge_switch(iedge);
 
         switch (rr_type) {
@@ -2220,7 +2220,7 @@ void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
 
     for (auto node : nodes) {
         /* Highlight the fanout nodes in red. */
-        for (int iedge = 0, l = device_ctx.rr_nodes[node].num_edges(); iedge < l; iedge++) {
+        for (t_edge_size iedge = 0, l = device_ctx.rr_nodes[node].num_edges(); iedge < l; iedge++) {
             int fanout_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
 
             if (draw_state->draw_rr_node[node].color == ezgl::MAGENTA && draw_state->draw_rr_node[fanout_node].color != ezgl::MAGENTA) {
@@ -2236,7 +2236,7 @@ void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
 
         /* Highlight the nodes that can fanin to this node in blue. */
         for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-            for (int iedge = 0, l = device_ctx.rr_nodes[inode].num_edges(); iedge < l; iedge++) {
+            for (t_edge_size iedge = 0, l = device_ctx.rr_nodes[inode].num_edges(); iedge < l; iedge++) {
                 int fanout_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
                 if (fanout_node == node) {
                     if (draw_state->draw_rr_node[node].color == ezgl::MAGENTA && draw_state->draw_rr_node[inode].color != ezgl::MAGENTA) {
@@ -2324,7 +2324,7 @@ void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set<int>& 
 
     expanded_nodes.insert(from_node);
 
-    for (int iedge = 0; iedge < device_ctx.rr_nodes[from_node].num_edges(); ++iedge) {
+    for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[from_node].num_edges(); ++iedge) {
         bool edge_configurable = device_ctx.rr_nodes[from_node].edge_is_configurable(iedge);
         int to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iedge);
 
@@ -3041,9 +3041,9 @@ bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_
 }
 
 //Find the edge between two rr nodes
-static int find_edge(int prev_inode, int inode) {
+static t_edge_size find_edge(int prev_inode, int inode) {
     auto& device_ctx = g_vpr_ctx.device();
-    for (int iedge = 0; iedge < device_ctx.rr_nodes[prev_inode].num_edges(); ++iedge) {
+    for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[prev_inode].num_edges(); ++iedge) {
         if (device_ctx.rr_nodes[prev_inode].edge_sink_node(iedge) == inode) {
             return iedge;
         }

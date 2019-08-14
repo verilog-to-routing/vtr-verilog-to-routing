@@ -399,7 +399,7 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vector<float>& nod
 
     auto& parent_node = device_ctx.rr_nodes[parent_ind];
 
-    for (int iedge = 0; iedge < parent_node.num_edges(); iedge++) {
+    for (t_edge_size iedge = 0; iedge < parent_node.num_edges(); iedge++) {
         int child_node_ind = parent_node.edge_sink_node(iedge);
         int switch_ind = parent_node.edge_switch(iedge);
 

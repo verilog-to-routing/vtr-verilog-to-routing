@@ -80,7 +80,7 @@ void ClockRRGraphBuilder::add_rr_switches_and_map_to_nodes(size_t node_start_idx
     // The following assumes that arch_switch was specified earlier when the edges where added
     for (size_t node_idx = node_start_idx; node_idx < rr_nodes.size(); node_idx++) {
         auto& from_node = rr_nodes[node_idx];
-        for (int edge_idx = 0; edge_idx < from_node.num_edges(); edge_idx++) {
+        for (t_edge_size edge_idx = 0; edge_idx < from_node.num_edges(); edge_idx++) {
             int arch_switch_idx = from_node.edge_switch(edge_idx);
 
             int rr_switch_idx;

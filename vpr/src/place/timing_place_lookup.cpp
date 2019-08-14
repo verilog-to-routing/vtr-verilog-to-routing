@@ -854,17 +854,17 @@ bool directconnect_exists(int src_rr_node, int sink_rr_node) {
     VTR_ASSERT(rr_nodes[src_rr_node].type() == SOURCE && rr_nodes[sink_rr_node].type() == SINK);
 
     //TODO: This is a constant depth search, but still may be too slow
-    for (int i_src_edge = 0; i_src_edge < rr_nodes[src_rr_node].num_edges(); ++i_src_edge) {
+    for (t_edge_size i_src_edge = 0; i_src_edge < rr_nodes[src_rr_node].num_edges(); ++i_src_edge) {
         int opin_rr_node = rr_nodes[src_rr_node].edge_sink_node(i_src_edge);
 
         if (rr_nodes[opin_rr_node].type() != OPIN) continue;
 
-        for (int i_opin_edge = 0; i_opin_edge < rr_nodes[opin_rr_node].num_edges(); ++i_opin_edge) {
+        for (t_edge_size i_opin_edge = 0; i_opin_edge < rr_nodes[opin_rr_node].num_edges(); ++i_opin_edge) {
             int ipin_rr_node = rr_nodes[opin_rr_node].edge_sink_node(i_opin_edge);
 
             if (rr_nodes[ipin_rr_node].type() != IPIN) continue;
 
-            for (int i_ipin_edge = 0; i_ipin_edge < rr_nodes[ipin_rr_node].num_edges(); ++i_ipin_edge) {
+            for (t_edge_size i_ipin_edge = 0; i_ipin_edge < rr_nodes[ipin_rr_node].num_edges(); ++i_ipin_edge) {
                 if (sink_rr_node == rr_nodes[ipin_rr_node].edge_sink_node(i_ipin_edge)) {
                     return true;
                 }
