@@ -807,12 +807,75 @@ bool RRGraph::check_dangling_nodes() const {
     return no_dangling;
 }
 
+/*********************************************************************** 
+ * check if all the source nodes are in the right condition:
+ * 1. zero fan-in and non-zero fanout
+ **********************************************************************/ 
+bool RRGraph::check_source_nodes() const {
+    bool invalid_sources = false;
+    /* For each node: 
+     * check if the number of input edges and output edges are both 0
+     * If so, this is a dangling nodes and report 
+     */
+    for (auto node : nodes()) {
+        /* Pass nodes whose types are not SOURCE */
+        if (SOURCE != this->node_type(node)) {
+            continue;
+        }
+        if ((0 != this->node_fan_in(node))
+            || (0 == this->node_fan_out(node))) {
+            /* Print a warning! */
+            VTR_LOG_WARN("Source node %s is invalid (should have zero fan-in and non-zero fan-out)!\n",
+                         node);
+            VTR_LOG_WARN("Node details for debugging:\n");
+            this->print_node(node);
+            invalid_sources = true;
+        }
+    }
+
+    return invalid_sources;
+}
+
+/*********************************************************************** 
+ * check if all the sink nodes are in the right condition:
+ * 1. non-zero fan-in and zero fanout
+ **********************************************************************/ 
+bool RRGraph::check_sink_nodes() const {
+    bool invalid_sinks = false;
+    /* For each node: 
+     * check if the number of input edges and output edges are both 0
+     * If so, this is a dangling nodes and report 
+     */
+    for (auto node : nodes()) {
+        /* Pass nodes whose types are not SINK */
+        if (SINK != this->node_type(node)) {
+            continue;
+        }
+        if ((0 == this->node_fan_in(node))
+            || (0 != this->node_fan_out(node))) {
+            /* Print a warning! */
+            VTR_LOG_WARN("Sink node %s is invalid (should have non-zero fan-in and zero fan-out)!\n",
+                         node);
+            VTR_LOG_WARN("Node details for debugging:\n");
+            this->print_node(node);
+            invalid_sinks = true;
+        }
+    }
+
+    return invalid_sinks;
+}
+
+
 /* This function should be used when nodes, edges, switches and segments have been used after 
  * We will build the fast_lookup, partition edges and check 
+ * This function run fundamental and optional checks on internal data 
+ * Errors are thrown if fundamental checking fails
+ * Warnings are thrown if optional checking fails
  */
 bool RRGraph::check() const {
     bool check_flag = true;
     size_t num_err = 0;
+    size_t num_fatal_err = 0;
 
     initialize_fast_node_lookup();
 
@@ -821,30 +884,35 @@ bool RRGraph::check() const {
         VTR_LOG_WARN("Fail in checking edges connected to each node!\n");
         check_flag = false;
         num_err++;
+        num_fatal_err++;
     }
 
     if (false == check_node_segments()) {
         VTR_LOG_WARN("Fail in checking segment IDs of nodes !\n");
         check_flag = false;
         num_err++;
+        num_fatal_err++;
     }
 
     if (false == check_edge_src_nodes()) {
         VTR_LOG_WARN("Fail in checking source nodes of edges !\n");
         check_flag = false;
         num_err++;
+        num_fatal_err++;
     }
 
     if (false == check_edge_sink_nodes()) {
         VTR_LOG_WARN("Fail in checking sink nodes of edges !\n");
         check_flag = false;
         num_err++;
+        num_fatal_err++;
     }
 
     if (false == check_edge_switches()) {
         VTR_LOG_WARN("Fail in checking switch IDs of edges !\n");
         check_flag = false;
         num_err++;
+        num_fatal_err++;
     }
 
     /* Advanced check */
@@ -860,8 +928,24 @@ bool RRGraph::check() const {
         num_err++;
     }
 
-    VTR_LOG("Checked Routing Resource graph with %d errors !\n",
-            num_err);
+    if (false == check_source_nodes()) {
+        VTR_LOG_WARN("Fail in checking source nodes!\n");
+        check_flag = false;
+        num_err++;
+    }
+
+    if (false == check_sink_nodes()) {
+        VTR_LOG_WARN("Fail in checking sink nodes!\n");
+        check_flag = false;
+        num_err++;
+    }
+
+    /* Error out if there is any fatal errors found */  
+    VTR_LOG_ERROR("Checked Routing Resource graph with %d fatal errors !\n",
+            num_fatal_err);
+
+    VTR_LOG_WARN("Checked Routing Resource graph with %d warnings !\n",
+            num_err - num_fatal_err);
 
     return check_flag;
 }
