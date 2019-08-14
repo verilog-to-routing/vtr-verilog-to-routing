@@ -319,6 +319,8 @@ class RRGraph {
     bool check_edge_sink_nodes() const;
     bool check_duplicated_edges() const; /* identify and report any duplicated edges between two nodes */
     bool check_dangling_nodes() const;   /* identify if there is any dangling nodes in the graph */
+    bool check_source_nodes() const;   /* identify if there is any invalid source nodes in the graph */
+    bool check_sink_nodes() const;   /* identify if there is any invalid sink nodes in the graph */
 
     /* Full set checking using listed checking functions*/
     bool check() const;
