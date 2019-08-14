@@ -44,11 +44,26 @@
  *  -----------------------------------------------------------------
  * 1. To traverse all the nodes/edges/switches/segments in a RRGraph, 
  *    using a range-based loop is suggested.
- *    Example:
- *      for (auto node : nodes()) {
+ *  -----------------------------------------------------------------
+ *    Example: iterate over all the nodes
+ *      for (RRNodeId node : nodes()) {
+ *        // Do something with each node
  *      }
  *
- * 2. Access to a node/edge/switch/segment, please use the StrongId created
+ *      for (RREdgeId edge : edges()) {
+ *        // Do something with each edge
+ *      }
+ *
+ *      for (RRSwitchId switch : switches()) {
+ *        // Do something with each switch
+ *      }
+ *
+ *      for (RRSegmentId segment : segments()) {
+ *        // Do something with each segment
+ *      }
+ *
+ * Access to a node/edge/switch/segment, please use the StrongId created
+ *  -----------------------------------------------------------------
  *    For node, use RRNodeId
  *    For edge, use RREdgeId
  *    For switch, use RRSwitchId
@@ -59,6 +74,7 @@
  *    Example:
  *       if (node_id == RRNodeId::INVALID()) {
  *       }  
+ *
  *  
  * Detailed description on the RRGraph data structure
  * ==================================================
@@ -161,11 +177,13 @@
  *                     for any node-to-node connection
  *
  * Switch-related data:
+ *  -----------------------------------------------------------------
  * 1. switch_ids_ : unique identifiers for switches which are used in the RRGraph  
  *
  * 2. switches_: detailed information about the switches, which are used in the RRGraph
  *
  * Segment-related data:
+ *  -----------------------------------------------------------------
  * 1. segment_ids_ : unique identifiers for routing segments which are used in the RRGraph  
  *
  * 2. segments_: detailed information about the segments, which are used in the RRGraph
@@ -327,7 +345,7 @@ class RRGraph {
 
     /* Full set checking using listed checking functions*/
     bool check() const;
-  public:  //Validators
+  public: //Validators
     bool valid_node_id(RRNodeId node) const;
     bool valid_edge_id(RREdgeId edge) const;
 
@@ -390,7 +408,6 @@ class RRGraph {
     void clear_edges();
     void clear_switches();
     void clear_segments();
-    void clear();
 
   private: //Internal
     void set_dirty();
