@@ -167,9 +167,9 @@ void init_parser()
 void cleanup_parser()
 {
 	sc_free_string_cache(defines_for_module_sc[num_modules]); // last string cache is unused
-	sc_free_string_cache(defines_for_function_sc[num_functions]); // last string cache is unused
+	//sc_free_string_cache(defines_for_function_sc[num_functions]); // last string cache is unused
 	vtr::free(defines_for_module_sc);
-	vtr::free(defines_for_function_sc);
+	//vtr::free(defines_for_function_sc);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -181,8 +181,8 @@ void init_parser_for_file()
 	defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
 	defines_for_module_sc[num_modules] = sc_new_string_cache();
 
-	defines_for_function_sc = (STRING_CACHE**)vtr::realloc(defines_for_function_sc, sizeof(STRING_CACHE*)*(num_functions+1));
-	defines_for_function_sc[num_modules] = sc_new_string_cache();
+	// defines_for_function_sc = (STRING_CACHE**)vtr::realloc(defines_for_function_sc, sizeof(STRING_CACHE*)*(num_modules+1));
+	// defines_for_function_sc[num_functions] = sc_new_string_cache();
 
 	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
 	modules_inputs_sc = sc_new_string_cache();
@@ -1651,7 +1651,6 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, { symbol_node, list_of_ports, list_of_module_items });
-	new_node->types.function.parameter_list = defines_for_function_sc[num_functions];
 
 	/* store the list of modules this module instantiates */
 	new_node->types.function.function_instantiations_instance = function_instantiations_instance;
@@ -1683,8 +1682,8 @@ void next_function()
     //num_modules++;
 
 	/* define the string cache for the next function */
-	defines_for_function_sc = (STRING_CACHE**)vtr::realloc(defines_for_function_sc, sizeof(STRING_CACHE*)*(num_functions+1));
-	defines_for_function_sc[num_functions] = sc_new_string_cache();
+	// defines_for_function_sc = (STRING_CACHE**)vtr::realloc(defines_for_function_sc, sizeof(STRING_CACHE*)*(num_functions+1));
+	// defines_for_function_sc[num_functions] = sc_new_string_cache();
 
 	/* create a new list for the instantiations list */
 	function_instantiations_instance = NULL;

@@ -736,13 +736,6 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, STRING_CACHE_LIST
 					ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(sc_spot_2 + 1));
 					ast_modules[sc_spot_2] = instance;
 
-					/* update the parameter table for the instantiated module */
-					STRING_CACHE *original_param_table_sc = ((ast_node_t *)module_names_to_idx->data[sc_spot])->types.function.parameter_list;
-					instance->types.function.parameter_list = copy_param_table_sc(original_param_table_sc);
-					STRING_CACHE *instance_param_table_sc = instance->types.function.parameter_list;
-
-					update_instance_parameter_table(temp_instance, instance_param_table_sc);
-
 					/* create the string cache list for the instantiated function */
 					STRING_CACHE_LIST *function_string_cache_list = (STRING_CACHE_LIST*)vtr::calloc(1, sizeof(STRING_CACHE_LIST));
 					function_string_cache_list->parent = local_string_cache_list;
@@ -754,7 +747,6 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, STRING_CACHE_LIST
 					
 					function_string_cache_list->instance_name_prefix = vtr::strdup(temp_instance_name);
 					function_string_cache_list->scope_id = vtr::strdup(temp_instance->children[1]->children[0]->types.identifier);
-					function_string_cache_list->local_param_table_sc = instance_param_table_sc;
 
 					/* create the symbol table for the instantiated module */
 					function_string_cache_list->local_symbol_table_sc = sc_new_string_cache();

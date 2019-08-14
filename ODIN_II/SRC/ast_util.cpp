@@ -1551,11 +1551,14 @@ void free_string_cache_list(STRING_CACHE_LIST *to_free)
 	}
 	to_free->children = (STRING_CACHE_LIST **)vtr::free(to_free->children);
 
-	for(i = 0; i < to_free->local_param_table_sc->free; i++)
+	if (to_free->local_param_table_sc)
 	{
-		free_whole_tree((ast_node_t *)to_free->local_param_table_sc->data[i]);
+		for(i = 0; i < to_free->local_param_table_sc->free; i++)
+		{
+			free_whole_tree((ast_node_t *)to_free->local_param_table_sc->data[i]);
+		}
+		to_free->local_param_table_sc = sc_free_string_cache(to_free->local_param_table_sc);
 	}
-	to_free->local_param_table_sc = sc_free_string_cache(to_free->local_param_table_sc);
 
 	for (i = 0; i < to_free->num_local_symbol_table; i++)
 	{
