@@ -394,17 +394,17 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 				/* range */
 				if (symbol_list->children[j]->children[1] == NULL)
 				{
-					symbol_list->children[j]->children[1] = this_port->children[1];
-					symbol_list->children[j]->children[2] = this_port->children[2];
-					symbol_list->children[j]->children[3] = this_port->children[3];
-					symbol_list->children[j]->children[4] = this_port->children[4];
+					symbol_list->children[j]->children[1] = ast_node_deep_copy(this_port->children[1]);
+					symbol_list->children[j]->children[2] = ast_node_deep_copy(this_port->children[2]);
+					symbol_list->children[j]->children[3] = ast_node_deep_copy(this_port->children[3]);
+					symbol_list->children[j]->children[4] = ast_node_deep_copy(this_port->children[4]);
 
 					if (this_port->num_children == 8)
 					{
 						symbol_list->children[j]->children = (ast_node_t**) realloc(symbol_list->children[j]->children, sizeof(ast_node_t*)*8);
-						symbol_list->children[j]->children[7] = symbol_list->children[j]->children[5];
-						symbol_list->children[j]->children[5] = this_port->children[5];
-						symbol_list->children[j]->children[6] = this_port->children[6];
+						symbol_list->children[j]->children[7] = ast_node_deep_copy(symbol_list->children[j]->children[5]);
+						symbol_list->children[j]->children[5] = ast_node_deep_copy(this_port->children[5]);
+						symbol_list->children[j]->children[6] = ast_node_deep_copy(this_port->children[6]);
 					}
 				}
 
@@ -760,8 +760,8 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 
 			if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
 			{
-				symbol_list->children[i]->children[1] = range_max;
-				symbol_list->children[i]->children[2] = range_min;
+				symbol_list->children[i]->children[1] = ast_node_deep_copy(range_max);
+				symbol_list->children[i]->children[2] = ast_node_deep_copy(range_min);
 			}
 			
 			if(top_type == MODULE) {
