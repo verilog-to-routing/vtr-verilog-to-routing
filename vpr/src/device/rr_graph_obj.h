@@ -17,17 +17,31 @@
  *   The RRGraph is designed to be a read-only database/graph, once created.
  *   Placement and routing should not change any attributes of RRGraph.
  *   Any placement and routing results should be stored in other data structures, such as PlaceContext and RoutingContext. 
- ***********************************************************************/
-
-/************************************************************************
+ *
  * How to use the RRGraph data structure 
- * 1. To traverse all the nodes/edges/switches/segments in a RRGraph, 
+ * =====================================
+ * To iterate over the nodes/edges/switches/segments in a RRGraph, 
  *    using a range-based loop is suggested.
- *    Example:
- *      for (auto node : nodes()) {
+ *  -----------------------------------------------------------------
+ *    Example: iterate over all the nodes
+ *      for (RRNodeId node : nodes()) {
+ *        // Do something with each node
  *      }
  *
- * 2. Access to a node/edge/switch/segment, please use the StrongId created
+ *      for (RREdgeId edge : edges()) {
+ *        // Do something with each edge
+ *      }
+ *
+ *      for (RRSwitchId switch : switches()) {
+ *        // Do something with each switch
+ *      }
+ *
+ *      for (RRSegmentId segment : segments()) {
+ *        // Do something with each segment
+ *      }
+ *
+ * Access to a node/edge/switch/segment, please use the StrongId created
+ *  -----------------------------------------------------------------
  *    For node, use RRNodeId
  *    For edge, use RREdgeId
  *    For switch, use RRSwitchId
@@ -38,13 +52,13 @@
  *    Example:
  *       if (node_id == RRNodeId::INVALID()) {
  *       }  
+ *
  *  
- ***********************************************************************/
-
-/************************************************************************
  * Detailed description on the RRGraph data structure
+ * ==================================================
  *
  * Node-related data 
+ *  -----------------------------------------------------------------
  * 1. node_ids_ : unique identifiers for the nodes
  *
  * 2. node_types_ : types of each node, can be 
@@ -87,7 +101,7 @@
  *                            |  <-------(xhigh, yhigh)
  *                            |
  *                           \|/ <-------(xlow, ylow)
-
+ *
  *
  * 4. node_capacities_ : the capacity of a node. How many nets can be mapped
  *                     to the node. Typically, each node has a capacity of 
@@ -142,19 +156,24 @@
  *                     for any node-to-node connection
  *
  * Switch-related data:
+ *  -----------------------------------------------------------------
  * 1. switch_ids_ : unique identifiers for switches which are used in the RRGraph  
  *
  * 2. switches_: detailed information about the switches, which are used in the RRGraph
  *
  * Segment-related data:
+ *  -----------------------------------------------------------------
  * 1. segment_ids_ : unique identifiers for routing segments which are used in the RRGraph  
  *
  * 2. segments_: detailed information about the segments, which are used in the RRGraph
  *
- * Misc.
- * 1. dirty_ : FIXME need more inputs 
+ * RRGraph compression
+ *  -----------------------------------------------------------------
+ * 1. dirty_ : an indicator showing if the RRGraph is compressed. 
+ *
  *
  * Fast look-up
+ *  -----------------------------------------------------------------
  * 1. node_lookup_: a fast look-up to quickly find a node in the RRGraph by its type, coordinator and ptc_num
  *
  ***********************************************************************/
@@ -252,7 +271,7 @@ class RRGraph {
     edge_range node_in_edges(RRNodeId node) const;
 
     //Edge attributes
-    size_t edge_index(RREdgeId edge) const;
+    size_t edge_index(RREdgeId edge) const; /* TODO: deprecate this accessor as outside functions should use RREdgeId */
     RRNodeId edge_src_node(RREdgeId edge) const;
     RRNodeId edge_sink_node(RREdgeId edge) const;
     RRSwitchId edge_switch(RREdgeId edge) const;
@@ -260,11 +279,11 @@ class RRGraph {
     bool edge_is_non_configurable(RREdgeId edge) const;
 
     /* Switch Info */
-    size_t switch_index(RRSwitchId switch_id) const;
+    size_t switch_index(RRSwitchId switch_id) const; /* TODO: deprecate this accessor as outside functions should use RRSwitchId */
     const t_rr_switch_inf& get_switch(RRSwitchId switch_id) const;
 
     /* Segment Info */
-    size_t segment_index(RRSegmentId segment_id) const;
+    size_t segment_index(RRSegmentId segment_id) const; /* TODO: deprecate this accessor as outside functions should use RRSegmentId */
     const t_segment_inf& get_segment(RRSegmentId segment_id) const;
 
     //Utilities
@@ -306,7 +325,7 @@ class RRGraph {
 
     /* Full set checking using listed checking functions*/
     bool check() const;
-  public:  //Validators
+  public: //Validators
     bool valid_node_id(RRNodeId node) const;
     bool valid_edge_id(RREdgeId edge) const;
 
@@ -359,11 +378,13 @@ class RRGraph {
     void compress();
     bool validate();
 
+    void clear(); /* top-level function to free */
+
+  private: //Internal free functions
     void clear_nodes();
     void clear_edges();
     void clear_switches();
     void clear_segments();
-    void clear();
 
   private: //Internal
     void set_dirty();

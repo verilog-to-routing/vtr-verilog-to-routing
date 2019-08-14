@@ -223,18 +223,7 @@ RRSegmentId RRGraph::node_segment(RRNodeId node) const {
  * This can avoid unneccessary walkthrough
  */
 short RRGraph::node_num_configurable_in_edges(RRNodeId node) const {
-    /* Ensure a valid node id */
-    VTR_ASSERT_SAFE(valid_node_id(node));
-
-    /* Each all the edges ends at this node */
-    short iedge = 0;
-    for (auto edge : node_in_edges(node)) {
-        if (true == edge_is_configurable(edge)) {
-            ++iedge;
-        }
-    }
-
-    return iedge;
+    return node_configurable_in_edges(node).size();
 }
 
 /* 
@@ -244,18 +233,7 @@ short RRGraph::node_num_configurable_in_edges(RRNodeId node) const {
  * This can avoid unneccessary walkthrough
  */
 short RRGraph::node_num_configurable_out_edges(RRNodeId node) const {
-    /* Ensure a valid node id */
-    VTR_ASSERT_SAFE(valid_node_id(node));
-
-    /* Each all the edges ends at this node */
-    short iedge = 0;
-    for (auto edge : node_out_edges(node)) {
-        if (true == edge_is_configurable(edge)) {
-            ++iedge;
-        }
-    }
-
-    return iedge;
+    return node_configurable_out_edges(node).size();
 }
 
 /* 
@@ -265,18 +243,7 @@ short RRGraph::node_num_configurable_out_edges(RRNodeId node) const {
  * This can avoid unneccessary walkthrough
  */
 short RRGraph::node_num_non_configurable_in_edges(RRNodeId node) const {
-    /* Ensure a valid node id */
-    VTR_ASSERT_SAFE(valid_node_id(node));
-
-    /* Each all the edges ends at this node */
-    short iedge = 0;
-    for (auto edge : node_in_edges(node)) {
-        if (true == edge_is_non_configurable(edge)) {
-            ++iedge;
-        }
-    }
-
-    return iedge;
+    return node_non_configurable_in_edges(node).size();
 }
 
 /* 
@@ -286,18 +253,7 @@ short RRGraph::node_num_non_configurable_in_edges(RRNodeId node) const {
  * This can avoid unneccessary walkthrough
  */
 short RRGraph::node_num_non_configurable_out_edges(RRNodeId node) const {
-    /* Ensure a valid node id */
-    VTR_ASSERT_SAFE(valid_node_id(node));
-
-    /* Each all the edges ends at this node */
-    short iedge = 0;
-    for (auto edge : node_out_edges(node)) {
-        if (true == edge_is_non_configurable(edge)) {
-            ++iedge;
-        }
-    }
-
-    return iedge;
+    return node_non_configurable_out_edges(node).size();
 }
 
 /* Get the edge id that connects two nodes */
