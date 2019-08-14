@@ -875,30 +875,35 @@ bool RRGraph::check() const {
         VTR_LOG_WARN("Fail in checking edges connected to each node!\n");
         check_flag = false;
         num_err++;
+        num_fatal_err++;
     }
 
     if (false == check_node_segments()) {
         VTR_LOG_WARN("Fail in checking segment IDs of nodes !\n");
         check_flag = false;
         num_err++;
+        num_fatal_err++;
     }
 
     if (false == check_edge_src_nodes()) {
         VTR_LOG_WARN("Fail in checking source nodes of edges !\n");
         check_flag = false;
         num_err++;
+        num_fatal_err++;
     }
 
     if (false == check_edge_sink_nodes()) {
         VTR_LOG_WARN("Fail in checking sink nodes of edges !\n");
         check_flag = false;
         num_err++;
+        num_fatal_err++;
     }
 
     if (false == check_edge_switches()) {
         VTR_LOG_WARN("Fail in checking switch IDs of edges !\n");
         check_flag = false;
         num_err++;
+        num_fatal_err++;
     }
 
     /* Error out if there is any fatal errors found */
