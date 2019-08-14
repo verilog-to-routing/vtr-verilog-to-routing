@@ -3,8 +3,6 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "easygl_constants.h"
-#    include "graphics.h"
 #    include "draw_global.h"
 
 #    include "ezgl/point.hpp"

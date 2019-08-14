@@ -62,7 +62,6 @@ target_link_libraries(libvpr
                         libarchfpga
                         libsdcparse
                         libblifparse
-			libeasygl
                         libtatum
                         libargparse
                         libpugixml)

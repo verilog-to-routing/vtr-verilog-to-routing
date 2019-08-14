@@ -31,7 +31,6 @@ using namespace std;
 #include "vpr_error.h"
 
 #include "globals.h"
-#include "graphics.h"
 #include "draw_color.h"
 #include "draw.h"
 #include "read_xml_arch_file.h"
@@ -2544,7 +2543,7 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, 
             app->update_message(msg.c_str());
         } else {
             if (!rr_highlight_message.empty()) {
-                update_message(rr_highlight_message.c_str());
+                app->update_message(rr_highlight_message.c_str());
             } else {
                 app->update_message(draw_state->default_message);
             }
@@ -3131,14 +3130,14 @@ ezgl::color to_ezgl_color(vtr::Color<float> color) {
     return ezgl::color(color.r * 255, color.g * 255, color.b * 255);
 }
 
-ezgl::color to_ezgl_color(t_color color) {
-    return ezgl::color(color.red, color.green, color.blue, color.alpha);
-}
-
-ezgl::color to_ezgl_color(color_types color_enum) {
-    t_color color = color_enum;
-    return to_ezgl_color(color);
-}
+//ezgl::color to_ezgl_color(t_color color) {
+//    return ezgl::color(color.red, color.green, color.blue, color.alpha);
+//}
+//
+//ezgl::color to_ezgl_color(color_types color_enum) {
+//    t_color color = color_enum;
+//    return to_ezgl_color(color);
+//}
 
 static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer& g) {
     constexpr float LEGEND_WIDTH_FAC = 0.075;
