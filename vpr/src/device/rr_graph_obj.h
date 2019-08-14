@@ -327,6 +327,9 @@ class RRGraph {
 
     /* Full set checking using listed checking functions*/
     bool check() const;
+  public:  //Validators
+    bool valid_node_id(RRNodeId node) const;
+    bool valid_edge_id(RREdgeId edge) const;
 
   public: //Validators
     bool valid_node_id(RRNodeId node) const;
