@@ -307,8 +307,8 @@ RREdgeId RRGraph::get_node_to_node_edge(RRNodeId from_node, RRNodeId to_node) co
             return edge; /* we find it return here */
         }
     }
-    /* We find nothing, return an RRGRAPH_OPEN ID */
-    return RRGRAPH_OPEN_EDGE_ID;
+    /* We find nothing, return an invalid ID of the EdgeId */
+    return RREdgeId::INVALID();
 }
 
 /* Get the switch id that connects two nodes */
@@ -318,9 +318,9 @@ RRSwitchId RRGraph::get_node_to_node_switch(RRNodeId from_node, RRNodeId to_node
     VTR_ASSERT_SAFE(valid_node_id(to_node));
 
     RREdgeId edge = get_node_to_node_edge(from_node, to_node);
-    if (RRGRAPH_OPEN_EDGE_ID == edge) {
-        /* edge is open, we return an RRGRAPH_OPEN_ID*/
-        return RRGRAPH_OPEN_SWITCH_ID;
+    if (RREdgeId::INVALID() == edge) {
+        /* edge is open, we return an invalid id of RRSwitch */
+        return RRSwitchId::INVALID();
     } else {
         return edge_switch(edge);
     }
@@ -485,35 +485,35 @@ RRNodeId RRGraph::find_node(short x, short y, t_rr_type type, int ptc, e_side si
     if ((x < 0)                                     /* See if x is smaller than the index of first element */
         || (size_t(x) > node_lookup_.size() - 1)) { /* See if x is large than the index of last element */
         /* Return a zero range! */
-        return RRGRAPH_OPEN_NODE_ID;
+        return RRNodeId::INVALID();
     }
 
     /* Check if x, y, type and ptc, side is valid */
     if ((y < 0)                                        /* See if y is smaller than the index of first element */
         || (size_t(y) > node_lookup_[x].size() - 1)) { /* See if y is large than the index of last element */
         /* Return a zero range! */
-        return RRGRAPH_OPEN_NODE_ID;
+        return RRNodeId::INVALID();
     }
 
     /* Check if x, y, type and ptc, side is valid */
     /* itype is always larger than -1, we can skip checking */
     if (itype > node_lookup_[x][y].size() - 1) { /* See if type is large than the index of last element */
         /* Return a zero range! */
-        return RRGRAPH_OPEN_NODE_ID;
+        return RRNodeId::INVALID();
     }
 
     /* Check if x, y, type and ptc, side is valid */
     if ((ptc < 0)                                                 /* See if ptc is smaller than the index of first element */
         || (size_t(ptc) > node_lookup_[x][y][type].size() - 1)) { /* See if ptc is large than the index of last element */
         /* Return a zero range! */
-        return RRGRAPH_OPEN_NODE_ID;
+        return RRNodeId::INVALID();
     }
 
     /* Check if x, y, type and ptc, side is valid */
     /* iside is always larger than -1, we can skip checking */
     if (iside > node_lookup_[x][y][type][ptc].size() - 1) { /* See if side is large than the index of last element */
         /* Return a zero range! */
-        return RRGRAPH_OPEN_NODE_ID;
+        return RRNodeId::INVALID();
     }
 
     return node_lookup_[x][y][itype][ptc][iside];
@@ -579,33 +579,33 @@ RRNodeId RRGraph::find_chan_node(short x, short y, t_rr_type type, int ptc) cons
     if ((x < 0)                                     /* See if x is smaller than the index of first element */
         || (size_t(x) > node_lookup_.size() - 1)) { /* See if x is large than the index of last element */
         /* Return a zero range! */
-        return RRGRAPH_OPEN_NODE_ID;
+        return RRNodeId::INVALID();
     }
 
     /* Check if x, y, type and ptc is valid */
     if ((y < 0)                                        /* See if y is smaller than the index of first element */
         || (size_t(y) > node_lookup_[x].size() - 1)) { /* See if y is large than the index of last element */
         /* Return a zero range! */
-        return RRGRAPH_OPEN_NODE_ID;
+        return RRNodeId::INVALID();
     }
 
     /* Check if x, y, type and ptc is valid */
     if ((size_t(type) > node_lookup_[x][y].size() - 1)) { /* See if type is large than the index of last element */
         /* Return a zero range! */
-        return RRGRAPH_OPEN_NODE_ID;
+        return RRNodeId::INVALID();
     }
 
     /* Check if x, y, type and ptc is valid */
     if ((ptc < 0)                                                 /* See if ptc is smaller than the index of first element */
         || (size_t(ptc) > node_lookup_[x][y][type].size() - 1)) { /* See if ptc is large than the index of last element */
         /* Return a zero range! */
-        return RRGRAPH_OPEN_NODE_ID;
+        return RRNodeId::INVALID();
     }
 
     /* check if SIDES is a zero vector */
     if (0 == node_lookup_[x][y][type][ptc].size()) {
         /* Return a zero range! */
-        return RRGRAPH_OPEN_NODE_ID;
+        return RRNodeId::INVALID();
     }
 
     return node_lookup_[x][y][type][ptc][NUM_SIDES];
@@ -656,8 +656,6 @@ void RRGraph::print_node(RRNodeId node) const {
     VTR_LOG("Node ptc: %d\n", node_ptc_num(node));
     VTR_LOG("Node num in_edges: %d\n", node_in_edges(node).size());
     VTR_LOG("Node num out_edges: %d\n", node_out_edges(node).size());
-
-    return;
 }
 
 /* Check if the segment id of a node is in range */
@@ -1053,8 +1051,6 @@ void RRGraph::reserve_nodes(int num_nodes) {
     /* Edge-relate vectors */
     this->node_in_edges_.reserve(num_nodes);
     this->node_out_edges_.reserve(num_nodes);
-
-    return;
 }
 
 /* Reserve a list of edges */
@@ -1064,24 +1060,18 @@ void RRGraph::reserve_edges(int num_edges) {
     this->edge_src_nodes_.reserve(num_edges);
     this->edge_sink_nodes_.reserve(num_edges);
     this->edge_switches_.reserve(num_edges);
-
-    return;
 }
 
 /* Reserve a list of switches */
 void RRGraph::reserve_switches(int num_switches) {
     this->switch_ids_.reserve(num_switches);
     this->switches_.reserve(num_switches);
-
-    return;
 }
 
 /* Reserve a list of segments */
 void RRGraph::reserve_segments(int num_segments) {
     this->segment_ids_.reserve(num_segments);
     this->segments_.reserve(num_segments);
-
-    return;
 }
 
 /* Mutators */
@@ -1316,8 +1306,6 @@ void RRGraph::set_node_segment(RRNodeId node, RRSegmentId segment_id) {
     }
 
     node_segments_[node] = segment_id;
-
-    return;
 }
 
 /* For a given node in a rr_graph
@@ -1337,8 +1325,6 @@ void RRGraph::partition_node_in_edges(RRNodeId node) {
                    "Exceeded RR node maximum number of non-configurable input edges");
 
     node_num_non_configurable_in_edges_[node] = num_non_conf_edges; //Narrowing
-
-    return;
 }
 
 /* For a given node in a rr_graph
@@ -1358,8 +1344,6 @@ void RRGraph::partition_node_out_edges(RRNodeId node) {
                    "Exceeded RR node maximum number of non-configurable output edges");
 
     node_num_non_configurable_out_edges_[node] = num_non_conf_edges; //Narrowing
-
-    return;
 }
 
 /* For all nodes in a rr_graph  
@@ -1370,8 +1354,6 @@ void RRGraph::partition_in_edges() {
     for (auto node : nodes()) {
         this->partition_node_in_edges(node);
     }
-
-    return;
 }
 
 /* For all nodes in a rr_graph  
@@ -1382,8 +1364,6 @@ void RRGraph::partition_out_edges() {
     for (auto node : nodes()) {
         this->partition_node_out_edges(node);
     }
-
-    return;
 }
 
 /* For all nodes in a rr_graph  
@@ -1395,8 +1375,6 @@ void RRGraph::partition_edges() {
     this->partition_in_edges();
     /* Partition output edges */
     this->partition_out_edges();
-
-    return;
 }
 
 /* 
@@ -1708,8 +1686,6 @@ void RRGraph::clear_nodes() {
 
     /* clean node_look_up */
     node_lookup_.clear();
-
-    return;
 }
 
 /* Empty all the vectors related to edges */
@@ -1718,24 +1694,18 @@ void RRGraph::clear_edges() {
     edge_src_nodes_.clear();
     edge_sink_nodes_.clear();
     edge_switches_.clear();
-
-    return;
 }
 
 /* Empty all the vectors related to switches */
 void RRGraph::clear_switches() {
     switch_ids_.clear();
     switches_.clear();
-
-    return;
 }
 
 /* Empty all the vectors related to segments */
 void RRGraph::clear_segments() {
     segment_ids_.clear();
     segments_.clear();
-
-    return;
 }
 
 /* Clean the rr_graph */
@@ -1744,7 +1714,5 @@ void RRGraph::clear() {
     clear_edges();
     clear_switches();
     clear_segments();
-
-    return;
 }
 
