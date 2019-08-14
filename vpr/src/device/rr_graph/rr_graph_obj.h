@@ -18,6 +18,113 @@
  *   Placement and routing should not change any attributes of RRGraph.
  *   Any placement and routing results should be stored in other data structures, such as PlaceContext and RoutingContext. 
  ***********************************************************************/
+
+/************************************************************************
+ * How to use the RRGraph data structure 
+ * 1. To traverse all the nodes/edges/switches/segments in a RRGraph, 
+ *    using a range-based loop is suggested.
+ *    Example:
+ *      for (auto node : nodes()) {
+ *      }
+ *
+ * 2. Access to a node/edge/switch/segment, please use the StrongId created
+ *    For node, use RRNodeId
+ *    For edge, use RREdgeId
+ *    For switch, use RRSwitchId
+ *    For segment, use RRSegmentId
+ *
+ *    These are the unique identifier for each data type.
+ *    To check if your id is valid or not, use the INVALID() function of StrongId class.
+ *    Example:
+ *       if (node_id == RRNodeId::INVALID()) {
+ *       }  
+ *  
+ ***********************************************************************/
+
+/************************************************************************
+ * Detailed description on the RRGraph data structure
+ *
+ * Node-related data 
+ * 1. node_ids_ : unique identifiers for the nodes
+ *
+ * 2. node_types_ : types of each node, can be 
+ *                  channel wires (CHANX or CHANY) or 
+ *                  logic block pins(OPIN or IPIN) or
+ *                  virtual nodes (SOURCE or SINK)
+ *                  see t_rr_type definition for more details
+ *
+ * 3. node_bounding_boxes_ : FIXME not sure what is this used for  
+ *                           need more inputs
+ *
+ * 4. node_capacities_ : the capacity of a node. How many nets can be mapped
+ *                     to the node. Typically, each node has a capacity of 
+ *                     1 but special nodes (SOURCE and SINK) will have a 
+ *                     large number due to logic equivalent pins
+ *
+ * 5. node_ptc_nums_ : feature number of each node for indexing by node type
+ *                     The ptc_num carries different meanings for different node types
+ *                     CHANX or CHANY: the track id in routing channels
+ *                     OPIN or IPIN: the index of pins in the logic block data structure
+ *                     SOURCE and SINK: does not matter
+ *                     Due to a useful identifier, ptc_num is used in building fast look-up 
+ *
+ * 6. node_cost_indices_: the index of cost data in the list of cost_indexed_data data structure
+ *                        It contains the routing cost for different nodes in the RRGraph
+ *                        when used in evaluate different routing paths
+ *
+ * 7. node_directions_ :  directionality of the node, only matters the routing track nodes
+ *                        (CHANX and CHANY) 
+ *
+ * 8. node_sides_ : side of node on the perimeter of logic blocks, only applicable to 
+ *                  OPIN and IPIN nodes. The side should be consistent to <pinlocation>
+ *                  definition in architecture XML
+ *
+ * 9. node_Rs_ :  resistance of a node, used to built RC tree for timing analysis  
+ *
+ * 10. node_Rs_ :  capacitance of a node, used to built RC tree for timing analysis  
+ *
+ * 11. node_segments_ : segment id of a node, containing the information of the routing
+ *                      segment that the node represents. See more details in the data
+ *                      structure t_segment_inf
+ *
+ * 12. node_num_non_configurable_in_edges_ : number of non-configurable incoming edges 
+ *                                           to a node
+ *
+ * 13. node_num_non_configurable_out_edges_ : number of non-configurable outgoing edges 
+ *                                           from a node
+ *
+ * 14. node_in_edges_ : a list of edge ids, which are incoming edges to a node 
+ *
+ * 15. node_out_edges_ : a list of edge ids, which are outgoing edges from a node 
+ *
+ * Edge-related data:
+ * 1. edge_ids_: unique identifiers for edges
+ *
+ * 2. edge_src_nodes_ : source node which drives a edge  
+ *
+ * 3. edge_sink_nodes_ : sink node which a edge ends to 
+ *
+ * 4. edge_switches_ : the switch id which a edge represents
+ *                     using switch id, timing and other information can be found
+ *                     for any node-to-node connection
+ *
+ * Switch-related data:
+ * 1. switch_ids_ : unique identifiers for switches which are used in the RRGraph  
+ *
+ * 2. switches_: detailed information about the switches, which are used in the RRGraph
+ *
+ * Segment-related data:
+ * 1. segment_ids_ : unique identifiers for routing segments which are used in the RRGraph  
+ *
+ * 2. segments_: detailed information about the segments, which are used in the RRGraph
+ *
+ * Misc.
+ * 1. dirty_ : FIXME need more inputs 
+ *
+ * Fast look-up
+ * 1. node_lookup_: a fast look-up to quickly find a node in the RRGraph by its type, coordinator and ptc_num
+ *
+ ***********************************************************************/
 #ifndef RR_GRAPH_OBJ_H
 #define RR_GRAPH_OBJ_H
 
