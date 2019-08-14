@@ -2,16 +2,38 @@
 #include "atom_netlist.h"
 #include "atom_lookup.h"
 
-VprTimingGraphResolver::VprTimingGraphResolver(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const tatum::TimingGraph& timing_graph, const AnalysisDelayCalculator& delay_calc)
+VprTimingGraphResolver::VprTimingGraphResolver(
+    const AtomNetlist& netlist,
+    const AtomLookup& netlist_lookup,
+    const ClusteredNetlist& clustered_netlist,
+    const ClusteredPinAtomPinsLookup& pin_lookup,
+    const tatum::TimingGraph& timing_graph,
+    const AnalysisDelayCalculator& delay_calc,
+    const vtr::vector<ClusterNetId, std::vector<int>>& net_rr_terminals)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
+    , clustered_netlist_(clustered_netlist)
+    , pin_lookup_(pin_lookup)
     , timing_graph_(timing_graph)
-    , delay_calc_(delay_calc) {}
+    , delay_calc_(delay_calc)
+    , net_rr_terminals_(net_rr_terminals) {}
 
 std::string VprTimingGraphResolver::node_name(tatum::NodeId node) const {
     AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
 
-    return netlist_.pin_name(pin);
+    std::string name = netlist_.pin_name(pin);
+    if (detail_level() == e_timing_report_detail::AGGREGATED || detail_level() == e_timing_report_detail::DETAILED_ROUTING) {
+        ClusterPinId sink_pin = pin_lookup_.atom_pin_to_cluster_pin(pin);
+        if (sink_pin) {
+            ClusterNetId net_id = clustered_netlist_.pin_net(sink_pin);
+            int ipin = clustered_netlist_.pin_net_index(sink_pin);
+            int sink_rr_inode = net_rr_terminals_[net_id][ipin];
+
+            name += " (inode: " + std::to_string(sink_rr_inode) + ")";
+        }
+    }
+
+    return name;
 }
 
 std::string VprTimingGraphResolver::node_type_name(tatum::NodeId node) const {
@@ -225,11 +247,11 @@ void VprTimingGraphResolver::set_detail_level(e_timing_report_detail report_deta
 }
 
 void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<tatum::DelayComponent>& components, ClusterNetId net_id, ClusterPinId sink_pin) const {
-    /* This routine obtains the interconnect components such as: OPIN, CHANX, CHANY, IPIN which join 
-     * two intra-block clusters in two parts. In part one, we construct the route tree 
+    /* This routine obtains the interconnect components such as: OPIN, CHANX, CHANY, IPIN which join
+     * two intra-block clusters in two parts. In part one, we construct the route tree
      * from the traceback and computes its value for R, C, and Tdel. Next, we find the pointer to
      * the route tree sink which corresponds to the sink_pin. In part two, we call the helper function,
-     * which walks the route tree from the sink to the source. Along the way, we process each node 
+     * which walks the route tree from the sink to the source. Along the way, we process each node
      * and construct net_components that are added to the vector of components. */
 
     t_rt_node* rt_root = traceback_to_route_tree(net_id);              //obtain the route tree from the traceback
@@ -243,7 +265,7 @@ void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<ta
 
 void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::vector<tatum::DelayComponent>& components, t_rt_node* node) const {
     /* This routine comprieses the second part of obtaining the interconnect components.
-     * We begin at the sink node and travel up the tree towards the source. For each node, we would 
+     * We begin at the sink node and travel up the tree towards the source. For each node, we would
      * like to retreive information such as the routing resource type, index, and incremental delay.
      * If the type is a channel, then we retrieve the name of the segment as well as the coordinates
      * of its start and endpoint. All of this information is stored in the object DelayComponent,

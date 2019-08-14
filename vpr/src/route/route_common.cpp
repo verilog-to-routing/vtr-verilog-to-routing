@@ -97,7 +97,6 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& main_b
 static std::pair<t_trace*, t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
 static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth = 0);
 
-static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
 static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
@@ -262,6 +261,7 @@ bool try_route(int width_fac,
      * only if a DETAILED routing has been selected.                        */
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     t_graph_type graph_type;
@@ -314,7 +314,10 @@ bool try_route(int width_fac,
         VTR_LOG("Confirming router algorithm: TIMING_DRIVEN.\n");
 
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.block_types, device_ctx.num_block_types);
-        ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
+        ClusteredPinAtomPinsLookup netlist_pin_lookup(
+            atom_ctx.nlist,
+            cluster_ctx.clb_nlist,
+            intra_lb_pb_pin_lookup);
 
         success = try_timing_driven_route(router_opts,
                                           analysis_opts,
@@ -738,7 +741,7 @@ float get_rr_cong_cost(int inode) {
     return (cost);
 }
 
-/* Returns the congestion cost of using this rr_node, *ignoring* 
+/* Returns the congestion cost of using this rr_node, *ignoring*
  * non-configurable edges */
 static float get_single_rr_cong_cost(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -1009,7 +1012,7 @@ void reset_rr_node_route_structs() {
 /* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *
  * index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    *
  * Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
-static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
+vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
     vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals;
 
     int inode, i, j, node_block_pin, iclass;
@@ -1117,7 +1120,7 @@ t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
      * the FPGA if necessary.  The bounding box returned by this routine
      * are different from the ones used by the placer in that they are
      * clipped to lie within (0,0) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1)
-     * rather than (1,1) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1).                                                            
+     * rather than (1,1) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1).
      */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();

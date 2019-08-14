@@ -9,7 +9,14 @@
 
 class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
   public:
-    VprTimingGraphResolver(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const tatum::TimingGraph& timing_graph, const AnalysisDelayCalculator& delay_calc);
+    VprTimingGraphResolver(
+        const AtomNetlist& netlist,
+        const AtomLookup& netlist_lookup,
+        const ClusteredNetlist& clustered_netlist,
+        const ClusteredPinAtomPinsLookup& pin_lookup,
+        const tatum::TimingGraph& timing_graph,
+        const AnalysisDelayCalculator& delay_calc,
+        const vtr::vector<ClusterNetId, std::vector<int>>& net_rr_terminals);
 
     std::string node_name(tatum::NodeId node) const override;
     std::string node_type_name(tatum::NodeId node) const override;
@@ -27,8 +34,11 @@ class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
 
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
+    const ClusteredNetlist& clustered_netlist_;
+    const ClusteredPinAtomPinsLookup& pin_lookup_;
     const tatum::TimingGraph& timing_graph_;
     const AnalysisDelayCalculator& delay_calc_;
+    const vtr::vector<ClusterNetId, std::vector<int>>& net_rr_terminals_;
     e_timing_report_detail detail_level_ = e_timing_report_detail::NETLIST;
 };
 

@@ -29,6 +29,7 @@
 #include "place_util.h"
 #include "place_delay_model.h"
 #include "move_generator.h"
+#include "route_common.h"
 
 #include "PlacementDelayCalculator.h"
 #include "VprTimingGraphResolver.h"
@@ -559,6 +560,7 @@ void try_place(const t_placer_opts& placer_opts,
     t_placer_statistics stats;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     std::shared_ptr<SetupTimingInfo> timing_info;
@@ -598,7 +600,7 @@ void try_place(const t_placer_opts& placer_opts,
     init_draw_coords((float)width_fac);
 
     //Enables fast look-up of atom pins connect to CLB pins
-    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, pb_gpin_lookup);
+    ClusteredPinAtomPinsLookup netlist_pin_lookup(atom_ctx.nlist, cluster_ctx.clb_nlist, pb_gpin_lookup);
 
     /* Gets initial cost and loads bounding boxes. */
 
@@ -3721,10 +3723,19 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
                                                const SetupTimingInfo& timing_info,
                                                const PlacementDelayCalculator& delay_calc) {
+    auto& device_ctx = g_vpr_ctx.device();
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc);
+    auto net_rr_terminals = load_net_rr_terminals(device_ctx.rr_node_indices);
+    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.block_types, device_ctx.num_block_types);
+    ClusteredPinAtomPinsLookup pin_lookup(atom_ctx.nlist, cluster_ctx.clb_nlist, pb_gpin_lookup);
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup,
+                                    cluster_ctx.clb_nlist,
+                                    pin_lookup,
+                                    *timing_ctx.graph, delay_calc,
+                                    net_rr_terminals);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);

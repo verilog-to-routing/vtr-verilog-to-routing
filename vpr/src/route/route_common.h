@@ -126,3 +126,5 @@ void print_invalid_routing_info();
 
 t_trace* alloc_trace_data();
 void free_trace_data(t_trace* trace);
+
+vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);

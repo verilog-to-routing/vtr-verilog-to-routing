@@ -2783,10 +2783,19 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
                                           const t_analysis_opts& analysis_opts,
                                           const SetupTimingInfo& timing_info,
                                           const RoutingDelayCalculator& delay_calc) {
+    auto& device_ctx = g_vpr_ctx.device();
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc);
+    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.block_types, device_ctx.num_block_types);
+    ClusteredPinAtomPinsLookup pin_lookup(atom_ctx.nlist, cluster_ctx.clb_nlist, pb_gpin_lookup);
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup,
+                                    cluster_ctx.clb_nlist,
+                                    pin_lookup,
+                                    *timing_ctx.graph, delay_calc,
+                                    route_ctx.net_rr_terminals);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
