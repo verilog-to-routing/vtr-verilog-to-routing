@@ -1045,29 +1045,25 @@ void RRGraph::remove_edge(RREdgeId edge) {
 void RRGraph::set_node_xlow(RRNodeId node, short xlow) {
     VTR_ASSERT(valid_node_id(node));
 
-    auto& orig_bb = node_bounding_boxes_[node];
-    node_bounding_boxes_[node].set_xlow(xlow);
+    node_bounding_boxes_[node].set_xmin(xlow);
 }
 
 void RRGraph::set_node_ylow(RRNodeId node, short ylow) {
     VTR_ASSERT(valid_node_id(node));
 
-    auto& orig_bb = node_bounding_boxes_[node];
-    node_bounding_boxes_[node].set_ylow(ylow);
+    node_bounding_boxes_[node].set_ymin(ylow);
 }
 
 void RRGraph::set_node_xhigh(RRNodeId node, short xhigh) {
     VTR_ASSERT(valid_node_id(node));
 
-    auto& orig_bb = node_bounding_boxes_[node];
-    node_bounding_boxes_[node].set_xhigh(xhigh);
+    node_bounding_boxes_[node].set_xmax(xhigh);
 }
 
 void RRGraph::set_node_yhigh(RRNodeId node, short yhigh) {
     VTR_ASSERT(valid_node_id(node));
 
-    auto& orig_bb = node_bounding_boxes_[node];
-    node_bounding_boxes_[node].set_yhigh(yhigh);
+    node_bounding_boxes_[node].set_ymax(yhigh);
 }
 
 void RRGraph::set_node_bounding_box(RRNodeId node, vtr::Rect<short> bb) {

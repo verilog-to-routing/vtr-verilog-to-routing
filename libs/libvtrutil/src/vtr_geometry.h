@@ -99,6 +99,13 @@ class Rect {
     friend bool operator== <>(const Rect<T>& lhs, const Rect<T>& rhs);
     friend bool operator!= <>(const Rect<T>& lhs, const Rect<T>& rhs);
 
+  public: //Mutators
+    //Co-ordinates
+    void set_xmin(T xmin_val);
+    void set_ymin(T ymin_val);
+    void set_xmax(T xmax_val);
+    void set_ymax(T ymax_val);
+
   private:
     Point<T> bottom_left_;
     Point<T> top_right_;
