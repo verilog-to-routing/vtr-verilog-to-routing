@@ -704,7 +704,6 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 	int width = 0;
 
 	STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
-	STRING_CACHE *function_local_symbol_table_sc = local_string_cache_list->function_local_symbol_table_sc;
 
 	if (var_node->type == ARRAY_REF)
 	{
@@ -745,11 +744,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 		ast_node_t *sym_node = NULL;
 		char *temp_string = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier, -1);
 
-		if ((sc_spot = sc_lookup_string(function_local_symbol_table_sc, temp_string)) > -1)
-		{
-			sym_node = (ast_node_t*)function_local_symbol_table_sc->data[sc_spot];
-		}
-		else if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) > -1)
+		if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) > -1)
 		{
 			sym_node = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
 		}
@@ -864,7 +859,6 @@ long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cach
 	ast_node_t *var_declare = NULL;
 
 	STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
-	STRING_CACHE *function_local_symbol_table_sc = local_string_cache_list->function_local_symbol_table_sc;
 	STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
 
 	switch(node->type)
@@ -893,13 +887,6 @@ long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cach
 			if (sc_spot > -1)
 			{
 				var_declare = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
-				break;
-			}
-			
-			sc_spot = sc_lookup_string(function_local_symbol_table_sc, node->types.identifier);
-			if (sc_spot > -1)
-			{
-				var_declare = (ast_node_t *)function_local_symbol_table_sc->data[sc_spot];
 				break;
 			}
 
@@ -995,7 +982,9 @@ ast_node_t *ast_node_deep_copy(ast_node_t *node){
 		node_copy->children = (ast_node_t**)vtr::calloc(node->num_children, sizeof(ast_node_t*));
 
 		//Recursively copy its children
-		for(long i = 0; i < node->num_children; i++){
+		for(long i = 0; i < node->num_children; i++)
+		{
+			oassert(node != node->children[i]);
 			node_copy->children[i] = ast_node_deep_copy(node->children[i]);
 		}
 	}
@@ -1529,4 +1518,57 @@ long resolve_concat_sizes(ast_node_t *node_top, STRING_CACHE_LIST *local_string_
 	}
 	
 	return concatenation_size;
+}
+
+/*---------------------------------------------------------------------------
+ * (function: copy_param_table_sc)
+ *-------------------------------------------------------------------------*/
+STRING_CACHE *copy_param_table_sc(STRING_CACHE *to_copy)
+{
+    STRING_CACHE *sc;
+
+    sc = sc_new_string_cache();
+
+    for (long i = 0; i < to_copy->free; i++)
+    {
+        long sc_spot = sc_add_string(sc, to_copy->string[i]);
+        sc->data[sc_spot] = (void *)ast_node_deep_copy((ast_node_t *)to_copy->data[i]);
+    }
+
+    return sc;
+}
+
+/*---------------------------------------------------------------------------
+ * (function: free_string_cache_list)
+ *-------------------------------------------------------------------------*/
+void free_string_cache_list(STRING_CACHE_LIST *to_free)
+{
+	int i;
+
+	for (i = 0; i < to_free->num_children; i++)
+	{
+		free_string_cache_list(to_free->children[i]);
+	}
+	to_free->children = (STRING_CACHE_LIST **)vtr::free(to_free->children);
+
+	for(i = 0; i < to_free->local_param_table_sc->free; i++)
+	{
+		free_whole_tree((ast_node_t *)to_free->local_param_table_sc->data[i]);
+	}
+	to_free->local_param_table_sc = sc_free_string_cache(to_free->local_param_table_sc);
+
+	for (i = 0; i < to_free->num_local_symbol_table; i++)
+	{
+		free_whole_tree(to_free->local_symbol_table[i]);
+	}
+	to_free->num_local_symbol_table = 0;
+	to_free->local_symbol_table = (ast_node_t **)vtr::free(to_free->local_symbol_table);
+	to_free->local_symbol_table_sc = sc_free_string_cache(to_free->local_symbol_table_sc);
+
+	to_free->instance_name_prefix = (char *)vtr::free(to_free->instance_name_prefix);
+	to_free->scope_id = (char *)vtr::free(to_free->scope_id);
+
+	to_free->num_children = 0;
+
+	vtr::free(to_free);
 }

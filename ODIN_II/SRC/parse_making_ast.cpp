@@ -166,17 +166,10 @@ void init_parser()
  *-------------------------------------------------------------------------------------------*/
 void cleanup_parser()
 {
-	long i;
-
-	/* frees all the defines for module string caches (used for parameters) */
-
-	for (i = 0; i <= num_modules; i++)
-	{
-		sc_free_string_cache(defines_for_module_sc[i]);
-	}
-
+	sc_free_string_cache(defines_for_module_sc[num_modules]); // last string cache is unused
+	sc_free_string_cache(defines_for_function_sc[num_functions]); // last string cache is unused
 	vtr::free(defines_for_module_sc);
-
+	vtr::free(defines_for_function_sc);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -187,6 +180,9 @@ void init_parser_for_file()
 	/* crrate a hash for defines so we can look them up when we find them */
 	defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
 	defines_for_module_sc[num_modules] = sc_new_string_cache();
+
+	defines_for_function_sc = (STRING_CACHE**)vtr::realloc(defines_for_function_sc, sizeof(STRING_CACHE*)*(num_functions+1));
+	defines_for_function_sc[num_modules] = sc_new_string_cache();
 
 	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
 	modules_inputs_sc = sc_new_string_cache();
@@ -262,7 +258,7 @@ ast_node_t *newList(ids node_type, ast_node_t *child)
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(node_type, yylineno, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, { child });
+	if (child) allocate_children_to_node(new_node, { child });
 
 	return new_node;
 }
@@ -285,7 +281,7 @@ ast_node_t *newfunctionList(ids node_type, ast_node_t *child)
 ast_node_t *newList_entry(ast_node_t *list, ast_node_t *child)
 {
 	/* allocate child nodes to this node */
-	add_child_to_node(list, child);
+	if (child) add_child_to_node(list, child);
 
 	return list;
 }
@@ -402,7 +398,7 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 					if (this_port->num_children == 8)
 					{
 						symbol_list->children[j]->children = (ast_node_t**) realloc(symbol_list->children[j]->children, sizeof(ast_node_t*)*8);
-						symbol_list->children[j]->children[7] = ast_node_deep_copy(symbol_list->children[j]->children[5]);
+						symbol_list->children[j]->children[7] = symbol_list->children[j]->children[5];
 						symbol_list->children[j]->children[5] = ast_node_deep_copy(this_port->children[5]);
 						symbol_list->children[j]->children[6] = ast_node_deep_copy(this_port->children[6]);
 					}
@@ -860,6 +856,18 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				}
 			}
 
+		}
+
+		/* parameters don't live in the AST */
+		if (id == PARAMETER || id == LOCALPARAM)
+		{
+			for (i = 0; i < symbol_list->num_children; i++)
+			{
+				symbol_list->children[i]->children[5] = NULL;
+			}
+
+			free_whole_tree(symbol_list);
+			symbol_list = NULL;
 		}
 	}
 
@@ -1528,10 +1536,15 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 		add_child_to_node_at_index(list_of_module_items, port_declarations, 0);
 	}
 
-	/* parameters are expected to be in module items */
+
+	/* parameters don't live in the AST */
 	if (list_of_parameters)
 	{
-		add_child_to_node_at_index(list_of_module_items, list_of_parameters, 0);
+		for (i = 0; i < list_of_parameters->num_children; i++)
+		{
+			list_of_parameters->children[i]->children[5] = NULL;
+		}
+		free_whole_tree(list_of_parameters);
 	}
 
 
@@ -1544,6 +1557,7 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 		new_node->types.module.is_instantiated = (sc_lookup_string(instantiated_modules, module_name) != -1);
 	}
 	new_node->types.module.index = num_modules;
+	new_node->types.module.parameter_list = defines_for_module_sc[num_modules];
 
 	new_node->types.function.function_instantiations_instance = function_instantiations_instance_by_module;
 	new_node->types.function.size_function_instantiations = size_function_instantiations_by_module;
@@ -1637,6 +1651,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, { symbol_node, list_of_ports, list_of_module_items });
+	new_node->types.function.parameter_list = defines_for_function_sc[num_functions];
 
 	/* store the list of modules this module instantiates */
 	new_node->types.function.function_instantiations_instance = function_instantiations_instance;
@@ -1736,8 +1751,8 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 			new_node = val->children[(val->num_children - 1)];
 
 			new_node->type = MODULE_PARAMETER;
-			new_node->types.variable.is_parameter = true;
-			new_node->children[5]->types.variable.is_parameter = true;
+			new_node->types.variable.is_defparam = true;
+			new_node->children[5]->types.variable.is_defparam = true;
 			new_node->types.identifier = vtr::strdup(module_instance_name.c_str());
 			new_node->line_number = line_number;
 
