@@ -412,6 +412,7 @@ std::vector<RREdgeId> RRGraph::find_edges(RRNodeId src_node, RRNodeId sink_node)
 
 RRNodeId RRGraph::find_node(short x, short y, t_rr_type type, int ptc, e_side side) const {
     initialize_fast_node_lookup();
+
     size_t itype = type;
     size_t iside = side;
 
@@ -874,68 +875,35 @@ bool RRGraph::check() const {
         VTR_LOG_WARN("Fail in checking edges connected to each node!\n");
         check_flag = false;
         num_err++;
-        num_fatal_err++;
     }
 
     if (false == check_node_segments()) {
         VTR_LOG_WARN("Fail in checking segment IDs of nodes !\n");
         check_flag = false;
         num_err++;
-        num_fatal_err++;
     }
 
     if (false == check_edge_src_nodes()) {
         VTR_LOG_WARN("Fail in checking source nodes of edges !\n");
         check_flag = false;
         num_err++;
-        num_fatal_err++;
     }
 
     if (false == check_edge_sink_nodes()) {
         VTR_LOG_WARN("Fail in checking sink nodes of edges !\n");
         check_flag = false;
         num_err++;
-        num_fatal_err++;
     }
 
     if (false == check_edge_switches()) {
         VTR_LOG_WARN("Fail in checking switch IDs of edges !\n");
         check_flag = false;
         num_err++;
-        num_fatal_err++;
-    }
-
-    /* Advanced check */
-    if (false == check_duplicated_edges()) {
-        VTR_LOG_WARN("Fail in checking duplicated edges !\n");
-        check_flag = false;
-        num_err++;
-    }
-
-    if (false == check_dangling_nodes()) {
-        VTR_LOG_WARN("Fail in checking dangling nodes !\n");
-        check_flag = false;
-        num_err++;
-    }
-
-    if (false == check_source_nodes()) {
-        VTR_LOG_WARN("Fail in checking source nodes!\n");
-        check_flag = false;
-        num_err++;
-    }
-
-    if (false == check_sink_nodes()) {
-        VTR_LOG_WARN("Fail in checking sink nodes!\n");
-        check_flag = false;
-        num_err++;
     }
 
     /* Error out if there is any fatal errors found */
     VTR_LOG_ERROR("Checked Routing Resource graph with %d fatal errors !\n",
-                  num_fatal_err);
-
-    VTR_LOG_WARN("Checked Routing Resource graph with %d warnings !\n",
-                 num_err - num_fatal_err);
+                  num_err);
 
     return check_flag;
 }

@@ -42,6 +42,13 @@
  *
  * Access to a node/edge/switch/segment, please use the StrongId created
  *  -----------------------------------------------------------------
+ * 1. To traverse all the nodes/edges/switches/segments in a RRGraph, 
+ *    using a range-based loop is suggested.
+ *    Example:
+ *      for (auto node : nodes()) {
+ *      }
+ *
+ * 2. Access to a node/edge/switch/segment, please use the StrongId created
  *    For node, use RRNodeId
  *    For edge, use RREdgeId
  *    For switch, use RRSwitchId
@@ -52,7 +59,6 @@
  *    Example:
  *       if (node_id == RRNodeId::INVALID()) {
  *       }  
- *
  *  
  * Detailed description on the RRGraph data structure
  * ==================================================
@@ -101,7 +107,6 @@
  *                            |  <-------(xhigh, yhigh)
  *                            |
  *                           \|/ <-------(xlow, ylow)
- *
  *
  * 4. node_capacities_ : the capacity of a node. How many nets can be mapped
  *                     to the node. Typically, each node has a capacity of 
@@ -156,13 +161,11 @@
  *                     for any node-to-node connection
  *
  * Switch-related data:
- *  -----------------------------------------------------------------
  * 1. switch_ids_ : unique identifiers for switches which are used in the RRGraph  
  *
  * 2. switches_: detailed information about the switches, which are used in the RRGraph
  *
  * Segment-related data:
- *  -----------------------------------------------------------------
  * 1. segment_ids_ : unique identifiers for routing segments which are used in the RRGraph  
  *
  * 2. segments_: detailed information about the segments, which are used in the RRGraph
@@ -245,6 +248,7 @@ class RRGraph {
     short node_cost_index(RRNodeId node) const;
     e_direction node_direction(RRNodeId node) const;
     e_side node_side(RRNodeId node) const;
+
     float node_R(RRNodeId node) const;
     float node_C(RRNodeId node) const;
     RRSegmentId node_segment(RRNodeId node) const; /* get the segment id of a rr_node */
@@ -268,6 +272,7 @@ class RRGraph {
 
     //Edge attributes
     size_t edge_index(RREdgeId edge) const; /* TODO: deprecate this accessor as outside functions should use RREdgeId */
+
     RRNodeId edge_src_node(RREdgeId edge) const;
     RRNodeId edge_sink_node(RREdgeId edge) const;
     RRSwitchId edge_switch(RREdgeId edge) const;
@@ -285,6 +290,7 @@ class RRGraph {
     //Utilities
     std::vector<RREdgeId> find_edges(RRNodeId src_node, RRNodeId sink_node) const;
     RRNodeId find_node(short x, short y, t_rr_type type, int ptc, e_side side = NUM_SIDES) const;
+
     short chan_num_tracks(short x, short y, t_rr_type type) const;
 
     bool is_dirty() const;
@@ -381,6 +387,7 @@ class RRGraph {
     void clear_edges();
     void clear_switches();
     void clear_segments();
+    void clear();
 
   private: //Internal
     void set_dirty();
