@@ -402,12 +402,13 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (!draw_state->show_graphics) /* Graphics turned off */
-        return;
-
+    if (!draw_state->show_graphics)
+        ezgl::set_disable_event_loop(true);
+    else
+        ezgl::set_disable_event_loop(false);
+    
     //Has the user asked us to pause at the next screen updated?
     bool forced_pause = g_vpr_ctx.forced_pause();
-
     if (int(priority) >= draw_state->gr_automode || forced_pause) {
         if (forced_pause) {
             VTR_LOG("Starting interactive graphics (due to user interrupt)\n");
@@ -418,11 +419,6 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
         /* If it's the type of picture displayed has changed, set up the proper  *
          * buttons.                                                              */
         if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
-
-            if (draw_state->save_graphics)
-                ezgl::set_disable_event_loop(true);
-            else
-                ezgl::set_disable_event_loop(false);
 
             if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
                 draw_state->pic_on_screen = pic_on_screen_val;
@@ -723,7 +719,6 @@ void alloc_draw_structs(const t_arch* arch) {
 
     /* Allocate the structures needed to draw the placement and routing.  Set *
      * up the default colors for blocks and nets.                             */
-
     draw_coords->tile_x = (float*)vtr::malloc(device_ctx.grid.width() * sizeof(float));
     draw_coords->tile_y = (float*)vtr::malloc(device_ctx.grid.height() * sizeof(float));
 
@@ -781,9 +776,8 @@ void init_draw_coords(float width_val) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-    if (!draw_state->show_graphics)
-        return; /* Graphics disabled */
-
+    if (!draw_state->show_graphics && !draw_state->save_graphics)
+        return; //do not initialize only if --disp off and --save_graphics off
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
     if (device_ctx.rr_nodes.size() != 0) {
@@ -815,10 +809,8 @@ void init_draw_coords(float width_val) {
         j += device_ctx.chan_width.x_list[i] + 1;
     }
     draw_coords->tile_y[device_ctx.grid.height() - 1] = ((device_ctx.grid.height() - 1) * draw_coords->get_tile_width()) + j;
-
     /* Load coordinates of sub-blocks inside the clbs */
     draw_internal_init_blk();
-
     //Margin beyond edge of the drawn device to extend the visible world
     //Setting this to > 0.0 means 'Zoom Fit' leave some fraction of white
     //space around the device edges

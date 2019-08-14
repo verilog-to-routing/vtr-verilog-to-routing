@@ -160,6 +160,7 @@ typedef struct {
  *				 Used to control drawing each routing resource when
  *				 ROUTING is on screen.
  *				 [0..device_ctx.rr_nodes.size()-1]
+ * save_graphics: Whether to generate an output graphcis file
  */
 struct t_draw_state {
     pic_type pic_on_screen = NO_PICTURE;
