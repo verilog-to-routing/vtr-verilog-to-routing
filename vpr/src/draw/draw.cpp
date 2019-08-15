@@ -3130,14 +3130,6 @@ ezgl::color to_ezgl_color(vtr::Color<float> color) {
     return ezgl::color(color.r * 255, color.g * 255, color.b * 255);
 }
 
-//ezgl::color to_ezgl_color(t_color color) {
-//    return ezgl::color(color.red, color.green, color.blue, color.alpha);
-//}
-//
-//ezgl::color to_ezgl_color(color_types color_enum) {
-//    t_color color = color_enum;
-//    return to_ezgl_color(color);
-//}
 
 static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer& g) {
     constexpr float LEGEND_WIDTH_FAC = 0.075;
