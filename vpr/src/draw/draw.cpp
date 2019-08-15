@@ -124,16 +124,17 @@ ezgl::rectangle initial_world;
 std::string rr_highlight_message;
 
 /********************** Subroutines local to this module ********************/
-void toggle_nets(GtkWidget* /*widget*/, ezgl::application* app);
+void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 void toggle_rr(GtkWidget* /*widget*/, ezgl::application* app);
 void toggle_congestion(GtkWidget* /*widget*/, ezgl::application* app);
 void toggle_routing_congestion_cost(GtkWidget* /*widget*/, ezgl::application* app);
 void toggle_routing_bounding_box(GtkWidget* /*widget*/, ezgl::application* app);
 void toggle_routing_util(GtkWidget* /*widget*/, ezgl::application* app);
 void toggle_crit_path(GtkWidget* /*widget*/, ezgl::application* app);
-void toggle_block_pin_util(GtkWidget* /*widget*/, ezgl::application* app);
+void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 void toggle_router_rr_costs(GtkWidget* /*widget*/, ezgl::application* app);
 void toggle_placement_macros(GtkWidget* /*widget*/, ezgl::application* app);
+static void update_draw_status(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 
 static void drawplace(ezgl::renderer& g);
 static void drawnets(ezgl::renderer& g);
@@ -233,7 +234,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
 #ifndef NO_GRAPHICS
 void draw_main_canvas(ezgl::renderer& g) {
     t_draw_state* draw_state = get_draw_state_vars();
-
+        
     g.set_font_size(14);
 
     draw_block_pin_util();
@@ -290,6 +291,10 @@ void draw_main_canvas(ezgl::renderer& g) {
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_PLACEMENT */
 void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    GObject* main_window = application.get_object(application.get_main_window_id().c_str());
+    GObject* main_window_grid = application.get_object("InnerGrid");
+            
     GtkButton* window = (GtkButton*)app->get_object("Window");
     gtk_button_set_label(window, "Window");
     g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
@@ -308,11 +313,79 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app) {
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");   // index 3
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID"); // index 4
     gtk_combo_box_set_active((GtkComboBox*)search_type, 0);                        // default set to Block ID which has an index 0
+    
+    
+    //combo box for toggle_nets
+    GtkWidget* toggle_nets_widget = gtk_combo_box_text_new();
+    GtkWidget* toggle_nets_label = gtk_label_new("Toggle Nets:");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_nets_widget), "N/A");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_nets_widget), "Nets");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_nets_widget), "Logical Connections");
+    gtk_combo_box_set_active((GtkComboBox*)toggle_nets_widget, 0);      // default set to N/A which has an index 0
+    gtk_widget_set_name(toggle_nets_widget, "toggle_nets");
+    
+    
+    
+    //spin box for toggle_blk_internal
+    GtkWidget* toggle_blk_internal_widget = gtk_spin_button_new_with_range(0., (double) draw_state->max_sub_blk_lvl, 1.);
+    GtkWidget* toggle_blk_internal_label = gtk_label_new("Toggle Block Internal:");
+    gtk_widget_set_name(toggle_blk_internal_widget, "toggle_blk_internal");
+    
+    
+    
+    GtkWidget* toggle_block_pin_util_widget = gtk_combo_box_text_new();
+    GtkWidget* toggle_block_pin_util_label = gtk_label_new("Toggle Block Pin Util:");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_block_pin_util_widget), "N/A");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_block_pin_util_widget), "All");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_block_pin_util_widget), "Inputs");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_block_pin_util_widget), "Outputs");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_block_pin_util_widget), "Max");
+    gtk_combo_box_set_active((GtkComboBox*)toggle_block_pin_util_widget, 0);      // default set to N/A which has an index 0
+    gtk_widget_set_name(toggle_block_pin_util_widget, "toggle_block_pin_util");
 
-    app->create_button("Toggle Nets", 2, toggle_nets);
-    app->create_button("Blk Internal", 3, toggle_blk_internal);
-    app->create_button("Blk Pin Util", 4, toggle_block_pin_util);
-    app->create_button("Place Macros", 5, toggle_placement_macros);
+//    GtkWidget* toggle_placement_macros = gtk_combo_box_text_new();
+//    GtkWidget* toggle_placement_macros_label = gtk_label_new("Toggle Placement Macros:");
+//    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_placement_macros), "N/A");
+//    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_placement_macros), "Regular");
+//    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_placement_macros), "Max");
+//    gtk_combo_box_set_active((GtkComboBox*)toggle_placement_macros, 0);      // default set to N/A which has an index 0
+//    gtk_widget_set_name(toggle_placement_macros, "toggle_placement_macros");
+    
+    //old buttons
+//    app->create_button("Toggle Nets", 2, toggle_nets);ok
+//    app->create_button("Blk Internal", 3, toggle_blk_internal);ok
+//    app->create_button("Blk Pin Util", 4, toggle_block_pin_util);ok
+//    app->create_button("Place Macros", 5, toggle_placement_macros);
+    
+    
+    gint box_width = 1;
+    gint box_height = 1;
+    gint label_left_start_point = 5;
+    gint box_left_start_point = 6;
+    
+    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_nets_label, label_left_start_point, 3, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_nets_widget, box_left_start_point, 3, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_blk_internal_label, label_left_start_point, 4, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_blk_internal_widget, box_left_start_point, 4, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_block_pin_util_label, label_left_start_point, 5, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_block_pin_util_widget, box_left_start_point, 5, box_width, box_height);
+    
+    gtk_widget_show_all((GtkWidget*)main_window);
+    
+    
+    // connect signals
+    g_signal_connect_swapped(GTK_COMBO_BOX_TEXT(toggle_nets_widget),
+                     "changed",
+                     G_CALLBACK(toggle_nets),
+                     toggle_nets_widget);
+    g_signal_connect_swapped((GtkSpinButton*)toggle_blk_internal_widget,
+                    "value_changed",
+                    G_CALLBACK(toggle_blk_internal),
+                    toggle_blk_internal_widget);
+    g_signal_connect_swapped((GtkSpinButton*)toggle_block_pin_util_widget,
+                    "changed",
+                    G_CALLBACK(toggle_block_pin_util),
+                    toggle_block_pin_util_widget);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -371,16 +444,16 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app) {
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID");
 
-    app->create_button("Toggle Nets", 2, toggle_nets);
-    app->create_button("Blk Internal", 3, toggle_blk_internal);
-    app->create_button("Blk Pin Util", 4, toggle_block_pin_util);
-    app->create_button("Place Macros", 5, toggle_placement_macros);
-    app->create_button("Toggle RR", 6, toggle_rr);
-    app->create_button("Congestion", 7, toggle_congestion);
-    app->create_button("Cong. Cost", 8, toggle_routing_congestion_cost);
-    app->create_button("Route BB", 9, toggle_routing_bounding_box);
-    app->create_button("Routing Util", 10, toggle_routing_util);
-    app->create_button("Router Cost", 11, toggle_router_rr_costs);
+//    app->create_button("Toggle Nets", 2, toggle_nets);
+//    app->create_button("Blk Internal", 3, toggle_blk_internal);
+//    app->create_button("Blk Pin Util", 4, toggle_block_pin_util);
+//    app->create_button("Place Macros", 5, toggle_placement_macros);
+//    app->create_button("Toggle RR", 6, toggle_rr);
+//    app->create_button("Congestion", 7, toggle_congestion);
+//    app->create_button("Cong. Cost", 8, toggle_routing_congestion_cost);
+//    app->create_button("Route BB", 9, toggle_routing_bounding_box);
+//    app->create_button("Routing Util", 10, toggle_routing_util);
+//    app->create_button("Router Cost", 11, toggle_router_rr_costs);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -505,31 +578,48 @@ void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/) {
     window_mode = true;
 }
 
-void toggle_nets(GtkWidget* /*widget*/, ezgl::application* app) {
+void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     /* Enables/disables drawing of nets when a the user clicks on a button.    *
      * Also disables drawing of routing resources.  See graphics.c for details *
      * of how buttons work.                                                    */
     t_draw_state* draw_state = get_draw_state_vars();
 
-    enum e_draw_nets new_state;
-
-    switch (draw_state->show_nets) {
-        case DRAW_NO_NETS:
-            new_state = DRAW_NETS;
+    
+    gchar* combo_box_content = NULL;
+    GtkWidget* toggle_nets = NULL;
+    GObject* main_window_grid = application.get_object("InnerGrid");
+    GList* list_of_widgets = gtk_container_get_children(GTK_CONTAINER(main_window_grid));
+    GList* current = list_of_widgets;
+    while (current != NULL) {
+        GList* next = current->next;
+        if (strcmp(gtk_widget_get_name(static_cast<GtkWidget*>(current->data)), "toggle_nets") == 0) {
+            toggle_nets = static_cast<GtkWidget*>(current->data);
             break;
-        case DRAW_NETS:
-            new_state = DRAW_LOGICAL_CONNECTIONS;
-            break;
-        default:
-        case DRAW_LOGICAL_CONNECTIONS:
-            new_state = DRAW_NO_NETS;
-            break;
+        }
+        current = next;
     }
+    
+    enum e_draw_nets new_state;
+    combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_nets));
+    if(strcmp(combo_box_content, "N/A") == 0)
+        new_state = DRAW_NO_NETS;
+    else if(strcmp(combo_box_content, "Nets") == 0)
+        new_state = DRAW_NETS;
+    else // "Logical Connections"
+        new_state = DRAW_LOGICAL_CONNECTIONS;
+    
+    //update value
     draw_state->reset_nets_congestion_and_rr();
     draw_state->show_nets = new_state;
-    app->update_message(draw_state->default_message);
-    app->refresh_drawing();
+    
+    //free dynamically allocated pointers
+    g_list_free(list_of_widgets);
+    g_free(combo_box_content);
+    
+    application.update_message(draw_state->default_message);
+    application.refresh_drawing();
 }
+
 void toggle_rr(GtkWidget* /*widget*/, ezgl::application* app) {
     /* Cycles through the options for viewing the routing resources available   *
      * in an FPGA.  If a routing isn't on screen, the routing graph hasn't been *
@@ -612,35 +702,62 @@ void toggle_routing_util(GtkWidget* /*widget*/, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void toggle_blk_internal(GtkWidget* /*widget*/, ezgl::application* app) {
-    t_draw_state* draw_state;
-
-    /* Call accessor function to retrieve global variables. */
-    draw_state = get_draw_state_vars();
-
-    /* Increment the depth of sub-blocks to be shown */
-    draw_state->show_blk_internal++;
-    /* If depth exceeds maximum sub-block level in pb_graph, then
-     * disable internals drawing
-     */
-    if (draw_state->show_blk_internal > draw_state->max_sub_blk_lvl)
-        draw_state->show_blk_internal = 0;
-
-    app->refresh_drawing();
+void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    GtkWidget* toggle_blk_internal = NULL;
+    GObject* main_window_grid = application.get_object("InnerGrid");
+    GList* list_of_widgets = gtk_container_get_children(GTK_CONTAINER(main_window_grid));
+    GList* current = list_of_widgets;
+    while (current != NULL) {
+        GList* next = current->next;
+        if (strcmp(gtk_widget_get_name(static_cast<GtkWidget*>(current->data)), "toggle_blk_internal") == 0) {
+            toggle_blk_internal = static_cast<GtkWidget*>(current->data);
+            break;
+        }
+        current = next;
+    }
+    draw_state->show_blk_internal = gtk_spin_button_get_value_as_int((GtkSpinButton*)toggle_blk_internal);
+    
+    g_list_free(list_of_widgets);
+    
+    application.refresh_drawing();
 }
 
-void toggle_block_pin_util(GtkWidget* /*widget*/, ezgl::application* app) {
+void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    e_draw_block_pin_util new_state = (enum e_draw_block_pin_util)(((int)draw_state->show_blk_pin_util + 1) % ((int)DRAW_PIN_UTIL_MAX));
-
-    draw_state->show_blk_pin_util = new_state;
-
-    if (new_state == DRAW_NO_BLOCK_PIN_UTIL) {
-        draw_reset_blk_colors();
-        app->update_message(draw_state->default_message);
+    gchar* combo_box_content = NULL;
+    GtkWidget* toggle_block_pin_util = NULL;
+    GObject* main_window_grid = application.get_object("InnerGrid");
+    GList* list_of_widgets = gtk_container_get_children(GTK_CONTAINER(main_window_grid));
+    GList* current = list_of_widgets;
+    while (current != NULL) {
+        GList* next = current->next;
+        if (strcmp(gtk_widget_get_name(static_cast<GtkWidget*>(current->data)), "toggle_block_pin_util") == 0) {
+            toggle_block_pin_util = static_cast<GtkWidget*>(current->data);
+            break;
+        }
+        current = next;
     }
-    app->refresh_drawing();
+    
+    combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_block_pin_util));
+    if(strcmp(combo_box_content, "N/A") == 0){
+        draw_state->show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
+        draw_reset_blk_colors();
+        application.update_message(draw_state->default_message);
+    }else if(strcmp(combo_box_content, "Total") == 0)
+        draw_state->show_blk_pin_util = DRAW_BLOCK_PIN_UTIL_TOTAL;
+    else if(strcmp(combo_box_content, "Inputs") == 0)
+        draw_state->show_blk_pin_util = DRAW_BLOCK_PIN_UTIL_INPUTS;
+    else if(strcmp(combo_box_content, "Outputs") == 0)
+        draw_state->show_blk_pin_util = DRAW_BLOCK_PIN_UTIL_OUTPUTS;
+    else(strcmp(combo_box_content, "Max") == 0)
+        draw_state->show_blk_pin_util = DRAW_PIN_UTIL_MAX;
+    
+    g_free(combo_box_content);
+    g_list_free(list_of_widgets);
+    
+    application.refresh_drawing();
 }
 
 void toggle_placement_macros(GtkWidget* /*widget*/, ezgl::application* app) {
@@ -3626,6 +3743,47 @@ static void highlight_blocks(double x, double y) {
 
     application.update_message(msg);
 
+    application.refresh_drawing();
+}
+
+static void update_draw_status(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    t_draw_state* draw_state = get_draw_state_vars();  
+    gchar* combo_box_content = NULL;
+    GtkWidget* toggle_nets = NULL;
+    GtkWidget* toggle_blk_internal = NULL;
+    GObject* main_window_grid = application.get_object("InnerGrid");
+    GList* list_of_widgets = gtk_container_get_children(GTK_CONTAINER(main_window_grid));
+    
+    GList* current = list_of_widgets;
+    while (current != NULL) {
+        GList* next = current->next;
+        if (strcmp(gtk_widget_get_name(static_cast<GtkWidget*>(current->data)), "toggle_nets") == 0) {
+            toggle_nets = static_cast<GtkWidget*>(current->data);
+        }else if (strcmp(gtk_widget_get_name(static_cast<GtkWidget*>(current->data)), "toggle_blk_internal") == 0) {
+            toggle_blk_internal = static_cast<GtkWidget*>(current->data);
+        }
+        current = next;
+    }
+    
+    //toggle nets
+    enum e_draw_nets new_state;
+    combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_nets));
+    if(strcmp(combo_box_content, "N/A") == 0)
+        new_state = DRAW_NO_NETS;
+    else if(strcmp(combo_box_content, "Nets") == 0)
+        new_state = DRAW_NETS;
+    else // "Logical Connections"
+        new_state = DRAW_LOGICAL_CONNECTIONS;
+    
+    //internal level
+    draw_state->show_blk_internal = gtk_spin_button_get_value_as_int((GtkSpinButton*)toggle_blk_internal);
+    
+    g_list_free(list_of_widgets);
+    g_free(combo_box_content);
+    
+    
+    draw_state->reset_nets_congestion_and_rr();
+    draw_state->show_nets = new_state;
     application.refresh_drawing();
 }
 

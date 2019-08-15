@@ -97,7 +97,8 @@ struct t_selected_sub_block_info {
  * will be disabled.
  */
 #    ifndef NO_GRAPHICS
-void toggle_blk_internal(GtkWidget* widget, ezgl::application* app);
+void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+
 #    endif /* NO_GRAPHICS */
 /* This function pre-allocates space to store bounding boxes for all sub-blocks. Each
  * sub-block is identified by its descriptor_type and a unique pin ID in the type.
