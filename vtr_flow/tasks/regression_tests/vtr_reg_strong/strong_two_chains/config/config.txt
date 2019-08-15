@@ -24,4 +24,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements_chain.txt
 
 # Script parameters
-#script_params=
+script_params= -crit_path_router_iterations 75
