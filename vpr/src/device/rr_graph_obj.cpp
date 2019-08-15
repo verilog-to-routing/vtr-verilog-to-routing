@@ -915,6 +915,7 @@ bool RRGraph::check() const {
         num_err++;
     }
 
+
     /* Error out if there is any fatal errors found */  
     VTR_LOG_ERROR("Checked Routing Resource graph with %d fatal errors !\n",
                   num_fatal_err);
