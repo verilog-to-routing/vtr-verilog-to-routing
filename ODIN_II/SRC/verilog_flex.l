@@ -44,9 +44,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define UNSUPPORTED_TOKEN 	{ delayed_error_message(PARSE_ERROR, my_yycolumn, my_yylineno, current_parse_file, "%s", "Unsuported token"); }
 
 #define _STATE_TOP(str)		{ BEGIN(_state_top(str)); }
-#define POP_STATE()			{ _pop_state(); _STATE_TOP("Poped to "); }
+#define POP_STATE()			{ _pop_state(); _STATE_TOP("Popped to "); }
 #define PUSH_STATE(state)	{ _push_state(state); _STATE_TOP("Pushed to ");}
-#define CHANGE_STATE(state) { _pop_state(); _push_state(state); _STATE_TOP("Switched to"); }
+#define CHANGE_STATE(state) { _pop_state(); _push_state(state); _STATE_TOP("Switched to "); }
 
 struct defines_t 
 {
