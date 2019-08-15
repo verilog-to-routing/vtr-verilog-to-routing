@@ -838,7 +838,6 @@ bool RRGraph::check_sink_nodes() const {
     return invalid_sinks;
 }
 
-
 /* This function should be used when nodes, edges, switches and segments have been used after 
  * We will build the fast_lookup, partition edges and check 
  * This function run fundamental and optional checks on internal data 
