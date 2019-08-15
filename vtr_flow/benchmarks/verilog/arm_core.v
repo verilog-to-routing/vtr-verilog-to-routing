@@ -362,7 +362,7 @@ always @ ( posedge i_clk )
     else    
         case ( c_state )
             CS_INIT :
-                if ( init_count < CACHE_LINES [CACHE_ADDR_WIDTH:0] )
+                if ( init_count < CACHE_LINES )
                     begin
                     init_count  <= init_count + 1'd1;
    		    source_sel  <= 4'b1;  //1'd1 << C_INIT
@@ -5865,7 +5865,7 @@ always @ ( posedge i_clk )
     else    
         case ( c_state )
             CS_INIT :
-                if ( init_count < CACHE_LINES [CACHE_ADDR_WIDTH:0] )
+                if ( init_count < CACHE_LINES )
                     begin
                     init_count  <= init_count + 1'd1;
    		    source_sel  <= 4'b1;  //1'd1 << C_INIT

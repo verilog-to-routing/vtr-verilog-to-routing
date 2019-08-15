@@ -344,6 +344,7 @@ struct typ
 	{
 		short is_parameter;
 		short is_localparam;
+		short is_defparam;
 		short is_port;
 		short is_input;
 		short is_output;
@@ -363,6 +364,7 @@ struct typ
 		ast_node_t **module_instantiations_instance;
 		int size_module_instantiations;
 		int index;
+		STRING_CACHE *parameter_list;
 	} module;
 	struct
 	{
@@ -370,6 +372,7 @@ struct typ
 		ast_node_t **function_instantiations_instance;
 		int size_function_instantiations;
 		int index;
+		STRING_CACHE *parameter_list;
 	} function;
 	struct
 	{
@@ -397,6 +400,7 @@ struct ast_node_t
 
 	void *hb_port;
 	void *net_node;
+	long chunk_size;
 
 };
 

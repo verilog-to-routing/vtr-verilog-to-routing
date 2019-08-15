@@ -2483,6 +2483,29 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
                 window_point_1_collected = false;
             }
             app->refresh_drawing();
+        }else{
+            // regular clicking mode
+            
+            /* This routine is called when the user clicks in the graphics area. *
+             * It determines if a clb was clicked on.  If one was, it is         *
+             * highlighted in green, it's fanin nets and clbs are highlighted in *
+             * blue and it's fanout is highlighted in red.  If no clb was        *
+             * clicked on (user clicked on white space) any old highlighting is  *
+             * removed.  Note that even though global nets are not drawn, their  *
+             * fanins and fanouts are highlighted when you click on a block      *
+             * attached to them.                                                 */
+
+            /* Control + mouse click to select multiple nets. */
+            if (!(event->state & GDK_CONTROL_MASK))
+                deselect_all();
+
+            //Check if we hit an rr node
+            // Note that we check this before checking for a block, since pins and routing may appear overtop of a multi-width/height block
+            if (highlight_rr_nodes(x, y)) {
+                return; //Selected an rr node
+            }
+
+            highlight_blocks(x, y);
         }
     }
     //  else if (event->button == 2)
@@ -2491,27 +2514,6 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
     //    std::cout << "right ";
 
     //  std::cout << "mouse button at coordinates (" << x << "," << y << ") " << std::endl;
-
-    /* This routine is called when the user clicks in the graphics area. *
-     * It determines if a clb was clicked on.  If one was, it is         *
-     * highlighted in green, it's fanin nets and clbs are highlighted in *
-     * blue and it's fanout is highlighted in red.  If no clb was        *
-     * clicked on (user clicked on white space) any old highlighting is  *
-     * removed.  Note that even though global nets are not drawn, their  *
-     * fanins and fanouts are highlighted when you click on a block      *
-     * attached to them.                                                 */
-
-    /* Control + mouse click to select multiple nets. */
-    if (!(event->state & GDK_CONTROL_MASK))
-        deselect_all();
-
-    //Check if we hit an rr node
-    // Note that we check this before checking for a block, since pins and routing may appear overtop of a multi-width/height block
-    if (highlight_rr_nodes(x, y)) {
-        return; //Selected an rr node
-    }
-
-    highlight_blocks(x, y);
 }
 
 void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, double y) {

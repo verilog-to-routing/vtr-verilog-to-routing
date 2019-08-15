@@ -48,4 +48,7 @@ ast_node_t *fold_unary(ast_node_t **node);
 long clog2(long value_in, int length);
 long resolve_concat_sizes(ast_node_t *node_top, STRING_CACHE_LIST *local_string_cache_list);
 
+STRING_CACHE *copy_param_table_sc(STRING_CACHE *to_copy);
+void free_string_cache_list(STRING_CACHE_LIST *to_free);
+
 #endif
