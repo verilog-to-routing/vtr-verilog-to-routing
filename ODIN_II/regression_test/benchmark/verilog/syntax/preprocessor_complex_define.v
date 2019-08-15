@@ -31,6 +31,6 @@ module simple_op(
 
     assign clk_out = clk;
 
-    `SIMPLE_ALWAYS_WITH_RESET(posedge clk, reset, out, (a + b))
+    `SIMPLE_ALWAYS_WITH_RESET(posedge clk, reset, out, `ADDITION(1, a, b))
 
 endmodule
