@@ -302,14 +302,13 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app) {
     g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box), app);
 
     GObject* search_type = (GObject*)app->get_object("SearchType");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");    // index 0
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block Name");  // index 1
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");      // index 2
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");    // index 3
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID");  // index 4
-    gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");   // index 0
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block Name"); // index 1
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");     // index 2
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");   // index 3
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID"); // index 4
+    gtk_combo_box_set_active((GtkComboBox*)search_type, 0);                        // default set to Block ID which has an index 0
 
-    
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
     app->create_button("Blk Pin Util", 4, toggle_block_pin_util);
@@ -406,7 +405,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
         ezgl::set_disable_event_loop(true);
     else
         ezgl::set_disable_event_loop(false);
-    
+
     //Has the user asked us to pause at the next screen updated?
     bool forced_pause = g_vpr_ctx.forced_pause();
     if (int(priority) >= draw_state->gr_automode || forced_pause) {
@@ -2483,9 +2482,9 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
                 window_point_1_collected = false;
             }
             app->refresh_drawing();
-        }else{
+        } else {
             // regular clicking mode
-            
+
             /* This routine is called when the user clicks in the graphics area. *
              * It determines if a clb was clicked on.  If one was, it is         *
              * highlighted in green, it's fanin nets and clbs are highlighted in *
