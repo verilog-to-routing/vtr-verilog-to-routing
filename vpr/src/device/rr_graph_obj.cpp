@@ -398,7 +398,8 @@ const t_segment_inf& RRGraph::get_segment(RRSegmentId segment_id) const {
  ***********************************************************************/
 std::vector<RREdgeId> RRGraph::find_edges(RRNodeId src_node, RRNodeId sink_node) const {
     std::vector<RREdgeId> edges;
- 
+
+    /* Iterate over the outgoing edges of the source node */
     for (auto edge : node_out_edges(src_node)) {
         if (edge_sink_node(edge) == sink_node) {
             /* Update edge list to return */
