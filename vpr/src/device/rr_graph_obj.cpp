@@ -783,8 +783,7 @@ bool RRGraph::check_dangling_nodes() const {
 /*********************************************************************** 
  * check if all the source nodes are in the right condition:
  * 1. zero fan-in and non-zero fanout
- *
- **********************************************************************/ 
+ **********************************************************************/
 bool RRGraph::check_source_nodes() const {
     bool invalid_sources = false;
     /* For each node: 
@@ -813,8 +812,7 @@ bool RRGraph::check_source_nodes() const {
 /*********************************************************************** 
  * check if all the sink nodes are in the right condition:
  * 1. non-zero fan-in and zero fanout
- *
- **********************************************************************/ 
+ **********************************************************************/
 bool RRGraph::check_sink_nodes() const {
     bool invalid_sinks = false;
     /* For each node: 
@@ -915,8 +913,7 @@ bool RRGraph::check() const {
         num_err++;
     }
 
-
-    /* Error out if there is any fatal errors found */  
+    /* Error out if there is any fatal errors found */
     VTR_LOG_ERROR("Checked Routing Resource graph with %d fatal errors !\n",
                   num_fatal_err);
 
