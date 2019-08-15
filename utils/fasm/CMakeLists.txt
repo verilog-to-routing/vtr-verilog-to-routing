@@ -20,7 +20,6 @@ target_link_libraries(fasm
   libarchfpga
   libsdcparse
   libblifparse
-  libeasygl
   libtatum
   libargparse
   libpugixml)
