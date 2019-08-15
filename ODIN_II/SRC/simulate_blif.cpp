@@ -3447,11 +3447,8 @@ static void free_test_vector(test_vector* v)
  */
 static void print_netlist_stats(stages_t *stages, int /*num_vectors*/)
 {
-	if(configuration.list_of_file_names.size() == 0)
-		printf("%s:\n", global_args.blif_file.value().c_str());
-	else
-		for(long i=0; i < configuration.list_of_file_names.size(); i++)
-			printf("%s:\n", configuration.list_of_file_names[i].c_str());
+	for(long i=0; i < configuration.list_of_file_names.size(); i++)
+		printf("%s:\n", configuration.list_of_file_names[i].c_str());
 
 	printf("  Nodes:           %d\n",    stages->num_nodes);
 	printf("  Connections:     %d\n",    stages->num_connections);

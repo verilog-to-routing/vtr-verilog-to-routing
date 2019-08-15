@@ -97,7 +97,7 @@ ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node)
 		value->types.vnumber = new VNumber(post_func(temp_vnum->get_value()));
 		delete temp_vnum;
 		
-		body_parent = body_parent ? newList_entry(body_parent, new_body) : newList(BLOCK, new_body);
+		body_parent = body_parent ? newList_entry(body_parent, new_body) : newList(BLOCK, new_body, new_body->line_number);
 		
 		dup_body = cond_func(value->types.vnumber->get_value());
 	}
