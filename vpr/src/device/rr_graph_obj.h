@@ -222,7 +222,6 @@ class RRGraph {
     //Node attributes
     size_t node_index(RRNodeId node) const; /* TODO: deprecate this accessor as outside functions should use RRNodeId */
     t_rr_type node_type(RRNodeId node) const;
-    const char* node_type_string(RRNodeId node) const;
 
     short node_xlow(RRNodeId node) const;
     short node_ylow(RRNodeId node) const;
@@ -245,9 +244,7 @@ class RRGraph {
 
     short node_cost_index(RRNodeId node) const;
     e_direction node_direction(RRNodeId node) const;
-    const char* node_direction_string(RRNodeId node) const;
     e_side node_side(RRNodeId node) const;
-    const char* node_side_string(RRNodeId node) const;
     float node_R(RRNodeId node) const;
     float node_C(RRNodeId node) const;
     RRSegmentId node_segment(RRNodeId node) const; /* get the segment id of a rr_node */
