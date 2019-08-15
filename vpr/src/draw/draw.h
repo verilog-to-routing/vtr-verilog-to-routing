@@ -54,8 +54,6 @@ void annotate_draw_rr_node_costs(ClusterNetId net, int sink_rr_node);
 void clear_draw_rr_annotations();
 
 ezgl::color to_ezgl_color(vtr::Color<float> color);
-//ezgl::color to_ezgl_color(t_color color);
-//ezgl::color to_ezgl_color(color_types color_enum);
 
 void draw_screen();
 
