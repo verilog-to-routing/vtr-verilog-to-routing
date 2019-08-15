@@ -42,11 +42,6 @@ size_t RRGraph::node_index(RRNodeId node) const {
     return size_t(node);
 }
 
-const char* RRGraph::node_type_string(RRNodeId node) const {
-    VTR_ASSERT_SAFE(valid_node_id(node));
-    return rr_node_typename[node_type(node)];
-}
-
 short RRGraph::node_xlow(RRNodeId node) const {
     return node_bounding_box(node).xmin();
 }
@@ -167,32 +162,10 @@ e_direction RRGraph::node_direction(RRNodeId node) const {
     return node_directions_[node];
 }
 
-const char* RRGraph::node_direction_string(RRNodeId node) const {
-    VTR_ASSERT_SAFE(valid_node_id(node));
-    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direction valid only for CHANX/CHANY RR nodes");
-
-    if (INC_DIRECTION == node_direction(node)) {
-        return "INC_DIR";
-    } else if (DEC_DIRECTION == node_direction(node)) {
-        return "DEC_DIR";
-    } else if (BI_DIRECTION == node_direction(node)) {
-        return "BI_DIR";
-    }
-
-    VTR_ASSERT(NO_DIRECTION == node_direction(node));
-    return "NO_DIR";
-}
-
 e_side RRGraph::node_side(RRNodeId node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side valid only for IPIN/OPIN RR nodes");
     return node_sides_[node];
-}
-
-const char* RRGraph::node_side_string(RRNodeId node) const {
-    VTR_ASSERT_SAFE(valid_node_id(node));
-    VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side valid only for IPIN/OPIN RR nodes");
-    return SIDE_STRING[node_side(node)];
 }
 
 /* Get the resistance of a node */
@@ -497,7 +470,7 @@ short RRGraph::chan_num_tracks(short x, short y, t_rr_type type) const {
 /* This function aims to print basic information about a node */
 void RRGraph::print_node(RRNodeId node) const {
     VTR_LOG("Node id: %d\n", node_index(node));
-    VTR_LOG("Node type: %s\n", node_type_string(node));
+    VTR_LOG("Node type: %s\n", rr_node_typename[node_type(node)]);
     VTR_LOG("Node xlow: %d\n", node_xlow(node));
     VTR_LOG("Node ylow: %d\n", node_ylow(node));
     VTR_LOG("Node xhigh: %d\n", node_xhigh(node));
