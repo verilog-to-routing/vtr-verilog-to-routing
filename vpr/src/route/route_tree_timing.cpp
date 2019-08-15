@@ -1413,22 +1413,21 @@ t_rt_node* find_sink_rt_node(t_rt_node* rt_root, ClusterNetId net_id, ClusterPin
     int ipin = cluster_ctx.clb_nlist.pin_net_index(sink_pin);
     int sink_rr_inode = route_ctx.net_rr_terminals[net_id][ipin]; //obtain the value of the routing resource sink
 
-    return find_sink_rt_node_recurr(rt_root, sink_rr_inode); //find pointer to route tree node corresponding to sink_rr_inode
+    t_rt_node* sink_rt_node = find_sink_rt_node_recurr(rt_root, sink_rr_inode); //find pointer to route tree node corresponding to sink_rr_inode
+    VTR_ASSERT(sink_rt_node);
+    return sink_rt_node;
 }
 t_rt_node* find_sink_rt_node_recurr(t_rt_node* node, int sink_rr_inode) {
-    t_rt_node* found_node = nullptr;
-
     if (node->inode == sink_rr_inode) { //check if current node matches sink_rr_inode
         return node;
     }
 
     for (t_linked_rt_edge* edge = node->u.child_list; edge != nullptr; edge = edge->next) {
-        found_node = find_sink_rt_node_recurr(edge->child, sink_rr_inode); //process each of the children
-        VTR_ASSERT(found_node);
-        if (found_node->inode == sink_rr_inode) {
+        t_rt_node* found_node = find_sink_rt_node_recurr(edge->child, sink_rr_inode); //process each of the children
+        if (found_node && found_node->inode == sink_rr_inode) {
             //If the sink has been found downstream in the branch, we would like to immediately exit the search
             return found_node;
         }
     }
-    return found_node; //We have not reached the sink node
+    return nullptr; //We have not reached the sink node
 }
