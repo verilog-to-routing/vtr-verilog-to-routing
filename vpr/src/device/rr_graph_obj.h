@@ -255,7 +255,7 @@ class RRGraph {
     short node_num_non_configurable_out_edges(RRNodeId node) const; /* get the number of non-configurable output edges of a node */
 
     /* Get a node-to-node switch */
-    RRSwitchId find_switch(RRNodeId from_node, RRNodeId to_node) const;
+    std::vector<RRSwitchId> find_switches(RRNodeId from_node, RRNodeId to_node) const;
 
     /* Get the range (list) of edges related to a given node */
     edge_range node_configurable_in_edges(RRNodeId node) const;
@@ -283,7 +283,7 @@ class RRGraph {
     const t_segment_inf& get_segment(RRSegmentId segment_id) const;
 
     //Utilities
-    RREdgeId find_edge(RRNodeId src_node, RRNodeId sink_node) const;
+    std::vector<RREdgeId> find_edges(RRNodeId src_node, RRNodeId sink_node) const;
     RRNodeId find_node(short x, short y, t_rr_type type, int ptc, e_side side = NUM_SIDES) const;
     short chan_num_tracks(short x, short y, t_rr_type type) const;
 

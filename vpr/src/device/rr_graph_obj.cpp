@@ -229,19 +229,30 @@ short RRGraph::node_num_non_configurable_out_edges(RRNodeId node) const {
     return node_non_configurable_out_edges(node).size();
 }
 
-/* Get the switch id that connects two nodes */
-RRSwitchId RRGraph::find_switch(RRNodeId from_node, RRNodeId to_node) const {
+/****************************************************************************
+ * Find the switches interconnecting two nodes 
+ * Return a vector of switch ids
+ ***************************************************************************/
+std::vector<RRSwitchId> RRGraph::find_switches(RRNodeId from_node, RRNodeId to_node) const {
     /* Make sure we will access a valid node */
     VTR_ASSERT_SAFE(valid_node_id(from_node));
     VTR_ASSERT_SAFE(valid_node_id(to_node));
 
-    RREdgeId edge = find_edge(from_node, to_node);
-    if (RREdgeId::INVALID() == edge) {
-        /* edge is open, we return an invalid id of RRSwitch */
-        return RRSwitchId::INVALID();
-    } else {
-        return edge_switch(edge);
+    std::vector<RRSwitchId> switches;
+    std::vector<RREdgeId> edges = find_edges(from_node, to_node);
+    if (true == edges.empty()) {
+        /* edge is open, we return an empty vector of switches */
+        return switches;
     }
+
+    /* Reach here, edge list is not empty, find switch id one by one
+     * and update the switch list  
+     */
+    for (auto edge : edges) {
+        switches.push_back(edge_switch(edge));
+    }
+
+    return switches;
 }
 
 /* Get the list of configurable edges from the input edges of a given node 
@@ -381,15 +392,21 @@ const t_segment_inf& RRGraph::get_segment(RRSegmentId segment_id) const {
     return segments_[segment_id];
 }
 
-RREdgeId RRGraph::find_edge(RRNodeId src_node, RRNodeId sink_node) const {
+/************************************************************************
+ * Find all the edges interconnecting two nodes
+ * Return a vector of the edge ids
+ ***********************************************************************/
+std::vector<RREdgeId> RRGraph::find_edges(RRNodeId src_node, RRNodeId sink_node) const {
+    std::vector<RREdgeId> edges;
+ 
     for (auto edge : node_out_edges(src_node)) {
         if (edge_sink_node(edge) == sink_node) {
-            return edge;
+            /* Update edge list to return */
+            edges.push_back(edge);
         }
     }
 
-    //Not found
-    return RREdgeId::INVALID();
+    return edges;
 }
 
 RRNodeId RRGraph::find_node(short x, short y, t_rr_type type, int ptc, e_side side) const {
