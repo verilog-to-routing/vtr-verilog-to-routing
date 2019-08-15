@@ -704,7 +704,6 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 	int width = 0;
 
 	STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
-
 	if (var_node->type == ARRAY_REF)
 	{
 		width = 1;

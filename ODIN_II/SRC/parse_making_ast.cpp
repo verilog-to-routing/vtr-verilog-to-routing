@@ -52,6 +52,10 @@ STRING_CACHE **defines_for_function_sc;
 STRING_CACHE *functions_inputs_sc;
 STRING_CACHE *functions_outputs_sc;
 
+STRING_CACHE **defines_for_task_sc;
+STRING_CACHE *tasks_inputs_sc;
+STRING_CACHE *tasks_outputs_sc;
+
 STRING_CACHE *module_names_to_idx;
 STRING_CACHE *instantiated_modules;
 
@@ -61,12 +65,25 @@ ast_node_t **function_instantiations_instance;
 int size_function_instantiations;
 ast_node_t **function_instantiations_instance_by_module;
 int size_function_instantiations_by_module;
+ast_node_t **function_instantiations_instance_by_task;
+int size_function_instantiations_by_task;
+
+ast_node_t **task_instantiations_instance;
+int size_task_instantiations;
+ast_node_t **task_instantiations_instance_by_module;
+int size_task_instantiations_by_module;
+ast_node_t **task_instantiations_instance_by_task;
+int size_task_instantiations_by_task;
 
 long num_modules;
 ast_node_t **ast_modules;
 
 int num_functions;
 ast_node_t **ast_functions;
+
+long num_tasks;
+ast_node_t **ast_tasks;
+
 ast_node_t **all_file_items_list;
 int size_all_file_items_list;
 
@@ -144,6 +161,7 @@ void init_parser()
 	defines_for_module_sc = NULL;
 
 	defines_for_function_sc = NULL;
+	defines_for_task_sc = NULL;
 	/* record of each of the individual modules */
 	num_modules = 0; // we're going to record all the modules in a list so we can build a tree of them later
 	num_functions = 0;
@@ -155,6 +173,10 @@ void init_parser()
   	size_function_instantiations = 0;
   	function_instantiations_instance_by_module = NULL;
 	size_function_instantiations_by_module = 0;
+	size_function_instantiations_by_task = 0;
+	size_task_instantiations = 0;
+	size_task_instantiations_by_module = 0;
+	size_task_instantiations_by_task = 0;
 
 	/* keeps track of all the ast roots */
 	all_file_items_list = NULL;
@@ -181,7 +203,10 @@ void init_parser_for_file()
 	defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
 	defines_for_module_sc[num_modules] = sc_new_string_cache();
 
-	// defines_for_function_sc = (STRING_CACHE**)vtr::realloc(defines_for_function_sc, sizeof(STRING_CACHE*)*(num_modules+1));
+	defines_for_task_sc = (STRING_CACHE**)vtr::realloc(defines_for_task_sc, sizeof(STRING_CACHE*)*(num_tasks+1));
+	defines_for_task_sc[num_tasks] = sc_new_string_cache();
+
+	// defines_for_function_sc = (STRING_CACHE**)vtr::realloc(defines_for_function_sc, sizeof(STRING_CACHE*)*(num_functions+1));
 	// defines_for_function_sc[num_functions] = sc_new_string_cache();
 
 	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
@@ -189,6 +214,8 @@ void init_parser_for_file()
 	modules_outputs_sc = sc_new_string_cache();
 	functions_inputs_sc = sc_new_string_cache();
 	functions_outputs_sc = sc_new_string_cache();
+	tasks_inputs_sc = sc_new_string_cache();
+	tasks_outputs_sc = sc_new_string_cache();
 	instantiated_modules = sc_new_string_cache();
 	module_instances_sc = sc_new_string_cache();
 }
@@ -203,6 +230,8 @@ void cleanup_parser_for_file()
 	modules_outputs_sc = sc_free_string_cache(modules_outputs_sc);
 	functions_inputs_sc = sc_free_string_cache(functions_inputs_sc);
 	functions_outputs_sc = sc_free_string_cache(functions_outputs_sc);
+	tasks_inputs_sc = sc_free_string_cache(tasks_inputs_sc);
+	tasks_outputs_sc = sc_free_string_cache(tasks_outputs_sc);
 	instantiated_modules = sc_free_string_cache(instantiated_modules);
 	module_instances_sc = sc_free_string_cache(module_instances_sc);
 }
@@ -320,6 +349,14 @@ static ast_node_t *resolve_symbol_node(ids top_type, ast_node_t *symbol_node)
 				long sc_spot = sc_lookup_string(defines_for_function_sc[num_functions], symbol_node->types.identifier);
 				if (sc_spot != -1)
 					newNode = (ast_node_t *)defines_for_function_sc[num_functions]->data[sc_spot];
+			}
+			else if(top_type == TASK)
+			{
+				long sc_spot = sc_lookup_string(defines_for_task_sc[num_tasks], symbol_node->types.identifier);
+				if (sc_spot != -1)
+				{
+					newNode = (ast_node_t *)defines_for_task_sc[num_tasks]->data[sc_spot];
+				}
 			}
 
 			if (newNode && newNode->types.variable.is_parameter == true)
@@ -454,6 +491,28 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 					error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
 				}
 			}
+			else if(top_type == TASK)
+			{
+				/* find the related INPUT or OUTPUT definition and store that instead */
+				if ((sc_spot = sc_lookup_string(tasks_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
+				{
+					oassert(((ast_node_t*)tasks_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
+					free_whole_tree(symbol_list->children[i]);
+					symbol_list->children[i] = (ast_node_t*)tasks_inputs_sc->data[sc_spot];
+					oassert(symbol_list->children[i]->types.variable.is_input);
+				}
+				else if ((sc_spot = sc_lookup_string(tasks_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
+				{
+					oassert(((ast_node_t*)tasks_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
+					free_whole_tree(symbol_list->children[i]);
+					symbol_list->children[i] = (ast_node_t*)tasks_outputs_sc->data[sc_spot];
+					oassert(symbol_list->children[i]->types.variable.is_output);
+				}
+				else
+				{
+					error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
+				}
+			}
 
 			symbol_list->children[i]->types.variable.is_port = true;
 		}
@@ -464,10 +523,27 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 
 ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_node_t *port, bool is_signed)
 {
+	oassert((top_type == MODULE || top_type == FUNCTION || top_type == TASK) 
+		&& "can only use MODULE, FUNCTION ot TASK as top type");
+
 	long sc_spot;
+	const char *top_type_name = NULL;
 	STRING_CACHE *this_inputs_sc = NULL;
 	STRING_CACHE *this_outputs_sc = NULL;
-	const char *top_type_name = (top_type == MODULE) ? "Module" : "Function";
+
+	if(top_type == MODULE)
+	{
+		top_type_name = "Module";
+	}
+	else if(top_type == FUNCTION)
+	{
+		top_type_name = "Function";
+	}
+	else 
+	{
+		top_type_name = "Task";
+	}
+
 	ids temp_net_id = NO_ID;
 
 	if (port->types.variable.is_port)
@@ -485,6 +561,11 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 	{
 		this_inputs_sc = functions_inputs_sc;
 		this_outputs_sc = functions_outputs_sc;
+	}
+	else if(top_type == TASK)
+	{
+		this_inputs_sc = tasks_inputs_sc;
+		this_outputs_sc = tasks_outputs_sc;
 	}
 
 	/* look for processed inputs with this name */
@@ -679,8 +760,8 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 
 ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parameter, bool is_signed)
 {
-	oassert((top_type == MODULE || top_type == FUNCTION) 
-		&& "can only use MODULE or FUNCTION as top type");
+	oassert((top_type == MODULE || top_type == FUNCTION || top_type == TASK) 
+		&& "can only use MODULE, FUNCTION ot TASK as top type");
 		
 	long sc_spot;
 	STRING_CACHE **this_defines_sc = NULL;
@@ -698,6 +779,11 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 		this_num_modules = num_functions;
 	}
 
+	else if(top_type == TASK)
+	{
+		this_defines_sc = defines_for_task_sc;
+		this_num_modules = num_tasks;
+	}
 	oassert(this_defines_sc);
 	oassert(this_defines_sc[this_num_modules]);
 
@@ -760,7 +846,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				symbol_list->children[i]->children[2] = ast_node_deep_copy(range_min);
 			}
 			
-			if(top_type == MODULE) {
+			if(top_type == MODULE || top_type == TASK) {
 
 				switch(id)
 				{
@@ -1266,7 +1352,7 @@ ast_node_t *newModuleNamedInstance(char* unique_name, ast_node_t *module_connect
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: newModuleNamedInstance)
+ * (function: newFunctionNamedInstance)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t *module_parameter_list, int line_number)
 {
@@ -1284,6 +1370,31 @@ ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t
 
 	return new_node;
 }
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newTaskNamedInstance)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newTaskInstance(char *task_name, ast_node_t *task_connect_list, ast_node_t *task_parameter_list, int line_number)
+{
+	ast_node_t *symbol_node = newSymbolNode(task_name, line_number);
+
+    /* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(TASK_INSTANCE, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, { symbol_node, task_connect_list, task_parameter_list });
+
+	/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
+	task_instantiations_instance_by_module = (ast_node_t **)vtr::realloc(task_instantiations_instance_by_module, sizeof(ast_node_t*)*(size_task_instantiations_by_module+1));
+	task_instantiations_instance_by_module[size_task_instantiations_by_module] = new_node;
+	size_task_instantiations_by_module++;
+
+	task_instantiations_instance_by_task = (ast_node_t **)vtr::realloc(task_instantiations_instance_by_task, sizeof(ast_node_t*)*(size_task_instantiations_by_task+1));
+	task_instantiations_instance_by_task[size_task_instantiations_by_task] = new_node;
+	size_task_instantiations_by_task++;
+
+	return new_node;
+}
+
 /*-------------------------------------------------------------------------
  * (function: newHardBlockInstance)
  *-----------------------------------------------------------------------*/
@@ -1563,6 +1674,12 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 	new_node->types.function.size_function_instantiations = size_function_instantiations_by_module;
 	new_node->types.function.is_instantiated = false;
 	new_node->types.function.index = num_functions;
+
+	new_node->types.task.task_instantiations_instance = task_instantiations_instance_by_module;
+	new_node->types.task.size_task_instantiations = size_task_instantiations_by_module;
+	new_node->types.task.is_instantiated = false;
+	new_node->types.task.index = num_tasks;
+
 	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
 	ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
 	ast_modules[num_modules] = new_node;
@@ -1672,6 +1789,134 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 	next_function();
 
 	return new_node;
+}
+
+ast_node_t *newTask(char *task_name, ast_node_t *list_of_ports, ast_node_t *list_of_task_items, int line_number)
+{
+	long sc_spot;
+	ast_node_t *symbol_node = newSymbolNode(task_name, line_number);
+	ast_node_t *var_node = NULL;
+	ast_node_t *port_declarations = NULL;
+	char *label = NULL;
+	
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(TASK, line_number, current_parse_file);
+
+	for(int i = 0; i < list_of_task_items->num_children; i++)
+	{
+		if(list_of_task_items->children[i]->type == VAR_DECLARE_LIST)
+		{
+			for(int j = 0; j < list_of_task_items->children[i]->num_children; j++)
+			{
+				if(	   list_of_task_items->children[i]->children[j]->types.variable.is_input)
+				{
+					label = vtr::strdup(list_of_task_items->children[i]->children[j]->children[0]->types.identifier);
+                    var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
+					var_node->types.variable.is_input = true;
+					if(list_of_ports)
+					{
+						newList_entry(list_of_ports,var_node);
+					}
+					else
+					{
+						list_of_ports = newList(VAR_DECLARE_LIST, var_node);
+					}
+				}
+				else if(list_of_task_items->children[i]->children[j]->types.variable.is_output)
+				{
+					label = vtr::strdup(list_of_task_items->children[i]->children[j]->children[0]->types.identifier);
+                    var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
+					var_node->types.variable.is_output = true;
+					if(list_of_ports)
+					{
+						newList_entry(list_of_ports,var_node);
+					}
+					else
+					{
+						list_of_ports = newList(VAR_DECLARE_LIST, var_node);
+					}
+				}
+				else if(list_of_task_items->children[i]->children[j]->types.variable.is_inout)
+				{
+					label = vtr::strdup(list_of_task_items->children[i]->children[j]->children[0]->types.identifier);
+                    var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
+					var_node->types.variable.is_inout = true;
+					if(list_of_ports)
+					{
+						newList_entry(list_of_ports,var_node);
+					}
+					else
+					{
+						list_of_ports = newList(VAR_DECLARE_LIST, var_node);
+					}
+				}
+			}
+		}
+	}
+
+	if(list_of_ports)
+	{
+		port_declarations = resolve_ports(TASK, list_of_ports);
+	}
+	/* ports are expected to be in module items */
+	if (port_declarations)
+	{
+		add_child_to_node_at_index(list_of_task_items, port_declarations, 0);
+	}
+
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, { symbol_node, list_of_ports, list_of_task_items });
+
+	/* store the list of tasks and functions this task instantiates */
+	new_node->types.task.task_instantiations_instance = task_instantiations_instance;
+	new_node->types.task.size_task_instantiations = size_task_instantiations;
+	new_node->types.task.is_instantiated = false;
+
+	new_node->types.function.function_instantiations_instance = function_instantiations_instance;
+	new_node->types.function.size_function_instantiations = size_function_instantiations;
+	new_node->types.function.is_instantiated = false;
+
+	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
+	ast_tasks = (ast_node_t **)vtr::realloc(ast_tasks, sizeof(ast_node_t*)*(num_tasks+1));
+	ast_tasks[num_tasks] = new_node;
+
+	sc_spot = sc_add_string(module_names_to_idx, task_name);
+		if (module_names_to_idx->data[sc_spot] != NULL)
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "task names with the same name -> %s\n", task_name);
+	}
+
+	/* store the data which is an idx here */
+	module_names_to_idx->data[sc_spot] = (void*)new_node;
+
+	/* now that we've bottom up built the parse tree for this task, go to the next task */
+	next_task();
+
+	return new_node;
+
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: next_task)
+ *-------------------------------------------------------------------------------------------*/
+void next_task()
+{
+	num_tasks++;
+
+	/* define the string cache for the next task */
+	defines_for_task_sc = (STRING_CACHE**)vtr::realloc(defines_for_task_sc, sizeof(STRING_CACHE*)*(num_tasks+1));
+	defines_for_task_sc[num_tasks] = sc_new_string_cache();
+
+	/* create a new list for the instantiations list */
+	task_instantiations_instance = NULL;
+	size_task_instantiations = 0;
+
+	/* old ones are done so clean */
+	sc_free_string_cache(tasks_inputs_sc);
+	sc_free_string_cache(tasks_outputs_sc);
+	/* make for next task */
+	tasks_inputs_sc = sc_new_string_cache();
+	tasks_outputs_sc = sc_new_string_cache();
 }
 /*---------------------------------------------------------------------------------------------
  * (function: next_function)

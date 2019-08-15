@@ -214,6 +214,44 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, STRING_CACHE_LIST
 
 				break;
 			}
+			case TASK:
+			{
+				if(parent != NULL)
+				{
+					skip_children = true;
+				}
+				break;
+			}
+			case TASK_INSTANCE:
+			{
+				// check ports
+				ast_node_t *connect_list = node->children[1]->children[1];
+				bool is_ordered_list;
+				if (connect_list->children[0]) // skip first connection
+				{
+					is_ordered_list = false; // name was specified
+				}
+				else
+				{
+					is_ordered_list = true;
+				}
+				
+				for (int i = 1; i < connect_list->num_children; i++)
+				{
+					if ((connect_list->children[i] 
+						&& connect_list->children[i]->children)
+						&& (( connect_list->children[i]->children[0] && is_ordered_list)
+						|| (!connect_list->children[i]->children[0] && !is_ordered_list)))
+					{
+						error_message(PARSE_ERROR, node->line_number, node->file_number, 
+								"%s", "Cannot mix port connections by name and port connections by ordered list\n");
+					}
+				}
+
+				skip_children = true;
+
+				break;
+			}
 			case MODULE_ITEMS:
 			{
 				/* look in the string cache for in-line continuous assignments */
@@ -761,6 +799,65 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, STRING_CACHE_LIST
 					vtr::free(temp_instance_name);
 				}
 
+				int task_offset = function_offset + i;
+				for (i = 0; i < node->types.task.size_task_instantiations; i++)
+				{
+				
+					/* make the stringed up module instance name - instance name is
+					* MODULE_INSTANCE->MODULE_NAMED_INSTANCE(child[1])->IDENTIFIER(child[0]).
+					* module name is MODULE_INSTANCE->IDENTIFIER(child[0])
+					*/
+					ast_node_t *temp_instance = node->types.task.task_instantiations_instance[i];
+					char *instance_name_prefix = local_string_cache_list->instance_name_prefix;
+
+					char *temp_instance_name = make_full_ref_name(instance_name_prefix,
+						temp_instance->children[0]->types.identifier,
+						temp_instance->children[1]->children[0]->types.identifier,
+						NULL, -1);
+
+					long sc_spot;
+					/* lookup the name of the task associated with this instantiated point */
+					if ((sc_spot = sc_lookup_string(module_names_to_idx, temp_instance->children[0]->types.identifier)) == -1)
+					{
+						error_message(NETLIST_ERROR, node->line_number, node->file_number,
+								"Can't find task name %s\n", temp_instance->children[0]->types.identifier);
+					}
+
+					/* make a unique copy of this task */
+					ast_node_t *instance = ast_node_deep_copy((ast_node_t *)module_names_to_idx->data[sc_spot]);
+					
+					long sc_spot_2 = sc_add_string(module_names_to_idx, temp_instance_name);
+					oassert(sc_spot_2 > -1 && module_names_to_idx->data[sc_spot_2] == NULL);
+					module_names_to_idx->data[sc_spot_2] = (void *)instance;
+					
+					ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(sc_spot_2 + 1));
+					ast_modules[sc_spot_2] = instance;
+
+					/* create the string cache list for the instantiated task */
+					STRING_CACHE_LIST *task_string_cache_list = (STRING_CACHE_LIST*)vtr::calloc(1, sizeof(STRING_CACHE_LIST));
+					task_string_cache_list->parent = local_string_cache_list;
+					
+					int num_children = local_string_cache_list->num_children;
+					local_string_cache_list->children = (STRING_CACHE_LIST **)vtr::realloc(local_string_cache_list->children, sizeof(STRING_CACHE_LIST *)*(num_children + 1));
+					local_string_cache_list->children[task_offset + i] = task_string_cache_list;
+					local_string_cache_list->num_children++;			
+					
+					task_string_cache_list->instance_name_prefix = vtr::strdup(temp_instance_name);
+					task_string_cache_list->scope_id = vtr::strdup(temp_instance->children[1]->children[0]->types.identifier);
+
+					/* create the symbol table for the instantiated module */
+					task_string_cache_list->local_symbol_table_sc = sc_new_string_cache();
+					task_string_cache_list->num_local_symbol_table = 0;
+					task_string_cache_list->local_symbol_table = NULL;
+					create_symbol_table_for_scope(instance->children[2], task_string_cache_list);
+
+					/* elaboration */
+					simplify_ast_module(&instance, task_string_cache_list);
+
+					/* clean up */
+					vtr::free(temp_instance_name);
+				}
+
 				break;
 			}
 			case MODULE_PARAMETER:
@@ -1131,6 +1228,11 @@ ast_node_t *reduce_expressions(ast_node_t *node, STRING_CACHE_LIST *local_string
 				skip_children = true;
 				break;
 			}	
+			case TASK:
+			{
+				skip_children = true;
+				break;
+			}
 			case BLOCKING_STATEMENT:
 			case NON_BLOCKING_STATEMENT:
 			{

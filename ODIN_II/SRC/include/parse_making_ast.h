@@ -58,6 +58,7 @@ ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int 
 ast_node_t *newModuleConnection(char* id, ast_node_t *expression, int line_number);
 ast_node_t *newModuleNamedInstance(char* unique_name, ast_node_t *module_connect_list, ast_node_t *module_parameter_list, int line_number);
 ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t *module_parameter_list, int line_number);
+ast_node_t *newTaskInstance(char *task_name, ast_node_t *task_connect_list, ast_node_t *task_parameter_list, int line_number);
 ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
 ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_named_instance, int line_number);
 ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
@@ -81,8 +82,10 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t *expression1, ast_
 /* HIGH LEVEL ITEMS */
 ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number);
 ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number);
+ast_node_t *newTask(char *task_name, ast_node_t *list_of_ports, ast_node_t *list_of_task_items, int line_number);
 void next_module();
 void next_function();
+void next_task();
 ast_node_t *newDefparam(ids id, ast_node_t *val, int line_number);
 
 void next_parsed_verilog_file(ast_node_t *file_items_list);

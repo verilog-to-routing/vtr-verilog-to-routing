@@ -80,6 +80,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"end"				{ MP; return vEND;}
 <INITIAL>"endcase"			{ MP; return vENDCASE;}
 <INITIAL>"endfunction"		{ MP; return vENDFUNCTION;}
+<INITIAL>"endtask"			{ MP; return vENDTASK;}
 <INITIAL>"endgenerate"		{ MP; return vENDGENERATE;}
 <INITIAL>"endmodule"		{ MP; return vENDMODULE;}
 <INITIAL>"endspecify"		{ MP; return vENDSPECIFY;}
@@ -93,6 +94,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"genvar"			{ MP; return vGENVAR;}
 <INITIAL>"module"			{ MP; return vMODULE;}
 <INITIAL>"function"			{ MP; return vFUNCTION;}
+<INITIAL>"task"				{ MP; return vTASK;}
 <INITIAL>"nand"				{ MP; return vNAND;}
 <INITIAL>"negedge"			{ MP; return vNEGEDGE;}
 <INITIAL>"nor"				{ MP; return vNOR;}
@@ -123,7 +125,6 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"casez"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"disable"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"edge"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
-<INITIAL>"endtask"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"scalared"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"bufif0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"bufif1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
@@ -163,7 +164,6 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"supply0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"supply1"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"table"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
-<INITIAL>"task"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"time"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"tran"				{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}
 <INITIAL>"tranif0"			{ UNSUPPORTED_TOKEN; return vNOT_SUPPORT;}

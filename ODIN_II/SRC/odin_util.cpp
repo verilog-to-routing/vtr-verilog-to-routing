@@ -185,7 +185,10 @@ char *make_full_ref_name(const char *previous, const char *module_name, const ch
 		return_string << previous;
 
 	if(module_name) 							 
-		return_string	<< "." << module_name << "+" << module_instance_name;
+		return_string	<< "." << module_name << "+";
+
+	if(module_instance_name)
+		return_string << module_instance_name;
 
 	if(signal_name && (previous || module_name)) 
 		return_string << "^";
