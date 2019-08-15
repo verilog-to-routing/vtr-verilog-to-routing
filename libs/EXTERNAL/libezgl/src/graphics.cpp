@@ -486,11 +486,11 @@ void renderer::draw_text(point2d point, std::string const &text, double bound_x,
     return;
 
   // get the width and height of the drawn text
-  cairo_text_extents_t text_extents{};
+  cairo_text_extents_t text_extents{0,0,0,0,0,0};
   cairo_text_extents(m_cairo, text.c_str(), &text_extents);
 
   // get more information about the font used
-  cairo_font_extents_t font_extents{};
+  cairo_font_extents_t font_extents{0,0,0,0,0};
   cairo_font_extents(m_cairo, &font_extents);
 
   // get text width and height in world coordinates (text width and height are constant in widget coordinates)

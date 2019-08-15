@@ -16,8 +16,11 @@ option(VPR_USE_SIGNAL_HANDLER "Should VPR use a signal handler to intercept sign
 set(VPR_PGO_CONFIG "none" CACHE STRING "Configure VPR Profile-Guided Optimization (PGO). prof_gen: built executable will produce profiling info, prof_use: built executable will be optimized based on generated profiling info, none: disable pgo")
 set_property(CACHE VPR_PGO_CONFIG PROPERTY STRINGS prof_gen prof_use none)
 
+#Handle graphics setup
+set(GRAPHICS_DEFINES "")
 
 if (VPR_USE_EZGL STREQUAL "on")
+    message(STATUS "EZGL: graphics enabled")
     set(
         RESOURCE_LIST
         # Strip all the whitespace characters from ui file
@@ -28,6 +31,9 @@ if (VPR_USE_EZGL STREQUAL "on")
          ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/libezgl/gcr-cmake/macros)
 
     include(GlibCompileResourcesSupport)
+else()
+    list(APPEND GRAPHICS_DEFINES "-DNO_GRAPHICS")
+    message(STATUS "EZGL: graphics disabled")
 endif()
 
 #
@@ -95,6 +101,8 @@ if (VPR_USE_EZGL STREQUAL "on")
     list(APPEND EXEC_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/resources.C)
 
 endif()
+
+target_compile_definitions(libvpr PUBLIC ${GRAPHICS_DEFINES})
 
 add_executable(vpr ${EXEC_SOURCES})
 

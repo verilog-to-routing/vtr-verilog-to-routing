@@ -791,6 +791,13 @@ enum class e_reducer {
     GEOMEAN
 };
 
+enum class e_file_type {
+    PDF,
+    PNG,
+    SVG,
+    NONE
+};
+
 struct t_placer_opts {
     enum e_place_algorithm place_algorithm;
     float timing_tradeoff;
@@ -1294,6 +1301,7 @@ struct t_vpr_setup {
     float constant_net_delay;            /* timing information when place and route not run */
     bool ShowGraphics;                   /* option to show graphics */
     int GraphPause;                      /* user interactiveness graphics option */
+    bool SaveGraphics;                   /* option to save graphical contents to pdf, png, or svg */
     t_power_opts PowerOpts;
     std::string device_layout;
     e_constant_net_method constant_net_method; //How constant nets should be handled
