@@ -160,6 +160,7 @@ typedef struct {
  *				 Used to control drawing each routing resource when
  *				 ROUTING is on screen.
  *				 [0..device_ctx.rr_nodes.size()-1]
+ * save_graphics: Whether to generate an output graphcis file
  */
 struct t_draw_state {
     pic_type pic_on_screen = NO_PICTURE;
@@ -185,6 +186,7 @@ struct t_draw_state {
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
     std::unique_ptr<const vtr::ColorMap> color_map = nullptr;
+    bool save_graphics = false;
 
     t_draw_state() = default;
 

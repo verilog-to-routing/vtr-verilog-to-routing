@@ -25,8 +25,6 @@
 #include "ezgl/application.hpp"
 #include "ezgl/graphics.hpp"
 
-#include <iostream>
-
 // Callback functions for event handling
 void act_on_mouse_press(ezgl::application *application, GdkEventButton *event, double x, double y);
 void act_on_mouse_move(ezgl::application *application, GdkEventButton *event, double x, double y);
@@ -537,7 +535,7 @@ void test_button(GtkWidget */*widget*/, ezgl::application *application)
 {
   // Update the status bar message
   application->update_message("Test Button Pressed");
-
+  
   // Redraw the main canvas
   application->refresh_drawing();
 

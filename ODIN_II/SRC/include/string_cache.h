@@ -34,16 +34,18 @@ struct STRING_CACHE{
 };
 
 struct STRING_CACHE_LIST{
+	char *scope_id;
+	char *instance_name_prefix;
+
 	STRING_CACHE *local_param_table_sc;
 	STRING_CACHE *local_symbol_table_sc;
-	STRING_CACHE *function_local_symbol_table_sc;
 
 	struct ast_node_t **local_symbol_table;
-	struct ast_node_t **function_local_symbol_table;
 	int num_local_symbol_table;
-	int function_num_local_symbol_table;
 
-	char *instance_name_prefix;
+	STRING_CACHE_LIST *parent;
+	STRING_CACHE_LIST **children;
+	int num_children;
 };
 
 /* creates the hash where it is indexed by a string and the void ** holds the data */

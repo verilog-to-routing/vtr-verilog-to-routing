@@ -78,6 +78,7 @@ using namespace std;
 #include "arch_util.h"
 
 #include "log.h"
+#include "iostream"
 
 #ifdef VPR_USE_TBB
 #    include <tbb/task_scheduler_init.h>
@@ -276,6 +277,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->Timing,
              &vpr_setup->ShowGraphics,
              &vpr_setup->GraphPause,
+             &vpr_setup->SaveGraphics,
              &vpr_setup->PowerOpts);
 
     /* Check inputs are reasonable */
@@ -834,10 +836,9 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     /* Startup X graphics */
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
-                        vpr_setup.RouterOpts.route_type);
-    if (vpr_setup.ShowGraphics) {
+                        vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics);
+    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics)
         alloc_draw_structs(&arch);
-    }
 }
 
 void vpr_close_graphics(const t_vpr_setup& /*vpr_setup*/) {
@@ -1050,6 +1051,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
                    int* GraphPause,
+                   bool* SaveGraphics,
                    t_power_opts* PowerOpts) {
     SetupVPR(Options,
              TimingEnabled,
@@ -1070,6 +1072,7 @@ void vpr_setup_vpr(t_options* Options,
              Timing,
              ShowGraphics,
              GraphPause,
+             SaveGraphics,
              PowerOpts);
 }
 

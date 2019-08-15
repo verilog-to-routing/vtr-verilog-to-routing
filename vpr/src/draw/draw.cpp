@@ -42,6 +42,7 @@ using namespace std;
 #include "hsl.h"
 #include "route_export.h"
 #include "search_bar.h"
+#include "save_graphics.h"
 #include "timing_info.h"
 #include "physical_types.h"
 
@@ -208,7 +209,7 @@ void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 
 /********************** Subroutine definitions ******************************/
 
-void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type) {
+void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -220,10 +221,12 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->show_graphics = show_graphics_val;
     draw_state->gr_automode = gr_automode_val;
     draw_state->draw_route_type = route_type;
+    draw_state->save_graphics = save_graphics;
 #else
     (void)show_graphics_val;
     (void)gr_automode_val;
     (void)route_type;
+    (void)save_graphics;
 #endif // NO_GRAPHICS
 }
 
@@ -247,7 +250,6 @@ void draw_main_canvas(ezgl::renderer& g) {
             default:
                 break;
         }
-
     } else { /* ROUTING on screen */
 
         switch (draw_state->show_nets) {
@@ -296,12 +298,16 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app) {
     gtk_button_set_label(search, "Search");
     g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
 
+    GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
+    g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box), app);
+
     GObject* search_type = (GObject*)app->get_object("SearchType");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block Name");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");   // index 0
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block Name"); // index 1
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");     // index 2
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");   // index 3
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID"); // index 4
+    gtk_combo_box_set_active((GtkComboBox*)search_type, 0);                        // default set to Block ID which has an index 0
 
     app->create_button("Toggle Nets", 2, toggle_nets);
     app->create_button("Blk Internal", 3, toggle_blk_internal);
@@ -355,6 +361,9 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app) {
     gtk_button_set_label(search, "Search RR Node");
     g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
 
+    GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
+    g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box), app);
+
     GObject* search_type = (GObject*)app->get_object("SearchType");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block Name");
@@ -392,12 +401,13 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (!draw_state->show_graphics) /* Graphics turned off */
-        return;
+    if (!draw_state->show_graphics)
+        ezgl::set_disable_event_loop(true);
+    else
+        ezgl::set_disable_event_loop(false);
 
     //Has the user asked us to pause at the next screen updated?
     bool forced_pause = g_vpr_ctx.forced_pause();
-
     if (int(priority) >= draw_state->gr_automode || forced_pause) {
         if (forced_pause) {
             VTR_LOG("Starting interactive graphics (due to user interrupt)\n");
@@ -408,16 +418,27 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
         /* If it's the type of picture displayed has changed, set up the proper  *
          * buttons.                                                              */
         if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
+
             if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
                 draw_state->pic_on_screen = pic_on_screen_val;
                 //Placement first to open
                 if (setup_timing_info) {
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                    if (draw_state->save_graphics) {
+                        std::string extension = "pdf";
+                        std::string file_name = "vpr_placement";
+                        save_graphics(extension, file_name);
+                    }
                     application.run(initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
                 } else {
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                    if (draw_state->save_graphics) {
+                        std::string extension = "pdf";
+                        std::string file_name = "vpr_placement";
+                        save_graphics(extension, file_name);
+                    }
                     application.run(initial_setup_NO_PICTURE_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
                 }
             } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
@@ -426,6 +447,11 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                 draw_state->pic_on_screen = pic_on_screen_val;
 
                 application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                if (draw_state->save_graphics) {
+                    std::string extension = "pdf";
+                    std::string file_name = "vpr_routing";
+                    save_graphics(extension, file_name);
+                }
                 application.run(initial_setup_PLACEMENT_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
             } else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
                 draw_state->setup_timing_info = setup_timing_info;
@@ -433,6 +459,11 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
                 //Placement, opening after routing
                 application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                if (draw_state->save_graphics) {
+                    std::string extension = "pdf";
+                    std::string file_name = "vpr_placement";
+                    save_graphics(extension, file_name);
+                }
                 application.run(initial_setup_ROUTING_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
             } else if (pic_on_screen_val == ROUTING
                        && draw_state->pic_on_screen == NO_PICTURE) {
@@ -442,17 +473,24 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                 if (setup_timing_info) {
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                    if (draw_state->save_graphics) {
+                        std::string extension = "pdf";
+                        std::string file_name = "vpr_routing";
+                        save_graphics(extension, file_name);
+                    }
                     application.run(initial_setup_NO_PICTURE_to_ROUTING_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
                 } else {
                     draw_state->setup_timing_info = setup_timing_info;
                     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+                    if (draw_state->save_graphics) {
+                        std::string extension = "pdf";
+                        std::string file_name = "vpr_routing";
+                        save_graphics(extension, file_name);
+                    }
                     application.run(initial_setup_NO_PICTURE_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
                 }
             }
         }
-
-    } else {
-        application.refresh_drawing();
     }
 #else
     (void)setup_timing_info;
@@ -680,7 +718,6 @@ void alloc_draw_structs(const t_arch* arch) {
 
     /* Allocate the structures needed to draw the placement and routing.  Set *
      * up the default colors for blocks and nets.                             */
-
     draw_coords->tile_x = (float*)vtr::malloc(device_ctx.grid.width() * sizeof(float));
     draw_coords->tile_y = (float*)vtr::malloc(device_ctx.grid.height() * sizeof(float));
 
@@ -738,9 +775,8 @@ void init_draw_coords(float width_val) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-    if (!draw_state->show_graphics)
-        return; /* Graphics disabled */
-
+    if (!draw_state->show_graphics && !draw_state->save_graphics)
+        return; //do not initialize only if --disp off and --save_graphics off
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
     if (device_ctx.rr_nodes.size() != 0) {
@@ -772,10 +808,8 @@ void init_draw_coords(float width_val) {
         j += device_ctx.chan_width.x_list[i] + 1;
     }
     draw_coords->tile_y[device_ctx.grid.height() - 1] = ((device_ctx.grid.height() - 1) * draw_coords->get_tile_width()) + j;
-
     /* Load coordinates of sub-blocks inside the clbs */
     draw_internal_init_blk();
-
     //Margin beyond edge of the drawn device to extend the visible world
     //Setting this to > 0.0 means 'Zoom Fit' leave some fraction of white
     //space around the device edges
@@ -2448,6 +2482,29 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
                 window_point_1_collected = false;
             }
             app->refresh_drawing();
+        } else {
+            // regular clicking mode
+
+            /* This routine is called when the user clicks in the graphics area. *
+             * It determines if a clb was clicked on.  If one was, it is         *
+             * highlighted in green, it's fanin nets and clbs are highlighted in *
+             * blue and it's fanout is highlighted in red.  If no clb was        *
+             * clicked on (user clicked on white space) any old highlighting is  *
+             * removed.  Note that even though global nets are not drawn, their  *
+             * fanins and fanouts are highlighted when you click on a block      *
+             * attached to them.                                                 */
+
+            /* Control + mouse click to select multiple nets. */
+            if (!(event->state & GDK_CONTROL_MASK))
+                deselect_all();
+
+            //Check if we hit an rr node
+            // Note that we check this before checking for a block, since pins and routing may appear overtop of a multi-width/height block
+            if (highlight_rr_nodes(x, y)) {
+                return; //Selected an rr node
+            }
+
+            highlight_blocks(x, y);
         }
     }
     //  else if (event->button == 2)
@@ -2456,27 +2513,6 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
     //    std::cout << "right ";
 
     //  std::cout << "mouse button at coordinates (" << x << "," << y << ") " << std::endl;
-
-    /* This routine is called when the user clicks in the graphics area. *
-     * It determines if a clb was clicked on.  If one was, it is         *
-     * highlighted in green, it's fanin nets and clbs are highlighted in *
-     * blue and it's fanout is highlighted in red.  If no clb was        *
-     * clicked on (user clicked on white space) any old highlighting is  *
-     * removed.  Note that even though global nets are not drawn, their  *
-     * fanins and fanouts are highlighted when you click on a block      *
-     * attached to them.                                                 */
-
-    /* Control + mouse click to select multiple nets. */
-    if (!(event->state & GDK_CONTROL_MASK))
-        deselect_all();
-
-    //Check if we hit an rr node
-    // Note that we check this before checking for a block, since pins and routing may appear overtop of a multi-width/height block
-    if (highlight_rr_nodes(x, y)) {
-        return; //Selected an rr node
-    }
-
-    highlight_blocks(x, y);
 }
 
 void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, double y) {
