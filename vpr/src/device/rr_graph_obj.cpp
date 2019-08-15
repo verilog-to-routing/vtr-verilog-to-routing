@@ -783,6 +783,7 @@ bool RRGraph::check_dangling_nodes() const {
 /*********************************************************************** 
  * check if all the source nodes are in the right condition:
  * 1. zero fan-in and non-zero fanout
+ *
  **********************************************************************/ 
 bool RRGraph::check_source_nodes() const {
     bool invalid_sources = false;
@@ -812,6 +813,7 @@ bool RRGraph::check_source_nodes() const {
 /*********************************************************************** 
  * check if all the sink nodes are in the right condition:
  * 1. non-zero fan-in and zero fanout
+ *
  **********************************************************************/ 
 bool RRGraph::check_sink_nodes() const {
     bool invalid_sinks = false;
