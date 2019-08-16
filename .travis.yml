@@ -104,22 +104,22 @@ jobs:
       name: "Basic Regression Tests"
       script:
         - ./.github/travis/build.sh
-        - ./run_reg_test.pl vtr_reg_basic -j2
+        - ./run_reg_test.pl vtr_reg_basic -show_failures -j2
     - stage: Test
       name: "Strong Regression Tests"
       script:
         - ./.github/travis/build.sh
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -j2
+        - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -show_failures -j2
     - stage: Test
       name: "Basic Valgrind Memory Tests"
       script:
         - ./.github/travis/build.sh
-        - ./run_reg_test.pl vtr_reg_valgrind_small -j2
+        - ./run_reg_test.pl vtr_reg_valgrind_small -show_failures -j2
     - stage: Test
       name: "ODIN-II Micro Tests"
       script:
         - ./.github/travis/build.sh
-        - ./run_reg_test.pl odin_reg_micro -j2
+        - ./run_reg_test.pl odin_reg_micro -show_failures -j2
 
     - stage: Build Compatibility
       name: "GCC 5 (Ubuntu Xenial - 16.04)"
