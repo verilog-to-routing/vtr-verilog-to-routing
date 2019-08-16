@@ -86,7 +86,7 @@ void create_directory(std::string path)
 	}
 }
 
-void assert_supported_file_extension(std::string input_file, int file_number)
+void assert_supported_file_extension(std::string input_file, int line_number, int file_number)
 {
 	bool supported = false;
 	std::string extension = get_file_extension(input_file);
@@ -104,13 +104,23 @@ void assert_supported_file_extension(std::string input_file, int file_number)
 			supported_extension_list += file_extension_supported_STR[i];
 		}
 
-		possible_error_message(ARG_ERROR, -1, file_number, 
-			"File (%s) has an unsupported extension (%s), Odin only support { %s }",
+		possible_error_message(ARG_ERROR, line_number, file_number, 
+			"File (%s) has an unsupported extension (%s), Odin only supports { %s }",
 			input_file.c_str(),
 			extension.c_str(),
 			supported_extension_list.c_str()
 			);
 	}
+}
+
+FILE *open_file(const char *file_name, const char *open_type)
+{
+	FILE *opened_file = fopen(file_name, open_type);
+	if (opened_file == NULL)
+	{
+		error_message(ARG_ERROR, -1, -1, "cannot open file: %s\n", file_name);
+	}
+	return opened_file;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -926,36 +936,6 @@ double wall_time()
 	std::chrono::duration<double> time_since_epoch = time_point.time_since_epoch();
 
 	return time_since_epoch.count();
-}
-
-std::string strip_path_and_ext(std::string file)
-{
-	std::string::size_type loc_path = file.find_last_of("/")+1;
-	std::string::size_type loc_ext = file.find_last_of(".");
-	return file.substr(loc_path, loc_ext-loc_path);
-}
-
-/*
- * Parses the given comma separated list
- */
-std::vector<std::string> parse_seperated_list(char *list, const char *separator)
-{
-	std::vector<std::string> list_out;
-
-	// Parse the list.
-	if (!list)
-		return list_out;
-
-
-	char *pin_list = vtr::strdup(list);
-	char *token    = strtok(pin_list, separator);
-	while (token)
-	{
-		list_out.push_back(token);
-		token = strtok(NULL, ",");
-	}
-	vtr::free(pin_list);
-	return list_out;
 }
 
 /*

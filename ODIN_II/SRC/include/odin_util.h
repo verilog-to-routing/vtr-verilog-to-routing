@@ -11,7 +11,8 @@ long shift_left_value_with_overflow_check(long input_value, long shift_by);
 
 std::string get_file_extension(std::string input_file);
 void create_directory(std::string path);
-void assert_supported_file_extension(std::string input_file, int file_number);
+void assert_supported_file_extension(std::string input_file, int line_number, int file_number);
+FILE *open_file(const char *file_name, const char *open_type);
 
 const char *name_based_on_op(operation_list op);
 const char *name_based_on_ids(ids op);
@@ -62,9 +63,6 @@ std::string find_substring(char *src,const char *sKey,int flag);
 
 void print_time(double time);
 double wall_time();
-std::string strip_path_and_ext(std::string file);
-std::vector<std::string> parse_seperated_list(char *list, const char *separator);
-
 int print_progress_bar(double completion, int position, int length, double time);
 
 void trim_string(char* string, const char *chars);

@@ -231,7 +231,7 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, STRING_CACHE_LIST
 						var_declare->children[5] = NULL;
 
 						ast_node_t *blocking_node = newBlocking(id, val, var_declare->line_number);
-						ast_node_t *assign_node = newList(ASSIGN, blocking_node);
+						ast_node_t *assign_node = newList(ASSIGN, blocking_node, var_declare->line_number);
 
 						add_child_to_node(node, assign_node);
 					}

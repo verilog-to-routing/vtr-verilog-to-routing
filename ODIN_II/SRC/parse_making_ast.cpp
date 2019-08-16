@@ -34,12 +34,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "parse_making_ast.h"
 #include "string_cache.h"
 #include "verilog_bison_user_defined.h"
-#include "verilog_preprocessor.h"
+#include "verilog_bison.h"
 #include "hard_blocks.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
-
-extern int yylineno;
 
 //for module
 STRING_CACHE **defines_for_module_sc;
@@ -70,8 +68,6 @@ ast_node_t **ast_functions;
 ast_node_t **all_file_items_list;
 int size_all_file_items_list;
 
-short to_view_parse;
-
 /*
  * File-scope function declarations
  */
@@ -83,57 +79,29 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list);
  *-------------------------------------------------------------------------------------------*/
 void parse_to_ast()
 {
-	extern FILE *yyin;
-	extern int yylineno;
+	extern void push_include(const char *file_name);
 
-	/* hooks into macro at the top of verilog_flex.l that shows the tokens as they're parsed.  Set to true if you want to see it go...*/
-	to_view_parse = configuration.print_parse_tokens;
-
-	/* initialize the parser */
-	init_veri_preproc();
 
 	/* read all the files in the configuration file */
-	current_parse_file =0;
-	while (current_parse_file < configuration.list_of_file_names.size())
+	current_parse_file = configuration.list_of_file_names.size()-1;
+
+	while (current_parse_file >= 0)
 	{
-		assert_supported_file_extension(configuration.list_of_file_names[current_parse_file], current_parse_file);
-
-		yyin = fopen(configuration.list_of_file_names[current_parse_file].c_str(), "r");
-		if (yyin == NULL)
-		{
-			error_message(ARG_ERROR, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
-		}
-
-		yyin = veri_preproc(yyin);
-
-		/* reset the line count */
-		yylineno = 0;
-
-		/* setup the local parser structures for a file */
-		init_parser_for_file();
-		/* parse next file */
-		yyparse();
-
-		fclose(yyin);
-		current_parse_file++;
+		push_include(configuration.list_of_file_names[current_parse_file].c_str());
+		current_parse_file--;
 	}
 
-	/* clean up all the structures in the parser */
-	cleanup_veri_preproc();
+	current_parse_file = 0;
+
+	/* parse all the files */
+	yyparse();
+
+	/* verify that the parser did not trigger delayed errors */
+	verify_delayed_error();
 
 	/* for error messages - this is in case we use any of the parser functions after parsing (i.e. create_case_control_signals()) */
 	current_parse_file = -1;
 }
-
-/* --------------------------------------------------------------------------------------------
- --------------------------------------------------------------------------------------------
- --------------------------------------------------------------------------------------------
-BASIC PARSING FUNCTIONS
- Assume that all `defines are constants so we can change the constant into a number (see def_reduct by performing a search in this file)
- --------------------------------------------------------------------------------------------
- --------------------------------------------------------------------------------------------
- --------------------------------------------------------------------------------------------*/
-
 
 /*---------------------------------------------------------------------------------------------
  * (function: init_parser)
@@ -141,7 +109,16 @@ BASIC PARSING FUNCTIONS
 void init_parser()
 {
 
-	defines_for_module_sc = NULL;
+	defines_for_module_sc =  (STRING_CACHE**)vtr::calloc(1, sizeof(STRING_CACHE*));
+	defines_for_module_sc[0] = sc_new_string_cache();
+
+	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
+	modules_inputs_sc = sc_new_string_cache();
+	modules_outputs_sc = sc_new_string_cache();
+	functions_inputs_sc = sc_new_string_cache();
+	functions_outputs_sc = sc_new_string_cache();
+	instantiated_modules = sc_new_string_cache();
+	module_instances_sc = sc_new_string_cache();
 
 	defines_for_function_sc = NULL;
 	/* record of each of the individual modules */
@@ -169,36 +146,6 @@ void cleanup_parser()
 	sc_free_string_cache(defines_for_module_sc[num_modules]); // last string cache is unused
 	//sc_free_string_cache(defines_for_function_sc[num_functions]); // last string cache is unused
 	vtr::free(defines_for_module_sc);
-	//vtr::free(defines_for_function_sc);
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: init_parser_for_file)
- *-------------------------------------------------------------------------------------------*/
-void init_parser_for_file()
-{
-	/* crrate a hash for defines so we can look them up when we find them */
-	defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
-	defines_for_module_sc[num_modules] = sc_new_string_cache();
-
-	// defines_for_function_sc = (STRING_CACHE**)vtr::realloc(defines_for_function_sc, sizeof(STRING_CACHE*)*(num_modules+1));
-	// defines_for_function_sc[num_functions] = sc_new_string_cache();
-
-	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
-	modules_inputs_sc = sc_new_string_cache();
-	modules_outputs_sc = sc_new_string_cache();
-	functions_inputs_sc = sc_new_string_cache();
-	functions_outputs_sc = sc_new_string_cache();
-	instantiated_modules = sc_new_string_cache();
-	module_instances_sc = sc_new_string_cache();
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: clean_up_parser_for_file)
- *-------------------------------------------------------------------------------------------*/
-void cleanup_parser_for_file()
-{
-	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
 	modules_inputs_sc = sc_free_string_cache(modules_inputs_sc);
 	modules_outputs_sc = sc_free_string_cache(modules_outputs_sc);
 	functions_inputs_sc = sc_free_string_cache(functions_inputs_sc);
@@ -253,22 +200,22 @@ ast_node_t *newNumberNode(char *num, int line_number)
 /*---------------------------------------------------------------------------------------------
  * (function: newList)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newList(ids node_type, ast_node_t *child)
+ast_node_t *newList(ids node_type, ast_node_t *child, int line_number)
 {
 	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(node_type, yylineno, current_parse_file);
+	ast_node_t* new_node = create_node_w_type(node_type, line_number, current_parse_file);
 	/* allocate child nodes to this node */
 	if (child) allocate_children_to_node(new_node, { child });
 
 	return new_node;
 }
 
-ast_node_t *newfunctionList(ids node_type, ast_node_t *child)
+ast_node_t *newfunctionList(ids node_type, ast_node_t *child, int line_number)
 {
     /* create a output node for this array reference that is going to be the first child */
-   	ast_node_t* output_node = create_node_w_type(IDENTIFIERS, yylineno, current_parse_file);
+   	ast_node_t* output_node = create_node_w_type(IDENTIFIERS, line_number, current_parse_file);
     /* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(node_type, yylineno, current_parse_file);
+	ast_node_t* new_node = create_node_w_type(node_type, line_number, current_parse_file);
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, { output_node, child });
 
@@ -289,10 +236,10 @@ ast_node_t *newList_entry(ast_node_t *list, ast_node_t *child)
 /*---------------------------------------------------------------------------------------------
  * (function: newListReplicate)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
+ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child, int line_number)
 {
 	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(REPLICATE, yylineno, current_parse_file);
+	ast_node_t* new_node = create_node_w_type(REPLICATE, line_number, current_parse_file);
 
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, { exp, child });
@@ -363,7 +310,7 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 
 			if (!unprocessed_ports)
 			{
-				unprocessed_ports = newList(VAR_DECLARE_LIST, this_port);
+				unprocessed_ports = newList(VAR_DECLARE_LIST, this_port, this_port->line_number);
 			} 
 			else 
 			{
@@ -1393,7 +1340,7 @@ ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, a
 
 	char *newChar = vtr::strdup(expression1->types.identifier);
 	ast_node_t *newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
-	ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar);
+	ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar, line_number);
 	ast_node_t *newVarMaked = markAndProcessSymbolListWith(MODULE,WIRE, newVarList, false);
 	if(size_module_variables_not_defined == 0){
 		module_variables_not_defined = (ast_node_t **)vtr::calloc(1, sizeof(ast_node_t*));
@@ -1426,7 +1373,7 @@ ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *
 
     ast_node_t *newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
 
-    ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar);
+    ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar, line_number);
 
     ast_node_t *newVarMarked = markAndProcessSymbolListWith(MODULE, WIRE, newVarList, false);
 
@@ -1612,7 +1559,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 
 	char *function_name = vtr::strdup(list_of_ports->children[0]->children[0]->types.identifier);
 
-	output_node = newList(VAR_DECLARE_LIST, list_of_ports->children[0]);
+	output_node = newList(VAR_DECLARE_LIST, list_of_ports->children[0], line_number);
 
 	markAndProcessSymbolListWith(FUNCTION, OUTPUT, output_node, list_of_ports->children[0]->types.variable.is_signed);
 
@@ -1620,7 +1567,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 
 	char *label = vtr::strdup(list_of_ports->children[0]->children[0]->types.identifier);
 
-	var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
+	var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, line_number);
 
 	list_of_ports->children[0] = var_node;
 
@@ -1630,7 +1577,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 			for(j = 0; j < list_of_module_items->children[i]->num_children; j++) {
 				if(list_of_module_items->children[i]->children[j]->types.variable.is_input){
                     label = vtr::strdup(list_of_module_items->children[i]->children[j]->children[0]->types.identifier);
-                    var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
+                    var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, line_number);
 					newList_entry(list_of_ports,var_node);
 				}
 			}

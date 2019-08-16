@@ -18,9 +18,9 @@ void cleanup_parser_for_file();
 /* GENERAL PARSER NODES */
 ast_node_t *newSymbolNode(char *id, int line_number);
 ast_node_t *newNumberNode(char *num, int line_number);
-ast_node_t *newList(ids type_id, ast_node_t *expression);
+ast_node_t *newList(ids type_id, ast_node_t *expression, int line_number);
 ast_node_t *newList_entry(ast_node_t *concat_node, ast_node_t *expression);
-ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child );
+ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child, int line_number);
 ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_node_t *port, bool is_signed);
 ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parameter, bool is_signed);
 ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list, bool is_signed);
@@ -64,7 +64,7 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
 ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number);
 
 /* FUNCTION INSTANCES FUNCTIONS */
-ast_node_t *newfunctionList(ids node_type, ast_node_t *child);
+ast_node_t *newfunctionList(ids node_type, ast_node_t *child, int line_number);
 ast_node_t *newParallelConnection(ast_node_t *expression1, ast_node_t *expression2, int line_number);
 
 /* GATE INSTANCE */
