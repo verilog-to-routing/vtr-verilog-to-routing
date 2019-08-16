@@ -212,7 +212,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->gr_automode = gr_automode_val;
     draw_state->draw_route_type = route_type;
     draw_state->save_graphics = save_graphics;
-    
+
 #else
     (void)show_graphics_val;
     (void)gr_automode_val;
@@ -511,16 +511,16 @@ void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/)
     /* this is the callback function for runtime created toggle_nets button 
      * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
-    
+
     // get the pointer to the toggle_nets button
     std::string button_name = "toggle_nets";
     auto toggle_nets = find_button(button_name.c_str());
-    
+
     // use the pointer to get the active text
     enum e_draw_nets new_state;
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_nets));
-    
-    // assign corresponding enum value to draw_state->show_nets 
+
+    // assign corresponding enum value to draw_state->show_nets
     if (strcmp(combo_box_content, "None") == 0)
         new_state = DRAW_NO_NETS;
     else if (strcmp(combo_box_content, "Nets") == 0) {
@@ -533,7 +533,7 @@ void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/)
 
     //free dynamically allocated pointers
     g_free(combo_box_content);
-    
+
     //redraw
     application.update_message(draw_state->default_message);
     application.refresh_drawing();
@@ -636,13 +636,13 @@ void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gp
     // get the pointer to the toggle_routing_bounding_box button
     std::string button_name = "toggle_routing_bounding_box";
     auto toggle_routing_bounding_box = find_button(button_name.c_str());
-    
+
     if (route_ctx.route_bb.size() == 0)
         return; //Nothing to draw
-    
+
     // use the pointer to get the active value
     int new_value = gtk_spin_button_get_value_as_int((GtkSpinButton*)toggle_routing_bounding_box);
-    
+
     // assign value to draw_state->show_routing_bb, bound check + set OPEN when it's -1 (draw nothing)
     if (new_value < -1)
         draw_state->show_routing_bb = -1;
@@ -652,7 +652,7 @@ void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gp
         draw_state->show_routing_bb = route_ctx.route_bb.size() - 1;
     else
         draw_state->show_routing_bb = new_value;
-    
+
     //redraw
     if ((int)(draw_state->show_routing_bb) == (int)((int)(route_ctx.route_bb.size()) - 1)) {
         application.update_message(draw_state->default_message);
@@ -695,7 +695,7 @@ void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_blk_internal";
     auto toggle_blk_internal = find_button(button_name.c_str());
-    
+
     int new_value = gtk_spin_button_get_value_as_int((GtkSpinButton*)toggle_blk_internal);
     if (new_value < 0)
         draw_state->show_blk_internal = 0;
@@ -736,7 +736,7 @@ void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpoint
     auto toggle_placement_macros = find_button(button_name.c_str());
 
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_placement_macros));
-    if (strcmp(combo_box_content, "None") == 0) 
+    if (strcmp(combo_box_content, "None") == 0)
         draw_state->show_placement_macros = DRAW_NO_PLACEMENT_MACROS;
     else
         draw_state->show_placement_macros = DRAW_PLACEMENT_MACROS;
@@ -3249,7 +3249,6 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer& g) 
                          {legend.right(), legend.top() - (i + 1) * height_incr});
     }
 
-
     //Min mark
     g.set_color(blk_SKYBLUE); // set to skyblue so its easier to see
     std::string str = vtr::string_fmt("%.3g", cmap.min());
@@ -3259,7 +3258,7 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer& g) 
     g.set_color(ezgl::BLACK);
     str = vtr::string_fmt("%.3g", cmap.min() + (cmap.range() / 2.));
     g.draw_text({legend.center_x(), legend.center_y()}, str.c_str());
-    
+
     //Max marker
     g.set_color(ezgl::BLACK);
     str = vtr::string_fmt("%.3g", cmap.max());
