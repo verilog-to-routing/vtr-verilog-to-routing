@@ -218,7 +218,6 @@ void t_rr_node::set_capacity(short new_capacity) {
 }
 
 void t_rr_node::set_fan_in(t_edge_size new_fan_in) {
-    VTR_ASSERT(new_fan_in >= 0);
     fan_in_ = new_fan_in;
 }
 
@@ -286,7 +285,6 @@ void t_rr_node::partition_edges() {
 
 void t_rr_node::set_num_edges(size_t new_num_edges) {
     VTR_ASSERT(new_num_edges <= std::numeric_limits<t_edge_size>::max());
-    VTR_ASSERT(new_num_edges >= 0);
     num_edges_ = new_num_edges;
     edges_capacity_ = new_num_edges;
 

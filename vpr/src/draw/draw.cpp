@@ -2439,7 +2439,7 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* event, char* key_name
     event = event; // just for hiding warning message
 }
 #    else
-void act_on_key_press(ezgl::application* app, GdkEventKey* event, char* key_name) {
+void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* /*key_name*/) {
     //Nothing to do
 }
 #    endif
