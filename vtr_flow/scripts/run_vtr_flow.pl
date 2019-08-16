@@ -1306,7 +1306,7 @@ sub system_with_timeout {
 			my $return_code = $? >> 8;
 
 			if ( $did_crash eq "true" ) {
-                if ($show_failures) {
+                if ($show_failures && !$expect_fail) {
                     my $abs_log_path = Cwd::abs_path($_[1]);
                     print "\n   Failed log file follows ($abs_log_path):\n";
                     cat_file($_[1], "\t> ");
@@ -1314,7 +1314,7 @@ sub system_with_timeout {
 				return "crashed";
 			}
 			elsif ( $return_code != 0 ) {
-                if ($show_failures) {
+                if ($show_failures && !$expect_fail) {
                     my $abs_log_path = Cwd::abs_path($_[1]);
                     print "\n   Failed log file follows ($abs_log_path):\n";
                     cat_file($_[1], "\t> ");
