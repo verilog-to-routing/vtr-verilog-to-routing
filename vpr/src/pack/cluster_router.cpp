@@ -25,6 +25,7 @@ using namespace std;
 
 #include "vpr_error.h"
 #include "vpr_types.h"
+#include "echo_files.h"
 
 #include "physical_types.h"
 #include "globals.h"
@@ -509,7 +510,7 @@ bool try_intra_lb_route(t_lb_router_data* router_data,
     } else {
         //Unroutable
 #ifdef PRINT_INTRA_LB_ROUTE
-        print_route("intra_lb_failed_route.echo", router_data);
+        print_route(getEchoFileName(E_ECHO_INTRA_LB_FAILED_ROUTE), router_data);
 #endif
 
         if (verbosity > 3 && !is_impossible) {
