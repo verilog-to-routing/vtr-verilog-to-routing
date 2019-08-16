@@ -212,6 +212,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->gr_automode = gr_automode_val;
     draw_state->draw_route_type = route_type;
     draw_state->save_graphics = save_graphics;
+    
 #else
     (void)show_graphics_val;
     (void)gr_automode_val;
@@ -507,40 +508,48 @@ void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/) {
 }
 
 void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_nets button 
+     * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
+    
+    // get the pointer to the toggle_nets button
     std::string button_name = "toggle_nets";
     auto toggle_nets = find_button(button_name.c_str());
+    
+    // use the pointer to get the active text
     enum e_draw_nets new_state;
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_nets));
-    if (strcmp(combo_box_content, "N/A") == 0)
+    
+    // assign corresponding enum value to draw_state->show_nets 
+    if (strcmp(combo_box_content, "None") == 0)
         new_state = DRAW_NO_NETS;
     else if (strcmp(combo_box_content, "Nets") == 0) {
         new_state = DRAW_NETS;
     } else { // "Logical Connections"
         new_state = DRAW_LOGICAL_CONNECTIONS;
     }
-    //update value
     draw_state->reset_nets_congestion_and_rr();
     draw_state->show_nets = new_state;
 
     //free dynamically allocated pointers
     g_free(combo_box_content);
-
+    
+    //redraw
     application.update_message(draw_state->default_message);
     application.refresh_drawing();
 }
 
 void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_rr button 
+     * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_rr";
     auto toggle_rr = find_button(button_name.c_str());
 
     enum e_draw_rr_toggle new_state;
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_rr));
-    if (strcmp(combo_box_content, "N/A") == 0)
+    if (strcmp(combo_box_content, "None") == 0)
         new_state = DRAW_NO_RR;
-    else if (strcmp(combo_box_content, "Mouse over RR") == 0)
-        new_state = DRAW_MOUSE_OVER_RR;
     else if (strcmp(combo_box_content, "Nodes RR") == 0)
         new_state = DRAW_NODES_RR;
     else if (strcmp(combo_box_content, "Nodes and SBox RR") == 0)
@@ -561,14 +570,15 @@ void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
 }
 
 void toggle_congestion(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* Turns the congestion display on and off.   */
+    /* this is the callback function for runtime created toggle_congestion button 
+     * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_congestion";
     auto toggle_congestion = find_button(button_name.c_str());
 
     enum e_draw_congestion new_state;
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_congestion));
-    if (strcmp(combo_box_content, "N/A") == 0)
+    if (strcmp(combo_box_content, "None") == 0)
         new_state = DRAW_NO_CONGEST;
     else if (strcmp(combo_box_content, "Congested") == 0)
         new_state = DRAW_CONGESTED;
@@ -585,13 +595,14 @@ void toggle_congestion(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*d
 }
 
 void toggle_routing_congestion_cost(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    //Turns routing congestion costs on and off
+    /* this is the callback function for runtime created toggle_routing_congestion_cost button 
+     * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_routing_congestion_cost";
     auto toggle_routing_congestion_cost = find_button(button_name.c_str());
     enum e_draw_routing_costs new_state;
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_routing_congestion_cost));
-    if (strcmp(combo_box_content, "N/A") == 0)
+    if (strcmp(combo_box_content, "None") == 0)
         new_state = DRAW_NO_ROUTING_COSTS;
     else if (strcmp(combo_box_content, "Total Routing Costs") == 0)
         new_state = DRAW_TOTAL_ROUTING_COSTS;
@@ -618,21 +629,31 @@ void toggle_routing_congestion_cost(GtkWidget* /*widget*/, gint /*response_id*/,
 }
 
 void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_routing_bounding_box button 
+     * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
     auto& route_ctx = g_vpr_ctx.routing();
+    // get the pointer to the toggle_routing_bounding_box button
     std::string button_name = "toggle_routing_bounding_box";
     auto toggle_routing_bounding_box = find_button(button_name.c_str());
-
+    
     if (route_ctx.route_bb.size() == 0)
         return; //Nothing to draw
-
+    
+    // use the pointer to get the active value
     int new_value = gtk_spin_button_get_value_as_int((GtkSpinButton*)toggle_routing_bounding_box);
-    if (new_value < 0)
-        draw_state->show_routing_bb = 0;
+    
+    // assign value to draw_state->show_routing_bb, bound check + set OPEN when it's -1 (draw nothing)
+    if (new_value < -1)
+        draw_state->show_routing_bb = -1;
+    else if (new_value == -1)
+        draw_state->show_routing_bb = OPEN;
     else if (new_value >= (int)(route_ctx.route_bb.size()))
         draw_state->show_routing_bb = route_ctx.route_bb.size() - 1;
     else
         draw_state->show_routing_bb = new_value;
+    
+    //redraw
     if ((int)(draw_state->show_routing_bb) == (int)((int)(route_ctx.route_bb.size()) - 1)) {
         application.update_message(draw_state->default_message);
     }
@@ -640,13 +661,15 @@ void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gp
 }
 
 void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_routing_util button 
+     * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_routing_util";
     auto toggle_routing_util = find_button(button_name.c_str());
 
     enum e_draw_routing_util new_state;
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_routing_util));
-    if (strcmp(combo_box_content, "N/A") == 0)
+    if (strcmp(combo_box_content, "None") == 0)
         new_state = DRAW_NO_ROUTING_UTIL;
     else if (strcmp(combo_box_content, "Routing Util") == 0)
         new_state = DRAW_ROUTING_UTIL;
@@ -667,10 +690,12 @@ void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /
 }
 
 void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_blk_internal button 
+     * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_blk_internal";
     auto toggle_blk_internal = find_button(button_name.c_str());
-
+    
     int new_value = gtk_spin_button_get_value_as_int((GtkSpinButton*)toggle_blk_internal);
     if (new_value < 0)
         draw_state->show_blk_internal = 0;
@@ -682,11 +707,13 @@ void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /
 }
 
 void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_block_pin_util button 
+     * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_block_pin_util";
     auto toggle_block_pin_util = find_button(button_name.c_str());
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_block_pin_util));
-    if (strcmp(combo_box_content, "N/A") == 0) {
+    if (strcmp(combo_box_content, "None") == 0) {
         draw_state->show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
         draw_reset_blk_colors();
         application.update_message(draw_state->default_message);
@@ -702,29 +729,31 @@ void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer
 }
 
 void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_placement_macros button 
+     * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_placement_macros";
     auto toggle_placement_macros = find_button(button_name.c_str());
 
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_placement_macros));
-    if (strcmp(combo_box_content, "N/A") == 0) {
+    if (strcmp(combo_box_content, "None") == 0) 
         draw_state->show_placement_macros = DRAW_NO_PLACEMENT_MACROS;
-    } else if (strcmp(combo_box_content, "Regular") == 0)
-        draw_state->show_placement_macros = DRAW_PLACEMENT_MACROS;
     else
-        draw_state->show_placement_macros = DRAW_PLACEMENT_MACROS_MAX;
+        draw_state->show_placement_macros = DRAW_PLACEMENT_MACROS;
 
     g_free(combo_box_content);
     application.refresh_drawing();
 }
 
 void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_crit_path button 
+     * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_crit_path";
     auto toggle_crit_path = find_button(button_name.c_str());
 
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_crit_path));
-    if (strcmp(combo_box_content, "N/A") == 0) {
+    if (strcmp(combo_box_content, "None") == 0) {
         draw_state->show_crit_path = DRAW_NO_CRIT_PATH;
     } else if (strcmp(combo_box_content, "Crit Path Flylines") == 0)
         draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES;
@@ -740,13 +769,15 @@ void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*da
 }
 
 void toggle_router_rr_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_router_rr_costs button 
+     * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_router_rr_costs";
     auto toggle_router_rr_costs = find_button(button_name.c_str());
 
     e_draw_router_rr_cost new_state;
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs));
-    if (strcmp(combo_box_content, "N/A") == 0) {
+    if (strcmp(combo_box_content, "None") == 0) {
         new_state = DRAW_NO_ROUTER_RR_COST;
     } else if (strcmp(combo_box_content, "Total") == 0)
         new_state = DRAW_ROUTER_RR_COST_TOTAL;
@@ -1235,7 +1266,7 @@ void draw_rr(ezgl::renderer& g) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-    if (draw_state->draw_rr_toggle == DRAW_NO_RR || draw_state->draw_rr_toggle == DRAW_MOUSE_OVER_RR) {
+    if (draw_state->draw_rr_toggle == DRAW_NO_RR) {
         g.set_line_width(3);
         drawroute(HIGHLIGHTED, g);
         g.set_line_width(0);
@@ -3218,18 +3249,21 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer& g) 
                          {legend.right(), legend.top() - (i + 1) * height_incr});
     }
 
-    g.set_color(ezgl::BLACK);
 
     //Min mark
+    g.set_color(blk_SKYBLUE); // set to skyblue so its easier to see
     std::string str = vtr::string_fmt("%.3g", cmap.min());
-    g.draw_text({legend.center_x(), legend.bottom() + TEXT_OFFSET}, str.c_str());
+    g.draw_text({legend.center_x(), legend.top() - TEXT_OFFSET}, str.c_str());
 
     //Mid marker
+    g.set_color(ezgl::BLACK);
     str = vtr::string_fmt("%.3g", cmap.min() + (cmap.range() / 2.));
     g.draw_text({legend.center_x(), legend.center_y()}, str.c_str());
+    
     //Max marker
+    g.set_color(ezgl::BLACK);
     str = vtr::string_fmt("%.3g", cmap.max());
-    g.draw_text({legend.center_x(), legend.top() - TEXT_OFFSET}, str.c_str());
+    g.draw_text({legend.center_x(), legend.bottom() + TEXT_OFFSET}, str.c_str());
 
     g.set_color(ezgl::BLACK);
     g.draw_rectangle(legend);
