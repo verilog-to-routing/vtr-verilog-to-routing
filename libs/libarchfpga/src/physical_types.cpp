@@ -194,7 +194,7 @@ std::string t_pb_graph_node::hierarchical_type_name() const {
  * t_pb_graph_pin
  */
 
-std::string t_pb_graph_pin::to_string() const {
+std::string t_pb_graph_pin::to_string(const bool full_description) const {
     std::string parent_name = this->parent_node->pb_type->name;
     std::string parent_index = std::to_string(this->parent_node->placement_index);
     std::string port_name = this->port->name;
@@ -202,6 +202,8 @@ std::string t_pb_graph_pin::to_string() const {
 
     std::string pin_string = parent_name + "[" + parent_index + "]";
     pin_string += "." + port_name + "[" + pin_index + "]";
+
+    if (!full_description) return pin_string;
 
     // Traverse upward through the pb_type hierarchy, constructing
     // name that represents the whole hierarchy to reach this pin.
