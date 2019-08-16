@@ -51,19 +51,16 @@ enum e_draw_nets {
  */
 enum e_draw_rr_toggle {
     DRAW_NO_RR = 0,
-    DRAW_MOUSE_OVER_RR,
     DRAW_NODES_RR,
     DRAW_NODES_AND_SBOX_RR,
     DRAW_ALL_BUT_BUFFERS_RR,
     DRAW_ALL_RR,
-    DRAW_RR_TOGGLE_MAX
 };
 
 enum e_draw_congestion {
     DRAW_NO_CONGEST = 0,
     DRAW_CONGESTED,
     DRAW_CONGESTED_WITH_NETS,
-    DRAW_CONGEST_MAX
 };
 
 enum e_draw_routing_costs {
@@ -75,7 +72,6 @@ enum e_draw_routing_costs {
     DRAW_PRES_ROUTING_COSTS,
     DRAW_LOG_PRES_ROUTING_COSTS,
     DRAW_BASE_ROUTING_COSTS,
-    DRAW_ROUTING_COST_MAX
 };
 
 enum e_draw_block_pin_util {
@@ -83,7 +79,6 @@ enum e_draw_block_pin_util {
     DRAW_BLOCK_PIN_UTIL_TOTAL,
     DRAW_BLOCK_PIN_UTIL_INPUTS,
     DRAW_BLOCK_PIN_UTIL_OUTPUTS,
-    DRAW_PIN_UTIL_MAX
 };
 
 enum e_draw_routing_util {
@@ -92,7 +87,6 @@ enum e_draw_routing_util {
     DRAW_ROUTING_UTIL_WITH_VALUE,
     DRAW_ROUTING_UTIL_WITH_FORMULA,
     DRAW_ROUTING_UTIL_OVER_BLOCKS, //Draw over blocks at full opacity (useful for figure generation)
-    DRAW_ROUTING_UTIL_MAX,
 };
 
 enum e_draw_router_rr_cost {
@@ -100,13 +94,11 @@ enum e_draw_router_rr_cost {
     DRAW_ROUTER_RR_COST_TOTAL,
     DRAW_ROUTER_RR_COST_KNOWN,
     DRAW_ROUTER_RR_COST_EXPECTED,
-    DRAW_ROUTER_RR_COST_MAX, //End of options
 };
 
 enum e_draw_placement_macros {
     DRAW_NO_PLACEMENT_MACROS = 0,
     DRAW_PLACEMENT_MACROS,
-    DRAW_PLACEMENT_MACROS_MAX
 };
 
 enum e_draw_net_type {
