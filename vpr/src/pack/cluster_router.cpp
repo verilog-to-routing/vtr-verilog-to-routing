@@ -114,7 +114,6 @@ static std::string describe_lb_type_rr_node(int inode,
 
 static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_node>& lb_type_graph,
                                                 const t_lb_rr_node_stats* lb_rr_node_stats);
-static std::string describe_pb_graph_pin(const t_pb_graph_pin* pb_graph_pin);
 static std::vector<int> find_incoming_rr_nodes(int dst_node, const t_lb_router_data* router_data);
 static std::string describe_congested_rr_nodes(const std::vector<int>& congested_rr_nodes,
                                                const t_lb_router_data* router_data);
@@ -1373,7 +1372,7 @@ static std::string describe_lb_type_rr_node(int inode,
     const t_pb_graph_pin* pb_graph_pin = rr_node.pb_graph_pin;
 
     if (pb_graph_pin) {
-        description += "'" + describe_pb_graph_pin(pb_graph_pin) + "'";
+        description += "'" + pb_graph_pin->to_string(false) + "'";
     } else if (inode == get_lb_type_rr_graph_ext_source_index(lb_type)) {
         VTR_ASSERT(rr_node.type == LB_SOURCE);
         description = "cluster-external source (LB_SOURCE)";
@@ -1390,7 +1389,7 @@ static std::string describe_lb_type_rr_node(int inode,
         std::vector<int> pin_rrs = find_incoming_rr_nodes(inode, router_data);
         for (int pin_rr_idx : pin_rrs) {
             const t_pb_graph_pin* pin_pb_gpin = (*router_data->lb_type_graph)[pin_rr_idx].pb_graph_pin;
-            pin_descriptions.push_back(describe_pb_graph_pin(pin_pb_gpin));
+            pin_descriptions.push_back(pin_pb_gpin->to_string());
         }
 
         description += vtr::join(pin_descriptions, ", ");
@@ -1424,18 +1423,6 @@ static std::vector<int> find_incoming_rr_nodes(int dst_node, const t_lb_router_d
         }
     }
     return incoming_rr_nodes;
-}
-
-// TODO: move this function to be a member function of class pb_graph_pin
-static std::string describe_pb_graph_pin(const t_pb_graph_pin* pb_graph_pin) {
-    VTR_ASSERT(pb_graph_pin);
-    std::string description;
-    description += pb_graph_pin->parent_node->pb_type->name;
-    description += "[" + std::to_string(pb_graph_pin->parent_node->placement_index) + "]";
-    description += '.';
-    description += pb_graph_pin->port->name;
-    description += "[" + std::to_string(pb_graph_pin->pin_number) + "]";
-    return description;
 }
 
 static std::string describe_congested_rr_nodes(const std::vector<int>& congested_rr_nodes,
