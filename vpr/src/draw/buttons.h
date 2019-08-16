@@ -9,7 +9,6 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
-
 void button_for_toggle_nets();
 void button_for_toggle_blk_internal();
 void button_for_toggle_block_pin_util();
@@ -27,4 +26,3 @@ GtkWidget* find_button(const char* button_name);
 #endif /* NO_GRAPHICS */
 
 #endif /* BUTTONS_H */
-
