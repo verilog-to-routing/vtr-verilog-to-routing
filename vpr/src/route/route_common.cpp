@@ -801,6 +801,26 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge, flo
     add_to_heap(hptr);
 }
 
+void drop_traceback_tail(ClusterNetId net_id) {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    auto* tail_ptr = route_ctx.trace[net_id].tail;
+    auto node = tail_ptr->index;
+    route_ctx.trace_nodes[net_id].erase(node);
+    auto* trace_ptr = route_ctx.trace[net_id].head;
+    while (trace_ptr!= nullptr) {
+        t_trace* next_ptr = trace_ptr->next;
+        if (next_ptr == tail_ptr) {
+            trace_ptr->iswitch = tail_ptr->iswitch;
+            trace_ptr->next = nullptr;
+            route_ctx.trace[net_id].tail = trace_ptr;
+            break;
+        }
+        trace_ptr = next_ptr;
+    }
+    free_trace_data(tail_ptr);
+}
+
 void free_traceback(ClusterNetId net_id) {
     /* Puts the entire traceback (old routing) for this net on the free list *
      * and sets the route_ctx.trace_head pointers etc. for the net to NULL.            */
