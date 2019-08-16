@@ -72,6 +72,7 @@ my $shared_script_params   = "";
 my $verbosity              = 0;
 my $short_task_names = 0;
 my $minw_hint_factor = 1.;
+my $show_failures = 0;
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
@@ -121,6 +122,9 @@ while ( $token = shift(@ARGV) ) {
 	}
 	elsif ( $token eq "-short_task_names" ) {
 		$short_task_names = 1;
+	}
+	elsif ( $token eq "-show_failures" ) {
+		$show_failures = 1;
 	}
 
 	elsif ( $token eq "-minw_hint_factor" ) {
@@ -439,8 +443,13 @@ sub generate_single_task_actions {
                     $expect_fail = "-expect_fail";
                 }
 
+                my $show_failure_args = "";
+                if ($show_failures) {
+                    $show_failure_args = "-show_failures";
+                }
+
                 #Build the command to run
-                my $command = "$script_path $circuits_dir/$circuit $archs_dir/$arch $expect_fail -name $name $full_params";
+                my $command = "$script_path $circuits_dir/$circuit $archs_dir/$arch $expect_fail -name $name $show_failure_args $full_params";
 
                 #Add a hint about the minimum channel width (potentially saves run-time)
                 my $expected_min_W = ret_expected_min_W($circuit, $arch, $full_params_dirname, $golden_results_file);

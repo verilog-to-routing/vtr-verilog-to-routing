@@ -124,6 +124,7 @@ my $odin_adder_cin_global = "";
 my $use_odin_xml_config = 1;
 my $relax_W_factor = 1.3;
 my $crit_path_router_iterations = undef;
+my $show_failures = 0;
 
 
 ##########
@@ -217,6 +218,9 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
     }
 	elsif ( $token eq "-use_new_latches_restoration_script" ){
 		$use_new_latches_restoration_script = 1;
+	}
+	elsif ( $token eq "-show_failures" ){
+		$show_failures = 1;
 	}
 	elsif ( $token eq "-iterative_bb" ){
 		$flow_type = 2;
@@ -1302,9 +1306,19 @@ sub system_with_timeout {
 			my $return_code = $? >> 8;
 
 			if ( $did_crash eq "true" ) {
+                if ($show_failures) {
+                    my $abs_log_path = Cwd::abs_path($_[1]);
+                    print "\n   Failed log file follows ($abs_log_path):\n";
+                    cat_file($_[1], "\t> ");
+                }
 				return "crashed";
 			}
 			elsif ( $return_code != 0 ) {
+                if ($show_failures) {
+                    my $abs_log_path = Cwd::abs_path($_[1]);
+                    print "\n   Failed log file follows ($abs_log_path):\n";
+                    cat_file($_[1], "\t> ");
+                }
 				return "exited with return code $return_code";
 			}
 			else {
@@ -1312,6 +1326,16 @@ sub system_with_timeout {
 			}
 		}
 	}
+}
+
+sub cat_file {
+    my $file = $_[0];
+    my $indent = $_[1];
+
+    open(my $fh, "<", $file) or die "Could not open '$file'\n";
+    while (my $line = <$fh>) {
+        print $indent . $line;
+    }
 }
 
 sub stage_index {
