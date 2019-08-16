@@ -69,6 +69,19 @@ void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
 std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
 void deselect_all();
 
+// toggle functions
+void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
+void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
+void toggle_congestion(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
+void toggle_routing_congestion_cost(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
+void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
+void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
+void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
+void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
+void toggle_router_rr_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
+void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
+
+
 #endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */
