@@ -13,7 +13,7 @@ struct VprVector2D {
 }
 
 struct VprCostMap {
-    costMap @0 :List(Matrix.Matrix(VprCostEntry));
-    offset @1 :List(VprVector2D);
+    costMap @0 :Matrix.Matrix((Matrix.Matrix(VprCostEntry)));
+    offset @1 :Matrix.Matrix(VprVector2D);
     segmentMap @2 :List(Int64);
 }
