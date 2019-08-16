@@ -120,45 +120,45 @@ jobs:
         - ./run_reg_test.pl odin_reg_micro -show_failures -j2
 
     - stage: Test
-      name: "GCC 5 (Ubuntu Xenial - 16.04)"
+      name: "Build Compatibility: GCC 5 (Ubuntu Xenial - 16.04)"
       env:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
         - BUILD_TYPE=release_strict
       script:
         - ./.github/travis/build.sh
     - stage: Test
-      name: "GCC 6 (Debian Stretch)"
+      name: "Build Compatibility: GCC 6 (Debian Stretch)"
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
         - BUILD_TYPE=release_strict
       script:
         - ./.github/travis/build.sh
     - stage: Test
-      name: "GCC 7 (Ubuntu Bionic - 18.04)"
+      name: "Build Compatibility: GCC 7 (Ubuntu Bionic - 18.04)"
       env:
          - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
       script:
         - ./.github/travis/build.sh
     - stage: Test
-      name: "GCC 8 (Ubuntu Latest)"
+      name: "Build Compatibility: GCC 8 (Ubuntu Latest)"
       env:
          - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
       script:
         - ./.github/travis/build.sh
     - stage: Test
-      name: "GCC 9 (Latest Release)"
+      name: "Build Compatibility: GCC 9 (Latest Release)"
       env:
          - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
       script:
         - ./.github/travis/build.sh
     - stage: Test
-      name: "clang-6.0 (Debian + Ubuntu common)"
+      name: "Build Compatibility: Clang 6 (Debian + Ubuntu common)"
       env:
          - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
       script:
         - ./.github/travis/build.sh
     - stage: Test
-      name: "clang-8 (Latest Release)"
+      name: "Build Compatibility: Clang 8 (Latest Release)"
       env:
          - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
       script:
