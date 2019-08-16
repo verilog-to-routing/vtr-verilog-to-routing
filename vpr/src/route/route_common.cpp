@@ -725,9 +725,9 @@ float get_rr_cong_cost(int inode) {
 
     float cost = get_single_rr_cong_cost(inode);
 
-    auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
-    if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
-        for (int node : device_ctx.rr_non_config_node_sets[itr->second]) {
+    int node_set = device_ctx.rr_node_to_non_config_node_set[inode];
+    if (node_set != -1) {
+        for (int node : device_ctx.rr_non_config_node_sets[node_set]) {
             if (node != inode) {
                 continue; //Already included above
             }

@@ -3095,8 +3095,11 @@ static void expand_non_configurable(int inode, std::set<t_node_edge>& edge_set) 
 }
 
 static void process_non_config_sets(const t_non_configurable_rr_sets& non_config_rr_sets) {
-    std::vector<std::vector<int>> non_config_rr_node_sets;
-    std::unordered_map<int, int> rr_node_non_config_node_set;
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    std::vector<std::vector<int>>& non_config_rr_node_sets = device_ctx.rr_non_config_node_sets;
+    std::vector<int>& rr_node_non_config_node_set = device_ctx.rr_node_to_non_config_node_set;
+    rr_node_non_config_node_set.resize(device_ctx.rr_nodes.size(), -1);
 
     for (const auto& node_set : non_config_rr_sets.node_sets) {
         //Convert node sets to vectors
@@ -3104,11 +3107,7 @@ static void process_non_config_sets(const t_non_configurable_rr_sets& non_config
 
         //Record reverse look-ups
         for (int inode : node_set) {
-            rr_node_non_config_node_set.emplace(inode, non_config_rr_node_sets.size() - 1);
+            rr_node_non_config_node_set[inode] = non_config_rr_node_sets.size() - 1;
         }
     }
-
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    device_ctx.rr_non_config_node_sets = std::move(non_config_rr_node_sets);
-    device_ctx.rr_node_to_non_config_node_set = std::move(rr_node_non_config_node_set);
 }
