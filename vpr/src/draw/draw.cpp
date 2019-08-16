@@ -136,7 +136,7 @@ static void draw_routing_util(ezgl::renderer& g);
 static void draw_crit_path(ezgl::renderer& g);
 static void draw_placement_macros(ezgl::renderer& g);
 
-void act_on_key_press(ezgl::application* app, GdkEventKey* event, char* key_name);
+void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name);
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y);
 void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, double y);
 
@@ -280,11 +280,7 @@ void draw_main_canvas(ezgl::renderer& g) {
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_PLACEMENT */
-void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app) {
-    t_draw_state* draw_state = get_draw_state_vars();
-    GObject* main_window = application.get_object(application.get_main_window_id().c_str());
-    GObject* main_window_grid = application.get_object("InnerGrid");
-    
+void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app) {    
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
     gtk_button_set_label(window, "Window");
@@ -512,7 +508,7 @@ void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/) {
     window_mode = true;
 }
 
-void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data) {
+void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_nets";
     auto toggle_nets = find_button(button_name.c_str());
@@ -536,7 +532,7 @@ void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data) {
     application.refresh_drawing();
 }
 
-void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data) {                       
+void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {                       
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_rr";
     auto toggle_rr = find_button(button_name.c_str());
@@ -567,7 +563,7 @@ void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data) {
     application.refresh_drawing();
 }
 
-void toggle_congestion(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data) {  
+void toggle_congestion(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {  
     /* Turns the congestion display on and off.   */
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_congestion";
@@ -591,7 +587,7 @@ void toggle_congestion(GtkWidget* /*widget*/, gint /*response_id*/, gpointer dat
     application.refresh_drawing();
 }
 
-void toggle_routing_congestion_cost(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data) {
+void toggle_routing_congestion_cost(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     //Turns routing congestion costs on and off
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_routing_congestion_cost";
@@ -624,7 +620,7 @@ void toggle_routing_congestion_cost(GtkWidget* /*widget*/, gint /*response_id*/,
     application.refresh_drawing();
 }
 
-void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data) {
+void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& route_ctx = g_vpr_ctx.routing();
     std::string button_name = "toggle_routing_bounding_box";
@@ -636,17 +632,17 @@ void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gp
     int new_value =  gtk_spin_button_get_value_as_int((GtkSpinButton*)toggle_routing_bounding_box);
     if(new_value < 0)
         draw_state->show_routing_bb = 0;
-    else if (new_value >= route_ctx.route_bb.size())
+    else if (new_value >= (int) (route_ctx.route_bb.size()))
         draw_state->show_routing_bb = route_ctx.route_bb.size()-1;
     else
         draw_state->show_routing_bb = new_value;
-    if ((int)draw_state->show_routing_bb == int(route_ctx.route_bb.size()-1)) {
+    if ((int)(draw_state->show_routing_bb) == (int)((int)(route_ctx.route_bb.size())-1)) {
         application.update_message(draw_state->default_message);
     }
     application.refresh_drawing();
 }
 
-void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data) {
+void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_routing_util";
     auto toggle_routing_util = find_button(button_name.c_str());
@@ -673,7 +669,7 @@ void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer d
     application.refresh_drawing();
 }
 
-void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data) {
+void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_blk_internal";
     auto toggle_blk_internal = find_button(button_name.c_str());
@@ -688,7 +684,7 @@ void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer d
     application.refresh_drawing();
 }
 
-void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data) {
+void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_block_pin_util";
     auto toggle_block_pin_util = find_button(button_name.c_str());
@@ -708,7 +704,7 @@ void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer
     application.refresh_drawing();
 }
 
-void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data) {
+void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_placement_macros";
     auto toggle_placement_macros = find_button(button_name.c_str());
@@ -725,7 +721,7 @@ void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpoint
     application.refresh_drawing();
 }
 
-void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data) {
+void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_crit_path";
     auto toggle_crit_path = find_button(button_name.c_str());
@@ -746,7 +742,7 @@ void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data
     application.refresh_drawing();
 }
 
-void toggle_router_rr_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data) {
+void toggle_router_rr_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
     std::string button_name = "toggle_router_rr_costs";
     auto toggle_router_rr_costs = find_button(button_name.c_str());
@@ -2494,14 +2490,13 @@ static bool highlight_rr_nodes(float x, float y) {
 }
 
 #    if defined(X11) && !defined(__MINGW32__)
-void act_on_key_press(ezgl::application* app, GdkEventKey* event, char* key_name) {
+void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name) {
     //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
     std::string key(key_name);
 
-    event = event; // just for hiding warning message
 }
 #    else
-void act_on_key_press(ezgl::application* app, GdkEventKey* event, char* key_name) {
+void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name) {
     //Nothing to do
 }
 #    endif
