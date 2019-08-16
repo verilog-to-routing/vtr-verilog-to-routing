@@ -97,7 +97,7 @@ struct t_selected_sub_block_info {
  * will be disabled.
  */
 #    ifndef NO_GRAPHICS
-void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
 
 #    endif /* NO_GRAPHICS */
 /* This function pre-allocates space to store bounding boxes for all sub-blocks. Each
