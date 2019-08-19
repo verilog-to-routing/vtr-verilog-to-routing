@@ -2,12 +2,6 @@ cmake_minimum_required(VERSION 3.9)
 
 project("ODIN_II")
 
-#
-# ODIN_II Build Options
-#
-set(VTR_COMPILE_OPTIONS "none" CACHE STRING "Specify whether ODIN_II uses strict compiling options, e.g. -Werror")
-set(CACHE VTR_COMPILE_OPTIONS PROPERTY STRING strict none)
-
 if(ODIN_DEBUG)
 
     message("*** Compiling with Odin debug flags")

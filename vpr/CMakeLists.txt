@@ -2,12 +2,6 @@ cmake_minimum_required(VERSION 3.9)
 
 project("vpr")
 
-#
-# VPR Build Options
-#
-set(VTR_COMPILE_OPTIONS "none" CACHE STRING "Specify whether vpr uses strict compiling options, e.g. -Werror")
-set(CACHE VTR_COMPILE_OPTIONS PROPERTY STRING strict none)
-
 set(VPR_EXECUTION_ENGINE "auto" CACHE STRING "Specify the framework for (potential) parallel execution")
 set_property(CACHE VPR_EXECUTION_ENGINE PROPERTY STRINGS auto serial tbb)
 

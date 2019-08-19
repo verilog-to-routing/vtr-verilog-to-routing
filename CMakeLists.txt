@@ -5,6 +5,13 @@ include(SupportCcache)
 
 project("VTR")
 
+#
+# VTR Build Options
+#
+set(VTR_COMPILE_OPTIONS "none" CACHE STRING "Specify whether vpr uses strict compiling options, e.g. -Werror")
+set(CACHE VTR_COMPILE_OPTIONS PROPERTY STRING strict none)
+
+
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
     message("CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
     message("CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
@@ -196,7 +203,7 @@ endforeach()
 
 #Suppress IPO link warnings
 set(IPO_LINK_WARN_SUPRESS_FLAGS " ")
-set(IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK 
+set(IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK
     "-Wno-null-dereference"
     )
 foreach(flag ${IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK})
@@ -301,9 +308,9 @@ enable_testing()
 set(READLINE_FOUND FALSE)
 
 
-# set VPR_USE_EZGL in the root of VTR to decide whether to add 
-# subdirectory of graphics library, which prevents users 
-# without gtk/x11 libraries installed to build. VPR_USE_EZGL is 
+# set VPR_USE_EZGL in the root of VTR to decide whether to add
+# subdirectory of graphics library, which prevents users
+# without gtk/x11 libraries installed to build. VPR_USE_EZGL is
 # being used in both the vpr CMakeLists and libs/EXTERNAL CMakeLists.
 #
 # check if GTK and X11 are installed and turn on/off graphics
