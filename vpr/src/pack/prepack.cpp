@@ -127,7 +127,7 @@ t_pack_patterns* alloc_and_load_pack_patterns(int* num_packing_patterns) {
     /* alloc and initialize array of packing patterns based on architecture complex blocks */
     std::unordered_map<std::string, int> pattern_names;
     for (int i = 0; i < device_ctx.num_block_types; i++) {
-        discover_pattern_names_in_pb_graph_node(device_ctx.block_types[i].pb_graph_head, pattern_names);
+        discover_pattern_names_in_pb_graph_node(device_ctx.logical_block_types[i].pb_graph_head, pattern_names);
     }
 
     list_of_packing_patterns = alloc_and_init_pattern_list_from_hash(pattern_names);
@@ -136,7 +136,7 @@ t_pack_patterns* alloc_and_load_pack_patterns(int* num_packing_patterns) {
     for (size_t i = 0; i < pattern_names.size(); i++) {
         for (int j = 0; j < device_ctx.num_block_types; j++) {
             // find an edge that belongs to this pattern
-            expansion_edge = find_expansion_edge_of_pattern(i, device_ctx.block_types[j].pb_graph_head);
+            expansion_edge = find_expansion_edge_of_pattern(i, device_ctx.logical_block_types[j].pb_graph_head);
             if (!expansion_edge) {
                 continue;
             }
@@ -164,7 +164,7 @@ t_pack_patterns* alloc_and_load_pack_patterns(int* num_packing_patterns) {
             // if this is a chain pattern (extends between complex blocks), check if there
             // are multiple equivalent chains with different starting and ending points
             if (list_of_packing_patterns[i].is_chain) {
-                find_all_equivalent_chains(&list_of_packing_patterns[i], device_ctx.block_types[j].pb_graph_head);
+                find_all_equivalent_chains(&list_of_packing_patterns[i], device_ctx.logical_block_types[j].pb_graph_head);
                 print_chain_starting_points(&list_of_packing_patterns[i]);
             }
 
@@ -1176,7 +1176,7 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const 
     current = nullptr;
     for (i = 0; i < device_ctx.num_block_types; i++) {
         cost = UNDEFINED;
-        current = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, device_ctx.block_types[i].pb_graph_head, &cost);
+        current = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, device_ctx.logical_block_types[i].pb_graph_head, &cost);
         if (cost != UNDEFINED) {
             if (best_cost == UNDEFINED || best_cost > cost) {
                 best_cost = cost;

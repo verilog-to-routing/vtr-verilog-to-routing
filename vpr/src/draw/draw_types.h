@@ -239,7 +239,7 @@ struct t_draw_coords {
      * Return a bounding box for the clb at device_ctx.grid[grid_x][grid_y].blocks[sub_block_index],
      * even if it is empty.
      */
-    ezgl::rectangle get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_type_ptr type);
+    ezgl::rectangle get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_logical_block_type_ptr type);
     ezgl::rectangle get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index);
 
   private:

@@ -341,7 +341,8 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
     free_rr_graph();
 
     create_rr_graph(graph_type,
-                    device_ctx.num_block_types, device_ctx.block_types,
+                    device_ctx.num_block_types,
+                    device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
                     device_ctx.num_arch_switches,

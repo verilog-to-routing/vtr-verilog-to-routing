@@ -134,7 +134,7 @@ static void print_trace(FILE* fp, t_lb_trace* trace, t_lb_router_data* router_da
 /**
  * Build data structures used by intra-logic block router
  */
-t_lb_router_data* alloc_and_load_router_data(vector<t_lb_type_rr_node>* lb_type_graph, t_type_ptr type) {
+t_lb_router_data* alloc_and_load_router_data(vector<t_lb_type_rr_node>* lb_type_graph, t_logical_block_type_ptr type) {
     t_lb_router_data* router_data = new t_lb_router_data;
     int size;
 
@@ -620,7 +620,7 @@ static void free_lb_trace(t_lb_trace* lb_trace) {
 static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPinId pin_id) {
     vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
     vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
-    t_type_ptr lb_type = router_data->lb_type;
+    t_logical_block_type_ptr lb_type = router_data->lb_type;
     bool found = false;
     unsigned int ipos;
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -787,7 +787,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPin
 static void remove_pin_from_rt_terminals(t_lb_router_data* router_data, const AtomPinId pin_id) {
     vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
     vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
-    t_type_ptr lb_type = router_data->lb_type;
+    t_logical_block_type_ptr lb_type = router_data->lb_type;
     bool found = false;
     unsigned int ipos;
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -1368,7 +1368,7 @@ static std::string describe_lb_type_rr_node(int inode,
     std::string description;
 
     const t_lb_type_rr_node& rr_node = (*router_data->lb_type_graph)[inode];
-    t_type_ptr lb_type = router_data->lb_type;
+    t_logical_block_type_ptr lb_type = router_data->lb_type;
 
     const t_pb_graph_pin* pb_graph_pin = rr_node.pb_graph_pin;
 

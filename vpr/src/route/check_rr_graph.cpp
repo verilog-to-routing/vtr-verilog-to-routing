@@ -22,7 +22,7 @@ static void check_rr_edge(int from_node, int from_edge, int to_node);
 
 void check_rr_graph(const t_graph_type graph_type,
                     const DeviceGrid& grid,
-                    const t_type_ptr types) {
+                    const std::vector<t_physical_tile_type>& types) {
     e_route_type route_type = DETAILED;
     if (graph_type == GRAPH_GLOBAL) {
         route_type = GLOBAL;
@@ -156,7 +156,7 @@ void check_rr_graph(const t_graph_type graph_type,
                  */
                 bool is_chain = false;
                 if (rr_type == IPIN) {
-                    t_type_ptr type = device_ctx.grid[device_ctx.rr_nodes[inode].xlow()][device_ctx.rr_nodes[inode].ylow()].type;
+                    t_physical_tile_type_ptr type = device_ctx.grid[device_ctx.rr_nodes[inode].xlow()][device_ctx.rr_nodes[inode].ylow()].type;
                     for (const t_fc_specification& fc_spec : types[type->index].fc_specs) {
                         if (fc_spec.fc_value == 0 && fc_spec.seg_index == 0) {
                             is_chain = true;
@@ -205,7 +205,7 @@ static bool rr_node_is_global_clb_ipin(int inode) {
     /* Returns true if inode refers to a global CLB input pin node.   */
 
     int ipin;
-    t_type_ptr type;
+    t_physical_tile_type_ptr type;
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -226,7 +226,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
 
     int xlow, ylow, xhigh, yhigh, ptc_num, capacity;
     t_rr_type rr_type;
-    t_type_ptr type;
+    t_physical_tile_type_ptr type;
     int nodes_per_chan, tracks_per_node, num_edges, cost_index;
     float C, R;
 

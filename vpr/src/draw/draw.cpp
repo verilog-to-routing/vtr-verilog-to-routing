@@ -125,7 +125,7 @@ static t_edge_size find_edge(int prev_inode, int inode);
 
 static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer& g);
 
-ezgl::color get_block_type_color(t_type_ptr type);
+ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 ezgl::color lighten_color(ezgl::color color, float amount);
 
 static void draw_block_pin_util();
@@ -878,9 +878,10 @@ void init_draw_coords(float width_val) {
     draw_coords->tile_width = width_val;
     draw_coords->pin_size = 0.3;
     for (int i = 0; i < device_ctx.num_block_types; ++i) {
-        if (device_ctx.block_types[i].num_pins > 0) {
+        auto num_pins = device_ctx.physical_tile_types[i].num_pins;
+        if (num_pins > 0) {
             draw_coords->pin_size = min(draw_coords->pin_size,
-                                        (draw_coords->get_tile_width() / (4.0F * device_ctx.block_types[i].num_pins)));
+                                        (draw_coords->get_tile_width() / (4.0F * num_pins)));
         }
     }
 
@@ -2031,7 +2032,7 @@ void draw_get_rr_pin_coords(const t_rr_node* node, float* xcen, float* ycen) {
 
     int i, j, k, ipin, pins_per_sub_tile;
     float offset, xc, yc, step;
-    t_type_ptr type;
+    t_physical_tile_type_ptr type;
     auto& device_ctx = g_vpr_ctx.device();
 
     i = node->xlow();
@@ -2434,7 +2435,7 @@ static int draw_check_rr_node_hit(float click_x, float click_y) {
             case OPIN: {
                 int i = device_ctx.rr_nodes[inode].xlow();
                 int j = device_ctx.rr_nodes[inode].ylow();
-                t_type_ptr type = device_ctx.grid[i][j].type;
+                t_physical_tile_type_ptr type = device_ctx.grid[i][j].type;
                 int width_offset = device_ctx.grid[i][j].width_offset;
                 int height_offset = device_ctx.grid[i][j].height_offset;
                 int ipin = device_ctx.rr_nodes[inode].ptc_num();
@@ -2633,22 +2634,22 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, 
     event = event; // just for hiding warning message
 }
 
-void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) {
+void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId blk_id) {
     int k, iclass;
     ClusterBlockId fanblk;
 
     t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    for (k = 0; k < type->num_pins; k++) { /* Each pin on a CLB */
+    for (k = 0; k < physical_tile_type(type)->num_pins; k++) { /* Each pin on a CLB */
         ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, k);
 
         if (net_id == ClusterNetId::INVALID())
             continue;
 
-        iclass = type->pin_class[k];
+        iclass = physical_tile_type(type)->pin_class[k];
 
-        if (type->class_inf[iclass].type == DRIVER) { /* Fanout */
+        if (physical_tile_type(type)->class_inf[iclass].type == DRIVER) { /* Fanout */
             if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanout. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
@@ -2713,9 +2714,8 @@ void deselect_all() {
 
 static void draw_reset_blk_color(ClusterBlockId blk_id) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    draw_state->block_color[blk_id] = get_block_type_color(cluster_ctx.clb_nlist.block_type(blk_id));
+    draw_state->block_color[blk_id] = get_block_type_color(physical_tile_type(blk_id));
 }
 
 /**
@@ -2793,7 +2793,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer& g
     const t_rr_node& chan_rr = device_ctx.rr_nodes[chan_node];
 
     const t_grid_tile& grid_tile = device_ctx.grid[pin_rr.xlow()][pin_rr.ylow()];
-    t_type_ptr grid_type = grid_tile.type;
+    t_physical_tile_type_ptr grid_type = grid_tile.type;
     VTR_ASSERT_MSG(grid_type->pinloc[grid_tile.width_offset][grid_tile.height_offset][pin_rr.side()][pin_rr.pin_num()],
                    "Pin coordinates should match block type pin locations");
 
@@ -3259,7 +3259,7 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer& g) 
     g.set_coordinate_system(ezgl::WORLD);
 }
 
-ezgl::color get_block_type_color(t_type_ptr type) {
+ezgl::color get_block_type_color(t_physical_tile_type_ptr type) {
     //Wrap around if there are too many blocks
     // This ensures we support an arbitrary number of types,
     // although the colours may repeat
@@ -3285,13 +3285,13 @@ static void draw_block_pin_util() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    std::map<t_type_ptr, size_t> total_input_pins;
-    std::map<t_type_ptr, size_t> total_output_pins;
+    std::map<t_physical_tile_type_ptr, size_t> total_input_pins;
+    std::map<t_physical_tile_type_ptr, size_t> total_output_pins;
     for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
-        t_type_ptr type = &device_ctx.block_types[itype];
+        t_physical_tile_type_ptr type = &device_ctx.physical_tile_types[itype];
         if (is_empty_type(type)) continue;
 
-        t_pb_type* pb_type = type->pb_type;
+        t_pb_type* pb_type = logical_block_type(type)->pb_type;
 
         total_input_pins[type] = pb_type->num_input_pins + pb_type->num_clock_pins;
         total_output_pins[type] = pb_type->num_output_pins;
@@ -3300,7 +3300,7 @@ static void draw_block_pin_util() {
     auto blks = cluster_ctx.clb_nlist.blocks();
     vtr::vector<ClusterBlockId, float> pin_util(blks.size());
     for (auto blk : blks) {
-        auto type = cluster_ctx.clb_nlist.block_type(blk);
+        auto type = physical_tile_type(blk);
 
         if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_TOTAL) {
             pin_util[blk] = cluster_ctx.clb_nlist.block_pins(blk).size() / float(total_input_pins[type] + total_output_pins[type]);
@@ -3585,7 +3585,6 @@ static void draw_placement_macros(ezgl::renderer& g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     for (size_t imacro = 0; imacro < place_ctx.pl_macros.size(); ++imacro) {
         const t_pl_macro* pl_macro = &place_ctx.pl_macros[imacro];
 
@@ -3612,8 +3611,8 @@ static void draw_placement_macros(ezgl::renderer& g) {
 
             xlow = std::min(xlow, x);
             ylow = std::min(ylow, y);
-            xhigh = std::max(xhigh, x + cluster_ctx.clb_nlist.block_type(blk)->width);
-            yhigh = std::max(yhigh, y + cluster_ctx.clb_nlist.block_type(blk)->height);
+            xhigh = std::max(xhigh, x + physical_tile_type(blk)->width);
+            yhigh = std::max(yhigh, y + physical_tile_type(blk)->height);
         }
 
         double draw_xlow = draw_coords->tile_x[xlow];

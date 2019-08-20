@@ -10,8 +10,8 @@
  * The data structures that store the
  *
  * Key data types:
- * t_type_descriptor: describes a placeable complex logic block,
- * pb_type: describes the types of physical blocks within the t_type_descriptor in a hierarchy where the top block is the complex block and the leaf blocks implement one logical block
+ * t_logical_block_type: describes a placeable complex logic block,
+ * pb_type: describes the types of physical blocks within the t_logical_block_type in a hierarchy where the top block is the complex block and the leaf blocks implement one logical block
  * pb_graph_node: is a flattened version of pb_type so a pb_type with 10 instances will have 10 pb_graph_nodes representing each instance
  *
  * Additional notes:
@@ -562,8 +562,20 @@ constexpr int DEFAULT_SWITCH = -2;
  * num_receivers: Total number of input receivers supplied
  * index: Keep track of type in array for easy access
  */
-struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or complex logic block or physical logic block*/
-{
+struct t_logical_block_type {
+    char* name = nullptr;
+
+    /* Clustering info */
+    t_pb_type* pb_type = nullptr;
+    t_pb_graph_node* pb_graph_head = nullptr;
+
+    int index = -1; /* index of type descriptor in array (allows for index referencing) */
+
+    int physical_tile_index = -1; /* index of the corresponding physical tile type */
+};
+typedef const t_logical_block_type* t_logical_block_type_ptr;
+
+struct t_physical_tile_type {
     char* name = nullptr;
     int num_pins = 0;
     int capacity = 0;
@@ -591,10 +603,6 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
     vtr::Matrix<e_sb_type> switchblock_locations;
     vtr::Matrix<int> switchblock_switch_overrides;
 
-    /* Clustering info */
-    t_pb_type* pb_type = nullptr;
-    t_pb_graph_node* pb_graph_head = nullptr;
-
     float area = 0;
 
     /* This info can be determined from class_inf and pin_class but stored for faster access */
@@ -603,10 +611,12 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
+    int logical_block_index = -1; /* index of the corresponding logical block type */
+
     /* Returns the indices of pins that contain a clock for this physical logic block */
-    std::vector<int> get_clock_pins_indices() const;
+    std::vector<int> get_clock_pins_indices(t_logical_block_type_ptr logic_block) const;
 };
-typedef const t_type_descriptor* t_type_ptr;
+typedef const t_physical_tile_type* t_physical_tile_type_ptr;
 
 /*************************************************************************************************
  * PB Type Hierarchy                                                                             *

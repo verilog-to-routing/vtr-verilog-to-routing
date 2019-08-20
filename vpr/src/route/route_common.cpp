@@ -227,7 +227,7 @@ void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_ar
     int warning_count;
     create_rr_graph(graph_type,
                     device_ctx.num_block_types,
-                    device_ctx.block_types,
+                    device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
                     device_ctx.num_arch_switches,
@@ -279,7 +279,7 @@ bool try_route(int width_fac,
 
     create_rr_graph(graph_type,
                     device_ctx.num_block_types,
-                    device_ctx.block_types,
+                    device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
                     device_ctx.num_arch_switches,
@@ -313,7 +313,7 @@ bool try_route(int width_fac,
     } else { /* TIMING_DRIVEN route */
         VTR_LOG("Confirming router algorithm: TIMING_DRIVEN.\n");
 
-        IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.block_types, device_ctx.num_block_types);
+        IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types, device_ctx.num_block_types);
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
 
         success = try_timing_driven_route(router_opts,
@@ -858,14 +858,13 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
     t_clb_opins_used clb_opins_used_locally;
     int clb_pin, iclass, class_low, class_high;
-    t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     clb_opins_used_locally.resize(cluster_ctx.clb_nlist.blocks().size());
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        type = cluster_ctx.clb_nlist.block_type(blk_id);
+        auto type = physical_tile_type(blk_id);
 
         get_class_range_for_block(blk_id, &class_low, &class_high);
         clb_opins_used_locally[blk_id].resize(type->num_class);
@@ -1013,7 +1012,6 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
     vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals;
 
     int inode, i, j, node_block_pin, iclass;
-    t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -1030,7 +1028,7 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
             auto block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
             i = place_ctx.block_locs[block_id].loc.x;
             j = place_ctx.block_locs[block_id].loc.y;
-            type = cluster_ctx.clb_nlist.block_type(block_id);
+            auto type = physical_tile_type(block_id);
 
             /* In the routing graph, each (x, y) location has unique pins on it
              * so when there is capacity, blocks are packed and their pin numbers
@@ -1060,7 +1058,6 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
     int i, j, iclass, inode;
     int class_low, class_high;
     t_rr_type rr_type;
-    t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -1068,7 +1065,7 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
     rr_blk_source.resize(cluster_ctx.clb_nlist.blocks().size());
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        type = cluster_ctx.clb_nlist.block_type(blk_id);
+        auto type = physical_tile_type(blk_id);
         get_class_range_for_block(blk_id, &class_low, &class_high);
         rr_blk_source[blk_id].resize(type->num_class);
         for (iclass = 0; iclass < type->num_class; iclass++) {
@@ -1521,7 +1518,7 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
             for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
                 ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
                 int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
-                int iclass = cluster_ctx.clb_nlist.block_type(block_id)->pin_class[pin_index];
+                int iclass = physical_tile_type(block_id)->pin_class[pin_index];
 
                 fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
                         cluster_ctx.clb_nlist.block_name(block_id).c_str(), size_t(block_id),
@@ -1585,7 +1582,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
     int iclass, ipin;
     float cost;
     t_heap* heap_head_ptr;
-    t_type_ptr type;
+    t_physical_tile_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -1593,7 +1590,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
     if (rip_up_local_opins) {
         for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-            type = cluster_ctx.clb_nlist.block_type(blk_id);
+            type = physical_tile_type(blk_id);
             for (iclass = 0; iclass < type->num_class; iclass++) {
                 num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
@@ -1610,7 +1607,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
     }
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        type = cluster_ctx.clb_nlist.block_type(blk_id);
+        type = physical_tile_type(blk_id);
         for (iclass = 0; iclass < type->num_class; iclass++) {
             num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 

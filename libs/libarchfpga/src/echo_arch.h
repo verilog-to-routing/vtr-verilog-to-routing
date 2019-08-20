@@ -3,6 +3,10 @@
 
 #include "arch_types.h"
 
-void EchoArch(const char* EchoFile, const t_type_descriptor* Types, const int NumTypes, const t_arch* arch);
+void EchoArch(const char* EchoFile,
+              const std::vector<t_physical_tile_type>& PhysicalTileTypes,
+              const std::vector<t_logical_block_type>& LogicalBlockTypes,
+              const int NumTypes,
+              const t_arch* arch);
 
 #endif

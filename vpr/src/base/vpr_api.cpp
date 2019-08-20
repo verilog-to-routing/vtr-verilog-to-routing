@@ -401,7 +401,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
      */
 
     //Record the resource requirement
-    std::map<t_type_ptr, size_t> num_type_instances;
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances;
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         num_type_instances[cluster_ctx.clb_nlist.block_type(blk_id)]++;
     }
@@ -419,9 +419,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     VTR_LOG("\n");
     VTR_LOG("Resource usage...\n");
     for (int i = 0; i < device_ctx.num_block_types; ++i) {
-        auto type = &device_ctx.block_types[i];
+        auto type = &device_ctx.physical_tile_types[i];
         VTR_LOG("\tNetlist      %d\tblocks of type: %s\n",
-                num_type_instances[type], type->name);
+                num_type_instances[logical_block_type(type)], type->name);
         VTR_LOG("\tArchitecture %d\tblocks of type: %s\n",
                 device_ctx.grid.num_instances(type), type->name);
     }
@@ -430,10 +430,10 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
     for (int i = 0; i < device_ctx.num_block_types; ++i) {
-        auto type = &device_ctx.block_types[i];
+        auto type = &device_ctx.physical_tile_types[i];
         float util = 0.;
         if (device_ctx.grid.num_instances(type) != 0) {
-            util = float(num_type_instances[type]) / device_ctx.grid.num_instances(type);
+            util = float(num_type_instances[logical_block_type(type)]) / device_ctx.grid.num_instances(type);
         }
         VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type->name);
     }
@@ -815,7 +815,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
     //Create the RR graph
     create_rr_graph(graph_type,
                     device_ctx.num_block_types,
-                    device_ctx.block_types,
+                    device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
                     device_ctx.num_arch_switches,
@@ -871,7 +871,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
     //Build a dummy 10x10 device to determine the 'best' block type to use
     auto grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts, 10, 10);
 
-    auto type = find_most_common_block_type(grid);
+    auto type = physical_tile_type(find_most_common_block_type(grid));
     /* get Fc_in/out for most common block (e.g. logic blocks) */
     VTR_ASSERT(type->fc_specs.size() > 0);
 
@@ -961,7 +961,7 @@ void free_device(const t_det_routing_arch& routing_arch) {
 static void free_complex_block_types() {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    free_type_descriptors(device_ctx.block_types, device_ctx.num_block_types);
+    free_type_descriptors(device_ctx.logical_block_types, device_ctx.num_block_types);
     free_pb_graph_edges();
 }
 

@@ -203,7 +203,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
             auto height_offset = grid[x][y].height_offset;
 
             // Ignore gird locations that do not have blocks
-            if (!type->pb_type) {
+            if (!logical_block_type(type)->pb_type) {
                 continue;
             }
 
@@ -213,7 +213,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                     continue;
                 }
 
-                for (auto clock_pin_idx : type->get_clock_pins_indices()) {
+                for (auto clock_pin_idx : type->get_clock_pins_indices(logical_block_type(type))) {
                     //Can't do anything if pin isn't at this location
                     if (0 == type->pinloc[width_offset][height_offset][side][clock_pin_idx]) {
                         continue;

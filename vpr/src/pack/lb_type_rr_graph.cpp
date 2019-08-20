@@ -38,7 +38,7 @@ using namespace std;
 /*****************************************************************************************
  * Internal functions declarations
  ******************************************************************************************/
-static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
+static void alloc_and_load_lb_type_rr_graph_for_type(const t_logical_block_type_ptr lb_type,
                                                      std::vector<t_lb_type_rr_node>& lb_type_rr_node_graph);
 static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_node* pb_graph_node,
                                                               std::vector<t_lb_type_rr_node>& lb_type_rr_node_graph,
@@ -59,8 +59,10 @@ std::vector<t_lb_type_rr_node>* alloc_and_load_all_lb_type_rr_graph() {
     lb_type_rr_graphs = new std::vector<t_lb_type_rr_node>[device_ctx.num_block_types];
 
     for (int i = 0; i < device_ctx.num_block_types; i++) {
-        if (&device_ctx.block_types[i] != device_ctx.EMPTY_TYPE) {
-            alloc_and_load_lb_type_rr_graph_for_type(&device_ctx.block_types[i], lb_type_rr_graphs[i]);
+        auto type = &device_ctx.logical_block_types[i];
+
+        if (physical_tile_type(type) != device_ctx.EMPTY_TYPE) {
+            alloc_and_load_lb_type_rr_graph_for_type(type, lb_type_rr_graphs[i]);
 
             /* Now that the data is loaded, reallocate to the precise amount of memory needed to prevent insidious bugs */
             /* I should be using shrinktofit() but as of 2013, C++ 11 is yet not well supported so I can't call this function in gcc */
@@ -75,7 +77,7 @@ void free_all_lb_type_rr_graph(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs
     auto& device_ctx = g_vpr_ctx.device();
 
     for (int itype = 0; itype < device_ctx.num_block_types; itype++) {
-        if (&device_ctx.block_types[itype] != device_ctx.EMPTY_TYPE) {
+        if (physical_tile_type(&device_ctx.logical_block_types[itype]) != device_ctx.EMPTY_TYPE) {
             int graph_size = lb_type_rr_graphs[itype].size();
             for (int inode = 0; inode < graph_size; inode++) {
                 t_lb_type_rr_node* node = &lb_type_rr_graphs[itype][inode];
@@ -101,12 +103,12 @@ void free_all_lb_type_rr_graph(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs
  ******************************************************************************************/
 
 /* Return external source index for logic block type internal routing resource graph */
-int get_lb_type_rr_graph_ext_source_index(t_type_ptr lb_type) {
+int get_lb_type_rr_graph_ext_source_index(t_logical_block_type_ptr lb_type) {
     return lb_type->pb_graph_head->total_pb_pins;
 }
 
 /* Return external source index for logic block type internal routing resource graph */
-int get_lb_type_rr_graph_ext_sink_index(t_type_ptr lb_type) {
+int get_lb_type_rr_graph_ext_sink_index(t_logical_block_type_ptr lb_type) {
     return lb_type->pb_graph_head->total_pb_pins + 1;
 }
 
@@ -133,9 +135,9 @@ void echo_lb_type_rr_graphs(char* filename, std::vector<t_lb_type_rr_node>* lb_t
 
     auto& device_ctx = g_vpr_ctx.device();
     for (int itype = 0; itype < device_ctx.num_block_types; itype++) {
-        if (&device_ctx.block_types[itype] != device_ctx.EMPTY_TYPE) {
+        if (physical_tile_type(&device_ctx.logical_block_types[itype]) != device_ctx.EMPTY_TYPE) {
             fprintf(fp, "--------------------------------------------------------------\n");
-            fprintf(fp, "Intra-Logic Block Routing Resource For Type %s\n", device_ctx.block_types[itype].name);
+            fprintf(fp, "Intra-Logic Block Routing Resource For Type %s\n", device_ctx.logical_block_types[itype].name);
             fprintf(fp, "--------------------------------------------------------------\n");
             fprintf(fp, "\n");
             print_lb_type_rr_graph(fp, lb_type_rr_graphs[itype]);
@@ -154,7 +156,7 @@ void echo_lb_type_rr_graphs(char* filename, std::vector<t_lb_type_rr_node>* lb_t
  * Extra sources and sinks in lb_type_rr_node_graph that do not correspond to a pb_graph_pin are appended in indices following total_pb_pins
  * of the pb_type
  */
-static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
+static void alloc_and_load_lb_type_rr_graph_for_type(const t_logical_block_type_ptr lb_type,
                                                      std::vector<t_lb_type_rr_node>& lb_type_rr_node_graph) {
     t_pb_type* pb_type;
     t_pb_graph_node* pb_graph_head;

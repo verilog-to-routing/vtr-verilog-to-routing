@@ -14,7 +14,12 @@ extern "C" {
 #define EMPTY_TYPE_INDEX 0
 
 /* function declarations */
-void XmlReadArch(const char* ArchFile, const bool timing_enabled, t_arch* arch, t_type_descriptor** Types, int* NumTypes);
+void XmlReadArch(const char* ArchFile,
+                 const bool timing_enabled,
+                 t_arch* arch,
+                 std::vector<t_physical_tile_type>& PhysicalTileTypes,
+                 std::vector<t_logical_block_type>& LogicalBlockTypes,
+                 int* NumTypes);
 
 const char* get_arch_file_name();
 

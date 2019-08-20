@@ -102,7 +102,11 @@ void SetupVPR(const t_options* Options,
 
     if (readArchFile == true) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
-        XmlReadArch(Options->ArchFile.value().c_str(), TimingEnabled, Arch, &device_ctx.block_types,
+        XmlReadArch(Options->ArchFile.value().c_str(),
+                    TimingEnabled,
+                    Arch,
+                    device_ctx.physical_tile_types,
+                    device_ctx.logical_block_types,
                     &device_ctx.num_block_types);
     }
 
@@ -112,15 +116,15 @@ void SetupVPR(const t_options* Options,
     /* TODO: this is inelegant, I should be populating this information in XmlReadArch */
     device_ctx.EMPTY_TYPE = nullptr;
     for (i = 0; i < device_ctx.num_block_types; i++) {
-        t_type_ptr type = &device_ctx.block_types[i];
-        if (strcmp(device_ctx.block_types[i].name, EMPTY_BLOCK_NAME) == 0) {
+        t_physical_tile_type_ptr type = &device_ctx.physical_tile_types[i];
+        if (strcmp(type->name, EMPTY_BLOCK_NAME) == 0) {
             VTR_ASSERT(device_ctx.EMPTY_TYPE == nullptr);
             device_ctx.EMPTY_TYPE = type;
         } else {
-            if (block_type_contains_blif_model(type, MODEL_INPUT)) {
+            if (block_type_contains_blif_model(logical_block_type(type), MODEL_INPUT)) {
                 device_ctx.input_types.insert(type);
             }
-            if (block_type_contains_blif_model(type, MODEL_OUTPUT)) {
+            if (block_type_contains_blif_model(logical_block_type(type), MODEL_OUTPUT)) {
                 device_ctx.output_types.insert(type);
             }
         }
@@ -220,7 +224,7 @@ void SetupVPR(const t_options* Options,
     *SaveGraphics = Options->save_graphics;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
-        EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.block_types, device_ctx.num_block_types,
+        EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.physical_tile_types, device_ctx.logical_block_types, device_ctx.num_block_types,
                  Arch);
     }
 }

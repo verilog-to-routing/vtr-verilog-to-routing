@@ -76,11 +76,12 @@ void routing_stats(bool full_stats, enum e_route_type route_type, std::vector<t_
 
     used_area = 0;
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        if (!is_io_type(cluster_ctx.clb_nlist.block_type(blk_id))) {
-            if (cluster_ctx.clb_nlist.block_type(blk_id)->area == UNDEFINED) {
-                used_area += grid_logic_tile_area * cluster_ctx.clb_nlist.block_type(blk_id)->width * cluster_ctx.clb_nlist.block_type(blk_id)->height;
+        auto type = physical_tile_type(blk_id);
+        if (!is_io_type(type)) {
+            if (type->area == UNDEFINED) {
+                used_area += grid_logic_tile_area * type->width * type->height;
             } else {
-                used_area += cluster_ctx.clb_nlist.block_type(blk_id)->area;
+                used_area += type->area;
             }
         }
     }
@@ -407,12 +408,11 @@ void print_lambda() {
     int ipin, iclass;
     int num_inputs_used = 0;
     float lambda;
-    t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        type = cluster_ctx.clb_nlist.block_type(blk_id);
+        auto type = physical_tile_type(blk_id);
         VTR_ASSERT(type != nullptr);
         if (!is_io_type(type)) {
             for (ipin = 0; ipin < type->num_pins; ipin++) {

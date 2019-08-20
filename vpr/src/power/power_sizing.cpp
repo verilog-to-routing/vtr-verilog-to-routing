@@ -533,8 +533,8 @@ static void power_size_pb() {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
-        if (device_ctx.block_types[type_idx].pb_graph_head) {
-            power_size_pb_rec(device_ctx.block_types[type_idx].pb_graph_head);
+        if (device_ctx.logical_block_types[type_idx].pb_graph_head) {
+            power_size_pb_rec(device_ctx.logical_block_types[type_idx].pb_graph_head);
         }
     }
 }

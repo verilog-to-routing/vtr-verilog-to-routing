@@ -12,7 +12,7 @@
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
 
-static void free_all_pb_graph_nodes(t_type_descriptor* type_descriptors, int num_type_descriptors);
+static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_descriptors, int num_type_descriptors);
 static void free_pb_graph(t_pb_graph_node* pb_graph_node);
 static void free_pb_type(t_pb_type* pb_type);
 
@@ -215,9 +215,7 @@ void free_arch(t_arch* arch) {
     }
 }
 
-void free_type_descriptors(t_type_descriptor* type_descriptors, int num_type_descriptors) {
-    free_all_pb_graph_nodes(type_descriptors, num_type_descriptors);
-
+void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors, int num_type_descriptors) {
     for (int i = 0; i < num_type_descriptors; ++i) {
         vtr::free(type_descriptors[i].name);
         if (i == EMPTY_TYPE_INDEX) {
@@ -253,14 +251,26 @@ void free_type_descriptors(t_type_descriptor* type_descriptors, int num_type_des
         vtr::free(type_descriptors[i].is_ignored_pin);
         vtr::free(type_descriptors[i].is_pin_global);
         vtr::free(type_descriptors[i].pin_class);
+    }
+    type_descriptors.clear();
+}
+
+void free_type_descriptors(std::vector<t_logical_block_type>& type_descriptors, int num_type_descriptors) {
+    free_all_pb_graph_nodes(type_descriptors, num_type_descriptors);
+
+    for (int i = 0; i < num_type_descriptors; ++i) {
+        vtr::free(type_descriptors[i].name);
+        if (i == EMPTY_TYPE_INDEX) {
+            continue;
+        }
 
         free_pb_type(type_descriptors[i].pb_type);
         delete type_descriptors[i].pb_type;
     }
-    delete[] type_descriptors;
+    type_descriptors.clear();
 }
 
-static void free_all_pb_graph_nodes(t_type_descriptor* type_descriptors, int num_type_descriptors) {
+static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_descriptors, int num_type_descriptors) {
     for (int i = 0; i < num_type_descriptors; i++) {
         if (type_descriptors[i].pb_type) {
             if (type_descriptors[i].pb_graph_head) {
@@ -524,26 +534,33 @@ t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, in
     return port;
 }
 
-void SetupEmptyType(t_type_descriptor* cb_type_descriptors,
-                    t_type_ptr EMPTY_TYPE) {
-    t_type_descriptor* type;
-    type = &cb_type_descriptors[EMPTY_TYPE->index];
-    type->name = vtr::strdup("EMPTY");
-    type->num_pins = 0;
-    type->width = 1;
-    type->height = 1;
-    type->capacity = 0;
-    type->num_drivers = 0;
-    type->num_receivers = 0;
-    type->pinloc = nullptr;
-    type->num_class = 0;
-    type->class_inf = nullptr;
-    type->pin_class = nullptr;
-    type->is_ignored_pin = nullptr;
-    type->pb_type = nullptr;
-    type->area = UNDEFINED;
-    type->switchblock_locations = vtr::Matrix<e_sb_type>({{size_t(type->width), size_t(type->height)}}, e_sb_type::FULL);
-    type->switchblock_switch_overrides = vtr::Matrix<int>({{size_t(type->width), size_t(type->height)}}, DEFAULT_SWITCH);
+t_physical_tile_type SetupEmptyPhysicalType() {
+    t_physical_tile_type type;
+    type.name = vtr::strdup("EMPTY");
+    type.num_pins = 0;
+    type.width = 1;
+    type.height = 1;
+    type.capacity = 0;
+    type.num_drivers = 0;
+    type.num_receivers = 0;
+    type.pinloc = nullptr;
+    type.num_class = 0;
+    type.class_inf = nullptr;
+    type.pin_class = nullptr;
+    type.is_ignored_pin = nullptr;
+    type.area = UNDEFINED;
+    type.switchblock_locations = vtr::Matrix<e_sb_type>({{size_t(type.width), size_t(type.height)}}, e_sb_type::FULL);
+    type.switchblock_switch_overrides = vtr::Matrix<int>({{size_t(type.width), size_t(type.height)}}, DEFAULT_SWITCH);
+
+    return type;
+}
+
+t_logical_block_type SetupEmptyLogicalType() {
+    t_logical_block_type type;
+    type.name = vtr::strdup("EMPTY");
+    type.pb_type = nullptr;
+
+    return type;
 }
 
 void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
@@ -1079,7 +1096,7 @@ void CreateModelLibrary(t_arch* arch) {
 }
 
 void SyncModelsPbTypes(t_arch* arch,
-                       const t_type_descriptor* Types,
+                       const std::vector<t_logical_block_type>& Types,
                        const int NumTypes) {
     int i;
     for (i = 0; i < NumTypes; i++) {

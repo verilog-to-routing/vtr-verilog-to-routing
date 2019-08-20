@@ -73,7 +73,7 @@
  * Example of physical_pin_index_
  * ---------------------
  * Given a ClusterPinId, physical_pin_index_ will return the index of the pin within its block
- * relative to the t_type_descriptor (physical description of the block).
+ * relative to the t_logical_block_type (physical description of the block).
  *
  *           +-----------+
  *       0-->|O         X|-->3
@@ -126,7 +126,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     t_pb* block_pb(const ClusterBlockId id) const;
 
     //Returns the type of CLB (Logic block, RAM, DSP, etc.)
-    t_type_ptr block_type(const ClusterBlockId id) const;
+    t_logical_block_type_ptr block_type(const ClusterBlockId id) const;
 
     //Returns the net of the block attached to the specific pin index
     ClusterNetId block_net(const ClusterBlockId blk_id, const int pin_index) const;
@@ -148,11 +148,11 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      */
 
     //Returns the physical pin index (i.e. pin index on the
-    //t_type_descriptor) of the specified logical pin
+    //t_logical_block_type) of the specified logical pin
     int pin_physical_index(const ClusterPinId id) const;
 
     //Finds the net_index'th net pin (e.g. the 6th pin of the net) and
-    //returns the physical pin index (i.e. pin index on the t_type_descriptor)
+    //returns the physical pin index (i.e. pin index on the t_logical_block_type)
     //of the block to which the pin belongs
     //  net_id        : The net
     //  net_pin_index : The index of the pin in the net
@@ -171,8 +171,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     //Create or return an existing block in the netlist
     //  name        : The unique name of the block
     //  pb          : The physical representation of the block
-    //  t_type_ptr  : The type of the CLB
-    ClusterBlockId create_block(const char* name, t_pb* pb, t_type_ptr type);
+    //  t_logical_block_type_ptr  : The type of the CLB
+    ClusterBlockId create_block(const char* name, t_pb* pb, t_logical_block_type_ptr type);
 
     //Create or return an existing port in the netlist
     //  blk_id      : The block the port is associated with
@@ -245,12 +245,12 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
   private: //Private Data
     //Blocks
     vtr::vector_map<ClusterBlockId, t_pb*> block_pbs_;                              //Physical block representing the clustering & internal hierarchy of each CLB
-    vtr::vector_map<ClusterBlockId, t_type_ptr> block_types_;                       //The type of physical block this user circuit block is mapped to
+    vtr::vector_map<ClusterBlockId, t_logical_block_type_ptr> block_types_;         //The type of physical block this user circuit block is mapped to
     vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>> block_logical_pins_; //The logical pin associated with each physical block pin
 
     //Pins
     vtr::vector_map<ClusterPinId, int> pin_physical_index_; //The physical pin index (i.e. pin index
-                                                            //in t_type_descriptor) of logical pins
+                                                            //in t_logical_block_type) of logical pins
 
     //Nets
     vtr::vector_map<ClusterNetId, bool> net_is_ignored_; //Boolean mapping indicating if the net is ignored
