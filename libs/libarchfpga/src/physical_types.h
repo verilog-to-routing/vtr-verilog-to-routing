@@ -1044,7 +1044,7 @@ class t_pb_graph_pin {
     // of this pin back to the cluster-level (top-level) pb_type in the
     // following format: clb[0]/lab[0]/fle[3]/ble6[0]/lut6[0].in[0]
     // if full_description is set to false it will only return lut6[0].in[0]
-    std::string to_string(const bool full_description=true) const;
+    std::string to_string(const bool full_description = true) const;
 };
 
 /** Describes a pb graph edge
