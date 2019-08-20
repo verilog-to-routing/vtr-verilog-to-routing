@@ -35,7 +35,7 @@ void FasmWriterVisitor::visit_top_impl(const char* top_level_name) {
     auto& device_ctx = g_vpr_ctx.device();
     pb_graph_pin_lookup_from_index_by_type_.resize(device_ctx.num_block_types);
     for(int itype = 0; itype < device_ctx.num_block_types; itype++) {
-        pb_graph_pin_lookup_from_index_by_type_.at(itype) = alloc_and_load_pb_graph_pin_lookup_from_index(&device_ctx.block_types[itype]);
+        pb_graph_pin_lookup_from_index_by_type_.at(itype) = alloc_and_load_pb_graph_pin_lookup_from_index(&device_ctx.logical_block_types[itype]);
     }
 }
 

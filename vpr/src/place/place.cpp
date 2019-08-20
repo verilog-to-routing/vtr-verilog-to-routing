@@ -268,32 +268,32 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr, vtr::fc
             }                                                     \
         } while (false)
 
-#    define LOG_MOVE_STATS_PROPOSED(t, affected_blocks)                               \
-        do {                                                                          \
-            if (f_move_stats_file) {                                                  \
-                auto& place_ctx = g_vpr_ctx.placement();                              \
-                auto& cluster_ctx = g_vpr_ctx.clustering();                           \
-                ClusterBlockId b_from = affected_blocks.moved_blocks[0].block_num;    \
-                                                                                      \
-                t_pl_loc to = affected_blocks.moved_blocks[0].new_loc;                \
-                ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z]; \
-                                                                                      \
-                t_type_ptr from_type = cluster_ctx.clb_nlist.block_type(b_from);      \
-                t_type_ptr to_type = nullptr;                                         \
-                if (b_to) {                                                           \
-                    to_type = cluster_ctx.clb_nlist.block_type(b_to);                 \
-                }                                                                     \
-                                                                                      \
-                fprintf(f_move_stats_file.get(),                                      \
-                        "%g,"                                                         \
-                        "%d,%d,"                                                      \
-                        "%s,%s,"                                                      \
-                        "%d,",                                                        \
-                        t,                                                            \
-                        int(size_t(b_from)), int(size_t(b_to)),                       \
-                        from_type->name, (to_type ? to_type->name : "EMPTY"),         \
-                        affected_blocks.num_moved_blocks);                            \
-            }                                                                         \
+#    define LOG_MOVE_STATS_PROPOSED(t, affected_blocks)                                        \
+        do {                                                                                   \
+            if (f_move_stats_file) {                                                           \
+                auto& place_ctx = g_vpr_ctx.placement();                                       \
+                auto& cluster_ctx = g_vpr_ctx.clustering();                                    \
+                ClusterBlockId b_from = affected_blocks.moved_blocks[0].block_num;             \
+                                                                                               \
+                t_pl_loc to = affected_blocks.moved_blocks[0].new_loc;                         \
+                ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];          \
+                                                                                               \
+                t_physical_tile_type_ptr from_type = cluster_ctx.clb_nlist.block_type(b_from); \
+                t_physical_tile_type_ptr to_type = nullptr;                                    \
+                if (b_to) {                                                                    \
+                    to_type = cluster_ctx.clb_nlist.block_type(b_to);                          \
+                }                                                                              \
+                                                                                               \
+                fprintf(f_move_stats_file.get(),                                               \
+                        "%g,"                                                                  \
+                        "%d,%d,"                                                               \
+                        "%s,%s,"                                                               \
+                        "%d,",                                                                 \
+                        t,                                                                     \
+                        int(size_t(b_from)), int(size_t(b_to)),                                \
+                        from_type->name, (to_type ? to_type->name : "EMPTY"),                  \
+                        affected_blocks.num_moved_blocks);                                     \
+            }                                                                                  \
         } while (false)
 
 #    define LOG_MOVE_STATS_OUTCOME(delta_cost, delta_bb_cost, delta_td_cost, \
@@ -454,7 +454,7 @@ static void comp_td_costs(const PlaceDelayModel* delay_model, double* timing_cos
 
 static e_swap_result assess_swap(double delta_c, double t);
 
-static bool find_to(t_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& to);
+static bool find_to(t_physical_tile_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& to);
 
 static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new);
 
@@ -567,7 +567,7 @@ void try_place(const t_placer_opts& placer_opts,
     std::unique_ptr<MoveGenerator> move_generator;
 
     /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
-    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.block_types, device_ctx.num_block_types);
+    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types, device_ctx.num_block_types);
 
     /* init file scope variables */
     num_swap_rejected = 0;
@@ -1752,12 +1752,11 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
     //(neccessarily) translationally invariant for an arbitrary macro
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (to.x < 0 || to.x >= int(device_ctx.grid.width())
         || to.y < 0 || to.y >= int(device_ctx.grid.height())
         || to.z < 0 || to.z >= device_ctx.grid[to.x][to.y].type->capacity
-        || (device_ctx.grid[to.x][to.y].type != cluster_ctx.clb_nlist.block_type(blk))) {
+        || (device_ctx.grid[to.x][to.y].type != physical_tile_type(blk))) {
         return false;
     }
     return true;
@@ -2016,7 +2015,7 @@ static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId
         //For large nets, update bounding box incrementally
         int iblk_pin = cluster_ctx.clb_nlist.pin_physical_index(blk_pin);
 
-        t_type_ptr blk_type = cluster_ctx.clb_nlist.block_type(blk);
+        t_physical_tile_type_ptr blk_type = physical_tile_type(blk);
         int pin_width_offset = blk_type->pin_width_offset[iblk_pin];
         int pin_height_offset = blk_type->pin_height_offset[iblk_pin];
 
@@ -2065,7 +2064,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model, const Clus
     }
 }
 
-static bool find_to(t_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& to) {
+static bool find_to(t_physical_tile_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& to) {
     //Finds a legal swap to location for the given type, starting from 'x_from' and 'y_from'
     //
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
@@ -2276,9 +2275,9 @@ static float comp_td_point_to_point_delay(const PlaceDelayModel* delay_model, Cl
             VPR_ERROR(VPR_ERROR_PLACE,
                       "in comp_td_point_to_point_delay: Bad delay_source_to_sink value %g from %s (at %d,%d) to %s (at %d,%d)\n"
                       "in comp_td_point_to_point_delay: Delay is less than 0\n",
-                      block_type_pin_index_to_name(cluster_ctx.clb_nlist.block_type(source_block), source_block_ipin).c_str(),
+                      block_type_pin_index_to_name(physical_tile_type(source_block), source_block_ipin).c_str(),
                       source_x, source_y,
-                      block_type_pin_index_to_name(cluster_ctx.clb_nlist.block_type(sink_block), sink_block_ipin).c_str(),
+                      block_type_pin_index_to_name(physical_tile_type(sink_block), sink_block_ipin).c_str(),
                       sink_x, sink_y,
                       delay_source_to_sink);
         }
@@ -2483,7 +2482,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     max_pins_per_clb = 0;
     for (i = 0; i < device_ctx.num_block_types; i++) {
-        max_pins_per_clb = max(max_pins_per_clb, device_ctx.block_types[i].num_pins);
+        max_pins_per_clb = max(max_pins_per_clb, device_ctx.physical_tile_types[i].num_pins);
     }
 
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -2551,7 +2550,7 @@ static void alloc_and_load_net_pin_indices() {
 
     /* Compute required size. */
     for (itype = 0; itype < device_ctx.num_block_types; itype++)
-        max_pins_per_clb = max(max_pins_per_clb, device_ctx.block_types[itype].num_pins);
+        max_pins_per_clb = max(max_pins_per_clb, device_ctx.physical_tile_types[itype].num_pins);
 
     /* Allocate for maximum size. */
     net_pin_indices.resize(cluster_ctx.clb_nlist.blocks().size());
@@ -2697,8 +2696,8 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     pnum = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
     VTR_ASSERT(pnum >= 0);
-    x = place_ctx.block_locs[bnum].loc.x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
-    y = place_ctx.block_locs[bnum].loc.y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
+    x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
+    y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
 
     x = max(min<int>(x, grid.width() - 2), 1);
     y = max(min<int>(y, grid.height() - 2), 1);
@@ -2715,8 +2714,8 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         pnum = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
-        x = place_ctx.block_locs[bnum].loc.x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
-        y = place_ctx.block_locs[bnum].loc.y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
+        x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
+        y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
 
         /* Code below counts IO blocks as being within the 1..grid.width()-2, 1..grid.height()-2 clb array. *
          * This is because channels do not go out of the 0..grid.width()-2, 0..grid.height()-2 range, and   *
@@ -2855,8 +2854,8 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     pnum = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
-    x = place_ctx.block_locs[bnum].loc.x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
-    y = place_ctx.block_locs[bnum].loc.y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
+    x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
+    y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
 
     xmin = x;
     ymin = y;
@@ -2866,8 +2865,8 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         pnum = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
-        x = place_ctx.block_locs[bnum].loc.x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
-        y = place_ctx.block_locs[bnum].loc.y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
+        x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
+        y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
 
         if (x < xmin) {
             xmin = x;
@@ -3240,13 +3239,14 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
 
         // Assume that all the blocks in the macro are of the same type
         blk_id = pl_macros[imacro].members[0].blk_index;
-        itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
+        auto type = physical_tile_type(blk_id);
+        itype = type->index;
         if (free_locations[itype] < int(pl_macros[imacro].members.size())) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                             "Initial placement failed.\n"
                             "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
                             "VPR cannot auto-size for your circuit, please resize the FPGA manually.\n",
-                            pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
+                            pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), type->name, itype);
         }
 
         // Try to place the macro first, if can be placed - place them, otherwise try again
@@ -3280,7 +3280,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
                                 "Initial placement failed.\n"
                                 "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
                                 "Please manually size the FPGA because VPR can't do this yet.\n",
-                                pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
+                                pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.physical_tile_types[itype].name, itype);
             }
 
         } else {
@@ -3305,7 +3305,7 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
         }
 
         /* Don't do IOs if the user specifies IOs; we'll read those locations later. */
-        if (!(is_io_type(cluster_ctx.clb_nlist.block_type(blk_id)) && pad_loc_type == USER)) {
+        if (!(is_io_type(physical_tile_type(blk_id)) && pad_loc_type == USER)) {
             /* Randomly select a free location of the appropriate type for blk_id.
              * We have a linearized list of all the free locations that can
              * accommodate a block of that type in free_locations[itype].
@@ -3317,7 +3317,7 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                                 "Initial placement failed.\n"
                                 "Could not place block %s (#%zu); no free locations of type %s (#%d).\n",
-                                cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
+                                cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.physical_tile_types[itype].name, itype);
             }
 
             t_pl_loc to;
@@ -3332,7 +3332,7 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
             place_ctx.block_locs[blk_id].loc = to;
 
             //Mark IOs as fixed if specifying a (fixed) random placement
-            if (is_io_type(cluster_ctx.clb_nlist.block_type(blk_id)) && pad_loc_type == RANDOM) {
+            if (is_io_type(physical_tile_type(blk_id)) && pad_loc_type == RANDOM) {
                 place_ctx.block_locs[blk_id].is_fixed = true;
             }
 
@@ -3384,7 +3384,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
             place_ctx.grid_blocks[i][j].usage = 0;
             itype = device_ctx.grid[i][j].type->index;
-            for (int k = 0; k < device_ctx.block_types[itype].capacity; k++) {
+            for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
                 if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK_ID) {
                     place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK_ID;
                 }
@@ -3607,7 +3607,7 @@ static int check_block_placement_consistency() {
                 if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
                     continue;
 
-                if (cluster_ctx.clb_nlist.block_type(bnum) != device_ctx.grid[i][j].type) {
+                if (physical_tile_type(bnum) != device_ctx.grid[i][j].type) {
                     VTR_LOG_ERROR("Block %zu type (%s) does not match grid location (%zu,%zu) type (%s).\n",
                                   size_t(bnum), cluster_ctx.clb_nlist.block_type(bnum)->name, i, j, device_ctx.grid[i][j].type->name);
                     error++;
@@ -3810,10 +3810,10 @@ e_propose_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& /*aff
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;
-    VTR_ASSERT(cluster_from_type == grid_from_type);
+    VTR_ASSERT(physical_tile_type(cluster_from_type) == grid_from_type);
 
     t_pl_loc to;
-    if (!find_to(cluster_ctx.clb_nlist.block_type(b_from), rlim, from, to)) {
+    if (!find_to(physical_tile_type(b_from), rlim, from, to)) {
         return e_propose_move::ABORT;
     }
 

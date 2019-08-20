@@ -179,7 +179,7 @@ void load_rr_file(const t_graph_type graph_type,
         device_ctx.chan_width = nodes_per_chan;
         device_ctx.read_rr_graph_filename = std::string(read_rr_graph_name);
 
-        check_rr_graph(graph_type, grid, device_ctx.block_types);
+        check_rr_graph(graph_type, grid, device_ctx.physical_tile_types);
 
     } catch (XmlError& e) {
         vpr_throw(VPR_ERROR_ROUTE, read_rr_graph_name, e.line(), "%s", e.what());
@@ -573,7 +573,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
     Block = get_first_child(parent, "block_type", loc_data);
     auto& device_ctx = g_vpr_ctx.mutable_device();
     while (Block) {
-        auto block_info = device_ctx.block_types[get_attribute(Block, "id", loc_data).as_int(0)];
+        auto block_info = device_ctx.physical_tile_types[get_attribute(Block, "id", loc_data).as_int(0)];
 
         const char* name = get_attribute(Block, "name", loc_data).as_string(nullptr);
 

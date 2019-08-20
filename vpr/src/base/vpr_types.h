@@ -443,7 +443,7 @@ struct t_net_power {
  * width_offset: Number of grid tiles reserved based on width (right) of a block
  * height_offset: Number of grid tiles reserved based on height (top) of a block */
 struct t_grid_tile {
-    t_type_ptr type = nullptr;
+    t_physical_tile_type_ptr type = nullptr;
     int width_offset = 0;
     int height_offset = 0;
     const t_metadata_dict* meta = nullptr;

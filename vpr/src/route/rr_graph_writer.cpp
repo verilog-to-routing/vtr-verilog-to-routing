@@ -204,7 +204,7 @@ void write_rr_block_types(fstream& fp) {
     fp << "\t<block_types>" << endl;
 
     for (int iBlock = 0; iBlock < device_ctx.num_block_types; iBlock++) {
-        auto& btype = device_ctx.block_types[iBlock];
+        auto& btype = device_ctx.physical_tile_types[iBlock];
 
         fp << "\t\t<block_type id=\"" << btype.index;
 

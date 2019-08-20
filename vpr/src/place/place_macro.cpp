@@ -78,7 +78,7 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
 
     num_macro = 0;
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        num_blk_pins = cluster_ctx.clb_nlist.block_type(blk_id)->num_pins;
+        num_blk_pins = physical_tile_type(blk_id)->num_pins;
         for (to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {
             to_net_id = cluster_ctx.clb_nlist.block_net(blk_id, to_iblk_pin);
             to_idirect = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type(blk_id)->index][to_iblk_pin];
@@ -456,7 +456,7 @@ static void write_place_macros(std::string filename, const std::vector<t_pl_macr
     fprintf(f, "------------------------------------------\n");
     auto& device_ctx = g_vpr_ctx.device();
     for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
-        t_type_descriptor* type = &device_ctx.block_types[itype];
+        auto type = &device_ctx.physical_tile_types[itype];
 
         for (int ipin = 0; ipin < type->num_pins; ++ipin) {
             if (f_idirect_from_blk_pin[itype][ipin] != OPEN) {

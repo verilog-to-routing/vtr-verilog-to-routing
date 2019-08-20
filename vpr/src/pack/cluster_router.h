@@ -11,7 +11,7 @@
 #include "pack_types.h"
 
 /* Constructors/Destructors */
-t_lb_router_data* alloc_and_load_router_data(vector<t_lb_type_rr_node>* lb_type_graph, t_type_ptr type);
+t_lb_router_data* alloc_and_load_router_data(vector<t_lb_type_rr_node>* lb_type_graph, t_logical_block_type_ptr type);
 void free_router_data(t_lb_router_data* router_data);
 void free_intra_lb_nets(vector<t_intra_lb_net>* intra_lb_nets);
 

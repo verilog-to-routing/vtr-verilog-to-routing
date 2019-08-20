@@ -94,7 +94,7 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
                                             const int num_output_sets,
                                             const int* num_output_ptrs);
 
-static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor* type);
+static void alloc_and_load_pin_locations_from_pb_graph(t_physical_tile_type* type);
 
 static void echo_pb_rec(const t_pb_graph_node* pb, const int level, FILE* fp);
 static void echo_pb_pins(t_pb_graph_pin** pb_graph_pins, const int num_ports, const int level, FILE* fp);
@@ -124,21 +124,22 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
     int i, errors;
     edges_head = nullptr;
     num_edges_head = nullptr;
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
     for (i = 0; i < device_ctx.num_block_types; i++) {
-        if (device_ctx.block_types[i].pb_type) {
-            device_ctx.block_types[i].pb_graph_head = (t_pb_graph_node*)vtr::calloc(1,
-                                                                                    sizeof(t_pb_graph_node));
+        auto type = &device_ctx.logical_block_types[i];
+        auto physical_type = &device_ctx.physical_tile_types[type->index];
+        if (type->pb_type) {
+            type->pb_graph_head = (t_pb_graph_node*)vtr::calloc(1, sizeof(t_pb_graph_node));
             int pin_count_in_cluster = 0;
-            alloc_and_load_pb_graph(device_ctx.block_types[i].pb_graph_head, nullptr,
-                                    device_ctx.block_types[i].pb_type, 0, load_power_structures, pin_count_in_cluster);
-            device_ctx.block_types[i].pb_graph_head->total_pb_pins = pin_count_in_cluster;
-            alloc_and_load_pin_locations_from_pb_graph(&device_ctx.block_types[i]);
-            load_pin_classes_in_pb_graph_head(device_ctx.block_types[i].pb_graph_head);
+            alloc_and_load_pb_graph(type->pb_graph_head, nullptr,
+                                    type->pb_type, 0, load_power_structures, pin_count_in_cluster);
+            type->pb_graph_head->total_pb_pins = pin_count_in_cluster;
+            alloc_and_load_pin_locations_from_pb_graph(physical_type);
+            load_pin_classes_in_pb_graph_head(type->pb_graph_head);
         } else {
-            device_ctx.block_types[i].pb_graph_head = nullptr;
-            VTR_ASSERT(&device_ctx.block_types[i] == device_ctx.EMPTY_TYPE);
+            type->pb_graph_head = nullptr;
+            VTR_ASSERT(physical_tile_type(type) == device_ctx.EMPTY_TYPE);
         }
     }
 
@@ -148,8 +149,8 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
         exit(1);
     }
     for (i = 0; i < device_ctx.num_block_types; i++) {
-        if (device_ctx.block_types[i].pb_type) {
-            load_pb_graph_pin_to_pin_annotations(device_ctx.block_types[i].pb_graph_head);
+        if (device_ctx.logical_block_types[i].pb_type) {
+            load_pb_graph_pin_to_pin_annotations(device_ctx.logical_block_types[i].pb_graph_head);
         }
     }
 }
@@ -168,9 +169,9 @@ void echo_pb_graph(char* filename) {
 
     auto& device_ctx = g_vpr_ctx.device();
     for (i = 0; i < device_ctx.num_block_types; i++) {
-        fprintf(fp, "type %s\n", device_ctx.block_types[i].name);
-        if (device_ctx.block_types[i].pb_graph_head)
-            echo_pb_rec(device_ctx.block_types[i].pb_graph_head, 1, fp);
+        fprintf(fp, "type %s\n", device_ctx.logical_block_types[i].name);
+        if (device_ctx.logical_block_types[i].pb_graph_head)
+            echo_pb_rec(device_ctx.logical_block_types[i].pb_graph_head, 1, fp);
     }
 
     fclose(fp);
@@ -190,8 +191,8 @@ static int check_pb_graph() {
     num_errors = 0;
     auto& device_ctx = g_vpr_ctx.device();
     for (i = 0; i < device_ctx.num_block_types; i++) {
-        if (device_ctx.block_types[i].pb_type) {
-            check_pb_node_rec(device_ctx.block_types[i].pb_graph_head);
+        if (device_ctx.logical_block_types[i].pb_type) {
+            check_pb_node_rec(device_ctx.logical_block_types[i].pb_graph_head);
         }
     }
     return num_errors;
@@ -1268,7 +1269,7 @@ static t_pb_graph_pin* get_pb_graph_pin_from_name(const char* port_name,
     return nullptr;
 }
 
-static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor* type) {
+static void alloc_and_load_pin_locations_from_pb_graph(t_physical_tile_type* type) {
     type->pin_width_offset.resize(type->num_pins, 0);
     type->pin_height_offset.resize(type->num_pins, 0);
 
@@ -1401,9 +1402,9 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor* type) 
                         int num_pb_graph_node_sets = 0;
 
                         t_pb_graph_pin*** pb_graph_node_pins;
-                        pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(type->pb_type->modes[0].interconnect[0].line_num,
-                                                                                      type->pb_graph_head,
-                                                                                      type->pb_graph_head->child_pb_graph_nodes[0],
+                        pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(logical_block_type(type)->pb_type->modes[0].interconnect[0].line_num,
+                                                                                      logical_block_type(type)->pb_graph_head,
+                                                                                      logical_block_type(type)->pb_graph_head->child_pb_graph_nodes[0],
                                                                                       type->pin_loc_assignments[width][height][side][pin],
                                                                                       &num_pb_graph_node_pins,
                                                                                       &num_pb_graph_node_sets, false, false);

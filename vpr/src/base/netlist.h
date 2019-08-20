@@ -395,7 +395,7 @@
  * Currently, the AtomNetlist and ClusteredNetlist are both derived from Netlist. The AtomNetlist has primitive
  * specific details (t_model, TruthTable), and handles all operations with the atoms. The ClusteredNetlist
  * contains information on the CLB (Clustered Logic Block) level, which includes the physical description of the
- * blocks (t_type_descriptor), as well as the internal hierarchy and wiring (t_pb/t_pb_route).
+ * blocks (t_logical_block_type), as well as the internal hierarchy and wiring (t_pb/t_pb_route).
  *
  * The calling-conventions of the functions in the AtomNetlist and ClusteredNetlist is as follows:
  *

@@ -53,10 +53,10 @@ struct t_mux_size_distribution {
 };
 
 struct t_clb_to_clb_directs {
-    t_type_descriptor* from_clb_type;
+    t_logical_block_type_ptr from_clb_type;
     int from_clb_pin_start_index;
     int from_clb_pin_end_index;
-    t_type_descriptor* to_clb_type;
+    t_logical_block_type_ptr to_clb_type;
     int to_clb_pin_start_index;
     int to_clb_pin_end_index;
     int switch_index; //The switch type used by this direct connection
@@ -80,7 +80,7 @@ bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& p
 
 static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
-                                                                          const t_type_ptr Type,
+                                                                          const t_physical_tile_type_ptr Type,
                                                                           const std::vector<bool>& perturb_switch_pattern,
                                                                           const e_directionality directionality,
                                                                           const int num_seg_types,
@@ -89,11 +89,11 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
 static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
                                                             const int seg_type_tracks,
                                                             const int Fc,
-                                                            const t_type_ptr Type,
+                                                            const t_physical_tile_type_ptr Type,
                                                             const bool perturb_switch_pattern,
                                                             const e_directionality directionality);
 
-static void advance_to_next_block_side(t_type_ptr Type, int& width_offset, int& height_offset, e_side& side);
+static void advance_to_next_block_side(t_physical_tile_type_ptr Type, int& width_offset, int& height_offset, e_side& side);
 
 static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr::NdMatrix<std::vector<int>, 4> pin_to_track_map,
                                                                              const vtr::Matrix<int>& Fc,
@@ -192,10 +192,10 @@ static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 5>& track
                                                     const int Fc,
                                                     const enum e_directionality directionality);
 
-static std::vector<bool> alloc_and_load_perturb_opins(const t_type_ptr type, const vtr::Matrix<int>& Fc_out, const int max_chan_width, const std::vector<t_segment_inf>& segment_inf);
+static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type_ptr type, const vtr::Matrix<int>& Fc_out, const int max_chan_width, const std::vector<t_segment_inf>& segment_inf);
 
 #ifdef ENABLE_CHECK_ALL_TRACKS
-static void check_all_tracks_reach_pins(t_type_ptr type,
+static void check_all_tracks_reach_pins(t_logical_block_type_ptr type,
                                         int***** tracks_connected_to_pin,
                                         int max_chan_width,
                                         int Fc,
@@ -262,14 +262,14 @@ static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
 static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs, const int num_directs, const int delayless_switch);
 
 static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
-                                       t_type_ptr types,
+                                       const std::vector<t_physical_tile_type>& types,
                                        int max_chan_width);
 
 static t_seg_details* alloc_and_load_global_route_seg_details(const int global_route_switch,
                                                               int* num_seg_details = nullptr);
 
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_types,
-                                                              const t_type_ptr types,
+                                                              const std::vector<t_physical_tile_type>& types,
                                                               const int max_pins,
                                                               const std::vector<t_segment_inf>& segment_inf,
                                                               const int* sets_per_seg_type,
@@ -287,7 +287,7 @@ static void process_non_config_sets(const t_non_configurable_rr_sets& non_config
 
 static void build_rr_graph(const t_graph_type graph_type,
                            const int L_num_types,
-                           const t_type_ptr types,
+                           const std::vector<t_physical_tile_type>& types,
                            const DeviceGrid& grid,
                            t_chan_width nodes_per_chan,
                            const enum e_switch_block_type sb_type,
@@ -312,7 +312,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
 void create_rr_graph(const t_graph_type graph_type,
                      const int num_block_types,
-                     const t_type_ptr block_types,
+                     const std::vector<t_physical_tile_type>& block_types,
                      const DeviceGrid& grid,
                      const t_chan_width nodes_per_chan,
                      const int num_arch_switches,
@@ -422,7 +422,7 @@ bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& p
 
 static void build_rr_graph(const t_graph_type graph_type,
                            const int L_num_types,
-                           const t_type_ptr types,
+                           const std::vector<t_physical_tile_type>& types,
                            const DeviceGrid& grid,
                            t_chan_width nodes_per_chan,
                            const enum e_switch_block_type sb_type,
@@ -552,7 +552,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         }
 
         for (int i = 1; i < L_num_types; ++i) { /* Skip "EMPTY" */
-            for (int j = 0; j < device_ctx.block_types[i].num_pins; ++j) {
+            for (int j = 0; j < device_ctx.physical_tile_types[i].num_pins; ++j) {
                 for (size_t k = 0; k < segment_inf.size(); k++) {
 #ifdef VERBOSE
                     VTR_LOG(
@@ -1039,7 +1039,7 @@ static t_seg_details* alloc_and_load_global_route_seg_details(const int global_r
 
 /* Calculates the number of track connections from each block pin to each segment type */
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_types,
-                                                              const t_type_ptr types,
+                                                              const std::vector<t_physical_tile_type>& types,
                                                               const int max_pins,
                                                               const std::vector<t_segment_inf>& segment_inf,
                                                               const int* sets_per_seg_type,
@@ -1151,7 +1151,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
 
 /* frees the track to ipin mapping for each physical grid type */
 static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
-                                       t_type_ptr types,
+                                       const std::vector<t_physical_tile_type>& types,
                                        int max_chan_width) {
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -1323,7 +1323,7 @@ static void build_bidir_rr_opins(const int i,
         return;
     }
 
-    t_type_ptr type = grid[i][j].type;
+    auto type = grid[i][j].type;
     int width_offset = grid[i][j].width_offset;
     int height_offset = grid[i][j].height_offset;
 
@@ -1408,7 +1408,7 @@ static void build_rr_sinks_sources(const int i,
     if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0)
         return;
 
-    t_type_ptr type = grid[i][j].type;
+    auto type = grid[i][j].type;
     int num_class = type->num_class;
     t_class* class_inf = type->class_inf;
     int num_pins = type->num_pins;
@@ -1779,7 +1779,7 @@ void alloc_and_load_edges(std::vector<t_rr_node>& L_rr_node,
  * vector */
 static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
-                                                                          const t_type_ptr Type,
+                                                                          const t_physical_tile_type_ptr Type,
                                                                           const std::vector<bool>& perturb_switch_pattern,
                                                                           const e_directionality directionality,
                                                                           const int num_seg_types,
@@ -1865,7 +1865,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
 static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
                                                             const int num_seg_type_tracks,
                                                             const int Fc,
-                                                            const t_type_ptr Type,
+                                                            const t_physical_tile_type_ptr Type,
                                                             const bool perturb_switch_pattern,
                                                             const e_directionality directionality) {
     /* Note: currently a single value of Fc is used across each pin. In the future
@@ -2030,7 +2030,7 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     return tracks_connected_to_pin;
 }
 
-static void advance_to_next_block_side(t_type_ptr Type, int& width_offset, int& height_offset, e_side& side) {
+static void advance_to_next_block_side(t_physical_tile_type_ptr Type, int& width_offset, int& height_offset, e_side& side) {
     //State-machine transitions for advancing around all sides of a block
 
     //This state-machine transitions in the following order:
@@ -2416,7 +2416,7 @@ static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 5>& track
 
 #ifdef ENABLE_CHECK_ALL_TRACKS
 
-static void check_all_tracks_reach_pins(t_type_ptr type,
+static void check_all_tracks_reach_pins(t_logical_block_type_ptr type,
                                         int***** tracks_connected_to_pin,
                                         int max_chan_width,
                                         int Fc,
@@ -2542,7 +2542,7 @@ std::string describe_rr_node(int inode) {
                                    rr_node.direction_string());
         }
     } else if (rr_node.type() == IPIN || rr_node.type() == OPIN) {
-        t_type_ptr type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
+        auto type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
         std::string pin_name = block_type_pin_index_to_name(type, rr_node.pin_num());
 
         msg += vtr::string_fmt(" pin: %d pin_name: %s",
@@ -2563,7 +2563,7 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side, c
      */
     *Fc_clipped = false;
 
-    t_type_ptr type = grid[i][j].type;
+    auto type = grid[i][j].type;
 
     int width_offset = grid[i][j].width_offset;
     int height_offset = grid[i][j].height_offset;
@@ -2674,14 +2674,14 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
 
         // Figure out which type, port, and pin is used
         for (j = 0; j < device_ctx.num_block_types; j++) {
-            if (strcmp(device_ctx.block_types[j].name, pb_type_name) == 0) {
+            if (strcmp(device_ctx.logical_block_types[j].name, pb_type_name) == 0) {
                 break;
             }
         }
         if (j >= device_ctx.num_block_types) {
             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line, "Unable to find block %s.\n", pb_type_name);
         }
-        clb_to_clb_directs[i].from_clb_type = &device_ctx.block_types[j];
+        clb_to_clb_directs[i].from_clb_type = &device_ctx.logical_block_types[j];
         pb_type = clb_to_clb_directs[i].from_clb_type->pb_type;
 
         for (j = 0; j < pb_type->num_ports; j++) {
@@ -2707,14 +2707,14 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
 
         // Figure out which type, port, and pin is used
         for (j = 0; j < device_ctx.num_block_types; j++) {
-            if (strcmp(device_ctx.block_types[j].name, pb_type_name) == 0) {
+            if (strcmp(device_ctx.logical_block_types[j].name, pb_type_name) == 0) {
                 break;
             }
         }
         if (j >= device_ctx.num_block_types) {
             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line, "Unable to find block %s.\n", pb_type_name);
         }
-        clb_to_clb_directs[i].to_clb_type = &device_ctx.block_types[j];
+        clb_to_clb_directs[i].to_clb_type = &device_ctx.logical_block_types[j];
         pb_type = clb_to_clb_directs[i].to_clb_type->pb_type;
 
         for (j = 0; j < pb_type->num_ports; j++) {
@@ -2779,7 +2779,7 @@ static int get_opin_direct_connecions(int x,
                                       const t_clb_to_clb_directs* clb_to_clb_directs) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_type_ptr curr_type = device_ctx.grid[x][y].type;
+    t_physical_tile_type_ptr curr_type = device_ctx.grid[x][y].type;
 
     int num_pins = 0;
 
@@ -2796,7 +2796,7 @@ static int get_opin_direct_connecions(int x,
     /* Iterate through all direct connections */
     for (int i = 0; i < num_directs; i++) {
         /* Find matching direct clb-to-clb connections with the same type as current grid location */
-        if (clb_to_clb_directs[i].from_clb_type == curr_type) { //We are at a valid starting point
+        if (clb_to_clb_directs[i].from_clb_type == logical_block_type(curr_type)) { //We are at a valid starting point
 
             if (directs[i].from_side != NUM_SIDES && directs[i].from_side != side) continue;
 
@@ -2806,8 +2806,8 @@ static int get_opin_direct_connecions(int x,
                 && y + directs[i].y_offset < int(device_ctx.grid.height() - 1)
                 && y + directs[i].y_offset > 0) {
                 //Only add connections if the target clb type matches the type in the direct specification
-                t_type_ptr target_type = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].type;
-                if (clb_to_clb_directs[i].to_clb_type == target_type
+                t_physical_tile_type_ptr target_type = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].type;
+                if (clb_to_clb_directs[i].to_clb_type == logical_block_type(target_type)
                     && z + directs[i].z_offset < int(target_type->capacity)
                     && z + directs[i].z_offset >= 0) {
                     /* Compute index of opin with regards to given pins */
@@ -2888,7 +2888,7 @@ static int get_opin_direct_connecions(int x,
  *  This is to prevent pathological cases where the output pin connections are		*
  *  spaced such that the connection pattern always skips some types of wire (w.r.t.	*
  *  starting points)									*/
-static std::vector<bool> alloc_and_load_perturb_opins(const t_type_ptr type,
+static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type_ptr type,
                                                       const vtr::Matrix<int>& Fc_out,
                                                       const int max_chan_width,
                                                       const std::vector<t_segment_inf>& segment_inf) {

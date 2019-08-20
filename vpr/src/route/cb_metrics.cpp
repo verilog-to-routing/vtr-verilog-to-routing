@@ -75,13 +75,13 @@ bool set_has_element(const T elem, const std::set<T>* my_set) {
 /**** Function Declarations ****/
 /* goes through each pin of pin_type and determines which side of the block it comes out on. results are stored in
  * the 'pin_locations' 2d-vector */
-static void get_pin_locations(const t_type_ptr block_type, const e_pin_type pin_type, const int num_pin_type_pins, int***** tracks_connected_to_pin, t_2d_int_vec* pin_locations);
+static void get_pin_locations(const t_physical_tile_type_ptr block_type, const e_pin_type pin_type, const int num_pin_type_pins, int***** tracks_connected_to_pin, t_2d_int_vec* pin_locations);
 
 /* Gets the maximum Fc value from the Fc_array of this pin type. Errors out if the pins of this pin_type don't all have the same Fc */
-static int get_max_Fc(const int* Fc_array, const t_type_ptr block_type, const e_pin_type pin_type);
+static int get_max_Fc(const int* Fc_array, const t_physical_tile_type_ptr block_type, const e_pin_type pin_type);
 
 /* initializes the fields of the cb_metrics class */
-static void init_cb_structs(const t_type_ptr block_type, int***** tracks_connected_to_pin, const int num_segments, const t_segment_inf* segment_inf, const e_pin_type pin_type, const int num_pin_type_pins, const int nodes_per_chan, const int Fc, Conn_Block_Metrics* cb_metrics);
+static void init_cb_structs(const t_physical_tile_type_ptr block_type, int***** tracks_connected_to_pin, const int num_segments, const t_segment_inf* segment_inf, const e_pin_type pin_type, const int num_pin_type_pins, const int nodes_per_chan, const int Fc, Conn_Block_Metrics* cb_metrics);
 
 /* given a set of tracks connected to a pin, we'd like to find which of these tracks are connected to a number of switches
  * greater than 'criteria'. The resulting set of tracks is passed back in the 'result' vector */
@@ -107,14 +107,14 @@ static float get_lemieux_cost_func(const int exponent, const bool both_sides, co
 
 /* this annealer is used to adjust a desired wire or pin metric while keeping the other type of metric
  * relatively constant */
-static bool annealer(const e_metric metric, const int nodes_per_chan, const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const float target_metric, const float target_metric_tolerance, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics);
+static bool annealer(const e_metric metric, const int nodes_per_chan, const t_physical_tile_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const float target_metric, const float target_metric_tolerance, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics);
 /* updates temperature based on current temperature and the annealer's outer loop iteration */
 static double update_temp(const double temp);
 /* determines whether to accept or reject a proposed move based on the resulting delta of the cost and current temperature */
 static bool accept_move(const double del_cost, const double temp);
 /* this function simply moves a switch from one track to another track (with an empty slot). The switch stays on the
  * same pin as before. */
-static double try_move(const e_metric metric, const int nodes_per_chan, const float initial_orthogonal_metric, const float orthogonal_metric_tolerance, const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const double cost, const double temp, const float target_metric, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics);
+static double try_move(const e_metric metric, const int nodes_per_chan, const float initial_orthogonal_metric, const float orthogonal_metric_tolerance, const t_physical_tile_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const double cost, const double temp, const float target_metric, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics);
 
 static void print_switch_histogram(const int nodes_per_chan, const Conn_Block_Metrics* cb_metrics);
 
@@ -122,7 +122,7 @@ static void print_switch_histogram(const int nodes_per_chan, const Conn_Block_Me
 
 /* adjusts the connection block until the appropriate metric has hit its target value. the other orthogonal metric is kept constant
  * within some tolerance */
-void adjust_cb_metric(const e_metric metric, const float target, const float target_tolerance, const t_type_ptr block_type, int***** pin_to_track_connections, const e_pin_type pin_type, const int* Fc_array, const t_chan_width* chan_width_inf, const int num_segments, const t_segment_inf* segment_inf) {
+void adjust_cb_metric(const e_metric metric, const float target, const float target_tolerance, const t_physical_tile_type_ptr block_type, int***** pin_to_track_connections, const e_pin_type pin_type, const int* Fc_array, const t_chan_width* chan_width_inf, const int num_segments, const t_segment_inf* segment_inf) {
     Conn_Block_Metrics cb_metrics;
 
     /* various error checks */
@@ -170,7 +170,7 @@ void adjust_cb_metric(const e_metric metric, const float target, const float tar
 }
 
 /* calculates all the connection block metrics and returns them through the cb_metrics variable */
-void get_conn_block_metrics(const t_type_ptr block_type, int***** tracks_connected_to_pin, const int num_segments, const t_segment_inf* segment_inf, const e_pin_type pin_type, const int* Fc_array, const t_chan_width* chan_width_inf, Conn_Block_Metrics* cb_metrics) {
+void get_conn_block_metrics(const t_physical_tile_type_ptr block_type, int***** tracks_connected_to_pin, const int num_segments, const t_segment_inf* segment_inf, const e_pin_type pin_type, const int* Fc_array, const t_chan_width* chan_width_inf, Conn_Block_Metrics* cb_metrics) {
     if (chan_width_inf->x_min != chan_width_inf->x_max || chan_width_inf->y_min != chan_width_inf->y_max
         || chan_width_inf->x_max != chan_width_inf->y_max) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Currently this code assumes that channel width is uniform throughout the fpga");
@@ -226,7 +226,7 @@ void get_conn_block_metrics(const t_type_ptr block_type, int***** tracks_connect
 }
 
 /* initializes the fields of the cb_metrics class */
-static void init_cb_structs(const t_type_ptr block_type, int***** tracks_connected_to_pin, const int num_segments, const t_segment_inf* segment_inf, const e_pin_type pin_type, const int num_pin_type_pins, const int nodes_per_chan, const int Fc, Conn_Block_Metrics* cb_metrics) {
+static void init_cb_structs(const t_physical_tile_type_ptr block_type, int***** tracks_connected_to_pin, const int num_segments, const t_segment_inf* segment_inf, const e_pin_type pin_type, const int num_pin_type_pins, const int nodes_per_chan, const int Fc, Conn_Block_Metrics* cb_metrics) {
     /* can not calculate CB metrics for open pins */
     if (OPEN == pin_type) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Can not initialize CB metric structures for pins of OPEN type\n");
@@ -330,7 +330,7 @@ int get_num_wire_types(const int num_segments, const t_segment_inf* segment_inf)
 }
 
 /* Gets the maximum Fc value from the Fc_array of this pin type. Errors out if the pins of this pin_type don't all have the same Fc */
-int get_max_Fc(const int* Fc_array, const t_type_ptr block_type, const e_pin_type pin_type) {
+int get_max_Fc(const int* Fc_array, const t_physical_tile_type_ptr block_type, const e_pin_type pin_type) {
     int Fc = 0;
     for (int ipin = 0; ipin < block_type->num_pins; ++ipin) {
         int iclass = block_type->pin_class[ipin];
@@ -578,7 +578,7 @@ static float get_wire_homogeneity(const int Fc, const int nodes_per_chan, const 
 
 /* goes through each pin of pin_type and determines which side of the block it comes out on. results are stored in
  * the 'pin_locations' 2d-vector */
-static void get_pin_locations(const t_type_ptr block_type, const e_pin_type pin_type, const int num_pin_type_pins, int***** tracks_connected_to_pin, t_2d_int_vec* pin_locations) {
+static void get_pin_locations(const t_physical_tile_type_ptr block_type, const e_pin_type pin_type, const int num_pin_type_pins, int***** tracks_connected_to_pin, t_2d_int_vec* pin_locations) {
     set<int> counted_pins;
 
     pin_locations->clear();
@@ -660,7 +660,7 @@ static void find_tracks_unconnected_to_pin(const set<int>* pin_tracks, const vec
 
 /* this function simply moves a switch from one track to another track (with an empty slot). The switch stays on the
  * same pin as before. */
-static double try_move(const e_metric metric, const int nodes_per_chan, const float initial_orthogonal_metric, const float orthogonal_metric_tolerance, const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const double cost, const double temp, const float target_metric, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics) {
+static double try_move(const e_metric metric, const int nodes_per_chan, const float initial_orthogonal_metric, const float orthogonal_metric_tolerance, const t_physical_tile_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const double cost, const double temp, const float target_metric, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics) {
     double new_cost = 0;
     float new_orthogonal_metric = 0;
     float new_metric = 0;
@@ -845,7 +845,7 @@ static double try_move(const e_metric metric, const int nodes_per_chan, const fl
 
 /* this annealer is used to adjust a desired wire or pin metric while keeping the other type of metric
  * relatively constant */
-static bool annealer(const e_metric metric, const int nodes_per_chan, const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const float target_metric, const float target_metric_tolerance, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics) {
+static bool annealer(const e_metric metric, const int nodes_per_chan, const t_physical_tile_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const float target_metric, const float target_metric_tolerance, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics) {
     bool success = false;
     double temp = INITIAL_TEMP;
 
@@ -988,7 +988,7 @@ static void print_switch_histogram(const int nodes_per_chan, const Conn_Block_Me
 /* constructs a crossbar matrix from the connection block 'conn_block'. rows correspond to the pins,
  * columns correspond to the wires. entry (i,j) is set to 1 if that pin and track are connected. the
  * only pins accounted for here are the pins that actually have switches on the conn block side in question */
-static void get_xbar_matrix(const int***** conn_block, const t_type_ptr block_type, e_pin_type pin_type, const int side, const bool both_sides, const int nodes_per_chan, const int Fc, t_xbar_matrix* xbar_matrix) {
+static void get_xbar_matrix(const int***** conn_block, const t_physical_tile_type_ptr block_type, e_pin_type pin_type, const int side, const bool both_sides, const int nodes_per_chan, const int Fc, t_xbar_matrix* xbar_matrix) {
     xbar_matrix->clear();
     if (both_sides && side >= 2) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "If analyzing both sides of a conn block, the initial side should have index < 2");
@@ -1321,7 +1321,7 @@ static t_xbar_matrix combine_two_xbars(const t_xbar_matrix* xbar1, const t_xbar_
     return xbar_out;
 }
 
-void analyze_conn_blocks(const int***** opin_cb, const int***** ipin_cb, const t_type_ptr block_type, const int* Fc_array_out, const int* Fc_array_in, const t_chan_width* chan_width_inf) {
+void analyze_conn_blocks(const int***** opin_cb, const int***** ipin_cb, const t_physical_tile_type_ptr block_type, const int* Fc_array_out, const int* Fc_array_in, const t_chan_width* chan_width_inf) {
     if (0 != strcmp(block_type->name, "clb")) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "This code currently works for CLB blocks only");
     }
@@ -1371,7 +1371,7 @@ void analyze_conn_blocks(const int***** opin_cb, const int***** ipin_cb, const t
 }
 
 /* make a poor cb pattern. */
-void make_poor_cb_pattern(const e_pin_type pin_type, const t_type_ptr block_type, const int* Fc_array, const t_chan_width* chan_width_inf, int***** cb) {
+void make_poor_cb_pattern(const e_pin_type pin_type, const t_physical_tile_type_ptr block_type, const int* Fc_array, const t_chan_width* chan_width_inf, int***** cb) {
     if (block_type->num_pins == 0) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Trying to adjust CB metrics for a block with no pins!\n");
     }

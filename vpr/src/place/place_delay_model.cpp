@@ -45,8 +45,8 @@ float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, 
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
 
-    t_type_ptr from_type_ptr = grid[from_x][from_y].type;
-    t_type_ptr to_type_ptr = grid[to_x][to_y].type;
+    t_physical_tile_type_ptr from_type_ptr = grid[from_x][from_y].type;
+    t_physical_tile_type_ptr to_type_ptr = grid[to_x][to_y].type;
 
     t_override override_key;
     override_key.from_type = from_type_ptr->index;
@@ -99,8 +99,8 @@ void OverrideDelayModel::dump_echo(std::string filepath) const {
         auto override_key = kv.first;
         float delay_val = kv.second;
         fprintf(f, "from_type: %s to_type: %s from_pin_class: %d to_pin_class: %d delta_x: %d delta_y: %d -> delay: %g\n",
-                device_ctx.block_types[override_key.from_type].name,
-                device_ctx.block_types[override_key.to_type].name,
+                device_ctx.physical_tile_types[override_key.from_type].name,
+                device_ctx.physical_tile_types[override_key.to_type].name,
                 override_key.from_class,
                 override_key.to_class,
                 override_key.delta_x,

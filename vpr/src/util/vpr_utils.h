@@ -20,12 +20,18 @@ void print_tabs(FILE* fpout, int num_tab);
 
 bool is_clb_external_pin(ClusterBlockId blk_id, int pb_pin_id);
 
-bool is_opin(int ipin, t_type_ptr type);
+bool is_opin(int ipin, t_physical_tile_type_ptr type);
 
-bool is_input_type(t_type_ptr type);
-bool is_output_type(t_type_ptr type);
-bool is_io_type(t_type_ptr type);
-bool is_empty_type(t_type_ptr type);
+bool is_input_type(t_physical_tile_type_ptr type);
+bool is_output_type(t_physical_tile_type_ptr type);
+bool is_io_type(t_physical_tile_type_ptr type);
+bool is_empty_type(t_physical_tile_type_ptr type);
+
+//Returns the corresponding physical/logical type given the logical/physical type as parameter
+t_physical_tile_type_ptr physical_tile_type(t_logical_block_type_ptr logical_block_type);
+t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
+t_physical_tile_type_ptr physical_tile_type(ClusteredNetlist& clb_nlist, ClusterBlockId blk);
+t_logical_block_type_ptr logical_block_type(t_physical_tile_type_ptr physical_tile_type);
 
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node);
 
@@ -38,10 +44,10 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
 void sync_grid_to_blocks();
 
 //Returns the name of the pin_index'th pin on the specified block type
-std::string block_type_pin_index_to_name(t_type_ptr type, int pin_index);
+std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_index);
 
 //Returns the name of the class_index'th pin class on the specified block type
-std::vector<std::string> block_type_class_index_to_pin_names(t_type_ptr type, int class_index);
+std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_type_ptr type, int class_index);
 
 //Returns a user-friendly architectural identifier for the specified RR node
 std::string rr_node_arch_name(int inode);
@@ -53,7 +59,7 @@ std::string rr_node_arch_name(int inode);
 //Class for looking up pb graph pins from block pin indicies
 class IntraLbPbPinLookup {
   public:
-    IntraLbPbPinLookup(t_type_descriptor* block_types, int num_block_types);
+    IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types, int num_block_types);
     IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs);
     IntraLbPbPinLookup& operator=(IntraLbPbPinLookup rhs);
     ~IntraLbPbPinLookup();
@@ -65,7 +71,7 @@ class IntraLbPbPinLookup {
     friend void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs);
 
   private:
-    t_type_descriptor* block_types_;
+    std::vector<t_logical_block_type> block_types_;
     int num_types_;
 
     t_pb_graph_pin*** intra_lb_pb_pin_lookup_;
@@ -107,24 +113,24 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::st
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
 //Returns the block type matching name, or nullptr (if not found)
-t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* types, int num_types);
+t_physical_tile_type_ptr find_block_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types, int num_types);
 
 //Returns the block type which is most common in the device grid
-t_type_ptr find_most_common_block_type(const DeviceGrid& grid);
+t_logical_block_type_ptr find_most_common_block_type(const DeviceGrid& grid);
 
 //Parses a block_name.port[x:y] (e.g. LAB.data_in[3:10]) pin range specification, if no pin range is specified
 //looks-up the block port and fills in the full range
 InstPort parse_inst_port(std::string str);
 
-int find_pin_class(t_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type);
+int find_pin_class(t_logical_block_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type);
 
-int find_pin(t_type_ptr type, std::string port_name, int pin_index_in_port);
+int find_pin(t_logical_block_type_ptr type, std::string port_name, int pin_index_in_port);
 
 //Returns the block type which is most likely the logic block
-t_type_ptr infer_logic_block_type(const DeviceGrid& grid);
+t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid);
 
 //Returns true if the specified block type contains the specified blif model name
-bool block_type_contains_blif_model(t_type_ptr type, std::string blif_model_name);
+bool block_type_contains_blif_model(t_logical_block_type_ptr type, std::string blif_model_name);
 
 //Returns true of a pb_type (or it's children) contain the specified blif model name
 bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name);
@@ -136,7 +142,7 @@ bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type* cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node);
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
-t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type);
+t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
 void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);

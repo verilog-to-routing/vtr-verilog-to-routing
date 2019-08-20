@@ -6,6 +6,7 @@
 #include "arch_util.h"
 #include "vpr_api.h"
 #include <cstring>
+#include <vector>
 
 namespace {
 
@@ -16,11 +17,12 @@ static constexpr const char kRrGraphFile[] = "test_read_rrgraph_metadata.xml";
 
 TEST_CASE("read_arch_metadata", "[vpr]") {
     t_arch arch;
-    t_type_descriptor* types;
+    std::vector<t_physical_tile_type> physical_tile_types;
+    std::vector<t_logical_block_type> logical_block_types;
     int num_types;
 
     XmlReadArch(kArchFile, /*timing_enabled=*/false,
-                &arch, &types, &num_types);
+                &arch, physical_tile_types, logical_block_types, &num_types);
 
     bool found_perimeter_meta = false;
     bool found_single_meta = false;
@@ -54,21 +56,21 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
     bool found_direct = false;
 
     for (int i = 0; i < num_types; ++i) {
-        if (strcmp("io", types[i].name) == 0) {
+        if (strcmp("io", logical_block_types[i].name) == 0) {
             found_pb_type = true;
-            REQUIRE(types[i].pb_type != nullptr);
-            REQUIRE(types[i].pb_type->meta.has("pb_type_type"));
-            auto* pb_type_value = types[i].pb_type->meta.one("pb_type_type");
+            REQUIRE(logical_block_types[i].pb_type != nullptr);
+            REQUIRE(logical_block_types[i].pb_type->meta.has("pb_type_type"));
+            auto* pb_type_value = logical_block_types[i].pb_type->meta.one("pb_type_type");
             REQUIRE(pb_type_value != nullptr);
             CHECK_THAT(pb_type_value->as_string(), Equals("pb_type = io"));
 
-            REQUIRE(types[i].pb_type->num_modes > 0);
-            REQUIRE(types[i].pb_type->modes != nullptr);
+            REQUIRE(logical_block_types[i].pb_type->num_modes > 0);
+            REQUIRE(logical_block_types[i].pb_type->modes != nullptr);
 
-            for (int imode = 0; imode < types[i].pb_type->num_modes; ++imode) {
-                if (strcmp("inpad", types[i].pb_type->modes[imode].name) == 0) {
+            for (int imode = 0; imode < logical_block_types[i].pb_type->num_modes; ++imode) {
+                if (strcmp("inpad", logical_block_types[i].pb_type->modes[imode].name) == 0) {
                     found_mode = true;
-                    const auto* mode = &types[i].pb_type->modes[imode];
+                    const auto* mode = &logical_block_types[i].pb_type->modes[imode];
 
                     REQUIRE(mode->meta.has("mode"));
                     auto* mode_value = mode->meta.one("mode");
@@ -99,7 +101,7 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
     CHECK(found_mode);
     CHECK(found_direct);
 
-    free_type_descriptors(types, num_types);
+    free_type_descriptors(logical_block_types, num_types);
     free_arch(&arch);
 }
 

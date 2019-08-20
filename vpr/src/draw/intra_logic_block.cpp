@@ -42,13 +42,13 @@ using namespace std;
 static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, float parent_width, float parent_height);
 static int draw_internal_find_max_lvl(const t_pb_type& pb_type);
 static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height);
-static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_type_ptr type);
+static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_logical_block_type_ptr type);
 std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb);
 void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
 
 #    ifndef NO_GRAPHICS
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_type_ptr type, ezgl::renderer& g);
+static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer& g);
 void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezgl::renderer& g);
 void draw_selected_pb_flylines(ezgl::renderer& g);
 void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin, ezgl::renderer& g);
@@ -72,10 +72,11 @@ void draw_internal_alloc_blk() {
 
     for (i = 0; i < device_ctx.num_block_types; ++i) {
         /* Empty block has no sub_blocks */
-        if (&device_ctx.block_types[i] == device_ctx.EMPTY_TYPE)
+        auto type = &device_ctx.logical_block_types[i];
+        if (physical_tile_type(type) == device_ctx.EMPTY_TYPE)
             continue;
 
-        pb_graph_head = device_ctx.block_types[i].pb_graph_head;
+        pb_graph_head = type->pb_graph_head;
 
         /* Create an vector with size equal to the total number of pins for each type
          * of physical logic block, in order to uniquely identify each sub-block in
@@ -95,14 +96,14 @@ void draw_internal_init_blk() {
     auto& device_ctx = g_vpr_ctx.device();
     for (int i = 0; i < device_ctx.num_block_types; ++i) {
         /* Empty block has no sub_blocks */
-        t_type_descriptor& type_desc = device_ctx.block_types[i];
-        if (&type_desc == device_ctx.EMPTY_TYPE)
+        auto type = device_ctx.physical_tile_types[i];
+        if (&type == device_ctx.EMPTY_TYPE)
             continue;
 
-        pb_graph_head_node = type_desc.pb_graph_head;
-        int type_descriptor_index = type_desc.index;
+        pb_graph_head_node = logical_block_type(&type)->pb_graph_head;
+        int type_descriptor_index = type.index;
 
-        int num_sub_tiles = type_desc.capacity;
+        int num_sub_tiles = type.capacity;
 
         // set the clb dimensions
         ezgl::rectangle& clb_bbox = draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0);
@@ -112,17 +113,17 @@ void draw_internal_init_blk() {
         // note, that all clbs of the same type are the same size,
         // and that consequently we have *one* model for each type.
         bot_left = {0, 0};
-        if (size_t(type_desc.width) > device_ctx.grid.width() || size_t(type_desc.height) > device_ctx.grid.height()) {
+        if (size_t(type.width) > device_ctx.grid.width() || size_t(type.height) > device_ctx.grid.height()) {
             // in this case, the clb certainly wont't fit, but this prevents
             // an out-of-bounds access, and provides some sort of (probably right)
             // value
             top_right = ezgl::point2d(
-                (draw_coords->tile_x[1] - draw_coords->tile_x[0]) * (type_desc.width - 1),
-                (draw_coords->tile_y[1] - draw_coords->tile_y[0]) * (type_desc.height - 1));
+                (draw_coords->tile_x[1] - draw_coords->tile_x[0]) * (type.width - 1),
+                (draw_coords->tile_y[1] - draw_coords->tile_y[0]) * (type.height - 1));
         } else {
             top_right = ezgl::point2d(
-                draw_coords->tile_x[type_desc.width - 1],
-                draw_coords->tile_y[type_desc.height - 1]);
+                draw_coords->tile_x[type.width - 1],
+                draw_coords->tile_y[type.height - 1]);
         }
         top_right += ezgl::point2d(
             draw_coords->get_tile_width() / num_sub_tiles,
@@ -133,7 +134,7 @@ void draw_internal_init_blk() {
                                   clb_bbox.width(), clb_bbox.height());
 
         /* Determine the max number of sub_block levels in the FPGA */
-        draw_state->max_sub_blk_lvl = max(draw_internal_find_max_lvl(*type_desc.pb_type),
+        draw_state->max_sub_blk_lvl = max(draw_internal_find_max_lvl(*logical_block_type(&type)->pb_type),
                                           draw_state->max_sub_blk_lvl);
     }
 }
@@ -271,7 +272,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     const float FRACTION_CHILD_MARGIN_Y = 0.04;
     double left, bot, right, top;
 
-    int capacity = device_ctx.block_types[type_descrip_index].capacity;
+    int capacity = device_ctx.physical_tile_types[type_descrip_index].capacity;
     if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && place_ctx.grid_blocks[1][0].usage != 0
         && type_descrip_index == device_ctx.grid[1][0].type->index) {
         // that should test for io blocks, and setting capacity_divisor > 1
@@ -320,7 +321,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
  * which a netlist block can map to, and draws each sub-block inside its parent block. With
  * each click on the "Blk Internal" button, a new level is shown.
  */
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_type_ptr type, ezgl::renderer& g) {
+static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer& g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
     t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
@@ -667,7 +668,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
 /* This function checks whether a top-level clb has been highlighted. It does
  * so by checking whether the color in this block is default color.
  */
-static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_type_ptr type) {
+static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_logical_block_type_ptr type) {
     t_draw_state* draw_state;
 
     /* Call accessor function to retrieve global variables. */

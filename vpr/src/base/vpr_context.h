@@ -117,16 +117,17 @@ struct DeviceContext : public Context {
     DeviceGrid grid; /* FPGA complex block grid [0 .. grid.width()-1][0 .. grid.height()-1] */
 
     /* Special pointers to identify special blocks on an FPGA: I/Os, unused, and default */
-    std::set<t_type_ptr> input_types;
-    std::set<t_type_ptr> output_types;
-    t_type_ptr EMPTY_TYPE;
+    std::set<t_physical_tile_type_ptr> input_types;
+    std::set<t_physical_tile_type_ptr> output_types;
+    t_physical_tile_type_ptr EMPTY_TYPE;
 
     /* block_types are blocks that can be moved by the placer
      * such as: I/Os, CLBs, memories, multipliers, etc
      * Different types of physical block are contained in type descriptors
      */
     int num_block_types;
-    t_type_descriptor* block_types;
+    std::vector<t_physical_tile_type> physical_tile_types;
+    std::vector<t_logical_block_type> logical_block_types;
 
     /*******************************************************************
      * Routing related

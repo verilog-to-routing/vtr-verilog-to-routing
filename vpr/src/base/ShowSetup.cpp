@@ -80,7 +80,7 @@ void printClusteredNetlistStats() {
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         num_blocks_type[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
-        auto type = cluster_ctx.clb_nlist.block_type(blk_id);
+        auto type = physical_tile_type(blk_id);
         if (is_io_type(type)) {
             for (j = 0; j < type->num_pins; j++) {
                 if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {
@@ -96,7 +96,7 @@ void printClusteredNetlistStats() {
     }
 
     for (i = 0; i < device_ctx.num_block_types; i++) {
-        VTR_LOG("Netlist %s blocks: %d.\n", device_ctx.block_types[i].name, num_blocks_type[i]);
+        VTR_LOG("Netlist %s blocks: %d.\n", device_ctx.logical_block_types[i].name, num_blocks_type[i]);
     }
 
     /* Print out each block separately instead */

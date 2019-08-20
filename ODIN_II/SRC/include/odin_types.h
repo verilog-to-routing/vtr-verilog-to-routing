@@ -577,7 +577,7 @@ struct netlist_t
 	STRING_CACHE *out_pins_sc;
 	STRING_CACHE *nodes_sc;
 
-	t_type_ptr type;
+	t_logical_block_type_ptr type;
 
 };
 
