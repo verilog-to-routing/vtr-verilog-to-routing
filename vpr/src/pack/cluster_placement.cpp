@@ -153,9 +153,21 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
                 }
                 /* try place molecule at root location cur */
                 cost = try_place_molecule(molecule, cur->pb_graph_node, primitives_list);
+
+                const auto cur_pcount = cur->pb_graph_node->total_primitive_count;
+                const auto best_pcount = (best)? best->pb_graph_node->total_primitive_count : std::numeric_limits<int>::max();
+
+                // specific to architectures with two types of Logic elements one more complex than the other
+                const auto cur_pcomplexity = cur->pb_graph_node->parent_complexity;
+                const auto best_pcomplexity = (best)? best->pb_graph_node->parent_complexity : std::numeric_limits<int>::min();
                 // if the cost is lower than the best, or is equal to the best but this
-                // primitive is more available in the cluster mark it as the best primitive
-                if (cost < lowest_cost || (best && cost == lowest_cost && cur->pb_graph_node->total_primitive_count > best->pb_graph_node->total_primitive_count)) {
+                // primitive is more available in the cluster mark it as the best primitive, or
+                // if it is an adder primitive and is closer to the cluster cin pin than the best
+                if (cost < lowest_cost || (cost == lowest_cost && cur_pcount > best_pcount)) {
+                    lowest_cost = cost;
+                    best = cur;
+                    before_best = prev;
+                } else if (static_cast<int>(1000*cost) == static_cast<int>(1000*lowest_cost) && cur_pcount == best_pcount && cur_pcomplexity < best_pcomplexity) {
                     lowest_cost = cost;
                     best = cur;
                     before_best = prev;

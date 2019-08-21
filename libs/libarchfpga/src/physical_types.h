@@ -940,6 +940,7 @@ class t_pb_graph_node {
     int num_output_pin_class;   /* number of output pin classes that this pb_graph_node has */
 
     int total_primitive_count; /* total number of this primitive type in the cluster */
+    int parent_complexity;     /* total number of primitives the parent node of this primitive have */
 
     /* Interconnect instances for this pb
      * Only used for power

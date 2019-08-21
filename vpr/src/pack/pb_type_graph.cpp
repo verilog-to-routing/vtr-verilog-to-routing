@@ -330,8 +330,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                          load_power_structures);
     }
 
-    // update the total number of primitives of that type
     if (pb_graph_node->is_primitive()) {
+        // update the total number of primitives of that type
         int total_count = 1;
         auto pb_node = pb_graph_node;
         while (!pb_node->is_root()) {
@@ -339,6 +339,19 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
             pb_node = pb_node->parent_pb_graph_node;
         }
         pb_graph_node->total_primitive_count = total_count;
+        // update the parent complexity of this primitive
+        int parent_complexity = 0;
+        auto parent_node = pb_graph_node->parent_pb_graph_node;
+        while (parent_node) {
+            const auto parent_pb_type = parent_node->pb_type;
+            for (i = 0; i < parent_pb_type->num_modes; i++) {
+                for (j = 0; j < parent_pb_type->modes[i].num_pb_type_children; j++) {
+                    parent_complexity += parent_pb_type->modes[i].pb_type_children[j].num_pb;
+                }
+            }
+            parent_node = parent_node->parent_pb_graph_node;
+        }
+        pb_graph_node->parent_complexity = parent_complexity;
     }
 }
 
