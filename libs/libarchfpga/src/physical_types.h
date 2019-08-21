@@ -516,7 +516,28 @@ enum class e_sb_type {
 constexpr int NO_SWITCH = -1;
 constexpr int DEFAULT_SWITCH = -2;
 
-/* Describes the type for a physical logic block
+/* Describes the type for a logical block
+ * name: unique identifier for type
+ * pb_type: Internal subblocks and routing information for this physical block
+ * pb_graph_head: Head of DAG of pb_types_nodes and their edges
+ *
+ * index: Keep track of type in array for easy access
+ * physical_tile_index: index of the corresponding physical tile type
+ */
+struct t_logical_block_type {
+    char* name = nullptr;
+
+    /* Clustering info */
+    t_pb_type* pb_type = nullptr;
+    t_pb_graph_node* pb_graph_head = nullptr;
+
+    int index = -1; /* index of type descriptor in array (allows for index referencing) */
+
+    int physical_tile_index = -1; /* index of the corresponding physical tile type */
+};
+typedef const t_logical_block_type* t_logical_block_type_ptr;
+
+/* Describes the type for a physical tile
  * name: unique identifier for type
  * num_pins: Number of pins for the block
  * capacity: Number of blocks of this type that can occupy one grid tile (typically used by IOs).
@@ -561,20 +582,8 @@ constexpr int DEFAULT_SWITCH = -2;
  * num_drivers: Total number of output drivers supplied
  * num_receivers: Total number of input receivers supplied
  * index: Keep track of type in array for easy access
+ * logical_tile_index: index of the corresponding logical block type
  */
-struct t_logical_block_type {
-    char* name = nullptr;
-
-    /* Clustering info */
-    t_pb_type* pb_type = nullptr;
-    t_pb_graph_node* pb_graph_head = nullptr;
-
-    int index = -1; /* index of type descriptor in array (allows for index referencing) */
-
-    int physical_tile_index = -1; /* index of the corresponding physical tile type */
-};
-typedef const t_logical_block_type* t_logical_block_type_ptr;
-
 struct t_physical_tile_type {
     char* name = nullptr;
     int num_pins = 0;
