@@ -256,6 +256,8 @@ void reduce_budgets_if_congested(route_budgets& budgeting_inf,
 static bool should_route_net(ClusterNetId net_id, const CBRR& connections_inf, bool if_force_reroute);
 static bool early_exit_heuristic(const t_router_opts& router_opts, const WirelengthInfo& wirelength_info);
 
+static bool check_hold(const t_router_opts& router_opts, std::shared_ptr<const SetupHoldTimingInfo> timing_info);
+
 struct more_sinks_than {
     inline bool operator()(const ClusterNetId net_index1, const ClusterNetId net_index2) {
         auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -285,6 +287,11 @@ static size_t dynamic_update_bounding_boxes(int high_fanout_threshold);
 static t_bb calc_current_bb(const t_trace* head);
 
 static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr);
+
+static bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts,
+                                  int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info);
+
+static bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& router_opts);
 
 static bool is_better_quality_routing(const vtr::vector<ClusterNetId, t_traceback>& best_routing,
                                       const RoutingMetrics& best_routing_metrics,
@@ -510,8 +517,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
         /*
          * Are we finished?
          */
-
-        if (routing_is_feasible) {
+        if (is_iteration_complete(routing_is_feasible, router_opts, itry, timing_info)) {
             auto& router_ctx = g_vpr_ctx.routing();
 
             if (is_better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
@@ -651,9 +657,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
 
             ++itry_conflicted_mode;
         }
-
         if (timing_info) {
-            if (itry == 1) {
+            if (should_setup_lower_bound_connection_delays(itry,router_opts)) {
                 // first iteration sets up the lower bound connection delays since only timing is optimized for
                 connections_inf.set_stable_critical_path_delay(critical_path.delay());
                 connections_inf.set_lower_bound_connection_delays(net_delay);
@@ -946,7 +951,7 @@ bool timing_driven_route_net(ClusterNetId net_id,
 
     VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
-    t_rt_node* rt_root = setup_routing_resources(itry, net_id, num_sinks, pres_fac, router_opts.min_incremental_reroute_fanout, connections_inf, rt_node_of_sink, (timing_info->hold_worst_negative_slack() < 0));
+    t_rt_node* rt_root = setup_routing_resources(itry, net_id, num_sinks, pres_fac, router_opts.min_incremental_reroute_fanout, connections_inf, rt_node_of_sink, check_hold(router_opts,timing_info));
 
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
 
@@ -1545,7 +1550,7 @@ static t_rt_node* setup_routing_resources(int itry,
     // for nets below a certain size (min_incremental_reroute_fanout), rip up any old routing
     // otherwise, we incrementally reroute by reusing legal parts of the previous iteration
     // convert the previous iteration's traceback into the starting route tree for this iteration
-    if ((int)num_sinks < min_incremental_reroute_fanout || itry == 1) {
+    if ((int)num_sinks < min_incremental_reroute_fanout || itry == 1 || hold) {
         profiling::net_rerouted();
 
         // rip up the whole net
@@ -1734,13 +1739,15 @@ static t_bb add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_no
 
             for (t_rt_node* rt_node : spatial_rt_lookup[bin_x][bin_y]) {
                 if (!rt_node->re_expand) continue; //Some nodes (like IPINs) shouldn't be re-expanded
-		        /*trace_path.clear();
-                trace_path.insert(rt_node->inode);
-                t_rt_node* parent = rt_node->parent_node;
-                while (parent != nullptr) {
-                    trace_path.insert(parent->inode);
-                    parent = parent->parent_node;
-                }*/
+                if (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO) {
+                    trace_path.clear();
+                    trace_path.insert(rt_node->inode);
+                    t_rt_node* parent = rt_node->parent_node;
+                    while (parent != nullptr) {
+                        trace_path.insert(parent->inode);
+                        parent = parent->parent_node;
+                    }
+                }
                 //Put the node onto the heap
                 add_route_tree_node_to_heap(rt_node, target_node, cost_params, router_lookahead, router_stats, trace_path);
 
@@ -2216,6 +2223,15 @@ static bool early_exit_heuristic(const t_router_opts& router_opts, const Wirelen
     return false;
 }
 
+static bool check_hold(const t_router_opts& router_opts, std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
+    if (router_opts.routing_budgets_algorithm != YOYO) {
+        return false;
+    }
+    else if (timing_info->hold_worst_negative_slack() == 0) {
+        return true;
+    }
+    return false;
+}
 // incremental rerouting resources class definitions
 Connection_based_routing_resources::Connection_based_routing_resources()
     : current_inet(NO_PREVIOUS)
@@ -2758,6 +2774,36 @@ static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId n
 #endif
 }
 
+static bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts,
+                                  int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
+    //This function checks if a routing iteration has completed. 
+    //When VPR is run normally, we check if routing_budgets_algorithm is disabled, and if the routing is legal
+    //With the introduction of yoyo budgeting algorithm, we must check if there are no hold violations 
+    //in addition to routing being legal and the correct budgeting algorithm being set.
+
+    if (routing_is_feasible) {
+        if (router_opts.routing_budgets_algorithm != YOYO) {
+            return true;
+        }
+        else if (router_opts.routing_budgets_algorithm == YOYO && (itry == 1) && timing_info->hold_worst_negative_slack() == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& router_opts) {
+    //This function checks the iteration number to see if is neccessary to setup the lower bound connection delays for future comparison.
+    //When VPR is normally run with the budgeting algorithm turned off, it the lower bound connection delays are set on the first iteration.
+    //However, with the yoyo algorithm, the lower bound is set every after every 5 iterations, so long as it is below 25.
+    if (router_opts.routing_budgets_algorithm != YOYO && itry == 1) {
+        return true;
+    }
+    else if (router_opts.routing_budgets_algorithm == YOYO && itry % 5 == 1 && itry < 25) {
+        return true;
+    }
+    return false;
+}
 static bool is_better_quality_routing(const vtr::vector<ClusterNetId, t_traceback>& best_routing,
                                       const RoutingMetrics& best_routing_metrics,
                                       const WirelengthInfo& wirelength_info,
