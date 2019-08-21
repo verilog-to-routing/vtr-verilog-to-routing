@@ -194,6 +194,9 @@ struct DeviceContext : public Context {
      * Clock Network
      ********************************************************************/
     t_clock_arch* clock_arch;
+
+    // Bit set of IPIN's.
+    dynamic_bitset ipin_nodes;
 };
 
 //State relating to power analysis
@@ -265,7 +268,7 @@ struct RoutingContext : public Context {
     vtr::vector<ClusterNetId, t_net_routing_status> net_status; //[0..cluster_ctx.clb_nlist.nets().size()-1]
 
     //Limits area within which each net must be routed.
-    vtr::vector<ClusterNetId, t_bb> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
+    vtr::vector<ClusterNetId, t_bb_cache> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
 
     t_clb_opins_used clb_opins_used_locally; //[0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1]
 

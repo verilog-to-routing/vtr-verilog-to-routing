@@ -1092,15 +1092,15 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
     return rr_blk_source;
 }
 
-vtr::vector<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
-    vtr::vector<ClusterNetId, t_bb> route_bb;
+vtr::vector<ClusterNetId, t_bb_cache> load_route_bb(int bb_factor) {
+    vtr::vector<ClusterNetId, t_bb_cache> route_bb;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     auto nets = cluster_ctx.clb_nlist.nets();
     route_bb.resize(nets.size());
     for (auto net_id : nets) {
-        route_bb[net_id] = load_net_route_bb(net_id, bb_factor);
+        route_bb[net_id].update_cache(load_net_route_bb(net_id, bb_factor));
     }
     return route_bb;
 }

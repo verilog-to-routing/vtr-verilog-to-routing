@@ -1220,7 +1220,7 @@ static void draw_routing_bb(ezgl::renderer& g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     auto net_id = ClusterNetId(draw_state->show_routing_bb);
-    const t_bb* bb = &route_ctx.route_bb[net_id];
+    const t_bb* bb = &route_ctx.route_bb[net_id].bb();
 
     //The router considers an RR node to be 'within' the the bounding box if it
     //is *loosely* greater (i.e. greater than or equal) the left/bottom edges, and

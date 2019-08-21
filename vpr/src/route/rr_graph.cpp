@@ -579,6 +579,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, grid,
                                                                 &num_rr_nodes, chan_details_x, chan_details_y);
     device_ctx.rr_nodes.resize(num_rr_nodes);
+    device_ctx.ipin_nodes.resize(num_rr_nodes);
 
     /* These are data structures used by the the unidir opin mapping. They are used
      * to spread connections evenly for each segment type among the available
@@ -690,6 +691,10 @@ static void build_rr_graph(const t_graph_type graph_type,
                             &Fc_clipped,
                             directs, num_directs, clb_to_clb_directs,
                             is_global_graph);
+
+    for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
+        device_ctx.ipin_nodes.set(i, device_ctx.rr_nodes[i].type() == IPIN);
+    }
 
     /* Update rr_nodes capacities if global routing */
     if (graph_type == GRAPH_GLOBAL) {

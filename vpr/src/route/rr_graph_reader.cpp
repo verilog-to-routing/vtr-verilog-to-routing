@@ -146,6 +146,8 @@ void load_rr_file(const t_graph_type graph_type,
         int num_rr_nodes = count_children(next_component, "node", loc_data);
 
         device_ctx.rr_nodes.resize(num_rr_nodes);
+        device_ctx.ipin_nodes.resize(num_rr_nodes);
+        device_ctx.ipin_nodes.fill(false);
         process_nodes(next_component, loc_data);
 
         /* Loads edges, switches, and node look up tables*/
@@ -306,6 +308,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
             node.set_type(OPIN);
         } else if (strcmp(node_type, "IPIN") == 0) {
             node.set_type(IPIN);
+            device_ctx.ipin_nodes.set(inode, true);
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Valid inputs for class types are \"CHANX\", \"CHANY\",\"SOURCE\", \"SINK\",\"OPIN\", and \"IPIN\".");

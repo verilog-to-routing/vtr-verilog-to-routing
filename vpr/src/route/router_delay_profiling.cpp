@@ -24,11 +24,8 @@ bool calculate_delay(int source_node, int sink_node, const t_router_opts& router
     update_rr_base_costs(1);
 
     //maximum bounding box for placement
-    t_bb bounding_box;
-    bounding_box.xmin = 0;
-    bounding_box.xmax = device_ctx.grid.width() + 1;
-    bounding_box.ymin = 0;
-    bounding_box.ymax = device_ctx.grid.height() + 1;
+    t_bb_cache bb_cache;
+    bb_cache.set_whole_grid();
 
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.;
@@ -42,7 +39,7 @@ bool calculate_delay(int source_node, int sink_node, const t_router_opts& router
     std::vector<int> modified_rr_node_inf;
     RouterStats router_stats;
     auto router_lookahead = make_router_lookahead(router_opts.lookahead_type);
-    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, *router_lookahead, modified_rr_node_inf, router_stats);
+    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bb_cache, *router_lookahead, modified_rr_node_inf, router_stats);
 
     bool found_path = (cheapest != nullptr);
     if (found_path) {

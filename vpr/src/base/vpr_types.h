@@ -1333,4 +1333,65 @@ class RouteStatus {
 
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
+class dynamic_bitset {
+  public:
+    // Bits in underlying storage.
+    static constexpr size_t kWidth = std::numeric_limits<unsigned int>::digits;
+
+    void resize(size_t size) {
+        array_.resize((size + kWidth - 1) / kWidth);
+    }
+    void fill(bool set) {
+        if (set) {
+            std::fill(array_.begin(), array_.end(), std::numeric_limits<unsigned int>::max());
+        } else {
+            std::fill(array_.begin(), array_.end(), 0);
+        }
+    }
+
+    void set(size_t index, bool val) {
+        if (val) {
+            array_[index / kWidth] |= (1 << (index % kWidth));
+        } else {
+            array_[index / kWidth] &= ~(1u << (index % kWidth));
+        }
+    }
+
+    bool get(size_t index) const {
+        return (array_[index / kWidth] & (1u << (index % kWidth))) != 0;
+    }
+
+  private:
+    std::vector<unsigned int> array_;
+};
+
+class t_bb_cache {
+  public:
+    void update_cache(const t_bb bounding_box) {
+        full_grid_ = false;
+        bounding_box_ = bounding_box;
+        build_cache();
+    }
+
+    void set_whole_grid() {
+        full_grid_ = true;
+    }
+
+    const t_bb& bb() const {
+        return bounding_box_;
+    }
+
+    bool inode_in_bb(size_t inode) const {
+        return full_grid_ || rr_node_bitset_.get(inode);
+    }
+
+  private:
+    void build_cache();
+
+    bool full_grid_;
+    t_bb bounding_box_;
+    // Intentionally using vector<bool> override.
+    dynamic_bitset rr_node_bitset_;
+};
+
 #endif

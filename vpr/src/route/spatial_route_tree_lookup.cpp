@@ -11,7 +11,7 @@ SpatialRouteTreeLookup build_route_tree_spatial_lookup(ClusterNetId net, t_rt_no
 
     int fanout = cluster_ctx.clb_nlist.net_sinks(net).size();
 
-    t_bb bb = route_ctx.route_bb[net];
+    t_bb bb = route_ctx.route_bb[net].bb();
     float bb_area = (bb.xmax - bb.xmin) * (bb.ymax - bb.ymin);
     float bb_area_per_sink = bb_area / fanout;
     float bin_area = BIN_AREA_PER_SINK_FACTOR * bb_area_per_sink;

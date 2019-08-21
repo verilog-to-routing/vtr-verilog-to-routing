@@ -150,7 +150,8 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
 static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_node* rt_root,
                                                                           int sink_node,
                                                                           const t_conn_cost_params cost_params,
-                                                                          t_bb bounding_box,
+                                                                          const t_bb_cache& net_bounding_box,
+                                                                          t_bb_cache& bb_cache,
                                                                           const RouterLookahead& router_lookahead,
                                                                           const SpatialRouteTreeLookup& spatial_rt_lookup,
                                                                           std::vector<int>& modified_rr_node_inf,
@@ -158,20 +159,20 @@ static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_n
 
 static t_heap* timing_driven_route_connection_from_heap(int sink_node,
                                                         const t_conn_cost_params cost_params,
-                                                        t_bb bounding_box,
+                                                        const t_bb_cache& bounding_box,
                                                         const RouterLookahead& router_lookahead,
                                                         std::vector<int>& modified_rr_node_inf,
                                                         RouterStats& router_stats);
 
 static std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(const t_conn_cost_params cost_params,
-                                                                           t_bb bounding_box,
+                                                                           const t_bb_cache& bounding_box,
                                                                            std::vector<int>& modified_rr_node_inf,
                                                                            RouterStats& router_stats);
 
 static void timing_driven_expand_cheapest(t_heap* cheapest,
                                           int target_node,
                                           const t_conn_cost_params cost_params,
-                                          t_bb bounding_box,
+                                          const t_bb_cache& bounding_box,
                                           const RouterLookahead& router_lookahead,
                                           std::vector<int>& modified_rr_node_inf,
                                           RouterStats& router_stats);
@@ -189,7 +190,7 @@ static t_bb add_high_fanout_route_tree_to_heap(t_rt_node* rt_root,
                                                const t_conn_cost_params cost_params,
                                                const RouterLookahead& router_lookahead,
                                                const SpatialRouteTreeLookup& spatial_route_tree_lookup,
-                                               t_bb net_bounding_box,
+                                               const t_bb net_bounding_box,
                                                RouterStats& router_stats);
 
 static t_bb adjust_highfanout_bounding_box(t_bb highfanout_bb);
@@ -202,7 +203,7 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
 
 static void timing_driven_expand_neighbours(t_heap* current,
                                             const t_conn_cost_params cost_params,
-                                            t_bb bounding_box,
+                                            const t_bb_cache& bounding_box,
                                             const RouterLookahead& router_lookahead,
                                             int target_node,
                                             RouterStats& router_stats);
@@ -212,7 +213,7 @@ static void timing_driven_expand_neighbour(t_heap* current,
                                            const t_edge_size from_edge,
                                            const int to_node,
                                            const t_conn_cost_params cost_params,
-                                           const t_bb bounding_box,
+                                           const t_bb_cache& bounding_box,
                                            const RouterLookahead& router_lookahead,
                                            int target_node,
                                            const t_bb target_bb,
@@ -1034,6 +1035,7 @@ bool timing_driven_route_net(ClusterNetId net_id,
     return (true);
 }
 
+static t_bb_cache g_bb_cache;
 static bool timing_driven_route_sink(ClusterNetId net_id,
                                      unsigned itarget,
                                      int target_pin,
@@ -1060,7 +1062,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
 
     std::vector<int> modified_rr_node_inf;
     t_heap* cheapest = nullptr;
-    t_bb bounding_box = route_ctx.route_bb[net_id];
+    const t_bb_cache& bounding_box = route_ctx.route_bb[net_id];
 
     bool net_is_global = cluster_ctx.clb_nlist.net_is_global(net_id);
     bool high_fanout = is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), high_fanout_threshold);
@@ -1075,6 +1077,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
                                                                               sink_node,
                                                                               cost_params,
                                                                               bounding_box,
+                                                                              g_bb_cache,
                                                                               router_lookahead,
                                                                               spatial_rt_lookup,
                                                                               modified_rr_node_inf,
@@ -1152,7 +1155,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
 t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root,
                                                        int sink_node,
                                                        const t_conn_cost_params cost_params,
-                                                       t_bb bounding_box,
+                                                       const t_bb_cache& bounding_box,
                                                        const RouterLookahead& router_lookahead,
                                                        std::vector<int>& modified_rr_node_inf,
                                                        RouterStats& router_stats) {
@@ -1171,8 +1174,8 @@ t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root,
     }
 
     VTR_LOGV_DEBUG(f_router_debug, "  Routing to %d as normal net (BB: %d,%d x %d,%d)\n", sink_node,
-                   bounding_box.xmin, bounding_box.ymin,
-                   bounding_box.xmax, bounding_box.ymax);
+                   bounding_box.bb().xmin, bounding_box.bb().ymin,
+                   bounding_box.bb().xmax, bounding_box.bb().ymax);
 
     t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                                 cost_params,
@@ -1190,13 +1193,8 @@ t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root,
         //found with the bounding box) remains fast and never re-tries .
         VTR_LOG_WARN("No routing path for connection to sink_rr %d, retrying with full device bounding box\n", sink_node);
 
-        auto& device_ctx = g_vpr_ctx.device();
-
-        t_bb full_device_bounding_box;
-        full_device_bounding_box.xmin = 0;
-        full_device_bounding_box.ymin = 0;
-        full_device_bounding_box.xmax = device_ctx.grid.width() - 1;
-        full_device_bounding_box.ymax = device_ctx.grid.height() - 1;
+        t_bb_cache full_grid_bounding_box;
+        full_grid_bounding_box.set_whole_grid();
 
         //
         //TODO: potential future optimization
@@ -1221,7 +1219,7 @@ t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root,
         //Try finding the path again with the relaxed bounding box
         cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                             cost_params,
-                                                            full_device_bounding_box,
+                                                            full_grid_bounding_box,
                                                             router_lookahead,
                                                             modified_rr_node_inf,
                                                             router_stats);
@@ -1244,14 +1242,16 @@ t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root,
 static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_node* rt_root,
                                                                           int sink_node,
                                                                           const t_conn_cost_params cost_params,
-                                                                          t_bb net_bounding_box,
+                                                                          const t_bb_cache& net_bounding_box,
+                                                                          t_bb_cache& high_fanout_bb_cache,
                                                                           const RouterLookahead& router_lookahead,
                                                                           const SpatialRouteTreeLookup& spatial_rt_lookup,
                                                                           std::vector<int>& modified_rr_node_inf,
                                                                           RouterStats& router_stats) {
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
-    t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, router_lookahead, spatial_rt_lookup, net_bounding_box, router_stats);
+    const t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, router_lookahead, spatial_rt_lookup, net_bounding_box.bb(), router_stats);
+    high_fanout_bb_cache.update_cache(high_fanout_bb);
     heap_::build_heap(); // via sifting down everything
 
     int source_node = rt_root->inode;
@@ -1269,7 +1269,7 @@ static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_n
 
     t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                                 cost_params,
-                                                                high_fanout_bb,
+                                                                high_fanout_bb_cache,
                                                                 router_lookahead,
                                                                 modified_rr_node_inf,
                                                                 router_stats);
@@ -1310,7 +1310,7 @@ static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_n
 //Returns either the last element of the path, or nullptr if no path is found
 static t_heap* timing_driven_route_connection_from_heap(int sink_node,
                                                         const t_conn_cost_params cost_params,
-                                                        t_bb bounding_box,
+                                                        const t_bb_cache& bounding_box,
                                                         const RouterLookahead& router_lookahead,
                                                         std::vector<int>& modified_rr_node_inf,
                                                         RouterStats& router_stats) {
@@ -1360,7 +1360,7 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
 //Find shortest paths from specified route tree to all nodes in the RR graph
 std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(t_rt_node* rt_root,
                                                                           const t_conn_cost_params cost_params,
-                                                                          t_bb bounding_box,
+                                                                          const t_bb bounding_box,
                                                                           std::vector<int>& modified_rr_node_inf,
                                                                           RouterStats& router_stats) {
     //Add the route tree to the heap with no specific target node
@@ -1369,7 +1369,10 @@ std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(t_rt_n
     add_route_tree_to_heap(rt_root, target_node, cost_params, *router_lookahead, router_stats);
     heap_::build_heap(); // via sifting down everything
 
-    auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box, modified_rr_node_inf, router_stats);
+    t_bb_cache bb_cache;
+    bb_cache.update_cache(bounding_box);
+
+    auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bb_cache, modified_rr_node_inf, router_stats);
 
     return res;
 }
@@ -1382,7 +1385,7 @@ std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(t_rt_n
 //Note that to re-use code used for the regular A*-based router we use a
 //no-operation lookahead which always returns zero.
 static std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(const t_conn_cost_params cost_params,
-                                                                           t_bb bounding_box,
+                                                                           const t_bb_cache& bounding_box,
                                                                            std::vector<int>& modified_rr_node_inf,
                                                                            RouterStats& router_stats) {
     auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP);
@@ -1436,7 +1439,7 @@ static std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(const
 static void timing_driven_expand_cheapest(t_heap* cheapest,
                                           int target_node,
                                           const t_conn_cost_params cost_params,
-                                          t_bb bounding_box,
+                                          const t_bb_cache& bounding_box,
                                           const RouterLookahead& router_lookahead,
                                           std::vector<int>& modified_rr_node_inf,
                                           RouterStats& router_stats) {
@@ -1648,7 +1651,13 @@ static void add_route_tree_to_heap(t_rt_node* rt_node,
     }
 }
 
-static t_bb add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_node, const t_conn_cost_params cost_params, const RouterLookahead& router_lookahead, const SpatialRouteTreeLookup& spatial_rt_lookup, t_bb net_bounding_box, RouterStats& router_stats) {
+static t_bb add_high_fanout_route_tree_to_heap(t_rt_node* rt_root,
+                                               int target_node,
+                                               const t_conn_cost_params cost_params,
+                                               const RouterLookahead& router_lookahead,
+                                               const SpatialRouteTreeLookup& spatial_rt_lookup,
+                                               const t_bb net_bounding_box,
+                                               RouterStats& router_stats) {
     //For high fanout nets we only add those route tree nodes which are spatially close
     //to the sink.
     //
@@ -1781,7 +1790,7 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
 
 static void timing_driven_expand_neighbours(t_heap* current,
                                             const t_conn_cost_params cost_params,
-                                            t_bb bounding_box,
+                                            const t_bb_cache& bounding_box,
                                             const RouterLookahead& router_lookahead,
                                             int target_node,
                                             RouterStats& router_stats) {
@@ -1821,29 +1830,29 @@ static void timing_driven_expand_neighbour(t_heap* current,
                                            const t_edge_size from_edge,
                                            const int to_node,
                                            const t_conn_cost_params cost_params,
-                                           const t_bb bounding_box,
+                                           const t_bb_cache& bounding_box,
                                            const RouterLookahead& router_lookahead,
                                            int target_node,
                                            const t_bb target_bb,
                                            RouterStats& router_stats) {
-    auto& device_ctx = g_vpr_ctx.device();
+    if (!bounding_box.inode_in_bb(to_node)) { // Check if node is in bounding box
+        if (f_router_debug) {
+            auto& device_ctx = g_vpr_ctx.device();
 
-    int to_xlow = device_ctx.rr_nodes[to_node].xlow();
-    int to_ylow = device_ctx.rr_nodes[to_node].ylow();
-    int to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
-    int to_yhigh = device_ctx.rr_nodes[to_node].yhigh();
+            int to_xlow = device_ctx.rr_nodes[to_node].xlow();
+            int to_ylow = device_ctx.rr_nodes[to_node].ylow();
+            int to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
+            int to_yhigh = device_ctx.rr_nodes[to_node].yhigh();
+            VTR_LOGV_DEBUG(f_router_debug,
+                           "      Pruned expansion of node %d edge %d -> %d"
+                           " (to node location %d,%dx%d,%d outside of expanded"
+                           " net bounding box %d,%dx%d,%d)\n",
+                           from_node, from_edge, to_node,
+                           to_xlow, to_ylow, to_xhigh, to_yhigh,
+                           bounding_box.bb().xmin, bounding_box.bb().ymin,
+                           bounding_box.bb().xmax, bounding_box.bb().ymax);
+        }
 
-    if (to_xhigh < bounding_box.xmin      //Strictly left of BB left-edge
-        || to_xlow > bounding_box.xmax    //Strictly right of BB right-edge
-        || to_yhigh < bounding_box.ymin   //Strictly below BB bottom-edge
-        || to_ylow > bounding_box.ymax) { //Strictly above BB top-edge
-        VTR_LOGV_DEBUG(f_router_debug,
-                       "      Pruned expansion of node %d edge %d -> %d"
-                       " (to node location %d,%dx%d,%d outside of expanded"
-                       " net bounding box %d,%dx%d,%d)\n",
-                       from_node, from_edge, to_node,
-                       to_xlow, to_ylow, to_xhigh, to_yhigh,
-                       bounding_box.xmin, bounding_box.ymin, bounding_box.xmax, bounding_box.ymax);
         return; /* Node is outside (expanded) bounding box. */
     }
 
@@ -1852,10 +1861,14 @@ static void timing_driven_expand_neighbour(t_heap* current,
      * more promising routes, but makes route-throughs (via CLBs) impossible.   *
      * Change this if you want to investigate route-throughs.                   */
     if (target_node != OPEN) {
-        t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
-        if (to_type == IPIN) {
+        auto& device_ctx = g_vpr_ctx.device();
+        if (device_ctx.ipin_nodes.get(to_node)) {
             //Check if this IPIN leads to the target block
             // IPIN's of the target block should be contained within it's bounding box
+            int to_xlow = device_ctx.rr_nodes[to_node].xlow();
+            int to_ylow = device_ctx.rr_nodes[to_node].ylow();
+            int to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
+            int to_yhigh = device_ctx.rr_nodes[to_node].yhigh();
             if (to_xlow < target_bb.xmin
                 || to_ylow < target_bb.ymin
                 || to_xhigh > target_bb.xmax
@@ -2595,7 +2608,7 @@ static size_t dynamic_update_bounding_boxes(const std::vector<ClusterNetId>& upd
 
         t_bb curr_bb = calc_current_bb(routing_head);
 
-        t_bb& router_bb = route_ctx.route_bb[net];
+        t_bb router_bb = route_ctx.route_bb[net].bb();
 
         //Calculate the distances between the net's used RR nodes and
         //the router's bounding box
@@ -2632,6 +2645,7 @@ static size_t dynamic_update_bounding_boxes(const std::vector<ClusterNetId>& upd
         }
 
         if (updated_bb) {
+            route_ctx.route_bb[net].update_cache(router_bb);
             ++num_bb_updated;
             //VTR_LOG("Expanded net %6zu router BB to (%d,%d)x(%d,%d) based on net RR node BB (%d,%d)x(%d,%d)\n", size_t(net),
             //router_bb.xmin, router_bb.ymin, router_bb.xmax, router_bb.ymax,

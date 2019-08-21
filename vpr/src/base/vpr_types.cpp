@@ -1,5 +1,6 @@
 #include <cmath>
 #include "vpr_types.h"
+#include "globals.h"
 
 t_ext_pin_util_targets::t_ext_pin_util_targets(float default_in_util, float default_out_util) {
     defaults_.input_pin_util = default_in_util;
@@ -175,4 +176,22 @@ BitIndex t_pb::atom_pin_bit_index(const t_pb_graph_pin* gpin) const {
 //logically equivalent pins
 void t_pb::set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_idx) {
     pin_rotations_[gpin] = atom_pin_bit_idx;
+}
+
+void t_bb_cache::build_cache() {
+    auto& device_ctx = g_vpr_ctx.device();
+    size_t nodes = device_ctx.rr_nodes.size();
+    rr_node_bitset_.resize(nodes);
+    for (size_t inode = 0; inode < nodes; ++inode) {
+        int to_xlow = device_ctx.rr_nodes[inode].xlow();
+        int to_ylow = device_ctx.rr_nodes[inode].ylow();
+        int to_xhigh = device_ctx.rr_nodes[inode].xhigh();
+        int to_yhigh = device_ctx.rr_nodes[inode].yhigh();
+        bool not_in_bb = (to_xhigh < bounding_box_.xmin     //Strictly left of BB left-edge
+                          || to_xlow > bounding_box_.xmax   //Strictly right of BB right-edge
+                          || to_yhigh < bounding_box_.ymin  //Strictly below BB bottom-edge
+                          || to_ylow > bounding_box_.ymax); //Strictly above BB top-edge
+
+        rr_node_bitset_.set(inode, !not_in_bb);
+    }
 }
