@@ -193,14 +193,12 @@
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="ProceedButton">
-            <property name="label">gtk-media-next</property>
-            <property name="use_action_appearance">False</property>
+          <object class="GtkButton" id="SaveGraphics">
+            <property name="label">gtk-save</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="use_stock">True</property>
-            <property name="image_position">right</property>
           </object>
           <packing>
             <property name="left_attach">7</property>
@@ -210,12 +208,14 @@
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="SaveGraphics">
-            <property name="label">gtk-save</property>
+          <object class="GtkButton" id="ProceedButton">
+            <property name="label">Proceed</property>
+            <property name="use_action_appearance">False</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="use_stock">True</property>
+            <property name="image_position">right</property>
           </object>
           <packing>
             <property name="left_attach">7</property>
