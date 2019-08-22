@@ -251,6 +251,9 @@ class t_pb {
     //Returns true if this pb has modes
     bool has_modes() const { return this->pb_graph_node->pb_type->num_modes > 0; }
 
+    //Returns true if any of the children of this pb is being occupied
+    bool has_occupied_child() const;
+
     int get_num_child_types() const;
 
     int get_num_children_of_type(int type_index) const;

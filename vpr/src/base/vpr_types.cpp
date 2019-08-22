@@ -55,7 +55,7 @@ int t_pb::get_num_child_types() const {
 
 int t_pb::get_num_children_of_type(int type_index) const {
     t_mode* mode_ptr = get_mode();
-    if (mode_ptr) {
+    if (child_pbs[type_index] && mode_ptr) {
         return mode_ptr->pb_type_children[type_index].num_pb;
     }
     return 0; //No mode
@@ -67,6 +67,17 @@ t_mode* t_pb::get_mode() const {
     } else {
         return nullptr;
     }
+}
+
+bool t_pb::has_occupied_child() const {
+
+    for (int i = 0; i < get_num_child_types(); i++) {
+        for (int j = 0; j < get_num_children_of_type(i); j++) {
+            if (child_pbs[i][j].name != nullptr || child_pbs[i][j].has_occupied_child())
+                return true;
+        }
+    }
+    return false;
 }
 
 //Returns the t_pb associated with the specified gnode which is contained

@@ -1317,7 +1317,7 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                     } while (do_detailed_routing_stage && mode_status.is_mode_issue());
                 }
 
-                if (do_detailed_routing_stage && is_routed == false) {
+                if (do_detailed_routing_stage && !is_routed) {
                     /* Cannot pack */
                     VTR_LOGV(verbosity > 4, "\t\t\tFAILED Detailed Routing Legality\n");
                     block_pack_status = BLK_FAILED_ROUTE;
@@ -1405,12 +1405,10 @@ static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* 
                                                          int verbosity,
                                                          const int feasible_block_array_size) {
     int i, j;
-    bool is_primitive;
     enum e_block_pack_status block_pack_status;
 
     t_pb* my_parent;
     t_pb *pb, *parent_pb;
-    const t_pb_type* pb_type;
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
@@ -1468,11 +1466,8 @@ static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* 
     if (pb->pb_stats == nullptr) {
         alloc_and_load_pb_stats(pb, feasible_block_array_size);
     }
-    pb_type = pb_graph_node->pb_type;
 
-    is_primitive = (pb_type->num_modes == 0);
-
-    if (is_primitive) {
+    if (pb_graph_node->is_primitive()) {
         VTR_ASSERT(!atom_ctx.lookup.pb_atom(pb)
                    && atom_ctx.lookup.atom_pb(blk_id) == nullptr
                    && atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID());
@@ -1546,8 +1541,11 @@ static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data* 
              */
             next = pb->parent_pb;
 
+            //TODO: The final condition (pb->has_occupied_child()) is added since pb->pb->stats->num_child_block_in_pb
+            //is not always up_to_date. It is updated in update_cluster_stats which is only called after calling try_pack_molecule.
+            //Where this function is called. So, if packing a molecule
             if (pb->child_pbs != nullptr && pb->pb_stats != nullptr
-                && pb->pb_stats->num_child_blocks_in_pb == 0) {
+                && pb->pb_stats->num_child_blocks_in_pb == 0 && !pb->has_occupied_child()) {
                 set_reset_pb_modes(router_data, pb, false);
                 if (next != nullptr) {
                     /* If the code gets here, then that means that placing the initial seed molecule
