@@ -182,10 +182,6 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
     ezgl::color(43, 61, 38)     //olive green
 };
 
-//FIXME: ugly hack
-extern t_pl_macro* pl_macros;
-extern int num_pl_macros;
-
 ezgl::application::settings settings("/ezgl/main.ui",
                                      "MainWindow",
                                      "MainCanvas",
