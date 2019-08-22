@@ -1465,17 +1465,16 @@ void free_pb(t_pb* pb) {
         }
         atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), pb);
     }
+
     free_pb_stats(pb);
 }
 
 void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules) {
-    const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
-    if (pb_type->blif_model == nullptr) {
-        int mode = pb->mode;
-        for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
-            for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
-                if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
+    if (!pb->is_primitive()) {
+        for (int i = 0; i < pb->get_num_child_types(); i++) {
+            for (int j = 0; j < pb->get_num_children_of_type(i); j++) {
+                if (pb->child_pbs[i][j].name || pb->child_pbs[i][j].child_pbs ) {
                     revalid_molecules(&pb->child_pbs[i][j], atom_molecules);
                 }
             }
@@ -1525,7 +1524,7 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId, t_pack_m
 
 void free_pb_stats(t_pb* pb) {
     if (pb) {
-        if (pb->pb_stats == nullptr) {
+        if (!pb->pb_stats) {
             return;
         }
 
@@ -1538,6 +1537,7 @@ void free_pb_stats(t_pb* pb) {
 
         if (pb->pb_stats->feasible_blocks) {
             free(pb->pb_stats->feasible_blocks);
+            pb->pb_stats->feasible_blocks = nullptr;
         }
         if (!pb->parent_pb) {
             pb->pb_stats->transitive_fanout_candidates.clear();
