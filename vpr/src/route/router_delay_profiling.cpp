@@ -19,6 +19,8 @@ bool calculate_delay(int source_node, int sink_node, const t_router_opts& router
 
     t_rt_node* rt_root = setup_routing_resources_no_net(source_node);
 
+    std::set<int> dummy_route_tree_nodes; // dummy set that will not be used for any purpose.
+
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(1);
 
@@ -47,7 +49,7 @@ bool calculate_delay(int source_node, int sink_node, const t_router_opts& router
     if (found_path) {
         VTR_ASSERT(cheapest->index == sink_node);
 
-        t_rt_node* rt_node_of_sink = update_route_tree(cheapest, nullptr);
+        t_rt_node* rt_node_of_sink = update_route_tree(cheapest, nullptr, dummy_route_tree_nodes);
         free_heap_data(cheapest);
 
         //find delay
@@ -71,6 +73,8 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
     std::vector<float> path_delays_to(device_ctx.rr_nodes.size(), std::numeric_limits<float>::quiet_NaN());
 
     t_rt_node* rt_root = setup_routing_resources_no_net(src_rr_node);
+    
+    std::set<int> dummy_route_tree_nodes; // dummy set that will not be used for any purpose.
 
     t_bb bounding_box;
     bounding_box.xmin = 0;
@@ -107,7 +111,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
 
             //Build the routing tree to get the delay
             rt_root = setup_routing_resources_no_net(src_rr_node);
-            t_rt_node* rt_node_of_sink = update_route_tree(&shortest_paths[sink_rr_node], nullptr);
+            t_rt_node* rt_node_of_sink = update_route_tree(&shortest_paths[sink_rr_node], nullptr, dummy_route_tree_nodes);
 
             VTR_ASSERT(rt_node_of_sink->inode == sink_rr_node);
 

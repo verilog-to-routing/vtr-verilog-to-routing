@@ -17,7 +17,7 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet);
 void free_route_tree(t_rt_node* rt_node);
 void print_route_tree(const t_rt_node* rt_node, int depth = 0);
 
-t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lookup);
+t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lookup, std::set<int>& route_tree_nodes);
 
 void update_net_delays_from_route_tree(float* net_delay,
                                        const t_rt_node* const* rt_node_of_sink,

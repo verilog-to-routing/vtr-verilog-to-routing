@@ -146,7 +146,8 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
                                      const RouterLookahead& router_lookahead,
                                      SpatialRouteTreeLookup& spatial_rt_lookup,
                                      RouterStats& router_stats,
-                                     route_budgets &budgeting_inf);
+                                     route_budgets &budgeting_inf,
+                                     std::set<int>& route_tree_nodes);
 
 static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_node* rt_root,
                                                                           int sink_node,
@@ -954,6 +955,8 @@ bool timing_driven_route_net(ClusterNetId net_id,
     t_rt_node* rt_root = setup_routing_resources(itry, net_id, num_sinks, pres_fac, router_opts.min_incremental_reroute_fanout, connections_inf, rt_node_of_sink, check_hold(router_opts,timing_info));
 
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
+    
+    std::set<int> route_tree_nodes;
 
     SpatialRouteTreeLookup spatial_route_tree_lookup;
     if (high_fanout) {
@@ -1035,7 +1038,8 @@ bool timing_driven_route_net(ClusterNetId net_id,
                                       router_lookahead,
                                       spatial_route_tree_lookup,
                                       router_stats,
-                                      budgeting_inf))
+                                      budgeting_inf,
+                                      route_tree_nodes))
             return false;
 
         ++router_stats.connections_routed;
@@ -1076,7 +1080,8 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
                                      const RouterLookahead& router_lookahead,
                                      SpatialRouteTreeLookup& spatial_rt_lookup,
                                      RouterStats& router_stats,
-                                     route_budgets &budgeting_inf) {
+                                     route_budgets &budgeting_inf,
+                                     std::set<int>& route_tree_nodes) {
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -1156,7 +1161,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
     t_trace* new_route_start_tptr = update_traceback(cheapest, net_id);
     VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
 
-    rt_node_of_sink[target_pin] = update_route_tree(cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr));
+    rt_node_of_sink[target_pin] = update_route_tree(cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr), route_tree_nodes);
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
