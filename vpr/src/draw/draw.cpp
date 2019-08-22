@@ -73,56 +73,6 @@ using namespace std;
 #    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
-//The arrow head position for turning/straight-thru connections in a switch box
-constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
-constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
-constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.10;
-
-//Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
-//  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
-//We use these to highlight a relatively small number of things (e.g. stages in a critical path,
-//a subset of selected net) where it is important for them to be visually distinct.
-
-const std::vector<ezgl::color> kelly_max_contrast_colors = {
-    //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
-    ezgl::color(34, 34, 34),    //black
-    ezgl::color(243, 195, 0),   //yellow
-    ezgl::color(135, 86, 146),  //purple
-    ezgl::color(243, 132, 0),   //orange
-    ezgl::color(161, 202, 241), //light blue
-    ezgl::color(190, 0, 50),    //red
-    ezgl::color(194, 178, 128), //buf
-    ezgl::color(132, 132, 130), //gray
-    ezgl::color(0, 136, 86),    //green
-    ezgl::color(230, 143, 172), //purplish pink
-    ezgl::color(0, 103, 165),   //blue
-    ezgl::color(249, 147, 121), //yellowish pink
-    ezgl::color(96, 78, 151),   //violet
-    ezgl::color(246, 166, 0),   //orange yellow
-    ezgl::color(179, 68, 108),  //purplish red
-    ezgl::color(220, 211, 0),   //greenish yellow
-    ezgl::color(136, 45, 23),   //redish brown
-    ezgl::color(141, 182, 0),   //yellow green
-    ezgl::color(101, 69, 34),   //yellowish brown
-    ezgl::color(226, 88, 34),   //reddish orange
-    ezgl::color(43, 61, 38)     //olive green
-};
-
-//FIXME: ugly hack
-extern t_pl_macro* pl_macros;
-extern int num_pl_macros;
-
-/************************** File Scope Variables ****************************/
-
-ezgl::application::settings settings;
-ezgl::application application(settings);
-
-bool window_mode = false;
-bool window_point_1_collected = false;
-ezgl::point2d point_1(0, 0);
-ezgl::rectangle initial_world;
-std::string rr_highlight_message;
-
 /********************** Subroutines local to this module ********************/
 static void drawplace(ezgl::renderer& g);
 static void drawnets(ezgl::renderer& g);
@@ -193,6 +143,60 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app);
 void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app);
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app);
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
+void setup_default_ezgl_callbacks(ezgl::application* app);
+
+/************************** File Scope Variables ****************************/
+
+//The arrow head position for turning/straight-thru connections in a switch box
+constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
+constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
+constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.10;
+
+//Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
+//  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
+//We use these to highlight a relatively small number of things (e.g. stages in a critical path,
+//a subset of selected net) where it is important for them to be visually distinct.
+
+const std::vector<ezgl::color> kelly_max_contrast_colors = {
+    //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
+    ezgl::color(34, 34, 34),    //black
+    ezgl::color(243, 195, 0),   //yellow
+    ezgl::color(135, 86, 146),  //purple
+    ezgl::color(243, 132, 0),   //orange
+    ezgl::color(161, 202, 241), //light blue
+    ezgl::color(190, 0, 50),    //red
+    ezgl::color(194, 178, 128), //buf
+    ezgl::color(132, 132, 130), //gray
+    ezgl::color(0, 136, 86),    //green
+    ezgl::color(230, 143, 172), //purplish pink
+    ezgl::color(0, 103, 165),   //blue
+    ezgl::color(249, 147, 121), //yellowish pink
+    ezgl::color(96, 78, 151),   //violet
+    ezgl::color(246, 166, 0),   //orange yellow
+    ezgl::color(179, 68, 108),  //purplish red
+    ezgl::color(220, 211, 0),   //greenish yellow
+    ezgl::color(136, 45, 23),   //redish brown
+    ezgl::color(141, 182, 0),   //yellow green
+    ezgl::color(101, 69, 34),   //yellowish brown
+    ezgl::color(226, 88, 34),   //reddish orange
+    ezgl::color(43, 61, 38)     //olive green
+};
+
+//FIXME: ugly hack
+extern t_pl_macro* pl_macros;
+extern int num_pl_macros;
+
+ezgl::application::settings settings("/ezgl/main.ui",
+                                     "MainWindow",
+                                     "MainCanvas",
+                                     setup_default_ezgl_callbacks);
+ezgl::application application(settings);
+
+bool window_mode = false;
+bool window_point_1_collected = false;
+ezgl::point2d point_1(0, 0);
+ezgl::rectangle initial_world;
+std::string rr_highlight_message;
 
 #endif // NO_GRAPHICS
 
@@ -3700,6 +3704,16 @@ static void highlight_blocks(double x, double y) {
     application.update_message(msg);
 
     application.refresh_drawing();
+}
+
+void setup_default_ezgl_callbacks(ezgl::application* app) {
+    // Connect press_proceed function to the Proceed button
+    GObject* proceed_button = app->get_object("ProceedButton");
+    g_signal_connect(proceed_button, "clicked", G_CALLBACK(ezgl::press_proceed), app);
+
+    // Connect press_zoom_fit function to the Zoom-fit button
+    GObject* zoom_fit_button = app->get_object("ZoomFitButton");
+    g_signal_connect(zoom_fit_button, "clicked", G_CALLBACK(ezgl::press_zoom_fit), app);
 }
 
 #endif /* NO_GRAPHICS */
