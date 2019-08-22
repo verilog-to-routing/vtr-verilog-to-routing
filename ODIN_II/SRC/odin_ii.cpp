@@ -331,6 +331,7 @@ int terminate_odin_ii(netlist_t *odin_netlist)
 	//Clean-up
 	free_arch(&Arch);
 	free_type_descriptors(logical_block_types, num_types);
+	free_type_descriptors(physical_tile_types, num_types);
 
 	return 0;
 }

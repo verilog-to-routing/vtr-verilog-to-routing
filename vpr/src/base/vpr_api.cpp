@@ -962,6 +962,7 @@ static void free_complex_block_types() {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     free_type_descriptors(device_ctx.logical_block_types, device_ctx.num_block_types);
+    free_type_descriptors(device_ctx.physical_tile_types, device_ctx.num_block_types);
     free_pb_graph_edges();
 }
 

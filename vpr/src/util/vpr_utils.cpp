@@ -654,12 +654,6 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
     return physical_tile_type(blk_type);
 }
 
-t_physical_tile_type_ptr physical_tile_type(ClusteredNetlist& clb_nlist, ClusterBlockId blk) {
-    auto blk_type = clb_nlist.block_type(blk);
-
-    return physical_tile_type(blk_type);
-}
-
 t_logical_block_type_ptr logical_block_type(t_physical_tile_type_ptr physical_tile_type) {
     auto& device_ctx = g_vpr_ctx.device();
 

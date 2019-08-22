@@ -30,7 +30,6 @@ bool is_empty_type(t_physical_tile_type_ptr type);
 //Returns the corresponding physical/logical type given the logical/physical type as parameter
 t_physical_tile_type_ptr physical_tile_type(t_logical_block_type_ptr logical_block_type);
 t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
-t_physical_tile_type_ptr physical_tile_type(ClusteredNetlist& clb_nlist, ClusterBlockId blk);
 t_logical_block_type_ptr logical_block_type(t_physical_tile_type_ptr physical_tile_type);
 
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node);

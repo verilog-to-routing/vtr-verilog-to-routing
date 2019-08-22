@@ -102,6 +102,7 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
     CHECK(found_direct);
 
     free_type_descriptors(logical_block_types, num_types);
+    free_type_descriptors(physical_tile_types, num_types);
     free_arch(&arch);
 }
 
