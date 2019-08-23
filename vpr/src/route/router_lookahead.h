@@ -11,7 +11,6 @@ class RouterLookahead {
     virtual float get_expected_delay(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
     virtual float get_expected_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
 
-
     virtual ~RouterLookahead() {}
 };
 

@@ -36,6 +36,8 @@
  * edge: A list of edges from each node in the partial path to reach the next node
  * 
  * net_rr: The entire route tree
+ *
+ * partial_path_nodes: The entire partial path up until the route tree, stored as a set. 
  * 
  * backward_delay: The delay of the partial path plus the path from route tree to source
  * 
@@ -47,11 +49,12 @@ struct t_heap {
     float R_upstream = 0.;
 
     int index = OPEN;
-	std::vector<int> path_rr;
-	std::vector<int> edge;
-	std::set<int> net_rr;
-	float backward_delay = 0.;
-	float backward_cong = 0.;
+    std::vector<int> path_rr;
+    std::vector<int> edge;
+    std::set<int> net_rr;
+    std::set<int> partial_path_nodes;
+    float backward_delay = 0.;
+    float backward_cong = 0.;
 
     struct t_prev {
         int node;
@@ -103,7 +106,7 @@ void sift_down(size_t hole);
 void sift_up(size_t tail, t_heap* const hptr);
 void push_back(t_heap* const hptr);
 void push_back_node(int inode, float total_cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream);
-void push_back_node_with_info(int inode, float total_cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream, float backward_path_delay, std::vector<int> path, std::set<int> net_rr);	
+void push_back_node_with_info(int inode, float total_cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream, float backward_path_delay, std::set<int> net_rr);
 bool is_valid();
 void pop_heap();
 void print_heap();

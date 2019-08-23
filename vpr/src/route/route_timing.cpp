@@ -146,7 +146,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
                                      const RouterLookahead& router_lookahead,
                                      SpatialRouteTreeLookup& spatial_rt_lookup,
                                      RouterStats& router_stats,
-                                     route_budgets &budgeting_inf,
+                                     route_budgets& budgeting_inf,
                                      std::set<int>& route_tree_nodes);
 
 static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_node* rt_root,
@@ -289,8 +289,7 @@ static t_bb calc_current_bb(const t_trace* head);
 
 static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr);
 
-static bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts,
-                                  int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info);
+static bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts, int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info);
 
 static bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& router_opts);
 
@@ -659,7 +658,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
             ++itry_conflicted_mode;
         }
         if (timing_info) {
-            if (should_setup_lower_bound_connection_delays(itry,router_opts)) {
+            if (should_setup_lower_bound_connection_delays(itry, router_opts)) {
                 // first iteration sets up the lower bound connection delays since only timing is optimized for
                 connections_inf.set_stable_critical_path_delay(critical_path.delay());
                 connections_inf.set_lower_bound_connection_delays(net_delay);
@@ -768,7 +767,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id,
         is_routed = true;
     } else if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Skip ignored nets. */
         is_routed = true;
-    } else if ( budgeting_inf.get_should_reroute(net_id) ) { /* if there is a hold violation and this net is involved, reroute */
+    } else if (budgeting_inf.get_should_reroute(net_id)) { /* if there is a hold violation and this net is involved, reroute */
         // track time spent vs fanout
         profiling::net_fanout_start();
 
@@ -790,12 +789,11 @@ bool try_timing_driven_route_net(ClusterNetId net_id,
 
         /* Impossible to route? (disconnected rr_graph) */
         if (is_routed) {
-			route_ctx.net_status[net_id].is_routed = true;
+            route_ctx.net_status[net_id].is_routed = true;
         } else {
             VTR_LOG("Routing failed.\n");
         }
 
-    
     } else if (should_route_net(net_id, connections_inf, true) == false) {
         is_routed = true;
     } else {
@@ -952,10 +950,10 @@ bool timing_driven_route_net(ClusterNetId net_id,
 
     VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
-    t_rt_node* rt_root = setup_routing_resources(itry, net_id, num_sinks, pres_fac, router_opts.min_incremental_reroute_fanout, connections_inf, rt_node_of_sink, check_hold(router_opts,timing_info));
+    t_rt_node* rt_root = setup_routing_resources(itry, net_id, num_sinks, pres_fac, router_opts.min_incremental_reroute_fanout, connections_inf, rt_node_of_sink, check_hold(router_opts, timing_info));
 
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
-    
+
     std::set<int> route_tree_nodes;
 
     SpatialRouteTreeLookup spatial_route_tree_lookup;
@@ -1080,7 +1078,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
                                      const RouterLookahead& router_lookahead,
                                      SpatialRouteTreeLookup& spatial_rt_lookup,
                                      RouterStats& router_stats,
-                                     route_budgets &budgeting_inf,
+                                     route_budgets& budgeting_inf,
                                      std::set<int>& route_tree_nodes) {
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
@@ -1170,7 +1168,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
         update_screen(ScreenUpdatePriority::MAJOR, "Routed connection successfully", ROUTING, nullptr);
     }
 
-    if (budgeting_inf.if_set() && cheapest->backward_delay < cost_params.delay_budget->min_delay ) {
+    if (budgeting_inf.if_set() && cheapest->backward_delay < cost_params.delay_budget->min_delay) {
         budgeting_inf.set_should_reroute(net_id, true);
     }
 
@@ -1358,7 +1356,6 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
                                                         const RouterLookahead& router_lookahead,
                                                         std::vector<int>& modified_rr_node_inf,
                                                         RouterStats& router_stats) {
-
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     VTR_ASSERT_SAFE(heap_::is_valid());
 
@@ -1378,13 +1375,13 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
         //Have we found the target?
         if (inode == sink_node) {
             if (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO) {
-                for (unsigned i = 1; i < cheapest->edge.size() - 1; i++ ) {
+                for (unsigned i = 1; i < cheapest->edge.size() - 1; i++) {
                     int node_2 = cheapest->path_rr[i];
-                    int edge = cheapest->edge[i-1];
-                        route_ctx.rr_node_route_inf[node_2].prev_node = cheapest->path_rr[i-1];
-                        route_ctx.rr_node_route_inf[node_2].prev_edge = edge;
-                        route_ctx.rr_node_route_inf[node_2].path_cost = cheapest->cost;
-                        route_ctx.rr_node_route_inf[node_2].backward_path_cost = cheapest->backward_path_cost;
+                    int edge = cheapest->edge[i - 1];
+                    route_ctx.rr_node_route_inf[node_2].prev_node = cheapest->path_rr[i - 1];
+                    route_ctx.rr_node_route_inf[node_2].prev_edge = edge;
+                    route_ctx.rr_node_route_inf[node_2].path_cost = cheapest->cost;
+                    route_ctx.rr_node_route_inf[node_2].backward_path_cost = cheapest->backward_path_cost;
                 }
             }
 
@@ -1515,7 +1512,7 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
 
     if (old_total_cost > new_total_cost && (old_back_cost > new_back_cost || (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO))) {
         VTR_LOGV_DEBUG(f_router_debug, "    Better cost to %d\n", inode);
-        
+
         VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for assicated node %d (from %d edge %d)\n", cheapest->index, cheapest->u.prev.node, cheapest->u.prev.edge);
 
         add_to_mod_list(cheapest->index, modified_rr_node_inf);
@@ -1816,7 +1813,7 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
                                         std::set<int> net_rr) {
     int inode = rt_node->inode;
     float backward_path_cost = cost_params.criticality * rt_node->Tdel; //+ (1. - cost_params.criticality) * get_rr_cong_cost(inode);
-        
+
     float R_upstream = rt_node->R_upstream;
     float tot_cost = backward_path_cost
                      + cost_params.astar_fac
@@ -1829,31 +1826,30 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
 
     float expected_cost = router_lookahead.get_expected_cost(inode, target_node, cost_params, R_upstream);
-    std::vector<int> path;
 
-    if (delay_budget && delay_budget->routing_budgets_algorithm == YOYO ) {
+    if (delay_budget && delay_budget->routing_budgets_algorithm == YOYO) {
         float expected_total_cost;
         float expected_delay = router_lookahead.get_expected_delay(inode, target_node, cost_params, R_upstream);
         float expected_cong = router_lookahead.get_expected_cong(inode, target_node, cost_params, R_upstream);
-        
-        float expected_total_delay_cost;// = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
-        float expected_total_cong =  expected_cong  + get_rr_cong_cost(inode);
+
+        float expected_total_delay_cost; // = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
+        float expected_total_cong = expected_cong + get_rr_cong_cost(inode);
         float expected_total_delay = expected_delay * cost_params.astar_fac + rt_node->Tdel;
-        
+
         expected_total_delay_cost = cost_params.criticality * expected_total_delay;
-        expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * max(0.f,  delay_budget->target_delay - expected_total_delay);
-        expected_total_delay_cost += pow(max(0.f, expected_total_delay- delay_budget->max_delay), 2) / 100e-12;
+        expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * max(0.f, delay_budget->target_delay - expected_total_delay);
+        expected_total_delay_cost += pow(max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
         expected_total_delay_cost += pow(max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
         expected_total_cost = expected_total_delay_cost + expected_cong;
-        
+
         heap_::push_back_node_with_info(inode, expected_total_cost, NO_PREVIOUS, NO_PREVIOUS,
-                backward_path_cost, R_upstream, rt_node->Tdel, path, net_rr);
-    }else {
-       // tot_cost = backward_path_cost + cost_params.astar_fac * expected_cost;
+                                        backward_path_cost, R_upstream, rt_node->Tdel, net_rr);
+    } else {
+        // tot_cost = backward_path_cost + cost_params.astar_fac * expected_cost;
         VTR_LOGV_DEBUG(f_router_debug, "  Adding node %8d to heap from init route tree with cost %g (%s)\n", inode, tot_cost, describe_rr_node(inode).c_str());
 
         heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
-                backward_path_cost, R_upstream);
+                              backward_path_cost, R_upstream);
     }
 
     ++router_stats.heap_pushes;
@@ -1913,10 +1909,11 @@ static void timing_driven_expand_neighbour(t_heap* current,
     int to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
     int to_yhigh = device_ctx.rr_nodes[to_node].yhigh();
 
-    if ((to_xhigh < bounding_box.xmin      //Strictly left of BB left-edge
-        || to_xlow > bounding_box.xmax    //Strictly right of BB right-edge
-        || to_yhigh < bounding_box.ymin   //Strictly below BB bottom-edge
-        || to_ylow > bounding_box.ymax) && !(cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO)) { //Strictly above BB top-edge
+    if ((to_xhigh < bounding_box.xmin    //Strictly left of BB left-edge
+         || to_xlow > bounding_box.xmax  //Strictly right of BB right-edge
+         || to_yhigh < bounding_box.ymin //Strictly below BB bottom-edge
+         || to_ylow > bounding_box.ymax)
+        && !(cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO)) { //Strictly above BB top-edge
         VTR_LOGV_DEBUG(f_router_debug,
                        "      Pruned expansion of node %d edge %d -> %d"
                        " (to node location %d,%dx%d,%d outside of expanded"
@@ -1957,8 +1954,8 @@ static void timing_driven_expand_neighbour(t_heap* current,
 
     if (!cost_params.delay_budget || (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm != YOYO) || (current->net_rr.find(to_node) == current->net_rr.end())) {
         timing_driven_add_to_heap(cost_params,
-                              router_lookahead,
-                              current, from_node, to_node, from_edge, target_node, router_stats);
+                                  router_lookahead,
+                                  current, from_node, to_node, from_edge, target_node, router_stats);
     }
 }
 
@@ -1982,6 +1979,7 @@ static void timing_driven_add_to_heap(const t_conn_cost_params cost_params,
     next->R_upstream = current->R_upstream;
     next->path_rr = current->path_rr;
     next->net_rr = current->net_rr;
+    next->partial_path_nodes = current->partial_path_nodes;
     next->edge = current->edge;
 
     auto& route_ctx = g_vpr_ctx.routing();
@@ -1996,7 +1994,7 @@ static void timing_driven_add_to_heap(const t_conn_cost_params cost_params,
         add_to_heap(next);
         ++router_stats.heap_pushes;
     } else {
-      free_heap_data(next);
+        free_heap_data(next);
     }
 }
 
@@ -2021,6 +2019,7 @@ static void timing_driven_expand_node(const t_conn_cost_params cost_params,
     current->u.prev.node = from_node;
     current->path_rr.emplace_back(from_node);
     current->net_rr.emplace(from_node);
+    current->partial_path_nodes.emplace(from_node);
     current->edge.emplace_back(iconn);
 }
 
@@ -2073,7 +2072,6 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     to->backward_delay += Tdel;
     to->backward_cong += get_rr_cong_cost(to_node);
 
-
     // to->backward_delay += Tdel;
     // to->backward_cong += get_rr_cong_cost(to_node);
     if (cost_params.bend_cost != 0.) {
@@ -2087,14 +2085,14 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     float total_cost = 0.;
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
 
-    float expected_delay = router_lookahead.get_expected_delay(to_node, target_node, cost_params, to->R_upstream );
-    float expected_cong = router_lookahead.get_expected_cong(to_node, target_node, cost_params, to->R_upstream );
+    float expected_delay = router_lookahead.get_expected_delay(to_node, target_node, cost_params, to->R_upstream);
+    float expected_cong = router_lookahead.get_expected_cong(to_node, target_node, cost_params, to->R_upstream);
     if (delay_budget && delay_budget->routing_budgets_algorithm == YOYO) {
-        float expected_total_delay_cost;// = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
+        float expected_total_delay_cost; // = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
         float expected_total_cong_cost;
-        
-        float expected_total_cong =expected_cong + to->backward_cong;
-        float expected_total_delay =cost_params.astar_fac *   expected_delay + to->backward_delay;
+
+        float expected_total_cong = expected_cong + to->backward_cong;
+        float expected_total_delay = cost_params.astar_fac * expected_delay + to->backward_delay;
         //If budgets specified calculate cost as described by RCV paper:
         //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
         //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
@@ -2102,17 +2100,17 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
 
         //TODO: Since these targets are delays, shouldn't we be using Tdel instead of new_costs.total_cost on RHS?
         expected_total_delay_cost = cost_params.criticality * expected_total_delay;
-        expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * max(0.f,  delay_budget->target_delay - expected_total_delay);
-        expected_total_delay_cost += pow(max(0.f, expected_total_delay- delay_budget->max_delay), 2) / 100e-12;
+        expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * max(0.f, delay_budget->target_delay - expected_total_delay);
+        expected_total_delay_cost += pow(max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
         expected_total_delay_cost += pow(max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
-        expected_total_cong_cost = (1. - cost_params.criticality) *  expected_total_cong;
+        expected_total_cong_cost = (1. - cost_params.criticality) * expected_total_cong;
         total_cost = expected_total_delay_cost + expected_total_cong;
-    }
-    else {
+    } else {
         //Update total cost
         float expected_cost = router_lookahead.get_expected_cost(to_node, target_node, cost_params, to->R_upstream);
         total_cost = to->backward_path_cost + cost_params.astar_fac * expected_cost;
-    }    to->cost = total_cost;
+    }
+    to->cost = total_cost;
 }
 
 void update_rr_base_costs(int fanout) {
@@ -2231,8 +2229,7 @@ static bool early_exit_heuristic(const t_router_opts& router_opts, const Wirelen
 static bool check_hold(const t_router_opts& router_opts, std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
     if (router_opts.routing_budgets_algorithm != YOYO) {
         return false;
-    }
-    else if (timing_info->hold_worst_negative_slack() == 0) {
+    } else if (timing_info->hold_worst_negative_slack() == 0) {
         return true;
     }
     return false;
@@ -2779,18 +2776,16 @@ static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId n
 #endif
 }
 
-static bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts,
-                                  int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
-    //This function checks if a routing iteration has completed. 
+static bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts, int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
+    //This function checks if a routing iteration has completed.
     //When VPR is run normally, we check if routing_budgets_algorithm is disabled, and if the routing is legal
-    //With the introduction of yoyo budgeting algorithm, we must check if there are no hold violations 
+    //With the introduction of yoyo budgeting algorithm, we must check if there are no hold violations
     //in addition to routing being legal and the correct budgeting algorithm being set.
 
     if (routing_is_feasible) {
         if (router_opts.routing_budgets_algorithm != YOYO) {
             return true;
-        }
-        else if (router_opts.routing_budgets_algorithm == YOYO && (itry == 1) && timing_info->hold_worst_negative_slack() == 0) {
+        } else if (router_opts.routing_budgets_algorithm == YOYO && (itry == 1) && timing_info->hold_worst_negative_slack() == 0) {
             return true;
         }
     }
@@ -2803,8 +2798,7 @@ static bool should_setup_lower_bound_connection_delays(int itry, const t_router_
     //However, with the yoyo algorithm, the lower bound is set every after every 5 iterations, so long as it is below 25.
     if (router_opts.routing_budgets_algorithm != YOYO && itry == 1) {
         return true;
-    }
-    else if (router_opts.routing_budgets_algorithm == YOYO && itry % 5 == 1 && itry < 25) {
+    } else if (router_opts.routing_budgets_algorithm == YOYO && itry % 5 == 1 && itry < 25) {
         return true;
     }
     return false;

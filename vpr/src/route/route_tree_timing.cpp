@@ -3,7 +3,6 @@
 #include <vector>
 using namespace std;
 
-
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
@@ -51,7 +50,8 @@ static t_linked_rt_edge* alloc_linked_rt_edge();
 static void free_linked_rt_edge(t_linked_rt_edge* rt_edge);
 
 static t_rt_node* add_subtree_to_route_tree(t_heap* hptr,
-                                            t_rt_node** sink_rt_node_ptr,std::set<int>& route_tree_nodes);
+                                            t_rt_node** sink_rt_node_ptr,
+                                            std::set<int>& route_tree_nodes);
 
 static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited, std::set<int>& route_tree_nodes);
 
@@ -213,7 +213,7 @@ t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lo
     auto& device_ctx = g_vpr_ctx.device();
 
     //Create a new subtree from the target in hptr to existing routing
-    start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr, &sink_rt_node,route_tree_nodes);
+    start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr, &sink_rt_node, route_tree_nodes);
 
     //Propagate R_upstream down into the new subtree
     load_new_subtree_R_upstream(start_of_new_subtree_rt_node);

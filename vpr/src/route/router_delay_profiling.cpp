@@ -73,7 +73,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
     std::vector<float> path_delays_to(device_ctx.rr_nodes.size(), std::numeric_limits<float>::quiet_NaN());
 
     t_rt_node* rt_root = setup_routing_resources_no_net(src_rr_node);
-    
+
     std::set<int> dummy_route_tree_nodes; // dummy set that will not be used for any purpose.
 
     t_bb bounding_box;

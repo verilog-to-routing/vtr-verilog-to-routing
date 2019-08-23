@@ -1264,13 +1264,10 @@ void push_back_node(int inode, float total_cost, int prev_node, int prev_edge, f
     hptr->R_upstream = R_upstream;
     push_back(hptr);
 }
-
-void push_back_node_with_info(int inode, float total_cost, int prev_node, int prev_edge,
-    float backward_path_cost, float R_upstream, float backward_path_delay, std::vector<int> path, std::set<int> net_rr) {
-
+void push_back_node_with_info(int inode, float total_cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream, float backward_path_delay, std::set<int> net_rr) {
     /* Puts an rr_node on the heap with the same condition as node_to_heap,
-        but do not fix heap property yet as that is more efficiently done from
-        bottom up with build_heap. Certain information is also added     */
+     * but do not fix heap property yet as that is more efficiently done from
+     * bottom up with build_heap. Certain information is also added     */
 
     auto& route_ctx = g_vpr_ctx.routing();
     if (total_cost >= route_ctx.rr_node_route_inf[inode].path_cost)
@@ -1285,7 +1282,7 @@ void push_back_node_with_info(int inode, float total_cost, int prev_node, int pr
     hptr->edge.clear();
     hptr->net_rr = net_rr;
     hptr->backward_delay = backward_path_delay;
-    hptr->backward_cong = 0; 
+    hptr->backward_cong = 0;
     push_back(hptr);
 }
 
@@ -1410,8 +1407,9 @@ alloc_heap_data() {
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = OPEN;
     temp_ptr->path_rr.clear();
-    temp_ptr->net_rr.clear();
     temp_ptr->edge.clear();
+    temp_ptr->net_rr.clear();
+    temp_ptr->partial_path_nodes.clear();
     temp_ptr->u.prev.node = NO_PREVIOUS;
     temp_ptr->u.prev.edge = NO_PREVIOUS;
     return (temp_ptr);
@@ -1594,14 +1592,14 @@ void print_route(const char* placement_file, const char* route_file) {
     route_ctx.routing_id = vtr::secure_digest_file(route_file);
 }
 
-//To ensure the router can only swaps pin which are actually logically equivalent some block output pins must be
+//To ensure the router can only swap pins which are actually logically equivalent, some block output pins must be
 //reserved in certain cases.
 //
 // In the RR graph, output pin equivalence is modelled by a single SRC node connected to (multiple) OPINs, modelling
 // that each of the OPINs is logcially equivalent (i.e. it doesn't matter through which the router routes a signal,
 // so long as it is from the appropriate SRC).
 //
-// This correctly models 'full' equivalence (e.g. if there is a full crossbar between the outputs), but is to
+// This correctly models 'full' equivalence (e.g. if there is a full crossbar between the outputs), but is too
 // optimistic for 'instance' equivalence (which typcially models the pin equivalence possible by swapping sub-block
 // instances like BLEs). In particular, for the 'instance' equivalence case, some of the 'equivalent' block outputs
 // may be used by internal signals which are routed entirely *within* the block (i.e. the signals which never leave
@@ -1648,7 +1646,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
             VTR_ASSERT(type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE);
 
             //From the SRC node we walk through it's out going edges to collect the
-            //OPIN nodes. We then push them onto a heap so the the OPINs with lower
+            //OPIN nodes. We then push them onto a heap so the OPINs with lower
             //congestion cost are popped-off/reserved first. (Intuitively, we want
             //the reserved OPINs to move out of the way of congestion, by preferring
             //to reserve OPINs with lower congestion costs).
