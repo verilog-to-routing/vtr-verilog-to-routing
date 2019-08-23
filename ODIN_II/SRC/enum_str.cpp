@@ -31,22 +31,12 @@ const char *_ZERO_PAD_ZERO[] =
 	"ZERO_PAD_ZERO","ZPZ"
 };
 
-const char *_SINGLE_PORT_RAM_string[] = 
-{
-	"single_port_ram","SPR"
-};
-
-const char *_DUAL_PORT_RAM_string[] = 
-{
-	"dual_port_ram","DPR"
-};
-
 const char *ZERO_GND_ZERO = _ZERO_GND_ZERO[ODIN_STRING_TYPE];
 const char *ONE_VCC_CNS = _ONE_VCC_CNS[ODIN_STRING_TYPE];
 const char *ZERO_PAD_ZERO = _ZERO_PAD_ZERO[ODIN_STRING_TYPE];
 
-const char *SINGLE_PORT_RAM_string = _SINGLE_PORT_RAM_string[ODIN_STRING_TYPE];
-const char *DUAL_PORT_RAM_string = _DUAL_PORT_RAM_string[ODIN_STRING_TYPE];
+const char *SINGLE_PORT_RAM_string = "single_port_ram";
+const char *DUAL_PORT_RAM_string = "dual_port_ram";
 
 const char *operation_list_STR[][2] = 
 {
@@ -123,7 +113,7 @@ const char *ids_STR []=
 	"GENVAR",
 	"PARAMETER",
 	"LOCALPARAM",
-	"INITIALS",
+	"INITIAL",
 	"PORT",
 	/* OTHER MODULE ITEMS */
 	"MODULE_ITEMS",

@@ -40,13 +40,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 
 //for module
-STRING_CACHE **defines_for_module_sc;
+STRING_CACHE *module_parameters_sc;
 STRING_CACHE *modules_inputs_sc;
 STRING_CACHE *modules_outputs_sc;
 STRING_CACHE *module_instances_sc;
+STRING_CACHE *module_defparams_sc;
 
 //for function
-STRING_CACHE **defines_for_function_sc;
+STRING_CACHE *function_parameters_sc;
+STRING_CACHE *function_defparams_sc;
 STRING_CACHE *functions_inputs_sc;
 STRING_CACHE *functions_outputs_sc;
 
@@ -73,6 +75,7 @@ int size_all_file_items_list;
  */
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list);
+bool is_valid_identifier(char *str);
 
 /*---------------------------------------------------------------------------------------------
  * (function: parse_to_ast)
@@ -109,18 +112,17 @@ void parse_to_ast()
 void init_parser()
 {
 
-	defines_for_module_sc =  (STRING_CACHE**)vtr::calloc(1, sizeof(STRING_CACHE*));
-	defines_for_module_sc[0] = sc_new_string_cache();
-
 	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
 	modules_inputs_sc = sc_new_string_cache();
 	modules_outputs_sc = sc_new_string_cache();
+	module_parameters_sc = sc_new_string_cache();
 	functions_inputs_sc = sc_new_string_cache();
 	functions_outputs_sc = sc_new_string_cache();
 	instantiated_modules = sc_new_string_cache();
 	module_instances_sc = sc_new_string_cache();
+	module_defparams_sc = sc_new_string_cache();
 
-	defines_for_function_sc = NULL;
+	function_parameters_sc = NULL;
 	/* record of each of the individual modules */
 	num_modules = 0; // we're going to record all the modules in a list so we can build a tree of them later
 	num_functions = 0;
@@ -143,15 +145,14 @@ void init_parser()
  *-------------------------------------------------------------------------------------------*/
 void cleanup_parser()
 {
-	sc_free_string_cache(defines_for_module_sc[num_modules]); // last string cache is unused
-	//sc_free_string_cache(defines_for_function_sc[num_functions]); // last string cache is unused
-	vtr::free(defines_for_module_sc);
 	modules_inputs_sc = sc_free_string_cache(modules_inputs_sc);
 	modules_outputs_sc = sc_free_string_cache(modules_outputs_sc);
+	module_parameters_sc = sc_free_string_cache(module_parameters_sc);
 	functions_inputs_sc = sc_free_string_cache(functions_inputs_sc);
 	functions_outputs_sc = sc_free_string_cache(functions_outputs_sc);
 	instantiated_modules = sc_free_string_cache(instantiated_modules);
 	module_instances_sc = sc_free_string_cache(module_instances_sc);
+	module_defparams_sc = sc_free_string_cache(module_defparams_sc);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -258,15 +259,19 @@ static ast_node_t *resolve_symbol_node(ids top_type, ast_node_t *symbol_node)
 			ast_node_t *newNode = NULL;
 			if(top_type == MODULE) 
 			{
-				long sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_node->types.identifier);
+				long sc_spot = sc_lookup_string(module_parameters_sc, symbol_node->types.identifier);
 				if(sc_spot != -1)
-					newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
+				{
+					newNode = (ast_node_t *)module_parameters_sc->data[sc_spot];
+				}
 			}
        		else if(top_type == FUNCTION) 
 			{
-				long sc_spot = sc_lookup_string(defines_for_function_sc[num_functions], symbol_node->types.identifier);
+				long sc_spot = sc_lookup_string(function_parameters_sc, symbol_node->types.identifier);
 				if (sc_spot != -1)
-					newNode = (ast_node_t *)defines_for_function_sc[num_functions]->data[sc_spot];
+				{
+					newNode = (ast_node_t *)function_parameters_sc->data[sc_spot];
+				}
 			}
 
 			if (newNode && newNode->types.variable.is_parameter == true)
@@ -630,33 +635,32 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 		&& "can only use MODULE or FUNCTION as top type");
 		
 	long sc_spot;
-	STRING_CACHE **this_defines_sc = NULL;
+	STRING_CACHE *this_parameters_sc = NULL;
 	long this_num_modules = 0;
 
 	if (top_type == MODULE)
 	{
-		this_defines_sc = defines_for_module_sc;
+		this_parameters_sc = module_parameters_sc;
 		this_num_modules = num_modules;
 
 	}
 	else if (top_type == FUNCTION)
 	{
-		this_defines_sc = defines_for_function_sc;
+		this_parameters_sc = function_parameters_sc;
 		this_num_modules = num_functions;
 	}
 
-	oassert(this_defines_sc);
-	oassert(this_defines_sc[this_num_modules]);
+	oassert(this_parameters_sc);
 
 	/* create an entry in the symbol table for this parameter */
-	if ((sc_spot = sc_lookup_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier)) > -1)
+	if ((sc_spot = sc_lookup_string(this_parameters_sc, parameter->children[0]->types.identifier)) > -1)
 	{
 		error_message(PARSE_ERROR, parameter->children[5]->line_number, current_parse_file, 
 				"Module already has parameter with this name (%s)\n", parameter->children[0]->types.identifier);
 	}
-	sc_spot = sc_add_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier);
+	sc_spot = sc_add_string(this_parameters_sc, parameter->children[0]->types.identifier);
 	
-	this_defines_sc[this_num_modules]->data[sc_spot] = (void*)parameter->children[5];
+	this_parameters_sc->data[sc_spot] = (void*)parameter->children[5];
 
 
 	if (id == PARAMETER)
@@ -1034,7 +1038,7 @@ ast_node_t *newNonBlocking(ast_node_t *expression1, ast_node_t *expression2, int
 ast_node_t *newInitial(ast_node_t *expression1, int line_number)
 {
 	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(INITIALS, line_number, current_parse_file);
+	ast_node_t* new_node = create_node_w_type(INITIAL, line_number, current_parse_file);
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, { expression1 });
 
@@ -1183,6 +1187,10 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
 	ast_node_t* new_node = create_node_w_type(MODULE_PARAMETER, line_number, current_parse_file);
 	if (id != NULL)
 	{
+		if (!is_valid_identifier(id))
+		{
+			error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", id);
+		}
 		symbol_node = newSymbolNode(id, line_number);
 	}
 
@@ -1202,6 +1210,11 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newModuleNamedInstance(char* unique_name, ast_node_t *module_connect_list, ast_node_t *module_parameter_list, int line_number)
 {
+	if (!is_valid_identifier(unique_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", unique_name);
+	}
+
 	ast_node_t *symbol_node = newSymbolNode(unique_name, line_number);
 
 	/* create a node for this array reference */
@@ -1236,6 +1249,11 @@ ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t
  *-----------------------------------------------------------------------*/
 ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number)
 {
+	if (!is_valid_identifier(module_ref_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", module_ref_name);
+	}
+
 	ast_node_t *symbol_node = newSymbolNode(module_ref_name, line_number);
 
 	// create a node for this array reference
@@ -1262,6 +1280,11 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
  *-----------------------------------------------------------------------*/
 ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number)
 {
+	if (!is_valid_identifier(module_ref_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", module_ref_name);
+	}
+
 	long i;
 	/* create a node for this array reference */
 	ast_node_t* new_master_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
@@ -1329,6 +1352,11 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, int line_number)
 {
+	if (!is_valid_identifier(gate_instance_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", gate_instance_name);
+	}
+
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(GATE_INSTANCE, line_number, current_parse_file);
 	ast_node_t *symbol_node = NULL;
@@ -1358,6 +1386,11 @@ ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, a
 
 ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, int line_number)
 {
+	if (!is_valid_identifier(gate_instance_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", gate_instance_name);
+	}
+	
     long i;
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(GATE_INSTANCE, line_number, current_parse_file);
@@ -1416,10 +1449,31 @@ ast_node_t *newGate(operation_list op_id, ast_node_t *gate_instance, int line_nu
 
 
 /*---------------------------------------------------------------------------------------------
+ * (function: newDefparamVarDeclare)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newDefparamVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
+{
+	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
+
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(VAR_DECLARE, line_number, current_parse_file);
+
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, { symbol_node, expression1, expression2, expression3, expression4, value });
+
+	return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
  * (function: newVarDeclare)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
 {
+	if (!is_valid_identifier(symbol))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", symbol);
+	}
+
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 
 	/* create a node for this array reference */
@@ -1437,6 +1491,11 @@ ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *exp
 
 ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ , ast_node_t * /*expression2*/ , ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
 {
+	if (!is_valid_identifier(symbol))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", symbol);
+	}
+
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 
     ast_node_t *number_node_with_value_31 = create_tree_node_number(31L, line_number,current_parse_file);
@@ -1457,6 +1516,11 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ 
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number)
 {
+	if (!is_valid_identifier(module_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", module_name);
+	}
+
 	int i;
 	long j, k;
 	long sc_spot;
@@ -1504,7 +1568,8 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 		new_node->types.module.is_instantiated = (sc_lookup_string(instantiated_modules, module_name) != -1);
 	}
 	new_node->types.module.index = num_modules;
-	new_node->types.module.parameter_list = defines_for_module_sc[num_modules];
+	new_node->types.module.parameter_list = module_parameters_sc;
+	new_node->types.module.defparam_list = module_defparams_sc;
 
 	new_node->types.function.function_instantiations_instance = function_instantiations_instance_by_module;
 	new_node->types.function.size_function_instantiations = size_function_instantiations_by_module;
@@ -1558,6 +1623,10 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 
 
 	char *function_name = vtr::strdup(list_of_ports->children[0]->children[0]->types.identifier);
+	if (!is_valid_identifier(function_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", function_name);
+	}
 
 	output_node = newList(VAR_DECLARE_LIST, list_of_ports->children[0], line_number);
 
@@ -1629,8 +1698,8 @@ void next_function()
     //num_modules++;
 
 	/* define the string cache for the next function */
-	// defines_for_function_sc = (STRING_CACHE**)vtr::realloc(defines_for_function_sc, sizeof(STRING_CACHE*)*(num_functions+1));
-	// defines_for_function_sc[num_functions] = sc_new_string_cache();
+	// function_parameters_sc = (STRING_CACHE**)vtr::realloc(function_parameters_sc, sizeof(STRING_CACHE*)*(num_functions+1));
+	// function_parameters_sc[num_functions] = sc_new_string_cache();
 
 	/* create a new list for the instantiations list */
 	function_instantiations_instance = NULL;
@@ -1652,9 +1721,6 @@ void next_module()
     num_functions = 0;
 
 	/* define the string cache for the next module */
-	defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
-	defines_for_module_sc[num_modules] = sc_new_string_cache();
-
 	function_instantiations_instance_by_module = NULL;
 	size_function_instantiations_by_module = 0;
 
@@ -1668,6 +1734,8 @@ void next_module()
 	modules_inputs_sc = sc_new_string_cache();
 	modules_outputs_sc = sc_new_string_cache();
 	module_instances_sc = sc_new_string_cache();
+	module_parameters_sc = sc_new_string_cache();
+	module_defparams_sc = sc_new_string_cache();
 }
 
 /*--------------------------------------------------------------------------
@@ -1679,35 +1747,21 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 
 	if(val)
 	{
-		if(val->num_children > 1)
+		for (int i = 0; i < val->num_children; i++)
 		{
-			std::string module_instance_name = "";
-			for(long i = 0; i < val->num_children - 1; i++)
-			{
-				oassert(val->children[i]->num_children > 0);
-
-				if( i != 0 || val->num_children < 2 )
-				{
-					module_instance_name += ".";
-				}
-
-				module_instance_name += val->children[i]->children[0]->types.identifier;
-			}
-
-			new_node = val->children[(val->num_children - 1)];
+			new_node = val->children[i];
 
 			new_node->type = MODULE_PARAMETER;
 			new_node->types.variable.is_defparam = true;
 			new_node->children[5]->types.variable.is_defparam = true;
-			new_node->types.identifier = vtr::strdup(module_instance_name.c_str());
 			new_node->line_number = line_number;
 
-			val->children[(val->num_children - 1)] = NULL;
-			val = free_whole_tree(val);			
+			long sc_spot = sc_add_string(module_defparams_sc, new_node->children[0]->types.identifier);
+			module_defparams_sc->data[sc_spot] = (void *)new_node;
 		}
-	}
+	}	
 
-	return new_node;
+	return val;
 }
 
 /* --------------------------------------------------------------------------------------------
@@ -1808,6 +1862,10 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newVarDeclare2D(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *expression5, ast_node_t *expression6,ast_node_t *value, int line_number)
 {
+	if (!is_valid_identifier(symbol))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", symbol);
+	}
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 
 	/* create a node for this array reference */
@@ -1843,4 +1901,25 @@ ast_node_t *newRangeRef2D(char *id, ast_node_t *expression1, ast_node_t *express
 	allocate_children_to_node(new_node, { symbol_node, expression1, expression2, expression3, expression4 });
 
 	return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: is_valid_identifier) for identifiers
+ *-------------------------------------------------------------------------------------------*/
+bool is_valid_identifier(char *str)
+{
+	if (str)
+	{
+		int i = 0;
+		char ch = str[i];
+		while (ch != 0)
+		{
+			if (ch == '.')
+			{
+				return false;
+			}
+			ch = str[++i];
+		}
+	}
+	return true;
 }

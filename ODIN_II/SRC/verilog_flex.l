@@ -327,7 +327,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>[[:digit:]]*'[sS]?{vDEC}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
 
 	/*	operands	*/
-<INITIAL>{vWORD}					{ MP(); yylval.id_name = vtr::strdup(yytext); return vSYMBOL_ID; }
+<INITIAL>{vWORD}(\.{vWORD})*		{ MP(); yylval.id_name = vtr::strdup(yytext); return vSYMBOL_ID; }
 
 	/* return operators */
 <INITIAL>{vPUNCT}					{ MP(); return yytext[0]; }

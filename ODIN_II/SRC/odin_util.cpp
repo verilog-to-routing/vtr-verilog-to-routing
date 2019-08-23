@@ -183,21 +183,21 @@ char *make_signal_name(char *signal_name, int bit)
 
 /*---------------------------------------------------------------------------------------------
  * (function: make_full_ref_name)
-// {previous_string}.module_name+instance_name
-// {previous_string}.module_name+instance_name^signal_name
-// {previous_string}.module_name+instance_name^signal_name~bit
+// {previous_string}.instance_name
+// {previous_string}.instance_name^signal_name
+// {previous_string}.instance_name^signal_name~bit
  *-------------------------------------------------------------------------------------------*/
-char *make_full_ref_name(const char *previous, const char *module_name, const char *module_instance_name, const char *signal_name, long bit)
+char *make_full_ref_name(const char *previous, const char */*module_name*/, const char *module_instance_name, const char *signal_name, long bit)
 {
 
 	std::stringstream return_string;
 	if(previous)								 
 		return_string << previous;
 
-	if(module_name) 							 
-		return_string	<< "." << module_name << "+" << module_instance_name;
+	if(module_instance_name) 							 
+		return_string	<< "." << module_instance_name;
 
-	if(signal_name && (previous || module_name)) 
+	if(signal_name && (previous || module_instance_name)) 
 		return_string << "^";
 
 	if(signal_name)								 
@@ -215,15 +215,15 @@ char *make_full_ref_name(const char *previous, const char *module_name, const ch
  * (function: make_full_name_w_o_array_ref)
 // {previous_string}.module_name+instance_name
  *-------------------------------------------------------------------------------------------*/
-char *make_full_name_w_o_array_ref(const char *previous, const char *module_name, const char *module_instance_name)
+char *make_full_name_w_o_array_ref(const char *previous, const char */*module_name*/, const char *module_instance_name)
 {
 
 	std::stringstream return_string;
 	if(previous)								 
 		return_string << previous;
 
-	if(module_name) 							 
-		return_string	<< "." << module_name << "+" << module_instance_name;
+	if(module_instance_name) 							 
+		return_string	<< "." << module_instance_name;
 		
 
 	std::string name = return_string.str();

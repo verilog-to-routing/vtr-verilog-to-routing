@@ -24,6 +24,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef AST_ELABORATE_H
 #define AST_ELABORATE_H
 
-int simplify_ast_module(ast_node_t **ast_module, STRING_CACHE_LIST *local_string_cache_list);
+int simplify_ast_module(ast_node_t **ast_module, sc_hierarchy *local_ref);
 
 #endif

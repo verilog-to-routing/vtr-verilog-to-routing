@@ -15,11 +15,11 @@
 /* This files header */
 #include "ast_loop_unroll.h"
 
-ast_node_t *unroll_for_loop(ast_node_t* node, ast_node_t *parent, STRING_CACHE_LIST *local_string_cache_list)
+ast_node_t *unroll_for_loop(ast_node_t* node, ast_node_t *parent, sc_hierarchy *local_ref)
 {
 	oassert(node && node->type == FOR);
 
-	char *module_id = local_string_cache_list->instance_name_prefix;
+	char *module_id = local_ref->instance_name_prefix;
 	long sc_spot = sc_lookup_string(module_names_to_idx, module_id);
 	oassert(sc_spot > -1);
 	ast_node_t *ast_module = (ast_node_t *)module_names_to_idx->data[sc_spot];

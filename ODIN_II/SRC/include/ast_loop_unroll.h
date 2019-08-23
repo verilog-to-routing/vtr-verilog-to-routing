@@ -15,7 +15,7 @@
 typedef std::function<bool(long)> condition_function;
 typedef std::function<long(long)> post_condition_function;
 
-ast_node_t *unroll_for_loop(ast_node_t* node, ast_node_t *parent, STRING_CACHE_LIST *local_string_cache_list);
+ast_node_t *unroll_for_loop(ast_node_t* node, ast_node_t *parent, sc_hierarchy *local_ref);
 
 inline bool is_for_node(ast_node_t* node)
 {

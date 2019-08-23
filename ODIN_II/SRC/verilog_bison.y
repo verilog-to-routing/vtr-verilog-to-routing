@@ -98,8 +98,8 @@ int yylex(void);
 
 %type <id>	 wire_types reg_types net_types net_direction
 %type <node> source_text item items module list_of_module_items list_of_function_items module_item function_item module_parameters module_ports
-%type <node> list_of_parameter_declaration parameter_declaration specparam_declaration list_of_port_declaration port_declaration defparam_declaration
-%type <node> function_declaration function_input_declaration
+%type <node> list_of_parameter_declaration parameter_declaration specparam_declaration list_of_port_declaration port_declaration
+%type <node> defparam_declaration defparam_variable_list defparam_variable function_declaration function_input_declaration 
 %type <node> io_declaration variable_list function_output_variable function_id_and_output_variable
 %type <node> integer_type_variable_list variable integer_type_variable
 %type <node> net_declaration integer_declaration function_instantiation genvar_declaration
@@ -269,7 +269,7 @@ localparam_declaration:
 	;
 
 defparam_declaration:
-	vDEFPARAM variable_list ';'	{$$ = newDefparam(MODULE_PARAMETER_LIST, $2, my_yylineno);}
+	vDEFPARAM defparam_variable_list ';'	{$$ = newDefparam(MODULE_PARAMETER_LIST, $2, my_yylineno);}
 	;
 
 io_declaration:
@@ -303,8 +303,12 @@ function_id_and_output_variable:
 
 variable_list:
 	variable_list ',' variable						{$$ = newList_entry($1, $3);}
-	| variable_list '.' variable					{$$ = newList_entry($1, $3);}    //Only for parameter
 	| variable										{$$ = newList(VAR_DECLARE_LIST, $1, my_yylineno);}
+	;
+
+defparam_variable_list:
+	defparam_variable_list ',' defparam_variable    {$$ = newList_entry($1, $3);}
+	| defparam_variable								{$$ = newList(VAR_DECLARE_LIST, $1, my_yylineno);}
 	;
 
 integer_type_variable_list:
@@ -321,6 +325,10 @@ variable:
 	| vSYMBOL_ID '=' expression												{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, $3, my_yylineno);}
 	;
 
+defparam_variable:
+	vSYMBOL_ID '=' expression				{$$ = newDefparamVarDeclare($1, NULL, NULL, NULL, NULL, $3, my_yylineno);}
+	;
+	
 integer_type_variable:
 	vSYMBOL_ID					{$$ = newIntegerTypeVarDeclare($1, NULL, NULL, NULL, NULL, NULL, my_yylineno);}
 	| vSYMBOL_ID '[' expression ':' expression ']'	{$$ = newIntegerTypeVarDeclare($1, NULL, NULL, $3, $5, NULL, my_yylineno);}
