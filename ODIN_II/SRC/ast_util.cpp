@@ -345,10 +345,6 @@ void remove_child_from_node_at_index(ast_node_t* node, int index)
 	{
 		node->children[index] = free_whole_tree(node->children[index]);
 		node->children[index] = NULL;
-
-		// ast_node_t *child = node->children[index];
-		// child = free_whole_tree(child);
-		// child = NULL;
 	}
 
 	for (int i = index; i < (node->num_children - 1); i++)
