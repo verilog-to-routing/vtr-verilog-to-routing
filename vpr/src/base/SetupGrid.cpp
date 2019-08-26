@@ -442,7 +442,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     }
 
     //Warn if any types were not specified in the grid layout
-    for (auto const &type : device_ctx.physical_tile_types) {
+    for (auto const& type : device_ctx.physical_tile_types) {
         if (&type == empty_type) continue; //Don't worry if empty hasn't been specified
 
         if (!seen_types.count(&type)) {

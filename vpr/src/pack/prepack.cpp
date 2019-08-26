@@ -126,7 +126,7 @@ t_pack_patterns* alloc_and_load_pack_patterns(int* num_packing_patterns) {
 
     /* alloc and initialize array of packing patterns based on architecture complex blocks */
     std::unordered_map<std::string, int> pattern_names;
-    for (auto &type : device_ctx.logical_block_types) {
+    for (auto& type : device_ctx.logical_block_types) {
         discover_pattern_names_in_pb_graph_node(type.pb_graph_head, pattern_names);
     }
 
@@ -134,7 +134,7 @@ t_pack_patterns* alloc_and_load_pack_patterns(int* num_packing_patterns) {
 
     /* load packing patterns by traversing the edges to find edges belonging to pattern */
     for (size_t i = 0; i < pattern_names.size(); i++) {
-        for (auto &type : device_ctx.logical_block_types) {
+        for (auto& type : device_ctx.logical_block_types) {
             // find an edge that belongs to this pattern
             expansion_edge = find_expansion_edge_of_pattern(i, type.pb_graph_head);
             if (!expansion_edge) {
@@ -1173,7 +1173,7 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const 
     best_cost = UNDEFINED;
     best = nullptr;
     current = nullptr;
-    for (const auto &type : device_ctx.logical_block_types) {
+    for (const auto& type : device_ctx.logical_block_types) {
         cost = UNDEFINED;
         current = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, type.pb_graph_head, &cost);
         if (cost != UNDEFINED) {

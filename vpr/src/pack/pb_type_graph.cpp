@@ -126,7 +126,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
     num_edges_head = nullptr;
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    for (auto &type : device_ctx.logical_block_types) {
+    for (auto& type : device_ctx.logical_block_types) {
         auto physical_type = &device_ctx.physical_tile_types[type.index];
         if (type.pb_type) {
             type.pb_graph_head = (t_pb_graph_node*)vtr::calloc(1, sizeof(t_pb_graph_node));
@@ -147,7 +147,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
         VTR_LOG_ERROR("in pb graph");
         exit(1);
     }
-    for (auto &type : device_ctx.logical_block_types) {
+    for (auto& type : device_ctx.logical_block_types) {
         if (type.pb_type) {
             load_pb_graph_pin_to_pin_annotations(type.pb_graph_head);
         }
@@ -166,7 +166,7 @@ void echo_pb_graph(char* filename) {
     fprintf(fp, "--------------------------------------------\n\n");
 
     auto& device_ctx = g_vpr_ctx.device();
-    for (auto &type : device_ctx.logical_block_types) {
+    for (auto& type : device_ctx.logical_block_types) {
         fprintf(fp, "type %s\n", type.name);
         if (type.pb_graph_head)
             echo_pb_rec(type.pb_graph_head, 1, fp);
@@ -188,7 +188,7 @@ static int check_pb_graph() {
      */
     num_errors = 0;
     auto& device_ctx = g_vpr_ctx.device();
-    for (auto &type : device_ctx.logical_block_types) {
+    for (auto& type : device_ctx.logical_block_types) {
         if (type.pb_type) {
             check_pb_node_rec(type.pb_graph_head);
         }

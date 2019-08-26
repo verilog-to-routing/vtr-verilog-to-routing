@@ -75,7 +75,7 @@ void EchoArch(const char* EchoFile,
     }
     fprintf(Echo, "*************************************************\n\n");
     fprintf(Echo, "*************************************************\n");
-    for (auto &Type : PhysicalTileTypes) {
+    for (auto& Type : PhysicalTileTypes) {
         fprintf(Echo, "Type: \"%s\"\n", Type.name);
         fprintf(Echo, "\tcapacity: %d\n", Type.capacity);
         fprintf(Echo, "\twidth: %d\n", Type.width);

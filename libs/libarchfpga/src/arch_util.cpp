@@ -216,7 +216,7 @@ void free_arch(t_arch* arch) {
 }
 
 void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors) {
-    for (auto &type : type_descriptors) {
+    for (auto& type : type_descriptors) {
         vtr::free(type.name);
         if (type.index == EMPTY_TYPE_INDEX) {
             continue;
@@ -258,7 +258,7 @@ void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors) 
 void free_type_descriptors(std::vector<t_logical_block_type>& type_descriptors) {
     free_all_pb_graph_nodes(type_descriptors);
 
-    for (auto &type : type_descriptors) {
+    for (auto& type : type_descriptors) {
         vtr::free(type.name);
         if (type.index == EMPTY_TYPE_INDEX) {
             continue;
@@ -271,7 +271,7 @@ void free_type_descriptors(std::vector<t_logical_block_type>& type_descriptors) 
 }
 
 static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_descriptors) {
-    for (auto &type : type_descriptors) {
+    for (auto& type : type_descriptors) {
         if (type.pb_type) {
             if (type.pb_graph_head) {
                 free_pb_graph(type.pb_graph_head);
@@ -1097,7 +1097,7 @@ void CreateModelLibrary(t_arch* arch) {
 
 void SyncModelsPbTypes(t_arch* arch,
                        const std::vector<t_logical_block_type>& Types) {
-    for (auto &Type : Types) {
+    for (auto& Type : Types) {
         if (Type.pb_type != nullptr) {
             SyncModelsPbTypes_rec(arch, Type.pb_type);
         }
