@@ -33,21 +33,6 @@ struct STRING_CACHE{
 	long *next_string;
 };
 
-struct STRING_CACHE_LIST{
-	char *scope_id;
-	char *instance_name_prefix;
-
-	STRING_CACHE *local_param_table_sc;
-	STRING_CACHE *local_symbol_table_sc;
-
-	struct ast_node_t **local_symbol_table;
-	int num_local_symbol_table;
-
-	STRING_CACHE_LIST *parent;
-	STRING_CACHE_LIST **children;
-	int num_children;
-};
-
 /* creates the hash where it is indexed by a string and the void ** holds the data */
 STRING_CACHE *sc_new_string_cache(void);
 /* returns an index of the spot where string is */

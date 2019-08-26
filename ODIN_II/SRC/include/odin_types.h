@@ -25,6 +25,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define ODIN_TYPES_H
 
 #include "string_cache.h"
+#include "hierarchy_util.h"
 #include "odin_error.h"
 #include "read_xml_arch_file.h"
 #include "argparse_value.hpp"
@@ -45,7 +46,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define ODIN_LONG_STRING 0
 #define ODIN_SHORT_STRING 1
 
-#ifdef DEBUG_ODIN
+#ifndef DEBUG_ODIN
 	#define ODIN_STRING_TYPE ODIN_SHORT_STRING
 #else
 	#define ODIN_STRING_TYPE ODIN_LONG_STRING
@@ -260,7 +261,7 @@ enum ids
 	GENVAR,
 	PARAMETER,
 	LOCALPARAM,
-	INITIALS,
+	INITIAL,
 	PORT,
 	/* OTHER MODULE ITEMS */
 	MODULE_ITEMS,
@@ -365,6 +366,8 @@ struct typ
 		int size_module_instantiations;
 		int index;
 		STRING_CACHE *parameter_list;
+		STRING_CACHE *defparam_list;
+		sc_hierarchy *string_cache_list;
 	} module;
 	struct
 	{
@@ -373,6 +376,7 @@ struct typ
 		int size_function_instantiations;
 		int index;
 		STRING_CACHE *parameter_list;
+		sc_hierarchy *string_cache_list;
 	} function;
 	struct
 	{
