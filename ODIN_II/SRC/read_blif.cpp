@@ -1380,7 +1380,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 		while (vtr::fgets(buffer, READ_BLIF_BUFFER, file))
 		{
 			char *token = vtr::strtok(buffer,TOKENS, file, buffer);
-			// match .model followed buy the subcircuit name.
+			// match .model followed by the subcircuit name.
 			if (token && !strcmp(token,".model") && !strcmp(vtr::strtok(NULL,TOKENS, file, buffer), name_subckt))
 			{
 				model = (hard_block_model *)vtr::calloc(1, sizeof(hard_block_model));
@@ -1397,27 +1397,30 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 				while (vtr::fgets(buffer, READ_BLIF_BUFFER, file))
 				{
 					char *first_word = vtr::strtok(buffer, TOKENS, file, buffer);
-					if(!strcmp(first_word, ".inputs"))
+					if(first_word)
 					{
-						char *name;
-						while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
+						if(!strcmp(first_word, ".inputs"))
 						{
-							model->inputs->names = (char **)vtr::realloc(model->inputs->names, sizeof(char *) * (model->inputs->count + 1));
-							model->inputs->names[model->inputs->count++] = vtr::strdup(name);
+							char *name;
+							while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
+							{
+								model->inputs->names = (char **)vtr::realloc(model->inputs->names, sizeof(char *) * (model->inputs->count + 1));
+								model->inputs->names[model->inputs->count++] = vtr::strdup(name);
+							}
 						}
-					}
-					else if(!strcmp(first_word, ".outputs"))
-					{
-						char *name;
-						while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
+						else if(!strcmp(first_word, ".outputs"))
 						{
-							model->outputs->names = (char **)vtr::realloc(model->outputs->names, sizeof(char *) * (model->outputs->count + 1));
-							model->outputs->names[model->outputs->count++] = vtr::strdup(name);
+							char *name;
+							while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
+							{
+								model->outputs->names = (char **)vtr::realloc(model->outputs->names, sizeof(char *) * (model->outputs->count + 1));
+								model->outputs->names[model->outputs->count++] = vtr::strdup(name);
+							}
 						}
-					}
-					else if(!strcmp(first_word, ".end"))
-					{
-						break;
+						else if(!strcmp(first_word, ".end"))
+						{
+							break;
+						}
 					}
 				}
 				break;
