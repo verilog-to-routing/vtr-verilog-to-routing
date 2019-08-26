@@ -1723,6 +1723,12 @@ void free_blk_pin_from_port_pin() {
     if (f_blk_pin_from_port_pin != nullptr) {
         for (const auto& type : device_ctx.logical_block_types) {
             int itype = type.index;
+
+            // Avoid EMPTY_TYPE
+            if (itype == 0) {
+                continue;
+            }
+
             num_ports = type.pb_type->num_ports;
             for (iport = 0; iport < num_ports; iport++) {
                 free(f_blk_pin_from_port_pin[itype][iport]);
