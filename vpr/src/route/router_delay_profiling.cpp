@@ -181,7 +181,6 @@ void alloc_routing_structs(t_chan_width chan_width,
     }
 
     create_rr_graph(graph_type,
-                    device_ctx.num_block_types,
                     device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,

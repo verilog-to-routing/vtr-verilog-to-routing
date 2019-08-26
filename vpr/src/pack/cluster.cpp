@@ -389,7 +389,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
      *****************************************************************/
     VTR_ASSERT(packer_opts.packer_algorithm == PACK_GREEDY);
 
-    int i, num_molecules, blocks_since_last_analysis, num_clb,
+    int num_molecules, blocks_since_last_analysis, num_clb,
         num_blocks_hill_added, max_cluster_size, cur_cluster_size,
         max_pb_depth, cur_pb_depth, num_unrelated_clustering_attempts,
         seedindex, savedseedindex /* index of next most timing critical block */,
@@ -451,14 +451,12 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     num_molecules = count_molecules(molecule_head);
 
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        auto type = &device_ctx.logical_block_types[i];
-
-        if (device_ctx.EMPTY_TYPE == physical_tile_type(type))
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (device_ctx.EMPTY_TYPE == physical_tile_type(&type))
             continue;
 
-        cur_cluster_size = get_max_primitives_in_pb_type(type->pb_type);
-        cur_pb_depth = get_max_depth_of_pb_type(type->pb_type);
+        cur_cluster_size = get_max_primitives_in_pb_type(type.pb_type);
+        cur_pb_depth = get_max_depth_of_pb_type(type.pb_type);
         if (cur_cluster_size > max_cluster_size) {
             max_cluster_size = cur_cluster_size;
         }
@@ -3208,10 +3206,9 @@ static std::map<const t_model*, std::vector<t_logical_block_type_ptr>> identify_
     for (auto model : unique_models) {
         model_candidates[model] = {};
 
-        for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
-            t_logical_block_type_ptr type = &device_ctx.logical_block_types[itype];
-            if (block_type_contains_blif_model(type, model->name)) {
-                model_candidates[model].push_back(type);
+        for (auto const& type : device_ctx.logical_block_types) {
+            if (block_type_contains_blif_model(&type, model->name)) {
+                model_candidates[model].push_back(&type);
             }
         }
     }

@@ -567,7 +567,7 @@ void try_place(const t_placer_opts& placer_opts,
     std::unique_ptr<MoveGenerator> move_generator;
 
     /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
-    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types, device_ctx.num_block_types);
+    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
 
     /* init file scope variables */
     num_swap_rejected = 0;
@@ -2466,7 +2466,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              t_direct_inf* directs,
                                              int num_directs) {
-    int max_pins_per_clb, i;
+    int max_pins_per_clb;
     unsigned int ipin;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -2481,8 +2481,8 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
     load_legal_placements();
 
     max_pins_per_clb = 0;
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        max_pins_per_clb = max(max_pins_per_clb, device_ctx.physical_tile_types[i].num_pins);
+    for (const auto& type : device_ctx.physical_tile_types) {
+        max_pins_per_clb = max(max_pins_per_clb, type.num_pins);
     }
 
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -2543,14 +2543,14 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
  * to the 2D net_pin_indices array.                                             */
 static void alloc_and_load_net_pin_indices() {
     unsigned int netpin;
-    int itype, max_pins_per_clb = 0;
+    int max_pins_per_clb = 0;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* Compute required size. */
-    for (itype = 0; itype < device_ctx.num_block_types; itype++)
-        max_pins_per_clb = max(max_pins_per_clb, device_ctx.physical_tile_types[itype].num_pins);
+    for (const auto& type : device_ctx.physical_tile_types)
+        max_pins_per_clb = max(max_pins_per_clb, type.num_pins);
 
     /* Allocate for maximum size. */
     net_pin_indices.resize(cluster_ctx.clb_nlist.blocks().size());
@@ -2595,7 +2595,7 @@ static std::vector<t_compressed_block_grid> create_compressed_block_grids() {
     auto& grid = device_ctx.grid;
 
     //Collect the set of x/y locations for each instace of a block type
-    std::vector<std::vector<vtr::Point<int>>> block_locations(device_ctx.num_block_types);
+    std::vector<std::vector<vtr::Point<int>>> block_locations(device_ctx.physical_tile_types.size());
     for (size_t x = 0; x < grid.width(); ++x) {
         for (size_t y = 0; y < grid.height(); ++y) {
             const t_grid_tile& tile = grid[x][y];
@@ -2606,9 +2606,9 @@ static std::vector<t_compressed_block_grid> create_compressed_block_grids() {
         }
     }
 
-    std::vector<t_compressed_block_grid> compressed_type_grids(device_ctx.num_block_types);
-    for (int itype = 0; itype < device_ctx.num_block_types; itype++) {
-        compressed_type_grids[itype] = create_compressed_block_grid(block_locations[itype]);
+    std::vector<t_compressed_block_grid> compressed_type_grids(device_ctx.physical_tile_types.size());
+    for (const auto& type : device_ctx.physical_tile_types) {
+        compressed_type_grids[type.index] = create_compressed_block_grid(block_locations[type.index]);
     }
 
     return compressed_type_grids;
@@ -3089,8 +3089,8 @@ static void alloc_legal_placements() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    legal_pos = new t_pl_loc*[device_ctx.num_block_types];
-    num_legal_pos = (int*)vtr::calloc(device_ctx.num_block_types, sizeof(int));
+    legal_pos = new t_pl_loc*[device_ctx.physical_tile_types.size()];
+    num_legal_pos = (int*)vtr::calloc(device_ctx.physical_tile_types.size(), sizeof(int));
 
     /* Initialize all occupancy to zero. */
 
@@ -3109,8 +3109,8 @@ static void alloc_legal_placements() {
         }
     }
 
-    for (int i = 0; i < device_ctx.num_block_types; i++) {
-        legal_pos[i] = new t_pl_loc[num_legal_pos[i]];
+    for (const auto& type : device_ctx.physical_tile_types) {
+        legal_pos[type.index] = new t_pl_loc[num_legal_pos[type.index]];
     }
 }
 
@@ -3118,7 +3118,7 @@ static void load_legal_placements() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    int* index = (int*)vtr::calloc(device_ctx.num_block_types, sizeof(int));
+    int* index = (int*)vtr::calloc(device_ctx.physical_tile_types.size(), sizeof(int));
 
     for (size_t i = 0; i < device_ctx.grid.width(); i++) {
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
@@ -3142,7 +3142,7 @@ static void load_legal_placements() {
 static void free_legal_placements() {
     auto& device_ctx = g_vpr_ctx.device();
 
-    for (int i = 0; i < device_ctx.num_block_types; i++) {
+    for (unsigned int i = 0; i < device_ctx.physical_tile_types.size(); i++) {
         delete[] legal_pos[i];
     }
     delete[] legal_pos; /* Free the mapping list */
@@ -3372,8 +3372,9 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    free_locations = (int*)vtr::malloc(device_ctx.num_block_types * sizeof(int));
-    for (itype = 0; itype < device_ctx.num_block_types; itype++) {
+    free_locations = (int*)vtr::malloc(device_ctx.physical_tile_types.size() * sizeof(int));
+    for (const auto& type : device_ctx.physical_tile_types) {
+        itype = type.index;
         free_locations[itype] = num_legal_pos[itype];
     }
 
@@ -3400,7 +3401,8 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
     initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
 
     // All the macros are placed, update the legal_pos[][] array
-    for (itype = 0; itype < device_ctx.num_block_types; itype++) {
+    for (const auto& type : device_ctx.physical_tile_types) {
+        itype = type.index;
         VTR_ASSERT(free_locations[itype] >= 0);
         for (ipos = 0; ipos < free_locations[itype]; ipos++) {
             t_pl_loc pos = legal_pos[itype][ipos];

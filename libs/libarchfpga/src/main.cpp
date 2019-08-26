@@ -22,7 +22,6 @@ int main(int argc, char** argv) {
         t_arch* arch = (t_arch*)vtr::calloc(1, sizeof(t_arch));
         std::vector<t_physical_tile_type> physical_tile_types;
         std::vector<t_logical_block_type> logical_block_types;
-        int numTypes;
 
         if (argc - 1 != 3) {
             printf("Error: Unexpected # of arguments.  Expected 3 found %d arguments\n",
@@ -44,11 +43,11 @@ int main(int argc, char** argv) {
         printf("Reading in architecture\n");
 
         /* function declarations */
-        XmlReadArch(argv[1], atoi(argv[2]), arch, physical_tile_types, logical_block_types, &numTypes);
+        XmlReadArch(argv[1], atoi(argv[2]), arch, physical_tile_types, logical_block_types);
 
         printf("Printing Results\n");
 
-        EchoArch(argv[3], physical_tile_types, logical_block_types, numTypes, arch);
+        EchoArch(argv[3], physical_tile_types, logical_block_types, arch);
         free(arch);
     } catch (vtr::VtrError& vtr_error) {
         printf("Failed to process architecture %s: %s\n", argv[1], vtr_error.what());

@@ -18,8 +18,7 @@ void XmlReadArch(const char* ArchFile,
                  const bool timing_enabled,
                  t_arch* arch,
                  std::vector<t_physical_tile_type>& PhysicalTileTypes,
-                 std::vector<t_logical_block_type>& LogicalBlockTypes,
-                 int* NumTypes);
+                 std::vector<t_logical_block_type>& LogicalBlockTypes);
 
 const char* get_arch_file_name();
 

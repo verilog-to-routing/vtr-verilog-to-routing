@@ -408,9 +408,9 @@ void free_placement_macros_structs() {
 
     // This frees up the two arrays and set the pointers to NULL
     auto& device_ctx = g_vpr_ctx.device();
-    int itype;
+    unsigned int itype;
     if (f_idirect_from_blk_pin != nullptr) {
-        for (itype = 1; itype < device_ctx.num_block_types; itype++) {
+        for (itype = 1; itype < device_ctx.physical_tile_types.size(); itype++) {
             free(f_idirect_from_blk_pin[itype]);
         }
         free(f_idirect_from_blk_pin);
@@ -418,7 +418,7 @@ void free_placement_macros_structs() {
     }
 
     if (f_direct_type_from_blk_pin != nullptr) {
-        for (itype = 1; itype < device_ctx.num_block_types; itype++) {
+        for (itype = 1; itype < device_ctx.physical_tile_types.size(); itype++) {
             free(f_direct_type_from_blk_pin[itype]);
         }
         free(f_direct_type_from_blk_pin);
@@ -455,16 +455,15 @@ static void write_place_macros(std::string filename, const std::vector<t_pl_macr
     fprintf(f, "type      type_pin  is_direct direct_type\n");
     fprintf(f, "------------------------------------------\n");
     auto& device_ctx = g_vpr_ctx.device();
-    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
-        auto type = &device_ctx.physical_tile_types[itype];
-
-        for (int ipin = 0; ipin < type->num_pins; ++ipin) {
+    for (const auto& type : device_ctx.physical_tile_types) {
+        int itype = type.index;
+        for (int ipin = 0; ipin < type.num_pins; ++ipin) {
             if (f_idirect_from_blk_pin[itype][ipin] != OPEN) {
                 if (f_direct_type_from_blk_pin[itype][ipin] == SOURCE) {
-                    fprintf(f, "%-9s %-9d true      SOURCE    \n", type->name, ipin);
+                    fprintf(f, "%-9s %-9d true      SOURCE    \n", type.name, ipin);
                 } else {
                     VTR_ASSERT(f_direct_type_from_blk_pin[itype][ipin] == SINK);
-                    fprintf(f, "%-9s %-9d true      SINK      \n", type->name, ipin);
+                    fprintf(f, "%-9s %-9d true      SINK      \n", type.name, ipin);
                 }
             } else {
                 VTR_ASSERT(f_direct_type_from_blk_pin[itype][ipin] == OPEN);

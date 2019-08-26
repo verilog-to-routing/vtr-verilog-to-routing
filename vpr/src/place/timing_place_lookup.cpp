@@ -775,8 +775,8 @@ static std::unique_ptr<OverrideDelayModel> compute_override_delay_model(const t_
         InstPort from_port = parse_inst_port(direct->from_pin);
         InstPort to_port = parse_inst_port(direct->to_pin);
 
-        t_physical_tile_type_ptr from_type = find_block_type_by_name(from_port.instance_name(), device_ctx.physical_tile_types, device_ctx.num_block_types);
-        t_physical_tile_type_ptr to_type = find_block_type_by_name(to_port.instance_name(), device_ctx.physical_tile_types, device_ctx.num_block_types);
+        t_physical_tile_type_ptr from_type = find_block_type_by_name(from_port.instance_name(), device_ctx.physical_tile_types);
+        t_physical_tile_type_ptr to_type = find_block_type_by_name(to_port.instance_name(), device_ctx.physical_tile_types);
 
         int num_conns = from_port.port_high_index() - from_port.port_low_index() + 1;
         VTR_ASSERT_MSG(num_conns == to_port.port_high_index() - to_port.port_low_index() + 1, "Directs must have the same size to/from");

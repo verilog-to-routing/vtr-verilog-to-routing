@@ -290,11 +290,11 @@ static void processComplexBlock(pugi::xml_node clb_block,
     VTR_ASSERT(ClusterBlockId(vtr::atoi(tokens[2].data)) == index);
 
     found = false;
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        if (strcmp(device_ctx.logical_block_types[i].name, tokens[0].data) == 0) {
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (strcmp(type.name, tokens[0].data) == 0) {
             t_pb* pb = new t_pb;
             pb->name = vtr::strdup(block_name.value());
-            clb_nlist->create_block(block_name.value(), pb, &device_ctx.logical_block_types[i]);
+            clb_nlist->create_block(block_name.value(), pb, &type);
             pb_type = clb_nlist->block_type(index)->pb_type;
             found = true;
             break;

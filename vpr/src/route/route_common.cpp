@@ -226,7 +226,6 @@ void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_ar
     /* Set up the routing resource graph defined by this FPGA architecture. */
     int warning_count;
     create_rr_graph(graph_type,
-                    device_ctx.num_block_types,
                     device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
@@ -278,7 +277,6 @@ bool try_route(int width_fac,
     int warning_count;
 
     create_rr_graph(graph_type,
-                    device_ctx.num_block_types,
                     device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
@@ -313,7 +311,7 @@ bool try_route(int width_fac,
     } else { /* TIMING_DRIVEN route */
         VTR_LOG("Confirming router algorithm: TIMING_DRIVEN.\n");
 
-        IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types, device_ctx.num_block_types);
+        IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
 
         success = try_timing_driven_route(router_opts,

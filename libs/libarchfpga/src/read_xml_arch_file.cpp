@@ -120,7 +120,6 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
 static void ProcessComplexBlocks(pugi::xml_node Node,
                                  std::vector<t_physical_tile_type>& PhysicalTileTypes,
                                  std::vector<t_logical_block_type>& LogicalBlockTypes,
-                                 int* NumTypes,
                                  t_arch& arch,
                                  const bool timing_enabled,
                                  const t_default_fc_spec& arch_def_fc,
@@ -196,8 +195,7 @@ void XmlReadArch(const char* ArchFile,
                  const bool timing_enabled,
                  t_arch* arch,
                  std::vector<t_physical_tile_type>& PhysicalTileTypes,
-                 std::vector<t_logical_block_type>& LogicalBlockTypes,
-                 int* NumTypes) {
+                 std::vector<t_logical_block_type>& LogicalBlockTypes) {
     pugi::xml_node Next;
     ReqOpt POWER_REQD, SWITCHBLOCKLIST_REQD;
 
@@ -268,7 +266,7 @@ void XmlReadArch(const char* ArchFile,
 
         /* Process types */
         Next = get_single_child(architecture, "complexblocklist", loc_data);
-        ProcessComplexBlocks(Next, PhysicalTileTypes, LogicalBlockTypes, NumTypes, *arch, timing_enabled, arch_def_fc, loc_data);
+        ProcessComplexBlocks(Next, PhysicalTileTypes, LogicalBlockTypes, *arch, timing_enabled, arch_def_fc, loc_data);
 
         /* Process directs */
         Next = get_single_child(architecture, "directlist", loc_data, OPTIONAL);
@@ -339,7 +337,7 @@ void XmlReadArch(const char* ArchFile,
                 free(clocks_fake);
             }
         }
-        SyncModelsPbTypes(arch, LogicalBlockTypes, *NumTypes);
+        SyncModelsPbTypes(arch, LogicalBlockTypes);
         UpdateAndCheckModels(arch);
 
     } catch (XmlError& e) {
@@ -2650,7 +2648,6 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
 static void ProcessComplexBlocks(pugi::xml_node Node,
                                  std::vector<t_physical_tile_type>& PhysicalTileTypes,
                                  std::vector<t_logical_block_type>& LogicalBlockTypes,
-                                 int* NumTypes,
                                  t_arch& arch,
                                  const bool timing_enabled,
                                  const t_default_fc_spec& arch_def_fc,
@@ -2659,11 +2656,10 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
     pugi::xml_node Cur;
     map<string, int> pb_type_descriptors;
     pair<map<string, int>::iterator, bool> ret_pb_type_descriptors;
+
     /* Alloc the type list. Need one additional t_type_desctiptors:
      * 1: empty psuedo-type
      */
-    *NumTypes = count_children(Node, "pb_type", loc_data) + 1;
-
     t_physical_tile_type EMPTY_PHYSICAL_TILE_TYPE = SetupEmptyPhysicalType();
     t_logical_block_type EMPTY_LOGICAL_BLOCK_TYPE = SetupEmptyLogicalType();
     EMPTY_PHYSICAL_TILE_TYPE.index = 0;

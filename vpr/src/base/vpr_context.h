@@ -125,7 +125,6 @@ struct DeviceContext : public Context {
      * such as: I/Os, CLBs, memories, multipliers, etc
      * Different types of physical block are contained in type descriptors
      */
-    int num_block_types;
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
 

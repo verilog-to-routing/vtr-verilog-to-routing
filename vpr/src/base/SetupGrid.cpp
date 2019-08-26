@@ -278,7 +278,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     auto grid = vtr::Matrix<t_grid_tile>({grid_width, grid_height});
 
     //Initialize the device to all empty blocks
-    auto empty_type = find_block_type_by_name(EMPTY_BLOCK_NAME, device_ctx.physical_tile_types, device_ctx.num_block_types);
+    auto empty_type = find_block_type_by_name(EMPTY_BLOCK_NAME, device_ctx.physical_tile_types);
     VTR_ASSERT(empty_type != nullptr);
     for (size_t x = 0; x < grid_width; ++x) {
         for (size_t y = 0; y < grid_height; ++y) {
@@ -291,7 +291,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     for (const auto& grid_loc_def : grid_def.loc_defs) {
         //Fill in the block types according to the specification
 
-        auto type = find_block_type_by_name(grid_loc_def.block_type, device_ctx.physical_tile_types, device_ctx.num_block_types);
+        auto type = find_block_type_by_name(grid_loc_def.block_type, device_ctx.physical_tile_types);
 
         if (!type) {
             VPR_FATAL_ERROR(VPR_ERROR_ARCH,
@@ -442,14 +442,12 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     }
 
     //Warn if any types were not specified in the grid layout
-    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
-        t_physical_tile_type_ptr type = &device_ctx.physical_tile_types[itype];
+    for (auto const &type : device_ctx.physical_tile_types) {
+        if (&type == empty_type) continue; //Don't worry if empty hasn't been specified
 
-        if (type == empty_type) continue; //Don't worry if empty hasn't been specified
-
-        if (!seen_types.count(type)) {
+        if (!seen_types.count(&type)) {
             VTR_LOG_WARN("Block type '%s' was not specified in device grid layout\n",
-                         type->name);
+                         type.name);
         }
     }
 
