@@ -10,7 +10,8 @@
  * The data structures that store the
  *
  * Key data types:
- * t_logical_block_type: describes a placeable complex logic block,
+ * t_physical_tile_type: represents the type of a tile in the device grid and describes its physical characteristics (pin locations, area, width, height, etc.)
+ * t_logical_block_type: represents and describes the type of a clustered block
  * pb_type: describes the types of physical blocks within the t_logical_block_type in a hierarchy where the top block is the complex block and the leaf blocks implement one logical block
  * pb_graph_node: is a flattened version of pb_type so a pb_type with 10 instances will have 10 pb_graph_nodes representing each instance
  *
@@ -572,10 +573,6 @@ typedef const t_logical_block_type* t_logical_block_type_ptr;
  *                        constructed at the specified location.
  *                        Note that the SB is located to the top-right of the
  *                        grid tile location. [0..width-1][0..height-1]
- *
- *
- * pb_type: Internal subblocks and routing information for this physical block
- * pb_graph_head: Head of DAG of pb_types_nodes and their edges
  *
  * area: Describes how much area this logic block takes, if undefined, use default
  * type_timing_inf: timing information unique to this type

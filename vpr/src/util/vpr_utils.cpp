@@ -643,6 +643,9 @@ bool is_empty_type(t_physical_tile_type_ptr type) {
 t_physical_tile_type_ptr physical_tile_type(t_logical_block_type_ptr logical_block_type) {
     auto& device_ctx = g_vpr_ctx.device();
 
+    /* It is assumed that there is a 1:1 mapping between logical and physical types
+     * making it possible to use the same index to access the corresponding type
+     */
     return &device_ctx.physical_tile_types[logical_block_type->index];
 }
 
@@ -657,6 +660,9 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
 t_logical_block_type_ptr logical_block_type(t_physical_tile_type_ptr physical_tile_type) {
     auto& device_ctx = g_vpr_ctx.device();
 
+    /* It is assumed that there is a 1:1 mapping between logical and physical types
+     * making it possible to use the same index to access the corresponding type
+     */
     return &device_ctx.logical_block_types[physical_tile_type->index];
 }
 
