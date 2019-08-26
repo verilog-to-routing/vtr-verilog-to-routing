@@ -17,7 +17,7 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
 
     std::map<t_physical_tile_type_ptr, size_t> total_input_pins;
     std::map<t_physical_tile_type_ptr, size_t> total_output_pins;
-    for (auto const &type : device_ctx.physical_tile_types) {
+    for (auto const& type : device_ctx.physical_tile_types) {
         if (is_empty_type(&type)) continue;
 
         t_pb_type* pb_type = logical_block_type(&type)->pb_type;
@@ -40,7 +40,7 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
 
     os << std::fixed << std::setprecision(2);
 
-    for (auto const &physical_type : device_ctx.physical_tile_types) {
+    for (auto const& physical_type : device_ctx.physical_tile_types) {
         auto type = &physical_type;
         if (is_empty_type(type)) continue;
         if (!inputs_used.count(type)) continue;

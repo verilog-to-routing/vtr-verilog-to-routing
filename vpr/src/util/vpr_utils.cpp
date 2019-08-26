@@ -718,7 +718,7 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
 }
 
 t_physical_tile_type_ptr find_block_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types) {
-    for (auto const &type : types) {
+    for (auto const& type : types) {
         if (type.name == name) {
             return &type;
         }
@@ -2228,7 +2228,7 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
 int max_pins_per_grid_tile() {
     auto& device_ctx = g_vpr_ctx.device();
     int max_pins = 0;
-    for (auto &type : device_ctx.physical_tile_types) {
+    for (auto& type : device_ctx.physical_tile_types) {
         int pins_per_grid_tile = type.num_pins / (type.width * type.height);
         //Use the maximum number of pins normalized by block area
         max_pins = max(max_pins, pins_per_grid_tile);

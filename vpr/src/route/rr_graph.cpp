@@ -680,8 +680,8 @@ static void build_rr_graph(const t_graph_type graph_type,
             auto perturb_opins = alloc_and_load_perturb_opins(&types[itype], Fc_out[itype],
                                                               max_chan_width, segment_inf);
             opin_to_track_map[itype] = alloc_and_load_pin_to_track_map(DRIVER,
-                                                                   Fc_out[itype], &types[itype], perturb_opins, directionality,
-                                                                   segment_inf.size(), sets_per_seg_type);
+                                                                       Fc_out[itype], &types[itype], perturb_opins, directionality,
+                                                                       segment_inf.size(), sets_per_seg_type);
         }
     }
     /* END OPIN MAP */
