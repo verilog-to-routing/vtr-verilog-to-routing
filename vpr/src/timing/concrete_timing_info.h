@@ -34,11 +34,17 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
   public:
     //Accessors
     tatum::TimingPathInfo least_slack_critical_path() const override {
-        return find_least_slack_critical_path_delay(*timing_constraints_, *setup_analyzer_);
+        if (least_slack_critical_path_.type() == tatum::TimingType::UNKOWN) {
+            least_slack_critical_path_ = find_least_slack_critical_path_delay(*timing_constraints_, *setup_analyzer_);
+        }
+        return least_slack_critical_path_;
     }
 
     tatum::TimingPathInfo longest_critical_path() const override {
-        return find_longest_critical_path_delay(*timing_constraints_, *setup_analyzer_);
+        if (longest_critical_path_.type() == tatum::TimingType::UNKOWN) {
+            longest_critical_path_ = find_longest_critical_path_delay(*timing_constraints_, *setup_analyzer_);
+        }
+        return longest_critical_path_;
     }
 
     std::vector<tatum::TimingPathInfo> critical_paths() const override {
@@ -46,11 +52,17 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
     }
 
     float setup_total_negative_slack() const override {
-        return find_setup_total_negative_slack(*setup_analyzer_);
+        if (std::isnan(sTNS_)) {
+            sTNS_ = find_setup_total_negative_slack(*setup_analyzer_);
+        }
+        return sTNS_;
     }
 
     float setup_worst_negative_slack() const override {
-        return find_setup_worst_negative_slack(*setup_analyzer_);
+        if (std::isnan(sWNS_)) {
+            sWNS_ = find_setup_worst_negative_slack(*setup_analyzer_);
+        }
+        return sWNS_;
     }
 
     float setup_pin_slack(AtomPinId pin) const override {
@@ -85,6 +97,12 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
         if (warn_unconstrained_) {
             warn_unconstrained(analyzer());
         }
+
+        //Reset cached values to invalid (calculated lazily in accessors)
+        sTNS_ = std::numeric_limits<float>::quiet_NaN();
+        sWNS_ = std::numeric_limits<float>::quiet_NaN();
+        least_slack_critical_path_ = tatum::TimingPathInfo();
+        longest_critical_path_ = tatum::TimingPathInfo();
     }
 
     void update_setup() override {
@@ -121,7 +139,6 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
     void set_warn_unconstrained(bool val) override { warn_unconstrained_ = val; }
 
   private:
-  private:
     //Data
     std::shared_ptr<const tatum::TimingGraph> timing_graph_;
     std::shared_ptr<const tatum::TimingConstraints> timing_constraints_;
@@ -129,6 +146,12 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
     std::shared_ptr<tatum::SetupTimingAnalyzer> setup_analyzer_;
 
     SetupSlackCrit slack_crit_;
+
+    //Cached values
+    mutable float sTNS_ = std::numeric_limits<float>::quiet_NaN();
+    mutable float sWNS_ = std::numeric_limits<float>::quiet_NaN();
+    mutable tatum::TimingPathInfo least_slack_critical_path_;
+    mutable tatum::TimingPathInfo longest_critical_path_;
 
     bool warn_unconstrained_ = true;
 
