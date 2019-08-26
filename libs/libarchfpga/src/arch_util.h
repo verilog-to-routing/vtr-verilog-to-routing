@@ -39,8 +39,8 @@ class InstPort {
 
 void free_arch(t_arch* arch);
 
-void free_type_descriptors(std::vector<t_logical_block_type>& type_descriptors, int num_type_descriptors);
-void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors, int num_type_descriptors);
+void free_type_descriptors(std::vector<t_logical_block_type>& type_descriptors);
+void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors);
 
 t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, int* low_index);
 
@@ -60,8 +60,7 @@ e_power_estimation_method power_method_inherited(e_power_estimation_method paren
 void CreateModelLibrary(t_arch* arch);
 
 void SyncModelsPbTypes(t_arch* arch,
-                       const std::vector<t_logical_block_type>& Types,
-                       const int NumTypes);
+                       const std::vector<t_logical_block_type>& Types);
 
 void SyncModelsPbTypes_rec(t_arch* arch,
                            t_pb_type* pb_type);

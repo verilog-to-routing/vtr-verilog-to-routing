@@ -274,10 +274,9 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_bl
     float device_utilization = calculate_device_utilization(grid, num_type_instances);
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
     std::map<t_logical_block_type_ptr, float> type_util;
-    for (int i = 0; i < device_ctx.num_block_types; ++i) {
-        auto type = &device_ctx.logical_block_types[i];
-        auto physical_type = physical_tile_type(type);
-        auto itr = num_type_instances.find(type);
+    for (const auto& type : device_ctx.logical_block_types) {
+        auto physical_type = physical_tile_type(&type);
+        auto itr = num_type_instances.find(&type);
         if (itr == num_type_instances.end()) continue;
 
         float num_instances = itr->second;
@@ -285,12 +284,12 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_bl
         if (device_ctx.grid.num_instances(physical_type) != 0) {
             util = num_instances / device_ctx.grid.num_instances(physical_type);
         }
-        type_util[type] = util;
+        type_util[&type] = util;
 
         if (util > 1.) {
             fits_on_device = false;
         }
-        VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type->name);
+        VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type.name);
     }
     VTR_LOG("\n");
 
@@ -413,7 +412,7 @@ static std::string target_external_pin_util_to_string(const t_ext_pin_util_targe
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+    for (unsigned int itype = 0; itype < device_ctx.physical_tile_types.size(); ++itype) {
         if (is_empty_type(&device_ctx.physical_tile_types[itype])) continue;
 
         auto blk_name = device_ctx.physical_tile_types[itype].name;
@@ -423,7 +422,7 @@ static std::string target_external_pin_util_to_string(const t_ext_pin_util_targe
         auto pin_util = ext_pin_utils.get_pin_util(blk_name);
         ss << pin_util.input_pin_util << ',' << pin_util.output_pin_util;
 
-        if (itype != device_ctx.num_block_types - 1) {
+        if (itype != device_ctx.physical_tile_types.size() - 1) {
             ss << " ";
         }
     }
@@ -506,7 +505,7 @@ static std::string high_fanout_thresholds_to_string(const t_pack_high_fanout_thr
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+    for (unsigned int itype = 0; itype < device_ctx.physical_tile_types.size(); ++itype) {
         if (is_empty_type(&device_ctx.physical_tile_types[itype])) continue;
 
         auto blk_name = device_ctx.physical_tile_types[itype].name;
@@ -516,7 +515,7 @@ static std::string high_fanout_thresholds_to_string(const t_pack_high_fanout_thr
         auto threshold = hf_thresholds.get_threshold(blk_name);
         ss << threshold;
 
-        if (itype != device_ctx.num_block_types - 1) {
+        if (itype != device_ctx.physical_tile_types.size() - 1) {
             ss << " ";
         }
     }

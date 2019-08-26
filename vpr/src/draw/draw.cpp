@@ -877,8 +877,8 @@ void init_draw_coords(float width_val) {
     }
     draw_coords->tile_width = width_val;
     draw_coords->pin_size = 0.3;
-    for (int i = 0; i < device_ctx.num_block_types; ++i) {
-        auto num_pins = device_ctx.physical_tile_types[i].num_pins;
+    for (const auto& type : device_ctx.physical_tile_types) {
+        auto num_pins = type.num_pins;
         if (num_pins > 0) {
             draw_coords->pin_size = min(draw_coords->pin_size,
                                         (draw_coords->get_tile_width() / (4.0F * num_pins)));
@@ -3287,14 +3287,15 @@ static void draw_block_pin_util() {
 
     std::map<t_physical_tile_type_ptr, size_t> total_input_pins;
     std::map<t_physical_tile_type_ptr, size_t> total_output_pins;
-    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
-        t_physical_tile_type_ptr type = &device_ctx.physical_tile_types[itype];
-        if (is_empty_type(type)) continue;
+    for (const auto& type : device_ctx.physical_tile_types) {
+        if (is_empty_type(&type)) {
+            continue;
+        }
 
-        t_pb_type* pb_type = logical_block_type(type)->pb_type;
+        t_pb_type* pb_type = logical_block_type(&type)->pb_type;
 
-        total_input_pins[type] = pb_type->num_input_pins + pb_type->num_clock_pins;
-        total_output_pins[type] = pb_type->num_output_pins;
+        total_input_pins[&type] = pb_type->num_input_pins + pb_type->num_clock_pins;
+        total_output_pins[&type] = pb_type->num_output_pins;
     }
 
     auto blks = cluster_ctx.clb_nlist.blocks();

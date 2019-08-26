@@ -581,13 +581,11 @@ static void power_reset_pb_type(t_pb_type* pb_type) {
  * Resets the power usage for all tile types
  */
 static void power_reset_tile_usage() {
-    int type_idx;
-
     auto& device_ctx = g_vpr_ctx.device();
 
-    for (type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
-        if (device_ctx.logical_block_types[type_idx].pb_type) {
-            power_reset_pb_type(device_ctx.logical_block_types[type_idx].pb_type);
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (type.pb_type) {
+            power_reset_pb_type(type.pb_type);
         }
     }
 }
@@ -1150,23 +1148,21 @@ void power_uninit_pb_pins_rec(t_pb_graph_node* pb_node) {
 }
 
 void power_pb_pins_init() {
-    int type_idx;
     auto& device_ctx = g_vpr_ctx.device();
 
-    for (type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
-        if (device_ctx.logical_block_types[type_idx].pb_graph_head) {
-            power_init_pb_pins_rec(device_ctx.logical_block_types[type_idx].pb_graph_head);
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (type.pb_graph_head) {
+            power_init_pb_pins_rec(type.pb_graph_head);
         }
     }
 }
 
 void power_pb_pins_uninit() {
-    int type_idx;
     auto& device_ctx = g_vpr_ctx.device();
 
-    for (type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
-        if (device_ctx.logical_block_types[type_idx].pb_graph_head) {
-            power_uninit_pb_pins_rec(device_ctx.logical_block_types[type_idx].pb_graph_head);
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (type.pb_graph_head) {
+            power_uninit_pb_pins_rec(type.pb_graph_head);
         }
     }
 }
@@ -1825,10 +1821,9 @@ static void power_print_breakdown_pb(FILE* fp) {
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    for (int type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
-        if (device_ctx.logical_block_types[type_idx].pb_type) {
-            power_print_breakdown_pb_rec(fp,
-                                         device_ctx.logical_block_types[type_idx].pb_type, 0);
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (type.pb_type) {
+            power_print_breakdown_pb_rec(fp, type.pb_type, 0);
         }
     }
     fprintf(fp, "\n");

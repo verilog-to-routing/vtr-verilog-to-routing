@@ -121,25 +121,24 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
  * Allocate memory into types and load the pb graph with interconnect edges
  */
 void alloc_and_load_all_pb_graphs(bool load_power_structures) {
-    int i, errors;
+    int errors;
     edges_head = nullptr;
     num_edges_head = nullptr;
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        auto type = &device_ctx.logical_block_types[i];
-        auto physical_type = &device_ctx.physical_tile_types[type->index];
-        if (type->pb_type) {
-            type->pb_graph_head = (t_pb_graph_node*)vtr::calloc(1, sizeof(t_pb_graph_node));
+    for (auto &type : device_ctx.logical_block_types) {
+        auto physical_type = &device_ctx.physical_tile_types[type.index];
+        if (type.pb_type) {
+            type.pb_graph_head = (t_pb_graph_node*)vtr::calloc(1, sizeof(t_pb_graph_node));
             int pin_count_in_cluster = 0;
-            alloc_and_load_pb_graph(type->pb_graph_head, nullptr,
-                                    type->pb_type, 0, load_power_structures, pin_count_in_cluster);
-            type->pb_graph_head->total_pb_pins = pin_count_in_cluster;
+            alloc_and_load_pb_graph(type.pb_graph_head, nullptr,
+                                    type.pb_type, 0, load_power_structures, pin_count_in_cluster);
+            type.pb_graph_head->total_pb_pins = pin_count_in_cluster;
             alloc_and_load_pin_locations_from_pb_graph(physical_type);
-            load_pin_classes_in_pb_graph_head(type->pb_graph_head);
+            load_pin_classes_in_pb_graph_head(type.pb_graph_head);
         } else {
-            type->pb_graph_head = nullptr;
-            VTR_ASSERT(physical_tile_type(type) == device_ctx.EMPTY_TYPE);
+            type.pb_graph_head = nullptr;
+            VTR_ASSERT(physical_tile_type(&type) == device_ctx.EMPTY_TYPE);
         }
     }
 
@@ -148,9 +147,9 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
         VTR_LOG_ERROR("in pb graph");
         exit(1);
     }
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        if (device_ctx.logical_block_types[i].pb_type) {
-            load_pb_graph_pin_to_pin_annotations(device_ctx.logical_block_types[i].pb_graph_head);
+    for (auto &type : device_ctx.logical_block_types) {
+        if (type.pb_type) {
+            load_pb_graph_pin_to_pin_annotations(type.pb_graph_head);
         }
     }
 }
@@ -160,7 +159,6 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
  */
 void echo_pb_graph(char* filename) {
     FILE* fp;
-    int i;
 
     fp = vtr::fopen(filename, "w");
 
@@ -168,10 +166,10 @@ void echo_pb_graph(char* filename) {
     fprintf(fp, "--------------------------------------------\n\n");
 
     auto& device_ctx = g_vpr_ctx.device();
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        fprintf(fp, "type %s\n", device_ctx.logical_block_types[i].name);
-        if (device_ctx.logical_block_types[i].pb_graph_head)
-            echo_pb_rec(device_ctx.logical_block_types[i].pb_graph_head, 1, fp);
+    for (auto &type : device_ctx.logical_block_types) {
+        fprintf(fp, "type %s\n", type.name);
+        if (type.pb_graph_head)
+            echo_pb_rec(type.pb_graph_head, 1, fp);
     }
 
     fclose(fp);
@@ -181,7 +179,7 @@ void echo_pb_graph(char* filename) {
  * check pb_type graph and return the number of errors
  */
 static int check_pb_graph() {
-    int i, num_errors;
+    int num_errors;
     /* TODO: Error checks to do
      * 1.  All pin and edge connections are bidirectional and match each other
      * 3.  All ports are unique in a pb_type
@@ -190,9 +188,9 @@ static int check_pb_graph() {
      */
     num_errors = 0;
     auto& device_ctx = g_vpr_ctx.device();
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        if (device_ctx.logical_block_types[i].pb_type) {
-            check_pb_node_rec(device_ctx.logical_block_types[i].pb_graph_head);
+    for (auto &type : device_ctx.logical_block_types) {
+        if (type.pb_type) {
+            check_pb_node_rec(type.pb_graph_head);
         }
     }
     return num_errors;

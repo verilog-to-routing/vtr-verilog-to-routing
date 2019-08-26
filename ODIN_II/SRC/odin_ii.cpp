@@ -70,7 +70,6 @@ global_args_t global_args;
 std::vector<t_physical_tile_type> physical_tile_types;
 std::vector<t_logical_block_type> logical_block_types;
 int block_tag = -1;
-int num_types = 0;
 ids default_net_type = WIRE;
 
 enum ODIN_ERROR_CODE
@@ -259,7 +258,7 @@ netlist_t *start_odin_ii(int argc,char **argv)
 		printf("Reading FPGA Architecture file\n");
 		try 
 		{
-			XmlReadArch(global_args.arch_file.value().c_str(), false, &Arch, physical_tile_types, logical_block_types, &num_types);
+			XmlReadArch(global_args.arch_file.value().c_str(), false, &Arch, physical_tile_types, logical_block_types);
 		} 
 		catch(vtr::VtrError& vtr_error) 
 		{
@@ -330,8 +329,8 @@ int terminate_odin_ii(netlist_t *odin_netlist)
 
 	//Clean-up
 	free_arch(&Arch);
-	free_type_descriptors(logical_block_types, num_types);
-	free_type_descriptors(physical_tile_types, num_types);
+	free_type_descriptors(logical_block_types);
+	free_type_descriptors(physical_tile_types);
 
 	return 0;
 }

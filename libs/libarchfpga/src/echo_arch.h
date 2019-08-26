@@ -6,7 +6,6 @@
 void EchoArch(const char* EchoFile,
               const std::vector<t_physical_tile_type>& PhysicalTileTypes,
               const std::vector<t_logical_block_type>& LogicalBlockTypes,
-              const int NumTypes,
               const t_arch* arch);
 
 #endif

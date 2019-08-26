@@ -35,20 +35,20 @@ using namespace std;
  * while in the post-pack level, block pins are used. The reason block   *
  * type is used instead of blocks is to save memories.                   */
 
-/* f_port_from_blk_pin array allow us to quickly find what port a block *
+/* f_port_from_blk_pin array allow us to quickly find what port a block  *
  * pin corresponds to.                                                   *
- * [0...device_ctx.num_block_types-1][0...blk_pin_count-1]                                *
+ * [0...device_ctx.logical_block_type.size()-1][0...blk_pin_count-1]     *
  *                                                                       */
 static int** f_port_from_blk_pin = nullptr;
 
 /* f_port_pin_from_blk_pin array allow us to quickly find what port pin a*
  * block pin corresponds to.                                             *
- * [0...device_ctx.num_block_types-1][0...blk_pin_count-1]                                */
+ * [0...device_ctx.logical_block_types.size()-1][0...blk_pin_count-1]    */
 static int** f_port_pin_from_blk_pin = nullptr;
 
-/* f_port_pin_to_block_pin array allows us to quickly find what block    *
- * pin a port pin corresponds to.                                        *
- * [0...device_ctx.num_block_types-1][0...num_ports-1][0...num_port_pins-1]               */
+/* f_port_pin_to_block_pin array allows us to quickly find what block                   *
+ * pin a port pin corresponds to.                                                       *
+ * [0...device_ctx.logical_block_types.size()-1][0...num_ports-1][0...num_port_pins-1]  */
 static int*** f_blk_pin_from_port_pin = nullptr;
 
 //Regular expressions used to determine register and logic primitives
@@ -290,17 +290,16 @@ std::string rr_node_arch_name(int inode) {
     return rr_node_arch_name;
 }
 
-IntraLbPbPinLookup::IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types, int ntypes)
-    : block_types_(block_types)
-    , num_types_(ntypes) {
-    intra_lb_pb_pin_lookup_ = new t_pb_graph_pin**[num_types_];
-    for (int itype = 0; itype < num_types_; ++itype) {
+IntraLbPbPinLookup::IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types)
+    : block_types_(block_types) {
+    intra_lb_pb_pin_lookup_ = new t_pb_graph_pin**[block_types_.size()];
+    for (unsigned int itype = 0; itype < block_types_.size(); ++itype) {
         intra_lb_pb_pin_lookup_[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&block_types[itype]);
     }
 }
 
 IntraLbPbPinLookup::IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs)
-    : IntraLbPbPinLookup(rhs.block_types_, rhs.num_types_) {
+    : IntraLbPbPinLookup(rhs.block_types_) {
     //nop
 }
 
@@ -313,21 +312,20 @@ IntraLbPbPinLookup& IntraLbPbPinLookup::operator=(IntraLbPbPinLookup rhs) {
 
 IntraLbPbPinLookup::~IntraLbPbPinLookup() {
     auto& device_ctx = g_vpr_ctx.device();
-    for (int itype = 0; itype < device_ctx.num_block_types; itype++) {
+    for (unsigned int itype = 0; itype < device_ctx.logical_block_types.size(); itype++) {
         free_pb_graph_pin_lookup_from_index(intra_lb_pb_pin_lookup_[itype]);
     }
 
     delete[] intra_lb_pb_pin_lookup_;
 }
 
-const t_pb_graph_pin* IntraLbPbPinLookup::pb_gpin(int itype, int ipin) const {
-    VTR_ASSERT(itype < num_types_);
+const t_pb_graph_pin* IntraLbPbPinLookup::pb_gpin(unsigned int itype, int ipin) const {
+    VTR_ASSERT(itype < block_types_.size());
 
     return intra_lb_pb_pin_lookup_[itype][ipin];
 }
 
 void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs) {
-    std::swap(lhs.num_types_, rhs.num_types_);
     std::swap(lhs.block_types_, rhs.block_types_);
     std::swap(lhs.intra_lb_pb_pin_lookup_, rhs.intra_lb_pb_pin_lookup_);
 }
@@ -719,10 +717,10 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
     *pin_high = (place_ctx.block_locs[blk_id].loc.z + 1) * (type->num_pins / type->capacity) - 1;
 }
 
-t_physical_tile_type_ptr find_block_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types, int num_types) {
-    for (int itype = 0; itype < num_types; ++itype) {
-        if (types[itype].name == name) {
-            return &types[itype];
+t_physical_tile_type_ptr find_block_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types) {
+    for (auto const &type : types) {
+        if (type.name == name) {
+            return &type;
         }
     }
     return nullptr; //Not found
@@ -733,21 +731,17 @@ t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid) {
     //Collect candidate blocks which contain LUTs
     std::vector<t_logical_block_type_ptr> logic_block_candidates;
 
-    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
-        auto type = &device_ctx.logical_block_types[itype];
-
-        if (block_type_contains_blif_model(type, LOGIC_MODEL_REGEX)) {
-            logic_block_candidates.push_back(type);
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (block_type_contains_blif_model(&type, LOGIC_MODEL_REGEX)) {
+            logic_block_candidates.push_back(&type);
         }
     }
 
     if (logic_block_candidates.empty()) {
         //No LUTs, fallback to looking for which contain FFs
-        for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
-            t_logical_block_type_ptr type = &device_ctx.logical_block_types[itype];
-
-            if (block_type_contains_blif_model(type, REGISTER_MODEL_REGEX)) {
-                logic_block_candidates.push_back(type);
+        for (const auto& type : device_ctx.logical_block_types) {
+            if (block_type_contains_blif_model(&type, REGISTER_MODEL_REGEX)) {
+                logic_block_candidates.push_back(&type);
             }
         }
     }
@@ -775,13 +769,11 @@ t_logical_block_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
 
     t_physical_tile_type_ptr max_type = nullptr;
     size_t max_count = 0;
-    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
-        auto type = &device_ctx.physical_tile_types[itype];
-
-        size_t inst_cnt = grid.num_instances(type);
+    for (const auto& type : device_ctx.physical_tile_types) {
+        size_t inst_cnt = grid.num_instances(&type);
         if (max_count < inst_cnt) {
             max_count = inst_cnt;
-            max_type = type;
+            max_type = &type;
         }
     }
 
@@ -795,7 +787,7 @@ InstPort parse_inst_port(std::string str) {
     InstPort inst_port(str);
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto blk_type = find_block_type_by_name(inst_port.instance_name(), device_ctx.physical_tile_types, device_ctx.num_block_types);
+    auto blk_type = find_block_type_by_name(inst_port.instance_name(), device_ctx.physical_tile_types);
     if (!blk_type) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find block type named %s", inst_port.instance_name().c_str());
     }
@@ -1591,11 +1583,11 @@ void get_port_pin_from_blk_pin(int blk_type_index, int blk_pin, int* port, int* 
      *                                                                       *
      * f_port_from_blk_pin array allow us to quickly find what port a        *
      * block pin corresponds to.                                             *
-     * [0...device_ctx.num_block_types-1][0...blk_pin_count-1]                                *
+     * [0...device_ctx.logical_block_types.size()-1][0...blk_pin_count-1]    *
      *                                                                       *
      * f_port_pin_from_blk_pin array allow us to quickly find what port      *
      * pin a block pin corresponds to.                                       *
-     * [0...device_ctx.num_block_types-1][0...blk_pin_count-1]                                */
+     * [0...device_ctx.logical_block_types.size()-1][0...blk_pin_count-1]    */
 
     /* If either one of the arrays is not allocated and loaded, it is        *
      * corrupted, so free both of them.                                      */
@@ -1620,11 +1612,12 @@ void free_port_pin_from_blk_pin() {
      * This function is called when the file-scope arrays are corrupted.     *
      * Otherwise, the arrays are freed in free_placement_structs()           */
 
-    int itype;
+    unsigned int itype;
+
     auto& device_ctx = g_vpr_ctx.device();
 
     if (f_port_from_blk_pin != nullptr) {
-        for (itype = 1; itype < device_ctx.num_block_types; itype++) {
+        for (itype = 1; itype < device_ctx.logical_block_types.size(); itype++) {
             free(f_port_from_blk_pin[itype]);
         }
         free(f_port_from_blk_pin);
@@ -1633,7 +1626,7 @@ void free_port_pin_from_blk_pin() {
     }
 
     if (f_port_pin_from_blk_pin != nullptr) {
-        for (itype = 1; itype < device_ctx.num_block_types; itype++) {
+        for (itype = 1; itype < device_ctx.logical_block_types.size(); itype++) {
             free(f_port_pin_from_blk_pin[itype]);
         }
         free(f_port_pin_from_blk_pin);
@@ -1650,15 +1643,17 @@ static void alloc_and_load_port_pin_from_blk_pin() {
 
     int** temp_port_from_blk_pin = nullptr;
     int** temp_port_pin_from_blk_pin = nullptr;
-    int itype, iblk_pin, iport, iport_pin;
+    unsigned int itype;
+    int iblk_pin, iport, iport_pin;
     int blk_pin_count, num_port_pins, num_ports;
     auto& device_ctx = g_vpr_ctx.device();
 
     /* Allocate and initialize the values to OPEN (-1). */
-    temp_port_from_blk_pin = (int**)vtr::malloc(device_ctx.num_block_types * sizeof(int*));
-    temp_port_pin_from_blk_pin = (int**)vtr::malloc(device_ctx.num_block_types * sizeof(int*));
-    for (itype = 1; itype < device_ctx.num_block_types; itype++) {
-        blk_pin_count = device_ctx.physical_tile_types[itype].num_pins;
+    temp_port_from_blk_pin = (int**)vtr::malloc(device_ctx.logical_block_types.size() * sizeof(int*));
+    temp_port_pin_from_blk_pin = (int**)vtr::malloc(device_ctx.logical_block_types.size() * sizeof(int*));
+    for (const auto& type : device_ctx.logical_block_types) {
+        itype = type.index;
+        blk_pin_count = physical_tile_type(&type)->num_pins;
 
         temp_port_from_blk_pin[itype] = (int*)vtr::malloc(blk_pin_count * sizeof(int));
         temp_port_pin_from_blk_pin[itype] = (int*)vtr::malloc(blk_pin_count * sizeof(int));
@@ -1670,14 +1665,19 @@ static void alloc_and_load_port_pin_from_blk_pin() {
     }
 
     /* Load the values */
-    /* itype starts from 1 since device_ctx.block_types[0] is the EMPTY_TYPE. */
-    for (itype = 1; itype < device_ctx.num_block_types; itype++) {
+    for (const auto& type : device_ctx.logical_block_types) {
+        itype = type.index;
+
+        /* itype starts from 1 since device_ctx.logical_block_types[0] is the EMPTY_TYPE. */
+        if (itype == 0) {
+            continue;
+        }
+
         blk_pin_count = 0;
-        auto type = &device_ctx.physical_tile_types[itype];
-        num_ports = logical_block_type(type)->pb_type->num_ports;
+        num_ports = type.pb_type->num_ports;
 
         for (iport = 0; iport < num_ports; iport++) {
-            num_port_pins = logical_block_type(type)->pb_type->ports[iport].num_pins;
+            num_port_pins = type.pb_type->ports[iport].num_pins;
 
             for (iport_pin = 0; iport_pin < num_port_pins; iport_pin++) {
                 temp_port_from_blk_pin[itype][blk_pin_count] = iport;
@@ -1693,14 +1693,14 @@ static void alloc_and_load_port_pin_from_blk_pin() {
 }
 
 void get_blk_pin_from_port_pin(int blk_type_index, int port, int port_pin, int* blk_pin) {
-    /* This mapping is needed since there are two different netlist          *
-     * conventions - in the cluster level, ports and port pins are used      *
-     * while in the post-pack level, block pins are used. The reason block   *
-     * type is used instead of blocks is to save memories.                   *
-     *                                                                       *
-     * f_port_pin_to_block_pin array allows us to quickly find what block    *
-     * pin a port pin corresponds to.                                        *
-     * [0...device_ctx.num_block_types-1][0...num_ports-1][0...num_port_pins-1]               */
+    /* This mapping is needed since there are two different netlist                         *
+     * conventions - in the cluster level, ports and port pins are used                     *
+     * while in the post-pack level, block pins are used. The reason block                  *
+     * type is used instead of blocks is to save memories.                                  *
+     *                                                                                      *
+     * f_port_pin_to_block_pin array allows us to quickly find what block                   *
+     * pin a port pin corresponds to.                                                       *
+     * [0...device_ctx.logical_block_types.size()-1][0...num_ports-1][0...num_port_pins-1]  */
 
     /* If the array is not allocated and loaded, allocate it.                */
     if (f_blk_pin_from_port_pin == nullptr) {
@@ -1717,12 +1717,13 @@ void free_blk_pin_from_port_pin() {
      * This function is called when the arrays are freed in   *
      * free_placement_structs()                               */
 
-    int itype, iport, num_ports;
+    int iport, num_ports;
     auto& device_ctx = g_vpr_ctx.device();
 
     if (f_blk_pin_from_port_pin != nullptr) {
-        for (itype = 1; itype < device_ctx.num_block_types; itype++) {
-            num_ports = device_ctx.logical_block_types[itype].pb_type->num_ports;
+        for (const auto& type : device_ctx.logical_block_types) {
+            int itype = type.index;
+            num_ports = type.pb_type->num_ports;
             for (iport = 0; iport < num_ports; iport++) {
                 free(f_blk_pin_from_port_pin[itype][iport]);
             }
@@ -1740,13 +1741,14 @@ static void alloc_and_load_blk_pin_from_port_pin() {
      * The arrays are freed in free_placement_structs()                      */
 
     int*** temp_blk_pin_from_port_pin = nullptr;
-    int itype, iport, iport_pin;
+    unsigned int itype;
+    int iport, iport_pin;
     int blk_pin_count, num_port_pins, num_ports;
     auto& device_ctx = g_vpr_ctx.device();
 
     /* Allocate and initialize the values to OPEN (-1). */
-    temp_blk_pin_from_port_pin = (int***)vtr::malloc(device_ctx.num_block_types * sizeof(int**));
-    for (itype = 1; itype < device_ctx.num_block_types; itype++) {
+    temp_blk_pin_from_port_pin = (int***)vtr::malloc(device_ctx.logical_block_types.size() * sizeof(int**));
+    for (itype = 1; itype < device_ctx.logical_block_types.size(); itype++) {
         num_ports = device_ctx.logical_block_types[itype].pb_type->num_ports;
         temp_blk_pin_from_port_pin[itype] = (int**)vtr::malloc(num_ports * sizeof(int*));
         for (iport = 0; iport < num_ports; iport++) {
@@ -1761,7 +1763,7 @@ static void alloc_and_load_blk_pin_from_port_pin() {
 
     /* Load the values */
     /* itype starts from 1 since device_ctx.block_types[0] is the EMPTY_TYPE. */
-    for (itype = 1; itype < device_ctx.num_block_types; itype++) {
+    for (itype = 1; itype < device_ctx.logical_block_types.size(); itype++) {
         blk_pin_count = 0;
         num_ports = device_ctx.logical_block_types[itype].pb_type->num_ports;
         for (iport = 0; iport < num_ports; iport++) {
@@ -1921,11 +1923,12 @@ static void mark_direct_of_ports(int idirect, int direct_type, char* pb_type_nam
      * Otherwise, mark down all the pins in that port.                                 */
 
     int num_ports, num_port_pins;
-    int itype, iport;
+    unsigned int itype;
+    int iport;
     auto& device_ctx = g_vpr_ctx.device();
 
     // Go through all the block types
-    for (itype = 1; itype < device_ctx.num_block_types; itype++) {
+    for (itype = 1; itype < device_ctx.logical_block_types.size(); itype++) {
         // Find blocks with the same pb_type_name
         if (strcmp(device_ctx.logical_block_types[itype].pb_type->name, pb_type_name) == 0) {
             num_ports = device_ctx.logical_block_types[itype].pb_type->num_ports;
@@ -1979,7 +1982,7 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
      *                                                                                  *
      * The two arrays are freed by the caller(s).                                       */
 
-    int itype, iblk_pin, idirect, num_type_pins;
+    int iblk_pin, idirect, num_type_pins;
     int **temp_idirect_from_blk_pin, **temp_direct_type_from_blk_pin;
 
     char to_pb_type_name[MAX_STRING_LEN + 1], to_port_name[MAX_STRING_LEN + 1],
@@ -1989,10 +1992,11 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
     auto& device_ctx = g_vpr_ctx.device();
 
     /* Allocate and initialize the values to OPEN (-1). */
-    temp_idirect_from_blk_pin = (int**)vtr::malloc(device_ctx.num_block_types * sizeof(int*));
-    temp_direct_type_from_blk_pin = (int**)vtr::malloc(device_ctx.num_block_types * sizeof(int*));
-    for (itype = 1; itype < device_ctx.num_block_types; itype++) {
-        num_type_pins = device_ctx.physical_tile_types[itype].num_pins;
+    temp_idirect_from_blk_pin = (int**)vtr::malloc(device_ctx.logical_block_types.size() * sizeof(int*));
+    temp_direct_type_from_blk_pin = (int**)vtr::malloc(device_ctx.logical_block_types.size() * sizeof(int*));
+    for (const auto& type : device_ctx.logical_block_types) {
+        int itype = type.index;
+        num_type_pins = physical_tile_type(&type)->num_pins;
 
         temp_idirect_from_blk_pin[itype] = (int*)vtr::malloc(num_type_pins * sizeof(int));
         temp_direct_type_from_blk_pin[itype] = (int*)vtr::malloc(num_type_pins * sizeof(int));
@@ -2224,10 +2228,8 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
 int max_pins_per_grid_tile() {
     auto& device_ctx = g_vpr_ctx.device();
     int max_pins = 0;
-    for (int i = 0; i < device_ctx.num_block_types; i++) {
-        auto type = &device_ctx.physical_tile_types[i];
-
-        int pins_per_grid_tile = type->num_pins / (type->width * type->height);
+    for (auto &type : device_ctx.physical_tile_types) {
+        int pins_per_grid_tile = type.num_pins / (type.width * type.height);
         //Use the maximum number of pins normalized by block area
         max_pins = max(max_pins, pins_per_grid_tile);
     }

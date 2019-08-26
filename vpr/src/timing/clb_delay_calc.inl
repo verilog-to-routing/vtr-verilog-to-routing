@@ -7,7 +7,7 @@
  */
 
 inline ClbDelayCalc::ClbDelayCalc()
-    : intra_lb_pb_pin_lookup_(g_vpr_ctx.device().logical_block_types, g_vpr_ctx.device().num_block_types) {}
+    : intra_lb_pb_pin_lookup_(g_vpr_ctx.device().logical_block_types) {}
 
 inline float ClbDelayCalc::clb_input_to_internal_sink_delay(const ClusterBlockId block_id, const int pin_index, int internal_sink_pin, DelayType delay_type) const {
     int pb_ipin = find_clb_pb_pin(block_id, pin_index);

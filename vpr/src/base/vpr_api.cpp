@@ -418,24 +418,22 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
     VTR_LOG("\n");
     VTR_LOG("Resource usage...\n");
-    for (int i = 0; i < device_ctx.num_block_types; ++i) {
-        auto type = &device_ctx.physical_tile_types[i];
+    for (const auto& type : device_ctx.physical_tile_types) {
         VTR_LOG("\tNetlist      %d\tblocks of type: %s\n",
-                num_type_instances[logical_block_type(type)], type->name);
+                num_type_instances[logical_block_type(&type)], type.name);
         VTR_LOG("\tArchitecture %d\tblocks of type: %s\n",
-                device_ctx.grid.num_instances(type), type->name);
+                device_ctx.grid.num_instances(&type), type.name);
     }
     VTR_LOG("\n");
 
     float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
-    for (int i = 0; i < device_ctx.num_block_types; ++i) {
-        auto type = &device_ctx.physical_tile_types[i];
+    for (const auto& type : device_ctx.physical_tile_types) {
         float util = 0.;
-        if (device_ctx.grid.num_instances(type) != 0) {
-            util = float(num_type_instances[logical_block_type(type)]) / device_ctx.grid.num_instances(type);
+        if (device_ctx.grid.num_instances(&type) != 0) {
+            util = float(num_type_instances[logical_block_type(&type)]) / device_ctx.grid.num_instances(&type);
         }
-        VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type->name);
+        VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type.name);
     }
     VTR_LOG("\n");
 
@@ -814,7 +812,6 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 
     //Create the RR graph
     create_rr_graph(graph_type,
-                    device_ctx.num_block_types,
                     device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
@@ -961,8 +958,8 @@ void free_device(const t_det_routing_arch& routing_arch) {
 static void free_complex_block_types() {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    free_type_descriptors(device_ctx.logical_block_types, device_ctx.num_block_types);
-    free_type_descriptors(device_ctx.physical_tile_types, device_ctx.num_block_types);
+    free_type_descriptors(device_ctx.logical_block_types);
+    free_type_descriptors(device_ctx.physical_tile_types);
     free_pb_graph_edges();
 }
 

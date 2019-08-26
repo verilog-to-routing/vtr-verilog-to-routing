@@ -58,7 +58,6 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
 
 void draw_internal_alloc_blk() {
     t_draw_coords* draw_coords;
-    int i;
     t_pb_graph_node* pb_graph_head;
 
     /* Call accessor function to retrieve global variables. */
@@ -68,21 +67,20 @@ void draw_internal_alloc_blk() {
      * block.
      */
     auto& device_ctx = g_vpr_ctx.device();
-    draw_coords->blk_info.resize(device_ctx.num_block_types);
+    draw_coords->blk_info.resize(device_ctx.logical_block_types.size());
 
-    for (i = 0; i < device_ctx.num_block_types; ++i) {
-        /* Empty block has no sub_blocks */
-        auto type = &device_ctx.logical_block_types[i];
-        if (physical_tile_type(type) == device_ctx.EMPTY_TYPE)
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (physical_tile_type(&type) == device_ctx.EMPTY_TYPE) {
             continue;
+        }
 
-        pb_graph_head = type->pb_graph_head;
+        pb_graph_head = type.pb_graph_head;
 
         /* Create an vector with size equal to the total number of pins for each type
          * of physical logic block, in order to uniquely identify each sub-block in
          * the pb_graph of that type.
          */
-        draw_coords->blk_info.at(i).subblk_array.resize(pb_graph_head->total_pb_pins);
+        draw_coords->blk_info.at(type.index).subblk_array.resize(pb_graph_head->total_pb_pins);
     }
 }
 
@@ -94,9 +92,8 @@ void draw_internal_init_blk() {
     t_pb_graph_node* pb_graph_head_node;
 
     auto& device_ctx = g_vpr_ctx.device();
-    for (int i = 0; i < device_ctx.num_block_types; ++i) {
+    for (const auto& type : device_ctx.physical_tile_types) {
         /* Empty block has no sub_blocks */
-        auto type = device_ctx.physical_tile_types[i];
         if (&type == device_ctx.EMPTY_TYPE)
             continue;
 

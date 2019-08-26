@@ -58,20 +58,19 @@ std::string rr_node_arch_name(int inode);
 //Class for looking up pb graph pins from block pin indicies
 class IntraLbPbPinLookup {
   public:
-    IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types, int num_block_types);
+    IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types);
     IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs);
     IntraLbPbPinLookup& operator=(IntraLbPbPinLookup rhs);
     ~IntraLbPbPinLookup();
 
     //Returns the pb graph pin associated with the specified type (index into block types array) and
     // pb pin index (index into block_pb().pb_route)
-    const t_pb_graph_pin* pb_gpin(int itype, int ipin) const;
+    const t_pb_graph_pin* pb_gpin(unsigned int itype, int ipin) const;
 
     friend void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs);
 
   private:
     std::vector<t_logical_block_type> block_types_;
-    int num_types_;
 
     t_pb_graph_pin*** intra_lb_pb_pin_lookup_;
 };
@@ -112,7 +111,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::st
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
 //Returns the block type matching name, or nullptr (if not found)
-t_physical_tile_type_ptr find_block_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types, int num_types);
+t_physical_tile_type_ptr find_block_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types);
 
 //Returns the block type which is most common in the device grid
 t_logical_block_type_ptr find_most_common_block_type(const DeviceGrid& grid);

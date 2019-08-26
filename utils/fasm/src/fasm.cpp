@@ -33,8 +33,8 @@ FasmWriterVisitor::FasmWriterVisitor(std::ostream& f) : os_(f) {}
 void FasmWriterVisitor::visit_top_impl(const char* top_level_name) {
     (void)top_level_name;
     auto& device_ctx = g_vpr_ctx.device();
-    pb_graph_pin_lookup_from_index_by_type_.resize(device_ctx.num_block_types);
-    for(int itype = 0; itype < device_ctx.num_block_types; itype++) {
+    pb_graph_pin_lookup_from_index_by_type_.resize(device_ctx.logical_block_types.size());
+    for(unsigned int itype = 0; itype < device_ctx.logical_block_types.size(); itype++) {
         pb_graph_pin_lookup_from_index_by_type_.at(itype) = alloc_and_load_pb_graph_pin_lookup_from_index(&device_ctx.logical_block_types[itype]);
     }
 }
@@ -612,7 +612,7 @@ void FasmWriterVisitor::walk_routing() {
 
 void FasmWriterVisitor::finish_impl() {
     auto& device_ctx = g_vpr_ctx.device();
-    for(int itype = 0; itype < device_ctx.num_block_types; itype++) {
+    for(unsigned int itype = 0; itype < device_ctx.logical_block_types.size(); itype++) {
         free_pb_graph_pin_lookup_from_index (pb_graph_pin_lookup_from_index_by_type_.at(itype));
     }
 

@@ -67,7 +67,6 @@ void SetupVPR(const t_options* Options,
               int* GraphPause,
               bool* SaveGraphics,
               t_power_opts* PowerOpts) {
-    int i;
     using argparse::Provenance;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -106,8 +105,7 @@ void SetupVPR(const t_options* Options,
                     TimingEnabled,
                     Arch,
                     device_ctx.physical_tile_types,
-                    device_ctx.logical_block_types,
-                    &device_ctx.num_block_types);
+                    device_ctx.logical_block_types);
     }
 
     *user_models = Arch->models;
@@ -115,17 +113,16 @@ void SetupVPR(const t_options* Options,
 
     /* TODO: this is inelegant, I should be populating this information in XmlReadArch */
     device_ctx.EMPTY_TYPE = nullptr;
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        t_physical_tile_type_ptr type = &device_ctx.physical_tile_types[i];
-        if (strcmp(type->name, EMPTY_BLOCK_NAME) == 0) {
+    for (const auto& type : device_ctx.physical_tile_types) {
+        if (strcmp(type.name, EMPTY_BLOCK_NAME) == 0) {
             VTR_ASSERT(device_ctx.EMPTY_TYPE == nullptr);
-            device_ctx.EMPTY_TYPE = type;
+            device_ctx.EMPTY_TYPE = &type;
         } else {
-            if (block_type_contains_blif_model(logical_block_type(type), MODEL_INPUT)) {
-                device_ctx.input_types.insert(type);
+            if (block_type_contains_blif_model(logical_block_type(&type), MODEL_INPUT)) {
+                device_ctx.input_types.insert(&type);
             }
-            if (block_type_contains_blif_model(logical_block_type(type), MODEL_OUTPUT)) {
-                device_ctx.output_types.insert(type);
+            if (block_type_contains_blif_model(logical_block_type(&type), MODEL_OUTPUT)) {
+                device_ctx.output_types.insert(&type);
             }
         }
     }
@@ -224,8 +221,7 @@ void SetupVPR(const t_options* Options,
     *SaveGraphics = Options->save_graphics;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
-        EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.physical_tile_types, device_ctx.logical_block_types, device_ctx.num_block_types,
-                 Arch);
+        EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.physical_tile_types, device_ctx.logical_block_types, Arch);
     }
 }
 
