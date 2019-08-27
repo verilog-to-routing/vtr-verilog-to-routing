@@ -103,16 +103,10 @@ static e_directionality switch_type_directionaity(SwitchType type) {
 /*
  * t_physical_tile_type
  */
-std::vector<int> t_physical_tile_type::get_clock_pins_indices(t_logical_block_type_ptr logic_block) const {
-    VTR_ASSERT(logic_block->pb_type); // assert not a nullptr
-
+std::vector<int> t_physical_tile_type::get_clock_pins_indices() const {
     std::vector<int> indices; // function return vector
 
     // Temporary variables
-    int num_input_pins = logic_block->pb_type->num_input_pins;
-    int num_output_pins = logic_block->pb_type->num_output_pins;
-    int num_clock_pins = logic_block->pb_type->num_clock_pins;
-
     int clock_pins_start_idx = 0;
     int clock_pins_stop_idx = 0;
 
@@ -123,8 +117,8 @@ std::vector<int> t_physical_tile_type::get_clock_pins_indices(t_logical_block_ty
         // TODO: This pin ordering assumption is also used functions such as load_external_nets_and_cb
         //       either remove this assumption all togther and create a better mapping or make use of
         //       the same functions throughout the code that return the pin ranges.
-        clock_pins_start_idx = num_input_pins + num_output_pins + clock_pins_stop_idx;
-        clock_pins_stop_idx = clock_pins_start_idx + num_clock_pins;
+        clock_pins_start_idx = this->num_input_pins + this->num_output_pins + clock_pins_stop_idx;
+        clock_pins_stop_idx = clock_pins_start_idx + this->num_clock_pins;
 
         for (int pin_idx = clock_pins_start_idx; pin_idx < clock_pins_stop_idx; pin_idx++) {
             indices.push_back(pin_idx);
