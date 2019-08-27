@@ -213,7 +213,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                     continue;
                 }
 
-                for (auto clock_pin_idx : type->get_clock_pins_indices(logical_block_type(type))) {
+                for (auto clock_pin_idx : type->get_clock_pins_indices()) {
                     //Can't do anything if pin isn't at this location
                     if (0 == type->pinloc[width_offset][height_offset][side][clock_pin_idx]) {
                         continue;

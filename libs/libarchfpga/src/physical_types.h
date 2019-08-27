@@ -52,6 +52,10 @@ struct t_pb_type_power;
 struct t_mode_power;
 struct t_interconnect_power;
 struct t_port_power;
+struct t_physical_port;
+struct t_equivalent_site;
+struct t_physical_tile_type;
+struct t_logical_block_type;
 struct t_pb_type;
 struct t_pb_graph_pin_power;
 struct t_mode;
@@ -584,6 +588,10 @@ typedef const t_logical_block_type* t_logical_block_type_ptr;
 struct t_physical_tile_type {
     char* name = nullptr;
     int num_pins = 0;
+    int num_input_pins = 0;
+    int num_output_pins = 0;
+    int num_clock_pins = 0;
+
     int capacity = 0;
 
     int width = 0;
@@ -598,6 +606,7 @@ struct t_physical_tile_type {
     int num_class = 0;
     t_class* class_inf = nullptr; /* [0..num_class-1] */
 
+    std::vector<t_physical_port> ports;
     std::vector<int> pin_width_offset;  //[0..num_pins-1]
     std::vector<int> pin_height_offset; //[0..num_pins-1]
     int* pin_class = nullptr;           /* [0..num_pins-1] */
@@ -619,10 +628,55 @@ struct t_physical_tile_type {
 
     int logical_block_index = -1; /* index of the corresponding logical block type */
 
+    std::vector<t_equivalent_site> equivalent_sites;
+
     /* Returns the indices of pins that contain a clock for this physical logic block */
-    std::vector<int> get_clock_pins_indices(t_logical_block_type_ptr logic_block) const;
+    std::vector<int> get_clock_pins_indices() const;
 };
 typedef const t_physical_tile_type* t_physical_tile_type_ptr;
+
+/** Describes I/O and clock ports of a physical tile type
+ *
+ *  It corresponds to <port/> tags in the FPGA architecture description
+ *
+ *  Data members:
+ *      name: name of the port
+ *      is_clock: whether or not this port is a clock
+ *      is_non_clock_global: Applies to top level pb_type, this pin is not a clock but
+ *                           is a global signal (useful for stuff like global reset signals,
+ *                           perhaps useful for VCC and GND)
+ *      num_pins: the number of pins this port has
+ *      tile_type: pointer to the associated tile type
+ *      port_class: port belongs to recognized set of ports in class library
+ *      index: port index by index in array of parent pb_type
+ *      port_index_by_type index of port by type (index by input, output, or clock)
+ *      equivalence: Applies to logic block I/Os and to primitive inputs only
+ */
+struct t_physical_port {
+    char* name;
+    enum PORTS type;
+    bool is_clock;
+    bool is_non_clock_global;
+    int num_pins;
+    PortEquivalence equivalent;
+
+    int index;
+    int port_index_by_type;
+    int tile_type_index;
+};
+
+/** Describes the equivalent sites related to a specific tile type
+ *
+ *  It corresponds to the <tile> tags in the FPGA architecture description
+ *
+ */
+struct t_equivalent_site {
+    char* pb_type_name;
+
+    // XXX Variables to hold information on mapping between site and tile
+    // XXX as well as references to the belonging pb_type and tile_type
+    //t_logical_block_type* block_type;
+};
 
 /*************************************************************************************************
  * PB Type Hierarchy                                                                             *
