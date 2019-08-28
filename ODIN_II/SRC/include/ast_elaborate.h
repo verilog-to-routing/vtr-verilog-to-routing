@@ -25,5 +25,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define AST_ELABORATE_H
 
 int simplify_ast_module(ast_node_t **ast_module, sc_hierarchy *local_ref);
+void create_param_table_for_scope(ast_node_t* module_items, sc_hierarchy *local_ref);
 
 #endif

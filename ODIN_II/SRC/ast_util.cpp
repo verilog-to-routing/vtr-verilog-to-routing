@@ -386,8 +386,6 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 	int j;
 	ast_node_t *rnode[3] = { 0 };
 
-	STRING_CACHE *local_symbol_table_sc = local_ref->local_symbol_table_sc;
-
 	concat_top->types.concat.num_bit_strings = 0;
 	concat_top->types.concat.bit_strings = NULL;
 
@@ -405,14 +403,13 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 		if (concat_top->children[i]->type == IDENTIFIERS)
 		{
 			char *temp_string = make_full_ref_name(NULL, NULL, NULL, concat_top->children[i]->types.identifier, -1);
-			long sc_spot;
-			if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) == -1)
+			ast_node_t *var_declare = resolve_hierarchical_name_reference(local_ref, temp_string);
+			if (var_declare == NULL)
 			{
 				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missing declaration of this symbol %s\n", temp_string);
 			}
 			else
 			{
-				ast_node_t *var_declare = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
 				if (var_declare->children[1] == NULL)
 				{
 					concat_top->types.concat.num_bit_strings ++;
@@ -566,7 +563,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	char *return_string = NULL;
 	ast_node_t *rnode[3] = { 0 };
 
-	STRING_CACHE *local_symbol_table_sc = local_ref->local_symbol_table_sc;
+	// STRING_CACHE *local_symbol_table_sc = local_ref->local_symbol_table_sc;
 
 	if (var_node->type == ARRAY_REF)
 	{
@@ -594,22 +591,22 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	}
 	else if (var_node->type == IDENTIFIERS)
 	{
-		long sc_spot;
+		ast_node_t *symbol_node;
 		int pin_index = 0;
 
-		if ((sc_spot = sc_lookup_string(local_symbol_table_sc, var_node->types.identifier)) == -1)
+		if ((symbol_node = resolve_hierarchical_name_reference(local_ref, var_node->types.identifier)) == NULL)
 		{
 			error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", var_node->types.identifier);
 		}
 
-		if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[1] == NULL)
+		if (symbol_node->children[1] == NULL)
 		{
 			pin_index = bit;
 		}
-		else if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[3] == NULL)
+		else if (symbol_node->children[3] == NULL)
 		{
-			oassert(((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]->type == NUMBERS);
-			pin_index = ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]->types.vnumber->get_value() + bit;
+			oassert(symbol_node->children[2]->type == NUMBERS);
+			pin_index = symbol_node->children[2]->types.vnumber->get_value() + bit;
 		}
 		else
 			oassert(false);
@@ -704,8 +701,6 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 	int i;
 	int width = 0;
 
-	STRING_CACHE *local_symbol_table_sc = local_ref->local_symbol_table_sc;
-
 	if (var_node->type == ARRAY_REF)
 	{
 		width = 1;
@@ -740,16 +735,11 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 	else if (var_node->type == IDENTIFIERS)
 	{
 		/* need to look in the symbol table for details about this identifier (i.e. is it a port) */
-		long sc_spot;
 
-		ast_node_t *sym_node = NULL;
 		char *temp_string = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier, -1);
+		ast_node_t *sym_node = resolve_hierarchical_name_reference(local_ref, temp_string);
 
-		if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) > -1)
-		{
-			sym_node = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
-		}
-		else 
+		if (sym_node == NULL)
 		{
 			error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", temp_string);
 		}
@@ -859,7 +849,6 @@ long get_size_of_variable(ast_node_t *node, sc_hierarchy *local_ref)
 	long sc_spot = 0;
 	ast_node_t *var_declare = NULL;
 
-	STRING_CACHE *local_symbol_table_sc = local_ref->local_symbol_table_sc;
 	STRING_CACHE *local_param_table_sc = local_ref->local_param_table_sc;
 
 	switch(node->type)
@@ -884,10 +873,10 @@ long get_size_of_variable(ast_node_t *node, sc_hierarchy *local_ref)
 				return assignment_size;
 			}
 
-			sc_spot = sc_lookup_string(local_symbol_table_sc, node->types.identifier);
-			if (sc_spot > -1)
+			ast_node_t *sym_node = resolve_hierarchical_name_reference(local_ref, node->types.identifier);
+			if (sym_node != NULL)
 			{
-				var_declare = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
+				var_declare = sym_node; // (ast_node_t *)local_symbol_table_sc->data[sc_spot];
 				break;
 			}
 
@@ -897,10 +886,10 @@ long get_size_of_variable(ast_node_t *node, sc_hierarchy *local_ref)
 
 		case ARRAY_REF:
 		{
-			sc_spot = sc_lookup_string(local_symbol_table_sc, node->children[0]->types.identifier);
-			if (sc_spot > -1)
+			ast_node_t *sym_node = resolve_hierarchical_name_reference(local_ref, node->children[0]->types.identifier);
+			if (sym_node != NULL)
 			{
-				var_declare = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
+				var_declare = sym_node;
 				break;
 			}
 			
@@ -1421,6 +1410,7 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->net_node = 0;
 	new_node->types.vnumber = nullptr;
 	new_node->types.identifier = NULL;
+	new_node->types.hierarchy = NULL;
 	new_node->chunk_size = 1;
 }
 
