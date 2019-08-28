@@ -131,7 +131,7 @@ struct e_data
 };
 
 ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t *parent, int index, sc_hierarchy *local_ref, bool is_generate_region, bool fold_expressions, e_data *data);
-ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *local_ref, bool is_generate_region, bool fold_expressions, e_data *data);
+ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *local_ref, bool is_generate_region, bool fold_expressions);
 ast_node_t *reduce_expressions(ast_node_t *node, sc_hierarchy *local_ref, long *max_size, long assignment_size);
 
 void update_string_caches(sc_hierarchy *local_ref);
@@ -190,11 +190,9 @@ int simplify_ast_module(ast_node_t **ast_module, sc_hierarchy *local_ref)
 		parent->children[index] = generate_node;
 	}
 
-	/* TODO apply remaining defparams and check for conflicts */
-
 	/* pass 3: finish AST elaboration */
 	update_string_caches(local_ref);
-	*ast_module = finalize_ast(*ast_module, NULL, local_ref, is_module, true, data);
+	*ast_module = finalize_ast(*ast_module, NULL, local_ref, is_module, true);
 	*ast_module = reduce_expressions(*ast_module, local_ref, NULL, 0);
 
 	if (data->generate.num_generate_constructs > 0) 
@@ -222,7 +220,6 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 	short skip_children = false; // skips the DFS completely if true
 
 	STRING_CACHE *local_defparam_table_sc = local_ref->local_defparam_table_sc;
-	STRING_CACHE *local_symbol_table_sc = local_ref->local_symbol_table_sc;
 	STRING_CACHE *local_param_table_sc = local_ref->local_param_table_sc;
 
 	if (node)
@@ -343,10 +340,8 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 					verify_genvars(node, local_ref, &genvar_list, 0);
 					if (genvar_list) vtr::free(genvar_list);
 
-					long sc_spot = sc_lookup_string(local_symbol_table_sc, initial->children[0]->types.identifier);
-					oassert(sc_spot > -1);
-
-					iterator = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
+					iterator = resolve_hierarchical_name_reference(local_ref, initial->children[0]->types.identifier);
+					oassert(iterator != NULL);
 
 					if ( !(node_is_constant(initial->children[1]))
 						|| !(node_is_constant(compare_expression->children[1]))
@@ -358,7 +353,12 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 					}
 				}
 				
-				node = unroll_for_loop(node, parent, local_ref);
+				int num_unrolled = 0;
+				node = unroll_for_loop(node, parent, &num_unrolled, local_ref, is_generate_region);
+				for (int i = index; i < (num_unrolled + index); i++)
+				{
+					parent->children[i] = build_hierarchy(parent->children[i], parent, i, local_ref, is_generate_region, true, data);
+				}
 				break;
 			}
 			case IF_Q:
@@ -422,6 +422,42 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 
 				if (to_return != NULL)
 				{
+					if (to_return->type == BLOCK && to_return->children[0]->type != IF &&
+						(is_generate_region || to_return->types.identifier != NULL))
+					{
+						// must create scope; parent has access to named block but not unnamed, 
+						// and child always has access to parent
+						sc_hierarchy *new_hierarchy = init_sc_hierarchy();
+						to_return->types.hierarchy = new_hierarchy;
+
+						new_hierarchy->top_node = to_return;
+						new_hierarchy->parent = local_ref;
+
+						if (to_return->types.identifier != NULL)
+						{
+							// parent's children
+							local_ref->block_children = (sc_hierarchy **)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy)*(local_ref->num_block_children + 1));
+							local_ref->block_children[local_ref->num_block_children] = new_hierarchy;
+							local_ref->num_block_children++;
+
+							// scope id/instance name prefix
+							new_hierarchy->scope_id = to_return->types.identifier;
+							new_hierarchy->instance_name_prefix = make_full_ref_name(local_ref->instance_name_prefix, NULL, to_return->types.identifier, NULL, -1);
+						}
+						else if (is_generate_region)
+						{
+							// create a unique scope id/instance name prefix for internal use
+							local_ref->num_unnamed_genblks++;
+							std::string new_scope_id("genblk" + std::to_string(local_ref->num_unnamed_genblks)); 
+							new_hierarchy->scope_id = vtr::strdup(new_scope_id.c_str());
+							new_hierarchy->instance_name_prefix = make_full_ref_name(local_ref->instance_name_prefix, NULL, new_hierarchy->scope_id, NULL, -1);
+						}
+
+						/* string caches */
+						create_param_table_for_scope(to_return, new_hierarchy);
+						create_symbol_table_for_scope(to_return, new_hierarchy);
+					}
+
 					oassert(node->children[1] == NULL || node->children[2] == NULL);
 					free_whole_tree(node);
 					node = to_return;
@@ -510,6 +546,41 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 
 					if (to_return)
 					{
+						if (to_return->type == BLOCK && (is_generate_region || to_return->types.identifier != NULL))
+						{
+							// must create scope; parent has access to named block but not unnamed, 
+							// and child always has access to parent
+							sc_hierarchy *new_hierarchy = init_sc_hierarchy();
+							to_return->types.hierarchy = new_hierarchy;
+
+							new_hierarchy->top_node = to_return;
+							new_hierarchy->parent = local_ref;
+
+							if (to_return->types.identifier != NULL)
+							{
+								// parent's children
+								local_ref->block_children = (sc_hierarchy **)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy)*(local_ref->num_block_children + 1));
+								local_ref->block_children[local_ref->num_block_children] = new_hierarchy;
+								local_ref->num_block_children++;
+
+								// scope id/instance name prefix
+								new_hierarchy->scope_id = to_return->types.identifier;
+								new_hierarchy->instance_name_prefix = make_full_ref_name(local_ref->instance_name_prefix, NULL, to_return->types.identifier, NULL, -1);
+							}
+							else if (is_generate_region)
+							{
+								// create a unique scope id/instance name prefix for internal use
+								local_ref->num_unnamed_genblks++;
+								std::string new_scope_id("genblk" + std::to_string(local_ref->num_unnamed_genblks)); 
+								new_hierarchy->scope_id = vtr::strdup(new_scope_id.c_str());
+								new_hierarchy->instance_name_prefix = make_full_ref_name(local_ref->instance_name_prefix, NULL, new_hierarchy->scope_id, NULL, -1);
+							}
+
+							/* string caches */
+							create_param_table_for_scope(to_return, new_hierarchy);
+							create_symbol_table_for_scope(to_return, new_hierarchy);
+						}
+
 						free_whole_tree(node);
 						node = to_return;
 					}
@@ -631,6 +702,20 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 			bool done = false;
 			int i = 0;
 
+			sc_hierarchy *new_ref = NULL;
+			if (node->type == BLOCK)
+			{
+				if (node->types.hierarchy)
+				{
+					new_ref = node->types.hierarchy;
+				}
+			}
+
+			if (!new_ref)
+			{
+				new_ref = local_ref;
+			}
+
 			/* traverse all the children */
 			while (done == false)
 			{
@@ -639,7 +724,7 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 				{
 					/* recurse */
 					ast_node_t *old_child = node->children[i];
-					ast_node_t *new_child = build_hierarchy(old_child, node, i, local_ref, is_generate_region, fold_expressions, data);
+					ast_node_t *new_child = build_hierarchy(old_child, node, i, new_ref, is_generate_region, fold_expressions, data);
 					node->children[i] = new_child;
 
 					if (old_child != new_child)
@@ -724,60 +809,6 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 					}
 				}
 
-				for (i = 0; i < node->types.module.size_module_instantiations; i++)
-				{
-				
-					/* make the stringed up module instance name - instance name is
-					* MODULE_INSTANCE->MODULE_NAMED_INSTANCE(child[1])->IDENTIFIER(child[0]).
-					* module name is MODULE_INSTANCE->IDENTIFIER(child[0])
-					*/
-					ast_node_t *temp_instance = node->types.module.module_instantiations_instance[i];
-					char *instance_name_prefix = local_ref->instance_name_prefix;
-
-					char *temp_instance_name = make_full_ref_name(instance_name_prefix,
-						temp_instance->children[0]->types.identifier,
-						temp_instance->children[1]->children[0]->types.identifier,
-						NULL, -1);
-
-					long sc_spot;
-					/* lookup the name of the module associated with this instantiated point */
-					if ((sc_spot = sc_lookup_string(module_names_to_idx, temp_instance->children[0]->types.identifier)) == -1)
-					{
-						error_message(NETLIST_ERROR, node->line_number, node->file_number,
-								"Can't find module name %s\n", temp_instance->children[0]->types.identifier);
-					}
-
-					/* make a unique copy of this module */
-					ast_node_t *instance = ast_node_deep_copy((ast_node_t *)module_names_to_idx->data[sc_spot]);
-					
-					long sc_spot_2 = sc_add_string(module_names_to_idx, temp_instance_name);
-					oassert(sc_spot_2 > -1 && module_names_to_idx->data[sc_spot_2] == NULL);
-					module_names_to_idx->data[sc_spot_2] = (void *)instance;
-					
-					ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(sc_spot_2 + 1));
-					ast_modules[sc_spot_2] = instance;
-
-					/* create the string cache list for the instantiated module */
-					sc_hierarchy *original_sc_hierarchy = ((ast_node_t *)module_names_to_idx->data[sc_spot])->types.module.string_cache_list;
-					sc_hierarchy *module_sc_hierarchy = copy_sc_hierarchy(original_sc_hierarchy);
-					module_sc_hierarchy->parent = local_ref;
-					module_sc_hierarchy->instance_name_prefix = vtr::strdup(temp_instance_name);
-					module_sc_hierarchy->scope_id = vtr::strdup(temp_instance->children[1]->children[0]->types.identifier);
-					
-					/* update parent string cache list */					
-					int num_module_children = local_ref->num_module_children;
-					local_ref->module_children = (sc_hierarchy **)vtr::realloc(local_ref->module_children, sizeof(sc_hierarchy *)*(num_module_children + 1));
-					local_ref->module_children[i] = module_sc_hierarchy;
-					local_ref->num_module_children++;
-
-
-					/* elaboration */
-					instance = build_hierarchy(instance, NULL, -1, module_sc_hierarchy, true, true, data);
-
-					/* clean up */
-					vtr::free(temp_instance_name);
-				}
-
 				for (i = 0; i < node->types.function.size_function_instantiations; i++)
 				{
 				
@@ -812,11 +843,12 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 					ast_modules[sc_spot_2] = instance;
 
 					/* create the string cache list for the instantiated module */
-					sc_hierarchy *original_sc_hierarchy = ((ast_node_t *)module_names_to_idx->data[sc_spot])->types.function.string_cache_list;
+					sc_hierarchy *original_sc_hierarchy = ((ast_node_t *)module_names_to_idx->data[sc_spot])->types.hierarchy;
 					sc_hierarchy *function_sc_hierarchy = copy_sc_hierarchy(original_sc_hierarchy);
 					function_sc_hierarchy->parent = local_ref;
 					function_sc_hierarchy->instance_name_prefix = vtr::strdup(temp_instance_name);
 					function_sc_hierarchy->scope_id = vtr::strdup(temp_instance->children[1]->children[0]->types.identifier);
+					function_sc_hierarchy->top_node = instance;
 
 					/* update parent string cache list */					
 					int num_function_children = local_ref->num_function_children;
@@ -829,7 +861,7 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 
 					/* clean up */
 					vtr::free(temp_instance_name);
-				}
+				}				
 
 				break;
 			}
@@ -840,19 +872,28 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 
 				if (node->num_children == 2)
 				{
-					char *instance_name_prefix = local_ref->instance_name_prefix;
 
-					long sc_spot = sc_lookup_string(module_names_to_idx, instance_name_prefix);
-					ast_node_t *module = (ast_node_t *)module_names_to_idx->data[sc_spot];
+					sc_hierarchy *this_ref = local_ref;
+					std::string new_id(node->children[1]->children[0]->types.identifier);
+					while (this_ref->top_node->type != MODULE)
+					{
+						std::string this_scope(this_ref->scope_id);
+						new_id = this_scope + "." + new_id;
+						this_ref = this_ref->parent;
+						oassert(this_ref);
+					}
+					ast_node_t *module = this_ref->top_node;
+					oassert(module->type == MODULE);
 
 					int num_instances = module->types.module.size_module_instantiations;
-					char *new_instance_name = node->children[1]->children[0]->types.identifier;
+					char *new_instance_name = vtr::strdup(new_id.c_str());
 					bool found = false;
 					for (int i = 0; i < num_instances; i++)
 					{
 						ast_node_t *temp_instance_node = module->types.module.module_instantiations_instance[i];
 						char *temp_instance_name = temp_instance_node->children[1]->children[0]->types.identifier;
-						if (strcmp(new_instance_name, temp_instance_name) == 0)
+						if (strcmp(node->children[1]->children[0]->types.identifier, temp_instance_name) == 0
+							|| strcmp(new_instance_name, temp_instance_name) == 0)
 						{
 							found = true;
 						}
@@ -860,29 +901,77 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 
 					if (found) 
 					{
+						vtr::free(new_instance_name);
 						break;
 					}
+					
+					vtr::free(node->children[1]->children[0]->types.identifier);
+					node->children[1]->children[0]->types.identifier = new_instance_name;
 
 					module->types.module.module_instantiations_instance = (ast_node_t **)vtr::realloc(module->types.module.module_instantiations_instance, sizeof(ast_node_t*)*(num_instances+1));
 					module->types.module.module_instantiations_instance[num_instances] = node;
 					module->types.module.size_module_instantiations++;
-				}
-				break;
-			}
-			case FOR:
-			case IF:
-			case CASE:
-			{
-				if (is_generate_region && data->pass == 2)
-				{
-					// TODO basically do what case MODULE does, with the addition of calling
-					// override_instances from here so that we can continue evaluating possible
-					// generate constructs within the instances
 
-					// also don't forget to take out the module instantiation patch in finalize_ast
-					// once this is done
-				}
 
+					/* make the stringed up module instance name - instance name is
+					* MODULE_INSTANCE->MODULE_NAMED_INSTANCE(child[1])->IDENTIFIER(child[0]).
+					* module name is MODULE_INSTANCE->IDENTIFIER(child[0])
+					*/
+					ast_node_t *temp_instance = node;
+					char *instance_name_prefix = this_ref->instance_name_prefix;
+
+					char *temp_instance_name = make_full_ref_name(instance_name_prefix,
+						temp_instance->children[0]->types.identifier,
+						temp_instance->children[1]->children[0]->types.identifier,
+						NULL, -1);
+
+					long sc_spot;
+					/* lookup the name of the module associated with this instantiated point */
+					if ((sc_spot = sc_lookup_string(module_names_to_idx, temp_instance->children[0]->types.identifier)) == -1)
+					{
+						error_message(NETLIST_ERROR, node->line_number, node->file_number,
+								"Can't find module name %s\n", temp_instance->children[0]->types.identifier);
+					}
+
+					/* make a unique copy of this module */
+					ast_node_t *instance = ast_node_deep_copy((ast_node_t *)module_names_to_idx->data[sc_spot]);
+					
+					long sc_spot_2 = sc_add_string(module_names_to_idx, temp_instance_name);
+					oassert(sc_spot_2 > -1 && module_names_to_idx->data[sc_spot_2] == NULL);
+					module_names_to_idx->data[sc_spot_2] = (void *)instance;
+					
+					ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(sc_spot_2 + 1));
+					ast_modules[sc_spot_2] = instance;
+
+					/* create the string cache list for the instantiated module */
+					sc_hierarchy *original_sc_hierarchy = ((ast_node_t *)module_names_to_idx->data[sc_spot])->types.hierarchy;
+					sc_hierarchy *module_sc_hierarchy = copy_sc_hierarchy(original_sc_hierarchy);
+					instance->types.hierarchy = module_sc_hierarchy;
+
+					module_sc_hierarchy->parent = local_ref;
+					module_sc_hierarchy->instance_name_prefix = vtr::strdup(temp_instance_name);
+					module_sc_hierarchy->scope_id = vtr::strdup(temp_instance->children[1]->children[0]->types.identifier);
+					module_sc_hierarchy->top_node = instance;
+
+					/* update parent string cache list */					
+					int num_module_children = local_ref->num_module_children;
+					local_ref->module_children = (sc_hierarchy **)vtr::realloc(local_ref->module_children, sizeof(sc_hierarchy *)*(num_module_children + 1));
+					local_ref->module_children[num_module_children] = module_sc_hierarchy;
+					local_ref->num_module_children++;
+
+
+					/* elaboration */
+					if (data->pass == 2)
+					{
+						/* make sure parameters are updated */
+						/* TODO apply remaining defparams and check for conflicts */
+						update_instance_parameter_table(temp_instance, module_sc_hierarchy->local_param_table_sc);
+					}
+					instance = build_hierarchy(instance, NULL, -1, module_sc_hierarchy, true, true, data);
+
+					/* clean up */
+					vtr::free(temp_instance_name);
+				}
 				break;
 			}
 			case BINARY_OPERATION:
@@ -1040,7 +1129,7 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
  * Basic sanity checks also happen here that weren't caught during parsing, e.g. checking port
  * lists.
  * --------------------------------------------------------------------------------------------------- */
-ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *local_ref, bool is_generate_region, bool fold_expressions, e_data *data)
+ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *local_ref, bool is_generate_region, bool fold_expressions)
 {
 	short *child_skip_list = NULL; // list of children not to traverse into
 	short skip_children = false; // skips the DFS completely if true
@@ -1145,7 +1234,7 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 
 						if (newNode->type != NUMBERS)
 						{
-							newNode = finalize_ast(newNode, parent, local_ref, is_generate_region, true, data);
+							newNode = finalize_ast(newNode, parent, local_ref, is_generate_region, true);
 							oassert(newNode->type == NUMBERS);
 
 							/* this forces parameter values as unsigned, since we don't currently support signed keyword...
@@ -1172,9 +1261,9 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 				oassert(child_skip_list);
 
 				// look ahead for parameters in loop conditions
-				node->children[0] = finalize_ast(node->children[0], node, local_ref, is_generate_region, true, data);
-				node->children[1] = finalize_ast(node->children[1], node, local_ref, is_generate_region, true, data);
-				node->children[2] = finalize_ast(node->children[2], node, local_ref, is_generate_region, true, data);
+				node->children[0] = finalize_ast(node->children[0], node, local_ref, is_generate_region, true);
+				node->children[1] = finalize_ast(node->children[1], node, local_ref, is_generate_region, true);
+				node->children[2] = finalize_ast(node->children[2], node, local_ref, is_generate_region, true);
 				
 				// update skip list
 				child_skip_list[0] = true;
@@ -1193,10 +1282,8 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 					verify_genvars(node, local_ref, &genvar_list, 0);
 					if (genvar_list) vtr::free(genvar_list);
 
-					long sc_spot = sc_lookup_string(local_symbol_table_sc, initial->children[0]->types.identifier);
-					oassert(sc_spot > -1);
-
-					iterator = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
+					iterator = resolve_hierarchical_name_reference(local_ref, initial->children[0]->types.identifier);
+					oassert(iterator != NULL);
 
 					if ( !(node_is_constant(initial->children[1]))
 						|| !(node_is_constant(compare_expression->children[1]))
@@ -1208,118 +1295,8 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 					}
 				}
 				
-				node = unroll_for_loop(node, parent, local_ref);
-				break;
-			}
-			case IF_Q:
-			case IF:
-			{
-				ast_node_t *to_return = NULL;
-				oassert(node->num_children > 0);
-
-				node->children[0] = finalize_ast(node->children[0], node, local_ref, is_generate_region, true, data);
-				ast_node_t *child_condition = node->children[0];
-				if(node_is_constant(child_condition))
-				{
-					VNumber condition = *(child_condition->types.vnumber);
-
-					if(V_TRUE(condition))
-					{
-						to_return = node->children[1];
-						node->children[1] = NULL;
-					}
-					else if(V_FALSE(condition))
-					{
-						to_return = node->children[2];
-						node->children[2] = NULL;
-					}
-					else if (node->type == IF && is_generate_region)
-					{
-						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-							"%s","Could not resolve conditional generate construct");
-					}
-					// otherwise we keep it as is to build the circuitry
-				}
-				else if (node->type == IF && is_generate_region)
-				{
-					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-						"%s","Could not resolve conditional generate construct");
-				}
-
-				if (to_return)
-				{
-					free_whole_tree(node);
-					node = to_return;
-				}
-				break;
-			}
-			case CASE:
-			{
-				ast_node_t *to_return = NULL;
-
-				node->children[0] = finalize_ast(node->children[0], node, local_ref, is_generate_region, true, data);
-				ast_node_t *child_condition = node->children[0];
-				if(node_is_constant(child_condition))
-				{
-					ast_node_t *case_list = node->children[1];
-					for (int i = 0; i < case_list->num_children; i++)
-					{
-						ast_node_t *item = case_list->children[i];
-						if (i == case_list->num_children - 1 && item->type == CASE_DEFAULT)
-						{
-							to_return = item->children[0];
-							item->children[0] = NULL;
-						}
-						else
-						{
-							if (item->type != CASE_ITEM)
-							{
-								error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-									"%s","Default case must only be the last case");
-							}
-
-							item->children[0] = finalize_ast(item->children[0], item, local_ref, is_generate_region, true, data);
-							if (node_is_constant(item->children[0]))
-							{
-								VNumber eval = V_CASE_EQUAL(*(child_condition->types.vnumber), *(item->children[0]->types.vnumber));
-								if (V_TRUE(eval))
-								{
-									to_return = item->children[1];
-									item->children[1] = NULL;
-									break;
-								}
-							}
-							else if (is_generate_region)
-							{
-								error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-									"%s","Could not resolve conditional generate construct");
-							}
-							else
-							{
-								/* encountered non-constant item - don't continue searching */
-								break;
-							}
-						}
-					}
-
-					if (to_return)
-					{
-						free_whole_tree(node);
-						node = to_return;
-					}
-					else if (is_generate_region)
-					{
-						/* no case */
-						error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-							"%s","Could not resolve conditional generate construct");
-					}
-				}
-				else if (is_generate_region)
-				{
-					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
-						"%s","Could not resolve conditional generate construct");
-				}
-
+				int num_unrolled = 0;
+				node = unroll_for_loop(node, parent, &num_unrolled, local_ref, is_generate_region);
 				break;
 			}
 			case ALWAYS: // fallthrough
@@ -1334,11 +1311,11 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 				/* fill out parameters and try to resolve self-determined expressions */
 				if (node->children[1]->type != FUNCTION_INSTANCE)
 				{
-					node->children[0] = finalize_ast(node->children[0], node, local_ref, is_generate_region, true, data);
+					node->children[0] = finalize_ast(node->children[0], node, local_ref, is_generate_region, true);
 					
 					if (node->children[1]->type != NUMBERS)
 					{
-						node->children[1] = finalize_ast(node->children[1], node, local_ref, is_generate_region, false, data);
+						node->children[1] = finalize_ast(node->children[1], node, local_ref, is_generate_region, false);
 						if (node->children[1] == NULL)
 						{
 							/* resulting from replication of zero */
@@ -1353,7 +1330,7 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 			}
 			case REPLICATE:
 			{
-				node->children[0] = finalize_ast(node->children[0], node, local_ref, is_generate_region, true, data);
+				node->children[0] = finalize_ast(node->children[0], node, local_ref, is_generate_region, true);
 				if (!(node_is_constant(node->children[0])))
 				{
 					error_message(NETLIST_ERROR, node->line_number, node->file_number, 
@@ -1391,7 +1368,7 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 				/* these need to be folded if they are binary expressions... regardless of fold_expressions */
 				for (int i = 1; i < node->num_children; i++)
 				{
-					node->children[i] = finalize_ast(node->children[i], node, local_ref, is_generate_region, true, data);
+					node->children[i] = finalize_ast(node->children[i], node, local_ref, is_generate_region, true);
 				}
 				skip_children = true;
 				break;
@@ -1410,6 +1387,20 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 			bool done = false;
 			int i = 0;
 
+			sc_hierarchy *new_ref = NULL;
+			if (node->type == BLOCK)
+			{
+				if (node->types.hierarchy)
+				{
+					new_ref = node->types.hierarchy;
+				}
+			}
+
+			if (!new_ref)
+			{
+				new_ref = local_ref;
+			}
+
 			/* traverse all the children */
 			while (done == false)
 			{
@@ -1418,7 +1409,7 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 				{
 					/* recurse */
 					ast_node_t *old_child = node->children[i];
-					ast_node_t *new_child = finalize_ast(old_child, node, local_ref, is_generate_region, fold_expressions, data);
+					ast_node_t *new_child = finalize_ast(old_child, node, new_ref, is_generate_region, fold_expressions);
 					node->children[i] = new_child;
 
 					if (old_child != new_child)
@@ -1492,7 +1483,7 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 						ast_modules[sc_spot] = instance;
 
 						/* create the string cache list for the instantiated module */
-						sc_hierarchy *original_sc_hierarchy = ((ast_node_t *)module_names_to_idx->data[sc_spot])->types.module.string_cache_list;
+						sc_hierarchy *original_sc_hierarchy = ((ast_node_t *)module_names_to_idx->data[sc_spot])->types.hierarchy;
 						sc_hierarchy *module_sc_hierarchy = copy_sc_hierarchy(original_sc_hierarchy);
 						module_sc_hierarchy->parent = local_ref;
 						module_sc_hierarchy->instance_name_prefix = vtr::strdup(temp_instance_name);
@@ -1509,7 +1500,7 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 						instance = (ast_node_t *)module_names_to_idx->data[sc_spot];
 					}
 
-					sc_hierarchy *module_sc_hierarchy = local_ref->module_children[i];				
+					sc_hierarchy *module_sc_hierarchy = instance->types.hierarchy;				
 
 					/* update the parameter table for the instantiated module */
 					STRING_CACHE *instance_param_table_sc = module_sc_hierarchy->local_param_table_sc;
@@ -1517,7 +1508,7 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 
 					/* elaboration */
 					update_string_caches(module_sc_hierarchy);
-					instance = finalize_ast(instance, NULL, module_sc_hierarchy, true, true, data);
+					instance = finalize_ast(instance, NULL, module_sc_hierarchy, true, true);
 
 					/* clean up */
 					vtr::free(temp_instance_name);
@@ -1550,7 +1541,7 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 
 					/* elaboration */
 					update_string_caches(function_sc_hierarchy);
-					instance = finalize_ast(instance, NULL, function_sc_hierarchy, false, true, data);
+					instance = finalize_ast(instance, NULL, function_sc_hierarchy, false, true);
 
 					/* clean up */
 					vtr::free(temp_instance_name);
@@ -1565,19 +1556,27 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 
 				if (node->num_children == 2)
 				{
-					char *instance_name_prefix = local_ref->instance_name_prefix;
-
-					long sc_spot = sc_lookup_string(module_names_to_idx, instance_name_prefix);
-					ast_node_t *module = (ast_node_t *)module_names_to_idx->data[sc_spot];
+					sc_hierarchy *this_ref = local_ref;
+					std::string new_id(node->children[1]->children[0]->types.identifier);
+					while (this_ref->top_node->type != MODULE)
+					{
+						std::string this_scope(this_ref->scope_id);
+						new_id = this_scope + "." + new_id;
+						this_ref = this_ref->parent;
+						oassert(this_ref);
+					}
+					ast_node_t *module = this_ref->top_node;
+					oassert(module->type == MODULE);
 
 					int num_instances = module->types.module.size_module_instantiations;
-					char *new_instance_name = node->children[1]->children[0]->types.identifier;
+					char *new_instance_name = vtr::strdup(new_id.c_str());
 					bool found = false;
 					for (int i = 0; i < num_instances; i++)
 					{
 						ast_node_t *temp_instance_node = module->types.module.module_instantiations_instance[i];
 						char *temp_instance_name = temp_instance_node->children[1]->children[0]->types.identifier;
-						if (strcmp(new_instance_name, temp_instance_name) == 0)
+						if (strcmp(node->children[1]->children[0]->types.identifier, temp_instance_name) == 0
+							|| strcmp(new_instance_name, temp_instance_name) == 0)
 						{
 							found = true;
 						}
@@ -1585,12 +1584,11 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 
 					if (found) 
 					{
+						vtr::free(new_instance_name);
 						break;
 					}
 
-					module->types.module.module_instantiations_instance = (ast_node_t **)vtr::realloc(module->types.module.module_instantiations_instance, sizeof(ast_node_t*)*(num_instances+1));
-					module->types.module.module_instantiations_instance[num_instances] = node;
-					module->types.module.size_module_instantiations++;
+					oassert(false); // module instances should be resolved at this point
 				}
 				break;
 			}
@@ -2028,7 +2026,7 @@ ast_node_t *reduce_expressions(ast_node_t *node, sc_hierarchy *local_ref, long *
 					ast_node_t *instance = (ast_node_t *)module_names_to_idx->data[sc_spot];
 
 					/* elaboration */
-					sc_hierarchy *module_sc_hierarchy = local_ref->module_children[i];
+					sc_hierarchy *module_sc_hierarchy = instance->types.hierarchy;
 					instance = reduce_expressions(instance, module_sc_hierarchy, NULL, 0);
 
 					/* clean up */
@@ -2226,7 +2224,7 @@ void update_string_caches(sc_hierarchy *local_ref)
 			ast_node_t *param_val = (ast_node_t *)local_param_table_sc->data[i];
 			if (param_val->type == VAR_DECLARE && !node_is_constant(param_val->children[5]))
 			{
-				ast_node_t *resolved_val = finalize_ast(param_val->children[5], NULL, local_ref, true, true, NULL);
+				ast_node_t *resolved_val = finalize_ast(param_val->children[5], NULL, local_ref, true, true);
 				oassert(resolved_val);
 				param_val->children[5] = NULL;
 				free_whole_tree(param_val);
@@ -2237,7 +2235,7 @@ void update_string_caches(sc_hierarchy *local_ref)
 				sc_hierarchy *this_ref = local_ref;
 				while (this_ref && !node_is_constant(param_val))
 				{
-					param_val = finalize_ast(param_val, NULL, this_ref, true, true, NULL);
+					param_val = finalize_ast(param_val, NULL, this_ref, true, true);
 					this_ref = this_ref->parent;
 				}
 			}
@@ -2265,7 +2263,7 @@ void update_string_caches(sc_hierarchy *local_ref)
 			|| var_declare->num_children == 8
 		)
 		{
-			local_symbol_table[i] = finalize_ast(var_declare, NULL, local_ref, true, true, NULL);
+			local_symbol_table[i] = finalize_ast(var_declare, NULL, local_ref, true, true);
 		}
 	}
 }
@@ -2536,7 +2534,6 @@ void verify_genvars(ast_node_t *node, sc_hierarchy *local_ref, char ***other_gen
 	{
 		if (node->type == FOR)
 		{
-			STRING_CACHE *local_symbol_table_sc = local_ref->local_symbol_table_sc;
 			ast_node_t *initial = node->children[0];
 			ast_node_t *terminal = node->children[2];
 			ast_node_t *body = node->children[3];
@@ -2549,13 +2546,14 @@ void verify_genvars(ast_node_t *node, sc_hierarchy *local_ref, char ***other_gen
 					"%s","Must use the same genvar for initial condition and iteration condition");
 			}			
 
-			long sc_spot = sc_lookup_string(local_symbol_table_sc, iterator->types.identifier);
-			if (sc_spot < 0)
+			ast_node_t *var_declare = resolve_hierarchical_name_reference(local_ref, iterator->types.identifier);
+			
+			if (var_declare == NULL)
 			{
 				error_message(NETLIST_ERROR, iterator->line_number, iterator->file_number, 
 					"Missing declaration of this symbol %s\n", iterator->types.identifier);
 			}
-			else if (!((ast_node_t *)local_symbol_table_sc->data[sc_spot])->types.variable.is_genvar)
+			else if (!var_declare->types.variable.is_genvar)
 			{
 				error_message(NETLIST_ERROR, node->line_number, node->file_number, 
 					"%s","Iterator for loop generate construct must be declared as a genvar");
@@ -2853,6 +2851,105 @@ ast_node_t *look_for_matching_soft_logic(ast_node_t *node, char *hard_block_name
 	else
 	{
 		return node;
+	}
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: create_param_table_for_scope)
+ * 	Creates a lookup of the parameters declared here.
+ *
+ * (NOTE: this is intended for named or generate blocks only)
+ *-------------------------------------------------------------------------------------------*/
+void create_param_table_for_scope(ast_node_t* module_items, sc_hierarchy *local_ref)
+{
+	/* with the top module we need to visit the entire ast tree */
+	long i, j;
+	char *temp_string;
+	long sc_spot;
+	oassert(module_items->type == BLOCK);
+
+	STRING_CACHE *local_param_table_sc = local_ref->local_param_table_sc;
+	STRING_CACHE *local_defparam_table_sc = local_ref->local_defparam_table_sc;
+
+	/* search for VAR_DECLARE_LISTS */
+	if (module_items->num_children > 0)
+	{
+		for (i = 0; i < module_items->num_children; i++)
+		{
+			if (module_items->children[i]->type == VAR_DECLARE_LIST)
+			{
+				/* go through the vars in this declare list */
+				for (j = 0; j < module_items->children[i]->num_children; j++)
+				{
+					ast_node_t *var_declare = module_items->children[i]->children[j];
+
+					/* symbols are already dealt with */
+					if (var_declare->types.variable.is_input 
+						|| var_declare->types.variable.is_output 
+						|| var_declare->types.variable.is_reg 
+						|| var_declare->types.variable.is_integer 
+						|| var_declare->types.variable.is_genvar
+						|| var_declare->types.variable.is_wire
+						|| var_declare->types.variable.is_defparam)
+						
+						continue;
+
+					oassert(module_items->children[i]->children[j]->type == VAR_DECLARE);
+
+					oassert (var_declare->types.variable.is_parameter
+						|| var_declare->types.variable.is_localparam
+						|| var_declare->types.variable.is_defparam);
+
+					/* make the string to add to the string cache */
+					temp_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, -1);
+					
+					if (var_declare->types.variable.is_parameter || var_declare->types.variable.is_localparam)
+					{
+						/* look for that element */
+						sc_spot = sc_add_string(local_param_table_sc, temp_string);
+
+						if (local_param_table_sc->data[sc_spot] != NULL)
+						{
+							error_message(PARSE_ERROR, var_declare->line_number, var_declare->file_number, 
+								"Block already has parameter with this name (%s)\n", var_declare->children[0]->types.identifier);
+						}
+
+						/* store the data which is an idx here */
+						local_param_table_sc->data[sc_spot] = (void *)var_declare;
+					}
+					else
+					{
+						/* look for that element */
+						sc_spot = sc_add_string(local_defparam_table_sc, temp_string);
+
+						if (local_defparam_table_sc->data[sc_spot] != NULL)
+						{
+							error_message(PARSE_ERROR, var_declare->line_number, var_declare->file_number, 
+								"Block already has defparam with this name (%s)\n", var_declare->children[0]->types.identifier);
+						}
+
+						/* store the data which is an idx here */
+						local_defparam_table_sc->data[sc_spot] = (void *)var_declare;
+					}
+
+					vtr::free(temp_string);
+			
+					module_items->children[i]->children[j] = NULL;
+					remove_child_from_node_at_index(module_items->children[i], j);
+					j--;
+				}
+
+				if (module_items->children[i]->num_children == 0)
+				{
+					remove_child_from_node_at_index(module_items, i);
+					i--;
+				}
+			}
+		}
+	}
+	else
+	{
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Empty module\n");
 	}
 }
 

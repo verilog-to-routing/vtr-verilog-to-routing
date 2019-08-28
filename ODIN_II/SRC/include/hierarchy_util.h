@@ -8,6 +8,8 @@ struct sc_hierarchy{
 	char *scope_id;
 	char *instance_name_prefix;
 
+	struct ast_node_t *top_node;
+
 	STRING_CACHE *local_defparam_table_sc;
 	STRING_CACHE *local_param_table_sc;
 	STRING_CACHE *local_symbol_table_sc;
@@ -26,6 +28,8 @@ struct sc_hierarchy{
 	int num_function_children;
 	int num_task_children;
 	int num_block_children;
+
+	int num_unnamed_genblks;
 };
 
 

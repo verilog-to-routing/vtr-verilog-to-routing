@@ -116,8 +116,8 @@ int yylex(void);
 %type <node> specify_block list_of_specify_items
 %type <node> c_function_expression_list c_function
 %type <node> initial_block list_of_blocking_assignment
-%type <node> list_of_generate_items generate_item generate loop_generate_construct if_generate_construct 
-%type <node> case_generate_construct case_generate_item_list case_generate_items generate_block
+%type <node> list_of_generate_block_items generate_item generate_block_item generate loop_generate_construct if_generate_construct 
+%type <node> case_generate_construct case_generate_item_list case_generate_items generate_block generate_localparam_declaration generate_defparam_declaration
 
 %%
 
@@ -191,9 +191,9 @@ module_item:
 	| error ';'				{$$ = NULL;}
 	;
 
-list_of_generate_items:
-	list_of_generate_items generate_item	{$$ = newList_entry($1, $2);}
-	| generate_item							{$$ = newList(BLOCK, $1, my_yylineno);}
+list_of_generate_block_items:
+	list_of_generate_block_items generate_block_item	{$$ = newList_entry($1, $2);}
+	| generate_block_item							{$$ = newList(BLOCK, $1, my_yylineno);}
 	;
 
 generate_item:
@@ -212,6 +212,24 @@ generate_item:
 	| if_generate_construct		{$$ = $1;}
 	| case_generate_construct	{$$ = $1;}
 	| loop_generate_construct	{$$ = $1;}
+	;
+
+generate_block_item:
+	generate_localparam_declaration	{$$ = $1;}
+	| net_declaration 				{$$ = $1;}
+	| genvar_declaration			{$$ = $1;}
+	| integer_declaration 			{$$ = $1;}
+	| continuous_assign				{$$ = $1;}
+	| gate_declaration				{$$ = $1;}
+	| module_instantiation			{$$ = $1;}
+	| function_declaration			{$$ = $1;}
+	| initial_block					{$$ = $1;}
+	| always						{$$ = $1;}
+	| generate_defparam_declaration	{$$ = $1;}
+	| c_function ';'				{$$ = $1;}
+	| if_generate_construct			{$$ = $1;}
+	| case_generate_construct		{$$ = $1;}
+	| loop_generate_construct		{$$ = $1;}
 	;
 
 function_declaration:
@@ -268,8 +286,17 @@ localparam_declaration:
 	| vLOCALPARAM variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $2, false);}
 	;
 
+generate_localparam_declaration:
+	vLOCALPARAM vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(BLOCK,LOCALPARAM, $3, true);}
+	| vLOCALPARAM variable_list ';'			{$$ = markAndProcessSymbolListWith(BLOCK,LOCALPARAM, $2, false);}
+	;
+
 defparam_declaration:
-	vDEFPARAM defparam_variable_list ';'	{$$ = newDefparam(MODULE_PARAMETER_LIST, $2, my_yylineno);}
+	vDEFPARAM defparam_variable_list ';'	{$$ = newDefparam(MODULE, $2, my_yylineno);}
+	;
+
+generate_defparam_declaration:
+	vDEFPARAM defparam_variable_list ';'	{$$ = newDefparam(BLOCK, $2, my_yylineno);}
 	;
 
 io_declaration:
@@ -464,9 +491,9 @@ case_generate_items:
 	;
 
 generate_block:
-	generate_item										{$$ = newList(BLOCK, $1, my_yylineno);}
-	| vBEGIN list_of_generate_items vEND				{$$ = $2;}
-	| vBEGIN ':' vSYMBOL_ID list_of_generate_items vEND	{free($3); $$ = $4;}
+	generate_block_item										{$$ = newList(BLOCK, $1, my_yylineno);} // block is implicit
+	| vBEGIN list_of_generate_block_items vEND				{$$ = $2;}
+	| vBEGIN ':' vSYMBOL_ID list_of_generate_block_items vEND	{$$ = newLabelledBlock($3, $4);}
 	;
 
 function_statement:
@@ -521,7 +548,7 @@ case_items:
 
 seq_block:
 	vBEGIN stmt_list vEND			{$$ = $2;}
-	| vBEGIN ':' vSYMBOL_ID stmt_list vEND	{free($3); $$ = $4;}
+	| vBEGIN ':' vSYMBOL_ID stmt_list vEND	{$$ = newLabelledBlock($3, $4);}
 	;
 
 stmt_list:

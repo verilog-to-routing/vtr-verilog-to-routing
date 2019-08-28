@@ -336,6 +336,7 @@ struct typ
 {
 	char *identifier;
 	VNumber *vnumber = nullptr;
+	sc_hierarchy *hierarchy;
 
 	struct
 	{
@@ -367,7 +368,6 @@ struct typ
 		int index;
 		STRING_CACHE *parameter_list;
 		STRING_CACHE *defparam_list;
-		sc_hierarchy *string_cache_list;
 	} module;
 	struct
 	{
@@ -376,7 +376,6 @@ struct typ
 		int size_function_instantiations;
 		int index;
 		STRING_CACHE *parameter_list;
-		sc_hierarchy *string_cache_list;
 	} function;
 	struct
 	{

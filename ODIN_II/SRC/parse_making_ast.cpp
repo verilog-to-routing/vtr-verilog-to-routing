@@ -248,6 +248,17 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child, int line_number
 	return new_node;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: newLabelledBlock)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newLabelledBlock(char *id, ast_node_t *block_node)
+{
+	oassert(block_node->type == BLOCK);
+	block_node->types.identifier = id;
+
+	return block_node;
+}
+
 static ast_node_t *resolve_symbol_node(ids top_type, ast_node_t *symbol_node)
 {
 	ast_node_t *to_return = NULL;
@@ -631,14 +642,40 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 
 ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parameter, bool is_signed)
 {
-	oassert((top_type == MODULE || top_type == FUNCTION) 
-		&& "can only use MODULE or FUNCTION as top type");
+	oassert((top_type == MODULE || top_type == FUNCTION || top_type == BLOCK) 
+		&& "can only use MODULE or FUNCTION or BLOCK as top type");
 		
 	long sc_spot;
 	STRING_CACHE *this_parameters_sc = NULL;
 	long this_num_modules = 0;
 
-	if (top_type == MODULE)
+	if (id == PARAMETER)
+	{
+		parameter->children[5]->types.variable.is_parameter = true;
+		parameter->types.variable.is_parameter = true;
+	}
+	else if (id == LOCALPARAM)
+	{
+		parameter->children[5]->types.variable.is_localparam = true;
+		parameter->types.variable.is_localparam = true;
+	}
+
+	if (is_signed)
+	{
+		/* cannot support signed parameters right now */
+		error_message(PARSE_ERROR, parameter->line_number, current_parse_file, 
+				"Odin does not handle signed parameters (%s)\n", parameter->children[0]->types.identifier);
+	}
+
+	parameter->children[5]->types.variable.is_signed = is_signed;
+	parameter->types.variable.is_signed = is_signed;
+
+	if (top_type == BLOCK)
+	{
+		/* parameters within named or generate blocks are handled during elaboration */
+		return parameter;
+	}
+	else if (top_type == MODULE)
 	{
 		this_parameters_sc = module_parameters_sc;
 		this_num_modules = num_modules;
@@ -661,28 +698,6 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 	sc_spot = sc_add_string(this_parameters_sc, parameter->children[0]->types.identifier);
 	
 	this_parameters_sc->data[sc_spot] = (void*)parameter->children[5];
-
-
-	if (id == PARAMETER)
-	{
-		parameter->children[5]->types.variable.is_parameter = true;
-		parameter->types.variable.is_parameter = true;
-	}
-	else if (id == LOCALPARAM)
-	{
-		parameter->children[5]->types.variable.is_localparam = true;
-		parameter->types.variable.is_localparam = true;
-	}
-
-	if (is_signed)
-	{
-		/* cannot support signed parameters right now */
-		error_message(PARSE_ERROR, parameter->line_number, current_parse_file, 
-				"Odin does not handle signed parameters (%s)\n", parameter->children[0]->types.identifier);
-	}
-
-	parameter->children[5]->types.variable.is_signed = is_signed;
-	parameter->types.variable.is_signed = is_signed;
 
 	return parameter;
 }
@@ -806,11 +821,52 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						oassert(false);
 				}
 			}
+			else if (top_type == BLOCK)
+			{
+				switch(id)
+				{
+					case LOCALPARAM:
+					{
+						markAndProcessParameterWith(top_type, id, symbol_list->children[i], is_signed);
+						break;
+					}
+					case WIRE:
+						if (is_signed)
+						{
+							/* cannot support signed nets right now */
+							error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
+									"Odin does not handle signed nets (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+						}
+						symbol_list->children[i]->types.variable.is_wire = true;
+						break;
+					case REG:
+						if (is_signed)
+						{
+							/* cannot support signed regs right now */
+							error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
+									"Odin does not handle signed regs (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+						}
+						symbol_list->children[i]->types.variable.is_reg = true;
+						break;
+					case INTEGER:
+						oassert(is_signed && "Integers must always be signed");
+						symbol_list->children[i]->types.variable.is_signed = is_signed;			
+						symbol_list->children[i]->types.variable.is_integer = true;
+						break;
+					case GENVAR:
+						oassert(is_signed && "Genvars must always be signed");
+						symbol_list->children[i]->types.variable.is_signed = is_signed;			
+						symbol_list->children[i]->types.variable.is_genvar = true;
+						break;
+					default:
+						oassert(false);
+				}
+			}
 
 		}
 
 		/* parameters don't live in the AST */
-		if (id == PARAMETER || id == LOCALPARAM)
+		if (top_type != BLOCK && (id == PARAMETER || id == LOCALPARAM))
 		{
 			for (i = 0; i < symbol_list->num_children; i++)
 			{
@@ -1741,7 +1797,7 @@ void next_module()
 /*--------------------------------------------------------------------------
  * (function: newDefparam)
  *------------------------------------------------------------------------*/
-ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
+ast_node_t *newDefparam(ids top_type, ast_node_t *val, int line_number)
 {
 	ast_node_t *new_node = NULL;
 
@@ -1756,8 +1812,15 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 			new_node->children[5]->types.variable.is_defparam = true;
 			new_node->line_number = line_number;
 
-			long sc_spot = sc_add_string(module_defparams_sc, new_node->children[0]->types.identifier);
-			module_defparams_sc->data[sc_spot] = (void *)new_node;
+			if (top_type == MODULE)
+			{
+				long sc_spot = sc_add_string(module_defparams_sc, new_node->children[0]->types.identifier);
+				module_defparams_sc->data[sc_spot] = (void *)new_node;
+			}
+			else
+			{
+				/* defparams within named or generate blocks are handled during elaboration */
+			}
 		}
 	}	
 

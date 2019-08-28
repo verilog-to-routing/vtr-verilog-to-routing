@@ -152,21 +152,21 @@ void create_netlist()
 		
 		if (((ast_node_t *)module_names_to_idx->data[i])->type == MODULE)
 		{
-			((ast_node_t *)module_names_to_idx->data[i])->types.module.string_cache_list = local_ref;
+			((ast_node_t *)module_names_to_idx->data[i])->types.hierarchy = local_ref;
 			local_ref->local_param_table_sc = ((ast_node_t *)module_names_to_idx->data[i])->types.module.parameter_list;
 			local_ref->local_defparam_table_sc = ((ast_node_t *)module_names_to_idx->data[i])->types.module.defparam_list;
 		}
 		else
 		{
 			oassert(((ast_node_t *)module_names_to_idx->data[i])->type == FUNCTION);
-			((ast_node_t *)module_names_to_idx->data[i])->types.function.string_cache_list = local_ref;
+			((ast_node_t *)module_names_to_idx->data[i])->types.hierarchy = local_ref;
 			// local_ref->local_param_table_sc = ((ast_node_t *)module_names_to_idx->data[i])->types.function.parameter_list;
 		}
 	}
 
 	/* we will find the top module */
 	top_module = find_top_module();
-
+	top_module->types.hierarchy->top_node = top_module;
 
 	/* Since the modules are in a tree, we will bottom up build the netlist.  Essentially,
 	 * we will go to the leafs of the module tree, build them upwards such that when we search for the nets,
@@ -180,7 +180,7 @@ void create_netlist()
 	/* initialize the storage of the top level drivers.  Assigned in create_top_driver_nets */
 	verilog_netlist = allocate_netlist();
 
-	sc_hierarchy *top_sc_list = top_module->types.module.string_cache_list;
+	sc_hierarchy *top_sc_list = top_module->types.hierarchy;
 	oassert(top_sc_list);
 	top_sc_list->instance_name_prefix = vtr::strdup(top_module->children[0]->types.identifier);
 	top_sc_list->scope_id = vtr::strdup(top_module->children[0]->types.identifier);
@@ -350,11 +350,13 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
 						"Can't find instance name %s\n", temp_instance_name);
 			}
 
-			sc_hierarchy *module_sc_hierarchy = local_ref->module_children[k];
+			ast_node_t *instance = (ast_node_t *)module_names_to_idx->data[sc_spot];
+
+			sc_hierarchy *module_sc_hierarchy = instance->types.hierarchy;;
 			oassert(!strcmp(module_sc_hierarchy->instance_name_prefix, temp_instance_name));
 
 			/* recursive call point */
-			convert_ast_to_netlist_recursing_via_modules(((ast_node_t**)&module_names_to_idx->data[sc_spot]), temp_instance_name, module_sc_hierarchy, level+1);
+			convert_ast_to_netlist_recursing_via_modules(&instance, temp_instance_name, module_sc_hierarchy, level+1);
 
 			/* clean up */
 			vtr::free(temp_instance_name);
@@ -621,8 +623,14 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t** node_ref, char *instanc
 			{
 				if (child_skip_list && child_skip_list[i] == false)
 				{
+					sc_hierarchy *child_ref = local_ref;
+					if (node->children[i]->types.hierarchy != NULL)
+					{
+						child_ref = node->children[i]->types.hierarchy;
+					}
+
 					/* recursively call through the tree going to each instance.  This is depth first traverse. */
-					children_signal_list[i] = netlist_expand_ast_of_module(&(node->children[i]), instance_name_prefix, local_ref);
+					children_signal_list[i] = netlist_expand_ast_of_module(&(node->children[i]), instance_name_prefix, child_ref);
 				}
 			}
 		}
@@ -1373,7 +1381,7 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy *local
 	long i, j;
 	char *temp_string;
 	long sc_spot;
-	oassert(module_items->type == MODULE_ITEMS || module_items->type == FUNCTION_ITEMS);
+	oassert(module_items->type == MODULE_ITEMS || module_items->type == FUNCTION_ITEMS || module_items->type == BLOCK);
 
 	STRING_CACHE *local_symbol_table_sc = local_ref->local_symbol_table_sc;
 	ast_node_t **local_symbol_table = local_ref->local_symbol_table;
@@ -1524,33 +1532,42 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy *local
 		for (i = 0; i < num_implicit_declarations; i++)
 		{
 			ast_node_t *node = implicit_declarations[i];
-			sc_spot = sc_add_string(local_symbol_table_sc, node->types.identifier);
-			oassert(sc_spot > -1);
+			ast_node_t *potential_var_declare = resolve_hierarchical_name_reference(local_ref, node->types.identifier);
 
-			if (local_symbol_table_sc->data[sc_spot] == NULL)
+			if (potential_var_declare == NULL)
 			{
-				ast_node_t *var_declare = create_node_w_type(VAR_DECLARE, node->line_number, node->file_number);
-			
-				/* copy the output status over */
-				var_declare->types.variable.is_wire = true;
-				var_declare->types.variable.is_reg = false;
+				sc_spot = sc_add_string(local_symbol_table_sc, node->types.identifier);
+				oassert(sc_spot > -1);
 
-				var_declare->types.variable.is_integer = false;
-				var_declare->types.variable.is_input = false;
+				if (local_symbol_table_sc->data[sc_spot] == NULL)
+				{
+					ast_node_t *var_declare = create_node_w_type(VAR_DECLARE, node->line_number, node->file_number);
 				
-				allocate_children_to_node(var_declare, { node, NULL, NULL, NULL, NULL, NULL });
+					/* copy the output status over */
+					var_declare->types.variable.is_wire = true;
+					var_declare->types.variable.is_reg = false;
 
-				/* store the data which is an idx here */
-				local_symbol_table_sc->data[sc_spot] = (void *)var_declare;
+					var_declare->types.variable.is_integer = false;
+					var_declare->types.variable.is_input = false;
+					
+					allocate_children_to_node(var_declare, { node, NULL, NULL, NULL, NULL, NULL });
 
-				/* store the symbol */
-				local_symbol_table = (ast_node_t **)vtr::realloc(local_symbol_table, sizeof(ast_node_t*)*(num_local_symbol_table+1));
-				local_symbol_table[num_local_symbol_table] = (ast_node_t *)var_declare;
-				num_local_symbol_table ++;
+					/* store the data which is an idx here */
+					local_symbol_table_sc->data[sc_spot] = (void *)var_declare;
+
+					/* store the symbol */
+					local_symbol_table = (ast_node_t **)vtr::realloc(local_symbol_table, sizeof(ast_node_t*)*(num_local_symbol_table+1));
+					local_symbol_table[num_local_symbol_table] = (ast_node_t *)var_declare;
+					num_local_symbol_table ++;
+				}
+				else
+				{
+					/* net was declared later; do nothing */
+				}
 			}
 			else
 			{
-				/* net was declared later; do nothing */
+				/* var_declare was defined in encompassing scope */
 			}
 		}
 
