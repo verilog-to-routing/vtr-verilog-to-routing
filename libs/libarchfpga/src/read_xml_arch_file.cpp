@@ -90,8 +90,8 @@ static void ProcessTileProps(pugi::xml_node Node,
                              t_physical_tile_type* PhysicalTileType,
                              const pugiutil::loc_data& loc_data);
 static void ProcessTilePorts(pugi::xml_node Parent,
-                            t_physical_tile_type* PhysicalTileType,
-                            const pugiutil::loc_data& loc_data);
+                             t_physical_tile_type* PhysicalTileType,
+                             const pugiutil::loc_data& loc_data);
 static void ProcessTilePort(pugi::xml_node Node,
                             t_physical_port* port,
                             const pugiutil::loc_data& loc_data);
@@ -99,7 +99,8 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
                                        t_physical_tile_type* PhysicalTileType,
                                        const pugiutil::loc_data& loc_data);
 static void ProcessPb_Type(pugi::xml_node Parent,
-                           t_pb_type* pb_type, t_mode* mode,
+                           t_pb_type* pb_type,
+                           t_mode* mode,
                            const bool timing_enabled,
                            const t_arch& arch,
                            const pugiutil::loc_data& loc_data);
@@ -286,7 +287,7 @@ void XmlReadArch(const char* ArchFile,
 
         /* Process logical block types */
         Next = get_single_child(architecture, "tiles", loc_data);
-        ProcessTiles(Next, PhysicalTileTypes, arch_def_fc, *arch,  loc_data);
+        ProcessTiles(Next, PhysicalTileTypes, arch_def_fc, *arch, loc_data);
 
         /* Process logical block types */
         Next = get_single_child(architecture, "complexblocklist", loc_data);
@@ -2675,9 +2676,9 @@ static void ProcessTiles(pugi::xml_node Node,
         ProcessTilePorts(CurTileType, &PhysicalTileType, loc_data);
 
         PhysicalTileType.num_pins = PhysicalTileType.capacity
-                         * (PhysicalTileType.num_input_pins
-                            + PhysicalTileType.num_output_pins
-                            + PhysicalTileType.num_clock_pins);
+                                    * (PhysicalTileType.num_input_pins
+                                       + PhysicalTileType.num_output_pins
+                                       + PhysicalTileType.num_clock_pins);
         PhysicalTileType.num_receivers = PhysicalTileType.capacity * PhysicalTileType.num_input_pins;
         PhysicalTileType.num_drivers = PhysicalTileType.capacity * PhysicalTileType.num_output_pins;
 
@@ -2727,7 +2728,6 @@ static void ProcessTiles(pugi::xml_node Node,
 static void ProcessTileProps(pugi::xml_node Node,
                              t_physical_tile_type* PhysicalTileType,
                              const pugiutil::loc_data& loc_data) {
-
     expect_only_attributes(Node, {"name", "capacity", "width", "height", "area"}, loc_data);
 
     /* Load type name */
@@ -2747,8 +2747,8 @@ static void ProcessTileProps(pugi::xml_node Node,
 }
 
 static void ProcessTilePorts(pugi::xml_node Parent,
-                            t_physical_tile_type* PhysicalTileType,
-                            const pugiutil::loc_data& loc_data) {
+                             t_physical_tile_type* PhysicalTileType,
+                             const pugiutil::loc_data& loc_data) {
     pugi::xml_node Cur;
 
     std::map<std::string, int> tile_port_names;
@@ -2820,7 +2820,7 @@ static void ProcessTilePort(pugi::xml_node Node,
                             const pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_attributes = {"name", "num_pins", "equivalent"};
 
-    if (Node.name() == "input"s  || Node.name() == "clock"s) {
+    if (Node.name() == "input"s || Node.name() == "clock"s) {
         expected_attributes.push_back("is_non_clock_global");
     }
 
@@ -4396,7 +4396,7 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
                     logical_block.physical_tile_index = physical_tile.index;
 
                     auto result = check_equivalence.insert(std::pair<t_physical_tile_type*, t_logical_block_type*>(&physical_tile, &logical_block));
-                    if(!result.second) {
+                    if (!result.second) {
                         archfpga_throw(__FILE__, __LINE__,
                                        "Logical and Physical types do not have a one to one mapping\n");
                     }
