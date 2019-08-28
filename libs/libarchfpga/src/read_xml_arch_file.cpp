@@ -199,6 +199,9 @@ int find_switch_by_name(const t_arch& arch, std::string switch_name);
 
 e_side string_to_side(std::string side_str);
 
+static void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
+                                        std::vector<t_logical_block_type>& LogicalBlockTypes);
+
 /*
  *
  *
@@ -288,6 +291,9 @@ void XmlReadArch(const char* ArchFile,
         /* Process logical block types */
         Next = get_single_child(architecture, "complexblocklist", loc_data);
         ProcessComplexBlocks(Next, LogicalBlockTypes, *arch, timing_enabled, loc_data);
+
+        /* Link Physical Tiles with Logical Blocks */
+        link_physical_logical_types(PhysicalTileTypes, LogicalBlockTypes);
 
         /* Process directs */
         Next = get_single_child(architecture, "directlist", loc_data, OPTIONAL);
@@ -2734,7 +2740,7 @@ static void ProcessTileProps(pugi::xml_node Node,
     PhysicalTileType->height = get_attribute(Node, "height", loc_data, OPTIONAL).as_uint(1);
     PhysicalTileType->area = get_attribute(Node, "area", loc_data, OPTIONAL).as_float(UNDEFINED);
 
-    if (PhysicalTileType->area < 0) {
+    if (atof(Prop) < 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                        "Area for type %s must be non-negative\n", PhysicalTileType->name);
     }
@@ -2894,9 +2900,9 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
 
         t_equivalent_site equivalent_site;
 
-        expect_only_attributes(CurSite, {"name"}, loc_data);
+        expect_only_attributes(CurSite, {"pb_type"}, loc_data);
         /* Load equivalent site name */
-        auto Prop = get_attribute(CurSite, "name", loc_data).value();
+        auto Prop = get_attribute(CurSite, "pb_type", loc_data).value();
         equivalent_site.pb_type_name = vtr::strdup(Prop);
 
         PhysicalTileType->equivalent_sites.push_back(equivalent_site);
@@ -4371,4 +4377,33 @@ e_side string_to_side(std::string side_str) {
                        "Invalid side specification");
     }
     return side;
+}
+
+static void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
+                                        std::vector<t_logical_block_type>& LogicalBlockTypes) {
+    std::map<t_physical_tile_type*, t_logical_block_type*> check_equivalence;
+
+    for (auto& physical_tile : PhysicalTileTypes) {
+        if (physical_tile.index == 0) continue;
+
+        for (auto& equivalent_site : physical_tile.equivalent_sites) {
+            for (auto& logical_block : LogicalBlockTypes) {
+                if (logical_block.index == 0) continue;
+
+                // Check the corresponding Logical Block
+                if (0 == strcmp(logical_block.pb_type->name, equivalent_site.pb_type_name)) {
+                    physical_tile.logical_block_index = logical_block.index;
+                    logical_block.physical_tile_index = physical_tile.index;
+
+                    auto result = check_equivalence.insert(std::pair<t_physical_tile_type*, t_logical_block_type*>(&physical_tile, &logical_block));
+                    if(!result.second) {
+                        archfpga_throw(__FILE__, __LINE__,
+                                       "Logical and Physical types do not have a one to one mapping\n");
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
 }
