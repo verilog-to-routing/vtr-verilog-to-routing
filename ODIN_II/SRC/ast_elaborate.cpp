@@ -682,6 +682,8 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 				fold_expressions = true;
 				break;
 			}
+			case TASK: //fallthrough
+			case STATEMENT: //fallthough
 			case FUNCTION:	// fallthrough
 			case INITIAL:	// fallthrough
 			case ALWAYS:
@@ -862,6 +864,59 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 					/* clean up */
 					vtr::free(temp_instance_name);
 				}				
+
+				for (i = 0; i < node->types.task.size_task_instantiations; i++)
+				{
+				
+					/* make the stringed up module instance name - instance name is
+					* MODULE_INSTANCE->MODULE_NAMED_INSTANCE(child[1])->IDENTIFIER(child[0]).
+					* module name is MODULE_INSTANCE->IDENTIFIER(child[0])
+					*/
+					ast_node_t *temp_instance = node->types.task.task_instantiations_instance[i];
+					char *instance_name_prefix = local_ref->instance_name_prefix;
+
+					char *temp_instance_name = make_full_ref_name(instance_name_prefix,
+						temp_instance->children[0]->types.identifier,
+						temp_instance->children[1]->children[0]->types.identifier,
+						NULL, -1);
+
+					long sc_spot;
+					/* lookup the name of the task associated with this instantiated point */
+					if ((sc_spot = sc_lookup_string(module_names_to_idx, temp_instance->children[0]->types.identifier)) == -1)
+					{
+						error_message(NETLIST_ERROR, node->line_number, node->file_number,
+								"Can't find task name %s\n", temp_instance->children[0]->types.identifier);
+					}
+
+					/* make a unique copy of this task */
+					ast_node_t *instance = ast_node_deep_copy((ast_node_t *)module_names_to_idx->data[sc_spot]);
+					
+					long sc_spot_2 = sc_add_string(module_names_to_idx, temp_instance_name);
+					oassert(sc_spot_2 > -1 && module_names_to_idx->data[sc_spot_2] == NULL);
+					module_names_to_idx->data[sc_spot_2] = (void *)instance;
+					
+					ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(sc_spot_2 + 1));
+					ast_modules[sc_spot_2] = instance;
+
+					/* create the string cache list for the instantiated module */
+					sc_hierarchy *original_sc_hierarchy = ((ast_node_t *)module_names_to_idx->data[sc_spot])->types.hierarchy;
+					sc_hierarchy *task_sc_hierarchy = copy_sc_hierarchy(original_sc_hierarchy);
+					task_sc_hierarchy->parent = local_ref;
+					task_sc_hierarchy->instance_name_prefix = vtr::strdup(temp_instance_name);
+					task_sc_hierarchy->scope_id = vtr::strdup(temp_instance->children[1]->children[0]->types.identifier);
+
+					/* update parent string cache list */					
+					int num_task_children = local_ref->num_task_children;
+					local_ref->task_children = (sc_hierarchy **)vtr::realloc(local_ref->task_children, sizeof(sc_hierarchy *)*(num_task_children + 1));
+					local_ref->task_children[i] = task_sc_hierarchy;
+					local_ref->num_task_children++;
+
+					/* elaboration */
+					instance = build_hierarchy(instance, NULL, -1, task_sc_hierarchy, false, true, data);
+
+					/* clean up */
+					vtr::free(temp_instance_name);
+				}
 
 				break;
 			}
@@ -1098,6 +1153,8 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 
 				break;
 			}
+			case STATEMENT: //fallthrough
+			case TASK: //fallthrough
 			case FUNCTION:	// fallthrough
 			case INITIAL:	// fallthrough
 			case ALWAYS:
@@ -1182,6 +1239,44 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 				{
 					if ((connect_list->children[i]->children[0] && is_ordered_list)
 						|| (!connect_list->children[i]->children[0] && !is_ordered_list))
+					{
+						error_message(PARSE_ERROR, node->line_number, node->file_number, 
+								"%s", "Cannot mix port connections by name and port connections by ordered list\n");
+					}
+				}
+
+				skip_children = true;
+
+				break;
+			}
+			case TASK:
+			{
+				if(parent != NULL)
+				{
+					skip_children = true;
+				}
+				break;
+			}
+			case TASK_INSTANCE:
+			{
+				// check ports
+				ast_node_t *connect_list = node->children[1]->children[1];
+				bool is_ordered_list;
+				if (connect_list->children[1]->children[0]) // skip first connection
+				{
+					is_ordered_list = false; // name was specified
+				}
+				else
+				{
+					is_ordered_list = true;
+				}
+				
+				for (int i = 1; i < connect_list->num_children; i++)
+				{
+					if ((connect_list->children[i] 
+						&& connect_list->children[i]->children)
+						&& (( connect_list->children[i]->children[0] && is_ordered_list)
+						|| (!connect_list->children[i]->children[0] && !is_ordered_list)))
 					{
 						error_message(PARSE_ERROR, node->line_number, node->file_number, 
 								"%s", "Cannot mix port connections by name and port connections by ordered list\n");
@@ -1299,6 +1394,7 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 				node = unroll_for_loop(node, parent, &num_unrolled, local_ref, is_generate_region);
 				break;
 			}
+			case STATEMENT: //fallthrough
 			case ALWAYS: // fallthrough
 			case INITIAL:
 			{
@@ -1547,6 +1643,40 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 					vtr::free(temp_instance_name);
 				}
 
+				for (i = 0; i < node->types.task.size_task_instantiations; i++)
+				{
+				
+					/* make the stringed up module instance name - instance name is
+					* MODULE_INSTANCE->MODULE_NAMED_INSTANCE(child[1])->IDENTIFIER(child[0]).
+					* module name is MODULE_INSTANCE->IDENTIFIER(child[0])
+					*/
+					ast_node_t *temp_instance = node->types.task.task_instantiations_instance[i];
+					char *instance_name_prefix = local_ref->instance_name_prefix;
+
+					char *temp_instance_name = make_full_ref_name(instance_name_prefix,
+						temp_instance->children[0]->types.identifier,
+						temp_instance->children[1]->children[0]->types.identifier,
+						NULL, -1);
+
+					/* lookup the name of the task associated with this instantiated point */
+					long sc_spot = sc_lookup_string(module_names_to_idx, temp_instance->children[0]->types.identifier);
+					oassert(sc_spot > -1 && module_names_to_idx->data[sc_spot] != NULL);
+					ast_node_t *instance = (ast_node_t *)module_names_to_idx->data[sc_spot];
+					
+					sc_hierarchy *task_sc_hierarchy = local_ref->task_children[i];				
+					
+					/* update the parameter table for the instantiated module */
+					STRING_CACHE *instance_param_table_sc = task_sc_hierarchy->local_param_table_sc;
+					update_instance_parameter_table(temp_instance, instance_param_table_sc);
+
+					/* elaboration */
+					update_string_caches(task_sc_hierarchy);
+					instance = finalize_ast(instance, NULL, task_sc_hierarchy, false, true);
+
+					/* clean up */
+					vtr::free(temp_instance_name);
+				}
+
 				break;
 			}
 			case MODULE_INSTANCE:
@@ -1777,6 +1907,7 @@ ast_node_t *finalize_ast(ast_node_t *node, ast_node_t *parent, sc_hierarchy *loc
 				if (node->num_children == 3) convert_2D_to_1D_array_ref(&node, local_ref);
 				break;
 			}
+			case STATEMENT: //fallthrough
 			case ALWAYS: // fallthrough
 			case INITIAL:
 			{
@@ -1834,6 +1965,11 @@ ast_node_t *reduce_expressions(ast_node_t *node, sc_hierarchy *local_ref, long *
 				skip_children = true;
 				break;
 			}	
+			case TASK:
+			{
+				skip_children = true;
+				break;
+			}
 			case MODULE_INSTANCE:
 			{
 				skip_children = true;

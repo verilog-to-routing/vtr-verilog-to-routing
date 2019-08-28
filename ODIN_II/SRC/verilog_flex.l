@@ -169,6 +169,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"always"					{ MP(); return vALWAYS;}
 <INITIAL>"and"						{ MP(); return vAND;}
 <INITIAL>"assign"					{ MP(); return vASSIGN;}
+<INITIAL>"automatic"				{ MP(); return vAUTOMATIC;}
 <INITIAL>"begin"					{ MP(); return vBEGIN;}
 <INITIAL>"case"						{ MP(); return vCASE;}
 <INITIAL>"default"					{ MP(); return vDEFAULT;}
@@ -180,6 +181,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"endgenerate"				{ MP(); return vENDGENERATE;}
 <INITIAL>"endmodule"				{ MP(); return vENDMODULE;}
 <INITIAL>"endspecify"				{ MP(); return vENDSPECIFY;}
+<INITIAL>"endtask"					{ MP(); return vENDTASK;}
 <INITIAL>"for"						{ MP(); return vFOR;}
 <INITIAL>"if"						{ MP(); return vIF;}
 <INITIAL>"initial"					{ MP(); return vINITIAL;}
@@ -201,6 +203,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"posedge"					{ MP(); return vPOSEDGE;}
 <INITIAL>"signed"					{ MP(); return vSIGNED;}
 <INITIAL>"specify"					{ MP(); return vSPECIFY;}
+<INITIAL>"task"						{ MP(); return vTASK;}
 <INITIAL>"while"					{ MP(); return vWHILE;}
 <INITIAL>"xnor"						{ MP(); return vXNOR;}
 <INITIAL>"xor"						{ MP(); return vXOR;}
@@ -222,13 +225,11 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"reg"						{ MP(); return netREG;}
 
 	/*	unsupported Keywords		*/
-<INITIAL>"automatic"				{ UNSUPPORTED_TOKEN;}
 <INITIAL>"buf"						{ UNSUPPORTED_TOKEN;}
 <INITIAL>"casex"					{ UNSUPPORTED_TOKEN;}
 <INITIAL>"casez"					{ UNSUPPORTED_TOKEN;}
 <INITIAL>"disable"					{ UNSUPPORTED_TOKEN;}
 <INITIAL>"edge"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"endtask"					{ UNSUPPORTED_TOKEN;}
 <INITIAL>"scalared"					{ UNSUPPORTED_TOKEN;}
 <INITIAL>"bufif0"					{ UNSUPPORTED_TOKEN;}
 <INITIAL>"bufif1"					{ UNSUPPORTED_TOKEN;}
@@ -268,7 +269,6 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"supply0"					{ UNSUPPORTED_TOKEN;}
 <INITIAL>"supply1"					{ UNSUPPORTED_TOKEN;}
 <INITIAL>"table"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"task"						{ UNSUPPORTED_TOKEN;}
 <INITIAL>"time"						{ UNSUPPORTED_TOKEN;}
 <INITIAL>"tran"						{ UNSUPPORTED_TOKEN;}
 <INITIAL>"tranif0"					{ UNSUPPORTED_TOKEN;}

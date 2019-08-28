@@ -272,6 +272,8 @@ enum ids
 	FUNCTION,
    	/* OTHER FUNCTION ITEMS */
   	FUNCTION_ITEMS,
+	TASK,
+	TASK_ITEMS,
 	/* primitives */
 	GATE,
 	GATE_INSTANCE,
@@ -288,12 +290,16 @@ enum ids
 	/* Function instances*/
 	FUNCTION_NAMED_INSTANCE,
 	FUNCTION_INSTANCE,
+
+	TASK_NAMED_INSTANCE,
+	TASK_INSTANCE,
 	/* Specify Items */
 	SPECIFY_ITEMS,
 	SPECIFY_PARAMETER,
 	SPECIFY_PAL_CONNECTION_STATEMENT,
 	SPECIFY_PAL_CONNECT_LIST,
 	/* statements */
+	STATEMENT,
 	BLOCK,
 	NON_BLOCKING_STATEMENT,
 	BLOCKING_STATEMENT,
@@ -377,6 +383,15 @@ struct typ
 		int index;
 		STRING_CACHE *parameter_list;
 	} function;
+	struct
+	{
+		short is_instantiated;
+		ast_node_t **task_instantiations_instance;
+		int size_task_instantiations;
+		int index;
+		STRING_CACHE *parameter_list;
+		sc_hierarchy *string_cache_list;
+	}task;
 	struct
 	{
 		int num_bit_strings;

@@ -659,7 +659,7 @@ char **get_name_of_pins_number(ast_node_t *var_node, int /*start*/, int width)
 
 	return_string = (char**)vtr::malloc(sizeof(char*)*width);
 	int i;
-	for (i = 0; i < width; i++)//
+	for (i = 0; i < width; i++)
 	{
 		return_string[i] = get_name_of_pin_number(var_node, i);
 	}
@@ -680,6 +680,7 @@ char *get_name_of_pin_number(ast_node_t *var_node, int bit)
 		case BitSpace::_1: return_string = vtr::strdup(ONE_VCC_CNS); break;
 		case BitSpace::_0: return_string = vtr::strdup(ZERO_GND_ZERO); break;
 		case BitSpace::_x: return_string = vtr::strdup(ZERO_GND_ZERO); break;
+		case BitSpace::_z: return_string = vtr::strdup(ZERO_PAD_ZERO); break;
 		default: 
 			error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.vnumber->to_bit_string().c_str());
 			break;
