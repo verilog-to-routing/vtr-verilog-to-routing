@@ -108,6 +108,12 @@ void free_sc_hierarchy(sc_hierarchy *to_free)
 	}
 	to_free->function_children = (sc_hierarchy **)vtr::free(to_free->function_children);
 
+	for (i = 0; i < to_free->num_task_children; i++)
+	{
+		free_sc_hierarchy(to_free->task_children[i]);
+	}
+	to_free->task_children = (sc_hierarchy **)vtr::free(to_free->task_children);
+
 	for (i = 0; i < to_free->num_block_children; i++)
 	{
 		free_sc_hierarchy(to_free->block_children[i]);
@@ -138,6 +144,7 @@ void free_sc_hierarchy(sc_hierarchy *to_free)
 
 	to_free->num_module_children = 0;
 	to_free->num_function_children = 0;
+	to_free->num_task_children = 0;
 	to_free->num_unnamed_genblks = 0;
 
 	vtr::free(to_free);
@@ -192,6 +199,14 @@ ast_node_t *resolve_hierarchical_name_reference(sc_hierarchy *local_ref, char *i
 						if (this_ref->function_children[i]->scope_id == scope_id)
 						{
 							this_ref = this_ref->function_children[i];
+							found = true;
+						}
+					}
+					for (int i = 0; !found && i < this_ref->num_task_children; i++)
+					{
+						if (this_ref->task_children[i]->scope_id == scope_id)
+						{
+							this_ref = this_ref->task_children[i];
 							found = true;
 						}
 					}
@@ -282,6 +297,14 @@ ast_node_t *resolve_hierarchical_name_reference_by_path_search(sc_hierarchy *loc
 				if (local_ref->function_children[i]->scope_id == scope_id)
 				{
 					var_declare = resolve_hierarchical_name_reference_by_path_search(local_ref->function_children[i], identifier);
+				}
+			}
+
+			for (int i = 0; !var_declare && i < local_ref->num_task_children; i++)
+			{
+				if (local_ref->task_children[i]->scope_id == scope_id)
+				{
+					var_declare = resolve_hierarchical_name_reference_by_path_search(local_ref->task_children[i], identifier);
 				}
 			}
 

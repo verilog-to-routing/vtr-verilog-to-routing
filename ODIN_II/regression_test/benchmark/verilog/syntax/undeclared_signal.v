@@ -1,4 +1,3 @@
-/* Odin will hot replace undeclared signal module instanciation with a dummy wire */
 
 module top(
   clk
@@ -8,7 +7,13 @@ input clk;
 testmod x (
   .clk(clk),
   .reset(1'b0),
-  .a(DoesNotExist)
+  .a()
+);
+
+testmod y (
+  clk, 
+  1'b0,
+
 );
 
 endmodule

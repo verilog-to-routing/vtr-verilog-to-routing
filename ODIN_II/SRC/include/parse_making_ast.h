@@ -52,6 +52,7 @@ ast_node_t *newIf(ast_node_t *compare_expression, ast_node_t *true_expression, a
 ast_node_t *newIfQuestion(ast_node_t *compare_expression, ast_node_t *true_expression, ast_node_t *false_expression, int line_number);
 ast_node_t *newCase(ast_node_t *compare_expression, ast_node_t *case_list, int line_number);
 ast_node_t *newAlways(ast_node_t *delay_control, ast_node_t *statements, int line_number);
+ast_node_t *newStatement(ast_node_t *statement, int line_number);
 ast_node_t *newFor(ast_node_t *initial, ast_node_t *compare_expression, ast_node_t *terminal, ast_node_t *statement, int line_number);
 ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int line_number);
 
@@ -59,6 +60,8 @@ ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int 
 ast_node_t *newModuleConnection(char* id, ast_node_t *expression, int line_number);
 ast_node_t *newModuleNamedInstance(char* unique_name, ast_node_t *module_connect_list, ast_node_t *module_parameter_list, int line_number);
 ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t *module_parameter_list, int line_number);
+ast_node_t *newTaskInstance(char *task_name, ast_node_t *task_named_instace, ast_node_t *task_parameter_list, int line_number);
+ast_node_t *newTaskNamedInstance(ast_node_t *module_connect_list, int line_number);
 ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
 ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_named_instance, int line_number);
 ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
@@ -82,9 +85,11 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t *expression1, ast_
 
 /* HIGH LEVEL ITEMS */
 ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number);
-ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number);
+ast_node_t *newFunction(ast_node_t *function_return, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number, bool automatic);
+ast_node_t *newTask(char *task_name, ast_node_t *list_of_ports, ast_node_t *list_of_task_items, int line_number, bool automatic);
 void next_module();
 void next_function();
+void next_task();
 ast_node_t *newDefparam(ids id, ast_node_t *val, int line_number);
 
 void next_parsed_verilog_file(ast_node_t *file_items_list);

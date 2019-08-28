@@ -124,6 +124,8 @@ const char *ids_STR []=
 	"FUNCTION",
    	/* OTHER FUNCTION ITEMS */
   	"FUNCTION_ITEMS",
+	"TASK",
+	"TASK_ITEMS",
 	/* primitives */
 	"GATE",
 	"GATE_INSTANCE",
@@ -140,12 +142,16 @@ const char *ids_STR []=
 	/* Function instances*/
 	"FUNCTION_NAMED_INSTANCE",
 	"FUNCTION_INSTANCE",
+
+	"TASK_NAMED_INSTANCE",
+	"TASK_INSTANCE",
 	/* Specify Items */
 	"SPECIFY_ITEMS",
 	"SPECIFY_PARAMETER",
 	"SPECIFY_PAL_CONNECTION_STATEMENT",
 	"SPECIFY_PAL_CONNECT_LIST",
 	/* statements */
+	"STATEMENT",
 	"BLOCK",
 	"NON_BLOCKING_STATEMENT",
 	"BLOCKING_STATEMENT",

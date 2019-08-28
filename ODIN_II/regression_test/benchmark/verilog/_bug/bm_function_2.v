@@ -35,15 +35,15 @@ function simple_func;
 	input in3;
 	input in4;
 
-	simple_func <= in1[0] & in2[0] | in3 ^ in4;
+	simple_func = in1[0] & in2[0] | in3 ^ in4;
 endfunction
 
 function [`BITS-1:0] simple_func_2;
 	input in3;
 	input in4;
 begin
-	simple_func_2[1] <= in3 & in4;
-	simple_func_2[0] <= in3 | in4;
+	simple_func_2[1] = in3 & in4;
+	simple_func_2[0] = in3 | in4;
 end
 endfunction
 

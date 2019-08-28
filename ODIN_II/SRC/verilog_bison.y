@@ -51,8 +51,8 @@ int yylex(void);
 }
 %token <id_name> vSYMBOL_ID
 %token <num_value> vNUMBER vDELAY_ID
-%token vALWAYS vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vDEFINE vELSE vEND vENDCASE
-%token vENDMODULE vENDSPECIFY vENDGENERATE vENDFUNCTION vIF vINOUT vINPUT vMODULE vGENERATE vFUNCTION
+%token vALWAYS vAUTOMATIC vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vDEFINE vELSE vEND vENDCASE vEMPTY
+%token vENDMODULE vENDSPECIFY vENDGENERATE vENDFUNCTION vENDTASK vIF vINOUT vINPUT vMODULE vGENERATE vFUNCTION vTASK
 %token vOUTPUT vPARAMETER vLOCALPARAM vPOSEDGE vXNOR vXOR vDEFPARAM voANDAND vNAND vNEGEDGE vNOR vNOT vOR vFOR
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT voASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vCLOG2 vGENVAR
@@ -97,20 +97,21 @@ int yylex(void);
 %nonassoc vELSE
 
 %type <id>	 wire_types reg_types net_types net_direction
-%type <node> source_text item items module list_of_module_items list_of_function_items module_item function_item module_parameters module_ports
-%type <node> list_of_parameter_declaration parameter_declaration specparam_declaration list_of_port_declaration port_declaration
-%type <node> defparam_declaration defparam_variable_list defparam_variable function_declaration function_input_declaration 
-%type <node> io_declaration variable_list function_output_variable function_id_and_output_variable
+%type <node> source_text item items module list_of_module_items list_of_task_items list_of_function_items module_item function_item task_item module_parameters module_ports
+%type <node> list_of_parameter_declaration parameter_declaration task_parameter_declaration specparam_declaration list_of_port_declaration port_declaration
+%type <node> defparam_declaration defparam_variable_list defparam_variable function_declaration function_port_list list_of_function_inputs function_input_declaration 
+%type <node> task_declaration task_input_declaration task_output_declaration task_inout_declaration
+%type <node> io_declaration variable_list function_return list_of_function_return_variable function_return_variable function_integer_declaration
 %type <node> integer_type_variable_list variable integer_type_variable
-%type <node> net_declaration integer_declaration function_instantiation genvar_declaration
-%type <node> continuous_assign multiple_inputs_gate_instance list_of_single_input_gate_declaration_instance
+%type <node> net_declaration integer_declaration function_instantiation task_instantiation genvar_declaration
+%type <node> procedural_continuous_assignment multiple_inputs_gate_instance list_of_single_input_gate_declaration_instance
 %type <node> list_of_multiple_inputs_gate_declaration_instance list_of_module_instance
 %type <node> gate_declaration single_input_gate_instance
-%type <node> module_instantiation module_instance function_instance list_of_module_connections list_of_function_connections
+%type <node> module_instantiation module_instance function_instance task_instance list_of_module_connections list_of_function_connections list_of_task_connections
 %type <node> list_of_multiple_inputs_gate_connections
-%type <node> module_connection always statement function_statement blocking_assignment
-%type <node> non_blocking_assignment conditional_statement case_statement case_item_list case_items seq_block
-%type <node> stmt_list delay_control event_expression_list event_expression loop_statement
+%type <node> module_connection tf_connection always statement function_statement function_statement_items task_statement blocking_assignment
+%type <node> non_blocking_assignment conditional_statement function_conditional_statement case_statement function_case_statement case_item_list function_case_item_list case_items function_case_items seq_block function_seq_block
+%type <node> stmt_list function_stmt_list delay_control event_expression_list event_expression loop_statement function_loop_statement
 %type <node> expression primary expression_list module_parameter
 %type <node> list_of_module_parameters localparam_declaration
 %type <node> specify_block list_of_specify_items
@@ -197,43 +198,54 @@ list_of_generate_block_items:
 	;
 
 generate_item:
-	localparam_declaration		{$$ = $1;}
-	| net_declaration 			{$$ = $1;}
-	| genvar_declaration		{$$ = $1;}
-	| integer_declaration 		{$$ = $1;}
-	| continuous_assign			{$$ = $1;}
-	| gate_declaration			{$$ = $1;}
-	| module_instantiation		{$$ = $1;}
-	| function_declaration		{$$ = $1;}
-	| initial_block				{$$ = $1;}
-	| always					{$$ = $1;}
-	| defparam_declaration		{$$ = $1;}
-	| c_function ';'			{$$ = $1;}
-	| if_generate_construct		{$$ = $1;}
-	| case_generate_construct	{$$ = $1;}
-	| loop_generate_construct	{$$ = $1;}
+	localparam_declaration				{$$ = $1;}
+	| net_declaration 					{$$ = $1;}
+	| genvar_declaration				{$$ = $1;}
+	| integer_declaration 				{$$ = $1;}
+	| procedural_continuous_assignment	{$$ = $1;}
+	| gate_declaration					{$$ = $1;}
+	| module_instantiation				{$$ = $1;}
+	| function_declaration				{$$ = $1;}
+	| task_declaration					{$$ = $1;}
+	| initial_block						{$$ = $1;}
+	| always							{$$ = $1;}
+	| defparam_declaration				{$$ = $1;}
+	| c_function ';'					{$$ = $1;}
+	| if_generate_construct				{$$ = $1;}
+	| case_generate_construct			{$$ = $1;}
+	| loop_generate_construct			{$$ = $1;}
 	;
 
 generate_block_item:
-	generate_localparam_declaration	{$$ = $1;}
-	| net_declaration 				{$$ = $1;}
-	| genvar_declaration			{$$ = $1;}
-	| integer_declaration 			{$$ = $1;}
-	| continuous_assign				{$$ = $1;}
-	| gate_declaration				{$$ = $1;}
-	| module_instantiation			{$$ = $1;}
-	| function_declaration			{$$ = $1;}
-	| initial_block					{$$ = $1;}
-	| always						{$$ = $1;}
-	| generate_defparam_declaration	{$$ = $1;}
-	| c_function ';'				{$$ = $1;}
-	| if_generate_construct			{$$ = $1;}
-	| case_generate_construct		{$$ = $1;}
-	| loop_generate_construct		{$$ = $1;}
+	generate_localparam_declaration			{$$ = $1;}
+	| net_declaration 						{$$ = $1;}
+	| genvar_declaration					{$$ = $1;}
+	| integer_declaration 					{$$ = $1;}
+	| procedural_continuous_assignment		{$$ = $1;}
+	| gate_declaration						{$$ = $1;}
+	| module_instantiation					{$$ = $1;}
+	| function_declaration					{$$ = $1;}
+	| initial_block							{$$ = $1;}
+	| always								{$$ = $1;}
+	| generate_defparam_declaration			{$$ = $1;}
+	| c_function ';'						{$$ = $1;}
+	| if_generate_construct					{$$ = $1;}
+	| case_generate_construct				{$$ = $1;}
+	| loop_generate_construct				{$$ = $1;}
 	;
 
 function_declaration:
-	vFUNCTION function_output_variable ';' list_of_function_items vENDFUNCTION	{$$ = newFunction($2, $4, my_yylineno); }
+	vFUNCTION function_return ';' list_of_function_items vENDFUNCTION									{$$ = newFunction($2, NULL, $4, my_yylineno, false);}
+	| vFUNCTION vAUTOMATIC function_return ';' list_of_function_items vENDFUNCTION						{$$ = newFunction($3, NULL, $5, my_yylineno, true);}
+	| vFUNCTION function_return function_port_list ';' list_of_function_items vENDFUNCTION				{$$ = newFunction($2, $3, $5, my_yylineno, false);}
+	| vFUNCTION vAUTOMATIC function_return function_port_list ';' list_of_function_items vENDFUNCTION	{$$ = newFunction($3, $4, $6, my_yylineno, true);}
+	;
+
+task_declaration:
+	vTASK vSYMBOL_ID ';' list_of_task_items vENDTASK	{$$ = newTask($2, NULL, $4, my_yylineno, false);}
+	| vTASK vSYMBOL_ID module_ports ';' list_of_task_items vENDTASK	{$$ = newTask($2, $3, $5, my_yylineno, false);}
+	| vTASK vAUTOMATIC vSYMBOL_ID ';' list_of_task_items vENDTASK	{$$ = newTask($3, NULL, $5, my_yylineno, true);}
+	| vTASK vAUTOMATIC vSYMBOL_ID module_ports ';' list_of_task_items vENDTASK	{$$ = newTask($3, $4, $6, my_yylineno, true);}
 	;
 
 initial_block:
@@ -260,25 +272,67 @@ list_of_function_items:
 	| function_item				{$$ = newList(FUNCTION_ITEMS, $1, my_yylineno);}
 	;
 
+task_input_declaration:
+	vINPUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, false);}
+	| vINPUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, true);}
+	| vINPUT vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,INPUT, $3, true);}
+	| vINPUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, false);}
+	;
+
+task_output_declaration:
+	vOUTPUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, false);}
+	| vOUTPUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, true);}
+	| vOUTPUT vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $3, true);}
+	| vOUTPUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, false);}
+	;
+
+task_inout_declaration:
+	vINOUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, false);}
+	| vINOUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, true);}
+	| vINOUT vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,INOUT, $3, true);}
+	| vINOUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, false);}
+	;
+
+list_of_task_items:
+	list_of_task_items task_item 	{$$ = newList_entry($1, $2); }
+	| task_item						{$$ = newList(TASK_ITEMS, $1, my_yylineno); }
+	;
+
 function_item: 
 	parameter_declaration			{$$ = $1;}
 	| function_input_declaration	{$$ = $1;}
 	| net_declaration 				{$$ = $1;}
-	| integer_declaration 			{$$ = $1;}
-	| continuous_assign				{$$ = $1;}
+	| function_integer_declaration ';' 			{$$ = $1;}
 	| defparam_declaration			{$$ = $1;}
-	| function_statement			{$$ = $1;} //TODO It`s temporary
+	| function_statement			{$$ = $1;}
 	| error ';'						{$$ = NULL;}
+	;
+
+task_item:
+	task_parameter_declaration			{$$ = $1;}
+	| task_input_declaration			{$$ = $1;}
+	| task_output_declaration			{$$ = $1;}
+	| task_inout_declaration			{$$ = $1;}
+	| net_declaration 					{$$ = $1;}
+	| integer_declaration 				{$$ = $1;}
+	| defparam_declaration				{$$ = $1;}
+	| task_statement					{$$ = $1;} 
 	;
 
 function_input_declaration:
 	vINPUT vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $3, true);}
 	| vINPUT variable_list ';'			{$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $2, false);}
+	| vINPUT function_integer_declaration ';' {$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $2, false);}
 	;
 
 parameter_declaration:
 	vPARAMETER vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $3, true);}
 	| vPARAMETER variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $2, false);}
+	;
+
+task_parameter_declaration:
+	vPARAMETER vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(TASK,PARAMETER, $3, true);}
+	| vPARAMETER variable_list ';'			{$$ = markAndProcessSymbolListWith(TASK,PARAMETER, $2, false);}
 	;
 
 localparam_declaration:
@@ -319,15 +373,37 @@ genvar_declaration:
 	vGENVAR integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,GENVAR, $2, true);}
 	;
 
-function_output_variable:
-	function_id_and_output_variable	{$$ = newList(VAR_DECLARE_LIST, $1, my_yylineno);}
+function_return:
+	list_of_function_return_variable							{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $1, false);}
+	| vSIGNED list_of_function_return_variable				{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $2, true);}
+	| function_integer_declaration							{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $1, false);}		//might need to pass true, but signed ports do not work
 	;
 
-function_id_and_output_variable:
-	vSYMBOL_ID					{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, NULL, my_yylineno);}
-	| '[' expression ':' expression ']' vSYMBOL_ID	{$$ = newVarDeclare($6, $2, $4, NULL, NULL, NULL, my_yylineno);}
+list_of_function_return_variable:
+	function_return_variable			{$$ = newList(VAR_DECLARE_LIST, $1, my_yylineno);}
 	;
 
+function_return_variable:
+	vSYMBOL_ID											{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, NULL, my_yylineno);}								
+	| '[' expression ':' expression ']' vSYMBOL_ID		{$$ = newVarDeclare($6, $2, $4, NULL, NULL, NULL, my_yylineno);}
+	;
+
+
+function_integer_declaration:
+	vINTEGER integer_type_variable_list 				{$$ = markAndProcessSymbolListWith(FUNCTION, INTEGER, $2, true);}
+	;
+
+function_port_list:
+	'(' list_of_function_inputs ')'					{$$ = $2;}
+	| '(' list_of_function_inputs ',' ')'				{$$ = $2;}
+	| '(' ')'											{$$ = NULL;}
+	;
+
+list_of_function_inputs:
+	list_of_function_inputs ',' function_input_declaration		{$$ = newList_entry($1, $3);}
+	| function_input_declaration									{$$ = newList(VAR_DECLARE_LIST, $1, my_yylineno);}
+	;
+	
 variable_list:
 	variable_list ',' variable						{$$ = newList_entry($1, $3);}
 	| variable										{$$ = newList(VAR_DECLARE_LIST, $1, my_yylineno);}
@@ -362,7 +438,7 @@ integer_type_variable:
 	| vSYMBOL_ID '=' primary			{$$ = newIntegerTypeVarDeclare($1, NULL, NULL, NULL, NULL, $3, my_yylineno);} // ONLY FOR PARAMETER
 	;
 
-continuous_assign:
+procedural_continuous_assignment:
 	vASSIGN list_of_blocking_assignment ';'	{$$ = $2;}
 	;
 
@@ -411,14 +487,25 @@ module_instantiation:
 	vSYMBOL_ID list_of_module_instance ';' 							{$$ = newModuleInstance($1, $2, my_yylineno);}
 	;
 
+task_instantiation:
+	vSYMBOL_ID '(' task_instance ')' ';'												{$$ = newTaskInstance($1, $3, NULL, my_yylineno);}
+	| vSYMBOL_ID '(' ')' ';'														{$$ = newTaskInstance($1, NULL, NULL, my_yylineno);}
+	| '#' '(' list_of_module_parameters ')' vSYMBOL_ID '(' task_instance ')' ';'		{$$ = newTaskInstance($5, $7, $3, my_yylineno);}
+	| '#' '(' list_of_module_parameters ')' vSYMBOL_ID '(' ')' ';'				{$$ = newTaskInstance($5, NULL, $3, my_yylineno);}
+
 list_of_module_instance:
 	list_of_module_instance ',' module_instance                     {$$ = newList_entry($1, $3);}
-	|module_instance                                                {$$ = newList(ONE_MODULE_INSTANCE, $1, my_yylineno);}
+	| module_instance                                                {$$ = newList(ONE_MODULE_INSTANCE, $1, my_yylineno);}
 	;
 
 // 4 Function Instantiations
 	function_instantiation: 
 	vSYMBOL_ID function_instance 									{$$ = newFunctionInstance($1, $2, my_yylineno);}
+	;
+
+// 4 Task Instantiations
+task_instance: 
+	list_of_task_connections											 {$$ = newTaskNamedInstance($1, my_yylineno);}
 	;
 
 function_instance:
@@ -433,17 +520,29 @@ module_instance:
 	;
 
 list_of_function_connections:
-	list_of_function_connections ',' module_connection	{$$ = newList_entry($1, $3);}
-	| module_connection					{$$ = newfunctionList(MODULE_CONNECT_LIST, $1, my_yylineno);}
+	list_of_function_connections ',' tf_connection	{$$ = newList_entry($1, $3);}
+	| tf_connection					{$$ = newfunctionList(MODULE_CONNECT_LIST, $1, my_yylineno);}
+	;
+
+list_of_task_connections:
+	list_of_task_connections ',' tf_connection	{$$ = newList_entry($1, $3);}
+	| tf_connection					{$$ = newList(MODULE_CONNECT_LIST, $1, my_yylineno);}
 	;
 
 list_of_module_connections:
 	list_of_module_connections ',' module_connection	{$$ = newList_entry($1, $3);}
+	| list_of_module_connections ',' 					{$$ = newList_entry($1, newModuleConnection(NULL, NULL, my_yylineno));}
 	| module_connection					{$$ = newList(MODULE_CONNECT_LIST, $1, my_yylineno);}
+	;
+
+tf_connection:
+	'.' vSYMBOL_ID '(' expression ')'	{$$ = newModuleConnection($2, $4, my_yylineno);}
+	| expression				{$$ = newModuleConnection(NULL, $1, my_yylineno);}
 	;
 
 module_connection:
 	'.' vSYMBOL_ID '(' expression ')'	{$$ = newModuleConnection($2, $4, my_yylineno);}
+	| '.' vSYMBOL_ID '(' ')'			{$$ = newModuleConnection($2, NULL, my_yylineno);}
 	| expression				{$$ = newModuleConnection(NULL, $1, my_yylineno);}
 	;
 
@@ -497,18 +596,49 @@ generate_block:
 	;
 
 function_statement:
-	statement	{$$ = newAlways(NULL, $1, my_yylineno);}
+	function_statement_items				{$$ = newStatement($1, my_yylineno);}
+	;
+
+task_statement:
+	statement	{$$ = newStatement($1, my_yylineno);}
 	;
 
 statement:
 	seq_block													{$$ = $1;}
+	| task_instantiation										{$$ = $1;}
 	| c_function ';'											{$$ = $1;}
 	| blocking_assignment ';'									{$$ = $1;}
 	| non_blocking_assignment ';'								{$$ = $1;}
+	| procedural_continuous_assignment							{$$ = $1;}
 	| conditional_statement										{$$ = $1;}
 	| case_statement											{$$ = $1;}
 	| loop_statement											{$$ = newList(BLOCK, $1, my_yylineno);}
 	| ';'														{$$ = NULL;}
+	;
+
+function_statement_items:
+	function_seq_block											{$$ = $1;}
+	| c_function ';'											{$$ = $1;}
+	| blocking_assignment ';'									{$$ = $1;}
+	| function_conditional_statement							{$$ = $1;}
+	| function_case_statement									{$$ = $1;}
+	| function_loop_statement									{$$ = newList(BLOCK, $1, my_yylineno);}
+	| ';'														{$$ = NULL;}
+	;	
+
+function_seq_block:
+	vBEGIN function_stmt_list vEND						{$$ = $2;}
+	| vBEGIN ':' vSYMBOL_ID function_stmt_list vEND		{free($3); $$ = $4;}
+	;
+
+function_stmt_list:
+	function_stmt_list function_statement_items {$$ = newList_entry($1, $2);}
+	| function_statement_items		{$$ = newList(BLOCK, $1, my_yylineno);}
+	;
+
+function_loop_statement:
+	vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' function_statement_items	{$$ = newFor($3, $5, $7, $9, my_yylineno);}
+	| vWHILE '(' expression ')' function_statement_items							{$$ = newWhile($3, $5, my_yylineno);}
 	;
 
 loop_statement:
@@ -518,6 +648,15 @@ loop_statement:
 
 case_statement:
 	vCASE '(' expression ')' case_item_list vENDCASE			{$$ = newCase($3, $5, my_yylineno);}
+	;
+
+function_case_statement:
+	vCASE '(' expression ')' function_case_item_list vENDCASE			{$$ = newCase($3, $5, my_yylineno);}
+	;
+
+function_conditional_statement:
+	vIF '(' expression ')' function_statement_items %prec LOWER_THAN_ELSE						{$$ = newIf($3, $5, NULL, my_yylineno);}
+	| vIF '(' expression ')' function_statement_items vELSE function_statement_items			{$$ = newIf($3, $5, $7, my_yylineno);}
 	;
 
 conditional_statement:
@@ -541,11 +680,21 @@ case_item_list:
 	| case_items			{$$ = newList(CASE_LIST, $1, my_yylineno);}
 	;
 
+function_case_item_list:
+	function_case_item_list function_case_items	{$$ = newList_entry($1, $2);}
+	| function_case_items			{$$ = newList(CASE_LIST, $1, my_yylineno);}
+	;
+
+function_case_items:
+	expression ':' function_statement_items	{$$ = newCaseItem($1, $3, my_yylineno);}
+	| vDEFAULT ':' function_statement_items	{$$ = newDefaultCase($3, my_yylineno);}
+	;
+
 case_items:
 	expression ':' statement	{$$ = newCaseItem($1, $3, my_yylineno);}
 	| vDEFAULT ':' statement	{$$ = newDefaultCase($3, my_yylineno);}
 	;
-
+	
 seq_block:
 	vBEGIN stmt_list vEND			{$$ = $2;}
 	| vBEGIN ':' vSYMBOL_ID stmt_list vEND	{$$ = newLabelledBlock($3, $4);}
