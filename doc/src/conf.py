@@ -20,7 +20,7 @@ import shlex
 import recommonmark
 
 sys.path.append(".")
-from markdown_code_symlinks import MarkdownCodeSymlinks
+from markdown_code_symlinks import LinkParser, VtrDomain
 
 # Cool looking ReadTheDocs theme
 import sphinx_rtd_theme
@@ -71,7 +71,7 @@ templates_path = []
 
 # Support rendering Markdown docs
 source_parsers = {
-   '.md': 'recommonmark.parser.CommonMarkParser',
+   '.md': 'markdown_code_symlinks.LinkParser',
 }
 
 # The suffix(es) of source filenames.
@@ -325,12 +325,12 @@ texinfo_documents = [
 #texinfo_no_detailmenu = False
 
 def setup(app):
-    MarkdownCodeSymlinks.find_links()
+    VtrDomain.find_links()
+    app.add_domain(VtrDomain)
     app.add_config_value(
         'recommonmark_config', {
             'github_code_repo': 'https://github.com/verilog-to-routing/vtr-verilog-to-routing',
             'enable_math': True,
             'enable_inline_math': True,
         }, True)
-    app.add_transform(MarkdownCodeSymlinks)
     app.add_stylesheet('css/vtr.css')
