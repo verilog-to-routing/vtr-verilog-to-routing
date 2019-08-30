@@ -10,3 +10,5 @@ Developer Guide
     contributing
     developing
     tutorial
+    support
+    license
