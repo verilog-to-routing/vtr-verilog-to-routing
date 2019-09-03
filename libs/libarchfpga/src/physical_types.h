@@ -658,7 +658,7 @@ struct t_physical_port {
     bool is_clock;
     bool is_non_clock_global;
     int num_pins;
-    PortEquivalence equivalent;
+    PortEquivalence equivalent = PortEquivalence::NONE;
 
     int index;
     int port_index_by_type;
