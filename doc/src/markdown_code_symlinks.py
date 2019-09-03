@@ -12,7 +12,7 @@ if sys.version_info < (3, 0):
 else:
     from urllib.parse import urlparse, unquote
 
-from recommonmark import transform, parser
+from recommonmark import parser
 
 """
 Allow linking of Markdown documentation from the source code tree into the Sphinx
@@ -139,10 +139,6 @@ Current Value: {}
         import pprint
         pprint.pprint(cls.mapping)
 
-    @classmethod
-    def remove_extension(cls, path):
-        return filename
-
     # Overriden method to solve the cross-reference link
     def resolve_xref(self, env, fromdocname, builder,
                      typ, target, node, contnode):
@@ -155,7 +151,6 @@ Current Value: {}
         # Removing filename extension (e.g. contributing.md -> contributing)
         todocname, _ = os.path.splitext(self.mapping['code2docs'][todocname])
 
-        content = nodes.TextElement(contnode[0], contnode[0])
         newnode = make_refnode(builder, fromdocname, todocname, targetid, contnode[0])
 
         return newnode
