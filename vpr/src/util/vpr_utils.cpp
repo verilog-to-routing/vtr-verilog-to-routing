@@ -779,6 +779,7 @@ t_logical_block_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
 
     if (max_type == nullptr) {
         VTR_LOG_WARN("Unable to determine most common block type (perhaps the device grid was empty?)\n");
+        return nullptr;
     }
     return logical_block_type(max_type);
 }
