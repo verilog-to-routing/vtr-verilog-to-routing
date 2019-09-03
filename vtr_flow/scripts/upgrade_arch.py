@@ -69,8 +69,8 @@ def main():
     arch = root_tags[0]
 
     if arch.tag != "architecture":
-        print "Not an architecture file, exiting..."
-        sys.exit(1)
+        print "Warning! Not an architecture file, exiting..."
+        sys.exit(0)
 
     modified = False
     if "add_model_timing" in args.features:
