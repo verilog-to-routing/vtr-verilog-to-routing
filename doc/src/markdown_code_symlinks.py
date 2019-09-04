@@ -13,7 +13,6 @@ else:
     from urllib.parse import urlparse, unquote
 
 from recommonmark import parser
-
 """
 Allow linking of Markdown documentation from the source code tree into the Sphinx
 documentation tree.
@@ -24,6 +23,7 @@ than the place they are now linked too - this code fixes these paths up.
 We also want links from two Markdown documents found in the Sphinx docs to
 work, so that is also fixed up.
 """
+
 
 def path_contains(parent_path, child_path):
     """Check a path contains another path.
@@ -66,14 +66,14 @@ def relative(parent_dir, child_path):
     return os.path.relpath(child_path, start=parent_dir)
 
 
-class VtrDomain(Domain):
+class MarkdownSymlinksDomain(Domain):
     """
     Extension of the Domain class to implement custom cross-reference links
     solve methodology
     """
 
-    name = 'vtr'
-    label = 'Vtr'
+    name = 'markdown_symlinks'
+    label = 'MarkdownSymlinks'
 
     roles = {
         'xref': XRefRole(),
@@ -86,6 +86,9 @@ class VtrDomain(Domain):
         'docs2code': {},
         'code2docs': {},
     }
+
+    github_repo_url = ""
+    github_repo_branch = ""
 
     @classmethod
     def relative_code(cls, url):
@@ -104,6 +107,7 @@ Assertion error! Document already in mapping!
     New Value: {}
 Current Value: {}
 """.format(docs_rel, cls.mapping['docs2code'][docs_rel])
+
         assert code_rel not in cls.mapping['code2docs'], """\
 Assertion error! Document already in mapping!
     New Value: {}
@@ -117,6 +121,26 @@ Current Value: {}
     def find_links(cls):
         """Walk the docs dir and find links to docs in the code dir."""
         for root, dirs, files in os.walk(cls.docs_root_dir):
+            for dname in dirs:
+                dpath = os.path.abspath(os.path.join(root, dname))
+
+                if not os.path.islink(dpath):
+                    continue
+
+                link_path = os.path.join(root, os.readlink(dpath))
+                # Is link outside the code directory?
+                if not path_contains(cls.code_root_dir, link_path):
+                    continue
+
+                # Is link internal to the docs directory?
+                if path_contains(cls.docs_root_dir, link_path):
+                    continue
+
+                docs_rel = cls.relative_docs(dpath)
+                code_rel = cls.relative_code(link_path)
+
+                cls.add_mapping(docs_rel, code_rel)
+
             for fname in files:
                 fpath = os.path.abspath(os.path.join(root, fname))
 
@@ -136,29 +160,46 @@ Current Value: {}
                 code_rel = cls.relative_code(link_path)
 
                 cls.add_mapping(docs_rel, code_rel)
+
         import pprint
         pprint.pprint(cls.mapping)
 
+    @classmethod
+    def add_github_repo(cls, github_repo_url, github_repo_branch):
+        """Initialize the github repository to update links correctly."""
+        cls.github_repo_url = github_repo_url
+        cls.github_repo_branch = github_repo_branch
+
     # Overriden method to solve the cross-reference link
-    def resolve_xref(self, env, fromdocname, builder,
-                     typ, target, node, contnode):
+    def resolve_xref(
+            self, env, fromdocname, builder, typ, target, node, contnode):
         if '#' in target:
             todocname, targetid = target.split('#')
         else:
             todocname = target
             targetid = ''
 
-        # Removing filename extension (e.g. contributing.md -> contributing)
-        todocname, _ = os.path.splitext(self.mapping['code2docs'][todocname])
+        if todocname not in self.mapping['code2docs']:
+            # Could be a link to a repository's code tree directory/file
+            todocname = '{}{}{}'.format(self.github_repo_url, self.github_repo_branch, todocname)
 
-        newnode = make_refnode(builder, fromdocname, todocname, targetid, contnode[0])
+            newnode = nodes.reference('', '', internal=True, refuri=todocname)
+            newnode.append(contnode[0])
+        else:
+            # Removing filename extension (e.g. contributing.md -> contributing)
+            todocname, _ = os.path.splitext(self.mapping['code2docs'][todocname])
+
+            newnode = make_refnode(
+                builder, fromdocname, todocname, targetid, contnode[0])
 
         return newnode
 
-    def resolve_any_xref(self, env, fromdocname, builder,
-                         target, node, contnode):
-        res = self.resolve_xref(env, fromdocname, builder, 'xref', target, node, contnode)
-        return [('vtr:xref', res)]
+    def resolve_any_xref(
+            self, env, fromdocname, builder, target, node, contnode):
+        res = self.resolve_xref(
+            env, fromdocname, builder, 'xref', target, node, contnode)
+        return [('markdown_symlinks:xref', res)]
+
 
 class LinkParser(parser.CommonMarkParser, object):
     def visit_link(self, mdnode):
@@ -190,10 +231,9 @@ class LinkParser(parser.CommonMarkParser, object):
             wrap_node = addnodes.pending_xref(
                 reftarget=unquote(destination),
                 reftype='xref',
-                refdomain='vtr',  # Added to enable cross-linking
+                refdomain='markdown_symlinks',  # Added to enable cross-linking
                 refexplicit=True,
-                refwarn=True
-            )
+                refwarn=True)
             # TODO also not correct sourcepos
             wrap_node.line = self._get_line(mdnode)
             if mdnode.title:
@@ -203,6 +243,7 @@ class LinkParser(parser.CommonMarkParser, object):
 
         self.current_node.append(next_node)
         self.current_node = ref_node
+
 
 if __name__ == "__main__":
     import doctest
