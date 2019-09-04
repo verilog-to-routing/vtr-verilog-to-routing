@@ -24,6 +24,10 @@ To build the documentation locally you need sphinx installed:
 
         $ pip install sphinxcontrib-bibtex
 
+    To install all the python requirements:
+
+        $ pip install -r requirements.txt
+
 To build the documentation just run:
 
     $ make html
