@@ -20,6 +20,7 @@ using namespace std;
 #include "vtr_log.h"
 #include "vtr_digest.h"
 #include "vtr_memory.h"
+#include "vtr_token.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -31,7 +32,6 @@ using namespace std;
 #include "read_xml_util.h"
 #include "read_netlist.h"
 #include "pb_type_graph.h"
-#include "token.h"
 
 static const char* netlist_file_name = nullptr;
 

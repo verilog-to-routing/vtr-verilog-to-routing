@@ -10,6 +10,7 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include "vtr_token.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -18,7 +19,6 @@ using namespace std;
 #include "globals.h"
 #include "vpr_utils.h"
 #include "pb_type_graph.h"
-#include "token.h"
 #include "pb_type_graph_annotations.h"
 #include "read_xml_arch_file.h"
 

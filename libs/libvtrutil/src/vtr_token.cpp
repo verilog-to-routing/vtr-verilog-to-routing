@@ -11,9 +11,7 @@ using namespace std;
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
-
-#include "token.h"
-#include "read_xml_util.h"
+#include "vtr_token.h"
 
 enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
                                        const char cur);
