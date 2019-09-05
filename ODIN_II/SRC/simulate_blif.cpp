@@ -36,10 +36,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <mutex>
 #include <unistd.h>
 #include <thread>
-//#include <cthreads.h>
-
-//maria
-#include <sys/sysinfo.h>
 
 #define CLOCK_INITIAL_VALUE 1
 #define MAX_REPEAT_SIM 128

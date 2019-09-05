@@ -110,7 +110,7 @@ vWORD [[:alpha:]_][[:alnum:]_$]*
 vSTRING ["][^"]*["]  
 vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
-%%	
+%%
 	/* preproc helpers */
 <VAR_PARSE>{vWORD}					{ MP(); add_args_to_define(yytext); }
 <VAR_PARSE>[\,]						{  }
