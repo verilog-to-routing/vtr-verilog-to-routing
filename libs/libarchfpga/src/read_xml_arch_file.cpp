@@ -795,7 +795,6 @@ static void LoadPinLoc(pugi::xml_node Locations,
             for (int height = 0; height < type->height; ++height) {
                 for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
                     for (int pin = 0; pin < type->num_pin_loc_assignments[width][height][side]; ++pin) {
-
                         auto pin_range = ProcessCustomPinLoc(Locations,
                                                              type,
                                                              type->pin_loc_assignments[width][height][side][pin],
@@ -840,7 +839,7 @@ static std::pair<int, int> ProcessCustomPinLoc(pugi::xml_node Locations,
 
     if (token.type != TOKEN_STRING || 0 != strcmp(token.data, type->name)) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                  "Wrong physical type name of the port: %s\n", pin_loc_string);
+                       "Wrong physical type name of the port: %s\n", pin_loc_string);
     }
 
     token_index++;
@@ -848,7 +847,7 @@ static std::pair<int, int> ProcessCustomPinLoc(pugi::xml_node Locations,
 
     if (token.type != TOKEN_DOT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                  "No dot is present to separate type name and port name: %s\n", pin_loc_string);
+                       "No dot is present to separate type name and port name: %s\n", pin_loc_string);
     }
 
     token_index++;
@@ -856,7 +855,7 @@ static std::pair<int, int> ProcessCustomPinLoc(pugi::xml_node Locations,
 
     if (token.type != TOKEN_STRING) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                  "No port name is present: %s\n", pin_loc_string);
+                       "No port name is present: %s\n", pin_loc_string);
     }
 
     auto port = get_port_by_name(type, token.data);
@@ -876,7 +875,7 @@ static std::pair<int, int> ProcessCustomPinLoc(pugi::xml_node Locations,
 
     if (token.type != TOKEN_OPEN_SQUARE_BRACKET) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                  "No open square bracket present: %s\n", pin_loc_string);
+                       "No open square bracket present: %s\n", pin_loc_string);
     }
 
     token_index++;
@@ -884,7 +883,7 @@ static std::pair<int, int> ProcessCustomPinLoc(pugi::xml_node Locations,
 
     if (token.type != TOKEN_INT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                  "No integer to indicate least significant pin index: %s\n", pin_loc_string);
+                       "No integer to indicate least significant pin index: %s\n", pin_loc_string);
     }
 
     int first_pin = vtr::atoi(token.data);
@@ -896,14 +895,14 @@ static std::pair<int, int> ProcessCustomPinLoc(pugi::xml_node Locations,
     if (token.type != TOKEN_COLON) {
         if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                      "No closing bracket: %s\n", pin_loc_string);
+                           "No closing bracket: %s\n", pin_loc_string);
         }
 
         token_index++;
 
         if (token_index != num_tokens) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                      "pin location should be completed, but more tokens are present: %s\n", pin_loc_string);
+                           "pin location should be completed, but more tokens are present: %s\n", pin_loc_string);
         }
 
         return std::make_pair(abs_first_pin_idx + first_pin, abs_first_pin_idx + first_pin + 1);
@@ -914,7 +913,7 @@ static std::pair<int, int> ProcessCustomPinLoc(pugi::xml_node Locations,
 
     if (token.type != TOKEN_INT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                  "No integer to indicate most significant pin index: %s\n", pin_loc_string);
+                       "No integer to indicate most significant pin index: %s\n", pin_loc_string);
     }
 
     int last_pin = vtr::atoi(token.data);
@@ -924,14 +923,14 @@ static std::pair<int, int> ProcessCustomPinLoc(pugi::xml_node Locations,
 
     if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                  "No closed square bracket: %s\n", pin_loc_string);
+                       "No closed square bracket: %s\n", pin_loc_string);
     }
 
     token_index++;
 
     if (token_index != num_tokens) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                  "pin location should be completed, but more tokens are present: %s\n", pin_loc_string);
+                       "pin location should be completed, but more tokens are present: %s\n", pin_loc_string);
     }
 
     if (first_pin > last_pin) {
@@ -2976,7 +2975,6 @@ static void ProcessTiles(pugi::xml_node Node,
         Cur = get_single_child(CurTileType, "pinlocations", loc_data, OPTIONAL);
         SetupPinLocationsAndPinClasses(Cur, &PhysicalTileType, loc_data);
         LoadPinLoc(Cur, &PhysicalTileType, loc_data);
-
 
         //Warn that gridlocations is no longer supported
         //TODO: eventually remove
