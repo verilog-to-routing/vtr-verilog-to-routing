@@ -649,6 +649,8 @@ typedef const t_physical_tile_type* t_physical_tile_type_ptr;
  *      tile_type: pointer to the associated tile type
  *      port_class: port belongs to recognized set of ports in class library
  *      index: port index by index in array of parent pb_type
+ *      absolute_first_pin_index: absolute index of the first pin in the physical tile.
+ *                                All the other pin indices can be calculated with num_pins
  *      port_index_by_type index of port by type (index by input, output, or clock)
  *      equivalence: Applies to logic block I/Os and to primitive inputs only
  */
@@ -661,6 +663,7 @@ struct t_physical_port {
     PortEquivalence equivalent = PortEquivalence::NONE;
 
     int index;
+    int absolute_first_pin_index;
     int port_index_by_type;
     int tile_type_index;
 };

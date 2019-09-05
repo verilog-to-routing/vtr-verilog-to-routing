@@ -51,6 +51,7 @@
 #include "vtr_util.h"
 #include "vtr_memory.h"
 #include "vtr_digest.h"
+#include "vtr_token.h"
 
 #include "arch_types.h"
 #include "arch_util.h"
@@ -79,6 +80,14 @@ static const char* arch_file_name = nullptr;
 static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
                                            t_physical_tile_type* PhysicalTileType,
                                            const pugiutil::loc_data& loc_data);
+
+static void LoadPinLoc(pugi::xml_node Locations,
+                       t_physical_tile_type* type,
+                       const pugiutil::loc_data& loc_data);
+static std::pair<int, int> ProcessCustomPinLoc(pugi::xml_node Locations,
+                                               t_physical_tile_type_ptr type,
+                                               const char* pin_loc_string,
+                                               const pugiutil::loc_data& loc_data);
 
 /*    Process XML hierarchy */
 static void ProcessTiles(pugi::xml_node Node,
@@ -202,6 +211,8 @@ e_side string_to_side(std::string side_str);
 
 static void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
                                         std::vector<t_logical_block_type>& LogicalBlockTypes);
+
+static const t_physical_port* get_port_by_name(t_physical_tile_type_ptr type, const char* port_name);
 
 /*
  *
@@ -651,6 +662,283 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
     }
     VTR_ASSERT(num_class == PhysicalTileType->num_class);
     VTR_ASSERT(pin_count == PhysicalTileType->num_pins);
+}
+
+static void LoadPinLoc(pugi::xml_node Locations,
+                       t_physical_tile_type* type,
+                       const pugiutil::loc_data& loc_data) {
+    type->pin_width_offset.resize(type->num_pins, 0);
+    type->pin_height_offset.resize(type->num_pins, 0);
+
+    std::vector<int> physical_pin_counts(type->num_pins, 0);
+    if (type->pin_location_distribution == E_SPREAD_PIN_DISTR) {
+        /* evenly distribute pins starting at bottom left corner */
+
+        int num_sides = 4 * (type->width * type->height);
+        int side_index = 0;
+        int count = 0;
+        for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+            for (int width = 0; width < type->width; ++width) {
+                for (int height = 0; height < type->height; ++height) {
+                    for (int pin_offset = 0; pin_offset < (type->num_pins / num_sides) + 1; ++pin_offset) {
+                        int pin_num = side_index + pin_offset * num_sides;
+                        if (pin_num < type->num_pins) {
+                            type->pinloc[width][height][side][pin_num] = true;
+                            type->pin_width_offset[pin_num] += width;
+                            type->pin_height_offset[pin_num] += height;
+                            physical_pin_counts[pin_num] += 1;
+                            count++;
+                        }
+                    }
+                    side_index++;
+                }
+            }
+        }
+        VTR_ASSERT(side_index == num_sides);
+        VTR_ASSERT(count == type->num_pins);
+    } else if (type->pin_location_distribution == E_PERIMETER_PIN_DISTR) {
+        //Add one pin at-a-time to perimeter sides in round-robin order
+        int ipin = 0;
+        while (ipin < type->num_pins) {
+            for (int width = 0; width < type->width; ++width) {
+                for (int height = 0; height < type->height; ++height) {
+                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                        if (((width == 0 && side == LEFT)
+                             || (height == type->height - 1 && side == TOP)
+                             || (width == type->width - 1 && side == RIGHT)
+                             || (height == 0 && side == BOTTOM))
+                            && ipin < type->num_pins) {
+                            //On a side, with pins still to allocate
+
+                            type->pinloc[width][height][side][ipin] = true;
+                            type->pin_width_offset[ipin] += width;
+                            type->pin_height_offset[ipin] += height;
+                            physical_pin_counts[ipin] += 1;
+                            ++ipin;
+                        }
+                    }
+                }
+            }
+        }
+        VTR_ASSERT(ipin == type->num_pins);
+
+    } else if (type->pin_location_distribution == E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR) {
+        //Collect the sets of block input/output pins
+        std::vector<int> input_pins;
+        std::vector<int> output_pins;
+        for (int pin_num = 0; pin_num < type->num_pins; ++pin_num) {
+            int iclass = type->pin_class[pin_num];
+
+            if (type->class_inf[iclass].type == RECEIVER) {
+                input_pins.push_back(pin_num);
+            } else {
+                VTR_ASSERT(type->class_inf[iclass].type == DRIVER);
+                output_pins.push_back(pin_num);
+            }
+        }
+
+        //Allocate the inputs one pin at-a-time in a round-robin order
+        //to all sides
+        size_t ipin = 0;
+        while (ipin < input_pins.size()) {
+            for (int width = 0; width < type->width; ++width) {
+                for (int height = 0; height < type->height; ++height) {
+                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                        if (ipin < input_pins.size()) {
+                            //Pins still to allocate
+
+                            int pin_num = input_pins[ipin];
+
+                            type->pinloc[width][height][side][pin_num] = true;
+                            type->pin_width_offset[pin_num] += width;
+                            type->pin_height_offset[pin_num] += height;
+                            physical_pin_counts[pin_num] += 1;
+                            ++ipin;
+                        }
+                    }
+                }
+            }
+        }
+        VTR_ASSERT(ipin == input_pins.size());
+
+        //Allocate the outputs one pin at-a-time to perimeter sides in round-robin order
+        ipin = 0;
+        while (ipin < output_pins.size()) {
+            for (int width = 0; width < type->width; ++width) {
+                for (int height = 0; height < type->height; ++height) {
+                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                        if (((width == 0 && side == LEFT)
+                             || (height == type->height - 1 && side == TOP)
+                             || (width == type->width - 1 && side == RIGHT)
+                             || (height == 0 && side == BOTTOM))
+                            && ipin < output_pins.size()) {
+                            //On a perimeter side, with pins still to allocate
+
+                            int pin_num = output_pins[ipin];
+
+                            type->pinloc[width][height][side][pin_num] = true;
+                            type->pin_width_offset[pin_num] += width;
+                            type->pin_height_offset[pin_num] += height;
+                            physical_pin_counts[pin_num] += 1;
+                            ++ipin;
+                        }
+                    }
+                }
+            }
+        }
+        VTR_ASSERT(ipin == output_pins.size());
+
+    } else {
+        VTR_ASSERT(type->pin_location_distribution == E_CUSTOM_PIN_DISTR);
+        int count = 0;
+        for (int width = 0; width < type->width; ++width) {
+            for (int height = 0; height < type->height; ++height) {
+                for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (int pin = 0; pin < type->num_pin_loc_assignments[width][height][side]; ++pin) {
+
+                        auto pin_range = ProcessCustomPinLoc(Locations,
+                                                             type,
+                                                             type->pin_loc_assignments[width][height][side][pin],
+                                                             loc_data);
+
+                        for (int pin_num = pin_range.first; pin_num < pin_range.second; ++pin_num) {
+                            VTR_ASSERT(pin_num < type->num_pins / type->capacity);
+                            for (int capacity = 0; capacity < type->capacity; ++capacity) {
+                                type->pinloc[width][height][side][pin_num + capacity * type->num_pins / type->capacity] = true;
+                                type->pin_width_offset[pin_num + capacity * type->num_pins / type->capacity] += width;
+                                type->pin_height_offset[pin_num + capacity * type->num_pins / type->capacity] += height;
+                                physical_pin_counts[pin_num + capacity * type->num_pins / type->capacity] += 1;
+                                VTR_ASSERT(count < type->num_pins);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (int ipin = 0; ipin < type->num_pins; ++ipin) {
+        VTR_ASSERT(physical_pin_counts[ipin] >= 1);
+
+        type->pin_width_offset[ipin] /= physical_pin_counts[ipin];
+        type->pin_height_offset[ipin] /= physical_pin_counts[ipin];
+
+        VTR_ASSERT(type->pin_width_offset[ipin] >= 0 && type->pin_width_offset[ipin] < type->width);
+        VTR_ASSERT(type->pin_height_offset[ipin] >= 0 && type->pin_height_offset[ipin] < type->height);
+    }
+}
+
+static std::pair<int, int> ProcessCustomPinLoc(pugi::xml_node Locations,
+                                               t_physical_tile_type_ptr type,
+                                               const char* pin_loc_string,
+                                               const pugiutil::loc_data& loc_data) {
+    int num_tokens;
+    auto tokens = GetTokensFromString(pin_loc_string, &num_tokens);
+
+    int token_index = 0;
+    auto token = tokens[token_index];
+
+    if (token.type != TOKEN_STRING || 0 != strcmp(token.data, type->name)) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                  "Wrong physical type name of the port: %s\n", pin_loc_string);
+    }
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_DOT) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                  "No dot is present to separate type name and port name: %s\n", pin_loc_string);
+    }
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_STRING) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                  "No port name is present: %s\n", pin_loc_string);
+    }
+
+    auto port = get_port_by_name(type, token.data);
+    VTR_ASSERT(port != nullptr);
+    int abs_first_pin_idx = port->absolute_first_pin_index;
+
+    std::pair<int, int> pins;
+
+    token_index++;
+
+    // All the pins of the port are taken or the port has a single pin
+    if (token_index == num_tokens) {
+        return std::make_pair(abs_first_pin_idx, abs_first_pin_idx + port->num_pins);
+    }
+
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_OPEN_SQUARE_BRACKET) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                  "No open square bracket present: %s\n", pin_loc_string);
+    }
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_INT) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                  "No integer to indicate least significant pin index: %s\n", pin_loc_string);
+    }
+
+    int first_pin = vtr::atoi(token.data);
+
+    token_index++;
+    token = tokens[token_index];
+
+    // Single pin is specified
+    if (token.type != TOKEN_COLON) {
+        if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                      "No closing bracket: %s\n", pin_loc_string);
+        }
+
+        token_index++;
+
+        if (token_index != num_tokens) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                      "pin location should be completed, but more tokens are present: %s\n", pin_loc_string);
+        }
+
+        return std::make_pair(abs_first_pin_idx + first_pin, abs_first_pin_idx + first_pin + 1);
+    }
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_INT) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                  "No integer to indicate most significant pin index: %s\n", pin_loc_string);
+    }
+
+    int last_pin = vtr::atoi(token.data);
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                  "No closed square bracket: %s\n", pin_loc_string);
+    }
+
+    token_index++;
+
+    if (token_index != num_tokens) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                  "pin location should be completed, but more tokens are present: %s\n", pin_loc_string);
+    }
+
+    if (first_pin > last_pin) {
+        std::swap(first_pin, last_pin);
+    }
+
+    return std::make_pair(abs_first_pin_idx + first_pin, abs_first_pin_idx + last_pin + 1);
 }
 
 static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
@@ -2687,6 +2975,8 @@ static void ProcessTiles(pugi::xml_node Node,
         /* Load pin names and classes and locations */
         Cur = get_single_child(CurTileType, "pinlocations", loc_data, OPTIONAL);
         SetupPinLocationsAndPinClasses(Cur, &PhysicalTileType, loc_data);
+        LoadPinLoc(Cur, &PhysicalTileType, loc_data);
+
 
         //Warn that gridlocations is no longer supported
         //TODO: eventually remove
@@ -2763,6 +3053,7 @@ static void ProcessTilePorts(pugi::xml_node Parent,
 
     int iport = 0;
     int k;
+    int absolute_first_pin_index = 0;
 
     for (int itype = 0; itype < 3; itype++) {
         if (itype == 0) {
@@ -2779,8 +3070,11 @@ static void ProcessTilePorts(pugi::xml_node Parent,
             t_physical_port port;
 
             port.index = iport;
+            port.absolute_first_pin_index = absolute_first_pin_index;
             port.port_index_by_type = k;
             ProcessTilePort(Cur, &port, loc_data);
+
+            absolute_first_pin_index += port.num_pins;
 
             //Check port name duplicates
             auto result = tile_port_names.insert(pair<std::string, int>(port.name, 0));
@@ -4406,4 +4700,14 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
             }
         }
     }
+}
+
+static const t_physical_port* get_port_by_name(t_physical_tile_type_ptr type, const char* port_name) {
+    for (auto port : type->ports) {
+        if (0 == strcmp(port.name, port_name)) {
+            return &type->ports[port.index];
+        }
+    }
+
+    return nullptr;
 }
