@@ -383,6 +383,42 @@ std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
     return rr_node_nets;
 }
 
+static void write_flat_graph(const char* fname) {
+    FILE* fp = vtr::fopen(fname, "w");
+
+    fprintf(fp, "Nets:\n");
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    for (const auto& terminals : route_ctx.net_rr_terminals) {
+        for (const auto terminal : terminals) {
+            fprintf(fp, "%d ", terminal);
+        }
+        fprintf(fp, "\n");
+    }
+    fprintf(fp, "\nGraph:\n");
+
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
+        fprintf(fp, "Node: %zu %s (%d, %d) <-> (%d, %d)\n", inode,
+                device_ctx.rr_nodes[inode].type_string(),
+                device_ctx.rr_nodes[inode].xlow(),
+                device_ctx.rr_nodes[inode].ylow(),
+                device_ctx.rr_nodes[inode].xhigh(),
+                device_ctx.rr_nodes[inode].yhigh());
+        fprintf(fp, "  Edges: ");
+        for (auto edge : device_ctx.rr_nodes[inode].configurable_edges()) {
+            fprintf(fp, "%d ", device_ctx.rr_nodes[inode].edge_sink_node(edge));
+        }
+        fprintf(fp, "\n");
+        fprintf(fp, "  Non-configurable edges: ");
+        for (auto edge : device_ctx.rr_nodes[inode].non_configurable_edges()) {
+            fprintf(fp, "%d ", device_ctx.rr_nodes[inode].edge_sink_node(edge));
+        }
+        fprintf(fp, "\n");
+    }
+
+    fclose(fp);
+}
+
 void pathfinder_update_path_cost(t_trace* route_segment_start,
                                  int add_or_sub,
                                  float pres_fac) {
@@ -501,6 +537,10 @@ void init_route_structs(int bb_factor) {
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_node_indices);
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
     route_ctx.net_status.resize(cluster_ctx.clb_nlist.nets().size());
+
+    if (isEchoFileEnabled(E_ECHO_FLAT_GRAPH)) {
+        write_flat_graph(getEchoFileName(E_ECHO_FLAT_GRAPH));
+    }
 
     /* Check that things that should have been emptied after the last routing *
      * really were.                                                           */
