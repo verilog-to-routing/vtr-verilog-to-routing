@@ -864,8 +864,9 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
     /*Go through each rr_node and use the segment ids to set CHANX and CHANY cost index*/
     rr_node = get_first_child(parent, "node", loc_data);
 
-    for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
-        auto& node = device_ctx.rr_nodes[i];
+    while (rr_node) {
+        int inode = get_attribute(rr_node, "id", loc_data).as_int();
+        auto& node = device_ctx.rr_nodes[inode];
 
         /*CHANX and CHANY cost index is dependent on the segment id*/
 
@@ -876,9 +877,9 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
                 int seg_id = get_attribute(segmentSubnode, "segment_id", loc_data).as_int(0);
                 if (is_global_graph) {
                     node.set_cost_index(0);
-                } else if (device_ctx.rr_nodes[i].type() == CHANX) {
+                } else if (node.type() == CHANX) {
                     node.set_cost_index(CHANX_COST_INDEX_START + seg_id);
-                } else if (device_ctx.rr_nodes[i].type() == CHANY) {
+                } else if (node.type() == CHANY) {
                     node.set_cost_index(CHANX_COST_INDEX_START + num_seg_types + seg_id);
                 }
             }
