@@ -315,10 +315,9 @@ class RRGraph {
 
   public:                                 /* Echos */
     void print_node(RRNodeId node) const; /* Print the detailed information of a node */
-  public:                                 /* Checkers */
+  private:                                 /* Private Checkers */
     /* Node-level checking */
     bool check_node_segment(RRNodeId node) const;
-    bool check_node_duplicated_edges(RRNodeId node) const;
     bool check_node_in_edges(RRNodeId node) const;
     bool check_node_out_edges(RRNodeId node) const;
     bool check_node_edges(RRNodeId node) const;
@@ -338,11 +337,8 @@ class RRGraph {
     bool check_edge_switches() const;
     bool check_edge_src_nodes() const;
     bool check_edge_sink_nodes() const;
-    bool check_duplicated_edges() const; /* identify and report any duplicated edges between two nodes */
-    bool check_dangling_nodes() const;   /* identify if there is any dangling nodes in the graph */
-    bool check_source_nodes() const;     /* identify if there is any invalid source nodes in the graph */
-    bool check_sink_nodes() const;       /* identify if there is any invalid sink nodes in the graph */
 
+  public:                                 /* Public Checkers */
     /* Full set checking using listed checking functions*/
     bool check() const;
 
