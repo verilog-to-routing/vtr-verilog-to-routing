@@ -732,129 +732,6 @@ bool RRGraph::check_edge_sink_nodes() const {
     return all_valid;
 }
 
-/* This function aims at checking any duplicated edges (with same EdgeId) 
- * of a given node. 
- * We will walkthrough the input edges of a node and see if there is any duplication
- */
-bool RRGraph::check_node_duplicated_edges(RRNodeId node) const {
-    bool no_duplication = true;
-    /* Check each input edges */
-    for (size_t iedge = 0; iedge < node_in_edges_[node].size(); ++iedge) {
-        for (size_t jedge = iedge + 1; jedge < node_in_edges_[node].size(); ++jedge) {
-            if (node_in_edges_[node][iedge] != node_in_edges_[node][jedge]) {
-                /* Normal case, continue */
-                continue;
-            }
-            /* Reach here it means we find some duplicated edges and report errors */
-            /* Print a warning! */
-            VTR_LOG_WARN("Node %d has duplicated input edges (edgeId:%d and %d)!\n",
-                         size_t(node), iedge, jedge);
-            this->print_node(node);
-            no_duplication = false;
-        }
-    }
-
-    return no_duplication;
-}
-
-/* Check the whole Routing Resource Graph  
- * identify and report any duplicated edges between two nodes 
- */
-bool RRGraph::check_duplicated_edges() const {
-    bool no_duplication = true;
-    /* For each node:
-     * Search input edges, see there are two edges with same id or address 
-     */
-    for (auto node : nodes()) {
-        if (false == check_node_duplicated_edges(node)) {
-            no_duplication = false;
-        }
-    }
-
-    return no_duplication;
-}
-
-/* 
- * identify and report any duplicated edges between two nodes 
- */
-bool RRGraph::check_dangling_nodes() const {
-    bool no_dangling = true;
-    /* For each node: 
-     * check if the number of input edges and output edges are both 0
-     * If so, this is a dangling nodes and report 
-     */
-    for (auto node : nodes()) {
-        if ((0 == this->node_fan_in(node))
-            && (0 == this->node_fan_out(node))) {
-            /* Print a warning! */
-            VTR_LOG_WARN("Node %s is dangling (zero fan-in and zero fan-out)!\n",
-                         node);
-            VTR_LOG_WARN("Node details for debugging:\n");
-            this->print_node(node);
-            no_dangling = false;
-        }
-    }
-
-    return no_dangling;
-}
-
-/*********************************************************************** 
- * check if all the source nodes are in the right condition:
- * 1. zero fan-in and non-zero fanout
- **********************************************************************/
-bool RRGraph::check_source_nodes() const {
-    bool invalid_sources = false;
-    /* For each node: 
-     * check if the number of input edges and output edges are both 0
-     * If so, this is a dangling nodes and report 
-     */
-    for (auto node : nodes()) {
-        /* Pass nodes whose types are not SOURCE */
-        if (SOURCE != this->node_type(node)) {
-            continue;
-        }
-        if ((0 != this->node_fan_in(node))
-            || (0 == this->node_fan_out(node))) {
-            /* Print a warning! */
-            VTR_LOG_WARN("Source node %s is invalid (should have zero fan-in and non-zero fan-out)!\n",
-                         node);
-            VTR_LOG_WARN("Node details for debugging:\n");
-            this->print_node(node);
-            invalid_sources = true;
-        }
-    }
-
-    return invalid_sources;
-}
-
-/*********************************************************************** 
- * check if all the sink nodes are in the right condition:
- * 1. non-zero fan-in and zero fanout
- **********************************************************************/
-bool RRGraph::check_sink_nodes() const {
-    bool invalid_sinks = false;
-    /* For each node: 
-     * check if the number of input edges and output edges are both 0
-     * If so, this is a dangling nodes and report 
-     */
-    for (auto node : nodes()) {
-        /* Pass nodes whose types are not SINK */
-        if (SINK != this->node_type(node)) {
-            continue;
-        }
-        if ((0 == this->node_fan_in(node))
-            || (0 != this->node_fan_out(node))) {
-            /* Print a warning! */
-            VTR_LOG_WARN("Sink node %s is invalid (should have non-zero fan-in and zero fan-out)!\n",
-                         node);
-            VTR_LOG_WARN("Node details for debugging:\n");
-            this->print_node(node);
-            invalid_sinks = true;
-        }
-    }
-
-    return invalid_sinks;
-}
 
 /* This function should be used when nodes, edges, switches and segments have been used after 
  * We will build the fast_lookup, partition edges and check 
@@ -865,7 +742,6 @@ bool RRGraph::check_sink_nodes() const {
 bool RRGraph::check() const {
     bool check_flag = true;
     size_t num_err = 0;
-    size_t num_fatal_err = 0;
 
     initialize_fast_node_lookup();
 
@@ -874,68 +750,23 @@ bool RRGraph::check() const {
         VTR_LOG_WARN("Fail in checking edges connected to each node!\n");
         check_flag = false;
         num_err++;
-        num_fatal_err++;
     }
 
     if (false == check_node_segments()) {
         VTR_LOG_WARN("Fail in checking segment IDs of nodes !\n");
         check_flag = false;
         num_err++;
-        num_fatal_err++;
-    }
-
-    if (false == check_edge_src_nodes()) {
-        VTR_LOG_WARN("Fail in checking source nodes of edges !\n");
-        check_flag = false;
-        num_err++;
-        num_fatal_err++;
-    }
-
-    if (false == check_edge_sink_nodes()) {
-        VTR_LOG_WARN("Fail in checking sink nodes of edges !\n");
-        check_flag = false;
-        num_err++;
-        num_fatal_err++;
     }
 
     if (false == check_edge_switches()) {
         VTR_LOG_WARN("Fail in checking switch IDs of edges !\n");
         check_flag = false;
         num_err++;
-        num_fatal_err++;
-    }
-
-    /* Advanced check */
-    if (false == check_duplicated_edges()) {
-        VTR_LOG_WARN("Fail in checking duplicated edges !\n");
-        check_flag = false;
-        num_err++;
-    }
-
-    if (false == check_dangling_nodes()) {
-        VTR_LOG_WARN("Fail in checking dangling nodes !\n");
-        check_flag = false;
-        num_err++;
-    }
-
-    if (false == check_source_nodes()) {
-        VTR_LOG_WARN("Fail in checking source nodes!\n");
-        check_flag = false;
-        num_err++;
-    }
-
-    if (false == check_sink_nodes()) {
-        VTR_LOG_WARN("Fail in checking sink nodes!\n");
-        check_flag = false;
-        num_err++;
     }
 
     /* Error out if there is any fatal errors found */
     VTR_LOG_ERROR("Checked Routing Resource graph with %d fatal errors !\n",
-                  num_fatal_err);
-
-    VTR_LOG_WARN("Checked Routing Resource graph with %d warnings !\n",
-                 num_err - num_fatal_err);
+                  num_err);
 
     return check_flag;
 }
