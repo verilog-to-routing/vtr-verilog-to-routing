@@ -790,7 +790,6 @@ static void LoadPinLoc(pugi::xml_node Locations,
 
     } else {
         VTR_ASSERT(type->pin_location_distribution == E_CUSTOM_PIN_DISTR);
-        int count = 0;
         for (int width = 0; width < type->width; ++width) {
             for (int height = 0; height < type->height; ++height) {
                 for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
@@ -807,7 +806,6 @@ static void LoadPinLoc(pugi::xml_node Locations,
                                 type->pin_width_offset[pin_num + capacity * type->num_pins / type->capacity] += width;
                                 type->pin_height_offset[pin_num + capacity * type->num_pins / type->capacity] += height;
                                 physical_pin_counts[pin_num + capacity * type->num_pins / type->capacity] += 1;
-                                VTR_ASSERT(count < type->num_pins);
                             }
                         }
                     }
@@ -868,6 +866,7 @@ static std::pair<int, int> ProcessCustomPinLoc(pugi::xml_node Locations,
 
     // All the pins of the port are taken or the port has a single pin
     if (token_index == num_tokens) {
+        freeTokens(tokens, num_tokens);
         return std::make_pair(abs_first_pin_idx, abs_first_pin_idx + port->num_pins);
     }
 
@@ -905,6 +904,7 @@ static std::pair<int, int> ProcessCustomPinLoc(pugi::xml_node Locations,
                            "pin location should be completed, but more tokens are present: %s\n", pin_loc_string);
         }
 
+        freeTokens(tokens, num_tokens);
         return std::make_pair(abs_first_pin_idx + first_pin, abs_first_pin_idx + first_pin + 1);
     }
 
@@ -937,6 +937,7 @@ static std::pair<int, int> ProcessCustomPinLoc(pugi::xml_node Locations,
         std::swap(first_pin, last_pin);
     }
 
+    freeTokens(tokens, num_tokens);
     return std::make_pair(abs_first_pin_idx + first_pin, abs_first_pin_idx + last_pin + 1);
 }
 
