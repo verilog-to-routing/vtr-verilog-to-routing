@@ -229,31 +229,6 @@ short RRGraph::node_num_non_configurable_out_edges(RRNodeId node) const {
     return node_non_configurable_out_edges(node).size();
 }
 
-/****************************************************************************
- * Find the switches interconnecting two nodes 
- * Return a vector of switch ids
- ***************************************************************************/
-std::vector<RRSwitchId> RRGraph::find_switches(RRNodeId from_node, RRNodeId to_node) const {
-    /* Make sure we will access a valid node */
-    VTR_ASSERT_SAFE(valid_node_id(from_node));
-    VTR_ASSERT_SAFE(valid_node_id(to_node));
-
-    std::vector<RRSwitchId> switches;
-    std::vector<RREdgeId> edges = find_edges(from_node, to_node);
-    if (true == edges.empty()) {
-        /* edge is open, we return an empty vector of switches */
-        return switches;
-    }
-
-    /* Reach here, edge list is not empty, find switch id one by one
-     * and update the switch list  
-     */
-    for (auto edge : edges) {
-        switches.push_back(edge_switch(edge));
-    }
-
-    return switches;
-}
 
 /* Get the list of configurable edges from the input edges of a given node 
  * And return the range(iterators) of the list 

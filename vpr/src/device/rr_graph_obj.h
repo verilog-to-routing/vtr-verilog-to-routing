@@ -276,9 +276,6 @@ class RRGraph {
     short node_num_configurable_out_edges(RRNodeId node) const;     /* get the number of configurable output edges of a node */
     short node_num_non_configurable_out_edges(RRNodeId node) const; /* get the number of non-configurable output edges of a node */
 
-    /* Get a node-to-node switch */
-    std::vector<RRSwitchId> find_switches(RRNodeId from_node, RRNodeId to_node) const;
-
     /* Get the range (list) of edges related to a given node */
     edge_range node_configurable_in_edges(RRNodeId node) const;
     edge_range node_non_configurable_in_edges(RRNodeId node) const;
