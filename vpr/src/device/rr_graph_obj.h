@@ -335,7 +335,7 @@ class RRGraph {
 
   public:                                 /* Echos */
     void print_node(RRNodeId node) const; /* Print the detailed information of a node */
-  private:                                 /* Private Checkers */
+  private:                                /* Private Checkers */
     /* Node-level checking */
     bool check_node_segment(RRNodeId node) const;
     bool check_node_in_edges(RRNodeId node) const;
@@ -358,7 +358,7 @@ class RRGraph {
     bool check_edge_src_nodes() const;
     bool check_edge_sink_nodes() const;
 
-  public:                                 /* Public Checkers */
+  public: /* Public Checkers */
     /* Full set checking using listed checking functions*/
     bool check() const;
 
