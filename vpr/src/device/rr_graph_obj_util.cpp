@@ -20,8 +20,8 @@ std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
     }
 
     /* Reach here, edge list is not empty, find switch id one by one
-   * and update the switch list
-   */
+     * and update the switch list
+     */
     for (auto edge : edges) {
         switches.push_back(rr_graph.edge_switch(edge));
     }
