@@ -1,6 +1,10 @@
 #ifndef RR_GRAPH_OBJ_UTILS_H
 #define RR_GRAPH_OBJ_UTILS_H
 
+/* Include header files which include data structures used by
+ * the function declaration
+ */
+#include <vector>
 #include "vtr_vector_map.h"
 
 /*
