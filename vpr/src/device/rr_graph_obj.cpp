@@ -229,7 +229,6 @@ short RRGraph::node_num_non_configurable_out_edges(RRNodeId node) const {
     return node_non_configurable_out_edges(node).size();
 }
 
-
 /* Get the list of configurable edges from the input edges of a given node 
  * And return the range(iterators) of the list 
  */
@@ -707,7 +706,6 @@ bool RRGraph::check_edge_sink_nodes() const {
     }
     return all_valid;
 }
-
 
 /* This function should be used when nodes, edges, switches and segments have been used after 
  * We will build the fast_lookup, partition edges and check 

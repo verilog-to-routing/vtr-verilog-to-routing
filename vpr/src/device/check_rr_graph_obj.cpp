@@ -9,43 +9,40 @@
  * of a given node. 
  * We will walkthrough the input edges of a node and see if there is any duplication
  **********************************************************************/
-static 
-bool check_rr_graph_node_duplicated_edges(const RRGraph& rr_graph, 
-                                          const RRNodeId& node) {
+static bool check_rr_graph_node_duplicated_edges(const RRGraph& rr_graph,
+                                                 const RRNodeId& node) {
     bool no_duplication = true;
 
     /* Create a map for each input edge */
     std::map<RREdgeId, size_t> edge_counter;
-  
+
     /* Check each input edges */
     for (const auto edge : rr_graph.node_in_edges(node)) {
-      auto result = edge_counter.insert(std::pair<RREdgeId, size_t>(edge, 1));
-      if (false == result.second) {
-        result.first->second++;
-      }
+        auto result = edge_counter.insert(std::pair<RREdgeId, size_t>(edge, 1));
+        if (false == result.second) {
+            result.first->second++;
+        }
     }
 
     for (auto& elem : edge_counter) {
-      if (elem.second > 1) {
-        /* Reach here it means we find some duplicated edges and report errors */
-        /* Print a warning! */
-        VTR_LOG_WARN("Node %d has duplicated input edges (id = %d)!\n",
-                     size_t(node), size_t(elem.first));
-        rr_graph.print_node(node);
-        no_duplication = false;
-      }
+        if (elem.second > 1) {
+            /* Reach here it means we find some duplicated edges and report errors */
+            /* Print a warning! */
+            VTR_LOG_WARN("Node %d has duplicated input edges (id = %d)!\n",
+                         size_t(node), size_t(elem.first));
+            rr_graph.print_node(node);
+            no_duplication = false;
+        }
     }
 
     return no_duplication;
 }
 
-
 /*********************************************************************** 
  * Check the whole Routing Resource Graph  
  * identify and report any duplicated edges between two nodes 
  **********************************************************************/
-static 
-bool check_rr_graph_duplicated_edges(const RRGraph& rr_graph) {
+static bool check_rr_graph_duplicated_edges(const RRGraph& rr_graph) {
     bool no_duplication = true;
     /* For each node:
      * Search input edges, see there are two edges with same id or address 
@@ -63,8 +60,7 @@ bool check_rr_graph_duplicated_edges(const RRGraph& rr_graph) {
  * Identify and report any dangling node (nodes without any fan-in or fan-out)
  * in the RRGraph
  **********************************************************************/
-static 
-bool check_rr_graph_dangling_nodes(const RRGraph& rr_graph) {
+static bool check_rr_graph_dangling_nodes(const RRGraph& rr_graph) {
     bool no_dangling = true;
     /* For each node: 
      * check if the number of input edges and output edges are both 0
@@ -89,8 +85,7 @@ bool check_rr_graph_dangling_nodes(const RRGraph& rr_graph) {
  * check if all the source nodes are in the right condition:
  * 1. zero fan-in and non-zero fanout
  **********************************************************************/
-static 
-bool check_rr_graph_source_nodes(const RRGraph& rr_graph) {
+static bool check_rr_graph_source_nodes(const RRGraph& rr_graph) {
     bool invalid_sources = false;
     /* For each node: 
      * check if the number of input edges and output edges are both 0
@@ -119,8 +114,7 @@ bool check_rr_graph_source_nodes(const RRGraph& rr_graph) {
  * check if all the sink nodes are in the right condition:
  * 1. non-zero fan-in and zero fanout
  **********************************************************************/
-static 
-bool check_rr_graph_sink_nodes(const RRGraph& rr_graph) {
+static bool check_rr_graph_sink_nodes(const RRGraph& rr_graph) {
     bool invalid_sinks = false;
     /* For each node: 
      * check if the number of input edges and output edges are both 0
@@ -144,7 +138,6 @@ bool check_rr_graph_sink_nodes(const RRGraph& rr_graph) {
 
     return invalid_sinks;
 }
-
 
 /*********************************************************************** 
  * This is an advanced checker for RRGraph object
