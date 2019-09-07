@@ -275,25 +275,27 @@
 #include "rr_graph_fwd.h"
 
 class RRGraph {
-  public: //Types
+  public: /* Types */
+    /* Iterators used to create iterator-based loop for nodes/edges/switches/segments */
     typedef vtr::vector<RRNodeId, RRNodeId>::const_iterator node_iterator;
     typedef vtr::vector<RREdgeId, RREdgeId>::const_iterator edge_iterator;
     typedef vtr::vector<RRSwitchId, RRSwitchId>::const_iterator switch_iterator;
     typedef vtr::vector<RRSegmentId, RRSegmentId>::const_iterator segment_iterator;
 
+    /* Ranges used to create range-based loop for nodes/edges/switches/segments */
     typedef vtr::Range<node_iterator> node_range;
     typedef vtr::Range<edge_iterator> edge_range;
     typedef vtr::Range<switch_iterator> switch_range;
     typedef vtr::Range<segment_iterator> segment_range;
 
-  public: //Accessors
-    //Aggregates
+  public: /* Accessors */
+    /* Aggregates: create range-based loops for nodes/edges/switches/segments */
     node_range nodes() const;
     edge_range edges() const;
     switch_range switches() const;
     segment_range segments() const;
 
-    //Node attributes
+    /* Node-level attributes */
     size_t node_index(RRNodeId node) const; /* TODO: deprecate this accessor as outside functions should use RRNodeId */
     t_rr_type node_type(RRNodeId node) const;
 
@@ -303,7 +305,10 @@ class RRGraph {
     short node_yhigh(RRNodeId node) const;
     short node_length(RRNodeId node) const;
     vtr::Rect<short> node_bounding_box(RRNodeId node) const;
-    /* Node starting and ending points */
+
+    /* Get node starting and ending points in routing channels. 
+     * Applicable to routing track nodes only!!! 
+     */
     vtr::Point<short> node_start_coordinate(RRNodeId node) const;
     vtr::Point<short> node_end_coordinate(RRNodeId node) const;
 
@@ -338,7 +343,7 @@ class RRGraph {
     edge_range node_out_edges(RRNodeId node) const;
     edge_range node_in_edges(RRNodeId node) const;
 
-    //Edge attributes
+    /* Edge-related attributes */
     size_t edge_index(RREdgeId edge) const; /* TODO: deprecate this accessor as outside functions should use RREdgeId */
 
     RRNodeId edge_src_node(RREdgeId edge) const;
@@ -355,12 +360,16 @@ class RRGraph {
     size_t segment_index(RRSegmentId segment_id) const; /* TODO: deprecate this accessor as outside functions should use RRSegmentId */
     const t_segment_inf& get_segment(RRSegmentId segment_id) const;
 
-    //Utilities
+    /* Utilities */
+    /* Find the edges connecting two nodes */
     std::vector<RREdgeId> find_edges(RRNodeId src_node, RRNodeId sink_node) const;
+    /* Find a node with given features from internal fast look-up */
     RRNodeId find_node(short x, short y, t_rr_type type, int ptc, e_side side = NUM_SIDES) const;
 
+    /* Find the number of routing tracks in a routing channel with a given coordinate */
     short chan_num_tracks(short x, short y, t_rr_type type) const;
 
+    /* Check if the graph contains invalid nodes/edges etc. */
     bool is_dirty() const;
 
   public:                                 /* Echos */
@@ -392,7 +401,7 @@ class RRGraph {
     /* Full set checking using listed checking functions*/
     bool check() const;
 
-  public: //Validators
+  public: /* Validators */
     bool valid_node_id(RRNodeId node) const;
     bool valid_edge_id(RREdgeId edge) const;
 
@@ -400,22 +409,24 @@ class RRGraph {
     bool valid_node_id(RRNodeId node) const;
     bool valid_edge_id(RREdgeId edge) const;
 
-  public: //Mutators
-    /* reserve the lists of nodes, edges, switches etc */
+  public: /* Mutators */
+    /* Reserve the lists of nodes, edges, switches etc. to be memory efficient */
     void reserve_nodes(int num_nodes);
     void reserve_edges(int num_edges);
     void reserve_switches(int num_switches);
     void reserve_segments(int num_segments);
 
-    /* Related to Nodes */
+    /* Add new elements (node, edge, switch, etc.) to RRGraph */
     RRNodeId create_node(t_rr_type type);
     RREdgeId create_edge(RRNodeId source, RRNodeId sink, RRSwitchId switch_id);
     RRSwitchId create_switch(t_rr_switch_inf switch_info);
     RRSegmentId create_segment(t_segment_inf segment_info);
 
+    /* Remove elements from RRGraph */
     void remove_node(RRNodeId node);
     void remove_edge(RREdgeId edge);
 
+    /* Set node-level information */
     void set_node_xlow(RRNodeId node, short xlow);
     void set_node_ylow(RRNodeId node, short ylow);
     void set_node_xhigh(RRNodeId node, short xhigh);
@@ -445,28 +456,31 @@ class RRGraph {
     void partition_out_edges(); /* classify the output edges of each node to be configurable (1st part) and non-configurable (2nd part) */
     void partition_edges();     /* classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) */
 
+    /* Graph-level Clean-up, remove invalid nodes/edges etc. */
     void compress();
+
+    /* Graph-level validation, ensure a valid RRGraph for routers */
     bool validate();
 
     void clear(); /* top-level function to free */
 
-  private: //Internal free functions
+  private: /* Internal free functions */
     void clear_nodes();
     void clear_edges();
     void clear_switches();
     void clear_segments();
 
-  private: //Internal
+  private: /* Internal validators and builders */
     void set_dirty();
     void clear_dirty();
 
-    //Fast look-up
+    /* Fast look-up builders and validators */
     void build_fast_node_lookup() const;
     void invalidate_fast_node_lookup() const;
     bool valid_fast_node_lookup() const;
     void initialize_fast_node_lookup() const;
 
-    //Validation
+    /* Graph property Validation */
     bool validate_sizes() const;
     bool validate_node_sizes() const;
     bool validate_edge_sizes() const;
@@ -477,21 +491,21 @@ class RRGraph {
     bool validate_crossrefs() const;
     bool validate_node_edge_crossrefs() const;
 
-    /* For switch list */
+    /* Validate switch list */
     bool valid_switch_id(RRSwitchId switch_id) const;
 
-    /* For segment list */
+    /* Validate segment list */
     bool valid_segment_id(RRSegmentId segment_id) const;
 
-    //Compression related
+    /* Graph Compression related */
     void build_id_maps(vtr::vector<RRNodeId, RRNodeId>& node_id_map,
                        vtr::vector<RREdgeId, RREdgeId>& edge_id_map);
     void clean_nodes(const vtr::vector<RRNodeId, RRNodeId>& node_id_map);
     void clean_edges(const vtr::vector<RREdgeId, RREdgeId>& edge_id_map);
     void rebuild_node_refs(const vtr::vector<RREdgeId, RREdgeId>& edge_id_map);
 
-  private: //Data
-    //Node related data
+  private: /* Internal Data */
+    /* Node related data */
     vtr::vector<RRNodeId, RRNodeId> node_ids_;
     vtr::vector<RRNodeId, t_rr_type> node_types_;
 
@@ -512,15 +526,16 @@ class RRGraph {
     vtr::vector<RRNodeId, std::vector<RREdgeId>> node_in_edges_;
     vtr::vector<RRNodeId, std::vector<RREdgeId>> node_out_edges_;
 
-    //Edge related data
+    /* Edge related data */
     vtr::vector<RREdgeId, RREdgeId> edge_ids_;
     vtr::vector<RREdgeId, RRNodeId> edge_src_nodes_;
     vtr::vector<RREdgeId, RRNodeId> edge_sink_nodes_;
     vtr::vector<RREdgeId, RRSwitchId> edge_switches_;
 
-    //Switch related data
-    // Note that so far there has been no need to remove
-    // switches, so no such facility exists
+    /* Switch related data
+     * Note that so far there has been no need to remove
+     * switches, so no such facility exists
+     */
     vtr::vector<RRSwitchId, RRSwitchId> switch_ids_;
     vtr::vector<RRSwitchId, t_rr_switch_inf> switches_;
 
@@ -531,12 +546,14 @@ class RRGraph {
     vtr::vector<RRSegmentId, RRSegmentId> segment_ids_;
     vtr::vector<RRSegmentId, t_segment_inf> segments_;
 
-    //Misc.
+    /* Misc. */
+    /* A flag to indicate if the graph contains invalid elements (nodes/edges etc.) */
     bool dirty_ = false;
 
-    //Fast look-up
+    /* Fast look-up to search a node */
+    /* [0..xmax][0..ymax][0..NUM_TYPES-1][0..ptc_max][0..NUM_SIDES-1] */
     typedef std::vector<std::vector<std::vector<std::vector<std::vector<RRNodeId>>>>> NodeLookup;
-    mutable NodeLookup node_lookup_; //[0..xmax][0..ymax][0..NUM_TYPES-1][0..ptc_max][0..NUM_SIDES-1]
+    mutable NodeLookup node_lookup_;
 };
 
 #endif
