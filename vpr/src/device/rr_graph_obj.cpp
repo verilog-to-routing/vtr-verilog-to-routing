@@ -878,6 +878,11 @@ RRSegmentId RRGraph::create_segment(t_segment_inf segment_info) {
     return segment_id;
 }
 
+/* This function just marks the node to be removed with an INVALID id 
+ * It also disconnects and mark the incoming and outcoming edges to be INVALID()
+ * And then set the RRGraph as polluted (dirty_flag = true)
+ * The compress() function should be called to physically remove the node 
+ */
 void RRGraph::remove_node(RRNodeId node) {
     //Invalidate all connected edges
     // TODO: consider removal of self-loop edges?
@@ -897,6 +902,10 @@ void RRGraph::remove_node(RRNodeId node) {
     set_dirty();
 }
 
+/* This function just marks the edge to be removed with an INVALID id 
+ * And then set the RRGraph as polluted (dirty_flag = true)
+ * The compress() function should be called to physically remove the edge 
+ */
 void RRGraph::remove_edge(RREdgeId edge) {
     RRNodeId src_node = edge_src_node(edge);
     RRNodeId sink_node = edge_sink_node(edge);
