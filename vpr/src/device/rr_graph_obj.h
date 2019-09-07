@@ -2,6 +2,8 @@
  * This file introduces a class to model a Routing Resource Graph (RRGraph or RRG) 
  * which is widely used by placers, routers, analyzers etc.
  *
+ * Overview
+ * ========
  * RRGraph aims to describe in a general way how routing resources are connected
  * in a FPGA fabric.
  * It includes device-level information for routing resources, 
@@ -12,11 +14,15 @@
  * A Routing Resource Graph (RRGraph or RRG) is a Directed Acyclic Graph (DAG),
  * which consists of a number of nodes and edges.
  *
+ * Node
+ * ----
  * Each node represents a routing resource, which could be 
  * 1. a routing track in X-direction or Y-direction (CHANX or CHANY) 
  * 2. an input or an output of a logic block (IPIN or OPIN) 
  * 3. a virtual source or sink node (SOURCE or SINK), which are starting/ending points of routing trees.
  *
+ * Edge
+ * ----
  * Each edge represents a switch between routing resources, which could be
  * 1. a multiplexer
  * 2. a tri-state buffer
@@ -84,13 +90,37 @@
  *       if (node_id == RRNodeId::INVALID()) {
  *       }  
  *
- * Cross-Reference on the RRGraph data structure
- * ==================================================
+ * Tracing Cross-Reference 
+ * =======================
  * RRGraph is designed to a self-contained data structure as much as possible.
  * It includes the switch information (rr_switch) and segment_information (rr_segment)
  * which are necessary to build-up any external data structures.
  *
- * The only cross-reference that may encounter is the cost_index
+ * Internal cross-reference
+ * ------------------------
+ *
+ *  +--------+                  +--------+
+ *  |        |  node_in_edges   |        |
+ *  |        |  node_out_edges  |        |
+ *  |  Node  |----------------->|  Edge  |--+
+ *  |        |<-----------------|        |  |
+ *  |        |  edge_src_nodes  |        |  |
+ *  +--------+  edge_sink_nodes +--------+  |edge_switch
+ *      |                                   |
+ *      | node_segment                      |
+ *      v                                   v
+ *  +------------+                     +----------+
+ *  |            |                     |          |
+ *  |            |                     |          |
+ *  |  Segments  |                     |  Switch  |
+ *  |            |                     |          |
+ *  |            |                     |          |
+ *  +------------+                     +----------+
+ *
+ *
+ * External cross-reference
+ * ------------------------
+ * The only cross-reference to outside data structures is the cost_index
  * corresponding to the data structure t_rr_index_data
  * Details can be found in the definition of t_rr_index_data
  *
