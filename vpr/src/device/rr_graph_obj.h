@@ -1,7 +1,16 @@
 /************************************************************************
  * This file introduces a class to model a Routing Resource Graph (RRGraph or RRG) 
  * which is widely used by placers, routers, analyzers etc.
- * A Routing Resource Graph (RRGraph or RRG) consists of a number of nodes and edges.
+ *
+ * RRGraph aims to describe in a general way how routing resources are connected
+ * in a FPGA fabric.
+ * It includes device-level information for routing resources, 
+ * such as the physical location of nodes, 
+ * routing segment information of each routing resource 
+ * switch information of each routing resource.
+ * 
+ * A Routing Resource Graph (RRGraph or RRG) is a Directed Acyclic Graph (DAG),
+ * which consists of a number of nodes and edges.
  *
  * Each node represents a routing resource, which could be 
  * 1. a routing track in X-direction or Y-direction (CHANX or CHANY) 
@@ -74,6 +83,20 @@
  *    Example:
  *       if (node_id == RRNodeId::INVALID()) {
  *       }  
+ *
+ * Cross-Reference on the RRGraph data structure
+ * ==================================================
+ * RRGraph is designed to a self-contained data structure as much as possible.
+ * It includes the switch information (rr_switch) and segment_information (rr_segment)
+ * which are necessary to build-up any external data structures.
+ *
+ * The only cross-reference that may encounter is the cost_index
+ * corresponding to the data structure t_rr_index_data
+ * Details can be found in the definition of t_rr_index_data
+ *
+ * +---------+  cost_index   +------------------------------+
+ * | RRGraph |-------------->| cost_indexe_data[cost_index] | 
+ * +---------+               +------------------------------+
  *
  *  
  * Detailed description on the RRGraph data structure
