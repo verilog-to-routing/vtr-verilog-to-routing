@@ -79,7 +79,7 @@ file(GLOB_RECURSE PARSER_SOURCES SRC/*.y)
 
 #Make the flex and bison targets
 flex_target(VerilogLexer ${LEXER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/verilog_flex.c)
-bison_target(VerilogParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/verilog_bison.c)
+bison_target(VerilogParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/verilog_bison.c COMPILE_FLAGS "--verbose")
 add_flex_bison_dependency(VerilogLexer VerilogParser)
 
 #Get the include directories for the generated headers

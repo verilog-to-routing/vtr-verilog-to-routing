@@ -151,23 +151,12 @@ void create_netlist()
 		local_ref->local_symbol_table_sc = sc_new_string_cache();
 		create_symbol_table_for_scope(((ast_node_t *)module_names_to_idx->data[i])->children[2], local_ref);
 		
+		((ast_node_t *)module_names_to_idx->data[i])->types.hierarchy = local_ref;
+		
 		if (((ast_node_t *)module_names_to_idx->data[i])->type == MODULE)
 		{
-			((ast_node_t *)module_names_to_idx->data[i])->types.hierarchy = local_ref;
-			local_ref->local_param_table_sc = ((ast_node_t *)module_names_to_idx->data[i])->types.module.parameter_list;
-			local_ref->local_defparam_table_sc = ((ast_node_t *)module_names_to_idx->data[i])->types.module.defparam_list;
-		}
-		else if(((ast_node_t *)module_names_to_idx->data[i])->type == FUNCTION)
-		{
-			oassert(((ast_node_t *)module_names_to_idx->data[i])->type == FUNCTION);
-			((ast_node_t *)module_names_to_idx->data[i])->types.hierarchy = local_ref;
-			// local_ref->local_param_table_sc = ((ast_node_t *)module_names_to_idx->data[i])->types.function.parameter_list;
-		}
-		else
-		{
-			oassert(((ast_node_t *)module_names_to_idx->data[i])->type == TASK);
-			((ast_node_t *)module_names_to_idx->data[i])->types.hierarchy = local_ref;
-			// local_ref->local_param_table_sc = ((ast_node_t *)module_names_to_idx->data[i])->types.task.parameter_list;
+			local_ref->local_param_table_sc = ((ast_node_t *)module_names_to_idx->data[i])->types.scope->param_sc;
+			local_ref->local_defparam_table_sc = ((ast_node_t *)module_names_to_idx->data[i])->types.scope->defparam_sc;
 		}
 	}
 

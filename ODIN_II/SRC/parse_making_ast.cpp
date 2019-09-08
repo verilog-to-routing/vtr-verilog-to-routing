@@ -39,21 +39,18 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
+#include "scope_util.h"
+
 //for module
-STRING_CACHE *module_parameters_sc;
+
 STRING_CACHE *modules_inputs_sc;
 STRING_CACHE *modules_outputs_sc;
 STRING_CACHE *module_instances_sc;
-STRING_CACHE *module_defparams_sc;
 
 //for function
-STRING_CACHE *function_parameters_sc;
-STRING_CACHE *function_defparams_sc;
 STRING_CACHE *functions_inputs_sc;
 STRING_CACHE *functions_outputs_sc;
 
-STRING_CACHE *task_parameters_sc;
-STRING_CACHE *task_defparams_sc;
 STRING_CACHE *tasks_inputs_sc;
 STRING_CACHE *tasks_outputs_sc;
 
@@ -130,17 +127,12 @@ void init_parser()
 	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
 	modules_inputs_sc = sc_new_string_cache();
 	modules_outputs_sc = sc_new_string_cache();
-	module_parameters_sc = sc_new_string_cache();
 	functions_inputs_sc = sc_new_string_cache();
 	functions_outputs_sc = sc_new_string_cache();
 	tasks_inputs_sc = sc_new_string_cache();
 	tasks_outputs_sc = sc_new_string_cache();
 	instantiated_modules = sc_new_string_cache();
 	module_instances_sc = sc_new_string_cache();
-	module_defparams_sc = sc_new_string_cache();
-
-	function_parameters_sc = NULL;
-	task_parameters_sc = NULL;
 	/* record of each of the individual modules */
 	num_modules = 0; // we're going to record all the modules in a list so we can build a tree of them later
 	num_functions = 0;
@@ -169,14 +161,12 @@ void cleanup_parser()
 {
 	modules_inputs_sc = sc_free_string_cache(modules_inputs_sc);
 	modules_outputs_sc = sc_free_string_cache(modules_outputs_sc);
-	module_parameters_sc = sc_free_string_cache(module_parameters_sc);
 	functions_inputs_sc = sc_free_string_cache(functions_inputs_sc);
 	functions_outputs_sc = sc_free_string_cache(functions_outputs_sc);
 	tasks_inputs_sc = sc_free_string_cache(tasks_inputs_sc);
 	tasks_outputs_sc = sc_free_string_cache(tasks_outputs_sc);
 	instantiated_modules = sc_free_string_cache(instantiated_modules);
 	module_instances_sc = sc_free_string_cache(module_instances_sc);
-	module_defparams_sc = sc_free_string_cache(module_defparams_sc);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -273,17 +263,25 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child, int line_number
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: newLabelledBlock)
+ * (function: newBlock)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newLabelledBlock(char *id, ast_node_t *block_node)
+ast_node_t *newBlock(char *id, ast_node_t *block_node)
 {
 	oassert(block_node->type == BLOCK);
-	block_node->types.identifier = id;
+	if(id)
+	{
+		block_node->types.identifier = id;
+		block_node->types.scope = pop_scope();
+	}
+	else
+	{
+		merge_top_scopes();
+	}
 
 	return block_node;
 }
 
-static ast_node_t *resolve_symbol_node(ids top_type, ast_node_t *symbol_node)
+static ast_node_t *resolve_symbol_node(ast_node_t *symbol_node)
 {
 	ast_node_t *to_return = NULL;
 
@@ -292,29 +290,11 @@ static ast_node_t *resolve_symbol_node(ids top_type, ast_node_t *symbol_node)
 		case IDENTIFIERS:
 		{
 			ast_node_t *newNode = NULL;
-			if(top_type == MODULE) 
+
+			long sc_spot = sc_lookup_string(current_scope->param_sc, symbol_node->types.identifier);
+			if(sc_spot != -1)
 			{
-				long sc_spot = sc_lookup_string(module_parameters_sc, symbol_node->types.identifier);
-				if(sc_spot != -1)
-				{
-					newNode = (ast_node_t *)module_parameters_sc->data[sc_spot];
-				}
-			}
-       		else if(top_type == FUNCTION) 
-			{
-				long sc_spot = sc_lookup_string(function_parameters_sc, symbol_node->types.identifier);
-				if (sc_spot != -1)
-				{
-					newNode = (ast_node_t *)function_parameters_sc->data[sc_spot];
-				}
-			}
-			else if(top_type == TASK)
-			{
-				long sc_spot = sc_lookup_string(task_parameters_sc, symbol_node->types.identifier);
-				if (sc_spot != -1)
-				{
-					newNode = (ast_node_t *)task_parameters_sc->data[sc_spot];
-				}
+				newNode = (ast_node_t *)current_scope->param_sc->data[sc_spot];
 			}
 
 			if (newNode && newNode->types.variable.is_parameter == true)
@@ -716,15 +696,8 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 	return port;
 }
 
-ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parameter, bool is_signed)
-{
-	oassert((top_type == MODULE || top_type == FUNCTION || top_type == TASK || top_type == BLOCK) 
-		&& "can only use MODULE, FUNCTION, TASK, or BLOCK as top type");
-		
-	long sc_spot;
-	STRING_CACHE *this_parameters_sc = NULL;
-	long this_num_modules = 0;
-
+ast_node_t *markAndProcessParameterWith(ids id, ast_node_t *parameter, bool is_signed)
+{	
 	if (id == PARAMETER)
 	{
 		parameter->children[5]->types.variable.is_parameter = true;
@@ -746,39 +719,19 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 	parameter->children[5]->types.variable.is_signed = is_signed;
 	parameter->types.variable.is_signed = is_signed;
 
-	if (top_type == BLOCK)
-	{
-		/* parameters within named or generate blocks are handled during elaboration */
-		return parameter;
-	}
-	else if (top_type == MODULE)
-	{
-		this_parameters_sc = module_parameters_sc;
-		this_num_modules = num_modules;
+	long sc_spot = -1;
 
-	}
-	else if (top_type == FUNCTION)
-	{
-		this_parameters_sc = function_parameters_sc;
-		this_num_modules = num_functions;
-	}
-	else if(top_type == TASK)
-	{
-		this_parameters_sc = task_parameters_sc;
-		this_num_modules = num_tasks;
-	}
-
-	oassert(this_parameters_sc);
+	oassert(current_scope->param_sc);
 
 	/* create an entry in the symbol table for this parameter */
-	if ((sc_spot = sc_lookup_string(this_parameters_sc, parameter->children[0]->types.identifier)) > -1)
+	if ((sc_spot = sc_lookup_string(current_scope->param_sc, parameter->children[0]->types.identifier)) > -1)
 	{
 		error_message(PARSE_ERROR, parameter->children[5]->line_number, current_parse_file, 
 				"Module already has parameter with this name (%s)\n", parameter->children[0]->types.identifier);
 	}
-	sc_spot = sc_add_string(this_parameters_sc, parameter->children[0]->types.identifier);
+	sc_spot = sc_add_string(current_scope->param_sc, parameter->children[0]->types.identifier);
 	
-	this_parameters_sc->data[sc_spot] = (void*)parameter->children[5];
+	current_scope->param_sc->data[sc_spot] = (void*)parameter->children[5];
 
 	return parameter;
 }
@@ -794,8 +747,8 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 	{
 		if(symbol_list->children[0] && symbol_list->children[0]->children[1])
 		{
-			range_max = resolve_symbol_node(top_type, symbol_list->children[0]->children[1]);
-			range_min = resolve_symbol_node(top_type, symbol_list->children[0]->children[2]);
+			range_max = resolve_symbol_node(symbol_list->children[0]->children[1]);
+			range_min = resolve_symbol_node(symbol_list->children[0]->children[2]);
 		}
 
 		for (i = 0; i < symbol_list->num_children; i++)
@@ -814,7 +767,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					case PARAMETER:
 					case LOCALPARAM:
 					{
-						markAndProcessParameterWith(top_type, id, symbol_list->children[i], is_signed);
+						markAndProcessParameterWith(id, symbol_list->children[i], is_signed);
 						break;
 					}
 					case INPUT:
@@ -861,7 +814,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					case PARAMETER:
 					case LOCALPARAM:
 					{
-						markAndProcessParameterWith(top_type, id, symbol_list->children[i], is_signed);
+						markAndProcessParameterWith( id, symbol_list->children[i], is_signed);
 						break;
 					}
 					case INPUT:
@@ -908,7 +861,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				{
 					case LOCALPARAM:
 					{
-						markAndProcessParameterWith(top_type, id, symbol_list->children[i], is_signed);
+						markAndProcessParameterWith(id, symbol_list->children[i], is_signed);
 						break;
 					}
 					case WIRE:
@@ -1763,19 +1716,15 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 	{
 		new_node->types.module.is_instantiated = (sc_lookup_string(instantiated_modules, module_name) != -1);
 	}
-	new_node->types.module.index = num_modules;
-	new_node->types.module.parameter_list = module_parameters_sc;
-	new_node->types.module.defparam_list = module_defparams_sc;
+	new_node->types.scope = pop_scope();
 
 	new_node->types.function.function_instantiations_instance = function_instantiations_instance_by_module;
 	new_node->types.function.size_function_instantiations = size_function_instantiations_by_module;
 	new_node->types.function.is_instantiated = false;
-	new_node->types.function.index = num_functions;
 
 	new_node->types.task.task_instantiations_instance = task_instantiations_instance_by_module;
 	new_node->types.task.size_task_instantiations = size_task_instantiations_by_module;
 	new_node->types.task.is_instantiated = false;
-	new_node->types.task.index = num_tasks;
 
 	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
 	ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
@@ -1815,9 +1764,9 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
  * ----------------------------------------------------
  * (function: newFunction)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newFunction(ast_node_t *function_return, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number, bool automatic) //function and module declaration work the same way (Lucas Cambuim)
-{
 
+ast_node_t *newFunction(ast_node_t *function_return, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number, bool automatic)
+{
 	long i,j;
 	long sc_spot;
 	char *label = NULL;
@@ -1883,7 +1832,9 @@ ast_node_t *newFunction(ast_node_t *function_return, ast_node_t *list_of_ports, 
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, { symbol_node, list_of_ports, list_of_module_items });
 
+
 	/* store the list of functions this function instantiates */
+	new_node->types.scope = pop_scope();
 	new_node->types.function.function_instantiations_instance = function_instantiations_instance;
 	new_node->types.function.size_function_instantiations = size_function_instantiations;
 	new_node->types.function.is_instantiated = false;
@@ -1986,6 +1937,7 @@ ast_node_t *newTask(char *task_name, ast_node_t *list_of_ports, ast_node_t *list
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, { symbol_node, list_of_ports, list_of_task_items });
 
+	new_node->types.scope = pop_scope();
 	/* store the list of tasks and functions this task instantiates */
 	new_node->types.task.task_instantiations_instance = task_instantiations_instance;
 	new_node->types.task.size_task_instantiations = size_task_instantiations;
@@ -2022,10 +1974,6 @@ void next_task()
 {
 	num_tasks++;
 
-	/* define the string cache for the next task */
-	// task_parameters_sc = (STRING_CACHE**)vtr::realloc(task_parameters_sc, sizeof(STRING_CACHE*)*(num_tasks+1));
-	// task_parameters_sc[num_tasks] = sc_new_string_cache();
-
 	/* create a new list for the instantiations list */
 	task_instantiations_instance = NULL;
 	size_task_instantiations = 0;
@@ -2043,11 +1991,6 @@ void next_task()
 void next_function()
 {
 	num_functions++;
-    //num_modules++;
-
-	/* define the string cache for the next function */
-	// function_parameters_sc = (STRING_CACHE**)vtr::realloc(function_parameters_sc, sizeof(STRING_CACHE*)*(num_functions+1));
-	// function_parameters_sc[num_functions] = sc_new_string_cache();
 
 	/* create a new list for the instantiations list */
 	function_instantiations_instance = NULL;
@@ -2082,8 +2025,6 @@ void next_module()
 	modules_inputs_sc = sc_new_string_cache();
 	modules_outputs_sc = sc_new_string_cache();
 	module_instances_sc = sc_new_string_cache();
-	module_parameters_sc = sc_new_string_cache();
-	module_defparams_sc = sc_new_string_cache();
 }
 
 /*--------------------------------------------------------------------------
@@ -2104,14 +2045,11 @@ ast_node_t *newDefparam(ids top_type, ast_node_t *val, int line_number)
 			new_node->children[5]->types.variable.is_defparam = true;
 			new_node->line_number = line_number;
 
-			if (top_type == MODULE)
+			/* defparams within named or generate blocks are handled during elaboration */
+			if (top_type != BLOCK)
 			{
-				long sc_spot = sc_add_string(module_defparams_sc, new_node->children[0]->types.identifier);
-				module_defparams_sc->data[sc_spot] = (void *)new_node;
-			}
-			else
-			{
-				/* defparams within named or generate blocks are handled during elaboration */
+				long sc_spot = sc_add_string(current_scope->defparam_sc, new_node->children[0]->types.identifier);
+				current_scope->defparam_sc->data[sc_spot] = (void *)new_node;
 			}
 		}
 	}	

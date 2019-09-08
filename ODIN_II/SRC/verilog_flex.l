@@ -22,19 +22,19 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
-
-#include <stdio.h>
-#include <string.h>
 #include "odin_error.h"
 #include "odin_types.h"
 #include "odin_util.h"
 #include "odin_globals.h"
 #include "verilog_bison.h"
 #include "vtr_util.h"
+#include "scope_util.h"
+
+#include <stdio.h>
 #include <string>
 #include <vector>
 #include <algorithm>
-#include "string.h"
+#include <string.h>
 
 #define RECURSIVE_LIMIT 256
 
@@ -110,7 +110,8 @@ vWORD [[:alpha:]_][[:alnum:]_$]*
 vSTRING ["][^"]*["]  
 vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
-%%	
+%%
+
 	/* preproc helpers */
 <VAR_PARSE>{vWORD}					{ MP(); add_args_to_define(yytext); }
 <VAR_PARSE>[\,]						{  }
@@ -165,23 +166,32 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>[\`]{vWORD}[\(]			{ MP(); load_define(yytext); PUSH_STATE(DEFINE_ARGS); }
 <INITIAL>[\`]{vWORD}				{ MP(); lex_string(get_simple_define(yytext).c_str());}
 
+
+	/* Begin Scoped items */
+<INITIAL>"begin"					{ MP(); push_scope(); return vBEGIN;}
+<INITIAL>"function"					{ MP(); push_scope(); return vFUNCTION;}
+<INITIAL>"module"					{ MP(); push_scope(); return vMODULE;}
+<INITIAL>"macromodule"				{ MP(); push_scope(); return vMODULE;}
+<INITIAL>"task"						{ MP(); push_scope(); return vTASK;}
+
+	/* End Scoped items */
+<INITIAL>"end"						{ MP(); return vEND;}
+<INITIAL>"endfunction"				{ MP(); return vENDFUNCTION;}
+<INITIAL>"endmodule"				{ MP(); return vENDMODULE;}
+<INITIAL>"endtask"					{ MP(); return vENDTASK;}
+
 	/*	Keywords	*/
 <INITIAL>"always"					{ MP(); return vALWAYS;}
 <INITIAL>"and"						{ MP(); return vAND;}
 <INITIAL>"assign"					{ MP(); return vASSIGN;}
 <INITIAL>"automatic"				{ MP(); return vAUTOMATIC;}
-<INITIAL>"begin"					{ MP(); return vBEGIN;}
 <INITIAL>"case"						{ MP(); return vCASE;}
 <INITIAL>"default"					{ MP(); return vDEFAULT;}
 <INITIAL>"defparam"					{ MP(); return vDEFPARAM;}
 <INITIAL>"else"						{ MP(); return vELSE;}
-<INITIAL>"end"						{ MP(); return vEND;}
 <INITIAL>"endcase"					{ MP(); return vENDCASE;}
-<INITIAL>"endfunction"				{ MP(); return vENDFUNCTION;}
-<INITIAL>"endgenerate"				{ MP(); return vENDGENERATE;}
-<INITIAL>"endmodule"				{ MP(); return vENDMODULE;}
 <INITIAL>"endspecify"				{ MP(); return vENDSPECIFY;}
-<INITIAL>"endtask"					{ MP(); return vENDTASK;}
+<INITIAL>"endgenerate"				{ MP(); return vENDGENERATE;}
 <INITIAL>"for"						{ MP(); return vFOR;}
 <INITIAL>"if"						{ MP(); return vIF;}
 <INITIAL>"initial"					{ MP(); return vINITIAL;}
@@ -190,8 +200,6 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"integer"					{ MP(); return vINTEGER;}
 <INITIAL>"generate"					{ MP(); return vGENERATE;}
 <INITIAL>"genvar"					{ MP(); return vGENVAR;}
-<INITIAL>"module"					{ MP(); return vMODULE;}
-<INITIAL>"function"					{ MP(); return vFUNCTION;}
 <INITIAL>"nand"						{ MP(); return vNAND;}
 <INITIAL>"negedge"					{ MP(); return vNEGEDGE;}
 <INITIAL>"nor"						{ MP(); return vNOR;}
@@ -203,11 +211,9 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"posedge"					{ MP(); return vPOSEDGE;}
 <INITIAL>"signed"					{ MP(); return vSIGNED;}
 <INITIAL>"specify"					{ MP(); return vSPECIFY;}
-<INITIAL>"task"						{ MP(); return vTASK;}
 <INITIAL>"while"					{ MP(); return vWHILE;}
 <INITIAL>"xnor"						{ MP(); return vXNOR;}
 <INITIAL>"xor"						{ MP(); return vXOR;}
-<INITIAL>"macromodule"				{ MP(); return vMODULE;}
 <INITIAL>"specparam"				{ MP(); return vSPECPARAM;}
 
 	/* Net types */
