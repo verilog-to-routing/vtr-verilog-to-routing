@@ -478,7 +478,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                                                  max_dim, segment_inf,
                                                  use_full_seg_groups, is_global_graph, directionality,
                                                  &num_seg_details);
-        if ((is_global_graph ? 1 : nodes_per_chan.max) != max_chan_width) {
+        if (nodes_per_chan.max != max_chan_width) {
             nodes_per_chan.max = max_chan_width;
             *Warnings |= RR_GRAPH_WARN_CHAN_WIDTH_CHANGED;
         }
