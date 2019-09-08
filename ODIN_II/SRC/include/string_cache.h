@@ -46,4 +46,6 @@ bool sc_remove_string(STRING_CACHE * sc, const char *string);
 /* free the cache */
 STRING_CACHE * sc_free_string_cache(STRING_CACHE *sc);
 
+void sc_merge_string_cache(STRING_CACHE **source_ref, STRING_CACHE *destination);
+
 #endif

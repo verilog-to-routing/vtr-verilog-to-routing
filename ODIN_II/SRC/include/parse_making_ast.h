@@ -2,6 +2,7 @@
 #define PARSE_MAKING_AST_H
 
 #include "odin_types.h"
+#include "scope_util.h"
 
 void parse_to_ast();
 
@@ -21,9 +22,8 @@ ast_node_t *newNumberNode(char *num, int line_number);
 ast_node_t *newList(ids type_id, ast_node_t *expression, int line_number);
 ast_node_t *newList_entry(ast_node_t *concat_node, ast_node_t *expression);
 ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child, int line_number);
-ast_node_t *newLabelledBlock(char *id, ast_node_t *block_node);
 ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_node_t *port, bool is_signed);
-ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parameter, bool is_signed);
+ast_node_t *markAndProcessParameterWith(ids id, ast_node_t *parameter, bool is_signed);
 ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list, bool is_signed);
 
 /* EXPRESSIONS */
@@ -87,6 +87,8 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t *expression1, ast_
 ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number);
 ast_node_t *newFunction(ast_node_t *function_return, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number, bool automatic);
 ast_node_t *newTask(char *task_name, ast_node_t *list_of_ports, ast_node_t *list_of_task_items, int line_number, bool automatic);
+ast_node_t *newBlock(char *id, ast_node_t *block_node);
+
 void next_module();
 void next_function();
 void next_task();

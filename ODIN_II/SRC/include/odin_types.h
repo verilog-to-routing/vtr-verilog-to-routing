@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "string_cache.h"
 #include "hierarchy_util.h"
+#include "scope_util.h"
 #include "odin_error.h"
 #include "read_xml_arch_file.h"
 #include "argparse_value.hpp"
@@ -343,7 +344,7 @@ struct typ
 	char *identifier;
 	VNumber *vnumber = nullptr;
 	sc_hierarchy *hierarchy;
-
+	sc_scope *scope;
 	struct
 	{
 		operation_list op;
@@ -371,27 +372,19 @@ struct typ
 		short is_instantiated;
 		ast_node_t **module_instantiations_instance;
 		int size_module_instantiations;
-		int index;
-		STRING_CACHE *parameter_list;
-		STRING_CACHE *defparam_list;
 	} module;
 	struct
 	{
 		short is_instantiated;
 		ast_node_t **function_instantiations_instance;
 		int size_function_instantiations;
-		int index;
-		STRING_CACHE *parameter_list;
 	} function;
 	struct
 	{
 		short is_instantiated;
 		ast_node_t **task_instantiations_instance;
 		int size_task_instantiations;
-		int index;
-		STRING_CACHE *parameter_list;
-		sc_hierarchy *string_cache_list;
-	}task;
+	} task;
 	struct
 	{
 		int num_bit_strings;
