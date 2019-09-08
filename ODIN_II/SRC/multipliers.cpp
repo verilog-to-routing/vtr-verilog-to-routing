@@ -1157,7 +1157,7 @@ void iterate_multipliers(netlist_t *netlist)
 
 		mula = node->input_port_sizes[0];
 		mulb = node->input_port_sizes[1];
-        int mult_size = std::max<int>(mula, mulb);
+        int mult_size = std::min<int>(mula, mulb);
 		if (mula < mulb)
 		{
 			swap = sizea;
@@ -1190,7 +1190,7 @@ void iterate_multipliers(netlist_t *netlist)
         // minimum hard multiplier size, use hard multiplier
         // TODO: implement multipliers where one of the operands is
         // 1 bit wide using soft logic
-		else if (mult_size >= min_mult || mula == 1 || mulb == 1)
+		else if (mult_size >= min_mult)
 		{
 			/* Check to ensure IF mult needs to be exact size */
 			if(configuration.fixed_hard_multiplier != 0)
@@ -1244,12 +1244,6 @@ void split_soft_multiplier(nnode_t *node, netlist_t *netlist) {
 	int multiplier_width = node->input_port_sizes[0];
 	int multiplicand_width = node->input_port_sizes[1];
 
-    // ODIN II doesn't work with multiplicand sizes of 1 since it assumes that the
-    // output of the multiplier is still the sum of the operands sizes. However, it
-    // should only be equal to the long operand since its an AND operation in this case.
-    // If this is fixed, this assert statement should be removed and the code will work properly
-    oassert(multiplicand_width > 1);
-
     // number of adders in a balanced tree of the partial product rows
     const int add_levels = std::ceil(std::log((double)multiplicand_width)/std::log(2.));
 
@@ -1286,7 +1280,7 @@ void split_soft_multiplier(nnode_t *node, netlist_t *netlist) {
 			if (i == 0) {
 				// when connecting the input to an AND gate for the first time, remap the input
 				remap_pin_to_new_node(node->input_pins[j], partial_products[i][j], 1);
-			} else {
+            } else {
 				// this input was remapped before, copy from the AND gate input instead
 				add_input_pin_to_node(partial_products[i][j], copy_input_npin(partial_products[0][j]->input_pins[1]), 1);
 			}
@@ -1367,13 +1361,15 @@ void split_soft_multiplier(nnode_t *node, netlist_t *netlist) {
         }
     }
 
-    // the size of the last stage of the adder tree should match the output size of the multiplier
-    oassert(addition_stages[add_levels][0].bits.size() == node->num_output_pins);
-
     // Remap the outputs of the multiplier
     for (size_t i = 0; i < addition_stages[add_levels][0].bits.size(); i++) {
         auto output_bit = addition_stages[add_levels][0].bits[i];
         remap_pin_to_new_node(node->output_pins[i], output_bit.first, output_bit.second);
+    }
+
+    // if one of the operand is only 1 bit long, then the output size should be smaller by one
+    if (multiplicand_width == 1 || multiplier_width == 1) {
+        node->output_pins[node->num_output_pins-1] = nullptr;
     }
 
     // check that all connections and input/output remapping is done right
