@@ -223,11 +223,11 @@ class Bucket {
   private:
     // Factor used to convert cost from float to int.  Should be scaled to
     // enable sufficent precision in bucketting.
-    static constexpr float kConvFactor = 1e12;
+    static constexpr float kDefaultConvFactor = 1e12;
 
     // Convert cost from float to integer bucket id.
     static int cost_to_int(float cost) {
-        return (int)(cost * kConvFactor);
+        return (int)(cost * conv_factor_);
     }
 
     // Simple fast random function used for randomizing item selection on pop.
@@ -236,6 +236,8 @@ class Bucket {
         return seed_;
     }
 
+    static void check_scaling();
+
     // Expand the number of buckets.
     //
     // Only call if insufficient bucets exist.
@@ -243,10 +245,14 @@ class Bucket {
 
     static size_t seed_; /* Seed for fast_rand, should be non-zero */
 
-    static t_heap** heap_;    /* Buckets for linked lists*/
-    static size_t heap_size_; /* Number of buckets */
-    static size_t heap_head_; /* First non-empty bucket */
-    static size_t heap_tail_; /* Last non-empty bucket */
+    static t_heap** heap_;     /* Buckets for linked lists*/
+    static size_t heap_size_;  /* Number of buckets */
+    static size_t heap_head_;  /* First non-empty bucket */
+    static size_t heap_tail_;  /* Last non-empty bucket */
+    static float conv_factor_; /* Cost bucket scaling factor */
+
+    static float min_cost_; /* Smallest cost seen */
+    static float max_cost_; /* Large cost seen */
 };
 
 inline bool is_empty_heap() {
