@@ -3399,6 +3399,14 @@ static t_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector
             return model.second[0];
     }
 
+    std::string ff_name = ".latch";
+
+    for (auto& model : primitive_candidate_block_types) {
+        std::string model_name(model.first->name);
+        if (model_name == ff_name)
+            return model.second[0];
+    }
+
     return nullptr;
 }
 
