@@ -182,6 +182,16 @@ alloc_heap_data() {
 // with items is returned.  This randomization exists to prevent the router
 // from following identical paths when operating with identical costs.
 // Consider two parallel paths to a node.
+//
+// Important node: This approximation makes some assumptions about the
+// structure of costs.
+//
+// Assumptions:
+//  1. 0 is the minimum cost
+//  2. Costs that are different by 0.1 % of the maximum cost are effectively
+//     equivilant
+//  3. The cost function is roughly linear.
+//
 class Bucket {
   public:
     Bucket() {}
