@@ -27,6 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <array>
 #include "odin_types.h"
 #include "odin_util.h"
 #include "node_creation_library.h"
@@ -54,6 +55,7 @@ int *mults = NULL;
 void record_mult_distribution(nnode_t *node);
 void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b, nnode_t *node_a, nnode_t *node_b);
 void init_multiplier_adder(nnode_t *node, nnode_t *parent, int a, int b);
+void split_multiplier_1bit(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *netlist);
 void split_multiplier_a(nnode_t *node, int a0, int a1, int b);
 void split_multiplier_b(nnode_t *node, int a, int b1, int b0, netlist_t* netlist);
 void pad_multiplier(nnode_t *node, netlist_t *netlist);
@@ -751,90 +753,188 @@ void init_multiplier_adder(nnode_t *node, nnode_t *parent, int a, int b) {
  *-----------------------------------------------------------------------*/
 void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *netlist)
 {
-	nnode_t *a0b0, *a0b1, *a1b0, *a1b1, *addsmall, *addbig;
-	int i, size;
+    std::array<std::array<nnode_t*, 2>, 2> ab;
+
+    std::array<int, 2> a_offset = {0, a0};
+    std::array<int, 2> a = {a0, a1};
+    std::array<int, 2> b_offset = {0, b0};
+    std::array<int, 2> b = {b0, b1};
+
+    // the offset and length of the output of each multiplier
+    std::array<std::array<std::pair<int, int>, 2>, 2> ab_off_len;
 
 	/* Check for a legitimate split */
 	oassert(node->input_port_sizes[0] == (a0 + a1));
 	oassert(node->input_port_sizes[1] == (b0 + b1));
 
-	/* New node for small multiply */
-	a0b0 = allocate_nnode();
-	a0b0->name = (char *)vtr::malloc(strlen(node->name) + 3);
-	strcpy(a0b0->name, node->name);
-	strcat(a0b0->name, "-0");
-	init_split_multiplier(node, a0b0, 0, a0, 0, b0, nullptr, nullptr);
-	mult_list = insert_in_vptr_list(mult_list, a0b0);
+    // initialize and name all the multiplies
+    for (size_t i = 0; i < ab.size(); ++i) {
+        for (size_t j = 0; j < ab[i].size(); ++j) {
+            ab[i][j] = allocate_nnode();
 
-	/* New node for big multiply */
-	a1b1 = allocate_nnode();
-	a1b1->name = (char *)vtr::malloc(strlen(node->name) + 3);
-	strcpy(a1b1->name, node->name);
-	strcat(a1b1->name, "-3");
-	init_split_multiplier(node, a1b1, a0, a1, b0, b1, nullptr, nullptr);
-	mult_list = insert_in_vptr_list(mult_list, a1b1);
+            ab[i][j]->name = (char *)vtr::malloc(strlen(node->name) + 3);
+            strcpy(ab[i][j]->name, node->name);
+            strcat(ab[i][j]->name, ("-" + std::to_string(i*ab.size()+j)).c_str());
 
-	/* New node for 2nd multiply */
-	a0b1 = allocate_nnode();
-	a0b1->name = (char *)vtr::malloc(strlen(node->name) + 3);
-	strcpy(a0b1->name, node->name);
-	strcat(a0b1->name, "-1");
-	init_split_multiplier(node, a0b1, 0, a0, b0, b1, a0b0, a1b1);
-	mult_list = insert_in_vptr_list(mult_list, a0b1);
+            auto node_a = (i > 0)? ab[i-1][j] : nullptr;
+            auto node_b = (j > 0)? ab[i][j-1] : nullptr;
+            init_split_multiplier(node, ab[i][j], a_offset[j], a[j], b_offset[i], b[i], node_a, node_b);
 
-	/* New node for 3rd multiply */
-	a1b0 = allocate_nnode();
-	a1b0->name = (char *)vtr::malloc(strlen(node->name) + 3);
-	strcpy(a1b0->name, node->name);
-	strcat(a1b0->name, "-2");
-	init_split_multiplier(node, a1b0, a0, a1, 0, b0, a1b1, a0b0);
-	mult_list = insert_in_vptr_list(mult_list, a1b0);
+            ab_off_len[i][j] = {a_offset[j] + b_offset[i], a[j] + b[i] - ((a[j] == 1 || b[i] == 1)? 1 : 0)};
+            printf("ab[%zu][%zu]: {%d, %d}\n", i, j, ab_off_len[i][j].first, ab_off_len[i][j].second);
+            mult_list = insert_in_vptr_list(mult_list, ab[i][j]);
+        }
+    }
 
-	/* New node for the initial add */
-	addsmall = allocate_nnode();
-	addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
-	strcpy(addsmall->name, node->name);
-	strcat(addsmall->name, "-add0");
+    std::array<nnode_t*, 2> adders;
+    // initialize and name the two additions
+    for (size_t i = 0; i < adders.size(); ++i) {
+        adders[i] = allocate_nnode();
+        adders[i]->name = (char *)vtr::malloc(strlen(node->name) + 6);
+        strcpy(adders[i]->name, node->name);
+        strcat(adders[i]->name, ("-add" + std::to_string(i)).c_str());
+    }
+
+    int len = ab_off_len[1][0].first - ab_off_len[0][1].first;
+    printf("Len %d\n", ab_off_len[0][1].second - len);
     // this addition will have a carry out in the worst case, add to input pins and connect then to gnd
-	init_multiplier_adder(addsmall, a1b0, a1b0->num_output_pins + 1, a0b1->num_output_pins + 1);
+    printf("Adder[0]: a -> %d, b -> %d\n", ab_off_len[0][1].second - len + 1, ab_off_len[1][0].second+1);
+	init_multiplier_adder(adders[0], ab[1][0], ab_off_len[0][1].second - len + 1, ab_off_len[1][0].second + 1);
+	/* New node for the BIG add */
+    printf("Adder[1]: a -> %d, b -> %d\n", ab_off_len[0][0].second + ab_off_len[1][1].second - a[0], (int) (adders[0]->num_output_pins + len));
+	init_multiplier_adder(adders[1], adders[0], ab_off_len[0][0].second + ab_off_len[1][1].second - a[0], adders[0]->num_output_pins + len);
+
+    // connect inputs to port a of adders[0]
+	for (int i = len, j = 0; i < ab[0][1]->num_output_pins; ++i, ++j)
+		connect_nodes(ab[0][1], i, adders[0], j);
+    add_input_pin_to_node(adders[0], get_zero_pin(netlist), ab[0][1]->num_output_pins - len);
+
+    printf("Connected input a of adders[0]\n");
+
+    // connect inputs to port b of adders[0]
+	for (int i = 0; i < ab_off_len[1][0].second; i++)
+		connect_nodes(ab[1][0], i, adders[0], i + adders[0]->input_port_sizes[0]);
+    // add one more bit for carry out
+    add_input_pin_to_node(adders[0], get_zero_pin(netlist), ab_off_len[1][0].second + adders[0]->input_port_sizes[0]);
+    // add another bit if one of the operands was 1-bit wide
+    if (a[1] == 1 || b[0] == 1) {
+        add_input_pin_to_node(adders[0], get_zero_pin(netlist), ab_off_len[1][0].second + 1 + adders[0]->input_port_sizes[0]);
+    }
+
+    printf("Connected input b of adders[0]\n");
+    // connect inputs to port a of adders[1]
+    int j = 0;
+    for (int i = ab_off_len[0][1].first; i < ab_off_len[0][0].second; ++i, ++j) {
+        connect_nodes(ab[0][0], i, adders[1], j);
+    }
+    for (int i = 0; i < ab_off_len[1][1].second; ++i, ++j) {
+        connect_nodes(ab[1][1], i, adders[1], j);
+    }
+
+    // connect inputs to port b of adders[1]
+    for (j = 0; j < len; ++j) {
+        connect_nodes(ab[0][1], j, adders[1], j + adders[1]->input_port_sizes[0]);
+    }
+    for (int i = 0; i < adders[0]->num_output_pins; ++i, ++j) {
+        connect_nodes(adders[0], i, adders[1], j + adders[1]->input_port_sizes[0]);
+    }
+
+    // remap the multiplier outputs coming directly from ab[0][0]
+    for (j = 0; j < len; j++) {
+        remap_pin_to_new_node(node->output_pins[j], ab[0][0], j);
+    }
+
+    // remap the multiplier outputs coming from adders[1]
+	for (int i = 0; i < adders[1]->num_output_pins; ++i, ++j) {
+		remap_pin_to_new_node(node->output_pins[j], adders[1], i);
+    }
+
+	/* Probably more to do here in freeing the old node! */
+	vtr::free(node->name);
+	vtr::free(node->input_port_sizes);
+	vtr::free(node->output_port_sizes);
+
+	/* Free arrays NOT the pins since relocated! */
+	vtr::free(node->input_pins);
+	vtr::free(node->output_pins);
+	vtr::free(node);
+
+	return;
+}
+
+void split_multiplier_1bit(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *netlist)
+{
+    oassert(a0 == 1 && b1 == 1);
+    std::array<std::array<nnode_t*, 2>, 2> ab;
+
+    std::array<int, 2> a_offset = {0, a0};
+    std::array<int, 2> a = {a0, a1};
+    std::array<int, 2> b_offset = {0, b0};
+    std::array<int, 2> b = {b0, b1};
+
+    // the offset and length of the output of each multiplier
+    std::array<std::array<std::pair<int, int>, 2>, 2> ab_off_len;
+
+	/* Check for a legitimate split */
+	oassert(node->input_port_sizes[0] == (a0 + a1));
+	oassert(node->input_port_sizes[1] == (b0 + b1));
+
+    // initialize and name all the multiplies
+    for (size_t i = 0; i < ab.size(); ++i) {
+        for (size_t j = 0; j < ab[i].size(); ++j) {
+            ab[i][j] = allocate_nnode();
+
+            ab[i][j]->name = (char *)vtr::malloc(strlen(node->name) + 3);
+            strcpy(ab[i][j]->name, node->name);
+            strcat(ab[i][j]->name, ("-" + std::to_string(i*ab.size()+j)).c_str());
+
+            auto node_a = (i > 0)? ab[i-1][j] : nullptr;
+            auto node_b = (j > 0)? ab[i][j-1] : nullptr;
+            init_split_multiplier(node, ab[i][j], a_offset[j], a[j], b_offset[i], b[i], node_a, node_b);
+
+            ab_off_len[i][j] = {a_offset[j] + b_offset[i], a[j] + b[i] - ((a[j] == 1 || b[i] == 1)? 1 : 0)};
+            mult_list = insert_in_vptr_list(mult_list, ab[i][j]);
+        }
+    }
+
+    std::array<nnode_t*, 1> adders;
+    // initialize and name the two additions
+    for (size_t i = 0; i < adders.size(); ++i) {
+        adders[i] = allocate_nnode();
+        adders[i]->name = (char *)vtr::malloc(strlen(node->name) + 6);
+        strcpy(adders[i]->name, node->name);
+        strcat(adders[i]->name, ("-add" + std::to_string(i)).c_str());
+    }
 
 	/* New node for the BIG add */
-	addbig = allocate_nnode();
-	addbig->name = (char *)vtr::malloc(strlen(node->name) + 6);
-	strcpy(addbig->name, node->name);
-	strcat(addbig->name, "-add1");
-	init_multiplier_adder(addbig, addsmall, addsmall->num_output_pins, a0b0->num_output_pins - b0 + a1b1->num_output_pins);
+	init_multiplier_adder(adders[0], ab[0][0], ab_off_len[0][1].second + 1, ab_off_len[0][1].second + 1);
 
-    // connect inputs to port a of addsmall
-	for (i = 0; i < a1b0->num_output_pins; i++)
-		connect_nodes(a1b0, i, addsmall, i);
-    add_input_pin_to_node(addsmall, get_zero_pin(netlist), a1b0->num_output_pins);
-    // connect inputs to port b of addsmall
-	for (i = 0; i < a0b1->num_output_pins; i++)
-		connect_nodes(a0b1, i, addsmall, i + addsmall->input_port_sizes[0]);
-    add_input_pin_to_node(addsmall, get_zero_pin(netlist), a0b1->num_output_pins + addsmall->input_port_sizes[0]);
+    // connect inputs to port a of adders[0]
+    int j = 0;
+	for (int i = 1; i < ab_off_len[0][0].second; ++i, ++j)
+		connect_nodes(ab[0][0], i, adders[0], j);
+    connect_nodes(ab[1][0], 0, adders[0], j++);
+    for (int i = 0; i < ab_off_len[1][1].second; ++i, ++j) {
+        connect_nodes(ab[1][1], i, adders[0], j);
+    }
+    add_input_pin_to_node(adders[0], get_zero_pin(netlist), j);
 
-    // connect inputs to port a of addbig
-	size = addsmall->num_output_pins;
-	for (i = 0; i < size; i++)
-		connect_nodes(addsmall, i, addbig, i);
+    // connect inputs to port b of adders[0]
+    for (int i = 0; i < ab_off_len[0][1].second; ++i) {
+        connect_nodes(ab[0][1], i, adders[0], i + adders[0]->input_port_sizes[0]);
+    }
+    add_input_pin_to_node(adders[0], get_zero_pin(netlist), ab_off_len[0][1].second + adders[0]->input_port_sizes[0]);
 
-    // connect inputs to port b of addbig
-	for (i = b0; i < a0b0->output_port_sizes[0]; i++)
-		connect_nodes(a0b0, i, addbig, i - b0 + size);
-	size = size + a0b0->output_port_sizes[0] - b0;
-	for (i = 0; i < a1b1->output_port_sizes[0]; i++)
-		connect_nodes(a1b1, i, addbig, i + size);
+    // remap the multiplier outputs coming directly from ab[0][0]
+    remap_pin_to_new_node(node->output_pins[0], ab[0][0], 0);
 
-    // remap the multiplier outputs coming directly from a0b0
-    for (i = 0; i < b0; i++) {
-        remap_pin_to_new_node(node->output_pins[i], a0b0, i);
+    // remap the multiplier outputs coming from adders[0]
+    j = 1;
+	for (int i = 0; i < adders[0]->num_output_pins; ++i, ++j) {
+		remap_pin_to_new_node(node->output_pins[j], adders[0], i);
     }
 
-    // remap the multiplier outputs coming from addbig
-	for (i = 0; i < addbig->num_output_pins; i++) {
-		remap_pin_to_new_node(node->output_pins[i+b0], addbig, i);
-    }
+    oassert(node->num_output_pins == j);
 
 	/* Probably more to do here in freeing the old node! */
 	vtr::free(node->name);
@@ -1171,11 +1271,15 @@ void iterate_multipliers(netlist_t *netlist)
 		/* Do I need to split the multiplier on both inputs? */
 		if ((mula > sizea) && (mulb > sizeb))
 		{
-			a0 = sizea;
-			a1 = mula - sizea;
+			a0 = mula - sizea;
+			a1 = sizea;
 			b0 = sizeb;
 			b1 = mulb - sizeb;
-			split_multiplier(node, a0, b0, a1, b1, netlist);
+            if (a0 == 1 && b1 == 1) {
+                split_multiplier_1bit(node, a0, b0, a1, b1, netlist);
+            } else {
+                split_multiplier(node, a0, b0, a1, b1, netlist);
+            }
 		}
 		else if (mula > sizea) /* split multiplier on a input? */
 		{
@@ -1246,7 +1350,7 @@ void split_soft_multiplier(nnode_t *node, netlist_t *netlist) {
 	int multiplicand_width = node->input_port_sizes[1];
 
     // number of adders in a balanced tree of the partial product rows
-    const int add_levels = std::ceil(std::log((double)multiplicand_width)/std::log(2.));
+    const int add_levels = (multiplier_width == 1)? 1 : std::ceil(std::log((double)multiplicand_width)/std::log(2.));
 
     // data structure holding the rows of output pins to be added in each addition stage
     // as well as the shift of each row from the position of the first output
@@ -1296,83 +1400,90 @@ void split_soft_multiplier(nnode_t *node, netlist_t *netlist) {
 		}
 	}
 
-    // iterate over all the levels of addition
-    for (size_t level = 0; level < adders.size(); level++) {
-        // the number of rows in the next stage is the ceiling of number of rows in this stage divided by 2
-        addition_stages[level+1].resize(std::ceil(addition_stages[level].size()/2.));
-        // the number of adders in this stage is the integer division of the number of rows in this stage
-        adder_widths[level].resize(addition_stages[level].size()/2);
-        adders[level].resize(addition_stages[level].size()/2);
-
-        // iterate over every two rows
-        for (size_t row = 0; row < addition_stages[level].size() - 1; row +=2) {
-            auto& first_row = addition_stages[level][row];
-            auto& second_row = addition_stages[level][row+1];
-            auto shift_difference = second_row.shift - first_row.shift;
-            auto add_id = row/2;
-
-            // get the widths of the adder, by finding the larger operand size
-            adder_widths[level][add_id] = std::max<int>(first_row.bits.size() - shift_difference, second_row.bits.size());
-            // first level of addition has a carry out that needs to be generated, so increase adder size by 1
-            if (level == 0) adder_widths[level][add_id]++;
-            // add one bit for carry out if that last bit of the addition is fed by both levels
-            // (was found to be the only case were a carry out will be needed in this multiplier adder tree)
-            if (first_row.bits.size() - shift_difference == second_row.bits.size()) adder_widths[level][add_id]++;
-
-            // initialize this adder
-            adders[level][add_id] = allocate_nnode();
-            init_multiplier_adder(adders[level][add_id], node, adder_widths[level][add_id], adder_widths[level][add_id]);
-            adders[level][add_id]->name = node_name(adders[level][add_id], node->name);
-
-            // initialize the output of this adder in the next stage
-            addition_stages[level+1][add_id].shift = first_row.shift;
-            addition_stages[level+1][add_id].bits.resize(shift_difference + adder_widths[level][add_id]);
-            // copy the bits that weren't fed to adders in the previous stage
-            for (int i = 0; i < shift_difference; i++) {
-                addition_stages[level+1][add_id].bits[i] = first_row.bits[i];
-            }
-            // copy adder output bits to their row in next stage
-            for (int i = 0; i < adder_widths[level][add_id]; i++) {
-                addition_stages[level+1][add_id].bits[i + shift_difference] = {adders[level][add_id], i};
-            }
-
-            // connect the bits in the rows to the adder inputs.
-            for (int bit = 0; bit < adder_widths[level][add_id]; bit++) {
-               // input port a of the adder
-               if (bit < first_row.bits.size() - shift_difference) {
-                  auto bit_a = first_row.bits[bit + shift_difference];
-                  connect_nodes(bit_a.first, bit_a.second, adders[level][add_id], bit);
-               } else {
-                  // connect additional inputs to gnd
-                  add_input_pin_to_node(adders[level][add_id], get_zero_pin(netlist), bit);
-               }
-               // input port b of the adder
-               if (bit < second_row.bits.size()) {
-                  connect_nodes(second_row.bits[bit].first, second_row.bits[bit].second, adders[level][add_id], bit + adder_widths[level][add_id]);
-               } else {
-                  // connect additional inputs to gnd
-                  add_input_pin_to_node(adders[level][add_id], get_zero_pin(netlist), bit + adder_widths[level][add_id]);
-               }
-            }
+    if (multiplier_width == 1) {
+        for (int i = 0; i < multiplicand_width; ++i) {
+            remap_pin_to_new_node(node->output_pins[i], partial_products[i][0], 0);
         }
-
-        // if this level have odd number of rows copy the last row to the next level to be added later
-        if (addition_stages[level].size() % 2 == 1) {
-            addition_stages[level+1].back() = addition_stages[level].back();
-        }
-    }
-
-    // Remap the outputs of the multiplier
-    for (size_t i = 0; i < addition_stages[add_levels][0].bits.size(); i++) {
-        auto output_bit = addition_stages[add_levels][0].bits[i];
-        remap_pin_to_new_node(node->output_pins[i], output_bit.first, output_bit.second);
-    }
-
-    // if one of the operand is only 1 bit long, then the output size should be smaller by one
-    if (multiplicand_width == 1 || multiplier_width == 1) {
         node->output_pins[node->num_output_pins-1] = nullptr;
-    }
+    } else {
+        // iterate over all the levels of addition
+        for (size_t level = 0; level < adders.size(); level++) {
+            // the number of rows in the next stage is the ceiling of number of rows in this stage divided by 2
+            addition_stages[level+1].resize(std::ceil(addition_stages[level].size()/2.));
+            // the number of adders in this stage is the integer division of the number of rows in this stage
+            adder_widths[level].resize(addition_stages[level].size()/2);
+            adders[level].resize(addition_stages[level].size()/2);
 
+            // iterate over every two rows
+            for (size_t row = 0; row < addition_stages[level].size() - 1; row +=2) {
+                auto& first_row = addition_stages[level][row];
+                auto& second_row = addition_stages[level][row+1];
+                auto shift_difference = second_row.shift - first_row.shift;
+                auto add_id = row/2;
+
+                // get the widths of the adder, by finding the larger operand size
+                adder_widths[level][add_id] = std::max<int>(first_row.bits.size() - shift_difference, second_row.bits.size());
+                // first level of addition has a carry out that needs to be generated, so increase adder size by 1
+                if (level == 0) adder_widths[level][add_id]++;
+                // add one bit for carry out if that last bit of the addition is fed by both levels
+                // (was found to be the only case were a carry out will be needed in this multiplier adder tree)
+                if (first_row.bits.size() - shift_difference == second_row.bits.size()) adder_widths[level][add_id]++;
+
+                // initialize this adder
+                adders[level][add_id] = allocate_nnode();
+                init_multiplier_adder(adders[level][add_id], node, adder_widths[level][add_id], adder_widths[level][add_id]);
+                adders[level][add_id]->name = node_name(adders[level][add_id], node->name);
+
+                // initialize the output of this adder in the next stage
+                addition_stages[level+1][add_id].shift = first_row.shift;
+                addition_stages[level+1][add_id].bits.resize(shift_difference + adder_widths[level][add_id]);
+                // copy the bits that weren't fed to adders in the previous stage
+                for (int i = 0; i < shift_difference; i++) {
+                    addition_stages[level+1][add_id].bits[i] = first_row.bits[i];
+                }
+                // copy adder output bits to their row in next stage
+                for (int i = 0; i < adder_widths[level][add_id]; i++) {
+                    addition_stages[level+1][add_id].bits[i + shift_difference] = {adders[level][add_id], i};
+                }
+
+                // connect the bits in the rows to the adder inputs.
+                for (int bit = 0; bit < adder_widths[level][add_id]; bit++) {
+                   // input port a of the adder
+                   if (bit < first_row.bits.size() - shift_difference) {
+                      auto bit_a = first_row.bits[bit + shift_difference];
+                      connect_nodes(bit_a.first, bit_a.second, adders[level][add_id], bit);
+                   } else {
+                      // connect additional inputs to gnd
+                      add_input_pin_to_node(adders[level][add_id], get_zero_pin(netlist), bit);
+                   }
+                   // input port b of the adder
+                   if (bit < second_row.bits.size()) {
+                      connect_nodes(second_row.bits[bit].first, second_row.bits[bit].second, adders[level][add_id], bit + adder_widths[level][add_id]);
+                   } else {
+                      // connect additional inputs to gnd
+                      add_input_pin_to_node(adders[level][add_id], get_zero_pin(netlist), bit + adder_widths[level][add_id]);
+                   }
+                }
+            }
+
+            // if this level have odd number of rows copy the last row to the next level to be added later
+            if (addition_stages[level].size() % 2 == 1) {
+                addition_stages[level+1].back() = addition_stages[level].back();
+            }
+        }
+
+        // Remap the outputs of the multiplier
+        for (size_t i = 0; i < addition_stages[add_levels][0].bits.size(); i++) {
+            auto output_bit = addition_stages[add_levels][0].bits[i];
+            remap_pin_to_new_node(node->output_pins[i], output_bit.first, output_bit.second);
+        }
+
+        // if one of the operand is only 1 bit long, then the output size should be smaller by one
+        if (multiplicand_width == 1 || multiplier_width == 1) {
+            node->output_pins[node->num_output_pins-1] = nullptr;
+        }
+
+    }
     // check that all connections and input/output remapping is done right
     // meaning all the inputs and outputs of the multiplier that is splitted are nullptrs
     // and all inputs and outputs of the AND gates and adders are not nullptrs
