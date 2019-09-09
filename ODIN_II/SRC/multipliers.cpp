@@ -55,7 +55,7 @@ void record_mult_distribution(nnode_t *node);
 void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b, nnode_t *node_a, nnode_t *node_b);
 void init_multiplier_adder(nnode_t *node, nnode_t *parent, int a, int b);
 void split_multiplier_a(nnode_t *node, int a0, int a1, int b);
-void split_multiplier_b(nnode_t *node, int a, int b1, int b0);
+void split_multiplier_b(nnode_t *node, int a, int b1, int b0, netlist_t* netlist);
 void pad_multiplier(nnode_t *node, netlist_t *netlist);
 void split_soft_multiplier(nnode_t *node, netlist_t *netlist);
 
@@ -940,10 +940,9 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
  * extending NOT contracting.
  *
  *-----------------------------------------------------------------------*/
-void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
+void split_multiplier_b(nnode_t *node, int a, int b1, int b0, netlist_t* netlist)
 {
 	nnode_t *ab0, *ab1, *addsmall;
-	int i;
 
 	/* Check for a legitimate split */
 	oassert(node->input_port_sizes[0] == a);
@@ -970,21 +969,25 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 	addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
-	init_multiplier_adder(addsmall, ab1, ab1->num_output_pins, a + b1);
+	init_multiplier_adder(addsmall, ab1, a, ab1->output_port_sizes[0]);
 
 	/* Connect pins for addsmall */
-	for (i = b0; i < ab0->output_port_sizes[0]; i++)
-		connect_nodes(ab0, i, addsmall, i-b0);
-	for (i = ab0->output_port_sizes[0] - b0; i < a+b1; i++) /* Sign extend */
-		connect_nodes(ab0, ab0->output_port_sizes[0]-1, addsmall, i);
-	for (i = b1+a; i < (2 * (a + b1)); i++)
-		connect_nodes(ab1, i-(b1+a), addsmall, i);
+	for (int i = b0, j = 0; i < ab0->output_port_sizes[0]; ++i, ++j)
+		connect_nodes(ab0, i, addsmall, j);
+
+    int len = ab1->output_port_sizes[0];
+    if (b1 == 1) {
+        len--;
+        add_input_pin_to_node(addsmall, get_zero_pin(netlist), addsmall->input_port_sizes[0] + len);
+    }
+	for (int i = 0; i < len; i++)
+		connect_nodes(ab1, i, addsmall, i + addsmall->input_port_sizes[0]);
 
 	/* Move original output pins for multiply to new outputs */
-	for (i = 0; i < b0; i++)
+	for (int i = 0; i < b0; i++)
 		remap_pin_to_new_node(node->output_pins[i], ab0, i);
 
-	for (i = b0; i < node->num_output_pins; i++)
+	for (int i = b0; i < node->num_output_pins; i++)
 		remap_pin_to_new_node(node->output_pins[i], addsmall, i-b0);
 
 	/* Probably more to do here in freeing the old node! */
@@ -1182,14 +1185,12 @@ void iterate_multipliers(netlist_t *netlist)
 		}
 		else if (mulb > sizeb) /* split multiplier on b input? */
 		{
-			b1 = sizeb;
-			b0 = mulb - sizeb;
-			split_multiplier_b(node, mula, b1, b0);
+			b0 = sizeb;
+			b1 = mulb - sizeb;
+			split_multiplier_b(node, mula, b1, b0, netlist);
 		}
         // if either of the multiplicands is larger than the
         // minimum hard multiplier size, use hard multiplier
-        // TODO: implement multipliers where one of the operands is
-        // 1 bit wide using soft logic
 		else if (mult_size >= min_mult)
 		{
 			/* Check to ensure IF mult needs to be exact size */
