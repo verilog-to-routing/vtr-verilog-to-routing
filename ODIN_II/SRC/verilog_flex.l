@@ -608,7 +608,7 @@ bool pop_include()
 		current_parse_file = -1;
 	}
 
-	if(has_current_parse_file())
+	if(has_current_parse_file() && current_parse_file >= 0)
 	{
 		my_yylineno = include_file_names[current_parse_file].second;
 
