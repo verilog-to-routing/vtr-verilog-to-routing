@@ -16,6 +16,11 @@ void Bucket::init(const DeviceGrid& grid) {
 
     heap_head_ = std::numeric_limits<size_t>::max();
     heap_tail_ = 0;
+
+    conv_factor_ = kDefaultConvFactor;
+
+    min_cost_ = std::numeric_limits<float>::max();
+    max_cost_ = std::numeric_limits<float>::min();
 }
 
 void Bucket::free() {
@@ -46,6 +51,9 @@ t_heap** Bucket::heap_ = nullptr;
 size_t Bucket::heap_size_ = 0;
 size_t Bucket::heap_head_ = std::numeric_limits<size_t>::max();
 size_t Bucket::heap_tail_ = 0;
+float Bucket::min_cost_ = 0.f;
+float Bucket::max_cost_ = 0.f;
+float Bucket::conv_factor_ = 0.f;
 
 void Bucket::clear() {
     if (heap_head_ != std::numeric_limits<size_t>::max()) {
@@ -55,19 +63,74 @@ void Bucket::clear() {
     heap_tail_ = 0;
 }
 
+void Bucket::check_scaling() {
+    float min_cost = min_cost_;
+    float max_cost = max_cost_;
+    VTR_ASSERT(max_cost != std::numeric_limits<float>::min());
+    if (min_cost == std::numeric_limits<float>::max()) {
+        min_cost = max_cost;
+    }
+    auto min_bucket = cost_to_int(min_cost);
+    auto max_bucket = cost_to_int(max_cost);
+
+    if (min_bucket < 0 || max_bucket < 0 || max_bucket > 1000000) {
+        // If min and max are close to each other, assume 3 orders of
+        // magnitude between min and max.
+        //
+        // If min and max are at least 3 orders of magnitude apart, scale
+        // soley based on max cost.
+        conv_factor_ = 50000.f / max_cost_ / std::max(1.f, 1000.f / (max_cost_ / min_cost_));
+
+        VTR_ASSERT(cost_to_int(min_cost_) >= 0);
+        VTR_ASSERT(cost_to_int(max_cost_) >= 0);
+        VTR_ASSERT(cost_to_int(max_cost_) < 1000000);
+
+        // Reheap after adjusting scaling.
+        if (heap_head_ != std::numeric_limits<size_t>::max()) {
+            std::vector<t_heap*> reheap;
+            for (size_t bucket = heap_head_; bucket <= heap_tail_; ++bucket) {
+                for (t_heap* item = heap_[bucket]; item != nullptr; item = item->next_bucket) {
+                    reheap.push_back(item);
+                }
+            }
+
+            std::fill(heap_ + heap_head_, heap_ + heap_tail_ + 1, nullptr);
+            heap_head_ = std::numeric_limits<size_t>::max();
+            heap_tail_ = 0;
+
+            for (t_heap* item : reheap) {
+                push(item);
+            }
+        }
+    }
+}
+
 void Bucket::push(t_heap* hptr) {
     float cost = hptr->cost;
     if (!std::isfinite(cost)) {
         return;
     }
 
-    //heap_::verify_extract_top();
+    bool check_scale = false;
+    // Exclude 0 cost from min_cost to provide useful scaling factor.
+    if (cost < min_cost_ && cost > 0) {
+        min_cost_ = cost;
+        check_scale = true;
+    }
+    if (cost > max_cost_) {
+        max_cost_ = cost;
+        check_scale = true;
+    }
+
+    if (check_scale) {
+        check_scaling();
+    }
 
     // Which bucket should this go into?
     auto int_cost = cost_to_int(cost);
 
     if (int_cost < 0) {
-        VTR_LOG_WARN("Cost is negative? cost = %g\n", cost);
+        VTR_LOG_WARN("Cost is negative? cost = %g, bucket = %d\n", cost, int_cost);
         int_cost = 0;
     }
 
@@ -90,8 +153,6 @@ void Bucket::push(t_heap* hptr) {
     if (uint_cost > heap_tail_) {
         heap_tail_ = uint_cost;
     }
-
-    //heap_::verify_extract_top();
 }
 
 t_heap* Bucket::pop() {
