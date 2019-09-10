@@ -536,7 +536,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
 
 	// Look up the model in the models cache.
  	hard_block_model *model = NULL;
- 	if (!(model = get_hard_block_model(subcircuit_name, ports, models)))
+ 	if ((subcircuit_name != NULL) && (!(model = get_hard_block_model(subcircuit_name, ports, models))))
  	{
  		// If the model isn's present, scan ahead and find it.
  		model = read_hard_block_model(subcircuit_name, ports, file);
