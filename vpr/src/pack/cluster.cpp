@@ -350,7 +350,7 @@ static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string,
 
 static void update_alm_and_alut_counts(const t_pb* pb, const t_type_ptr logic_block_type,
                              std::vector<t_pb_type*>& alm_pb_types, std::vector<int>& alm_count,
-                             std::vector<t_pb_type*>& alut_pb_types, std::vector<int>& alut_count);
+                             std::vector<t_pb_type*>& alut_pb_types, std::vector<int>& alut_count, float& unusable_alm_count);
 
 static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count);
 
@@ -361,9 +361,11 @@ static std::vector<t_pb_graph_node*> identify_alm_block_type(t_type_ptr logic_bl
 static bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name);
 
 static void print_alm_and_alut_count(std::vector<t_pb_type*>& alm_types, std::vector<int>& alm_count,
-                                     std::vector<t_pb_type*>& alut_types, std::vector<int>& alut_count);
+                                     std::vector<t_pb_type*>& alut_types, std::vector<int>& alut_count, float& unusable_alm_count);
 
 static std::vector<t_pb_type*> identify_alut_block_type(std::vector<t_pb_graph_node*>& alm_nodes);
+
+static float count_num_unusable_ALMs(const t_pb* parent_pb);
 
 /*****************************************/
 /*globally accessible function*/
@@ -436,6 +438,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
     // of ALMs that are used for logic (LUTs/adders) only. Index 2 holds the
     // number of ALMs that are used for registers only.
     std::vector<int> alm_count(3, 0);
+    float unusable_alm_count = 0.0;
     std::vector<int> alut_count(3, 0);
 
     num_clb = 0;
@@ -751,7 +754,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                 // update the pb type count by counting the used pb types in this packed cluster
                 update_pb_type_count(cur_pb, pb_type_count);
                 // update the data structure holding the alm counts
-                update_alm_and_alut_counts(cur_pb, logic_block_type, alm_pb_types, alm_count, alut_pb_types, alut_count);
+                update_alm_and_alut_counts(cur_pb, logic_block_type, alm_pb_types, alm_count, alut_pb_types, alut_count, unusable_alm_count);
                 free_pb_stats_recursive(cur_pb);
             } else {
                 /* Free up data structures and requeue used molecules */
@@ -772,7 +775,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
     print_pb_type_count(pb_type_count);
 
     // if this architecture has an ALM-like physical block, report its usage
-    print_alm_and_alut_count(alm_pb_types, alm_count, alut_pb_types, alut_count);
+    print_alm_and_alut_count(alm_pb_types, alm_count, alut_pb_types, alut_count, unusable_alm_count);
 
     /****************************************************************
      * Free Data Structures
@@ -3483,7 +3486,7 @@ static std::vector<t_pb_type*> identify_alut_block_type(std::vector<t_pb_graph_n
  */
 static void update_alm_and_alut_counts(const t_pb* pb, const t_type_ptr logic_block_type,
                              std::vector<t_pb_type*>& alm_pb_types, std::vector<int>& alm_count,
-                             std::vector<t_pb_type*>& alut_pb_types, std::vector<int>& alut_count) {
+                             std::vector<t_pb_type*>& alut_pb_types, std::vector<int>& alut_count, float& unusable_alm_count) {
     // if this cluster doesn't contain ALMs or there
     // are no alms in this architecture, ignore it
     if (!logic_block_type || pb->pb_graph_node != logic_block_type->pb_graph_head || alm_pb_types.empty())
@@ -3508,6 +3511,10 @@ static void update_alm_and_alut_counts(const t_pb* pb, const t_type_ptr logic_bl
             if (type_id != -1) break;
             parent_pb = &parent_pb->child_pbs[0][0];
         }
+
+        auto unusable = count_num_unusable_ALMs(parent_pb);
+        VTR_LOG("Unusable %.2f\n", unusable);
+        unusable_alm_count += unusable;
 
         // iterate over all the ALMs and update the ALM count accordingly
         for (int ialm = 0; ialm < parent_pb->get_num_children_of_type(type_id); ialm++) {
@@ -3559,6 +3566,23 @@ static void update_alm_and_alut_counts(const t_pb* pb, const t_type_ptr logic_bl
     }
 }
 
+static float count_num_unusable_ALMs(const t_pb* parent_pb) {
+    const auto& atom_ctx = g_vpr_ctx.atom();
+    auto pb = &parent_pb->child_pbs[1][0];
+    if (!pb->child_pbs)
+        return 0;
+    auto atom = atom_ctx.lookup.pb_atom(&pb->child_pbs[0][0]);
+    VTR_LOG("Atom Name %s\n", atom_ctx.nlist.block_name(atom).c_str());
+    int count = 0;
+    auto pin_range = atom_ctx.nlist.block_output_pins(atom);
+    for (const auto& pin : pin_range) {
+        if (atom_ctx.nlist.pin_net(pin)) {
+            count++;
+        }
+    }
+
+    return std::ceil(count/2.)/2.;
+}
 
 /**
  * This function returns true if the given physical block has
@@ -3595,18 +3619,19 @@ static bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name) 
  * Print the alm count data strurture
  */
 static void print_alm_and_alut_count(std::vector<t_pb_type*>& alm_types, std::vector<int>& alm_count,
-                                     std::vector<t_pb_type*>& alut_types, std::vector<int>& alut_count) {
+                                     std::vector<t_pb_type*>& alut_types, std::vector<int>& alut_count, float& unusable_alm_count) {
     // ignore if no alm type
     if (alm_types.empty()) return;
 
     std::string alm_name(alm_types[0]->name);
 
     VTR_LOG("\nDetailed %s (ALM-like) count...\n", alm_name.c_str());
-    VTR_LOG("  Total number of ALMs used             : %d\n", alm_count[0] + alm_count[1] + alm_count[2]);
-    VTR_LOG("  (A) ALMs used for logic and registers : %d\n", alm_count[0]);
-    VTR_LOG("  (B) ALMs used for logic only          : %d\n", alm_count[1]);
-    VTR_LOG("  (C) ALMs used for registers only      : %d\n", alm_count[2]);
-    VTR_LOG("  (D) ALMs used for logic (A) + (B)     : %d\n\n", alm_count[0] + alm_count[1]);
+    VTR_LOG("  Total number of ALMs used                    : %d\n", alm_count[0] + alm_count[1] + alm_count[2]);
+    VTR_LOG("  (A) ALMs used for logic and registers        : %d\n", alm_count[0]);
+    VTR_LOG("  (B) ALMs used for logic only                 : %d\n", alm_count[1]);
+    VTR_LOG("  (C) ALMs used for registers only             : %d\n", alm_count[2]);
+    VTR_LOG("  (D) ALMs used for logic (A) + (B) + unusable : %.1f\n", alm_count[0] + alm_count[1] + unusable_alm_count);
+    VTR_LOG("  (E) ALMs made unusable                       : %.1f\n", unusable_alm_count);
 
     if (alut_types.empty()) return;
 
