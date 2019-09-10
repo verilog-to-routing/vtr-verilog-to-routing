@@ -56,8 +56,9 @@ void record_mult_distribution(nnode_t *node);
 void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b, nnode_t *node_a, nnode_t *node_b);
 void init_multiplier_adder(nnode_t *node, nnode_t *parent, int a, int b);
 void split_multiplier_1bit(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *netlist);
-void split_multiplier_a(nnode_t *node, int a0, int a1, int b);
+void split_multiplier_a(nnode_t *node, int a0, int a1, int b, netlist_t* netlist);
 void split_multiplier_b(nnode_t *node, int a, int b1, int b0, netlist_t* netlist);
+void split_multiplier_9bit(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *netlist);
 void pad_multiplier(nnode_t *node, netlist_t *netlist);
 void split_soft_multiplier(nnode_t *node, netlist_t *netlist);
 
@@ -796,18 +797,20 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
     }
 
     int len = ab_off_len[1][0].first - ab_off_len[0][1].first;
-    printf("Len %d\n", ab_off_len[0][1].second - len);
+    printf("Width %d, diff %d\n", ab_off_len[0][1].second - len, len);
     // this addition will have a carry out in the worst case, add to input pins and connect then to gnd
     printf("Adder[0]: a -> %d, b -> %d\n", ab_off_len[0][1].second - len + 1, ab_off_len[1][0].second+1);
-	init_multiplier_adder(adders[0], ab[1][0], ab_off_len[0][1].second - len + 1, ab_off_len[1][0].second + 1);
+	init_multiplier_adder(adders[0], ab[1][0], ab_off_len[0][1].second - len + 1, ab[1][0]->num_output_pins + 1);
 	/* New node for the BIG add */
     printf("Adder[1]: a -> %d, b -> %d\n", ab_off_len[0][0].second + ab_off_len[1][1].second - a[0], (int) (adders[0]->num_output_pins + len));
-	init_multiplier_adder(adders[1], adders[0], ab_off_len[0][0].second + ab_off_len[1][1].second - a[0], adders[0]->num_output_pins + len);
+    // the input of the multiplier should be the output of ab00 +1 if a0 or b0 are 1-bit operands
+	init_multiplier_adder(adders[1], adders[0], ab[0][0]->num_output_pins + ab_off_len[1][1].second - a[0], adders[0]->num_output_pins + len);
 
     // connect inputs to port a of adders[0]
-	for (int i = len, j = 0; i < ab[0][1]->num_output_pins; ++i, ++j)
+    int j = 0;
+	for (int i = len; i < ab_off_len[0][1].second; ++i, ++j)
 		connect_nodes(ab[0][1], i, adders[0], j);
-    add_input_pin_to_node(adders[0], get_zero_pin(netlist), ab[0][1]->num_output_pins - len);
+    add_input_pin_to_node(adders[0], get_zero_pin(netlist), j);
 
     printf("Connected input a of adders[0]\n");
 
@@ -817,16 +820,21 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
     // add one more bit for carry out
     add_input_pin_to_node(adders[0], get_zero_pin(netlist), ab_off_len[1][0].second + adders[0]->input_port_sizes[0]);
     // add another bit if one of the operands was 1-bit wide
-    if (a[1] == 1 || b[0] == 1) {
+    if (a[0] == 1 || b[1] == 1) {
         add_input_pin_to_node(adders[0], get_zero_pin(netlist), ab_off_len[1][0].second + 1 + adders[0]->input_port_sizes[0]);
     }
 
     printf("Connected input b of adders[0]\n");
+
     // connect inputs to port a of adders[1]
-    int j = 0;
+    j = 0;
     for (int i = ab_off_len[0][1].first; i < ab_off_len[0][0].second; ++i, ++j) {
         connect_nodes(ab[0][0], i, adders[1], j);
     }
+    if (j != (ab_off_len[1][1].first - a[0])) {
+        add_input_pin_to_node(adders[1], get_zero_pin(netlist), j++);
+    }
+    oassert(j == (ab_off_len[1][1].first - a[0]));
     for (int i = 0; i < ab_off_len[1][1].second; ++i, ++j) {
         connect_nodes(ab[1][1], i, adders[1], j);
     }
@@ -840,6 +848,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
     }
 
     // remap the multiplier outputs coming directly from ab[0][0]
+    len = ab_off_len[0][1].first - ab_off_len[0][0].first;
     for (j = 0; j < len; j++) {
         remap_pin_to_new_node(node->output_pins[j], ab[0][0], j);
     }
@@ -949,6 +958,142 @@ void split_multiplier_1bit(nnode_t *node, int a0, int b0, int a1, int b1, netlis
 	return;
 }
 
+void split_multiplier_9bit(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *netlist)
+{
+    std::array<std::array<nnode_t*, 2>, 2> ab;
+
+    std::array<int, 2> a_offset = {0, a0};
+    std::array<int, 2> a = {a0, a1};
+    std::array<int, 2> b_offset = {0, b0};
+    std::array<int, 2> b = {b0, b1};
+
+    // the offset and length of the output of each multiplier
+    std::array<std::array<std::pair<int, int>, 2>, 2> ab_off_len;
+
+	/* Check for a legitimate split */
+	oassert(node->input_port_sizes[0] == (a0 + a1));
+	oassert(node->input_port_sizes[1] == (b0 + b1));
+
+    // initialize and name all the multiplies
+    for (size_t i = 0; i < ab.size(); ++i) {
+        for (size_t j = 0; j < ab[i].size(); ++j) {
+            ab[i][j] = allocate_nnode();
+
+            ab[i][j]->name = (char *)vtr::malloc(strlen(node->name) + 3);
+            strcpy(ab[i][j]->name, node->name);
+            strcat(ab[i][j]->name, ("-" + std::to_string(i*ab.size()+j)).c_str());
+
+            auto node_a = (i > 0)? ab[i-1][j] : nullptr;
+            auto node_b = (j > 0)? ab[i][j-1] : nullptr;
+            init_split_multiplier(node, ab[i][j], a_offset[j], a[j], b_offset[i], b[i], node_a, node_b);
+
+            ab_off_len[i][j] = {a_offset[j] + b_offset[i], a[j] + b[i] - ((a[j] == 1 || b[i] == 1)? 1 : 0)};
+            printf("ab[%zu][%zu]: {%d, %d}\n", i, j, ab_off_len[i][j].first, ab_off_len[i][j].second);
+            mult_list = insert_in_vptr_list(mult_list, ab[i][j]);
+        }
+    }
+
+    std::array<nnode_t*, 2> adders;
+    // initialize and name the two additions
+    for (size_t i = 0; i < adders.size(); ++i) {
+        adders[i] = allocate_nnode();
+        adders[i]->name = (char *)vtr::malloc(strlen(node->name) + 6);
+        strcpy(adders[i]->name, node->name);
+        strcat(adders[i]->name, ("-add" + std::to_string(i)).c_str());
+    }
+
+    int len = ab_off_len[0][1].first - ab_off_len[1][0].first;
+    printf("Width %d, diff %d\n", ab_off_len[0][1].second - len, len);
+    // this addition will have a carry out in the worst case, add to input pins and connect then to gnd
+    printf("Adder[0]: a -> %d, b -> %ld\n", ab_off_len[0][1].second + 1, ab[1][0]->num_output_pins - len + 1);
+	init_multiplier_adder(adders[0], ab[1][0], ab_off_len[0][1].second + 1, ab[1][0]->num_output_pins - len + 1);
+	/* New node for the BIG add */
+    printf("Adder[1]: a -> %ld, b -> %ld\n", ab_off_len[0][0].second + ab[1][1]->num_output_pins - b[0], adders[0]->num_output_pins + len);
+    // the input of the multiplier should be the output of ab00 +1 if a0 or b0 are 1-bit operands
+	init_multiplier_adder(adders[1], adders[0], ab_off_len[0][0].second + ab[1][1]->num_output_pins - b[0], adders[0]->num_output_pins + len);
+
+    // connect inputs to port a of adders[0]
+    int j = 0;
+	for (int i = 0; i < ab_off_len[0][1].second; ++i, ++j)
+		connect_nodes(ab[0][1], i, adders[0], j);
+    add_input_pin_to_node(adders[0], get_zero_pin(netlist), j);
+
+    printf("Connected input a of adders[0]\n");
+
+    // connect inputs to port b of adders[0]
+	for (int i = len; i < ab_off_len[1][0].second; i++)
+		connect_nodes(ab[1][0], i, adders[0], i + adders[0]->input_port_sizes[0] - len);
+    // add one more bit for carry out
+    add_input_pin_to_node(adders[0], get_zero_pin(netlist), ab_off_len[1][0].second + adders[0]->input_port_sizes[0] - len);
+    // add another bit if one of the operands was 1-bit wide
+    if (a[0] == 1 || b[1] == 1) {
+        add_input_pin_to_node(adders[0], get_zero_pin(netlist), ab_off_len[1][0].second + 1 + adders[0]->input_port_sizes[0] - len);
+    }
+
+    printf("Connected input b of adders[0]\n");
+
+    // connect inputs to port a of adders[1]
+    j = 0;
+    for (int i = b[0]; i < ab_off_len[0][0].second; ++i, ++j) {
+        connect_nodes(ab[0][0], i, adders[1], j);
+    }
+    oassert(j == (ab_off_len[1][1].first - b[0]));
+    for (int i = 0; i < ab_off_len[1][1].second; ++i, ++j) {
+        connect_nodes(ab[1][1], i, adders[1], j);
+    }
+    while (j < adders[1]->input_port_sizes[0]) {
+        add_input_pin_to_node(adders[1], get_zero_pin(netlist), j++);
+    }
+
+    // connect inputs to port b of adders[1]
+    for (j = 0; j < len; ++j) {
+        connect_nodes(ab[1][0], j, adders[1], j + adders[1]->input_port_sizes[0]);
+    }
+    for (int i = 0; i < adders[0]->num_output_pins; ++i, ++j) {
+        connect_nodes(adders[0], i, adders[1], j + adders[1]->input_port_sizes[0]);
+    }
+    while (j < adders[1]->input_port_sizes[1]) {
+        add_input_pin_to_node(adders[1], get_zero_pin(netlist), j++ + adders[1]->input_port_sizes[0]);
+    }
+
+    // remap the multiplier outputs coming directly from ab[0][0]
+    for (j = 0; j < b[0]; j++) {
+        remap_pin_to_new_node(node->output_pins[j], ab[0][0], j);
+    }
+
+    // remap the multiplier outputs coming from adders[1]
+	for (int i = 0; i < adders[1]->num_output_pins; ++i, ++j) {
+		remap_pin_to_new_node(node->output_pins[j], adders[1], i);
+    }
+
+    for (int i = 0; i < adders[0]->num_input_pins; ++i) {
+        //printf("adders[0]->input[%d]\n", i);
+        oassert(adders[0]->input_pins[i]);
+    }
+    for (int i = 0; i < adders[1]->num_input_pins; ++i) {
+        printf("adders[1]->input[%d]\n", i);
+        oassert(adders[1]->input_pins[i]);
+    }
+
+    for (int i = 0; i < adders[0]->num_output_pins; ++i) {
+        oassert(adders[0]->output_pins[i]);
+    }
+    for (int i = 0; i < adders[1]->num_output_pins; ++i) {
+        oassert(adders[1]->output_pins[i]);
+    }
+
+	/* Probably more to do here in freeing the old node! */
+	vtr::free(node->name);
+	vtr::free(node->input_port_sizes);
+	vtr::free(node->output_port_sizes);
+
+	/* Free arrays NOT the pins since relocated! */
+	vtr::free(node->input_pins);
+	vtr::free(node->output_pins);
+	vtr::free(node);
+
+	return;
+}
 /*-------------------------------------------------------------------------
  * (function: split_multiplier_a)
  *
@@ -966,7 +1111,7 @@ void split_multiplier_1bit(nnode_t *node, int a0, int b0, int a1, int b1, netlis
  * extending NOT contracting.
  *
  *-----------------------------------------------------------------------*/
-void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
+void split_multiplier_a(nnode_t *node, int a0, int a1, int b, netlist_t* netlist)
 {
 	nnode_t *a0b, *a1b, *addsmall;
 	int i;
@@ -996,13 +1141,19 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 	addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
-	init_multiplier_adder(addsmall, a0b, b,  a1b->num_output_pins);
+	init_multiplier_adder(addsmall, a0b, a0b->num_output_pins - a0 + ((a1 == 1)? 1 : 0),  a1b->num_output_pins);
 
 	/* Connect pins for addsmall */
 	for (i = a0; i < a0b->num_output_pins; i++)
 		connect_nodes(a0b, i, addsmall, i-a0);
-	for (i = 0; i < a1b->num_output_pins; i++)
+    if (a1 == 1) {
+        add_input_pin_to_node(addsmall, get_zero_pin(netlist), a0b->num_output_pins-a0);
+    }
+	for (i = 0; i < a1b->num_output_pins - ((a1==1)? 1 : 0); i++)
 		connect_nodes(a1b, i, addsmall, i + addsmall->input_port_sizes[0]);
+    if (a1 == 1) {
+        add_input_pin_to_node(addsmall, get_zero_pin(netlist), a1b->num_output_pins - 1 + addsmall->input_port_sizes[0]);
+    }
 
 	/* Move original output pins for multiply to new outputs */
 	for (i = 0; i < a0; i++)
@@ -1010,6 +1161,16 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 
 	for (i = 0; i < addsmall->num_output_pins; i++)
 		remap_pin_to_new_node(node->output_pins[i+a0], addsmall, i);
+
+    for (i = 0; i < addsmall->num_input_pins; ++i) {
+        printf("addsmall->input[%d]\n", i);
+        oassert(addsmall->input_pins[i]);
+    }
+
+    for (i = 0; i < addsmall->num_output_pins; ++i) {
+        printf("addsmall->output[%d]\n", i);
+        oassert(addsmall->output_pins[i]);
+    }
 
 	/* Probably more to do here in freeing the old node! */
 	vtr::free(node->name);
@@ -1261,6 +1422,7 @@ void iterate_multipliers(netlist_t *netlist)
 		mula = node->input_port_sizes[0];
 		mulb = node->input_port_sizes[1];
         int mult_size = std::min<int>(mula, mulb);
+        bool operand_1bit = (mula == 1 || mulb == 1);
 		if (mula < mulb)
 		{
 			swap = sizea;
@@ -1269,7 +1431,7 @@ void iterate_multipliers(netlist_t *netlist)
 		}
 
 		/* Do I need to split the multiplier on both inputs? */
-		if ((mula > sizea) && (mulb > sizeb))
+		if ((mula > sizea) && (mulb > sizeb) && !operand_1bit)
 		{
 			a0 = mula - sizea;
 			a1 = sizea;
@@ -1277,17 +1439,19 @@ void iterate_multipliers(netlist_t *netlist)
 			b1 = mulb - sizeb;
             if (a0 == 1 && b1 == 1) {
                 split_multiplier_1bit(node, a0, b0, a1, b1, netlist);
+            } else if (a0 > a1) {
+                split_multiplier_9bit(node, a0, b0, a1, b1, netlist);
             } else {
                 split_multiplier(node, a0, b0, a1, b1, netlist);
             }
 		}
-		else if (mula > sizea) /* split multiplier on a input? */
+		else if (mula > sizea && !operand_1bit) /* split multiplier on a input? */
 		{
 			a0 = sizea;
 			a1 = mula - sizea;
-			split_multiplier_a(node, a0, a1, mulb);
+			split_multiplier_a(node, a0, a1, mulb, netlist);
 		}
-		else if (mulb > sizeb) /* split multiplier on b input? */
+		else if (mulb > sizeb && !operand_1bit) /* split multiplier on b input? */
 		{
 			b0 = sizeb;
 			b1 = mulb - sizeb;
@@ -1295,7 +1459,7 @@ void iterate_multipliers(netlist_t *netlist)
 		}
         // if either of the multiplicands is larger than the
         // minimum hard multiplier size, use hard multiplier
-		else if (mult_size >= min_mult)
+		else if (mult_size >= min_mult && !operand_1bit)
 		{
 			/* Check to ensure IF mult needs to be exact size */
 			if(configuration.fixed_hard_multiplier != 0)
