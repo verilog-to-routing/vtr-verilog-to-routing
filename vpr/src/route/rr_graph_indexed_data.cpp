@@ -115,6 +115,18 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
     load_rr_indexed_data_T_values((CHANX_COST_INDEX_START + num_segment),
                                   num_segment, CHANY, nodes_per_chan, L_rr_node_indices);
 
+    for (int cost_index = CHANX_COST_INDEX_START;
+         cost_index < CHANX_COST_INDEX_START + 2 * num_segment; cost_index++) {
+        int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
+        /* If segments doesn't have data (e.g. doesn't exists), check if ortho 
+         * segment does exist. If so, copy that data. */
+        if (device_ctx.rr_indexed_data[cost_index].T_linear == OPEN && device_ctx.rr_indexed_data[ortho_cost_index].T_linear != OPEN) {
+            device_ctx.rr_indexed_data[cost_index].T_linear = device_ctx.rr_indexed_data[ortho_cost_index].T_linear;
+            device_ctx.rr_indexed_data[cost_index].T_quadratic = device_ctx.rr_indexed_data[ortho_cost_index].T_quadratic;
+            device_ctx.rr_indexed_data[cost_index].C_load = device_ctx.rr_indexed_data[ortho_cost_index].C_load;
+        }
+    }
+
     load_rr_indexed_data_base_costs(nodes_per_chan, L_rr_node_indices,
                                     base_cost_type);
 }
