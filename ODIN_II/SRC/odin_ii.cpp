@@ -418,6 +418,12 @@ void get_options(int argc, char** argv) {
             .action(argparse::Action::STORE_TRUE)
             ;
 
+    other_grp.add_argument(global_args.shadow_multiplier_size, "--shadow_multiplier_size")
+            .help("Defines the size of the shadow multiplier added to the soft logic")
+            .default_value("-1")
+            .metavar("SHADOW_MULTIPLIER_SIZE")
+            ;
+
     other_grp.add_argument(global_args.top_level_module_name, "--top_module")
             .help("Allow to overwrite the top level module that odin would use")
 			.metavar("TOP_LEVEL_MODULE_NAME")
@@ -440,7 +446,7 @@ void get_options(int argc, char** argv) {
 			.default_value("false")
 			.action(argparse::Action::STORE_TRUE)
 			;
-			
+
 	rand_sim_grp.add_argument(global_args.sim_random_seed, "-r")
 			.help("Random seed")
 			.default_value("0")
@@ -601,6 +607,10 @@ void get_options(int argc, char** argv) {
         configuration.adder_cin_global = global_args.adder_cin_global;
     }
 
+    if (global_args.shadow_multiplier_size.provenance() == argparse::Provenance::SPECIFIED) {
+        configuration.shadow_multiplier_size = global_args.shadow_multiplier_size;
+    }
+
 	if (configuration.debug_output_path == DEFAULT_OUTPUT) {
 		configuration.debug_output_path = std::string(global_args.sim_directory);
 	}
@@ -631,6 +641,7 @@ void set_default_config()
 	configuration.split_memory_depth = 0;
 
     configuration.adder_cin_global = false;
+    configuration.shadow_multiplier_size = -1;
 
 	/*
 	* Soft logic cutoffs. If a memory or a memory resulting from a split

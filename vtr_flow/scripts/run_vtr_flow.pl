@@ -121,6 +121,7 @@ my $expect_fail = 0;
 my $verbosity = 0;
 my $odin_adder_config_path = "default";
 my $odin_adder_cin_global = "";
+my $odin_shadow_multiplier_size = -1;
 my $use_odin_xml_config = 1;
 my $relax_W_factor = 1.3;
 my $crit_path_router_iterations = undef;
@@ -168,6 +169,8 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 		$keep_intermediate_files = 1;
 	} elsif ( $token eq "-min_hard_mult_size" ) {
 		$min_hard_mult_size = shift(@ARGV);
+    } elsif ( $token eq "-shadow_multiplier_size" ) {
+        $odin_shadow_multiplier_size = shift(@ARGV);
 	} elsif ( $token eq "-min_hard_adder_size" ) {
 		$min_hard_adder_size = shift(@ARGV);
 	} elsif ( $token eq "-verify_rr_graph" ){
@@ -451,6 +454,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 				"-c", $odin_config_file_name,
 				"--adder_type", $odin_adder_config_path,
                 $odin_adder_cin_global,
+                "--shadow_multiplier_size", $odin_shadow_multiplier_size,
 				"-U0");
 		} else {
 			$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
@@ -459,6 +463,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 				"-V", $temp_dir . $circuit_file_name,
 				"-o", $temp_dir . $odin_output_file_name,
                 $odin_adder_cin_global,
+                "--shadow_multiplier_size", $odin_shadow_multiplier_size,
 				"-U0");
 		}
 

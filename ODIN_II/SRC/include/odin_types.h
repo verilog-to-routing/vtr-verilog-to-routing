@@ -102,6 +102,8 @@ struct global_args_t
     // defines if the first cin of an adder/subtractor is connected to a global gnd/vdd
     // or generated using a dummy adder with both inputs set to gnd/vdd
     argparse::ArgValue<bool> adder_cin_global;
+    // define the shadow multiplier size in the soft logic
+    argparse::ArgValue<int> shadow_multiplier_size;
 
 	/////////////////////
 	// For simulation.

@@ -41,6 +41,8 @@ struct config_t
     // defines if the first cin of an adder/subtractor is connected to a global gnd/vdd
     // or generated using a dummy adder with both inputs set to gnd/vdd
     bool adder_cin_global;
+    // size of the shadow multiplier in the soft logic
+    int shadow_multiplier_size;
 
 	// If the memory is smaller than both of these, it will be converted to soft logic.
 	int soft_logic_memory_depth_threshold;
