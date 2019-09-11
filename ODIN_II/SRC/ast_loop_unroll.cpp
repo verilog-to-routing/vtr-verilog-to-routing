@@ -54,7 +54,7 @@ ast_node_t *unroll_for_loop(ast_node_t* node, ast_node_t *parent, int *num_unrol
 
 					if (child->types.identifier != NULL)
 					{
-						local_ref->block_children = (sc_hierarchy **)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy)*(local_ref->num_block_children + 1));
+						local_ref->block_children = (sc_hierarchy **)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy *)*(local_ref->num_block_children + 1));
 						local_ref->block_children[local_ref->num_block_children] = child_hierarchy;
 						local_ref->num_block_children++;
 					
@@ -90,7 +90,7 @@ ast_node_t *unroll_for_loop(ast_node_t* node, ast_node_t *parent, int *num_unrol
 					child_hierarchy->top_node = child;
 					child_hierarchy->parent = local_ref;
 
-					local_ref->block_children = (sc_hierarchy **)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy)*(local_ref->num_block_children + 1));
+					local_ref->block_children = (sc_hierarchy **)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy *)*(local_ref->num_block_children + 1));
 					local_ref->block_children[local_ref->num_block_children] = child_hierarchy;
 					local_ref->num_block_children++;
 
