@@ -250,7 +250,7 @@ class RRGraph {
      * Note that it is ONLY meaningful for CHANX and CHANY, which represents the number of logic blocks that a routing track spans
      * For nodes that are OPIN/IPIN/SOURCE/SINK, the length is supposed to be always 1
      */
-    short node_length(const RRNodeId& node) const; 
+    short node_length(const RRNodeId& node) const;
     /* A short-cut function to get coordinates of a node */
     vtr::Rect<short> node_bounding_box(const RRNodeId& node) const;
 
@@ -398,7 +398,7 @@ class RRGraph {
     /* Check if the graph contains invalid nodes/edges etc. */
     bool is_dirty() const;
 
-  public:                                 /* Echos */
+  public:                                        /* Echos */
     void print_node(const RRNodeId& node) const; /* Print the detailed information of a node */
 
   public: /* Public Checkers */
@@ -497,7 +497,7 @@ class RRGraph {
 
     /* Set the routing cost index for node, see node_cost_index() for details */
     /* TODO the cost index should be changed to a StrongId!!! */
-    void set_node_cost_index(const RRNodeId& node, const short& cost_index); 
+    void set_node_cost_index(const RRNodeId& node, const short& cost_index);
     /* Set the directionality for a node, only applicable to CHANX and CHANY */
     void set_node_direction(const RRNodeId& node, const e_direction& direction);
     /* Set the side for a node, only applicable to OPIN and IPIN */
