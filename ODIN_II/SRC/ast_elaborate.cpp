@@ -2465,7 +2465,7 @@ void update_instance_parameter_table(ast_node_t *instance, STRING_CACHE *instanc
 		if (!is_by_name && param_count > instance_param_table_sc->free)
 		{
 			error_message(NETLIST_ERROR, parameter_override_list->line_number, parameter_override_list->file_number,
-				"There are more parameters (%d) passed into %s than there are specified in the module (%d)!",
+				"There are more parameters (%d) passed into %s than there are specified in the module (%ld)!",
 				param_count, instance->children[1]->children[0]->types.identifier, instance_param_table_sc->free);
 		}
 
