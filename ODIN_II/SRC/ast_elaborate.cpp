@@ -436,7 +436,7 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 						if (to_return->types.identifier != NULL)
 						{
 							// parent's children
-							local_ref->block_children = (sc_hierarchy **)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy)*(local_ref->num_block_children + 1));
+							local_ref->block_children = (sc_hierarchy **)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy *)*(local_ref->num_block_children + 1));
 							local_ref->block_children[local_ref->num_block_children] = new_hierarchy;
 							local_ref->num_block_children++;
 
@@ -559,7 +559,7 @@ ast_node_t *build_hierarchy(ast_node_t *node, ast_node_t * parent, int index, sc
 							if (to_return->types.identifier != NULL)
 							{
 								// parent's children
-								local_ref->block_children = (sc_hierarchy **)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy)*(local_ref->num_block_children + 1));
+								local_ref->block_children = (sc_hierarchy **)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy*)*(local_ref->num_block_children + 1));
 								local_ref->block_children[local_ref->num_block_children] = new_hierarchy;
 								local_ref->num_block_children++;
 
