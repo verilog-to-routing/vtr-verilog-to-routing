@@ -32,37 +32,37 @@ RRGraph::segment_range RRGraph::segments() const {
 }
 
 //Node attributes
-t_rr_type RRGraph::node_type(RRNodeId node) const {
+t_rr_type RRGraph::node_type(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     return node_types_[node];
 }
 
-size_t RRGraph::node_index(RRNodeId node) const {
+size_t RRGraph::node_index(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     return size_t(node);
 }
 
-short RRGraph::node_xlow(RRNodeId node) const {
+short RRGraph::node_xlow(const RRNodeId& node) const {
     return node_bounding_box(node).xmin();
 }
 
-short RRGraph::node_ylow(RRNodeId node) const {
+short RRGraph::node_ylow(const RRNodeId& node) const {
     return node_bounding_box(node).ymin();
 }
 
-short RRGraph::node_xhigh(RRNodeId node) const {
+short RRGraph::node_xhigh(const RRNodeId& node) const {
     return node_bounding_box(node).xmax();
 }
 
-short RRGraph::node_yhigh(RRNodeId node) const {
+short RRGraph::node_yhigh(const RRNodeId& node) const {
     return node_bounding_box(node).ymax();
 }
 
-short RRGraph::node_length(RRNodeId node) const {
+short RRGraph::node_length(const RRNodeId& node) const {
     return std::max(node_xhigh(node) - node_xlow(node), node_yhigh(node) - node_ylow(node));
 }
 
-vtr::Rect<short> RRGraph::node_bounding_box(RRNodeId node) const {
+vtr::Rect<short> RRGraph::node_bounding_box(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     return node_bounding_boxes_[node];
 }
@@ -79,7 +79,7 @@ vtr::Rect<short> RRGraph::node_bounding_box(RRNodeId node) const {
  * For routing tracks in BI_DIRECTION
  * we always use (xhigh, yhigh)
  ***********************************************************************/
-vtr::Point<short> RRGraph::node_start_coordinate(RRNodeId node) const {
+vtr::Point<short> RRGraph::node_start_coordinate(const RRNodeId& node) const {
     /* Make sure we have CHANX or CHANY */
     VTR_ASSERT((CHANX == node_type(node)) || (CHANY == node_type(node)));
 
@@ -103,7 +103,7 @@ vtr::Point<short> RRGraph::node_start_coordinate(RRNodeId node) const {
  * For routing tracks in BI_DIRECTION
  * we always use (xhigh, yhigh)
  ***********************************************************************/
-vtr::Point<short> RRGraph::node_end_coordinate(RRNodeId node) const {
+vtr::Point<short> RRGraph::node_end_coordinate(const RRNodeId& node) const {
     /* Make sure we have CHANX or CHANY */
     VTR_ASSERT((CHANX == node_type(node)) || (CHANY == node_type(node)));
 
@@ -116,66 +116,66 @@ vtr::Point<short> RRGraph::node_end_coordinate(RRNodeId node) const {
     return end_coordinate;
 }
 
-short RRGraph::node_fan_in(RRNodeId node) const {
+short RRGraph::node_fan_in(const RRNodeId& node) const {
     return node_in_edges(node).size();
 }
 
-short RRGraph::node_fan_out(RRNodeId node) const {
+short RRGraph::node_fan_out(const RRNodeId& node) const {
     return node_out_edges(node).size();
 }
 
-short RRGraph::node_capacity(RRNodeId node) const {
+short RRGraph::node_capacity(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     return node_capacities_[node];
 }
 
-short RRGraph::node_ptc_num(RRNodeId node) const {
+short RRGraph::node_ptc_num(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     return node_ptc_nums_[node];
 }
 
-short RRGraph::node_pin_num(RRNodeId node) const {
+short RRGraph::node_pin_num(const RRNodeId& node) const {
     VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN,
                    "Pin number valid only for IPIN/OPIN RR nodes");
     return node_ptc_num(node);
 }
 
-short RRGraph::node_track_num(RRNodeId node) const {
+short RRGraph::node_track_num(const RRNodeId& node) const {
     VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY,
                    "Track number valid only for CHANX/CHANY RR nodes");
     return node_ptc_num(node);
 }
 
-short RRGraph::node_class_num(RRNodeId node) const {
+short RRGraph::node_class_num(const RRNodeId& node) const {
     VTR_ASSERT_MSG(node_type(node) == SOURCE || node_type(node) == SINK, "Class number valid only for SOURCE/SINK RR nodes");
     return node_ptc_num(node);
 }
 
-short RRGraph::node_cost_index(RRNodeId node) const {
+short RRGraph::node_cost_index(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     return node_cost_indices_[node];
 }
 
-e_direction RRGraph::node_direction(RRNodeId node) const {
+e_direction RRGraph::node_direction(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direction valid only for CHANX/CHANY RR nodes");
     return node_directions_[node];
 }
 
-e_side RRGraph::node_side(RRNodeId node) const {
+e_side RRGraph::node_side(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side valid only for IPIN/OPIN RR nodes");
     return node_sides_[node];
 }
 
 /* Get the resistance of a node */
-float RRGraph::node_R(RRNodeId node) const {
+float RRGraph::node_R(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     return node_Rs_[node];
 }
 
 /* Get the capacitance of a node */
-float RRGraph::node_C(RRNodeId node) const {
+float RRGraph::node_C(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     return node_Cs_[node];
 }
@@ -183,7 +183,7 @@ float RRGraph::node_C(RRNodeId node) const {
 /*
  * Get a segment id of a node in rr_graph 
  */
-RRSegmentId RRGraph::node_segment(RRNodeId node) const {
+RRSegmentId RRGraph::node_segment(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
 
     return node_segments_[node];
@@ -195,7 +195,7 @@ RRSegmentId RRGraph::node_segment(RRNodeId node) const {
  * when the rr_graph edges have been partitioned 
  * This can avoid unneccessary walkthrough
  */
-short RRGraph::node_num_configurable_in_edges(RRNodeId node) const {
+short RRGraph::node_num_configurable_in_edges(const RRNodeId& node) const {
     return node_configurable_in_edges(node).size();
 }
 
@@ -205,7 +205,7 @@ short RRGraph::node_num_configurable_in_edges(RRNodeId node) const {
  * when the rr_graph edges have been partitioned 
  * This can avoid unneccessary walkthrough
  */
-short RRGraph::node_num_configurable_out_edges(RRNodeId node) const {
+short RRGraph::node_num_configurable_out_edges(const RRNodeId& node) const {
     return node_configurable_out_edges(node).size();
 }
 
@@ -215,7 +215,7 @@ short RRGraph::node_num_configurable_out_edges(RRNodeId node) const {
  * when the rr_graph edges have been partitioned 
  * This can avoid unneccessary walkthrough
  */
-short RRGraph::node_num_non_configurable_in_edges(RRNodeId node) const {
+short RRGraph::node_num_non_configurable_in_edges(const RRNodeId& node) const {
     return node_non_configurable_in_edges(node).size();
 }
 
@@ -225,14 +225,14 @@ short RRGraph::node_num_non_configurable_in_edges(RRNodeId node) const {
  * when the rr_graph edges have been partitioned 
  * This can avoid unneccessary walkthrough
  */
-short RRGraph::node_num_non_configurable_out_edges(RRNodeId node) const {
+short RRGraph::node_num_non_configurable_out_edges(const RRNodeId& node) const {
     return node_non_configurable_out_edges(node).size();
 }
 
 /* Get the list of configurable edges from the input edges of a given node 
  * And return the range(iterators) of the list 
  */
-RRGraph::edge_range RRGraph::node_configurable_in_edges(RRNodeId node) const {
+RRGraph::edge_range RRGraph::node_configurable_in_edges(const RRNodeId& node) const {
     /* Make sure we will access a valid node */
     VTR_ASSERT_SAFE(valid_node_id(node));
 
@@ -248,7 +248,7 @@ RRGraph::edge_range RRGraph::node_configurable_in_edges(RRNodeId node) const {
 /* Get the list of configurable edges from the input edges of a given node 
  * And return the range(iterators) of the list 
  */
-RRGraph::edge_range RRGraph::node_non_configurable_in_edges(RRNodeId node) const {
+RRGraph::edge_range RRGraph::node_non_configurable_in_edges(const RRNodeId& node) const {
     /* Make sure we will access a valid node */
     VTR_ASSERT_SAFE(valid_node_id(node));
 
@@ -264,7 +264,7 @@ RRGraph::edge_range RRGraph::node_non_configurable_in_edges(RRNodeId node) const
 /* Get the list of configurable edges from the input edges of a given node 
  * And return the range(iterators) of the list 
  */
-RRGraph::edge_range RRGraph::node_configurable_out_edges(RRNodeId node) const {
+RRGraph::edge_range RRGraph::node_configurable_out_edges(const RRNodeId& node) const {
     /* Make sure we will access a valid node */
     VTR_ASSERT_SAFE(valid_node_id(node));
 
@@ -280,7 +280,7 @@ RRGraph::edge_range RRGraph::node_configurable_out_edges(RRNodeId node) const {
 /* Get the list of configurable edges from the input edges of a given node 
  * And return the range(iterators) of the list 
  */
-RRGraph::edge_range RRGraph::node_non_configurable_out_edges(RRNodeId node) const {
+RRGraph::edge_range RRGraph::node_non_configurable_out_edges(const RRNodeId& node) const {
     /* Make sure we will access a valid node */
     VTR_ASSERT_SAFE(valid_node_id(node));
 
@@ -293,38 +293,38 @@ RRGraph::edge_range RRGraph::node_non_configurable_out_edges(RRNodeId node) cons
     return vtr::make_range(begin, end);
 }
 
-RRGraph::edge_range RRGraph::node_out_edges(RRNodeId node) const {
+RRGraph::edge_range RRGraph::node_out_edges(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     return vtr::make_range(node_out_edges_[node].begin(), node_out_edges_[node].end());
 }
 
-RRGraph::edge_range RRGraph::node_in_edges(RRNodeId node) const {
+RRGraph::edge_range RRGraph::node_in_edges(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     return vtr::make_range(node_in_edges_[node].begin(), node_in_edges_[node].end());
 }
 
 //Edge attributes
-size_t RRGraph::edge_index(RREdgeId edge) const {
+size_t RRGraph::edge_index(const RREdgeId& edge) const {
     VTR_ASSERT_SAFE(valid_edge_id(edge));
     return size_t(edge);
 }
 
-RRNodeId RRGraph::edge_src_node(RREdgeId edge) const {
+RRNodeId RRGraph::edge_src_node(const RREdgeId& edge) const {
     VTR_ASSERT_SAFE(valid_edge_id(edge));
     return edge_src_nodes_[edge];
 }
-RRNodeId RRGraph::edge_sink_node(RREdgeId edge) const {
+RRNodeId RRGraph::edge_sink_node(const RREdgeId& edge) const {
     VTR_ASSERT_SAFE(valid_edge_id(edge));
     return edge_sink_nodes_[edge];
 }
 
-RRSwitchId RRGraph::edge_switch(RREdgeId edge) const {
+RRSwitchId RRGraph::edge_switch(const RREdgeId& edge) const {
     VTR_ASSERT_SAFE(valid_edge_id(edge));
     return edge_switches_[edge];
 }
 
 /* Check if the edge is a configurable edge (programmble) */
-bool RRGraph::edge_is_configurable(RREdgeId edge) const {
+bool RRGraph::edge_is_configurable(const RREdgeId& edge) const {
     /* Make sure we have a valid edge id */
     VTR_ASSERT_SAFE(valid_edge_id(edge));
 
@@ -334,13 +334,13 @@ bool RRGraph::edge_is_configurable(RREdgeId edge) const {
 }
 
 /* Check if the edge is a non-configurable edge (hardwired) */
-bool RRGraph::edge_is_non_configurable(RREdgeId edge) const {
+bool RRGraph::edge_is_non_configurable(const RREdgeId& edge) const {
     /* Make sure we have a valid edge id */
     VTR_ASSERT_SAFE(valid_edge_id(edge));
     return !edge_is_configurable(edge);
 }
 
-size_t RRGraph::switch_index(RRSwitchId switch_id) const {
+size_t RRGraph::switch_index(const RRSwitchId& switch_id) const {
     VTR_ASSERT_SAFE(valid_switch_id(switch_id));
     return size_t(switch_id);
 }
@@ -348,12 +348,12 @@ size_t RRGraph::switch_index(RRSwitchId switch_id) const {
 /*
  * Get a switch from the rr_switch list with a given id  
  */
-const t_rr_switch_inf& RRGraph::get_switch(RRSwitchId switch_id) const {
+const t_rr_switch_inf& RRGraph::get_switch(const RRSwitchId& switch_id) const {
     VTR_ASSERT_SAFE(valid_switch_id(switch_id));
     return switches_[switch_id];
 }
 
-size_t RRGraph::segment_index(RRSegmentId segment_id) const {
+size_t RRGraph::segment_index(const RRSegmentId& segment_id) const {
     VTR_ASSERT_SAFE(valid_segment_id(segment_id));
     return size_t(segment_id);
 }
@@ -361,7 +361,7 @@ size_t RRGraph::segment_index(RRSegmentId segment_id) const {
 /*
  * Get a segment from the segment list with a given id  
  */
-const t_segment_inf& RRGraph::get_segment(RRSegmentId segment_id) const {
+const t_segment_inf& RRGraph::get_segment(const RRSegmentId& segment_id) const {
     VTR_ASSERT_SAFE(valid_segment_id(segment_id));
     return segments_[segment_id];
 }
@@ -370,7 +370,7 @@ const t_segment_inf& RRGraph::get_segment(RRSegmentId segment_id) const {
  * Find all the edges interconnecting two nodes
  * Return a vector of the edge ids
  ***********************************************************************/
-std::vector<RREdgeId> RRGraph::find_edges(RRNodeId src_node, RRNodeId sink_node) const {
+std::vector<RREdgeId> RRGraph::find_edges(const RRNodeId& src_node, const RRNodeId& sink_node) const {
     std::vector<RREdgeId> edges;
 
     /* Iterate over the outgoing edges of the source node */
@@ -384,7 +384,7 @@ std::vector<RREdgeId> RRGraph::find_edges(RRNodeId src_node, RRNodeId sink_node)
     return edges;
 }
 
-RRNodeId RRGraph::find_node(short x, short y, t_rr_type type, int ptc, e_side side) const {
+RRNodeId RRGraph::find_node(const short& x, const short& y, const t_rr_type& type, const int& ptc, const e_side& side) const {
     initialize_fast_node_lookup();
     size_t itype = type;
     size_t iside = side;
@@ -428,7 +428,7 @@ RRNodeId RRGraph::find_node(short x, short y, t_rr_type type, int ptc, e_side si
 }
 
 /* Find the channel width (number of tracks) of a channel [x][y] */
-short RRGraph::chan_num_tracks(short x, short y, t_rr_type type) const {
+short RRGraph::chan_num_tracks(const short& x, const short& y, const t_rr_type& type) const {
     /* Must be CHANX or CHANY */
     VTR_ASSERT_MSG(CHANX == type || CHANY == type,
                    "Required node_type to be CHANX or CHANY!");
@@ -460,7 +460,7 @@ short RRGraph::chan_num_tracks(short x, short y, t_rr_type type) const {
 }
 
 /* This function aims to print basic information about a node */
-void RRGraph::print_node(RRNodeId node) const {
+void RRGraph::print_node(const RRNodeId& node) const {
     VTR_LOG("Node id: %d\n", node_index(node));
     VTR_LOG("Node type: %s\n", rr_node_typename[node_type(node)]);
     VTR_LOG("Node xlow: %d\n", node_xlow(node));
@@ -473,7 +473,7 @@ void RRGraph::print_node(RRNodeId node) const {
 }
 
 /* Check if the segment id of a node is in range */
-bool RRGraph::check_node_segment(RRNodeId node) const {
+bool RRGraph::check_node_segment(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     /* Only CHANX and CHANY requires a valid segment id */
     if ((CHANX == node_type(node))
@@ -501,7 +501,7 @@ bool RRGraph::check_node_segments() const {
 }
 
 /* Check if the switch id of a edge is in range */
-bool RRGraph::check_edge_switch(RREdgeId edge) const {
+bool RRGraph::check_edge_switch(const RREdgeId& edge) const {
     VTR_ASSERT_SAFE(valid_edge_id(edge));
     return valid_switch_id(edge_switches_[edge]);
 }
@@ -523,7 +523,7 @@ bool RRGraph::check_edge_switches() const {
 }
 
 /* Check if a node is in the list of source_nodes of a edge */
-bool RRGraph::check_node_is_edge_src(RRNodeId node, RREdgeId edge) const {
+bool RRGraph::check_node_is_edge_src(const RRNodeId& node, const RREdgeId& edge) const {
     /* Assure a valid node id */
     VTR_ASSERT_SAFE(valid_node_id(node));
     /* assure a valid edge id */
@@ -537,7 +537,7 @@ bool RRGraph::check_node_is_edge_src(RRNodeId node, RREdgeId edge) const {
 }
 
 /* Check if a node is in the list of sink_nodes of a edge */
-bool RRGraph::check_node_is_edge_sink(RRNodeId node, RREdgeId edge) const {
+bool RRGraph::check_node_is_edge_sink(const RRNodeId& node, const RREdgeId& edge) const {
     /* Assure a valid node id */
     VTR_ASSERT_SAFE(valid_node_id(node));
     /* assure a valid edge id */
@@ -554,7 +554,7 @@ bool RRGraph::check_node_is_edge_sink(RRNodeId node, RREdgeId edge) const {
  * 1. Check the edge ids are valid
  * 2. Check the node is in the list of edge_sink_node
  */
-bool RRGraph::check_node_in_edges(RRNodeId node) const {
+bool RRGraph::check_node_in_edges(const RRNodeId& node) const {
     bool all_valid = true;
     /* Assure a valid node id */
     VTR_ASSERT_SAFE(valid_node_id(node));
@@ -581,7 +581,7 @@ bool RRGraph::check_node_in_edges(RRNodeId node) const {
  * 1. Check the edge ids are valid
  * 2. Check the node is in the list of edge_source_node
  */
-bool RRGraph::check_node_out_edges(RRNodeId node) const {
+bool RRGraph::check_node_out_edges(const RRNodeId& node) const {
     bool all_valid = true;
     /* Assure a valid node id */
     VTR_ASSERT_SAFE(valid_node_id(node));
@@ -605,7 +605,7 @@ bool RRGraph::check_node_out_edges(RRNodeId node) const {
 }
 
 /* check all the edges of a node */
-bool RRGraph::check_node_edges(RRNodeId node) const {
+bool RRGraph::check_node_edges(const RRNodeId& node) const {
     bool all_valid = true;
 
     if (false == check_node_in_edges(node)) {
@@ -663,12 +663,12 @@ bool RRGraph::check_nodes_edges() const {
 }
 
 /* Check if source node of a edge is valid */
-bool RRGraph::check_edge_src_node(RREdgeId edge) const {
+bool RRGraph::check_edge_src_node(const RREdgeId& edge) const {
     return valid_node_id(edge_src_node(edge));
 }
 
 /* Check if sink node of a edge is valid */
-bool RRGraph::check_edge_sink_node(RREdgeId edge) const {
+bool RRGraph::check_edge_sink_node(const RREdgeId& edge) const {
     return valid_node_id(edge_sink_node(edge));
 }
 
@@ -757,7 +757,7 @@ void RRGraph::clear_dirty() {
 }
 
 /* Reserve a list of nodes */
-void RRGraph::reserve_nodes(int num_nodes) {
+void RRGraph::reserve_nodes(const int& num_nodes) {
     /* Reserve the full set of vectors related to nodes */
     /* Basic information */
     this->node_ids_.reserve(num_nodes);
@@ -779,7 +779,7 @@ void RRGraph::reserve_nodes(int num_nodes) {
 }
 
 /* Reserve a list of edges */
-void RRGraph::reserve_edges(int num_edges) {
+void RRGraph::reserve_edges(const int& num_edges) {
     /* Reserve the full set of vectors related to edges */
     this->edge_ids_.reserve(num_edges);
     this->edge_src_nodes_.reserve(num_edges);
@@ -788,19 +788,19 @@ void RRGraph::reserve_edges(int num_edges) {
 }
 
 /* Reserve a list of switches */
-void RRGraph::reserve_switches(int num_switches) {
+void RRGraph::reserve_switches(const int& num_switches) {
     this->switch_ids_.reserve(num_switches);
     this->switches_.reserve(num_switches);
 }
 
 /* Reserve a list of segments */
-void RRGraph::reserve_segments(int num_segments) {
+void RRGraph::reserve_segments(const int& num_segments) {
     this->segment_ids_.reserve(num_segments);
     this->segments_.reserve(num_segments);
 }
 
 /* Mutators */
-RRNodeId RRGraph::create_node(t_rr_type type) {
+RRNodeId RRGraph::create_node(const t_rr_type& type) {
     //Allocate an ID
     RRNodeId node_id = RRNodeId(node_ids_.size());
 
@@ -831,7 +831,7 @@ RRNodeId RRGraph::create_node(t_rr_type type) {
     return node_id;
 }
 
-RREdgeId RRGraph::create_edge(RRNodeId source, RRNodeId sink, RRSwitchId switch_id) {
+RREdgeId RRGraph::create_edge(const RRNodeId& source, const RRNodeId& sink, const RRSwitchId& switch_id) {
     VTR_ASSERT(valid_node_id(source));
     VTR_ASSERT(valid_node_id(sink));
     VTR_ASSERT(valid_switch_id(switch_id));
@@ -855,7 +855,7 @@ RREdgeId RRGraph::create_edge(RRNodeId source, RRNodeId sink, RRSwitchId switch_
     return edge_id;
 }
 
-RRSwitchId RRGraph::create_switch(t_rr_switch_inf switch_info) {
+RRSwitchId RRGraph::create_switch(const t_rr_switch_inf& switch_info) {
     //Allocate an ID
     RRSwitchId switch_id = RRSwitchId(switch_ids_.size());
     switch_ids_.push_back(switch_id);
@@ -866,7 +866,7 @@ RRSwitchId RRGraph::create_switch(t_rr_switch_inf switch_info) {
 }
 
 /* Create segment */
-RRSegmentId RRGraph::create_segment(t_segment_inf segment_info) {
+RRSegmentId RRGraph::create_segment(const t_segment_inf& segment_info) {
     //Allocate an ID
     RRSegmentId segment_id = RRSegmentId(segment_ids_.size());
     segment_ids_.push_back(segment_id);
@@ -881,7 +881,7 @@ RRSegmentId RRGraph::create_segment(t_segment_inf segment_info) {
  * And then set the RRGraph as polluted (dirty_flag = true)
  * The compress() function should be called to physically remove the node 
  */
-void RRGraph::remove_node(RRNodeId node) {
+void RRGraph::remove_node(const RRNodeId& node) {
     //Invalidate all connected edges
     // TODO: consider removal of self-loop edges?
     for (auto edge : node_in_edges(node)) {
@@ -904,7 +904,7 @@ void RRGraph::remove_node(RRNodeId node) {
  * And then set the RRGraph as polluted (dirty_flag = true)
  * The compress() function should be called to physically remove the edge 
  */
-void RRGraph::remove_edge(RREdgeId edge) {
+void RRGraph::remove_edge(const RREdgeId& edge) {
     RRNodeId src_node = edge_src_node(edge);
     RRNodeId sink_node = edge_sink_node(edge);
 
@@ -929,95 +929,95 @@ void RRGraph::remove_edge(RREdgeId edge) {
     set_dirty();
 }
 
-void RRGraph::set_node_xlow(RRNodeId node, short xlow) {
+void RRGraph::set_node_xlow(const RRNodeId& node, const short& xlow) {
     VTR_ASSERT(valid_node_id(node));
 
     node_bounding_boxes_[node].set_xmin(xlow);
 }
 
-void RRGraph::set_node_ylow(RRNodeId node, short ylow) {
+void RRGraph::set_node_ylow(const RRNodeId& node, const short& ylow) {
     VTR_ASSERT(valid_node_id(node));
 
     node_bounding_boxes_[node].set_ymin(ylow);
 }
 
-void RRGraph::set_node_xhigh(RRNodeId node, short xhigh) {
+void RRGraph::set_node_xhigh(const RRNodeId& node, const short& xhigh) {
     VTR_ASSERT(valid_node_id(node));
 
     node_bounding_boxes_[node].set_xmax(xhigh);
 }
 
-void RRGraph::set_node_yhigh(RRNodeId node, short yhigh) {
+void RRGraph::set_node_yhigh(const RRNodeId& node, const short& yhigh) {
     VTR_ASSERT(valid_node_id(node));
 
     node_bounding_boxes_[node].set_ymax(yhigh);
 }
 
-void RRGraph::set_node_bounding_box(RRNodeId node, vtr::Rect<short> bb) {
+void RRGraph::set_node_bounding_box(const RRNodeId& node, const vtr::Rect<short>& bb) {
     VTR_ASSERT(valid_node_id(node));
 
     node_bounding_boxes_[node] = bb;
 }
 
-void RRGraph::set_node_capacity(RRNodeId node, short capacity) {
+void RRGraph::set_node_capacity(const RRNodeId& node, const short& capacity) {
     VTR_ASSERT(valid_node_id(node));
 
     node_capacities_[node] = capacity;
 }
 
-void RRGraph::set_node_ptc_num(RRNodeId node, short ptc) {
+void RRGraph::set_node_ptc_num(const RRNodeId& node, const short& ptc) {
     VTR_ASSERT(valid_node_id(node));
 
     node_ptc_nums_[node] = ptc;
 }
 
-void RRGraph::set_node_pin_num(RRNodeId node, short pin_id) {
+void RRGraph::set_node_pin_num(const RRNodeId& node, const short& pin_id) {
     VTR_ASSERT(valid_node_id(node));
     VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Pin number valid only for IPIN/OPIN RR nodes");
 
     set_node_ptc_num(node, pin_id);
 }
 
-void RRGraph::set_node_track_num(RRNodeId node, short track_id) {
+void RRGraph::set_node_track_num(const RRNodeId& node, const short& track_id) {
     VTR_ASSERT(valid_node_id(node));
     VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Track number valid only for CHANX/CHANY RR nodes");
 
     set_node_ptc_num(node, track_id);
 }
 
-void RRGraph::set_node_class_num(RRNodeId node, short class_id) {
+void RRGraph::set_node_class_num(const RRNodeId& node, const short& class_id) {
     VTR_ASSERT(valid_node_id(node));
     VTR_ASSERT_MSG(node_type(node) == SOURCE || node_type(node) == SINK, "Class number valid only for SOURCE/SINK RR nodes");
 
     set_node_ptc_num(node, class_id);
 }
 
-void RRGraph::set_node_cost_index(RRNodeId node, short cost_index) {
+void RRGraph::set_node_cost_index(const RRNodeId& node, const short& cost_index) {
     VTR_ASSERT(valid_node_id(node));
     node_cost_indices_[node] = cost_index;
 }
 
-void RRGraph::set_node_direction(RRNodeId node, e_direction direction) {
+void RRGraph::set_node_direction(const RRNodeId& node, const e_direction& direction) {
     VTR_ASSERT(valid_node_id(node));
     VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direct can only be specified on CHANX/CNAY rr nodes");
 
     node_directions_[node] = direction;
 }
 
-void RRGraph::set_node_side(RRNodeId node, e_side side) {
+void RRGraph::set_node_side(const RRNodeId& node, const e_side& side) {
     VTR_ASSERT(valid_node_id(node));
     VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side can only be specified on IPIN/OPIN rr nodes");
 
     node_sides_[node] = side;
 }
 
-void RRGraph::set_node_R(RRNodeId node, float R) {
+void RRGraph::set_node_R(const RRNodeId& node, const float& R) {
     VTR_ASSERT(valid_node_id(node));
 
     node_Rs_[node] = R;
 }
 
-void RRGraph::set_node_C(RRNodeId node, float C) {
+void RRGraph::set_node_C(const RRNodeId& node, const float& C) {
     VTR_ASSERT(valid_node_id(node));
 
     node_Cs_[node] = C;
@@ -1026,7 +1026,7 @@ void RRGraph::set_node_C(RRNodeId node, float C) {
 /*
  * Set a segment id for a node in rr_graph 
  */
-void RRGraph::set_node_segment(RRNodeId node, RRSegmentId segment_id) {
+void RRGraph::set_node_segment(const RRNodeId& node, const RRSegmentId& segment_id) {
     VTR_ASSERT(valid_node_id(node));
 
     /* Only CHANX and CHANY requires a valid segment id */
@@ -1041,7 +1041,7 @@ void RRGraph::set_node_segment(RRNodeId node, RRSegmentId segment_id) {
 /* For a given node in a rr_graph
  * classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) 
  */
-void RRGraph::partition_node_in_edges(RRNodeId node) {
+void RRGraph::partition_node_in_edges(const RRNodeId& node) {
     //Partition the edges so the first set of edges are all configurable, and the later are not
     auto first_non_config_edge = std::partition(node_in_edges_[node].begin(), node_in_edges_[node].end(),
                                                 [&](const RREdgeId edge) { return edge_is_configurable(edge); }); /* Condition to partition edges */
@@ -1060,7 +1060,7 @@ void RRGraph::partition_node_in_edges(RRNodeId node) {
 /* For a given node in a rr_graph
  * classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) 
  */
-void RRGraph::partition_node_out_edges(RRNodeId node) {
+void RRGraph::partition_node_out_edges(const RRNodeId& node) {
     //Partition the edges so the first set of edges are all configurable, and the later are not
     auto first_non_config_edge = std::partition(node_out_edges_[node].begin(), node_out_edges_[node].end(),
                                                 [&](const RREdgeId edge) { return edge_is_configurable(edge); }); /* Condition to partition edges */
@@ -1170,22 +1170,22 @@ bool RRGraph::validate() {
     return success;
 }
 
-bool RRGraph::valid_node_id(RRNodeId node) const {
+bool RRGraph::valid_node_id(const RRNodeId& node) const {
     return size_t(node) < node_ids_.size() && node_ids_[node] == node;
 }
 
-bool RRGraph::valid_edge_id(RREdgeId edge) const {
+bool RRGraph::valid_edge_id(const RREdgeId& edge) const {
     return size_t(edge) < edge_ids_.size() && edge_ids_[edge] == edge;
 }
 
 /* check if a given switch id is valid or not */
-bool RRGraph::valid_switch_id(RRSwitchId switch_id) const {
+bool RRGraph::valid_switch_id(const RRSwitchId& switch_id) const {
     /* TODO: should we check the index of switch[id] matches ? */
     return size_t(switch_id) < switches_.size();
 }
 
 /* check if a given segment id is valid or not */
-bool RRGraph::valid_segment_id(RRSegmentId segment_id) const {
+bool RRGraph::valid_segment_id(const RRSegmentId& segment_id) const {
     /* TODO: should we check the index of segment[id] matches ? */
     return size_t(segment_id) < segments_.size();
 }
