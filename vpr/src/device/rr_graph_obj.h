@@ -177,19 +177,19 @@ class RRGraph {
      *    using a range-based loop is suggested.
      *  -----------------------------------------------------------------
      *    Example: iterate over all the nodes
-     *      for (RRNodeId node : nodes()) {
+     *      for (const RRNodeId& node : nodes()) {
      *        // Do something with each node
      *      }
      *
-     *      for (RREdgeId edge : edges()) {
+     *      for (const RREdgeId& edge : edges()) {
      *        // Do something with each edge
      *      }
      *
-     *      for (RRSwitchId switch : switches()) {
+     *      for (const RRSwitchId& switch : switches()) {
      *        // Do something with each switch
      *      }
      *
-     *      for (RRSegmentId segment : segments()) {
+     *      for (const RRSegmentId& segment : segments()) {
      *        // Do something with each segment
      *      }
      */
@@ -199,13 +199,13 @@ class RRGraph {
     segment_range segments() const;
 
     /* Node-level attributes */
-    size_t node_index(RRNodeId node) const; /* TODO: deprecate this accessor as outside functions should use RRNodeId */
+    size_t node_index(const RRNodeId& node) const; /* TODO: deprecate this accessor as outside functions should use RRNodeId */
 
     /* get the type of a RRGraph node : types of each node, can be channel wires (CHANX or CHANY) or 
      *                                  logic block pins(OPIN or IPIN) or virtual nodes (SOURCE or SINK)
      *                                  see t_rr_type definition for more details
      */
-    t_rr_type node_type(RRNodeId node) const;
+    t_rr_type node_type(const RRNodeId& node) const;
 
     /* Get coordinate of a node. (xlow, xhigh, ylow, yhigh):
      *   For OPIN/IPIN/SOURCE/SINK, xlow = xhigh and ylow = yhigh
@@ -242,19 +242,24 @@ class RRGraph {
      *       |
      *      \|/ <-------(xlow, ylow)
      */
-    short node_xlow(RRNodeId node) const;
-    short node_ylow(RRNodeId node) const;
-    short node_xhigh(RRNodeId node) const;
-    short node_yhigh(RRNodeId node) const;
-    short node_length(RRNodeId node) const; /* Get the length of a routing track. Meaningful for CHANX and CHANY, which spans over a few logic blocks. */
-    vtr::Rect<short> node_bounding_box(RRNodeId node) const;
+    short node_xlow(const RRNodeId& node) const;
+    short node_ylow(const RRNodeId& node) const;
+    short node_xhigh(const RRNodeId& node) const;
+    short node_yhigh(const RRNodeId& node) const;
+    /* Get the length of a routing track. 
+     * Note that it is ONLY meaningful for CHANX and CHANY, which represents the number of logic blocks that a routing track spans
+     * For nodes that are OPIN/IPIN/SOURCE/SINK, the length is supposed to be always 1
+     */
+    short node_length(const RRNodeId& node) const; 
+    /* A short-cut function to get coordinates of a node */
+    vtr::Rect<short> node_bounding_box(const RRNodeId& node) const;
 
     /* Get node starting and ending points in routing channels. 
      * See details in the figure for bounding box 
      * Applicable to routing track nodes only!!! 
      */
-    vtr::Point<short> node_start_coordinate(RRNodeId node) const;
-    vtr::Point<short> node_end_coordinate(RRNodeId node) const;
+    vtr::Point<short> node_start_coordinate(const RRNodeId& node) const;
+    vtr::Point<short> node_end_coordinate(const RRNodeId& node) const;
 
     /* Get the capacity of a node. 
      * Literally, how many nets can be mapped to the node. 
@@ -262,9 +267,9 @@ class RRGraph {
      * large number due to logic equivalent pins
      * See Vaughn Betz's book for more details
      */
-    short node_capacity(RRNodeId node) const;
-    short node_fan_in(RRNodeId node) const;
-    short node_fan_out(RRNodeId node) const;
+    short node_capacity(const RRNodeId& node) const;
+    short node_fan_in(const RRNodeId& node) const;
+    short node_fan_out(const RRNodeId& node) const;
 
     /* Get the ptc_num of a node
      * ptc number is a feature number of each node for indexing by node type
@@ -274,23 +279,23 @@ class RRGraph {
      * SOURCE and SINK: does not matter
      * Due to a useful identifier, ptc_num is used in building fast look-up 
      */
-    short node_ptc_num(RRNodeId node) const;
-    short node_pin_num(RRNodeId node) const;
-    short node_track_num(RRNodeId node) const;
-    short node_class_num(RRNodeId node) const;
+    short node_ptc_num(const RRNodeId& node) const;
+    short node_pin_num(const RRNodeId& node) const;
+    short node_track_num(const RRNodeId& node) const;
+    short node_class_num(const RRNodeId& node) const;
 
     /* Get the index of cost data in the list of cost_indexed_data data structure
      * It contains the routing cost for different nodes in the RRGraph
      * when used in evaluate different routing paths
      * See cross-reference section in this header file for more details
      */
-    short node_cost_index(RRNodeId node) const;
+    short node_cost_index(const RRNodeId& node) const;
 
     /* Get the directionality of a node
      * see node coordinate for details 
      * only matters the routing track nodes (CHANX and CHANY) 
      */
-    e_direction node_direction(RRNodeId node) const;
+    e_direction node_direction(const RRNodeId& node) const;
     /* Get the side where the node physically locates on a logic block. 
      * Mainly applicable to IPIN and OPIN nodes, which locates on the perimeter of logic block 
      * The side should be consistent to <pinlocation> definition in architecture XML
@@ -305,38 +310,38 @@ class RRGraph {
      *            BOTTOM
      *
      */
-    e_side node_side(RRNodeId node) const;
+    e_side node_side(const RRNodeId& node) const;
 
     /* Get resistance of a node, used to built RC tree for timing analysis */
-    float node_R(RRNodeId node) const;
+    float node_R(const RRNodeId& node) const;
 
     /* Get capacitance of a node, used to built RC tree for timing analysis */
-    float node_C(RRNodeId node) const;
+    float node_C(const RRNodeId& node) const;
 
     /* Get segment id of a node, containing the information of the routing
      * segment that the node represents. See more details in the data structure t_segment_inf
      */
-    RRSegmentId node_segment(RRNodeId node) const;
+    RRSegmentId node_segment(const RRNodeId& node) const;
 
     /* Get the number of non-configurable incoming edges to a node */
-    short node_num_configurable_in_edges(RRNodeId node) const;
+    short node_num_configurable_in_edges(const RRNodeId& node) const;
     /* Get the number of non-configurable outgoing edges from a node */
-    short node_num_non_configurable_in_edges(RRNodeId node) const;
+    short node_num_non_configurable_in_edges(const RRNodeId& node) const;
     /* Get the number of configurable output edges of a node */
-    short node_num_configurable_out_edges(RRNodeId node) const;
+    short node_num_configurable_out_edges(const RRNodeId& node) const;
     /* Get the number of non-configurable output edges of a node */
-    short node_num_non_configurable_out_edges(RRNodeId node) const;
+    short node_num_non_configurable_out_edges(const RRNodeId& node) const;
 
     /* Get the range (list) of edges related to a given node */
-    edge_range node_configurable_in_edges(RRNodeId node) const;
-    edge_range node_non_configurable_in_edges(RRNodeId node) const;
-    edge_range node_configurable_out_edges(RRNodeId node) const;
-    edge_range node_non_configurable_out_edges(RRNodeId node) const;
+    edge_range node_configurable_in_edges(const RRNodeId& node) const;
+    edge_range node_non_configurable_in_edges(const RRNodeId& node) const;
+    edge_range node_configurable_out_edges(const RRNodeId& node) const;
+    edge_range node_non_configurable_out_edges(const RRNodeId& node) const;
 
     /* Get a list of edge ids, which are incoming edges to a node */
-    edge_range node_in_edges(RRNodeId node) const;
+    edge_range node_in_edges(const RRNodeId& node) const;
     /* Get a list of edge ids, which are outgoing edges from a node */
-    edge_range node_out_edges(RRNodeId node) const;
+    edge_range node_out_edges(const RRNodeId& node) const;
 
     /* Edge-related attributes 
      * An example to explain the terminology used in RRGraph
@@ -354,48 +359,47 @@ class RRGraph {
      *  +----------+----------------+----------------+
      *
      */
-    size_t edge_index(RREdgeId edge) const; /* TODO: deprecate this accessor as outside functions should use RREdgeId */
+    size_t edge_index(const RREdgeId& edge) const; /* TODO: deprecate this accessor as outside functions should use RREdgeId */
     /* Get the source node which drives a edge */
-    RRNodeId edge_src_node(RREdgeId edge) const;
+    RRNodeId edge_src_node(const RREdgeId& edge) const;
     /* Get the sink node which a edge ends to */
-    RRNodeId edge_sink_node(RREdgeId edge) const;
+    RRNodeId edge_sink_node(const RREdgeId& edge) const;
     /* Get the switch id which a edge represents
      * using switch id, timing and other information can be found
      * for any node-to-node connection
      */
-    RRSwitchId edge_switch(RREdgeId edge) const;
+    RRSwitchId edge_switch(const RREdgeId& edge) const;
     /* Judge if a edge is configurable or not. 
      * A configurable edge is controlled by a programmable memory bit
      * while a non-configurable edge is typically a hard-wired connection
      * FIXME: need a double-check for the definition
      */
-    bool edge_is_configurable(RREdgeId edge) const;
-    bool edge_is_non_configurable(RREdgeId edge) const;
+    bool edge_is_configurable(const RREdgeId& edge) const;
+    bool edge_is_non_configurable(const RREdgeId& edge) const;
 
     /* Switch Info */
-    size_t switch_index(RRSwitchId switch_id) const; /* TODO: deprecate this accessor as outside functions should use RRSwitchId */
+    size_t switch_index(const RRSwitchId& switch_id) const; /* TODO: deprecate this accessor as outside functions should use RRSwitchId */
     /* Get the switch info of a switch used in this RRGraph */
-    const t_rr_switch_inf& get_switch(RRSwitchId switch_id) const;
+    const t_rr_switch_inf& get_switch(const RRSwitchId& switch_id) const;
 
     /* Segment Info */
-    size_t segment_index(RRSegmentId segment_id) const; /* TODO: deprecate this accessor as outside functions should use RRSegmentId */
+    size_t segment_index(const RRSegmentId& segment_id) const; /* TODO: deprecate this accessor as outside functions should use RRSegmentId */
     /* Get the segment info of a routing segment used in this RRGraph */
-    const t_segment_inf& get_segment(RRSegmentId segment_id) const;
+    const t_segment_inf& get_segment(const RRSegmentId& segment_id) const;
 
     /* Utilities */
     /* Find the edges connecting two nodes */
-    std::vector<RREdgeId> find_edges(RRNodeId src_node, RRNodeId sink_node) const;
+    std::vector<RREdgeId> find_edges(const RRNodeId& src_node, const RRNodeId& sink_node) const;
     /* Find a node with given features from internal fast look-up */
-    RRNodeId find_node(short x, short y, t_rr_type type, int ptc, e_side side = NUM_SIDES) const;
-
+    RRNodeId find_node(const short& x, const short& y, const t_rr_type& type, const int& ptc, const e_side& side = NUM_SIDES) const;
     /* Find the number of routing tracks in a routing channel with a given coordinate */
-    short chan_num_tracks(short x, short y, t_rr_type type) const;
+    short chan_num_tracks(const short& x, const short& y, const t_rr_type& type) const;
 
     /* Check if the graph contains invalid nodes/edges etc. */
     bool is_dirty() const;
 
   public:                                 /* Echos */
-    void print_node(RRNodeId node) const; /* Print the detailed information of a node */
+    void print_node(const RRNodeId& node) const; /* Print the detailed information of a node */
 
   public: /* Public Checkers */
     /* Full set checking using listed checking functions*/
@@ -403,9 +407,9 @@ class RRGraph {
 
   public: /* Public Validators */
     /* Validate is the node id does exist in the RRGraph */
-    bool valid_node_id(RRNodeId node) const;
+    bool valid_node_id(const RRNodeId& node) const;
     /* Validate is the edge id does exist in the RRGraph */
-    bool valid_edge_id(RREdgeId edge) const;
+    bool valid_edge_id(const RREdgeId& edge) const;
 
   public: //Validators
     bool valid_node_id(RRNodeId node) const;
@@ -422,10 +426,10 @@ class RRGraph {
      *      create_node();
      *    }
      */
-    void reserve_nodes(int num_nodes);
-    void reserve_edges(int num_edges);
-    void reserve_switches(int num_switches);
-    void reserve_segments(int num_segments);
+    void reserve_nodes(const int& num_nodes);
+    void reserve_edges(const int& num_edges);
+    void reserve_switches(const int& num_switches);
+    void reserve_segments(const int& num_segments);
 
     /* Add new elements (node, edge, switch, etc.) to RRGraph */
     /* Add a node to the RRGraph with a deposited type 
@@ -434,14 +438,14 @@ class RRGraph {
      *   RRNodeId node = create_node();
      *   set_node_xlow(node, 0);
      */
-    RRNodeId create_node(t_rr_type type);
+    RRNodeId create_node(const t_rr_type& type);
     /* Add a edge to the RRGraph, by providing the source and sink node 
      * This function will automatically create a node and
      * configure the nodes and edges in connection   
      */
-    RREdgeId create_edge(RRNodeId source, RRNodeId sink, RRSwitchId switch_id);
-    RRSwitchId create_switch(t_rr_switch_inf switch_info);
-    RRSegmentId create_segment(t_segment_inf segment_info);
+    RREdgeId create_edge(const RRNodeId& source, const RRNodeId& sink, const RRSwitchId& switch_id);
+    RRSwitchId create_switch(const t_rr_switch_inf& switch_info);
+    RRSegmentId create_segment(const t_segment_inf& segment_info);
 
     /* Remove elements from RRGraph
      * this function just turn the nodes and edges to an invalid id without deletion
@@ -453,28 +457,28 @@ class RRGraph {
      *   .. // remove more nodes 
      *   compress()
      */
-    void remove_node(RRNodeId node);
-    void remove_edge(RREdgeId edge);
+    void remove_node(const RRNodeId& node);
+    void remove_edge(const RREdgeId& edge);
 
     /* Set node-level information */
-    void set_node_xlow(RRNodeId node, short xlow);
-    void set_node_ylow(RRNodeId node, short ylow);
-    void set_node_xhigh(RRNodeId node, short xhigh);
-    void set_node_yhigh(RRNodeId node, short yhigh);
+    void set_node_xlow(const RRNodeId& node, const short& xlow);
+    void set_node_ylow(const RRNodeId& node, const short& ylow);
+    void set_node_xhigh(const RRNodeId& node, const short& xhigh);
+    void set_node_yhigh(const RRNodeId& node, const short& yhigh);
     /* This is a short-cut function, set xlow/xhigh/ylow/yhigh for a node
      * Please respect the following to configure the bb object:
      * bb.xmin = xlow, bb.ymin = ylow; bb.xmax = xhigh, bb.ymax = yhigh;
      */
-    void set_node_bounding_box(RRNodeId node, vtr::Rect<short> bb);
+    void set_node_bounding_box(const RRNodeId& node, const vtr::Rect<short>& bb);
 
-    void set_node_capacity(RRNodeId node, short capacity);
+    void set_node_capacity(const RRNodeId& node, const short& capacity);
 
     /* A generic function to set the ptc_num for a node */
-    void set_node_ptc_num(RRNodeId node, short ptc);
+    void set_node_ptc_num(const RRNodeId& node, const short& ptc);
     /* Only applicable to IPIN and OPIN, set the ptc_num for a node, which is the pin id in a logic block,
      * See definition in t_type_descriptor data structure   
      */
-    void set_node_pin_num(RRNodeId node, short pin_id);
+    void set_node_pin_num(const RRNodeId& node, const short& pin_id);
     /* Only applicable to CHANX and CHANY, set the ptc_num for a node, which is the track id in a routing channel,
      * Routing channel is a group of routing tracks, each of which has a unique index
      * An example 
@@ -489,29 +493,30 @@ class RRGraph {
      *    |                  |
      *    +------------------+
      */
-    void set_node_track_num(RRNodeId node, short track_id);
+    void set_node_track_num(const RRNodeId& node, const short& track_id);
     /* Only applicable to SOURCE and SINK, set the ptc_num for a node, which is the class number in a logic block,
      * See definition in t_type_descriptor data structure   
      */
-    void set_node_class_num(RRNodeId node, short class_id);
+    void set_node_class_num(const RRNodeId& node, const short& class_id);
 
     /* Set the routing cost index for node, see node_cost_index() for details */
-    void set_node_cost_index(RRNodeId node, short cost_index);
+    /* TODO the cost index should be changed to a StrongId!!! */
+    void set_node_cost_index(const RRNodeId& node, const short& cost_index); 
     /* Set the directionality for a node, only applicable to CHANX and CHANY */
-    void set_node_direction(RRNodeId node, e_direction direction);
+    void set_node_direction(const RRNodeId& node, const e_direction& direction);
     /* Set the side for a node, only applicable to OPIN and IPIN */
-    void set_node_side(RRNodeId node, e_side side);
+    void set_node_side(const RRNodeId& node, const e_side& side);
     /* Set the RC information for a node */
-    void set_node_R(RRNodeId node, float R);
-    void set_node_C(RRNodeId node, float C);
+    void set_node_R(const RRNodeId& node, const float& R);
+    void set_node_C(const RRNodeId& node, const float& C);
     /* Set the routing segment linked to a node, only applicable to CHANX and CHANY */
-    void set_node_segment(RRNodeId node, RRSegmentId segment_index);
+    void set_node_segment(const RRNodeId& node, const RRSegmentId& segment_index);
 
     /* Edge related */
     /* classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) */
-    void partition_node_in_edges(RRNodeId node);
+    void partition_node_in_edges(const RRNodeId& node);
     /* classify the output edges of each node to be configurable (1st part) and non-configurable (2nd part) */
-    void partition_node_out_edges(RRNodeId node);
+    void partition_node_out_edges(const RRNodeId& node);
     void partition_in_edges();  /* classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) */
     void partition_out_edges(); /* classify the output edges of each node to be configurable (1st part) and non-configurable (2nd part) */
     void partition_edges();     /* classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) */
@@ -527,17 +532,17 @@ class RRGraph {
 
   private: /* Private Checkers */
     /* Node-level checking */
-    bool check_node_segment(RRNodeId node) const;
-    bool check_node_in_edges(RRNodeId node) const;
-    bool check_node_out_edges(RRNodeId node) const;
-    bool check_node_edges(RRNodeId node) const;
+    bool check_node_segment(const RRNodeId& node) const;
+    bool check_node_in_edges(const RRNodeId& node) const;
+    bool check_node_out_edges(const RRNodeId& node) const;
+    bool check_node_edges(const RRNodeId& node) const;
 
     /* Edge-level checking */
-    bool check_node_is_edge_src(RRNodeId node, RREdgeId edge) const;
-    bool check_node_is_edge_sink(RRNodeId node, RREdgeId edge) const;
-    bool check_edge_switch(RREdgeId edge) const;
-    bool check_edge_src_node(RREdgeId edge) const;
-    bool check_edge_sink_node(RREdgeId edge) const;
+    bool check_node_is_edge_src(const RRNodeId& node, const RREdgeId& edge) const;
+    bool check_node_is_edge_sink(const RRNodeId& node, const RREdgeId& edge) const;
+    bool check_edge_switch(const RREdgeId& edge) const;
+    bool check_edge_src_node(const RREdgeId& edge) const;
+    bool check_edge_sink_node(const RREdgeId& edge) const;
 
     /* List-level checking */
     bool check_nodes_in_edges() const;
@@ -576,10 +581,10 @@ class RRGraph {
     bool validate_node_edge_crossrefs() const;
 
     /* Validate switch list */
-    bool valid_switch_id(RRSwitchId switch_id) const;
+    bool valid_switch_id(const RRSwitchId& switch_id) const;
 
     /* Validate segment list */
-    bool valid_segment_id(RRSegmentId segment_id) const;
+    bool valid_segment_id(const RRSegmentId& segment_id) const;
 
     /* Graph Compression related */
     void build_id_maps(vtr::vector<RRNodeId, RRNodeId>& node_id_map,
