@@ -53,7 +53,7 @@ int min_mult = 0;
 int *mults = NULL;
 
 void record_mult_distribution(nnode_t *node);
-void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b, nnode_t *node_a, nnode_t *node_b);
+void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b, nnode_t *node_a, nnode_t *node_b, bool a_swapped, bool b_swapped);
 void init_multiplier_adder(nnode_t *node, nnode_t *parent, int a, int b);
 void split_multiplier_1bit(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *netlist);
 void split_multiplier_a(nnode_t *node, int a0, int a1, int b, netlist_t* netlist);
@@ -636,9 +636,12 @@ void define_mult_function(nnode_t *node, FILE *out)
  *	to original pins, output pins are set to NULL for later connecting
  *	with temp pins to connect cascading multipliers/adders.
  *---------------------------------------------------------------------*/
-void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b, nnode_t *node_a, nnode_t *node_b)
+void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b, nnode_t *node_a, nnode_t *node_b, bool a_swapped, bool b_swapped)
 {
 	int i;
+    bool swap = a < b;
+    auto x = (a_swapped && node_a)? node_a->input_port_sizes[0] : 0;
+    auto y = (b_swapped || !node_b)? 0 : node_b->input_port_sizes[0];
 
 	/* Copy properties from original node */
 	ptr->type = node->type;
@@ -649,8 +652,13 @@ void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int off
 	/* Set new port sizes and parameters */
 	ptr->num_input_port_sizes = 2;
 	ptr->input_port_sizes = (int *)vtr::malloc(2 * sizeof(int));
-	ptr->input_port_sizes[0] = a;
-	ptr->input_port_sizes[1] = b;
+    if (swap) {
+        ptr->input_port_sizes[0] = b;
+        ptr->input_port_sizes[1] = a;
+    } else {
+        ptr->input_port_sizes[0] = a;
+        ptr->input_port_sizes[1] = b;
+    }
 	ptr->num_output_port_sizes = 1;
 	ptr->output_port_sizes = (int *)vtr::malloc(sizeof(int));
 	ptr->output_port_sizes[0] = a + b;
@@ -658,21 +666,39 @@ void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int off
 	/* Set the number of pins and re-locate previous pin entries */
 	ptr->num_input_pins = a + b;
 	ptr->input_pins = (npin_t**)vtr::malloc(sizeof(void *) * (a + b));
-	for (i = 0; i < a; i++)
-	{
-        if (node_a)
-            add_input_pin_to_node(ptr, copy_input_npin(node_a->input_pins[i]), i);
-        else
-            remap_pin_to_new_node(node->input_pins[i+offa], ptr, i);
-	}
+    if (swap) {
+        for (i = 0; i < a; i++)
+        {
+            if (node_a)
+                add_input_pin_to_node(ptr, copy_input_npin(node_a->input_pins[i + x]), i + b);
+            else
+                remap_pin_to_new_node(node->input_pins[i+offa], ptr, i + b);
+        }
 
-	for (i = 0; i < b; i++)
-	{
-        if (node_b)
-            add_input_pin_to_node(ptr, copy_input_npin(node_b->input_pins[i + node_b->input_port_sizes[0]]), i + a);
-        else
-            remap_pin_to_new_node(node->input_pins[i + node->input_port_sizes[0] + offb], ptr, i + a);
-	}
+        for (i = 0; i < b; i++)
+        {
+            if (node_b)
+                add_input_pin_to_node(ptr, copy_input_npin(node_b->input_pins[i + y]), i);
+            else
+                remap_pin_to_new_node(node->input_pins[i + node->input_port_sizes[0] + offb], ptr, i);
+        }
+    } else {
+        for (i = 0; i < a; i++)
+        {
+            if (node_a)
+                add_input_pin_to_node(ptr, copy_input_npin(node_a->input_pins[i + x]), i);
+            else
+                remap_pin_to_new_node(node->input_pins[i+offa], ptr, i);
+        }
+
+        for (i = 0; i < b; i++)
+        {
+            if (node_b)
+                add_input_pin_to_node(ptr, copy_input_npin(node_b->input_pins[i + y]), i + a);
+            else
+                remap_pin_to_new_node(node->input_pins[i + node->input_port_sizes[0] + offb], ptr, i + a);
+        }
+    }
 
 	/* Prep output pins for connecting to cascaded multipliers */
 	ptr->num_output_pins = a + b;
@@ -761,6 +787,8 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
     std::array<int, 2> b_offset = {0, b0};
     std::array<int, 2> b = {b0, b1};
 
+    std::array<std::array<bool, 2>, 2> ab_is_flipped;
+
     // the offset and length of the output of each multiplier
     std::array<std::array<std::pair<int, int>, 2>, 2> ab_off_len;
 
@@ -779,7 +807,8 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
 
             auto node_a = (i > 0)? ab[i-1][j] : nullptr;
             auto node_b = (j > 0)? ab[i][j-1] : nullptr;
-            init_split_multiplier(node, ab[i][j], a_offset[j], a[j], b_offset[i], b[i], node_a, node_b);
+            ab_is_flipped[i][j] = a[j] < b[i];
+            init_split_multiplier(node, ab[i][j], a_offset[j], a[j], b_offset[i], b[i], node_a, node_b, ab_is_flipped[i-1][j], ab_is_flipped[i][j-1]);
 
             ab_off_len[i][j] = {a_offset[j] + b_offset[i], a[j] + b[i] - ((a[j] == 1 || b[i] == 1)? 1 : 0)};
             printf("ab[%zu][%zu]: {%d, %d}\n", i, j, ab_off_len[i][j].first, ab_off_len[i][j].second);
@@ -881,6 +910,8 @@ void split_multiplier_1bit(nnode_t *node, int a0, int b0, int a1, int b1, netlis
     std::array<int, 2> b_offset = {0, b0};
     std::array<int, 2> b = {b0, b1};
 
+    std::array<std::array<bool, 2>, 2> ab_is_flipped;
+
     // the offset and length of the output of each multiplier
     std::array<std::array<std::pair<int, int>, 2>, 2> ab_off_len;
 
@@ -899,7 +930,8 @@ void split_multiplier_1bit(nnode_t *node, int a0, int b0, int a1, int b1, netlis
 
             auto node_a = (i > 0)? ab[i-1][j] : nullptr;
             auto node_b = (j > 0)? ab[i][j-1] : nullptr;
-            init_split_multiplier(node, ab[i][j], a_offset[j], a[j], b_offset[i], b[i], node_a, node_b);
+            ab_is_flipped[i][j] = a[j] < b[i];
+            init_split_multiplier(node, ab[i][j], a_offset[j], a[j], b_offset[i], b[i], node_a, node_b, ab_is_flipped[i-1][j], ab_is_flipped[i][j-1]);
 
             ab_off_len[i][j] = {a_offset[j] + b_offset[i], a[j] + b[i] - ((a[j] == 1 || b[i] == 1)? 1 : 0)};
             mult_list = insert_in_vptr_list(mult_list, ab[i][j]);
@@ -967,6 +999,7 @@ void split_multiplier_9bit(nnode_t *node, int a0, int b0, int a1, int b1, netlis
     std::array<int, 2> b_offset = {0, b0};
     std::array<int, 2> b = {b0, b1};
 
+    std::array<std::array<bool, 2>, 2> ab_is_flipped;
     // the offset and length of the output of each multiplier
     std::array<std::array<std::pair<int, int>, 2>, 2> ab_off_len;
 
@@ -985,7 +1018,8 @@ void split_multiplier_9bit(nnode_t *node, int a0, int b0, int a1, int b1, netlis
 
             auto node_a = (i > 0)? ab[i-1][j] : nullptr;
             auto node_b = (j > 0)? ab[i][j-1] : nullptr;
-            init_split_multiplier(node, ab[i][j], a_offset[j], a[j], b_offset[i], b[i], node_a, node_b);
+            ab_is_flipped[i][j] = a[j] < b[i];
+            init_split_multiplier(node, ab[i][j], a_offset[j], a[j], b_offset[i], b[i], node_a, node_b, ab_is_flipped[i-1][j], ab_is_flipped[i][j-1]);
 
             ab_off_len[i][j] = {a_offset[j] + b_offset[i], a[j] + b[i] - ((a[j] == 1 || b[i] == 1)? 1 : 0)};
             printf("ab[%zu][%zu]: {%d, %d}\n", i, j, ab_off_len[i][j].first, ab_off_len[i][j].second);
@@ -1125,7 +1159,7 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b, netlist_t* netlist
 	a0b->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a0b->name, node->name);
 	strcat(a0b->name, "-0");
-	init_split_multiplier(node, a0b, 0, a0, 0, b, nullptr, nullptr);
+	init_split_multiplier(node, a0b, 0, a0, 0, b, nullptr, nullptr, false, false);
 	mult_list = insert_in_vptr_list(mult_list, a0b);
 
 	/* New node for a1b multiply */
@@ -1133,7 +1167,8 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b, netlist_t* netlist
 	a1b->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a1b->name, node->name);
 	strcat(a1b->name, "-1");
-	init_split_multiplier(node, a1b, a0, a1, 0, b, nullptr, a0b);
+    init_split_multiplier(node, a1b, a0, a1, 0, b, nullptr, a0b, false, false);
+
 	mult_list = insert_in_vptr_list(mult_list, a1b);
 
 	/* New node for the add */
@@ -1214,7 +1249,7 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0, netlist_t* netlist
 	ab0->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(ab0->name, node->name);
 	strcat(ab0->name, "-0");
-	init_split_multiplier(node, ab0, 0, a, 0, b0, nullptr, nullptr);
+	init_split_multiplier(node, ab0, 0, a, 0, b0, nullptr, nullptr, false, false);
 	mult_list = insert_in_vptr_list(mult_list, ab0);
 
 	/* New node for ab1 multiply */
@@ -1222,7 +1257,7 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0, netlist_t* netlist
 	ab1->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(ab1->name, node->name);
 	strcat(ab1->name, "-1");
-	init_split_multiplier(node, ab1, 0, a, b0, b1, ab0, nullptr);
+	init_split_multiplier(node, ab1, 0, a, b0, b1, ab0, nullptr, false, false);
 	mult_list = insert_in_vptr_list(mult_list, ab1);
 
 	/* New node for the add */
