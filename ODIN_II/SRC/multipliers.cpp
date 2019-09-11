@@ -811,7 +811,6 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
             init_split_multiplier(node, ab[i][j], a_offset[j], a[j], b_offset[i], b[i], node_a, node_b, ab_is_flipped[i-1][j], ab_is_flipped[i][j-1]);
 
             ab_off_len[i][j] = {a_offset[j] + b_offset[i], a[j] + b[i] - ((a[j] == 1 || b[i] == 1)? 1 : 0)};
-            printf("ab[%zu][%zu]: {%d, %d}\n", i, j, ab_off_len[i][j].first, ab_off_len[i][j].second);
             mult_list = insert_in_vptr_list(mult_list, ab[i][j]);
         }
     }
@@ -826,12 +825,9 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
     }
 
     int len = ab_off_len[1][0].first - ab_off_len[0][1].first;
-    printf("Width %d, diff %d\n", ab_off_len[0][1].second - len, len);
     // this addition will have a carry out in the worst case, add to input pins and connect then to gnd
-    printf("Adder[0]: a -> %d, b -> %d\n", ab_off_len[0][1].second - len + 1, ab_off_len[1][0].second+1);
 	init_multiplier_adder(adders[0], ab[1][0], ab_off_len[0][1].second - len + 1, ab[1][0]->num_output_pins + 1);
 	/* New node for the BIG add */
-    printf("Adder[1]: a -> %d, b -> %d\n", ab_off_len[0][0].second + ab_off_len[1][1].second - a[0], (int) (adders[0]->num_output_pins + len));
     // the input of the multiplier should be the output of ab00 +1 if a0 or b0 are 1-bit operands
 	init_multiplier_adder(adders[1], adders[0], ab[0][0]->num_output_pins + ab_off_len[1][1].second - a[0], adders[0]->num_output_pins + len);
 
@@ -841,7 +837,6 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
 		connect_nodes(ab[0][1], i, adders[0], j);
     add_input_pin_to_node(adders[0], get_zero_pin(netlist), j);
 
-    printf("Connected input a of adders[0]\n");
 
     // connect inputs to port b of adders[0]
 	for (int i = 0; i < ab_off_len[1][0].second; i++)
@@ -852,8 +847,6 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
     if (a[0] == 1 || b[1] == 1) {
         add_input_pin_to_node(adders[0], get_zero_pin(netlist), ab_off_len[1][0].second + 1 + adders[0]->input_port_sizes[0]);
     }
-
-    printf("Connected input b of adders[0]\n");
 
     // connect inputs to port a of adders[1]
     j = 0;
@@ -1022,7 +1015,6 @@ void split_multiplier_9bit(nnode_t *node, int a0, int b0, int a1, int b1, netlis
             init_split_multiplier(node, ab[i][j], a_offset[j], a[j], b_offset[i], b[i], node_a, node_b, ab_is_flipped[i-1][j], ab_is_flipped[i][j-1]);
 
             ab_off_len[i][j] = {a_offset[j] + b_offset[i], a[j] + b[i] - ((a[j] == 1 || b[i] == 1)? 1 : 0)};
-            printf("ab[%zu][%zu]: {%d, %d}\n", i, j, ab_off_len[i][j].first, ab_off_len[i][j].second);
             mult_list = insert_in_vptr_list(mult_list, ab[i][j]);
         }
     }
@@ -1037,12 +1029,9 @@ void split_multiplier_9bit(nnode_t *node, int a0, int b0, int a1, int b1, netlis
     }
 
     int len = ab_off_len[0][1].first - ab_off_len[1][0].first;
-    printf("Width %d, diff %d\n", ab_off_len[0][1].second - len, len);
     // this addition will have a carry out in the worst case, add to input pins and connect then to gnd
-    printf("Adder[0]: a -> %d, b -> %ld\n", ab_off_len[0][1].second + 1, ab[1][0]->num_output_pins - len + 1);
 	init_multiplier_adder(adders[0], ab[1][0], ab_off_len[0][1].second + 1, ab[1][0]->num_output_pins - len + 1);
 	/* New node for the BIG add */
-    printf("Adder[1]: a -> %ld, b -> %ld\n", ab_off_len[0][0].second + ab[1][1]->num_output_pins - b[0], adders[0]->num_output_pins + len);
     // the input of the multiplier should be the output of ab00 +1 if a0 or b0 are 1-bit operands
 	init_multiplier_adder(adders[1], adders[0], ab_off_len[0][0].second + ab[1][1]->num_output_pins - b[0], adders[0]->num_output_pins + len);
 
@@ -1051,8 +1040,6 @@ void split_multiplier_9bit(nnode_t *node, int a0, int b0, int a1, int b1, netlis
 	for (int i = 0; i < ab_off_len[0][1].second; ++i, ++j)
 		connect_nodes(ab[0][1], i, adders[0], j);
     add_input_pin_to_node(adders[0], get_zero_pin(netlist), j);
-
-    printf("Connected input a of adders[0]\n");
 
     // connect inputs to port b of adders[0]
 	for (int i = len; i < ab_off_len[1][0].second; i++)
@@ -1063,8 +1050,6 @@ void split_multiplier_9bit(nnode_t *node, int a0, int b0, int a1, int b1, netlis
     if (a[0] == 1 || b[1] == 1) {
         add_input_pin_to_node(adders[0], get_zero_pin(netlist), ab_off_len[1][0].second + 1 + adders[0]->input_port_sizes[0] - len);
     }
-
-    printf("Connected input b of adders[0]\n");
 
     // connect inputs to port a of adders[1]
     j = 0;
@@ -1101,11 +1086,9 @@ void split_multiplier_9bit(nnode_t *node, int a0, int b0, int a1, int b1, netlis
     }
 
     for (int i = 0; i < adders[0]->num_input_pins; ++i) {
-        //printf("adders[0]->input[%d]\n", i);
         oassert(adders[0]->input_pins[i]);
     }
     for (int i = 0; i < adders[1]->num_input_pins; ++i) {
-        printf("adders[1]->input[%d]\n", i);
         oassert(adders[1]->input_pins[i]);
     }
 
@@ -1198,12 +1181,10 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b, netlist_t* netlist
 		remap_pin_to_new_node(node->output_pins[i+a0], addsmall, i);
 
     for (i = 0; i < addsmall->num_input_pins; ++i) {
-        printf("addsmall->input[%d]\n", i);
         oassert(addsmall->input_pins[i]);
     }
 
     for (i = 0; i < addsmall->num_output_pins; ++i) {
-        printf("addsmall->output[%d]\n", i);
         oassert(addsmall->output_pins[i]);
     }
 
