@@ -1414,17 +1414,18 @@ void iterate_multipliers(netlist_t *netlist)
 	if (hard_multipliers == NULL)
 		return;
 
-	sizea = hard_multipliers->inputs->size;
-	sizeb = hard_multipliers->inputs->next->size;
-	if (sizea < sizeb)
-	{
-		swap = sizea;
-		sizea = sizeb;
-		sizeb = swap;
-	}
+    int sm_size = configuration.shadow_multiplier_size;
 
 	while (mult_list != NULL)
 	{
+        sizea = hard_multipliers->inputs->size;
+        sizeb = hard_multipliers->inputs->next->size;
+        if (sizea < sizeb)
+        {
+            swap = sizea;
+            sizea = sizeb;
+            sizeb = swap;
+        }
 		node = (nnode_t *)mult_list->data_vptr;
 		mult_list = delete_in_vptr_list(mult_list);
 
@@ -1445,6 +1446,12 @@ void iterate_multipliers(netlist_t *netlist)
 			sizea = sizeb;
 			sizeb = swap;
 		}
+
+        int mult_max = std::max<int>(mula, mulb);
+        if (sm_size != -1 && mult_max <= 9) {
+            sizea = sm_size;
+            sizeb = sm_size;
+        }
 
 		/* Do I need to split the multiplier on both inputs? */
 		if ((mula > sizea) && (mulb > sizeb) && !operand_1bit)
