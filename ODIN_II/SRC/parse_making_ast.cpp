@@ -1775,7 +1775,7 @@ ast_node_t *newFunction(ast_node_t *function_return, ast_node_t *list_of_ports, 
 
 	if(automatic)
 	{
-		warning_message(PARSE_ERROR, line_number, current_parse_file, "ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING ", 0);
+		warning_message(PARSE_ERROR, line_number, current_parse_file, "%s",  "ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING ");
 	}
 
 	if(function_return->children[0]->types.variable.is_integer)
@@ -1866,7 +1866,7 @@ ast_node_t *newTask(char *task_name, ast_node_t *list_of_ports, ast_node_t *list
 
 	if(automatic)
 	{
-		warning_message(PARSE_ERROR, line_number, 0, "ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING", 0);
+		warning_message(PARSE_ERROR, line_number, 0, "%s", "ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING");
 	}
 	
 	/* create a node for this array reference */
