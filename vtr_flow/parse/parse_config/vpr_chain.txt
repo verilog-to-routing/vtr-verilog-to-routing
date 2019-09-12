@@ -5,6 +5,8 @@ num_alms_logic;vpr.out;\s*\(D\) ALMs used for logic \(A\) \+ \(B\)\s*:\s*(\d+)
 num_aluts;vpr.out;\s*Total number of ALUTs used\s*:\s*(\d+)
 num_aluts_logic;vpr.out;\s*\(D\) ALUTs used for logic \(A\) \+ \(B\)\s*:\s*(\d+)
 num_luts;vpr.out;6-LUT\s*:\s*(\d+)
+num_SMs;vpr.out;mult_\dx\d\s*:\s*(\d+);0
+num_alms_unusable;vpr.out;\(E\) ALMs made unusable\s*:\s*(\d*\.?\d*);0
 num_add_blocks;odin.out;The Total Number of Hard Block adders: (\d+)
 max_add_chain_length;odin.out;The Number of Hard Block adders in the Longest Chain: (\d+)
 num_sub_blocks;odin.out;The Total Number of Hard Block subs: (\d+)
