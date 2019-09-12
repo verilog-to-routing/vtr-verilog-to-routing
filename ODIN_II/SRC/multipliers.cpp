@@ -1456,11 +1456,12 @@ void iterate_multipliers(netlist_t *netlist)
 		/* Do I need to split the multiplier on both inputs? */
 		if ((mula > sizea) && (mulb > sizeb) && !operand_1bit)
 		{
-			a0 = mula - sizea;
-			a1 = sizea;
+			a0 = sizea;
+			a1 = mula - sizea;
 			b0 = sizeb;
 			b1 = mulb - sizeb;
             if (a0 == 1 && b1 == 1) {
+                oassert(true);
                 split_multiplier_1bit(node, a0, b0, a1, b1, netlist);
             } else if (a0 > a1) {
                 split_multiplier_9bit(node, a0, b0, a1, b1, netlist);
