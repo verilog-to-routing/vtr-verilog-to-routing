@@ -608,7 +608,7 @@ bool pop_include()
 		current_parse_file = -1;
 	}
 
-	if(has_current_parse_file())
+	if(has_current_parse_file() && current_parse_file >= 0)
 	{
 		my_yylineno = include_file_names[current_parse_file].second;
 
@@ -673,7 +673,7 @@ std::string get_complex_define()
 	if( current_args.size() != current_define->args.size())
 	{
 		error_message(PARSE_ERROR, my_yylineno, current_parse_file, 
-			"define is being used with wrong number of arguments, Expected %d, got %d", 
+			"define is being used with wrong number of arguments, Expected %d, got %ld", 
 			current_args.size(), 
 			current_define->args.size());
 	}
