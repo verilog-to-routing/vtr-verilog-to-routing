@@ -3626,7 +3626,7 @@ static void print_alm_and_alut_count(std::vector<t_pb_type*>& alm_types, std::ve
     std::string alm_name(alm_types[0]->name);
 
     VTR_LOG("\nDetailed %s (ALM-like) count...\n", alm_name.c_str());
-    VTR_LOG("  Total number of ALMs used                    : %d\n", alm_count[0] + alm_count[1] + alm_count[2]);
+    VTR_LOG("  Total number of ALMs used                    : %.1f\n", alm_count[0] + alm_count[1] + alm_count[2] + unusable_alm_count);
     VTR_LOG("  (A) ALMs used for logic and registers        : %d\n", alm_count[0]);
     VTR_LOG("  (B) ALMs used for logic only                 : %d\n", alm_count[1]);
     VTR_LOG("  (C) ALMs used for registers only             : %d\n", alm_count[2]);
@@ -3638,10 +3638,10 @@ static void print_alm_and_alut_count(std::vector<t_pb_type*>& alm_types, std::ve
     std::string alut_name(alut_types[0]->name);
 
     VTR_LOG("\nDetailed %s (ALUT-like) count...\n", alut_name.c_str());
-    VTR_LOG("  Total number of ALUTs used             : %d\n", alut_count[0] + alut_count[1] + alut_count[2]);
-    VTR_LOG("  (A) ALUTs used for logic and registers : %d\n", alut_count[0]);
-    VTR_LOG("  (B) ALUTs used for logic only          : %d\n", alut_count[1]);
-    VTR_LOG("  (C) ALUTs used for registers only      : %d\n", alut_count[2]);
-    VTR_LOG("  (D) ALUTs used for logic (A) + (B)     : %d\n\n", alut_count[0] + alut_count[1]);
+    VTR_LOG("  Total number of ALUTs used                    : %.1f\n", alut_count[0] + alut_count[1] + alut_count[2] + 2*unusable_alm_count);
+    VTR_LOG("  (A) ALUTs used for logic and registers        : %d\n", alut_count[0]);
+    VTR_LOG("  (B) ALUTs used for logic only                 : %d\n", alut_count[1]);
+    VTR_LOG("  (C) ALUTs used for registers only             : %d\n", alut_count[2]);
+    VTR_LOG("  (D) ALUTs used for logic (A) + (B) + unusable : %.1f\n\n", alut_count[0] + alut_count[1] + 2*unusable_alm_count);
 
 }
