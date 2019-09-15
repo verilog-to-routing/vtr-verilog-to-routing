@@ -273,6 +273,7 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                                   const ClusterBlockId cluster_index,
                                                   bool prioritize_transitive_connectivity,
                                                   int transitive_fanout_threshold,
+                                                  const std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types,
                                                   const int feasible_block_array_size);
 
 void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
@@ -291,6 +292,7 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
                                                                 const ClusterBlockId cluster_index,
                                                                 int transitive_fanout_threshold,
+                                                                const std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types,
                                                                 const int feasible_block_array_size);
 
 static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
@@ -303,6 +305,7 @@ static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                                  t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                  vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
                                                  ClusterBlockId cluster_index,
+                                                 const std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types,
                                                  int verbosity);
 
 static void check_clustering();
@@ -334,6 +337,7 @@ static void load_transitive_fanout_candidates(ClusterBlockId cluster_index,
                                               const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                               t_pb_stats* pb_stats,
                                               vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
+                                              const std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types,
                                               int transitive_fanout_threshold);
 
 static std::map<const t_model*, std::vector<t_type_ptr>> identify_primitive_candidate_block_types();
@@ -614,6 +618,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                                                      cur_cluster_placement_stats_ptr,
                                                      clb_inter_blk_nets,
                                                      clb_index,
+                                                     primitive_candidate_block_types,
                                                      packer_opts.pack_verbosity);
             prev_molecule = istart;
             while (next_molecule != nullptr && prev_molecule != next_molecule) {
@@ -665,7 +670,9 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                                                              &num_unrelated_clustering_attempts,
                                                              cur_cluster_placement_stats_ptr,
                                                              clb_inter_blk_nets,
-                                                             clb_index, packer_opts.pack_verbosity);
+                                                             clb_index,
+                                                             primitive_candidate_block_types,
+                                                             packer_opts.pack_verbosity);
                     continue;
                 }
 
@@ -701,6 +708,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                                                          cur_cluster_placement_stats_ptr,
                                                          clb_inter_blk_nets,
                                                          clb_index,
+                                                         primitive_candidate_block_types,
                                                          packer_opts.pack_verbosity);
             }
 
@@ -2088,6 +2096,7 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                                   const ClusterBlockId cluster_index,
                                                   bool prioritize_transitive_connectivity,
                                                   int transitive_fanout_threshold,
+                                                  const std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types,
                                                   const int feasible_block_array_size) {
     /* This routine populates a list of feasible blocks outside the cluster then returns the best one for the list    *
      * not currently in a cluster and satisfies the feasibility     *
@@ -2108,7 +2117,7 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         // 2. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->explore_transitive_fanout) {
             add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets,
-                                                                       cluster_index, transitive_fanout_threshold, feasible_block_array_size);
+                                                                       cluster_index, transitive_fanout_threshold, primitive_candidate_block_types, feasible_block_array_size);
         }
 
         // 3. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
@@ -2124,7 +2133,7 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         // 2. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->explore_transitive_fanout) {
             add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets,
-                                                                       cluster_index, transitive_fanout_threshold, feasible_block_array_size);
+                                                                       cluster_index, transitive_fanout_threshold, primitive_candidate_block_types, feasible_block_array_size);
         }
     }
 
@@ -2238,6 +2247,7 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
                                                                 const ClusterBlockId cluster_index,
                                                                 int transitive_fanout_threshold,
+                                                                const std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types,
                                                                 const int feasible_block_array_size) {
     //TODO: For now, only done by fan-out; should also consider fan-in
 
@@ -2250,6 +2260,7 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                       atom_molecules,
                                       cur_pb->pb_stats,
                                       clb_inter_blk_nets,
+                                      primitive_candidate_block_types,
                                       transitive_fanout_threshold);
     /* Only consider candidates that pass a very simple legality check */
     for (const auto& transitive_candidate : cur_pb->pb_stats->transitive_fanout_candidates) {
@@ -2287,6 +2298,7 @@ static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                                  t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                  vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
                                                  ClusterBlockId cluster_index,
+                                                 const std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types,
                                                  int verbosity) {
     /* Finds the block with the greatest gain that satisfies the
      * input, clock and capacity constraints of a cluster that are
@@ -2300,7 +2312,7 @@ static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
     auto best_molecule = get_highest_gain_molecule(cur_pb, atom_molecules,
                                                    NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets,
                                                    cluster_index, prioritize_transitive_connectivity,
-                                                   transitive_fanout_threshold, feasible_block_array_size);
+                                                   transitive_fanout_threshold, primitive_candidate_block_types, feasible_block_array_size);
 
     /* If no blocks have any gain to the current cluster, the code above      *
      * will not find anything.  However, another atom block with no inputs in *
@@ -3156,8 +3168,11 @@ static void load_transitive_fanout_candidates(ClusterBlockId clb_index,
                                               const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                               t_pb_stats* pb_stats,
                                               vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
+                                              const std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types,
                                               int transitive_fanout_threshold) {
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto type = cluster_ctx.clb_nlist.block_type(clb_index);
 
     // iterate over all the nets that have pins in this cluster
     for (const auto net_id : pb_stats->marked_nets) {
@@ -3177,6 +3192,11 @@ static void load_transitive_fanout_candidates(ClusterBlockId clb_index,
                             auto blk_id = atom_ctx.nlist.pin_block(tpin);
                             // This transitive atom is not packed, score and add
                             if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
+                                const t_model* root_model = atom_ctx.nlist.block_model(blk_id);
+                                auto itr = primitive_candidate_block_types.find(root_model);
+                                auto itr2 = std::find(itr->second.begin(), itr->second.end(), type);
+                                if (itr2 == itr->second.end()) continue;
+
                                 auto& transitive_fanout_candidates = pb_stats->transitive_fanout_candidates;
 
                                 if (pb_stats->gain.count(blk_id) == 0) {
