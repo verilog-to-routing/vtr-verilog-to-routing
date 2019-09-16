@@ -411,10 +411,6 @@ class RRGraph {
     /* Validate is the edge id does exist in the RRGraph */
     bool valid_edge_id(const RREdgeId& edge) const;
 
-  public: //Validators
-    bool valid_node_id(RRNodeId node) const;
-    bool valid_edge_id(RREdgeId edge) const;
-
   public: /* Mutators */
     /* Reserve the lists of nodes, edges, switches etc. to be memory efficient. 
      * This function is mainly used to reserve memory space inside RRGraph,

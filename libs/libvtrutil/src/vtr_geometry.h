@@ -61,14 +61,6 @@ class Point {
     /* Swap x and y values */
     void swap();
 
-  public: //Mutators
-    /* Set x and y values */
-    void set(T x_val, T y_val);
-    void set_x(T x_val);
-    void set_y(T y_val);
-    /* Swap x and y values */
-    void swap();
-
   private:
     T x_;
     T y_;
