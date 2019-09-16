@@ -29,6 +29,8 @@ static void load_rr_indexed_data_T_values(int index_start,
                                           int nodes_per_chan,
                                           const t_rr_node_indices& L_rr_node_indices);
 
+static void fixup_rr_indexed_data_T_values(size_t num_segment);
+
 static std::vector<size_t> count_rr_segment_types();
 
 /******************** Subroutine definitions *********************************/
@@ -115,27 +117,7 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
     load_rr_indexed_data_T_values((CHANX_COST_INDEX_START + num_segment),
                                   num_segment, CHANY, nodes_per_chan, L_rr_node_indices);
 
-    // Scan CHANX/CHANY indexed data and search for uninitialized costs.
-    //
-    // This would occur if a segment ends up only being used as CHANX or a
-    // CHANY, but not both.  If this occurs, then copying the orthogonal
-    // pair's cost data is likely a better choice than leaving it as -1.
-    //
-    // The primary reason for this fixup is to avoid propagating negative
-    // values in cost functions.
-    for (int cost_index = CHANX_COST_INDEX_START;
-         cost_index < CHANX_COST_INDEX_START + 2 * num_segment; cost_index++) {
-        int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
-
-        // Check if this data is uninitialized, but the orthogonal data is
-        // initialized.
-        if (device_ctx.rr_indexed_data[cost_index].T_linear == OPEN && device_ctx.rr_indexed_data[ortho_cost_index].T_linear != OPEN) {
-            // Copy orthogonal data over.
-            device_ctx.rr_indexed_data[cost_index].T_linear = device_ctx.rr_indexed_data[ortho_cost_index].T_linear;
-            device_ctx.rr_indexed_data[cost_index].T_quadratic = device_ctx.rr_indexed_data[ortho_cost_index].T_quadratic;
-            device_ctx.rr_indexed_data[cost_index].C_load = device_ctx.rr_indexed_data[ortho_cost_index].C_load;
-        }
-    }
+    fixup_rr_indexed_data_T_values(num_segment);
 
     load_rr_indexed_data_base_costs(nodes_per_chan, L_rr_node_indices,
                                     base_cost_type);
@@ -447,4 +429,30 @@ static void load_rr_indexed_data_T_values(int index_start,
     free(switch_T_total);
     free(switch_Cinternal_total);
     free(switches_buffered);
+}
+
+static void fixup_rr_indexed_data_T_values(size_t num_segment) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    // Scan CHANX/CHANY indexed data and search for uninitialized costs.
+    //
+    // This would occur if a segment ends up only being used as CHANX or a
+    // CHANY, but not both.  If this occurs, then copying the orthogonal
+    // pair's cost data is likely a better choice than leaving it as -1.
+    //
+    // The primary reason for this fixup is to avoid propagating negative
+    // values in cost functions.
+    for (size_t cost_index = CHANX_COST_INDEX_START;
+         cost_index < CHANX_COST_INDEX_START + 2 * num_segment; cost_index++) {
+        int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
+
+        // Check if this data is uninitialized, but the orthogonal data is
+        // initialized.
+        if (device_ctx.rr_indexed_data[cost_index].T_linear == OPEN && device_ctx.rr_indexed_data[ortho_cost_index].T_linear != OPEN) {
+            // Copy orthogonal data over.
+            device_ctx.rr_indexed_data[cost_index].T_linear = device_ctx.rr_indexed_data[ortho_cost_index].T_linear;
+            device_ctx.rr_indexed_data[cost_index].T_quadratic = device_ctx.rr_indexed_data[ortho_cost_index].T_quadratic;
+            device_ctx.rr_indexed_data[cost_index].C_load = device_ctx.rr_indexed_data[ortho_cost_index].C_load;
+        }
+    }
 }
