@@ -673,7 +673,7 @@ std::string get_complex_define()
 	if( current_args.size() != current_define->args.size())
 	{
 		error_message(PARSE_ERROR, my_yylineno, current_parse_file, 
-			"define is being used with wrong number of arguments, Expected %d, got %ld", 
+			"define is being used with wrong number of arguments, Expected %ld, got %ld", 
 			current_args.size(), 
 			current_define->args.size());
 	}
