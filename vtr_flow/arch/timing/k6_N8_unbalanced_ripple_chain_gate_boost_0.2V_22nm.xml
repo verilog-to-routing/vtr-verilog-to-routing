@@ -19,371 +19,403 @@ Each 2-to-1 mux for adder adds 22ps delay and 9 MWTAs.  2 2-to-1 muxes per adder
 
 Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 
---><architecture>
-  
+-->
+<architecture>
   <!-- ODIN II specific config -->
   <models>
     <model name="multiply">
       <input_ports>
-      <port name="a" combinational_sink_ports="out"/>
-      <port name="b" combinational_sink_ports="out"/>
+        <port name="a" combinational_sink_ports="out"/>
+        <port name="b" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
-      <port name="out"/>
+        <port name="out"/>
       </output_ports>
     </model>
-    
     <model name="single_port_ram">
       <input_ports>
-      <port name="we" clock="clk"/>     <!-- control -->
-      <port name="addr" clock="clk"/>  <!-- address lines -->
-      <port name="data" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
-      <port name="clk" is_clock="1"/>  <!-- memories are often clocked -->
+        <port name="we" clock="clk"/>
+        <!-- control -->
+        <port name="addr" clock="clk"/>
+        <!-- address lines -->
+        <port name="data" clock="clk"/>
+        <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+        <port name="clk" is_clock="1"/>
+        <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
-      <port name="out" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+        <port name="out" clock="clk"/>
+        <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
-
     <model name="dual_port_ram">
       <input_ports>
-      <port name="we1" clock="clk"/>     <!-- write enable -->
-      <port name="we2" clock="clk"/>     <!-- write enable -->
-      <port name="addr1" clock="clk"/>  <!-- address lines -->
-      <port name="addr2" clock="clk"/>  <!-- address lines -->
-      <port name="data1" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
-      <port name="data2" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
-      <port name="clk" is_clock="1"/>  <!-- memories are often clocked -->
+        <port name="we1" clock="clk"/>
+        <!-- write enable -->
+        <port name="we2" clock="clk"/>
+        <!-- write enable -->
+        <port name="addr1" clock="clk"/>
+        <!-- address lines -->
+        <port name="addr2" clock="clk"/>
+        <!-- address lines -->
+        <port name="data1" clock="clk"/>
+        <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+        <port name="data2" clock="clk"/>
+        <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+        <port name="clk" is_clock="1"/>
+        <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
-      <port name="out1" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
-      <port name="out2" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+        <port name="out1" clock="clk"/>
+        <!-- output can be broken down into smaller bit widths minimum size 1 -->
+        <port name="out2" clock="clk"/>
+        <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
-
     <model name="adder">
       <input_ports>
-      <port name="a" combinational_sink_ports="sumout cout"/>     
-      <port name="b" combinational_sink_ports="sumout cout"/>  
-      <port name="cin" combinational_sink_ports="sumout cout"/> 
+        <port name="a" combinational_sink_ports="sumout cout"/>
+        <port name="b" combinational_sink_ports="sumout cout"/>
+        <port name="cin" combinational_sink_ports="sumout cout"/>
       </input_ports>
       <output_ports>
-      <port name="cout"/>
-      <port name="sumout"/>
+        <port name="cout"/>
+        <port name="sumout"/>
       </output_ports>
     </model>
-
   </models>
+  <tiles>
+    <tile name="io" capacity="8" area="0">
+      <equivalent_sites>
+        <site pb_type="io"/>
+      </equivalent_sites>
+      <input name="outpad" num_pins="1"/>
+      <output name="inpad" num_pins="1"/>
+      <clock name="clock" num_pins="1"/>
+      <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.10"/>
+      <pinlocations pattern="custom">
+        <loc side="left">io.outpad io.inpad io.clock</loc>
+        <loc side="top">io.outpad io.inpad io.clock</loc>
+        <loc side="right">io.outpad io.inpad io.clock</loc>
+        <loc side="bottom">io.outpad io.inpad io.clock</loc>
+      </pinlocations>
+    </tile>
+    <tile name="clb">
+      <equivalent_sites>
+        <site pb_type="clb"/>
+      </equivalent_sites>
+      <input name="I1" num_pins="10" equivalent="full"/>
+      <input name="I2" num_pins="10" equivalent="full"/>
+      <input name="I3" num_pins="10" equivalent="full"/>
+      <input name="I4" num_pins="10" equivalent="full"/>
+      <input name="cin" num_pins="1" equivalent="none"/>
+      <output name="O" num_pins="8" equivalent="none"/>
+      <output name="cout" num_pins="1" equivalent="none"/>
+      <clock name="clk" num_pins="1"/>
+      <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.10">
+        <fc_override port_name="cin" fc_type="frac" fc_val="0"/>
+        <fc_override port_name="cout" fc_type="frac" fc_val="0"/>
+      </fc>
+      <pinlocations pattern="custom">
+        <loc side="right">clb.O clb.I1[4:0] clb.I2[4:0] clb.I3[4:0] clb.I4[4:0] clb.clk</loc>
+        <loc side="bottom">clb.O clb.I1[9:5] clb.I2[9:5] clb.I3[9:5] clb.I4[9:5] clb.cout</loc>
+        <loc side="top">clb.cin</loc>
+      </pinlocations>
+    </tile>
+    <tile name="mult_36" height="4" area="396000">
+      <equivalent_sites>
+        <site pb_type="mult_36"/>
+      </equivalent_sites>
+      <input name="a" num_pins="36"/>
+      <input name="b" num_pins="36"/>
+      <output name="out" num_pins="72"/>
+      <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.10"/>
+      <pinlocations pattern="spread"/>
+    </tile>
+    <tile name="memory" height="6" area="548000">
+      <equivalent_sites>
+        <site pb_type="memory"/>
+      </equivalent_sites>
+      <input name="addr1" num_pins="15"/>
+      <input name="addr2" num_pins="15"/>
+      <input name="data" num_pins="64"/>
+      <input name="we1" num_pins="1"/>
+      <input name="we2" num_pins="1"/>
+      <output name="out" num_pins="64"/>
+      <clock name="clk" num_pins="1"/>
+      <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.10"/>
+      <pinlocations pattern="spread"/>
+    </tile>
+  </tiles>
   <!-- ODIN II specific config ends -->
- 
   <!-- Physical descriptions begin -->
   <layout>
     <auto_layout aspect_ratio="1.0">
-        <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
-        <perimeter type="io" priority="100"/>
-        <corners type="EMPTY" priority="101"/>
-        <!--Fill with 'clb'-->
-        <fill type="clb" priority="10"/>
-        <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
-        <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
-        <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
-        <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
-        <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
-        <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
-        </auto_layout>
-</layout>
-
-		<device>
-			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111"/>
-			<area grid_logic_tile_area="12678"/>
-			<chan_width_distr>
-				<x distr="uniform" peak="1.000000"/>
-				<y distr="uniform" peak="1.000000"/>
-			</chan_width_distr>
-			<switch_block type="wilton" fs="3"/>
-		<connection_block input_switch_name="ipin_cblock"/>
-        </device>
-		<switchlist>
-			<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="1.202e-10" mux_trans_size="1.50823" buf_size="22.564"/>
-		<!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
-        <switch type="mux" name="ipin_cblock" R="3272.5" Cout="0." Cin="0.000000e+00" Tdel="8.891e-11" mux_trans_size="1.256" buf_size="auto"/>
-        </switchlist>
-		<segmentlist>
-			<segment freq="1.000000" length="4" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
-			<mux name="0"/>
-			<sb type="pattern">1 1 1 1 1</sb>
-			<cb type="pattern">1 1 1 1</cb>
-			</segment>
-		</segmentlist>
-
-
-    <directlist>
-      <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
-    </directlist>
-
-	  <complexblocklist>
-       <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
-      <pb_type name="io" capacity="8" area="0">
-        <input name="outpad" num_pins="1"/>
-        <output name="inpad" num_pins="1"/>
-        <clock name="clock" num_pins="1"/>
-
-        <!-- IOs can operate as either inputs or outputs -->
-        <mode name="inpad">
-          <pb_type name="inpad" blif_model=".input" num_pb="1">
-            <output name="inpad" num_pins="1"/>
-          </pb_type>
-          <interconnect>
-            <direct name="inpad" input="inpad.inpad" output="io.inpad">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+      <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
+      <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
+    </auto_layout>
+  </layout>
+  <device>
+    <sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111"/>
+    <area grid_logic_tile_area="12678"/>
+    <chan_width_distr>
+      <x distr="uniform" peak="1.000000"/>
+      <y distr="uniform" peak="1.000000"/>
+    </chan_width_distr>
+    <switch_block type="wilton" fs="3"/>
+    <connection_block input_switch_name="ipin_cblock"/>
+  </device>
+  <switchlist>
+    <switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="1.202e-10" mux_trans_size="1.50823" buf_size="22.564"/>
+    <!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
+    <switch type="mux" name="ipin_cblock" R="3272.5" Cout="0." Cin="0.000000e+00" Tdel="8.891e-11" mux_trans_size="1.256" buf_size="auto"/>
+  </switchlist>
+  <segmentlist>
+    <segment freq="1.000000" length="4" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
+      <mux name="0"/>
+      <sb type="pattern">1 1 1 1 1</sb>
+      <cb type="pattern">1 1 1 1</cb>
+    </segment>
+  </segmentlist>
+  <directlist>
+    <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+  </directlist>
+  <complexblocklist>
+    <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
+    <pb_type name="io">
+      <input name="outpad" num_pins="1"/>
+      <output name="inpad" num_pins="1"/>
+      <clock name="clock" num_pins="1"/>
+      <!-- IOs can operate as either inputs or outputs -->
+      <mode name="inpad">
+        <pb_type name="inpad" blif_model=".input" num_pb="1">
+          <output name="inpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct name="inpad" input="inpad.inpad" output="io.inpad">
             <delay_constant max="4.243e-11" in_port="inpad.inpad" out_port="io.inpad"/>
-            </direct>
-          </interconnect>
-      
-        </mode>
-        <mode name="outpad">
-          <pb_type name="outpad" blif_model=".output" num_pb="1">
-            <input name="outpad" num_pins="1"/>
-          </pb_type>
-          <interconnect>
-            <direct name="outpad" input="io.outpad" output="outpad.outpad">
+          </direct>
+        </interconnect>
+      </mode>
+      <mode name="outpad">
+        <pb_type name="outpad" blif_model=".output" num_pb="1">
+          <input name="outpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct name="outpad" input="io.outpad" output="outpad.outpad">
             <delay_constant max="1.394e-11" in_port="io.outpad" out_port="outpad.outpad"/>
-            </direct>
-          </interconnect>
-        </mode>
-
-        <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.10"/>
-
-        <!-- IOs go on the periphery of the FPGA, for consistency, 
+          </direct>
+        </interconnect>
+      </mode>
+      <!-- IOs go on the periphery of the FPGA, for consistency, 
           make it physically equivalent on all sides so that only one definition of I/Os is needed.
           If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA
         -->
-        <pinlocations pattern="custom">
-          <loc side="left">io.outpad io.inpad io.clock</loc>
-          <loc side="top">io.outpad io.inpad io.clock</loc>
-          <loc side="right">io.outpad io.inpad io.clock</loc>
-          <loc side="bottom">io.outpad io.inpad io.clock</loc>
-        </pinlocations>
-
-        </pb_type>
-
-      <!-- Logic cluster definition -->
-      <pb_type name="clb">
-        <input name="I1" num_pins="10" equivalent="full"/>
-        <input name="I2" num_pins="10" equivalent="full"/>
-        <input name="I3" num_pins="10" equivalent="full"/>
-        <input name="I4" num_pins="10" equivalent="full"/>
-        <input name="cin" num_pins="1" equivalent="none"/>
-        <output name="O" num_pins="8" equivalent="none"/>
-        <output name="cout" num_pins="1" equivalent="none"/>
-        <clock name="clk" num_pins="1"/>
-
-        <!-- Basic logic element definition -->
-		<pb_type name="ble6" num_pb="8">
-		  <input name="in_A" num_pins="1"/>
-		  <input name="in_B" num_pins="1"/>
-		  <input name="in_C" num_pins="1"/>
-		  <input name="in_D" num_pins="1"/>
-		  <input name="in_E" num_pins="1"/>
-		  <input name="in_F" num_pins="1"/>
-      <input name="cin" num_pins="1"/>
-		  <output name="out_local" num_pins="1"/>
-		  <output name="out_routing" num_pins="1"/>
-      <output name="cout" num_pins="1"/>
-		  <clock name="clk" num_pins="1"/> 
-      <pb_type name="arithlut" num_pb="1">
-        <input name="in" num_pins="6"/>
+    </pb_type>
+    <!-- Logic cluster definition -->
+    <pb_type name="clb">
+      <input name="I1" num_pins="10" equivalent="full"/>
+      <input name="I2" num_pins="10" equivalent="full"/>
+      <input name="I3" num_pins="10" equivalent="full"/>
+      <input name="I4" num_pins="10" equivalent="full"/>
+      <input name="cin" num_pins="1" equivalent="none"/>
+      <output name="O" num_pins="8" equivalent="none"/>
+      <output name="cout" num_pins="1" equivalent="none"/>
+      <clock name="clk" num_pins="1"/>
+      <!-- Basic logic element definition -->
+      <pb_type name="ble6" num_pb="8">
+        <input name="in_A" num_pins="1"/>
+        <input name="in_B" num_pins="1"/>
+        <input name="in_C" num_pins="1"/>
+        <input name="in_D" num_pins="1"/>
+        <input name="in_E" num_pins="1"/>
+        <input name="in_F" num_pins="1"/>
         <input name="cin" num_pins="1"/>
-        <output name="out" num_pins="1"/>
+        <output name="out_local" num_pins="1"/>
+        <output name="out_routing" num_pins="1"/>
         <output name="cout" num_pins="1"/>
-        <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut">
-          <input name="in" num_pins="6" port_class="lut_in"/>
-          <!-- I average out the delays because VPR does not to LUT balancing
-          -->
-          <output name="out" num_pins="1" port_class="lut_out"/>
-          <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
-			1.43259e-10
-			1.43259e-10
-			1.43259e-10
-			1.43259e-10
-			1.43259e-10
-			1.43259e-10
-          </delay_matrix>      
-        </pb_type>
-        <pb_type name="wrapadd" num_pb="1">
-          <input name="a" num_pins="1"/>
-          <input name="b" num_pins="1"/>
+        <clock name="clk" num_pins="1"/>
+        <pb_type name="arithlut" num_pb="1">
+          <input name="in" num_pins="6"/>
           <input name="cin" num_pins="1"/>
-          <output name="sumout" num_pins="1"/>
+          <output name="out" num_pins="1"/>
           <output name="cout" num_pins="1"/>
-
-          <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
+          <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut">
+            <input name="in" num_pins="6" port_class="lut_in"/>
+            <!-- I average out the delays because VPR does not to LUT balancing
+          -->
+            <output name="out" num_pins="1" port_class="lut_out"/>
+            <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
+			1.43259e-10
+			1.43259e-10
+			1.43259e-10
+			1.43259e-10
+			1.43259e-10
+			1.43259e-10
+          </delay_matrix>
+          </pb_type>
+          <pb_type name="wrapadd" num_pb="1">
             <input name="a" num_pins="1"/>
             <input name="b" num_pins="1"/>
             <input name="cin" num_pins="1"/>
             <output name="sumout" num_pins="1"/>
             <output name="cout" num_pins="1"/>
-            <!-- Carry link delays included in cin->cout delay -->
-            <delay_constant max="83e-12" in_port="adder.a" out_port="adder.sumout"/>
-            <delay_constant max="83e-12" in_port="adder.b" out_port="adder.sumout"/>
-            <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout"/>
-            <delay_constant max="56e-12" in_port="adder.a" out_port="adder.cout"/>
-            <delay_constant max="56e-12" in_port="adder.b" out_port="adder.cout"/>
-            <delay_constant max="11e-12" in_port="adder.cin" out_port="adder.cout"/>
+            <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
+              <input name="a" num_pins="1"/>
+              <input name="b" num_pins="1"/>
+              <input name="cin" num_pins="1"/>
+              <output name="sumout" num_pins="1"/>
+              <output name="cout" num_pins="1"/>
+              <!-- Carry link delays included in cin->cout delay -->
+              <delay_constant max="83e-12" in_port="adder.a" out_port="adder.sumout"/>
+              <delay_constant max="83e-12" in_port="adder.b" out_port="adder.sumout"/>
+              <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout"/>
+              <delay_constant max="56e-12" in_port="adder.a" out_port="adder.cout"/>
+              <delay_constant max="56e-12" in_port="adder.b" out_port="adder.cout"/>
+              <delay_constant max="11e-12" in_port="adder.cin" out_port="adder.cout"/>
+            </pb_type>
+            <interconnect>
+              <direct name="direct1" input="adder.sumout" output="wrapadd.sumout">
+                <pack_pattern name="chain" in_port="adder.sumout" out_port="wrapadd.sumout"/>
+                <delay_constant max="2.2e-11" in_port="adder.sumout" out_port="wrapadd.sumout"/>
+              </direct>
+              <direct name="direct2" input="wrapadd.cin" output="adder.cin">
+                <pack_pattern name="chain" in_port="wrapadd.cin" out_port="adder.cin"/>
+              </direct>
+              <direct name="direct3" input="adder.cout" output="wrapadd.cout">
+                <pack_pattern name="chain" in_port="adder.cout" out_port="wrapadd.cout"/>
+              </direct>
+              <!-- adder inputs are logically equilvalent, model using full xbar -->
+              <complete name="complete1" input="wrapadd.a wrapadd.b" output="adder.a adder.b"/>
+            </interconnect>
           </pb_type>
           <interconnect>
-            <direct name="direct1" input="adder.sumout" output="wrapadd.sumout">
-              <pack_pattern name="chain" in_port="adder.sumout" out_port="wrapadd.sumout"/>
-              <delay_constant max="2.2e-11" in_port="adder.sumout" out_port="wrapadd.sumout"/>
+            <direct name="direct1" input="arithlut.in[5:0]" output="lut6[0:0].in"/>
+            <direct name="direct2" input="lut6.out" output="arithlut.out">
+              <pack_pattern name="ble6" in_port="lut6.out" out_port="arithlut.out"/>
+              <delay_constant max="2.2e-11" in_port="lut6.out" out_port="arithlut.out"/>
             </direct>
-            <direct name="direct2" input="wrapadd.cin" output="adder.cin">
-              <pack_pattern name="chain" in_port="wrapadd.cin" out_port="adder.cin"/>
+            <direct name="direct3" input="wrapadd.sumout" output="arithlut.out">
+              <pack_pattern name="chain" in_port="wrapadd.sumout" out_port="arithlut.out"/>
             </direct>
-            <direct name="direct3" input="adder.cout" output="wrapadd.cout">
-              <pack_pattern name="chain" in_port="adder.cout" out_port="wrapadd.cout"/>
+            <direct name="direct4" input="arithlut.cin" output="wrapadd.cin">
+              <pack_pattern name="chain" in_port="arithlut.cin" out_port="wrapadd.cin"/>
             </direct>
-
-            <!-- adder inputs are logically equilvalent, model using full xbar -->
-            <complete name="complete1" input="wrapadd.a wrapadd.b" output="adder.a adder.b"/>            
+            <direct name="direct5" input="wrapadd.cout" output="arithlut.cout">
+              <pack_pattern name="chain" in_port="wrapadd.cout" out_port="arithlut.cout"/>
+            </direct>
+            <direct name="direct6" input="lut6.out" output="wrapadd.a"/>
+            <!-- Need full feedback flexibility for adder, LUT input pins 0 and 2 satisfy this requirement -->
+            <mux name="mux1" input="arithlut.in[2:2] arithlut.in[0:0]" output="wrapadd.b">
+              <delay_constant max="2.2e-11" in_port="arithlut.in[2:2]" out_port="wrapadd.b"/>
+              <delay_constant max="2.2e-11" in_port="arithlut.in[0:0]" out_port="wrapadd.b"/>
+            </mux>
           </interconnect>
-
         </pb_type>
-        
+        <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+          <input name="D" num_pins="1" port_class="D"/>
+          <output name="Q" num_pins="1" port_class="Q"/>
+          <clock name="clk" num_pins="1" port_class="clock"/>
+          <T_setup value="1.891e-11" port="ff.D" clock="clk"/>
+          <T_clock_to_Q max="6.032e-11" port="ff.Q" clock="clk"/>
+        </pb_type>
         <interconnect>
-          <direct name="direct1" input="arithlut.in[5:0]" output="lut6[0:0].in"/>
-          <direct name="direct2" input="lut6.out" output="arithlut.out">
-            <pack_pattern name="ble6" in_port="lut6.out" out_port="arithlut.out"/>
-            <delay_constant max="2.2e-11" in_port="lut6.out" out_port="arithlut.out"/>
+          <!-- BLE input to LUT input direct connections and delays -->
+          <direct name="direct1" input="ble6.in_A" output="arithlut.in[0:0]">
+			</direct>
+          <direct name="direct2" input="ble6.in_B" output="arithlut.in[1:1]">
+			</direct>
+          <direct name="direct3" input="ble6.in_D" output="arithlut.in[3:3]">
+			</direct>
+          <direct name="direct4" input="ble6.in_E" output="arithlut.in[4:4]">
+			</direct>
+          <direct name="direct5" input="ble6.in_F" output="arithlut.in[5:5]">
+			</direct>
+          <direct name="direct6" input="ble6.cin" output="arithlut.cin">
+            <pack_pattern name="chain" in_port="ble6.cin" out_port="arithlut.cin"/>
           </direct>
-          <direct name="direct3" input="wrapadd.sumout" output="arithlut.out">
-            <pack_pattern name="chain" in_port="wrapadd.sumout" out_port="arithlut.out"/>
+          <direct name="direct7" input="arithlut.cout" output="ble6.cout">
+            <pack_pattern name="chain" in_port="arithlut.cout" out_port="ble6.cout"/>
           </direct>
-          <direct name="direct4" input="arithlut.cin" output="wrapadd.cin">
-            <pack_pattern name="chain" in_port="arithlut.cin" out_port="wrapadd.cin"/>
-          </direct>
-          <direct name="direct5" input="wrapadd.cout" output="arithlut.cout">
-            <pack_pattern name="chain" in_port="wrapadd.cout" out_port="arithlut.cout"/>
-          </direct>
-          <direct name="direct6" input="lut6.out" output="wrapadd.a"/>
-
-          
-          <!-- Need full feedback flexibility for adder, LUT input pins 0 and 2 satisfy this requirement -->
-          <mux name="mux1" input="arithlut.in[2:2] arithlut.in[0:0]" output="wrapadd.b">
-            <delay_constant max="2.2e-11" in_port="arithlut.in[2:2]" out_port="wrapadd.b"/>
-            <delay_constant max="2.2e-11" in_port="arithlut.in[0:0]" out_port="wrapadd.b"/>
+          <!--Clock -->
+          <direct name="direct8" input="ble6.clk" output="ff.clk"/>
+          <!-- Register feedback mux -->
+          <mux name="mux1" input="ble6.in_C ff.Q" output="arithlut.in[2:2]">
+            <delay_constant max="0.392e-10" in_port="ble6.in_C" out_port="arithlut.in[2:2]"/>
+            <delay_constant max="0.392e-10" in_port="ff.Q" out_port="arithlut.in[2:2]"/>
+          </mux>
+          <!-- FF input selection mux -->
+          <mux name="mux2" input="arithlut.out ble6.in_C" output="ff.D">
+            <delay_constant max="1.33594e-11" in_port="arithlut.out" out_port="ff.D"/>
+            <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff.D"/>
+            <pack_pattern name="ble6" in_port="arithlut.out" out_port="ff.D"/>
+            <pack_pattern name="chain" in_port="arithlut.out" out_port="ff.D"/>
+          </mux>
+          <!-- BLE output (local) -->
+          <mux name="mux3" input="ff.Q arithlut.out" output="ble6.out_local">
+            <delay_constant max="9.514e-11" in_port="ff.Q" out_port="ble6.out_local"/>
+            <delay_constant max="9.514e-11" in_port="arithlut.out" out_port="ble6.out_local"/>
+          </mux>
+          <!-- BLE output (routing 1) -->
+          <mux name="mux4" input="ff.Q arithlut.out" output="ble6.out_routing[0:0]">
+            <delay_constant max="3.211e-11" in_port="ff.Q" out_port="ble6.out_routing[0:0]"/>
+            <delay_constant max="3.211e-11" in_port="arithlut.out" out_port="ble6.out_routing[0:0]"/>
           </mux>
         </interconnect>
       </pb_type>
-
-		  <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
-        <input name="D" num_pins="1" port_class="D"/>
-        <output name="Q" num_pins="1" port_class="Q"/>
-        <clock name="clk" num_pins="1" port_class="clock"/>
-        <T_setup value="1.891e-11" port="ff.D" clock="clk"/>
-        <T_clock_to_Q max="6.032e-11" port="ff.Q" clock="clk"/>
-		  </pb_type>
-
-		  <interconnect>
-			<!-- BLE input to LUT input direct connections and delays -->
-			<direct name="direct1" input="ble6.in_A" output="arithlut.in[0:0]">
-			</direct>
-			<direct name="direct2" input="ble6.in_B" output="arithlut.in[1:1]">
-			</direct>
-			<direct name="direct3" input="ble6.in_D" output="arithlut.in[3:3]">
-			</direct>
-			<direct name="direct4" input="ble6.in_E" output="arithlut.in[4:4]">
-			</direct>
-			<direct name="direct5" input="ble6.in_F" output="arithlut.in[5:5]">
-			</direct>
-      <direct name="direct6" input="ble6.cin" output="arithlut.cin">
-        <pack_pattern name="chain" in_port="ble6.cin" out_port="arithlut.cin"/>
-      </direct>
-      <direct name="direct7" input="arithlut.cout" output="ble6.cout">
-        <pack_pattern name="chain" in_port="arithlut.cout" out_port="ble6.cout"/>
-      </direct>
-			<!--Clock -->  
-			<direct name="direct8" input="ble6.clk" output="ff.clk"/>			
-	        <!-- Register feedback mux -->   
-	    <mux name="mux1" input="ble6.in_C ff.Q" output="arithlut.in[2:2]">
-			  <delay_constant max="0.392e-10" in_port="ble6.in_C" out_port="arithlut.in[2:2]"/>
-			  <delay_constant max="0.392e-10" in_port="ff.Q" out_port="arithlut.in[2:2]"/>  
-			</mux>
-	        <!-- FF input selection mux -->
-	    <mux name="mux2" input="arithlut.out ble6.in_C" output="ff.D">
-			  <delay_constant max="1.33594e-11" in_port="arithlut.out" out_port="ff.D"/>
-			  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff.D"/>
-        <pack_pattern name="ble6" in_port="arithlut.out" out_port="ff.D"/>
-        <pack_pattern name="chain" in_port="arithlut.out" out_port="ff.D"/>
-			</mux>
-	        <!-- BLE output (local) -->                  
-			<mux name="mux3" input="ff.Q arithlut.out" output="ble6.out_local">
-			  <delay_constant max="9.514e-11" in_port="ff.Q" out_port="ble6.out_local"/>
-	      <delay_constant max="9.514e-11" in_port="arithlut.out" out_port="ble6.out_local"/>
-			</mux>
-	        <!-- BLE output (routing 1) --> 
-	    <mux name="mux4" input="ff.Q arithlut.out" output="ble6.out_routing[0:0]">
-	      <delay_constant max="3.211e-11" in_port="ff.Q" out_port="ble6.out_routing[0:0]"/>
-			  <delay_constant max="3.211e-11" in_port="arithlut.out" out_port="ble6.out_routing[0:0]"/>
-			</mux>
-		  </interconnect>
-		</pb_type>
-
-        
-        <interconnect>
-          <!-- 50% sparsely populated local routing -->
-          <complete name="lutA" input="clb.I4 clb.I3 ble6[1:0].out_local ble6[3:2].out_local" output="ble6[7:0].in_A">
-            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_A"/>
-            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_A"/>
+      <interconnect>
+        <!-- 50% sparsely populated local routing -->
+        <complete name="lutA" input="clb.I4 clb.I3 ble6[1:0].out_local ble6[3:2].out_local" output="ble6[7:0].in_A">
+          <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_A"/>
+          <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_A"/>
+        </complete>
+        <complete name="lutB" input="clb.I3 clb.I2 ble6[3:2].out_local ble6[5:4].out_local" output="ble6[7:0].in_B">
+          <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_B"/>
+          <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_B"/>
+        </complete>
+        <complete name="lutC" input="clb.I2 clb.I1 ble6[5:4].out_local ble6[7:6].out_local" output="ble6[7:0].in_C">
+          <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_C"/>
+          <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_C"/>
+        </complete>
+        <complete name="lutD" input="clb.I4 clb.I2 ble6[1:0].out_local ble6[5:4].out_local" output="ble6[7:0].in_D">
+          <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_D"/>
+          <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_D"/>
+        </complete>
+        <complete name="lutE" input="clb.I3 clb.I1 ble6[3:2].out_local ble6[7:6].out_local" output="ble6[7:0].in_E">
+          <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_E"/>
+          <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_E"/>
+        </complete>
+        <complete name="lutF" input="clb.I4 clb.I1 ble6[1:0].out_local ble6[7:6].out_local" output="ble6[7:0].in_F">
+          <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_F"/>
+          <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_F"/>
+        </complete>
+        <complete name="clks" input="clb.clk" output="ble6[7:0].clk">
           </complete>
-          <complete name="lutB" input="clb.I3 clb.I2 ble6[3:2].out_local ble6[5:4].out_local" output="ble6[7:0].in_B">
-            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_B"/>
-            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_B"/>
-            </complete>
-          <complete name="lutC" input="clb.I2 clb.I1 ble6[5:4].out_local ble6[7:6].out_local" output="ble6[7:0].in_C">
-            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_C"/>
-            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_C"/>
-            </complete>
-          <complete name="lutD" input="clb.I4 clb.I2 ble6[1:0].out_local ble6[5:4].out_local" output="ble6[7:0].in_D">
-            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_D"/>
-            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_D"/>
-            </complete>
-          <complete name="lutE" input="clb.I3 clb.I1 ble6[3:2].out_local ble6[7:6].out_local" output="ble6[7:0].in_E">
-            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_E"/>
-            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_E"/>
-            </complete>
-          <complete name="lutF" input="clb.I4 clb.I1 ble6[1:0].out_local ble6[7:6].out_local" output="ble6[7:0].in_F">
-            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_F"/>
-            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_F"/>
-            </complete>
-          <complete name="clks" input="clb.clk" output="ble6[7:0].clk">
-          </complete>
-          
-          <!-- Direct connections to CLB outputs -->
-          <direct name="clbouts1" input="ble6[7:0].out_routing" output="clb.O"/>
-          <direct name="chain1" input="clb.cin" output="ble6[0].cin">
-            <pack_pattern name="chain" in_port="clb.cin" out_port="ble6[0].cin"/>
-          </direct>
-          <direct name="chain2" input="ble6[7].cout" output="clb.cout">
-            <pack_pattern name="chain" in_port="ble6[7].cout" out_port="clb.cout"/>
-            <delay_constant max="20e-12" in_port="ble6[7].cout" out_port="clb.cout"/>           <!-- delay of carry link joining two adjacent CLBs -->
-          </direct>
-          <direct name="chain3" input="ble6[6:0].cout" output="ble6[7:1].cin">
-            <pack_pattern name="chain" in_port="ble6[6:0].cout" out_port="ble6[7:1].cin"/>
-          </direct>
-        </interconnect>
-
-        <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.10">
-            <fc_override port_name="cin" fc_type="frac" fc_val="0"/>
-            <fc_override port_name="cout" fc_type="frac" fc_val="0"/>
-        </fc>
-
-        <!-- Two sided connectivity CLB architecture--> 
-        <pinlocations pattern="custom">
-          <loc side="right">clb.O clb.I1[4:0] clb.I2[4:0] clb.I3[4:0] clb.I4[4:0] clb.clk</loc> 
-          <loc side="bottom">clb.O clb.I1[9:5] clb.I2[9:5] clb.I3[9:5] clb.I4[9:5] clb.cout</loc>     
-          <loc side="top">clb.cin</loc> 
-        </pinlocations>
-        </pb_type>
-
+        <!-- Direct connections to CLB outputs -->
+        <direct name="clbouts1" input="ble6[7:0].out_routing" output="clb.O"/>
+        <direct name="chain1" input="clb.cin" output="ble6[0].cin">
+          <pack_pattern name="chain" in_port="clb.cin" out_port="ble6[0].cin"/>
+        </direct>
+        <direct name="chain2" input="ble6[7].cout" output="clb.cout">
+          <pack_pattern name="chain" in_port="ble6[7].cout" out_port="clb.cout"/>
+          <delay_constant max="20e-12" in_port="ble6[7].cout" out_port="clb.cout"/>
+          <!-- delay of carry link joining two adjacent CLBs -->
+        </direct>
+        <direct name="chain3" input="ble6[6:0].cout" output="ble6[7:1].cin">
+          <pack_pattern name="chain" in_port="ble6[6:0].cout" out_port="ble6[7:1].cin"/>
+        </direct>
+      </interconnect>
+      <!-- Two sided connectivity CLB architecture-->
+    </pb_type>
     <!-- Define fracturable multiplier begin -->
     <!-- This multiplier can operate as a 36x36 multiplier that can fracture to two 18x18 multipliers each of which can further fracture to two 9x9 multipliers 
 	   For delay modelling, the 36x36 DSP multiplier in Stratix IV has a delay of 1.523 ns + 1.93 ns
@@ -407,17 +439,15 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 		  area associated with our DSP block is four times that of a logic tile, where the routing area of a logic tile was calculated above (at W = 300)
 		  as 30481 MWTAs. Hence the (core, non-routing) area our DSP block is approximately 518,000 - 4 * 30,481 = 396,000 MWTUs.
       -->
-    <pb_type name="mult_36" height="4" area="396000">
+    <pb_type name="mult_36">
       <input name="a" num_pins="36"/>
       <input name="b" num_pins="36"/>
       <output name="out" num_pins="72"/>
-
       <mode name="two_divisible_mult_18x18">
         <pb_type name="divisible_mult_18x18" num_pb="2">
           <input name="a" num_pins="18"/>
           <input name="b" num_pins="18"/>
           <output name="out" num_pins="36"/>
-
           <!-- Model 9x9 delay and 18x18 delay as the same.  9x9 could be faster, but in Stratix IV
 	          isn't, presumably because the multiplier layout is really optimized for 18x18.
 		-->
@@ -426,7 +456,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
               <input name="A_cfg" num_pins="9"/>
               <input name="B_cfg" num_pins="9"/>
               <output name="OUT_cfg" num_pins="18"/>
-
               <pb_type name="mult_9x9" blif_model=".subckt multiply" num_pb="1">
                 <input name="a" num_pins="9"/>
                 <input name="b" num_pins="9"/>
@@ -434,7 +463,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
                 <delay_constant max="1.523e-9" in_port="mult_9x9.a" out_port="mult_9x9.out"/>
                 <delay_constant max="1.523e-9" in_port="mult_9x9.b" out_port="mult_9x9.out"/>
               </pb_type>
-
               <interconnect>
                 <direct name="a2a" input="mult_9x9_slice.A_cfg" output="mult_9x9.a">
                 </direct>
@@ -457,15 +485,12 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
               <direct name="out2out" input="mult_9x9_slice[1:0].OUT_cfg" output="divisible_mult_18x18.out">
               </direct>
             </interconnect>
-
           </mode>
-
           <mode name="mult_18x18">
             <pb_type name="mult_18x18_slice" num_pb="1">
               <input name="A_cfg" num_pins="18"/>
               <input name="B_cfg" num_pins="18"/>
               <output name="OUT_cfg" num_pins="36"/>
-
               <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1">
                 <input name="a" num_pins="18"/>
                 <input name="b" num_pins="18"/>
@@ -473,7 +498,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
                 <delay_constant max="1.523e-9" in_port="mult_18x18.a" out_port="mult_18x18.out"/>
                 <delay_constant max="1.523e-9" in_port="mult_18x18.b" out_port="mult_18x18.out"/>
               </pb_type>
-
               <interconnect>
                 <direct name="a2a" input="mult_18x18_slice.A_cfg" output="mult_18x18.a">
                 </direct>
@@ -485,7 +509,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
               <power method="pin-toggle">
                 <port name="A_cfg" energy_per_toggle="1.09e-12"/>
                 <port name="B_cfg" energy_per_toggle="1.09e-12"/>
-                <static_power power_per_instance="0.0"/>					
+                <static_power power_per_instance="0.0"/>
               </power>
             </pb_type>
             <interconnect>
@@ -497,7 +521,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
               </direct>
             </interconnect>
           </mode>
-
           <power method="sum-of-children"/>
         </pb_type>
         <interconnect>
@@ -515,13 +538,11 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           </direct>
         </interconnect>
       </mode>
-
       <mode name="mult_36x36">
         <pb_type name="mult_36x36_slice" num_pb="1">
           <input name="A_cfg" num_pins="36"/>
           <input name="B_cfg" num_pins="36"/>
           <output name="OUT_cfg" num_pins="72"/>
-
           <pb_type name="mult_36x36" blif_model=".subckt multiply" num_pb="1">
             <input name="a" num_pins="36"/>
             <input name="b" num_pins="36"/>
@@ -529,7 +550,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
             <delay_constant max="1.523e-9" in_port="mult_36x36.a" out_port="mult_36x36.out"/>
             <delay_constant max="1.523e-9" in_port="mult_36x36.b" out_port="mult_36x36.out"/>
           </pb_type>
-
           <interconnect>
             <direct name="a2a" input="mult_36x36_slice.A_cfg" output="mult_36x36.a">
             </direct>
@@ -538,7 +558,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
             <direct name="out2out" input="mult_36x36.out" output="mult_36x36_slice.OUT_cfg">
             </direct>
           </interconnect>
-
           <power method="pin-toggle">
             <port name="A_cfg" energy_per_toggle="2.13e-12"/>
             <port name="B_cfg" energy_per_toggle="2.13e-12"/>
@@ -560,17 +579,11 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
             <delay_constant max="1.93e-9" in_port="mult_36x36_slice.OUT_cfg" out_port="mult_36.out"/>
           </direct>
         </interconnect>
-
       </mode>
-
-      <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.10"/>
-      <pinlocations pattern="spread"/>
-
       <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->
       <power method="sum-of-children"/>
     </pb_type>
     <!-- Define fracturable multiplier end -->
-
     <!-- Define fracturable memory begin -->
     <!-- 32 Kb Memory that can operate from 512x64 to 32Kx1 for single-port mode and 1024x32 to 32Kx1 for dual-port mode.  
            Area and delay based off Stratix IV 9K and 144K memories (delay from linear interpolation, Tsu(483 ps, 636 ps) Tco(1084ps, 1969ps)).  
@@ -590,7 +603,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 		   tile according to D. Lewis et al, "Architectural Enhancements in Stratix V," FPGA 2013. Hence we should subtract 0.3 * 2.2 * 84,375 MWTUs to
 		   obtain a RAM core area (not including inter-block routing) of 548,000 MWTU areas for our 32 kb RAM in a 40 nm process.
       -->
-    <pb_type name="memory" height="6" area="548000">
+    <pb_type name="memory">
       <input name="addr1" num_pins="15"/>
       <input name="addr2" num_pins="15"/>
       <input name="data" num_pins="64"/>
@@ -598,7 +611,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
       <input name="we2" num_pins="1"/>
       <output name="out" num_pins="64"/>
       <clock name="clk" num_pins="1"/>
-
       <!-- Specify single port mode first -->
       <mode name="mem_512x64_sp">
         <pb_type name="mem_512x64_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
@@ -612,7 +624,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <T_setup value="509e-12" port="mem_512x64_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_512x64_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="9.0e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -633,7 +645,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           </direct>
         </interconnect>
       </mode>
-
       <mode name="mem_1024x32_sp">
         <pb_type name="mem_1024x32_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
           <input name="addr" num_pins="10" port_class="address"/>
@@ -646,7 +657,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <T_setup value="509e-12" port="mem_1024x32_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_1024x32_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="9.0e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -667,8 +678,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           </direct>
         </interconnect>
       </mode>
-
-
       <mode name="mem_2048x16_sp">
         <pb_type name="mem_2048x16_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
           <input name="addr" num_pins="11" port_class="address"/>
@@ -681,7 +690,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <T_setup value="509e-12" port="mem_2048x16_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_2048x16_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="9.0e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -702,7 +711,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           </direct>
         </interconnect>
       </mode>
-
       <mode name="mem_4096x8_sp">
         <pb_type name="mem_4096x8_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
           <input name="addr" num_pins="12" port_class="address"/>
@@ -715,7 +723,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <T_setup value="509e-12" port="mem_4096x8_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_4096x8_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="9.0e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -736,7 +744,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           </direct>
         </interconnect>
       </mode>
-
       <mode name="mem_8192x4_sp">
         <pb_type name="mem_8192x4_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
           <input name="addr" num_pins="13" port_class="address"/>
@@ -749,7 +756,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <T_setup value="509e-12" port="mem_8192x4_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_8192x4_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="9.0e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -770,7 +777,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           </direct>
         </interconnect>
       </mode>
-
       <mode name="mem_16384x2_sp">
         <pb_type name="mem_16384x2_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
           <input name="addr" num_pins="14" port_class="address"/>
@@ -783,7 +789,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <T_setup value="509e-12" port="mem_16384x2_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_16384x2_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="9.0e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -803,8 +809,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <direct name="clk" input="memory.clk" output="mem_16384x2_sp.clk">
           </direct>
         </interconnect>
-      </mode>  
-
+      </mode>
       <mode name="mem_32768x1_sp">
         <pb_type name="mem_32768x1_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
           <input name="addr" num_pins="15" port_class="address"/>
@@ -817,7 +822,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <T_setup value="509e-12" port="mem_32768x1_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_32768x1_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="9.0e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -837,8 +842,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <direct name="clk" input="memory.clk" output="mem_32768x1_sp.clk">
           </direct>
         </interconnect>
-      </mode> 
-
+      </mode>
       <!-- Specify true dual port mode next -->
       <mode name="mem_1024x32_dp">
         <pb_type name="mem_1024x32_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
@@ -860,7 +864,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <T_clock_to_Q max="1.234e-9" port="mem_1024x32_dp.out1" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_1024x32_dp.out2" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>					
+            <port name="clk" energy_per_toggle="17.9e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -893,7 +897,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           </direct>
         </interconnect>
       </mode>
-
       <mode name="mem_2048x16_dp">
         <pb_type name="mem_2048x16_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
           <input name="addr1" num_pins="11" port_class="address1"/>
@@ -914,7 +917,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <T_clock_to_Q max="1.234e-9" port="mem_2048x16_dp.out1" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_2048x16_dp.out2" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>					
+            <port name="clk" energy_per_toggle="17.9e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -947,7 +950,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           </direct>
         </interconnect>
       </mode>
-
       <mode name="mem_2048x8_dp">
         <pb_type name="mem_2048x8_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
           <input name="addr1" num_pins="12" port_class="address1"/>
@@ -968,7 +970,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <T_clock_to_Q max="1.234e-9" port="mem_2048x8_dp.out1" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_2048x8_dp.out2" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>					
+            <port name="clk" energy_per_toggle="17.9e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -1021,7 +1023,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <T_clock_to_Q max="1.234e-9" port="mem_8192x4_dp.out1" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_8192x4_dp.out2" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>					
+            <port name="clk" energy_per_toggle="17.9e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -1074,7 +1076,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <T_clock_to_Q max="1.234e-9" port="mem_16384x2_dp.out1" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_16384x2_dp.out2" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>					
+            <port name="clk" energy_per_toggle="17.9e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -1107,7 +1109,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           </direct>
         </interconnect>
       </mode>
-
       <mode name="mem_32768x1_dp">
         <pb_type name="mem_32768x1_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
           <input name="addr1" num_pins="15" port_class="address1"/>
@@ -1128,7 +1129,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           <T_clock_to_Q max="1.234e-9" port="mem_32768x1_dp.out1" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_32768x1_dp.out2" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>					
+            <port name="clk" energy_per_toggle="17.9e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -1161,16 +1162,10 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           </direct>
         </interconnect>
       </mode>
-
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
-      <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.10"/>
-      <pinlocations pattern="spread"/>
-
       <!-- Place this memory block every 8 columns from (and including) the second column -->
       <power method="sum-of-children"/>
     </pb_type>
     <!-- Define fracturable memory end -->
-
-
-    </complexblocklist>
-  </architecture>
+  </complexblocklist>
+</architecture>
