@@ -1780,7 +1780,7 @@ ast_node_t *newFunction(ast_node_t *function_return, ast_node_t *list_of_ports, 
 
 	if(function_return->children[0]->types.variable.is_integer)
 	{
-		warning_message(PARSE_ERROR, line_number, current_parse_file, "ODIN_II does not fully support input/output integers in functions", 0);
+		warning_message(PARSE_ERROR, line_number, current_parse_file,"%s", "ODIN_II does not fully support input/output integers in functions");
 	}
 
 	if(list_of_ports == NULL )
