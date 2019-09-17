@@ -530,17 +530,12 @@ def upgrade_pinlocations(arch):
     the yoffset case
     """
     modified = False
-    pinlocations_list = arch.findall(".//pinlocations")
-
-    tiles_exists = arch.findall('./tiles')
+    pinlocations_list = arch.findall(".//pb_type/pinlocations")
 
     for pinlocations in pinlocations_list:
         pb_type = pinlocations.find("..")
 
-        if not tiles_exists:
-            assert pb_type.tag == "pb_type"
-        else:
-            assert pb_type.tag == "tile"
+        assert pb_type.tag == "pb_type"
 
         width = 1
         height = 1

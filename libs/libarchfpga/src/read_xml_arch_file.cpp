@@ -102,7 +102,7 @@ static void ProcessTilePorts(pugi::xml_node Parent,
                              t_physical_tile_type* PhysicalTileType,
                              const pugiutil::loc_data& loc_data);
 static void ProcessTilePort(pugi::xml_node Node,
-                            t_physical_port* port,
+                            t_physical_tile_port* port,
                             const pugiutil::loc_data& loc_data);
 static void ProcessTileEquivalentSites(pugi::xml_node Parent,
                                        t_physical_tile_type* PhysicalTileType,
@@ -212,7 +212,9 @@ e_side string_to_side(std::string side_str);
 static void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
                                         std::vector<t_logical_block_type>& LogicalBlockTypes);
 
-static const t_physical_port* get_port_by_name(t_physical_tile_type_ptr type, const char* port_name);
+static void check_port_equivalence(t_physical_tile_type& physical_tile, t_logical_block_type& logical_block);
+
+static const t_physical_tile_port* get_port_by_name(t_physical_tile_type_ptr type, const char* port_name);
 
 /*
  *
@@ -550,7 +552,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
                             //Empty range, so full port
 
                             //Find the matching pb type to get the total number of pins
-                            const t_physical_port* port = nullptr;
+                            const t_physical_tile_port* port = nullptr;
                             for (const auto& tmp_port : PhysicalTileType->ports) {
                                 if (tmp_port.name == inst_port.port_name()) {
                                     port = &tmp_port;
@@ -3066,7 +3068,7 @@ static void ProcessTilePorts(pugi::xml_node Parent,
             Cur = get_first_child(Parent, "clock", loc_data, OPTIONAL);
         }
         while (Cur) {
-            t_physical_port port;
+            t_physical_tile_port port;
 
             port.index = iport;
             port.absolute_first_pin_index = absolute_first_pin_index;
@@ -3109,7 +3111,7 @@ static void ProcessTilePorts(pugi::xml_node Parent,
 }
 
 static void ProcessTilePort(pugi::xml_node Node,
-                            t_physical_port* port,
+                            t_physical_tile_port* port,
                             const pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_attributes = {"name", "num_pins", "equivalent"};
 
@@ -4677,22 +4679,24 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
     std::map<t_physical_tile_type*, t_logical_block_type*> check_equivalence;
 
     for (auto& physical_tile : PhysicalTileTypes) {
-        if (physical_tile.index == 0) continue;
+        if (physical_tile.index == EMPTY_TYPE_INDEX) continue;
 
         for (auto& equivalent_site : physical_tile.equivalent_sites) {
             for (auto& logical_block : LogicalBlockTypes) {
-                if (logical_block.index == 0) continue;
+                if (logical_block.index == EMPTY_TYPE_INDEX) continue;
 
                 // Check the corresponding Logical Block
                 if (0 == strcmp(logical_block.pb_type->name, equivalent_site.pb_type_name)) {
                     physical_tile.logical_block_index = logical_block.index;
                     logical_block.physical_tile_index = physical_tile.index;
 
-                    auto result = check_equivalence.insert(std::pair<t_physical_tile_type*, t_logical_block_type*>(&physical_tile, &logical_block));
+                    auto result = check_equivalence.emplace(&physical_tile, &logical_block);
                     if (!result.second) {
                         archfpga_throw(__FILE__, __LINE__,
                                        "Logical and Physical types do not have a one to one mapping\n");
                     }
+
+                    check_port_equivalence(physical_tile, logical_block);
 
                     break;
                 }
@@ -4701,7 +4705,28 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
     }
 }
 
-static const t_physical_port* get_port_by_name(t_physical_tile_type_ptr type, const char* port_name) {
+static void check_port_equivalence(t_physical_tile_type& physical_tile, t_logical_block_type& logical_block) {
+    auto pb_type = logical_block.pb_type;
+    auto pb_type_ports = pb_type->ports;
+
+    if (pb_type->num_ports != (int)physical_tile.ports.size()) {
+        archfpga_throw(__FILE__, __LINE__,
+                       "Logical and Physical types have a different number of ports.\n");
+    }
+
+    for (auto& tile_port : physical_tile.ports) {
+        auto block_port = pb_type_ports[tile_port.index];
+
+        if (0 != strcmp(tile_port.name, block_port.name)
+            || tile_port.type != block_port.type
+            || tile_port.num_pins != block_port.num_pins) {
+            archfpga_throw(__FILE__, __LINE__,
+                           "Logical and Physical types do not have equivalent port specifications.\n");
+        }
+    }
+}
+
+static const t_physical_tile_port* get_port_by_name(t_physical_tile_type_ptr type, const char* port_name) {
     for (auto port : type->ports) {
         if (0 == strcmp(port.name, port_name)) {
             return &type->ports[port.index];

@@ -52,7 +52,7 @@ struct t_pb_type_power;
 struct t_mode_power;
 struct t_interconnect_power;
 struct t_port_power;
-struct t_physical_port;
+struct t_physical_tile_port;
 struct t_equivalent_site;
 struct t_physical_tile_type;
 struct t_logical_block_type;
@@ -606,7 +606,7 @@ struct t_physical_tile_type {
     int num_class = 0;
     t_class* class_inf = nullptr; /* [0..num_class-1] */
 
-    std::vector<t_physical_port> ports;
+    std::vector<t_physical_tile_port> ports;
     std::vector<int> pin_width_offset;  //[0..num_pins-1]
     std::vector<int> pin_height_offset; //[0..num_pins-1]
     int* pin_class = nullptr;           /* [0..num_pins-1] */
@@ -654,7 +654,7 @@ typedef const t_physical_tile_type* t_physical_tile_type_ptr;
  *      port_index_by_type index of port by type (index by input, output, or clock)
  *      equivalence: Applies to logic block I/Os and to primitive inputs only
  */
-struct t_physical_port {
+struct t_physical_tile_port {
     char* name;
     enum PORTS type;
     bool is_clock;
