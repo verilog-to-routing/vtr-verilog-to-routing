@@ -61,7 +61,7 @@ def main():
     args = parse_args()
 
     print args.xml_file
-    parser = ET.XMLParser()
+    parser = ET.XMLParser(remove_blank_text=True)
     root = ET.parse(args.xml_file, parser)
 
     root_tags = root.findall(".")
@@ -934,7 +934,10 @@ def add_tile_tags(arch):
     if arch.findall('./tiles'):
         return False
 
-    tiles = ET.SubElement(arch, 'tiles')
+    models = arch.find('./models')
+
+    tiles = ET.Element('tiles')
+    models.addnext(tiles)
 
     top_pb_types = []
     for pb_type in arch.iter('pb_type'):
