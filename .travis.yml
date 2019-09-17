@@ -98,31 +98,26 @@ jobs:
       name: "C++ Unit Tests"
       script:
         - ./.github/travis/build.sh
-        - ./dev/upgrade_vtr_archs.sh
         - ./.github/travis/unittest.sh
     - stage: Test
       name: "Basic Regression Tests"
       script:
         - ./.github/travis/build.sh
-        - ./dev/upgrade_vtr_archs.sh
         - ./run_reg_test.pl vtr_reg_basic -show_failures -j2
     - stage: Test
       name: "Strong Regression Tests"
       script:
         - ./.github/travis/build.sh
-        - ./dev/upgrade_vtr_archs.sh
         - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -show_failures -j2
     - stage: Test
       name: "Basic Valgrind Memory Tests"
       script:
         - ./.github/travis/build.sh
-        - ./dev/upgrade_vtr_archs.sh
         - ./run_reg_test.pl vtr_reg_valgrind_small -show_failures -j2
     - stage: Test
       name: "ODIN-II Micro Tests"
       script:
         - ./.github/travis/build.sh
-        - ./dev/upgrade_vtr_archs.sh
         - ./run_reg_test.pl odin_reg_micro -show_failures -j2
 
     - stage: Test
