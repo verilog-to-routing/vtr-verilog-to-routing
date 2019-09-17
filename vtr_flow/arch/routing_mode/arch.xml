@@ -1,4 +1,3 @@
-<?xml version="1.0"?>
 <!-- set: ai sw=2 ts=2 sta et -->
 <architecture>
   <models>
@@ -41,6 +40,38 @@
       </output_ports>
     </model>
   </models>
+  <tiles>
+    <tile name="ff_tile">
+      <equivalent_sites>
+        <site pb_type="ff_tile"/>
+      </equivalent_sites>
+      <input name="in" num_pins="4"/>
+      <output name="out" num_pins="4"/>
+      <clock name="clk" num_pins="1"/>
+      <input name="cen" num_pins="1"/>
+      <switchblock_locations pattern="all"/>
+      <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      <pinlocations pattern="custom">
+        <loc side="left" xoffset="0" yoffset="0">ff_tile.in</loc>
+        <loc side="bottom" xoffset="0" yoffset="0">ff_tile.clk ff_tile.cen</loc>
+        <loc side="right" xoffset="0" yoffset="0">ff_tile.out</loc>
+      </pinlocations>
+    </tile>
+    <tile name="io_tile">
+      <equivalent_sites>
+        <site pb_type="io_tile"/>
+      </equivalent_sites>
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
+      <pinlocations pattern="custom">
+        <loc side="top" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="left" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="bottom" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="right" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+      </pinlocations>
+      <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+    </tile>
+  </tiles>
   <complexblocklist>
     <pb_type name="ff_tile">
       <input name="in" num_pins="4"/>
@@ -192,13 +223,6 @@
         <direct input="ff_tile.cen" name="cen[2]" output="flipflop[2].cen"/>
         <direct input="ff_tile.cen" name="cen[3]" output="flipflop[3].cen"/>
       </interconnect>
-      <switchblock_locations pattern="all"/>
-      <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
-      <pinlocations pattern="custom">
-        <loc side="left" xoffset="0" yoffset="0">ff_tile.in</loc>
-        <loc side="bottom" xoffset="0" yoffset="0">ff_tile.clk ff_tile.cen</loc>
-        <loc side="right" xoffset="0" yoffset="0">ff_tile.out</loc>
-      </pinlocations>
     </pb_type>
     <pb_type name="io_tile">
       <input name="in" num_pins="1"/>
@@ -219,13 +243,6 @@
           <direct input="pad.inpad" name="-" output="io_tile.out"/>
         </interconnect>
       </mode>
-      <pinlocations pattern="custom">
-        <loc side="top" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
-        <loc side="left" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
-        <loc side="bottom" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
-        <loc side="right" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
-      </pinlocations>
-      <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
     </pb_type>
   </complexblocklist>
   <layout>

@@ -1,6 +1,32 @@
 <architecture>
   <models/>
-
+  <tiles>
+    <tile name="io" capacity="8">
+      <equivalent_sites>
+        <site pb_type="io"/>
+      </equivalent_sites>
+      <input name="outpad" num_pins="1"/>
+      <output name="inpad" num_pins="1"/>
+      <clock name="clock" num_pins="1"/>
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+      <pinlocations pattern="custom">
+        <loc side="left">io.outpad io.inpad io.clock</loc>
+        <loc side="top">io.outpad io.inpad io.clock</loc>
+        <loc side="right">io.outpad io.inpad io.clock</loc>
+        <loc side="bottom">io.outpad io.inpad io.clock</loc>
+      </pinlocations>
+    </tile>
+    <tile name="clb">
+      <equivalent_sites>
+        <site pb_type="clb"/>
+      </equivalent_sites>
+      <input name="I" num_pins="33" equivalent="full"/>
+      <output name="O" num_pins="20" equivalent="none"/>
+      <clock name="clk" num_pins="1"/>
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+      <pinlocations pattern="spread"/>
+    </tile>
+  </tiles>
   <layout>
     <auto_layout aspect_ratio="1.0">
       <perimeter type="io" priority="100">
@@ -19,7 +45,6 @@
       <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
     </auto_layout>
   </layout>
-
   <device>
     <sizing R_minW_nmos="8926" R_minW_pmos="16067"/>
     <area grid_logic_tile_area="53894"/>
@@ -41,16 +66,14 @@
       <cb type="pattern">1 1 1 1</cb>
     </segment>
   </segmentlist>
-
   <complexblocklist>
-    <pb_type name="io" capacity="8">
+    <pb_type name="io">
       <metadata>
         <meta name="pb_type_type">pb_type = io</meta>
       </metadata>
       <input name="outpad" num_pins="1"/>
       <output name="inpad" num_pins="1"/>
       <clock name="clock" num_pins="1"/>
-
       <mode name="inpad">
         <metadata>
           <meta name="mode">inpad</meta>
@@ -66,7 +89,6 @@
             </metadata>
           </direct>
         </interconnect>
-
       </mode>
       <mode name="outpad">
         <pb_type name="outpad" blif_model=".output" num_pb="1">
@@ -78,25 +100,14 @@
           </direct>
         </interconnect>
       </mode>
-
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-
       <!-- IOs go on the periphery of the FPGA, for consistency,
           make it physically equivalent on all sides so that only one definition of I/Os is needed.
           If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA
         -->
-      <pinlocations pattern="custom">
-        <loc side="left">io.outpad io.inpad io.clock</loc>
-        <loc side="top">io.outpad io.inpad io.clock</loc>
-        <loc side="right">io.outpad io.inpad io.clock</loc>
-        <loc side="bottom">io.outpad io.inpad io.clock</loc>
-      </pinlocations>
-
       <!-- Place I/Os on the sides of the FPGA -->
       <power method="ignore"/>
     </pb_type>
-
     <pb_type name="clb">
       <input name="I" num_pins="33" equivalent="full"/>
       <output name="O" num_pins="20" equivalent="none"/>
@@ -105,7 +116,6 @@
         <input name="in" num_pins="6"/>
         <output name="out" num_pins="2"/>
         <clock name="clk" num_pins="1"/>
-
         <mode name="n2_lut5">
           <pb_type name="lut5inter" num_pb="1">
             <input name="in" num_pins="5"/>
@@ -115,7 +125,6 @@
               <input name="in" num_pins="5"/>
               <output name="out" num_pins="1"/>
               <clock name="clk" num_pins="1"/>
-
               <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut">
                 <input name="in" num_pins="5" port_class="lut_in"/>
                 <output name="out" num_pins="1" port_class="lut_out"/>
@@ -127,7 +136,6 @@
                   235e-12
                 </delay_matrix>
               </pb_type>
-
               <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
                 <input name="D" num_pins="1" port_class="D"/>
                 <output name="Q" num_pins="1" port_class="Q"/>
@@ -135,7 +143,6 @@
                 <T_setup value="66e-12" port="ff.D" clock="clk"/>
                 <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
               </pb_type>
-
               <interconnect>
                 <direct name="direct1" input="ble5.in[4:0]" output="lut5[0:0].in[4:0]"/>
                 <direct name="direct2" input="lut5[0:0].out" output="ff[0:0].D">
@@ -168,7 +175,6 @@
             <input name="in" num_pins="6"/>
             <output name="out" num_pins="1"/>
             <clock name="clk" num_pins="1"/>
-
             <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut">
               <input name="in" num_pins="6" port_class="lut_in"/>
               <output name="out" num_pins="1" port_class="lut_out"/>
@@ -181,7 +187,6 @@
                 261e-12
               </delay_matrix>
             </pb_type>
-
             <!-- Define flip-flop -->
             <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
               <input name="D" num_pins="1" port_class="D"/>
@@ -190,7 +195,6 @@
               <T_setup value="66e-12" port="ff.D" clock="clk"/>
               <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
             </pb_type>
-
             <interconnect>
               <direct name="direct1" input="ble6.in" output="lut6[0:0].in"/>
               <direct name="direct2" input="lut6.out" output="ff.D">
@@ -217,14 +221,9 @@
         </complete>
         <complete name="clks" input="clb.clk" output="fle[9:0].clk">
         </complete>
-
         <direct name="clbouts1" input="fle[9:0].out[0:0]" output="clb.O[9:0]"/>
         <direct name="clbouts2" input="fle[9:0].out[1:1]" output="clb.O[19:10]"/>
       </interconnect>
-
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-
-      <pinlocations pattern="spread"/>
     </pb_type>
   </complexblocklist>
   <power>

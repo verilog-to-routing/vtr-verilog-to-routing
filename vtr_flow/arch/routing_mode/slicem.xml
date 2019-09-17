@@ -1,11 +1,10 @@
-<?xml version="1.0"?>
 <!-- This architecture definition represents a simplified version of a SLICEM site -->
 <architecture xmlns:xi="http://www.w3.org/2001/XInclude">
   <models>
     <model name="CARRY">
       <input_ports>
-        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="CI"/>
-        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="S"/>
+        <port combinational_sink_ports="CO_FABRIC CO_CHAIN O" name="CI"/>
+        <port combinational_sink_ports="CO_FABRIC CO_CHAIN O" name="S"/>
       </input_ports>
       <output_ports>
         <port name="CO_CHAIN"/>
@@ -15,9 +14,9 @@
     </model>
     <model name="CARRY0">
       <input_ports>
-        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="CI"/>
-        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="CI_INIT"/>
-        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="S"/>
+        <port combinational_sink_ports="CO_FABRIC CO_CHAIN O" name="CI"/>
+        <port combinational_sink_ports="CO_FABRIC CO_CHAIN O" name="CI_INIT"/>
+        <port combinational_sink_ports="CO_FABRIC CO_CHAIN O" name="S"/>
       </input_ports>
       <output_ports>
         <port name="CO_CHAIN"/>
@@ -61,6 +60,78 @@
       </output_ports>
     </model>
   </models>
+  <tiles>
+    <tile name="io_tile">
+      <equivalent_sites>
+        <site pb_type="io_tile"/>
+      </equivalent_sites>
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
+      <pinlocations pattern="custom">
+        <loc side="top" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="left" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="bottom" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="right" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+      </pinlocations>
+      <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+    </tile>
+    <tile name="BLK_IG-SLICEM">
+      <equivalent_sites>
+        <site pb_type="BLK_IG-SLICEM"/>
+      </equivalent_sites>
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+      <input name="DI" num_pins="1"/>
+      <input name="DX" num_pins="1"/>
+      <input name="D1" num_pins="1"/>
+      <input name="D2" num_pins="1"/>
+      <input name="D3" num_pins="1"/>
+      <input name="D4" num_pins="1"/>
+      <input name="D5" num_pins="1"/>
+      <input name="D6" num_pins="1"/>
+      <input name="CI" num_pins="1"/>
+      <input name="CX" num_pins="1"/>
+      <input name="C1" num_pins="1"/>
+      <input name="C2" num_pins="1"/>
+      <input name="C3" num_pins="1"/>
+      <input name="C4" num_pins="1"/>
+      <input name="C5" num_pins="1"/>
+      <input name="C6" num_pins="1"/>
+      <input name="BI" num_pins="1"/>
+      <input name="BX" num_pins="1"/>
+      <input name="B1" num_pins="1"/>
+      <input name="B2" num_pins="1"/>
+      <input name="B3" num_pins="1"/>
+      <input name="B4" num_pins="1"/>
+      <input name="B5" num_pins="1"/>
+      <input name="B6" num_pins="1"/>
+      <input name="AI" num_pins="1"/>
+      <input name="AX" num_pins="1"/>
+      <input name="A1" num_pins="1"/>
+      <input name="A2" num_pins="1"/>
+      <input name="A3" num_pins="1"/>
+      <input name="A4" num_pins="1"/>
+      <input name="A5" num_pins="1"/>
+      <input name="A6" num_pins="1"/>
+      <input name="SR" num_pins="1"/>
+      <input name="CE" num_pins="1"/>
+      <input name="WE" num_pins="1"/>
+      <clock name="CLK" num_pins="1"/>
+      <input name="CIN" num_pins="1"/>
+      <output name="COUT" num_pins="1"/>
+      <output name="DMUX" num_pins="1"/>
+      <output name="D" num_pins="1"/>
+      <output name="DQ" num_pins="1"/>
+      <output name="CMUX" num_pins="1"/>
+      <output name="C" num_pins="1"/>
+      <output name="CQ" num_pins="1"/>
+      <output name="BMUX" num_pins="1"/>
+      <output name="B" num_pins="1"/>
+      <output name="BQ" num_pins="1"/>
+      <output name="AMUX" num_pins="1"/>
+      <output name="A" num_pins="1"/>
+      <output name="AQ" num_pins="1"/>
+    </tile>
+  </tiles>
   <complexblocklist>
     <pb_type name="io_tile">
       <input name="in" num_pins="1"/>
@@ -81,16 +152,8 @@
           <direct input="pad.inpad" name="-" output="io_tile.out"/>
         </interconnect>
       </mode>
-      <pinlocations pattern="custom">
-        <loc side="top" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
-        <loc side="left" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
-        <loc side="bottom" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
-        <loc side="right" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
-      </pinlocations>
-      <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
     </pb_type>
     <pb_type name="BLK_IG-SLICEM">
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
       <input name="DI" num_pins="1"/>
       <input name="DX" num_pins="1"/>
       <input name="D1" num_pins="1"/>
@@ -263,7 +326,6 @@
           <!-- Carry -->
           <!-- Carry initialization -->
           <direct input="BLK_IG-COMMON_SLICE.AX" name="PRECYINIT_MUX" output="BEL_BB-CARRY0.CI_INIT"/>
-
           <direct input="BLK_IG-COMMON_SLICE.CIN" name="CIN_TO_CARRY0" output="BEL_BB-CARRY0.CI">
             <pack_pattern in_port="BLK_IG-COMMON_SLICE.CIN" name="BLK_TI-CLBLM_R.BLK_IG-SLICEM.CARRYCHAIN" out_port="BEL_BB-CARRY0.CI"/>
           </direct>
@@ -752,7 +814,6 @@
               </interconnect>
             </mode>
           </pb_type>
-
           <!-- D_DRAM does not have a LUT mode because, if DRAMs mode is selected for SLICEM-MODES pb type DLUT can only operate in DRAM mode.
                For the purpose of this test all the DRAM modes from {N}_DRAM pb types have been disabled to increase readability -->
           <pb_type name="BLK_IG-D_DRAM" num_pb="1">
