@@ -12,7 +12,7 @@ recommonmark
 sphinx-markdown-tables
 
 # Handle markdown cross-references
-git+https://github.com/SymbiFlow/sphinxcontrib-markdown-symlinks
+git+https://github.com/SymbiFlow/sphinxcontrib-markdown-symlinks@bd0869b817568dce268bcdc3dc3dc7a7bd40c392
 
 #Handle references in bibtex format
 sphinxcontrib-bibtex
