@@ -4719,7 +4719,8 @@ static void check_port_equivalence(t_physical_tile_type& physical_tile, t_logica
 
         if (0 != strcmp(tile_port.name, block_port.name)
             || tile_port.type != block_port.type
-            || tile_port.num_pins != block_port.num_pins) {
+            || tile_port.num_pins != block_port.num_pins
+            || tile_port.equivalent != block_port.equivalent) {
             archfpga_throw(__FILE__, __LINE__,
                            "Logical and Physical types do not have equivalent port specifications.\n");
         }
