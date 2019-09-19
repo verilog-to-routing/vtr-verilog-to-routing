@@ -13,6 +13,8 @@
 #include "rr_graph.h"
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
+#include "route_tree_type.h"
+#include "route_tree_timing.h"
 
 /******************** Subroutines local to this module **********************/
 static void check_node_and_range(int inode, enum e_route_type route_type);
@@ -26,6 +28,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                                          enum e_route_type route_type);
 
 static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets);
+static void check_net_for_stubs(ClusterNetId net);
 
 /************************ Subroutine definitions ****************************/
 
@@ -154,6 +157,8 @@ void check_route(enum e_route_type route_type) {
         }
 
         check_non_configurable_edges(net_id, non_configurable_rr_sets);
+
+        check_net_for_stubs(net_id);
 
         reset_flags(net_id, connected_to_route);
 
@@ -775,4 +780,91 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
     }
 
     return true;
+}
+
+// StubFinder traverses a net definition and find ensures that all nodes that
+// are children of a configurable node have at least one sink.
+class StubFinder {
+  public:
+    // Checks specified net for stubs, return true if at least one stub is
+    // found.
+    bool CheckNet(ClusterNetId net);
+
+    // Returns set of stub nodes.
+    const std::set<int>& stub_nodes() {
+        return stub_nodes_;
+    }
+
+  private:
+    bool RecurseTree(t_rt_node* rt_root);
+
+    // Set of stub nodes
+    // Note this is an ordered set so that node output is sorted by node
+    // id.
+    std::set<int> stub_nodes_;
+};
+
+//Cheks for stubs in a net's routing.
+//
+//Stubs (routing branches which don't connect to SINKs) serve no purpose, and only chew up wiring unecessarily.
+//The only exception are stubs required by non-configurable switches (e.g. shorts).
+//
+//We treat any configurable stubs as an error.
+void check_net_for_stubs(ClusterNetId net) {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    StubFinder stub_finder;
+
+    bool any_stubs = stub_finder.CheckNet(net);
+    if (any_stubs) {
+        auto& cluster_ctx = g_vpr_ctx.clustering();
+        std::string msg = vtr::string_fmt("Route tree for net '%s' (#%zu) contains stub branches rooted at:\n",
+                                          cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
+        for (int inode : stub_finder.stub_nodes()) {
+            msg += vtr::string_fmt("    %s\n", describe_rr_node(inode).c_str());
+        }
+
+        VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
+    }
+}
+
+bool StubFinder::CheckNet(ClusterNetId net) {
+    stub_nodes_.clear();
+
+    t_rt_node* rt_root = traceback_to_route_tree(net);
+    RecurseTree(rt_root);
+    free_route_tree(rt_root);
+
+    return !stub_nodes_.empty();
+}
+
+// Returns true if this node is a stub.
+bool StubFinder::RecurseTree(t_rt_node* rt_root) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    if (rt_root->u.child_list == nullptr) {
+        //If a leaf of the route tree is not a SINK, then it is a stub
+        if (device_ctx.rr_nodes[rt_root->inode].type() != SINK) {
+            return true; //It is the current root of this stub
+        } else {
+            return false;
+        }
+    } else {
+        bool is_stub = true;
+        for (t_linked_rt_edge* edge = rt_root->u.child_list; edge != nullptr; edge = edge->next) {
+            bool driver_switch_configurable = device_ctx.rr_switch_inf[edge->iswitch].configurable();
+
+            bool child_is_stub = RecurseTree(edge->child);
+            if (!child_is_stub) {
+                // Because the child was not a stub, this node is not a stub.
+                is_stub = false;
+            } else if (driver_switch_configurable) {
+                // This child was stub, and we drove it from a configurable
+                // edge, this is an error.
+                stub_nodes_.insert(edge->child->inode);
+            }
+        }
+
+        return is_stub;
+    }
 }

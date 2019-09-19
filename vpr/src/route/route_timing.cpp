@@ -1539,7 +1539,9 @@ static t_rt_node* setup_routing_resources(int itry,
         profiling::net_rebuild_start();
 
         // convert the previous iteration's traceback into a route tree
-        rt_root = traceback_to_route_tree(net_id);
+        auto& device_ctx = g_vpr_ctx.device();
+        std::vector<int> non_config_node_set_usage(device_ctx.rr_non_config_node_sets.size(), 0);
+        rt_root = traceback_to_route_tree(net_id, &non_config_node_set_usage);
 
         //Santiy check that route tree and traceback are equivalent before pruning
         VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
@@ -1549,7 +1551,7 @@ static t_rt_node* setup_routing_resources(int itry,
         VTR_ASSERT_SAFE(should_route_net(net_id, connections_inf, true));
 
         //Prune the branches of the tree that don't legally lead to sinks
-        rt_root = prune_route_tree(rt_root, connections_inf);
+        rt_root = prune_route_tree(rt_root, connections_inf, &non_config_node_set_usage);
 
         //Now that the tree has been pruned, we can free the old traceback
         // NOTE: this must happen *after* pruning since it changes the
