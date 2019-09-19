@@ -3093,7 +3093,7 @@ class EdgeGroups {
         // the merge list to ensure that the merge first elements are always
         // increasing.
         std::sort(merges.begin(), merges.end(), [](const std::pair<int, int>& a, const std::pair<int, int>& b) {
-            return a.first < a.second;
+            return a.first < b.first;
         });
 
         // Update final_set_map with the final merge id for the second element.
