@@ -49,11 +49,13 @@ void print_route_tree_node(const t_rt_node* rt_root);
 void print_route_tree_inf(const t_rt_node* rt_root);
 void print_route_tree_congestion(const t_rt_node* rt_root);
 
-t_rt_node* traceback_to_route_tree(t_trace* head);
 t_rt_node* traceback_to_route_tree(ClusterNetId inet);
+t_rt_node* traceback_to_route_tree(ClusterNetId inet, std::vector<int>* non_config_node_set_usage);
+t_rt_node* traceback_to_route_tree(t_trace* head);
+t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_node_set_usage);
 t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int num_remaining_sinks);
 
-t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf);
+t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vector<int>* non_config_node_set_usage);
 
 void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub, float pres_fac);
 
