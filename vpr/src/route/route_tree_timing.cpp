@@ -737,6 +737,18 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             else
                 node->re_expand = true;
 
+            if (node_type == SINK) {
+                // A non-configurable edge to a sink is also a usage of the
+                // set.
+                auto& device_ctx = g_vpr_ctx.device();
+                auto set_itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
+                if (non_config_node_set_usage != nullptr && set_itr != device_ctx.rr_node_to_non_config_node_set.end()) {
+                    if (device_ctx.rr_switch_inf[iswitch].configurable()) {
+                        (*non_config_node_set_usage)[set_itr->second] += 1;
+                    }
+                }
+            }
+
             //Save
             rr_node_to_rt[inode] = node;
         } else {
@@ -1005,6 +1017,21 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
         }
 
     } else {
+        // If this node is:
+        //   1. Part of a non-configurable node set
+        //   2. The first node in the tree that is part of the non-configurable
+        //      node set
+        //
+        //      -- and --
+        //
+        //   3. The node set is not active
+        //
+        //  Then prune this node.
+        if (node_set != -1 && device_ctx.rr_switch_inf[node->parent_switch].configurable() && (*non_config_node_set_usage)[node_set] == 0) {
+            // This node should be pruned, re-prune edges once more.
+            return prune_route_tree_recurr(node, connections_inf, /*force_prune=*/false, non_config_node_set_usage);
+        }
+
         //An unpruned intermediate node
         VTR_ASSERT(!force_prune);
 
