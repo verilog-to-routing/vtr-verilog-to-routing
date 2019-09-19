@@ -811,8 +811,6 @@ class StubFinder {
 //
 //We treat any configurable stubs as an error.
 void check_net_for_stubs(ClusterNetId net) {
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
     StubFinder stub_finder;
 
     bool any_stubs = stub_finder.CheckNet(net);
