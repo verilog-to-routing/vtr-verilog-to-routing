@@ -777,7 +777,6 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             if (node_type == SINK) {
                 // A non-configurable edge to a sink is also a usage of the
                 // set.
-                auto& device_ctx = g_vpr_ctx.device();
                 auto set_itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
                 if (non_config_node_set_usage != nullptr && set_itr != device_ctx.rr_node_to_non_config_node_set.end()) {
                     if (device_ctx.rr_switch_inf[iswitch].configurable()) {
