@@ -2184,9 +2184,9 @@ ast_node_t *reduce_expressions(ast_node_t *node, sc_hierarchy *local_ref, long *
 						temp_instance->children[1]->children[0]->types.identifier,
 						NULL, -1);
 
-					long sc_spot;
+					long sc_spot = sc_lookup_string(module_names_to_idx, temp_instance_name);
 					/* lookup the name of the module associated with this instantiated point */
-					oassert((sc_spot = sc_lookup_string(module_names_to_idx, temp_instance_name)) != -1);
+					oassert(sc_spot != -1);
 					ast_node_t *instance = (ast_node_t *)module_names_to_idx->data[sc_spot];
 
 					/* elaboration */
