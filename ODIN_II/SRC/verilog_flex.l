@@ -647,7 +647,8 @@ void new_define_t(const char* id)
 	
 	if(defines_map.find(tmp) != defines_map.end())
 	{
-		warning_message(PARSE_ERROR, my_yylineno, current_parse_file, "%s defined more than once", id);
+		warning_message(PARSE_ERROR, my_yylineno, current_parse_file, "%s is redefined, overwritting its value", id);
+		delete defines_map[tmp];	
 	}
 
 	defines_map[tmp] = new_define;
