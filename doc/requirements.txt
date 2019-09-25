@@ -12,7 +12,10 @@ recommonmark
 sphinx-markdown-tables
 
 #Handle references in bibtex format
-sphinxcontrib-bibtex
+#
+# To work around citations not resolving we need to use a version < 1 (0.4.2 is the latest), until
+# we upgrade to using sphinx-2.0
+sphinxcontrib-bibtex==0.4.2
 
 #Work-around bug "AttributeError: 'Values' object has no attribute 'character_level_inline_markup'" with docutils 0.13.1
 #See:
