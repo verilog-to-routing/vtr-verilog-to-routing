@@ -20,8 +20,8 @@ It can be useful in analyzing how VPR packs primitives together.
 
 A detailed description of the ``.net`` file format can be found in the :ref:`vpr_pack_file` section.
 
-Placment
---------
+Placement
+---------
 
 This step assigns a location to the Complex Blocks (produced by packing) with the FPGA grid, while optimizing for wirelength and timing.
 The output from this step is written to the ``.place`` file, which contains the physical location of the blocks from the ``.net`` file.
