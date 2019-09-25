@@ -67,6 +67,7 @@ class FasmWriterVisitor : public NetlistVisitor {
 
   private:
       void output_fasm_features(std::string features) const;
+      void output_fasm_features(bool have_clb_prefix, std::string clb_prefix, std::string features) const;
       void check_features(const t_metadata_dict *meta) const;
       void check_interconnect(const t_pb_routes &pb_route, int inode);
       void check_for_lut(const t_pb* atom);
@@ -77,6 +78,10 @@ class FasmWriterVisitor : public NetlistVisitor {
       const LutOutputDefinition* find_lut(const t_pb_graph_node* pb_graph_node);
       void check_for_param(const t_pb *atom);
 
+      // Walk from node to parents and search for a CLB prefix.
+      void find_clb_prefix(const t_pb_graph_node *node,
+        bool *have_prefix, std::string *clb_prefix) const;
+
       std::ostream& os_;
 
       t_pb_graph_node *root_clb_;
@@ -84,6 +89,7 @@ class FasmWriterVisitor : public NetlistVisitor {
       t_physical_tile_type_ptr blk_type_;
       std::string blk_prefix_;
       std::string clb_prefix_;
+      std::map<const t_pb_graph_node *, std::string> clb_prefix_map_;
       ClusterBlockId current_blk_id_;
       std::vector<t_pb_graph_pin**> pb_graph_pin_lookup_from_index_by_type_;
       std::map<const t_pb_type*, std::vector<std::pair<std::string, LutOutputDefinition>>> lut_definitions_;
