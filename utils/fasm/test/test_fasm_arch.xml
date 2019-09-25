@@ -150,10 +150,12 @@
                   <!-- LUT to output is faster than FF to output on a Stratix IV -->
                   <delay_constant max="25e-12" in_port="lut5.out[0:0]" out_port="ble5.out[0:0]"/>
                   <delay_constant max="45e-12" in_port="ff[0:0].Q" out_port="ble5.out[0:0]"/>
-                  <meta name="fasm_mux">
-                    ff.Q : OUT_MUX.FFQ
-                    lut5.out : OUT_MUX.LUT,DISABLE_FF
-                  </meta>
+                  <metadata>
+                    <meta name="fasm_mux">
+                      ff.Q : OUT_MUX.FFQ
+                      lut5.out : OUT_MUX.LUT,DISABLE_FF
+                    </meta>
+                  </metadata>
                 </mux>
               </interconnect>
               <metadata>
@@ -189,6 +191,19 @@
             <input name="in" num_pins="6"/>
             <output name="out" num_pins="1"/>
             <clock name="clk" num_pins="1"/>
+            <!-- Define flip-flop -->
+            <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+              <input name="D" num_pins="1" port_class="D"/>
+              <output name="Q" num_pins="1" port_class="Q"/>
+              <clock name="clk" num_pins="1" port_class="clock"/>
+              <T_setup value="66e-12" port="ff.D" clock="clk"/>
+              <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
+              <metadata>
+                <meta name="fasm_prefix">
+                  ALUT
+                </meta>
+              </metadata>
+            </pb_type>
             <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut">
               <input name="in" num_pins="6" port_class="lut_in"/>
               <output name="out" num_pins="1" port_class="lut_out"/>
@@ -205,18 +220,24 @@
                 <meta name="fasm_lut">
                   LUT6[63:0]
                 </meta>
+                <meta name="fasm_prefix">
+                  ALUT
+                </meta>
               </metadata>
             </pb_type>
-            <!-- Define flip-flop -->
-            <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
-              <input name="D" num_pins="1" port_class="D"/>
-              <output name="Q" num_pins="1" port_class="Q"/>
-              <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="66e-12" port="ff.D" clock="clk"/>
-              <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
-            </pb_type>
             <interconnect>
-              <direct name="direct1" input="ble6.in" output="lut6[0:0].in"/>
+              <direct name="direct1" input="ble6.in" output="lut6[0:0].in">
+                <metadata>
+                  <meta name="fasm_mux">
+                    ble6.in[0] : IN0
+                    ble6.in[1] : IN1
+                    ble6.in[2] : IN2
+                    ble6.in[3] : IN3
+                    ble6.in[4] : IN4
+                    ble6.in[5] : IN5
+                  </meta>
+                </metadata>
+              </direct>
               <direct name="direct2" input="lut6.out" output="ff.D">
                 <pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
               </direct>
