@@ -214,7 +214,7 @@ class CostMap {
 
 static CostMap g_cost_map;
 
-const std::vector<int>& get_rr_node_indcies(t_rr_type rr_type, int start_x, int start_y) {
+static const std::vector<int>& get_rr_node_indcies(t_rr_type rr_type, int start_x, int start_y) {
     const auto& device_ctx = g_vpr_ctx.device();
     if (rr_type == CHANX) {
         return device_ctx.rr_node_indices[rr_type][start_y][start_x][0];
