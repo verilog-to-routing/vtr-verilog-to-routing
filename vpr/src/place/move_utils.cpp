@@ -4,11 +4,11 @@
 #include "place_util.h"
 
 //Records that block 'blk' should be moved to the specified 'to' location
-e_find_affected_blocks_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId blk, t_pl_loc to) {
+e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId blk, t_pl_loc to) {
     auto res = blocks_affected.moved_to.emplace(to);
     if (!res.second) {
         log_move_abort("duplicate block move to location");
-        return e_find_affected_blocks_result::ABORT;
+        return e_block_move_result::ABORT;
     }
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -18,7 +18,7 @@ e_find_affected_blocks_result record_block_move(t_pl_blocks_to_be_moved& blocks_
     auto res2 = blocks_affected.moved_from.emplace(from);
     if (!res2.second) {
         log_move_abort("duplicate block move from location");
-        return e_find_affected_blocks_result::ABORT;
+        return e_block_move_result::ABORT;
     }
 
     VTR_ASSERT_SAFE(to.z < int(place_ctx.grid_blocks[to.x][to.y].blocks.size()));
@@ -30,7 +30,7 @@ e_find_affected_blocks_result record_block_move(t_pl_blocks_to_be_moved& blocks_
     blocks_affected.moved_blocks[imoved_blk].new_loc = to;
     blocks_affected.num_moved_blocks++;
 
-    return e_find_affected_blocks_result::VALID;
+    return e_block_move_result::VALID;
 }
 
 //Moves the blocks in blocks_affected to their new locations
