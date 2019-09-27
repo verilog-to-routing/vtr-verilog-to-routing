@@ -29,6 +29,7 @@
 #include "place_util.h"
 #include "place_delay_model.h"
 #include "move_generator.h"
+#include "move_utils.h"
 
 #include "PlacementDelayCalculator.h"
 #include "VprTimingGraphResolver.h"
@@ -85,13 +86,6 @@ enum e_swap_result {
     ABORTED
 };
 
-enum class e_find_affected_blocks_result {
-    VALID,       //Move successful
-    ABORT,       //Unable to perform move
-    INVERT,      //Try move again but with from/to inverted
-    INVERT_VALID //Completed inverted move
-};
-
 struct t_placer_statistics {
     double av_cost, av_bb_cost, av_timing_cost,
         sum_of_squares;
@@ -124,9 +118,6 @@ constexpr double MAX_INV_TIMING_COST = 1.e9;
  * which avoids multiplying by a gigantic prev_inverse.timing_cost when auto-normalizing.
  * The exact value of this cost has relatively little impact, but should not be
  * large enough to be on the order of timing costs for normal constraints. */
-
-//Define to log and print debug info about aborted moves
-#define DEBUG_ABORTED_MOVES
 
 /********************** Variables local to place.c ***************************/
 
@@ -178,7 +169,7 @@ static vtr::vector<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
  * placement, in the form of array of structs instead of struct with    *
  * arrays for cache effifiency                                          *
  */
-static t_pl_blocks_to_be_moved blocks_affected;
+t_pl_blocks_to_be_moved blocks_affected;
 
 /* The arrays below are used to precompute the inverse of the average   *
  * number of tracks per channel between [subhigh] and [sublow].  Access *
@@ -217,8 +208,6 @@ static const float cross_count[50] = {/* [0..49] */ 1.0, 1.0, 1.0, 1.0828, 1.153
                                       2.7410, 2.7671, 2.7933};
 
 extern vtr::vector<ClusterNetId, float*> f_timing_place_crit; //TODO: encapsulate better
-
-static std::map<std::string, size_t> f_move_abort_reasons;
 
 struct t_type_loc {
     int x = OPEN;
@@ -371,16 +360,10 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 static double comp_bb_cost(e_cost_methods method);
 
-static void apply_move_blocks();
-static void revert_move_blocks();
-static void commit_move_blocks();
-static void clear_move_blocks();
-
 static void update_move_nets(int num_nets_affected);
 static void reset_move_nets(int num_nets_affected);
 
 static e_find_affected_blocks_result record_single_block_swap(ClusterBlockId b_from, t_pl_loc to);
-static e_find_affected_blocks_result record_block_move(ClusterBlockId blk, t_pl_loc to);
 
 static e_propose_move propose_move(ClusterBlockId b_from, t_pl_loc to);
 static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from, t_pl_loc to);
@@ -509,8 +492,6 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const SetupTimingInfo& timing_info,
                                                const PlacementDelayCalculator& delay_calc);
 
-static void log_move_abort(std::string reason);
-static void report_aborted_moves();
 static int grid_to_compressed(const std::vector<int>& coords, int point);
 
 static void print_place_status_header();
@@ -1231,77 +1212,6 @@ static float starting_t(t_placer_costs* costs,
     return (20. * std_dev);
 }
 
-//Moves the blocks in blocks_affected to their new locations
-static void apply_move_blocks() {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    //Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
-    //yet since we don't know whether the swap will be accepted
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
-        ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
-
-        place_ctx.block_locs[blk].loc = blocks_affected.moved_blocks[iblk].new_loc;
-    }
-}
-
-//Commits the blocks in blocks_affected to their new locations (updates inverse
-//lookups via place_ctx.grid_blocks)
-static void commit_move_blocks() {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    /* Swap physical location */
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
-        ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
-
-        t_pl_loc to = blocks_affected.moved_blocks[iblk].new_loc;
-
-        t_pl_loc from = blocks_affected.moved_blocks[iblk].old_loc;
-
-        //Remove from old location only if it hasn't already been updated by a previous block update
-        if (place_ctx.grid_blocks[from.x][from.y].blocks[from.z] == blk) {
-            ;
-            place_ctx.grid_blocks[from.x][from.y].blocks[from.z] = EMPTY_BLOCK_ID;
-            --place_ctx.grid_blocks[from.x][from.y].usage;
-        }
-
-        //Add to new location
-        if (place_ctx.grid_blocks[to.x][to.y].blocks[to.z] == EMPTY_BLOCK_ID) {
-            ;
-            //Only need to increase usage if previously unused
-            ++place_ctx.grid_blocks[to.x][to.y].usage;
-        }
-        place_ctx.grid_blocks[to.x][to.y].blocks[to.z] = blk;
-
-    } // Finish updating clb for all blocks
-}
-
-//Moves the blocks in blocks_affected to their old locations
-static void revert_move_blocks() {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    // Swap the blocks back, nets not yet swapped they don't need to be changed
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
-        ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
-
-        t_pl_loc old = blocks_affected.moved_blocks[iblk].old_loc;
-
-        place_ctx.block_locs[blk].loc = old;
-
-        VTR_ASSERT_SAFE_MSG(place_ctx.grid_blocks[old.x][old.y].blocks[old.z] = blk, "Grid blocks should only have been updated if swap commited (not reverted)");
-    }
-}
-
-//Clears the current move so a new move can be proposed
-static void clear_move_blocks() {
-    //Reset moved flags
-    blocks_affected.moved_to.clear();
-    blocks_affected.moved_from.clear();
-
-    //For run-time we just reset num_moved_blocks to zero, but do not free the blocks_affected
-    //array to avoid memory allocation
-    blocks_affected.num_moved_blocks = 0;
-}
-
 static void update_move_nets(int num_nets_affected) {
     /* update net cost functions and reset flags. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1329,34 +1239,6 @@ static void reset_move_nets(int num_nets_affected) {
     }
 }
 
-static e_find_affected_blocks_result record_block_move(ClusterBlockId blk, t_pl_loc to) {
-    auto res = blocks_affected.moved_to.emplace(to);
-    if (!res.second) {
-        log_move_abort("duplicate block move to location");
-        return e_find_affected_blocks_result::ABORT;
-    }
-
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    t_pl_loc from = place_ctx.block_locs[blk].loc;
-
-    auto res2 = blocks_affected.moved_from.emplace(from);
-    if (!res2.second) {
-        log_move_abort("duplicate block move from location");
-        return e_find_affected_blocks_result::ABORT;
-    }
-
-    VTR_ASSERT_SAFE(to.z < int(place_ctx.grid_blocks[to.x][to.y].blocks.size()));
-
-    // Sets up the blocks moved
-    int imoved_blk = blocks_affected.num_moved_blocks;
-    blocks_affected.moved_blocks[imoved_blk].block_num = blk;
-    blocks_affected.moved_blocks[imoved_blk].old_loc = from;
-    blocks_affected.moved_blocks[imoved_blk].new_loc = to;
-    blocks_affected.num_moved_blocks++;
-
-    return e_find_affected_blocks_result::VALID;
-}
 
 static e_find_affected_blocks_result record_single_block_swap(ClusterBlockId b_from, t_pl_loc to) {
     /* Find all the blocks affected when b_from is swapped with b_to.
@@ -3741,23 +3623,6 @@ static void update_screen_debug() {
 }
 #endif
 
-#ifdef DEBUG_ABORTED_MOVES
-static void log_move_abort(std::string reason) {
-    ++f_move_abort_reasons[reason];
-#else
-static void log_move_abort(std::string /*reason*/) {
-#endif
-}
-
-static void report_aborted_moves() {
-#ifdef DEBUG_ABORTED_MOVES
-    VTR_LOG("\n");
-    VTR_LOG("Aborted Move Reasons:\n");
-    for (auto kv : f_move_abort_reasons) {
-        VTR_LOG("  %s: %zu\n", kv.first.c_str(), kv.second);
-    }
-#endif
-}
 
 static int grid_to_compressed(const std::vector<int>& coords, int point) {
     auto itr = std::lower_bound(coords.begin(), coords.end(), point);
