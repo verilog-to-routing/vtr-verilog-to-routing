@@ -3,10 +3,8 @@
 #include "globals.h"
 #include "place_util.h"
 
-extern t_pl_blocks_to_be_moved blocks_affected;
-
 //Records that block 'blk' should be moved to the specified 'to' location
-e_find_affected_blocks_result record_block_move(ClusterBlockId blk, t_pl_loc to) {
+e_find_affected_blocks_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId blk, t_pl_loc to) {
     auto res = blocks_affected.moved_to.emplace(to);
     if (!res.second) {
         log_move_abort("duplicate block move to location");
@@ -36,7 +34,7 @@ e_find_affected_blocks_result record_block_move(ClusterBlockId blk, t_pl_loc to)
 }
 
 //Moves the blocks in blocks_affected to their new locations
-void apply_move_blocks() {
+void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     //Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
@@ -50,7 +48,7 @@ void apply_move_blocks() {
 
 //Commits the blocks in blocks_affected to their new locations (updates inverse
 //lookups via place_ctx.grid_blocks)
-void commit_move_blocks() {
+void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     /* Swap physical location */
@@ -80,7 +78,7 @@ void commit_move_blocks() {
 }
 
 //Moves the blocks in blocks_affected to their old locations
-void revert_move_blocks() {
+void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     // Swap the blocks back, nets not yet swapped they don't need to be changed
@@ -96,7 +94,7 @@ void revert_move_blocks() {
 }
 
 //Clears the current move so a new move can be proposed
-void clear_move_blocks() {
+void clear_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
     //Reset moved flags
     blocks_affected.moved_to.clear();
     blocks_affected.moved_from.clear();

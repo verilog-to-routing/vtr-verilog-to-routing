@@ -36,14 +36,14 @@ enum class e_find_affected_blocks_result {
     INVERT_VALID //Completed inverted move
 };
 
-e_find_affected_blocks_result record_block_move(ClusterBlockId blk, t_pl_loc to);
+e_find_affected_blocks_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId blk, t_pl_loc to);
 
-void apply_move_blocks();
+void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
-void commit_move_blocks();
+void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
-void revert_move_blocks();
+void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected);
 
-void clear_move_blocks();
+void clear_move_blocks(t_pl_blocks_to_be_moved& blocks_affected);
 
 #endif

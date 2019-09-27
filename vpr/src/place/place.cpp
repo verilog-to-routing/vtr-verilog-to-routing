@@ -1257,18 +1257,18 @@ static e_find_affected_blocks_result record_single_block_swap(ClusterBlockId b_f
     // Check whether the to_location is empty
     if (b_to == EMPTY_BLOCK_ID) {
         // Sets up the blocks moved
-        outcome = record_block_move(b_from, to);
+        outcome = record_block_move(blocks_affected, b_from, to);
 
     } else if (b_to != INVALID_BLOCK_ID) {
         // Sets up the blocks moved
-        outcome = record_block_move(b_from, to);
+        outcome = record_block_move(blocks_affected, b_from, to);
 
         if (outcome != e_find_affected_blocks_result::VALID) {
             return outcome;
         }
 
         t_pl_loc from = place_ctx.block_locs[b_from].loc;
-        outcome = record_block_move(b_to, from);
+        outcome = record_block_move(blocks_affected, b_to, from);
 
     } // Finish swapping the blocks and setting up blocks_affected
 
@@ -1556,7 +1556,7 @@ static e_find_affected_blocks_result record_macro_move(std::vector<ClusterBlockI
 
         ClusterBlockId blk_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
 
-        record_block_move(member.blk_index, to);
+        record_block_move(blocks_affected, member.blk_index, to);
 
         int imacro_to = -1;
         get_imacro_from_iblk(&imacro_to, blk_to, place_ctx.pl_macros);
@@ -1571,7 +1571,7 @@ static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, t
     auto& place_ctx = g_vpr_ctx.placement();
 
     //Reset any partial move
-    clear_move_blocks();
+    clear_move_blocks(blocks_affected);
 
     //Collect the macros affected
     std::vector<int> affected_macros;
@@ -1617,7 +1617,7 @@ static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, t
     //Fit the displaced blocks into the empty locations
     auto loc_itr = empty_locs.begin();
     for (auto blk : non_macro_displaced_blocks) {
-        outcome = record_block_move(blk, *loc_itr);
+        outcome = record_block_move(blocks_affected, blk, *loc_itr);
         ++loc_itr;
     }
 
@@ -1702,7 +1702,7 @@ static e_swap_result try_swap(float t,
 
     if (move_outcome == e_propose_move::ABORT) {
         //Proposed move is not legal -- give up on this move
-        clear_move_blocks();
+        clear_move_blocks(blocks_affected);
 
         LOG_MOVE_STATS_OUTCOME(std::numeric_limits<float>::quiet_NaN(),
                                std::numeric_limits<float>::quiet_NaN(),
@@ -1728,7 +1728,7 @@ static e_swap_result try_swap(float t,
      */
 
     //Update the block positions
-    apply_move_blocks();
+    apply_move_blocks(blocks_affected);
 
     // Find all the nets affected by this swap and update their costs
     int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm, delay_model, bb_delta_c, timing_delta_c);
@@ -1763,17 +1763,17 @@ static e_swap_result try_swap(float t,
         update_move_nets(num_nets_affected);
 
         /* Update clb data structures since we kept the move. */
-        commit_move_blocks();
+        commit_move_blocks(blocks_affected);
 
     } else { /* Move was rejected.  */
              /* Reset the net cost function flags first. */
         reset_move_nets(num_nets_affected);
 
         /* Restore the place_ctx.block_locs data structures to their state before the move. */
-        revert_move_blocks();
+        revert_move_blocks(blocks_affected);
     }
 
-    clear_move_blocks();
+    clear_move_blocks(blocks_affected);
 
     //VTR_ASSERT(check_macro_placement_consistency() == 0);
 #if 0
