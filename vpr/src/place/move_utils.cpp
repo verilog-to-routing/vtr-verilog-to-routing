@@ -430,3 +430,38 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
 
     return empty_locs;
 }
+
+//Pick a random block to be swapped with another random block.
+//If none is found return ClusterBlockId::INVALID()
+ClusterBlockId pick_from_block() {
+    /* Some blocks may be fixed, and should never be moved from their *
+     * initial positions. If we randomly selected such a block try    *
+     * another random block.                                          *
+     *                                                                *
+     * We need to track the blocks we have tried to avoid an infinite *
+     * loop if all blocks are fixed.                                  */
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    std::unordered_set<ClusterBlockId> tried_from_blocks;
+
+    //So long as untried blocks remain
+    while (tried_from_blocks.size() < cluster_ctx.clb_nlist.blocks().size()) {
+        //Pick a block at random
+        ClusterBlockId b_from = ClusterBlockId(vtr::irand((int)cluster_ctx.clb_nlist.blocks().size() - 1));
+
+        //Record it as tried
+        tried_from_blocks.insert(b_from);
+
+        if (place_ctx.block_locs[b_from].is_fixed) {
+            continue; //Fixed location, try again
+        }
+
+        //Found a movable block
+        return b_from;
+    }
+
+    //No movable blocks found
+    return ClusterBlockId::INVALID();
+}
+

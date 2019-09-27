@@ -31,4 +31,6 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to);
 
 std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected);
 
+ClusterBlockId pick_from_block();
+
 #endif

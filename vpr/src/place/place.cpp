@@ -369,8 +369,6 @@ static e_swap_result try_swap(float t,
                               enum e_place_algorithm place_algorithm,
                               float timing_tradeoff);
 
-static ClusterBlockId pick_from_block();
-
 static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
                         enum e_place_algorithm place_algorithm);
@@ -1356,40 +1354,6 @@ static e_swap_result try_swap(float t,
     LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c,
                            (keep_switch ? "ACCEPTED" : "REJECTED"), "");
     return (keep_switch);
-}
-
-//Pick a random block to be swapped with another random block.
-//If none is found return ClusterBlockId::INVALID()
-static ClusterBlockId pick_from_block() {
-    /* Some blocks may be fixed, and should never be moved from their *
-     * initial positions. If we randomly selected such a block try    *
-     * another random block.                                          *
-     *                                                                *
-     * We need to track the blocks we have tried to avoid an infinite *
-     * loop if all blocks are fixed.                                  */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    std::unordered_set<ClusterBlockId> tried_from_blocks;
-
-    //So long as untried blocks remain
-    while (tried_from_blocks.size() < cluster_ctx.clb_nlist.blocks().size()) {
-        //Pick a block at random
-        ClusterBlockId b_from = ClusterBlockId(vtr::irand((int)cluster_ctx.clb_nlist.blocks().size() - 1));
-
-        //Record it as tried
-        tried_from_blocks.insert(b_from);
-
-        if (place_ctx.block_locs[b_from].is_fixed) {
-            continue; //Fixed location, try again
-        }
-
-        //Found a movable block
-        return b_from;
-    }
-
-    //No movable blocks found
-    return ClusterBlockId::INVALID();
 }
 
 //Puts all the nets changed by the current swap into nets_to_update,
