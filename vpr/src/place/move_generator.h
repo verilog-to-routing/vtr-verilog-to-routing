@@ -3,11 +3,6 @@
 #include "vpr_types.h"
 #include "move_utils.h"
 
-enum class e_propose_move {
-    VALID, //Move successful and legal
-    ABORT, //Unable to perform move
-};
-
 class MoveGenerator {
   public:
     virtual ~MoveGenerator() {}
