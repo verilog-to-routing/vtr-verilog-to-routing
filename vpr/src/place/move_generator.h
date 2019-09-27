@@ -1,6 +1,7 @@
 #ifndef VPR_MOVE_GENERATOR_H
 #define VPR_MOVE_GENERATOR_H
 #include "vpr_types.h"
+#include "move_utils.h"
 
 enum class e_propose_move {
     VALID, //Move successful and legal
