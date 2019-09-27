@@ -165,12 +165,6 @@ static vtr::vector<ClusterBlockId, std::vector<int>> net_pin_indices;
 
 static vtr::vector<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
 
-/* Store the information on the blocks to be moved in a swap during     *
- * placement, in the form of array of structs instead of struct with    *
- * arrays for cache effifiency                                          *
- */
-t_pl_blocks_to_be_moved blocks_affected;
-
 /* The arrays below are used to precompute the inverse of the average   *
  * number of tracks per channel between [subhigh] and [sublow].  Access *
  * them as chan?_place_cost_fac[subhigh][sublow].  They are used to     *
@@ -363,29 +357,31 @@ static double comp_bb_cost(e_cost_methods method);
 static void update_move_nets(int num_nets_affected);
 static void reset_move_nets(int num_nets_affected);
 
-static e_find_affected_blocks_result record_single_block_swap(ClusterBlockId b_from, t_pl_loc to);
+static e_find_affected_blocks_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
 
-static e_propose_move propose_move(ClusterBlockId b_from, t_pl_loc to);
-static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from, t_pl_loc to);
+static e_propose_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
+static e_find_affected_blocks_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
 
-static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, int& imember_from, t_pl_offset swap_offset);
-static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_from, int& imember_from, const int imacro_to, ClusterBlockId blk_to, t_pl_offset swap_offset);
+static e_find_affected_blocks_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro_from, int& imember_from, t_pl_offset swap_offset);
+static e_find_affected_blocks_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro_from, int& imember_from, const int imacro_to, ClusterBlockId blk_to, t_pl_offset swap_offset);
 
-static e_find_affected_blocks_result record_macro_move(std::vector<ClusterBlockId>& displaced_blocks,
+static e_find_affected_blocks_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected, 
+                                                       std::vector<ClusterBlockId>& displaced_blocks,
                                                        const int imacro,
                                                        t_pl_offset swap_offset);
 static e_find_affected_blocks_result identify_macro_self_swap_affected_macros(std::vector<int>& macros, const int imacro, t_pl_offset swap_offset);
-static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, t_pl_offset swap_offset);
+static e_find_affected_blocks_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro, t_pl_offset swap_offset);
 
 bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to);
 
-std::set<t_pl_loc> determine_locations_emptied_by_move();
+std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected);
 
 static e_swap_result try_swap(float t,
                               t_placer_costs* costs,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
+                              t_pl_blocks_to_be_moved& blocks_affected,
                               const PlaceDelayModel* delay_model,
                               float rlim_escape_fraction,
                               enum e_place_algorithm place_algorithm,
@@ -411,6 +407,7 @@ static float starting_t(t_placer_costs* costs,
                         float rlim,
                         const PlaceDelayModel* delay_model,
                         MoveGenerator& move_generator,
+                        t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts);
 
 static void update_t(float* t, float rlim, float success_rat, t_annealing_sched annealing_sched);
@@ -429,9 +426,9 @@ static float comp_td_point_to_point_delay(const PlaceDelayModel* delay_model, Cl
 
 static void comp_td_point_to_point_delays(const PlaceDelayModel* delay_model);
 
-static void update_td_cost();
+static void update_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
 
-static bool driven_by_moved_block(const ClusterNetId net);
+static bool driven_by_moved_block(const ClusterNetId net, const t_pl_blocks_to_be_moved& blocks_affected);
 
 static void comp_td_costs(const PlaceDelayModel* delay_model, double* timing_cost);
 
@@ -443,12 +440,20 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new);
 
 static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new, int xold, int yold, int xnew, int ynew);
 
-static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel* delay_model, double& bb_delta_c, double& timing_delta_c);
+static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm,
+                                               const t_pl_blocks_to_be_moved& blocks_affected,
+                                               const PlaceDelayModel* delay_model,
+                                               double& bb_delta_c,
+                                               double& timing_delta_c);
 
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
 
-static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId blk, const ClusterPinId blk_pin);
-static void update_td_delta_costs(const PlaceDelayModel* delay_model, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost);
+static void update_net_bb(const ClusterNetId net,
+                          const t_pl_blocks_to_be_moved& blocks_affected,
+                          int iblk,
+                          const ClusterBlockId blk,
+                          const ClusterPinId blk_pin);
+static void update_td_delta_costs(const PlaceDelayModel* delay_model, const t_pl_blocks_to_be_moved& blocks_affected, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost);
 
 static double get_net_cost(ClusterNetId net_id, t_bb* bb_ptr);
 
@@ -481,6 +486,7 @@ static void placement_inner_loop(float t,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                  const PlaceDelayModel* delay_model,
                                  MoveGenerator& move_generator,
+                                 t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo& timing_info);
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel* delay_model, t_placer_costs* costs);
@@ -546,6 +552,8 @@ void try_place(const t_placer_opts& placer_opts,
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
     std::unique_ptr<PlaceDelayModel> place_delay_model;
     std::unique_ptr<MoveGenerator> move_generator;
+
+    t_pl_blocks_to_be_moved blocks_affected(cluster_ctx.clb_nlist.blocks().size());
 
     /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
     IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
@@ -699,6 +707,7 @@ void try_place(const t_placer_opts& placer_opts,
                    annealing_sched, move_lim, rlim,
                    place_delay_model.get(),
                    *move_generator,
+                   blocks_affected,
                    placer_opts);
 
     if (!placer_opts.move_stats_file.empty()) {
@@ -731,6 +740,7 @@ void try_place(const t_placer_opts& placer_opts,
                              netlist_pin_lookup,
                              place_delay_model.get(),
                              *move_generator,
+                             blocks_affected,
                              *timing_info);
 
         tot_iter += move_lim;
@@ -790,6 +800,7 @@ void try_place(const t_placer_opts& placer_opts,
                          netlist_pin_lookup,
                          place_delay_model.get(),
                          *move_generator,
+                         blocks_affected,
                          *timing_info);
 
     tot_iter += move_lim;
@@ -950,6 +961,7 @@ static void placement_inner_loop(float t,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                  const PlaceDelayModel* delay_model,
                                  MoveGenerator& move_generator,
+                                 t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo& timing_info) {
     int inner_crit_iter_count, inner_iter;
 
@@ -965,6 +977,7 @@ static void placement_inner_loop(float t,
     for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
         e_swap_result swap_result = try_swap(t, costs, prev_inverse_costs, rlim,
                                              move_generator,
+                                             blocks_affected,
                                              delay_model,
                                              placer_opts.rlim_escape_fraction,
                                              placer_opts.place_algorithm,
@@ -1153,6 +1166,7 @@ static float starting_t(t_placer_costs* costs,
                         float rlim,
                         const PlaceDelayModel* delay_model,
                         MoveGenerator& move_generator,
+                        t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts) {
     /* Finds the starting temperature (hot condition).              */
 
@@ -1175,6 +1189,7 @@ static float starting_t(t_placer_costs* costs,
     for (i = 0; i < move_lim; i++) {
         e_swap_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, costs, prev_inverse_costs, rlim,
                                              move_generator,
+                                             blocks_affected,
                                              delay_model,
                                              placer_opts.rlim_escape_fraction,
                                              placer_opts.place_algorithm,
@@ -1240,7 +1255,7 @@ static void reset_move_nets(int num_nets_affected) {
 }
 
 
-static e_find_affected_blocks_result record_single_block_swap(ClusterBlockId b_from, t_pl_loc to) {
+static e_find_affected_blocks_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
     /* Find all the blocks affected when b_from is swapped with b_to.
      * Returns abort_swap.                  */
 
@@ -1275,8 +1290,8 @@ static e_find_affected_blocks_result record_single_block_swap(ClusterBlockId b_f
     return outcome;
 }
 
-static e_propose_move propose_move(ClusterBlockId b_from, t_pl_loc to) {
-    e_find_affected_blocks_result outcome = find_affected_blocks(b_from, to);
+static e_propose_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
+    e_find_affected_blocks_result outcome = find_affected_blocks(blocks_affected, b_from, to);
 
     if (outcome == e_find_affected_blocks_result::INVERT) {
         //Try inverting the swap direction
@@ -1290,7 +1305,7 @@ static e_propose_move propose_move(ClusterBlockId b_from, t_pl_loc to) {
         } else {
             t_pl_loc from = place_ctx.block_locs[b_from].loc;
 
-            outcome = find_affected_blocks(b_to, from);
+            outcome = find_affected_blocks(blocks_affected, b_to, from);
 
             if (outcome == e_find_affected_blocks_result::INVERT) {
                 log_move_abort("inverted move recurrsion");
@@ -1308,7 +1323,7 @@ static e_propose_move propose_move(ClusterBlockId b_from, t_pl_loc to) {
     }
 }
 
-static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from, t_pl_loc to) {
+static e_find_affected_blocks_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
     /* Finds and set ups the affected_blocks array.
      * Returns abort_swap. */
     VTR_ASSERT_SAFE(b_from);
@@ -1331,7 +1346,7 @@ static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from,
         t_pl_offset swap_offset = to - from;
 
         int imember_from = 0;
-        outcome = record_macro_swaps(imacro_from, imember_from, swap_offset);
+        outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset);
 
         VTR_ASSERT_SAFE(outcome != e_find_affected_blocks_result::VALID || imember_from == int(pl_macros[imacro_from].members.size()));
 
@@ -1348,7 +1363,7 @@ static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from,
             outcome = e_find_affected_blocks_result::INVERT;
         } else {
             // This is not a macro - I could use the from and to info from before
-            outcome = record_single_block_swap(b_from, to);
+            outcome = record_single_block_swap(blocks_affected, b_from, to);
         }
 
     } // Finish handling cases for blocks in macro and otherwise
@@ -1359,7 +1374,7 @@ static e_find_affected_blocks_result find_affected_blocks(ClusterBlockId b_from,
 //Records all the block movements required to move the macro imacro_from starting at member imember_from
 //to a new position offset from its current position by swap_offset. The new location may be a
 //single (non-macro) block, or another macro.
-static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, int& imember_from, t_pl_offset swap_offset) {
+static e_find_affected_blocks_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro_from, int& imember_from, t_pl_offset swap_offset) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& pl_macros = place_ctx.pl_macros;
 
@@ -1393,11 +1408,11 @@ static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, i
                 //To block is a macro
 
                 if (imacro_from == imacro_to) {
-                    outcome = record_macro_self_swaps(imacro_from, swap_offset);
+                    outcome = record_macro_self_swaps(blocks_affected, imacro_from, swap_offset);
                     imember_from = pl_macros[imacro_from].members.size();
                     break; //record_macro_self_swaps() handles this case completely, so we don't need to continue the loop
                 } else {
-                    outcome = record_macro_macro_swaps(imacro_from, imember_from, imacro_to, b_to, swap_offset);
+                    outcome = record_macro_macro_swaps(blocks_affected, imacro_from, imember_from, imacro_to, b_to, swap_offset);
                     if (outcome == e_find_affected_blocks_result::INVERT_VALID) {
                         break; //The move was inverted and successfully proposed, don't need to continue the loop
                     }
@@ -1405,7 +1420,7 @@ static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, i
                 }
             } else {
                 //To block is not a macro
-                outcome = record_single_block_swap(curr_b_from, curr_to);
+                outcome = record_single_block_swap(blocks_affected, curr_b_from, curr_to);
             }
         }
     } // Finish going through all the blocks in the macro
@@ -1415,7 +1430,7 @@ static e_find_affected_blocks_result record_macro_swaps(const int imacro_from, i
 //Records all the block movements required to move the macro imacro_from starting at member imember_from
 //to a new position offset from its current position by swap_offset. The new location must be where
 //blk_to is located and blk_to must be part of imacro_to.
-static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_from, int& imember_from, const int imacro_to, ClusterBlockId blk_to, t_pl_offset swap_offset) {
+static e_find_affected_blocks_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro_from, int& imember_from, const int imacro_to, ClusterBlockId blk_to, t_pl_offset swap_offset) {
     //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to it's
     //new position.
     //
@@ -1432,7 +1447,7 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
     //allow these blocks to swap)
     if (place_ctx.pl_macros[imacro_to].members[0].blk_index != blk_to) {
         int imember_to = 0;
-        auto outcome = record_macro_swaps(imacro_to, imember_to, -swap_offset);
+        auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset);
         if (outcome == e_find_affected_blocks_result::INVERT) {
             log_move_abort("invert recursion2");
             outcome = e_find_affected_blocks_result::ABORT;
@@ -1482,7 +1497,7 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
             return e_find_affected_blocks_result::ABORT;
         }
 
-        auto outcome = record_single_block_swap(b_from, curr_to);
+        auto outcome = record_single_block_swap(blocks_affected, b_from, curr_to);
         if (outcome != e_find_affected_blocks_result::VALID) {
             return outcome;
         }
@@ -1493,7 +1508,7 @@ static e_find_affected_blocks_result record_macro_macro_swaps(const int imacro_f
         //
         //Swap the remainder of the 'to' macro to locations after the 'from' macro.
         //Note that we are swapping in the opposite direction so the swap offsets are inverted.
-        return record_macro_swaps(imacro_to, imember_to, -swap_offset);
+        return record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset);
     }
 
     return e_find_affected_blocks_result::VALID;
@@ -1539,7 +1554,8 @@ static e_find_affected_blocks_result identify_macro_self_swap_affected_macros(st
 //and any generated empty locations in empty_locations.
 //
 //This function moves a single macro and does not check for overlap with other macros!
-static e_find_affected_blocks_result record_macro_move(std::vector<ClusterBlockId>& displaced_blocks,
+static e_find_affected_blocks_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected, 
+                                                       std::vector<ClusterBlockId>& displaced_blocks,
                                                        const int imacro,
                                                        t_pl_offset swap_offset) {
     auto& place_ctx = g_vpr_ctx.placement();
@@ -1567,7 +1583,9 @@ static e_find_affected_blocks_result record_macro_move(std::vector<ClusterBlockI
     return e_find_affected_blocks_result::VALID;
 }
 
-static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, t_pl_offset swap_offset) {
+static e_find_affected_blocks_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected, 
+                                                             const int imacro,
+                                                             t_pl_offset swap_offset) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     //Reset any partial move
@@ -1589,7 +1607,7 @@ static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, t
 
     //Move all the affected macros by the offset
     for (int imacro_affected : affected_macros) {
-        outcome = record_macro_move(displaced_blocks, imacro_affected, swap_offset);
+        outcome = record_macro_move(blocks_affected, displaced_blocks, imacro_affected, swap_offset);
 
         if (outcome != e_find_affected_blocks_result::VALID) {
             return outcome;
@@ -1610,7 +1628,7 @@ static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, t
     std::copy_if(displaced_blocks.begin(), displaced_blocks.end(), std::back_inserter(non_macro_displaced_blocks), is_non_macro_block);
 
     //Based on the currently queued block moves, find the empty 'holes' left behind
-    auto empty_locs = determine_locations_emptied_by_move();
+    auto empty_locs = determine_locations_emptied_by_move(blocks_affected);
 
     VTR_ASSERT_SAFE(empty_locs.size() >= non_macro_displaced_blocks.size());
 
@@ -1645,7 +1663,7 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
 }
 
 //Examines the currently proposed move and determine any empty locations
-std::set<t_pl_loc> determine_locations_emptied_by_move() {
+std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected) { 
     std::set<t_pl_loc> moved_from;
     std::set<t_pl_loc> moved_to;
 
@@ -1670,6 +1688,7 @@ static e_swap_result try_swap(float t,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
+                              t_pl_blocks_to_be_moved& blocks_affected,
                               const PlaceDelayModel* delay_model,
                               float rlim_escape_fraction,
                               enum e_place_algorithm place_algorithm,
@@ -1731,7 +1750,7 @@ static e_swap_result try_swap(float t,
     apply_move_blocks(blocks_affected);
 
     // Find all the nets affected by this swap and update their costs
-    int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm, delay_model, bb_delta_c, timing_delta_c);
+    int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm, blocks_affected, delay_model, bb_delta_c, timing_delta_c);
 
     if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         /*in this case we redefine delta_c as a combination of timing and bb.  *
@@ -1756,7 +1775,7 @@ static e_swap_result try_swap(float t,
              * values from the temporary values */
             costs->timing_cost += timing_delta_c;
 
-            update_td_cost();
+            update_td_cost(blocks_affected);
         }
 
         /* update net cost functions and reset flags. */
@@ -1824,7 +1843,11 @@ static ClusterBlockId pick_from_block() {
 //and updates their bounding box.
 //
 //Returns the number of affected nets.
-static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, const PlaceDelayModel* delay_model, double& bb_delta_c, double& timing_delta_c) {
+static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm,
+                                               const t_pl_blocks_to_be_moved& blocks_affected,
+                                               const PlaceDelayModel* delay_model,
+                                               double& bb_delta_c,
+                                               double& timing_delta_c) {
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1850,11 +1873,11 @@ static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm
             //
             //Do not update the net cost here since it should only be updated
             //once per net, not once per pin.
-            update_net_bb(net_id, iblk, blk, blk_pin);
+            update_net_bb(net_id, blocks_affected, iblk, blk, blk_pin);
 
             if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
                 //Determine the change in timing costs if required
-                update_td_delta_costs(delay_model, net_id, blk_pin, timing_delta_c);
+                update_td_delta_costs(delay_model, blocks_affected, net_id, blk_pin, timing_delta_c);
             }
         }
     }
@@ -1884,7 +1907,11 @@ static void record_affected_net(const ClusterNetId net, int& num_affected_nets) 
     }
 }
 
-static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId blk, const ClusterPinId blk_pin) {
+static void update_net_bb(const ClusterNetId net,
+                          const t_pl_blocks_to_be_moved& blocks_affected,
+                          int iblk,
+                          const ClusterBlockId blk,
+                          const ClusterPinId blk_pin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
@@ -1911,7 +1938,7 @@ static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId
     }
 }
 
-static void update_td_delta_costs(const PlaceDelayModel* delay_model, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost) {
+static void update_td_delta_costs(const PlaceDelayModel* delay_model, const t_pl_blocks_to_be_moved& blocks_affected, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
@@ -1934,7 +1961,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model, const Clus
         //
         //Computing it here would double count the change, and mess up the
         //delta_timing_cost value.
-        if (!driven_by_moved_block(net)) {
+        if (!driven_by_moved_block(net, blocks_affected)) {
             int net_pin = cluster_ctx.clb_nlist.pin_net_index(pin);
 
             float temp_delay = comp_td_point_to_point_delay(delay_model, net, net_pin);
@@ -2181,7 +2208,8 @@ static void comp_td_point_to_point_delays(const PlaceDelayModel* delay_model) {
 
 /* Update the point_to_point_timing_cost values from the temporary *
  * values for all connections that have changed.                   */
-static void update_td_cost() {
+static void update_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
+
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* Go through all the blocks moved. */
@@ -2207,7 +2235,7 @@ static void update_td_cost() {
                 VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::SINK);
 
                 /* The following "if" prevents the value from being updated twice. */
-                if (!driven_by_moved_block(net_id)) {
+                if (!driven_by_moved_block(net_id, blocks_affected)) {
                     int net_pin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
 
                     point_to_point_delay[net_id][net_pin] = temp_point_to_point_delay[net_id][net_pin];
@@ -2220,7 +2248,7 @@ static void update_td_cost() {
     }     /* Finished going through all the blocks moved */
 }
 
-static bool driven_by_moved_block(const ClusterNetId net) {
+static bool driven_by_moved_block(const ClusterNetId net, const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     ClusterBlockId net_driver_block = cluster_ctx.clb_nlist.net_driver_block(net);
@@ -2464,10 +2492,6 @@ static void alloc_and_load_try_swap_structs() {
     ts_bb_coord_new.resize(num_nets, t_bb());
     ts_bb_edge_new.resize(num_nets, t_bb());
     ts_nets_to_update.resize(num_nets, ClusterNetId::INVALID());
-
-    /* Allocate with size cluster_ctx.clb_nlist.blocks().size() for any number of moved blocks. */
-    blocks_affected.moved_blocks = std::vector<t_pl_moved_block>(cluster_ctx.clb_nlist.blocks().size());
-    blocks_affected.num_moved_blocks = 0;
 
     f_compressed_block_grids = create_compressed_block_grids();
 }
@@ -3577,8 +3601,6 @@ static void print_clb_placement(const char* fname) {
 #endif
 
 static void free_try_swap_arrays() {
-    blocks_affected.moved_blocks.clear();
-    blocks_affected.num_moved_blocks = 0;
     f_compressed_block_grids.clear();
 }
 
@@ -3664,7 +3686,7 @@ static void print_place_status(const float t,
     fflush(stdout);
 }
 
-e_propose_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& /*affected_blocks*/, float rlim) {
+e_propose_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
@@ -3697,5 +3719,5 @@ e_propose_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& /*aff
     VTR_LOG("\n");
 #endif
 
-    return ::propose_move(b_from, to);
+    return ::propose_move(blocks_affected, b_from, to);
 }
