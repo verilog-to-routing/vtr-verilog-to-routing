@@ -202,39 +202,6 @@ static const float cross_count[50] = {/* [0..49] */ 1.0, 1.0, 1.0, 1.0828, 1.153
 
 extern vtr::vector<ClusterNetId, float*> f_timing_place_crit; //TODO: encapsulate better
 
-struct t_type_loc {
-    int x = OPEN;
-    int y = OPEN;
-
-    t_type_loc(int x_val, int y_val)
-        : x(x_val)
-        , y(y_val) {}
-
-    //Returns true if this type location has valid x/y values
-    operator bool() const {
-        return !(x == OPEN || y == OPEN);
-    }
-};
-
-struct t_compressed_block_grid {
-    //If 'cx' is an index in the compressed grid space, then
-    //'compressed_to_grid_x[cx]' is the corresponding location in the
-    //full (uncompressed) device grid.
-    std::vector<int> compressed_to_grid_x;
-    std::vector<int> compressed_to_grid_y;
-
-    //The grid is stored with a full/dense x-dimension (since only
-    //x values which exist are considered), while the y-dimension is
-    //stored sparsely, since we may not have full columns of blocks.
-    //This makes it easy to check whether there exist
-    std::vector<vtr::flat_map2<int, t_type_loc>> grid;
-};
-
-//Compressed grid space for each block type
-//Used to efficiently find logically 'adjacent' blocks of the same block type even though
-//the may be physically far apart
-static std::vector<t_compressed_block_grid> f_compressed_block_grids;
-
 std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr, vtr::fclose);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -323,10 +290,6 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 static void alloc_and_load_net_pin_indices();
 
 static void alloc_and_load_try_swap_structs();
-
-static std::vector<t_compressed_block_grid> create_compressed_block_grids();
-
-static t_compressed_block_grid create_compressed_block_grid(const std::vector<vtr::Point<int>>& locations);
 
 static void free_placement_structs(const t_placer_opts& placer_opts);
 
@@ -475,7 +438,6 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const SetupTimingInfo& timing_info,
                                                const PlacementDelayCalculator& delay_calc);
 
-static int grid_to_compressed(const std::vector<int>& coords, int point);
 
 static void print_place_status_header();
 static void print_place_status(const float t,
@@ -1487,138 +1449,6 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model, const t_pl
     }
 }
 
-bool find_to(t_physical_tile_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& to) {
-    //Finds a legal swap to location for the given type, starting from 'x_from' and 'y_from'
-    //
-    //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
-    //of the same block types, and not the physical grid space). This means, for example, that columns of 'rare'
-    //blocks (e.g. DSPs/RAMs) which are physically far appart but logically adjacent will be swappable even
-    //at an rlim fo 1.
-    //
-    //This ensures that such blocks don't get locked down too early during placement (as would be the
-    //case with a physical distance rlim)
-    auto& grid = g_vpr_ctx.device().grid;
-
-    auto grid_type = grid[from.x][from.y].type;
-    VTR_ASSERT(type == grid_type);
-
-    //Retrieve the compressed block grid for this block type
-    const auto& compressed_block_grid = f_compressed_block_grids[type->index];
-
-    //Determine the rlim in each dimension
-    int rlim_x = min<int>(compressed_block_grid.compressed_to_grid_x.size(), rlim);
-    int rlim_y = min<int>(compressed_block_grid.compressed_to_grid_y.size(), rlim); /* for aspect_ratio != 1 case. */
-
-    //Determine the coordinates in the compressed grid space of the current block
-    int cx_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_x, from.x);
-    int cy_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_y, from.y);
-
-    //Determin the valid compressed grid location ranges
-    int min_cx = std::max(0, cx_from - rlim_x);
-    int max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_from + rlim_x);
-    int delta_cx = max_cx - min_cx;
-
-    int min_cy = std::max(0, cy_from - rlim_y);
-    int max_cy = std::min<int>(compressed_block_grid.compressed_to_grid_y.size() - 1, cy_from + rlim_y);
-
-    int cx_to = OPEN;
-    int cy_to = OPEN;
-    std::unordered_set<int> tried_cx_to;
-    bool legal = false;
-    while (!legal && (int)tried_cx_to.size() < delta_cx) { //Until legal or all possibilities exhaused
-        //Pick a random x-location within [min_cx, max_cx],
-        //until we find a legal swap, or have exhuasted all possiblites
-        cx_to = min_cx + vtr::irand(delta_cx);
-
-        VTR_ASSERT(cx_to >= min_cx);
-        VTR_ASSERT(cx_to <= max_cx);
-
-        //Record this x location as tried
-        auto res = tried_cx_to.insert(cx_to);
-        if (!res.second) {
-            continue; //Already tried this position
-        }
-
-        //Pick a random y location
-        //
-        //We are careful here to consider that there may be a sparse
-        //set of candidate blocks in the y-axis at this x location.
-        //
-        //The candidates are stored in a flat_map so we can efficiently find the set of valid
-        //candidates with upper/lower bound.
-        auto y_lower_iter = compressed_block_grid.grid[cx_to].lower_bound(min_cy);
-        if (y_lower_iter == compressed_block_grid.grid[cx_to].end()) {
-            continue;
-        }
-
-        auto y_upper_iter = compressed_block_grid.grid[cx_to].upper_bound(max_cy);
-
-        if (y_lower_iter->first > min_cy) {
-            //No valid blocks at this x location which are within rlim_y
-            //
-            //Fall back to allow the whole y range
-            y_lower_iter = compressed_block_grid.grid[cx_to].begin();
-            y_upper_iter = compressed_block_grid.grid[cx_to].end();
-
-            min_cy = y_lower_iter->first;
-            max_cy = (y_upper_iter - 1)->first;
-        }
-
-        int y_range = std::distance(y_lower_iter, y_upper_iter);
-        VTR_ASSERT(y_range >= 0);
-
-        //At this point we know y_lower_iter and y_upper_iter
-        //bound the range of valid blocks at this x-location, which
-        //are within rlim_y
-        std::unordered_set<int> tried_dy;
-        while (!legal && (int)tried_dy.size() < y_range) { //Until legal or all possibilities exhausted
-            //Randomly pick a y location
-            int dy = vtr::irand(y_range - 1);
-
-            //Record this y location as tried
-            auto res2 = tried_dy.insert(dy);
-            if (!res2.second) {
-                continue; //Already tried this position
-            }
-
-            //Key in the y-dimension is the compressed index location
-            cy_to = (y_lower_iter + dy)->first;
-
-            VTR_ASSERT(cy_to >= min_cy);
-            VTR_ASSERT(cy_to <= max_cy);
-
-            if (cx_from == cx_to && cy_from == cy_to) {
-                continue; //Same from/to location -- try again for new y-position
-            } else {
-                legal = true;
-            }
-        }
-    }
-
-    if (!legal) {
-        //No valid position found
-        return false;
-    }
-
-    VTR_ASSERT(cx_to != OPEN);
-    VTR_ASSERT(cy_to != OPEN);
-
-    //Convert to true (uncompressed) grid locations
-    to.x = compressed_block_grid.compressed_to_grid_x[cx_to];
-    to.y = compressed_block_grid.compressed_to_grid_y[cy_to];
-
-    //Each x/y location contains only a single type, so we can pick a random
-    //z (capcity) location
-    to.z = vtr::irand(type->capacity - 1);
-
-    auto& device_ctx = g_vpr_ctx.device();
-    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].type == type, "Type must match");
-    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].width_offset == 0, "Should be at block base location");
-    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].height_offset == 0, "Should be at block base location");
-
-    return true;
-}
-
 static e_swap_result assess_swap(double delta_c, double t) {
     /* Returns: 1 -> move accepted, 0 -> rejected. */
     if (delta_c <= 0) {
@@ -2007,97 +1837,8 @@ static void alloc_and_load_try_swap_structs() {
     ts_bb_edge_new.resize(num_nets, t_bb());
     ts_nets_to_update.resize(num_nets, ClusterNetId::INVALID());
 
-    f_compressed_block_grids = create_compressed_block_grids();
-}
-
-static std::vector<t_compressed_block_grid> create_compressed_block_grids() {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& grid = device_ctx.grid;
-
-    //Collect the set of x/y locations for each instace of a block type
-    std::vector<std::vector<vtr::Point<int>>> block_locations(device_ctx.physical_tile_types.size());
-    for (size_t x = 0; x < grid.width(); ++x) {
-        for (size_t y = 0; y < grid.height(); ++y) {
-            const t_grid_tile& tile = grid[x][y];
-            if (tile.width_offset == 0 && tile.height_offset == 0) {
-                //Only record at block root location
-                block_locations[tile.type->index].emplace_back(x, y);
-            }
-        }
-    }
-
-    std::vector<t_compressed_block_grid> compressed_type_grids(device_ctx.physical_tile_types.size());
-    for (const auto& type : device_ctx.physical_tile_types) {
-        compressed_type_grids[type.index] = create_compressed_block_grid(block_locations[type.index]);
-    }
-
-    return compressed_type_grids;
-}
-
-//Given a set of locations, returns a 2D matrix in a compressed space
-static t_compressed_block_grid create_compressed_block_grid(const std::vector<vtr::Point<int>>& locations) {
-    t_compressed_block_grid compressed_grid;
-
-    if (locations.empty()) {
-        return compressed_grid;
-    }
-
-    {
-        std::vector<int> x_locs;
-        std::vector<int> y_locs;
-
-        //Record all the x/y locations seperately
-        for (auto point : locations) {
-            x_locs.emplace_back(point.x());
-            y_locs.emplace_back(point.y());
-        }
-
-        //Uniquify x/y locations
-        std::sort(x_locs.begin(), x_locs.end());
-        x_locs.erase(unique(x_locs.begin(), x_locs.end()), x_locs.end());
-
-        std::sort(y_locs.begin(), y_locs.end());
-        y_locs.erase(unique(y_locs.begin(), y_locs.end()), y_locs.end());
-
-        //The index of an x-position in x_locs corresponds to it's compressed
-        //x-coordinate (similarly for y)
-        compressed_grid.compressed_to_grid_x = x_locs;
-        compressed_grid.compressed_to_grid_y = y_locs;
-    }
-
-    //
-    //Build the compressed grid
-    //
-
-    //Create a full/dense x-dimension (since there must be at least one
-    //block per x location)
-    compressed_grid.grid.resize(compressed_grid.compressed_to_grid_x.size());
-
-    //Fill-in the y-dimensions
-    //
-    //Note that we build the y-dimension sparsely (using a flat map), since
-    //there may not be full columns of blocks at each x location, this makes
-    //it efficient to find the non-empty blocks in the y dimension
-    for (auto point : locations) {
-        //Determine the compressed indices in the x & y dimensions
-        auto x_itr = std::lower_bound(compressed_grid.compressed_to_grid_x.begin(), compressed_grid.compressed_to_grid_x.end(), point.x());
-        int cx = std::distance(compressed_grid.compressed_to_grid_x.begin(), x_itr);
-
-        auto y_itr = std::lower_bound(compressed_grid.compressed_to_grid_y.begin(), compressed_grid.compressed_to_grid_y.end(), point.y());
-        int cy = std::distance(compressed_grid.compressed_to_grid_y.begin(), y_itr);
-
-        VTR_ASSERT(cx >= 0 && cx < (int)compressed_grid.compressed_to_grid_x.size());
-        VTR_ASSERT(cy >= 0 && cy < (int)compressed_grid.compressed_to_grid_y.size());
-
-        VTR_ASSERT(compressed_grid.compressed_to_grid_x[cx] == point.x());
-        VTR_ASSERT(compressed_grid.compressed_to_grid_y[cy] == point.y());
-
-        auto result = compressed_grid.grid[cx].insert(std::make_pair(cy, t_type_loc(point.x(), point.y())));
-
-        VTR_ASSERT_MSG(result.second, "Duplicates should not exist in compressed grid space");
-    }
-
-    return compressed_grid;
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    place_ctx.compressed_block_grids = create_compressed_block_grids();
 }
 
 /* This routine finds the bounding box of each net from scratch (i.e.   *
@@ -3115,7 +2856,7 @@ static void print_clb_placement(const char* fname) {
 #endif
 
 static void free_try_swap_arrays() {
-    f_compressed_block_grids.clear();
+    g_vpr_ctx.mutable_placement().compressed_block_grids.clear();
 }
 
 static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, double& std_dev, const t_placer_costs& costs, const int move_lim) {
@@ -3159,13 +2900,6 @@ static void update_screen_debug() {
 }
 #endif
 
-
-static int grid_to_compressed(const std::vector<int>& coords, int point) {
-    auto itr = std::lower_bound(coords.begin(), coords.end(), point);
-    VTR_ASSERT(*itr == point);
-
-    return std::distance(coords.begin(), itr);
-}
 
 static void print_place_status_header() {
     VTR_LOG("------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");

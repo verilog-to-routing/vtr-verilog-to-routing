@@ -20,6 +20,7 @@
 #include "clock_connection_builders.h"
 #include "route_traceback.h"
 #include "place_macro.h"
+#include "compressed_grid.h"
 
 //A Context is collection of state relating to a particular part of VPR
 //
@@ -245,6 +246,11 @@ struct PlacementContext : public Context {
 
     // The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
+
+    //Compressed grid space for each block type
+    //Used to efficiently find logically 'adjacent' blocks of the same block type even though
+    //the may be physically far apart
+    t_compressed_block_grids compressed_block_grids;
 
     //SHA256 digest of the .place file (used for unique identification and consistency checking)
     std::string placement_id;

@@ -2,6 +2,7 @@
 #define VPR_MOVE_UTILS_H
 #include "vpr_types.h"
 #include "move_transactions.h"
+#include "compressed_grid.h"
 
 
 enum class e_create_move {
@@ -33,4 +34,8 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
 
 ClusterBlockId pick_from_block();
 
+bool find_to(t_physical_tile_type_ptr type,
+            float rlim,
+            const t_pl_loc from,
+            t_pl_loc& to);
 #endif
