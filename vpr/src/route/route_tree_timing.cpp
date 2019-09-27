@@ -935,7 +935,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
 
             // After removing an edge, check if non_config_node_set_usage
             // needs an update.
-            if (node_set != -1 && device_ctx.rr_switch_inf[old_edge->iswitch].configurable()) {
+            if (non_config_node_set_usage != nullptr && node_set != -1 && device_ctx.rr_switch_inf[old_edge->iswitch].configurable()) {
                 (*non_config_node_set_usage)[node_set] -= 1;
                 VTR_ASSERT((*non_config_node_set_usage)[node_set] >= 0);
             }
@@ -1004,7 +1004,9 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
             if (reached_non_configurably) {
                 // Check if this non-configurable node set is in use.
                 VTR_ASSERT(node_set != -1);
-                force_prune = force_prune || (*non_config_node_set_usage)[node_set] == 0;
+                if (non_config_node_set_usage != nullptr && (*non_config_node_set_usage)[node_set] == 0) {
+                    force_prune = true;
+                }
             }
         }
 
@@ -1026,7 +1028,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
         //   3. The node set is not active
         //
         //  Then prune this node.
-        if (node_set != -1 && device_ctx.rr_switch_inf[node->parent_switch].configurable() && (*non_config_node_set_usage)[node_set] == 0) {
+        if (non_config_node_set_usage != nullptr && node_set != -1 && device_ctx.rr_switch_inf[node->parent_switch].configurable() && (*non_config_node_set_usage)[node_set] == 0) {
             // This node should be pruned, re-prune edges once more.
             return prune_route_tree_recurr(node, connections_inf, /*force_prune=*/false, non_config_node_set_usage);
         }
@@ -1036,6 +1038,10 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
 
         return node; //Not pruned
     }
+}
+
+t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf) {
+    return prune_route_tree(rt_root, connections_inf, nullptr);
 }
 
 t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vector<int>* non_config_node_set_usage) {

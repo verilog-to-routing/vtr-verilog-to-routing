@@ -298,6 +298,8 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
                                           const SetupTimingInfo& timing_info,
                                           const RoutingDelayCalculator& delay_calc);
 
+static void prune_unused_non_configurable_nets(CBRR& connections_inf);
+
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(const t_router_opts& router_opts,
                              const t_analysis_opts& analysis_opts,
@@ -713,8 +715,16 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
         VTR_LOG("Restoring best routing\n");
 
         auto& router_ctx = g_vpr_ctx.mutable_routing();
+
+        /* Restore congestion from best route */
+        for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+            pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
+            pathfinder_update_path_cost(best_routing[net_id].head, 1, pres_fac);
+        }
         router_ctx.trace = best_routing;
         router_ctx.clb_opins_used_locally = best_clb_opins_used_locally;
+
+        prune_unused_non_configurable_nets(connections_inf);
 
         if (timing_info) {
             VTR_LOG("Critical path: %g ns\n", 1e9 * best_routing_metrics.critical_path.delay());
@@ -1510,9 +1520,7 @@ static t_rt_node* setup_routing_resources(int itry,
         profiling::net_rebuild_start();
 
         // convert the previous iteration's traceback into a route tree
-        auto& device_ctx = g_vpr_ctx.device();
-        std::vector<int> non_config_node_set_usage(device_ctx.rr_non_config_node_sets.size(), 0);
-        rt_root = traceback_to_route_tree(net_id, &non_config_node_set_usage);
+        rt_root = traceback_to_route_tree(net_id);
 
         //Santiy check that route tree and traceback are equivalent before pruning
         VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
@@ -1522,7 +1530,7 @@ static t_rt_node* setup_routing_resources(int itry,
         VTR_ASSERT_SAFE(should_route_net(net_id, connections_inf, true));
 
         //Prune the branches of the tree that don't legally lead to sinks
-        rt_root = prune_route_tree(rt_root, connections_inf, &non_config_node_set_usage);
+        rt_root = prune_route_tree(rt_root, connections_inf);
 
         //Now that the tree has been pruned, we can free the old traceback
         // NOTE: this must happen *after* pruning since it changes the
@@ -2712,4 +2720,47 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
 
     timing_reporter.report_timing_setup(router_opts.first_iteration_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
+}
+
+// If a route is ripped up during routing, non-configurable sets are left
+// behind.  As a result, the final routing may have stubs at
+// non-configurable sets.  This function tracks non-configurable set usage,
+// and if the sets are unused, prunes them.
+static void prune_unused_non_configurable_nets(CBRR& connections_inf) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    std::vector<int> non_config_node_set_usage(device_ctx.rr_non_config_node_sets.size(), 0);
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        connections_inf.prepare_routing_for_net(net_id);
+        connections_inf.clear_force_reroute_for_net();
+
+        std::fill(non_config_node_set_usage.begin(), non_config_node_set_usage.end(), 0);
+        t_rt_node* rt_root = traceback_to_route_tree(net_id, &non_config_node_set_usage);
+        if (rt_root == nullptr) {
+            continue;
+        }
+
+        //Santiy check that route tree and traceback are equivalent before pruning
+        VTR_ASSERT(verify_traceback_route_tree_equivalent(
+            route_ctx.trace[net_id].head, rt_root));
+
+        // check for edge correctness
+        VTR_ASSERT_SAFE(is_valid_skeleton_tree(rt_root));
+
+        //Prune the branches of the tree that don't legally lead to sinks
+        rt_root = prune_route_tree(rt_root, connections_inf,
+                                   &non_config_node_set_usage);
+
+        // Free old traceback.
+        free_traceback(net_id);
+
+        // Update traceback with pruned tree.
+        auto& reached_rt_sinks = connections_inf.get_reached_rt_sinks();
+        traceback_from_route_tree(net_id, rt_root, reached_rt_sinks.size());
+        VTR_ASSERT(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
+
+        free_route_tree(rt_root);
+    }
 }
