@@ -1,6 +1,9 @@
 #include "move_utils.h"
+
 #include "place_util.h"
 #include "globals.h"
+
+#include "vtr_random.h"
 
 
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {

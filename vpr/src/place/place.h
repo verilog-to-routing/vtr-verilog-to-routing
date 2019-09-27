@@ -12,4 +12,5 @@ void try_place(const t_placer_opts& placer_opts,
                t_direct_inf* directs,
                int num_directs);
 
+bool find_to(t_physical_tile_type_ptr type, float rlim, const t_pl_loc from, t_pl_loc& to);
 #endif
