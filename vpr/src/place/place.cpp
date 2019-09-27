@@ -109,7 +109,7 @@ struct t_placer_prev_inverse_costs {
 };
 
 class UniformMoveGenerator : public MoveGenerator {
-    e_propose_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim);
+    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim);
 };
 
 constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
@@ -1268,11 +1268,11 @@ static e_swap_result try_swap(float t,
     }
 
     //Generate a new move used to explore the space of possible placements
-    e_propose_move move_outcome = move_generator.propose_move(blocks_affected, rlim);
+    e_create_move move_outcome = move_generator.propose_move(blocks_affected, rlim);
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
-    if (move_outcome == e_propose_move::ABORT) {
+    if (move_outcome == e_create_move::ABORT) {
         //Proposed move is not legal -- give up on this move
         clear_move_blocks(blocks_affected);
 
@@ -1284,7 +1284,7 @@ static e_swap_result try_swap(float t,
         return ABORTED;
     }
 
-    VTR_ASSERT(move_outcome == e_propose_move::VALID);
+    VTR_ASSERT(move_outcome == e_create_move::VALID);
 
     /*
      * To make evaluating the move simpler (e.g. calculating changed bounding box), 
@@ -3239,11 +3239,11 @@ static void print_place_status(const float t,
     fflush(stdout);
 }
 
-e_propose_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
+e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
-        return e_propose_move::ABORT; //No movable block found
+        return e_create_move::ABORT; //No movable block found
     }
 
     auto& place_ctx = g_vpr_ctx.placement();
@@ -3256,7 +3256,7 @@ e_propose_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
 
     t_pl_loc to;
     if (!find_to(physical_tile_type(b_from), rlim, from, to)) {
-        return e_propose_move::ABORT;
+        return e_create_move::ABORT;
     }
 
 #if 0
@@ -3272,5 +3272,5 @@ e_propose_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     VTR_LOG("\n");
 #endif
 
-    return ::propose_move(blocks_affected, b_from, to);
+    return ::create_move(blocks_affected, b_from, to);
 }

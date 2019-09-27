@@ -4,13 +4,13 @@
 #include "move_transactions.h"
 
 
-enum class e_propose_move {
+enum class e_create_move {
     VALID, //Move successful and legal
     ABORT, //Unable to perform move
 };
 
 
-e_propose_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
+e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
 
 
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);

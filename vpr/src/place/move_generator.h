@@ -8,7 +8,7 @@ class MoveGenerator {
     virtual ~MoveGenerator() {}
 
     //Updates affected_blocks with the proposed move, while respecting the current rlim
-    virtual e_propose_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim) = 0;
+    virtual e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim) = 0;
 };
 
 #endif

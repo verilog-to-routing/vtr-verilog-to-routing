@@ -3,7 +3,7 @@
 #include "globals.h"
 
 
-e_propose_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
+e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
     e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to);
 
     if (outcome == e_block_move_result::INVERT) {
@@ -29,10 +29,10 @@ e_propose_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlo
 
     if (outcome == e_block_move_result::VALID
         || outcome == e_block_move_result::INVERT_VALID) {
-        return e_propose_move::VALID;
+        return e_create_move::VALID;
     } else {
         VTR_ASSERT_SAFE(outcome == e_block_move_result::ABORT);
-        return e_propose_move::ABORT;
+        return e_create_move::ABORT;
     }
 }
 
