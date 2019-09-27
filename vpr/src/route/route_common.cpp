@@ -163,10 +163,12 @@ void restore_routing(vtr::vector<ClusterNetId, t_trace*>& best_routing,
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         /* Free any current routing. */
+        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, 0.f);
         free_traceback(net_id);
 
         /* Set the current routing to the saved one. */
         route_ctx.trace[net_id].head = best_routing[net_id];
+        pathfinder_update_path_cost(route_ctx.trace[net_id].head, 1, 0.f);
         best_routing[net_id] = nullptr; /* No stored routing. */
     }
 
@@ -736,7 +738,7 @@ float get_rr_cong_cost(int inode) {
     return (cost);
 }
 
-/* Returns the congestion cost of using this rr_node, *ignoring* 
+/* Returns the congestion cost of using this rr_node, *ignoring*
  * non-configurable edges */
 static float get_single_rr_cong_cost(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -1112,7 +1114,7 @@ t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
      * the FPGA if necessary.  The bounding box returned by this routine
      * are different from the ones used by the placer in that they are
      * clipped to lie within (0,0) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1)
-     * rather than (1,1) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1).                                                            
+     * rather than (1,1) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1).
      */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
