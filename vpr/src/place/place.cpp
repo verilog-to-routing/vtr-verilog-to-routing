@@ -1570,7 +1570,7 @@ static e_find_affected_blocks_result record_macro_move(std::vector<ClusterBlockI
 static e_find_affected_blocks_result record_macro_self_swaps(const int imacro, t_pl_offset swap_offset) {
     auto& place_ctx = g_vpr_ctx.placement();
 
-    //Reset any paritao move
+    //Reset any partial move
     clear_move_blocks();
 
     //Collect the macros affected
