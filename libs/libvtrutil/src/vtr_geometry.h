@@ -1,6 +1,11 @@
 #ifndef VTR_GEOMETRY_H
 #define VTR_GEOMETRY_H
 #include "vtr_range.h"
+
+#include <vector>
+#include <tuple>
+#include <limits>
+
 namespace vtr {
 
 /*
