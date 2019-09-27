@@ -162,10 +162,12 @@ void restore_routing(vtr::vector<ClusterNetId, t_trace*>& best_routing,
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         /* Free any current routing. */
+        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, 0.f);
         free_traceback(net_id);
 
         /* Set the current routing to the saved one. */
         route_ctx.trace[net_id].head = best_routing[net_id];
+        pathfinder_update_path_cost(route_ctx.trace[net_id].head, 1, 0.f);
         best_routing[net_id] = nullptr; /* No stored routing. */
     }
 
