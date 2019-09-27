@@ -644,7 +644,7 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
     auto pin_index = mux_input_pin->pin_number;
     auto mux_inputs = vtr::split(fasm_mux, "\n");
 
-    bool have_prefix;
+    bool have_prefix = false;
     std::string clb_prefix;
     find_clb_prefix(mux_input_pin->parent_node, &have_prefix, &clb_prefix);
 
