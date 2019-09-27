@@ -1,5 +1,5 @@
-#ifndef VPR_MOVE_UTILS_H
-#define VPR_MOVE_UTILS_H
+#ifndef VPR_MOVE_TRANSACTIONS_H
+#define VPR_MOVE_TRANSACTIONS_H
 #include "vpr_types.h"
 
 /* Stores the information of the move for a block that is       *
