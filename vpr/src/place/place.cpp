@@ -79,15 +79,6 @@ enum e_cost_methods {
     CHECK
 };
 
-/* This is for the placement swap routines. A swap attempt could be       *
- * rejected, accepted or aborted (due to the limitations placed on the    *
- * carry chain support at this point).                                    */
-enum e_move_result {
-    REJECTED,
-    ACCEPTED,
-    ABORTED
-};
-
 struct t_placer_statistics {
     double av_cost, av_bb_cost, av_timing_cost,
         sum_of_squares;

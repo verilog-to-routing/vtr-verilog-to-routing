@@ -4,6 +4,14 @@
 #include "move_transactions.h"
 #include "compressed_grid.h"
 
+/* This is for the placement swap routines. A swap attempt could be       *
+ * rejected, accepted or aborted (due to the limitations placed on the    *
+ * carry chain support at this point).                                    */
+enum e_move_result {
+    REJECTED,
+    ACCEPTED,
+    ABORTED
+};
 
 enum class e_create_move {
     VALID, //Move successful and legal
