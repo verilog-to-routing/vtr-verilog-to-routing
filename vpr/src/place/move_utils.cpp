@@ -482,11 +482,11 @@ ClusterBlockId pick_from_block() {
     return ClusterBlockId::INVALID();
 }
 
-bool find_to(t_physical_tile_type_ptr type,
-             float rlim,
-             const t_pl_loc from,
-             t_pl_loc& to) {
-    //Finds a legal swap to location for the given type, starting from 'x_from' and 'y_from'
+bool find_to_loc_uniform(t_physical_tile_type_ptr type,
+                         float rlim,
+                         const t_pl_loc from,
+                         t_pl_loc& to) {
+    //Finds a legal swap to location for the given type, starting from 'from.x' and 'from.y'
     //
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
     //of the same block types, and not the physical grid space). This means, for example, that columns of 'rare'

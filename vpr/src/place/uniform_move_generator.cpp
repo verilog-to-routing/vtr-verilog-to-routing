@@ -17,7 +17,7 @@ e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks
     VTR_ASSERT(physical_tile_type(cluster_from_type) == grid_from_type);
 
     t_pl_loc to;
-    if (!find_to(physical_tile_type(b_from), rlim, from, to)) {
+    if (!find_to_loc_uniform(physical_tile_type(b_from), rlim, from, to)) {
         return e_create_move::ABORT;
     }
 

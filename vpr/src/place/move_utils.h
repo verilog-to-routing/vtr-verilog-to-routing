@@ -46,8 +46,8 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
 
 ClusterBlockId pick_from_block();
 
-bool find_to(t_physical_tile_type_ptr type,
-             float rlim,
-             const t_pl_loc from,
-             t_pl_loc& to);
+bool find_to_loc_uniform(t_physical_tile_type_ptr type,
+                         float rlim,
+                         const t_pl_loc from,
+                         t_pl_loc& to);
 #endif
