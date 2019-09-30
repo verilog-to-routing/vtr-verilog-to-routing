@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -767,7 +766,7 @@ void mark_ends(ClusterNetId net_id) {
     }
 }
 
-void mark_remaining_ends(const vector<int>& remaining_sinks) {
+void mark_remaining_ends(const std::vector<int>& remaining_sinks) {
     // like mark_ends, but only performs it for the remaining sinks of a net
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     for (int sink_node : remaining_sinks)
@@ -1161,10 +1160,10 @@ t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
 
     t_bb bb;
 
-    bb.xmin = max<int>(xmin - bb_factor, 0);
-    bb.xmax = min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
-    bb.ymin = max<int>(ymin - bb_factor, 0);
-    bb.ymax = min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
+    bb.xmin = std::max<int>(xmin - bb_factor, 0);
+    bb.xmax = std::min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
+    bb.ymin = std::max<int>(ymin - bb_factor, 0);
+    bb.ymax = std::min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
 
     return bb;
 }

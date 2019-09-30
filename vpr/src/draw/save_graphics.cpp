@@ -2,7 +2,6 @@
 
 #    include <cstdio>
 #    include <sstream>
-using namespace std;
 
 #    include "globals.h"
 #    include "draw.h"

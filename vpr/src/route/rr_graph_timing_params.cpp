@@ -11,7 +11,6 @@
 #include "rr_graph2.h"
 #include "rr_graph_timing_params.h"
 
-using namespace std;
 /****************** Subroutine definitions *********************************/
 
 void add_rr_graph_C_from_switches(float C_ipin_cblock) {
@@ -41,7 +40,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
-    maxlen = max(device_ctx.grid.width(), device_ctx.grid.height());
+    maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
     cblock_counted = (bool*)vtr::calloc(maxlen, sizeof(bool));
     buffer_Cin = (float*)vtr::calloc(maxlen, sizeof(float));
 
@@ -94,7 +93,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                             rr_node_C[to_node] += Cout;
                         }
                         isblock = seg_index_of_sblock(inode, to_node);
-                        buffer_Cin[isblock] = max(buffer_Cin[isblock], Cin);
+                        buffer_Cin[isblock] = std::max(buffer_Cin[isblock], Cin);
                     }
 
                 }

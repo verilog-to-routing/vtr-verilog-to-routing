@@ -6,8 +6,6 @@
 #include <vector>
 #include "vtr_assert.h"
 
-using namespace std;
-
 #include "vtr_util.h"
 #include "vtr_memory.h"
 #include "vtr_math.h"
@@ -290,7 +288,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            t_chan_width nodes_per_chan,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
-                           const vector<t_switchblock_inf> switchblocks,
+                           const std::vector<t_switchblock_inf> switchblocks,
                            const int num_arch_switches,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
@@ -422,7 +420,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            t_chan_width nodes_per_chan,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
-                           const vector<t_switchblock_inf> switchblocks,
+                           const std::vector<t_switchblock_inf> switchblocks,
                            const int num_arch_switches,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
@@ -872,7 +870,7 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
 
     device_ctx.switch_fanin_remap.resize(num_arch_switches);
     for (int i_arch_switch = 0; i_arch_switch < num_arch_switches; i_arch_switch++) {
-        map<int, int>::iterator it;
+        std::map<int, int>::iterator it;
         for (auto fanin_rrswitch : arch_switch_fanins[i_arch_switch]) {
             /* the fanin value is in it->first, and we'll need to set what index this i_arch_switch/fanin
              * combination maps to (within rr_switch_inf) in it->second) */
@@ -2213,8 +2211,8 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_
         int width = pin_locations[i].width_offset;
         int height = pin_locations[i].height_offset;
 
-        max_width = max(max_width, width);
-        max_height = max(max_height, height);
+        max_width = std::max(max_width, width);
+        max_height = std::max(max_height, height);
     }
 
     for (int iside = 0; iside < NUM_SIDES; iside++) {

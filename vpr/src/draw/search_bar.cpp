@@ -2,7 +2,6 @@
 
 #    include <cstdio>
 #    include <sstream>
-using namespace std;
 
 #    include "vtr_assert.h"
 #    include "vtr_ndoffsetmatrix.h"

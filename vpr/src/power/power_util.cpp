@@ -23,7 +23,6 @@
 #include <cstring>
 #include <cmath>
 #include <map>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -334,9 +333,8 @@ void output_logs(FILE* fp, t_log* logs, int num_logs) {
 
 float power_buffer_size_from_logical_effort(float C_load) {
     auto& power_ctx = g_vpr_ctx.power();
-    return max(1.0f,
-               C_load / power_ctx.commonly_used->INV_1X_C_in
-                   / (2 * power_ctx.arch->logical_effort_factor));
+    return std::max(1.0f,
+                    C_load / power_ctx.commonly_used->INV_1X_C_in / (2 * power_ctx.arch->logical_effort_factor));
 }
 
 void power_print_title(FILE* fp, const char* title) {

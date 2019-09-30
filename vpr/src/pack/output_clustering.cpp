@@ -7,7 +7,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"

@@ -1,5 +1,4 @@
 #include <cstdio>
-using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_assert.h"
@@ -305,7 +304,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
             /* These properties are used for vpr_to_phy_track to determine
              * * twisting of wires. */
             seg_details[cur_track].group_start = group_start;
-            seg_details[cur_track].group_size = min(ntracks + first_track - group_start, length * fac);
+            seg_details[cur_track].group_size = std::min(ntracks + first_track - group_start, length * fac);
             VTR_ASSERT(0 == seg_details[cur_track].group_size % fac);
             if (0 == seg_details[cur_track].group_size) {
                 seg_details[cur_track].group_size = length * fac;
@@ -790,7 +789,7 @@ int get_unidir_opin_connections(const int chan,
     /* Clip Fc to the number of muxes. */
     if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
         *Fc_clipped = true;
-        Fc = 2 * min(num_inc_muxes, num_dec_muxes);
+        Fc = 2 * std::min(num_inc_muxes, num_dec_muxes);
     }
 
     /* Assign tracks to meet Fc demand */
@@ -1810,7 +1809,7 @@ static int get_track_to_chan_seg(const int from_wire,
     if (sb_conn_map->count(sb_coord) > 0) {
         /* get reference to the connections vector which lists all destination wires for a given source wire
          * at a specific coordinate sb_coord */
-        vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord];
+        std::vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord];
 
         /* go through the connections... */
         for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
@@ -2041,8 +2040,8 @@ static void get_switch_type(bool is_from_sblock,
         /* Take the smaller index unless the other
          * switch is bigger (smaller R). */
 
-        int first_switch = min(to_node_switch, from_node_switch);
-        int second_switch = max(to_node_switch, from_node_switch);
+        int first_switch = std::min(to_node_switch, from_node_switch);
+        int second_switch = std::max(to_node_switch, from_node_switch);
 
         if (used < 2) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,

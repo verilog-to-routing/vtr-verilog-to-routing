@@ -1,6 +1,5 @@
 #include <cstdio>
 #include <cmath>
-using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_memory.h"

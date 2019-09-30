@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <regex>
 #include <limits>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_math.h"

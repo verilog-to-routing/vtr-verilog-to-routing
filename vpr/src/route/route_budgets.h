@@ -9,8 +9,6 @@
 #include "vtr_memory.h"
 #include "RoutingDelayCalculator.h"
 
-using namespace std;
-
 enum analysis_type {
     SETUP,
     HOLD
@@ -26,7 +24,7 @@ class route_budgets {
   public:
     route_budgets();
 
-    route_budgets(vector<vector<float>> net_delay);
+    route_budgets(std::vector<std::vector<float>> net_delay);
 
     virtual ~route_budgets();
 

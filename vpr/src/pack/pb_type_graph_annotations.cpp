@@ -5,7 +5,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_util.h"

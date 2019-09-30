@@ -3,7 +3,6 @@
 #include <cmath>
 #include <time.h>
 #include <limits>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"

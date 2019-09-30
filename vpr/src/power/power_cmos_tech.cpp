@@ -43,9 +43,6 @@
 #include "PowerSpicedComponent.h"
 #include "power_callibrate.h"
 
-using namespace std;
-using namespace pugiutil;
-
 /************************* FILE SCOPE **********************************/
 static t_transistor_inf* f_transistor_last_searched;
 static t_power_buffer_strength_inf* f_buffer_strength_last_searched;
@@ -80,7 +77,7 @@ void power_tech_load_xml_file(const char* cmos_tech_behavior_filepath) {
     pugiutil::loc_data loc_data;
     try {
         loc_data = pugiutil::load_xml(doc, cmos_tech_behavior_filepath);
-    } catch (const XmlError& e) {
+    } catch (const pugiutil::XmlError& e) {
         vpr_throw(VPR_ERROR_POWER, cmos_tech_behavior_filepath, 0,
                   "Failed to load CMOS Tech Properties file '%s' (%s).", cmos_tech_behavior_filepath, e.what());
     }
@@ -138,7 +135,7 @@ void power_tech_load_xml_file(const char* cmos_tech_behavior_filepath) {
 }
 
 static void power_tech_xml_load_component(pugi::xml_node parent, const pugiutil::loc_data& loc_data, PowerSpicedComponent** component, const char* name, float (*usage_fn)(int num_inputs, float transistor_size)) {
-    string component_name(name);
+    std::string component_name(name);
     *component = new PowerSpicedComponent(component_name, usage_fn);
 
     auto cur = get_single_child(parent, name, loc_data);

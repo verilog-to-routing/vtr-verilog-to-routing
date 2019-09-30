@@ -46,9 +46,6 @@
 
 #include "rr_graph_reader.h"
 
-using namespace std;
-using namespace pugiutil;
-
 /*********************** Subroutines local to this module *******************/
 void process_switches(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void verify_segments(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const std::vector<t_segment_inf>& segment_inf);
@@ -96,7 +93,7 @@ void load_rr_file(const t_graph_type graph_type,
         auto rr_graph = get_single_child(doc, "rr_graph", loc_data);
 
         //Check for errors
-        Prop = get_attribute(rr_graph, "tool_version", loc_data, OPTIONAL).as_string(nullptr);
+        Prop = get_attribute(rr_graph, "tool_version", loc_data, pugiutil::OPTIONAL).as_string(nullptr);
         if (Prop != nullptr) {
             if (strcmp(Prop, vtr::VERSION) != 0) {
                 VTR_LOG("\n");
@@ -105,8 +102,8 @@ void load_rr_file(const t_graph_type graph_type,
                 VTR_LOG("\n");
             }
         }
-        Prop = get_attribute(rr_graph, "tool_comment", loc_data, OPTIONAL).as_string(nullptr);
-        string correct_string = "Generated from arch file ";
+        Prop = get_attribute(rr_graph, "tool_comment", loc_data, pugiutil::OPTIONAL).as_string(nullptr);
+        std::string correct_string = "Generated from arch file ";
         correct_string += get_arch_file_name();
         if (Prop != nullptr) {
             if (Prop != correct_string) {
@@ -181,7 +178,7 @@ void load_rr_file(const t_graph_type graph_type,
 
         check_rr_graph(graph_type, grid, device_ctx.physical_tile_types);
 
-    } catch (XmlError& e) {
+    } catch (pugiutil::XmlError& e) {
         vpr_throw(VPR_ERROR_ROUTE, read_rr_graph_name, e.line(), "%s", e.what());
     }
 }
@@ -196,7 +193,7 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data& loc_data)
     while (Switch) {
         int iSwitch = get_attribute(Switch, "id", loc_data).as_int();
         auto& rr_switch = device_ctx.rr_switch_inf[iSwitch];
-        const char* name = get_attribute(Switch, "name", loc_data, OPTIONAL).as_string(nullptr);
+        const char* name = get_attribute(Switch, "name", loc_data, pugiutil::OPTIONAL).as_string(nullptr);
         bool found_arch_name = false;
         if (name != nullptr) {
             for (int i = 0; i < device_ctx.num_arch_switches; ++i) {
@@ -230,7 +227,7 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data& loc_data)
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid switch type '%s'\n", switch_type_str.c_str());
         }
         rr_switch.set_type(switch_type);
-        SwitchSubnode = get_single_child(Switch, "timing", loc_data, OPTIONAL);
+        SwitchSubnode = get_single_child(Switch, "timing", loc_data, pugiutil::OPTIONAL);
         if (SwitchSubnode) {
             rr_switch.R = get_attribute(SwitchSubnode, "R", loc_data).as_float();
             rr_switch.Cin = get_attribute(SwitchSubnode, "Cin", loc_data).as_float();
@@ -267,9 +264,9 @@ void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
         id = get_attribute(rr_node, "id", loc_data).as_int();
         auto& node = device_ctx.rr_nodes[id];
 
-        segmentSubnode = get_single_child(rr_node, "segment", loc_data, OPTIONAL);
+        segmentSubnode = get_single_child(rr_node, "segment", loc_data, pugiutil::OPTIONAL);
         if (segmentSubnode) {
-            attribute = get_attribute(segmentSubnode, "segment_id", loc_data, OPTIONAL);
+            attribute = get_attribute(segmentSubnode, "segment_id", loc_data, pugiutil::OPTIONAL);
             if (attribute) {
                 int seg_id = get_attribute(segmentSubnode, "segment_id", loc_data).as_int(0);
                 device_ctx.rr_indexed_data[node.cost_index()].seg_index = seg_id;
@@ -357,7 +354,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
         node.set_ptc_num(get_attribute(locSubnode, "ptc", loc_data).as_int());
 
         //-------
-        timingSubnode = get_single_child(rr_node, "timing", loc_data, OPTIONAL);
+        timingSubnode = get_single_child(rr_node, "timing", loc_data, pugiutil::OPTIONAL);
 
         float R = 0.;
         float C = 0.;
@@ -373,7 +370,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
         //  <metadata>
         //    <meta name='grid_prefix' >CLBLL_L_</meta>
         //  </metadata>
-        auto metadata = get_single_child(rr_node, "metadata", loc_data, OPTIONAL);
+        auto metadata = get_single_child(rr_node, "metadata", loc_data, pugiutil::OPTIONAL);
         if (metadata) {
             auto rr_node_meta = get_first_child(metadata, "meta", loc_data);
             while (rr_node_meta) {
@@ -397,7 +394,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
 
     edges = get_first_child(parent, "edge", loc_data);
     //count the number of edges and store it in a vector
-    vector<size_t> num_edges_for_node;
+    std::vector<size_t> num_edges_for_node;
     num_edges_for_node.resize(device_ctx.rr_nodes.size(), 0);
 
     while (edges) {
@@ -430,7 +427,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
     std::vector<int> count_for_wire_to_ipin_switches;
     count_for_wire_to_ipin_switches.resize(num_rr_switches, 0);
     //first is index, second is count
-    pair<int, int> most_frequent_switch(-1, 0);
+    std::pair<int, int> most_frequent_switch(-1, 0);
 
     while (edges) {
         size_t source_node = get_attribute(edges, "src_node", loc_data).as_uint();
@@ -465,7 +462,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
         device_ctx.rr_nodes[source_node].set_edge_switch(num_edges_for_node[source_node], switch_id);
 
         // Read the metadata for the edge
-        auto metadata = get_single_child(edges, "metadata", loc_data, OPTIONAL);
+        auto metadata = get_single_child(edges, "metadata", loc_data, pugiutil::OPTIONAL);
         if (metadata) {
             auto edges_meta = get_first_child(metadata, "meta", loc_data);
             while (edges_meta) {
@@ -591,9 +588,9 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
                             "Architecture file does not match RR graph's block height");
         }
 
-        pin_class = get_first_child(Block, "pin_class", loc_data, OPTIONAL);
+        pin_class = get_first_child(Block, "pin_class", loc_data, pugiutil::OPTIONAL);
 
-        block_info.num_class = count_children(Block, "pin_class", loc_data, OPTIONAL);
+        block_info.num_class = count_children(Block, "pin_class", loc_data, pugiutil::OPTIONAL);
 
         for (int classNum = 0; classNum < block_info.num_class; classNum++) {
             auto& class_inf = block_info.class_inf[classNum];
@@ -623,7 +620,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
                                 "Incorrect number of pins in %d pin_class in block %s", classNum, block_info.name);
             }
 
-            pin = get_first_child(pin_class, "pin", loc_data, OPTIONAL);
+            pin = get_first_child(pin_class, "pin", loc_data, pugiutil::OPTIONAL);
             while (pin) {
                 auto num = get_attribute(pin, "ptc", loc_data).as_uint();
                 auto index = pin_index_by_num(class_inf, num);
@@ -659,7 +656,7 @@ void verify_segments(pugi::xml_node parent, const pugiutil::loc_data& loc_data, 
                             "Architecture file does not match RR graph's segment name: arch uses %s, RR graph uses %s", segment_inf[segNum].name.c_str(), name);
         }
 
-        subnode = get_single_child(parent, "timing", loc_data, OPTIONAL);
+        subnode = get_single_child(parent, "timing", loc_data, pugiutil::OPTIONAL);
 
         if (subnode) {
             if (segment_inf[segNum].Rmetal != get_attribute(subnode, "R_per_meter", loc_data).as_float(0)) {
@@ -870,9 +867,9 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
 
         /*CHANX and CHANY cost index is dependent on the segment id*/
 
-        segmentSubnode = get_single_child(rr_node, "segment", loc_data, OPTIONAL);
+        segmentSubnode = get_single_child(rr_node, "segment", loc_data, pugiutil::OPTIONAL);
         if (segmentSubnode) {
-            attribute = get_attribute(segmentSubnode, "segment_id", loc_data, OPTIONAL);
+            attribute = get_attribute(segmentSubnode, "segment_id", loc_data, pugiutil::OPTIONAL);
             if (attribute) {
                 int seg_id = get_attribute(segmentSubnode, "segment_id", loc_data).as_int(0);
                 if (is_global_graph) {

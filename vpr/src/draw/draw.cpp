@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <sstream>
 #include <array>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
@@ -880,8 +879,8 @@ void init_draw_coords(float width_val) {
     for (const auto& type : device_ctx.physical_tile_types) {
         auto num_pins = type.num_pins;
         if (num_pins > 0) {
-            draw_coords->pin_size = min(draw_coords->pin_size,
-                                        (draw_coords->get_tile_width() / (4.0F * num_pins)));
+            draw_coords->pin_size = std::min(draw_coords->pin_size,
+                                             (draw_coords->get_tile_width() / (4.0F * num_pins)));
         }
     }
 

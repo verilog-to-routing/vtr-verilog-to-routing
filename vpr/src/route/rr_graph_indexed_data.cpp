@@ -1,5 +1,4 @@
 #include <cmath> /* Needed only for sqrt call (remove if sqrt removed) */
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"

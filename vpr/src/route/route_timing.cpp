@@ -611,7 +611,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
             pres_fac *= router_opts.pres_fac_mult;
 
             /* Avoid overflow for high iteration counts, even if acc_cost is big */
-            pres_fac = min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
+            pres_fac = std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
 
             pathfinder_update_cost(pres_fac, router_opts.acc_fac);
         }
@@ -884,7 +884,7 @@ int get_max_pins_per_net() {
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id))
-            max_pins_per_net = max(max_pins_per_net, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
+            max_pins_per_net = std::max(max_pins_per_net, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
     }
 
     return (max_pins_per_net);
@@ -953,13 +953,13 @@ bool timing_driven_route_net(ClusterNetId net_id,
              * else becomes a bit less critical. This effect becomes more pronounced if
              * max_criticality is set lower. */
             // VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
-            pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - router_opts.max_criticality), 0.0);
+            pin_criticality[ipin] = std::max(pin_criticality[ipin] - (1.0 - router_opts.max_criticality), 0.0);
 
             /* Take pin criticality to some power (1 by default). */
-            pin_criticality[ipin] = pow(pin_criticality[ipin], router_opts.criticality_exp);
+            pin_criticality[ipin] = std::pow(pin_criticality[ipin], router_opts.criticality_exp);
 
             /* Cut off pin criticality at max_criticality. */
-            pin_criticality[ipin] = min(pin_criticality[ipin], router_opts.max_criticality);
+            pin_criticality[ipin] = std::min(pin_criticality[ipin], router_opts.max_criticality);
         } else {
             //No timing info, implies we want a min delay routing, so use criticality of 1.
             pin_criticality[ipin] = 1.;
@@ -1766,9 +1766,9 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
     if (delay_budget) {
         float zero = 0.0;
-        tot_cost += (delay_budget->short_path_criticality + cost_params.criticality) * max(zero, delay_budget->target_delay - tot_cost);
-        tot_cost += pow(max(zero, tot_cost - delay_budget->max_delay), 2) / 100e-12;
-        tot_cost += pow(max(zero, delay_budget->min_delay - tot_cost), 2) / 100e-12;
+        tot_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(zero, delay_budget->target_delay - tot_cost);
+        tot_cost += std::pow(std::max(zero, tot_cost - delay_budget->max_delay), 2) / 100e-12;
+        tot_cost += std::pow(std::max(zero, delay_budget->min_delay - tot_cost), 2) / 100e-12;
     }
 
     VTR_LOGV_DEBUG(f_router_debug, "  Adding node %8d to heap from init route tree with cost %g (%s)\n", inode, tot_cost, describe_rr_node(inode).c_str());
@@ -2017,9 +2017,9 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
         //     Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.
 
         //TODO: Since these targets are delays, shouldn't we be using Tdel instead of new_costs.total_cost on RHS?
-        total_cost += (delay_budget->short_path_criticality + cost_params.criticality) * max(0.f, delay_budget->target_delay - total_cost);
-        total_cost += pow(max(0.f, total_cost - delay_budget->max_delay), 2) / 100e-12;
-        total_cost += pow(max(0.f, delay_budget->min_delay - total_cost), 2) / 100e-12;
+        total_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - total_cost);
+        total_cost += std::pow(std::max(0.f, total_cost - delay_budget->max_delay), 2) / 100e-12;
+        total_cost += std::pow(std::max(0.f, delay_budget->min_delay - total_cost), 2) / 100e-12;
     }
 
     //Update total cost
@@ -2197,7 +2197,7 @@ Connection_based_routing_resources::Connection_based_routing_resources()
     }
 }
 
-void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(vector<int>& rr_sink_nodes) const {
+void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(std::vector<int>& rr_sink_nodes) const {
     /* Turn a vector of device_ctx.rr_nodes indices, assumed to be of sinks for a net *
      * into the pin indices of the same net. */
 
@@ -2215,7 +2215,7 @@ void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(vector<i
     }
 }
 
-void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(const vector<t_rt_node*>& sink_rt_nodes,
+void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(const std::vector<t_rt_node*>& sink_rt_nodes,
                                                                               t_rt_node** rt_node_of_sink) const {
     /* Load rt_node_of_sink (which maps a PIN index to a route tree node)
      * with a vector of route tree sink nodes. */

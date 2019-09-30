@@ -18,7 +18,6 @@
 #    include "ezgl/point.hpp"
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
-using namespace std;
 
 //location of spin buttons, combo boxes, and labels on grid
 gint box_width = 1;

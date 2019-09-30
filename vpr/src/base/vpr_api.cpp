@@ -13,7 +13,6 @@
 #include <chrono>
 #include <cmath>
 #include <sstream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_math.h"
@@ -1043,7 +1042,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
                    t_det_routing_arch* RoutingArch,
-                   vector<t_lb_type_rr_node>** PackerRRGraph,
+                   std::vector<t_lb_type_rr_node>** PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,

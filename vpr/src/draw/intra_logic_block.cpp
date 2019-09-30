@@ -27,8 +27,6 @@
 #    include "vtr_assert.h"
 #    include "vtr_memory.h"
 
-using namespace std;
-
 #    include "intra_logic_block.h"
 #    include "globals.h"
 #    include "atom_netlist.h"
@@ -131,8 +129,8 @@ void draw_internal_init_blk() {
                                   clb_bbox.width(), clb_bbox.height());
 
         /* Determine the max number of sub_block levels in the FPGA */
-        draw_state->max_sub_blk_lvl = max(draw_internal_find_max_lvl(*logical_block_type(&type)->pb_type),
-                                          draw_state->max_sub_blk_lvl);
+        draw_state->max_sub_blk_lvl = std::max(draw_internal_find_max_lvl(*logical_block_type(&type)->pb_type),
+                                               draw_state->max_sub_blk_lvl);
     }
 }
 
@@ -193,7 +191,7 @@ static int draw_internal_find_max_lvl(const t_pb_type& pb_type) {
         mode = pb_type.modes[i];
 
         for (j = 0; j < mode.num_pb_type_children; ++j) {
-            max_levels = max(draw_internal_find_max_lvl(mode.pb_type_children[j]), max_levels);
+            max_levels = std::max(draw_internal_find_max_lvl(mode.pb_type_children[j]), max_levels);
         }
     }
     return max_levels;

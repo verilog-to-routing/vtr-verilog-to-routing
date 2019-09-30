@@ -1,7 +1,6 @@
 #include <cstring>
 #include <vector>
 #include <sstream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -60,7 +59,7 @@ void SetupVPR(const t_options* Options,
               t_router_opts* RouterOpts,
               t_analysis_opts* AnalysisOpts,
               t_det_routing_arch* RoutingArch,
-              vector<t_lb_type_rr_node>** PackerRRGraphs,
+              std::vector<t_lb_type_rr_node>** PackerRRGraphs,
               std::vector<t_segment_inf>& Segments,
               t_timing_inf* Timing,
               bool* ShowGraphics,

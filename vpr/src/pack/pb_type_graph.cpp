@@ -14,7 +14,6 @@
 #include <cstdio>
 #include <cstring>
 #include <cinttypes>
-using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_assert.h"
@@ -112,7 +111,7 @@ static bool operator<(const t_pb_graph_edge_comparator& edge1,
                       const t_pb_graph_edge_comparator& edge2);
 static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
                                          const int i_pin,
-                                         map<int, int>& edges_map,
+                                         std::map<int, int>& edges_map,
                                          int* line_num);
 
 /**
@@ -1434,7 +1433,7 @@ static void echo_pb_pins(t_pb_graph_pin** pb_graph_pins, const int num_ports, co
 static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node) {
     int i, j, k;
     int line_num = 0;
-    map<int, int> logic_equivalent_pins_map;
+    std::map<int, int> logic_equivalent_pins_map;
 
     for (i = 0; i < pb_graph_node->num_input_ports; i++) {
         for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
@@ -1487,8 +1486,8 @@ static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin) {
     int i_edge, i_pin;
     t_pb_graph_edge* cur_edge;
     t_pb_graph_edge_comparator edges_info;
-    map<t_pb_graph_edge_comparator, int> edges_map;
-    pair<map<t_pb_graph_edge_comparator, int>::iterator, bool> ret_edges_map;
+    std::map<t_pb_graph_edge_comparator, int> edges_map;
+    std::pair<std::map<t_pb_graph_edge_comparator, int>::iterator, bool> ret_edges_map;
 
     // First check the incoming edges into cur_pin
     for (i_edge = 0; i_edge < cur_pin->num_input_edges; i_edge++) {
@@ -1500,7 +1499,7 @@ static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin) {
             edges_info.output_pin = cur_pin;
             edges_info.input_pin_id_in_cluster = cur_edge->input_pins[i_pin]->pin_count_in_cluster;
             edges_info.output_pin_id_in_cluster = cur_pin->pin_count_in_cluster;
-            ret_edges_map = edges_map.insert(pair<t_pb_graph_edge_comparator, int>(edges_info, 0));
+            ret_edges_map = edges_map.insert(std::pair<t_pb_graph_edge_comparator, int>(edges_info, 0));
             if (!ret_edges_map.second) {
                 // Print out the connection that already exists in the map and then the new one
                 // we are trying to insert into the map.
@@ -1546,7 +1545,7 @@ static bool operator<(const t_pb_graph_edge_comparator& edge1,
  */
 static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
                                          const int i_pin,
-                                         map<int, int>& logic_equivalent_pins_map,
+                                         std::map<int, int>& logic_equivalent_pins_map,
                                          int* line_num) {
     int i, j, edge_count;
     t_pb_graph_edge* cur_edge;
@@ -1562,7 +1561,7 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
         for (j = 0; j < cur_edge->num_output_pins; j++) {
             if (i_pin == 0) {
                 // First pin of an equivalent port, populate edges_map first
-                logic_equivalent_pins_map.insert(pair<int, int>(cur_edge->output_pins[j]->pin_count_in_cluster, 0));
+                logic_equivalent_pins_map.insert(std::pair<int, int>(cur_edge->output_pins[j]->pin_count_in_cluster, 0));
             } else {
                 // Rest of the pins of an equivalent port, they should connect to the
                 // same set of pins

@@ -18,7 +18,6 @@
 #include <map>
 #include <queue>
 #include <cmath>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -50,9 +49,9 @@ enum e_commit_remove { RT_COMMIT,
  * allows me to use a priority queue where I can pre-allocate the # of elements in the underlying container
  * for efficiency reasons.  Note: Must use vector with this */
 template<class T, class U, class V>
-class reservable_pq : public priority_queue<T, U, V> {
+class reservable_pq : public std::priority_queue<T, U, V> {
   public:
-    typedef typename priority_queue<T>::size_type size_type;
+    typedef typename std::priority_queue<T>::size_type size_type;
     reservable_pq(size_type capacity = 0) {
         reserve(capacity);
         cur_cap = capacity;
@@ -83,12 +82,12 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data* router_data);
 static void commit_remove_rt(t_lb_trace* rt, t_lb_router_data* router_data, e_commit_remove op, std::unordered_map<const t_pb_graph_node*, const t_mode*>* mode_map, t_mode_selection_status* mode_status);
 static bool is_skip_route_net(t_lb_trace* rt, t_lb_router_data* router_data);
 static void add_source_to_rt(t_lb_router_data* router_data, int inet);
-static void expand_rt(t_lb_router_data* router_data, int inet, reservable_pq<t_expansion_node, vector<t_expansion_node>, compare_expansion_node>& pq, int irt_net);
-static void expand_rt_rec(t_lb_trace* rt, int prev_index, t_explored_node_tb* explored_node_tb, reservable_pq<t_expansion_node, vector<t_expansion_node>, compare_expansion_node>& pq, int irt_net, int explore_id_index);
+static void expand_rt(t_lb_router_data* router_data, int inet, reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node>& pq, int irt_net);
+static void expand_rt_rec(t_lb_trace* rt, int prev_index, t_explored_node_tb* explored_node_tb, reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node>& pq, int irt_net, int explore_id_index);
 static bool try_expand_nodes(t_lb_router_data* router_data,
                              t_intra_lb_net* lb_net,
                              t_expansion_node* exp_node,
-                             reservable_pq<t_expansion_node, vector<t_expansion_node>, compare_expansion_node>& pq,
+                             reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node>& pq,
                              int itarget,
                              bool try_other_modes,
                              int verbosity);
@@ -98,10 +97,10 @@ static void expand_edges(t_lb_router_data* router_data,
                          int cur_inode,
                          float cur_cost,
                          int net_fanout,
-                         reservable_pq<t_expansion_node, vector<t_expansion_node>, compare_expansion_node>& pq);
+                         reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node>& pq);
 
-static void expand_node(t_lb_router_data* router_data, t_expansion_node exp_node, reservable_pq<t_expansion_node, vector<t_expansion_node>, compare_expansion_node>& pq, int net_fanout);
-static void expand_node_all_modes(t_lb_router_data* router_data, t_expansion_node exp_node, reservable_pq<t_expansion_node, vector<t_expansion_node>, compare_expansion_node>& pq, int net_fanout);
+static void expand_node(t_lb_router_data* router_data, t_expansion_node exp_node, reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node>& pq, int net_fanout);
+static void expand_node_all_modes(t_lb_router_data* router_data, t_expansion_node exp_node, reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node>& pq, int net_fanout);
 
 static bool add_to_rt(t_lb_trace* rt, int node_index, t_lb_router_data* router_data, int irt_net);
 static bool is_route_success(t_lb_router_data* router_data);
@@ -134,7 +133,7 @@ static void print_trace(FILE* fp, t_lb_trace* trace, t_lb_router_data* router_da
 /**
  * Build data structures used by intra-logic block router
  */
-t_lb_router_data* alloc_and_load_router_data(vector<t_lb_type_rr_node>* lb_type_graph, t_logical_block_type_ptr type) {
+t_lb_router_data* alloc_and_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_graph, t_logical_block_type_ptr type) {
     t_lb_router_data* router_data = new t_lb_router_data;
     int size;
 
@@ -142,8 +141,8 @@ t_lb_router_data* alloc_and_load_router_data(vector<t_lb_type_rr_node>* lb_type_
     size = router_data->lb_type_graph->size();
     router_data->lb_rr_node_stats = new t_lb_rr_node_stats[size];
     router_data->explored_node_tb = new t_explored_node_tb[size];
-    router_data->intra_lb_nets = new vector<t_intra_lb_net>;
-    router_data->atoms_added = new map<AtomBlockId, bool>;
+    router_data->intra_lb_nets = new std::vector<t_intra_lb_net>;
+    router_data->atoms_added = new std::map<AtomBlockId, bool>;
     router_data->lb_type = type;
 
     return router_data;
@@ -167,7 +166,7 @@ void free_router_data(t_lb_router_data* router_data) {
 }
 
 static bool route_has_conflict(t_lb_trace* rt, t_lb_router_data* router_data) {
-    vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
+    std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
 
     int cur_mode = -1;
     for (unsigned int i = 0; i < rt->next_nodes.size(); i++) {
@@ -269,7 +268,7 @@ void add_atom_as_target(t_lb_router_data* router_data, const AtomBlockId blk_id)
 void remove_atom_from_target(t_lb_router_data* router_data, const AtomBlockId blk_id) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    map<AtomBlockId, bool>& atoms_added = *router_data->atoms_added;
+    std::map<AtomBlockId, bool>& atoms_added = *router_data->atoms_added;
 
     const t_pb* pb = atom_ctx.lookup.atom_pb(blk_id);
 
@@ -335,7 +334,7 @@ void set_reset_pb_modes(t_lb_router_data* router_data, const t_pb* pb, const boo
 static bool try_expand_nodes(t_lb_router_data* router_data,
                              t_intra_lb_net* lb_net,
                              t_expansion_node* exp_node,
-                             reservable_pq<t_expansion_node, vector<t_expansion_node>, compare_expansion_node>& pq,
+                             reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node>& pq,
                              int itarget,
                              bool try_other_modes,
                              int verbosity) {
@@ -395,8 +394,8 @@ static bool try_expand_nodes(t_lb_router_data* router_data,
 bool try_intra_lb_route(t_lb_router_data* router_data,
                         int verbosity,
                         t_mode_selection_status* mode_status) {
-    vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
-    vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
+    std::vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
+    std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
     bool is_routed = false;
     bool is_impossible = false;
 
@@ -406,7 +405,7 @@ bool try_intra_lb_route(t_lb_router_data* router_data,
     t_expansion_node exp_node;
 
     /* Stores state info during route */
-    reservable_pq<t_expansion_node, vector<t_expansion_node>, compare_expansion_node> pq;
+    reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node> pq;
 
     reset_explored_node_tb(router_data);
 
@@ -536,8 +535,8 @@ bool try_intra_lb_route(t_lb_router_data* router_data,
 
 /* Creates an array [0..num_pb_graph_pins-1] lookup for intra-logic block routing.  Given pb_graph_pin id for clb, lookup atom net that uses that pin.
  * If pin is not used, stores OPEN at that pin location */
-t_pb_routes alloc_and_load_pb_route(const vector<t_intra_lb_net>* intra_lb_nets, t_pb_graph_node* pb_graph_head) {
-    const vector<t_intra_lb_net>& lb_nets = *intra_lb_nets;
+t_pb_routes alloc_and_load_pb_route(const std::vector<t_intra_lb_net>* intra_lb_nets, t_pb_graph_node* pb_graph_head) {
+    const std::vector<t_intra_lb_net>& lb_nets = *intra_lb_nets;
     int total_pins = pb_graph_head->total_pb_pins;
     t_pb_routes pb_route;
 
@@ -555,11 +554,11 @@ void free_pb_route(t_pb_route* pb_route) {
     }
 }
 
-void free_intra_lb_nets(vector<t_intra_lb_net>* intra_lb_nets) {
+void free_intra_lb_nets(std::vector<t_intra_lb_net>* intra_lb_nets) {
     if (intra_lb_nets == nullptr) {
         return;
     }
-    vector<t_intra_lb_net>& lb_nets = *intra_lb_nets;
+    std::vector<t_intra_lb_net>& lb_nets = *intra_lb_nets;
     for (unsigned int i = 0; i < lb_nets.size(); i++) {
         lb_nets[i].terminals.clear();
         free_lb_net_rt(lb_nets[i].rt_tree);
@@ -618,8 +617,8 @@ static void free_lb_trace(t_lb_trace* lb_trace) {
  * Assumes that pin is not already assigned
  */
 static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPinId pin_id) {
-    vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
-    vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
+    std::vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
+    std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
     t_logical_block_type_ptr lb_type = router_data->lb_type;
     bool found = false;
     unsigned int ipos;
@@ -785,8 +784,8 @@ static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPin
 /* Given a pin of a net, remove route tree terminals from it
  */
 static void remove_pin_from_rt_terminals(t_lb_router_data* router_data, const AtomPinId pin_id) {
-    vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
-    vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
+    std::vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
+    std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
     t_logical_block_type_ptr lb_type = router_data->lb_type;
     bool found = false;
     unsigned int ipos;
@@ -912,8 +911,8 @@ static void remove_pin_from_rt_terminals(t_lb_router_data* router_data, const At
 static void fix_duplicate_equivalent_pins(t_lb_router_data* router_data) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
-    vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
+    std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
+    std::vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
 
     for (size_t ilb_net = 0; ilb_net < lb_nets.size(); ++ilb_net) {
         //Collect all the sink terminals indicies which target a particular node
@@ -967,7 +966,7 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data* router_data) {
 static void commit_remove_rt(t_lb_trace* rt, t_lb_router_data* router_data, e_commit_remove op, std::unordered_map<const t_pb_graph_node*, const t_mode*>* mode_map, t_mode_selection_status* mode_status) {
     t_lb_rr_node_stats* lb_rr_node_stats;
     t_explored_node_tb* explored_node_tb;
-    vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
+    std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
     int inode;
     int incr;
 
@@ -1018,7 +1017,7 @@ static void commit_remove_rt(t_lb_trace* rt, t_lb_router_data* router_data, e_co
 /* Should net be skipped?  If the net does not conflict with another net, then skip routing this net */
 static bool is_skip_route_net(t_lb_trace* rt, t_lb_router_data* router_data) {
     t_lb_rr_node_stats* lb_rr_node_stats;
-    vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
+    std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
     int inode;
 
     lb_rr_node_stats = router_data->lb_rr_node_stats;
@@ -1054,8 +1053,8 @@ static void add_source_to_rt(t_lb_router_data* router_data, int inet) {
 }
 
 /* Expand all nodes found in route tree into priority queue */
-static void expand_rt(t_lb_router_data* router_data, int inet, reservable_pq<t_expansion_node, vector<t_expansion_node>, compare_expansion_node>& pq, int irt_net) {
-    vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
+static void expand_rt(t_lb_router_data* router_data, int inet, reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node>& pq, int irt_net) {
+    std::vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
 
     VTR_ASSERT(pq.empty());
 
@@ -1063,7 +1062,7 @@ static void expand_rt(t_lb_router_data* router_data, int inet, reservable_pq<t_e
 }
 
 /* Expand all nodes found in route tree into priority queue recursively */
-static void expand_rt_rec(t_lb_trace* rt, int prev_index, t_explored_node_tb* explored_node_tb, reservable_pq<t_expansion_node, vector<t_expansion_node>, compare_expansion_node>& pq, int irt_net, int explore_id_index) {
+static void expand_rt_rec(t_lb_trace* rt, int prev_index, t_explored_node_tb* explored_node_tb, reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node>& pq, int irt_net, int explore_id_index) {
     t_expansion_node enode;
 
     /* Perhaps should use a cost other than zero */
@@ -1088,8 +1087,8 @@ static void expand_edges(t_lb_router_data* router_data,
                          int cur_inode,
                          float cur_cost,
                          int net_fanout,
-                         reservable_pq<t_expansion_node, vector<t_expansion_node>, compare_expansion_node>& pq) {
-    vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
+                         reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node>& pq) {
+    std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
     t_lb_rr_node_stats* lb_rr_node_stats = router_data->lb_rr_node_stats;
     t_lb_router_params params = router_data->params;
     t_expansion_node enode;
@@ -1141,7 +1140,7 @@ static void expand_edges(t_lb_router_data* router_data,
 }
 
 /* Expand all nodes found in route tree into priority queue */
-static void expand_node(t_lb_router_data* router_data, t_expansion_node exp_node, reservable_pq<t_expansion_node, vector<t_expansion_node>, compare_expansion_node>& pq, int net_fanout) {
+static void expand_node(t_lb_router_data* router_data, t_expansion_node exp_node, reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node>& pq, int net_fanout) {
     int cur_node;
     float cur_cost;
     int mode;
@@ -1159,8 +1158,8 @@ static void expand_node(t_lb_router_data* router_data, t_expansion_node exp_node
 }
 
 /* Expand all nodes using all possible modes found in route tree into priority queue */
-static void expand_node_all_modes(t_lb_router_data* router_data, t_expansion_node exp_node, reservable_pq<t_expansion_node, vector<t_expansion_node>, compare_expansion_node>& pq, int net_fanout) {
-    vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
+static void expand_node_all_modes(t_lb_router_data* router_data, t_expansion_node exp_node, reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node>& pq, int net_fanout) {
+    std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
     t_lb_rr_node_stats* lb_rr_node_stats = router_data->lb_rr_node_stats;
 
     int cur_inode = exp_node.node_index;
@@ -1198,7 +1197,7 @@ static void expand_node_all_modes(t_lb_router_data* router_data, t_expansion_nod
 /* Add new path from existing route tree to target sink */
 static bool add_to_rt(t_lb_trace* rt, int node_index, t_lb_router_data* router_data, int irt_net) {
     t_explored_node_tb* explored_node_tb = router_data->explored_node_tb;
-    vector<int> trace_forward;
+    std::vector<int> trace_forward;
     int rt_index, trace_index;
     t_lb_trace* link_node;
     t_lb_trace curr_node;
@@ -1232,7 +1231,7 @@ static bool add_to_rt(t_lb_trace* rt, int node_index, t_lb_router_data* router_d
 
 /* Determine if a completed route is valid.  A successful route has no congestion (ie. no routing resource is used by two nets). */
 static bool is_route_success(t_lb_router_data* router_data) {
-    vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
+    std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
 
     for (unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
         if (router_data->lb_rr_node_stats[inode].occ > lb_type_graph[inode].capacity) {
@@ -1263,7 +1262,7 @@ static t_lb_trace* find_node_in_rt(t_lb_trace* rt, int rt_index) {
 /* Debug routine, print out current intra logic block route */
 static void print_route(const char* filename, t_lb_router_data* router_data) {
     FILE* fp;
-    vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
+    std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
 
     fp = fopen(filename, "w");
     for (unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
@@ -1275,7 +1274,7 @@ static void print_route(const char* filename, t_lb_router_data* router_data) {
 }
 
 static void print_route(FILE* fp, t_lb_router_data* router_data) {
-    vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
+    std::vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
     fprintf(fp, "\n\n----------------------------------------------------\n\n");
 
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -1310,7 +1309,7 @@ static void print_trace(FILE* fp, t_lb_trace* trace, t_lb_router_data* router_da
 }
 
 static void reset_explored_node_tb(t_lb_router_data* router_data) {
-    vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
+    std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
     for (unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
         router_data->explored_node_tb[inode].prev_index = OPEN;
         router_data->explored_node_tb[inode].explored_id = OPEN;
@@ -1322,7 +1321,7 @@ static void reset_explored_node_tb(t_lb_router_data* router_data) {
 
 /* Save last successful intra-logic block route and reset current traceback */
 static void save_and_reset_lb_route(t_lb_router_data* router_data) {
-    vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
+    std::vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
 
     /* Free old saved lb nets if exist */
     if (router_data->saved_lb_nets != nullptr) {
@@ -1331,8 +1330,8 @@ static void save_and_reset_lb_route(t_lb_router_data* router_data) {
     }
 
     /* Save current routed solution */
-    router_data->saved_lb_nets = new vector<t_intra_lb_net>(lb_nets.size());
-    vector<t_intra_lb_net>& saved_lb_nets = *router_data->saved_lb_nets;
+    router_data->saved_lb_nets = new std::vector<t_intra_lb_net>(lb_nets.size());
+    std::vector<t_intra_lb_net>& saved_lb_nets = *router_data->saved_lb_nets;
 
     for (int inet = 0; inet < (int)saved_lb_nets.size(); inet++) {
         /*

@@ -9,7 +9,6 @@
 #include <cstring>
 #include <ctime>
 #include <map>
-using namespace std;
 
 #include "pugixml.hpp"
 #include "pugixml_loc.hpp"
