@@ -82,7 +82,7 @@ enum e_cost_methods {
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
  * carry chain support at this point).                                    */
-enum e_swap_result {
+enum e_move_result {
     REJECTED,
     ACCEPTED,
     ABORTED
@@ -319,7 +319,7 @@ static double comp_bb_cost(e_cost_methods method);
 static void update_move_nets(int num_nets_affected);
 static void reset_move_nets(int num_nets_affected);
 
-static e_swap_result try_swap(float t,
+static e_move_result try_swap(float t,
                               t_placer_costs* costs,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
@@ -373,7 +373,7 @@ static bool driven_by_moved_block(const ClusterNetId net, const t_pl_blocks_to_b
 
 static void comp_td_costs(const PlaceDelayModel* delay_model, double* timing_cost);
 
-static e_swap_result assess_swap(double delta_c, double t);
+static e_move_result assess_swap(double delta_c, double t);
 
 
 static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new);
@@ -914,7 +914,7 @@ static void placement_inner_loop(float t,
 
     /* Inner loop begins */
     for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
-        e_swap_result swap_result = try_swap(t, costs, prev_inverse_costs, rlim,
+        e_move_result swap_result = try_swap(t, costs, prev_inverse_costs, rlim,
                                              move_generator,
                                              blocks_affected,
                                              delay_model,
@@ -1126,7 +1126,7 @@ static float starting_t(t_placer_costs* costs,
     /* Try one move per block.  Set t high so essentially all accepted. */
 
     for (i = 0; i < move_lim; i++) {
-        e_swap_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, costs, prev_inverse_costs, rlim,
+        e_move_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, costs, prev_inverse_costs, rlim,
                                              move_generator,
                                              blocks_affected,
                                              delay_model,
@@ -1193,7 +1193,7 @@ static void reset_move_nets(int num_nets_affected) {
     }
 }
 
-static e_swap_result try_swap(float t,
+static e_move_result try_swap(float t,
                               t_placer_costs* costs,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
@@ -1274,7 +1274,7 @@ static e_swap_result try_swap(float t,
     }
 
     /* 1 -> move accepted, 0 -> rejected. */
-    e_swap_result keep_switch = assess_swap(delta_c, t);
+    e_move_result keep_switch = assess_swap(delta_c, t);
 
     if (keep_switch == ACCEPTED) {
         costs->cost += delta_c;
@@ -1449,7 +1449,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model, const t_pl
     }
 }
 
-static e_swap_result assess_swap(double delta_c, double t) {
+static e_move_result assess_swap(double delta_c, double t) {
     /* Returns: 1 -> move accepted, 0 -> rejected. */
     if (delta_c <= 0) {
         return ACCEPTED;
