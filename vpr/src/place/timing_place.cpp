@@ -36,7 +36,7 @@ static void alloc_crit(vtr::t_chunk* chunk_list_ptr) {
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         tmp_ptr = (float*)vtr::chunk_malloc((cluster_ctx.clb_nlist.net_pins(net_id).size()) * sizeof(float), chunk_list_ptr);
-        f_timing_place_crit[net_id] = tmp_ptr; /* [1..num_sinks] */
+        f_timing_place_crit[net_id] = tmp_ptr;
     }
 }
 
