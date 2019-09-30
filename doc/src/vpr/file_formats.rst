@@ -159,6 +159,170 @@ Also note that the last ``.subckt adder`` has it's ``cout`` output left implicit
     .blackbox
     .end
 
+.. _vpr_blif_naming_convention:
+
+BLIF Naming Convention
+~~~~~~~~~~~~~~~~~~~~~~
+VPR follows a naming convention to refer to primitives and pins in the BLIF netlist.
+These names appear in the :ref:`VPR GUI <vpr_graphics>`, in log and error messages, and in can be used elsewhere (e.g. in :ref:`SDC constraints <sdc_commands>`).
+
+.. _vpr_blif_naming_convention_nets:
+
+Net Names
+^^^^^^^^^
+The BLIF format uses explicit names to refer to nets.
+These names are used directly as is by VPR (although some nets may be merged/removed by :ref:`netlist cleaning <netlist_options>`).
+
+For example, the following netlist:
+
+.. code-block:: none
+
+    .model top
+    .inputs a b
+    .outputs c
+
+    .names a b c
+    11 1
+
+    .end
+
+contains nets named:
+
+- ``a``
+- ``b``
+- ``c``
+
+.. _vpr_blif_naming_convention_primitives:
+
+Primitive Names
+^^^^^^^^^^^^^^^
+The standard BLIF format has no mechanism for specifying the names of primitives (e.g. ``.names``/``.latch``/``.subckt``).
+As a result, tools processing BLIF follow a naming convention which generates unique names for each netlist primitive.
+
+The VPR primitive naming convention is as follows:
+
++---------------+--------------------------+-------------------------+
+| Primitive     | Drives at least one net? | Primitive Name          |
++===============+==========================+=========================+
+| - ``.input``  | Yes                      | Name of first           |
+| - ``.names``  |                          | driven net              |
+| - ``.latch``  +--------------------------+-------------------------+
+| - ``.subckt`` | No                       | Arbitrarily             |
+|               |                          | generated (e.g.         |
+|               |                          | ``unamed_instances_K``) |
++---------------+--------------------------+-------------------------+
+| - ``.output`` | N/A                      | .output name            |
+|               |                          | prefixed with           |
+|               |                          | ``out:``                |
++---------------+--------------------------+-------------------------+
+
+which ensures each netlist primitive is given a unique name.
+
+For example, in the following:
+
+.. code-block:: none
+
+    .model top
+    .inputs a b x y z clk
+    .outputs c c_reg cout[0] sum[0]
+    
+    .names a b c
+    11 1
+
+    .latch c c_reg re clk 0
+
+    .subckt adder a=x b=y cin=z cout=cout[0] sumout=sum[0]
+
+    .end
+
+    .model adder
+    .inputs a b cin
+    .outputs cout sumout
+    .blackbox
+    .end
+
+- The circuit primary inputs (``.inputs``) are named: ``a``, ``b``, ``x``, ``y``, ``z``, ``clk``,
+- The 2-LUT (``.names``) is named ``c``,
+- The FF (``.latch``) is named ``c_reg``,
+- The ``adder`` (``.subckt``) is named ``cout[0]`` (the name of the first net it drives), and
+- The circuit primary outputs (``.outputs``) are named: ``out:c``, ``out:c_reg``, ``out:cout[0]``, ``out:sum[0]``.
+
+.. seealso:: EBLIF's :ref:`.cname <vpr_eblif_cname>` extension, which allows explicit primitive names to be specified.
+
+
+.. _vpr_blif_naming_convention_pins:
+
+Pin Names
+^^^^^^^^^
+It is useful to be able to refer to particular pins in the netlist.
+VPR uses the convention: ``<primitive_instance_name>.<pin_name>``.
+Where ``<primitive_instance_name>`` is replaced with the netlist primitive name, and ``<pin_name>`` is the name of the relevant pin.
+
+For example, the following ``adder``:
+
+.. code-block:: none
+
+    .subckt adder a=x b=y cin=z cout=cout[0] sumout=sum[0]
+
+which has pin names:
+
+- ``cout[0].a[0]`` (driven by net ``x``)
+- ``cout[0].b[0]`` (driven by net ``y``)
+- ``cout[0].cin[0]`` (driven by net ``z``)
+- ``cout[0].cout[0]`` (drives net ``cout[0]``)
+- ``cout[0].sumout[0]`` (drives net ``sum[0]``)
+
+Since the primitive instance itself is named ``cout[0]`` :ref:`by convention <vpr_blif_naming_convention_primitives>`.
+
+
+Built-in Primitive Pin Names
+""""""""""""""""""""""""""""
+The built-in primitives in BLIF (``.names``, ``.latch``) do not explicitly list the names of their input/output pins.
+VPR uses the following convention:
+
++------------+---------+---------+
+| Primitive  | Port    | Name    |
++============+=========+=========+
+| ``.names`` | input   | ``in``  |
+|            +---------+---------+
+|            | output  | ``out`` |
++------------+---------+---------+
+| ``.latch`` | input   | ``D``   |
+|            +---------+---------+
+|            | output  | ``Q``   |
+|            +---------+---------+
+|            | control | ``clk`` |
++------------+---------+---------+
+
+
+Consider the following:
+
+.. code-block:: none
+
+    .names a b c d e f
+    11111 1
+
+    .latch g h re clk 0
+
+The ``.names``' pin names are:
+
+- ``f.in[0]`` (driven by net ``a``)
+- ``f.in[1]`` (driven by net ``b``)
+- ``f.in[2]`` (driven by net ``c``)
+- ``f.in[3]`` (driven by net ``d``)
+- ``f.in[4]`` (driven by net ``e``)
+- ``f.out[0]`` (drives net ``f``)
+
+and the ``.latch`` pin names are:
+
+- ``h.D[0]`` (driven by net ``g``)
+- ``h.Q[0]`` (drives net ``h``)
+- ``h.clk[0]`` (driven by net ``clk``)
+
+since the ``.names`` and ``.latch`` primitives are named ``f`` and ``h`` :ref:`by convention <vpr_blif_naming_convention_primitives>`.
+
+.. note:: To support pins within multi-bit ports unambiguously, the bit index of the pin within its associated port is included in the pin name (for single-bit ports this will always be ``[0]``).
+
 .. _vpr_eblif_file:
 
 Extended BLIF (.eblif)
@@ -201,6 +365,8 @@ This avoids the insertion of a ``.names`` buffer which is required in standard B
 
     .end
 
+
+.. _vpr_eblif_cname:
 
 .cname
 ~~~~~~
