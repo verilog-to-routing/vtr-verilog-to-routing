@@ -100,7 +100,6 @@ struct t_placer_prev_inverse_costs {
     double timing_cost;
 };
 
-
 constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
 
 constexpr double MAX_INV_TIMING_COST = 1.e9;
@@ -366,7 +365,6 @@ static void comp_td_costs(const PlaceDelayModel* delay_model, double* timing_cos
 
 static e_move_result assess_swap(double delta_c, double t);
 
-
 static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new);
 
 static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new, int xold, int yold, int xnew, int ynew);
@@ -428,7 +426,6 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
                                                const SetupTimingInfo& timing_info,
                                                const PlacementDelayCalculator& delay_calc);
-
 
 static void print_place_status_header();
 static void print_place_status(const float t,
@@ -1235,7 +1232,6 @@ static e_move_result try_swap(float t,
 
         move_outcome = ABORTED;
     } else {
-
         VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
         /*
@@ -1560,7 +1556,6 @@ static void comp_td_point_to_point_delays(const PlaceDelayModel* delay_model) {
 /* Update the point_to_point_timing_cost values from the temporary *
  * values for all connections that have changed.                   */
 static void update_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* Go through all the blocks moved. */
@@ -2907,7 +2902,6 @@ static void update_screen_debug() {
 }
 #endif
 
-
 static void print_place_status_header() {
     VTR_LOG("------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
     VTR_LOG("      T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha\n");
@@ -2940,4 +2934,3 @@ static void print_place_status(const float t,
     VTR_LOG(" %6.3f\n", t / oldt);
     fflush(stdout);
 }
-

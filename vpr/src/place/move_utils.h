@@ -26,7 +26,6 @@ void report_aborted_moves();
 
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
 
-
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
 
 e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
@@ -34,7 +33,7 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
 e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro_from, int& imember_from, t_pl_offset swap_offset);
 e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro_from, int& imember_from, const int imacro_to, ClusterBlockId blk_to, t_pl_offset swap_offset);
 
-e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected, 
+e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       std::vector<ClusterBlockId>& displaced_blocks,
                                       const int imacro,
                                       t_pl_offset swap_offset);
@@ -48,7 +47,7 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
 ClusterBlockId pick_from_block();
 
 bool find_to(t_physical_tile_type_ptr type,
-            float rlim,
-            const t_pl_loc from,
-            t_pl_loc& to);
+             float rlim,
+             const t_pl_loc from,
+             t_pl_loc& to);
 #endif

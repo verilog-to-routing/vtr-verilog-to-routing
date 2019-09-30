@@ -25,7 +25,7 @@ class MoveGenerator {
     virtual e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim) = 0;
 
     //Recieves feedback about the outcome of the previously proposed move
-    virtual void process_outcome(const MoveOutcomeStats& /*move_outcome*/) {};
+    virtual void process_outcome(const MoveOutcomeStats& /*move_outcome*/){};
 };
 
 #endif

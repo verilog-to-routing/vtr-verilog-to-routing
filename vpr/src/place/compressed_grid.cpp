@@ -97,4 +97,3 @@ int grid_to_compressed(const std::vector<int>& coords, int point) {
 
     return std::distance(coords.begin(), itr);
 }
-

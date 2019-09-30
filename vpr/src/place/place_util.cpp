@@ -29,4 +29,3 @@ static vtr::Matrix<t_grid_blocks> init_grid_blocks() {
 
     return grid_blocks;
 }
-

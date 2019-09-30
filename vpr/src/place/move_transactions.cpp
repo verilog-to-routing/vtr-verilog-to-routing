@@ -103,4 +103,3 @@ void clear_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
     //array to avoid memory allocation
     blocks_affected.num_moved_blocks = 0;
 }
-

@@ -285,10 +285,10 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
 //and any generated empty locations in empty_locations.
 //
 //This function moves a single macro and does not check for overlap with other macros!
-e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected, 
-                                                       std::vector<ClusterBlockId>& displaced_blocks,
-                                                       const int imacro,
-                                                       t_pl_offset swap_offset) {
+e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
+                                      std::vector<ClusterBlockId>& displaced_blocks,
+                                      const int imacro,
+                                      t_pl_offset swap_offset) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     for (const t_pl_macro_member& member : place_ctx.pl_macros[imacro].members) {
@@ -348,9 +348,9 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
     return e_block_move_result::VALID;
 }
 
-e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected, 
-                                                             const int imacro,
-                                                             t_pl_offset swap_offset) {
+e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected,
+                                            const int imacro,
+                                            t_pl_offset swap_offset) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     //Reset any partial move
@@ -428,7 +428,7 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
 }
 
 //Examines the currently proposed move and determine any empty locations
-std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected) { 
+std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected) {
     std::set<t_pl_loc> moved_from;
     std::set<t_pl_loc> moved_to;
 
@@ -483,9 +483,9 @@ ClusterBlockId pick_from_block() {
 }
 
 bool find_to(t_physical_tile_type_ptr type,
-            float rlim,
-            const t_pl_loc from,
-            t_pl_loc& to) {
+             float rlim,
+             const t_pl_loc from,
+             t_pl_loc& to) {
     //Finds a legal swap to location for the given type, starting from 'x_from' and 'y_from'
     //
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
@@ -616,4 +616,3 @@ bool find_to(t_physical_tile_type_ptr type,
 
     return true;
 }
-
