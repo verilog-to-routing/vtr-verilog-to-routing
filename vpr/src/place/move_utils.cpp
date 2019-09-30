@@ -5,6 +5,20 @@
 
 #include "vtr_random.h"
 
+//Records counts of reasons for aborted moves
+static std::map<std::string, size_t> f_move_abort_reasons;
+
+void log_move_abort(std::string reason) {
+    ++f_move_abort_reasons[reason];
+}
+
+void report_aborted_moves() {
+    VTR_LOG("\n");
+    VTR_LOG("Aborted Move Reasons:\n");
+    for (auto kv : f_move_abort_reasons) {
+        VTR_LOG("  %s: %zu\n", kv.first.c_str(), kv.second);
+    }
+}
 
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
     e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to);
