@@ -1202,6 +1202,8 @@ static e_move_result try_swap(float t,
 
     num_ts_called++;
 
+    MoveOutcomeStats move_outcome_stats;
+
     /* I'm using negative values of temp_net_cost as a flag, so DO NOT   *
      * use cost functions that can go negative.                          */
 
@@ -1215,12 +1217,14 @@ static e_move_result try_swap(float t,
         rlim = std::numeric_limits<float>::infinity();
     }
 
-    //Generate a new move used to explore the space of possible placements
-    e_create_move move_outcome = move_generator.propose_move(blocks_affected, rlim);
+    //Generate a new move (perturbation) used to explore the space of possible placements
+    e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
-    if (move_outcome == e_create_move::ABORT) {
+    e_move_result move_outcome = ABORTED;
+
+    if (create_move_outcome == e_create_move::ABORT) {
         //Proposed move is not legal -- give up on this move
         clear_move_blocks(blocks_affected);
 
@@ -1229,69 +1233,83 @@ static e_move_result try_swap(float t,
                                std::numeric_limits<float>::quiet_NaN(),
                                "ABORTED", "illegal move");
 
-        return ABORTED;
-    }
-
-    VTR_ASSERT(move_outcome == e_create_move::VALID);
-
-    /*
-     * To make evaluating the move simpler (e.g. calculating changed bounding box), 
-     * we first move the blocks to thier new locations (apply the move to 
-     * place_ctx.block_locs) and then computed the change in cost. If the move is 
-     * accepted, the inverse look-up in place_ctx.grid_blocks is updated (committing
-     * the move). If the move is rejected the blocks are returned to their original 
-     * positions (reverting place_ctx.block_locs to its original state).
-     *
-     * Note that the inverse look-up place_ctx.block_locs is only updated until 
-     * after move acceptance is determined, and so should not be used when 
-     * evaluating a move.
-     */
-
-    //Update the block positions
-    apply_move_blocks(blocks_affected);
-
-    // Find all the nets affected by this swap and update their costs
-    int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm, blocks_affected, delay_model, bb_delta_c, timing_delta_c);
-
-    if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-        /*in this case we redefine delta_c as a combination of timing and bb.  *
-         *additionally, we normalize all values, therefore delta_c is in       *
-         *relation to 1*/
-
-        delta_c = (1 - timing_tradeoff) * bb_delta_c * prev_inverse_costs->bb_cost
-                  + timing_tradeoff * timing_delta_c * prev_inverse_costs->timing_cost;
+        move_outcome = ABORTED;
     } else {
-        delta_c = bb_delta_c;
-    }
 
-    /* 1 -> move accepted, 0 -> rejected. */
-    e_move_result keep_switch = assess_swap(delta_c, t);
+        VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
-    if (keep_switch == ACCEPTED) {
-        costs->cost += delta_c;
-        costs->bb_cost += bb_delta_c;
+        /*
+         * To make evaluating the move simpler (e.g. calculating changed bounding box), 
+         * we first move the blocks to thier new locations (apply the move to 
+         * place_ctx.block_locs) and then computed the change in cost. If the move is 
+         * accepted, the inverse look-up in place_ctx.grid_blocks is updated (committing
+         * the move). If the move is rejected the blocks are returned to their original 
+         * positions (reverting place_ctx.block_locs to its original state).
+         *
+         * Note that the inverse look-up place_ctx.grid_blocks is only updated
+         * after move acceptance is determined, and so should not be used when 
+         * evaluating a move.
+         */
 
+        //Update the block positions
+        apply_move_blocks(blocks_affected);
+
+        // Find all the nets affected by this swap and update their costs
+        int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm, blocks_affected, delay_model, bb_delta_c, timing_delta_c);
         if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-            /*update the point_to_point_timing_cost and point_to_point_delay
-             * values from the temporary values */
-            costs->timing_cost += timing_delta_c;
+            /*in this case we redefine delta_c as a combination of timing and bb.  *
+             *additionally, we normalize all values, therefore delta_c is in       *
+             *relation to 1*/
 
-            update_td_cost(blocks_affected);
+            delta_c = (1 - timing_tradeoff) * bb_delta_c * prev_inverse_costs->bb_cost
+                      + timing_tradeoff * timing_delta_c * prev_inverse_costs->timing_cost;
+        } else {
+            delta_c = bb_delta_c;
         }
 
-        /* update net cost functions and reset flags. */
-        update_move_nets(num_nets_affected);
+        /* 1 -> move accepted, 0 -> rejected. */
+        move_outcome = assess_swap(delta_c, t);
 
-        /* Update clb data structures since we kept the move. */
-        commit_move_blocks(blocks_affected);
+        if (move_outcome == ACCEPTED) {
+            costs->cost += delta_c;
+            costs->bb_cost += bb_delta_c;
 
-    } else { /* Move was rejected.  */
-             /* Reset the net cost function flags first. */
-        reset_move_nets(num_nets_affected);
+            if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+                /*update the point_to_point_timing_cost and point_to_point_delay
+                 * values from the temporary values */
+                costs->timing_cost += timing_delta_c;
 
-        /* Restore the place_ctx.block_locs data structures to their state before the move. */
-        revert_move_blocks(blocks_affected);
+                update_td_cost(blocks_affected);
+            }
+
+            /* update net cost functions and reset flags. */
+            update_move_nets(num_nets_affected);
+
+            /* Update clb data structures since we kept the move. */
+            commit_move_blocks(blocks_affected);
+
+        } else { /* Move was rejected.  */
+                 /* Reset the net cost function flags first. */
+            reset_move_nets(num_nets_affected);
+
+            /* Restore the place_ctx.block_locs data structures to their state before the move. */
+            revert_move_blocks(blocks_affected);
+        }
+
+        move_outcome_stats.delta_cost_norm = delta_c;
+        move_outcome_stats.delta_bb_cost_norm = bb_delta_c * prev_inverse_costs->bb_cost;
+        move_outcome_stats.delta_timing_cost_norm = timing_delta_c * prev_inverse_costs->timing_cost;
+
+        move_outcome_stats.delta_bb_cost_abs = bb_delta_c;
+        move_outcome_stats.delta_timing_cost_abs = timing_delta_c;
+
+        LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c,
+                               (move_outcome ? "ACCEPTED" : "REJECTED"), "");
     }
+
+    move_outcome_stats.outcome = move_outcome;
+
+    move_generator.process_outcome(move_outcome_stats);
 
     clear_move_blocks(blocks_affected);
 
@@ -1301,9 +1319,7 @@ static e_move_result try_swap(float t,
     check_place(*costs, delay_model, place_algorithm);
 #endif
 
-    LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c,
-                           (keep_switch ? "ACCEPTED" : "REJECTED"), "");
-    return (keep_switch);
+    return (move_outcome);
 }
 
 //Puts all the nets changed by the current swap into nets_to_update,
