@@ -2654,15 +2654,16 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
     t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    for (k = 0; k < physical_tile_type(type)->num_pins; k++) { /* Each pin on a CLB */
+    for (k = 0; k < type->pb_type->num_pins; k++) { /* Each pin on a CLB */
         ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, k);
 
         if (net_id == ClusterNetId::INVALID())
             continue;
 
-        iclass = physical_tile_type(type)->pin_class[k];
+        // XXX Logical Physical Mapping to be used here
+        iclass = physical_tile_type(blk_id)->pin_class[k];
 
-        if (physical_tile_type(type)->class_inf[iclass].type == DRIVER) { /* Fanout */
+        if (physical_tile_type(blk_id)->class_inf[iclass].type == DRIVER) { /* Fanout */
             if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanout. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
@@ -2712,7 +2713,8 @@ void deselect_all() {
 
     /* Create some colour highlighting */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        draw_reset_blk_color(blk_id);
+        if (blk_id != ClusterBlockId::INVALID())
+            draw_reset_blk_color(blk_id);
     }
 
     for (auto net_id : cluster_ctx.clb_nlist.nets())
@@ -2726,9 +2728,13 @@ void deselect_all() {
 }
 
 static void draw_reset_blk_color(ClusterBlockId blk_id) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+
     t_draw_state* draw_state = get_draw_state_vars();
 
-    draw_state->block_color[blk_id] = get_block_type_color(physical_tile_type(blk_id));
+    draw_state->block_color[blk_id] = get_block_type_color(physical_tile_type(logical_block));
 }
 
 /**
@@ -3305,10 +3311,8 @@ static void draw_block_pin_util() {
             continue;
         }
 
-        t_pb_type* pb_type = logical_block_type(&type)->pb_type;
-
-        total_input_pins[&type] = pb_type->num_input_pins + pb_type->num_clock_pins;
-        total_output_pins[&type] = pb_type->num_output_pins;
+        total_input_pins[&type] = type.num_input_pins + type.num_clock_pins;
+        total_output_pins[&type] = type.num_output_pins;
     }
 
     auto blks = cluster_ctx.clb_nlist.blocks();

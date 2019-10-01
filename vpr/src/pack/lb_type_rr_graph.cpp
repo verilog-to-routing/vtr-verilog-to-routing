@@ -58,7 +58,7 @@ std::vector<t_lb_type_rr_node>* alloc_and_load_all_lb_type_rr_graph() {
 
     for (const auto& type : device_ctx.logical_block_types) {
         int itype = type.index;
-        if (physical_tile_type(&type) != device_ctx.EMPTY_TYPE) {
+        if (&type != device_ctx.EMPTY_LOGICAL_BLOCK_TYPE) {
             alloc_and_load_lb_type_rr_graph_for_type(&type, lb_type_rr_graphs[itype]);
 
             /* Now that the data is loaded, reallocate to the precise amount of memory needed to prevent insidious bugs */
@@ -75,7 +75,7 @@ void free_all_lb_type_rr_graph(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs
 
     for (const auto& type : device_ctx.logical_block_types) {
         int itype = type.index;
-        if (physical_tile_type(&type) != device_ctx.EMPTY_TYPE) {
+        if (!is_empty_type(&type)) {
             int graph_size = lb_type_rr_graphs[itype].size();
             for (int inode = 0; inode < graph_size; inode++) {
                 t_lb_type_rr_node* node = &lb_type_rr_graphs[itype][inode];
@@ -133,7 +133,7 @@ void echo_lb_type_rr_graphs(char* filename, std::vector<t_lb_type_rr_node>* lb_t
 
     auto& device_ctx = g_vpr_ctx.device();
     for (const auto& type : device_ctx.logical_block_types) {
-        if (physical_tile_type(&type) != device_ctx.EMPTY_TYPE) {
+        if (!is_empty_type(&type)) {
             fprintf(fp, "--------------------------------------------------------------\n");
             fprintf(fp, "Intra-Logic Block Routing Resource For Type %s\n", type.name);
             fprintf(fp, "--------------------------------------------------------------\n");

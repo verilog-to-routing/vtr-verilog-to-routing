@@ -93,8 +93,9 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
         ClusterBlockId blk_id = cluster_ctx.clb_nlist.pin_block(pin_id);
         int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
 
-        if (physical_tile_type(blk_id)->is_ignored_pin[pin_index] != net_is_ignored
-            && !is_io_type(physical_tile_type(blk_id))) {
+        auto logical_type = cluster_ctx.clb_nlist.block_type(blk_id);
+        if (physical_tile_type(logical_type)->is_ignored_pin[pin_index] != net_is_ignored
+            && !is_io_type(physical_tile_type(logical_type))) {
             VTR_LOGV_WARN(verbosity > 2,
                           "Global net '%s' connects to non-global architecture pin '%s' (netlist pin '%s')\n",
                           cluster_ctx.clb_nlist.net_name(net_id).c_str(),
@@ -144,7 +145,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
     /* This case should already have been flagged as an error -- this is *
      * just a redundant double check.                                    */
 
-    if (num_conn > physical_tile_type(type)->num_pins) {
+    if (num_conn > type->pb_type->num_pins) {
         VTR_LOG_ERROR("logic block #%d with output %s has %d pins.\n",
                       iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
         error++;

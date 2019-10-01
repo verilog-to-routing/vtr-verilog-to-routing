@@ -1052,13 +1052,21 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
             i = place_ctx.block_locs[block_id].loc.x;
             j = place_ctx.block_locs[block_id].loc.y;
             auto type = physical_tile_type(block_id);
+            auto logical_block = cluster_ctx.clb_nlist.block_type(block_id);
 
             /* In the routing graph, each (x, y) location has unique pins on it
              * so when there is capacity, blocks are packed and their pin numbers
              * are offset to get their actual rr_node */
-            node_block_pin = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+            node_block_pin = cluster_ctx.clb_nlist.pin_logical_index(pin_id);
 
-            iclass = type->pin_class[node_block_pin];
+            auto pin_directs_map = type->tile_block_pin_directs_map;
+            auto map_result = pin_directs_map.find(logical_block->index);
+            std::unordered_map<int, int> map = map_result->second;
+
+            auto pin_result = map.find(node_block_pin);
+            auto phys_pin = pin_result->second;
+
+            iclass = type->pin_class[phys_pin];
 
             inode = get_rr_node_index(L_rr_node_indices, i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
                                       iclass);

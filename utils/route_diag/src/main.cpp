@@ -154,7 +154,7 @@ static void profile_source(int source_rr_node,
 
     for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
         for (int sink_y = start_y; sink_y <= end_y; sink_y++) {
-            if(device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
+            if(device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                 continue;
             }
 
@@ -220,7 +220,7 @@ static t_chan_width setup_chan_width(t_router_opts router_opts,
     if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH) {
         auto& device_ctx = g_vpr_ctx.device();
 
-        auto type = physical_tile_type(find_most_common_block_type(device_ctx.grid));
+        auto type = find_most_common_tile_type(device_ctx.grid);
 
         width_fac = 4 * type->num_pins;
         /*this is 2x the value that binary search starts */

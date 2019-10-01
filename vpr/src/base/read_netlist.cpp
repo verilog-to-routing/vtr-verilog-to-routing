@@ -857,6 +857,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
     ClusterNetId clb_net_id;
 
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& device_ctx = g_vpr_ctx.device();
 
     ext_nhash = alloc_hash_table();
 
@@ -868,14 +869,13 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
     /* Determine the external nets of complex block */
     for (auto blk_id : clb_nlist.blocks()) {
         block_type = clb_nlist.block_type(blk_id);
-        tile_type = physical_tile_type(block_type);
         const t_pb* pb = clb_nlist.block_pb(blk_id);
 
         ipin = 0;
         VTR_ASSERT(block_type->pb_type->num_input_pins
                        + block_type->pb_type->num_output_pins
                        + block_type->pb_type->num_clock_pins
-                   == tile_type->num_pins / tile_type->capacity);
+                   == block_type->pb_type->num_pins);
 
         int num_input_ports = pb->pb_graph_node->num_input_ports;
         int num_output_ports = pb->pb_graph_node->num_output_ports;
@@ -951,7 +951,8 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
      * and blocks point back to net pins */
     for (auto blk_id : clb_nlist.blocks()) {
         block_type = clb_nlist.block_type(blk_id);
-        tile_type = physical_tile_type(block_type);
+        // XXX Use pin mapping here! To check that all the possible pins can be used in the correct tile!
+        tile_type = find_block_type_by_name(block_type->name, device_ctx.physical_tile_types);
         for (j = 0; j < tile_type->num_pins; j++) {
             //Iterate through each pin of the block, and see if there is a net allocated/used for it
             clb_net_id = clb_nlist.block_net(blk_id, j);
