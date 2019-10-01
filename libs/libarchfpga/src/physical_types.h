@@ -55,7 +55,9 @@ struct t_port_power;
 struct t_physical_tile_port;
 struct t_equivalent_site;
 struct t_physical_tile_type;
+typedef const t_physical_tile_type* t_physical_tile_type_ptr;
 struct t_logical_block_type;
+typedef const t_logical_block_type* t_logical_block_type_ptr;
 struct t_pb_type;
 struct t_pb_graph_pin_power;
 struct t_mode;
@@ -521,27 +523,6 @@ enum class e_sb_type {
 constexpr int NO_SWITCH = -1;
 constexpr int DEFAULT_SWITCH = -2;
 
-/* Describes the type for a logical block
- * name: unique identifier for type
- * pb_type: Internal subblocks and routing information for this physical block
- * pb_graph_head: Head of DAG of pb_types_nodes and their edges
- *
- * index: Keep track of type in array for easy access
- * physical_tile_index: index of the corresponding physical tile type
- */
-struct t_logical_block_type {
-    char* name = nullptr;
-
-    /* Clustering info */
-    t_pb_type* pb_type = nullptr;
-    t_pb_graph_node* pb_graph_head = nullptr;
-
-    int index = -1; /* index of type descriptor in array (allows for index referencing) */
-
-    int physical_tile_index = -1; /* index of the corresponding physical tile type */
-};
-typedef const t_logical_block_type* t_logical_block_type_ptr;
-
 /* Describes the type for a physical tile
  * name: unique identifier for type
  * num_pins: Number of pins for the block
@@ -626,14 +607,13 @@ struct t_physical_tile_type {
 
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
-    int logical_block_index = -1; /* index of the corresponding logical block type */
-
-    std::vector<t_equivalent_site> equivalent_sites;
+    std::vector<std::string> equivalent_sites_names;
+    std::vector<t_logical_block_type_ptr> equivalent_sites;
+    std::unordered_map<int, std::unordered_map<int, int>> tile_block_pin_directs_map;
 
     /* Returns the indices of pins that contain a clock for this physical logic block */
     std::vector<int> get_clock_pins_indices() const;
 };
-typedef const t_physical_tile_type* t_physical_tile_type_ptr;
 
 /** Describes I/O and clock ports of a physical tile type
  *
@@ -668,17 +648,24 @@ struct t_physical_tile_port {
     int tile_type_index;
 };
 
-/** Describes the equivalent sites related to a specific tile type
+/* Describes the type for a logical block
+ * name: unique identifier for type
+ * pb_type: Internal subblocks and routing information for this physical block
+ * pb_graph_head: Head of DAG of pb_types_nodes and their edges
  *
- *  It corresponds to the <tile> tags in the FPGA architecture description
- *
+ * index: Keep track of type in array for easy access
+ * physical_tile_index: index of the corresponding physical tile type
  */
-struct t_equivalent_site {
-    char* pb_type_name;
+struct t_logical_block_type {
+    char* name = nullptr;
 
-    // XXX Variables to hold information on mapping between site and tile
-    // XXX as well as references to the belonging pb_type and tile_type
-    //t_logical_block_type* block_type;
+    /* Clustering info */
+    t_pb_type* pb_type = nullptr;
+    t_pb_graph_node* pb_graph_head = nullptr;
+
+    int index = -1; /* index of type descriptor in array (allows for index referencing) */
+
+    std::vector<t_physical_tile_type_ptr> equivalent_tiles;
 };
 
 /*************************************************************************************************
@@ -726,8 +713,9 @@ struct t_equivalent_site {
  *      modes: Different modes accepted
  *      ports: I/O and clock ports
  *      num_clock_pins: A count of the total number of clock pins
- *      int num_input_pins: A count of the total number of input pins
- *      int num_output_pins: A count of the total number of output pins
+ *      num_input_pins: A count of the total number of input pins
+ *      num_output_pins: A count of the total number of output pins
+ *      num_pins: A count of the total number of pins
  *      timing: Timing matrix of block [0..num_inputs-1][0..num_outputs-1]
  *      parent_mode: mode of the parent block
  *      t_mode_power: ???
@@ -748,6 +736,8 @@ struct t_pb_type {
     int num_clock_pins = 0;
     int num_input_pins = 0; /* inputs not including clock pins */
     int num_output_pins = 0;
+
+    int num_pins = 0;
 
     t_mode* parent_mode = nullptr;
     int depth = 0; /* depth of pb_type */
@@ -861,6 +851,7 @@ struct t_port {
 
     int index;
     int port_index_by_type;
+    int absolute_first_pin_index;
 
     t_port_power* port_power;
 };

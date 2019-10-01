@@ -77,7 +77,7 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
 
     num_macro = 0;
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        num_blk_pins = physical_tile_type(blk_id)->num_pins;
+        num_blk_pins = cluster_ctx.clb_nlist.block_type(blk_id)->pb_type->num_pins;
         for (to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {
             to_net_id = cluster_ctx.clb_nlist.block_net(blk_id, to_iblk_pin);
             to_idirect = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type(blk_id)->index][to_iblk_pin];

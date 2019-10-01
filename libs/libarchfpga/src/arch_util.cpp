@@ -252,10 +252,6 @@ void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors) 
         vtr::free(type.is_pin_global);
         vtr::free(type.pin_class);
 
-        for (auto equivalent_site : type.equivalent_sites) {
-            vtr::free(equivalent_site.pb_type_name);
-        }
-
         for (auto port : type.ports) {
             vtr::free(port.name);
         }

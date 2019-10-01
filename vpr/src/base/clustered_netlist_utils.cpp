@@ -17,7 +17,7 @@ void ClusteredPinAtomPinsLookup::init_lookup(const ClusteredNetlist& clustered_n
     clustered_pin_connected_atom_pins_.resize(clustered_pins.size());
     for (ClusterPinId clustered_pin : clustered_pins) {
         auto clustered_block = clustered_netlist.pin_block(clustered_pin);
-        int phys_pin_index = clustered_netlist.pin_physical_index(clustered_pin);
-        clustered_pin_connected_atom_pins_[clustered_pin] = find_clb_pin_connected_atom_pins(clustered_block, phys_pin_index, pb_gpin_lookup);
+        int log_pin_index = clustered_netlist.pin_logical_index(clustered_pin);
+        clustered_pin_connected_atom_pins_[clustered_pin] = find_clb_pin_connected_atom_pins(clustered_block, log_pin_index, pb_gpin_lookup);
     }
 }
