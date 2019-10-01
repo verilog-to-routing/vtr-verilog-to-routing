@@ -227,7 +227,7 @@ static std::vector<t_physical_tile_type_ptr> grid_overused_resources(const Devic
     for (auto kv : instance_counts) {
         t_physical_tile_type_ptr type;
         size_t min_count;
-        std::tie(type, min_count) = std::make_pair(physical_tile_type(kv.first), kv.second);
+        std::tie(type, min_count) = std::make_pair(kv.first->equivalent_tiles[0], kv.second);
 
         size_t inst_cnt = grid.num_instances(type);
 
@@ -531,7 +531,7 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
             VTR_ASSERT(grid_priorities[x][y] <= priority);
 
             if (grid_tile.type != nullptr
-                && grid_tile.type != device_ctx.EMPTY_TYPE) {
+                && grid_tile.type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                 //We are overriding a non-empty block, we need to be careful
                 //to ensure we remove any blocks which will be invalidated when we
                 //overwrite part of their locations
@@ -566,8 +566,8 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
                     // Note: that we explicitly check the type and offsets, since the original block
                     //       may have been completely overwritten, and we don't want to change anything
                     //       in that case
-                    VTR_ASSERT(device_ctx.EMPTY_TYPE->width == 1);
-                    VTR_ASSERT(device_ctx.EMPTY_TYPE->height == 1);
+                    VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE->width == 1);
+                    VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE->height == 1);
 
 #ifdef VERBOSE
                     VTR_LOG("Ripping up block '%s' at (%d,%d) offset (%d,%d). Overlapped by '%s' at (%d,%d)\n",
@@ -576,7 +576,7 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
                             type->name, x_root, y_root);
 #endif
 
-                    grid[x][y].type = device_ctx.EMPTY_TYPE;
+                    grid[x][y].type = device_ctx.EMPTY_PHYSICAL_TILE_TYPE;
                     grid[x][y].width_offset = 0;
                     grid[x][y].height_offset = 0;
 
@@ -664,7 +664,8 @@ float calculate_device_utilization(const DeviceGrid& grid, std::map<t_logical_bl
     //Determine the area of instances in tile units
     float instance_area = 0.;
     for (auto& kv : instance_counts) {
-        t_physical_tile_type_ptr type = physical_tile_type(kv.first);
+        // XXX How to deal with multiple possible tiles?
+        t_physical_tile_type_ptr type = kv.first->equivalent_tiles[0];
         size_t count = kv.second;
 
         float type_area = type->width * type->height;
