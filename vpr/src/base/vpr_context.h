@@ -120,7 +120,10 @@ struct DeviceContext : public Context {
     /* Special pointers to identify special blocks on an FPGA: I/Os, unused, and default */
     std::set<t_physical_tile_type_ptr> input_types;
     std::set<t_physical_tile_type_ptr> output_types;
-    t_physical_tile_type_ptr EMPTY_TYPE;
+
+    /* Empty types */
+    t_physical_tile_type_ptr EMPTY_PHYSICAL_TILE_TYPE;
+    t_logical_block_type_ptr EMPTY_LOGICAL_BLOCK_TYPE;
 
     /* block_types are blocks that can be moved by the placer
      * such as: I/Os, CLBs, memories, multipliers, etc
