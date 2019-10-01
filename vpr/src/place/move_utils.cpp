@@ -497,27 +497,27 @@ bool find_to_loc_uniform(t_physical_tile_type_ptr type,
     //case with a physical distance rlim)
     auto& grid = g_vpr_ctx.device().grid;
 
-    auto grid_type = grid[from.x][from.y].type;
-    VTR_ASSERT(type == grid_type);
+    auto from_type = grid[from.x][from.y].type;
 
     //Retrieve the compressed block grid for this block type
-    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
+    const auto& to_compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
+    const auto& from_compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[from_type->index];
 
     //Determine the rlim in each dimension
-    int rlim_x = std::min<int>(compressed_block_grid.compressed_to_grid_x.size(), rlim);
-    int rlim_y = std::min<int>(compressed_block_grid.compressed_to_grid_y.size(), rlim); /* for aspect_ratio != 1 case. */
+    int rlim_x = std::min<int>(to_compressed_block_grid.compressed_to_grid_x.size(), rlim);
+    int rlim_y = std::min<int>(to_compressed_block_grid.compressed_to_grid_y.size(), rlim); /* for aspect_ratio != 1 case. */
 
     //Determine the coordinates in the compressed grid space of the current block
-    int cx_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_x, from.x);
-    int cy_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_y, from.y);
+    int cx_from = grid_to_compressed(from_compressed_block_grid.compressed_to_grid_x, from.x);
+    int cy_from = grid_to_compressed(from_compressed_block_grid.compressed_to_grid_y, from.y);
 
-    //Determin the valid compressed grid location ranges
+    //Determine the valid compressed grid location ranges
     int min_cx = std::max(0, cx_from - rlim_x);
-    int max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_from + rlim_x);
+    int max_cx = std::min<int>(to_compressed_block_grid.compressed_to_grid_x.size() - 1, cx_from + rlim_x);
     int delta_cx = max_cx - min_cx;
 
     int min_cy = std::max(0, cy_from - rlim_y);
-    int max_cy = std::min<int>(compressed_block_grid.compressed_to_grid_y.size() - 1, cy_from + rlim_y);
+    int max_cy = std::min<int>(to_compressed_block_grid.compressed_to_grid_y.size() - 1, cy_from + rlim_y);
 
     int cx_to = OPEN;
     int cy_to = OPEN;
@@ -544,19 +544,19 @@ bool find_to_loc_uniform(t_physical_tile_type_ptr type,
         //
         //The candidates are stored in a flat_map so we can efficiently find the set of valid
         //candidates with upper/lower bound.
-        auto y_lower_iter = compressed_block_grid.grid[cx_to].lower_bound(min_cy);
-        if (y_lower_iter == compressed_block_grid.grid[cx_to].end()) {
+        auto y_lower_iter = to_compressed_block_grid.grid[cx_to].lower_bound(min_cy);
+        if (y_lower_iter == to_compressed_block_grid.grid[cx_to].end()) {
             continue;
         }
 
-        auto y_upper_iter = compressed_block_grid.grid[cx_to].upper_bound(max_cy);
+        auto y_upper_iter = to_compressed_block_grid.grid[cx_to].upper_bound(max_cy);
 
         if (y_lower_iter->first > min_cy) {
             //No valid blocks at this x location which are within rlim_y
             //
             //Fall back to allow the whole y range
-            y_lower_iter = compressed_block_grid.grid[cx_to].begin();
-            y_upper_iter = compressed_block_grid.grid[cx_to].end();
+            y_lower_iter = to_compressed_block_grid.grid[cx_to].begin();
+            y_upper_iter = to_compressed_block_grid.grid[cx_to].end();
 
             min_cy = y_lower_iter->first;
             max_cy = (y_upper_iter - 1)->first;
@@ -602,17 +602,16 @@ bool find_to_loc_uniform(t_physical_tile_type_ptr type,
     VTR_ASSERT(cy_to != OPEN);
 
     //Convert to true (uncompressed) grid locations
-    to.x = compressed_block_grid.compressed_to_grid_x[cx_to];
-    to.y = compressed_block_grid.compressed_to_grid_y[cy_to];
+    to.x = to_compressed_block_grid.compressed_to_grid_x[cx_to];
+    to.y = to_compressed_block_grid.compressed_to_grid_y[cy_to];
 
     //Each x/y location contains only a single type, so we can pick a random
     //z (capcity) location
     to.z = vtr::irand(type->capacity - 1);
 
-    auto& device_ctx = g_vpr_ctx.device();
-    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].type == type, "Type must match");
-    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].width_offset == 0, "Should be at block base location");
-    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].height_offset == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid[to.x][to.y].type == type, "Type must match");
+    VTR_ASSERT_MSG(grid[to.x][to.y].width_offset == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid[to.x][to.y].height_offset == 0, "Should be at block base location");
 
     return true;
 }

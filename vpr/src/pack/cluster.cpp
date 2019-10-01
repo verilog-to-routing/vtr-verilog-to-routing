@@ -451,7 +451,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     num_molecules = count_molecules(molecule_head);
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (device_ctx.EMPTY_TYPE == physical_tile_type(&type))
+        if (is_empty_type(&type))
             continue;
 
         cur_cluster_size = get_max_primitives_in_pb_type(type.pb_type);
@@ -1963,8 +1963,14 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
         //support the same primitive(s).
         std::stable_sort(candidate_types.begin(), candidate_types.end(),
                          [&](t_logical_block_type_ptr lhs, t_logical_block_type_ptr rhs) {
-                             float lhs_util = vtr::safe_ratio<float>(num_used_type_instances[lhs], device_ctx.grid.num_instances(physical_tile_type(lhs)));
-                             float rhs_util = vtr::safe_ratio<float>(num_used_type_instances[rhs], device_ctx.grid.num_instances(physical_tile_type(rhs)));
+                             int lhs_num_instances = 0;
+                             int rhs_num_instances = 0;
+                             // Count number of instances for each type
+                             for (auto type : lhs->equivalent_tiles) lhs_num_instances += device_ctx.grid.num_instances(type);
+                             for (auto type : rhs->equivalent_tiles) rhs_num_instances += device_ctx.grid.num_instances(type);
+
+                             float lhs_util = vtr::safe_ratio<float>(num_used_type_instances[lhs], lhs_num_instances);
+                             float rhs_util = vtr::safe_ratio<float>(num_used_type_instances[rhs], rhs_num_instances);
                              //Lower util first
                              return lhs_util < rhs_util;
                          });
@@ -2053,10 +2059,17 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
     VTR_ASSERT(success);
 
     //Successfully create cluster
-    num_used_type_instances[clb_nlist->block_type(clb_index)]++;
+    auto block_type = clb_nlist->block_type(clb_index);
+    num_used_type_instances[block_type]++;
 
     /* Expand FPGA size if needed */
-    if (num_used_type_instances[clb_nlist->block_type(clb_index)] > device_ctx.grid.num_instances(physical_tile_type(clb_index))) {
+    // Check used type instances against the possible equivalent physical locations
+    unsigned int num_instances = 0;
+    for (auto equivalent_tile : block_type->equivalent_tiles) {
+        num_instances += device_ctx.grid.num_instances(equivalent_tile);
+    }
+
+    if (num_used_type_instances[block_type] > num_instances) {
         device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances, target_device_utilization);
         VTR_LOGV(verbosity > 0, "Not enough resources expand FPGA size to (%d x %d)\n",
                  device_ctx.grid.width(), device_ctx.grid.height());
