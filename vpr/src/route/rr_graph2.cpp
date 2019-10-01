@@ -452,7 +452,7 @@ void obstruct_chan_details(const DeviceGrid& grid,
             if (!trim_obs_channels)
                 continue;
 
-            if (grid[x][y].type == device_ctx.EMPTY_TYPE)
+            if (grid[x][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
                 continue;
             if (grid[x][y].width_offset > 0 || grid[x][y].height_offset > 0)
                 continue;
@@ -491,22 +491,22 @@ void obstruct_chan_details(const DeviceGrid& grid,
                 if ((x == 0) || (y == 0))
                     continue;
             }
-            if (grid[x][y].type == device_ctx.EMPTY_TYPE) {
+            if (grid[x][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                 if ((x == grid.width() - 2) && is_io_type(grid[x + 1][y].type)) //-2 for no perim channels
                     continue;
                 if ((y == grid.height() - 2) && is_io_type(grid[x][y + 1].type)) //-2 for no perim channels
                     continue;
             }
 
-            if (is_io_type(grid[x][y].type) || (grid[x][y].type == device_ctx.EMPTY_TYPE)) {
-                if (is_io_type(grid[x][y + 1].type) || (grid[x][y + 1].type == device_ctx.EMPTY_TYPE)) {
+            if (is_io_type(grid[x][y].type) || (grid[x][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)) {
+                if (is_io_type(grid[x][y + 1].type) || (grid[x][y + 1].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)) {
                     for (int track = 0; track < nodes_per_chan->max; ++track) {
                         chan_details_x[x][y][track].set_length(0);
                     }
                 }
             }
-            if (is_io_type(grid[x][y].type) || (grid[x][y].type == device_ctx.EMPTY_TYPE)) {
-                if (is_io_type(grid[x + 1][y].type) || (grid[x + 1][y].type == device_ctx.EMPTY_TYPE)) {
+            if (is_io_type(grid[x][y].type) || (grid[x][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)) {
+                if (is_io_type(grid[x + 1][y].type) || (grid[x + 1][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)) {
                     for (int track = 0; track < nodes_per_chan->max; ++track) {
                         chan_details_y[x][y][track].set_length(0);
                     }
@@ -1370,7 +1370,7 @@ int find_average_rr_node_index(int device_width,
 
         for (int x = 0; x < device_width; ++x) {
             for (int y = 0; y < device_height; ++y) {
-                if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)
+                if (device_ctx.grid[x][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
                     continue;
                 if (is_io_type(device_ctx.grid[x][y].type))
                     continue;
@@ -1429,7 +1429,7 @@ int get_track_to_pins(int seg,
                 }
 
                 /* PAJ - if the pointed to is an EMPTY then shouldn't look for ipins */
-                if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)
+                if (device_ctx.grid[x][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
                     continue;
 
                 /* Move from logical (straight) to physical (twisted) track index

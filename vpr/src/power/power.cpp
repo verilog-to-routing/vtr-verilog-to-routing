@@ -606,7 +606,7 @@ static void power_usage_blocks(t_power_usage* power_usage) {
         for (size_t y = 0; y < device_ctx.grid.height(); y++) {
             if ((device_ctx.grid[x][y].width_offset != 0)
                 || (device_ctx.grid[x][y].height_offset != 0)
-                || (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)) {
+                || (device_ctx.grid[x][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)) {
                 continue;
             }
 

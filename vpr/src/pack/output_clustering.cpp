@@ -63,7 +63,8 @@ static void print_stats() {
     /* Counters used only for statistics purposes. */
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto type = physical_tile_type(blk_id);
+        // XXX Use mapping here
+        auto type = cluster_ctx.clb_nlist.block_type(blk_id)->equivalent_tiles[0];
         for (ipin = 0; ipin < type->num_pins; ipin++) {
             if (cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route.empty()) {
                 ClusterNetId clb_net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
