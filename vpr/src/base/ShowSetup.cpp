@@ -75,7 +75,8 @@ void printClusteredNetlistStats() {
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         num_blocks_type[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
-        auto type = physical_tile_type(blk_id);
+        // XXX mapping here
+        auto type = cluster_ctx.clb_nlist.block_type(blk_id)->equivalent_tiles[0];
         if (is_io_type(type)) {
             for (j = 0; j < type->num_pins; j++) {
                 if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {

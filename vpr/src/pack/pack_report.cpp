@@ -15,22 +15,22 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
     auto& cluster_ctx = ctx.clustering();
     auto& device_ctx = ctx.device();
 
-    std::map<t_physical_tile_type_ptr, size_t> total_input_pins;
-    std::map<t_physical_tile_type_ptr, size_t> total_output_pins;
-    for (auto const& type : device_ctx.physical_tile_types) {
+    std::map<t_logical_block_type_ptr, size_t> total_input_pins;
+    std::map<t_logical_block_type_ptr, size_t> total_output_pins;
+    for (auto const& type : device_ctx.logical_block_types) {
         if (is_empty_type(&type)) continue;
 
-        t_pb_type* pb_type = logical_block_type(&type)->pb_type;
+        t_pb_type* pb_type = type.pb_type;
 
         total_input_pins[&type] = pb_type->num_input_pins + pb_type->num_clock_pins;
         total_output_pins[&type] = pb_type->num_output_pins;
     }
 
-    std::map<t_physical_tile_type_ptr, std::vector<float>> inputs_used;
-    std::map<t_physical_tile_type_ptr, std::vector<float>> outputs_used;
+    std::map<t_logical_block_type_ptr, std::vector<float>> inputs_used;
+    std::map<t_logical_block_type_ptr, std::vector<float>> outputs_used;
 
     for (auto blk : cluster_ctx.clb_nlist.blocks()) {
-        t_physical_tile_type_ptr type = physical_tile_type(blk);
+        t_logical_block_type_ptr type = cluster_ctx.clb_nlist.block_type(blk);
 
         inputs_used[type].push_back(cluster_ctx.clb_nlist.block_input_pins(blk).size() + cluster_ctx.clb_nlist.block_clock_pins(blk).size());
         outputs_used[type].push_back(cluster_ctx.clb_nlist.block_output_pins(blk).size());
@@ -40,8 +40,8 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
 
     os << std::fixed << std::setprecision(2);
 
-    for (auto const& physical_type : device_ctx.physical_tile_types) {
-        auto type = &physical_type;
+    for (auto const& logical_type : device_ctx.logical_block_types) {
+        auto type = &logical_type;
         if (is_empty_type(type)) continue;
         if (!inputs_used.count(type)) continue;
 

@@ -297,7 +297,7 @@ static int try_place_macro(int itype, int ipos, int imacro);
 static void initial_placement_pl_macros(int macros_max_num_tries, int* free_locations);
 
 static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pad_loc_type);
-static void initial_placement_location(const int* free_locations, ClusterBlockId blk_id, int& pipos, t_pl_loc& to);
+static void initial_placement_location(const int* free_locations, int& pipos, int itype, t_pl_loc& to);
 
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
                               const char* pad_loc_file);
@@ -509,6 +509,7 @@ void try_place(const t_placer_opts& placer_opts,
                                      directs, num_directs);
 
     initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file.c_str());
+
     init_draw_coords((float)width_fac);
     //Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, pb_gpin_lookup);
@@ -2406,7 +2407,8 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
 
         // Assume that all the blocks in the macro are of the same type
         blk_id = pl_macros[imacro].members[0].blk_index;
-        auto type = physical_tile_type(blk_id);
+        auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+        auto type = pick_random_placement_type(logical_block);
         itype = type->index;
         if (free_locations[itype] < int(pl_macros[imacro].members.size())) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE,
@@ -2471,15 +2473,19 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
             continue;
         }
 
+        auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+
         /* Don't do IOs if the user specifies IOs; we'll read those locations later. */
-        if (!(is_io_type(physical_tile_type(blk_id)) && pad_loc_type == USER)) {
+        if (!(is_io_type(physical_tile_type(logical_block)) && pad_loc_type == USER)) {
             /* Randomly select a free location of the appropriate type for blk_id.
              * We have a linearized list of all the free locations that can
              * accommodate a block of that type in free_locations[itype].
              * Choose one randomly and put blk_id there. Then we don't want to pick
              * that location again, so remove it from the free_locations array.
              */
-            itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
+
+            itype = pick_random_placement_type(logical_block)->index;
+
             if (free_locations[itype] <= 0) {
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                                 "Initial placement failed.\n"
@@ -2488,7 +2494,7 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
             }
 
             t_pl_loc to;
-            initial_placement_location(free_locations, blk_id, ipos, to);
+            initial_placement_location(free_locations, ipos, itype, to);
 
             // Make sure that the position is EMPTY_BLOCK before placing the block down
             VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.z] == EMPTY_BLOCK_ID);
@@ -2499,7 +2505,7 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
             place_ctx.block_locs[blk_id].loc = to;
 
             //Mark IOs as fixed if specifying a (fixed) random placement
-            if (is_io_type(physical_tile_type(blk_id)) && pad_loc_type == RANDOM) {
+            if (is_io_type(physical_tile_type(logical_block)) && pad_loc_type == RANDOM) {
                 place_ctx.block_locs[blk_id].is_fixed = true;
             }
 
@@ -2513,11 +2519,7 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
     }
 }
 
-static void initial_placement_location(const int* free_locations, ClusterBlockId blk_id, int& ipos, t_pl_loc& to) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    int itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
-
+static void initial_placement_location(const int* free_locations, int& ipos, int itype, t_pl_loc& to) {
     ipos = vtr::irand(free_locations[itype] - 1);
     to = legal_pos[itype][ipos];
 }
