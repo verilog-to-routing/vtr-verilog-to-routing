@@ -111,22 +111,38 @@ void SetupVPR(const t_options* Options,
     *library_models = Arch->model_library;
 
     /* TODO: this is inelegant, I should be populating this information in XmlReadArch */
-    device_ctx.EMPTY_TYPE = nullptr;
+    device_ctx.EMPTY_PHYSICAL_TILE_TYPE = nullptr;
     for (const auto& type : device_ctx.physical_tile_types) {
         if (strcmp(type.name, EMPTY_BLOCK_NAME) == 0) {
-            VTR_ASSERT(device_ctx.EMPTY_TYPE == nullptr);
-            device_ctx.EMPTY_TYPE = &type;
+            VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE == nullptr);
+            device_ctx.EMPTY_PHYSICAL_TILE_TYPE = &type;
         } else {
-            if (block_type_contains_blif_model(logical_block_type(&type), MODEL_INPUT)) {
-                device_ctx.input_types.insert(&type);
+            for (const auto& equivalent_site : type.equivalent_sites) {
+                if (block_type_contains_blif_model(equivalent_site, MODEL_INPUT)) {
+                    device_ctx.input_types.insert(&type);
+                    break;
+                }
             }
-            if (block_type_contains_blif_model(logical_block_type(&type), MODEL_OUTPUT)) {
-                device_ctx.output_types.insert(&type);
+
+            for (const auto& equivalent_site : type.equivalent_sites) {
+                if (block_type_contains_blif_model(equivalent_site, MODEL_OUTPUT)) {
+                    device_ctx.output_types.insert(&type);
+                    break;
+                }
             }
         }
     }
 
-    VTR_ASSERT(device_ctx.EMPTY_TYPE != nullptr);
+    device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = nullptr;
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (0 == strcmp(type.name, EMPTY_BLOCK_NAME)) {
+            device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = &type;
+            break;
+        }
+    }
+
+    VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE != nullptr);
+    VTR_ASSERT(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE != nullptr);
 
     if (device_ctx.input_types.empty()) {
         VPR_ERROR(VPR_ERROR_ARCH,

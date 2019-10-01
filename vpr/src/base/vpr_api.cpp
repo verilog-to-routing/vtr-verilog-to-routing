@@ -417,11 +417,17 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
     VTR_LOG("\n");
     VTR_LOG("Resource usage...\n");
-    for (const auto& type : device_ctx.physical_tile_types) {
-        VTR_LOG("\tNetlist      %d\tblocks of type: %s\n",
-                num_type_instances[logical_block_type(&type)], type.name);
-        VTR_LOG("\tArchitecture %d\tblocks of type: %s\n",
-                device_ctx.grid.num_instances(&type), type.name);
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (is_empty_type(&type)) continue;
+
+        VTR_LOG("\tNetlist\n\t\t%d\tblocks of type: %s\n",
+                num_type_instances[&type], type.name);
+
+        VTR_LOG("\tArchitecture\n");
+        for(const auto equivalent_tile : type.equivalent_tiles) {
+            VTR_LOG("\t\t%d\tblocks of type: %s\n",
+                    device_ctx.grid.num_instances(equivalent_tile), equivalent_tile->name);
+        }
     }
     VTR_LOG("\n");
 
@@ -879,7 +885,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
     //Build a dummy 10x10 device to determine the 'best' block type to use
     auto grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts, 10, 10);
 
-    auto type = physical_tile_type(find_most_common_block_type(grid));
+    auto type = find_most_common_tile_type(grid);
     /* get Fc_in/out for most common block (e.g. logic blocks) */
     VTR_ASSERT(type->fc_specs.size() > 0);
 
