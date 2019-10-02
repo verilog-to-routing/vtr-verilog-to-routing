@@ -140,7 +140,7 @@ void load_rr_file(const t_graph_type graph_type,
         VTR_ASSERT(max_chan_width > 0);
 
         /* Branches to binary format */
-        next_component = get_single_child(rr_graph, "binary_nodes_and_edges", loc_data, OPTIONAL);
+        next_component = get_single_child(rr_graph, "binary_nodes_and_edges", loc_data, pugiutil::OPTIONAL);
         if (next_component) {
             /* Loads edges, switches, and node look up tables*/
             next_component = get_single_child(rr_graph, "switches", loc_data);
@@ -150,7 +150,7 @@ void load_rr_file(const t_graph_type graph_type,
 
             process_switches(next_component, loc_data);
 
-            next_component = get_single_child(rr_graph, "binary_nodes_and_edges", loc_data, OPTIONAL);
+            next_component = get_single_child(rr_graph, "binary_nodes_and_edges", loc_data, pugiutil::OPTIONAL);
             auto filename = get_attribute(next_component, "file", loc_data).as_string("");
             VTR_LOG("Using Binary File: %s\n", filename);
             FILE* fp = fopen(filename, "rb");
