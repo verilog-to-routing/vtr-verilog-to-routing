@@ -162,9 +162,6 @@ void sync_grid_to_blocks() {
 
         auto type = physical_tile_type(blk_id);
 
-        auto logical_type = cluster_ctx.clb_nlist.block_type(blk_id);
-        VTR_LOG("PHYSICAL TILE: %s\tLOGICAL_BLOCK: %s\n", type->name, logical_type->name);
-
         /* Check range of block coords */
         if (blk_x < 0 || blk_y < 0
             || (blk_x + type->width - 1) > int(device_ctx.grid.width() - 1)
