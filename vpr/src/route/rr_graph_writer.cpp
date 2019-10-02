@@ -47,7 +47,7 @@ void write_rr_graph(const char* file_name, const std::vector<t_segment_inf>& seg
         VTR_LOG("RR_Graph binary file %s\n", bin_file_name.c_str());
         fb = vtr::fopen(bin_file_name.c_str(), "w");
     }
-    fp.open(file_name, fstream::out | fstream::trunc);
+    fp.open(file_name, std::fstream::out | std::fstream::trunc);
 
     /* Prints out general info for easy error checking*/
     if (!fp.is_open() || !fp.good()) {
