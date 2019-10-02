@@ -1065,9 +1065,41 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
         //   3. The node set is not active
         //
         //  Then prune this node.
+        //
         if (non_config_node_set_usage != nullptr && node_set != -1 && device_ctx.rr_switch_inf[node->parent_switch].configurable() && (*non_config_node_set_usage)[node_set] == 0) {
             // This node should be pruned, re-prune edges once more.
-            return prune_route_tree_recurr(node, connections_inf, /*force_prune=*/false, non_config_node_set_usage);
+            //
+            // If the following is true:
+            //
+            //  - The node set is unused
+            //    (e.g. (*non_config_node_set_usage)[node_set] == 0)
+            //  - This particular node still had children
+            //    (which is true by virtue of being in this else statement)
+            //
+            // Then that indicates that the node set became unused during the
+            // pruning. One or more of the children of this node will be
+            // pruned if prune_route_tree_recurr is called again, and
+            // eventually the whole node will be prunable.
+            //
+            //  Consider the following graph:
+            //
+            //  1 -> 2
+            //  2 -> 3 [non-configurable]
+            //  2 -> 4 [non-configurable]
+            //  3 -> 5
+            //  4 -> 6
+            //
+            //  Assume that nodes 5 and 6 do not connect to a sink, so they
+            //  will be pruned (as normal). When prune_route_tree_recurr
+            //  visits 2 for the first time, node 3 or 4 will remain. This is
+            //  because when prune_route_tree_recurr visits 3 or 4, it will
+            //  not have visited 4 or 3 (respectively). As a result, either
+            //  node 3 or 4 will not be pruned on the first pass, because the
+            //  node set usage count will be > 0. However after
+            //  prune_route_tree_recurr visits 2, 3 and 4, the node set usage
+            //  will be 0, so everything can be pruned.
+            return prune_route_tree_recurr(node, connections_inf,
+                                           /*force_prune=*/false, non_config_node_set_usage);
         }
 
         //An unpruned intermediate node
