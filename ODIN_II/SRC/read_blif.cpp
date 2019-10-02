@@ -778,7 +778,8 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 		add_driver_pin_to_net(new_net,new_pin);
 
 		output_nets_hash->add(new_node->name, new_net);
-
+		
+		vtr::free(names[input_count-1]);
 	}
 	/* Free the char** names */
 	vtr::free(names);
