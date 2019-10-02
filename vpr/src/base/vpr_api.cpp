@@ -424,7 +424,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
                 num_type_instances[&type], type.name);
 
         VTR_LOG("\tArchitecture\n");
-        for(const auto equivalent_tile : type.equivalent_tiles) {
+        for (const auto equivalent_tile : type.equivalent_tiles) {
             VTR_LOG("\t\t%d\tblocks of type: %s\n",
                     device_ctx.grid.num_instances(equivalent_tile), equivalent_tile->name);
         }
