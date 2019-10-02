@@ -41,6 +41,10 @@ file(GLOB_RECURSE LIB_SOURCES src/*/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
+if(${VTR_ENABLE_CAPNPROTO})
+    add_definitions("-DVTR_ENABLE_CAPNPROTO")
+endif()
+
 #Create the library
 add_library(libvpr STATIC
              ${LIB_HEADERS}
@@ -97,6 +101,10 @@ if (VPR_USE_EZGL STREQUAL "on")
 endif()
 
 target_compile_definitions(libvpr PUBLIC ${GRAPHICS_DEFINES})
+
+if(${VTR_ENABLE_CAPNPROTO})
+    target_link_libraries(libvpr libvtrcapnproto)
+endif()
 
 add_executable(vpr ${EXEC_SOURCES})
 

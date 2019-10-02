@@ -13,3 +13,20 @@ add_subdirectory(libtatum)
 if(VPR_USE_EZGL STREQUAL "on")
     add_subdirectory(libezgl)
 endif()
+
+if(${VTR_ENABLE_CAPNPROTO})
+    # Override default policy for capnproto (CMake policy version 3.1)
+    # Enable new IPO variables
+    set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+
+    # Enable option overrides via variables
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+
+    # Re-enable CXX extensions for capnproto.
+    set(CMAKE_CXX_EXTENSIONS ON)
+
+    # Disable capnproto tests
+    set(BUILD_TESTING OFF)
+
+    add_subdirectory(capnproto EXCLUDE_FROM_ALL)
+endif()

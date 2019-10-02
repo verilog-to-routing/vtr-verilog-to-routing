@@ -41,9 +41,8 @@ class PlaceDelayModel {
 class DeltaDelayModel : public PlaceDelayModel {
   public:
     DeltaDelayModel() {}
-    DeltaDelayModel(vtr::Matrix<float> delta_delays, t_router_opts router_opts)
-        : delays_(std::move(delta_delays))
-        , router_opts_(router_opts) {}
+    DeltaDelayModel(vtr::Matrix<float> delta_delays)
+        : delays_(std::move(delta_delays)) {}
 
     void compute(
         const RouterDelayProfiler& router,
@@ -53,16 +52,14 @@ class DeltaDelayModel : public PlaceDelayModel {
     float delay(int from_x, int from_y, int /*from_pin*/, int to_x, int to_y, int /*to_pin*/) const override;
     void dump_echo(std::string filepath) const override;
 
-    void read(const std::string& /*file*/) override {
-        VPR_THROW(VPR_ERROR_ROUTE, "DeltaDelayModel::read unimplemented");
-    }
-    void write(const std::string& /*file*/) const override {
-        VPR_THROW(VPR_ERROR_ROUTE, "DeltaDelayModel::write unimplemented");
+    void read(const std::string& file) override;
+    void write(const std::string& file) const override;
+    const vtr::Matrix<float>& delays() const {
+        return delays_;
     }
 
   private:
     vtr::Matrix<float> delays_;
-    t_router_opts router_opts_;
 };
 
 class OverrideDelayModel : public PlaceDelayModel {
@@ -75,19 +72,20 @@ class OverrideDelayModel : public PlaceDelayModel {
     float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin) const override;
     void dump_echo(std::string filepath) const override;
 
-    void read(const std::string& /*file*/) override {
-        VPR_THROW(VPR_ERROR_ROUTE, "OverrideDelayModel::read unimplemented");
-    }
-    void write(const std::string& /*file*/) const override {
-        VPR_THROW(VPR_ERROR_ROUTE, "OverrideDelayModel::write unimplemented");
-    }
+    void read(const std::string& file) override;
+    void write(const std::string& file) const override;
 
   public: //Mutators
-  private:
-    std::unique_ptr<PlaceDelayModel> base_delay_model_;
-
+    void set_base_delay_model(std::unique_ptr<DeltaDelayModel> base_delay_model);
+    const DeltaDelayModel* base_delay_model() const;
+    float get_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y) const;
     void set_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y, float delay);
-    void compute_override_delay_model(const RouterDelayProfiler& router);
+
+  private:
+    std::unique_ptr<DeltaDelayModel> base_delay_model_;
+
+    void compute_override_delay_model(const RouterDelayProfiler& router,
+                                      const t_router_opts& router_opts);
 
     struct t_override {
         short from_type;
@@ -104,7 +102,6 @@ class OverrideDelayModel : public PlaceDelayModel {
     };
 
     vtr::flat_map2<t_override, float> delay_overrides_;
-    t_router_opts router_opts_;
 };
 
 #endif

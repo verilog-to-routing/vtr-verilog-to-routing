@@ -183,7 +183,6 @@ void DeltaDelayModel::compute(
     const t_placer_opts& placer_opts,
     const t_router_opts& router_opts,
     int longest_length) {
-    router_opts_ = router_opts;
     delays_ = compute_delta_delay_model(
         route_profiler,
         placer_opts, router_opts, /*measure_directconnect=*/true,
@@ -195,15 +194,14 @@ void OverrideDelayModel::compute(
     const t_placer_opts& placer_opts,
     const t_router_opts& router_opts,
     int longest_length) {
-    router_opts_ = router_opts;
     auto delays = compute_delta_delay_model(
         route_profiler,
         placer_opts, router_opts, /*measure_directconnect=*/false,
         longest_length);
 
-    base_delay_model_ = std::make_unique<DeltaDelayModel>(delays, router_opts);
+    base_delay_model_ = std::make_unique<DeltaDelayModel>(delays);
 
-    compute_override_delay_model(route_profiler);
+    compute_override_delay_model(route_profiler, router_opts);
 }
 
 /******* File Accessible Functions **********/
@@ -855,8 +853,10 @@ static bool verify_delta_delays(const vtr::Matrix<float>& delta_delays) {
     return true;
 }
 
-void OverrideDelayModel::compute_override_delay_model(const RouterDelayProfiler& route_profiler) {
-    t_router_opts router_opts2 = router_opts_;
+void OverrideDelayModel::compute_override_delay_model(
+    const RouterDelayProfiler& route_profiler,
+    const t_router_opts& router_opts) {
+    t_router_opts router_opts2 = router_opts;
     router_opts2.astar_fac = 0.;
 
     //Look at all the direct connections that exist, and add overrides to delay model
