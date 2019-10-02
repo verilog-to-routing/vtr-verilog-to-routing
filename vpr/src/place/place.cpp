@@ -439,6 +439,7 @@ static void print_place_status(const float t,
                                const float rlim,
                                const float crit_exponent,
                                size_t tot_moves);
+static void print_resources_utilization();
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -831,6 +832,8 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100 * abort_rate);
 
     report_aborted_moves();
+
+    print_resources_utilization();
 
     free_placement_structs(placer_opts);
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -2961,4 +2964,34 @@ static void print_place_status(const float t,
 
     VTR_LOG(" %6.3f\n", t / oldt);
     fflush(stdout);
+}
+
+static void print_resources_utilization() {
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    //Record the resource requirement
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances;
+    std::map<t_logical_block_type_ptr, std::map<t_physical_tile_type_ptr, size_t>> num_placed_instances;
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        auto block_loc = place_ctx.block_locs[blk_id];
+        auto loc = block_loc.loc;
+
+        auto physical_tile = device_ctx.grid[loc.x][loc.y].type;
+        auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+
+        num_type_instances[logical_block]++;
+        num_placed_instances[logical_block][physical_tile]++;
+    }
+
+    for (auto logical_block : num_type_instances) {
+        VTR_LOG("Logical Block: %s\n", logical_block.first->name);
+        VTR_LOG("\tInstances -> %d\n", logical_block.second);
+
+        VTR_LOG("\tPhysical Tiles used:\n");
+        for (auto physical_tile : num_placed_instances[logical_block.first]) {
+            VTR_LOG("\t\t%s: %d\n", physical_tile.first->name, physical_tile.second);
+        }
+    }
 }
