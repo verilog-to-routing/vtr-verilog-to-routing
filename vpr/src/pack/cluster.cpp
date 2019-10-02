@@ -1966,8 +1966,10 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                              int lhs_num_instances = 0;
                              int rhs_num_instances = 0;
                              // Count number of instances for each type
-                             for (auto type : lhs->equivalent_tiles) lhs_num_instances += device_ctx.grid.num_instances(type);
-                             for (auto type : rhs->equivalent_tiles) rhs_num_instances += device_ctx.grid.num_instances(type);
+                             for (auto type : lhs->equivalent_tiles)
+                                 lhs_num_instances += device_ctx.grid.num_instances(type);
+                             for (auto type : rhs->equivalent_tiles)
+                                 rhs_num_instances += device_ctx.grid.num_instances(type);
 
                              float lhs_util = vtr::safe_ratio<float>(num_used_type_instances[lhs], lhs_num_instances);
                              float rhs_util = vtr::safe_ratio<float>(num_used_type_instances[rhs], rhs_num_instances);

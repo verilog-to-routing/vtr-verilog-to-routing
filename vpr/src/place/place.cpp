@@ -418,6 +418,8 @@ static void placement_inner_loop(float t,
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel* delay_model, t_placer_costs* costs);
 
+static t_physical_tile_type_ptr pick_highest_priority_type(t_logical_block_type_ptr logical_block, int num_needed_types, int* free_locations);
+
 static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, double& std_dev, const t_placer_costs& costs, const int move_lim);
 
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
@@ -2408,15 +2410,17 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
         // Assume that all the blocks in the macro are of the same type
         blk_id = pl_macros[imacro].members[0].blk_index;
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-        auto type = pick_random_placement_type(logical_block);
-        itype = type->index;
-        if (free_locations[itype] < int(pl_macros[imacro].members.size())) {
+        auto type = pick_highest_priority_type(logical_block, int(pl_macros[imacro].members.size()), free_locations);
+
+        if (type == nullptr) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                             "Initial placement failed.\n"
                             "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
                             "VPR cannot auto-size for your circuit, please resize the FPGA manually.\n",
                             pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), type->name, itype);
         }
+
+        itype = type->index;
 
         // Try to place the macro first, if can be placed - place them, otherwise try again
         for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
@@ -2484,14 +2488,16 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
              * that location again, so remove it from the free_locations array.
              */
 
-            itype = pick_random_placement_type(logical_block)->index;
+            auto type = pick_highest_priority_type(logical_block, 1, free_locations);
 
-            if (free_locations[itype] <= 0) {
+            if (type == nullptr) {
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                                 "Initial placement failed.\n"
                                 "Could not place block %s (#%zu); no free locations of type %s (#%d).\n",
                                 cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.physical_tile_types[itype].name, itype);
             }
+
+            itype = type->index;
 
             t_pl_loc to;
             initial_placement_location(free_locations, ipos, itype, to);
@@ -2842,6 +2848,19 @@ int check_macro_placement_consistency() {
         } // Finish going through all the members
     }     // Finish going through all the macros
     return error;
+}
+
+static t_physical_tile_type_ptr pick_highest_priority_type(t_logical_block_type_ptr logical_block, int num_needed_types, int* free_locations) {
+    // Loop through the ordered map to get tiles in a decreasing priority order
+    for (auto& physical_tiles : logical_block->placement_priority) {
+        for (auto tile : physical_tiles.second) {
+            if (free_locations[tile->index] >= num_needed_types) {
+                return tile;
+            }
+        }
+    }
+
+    return nullptr;
 }
 
 #ifdef VERBOSE
