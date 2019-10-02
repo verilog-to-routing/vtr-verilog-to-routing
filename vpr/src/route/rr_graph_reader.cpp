@@ -131,7 +131,7 @@ void load_rr_file(const t_graph_type graph_type,
         t_chan_width nodes_per_chan;
         process_channels(nodes_per_chan, grid, next_component, loc_data);
 
-        next_component = get_first_child(rr_graph, "connection_boxes", loc_data, OPTIONAL);
+        next_component = get_first_child(rr_graph, "connection_boxes", loc_data, pugiutil::OPTIONAL);
         if (next_component != nullptr) {
             process_connection_boxes(next_component, loc_data);
         } else {
@@ -315,7 +315,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
         } else if (strcmp(node_type, "IPIN") == 0) {
             node.set_type(IPIN);
 
-            pugi::xml_node connection_boxSubnode = get_single_child(rr_node, "connection_box", loc_data, OPTIONAL);
+            pugi::xml_node connection_boxSubnode = get_single_child(rr_node, "connection_box", loc_data, pugiutil::OPTIONAL);
             if (connection_boxSubnode) {
                 int x = get_attribute(connection_boxSubnode, "x", loc_data).as_int();
                 int y = get_attribute(connection_boxSubnode, "y", loc_data).as_int();
@@ -345,7 +345,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
             }
         }
 
-        pugi::xml_node connection_boxSubnode = get_single_child(rr_node, "canonical_loc", loc_data, OPTIONAL);
+        pugi::xml_node connection_boxSubnode = get_single_child(rr_node, "canonical_loc", loc_data, pugiutil::OPTIONAL);
         if (connection_boxSubnode) {
             int x = get_attribute(connection_boxSubnode, "x", loc_data).as_int();
             int y = get_attribute(connection_boxSubnode, "y", loc_data).as_int();
