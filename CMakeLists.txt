@@ -38,6 +38,7 @@ option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 #Allow the user to decide weather to compile the graphics library
 set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
 set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
+option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VPR." ON)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 option(WITH_LIBRTLNUMBER "Enable build with librtlnumber" OFF)
@@ -276,8 +277,13 @@ endif()
 #
 # Set final flags
 #
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS} ${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE}")
-message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+separate_arguments(
+    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE}"
+    )
+add_compile_options(${ADDITIONAL_FLAGS})
+separate_arguments(
+    WARN_FLAGS UNIX_COMMAND "${WARN_FLAGS}"
+    )
 
 
 #
@@ -329,6 +335,9 @@ endif()
 
 #Add the various sub-projects
 add_subdirectory(libs)
+
+# Only add warn flags for VPR internal libraries.
+add_compile_options(${WARN_FLAGS})
 add_subdirectory(vpr)
 add_subdirectory(abc)
 add_subdirectory(ODIN_II)
