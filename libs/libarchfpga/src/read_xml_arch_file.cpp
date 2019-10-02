@@ -2976,6 +2976,8 @@ static void ProcessTiles(pugi::xml_node Node,
 
         t_physical_tile_type PhysicalTileType;
 
+        PhysicalTileType.index = index;
+
         /* Parses the properties fields of the type */
         ProcessTileProps(CurTileType, &PhysicalTileType, loc_data);
 
@@ -3024,8 +3026,6 @@ static void ProcessTiles(pugi::xml_node Node,
         //Load equivalent sites infromation
         Cur = get_single_child(CurTileType, "equivalent_sites", loc_data, ReqOpt::REQUIRED);
         ProcessTileEquivalentSites(Cur, &PhysicalTileType, LogicalBlockTypes, loc_data);
-
-        PhysicalTileType.index = index;
 
         /* Type fully read */
         ++index;
@@ -3217,7 +3217,7 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
     while (CurSite) {
         check_node(CurSite, "site", loc_data);
 
-        expect_only_attributes(CurSite, {"pb_type"}, loc_data);
+        expect_only_attributes(CurSite, {"pb_type", "priority"}, loc_data);
         /* Load equivalent site name */
         auto Prop = std::string(get_attribute(CurSite, "pb_type", loc_data).value());
         PhysicalTileType->equivalent_sites_names.push_back(Prop);
@@ -3225,7 +3225,8 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
         auto LogicalBlockType = get_type_by_name<t_logical_block_type>(Prop.c_str(), LogicalBlockTypes);
 
         auto priority = get_attribute(CurSite, "priority", loc_data, ReqOpt::OPTIONAL).as_int(0);
-        LogicalBlockType->placement_priority[priority].push_back(PhysicalTileType);
+        LogicalBlockType->physical_tiles_priority[priority].push_back(PhysicalTileType->index);
+        PhysicalTileType->logical_blocks_priority[priority].push_back(LogicalBlockType->index);
 
         ProcessEquivalentSiteDirects(CurSite, PhysicalTileType, LogicalBlockType, Prop, loc_data);
 
@@ -4795,8 +4796,7 @@ static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t
         auto block_port = get_port_by_pin(logical_block, pin_map.first);
         auto tile_port = get_port_by_pin(physical_tile, pin_map.second);
 
-        if (0 != strcmp(tile_port->name, block_port->name)
-            || tile_port->type != block_port->type
+        if (tile_port->type != block_port->type
             || tile_port->num_pins != block_port->num_pins
             || tile_port->equivalent != block_port->equivalent) {
             archfpga_throw(__FILE__, __LINE__,
@@ -4831,7 +4831,7 @@ static const t_port* get_port_by_name(t_logical_block_type_ptr type, const char*
 
 static const t_physical_tile_port* get_port_by_pin(t_physical_tile_type_ptr type, int pin) {
     for (auto port : type->ports) {
-        if (pin >= port.absolute_first_pin_index && pin < port.num_pins) {
+        if (pin >= port.absolute_first_pin_index && pin < port.absolute_first_pin_index + port.num_pins) {
             return &type->ports[port.index];
         }
     }
@@ -4844,7 +4844,7 @@ static const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin) {
 
     for (int i = 0; i < pb_type->num_ports; i++) {
         auto port = pb_type->ports[i];
-        if (pin >= port.absolute_first_pin_index && pin < port.num_pins) {
+        if (pin >= port.absolute_first_pin_index && pin < port.absolute_first_pin_index + port.num_pins) {
             return &pb_type->ports[port.index];
         }
     }
