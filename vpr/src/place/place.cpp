@@ -418,7 +418,7 @@ static void placement_inner_loop(float t,
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, const PlaceDelayModel* delay_model, t_placer_costs* costs);
 
-static t_physical_tile_type_ptr pick_highest_priority_type(t_logical_block_type_ptr logical_block, int num_needed_types, int* free_locations);
+static t_physical_tile_type_ptr pick_highest_placement_priority_type(t_logical_block_type_ptr logical_block, int num_needed_types, int* free_locations);
 
 static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, double& std_dev, const t_placer_costs& costs, const int move_lim);
 
@@ -2410,7 +2410,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
         // Assume that all the blocks in the macro are of the same type
         blk_id = pl_macros[imacro].members[0].blk_index;
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-        auto type = pick_highest_priority_type(logical_block, int(pl_macros[imacro].members.size()), free_locations);
+        auto type = pick_highest_placement_priority_type(logical_block, int(pl_macros[imacro].members.size()), free_locations);
 
         if (type == nullptr) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE,
@@ -2488,7 +2488,7 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
              * that location again, so remove it from the free_locations array.
              */
 
-            auto type = pick_highest_priority_type(logical_block, 1, free_locations);
+            auto type = pick_highest_placement_priority_type(logical_block, 1, free_locations);
 
             if (type == nullptr) {
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE,
@@ -2850,12 +2850,15 @@ int check_macro_placement_consistency() {
     return error;
 }
 
-static t_physical_tile_type_ptr pick_highest_priority_type(t_logical_block_type_ptr logical_block, int num_needed_types, int* free_locations) {
+static t_physical_tile_type_ptr pick_highest_placement_priority_type(t_logical_block_type_ptr logical_block, int num_needed_types, int* free_locations) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto physical_tiles = device_ctx.physical_tile_types;
+
     // Loop through the ordered map to get tiles in a decreasing priority order
-    for (auto& physical_tiles : logical_block->placement_priority) {
-        for (auto tile : physical_tiles.second) {
-            if (free_locations[tile->index] >= num_needed_types) {
-                return tile;
+    for (auto& physical_tiles_ids : logical_block->physical_tiles_priority) {
+        for (auto tile_id : physical_tiles_ids.second) {
+            if (free_locations[tile_id] >= num_needed_types) {
+                return &physical_tiles[tile_id];
             }
         }
     }
