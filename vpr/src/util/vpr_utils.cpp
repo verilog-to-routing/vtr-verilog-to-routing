@@ -645,12 +645,13 @@ bool is_empty_type(t_logical_block_type_ptr type) {
 
 t_physical_tile_type_ptr physical_tile_type(t_logical_block_type_ptr logical_block_type) {
     auto& device_ctx = g_vpr_ctx.device();
+    auto& physical_tiles = device_ctx.physical_tile_types;
 
-    if (0 == logical_block_type->equivalent_tiles.size())
-        return device_ctx.EMPTY_PHYSICAL_TILE_TYPE;
-
-    for (auto type : logical_block_type->equivalent_tiles) {
-        if (0 == strcmp(type->name, logical_block_type->name)) return type;
+    // Loop through the ordered map to get tiles in a decreasing priority order
+    for (auto& physical_tiles_ids : logical_block_type->physical_tiles_priority) {
+        for (auto tile_id : physical_tiles_ids.second) {
+            return &physical_tiles[tile_id];
+        }
     }
 
     return nullptr;
@@ -668,13 +669,15 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
 
 t_logical_block_type_ptr logical_block_type(t_physical_tile_type_ptr physical_tile_type) {
     auto& device_ctx = g_vpr_ctx.device();
+    auto& logical_blocks = device_ctx.logical_block_types;
 
-    if (0 == physical_tile_type->equivalent_sites.size())
-        return device_ctx.EMPTY_LOGICAL_BLOCK_TYPE;
-
-    for (auto type : physical_tile_type->equivalent_sites) {
-        if (0 == strcmp(type->name, physical_tile_type->name)) return type;
+    // Loop through the ordered map to get tiles in a decreasing priority order
+    for (auto& logical_blocks_ids : physical_tile_type->logical_blocks_priority) {
+        for (auto block_id : logical_blocks_ids.second) {
+            return &logical_blocks[block_id];
+        }
     }
+
     return nullptr;
 }
 
