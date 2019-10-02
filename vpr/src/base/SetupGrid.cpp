@@ -664,8 +664,7 @@ float calculate_device_utilization(const DeviceGrid& grid, std::map<t_logical_bl
     //Determine the area of instances in tile units
     float instance_area = 0.;
     for (auto& kv : instance_counts) {
-        // XXX How to deal with multiple possible tiles?
-        t_physical_tile_type_ptr type = kv.first->equivalent_tiles[0];
+        t_physical_tile_type_ptr type = physical_tile_type(kv.first);
         size_t count = kv.second;
 
         float type_area = type->width * type->height;
