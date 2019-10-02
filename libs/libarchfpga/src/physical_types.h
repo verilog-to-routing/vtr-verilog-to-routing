@@ -609,6 +609,9 @@ struct t_physical_tile_type {
 
     std::vector<std::string> equivalent_sites_names;
     std::vector<t_logical_block_type_ptr> equivalent_sites;
+
+    /* Unordered map indexed by the logical block index. 
+     * tile_block_pin_directs_map[logical block index][logical block pin] -> physical tile pin */
     std::unordered_map<int, std::unordered_map<int, int>> tile_block_pin_directs_map;
 
     /* Returns the indices of pins that contain a clock for this physical logic block */
@@ -666,6 +669,7 @@ struct t_logical_block_type {
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
     std::vector<t_physical_tile_type_ptr> equivalent_tiles;
+    std::map<int, std::vector<t_physical_tile_type_ptr>> placement_priority;
 };
 
 /*************************************************************************************************

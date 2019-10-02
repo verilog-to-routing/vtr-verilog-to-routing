@@ -172,7 +172,6 @@ void print_usage_by_wire_length();
 AtomBlockId find_memory_sibling(const t_pb* pb);
 
 void place_sync_external_block_connections(ClusterBlockId iblk);
-void update_physical_pin_indices();
 int get_max_num_pins(t_logical_block_type_ptr logical_block);
 
 bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block);
