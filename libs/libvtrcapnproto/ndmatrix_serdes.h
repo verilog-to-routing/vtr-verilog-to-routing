@@ -1,6 +1,61 @@
 #ifndef NDMATRIX_SERDES_H_
 #define NDMATRIX_SERDES_H_
-
+// Provide generic functions for serializing vtr::NdMatrix to and from Cap'n
+// proto Matrix.
+//
+// Functions:
+//  ToNdMatrix - Converts Matrix capnproto message to vtr::NdMatrix
+//  FromNdMatrix - Converts vtr::NdMatrix to Matrix capnproto
+//
+// Example:
+//
+//  Schema:
+//
+//  using Matrix = import "matrix.capnp";
+//
+//
+//  struct Test {
+//    struct Vec2 {
+//      x @0 :Float32;
+//      y @1 :Float32;
+//    }
+//    vectors @0 :Matrix.Matrix(Vec2)
+//  }
+//
+//  C++:
+//
+//  struct Vec2 {
+//    float x;
+//    float y;
+//  };
+//
+//  static void ToVec2(Vec2 *out, const Test::Vec2::Reader& in) {
+//    out->x = in.getX();
+//    out->y = in.getY();
+//  }
+//
+//  static void FromVec2(Test::Vec2::Builder* out, const Vec2 &in) {
+//    out->setX(in.x);
+//    out->setY(in.y);
+//  }
+//
+//  void example(std::string file) {
+//      vtr::NdMatrix<Vec2, 3> mat_in({3, 3, 3}, {2, 3});
+//
+//      ::capnp::MallocMessageBuilder builder;
+//      auto test = builder.initRoot<Test>();
+//      auto vectors = test.getVectors();
+//
+//      FromNdMatrix<3, Test::Vec2, Vec2>(&vectors, mat_in, FromVec2);
+//      writeMessageToFile(file, &builder);
+//
+//      MmapFile f(file);
+//      ::capnp::FlatArrayMessageReader reader(f.getData());
+//      auto test = reader.getRoot<Test>();
+//
+//      vtr::NdMatrix<Vec2, 3> mat_out;
+//      ToNdMatrix<3, Test::Vec2, Vec2>(&mat_out, test.getVectors(), FromVec2);
+//  }
 #include <functional>
 #include "vtr_ndmatrix.h"
 #include "vpr_error.h"
@@ -18,7 +73,6 @@
 //  m_out = Target vtr::NdMatrix.
 //  m_in = Source capnproto message reader.
 //  copy_fun = Function to convert from CapType to CType.
-//
 template<size_t N, typename CapType, typename CType>
 void ToNdMatrix(
     vtr::NdMatrix<CType, N>* m_out,
