@@ -588,7 +588,33 @@ bool find_to_loc_uniform(t_physical_tile_type_ptr type,
             if (cx_from == cx_to && cy_from == cy_to) {
                 continue; //Same from/to location -- try again for new y-position
             } else {
-                legal = true;
+                VTR_ASSERT(cx_to != OPEN);
+                VTR_ASSERT(cy_to != OPEN);
+
+                //Convert to true (uncompressed) grid locations
+                to.x = to_compressed_block_grid.compressed_to_grid_x[cx_to];
+                to.y = to_compressed_block_grid.compressed_to_grid_y[cy_to];
+
+                auto& place_ctx = g_vpr_ctx.placement();
+                auto& cluster_ctx = g_vpr_ctx.clustering();
+
+                auto blocks = place_ctx.grid_blocks[to.x][to.y].blocks;
+                bool impossible_swap = false;
+                for (auto blk : blocks) {
+                    if (blk == ClusterBlockId::INVALID()) {
+                        continue;
+                    }
+
+                    auto block_type = cluster_ctx.clb_nlist.block_type(blk);
+                    if (!is_tile_compatible(from_type, block_type)) {
+                        impossible_swap = true;
+                        break;
+                    }
+                }
+
+                if (!impossible_swap) {
+                    legal = true;
+                }
             }
         }
     }
@@ -597,13 +623,6 @@ bool find_to_loc_uniform(t_physical_tile_type_ptr type,
         //No valid position found
         return false;
     }
-
-    VTR_ASSERT(cx_to != OPEN);
-    VTR_ASSERT(cy_to != OPEN);
-
-    //Convert to true (uncompressed) grid locations
-    to.x = to_compressed_block_grid.compressed_to_grid_x[cx_to];
-    to.y = to_compressed_block_grid.compressed_to_grid_y[cy_to];
 
     //Each x/y location contains only a single type, so we can pick a random
     //z (capcity) location
