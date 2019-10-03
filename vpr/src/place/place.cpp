@@ -2420,7 +2420,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
                             "Initial placement failed.\n"
                             "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
                             "VPR cannot auto-size for your circuit, please resize the FPGA manually.\n",
-                            pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), type->name, itype);
+                            pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), logical_block->name, logical_block->index);
         }
 
         itype = type->index;
@@ -2472,7 +2472,6 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
     int itype, ipos;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& device_ctx = g_vpr_ctx.device();
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         if (place_ctx.block_locs[blk_id].loc.x != -1) { // -1 is a sentinel for an empty block
@@ -2497,7 +2496,7 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                                 "Initial placement failed.\n"
                                 "Could not place block %s (#%zu); no free locations of type %s (#%d).\n",
-                                cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.physical_tile_types[itype].name, itype);
+                                cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), logical_block->name, logical_block->index);
             }
 
             itype = type->index;
