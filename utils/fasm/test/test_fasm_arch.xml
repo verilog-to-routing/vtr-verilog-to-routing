@@ -28,20 +28,100 @@
     </tile>
   </tiles>
   <layout>
-    <fixed_layout height="10" width="10" name="test">
+    <fixed_layout height="6" width="6" name="test">
       <perimeter type="io" priority="100">
         <metadata>
           <meta name="type">io</meta>
         </metadata>
       </perimeter>
       <corners type="EMPTY" priority="101"/>
-      <fill type="clb" priority="10">
-        <metadata>
-          <meta name="fasm_prefix">CLB</meta>
-        </metadata>
-      </fill>
-      <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
-      <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
+
+      <single type="clb" priority="10" x="1" y="1">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X1Y1
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+      <single type="clb" priority="10" x="1" y="2">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X1Y2
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+      <single type="clb" priority="10" x="1" y="3">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X1Y3
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+      <single type="clb" priority="10" x="1" y="4">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X1Y4
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+
+      <single type="clb" priority="10" x="2" y="1">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X2Y1
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+      <single type="clb" priority="10" x="2" y="2">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X2Y2
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+      <single type="clb" priority="10" x="2" y="3">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X2Y3
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+      <single type="clb" priority="10" x="2" y="4">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X2Y4
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+
+      <single type="clb" priority="10" x="3" y="1">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X3Y1
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+      <single type="clb" priority="10" x="3" y="2">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X3Y2
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+      <single type="clb" priority="10" x="3" y="3">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X3Y3
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+      <single type="clb" priority="10" x="3" y="4">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X3Y4
+      </meta>  <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+
+      <single type="clb" priority="10" x="4" y="1">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X4Y1
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+      <single type="clb" priority="10" x="4" y="2">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X4Y2
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+      <single type="clb" priority="10" x="4" y="3">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X4Y3
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+      <single type="clb" priority="10" x="4" y="4">
+      <metadata> <meta name="fasm_placeholders">
+        LOC=X4Y4
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </single>
+
+<!--      <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
+      <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/> -->
     </fixed_layout>
   </layout>
   <device>
@@ -267,7 +347,7 @@
         </mode>
         <metadata>
           <meta name="fasm_prefix">
-            FLE0 FLE1 FLE2 FLE3 FLE4 FLE5 FLE6 FLE7 FLE8 FLE9
+            FLE0_{LOC} FLE1_{LOC} FLE2_{LOC} FLE3_{LOC} FLE4_{LOC} FLE5_{LOC} FLE6_{LOC} FLE7_{LOC} FLE8_{LOC} FLE9_{LOC}
           </meta>
         </metadata>
       </pb_type>
