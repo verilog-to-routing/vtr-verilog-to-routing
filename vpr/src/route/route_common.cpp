@@ -1064,7 +1064,12 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
             std::unordered_map<int, int> map = map_result->second;
 
             auto pin_result = map.find(node_block_pin);
-            auto phys_pin = pin_result->second;
+            auto orig_phys_pin = pin_result->second;
+
+            VTR_ASSERT(type->num_pins % type->capacity == 0);
+            int max_num_block_pins = type->num_pins / type->capacity;
+
+            int phys_pin = orig_phys_pin + place_ctx.block_locs[block_id].loc.z * max_num_block_pins;
 
             iclass = type->pin_class[phys_pin];
 
