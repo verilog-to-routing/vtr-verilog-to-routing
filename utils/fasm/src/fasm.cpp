@@ -56,7 +56,8 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
     auto &grid_loc = device_ctx.grid[x][y];
     blk_type_ = grid_loc.type;
 
-    current_blk_has_prefix_ = true;
+    blk_prefix_ = "";
+    clb_prefix_ = "";
     clb_prefix_map_.clear();
 
     // Get placeholder list (if provided)
@@ -93,12 +94,10 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
                   prefix_unsplit.c_str(), fasm_prefixes.size(), blk_type_->name, blk_type_->capacity);
       }
       grid_prefix = fasm_prefixes[z];
-    } else {
-      current_blk_has_prefix_= false;
-    }
-
-    if(current_blk_has_prefix_) {
       blk_prefix_ = grid_prefix + ".";
+    }
+    else {
+      blk_prefix_ = "";
     }
 }
 
@@ -614,8 +613,7 @@ void FasmWriterVisitor::walk_route_tree(const t_rt_node *root) {
     for (t_linked_rt_edge* edge = root->u.child_list; edge != nullptr; edge = edge->next) {
         auto *meta = vpr::rr_edge_metadata(root->inode, edge->child->inode, edge->iswitch, "fasm_features");
         if(meta != nullptr) {
-            current_blk_has_prefix_ = false;
-            output_fasm_features(meta->as_string());
+            output_fasm_features(meta->as_string(), "", "");
         }
 
         walk_route_tree(edge->child);
@@ -645,6 +643,13 @@ void FasmWriterVisitor::finish_impl() {
 
 void FasmWriterVisitor::find_clb_prefix(const t_pb_graph_node *node,
         bool *have_prefix, std::string *clb_prefix) const {
+<<<<<<< HEAD
+=======
+
+    *have_prefix = false;
+    *clb_prefix  = "";
+
+>>>>>>> Fixed fasm output for top-level blocks without prefixes.
     while(node != nullptr) {
         auto clb_prefix_itr = clb_prefix_map_.find(node);
         *have_prefix = clb_prefix_itr != clb_prefix_map_.end();
@@ -709,7 +714,11 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
         // pb_type_prefixes_, not on the mux input.
         if(mux_pb_name == pb_name && mux_port_name == port_name && mux_pin_index == pin_index) {
           if(mux_parts[1] != "NULL") {
+<<<<<<< HEAD
             output_fasm_features(have_prefix, clb_prefix, fasm_features);
+=======
+            output_fasm_features(fasm_features, clb_prefix, blk_prefix_);
+>>>>>>> Fixed fasm output for top-level blocks without prefixes.
           }
           return;
         }
@@ -718,7 +727,7 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
                 mux_port_name == port_name &&
                 mux_pin_index == pin_index) {
         if(mux_parts[1] != "NULL") {
-          output_fasm_features(have_prefix, clb_prefix, fasm_features);
+          output_fasm_features(fasm_features, clb_prefix, blk_prefix_);
         }
         return;
       }
@@ -729,11 +738,11 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
         pb_name, pb_index, port_name, pin_index, fasm_mux.c_str());
 }
 
-void FasmWriterVisitor::output_fasm_features(std::string features) const {
-  output_fasm_features(current_blk_has_prefix_, clb_prefix_, features);
+void FasmWriterVisitor::output_fasm_features(const std::string features) const {
+  output_fasm_features(features, clb_prefix_, blk_prefix_);
 }
 
-void FasmWriterVisitor::output_fasm_features(bool have_clb_prefix, std::string clb_prefix, std::string features) const {
+void FasmWriterVisitor::output_fasm_features(const std::string features, const std::string clb_prefix, const std::string blk_prefix) const {
   std::stringstream os(features);
 
   while(os) {
@@ -741,10 +750,8 @@ void FasmWriterVisitor::output_fasm_features(bool have_clb_prefix, std::string c
     os >> feature;
     if(os) {
       std::string out_feature;
-      if(have_clb_prefix) {
-        out_feature += blk_prefix_;
-        out_feature += clb_prefix;
-      }
+      out_feature += blk_prefix;
+      out_feature += clb_prefix;
       out_feature += feature;
       // Substitute tags
       os_ << substitute_tags(out_feature, tags_) << std::endl;
