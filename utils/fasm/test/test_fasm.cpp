@@ -7,6 +7,7 @@
 #include "arch_util.h"
 #include "rr_graph_writer.h"
 #include <sstream>
+#include <fstream>
 
 static constexpr const char kArchFile[] = "test_fasm_arch.xml";
 static constexpr const char kRrGraphFile[] = "test_fasm_rrgraph.xml";
@@ -78,6 +79,16 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
     fasm_string.seekg(0);
 
+    std::ofstream fasm_file("output.fasm", std::ios_base::out);
+    while(fasm_string) {
+        std::string line;
+        std::getline(fasm_string, line);
+        fasm_file << line << std::endl;
+    }
+
+    fasm_string.clear();
+    fasm_string.seekg(0);
+
     std::set<std::tuple<int, int, short>> routing_edges;
     bool found_lut5 = false;
     bool found_lut6 = false;
@@ -99,13 +110,13 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
             continue;
         }
 
-        if(!found_mux1 && line == "CLB.FLE9.OUT_MUX.LUT") {
+        if(!found_mux1 && line.find(".OUT_MUX.LUT") != std::string::npos) {
             found_mux1 = true;
         }
-        if(!found_mux2 && line == "CLB.FLE9.DISABLE_FF") {
+        if(!found_mux2 && line.find(".DISABLE_FF") != std::string::npos) {
             found_mux2 = true;
         }
-        if(!found_mux3 && line == "CLB.FLE9.IN0") {
+        if(!found_mux3 && line.find(".IN0") != std::string::npos) {
             found_mux3 = true;
         }
 

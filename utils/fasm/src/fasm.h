@@ -94,6 +94,8 @@ class FasmWriterVisitor : public NetlistVisitor {
       std::vector<t_pb_graph_pin**> pb_graph_pin_lookup_from_index_by_type_;
       std::map<const t_pb_type*, std::vector<std::pair<std::string, LutOutputDefinition>>> lut_definitions_;
       std::map<const t_pb_type*, Parameters> parameters_;
+
+      std::map<const std::string, std::string> tags_;
 };
 
 } // namespace fasm

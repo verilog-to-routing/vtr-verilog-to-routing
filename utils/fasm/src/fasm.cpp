@@ -58,6 +58,28 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
 
     current_blk_has_prefix_ = true;
     clb_prefix_map_.clear();
+
+    // Get placeholder list (if provided)
+    tags_.clear();
+    if(grid_loc.meta != nullptr && grid_loc.meta->has("fasm_placeholders")) {
+      auto* value = grid_loc.meta->get("fasm_placeholders");
+      VTR_ASSERT(value != nullptr);
+
+      // Parse placeholder definition
+      std::vector<std::string> tag_defs = vtr::split(value->front().as_string(), "\n");
+      for (auto& tag_def: tag_defs) {
+        auto parts = split_fasm_entry(tag_def, "=:", "\t ");
+        if (parts.size() == 0) {
+          continue;
+        }
+
+        VTR_ASSERT(parts.size() == 2);
+
+        VTR_ASSERT(tags_.count(parts.at(0)) == 0);
+        tags_[parts.at(0)] = parts.at(1);
+      }
+    }
+
     std::string grid_prefix;
     if(grid_loc.meta != nullptr && grid_loc.meta->has("fasm_prefix")) {
       auto* value = grid_loc.meta->get("fasm_prefix");
@@ -718,10 +740,14 @@ void FasmWriterVisitor::output_fasm_features(bool have_clb_prefix, std::string c
     std::string feature;
     os >> feature;
     if(os) {
+      std::string out_feature;
       if(have_clb_prefix) {
-        os_ << blk_prefix_ << clb_prefix;
+        out_feature += blk_prefix_;
+        out_feature += clb_prefix;
       }
-      os_ << feature << std::endl;
+      out_feature += feature;
+      // Substitute tags
+      os_ << substitute_tags(out_feature, tags_) << std::endl;
     }
   }
 
