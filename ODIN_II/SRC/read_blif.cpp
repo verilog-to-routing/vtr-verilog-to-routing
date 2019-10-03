@@ -399,6 +399,11 @@ void create_latch_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 	output_nets_hash->add(new_node->name, new_net);
 
 	/* Free the char** names */
+	for (i = 0; i < input_token_count; i++)
+		// Except these two since they were assigned to new_node
+		if (i!=0 && i!=3)
+			vtr::free(names[i]);
+
 	vtr::free(names);
 	vtr::free(ptr);
 }

@@ -3380,6 +3380,8 @@ static void free_lines(lines_t *l)
 						vtr::free(l->lines[l->count]->name);
 					if(l->lines[l->count]->pins)
 						vtr::free(l->lines[l->count]->pins);
+					if(l->lines[l->count]->pin_numbers)
+						vtr::free(l->lines[l->count]->pin_numbers);
 					vtr::free(l->lines[l->count]);
 				}
 			}
@@ -3397,6 +3399,8 @@ static void free_stages(stages_t *s)
 {
 	if(s)
 	{
+		vtr::free(s->num_children);
+
 		if(s->stages)
 		{
 			while (s->count--)
