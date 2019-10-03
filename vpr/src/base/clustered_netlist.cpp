@@ -52,7 +52,7 @@ int ClusteredNetlist::block_pin_net_index(const ClusterBlockId blk_id, const int
 
 ClusterPinId ClusteredNetlist::block_pin(const ClusterBlockId blk, const int phys_pin_index) const {
     VTR_ASSERT_SAFE(valid_block_id(blk));
-    VTR_ASSERT_SAFE_MSG(phys_pin_index >= 0 && phys_pin_index < block_type(blk)->pb_type->num_pins, "Physical pin index must be in range");
+    VTR_ASSERT_SAFE_MSG(phys_pin_index >= 0 && phys_pin_index < physical_tile_type(block_type(blk))->num_pins, "Physical pin index must be in range");
 
     return block_logical_pins_[blk][phys_pin_index];
 }
