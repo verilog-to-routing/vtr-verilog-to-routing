@@ -120,7 +120,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
             found_mux3 = true;
         }
 
-        if(line.find("CLB") != std::string::npos) {
+        if(line.find("CLB") != std::string::npos || line.find("FLE") != std::string::npos) {
             auto pos = line.find("LUT[");
             if(pos != std::string::npos) {
                 CHECK_THAT(line.substr(pos), Equals(

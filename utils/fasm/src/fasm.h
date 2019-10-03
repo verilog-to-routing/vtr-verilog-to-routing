@@ -66,8 +66,8 @@ class FasmWriterVisitor : public NetlistVisitor {
       void finish_impl() override;
 
   private:
-      void output_fasm_features(std::string features) const;
-      void output_fasm_features(bool have_clb_prefix, std::string clb_prefix, std::string features) const;
+      void output_fasm_features(const std::string features) const;
+      void output_fasm_features(const std::string features, const std::string clb_prefix, const std::string blk_prefix) const;
       void check_features(const t_metadata_dict *meta) const;
       void check_interconnect(const t_pb_routes &pb_route, int inode);
       void check_for_lut(const t_pb* atom);
@@ -85,7 +85,6 @@ class FasmWriterVisitor : public NetlistVisitor {
       std::ostream& os_;
 
       t_pb_graph_node *root_clb_;
-      bool current_blk_has_prefix_;
       t_physical_tile_type_ptr blk_type_;
       std::string blk_prefix_;
       std::string clb_prefix_;

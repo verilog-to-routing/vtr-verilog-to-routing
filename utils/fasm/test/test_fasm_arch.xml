@@ -96,7 +96,7 @@
       <single type="clb" priority="10" x="3" y="4">
       <metadata> <meta name="fasm_placeholders">
         LOC=X3Y4
-      </meta>  <meta name="fasm_prefix">CLB</meta> </metadata>
+      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
       </single>
 
       <single type="clb" priority="10" x="4" y="1">
