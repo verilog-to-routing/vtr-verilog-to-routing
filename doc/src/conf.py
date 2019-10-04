@@ -55,6 +55,7 @@ from vtr_version import get_vtr_version, get_vtr_release
 extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
+    'notfound.extension',
     'sphinx_markdown_tables',
     'sdcdomain',
     'archdomain',
@@ -323,6 +324,19 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+# -- Options for 404 page -------------------------------------------
+
+# sphinx-notfound-page
+# https://github.com/readthedocs/sphinx-notfound-page
+notfound_context = {
+    'title': 'Page Not Found',
+    'body': '''
+<h1>Page Not Found</h1>
+<p>Sorry, we couldn't find that page.</p>
+<p>Try using the search box or go to the homepage.</p>
+''',
+}
 
 def setup(app):
     github_code_repo = 'https://github.com/verilog-to-routing/vtr-verilog-to-routing/'
