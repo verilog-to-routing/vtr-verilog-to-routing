@@ -652,7 +652,6 @@ struct t_physical_tile_port {
     int index;
     int absolute_first_pin_index;
     int port_index_by_type;
-    int tile_type_index;
 };
 
 /* Describes the type for a logical block

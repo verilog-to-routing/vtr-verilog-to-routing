@@ -878,8 +878,6 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     VTR_ASSERT(port != nullptr);
     int abs_first_pin_idx = port->absolute_first_pin_index;
 
-    std::pair<int, int> pins;
-
     token_index++;
 
     // All the pins of the port are taken or the port has a single pin
@@ -3257,10 +3255,12 @@ static void ProcessEquivalentSiteDirects(pugi::xml_node Parent,
         expect_only_attributes(CurDirect, {"from", "to"}, loc_data);
 
         std::string from, to;
+        // `from` attribute is relative to the physical tile pins
         from = std::string(get_attribute(CurDirect, "from", loc_data).value());
+
+        // `to` attribute is relative to the logical block pins
         to = std::string(get_attribute(CurDirect, "to", loc_data).value());
 
-        // XXX
         auto from_pins = ProcessPinString<t_physical_tile_type_ptr>(CurDirect, PhysicalTileType, from.c_str(), loc_data);
         auto to_pins = ProcessPinString<t_logical_block_type_ptr>(CurDirect, LogicalBlockType, to.c_str(), loc_data);
 
