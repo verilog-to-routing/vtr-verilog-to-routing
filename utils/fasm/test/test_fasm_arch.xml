@@ -20,8 +20,8 @@
       <equivalent_sites>
         <site pb_type="clb"/>
       </equivalent_sites>
-      <input name="I" num_pins="33" equivalent="full"/>
-      <output name="O" num_pins="20" equivalent="none"/>
+      <input name="I" num_pins="12" equivalent="full"/>
+      <output name="O" num_pins="4" equivalent="none"/>
       <clock name="clk" num_pins="1"/>
       <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
       <pinlocations pattern="spread"/>
@@ -60,64 +60,64 @@
       <single type="clb" priority="10" x="2" y="1">
       <metadata> <meta name="fasm_placeholders">
         LOC=X2Y1
-      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </meta> <meta name="fasm_prefix">PLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="2" y="2">
       <metadata> <meta name="fasm_placeholders">
         LOC=X2Y2
-      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </meta> <meta name="fasm_prefix">PLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="2" y="3">
       <metadata> <meta name="fasm_placeholders">
         LOC=X2Y3
-      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </meta> <meta name="fasm_prefix">PLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="2" y="4">
       <metadata> <meta name="fasm_placeholders">
         LOC=X2Y4
-      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </meta> <meta name="fasm_prefix">PLB</meta> </metadata>
       </single>
 
       <single type="clb" priority="10" x="3" y="1">
       <metadata> <meta name="fasm_placeholders">
         LOC=X3Y1
-      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </meta> </metadata>
       </single>
       <single type="clb" priority="10" x="3" y="2">
       <metadata> <meta name="fasm_placeholders">
         LOC=X3Y2
-      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </meta> </metadata>
       </single>
       <single type="clb" priority="10" x="3" y="3">
       <metadata> <meta name="fasm_placeholders">
         LOC=X3Y3
-      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </meta> </metadata>
       </single>
       <single type="clb" priority="10" x="3" y="4">
       <metadata> <meta name="fasm_placeholders">
         LOC=X3Y4
-      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </meta>  </metadata>
       </single>
 
       <single type="clb" priority="10" x="4" y="1">
       <metadata> <meta name="fasm_placeholders">
         LOC=X4Y1
-      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </meta> <meta name="fasm_prefix">SLICE</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="4" y="2">
       <metadata> <meta name="fasm_placeholders">
         LOC=X4Y2
-      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </meta> <meta name="fasm_prefix">SLICE</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="4" y="3">
       <metadata> <meta name="fasm_placeholders">
         LOC=X4Y3
-      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </meta> <meta name="fasm_prefix">SLICE</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="4" y="4">
       <metadata> <meta name="fasm_placeholders">
         LOC=X4Y4
-      </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
+      </meta> <meta name="fasm_prefix">SLICE</meta> </metadata>
       </single>
 
 <!--      <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
@@ -185,10 +185,10 @@
       <power method="ignore"/>
     </pb_type>
     <pb_type name="clb">
-      <input name="I" num_pins="33" equivalent="full"/>
-      <output name="O" num_pins="20" equivalent="none"/>
+      <input name="I" num_pins="12" equivalent="full"/>
+      <output name="O" num_pins="4" equivalent="none"/>
       <clock name="clk" num_pins="1"/>
-      <pb_type name="fle" num_pb="10">
+      <pb_type name="fle" num_pb="2">
         <input name="in" num_pins="6"/>
         <output name="out" num_pins="2"/>
         <clock name="clk" num_pins="1"/>
@@ -347,19 +347,19 @@
         </mode>
         <metadata>
           <meta name="fasm_prefix">
-            FLE0_{LOC} FLE1_{LOC} FLE2_{LOC} FLE3_{LOC} FLE4_{LOC} FLE5_{LOC} FLE6_{LOC} FLE7_{LOC} FLE8_{LOC} FLE9_{LOC}
+            FLE0_{LOC} FLE1_{LOC}
           </meta>
         </metadata>
       </pb_type>
       <interconnect>
-        <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in">
-          <delay_constant max="95e-12" in_port="clb.I" out_port="fle[9:0].in"/>
-          <delay_constant max="75e-12" in_port="fle[9:0].out" out_port="fle[9:0].in"/>
+        <complete name="crossbar" input="clb.I fle[1:0].out" output="fle[1:0].in">
+          <delay_constant max="95e-12" in_port="clb.I" out_port="fle[1:0].in"/>
+          <delay_constant max="75e-12" in_port="fle[1:0].out" out_port="fle[1:0].in"/>
         </complete>
-        <complete name="clks" input="clb.clk" output="fle[9:0].clk">
+        <complete name="clks" input="clb.clk" output="fle[1:0].clk">
         </complete>
-        <direct name="clbouts1" input="fle[9:0].out[0:0]" output="clb.O[9:0]"/>
-        <direct name="clbouts2" input="fle[9:0].out[1:1]" output="clb.O[19:10]"/>
+        <direct name="clbouts1" input="fle[1:0].out[0:0]" output="clb.O[1:0]"/>
+        <direct name="clbouts2" input="fle[1:0].out[1:1]" output="clb.O[3:2]"/>
       </interconnect>
     </pb_type>
   </complexblocklist>
