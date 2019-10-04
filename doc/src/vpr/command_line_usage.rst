@@ -829,7 +829,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     Selects which router algorithm to use.
 
-    The ``breadth_first`` router focuses solely on routing a design successfully, while the ``timing_driven`` router focuses both on achieving a successful route and achieving good circuit speed.
+    .. warning::
+
+        The ``breadth_first`` router **should NOT be used to compare the run-time/quality** of alternate routing algorithms.
+
+        It is inferrior to the ``timing_driven`` router from a circuit speed (2x - 10x slower) and run-time perspective (takes 10-100x longer on the large benchmarks).
+        The ``breadth_first`` router is deprecated and may be removed in a future release.
+
+    The ``breadth_first`` router :cite:`betz_arch_cad` focuses solely on routing a design successfully, while the ``timing_driven`` router :cite:`betz_arch_cad,murray_air` focuses both on achieving a successful route and achieving good circuit speed.
 
     The breadth-first router is capable of routing a design using slightly fewer tracks than the timing-driving router (typically 5% if the timing-driven router uses its default parameters.
     This can be reduced to about 2% if the router parameters are set so the timing-driven router pays more attention to routability and less to area).
