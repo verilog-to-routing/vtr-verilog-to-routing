@@ -2854,7 +2854,7 @@ int check_macro_placement_consistency() {
 
 static t_physical_tile_type_ptr pick_highest_placement_priority_type(t_logical_block_type_ptr logical_block, int num_needed_types, int* free_locations) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto physical_tiles = device_ctx.physical_tile_types;
+    auto& physical_tiles = device_ctx.physical_tile_types;
 
     // Loop through the ordered map to get tiles in a decreasing priority order
     for (auto& physical_tiles_ids : logical_block->physical_tiles_priority) {
