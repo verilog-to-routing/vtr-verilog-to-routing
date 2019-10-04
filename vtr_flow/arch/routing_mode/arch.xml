@@ -43,7 +43,12 @@
   <tiles>
     <tile name="ff_tile">
       <equivalent_sites>
-        <site pb_type="ff_tile"/>
+        <site pb_type="ff_tile">
+          <direct from="ff_tile.in" to="ff_tile.in"/>
+          <direct from="ff_tile.out" to="ff_tile.out"/>
+          <direct from="ff_tile.clk" to="ff_tile.clk"/>
+          <direct from="ff_tile.cen" to="ff_tile.cen"/>
+        </site>
       </equivalent_sites>
       <input name="in" num_pins="4"/>
       <output name="out" num_pins="4"/>
@@ -59,7 +64,10 @@
     </tile>
     <tile name="io_tile">
       <equivalent_sites>
-        <site pb_type="io_tile"/>
+        <site pb_type="io_tile">
+          <direct from="io_tile.in" to="io_tile.in"/>
+          <direct from="io_tile.out" to="io_tile.out"/>
+        </site>
       </equivalent_sites>
       <input name="in" num_pins="1"/>
       <output name="out" num_pins="1"/>
