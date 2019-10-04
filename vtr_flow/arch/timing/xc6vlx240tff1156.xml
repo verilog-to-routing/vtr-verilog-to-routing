@@ -79,7 +79,12 @@
   <tiles>
     <tile name="IOB" capacity="2">
       <equivalent_sites>
-        <site pb_type="IOB"/>
+        <site pb_type="IOB">
+          <direct from="IOB.O" to="IOB.O"/>
+          <direct from="IOB.I" to="IOB.I"/>
+          <direct from="IOB.GND_WIRE" to="IOB.GND_WIRE"/>
+          <direct from="IOB.VCC_WIRE" to="IOB.VCC_WIRE"/>
+        </site>
       </equivalent_sites>
       <input name="O" num_pins="1"/>
       <output name="I" num_pins="1"/>
@@ -90,7 +95,37 @@
     </tile>
     <tile name="SLICEL" capacity="2">
       <equivalent_sites>
-        <site pb_type="SLICEL"/>
+        <site pb_type="SLICEL">
+          <direct from="SLICEL.A6-1" to="SLICEL.A6-1"/>
+          <direct from="SLICEL.A6_VCCONLY" to="SLICEL.A6_VCCONLY"/>
+          <direct from="SLICEL.AX" to="SLICEL.AX"/>
+          <direct from="SLICEL.B6-1" to="SLICEL.B6-1"/>
+          <direct from="SLICEL.B6_VCCONLY" to="SLICEL.B6_VCCONLY"/>
+          <direct from="SLICEL.BX" to="SLICEL.BX"/>
+          <direct from="SLICEL.C6-1" to="SLICEL.C6-1"/>
+          <direct from="SLICEL.C6_VCCONLY" to="SLICEL.C6_VCCONLY"/>
+          <direct from="SLICEL.CX" to="SLICEL.CX"/>
+          <direct from="SLICEL.D6-1" to="SLICEL.D6-1"/>
+          <direct from="SLICEL.D6_VCCONLY" to="SLICEL.D6_VCCONLY"/>
+          <direct from="SLICEL.DX" to="SLICEL.DX"/>
+          <direct from="SLICEL.CIN" to="SLICEL.CIN"/>
+          <direct from="SLICEL.A" to="SLICEL.A"/>
+          <direct from="SLICEL.AQ" to="SLICEL.AQ"/>
+          <direct from="SLICEL.AMUX" to="SLICEL.AMUX"/>
+          <direct from="SLICEL.B" to="SLICEL.B"/>
+          <direct from="SLICEL.BQ" to="SLICEL.BQ"/>
+          <direct from="SLICEL.BMUX" to="SLICEL.BMUX"/>
+          <direct from="SLICEL.C" to="SLICEL.C"/>
+          <direct from="SLICEL.CQ" to="SLICEL.CQ"/>
+          <direct from="SLICEL.CMUX" to="SLICEL.CMUX"/>
+          <direct from="SLICEL.D" to="SLICEL.D"/>
+          <direct from="SLICEL.DQ" to="SLICEL.DQ"/>
+          <direct from="SLICEL.DMUX" to="SLICEL.DMUX"/>
+          <direct from="SLICEL.COUT" to="SLICEL.COUT"/>
+          <direct from="SLICEL.GND_WIRE" to="SLICEL.GND_WIRE"/>
+          <direct from="SLICEL.VCC_WIRE" to="SLICEL.VCC_WIRE"/>
+          <direct from="SLICEL.CLK" to="SLICEL.CLK"/>
+        </site>
       </equivalent_sites>
       <input name="A6-1" num_pins="6" equivalent="full"/>
       <input name="A6_VCCONLY" num_pins="1" equivalent="none"/>
@@ -130,7 +165,22 @@
     </tile>
     <tile name="DSP48E1" height="5" capacity="2">
       <equivalent_sites>
-        <site pb_type="DSP48E1"/>
+        <site pb_type="DSP48E1">
+          <direct from="DSP48E1.A" to="DSP48E1.A"/>
+          <direct from="DSP48E1.B" to="DSP48E1.B"/>
+          <direct from="DSP48E1.CEA1" to="DSP48E1.CEA1"/>
+          <direct from="DSP48E1.CEA2" to="DSP48E1.CEA2"/>
+          <direct from="DSP48E1.CEB1" to="DSP48E1.CEB1"/>
+          <direct from="DSP48E1.CEB2" to="DSP48E1.CEB2"/>
+          <direct from="DSP48E1.CEM" to="DSP48E1.CEM"/>
+          <direct from="DSP48E1.CEP" to="DSP48E1.CEP"/>
+          <direct from="DSP48E1.INMODE" to="DSP48E1.INMODE"/>
+          <direct from="DSP48E1.OPMODE" to="DSP48E1.OPMODE"/>
+          <direct from="DSP48E1.P" to="DSP48E1.P"/>
+          <direct from="DSP48E1.GND_WIRE" to="DSP48E1.GND_WIRE"/>
+          <direct from="DSP48E1.VCC_WIRE" to="DSP48E1.VCC_WIRE"/>
+          <direct from="DSP48E1.CLK" to="DSP48E1.CLK"/>
+        </site>
       </equivalent_sites>
       <input name="A" num_pins="30"/>
       <input name="B" num_pins="18"/>
@@ -151,7 +201,102 @@
     </tile>
     <tile name="RAMB36E1" height="5">
       <equivalent_sites>
-        <site pb_type="RAMB36E1"/>
+        <site pb_type="RAMB36E1">
+          <direct from="RAMB36E1.ADDRARDADDRL" to="RAMB36E1.ADDRARDADDRL"/>
+          <direct from="RAMB36E1.ADDRARDADDRU" to="RAMB36E1.ADDRARDADDRU"/>
+          <direct from="RAMB36E1.ADDRBWRADDRL" to="RAMB36E1.ADDRBWRADDRL"/>
+          <direct from="RAMB36E1.ADDRBWRADDRU" to="RAMB36E1.ADDRBWRADDRU"/>
+          <direct from="RAMB36E1.DIADI" to="RAMB36E1.DIADI"/>
+          <direct from="RAMB36E1.DIPADIP" to="RAMB36E1.DIPADIP"/>
+          <direct from="RAMB36E1.WEAL" to="RAMB36E1.WEAL"/>
+          <direct from="RAMB36E1.WEAU" to="RAMB36E1.WEAU"/>
+          <direct from="RAMB36E1.DIBDI" to="RAMB36E1.DIBDI"/>
+          <direct from="RAMB36E1.DIPBDIP" to="RAMB36E1.DIPBDIP"/>
+          <direct from="RAMB36E1.WEBWEL" to="RAMB36E1.WEBWEL"/>
+          <direct from="RAMB36E1.WEBWEU" to="RAMB36E1.WEBWEU"/>
+          <direct from="RAMB36E1.ENARDENL" to="RAMB36E1.ENARDENL"/>
+          <direct from="RAMB36E1.ENARDENU" to="RAMB36E1.ENARDENU"/>
+          <direct from="RAMB36E1.ENBWRENL" to="RAMB36E1.ENBWRENL"/>
+          <direct from="RAMB36E1.ENBWRENU" to="RAMB36E1.ENBWRENU"/>
+          <direct from="RAMB36E1.REGCEAREGCEL" to="RAMB36E1.REGCEAREGCEL"/>
+          <direct from="RAMB36E1.REGCEAREGCEU" to="RAMB36E1.REGCEAREGCEU"/>
+          <direct from="RAMB36E1.REGCEBL" to="RAMB36E1.REGCEBL"/>
+          <direct from="RAMB36E1.REGCEBU" to="RAMB36E1.REGCEBU"/>
+          <direct from="RAMB36E1.RSTRAMARSTRAMLRST" to="RAMB36E1.RSTRAMARSTRAMLRST"/>
+          <direct from="RAMB36E1.RSTRAMARSTRAMU" to="RAMB36E1.RSTRAMARSTRAMU"/>
+          <direct from="RAMB36E1.RSTRAMBL" to="RAMB36E1.RSTRAMBL"/>
+          <direct from="RAMB36E1.RSTRAMBU" to="RAMB36E1.RSTRAMBU"/>
+          <direct from="RAMB36E1.RSTREGARSTREGL" to="RAMB36E1.RSTREGARSTREGL"/>
+          <direct from="RAMB36E1.RSTREGARSTREGU" to="RAMB36E1.RSTREGARSTREGU"/>
+          <direct from="RAMB36E1.RSTREGBL" to="RAMB36E1.RSTREGBL"/>
+          <direct from="RAMB36E1.RSTREGBU" to="RAMB36E1.RSTREGBU"/>
+          <direct from="RAMB36E1.s0_ADDRARDADDR" to="RAMB36E1.s0_ADDRARDADDR"/>
+          <direct from="RAMB36E1.s0_ADDRBWRADDR" to="RAMB36E1.s0_ADDRBWRADDR"/>
+          <direct from="RAMB36E1.s0_DIADI" to="RAMB36E1.s0_DIADI"/>
+          <direct from="RAMB36E1.s0_DIPADIP" to="RAMB36E1.s0_DIPADIP"/>
+          <direct from="RAMB36E1.s0_WEA" to="RAMB36E1.s0_WEA"/>
+          <direct from="RAMB36E1.s0_DIBDI" to="RAMB36E1.s0_DIBDI"/>
+          <direct from="RAMB36E1.s0_DIPBDIP" to="RAMB36E1.s0_DIPBDIP"/>
+          <direct from="RAMB36E1.s0_WEBWE" to="RAMB36E1.s0_WEBWE"/>
+          <direct from="RAMB36E1.s0_ENARDEN" to="RAMB36E1.s0_ENARDEN"/>
+          <direct from="RAMB36E1.s0_ENBWREN" to="RAMB36E1.s0_ENBWREN"/>
+          <direct from="RAMB36E1.s0_ADDRATIEHIGH" to="RAMB36E1.s0_ADDRATIEHIGH"/>
+          <direct from="RAMB36E1.s0_ADDRBTIEHIGH" to="RAMB36E1.s0_ADDRBTIEHIGH"/>
+          <direct from="RAMB36E1.s0_REGCEAREGCE" to="RAMB36E1.s0_REGCEAREGCE"/>
+          <direct from="RAMB36E1.s0_REGCEB" to="RAMB36E1.s0_REGCEB"/>
+          <direct from="RAMB36E1.s0_RSTRAMARSTRAM" to="RAMB36E1.s0_RSTRAMARSTRAM"/>
+          <direct from="RAMB36E1.s0_RSTRAMB" to="RAMB36E1.s0_RSTRAMB"/>
+          <direct from="RAMB36E1.s0_RSTREGARSTREG" to="RAMB36E1.s0_RSTREGARSTREG"/>
+          <direct from="RAMB36E1.s0_RSTREGB" to="RAMB36E1.s0_RSTREGB"/>
+          <direct from="RAMB36E1.s1_ADDRARDADDR" to="RAMB36E1.s1_ADDRARDADDR"/>
+          <direct from="RAMB36E1.s1_ADDRBWRADDR" to="RAMB36E1.s1_ADDRBWRADDR"/>
+          <direct from="RAMB36E1.s1_DIADI" to="RAMB36E1.s1_DIADI"/>
+          <direct from="RAMB36E1.s1_DIPADIP" to="RAMB36E1.s1_DIPADIP"/>
+          <direct from="RAMB36E1.s1_WEA" to="RAMB36E1.s1_WEA"/>
+          <direct from="RAMB36E1.s1_DIBDI" to="RAMB36E1.s1_DIBDI"/>
+          <direct from="RAMB36E1.s1_DIPBDIP" to="RAMB36E1.s1_DIPBDIP"/>
+          <direct from="RAMB36E1.s1_WEBWE" to="RAMB36E1.s1_WEBWE"/>
+          <direct from="RAMB36E1.s1_ENARDEN" to="RAMB36E1.s1_ENARDEN"/>
+          <direct from="RAMB36E1.s1_ENBWREN" to="RAMB36E1.s1_ENBWREN"/>
+          <direct from="RAMB36E1.s1_ADDRATIEHIGH" to="RAMB36E1.s1_ADDRATIEHIGH"/>
+          <direct from="RAMB36E1.s1_ADDRBTIEHIGH" to="RAMB36E1.s1_ADDRBTIEHIGH"/>
+          <direct from="RAMB36E1.s1_REGCEAREGCE" to="RAMB36E1.s1_REGCEAREGCE"/>
+          <direct from="RAMB36E1.s1_REGCEB" to="RAMB36E1.s1_REGCEB"/>
+          <direct from="RAMB36E1.s1_RSTRAMARSTRAM" to="RAMB36E1.s1_RSTRAMARSTRAM"/>
+          <direct from="RAMB36E1.s1_RSTRAMB" to="RAMB36E1.s1_RSTRAMB"/>
+          <direct from="RAMB36E1.s1_RSTREGARSTREG" to="RAMB36E1.s1_RSTREGARSTREG"/>
+          <direct from="RAMB36E1.s1_RSTREGB" to="RAMB36E1.s1_RSTREGB"/>
+          <direct from="RAMB36E1.DOADO" to="RAMB36E1.DOADO"/>
+          <direct from="RAMB36E1.DOPADOP" to="RAMB36E1.DOPADOP"/>
+          <direct from="RAMB36E1.DOBDO" to="RAMB36E1.DOBDO"/>
+          <direct from="RAMB36E1.DOPBDOP" to="RAMB36E1.DOPBDOP"/>
+          <direct from="RAMB36E1.s0_DOADO" to="RAMB36E1.s0_DOADO"/>
+          <direct from="RAMB36E1.s0_DOPADOP" to="RAMB36E1.s0_DOPADOP"/>
+          <direct from="RAMB36E1.s0_DOBDO" to="RAMB36E1.s0_DOBDO"/>
+          <direct from="RAMB36E1.s0_DOPBDOP" to="RAMB36E1.s0_DOPBDOP"/>
+          <direct from="RAMB36E1.s1_DOADO" to="RAMB36E1.s1_DOADO"/>
+          <direct from="RAMB36E1.s1_DOPADOP" to="RAMB36E1.s1_DOPADOP"/>
+          <direct from="RAMB36E1.s1_DOBDO" to="RAMB36E1.s1_DOBDO"/>
+          <direct from="RAMB36E1.s1_DOPBDOP" to="RAMB36E1.s1_DOPBDOP"/>
+          <direct from="RAMB36E1.GND_WIRE" to="RAMB36E1.GND_WIRE"/>
+          <direct from="RAMB36E1.VCC_WIRE" to="RAMB36E1.VCC_WIRE"/>
+          <direct from="RAMB36E1.CLKARDCLKL" to="RAMB36E1.CLKARDCLKL"/>
+          <direct from="RAMB36E1.CLKARDCLKU" to="RAMB36E1.CLKARDCLKU"/>
+          <direct from="RAMB36E1.CLKBWRCLKL" to="RAMB36E1.CLKBWRCLKL"/>
+          <direct from="RAMB36E1.CLKBWRCLKU" to="RAMB36E1.CLKBWRCLKU"/>
+          <direct from="RAMB36E1.s0_CLKARDCLK" to="RAMB36E1.s0_CLKARDCLK"/>
+          <direct from="RAMB36E1.s0_CLKBWRCLK" to="RAMB36E1.s0_CLKBWRCLK"/>
+          <direct from="RAMB36E1.s1_CLKARDCLK" to="RAMB36E1.s1_CLKARDCLK"/>
+          <direct from="RAMB36E1.s1_CLKBWRCLK" to="RAMB36E1.s1_CLKBWRCLK"/>
+          <direct from="RAMB36E1.REGCLKARDRCLKL" to="RAMB36E1.REGCLKARDRCLKL"/>
+          <direct from="RAMB36E1.REGCLKARDRCLKU" to="RAMB36E1.REGCLKARDRCLKU"/>
+          <direct from="RAMB36E1.REGCLKBL" to="RAMB36E1.REGCLKBL"/>
+          <direct from="RAMB36E1.REGCLKBU" to="RAMB36E1.REGCLKBU"/>
+          <direct from="RAMB36E1.s0_REGCLKARDRCLK" to="RAMB36E1.s0_REGCLKARDRCLK"/>
+          <direct from="RAMB36E1.s0_REGCLKB" to="RAMB36E1.s0_REGCLKB"/>
+          <direct from="RAMB36E1.s1_REGCLKARDRCLK" to="RAMB36E1.s1_REGCLKARDRCLK"/>
+          <direct from="RAMB36E1.s1_REGCLKB" to="RAMB36E1.s1_REGCLKB"/>
+        </site>
       </equivalent_sites>
       <input name="ADDRARDADDRL" num_pins="16"/>
       <input name="ADDRARDADDRU" num_pins="15"/>
@@ -252,7 +397,15 @@
     </tile>
     <tile name="BUFG" height="2" capacity="16">
       <equivalent_sites>
-        <site pb_type="BUFG"/>
+        <site pb_type="BUFG">
+          <direct from="BUFG.I" to="BUFG.I"/>
+          <direct from="BUFG.S" to="BUFG.S"/>
+          <direct from="BUFG.CE" to="BUFG.CE"/>
+          <direct from="BUFG.IGNORE" to="BUFG.IGNORE"/>
+          <direct from="BUFG.O" to="BUFG.O"/>
+          <direct from="BUFG.GND_WIRE" to="BUFG.GND_WIRE"/>
+          <direct from="BUFG.VCC_WIRE" to="BUFG.VCC_WIRE"/>
+        </site>
       </equivalent_sites>
       <input name="I" num_pins="2"/>
       <input name="S" num_pins="2"/>
