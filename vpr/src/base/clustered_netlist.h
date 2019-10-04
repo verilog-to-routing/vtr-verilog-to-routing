@@ -255,8 +255,10 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     //Pins
     vtr::vector_map<ClusterPinId, int> pin_physical_index_; //The physical pin index (i.e. pin index
                                                             //in t_physical_tile_type) corresponding
-                                                            //to the logical pin
-    vtr::vector_map<ClusterPinId, int> pin_logical_index_;  //The logical pin index of this block
+                                                            //to the clustered pin
+    vtr::vector_map<ClusterPinId, int> pin_logical_index_;  //The logical pin index of this block (i.e. pin index
+                                                            //in t_logical_block_type) corresponding
+                                                            //to the clustered pin
 
     //Nets
     vtr::vector_map<ClusterNetId, bool> net_is_ignored_; //Boolean mapping indicating if the net is ignored
