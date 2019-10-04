@@ -2312,7 +2312,14 @@ bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_
 t_physical_tile_type_ptr pick_random_placement_type(t_logical_block_type_ptr logical_block) {
     auto equivalent_tiles = logical_block->equivalent_tiles;
 
-    return equivalent_tiles[vtr::irand((int)equivalent_tiles.size() - 1)];
+    size_t num_equivalent_tiles = equivalent_tiles.size();
+    int index = 0;
+
+    if (num_equivalent_tiles > 1) {
+        index = vtr::irand((int)equivalent_tiles.size() - 1);
+    }
+
+    return equivalent_tiles[index];
 }
 
 void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision) {
