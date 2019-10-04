@@ -4,6 +4,7 @@
 #include "vtr_util.h"
 #include "rr_metadata.h"
 #include "fasm.h"
+#include "fasm_utils.h"
 #include "arch_util.h"
 #include "rr_graph_writer.h"
 #include <sstream>
@@ -12,9 +13,53 @@
 static constexpr const char kArchFile[] = "test_fasm_arch.xml";
 static constexpr const char kRrGraphFile[] = "test_fasm_rrgraph.xml";
 
+// Prototype here to be able to test it
+namespace fasm {
+std::vector<std::string> find_tags_in_feature (const std::string& a_String);
+}
+
 namespace {
 
 using Catch::Matchers::Equals;
+
+// ============================================================================
+
+
+TEST_CASE("find_tags", "[fasm]") {
+    const std::string feature ("{prefix}CLB_{loc}_{site}");
+
+    auto tags = fasm::find_tags_in_feature (feature);
+
+    REQUIRE (tags.size() == 3);
+    REQUIRE (std::find(tags.begin(), tags.end(), "prefix") != tags.end());
+    REQUIRE (std::find(tags.begin(), tags.end(), "loc")    != tags.end());
+    REQUIRE (std::find(tags.begin(), tags.end(), "site")   != tags.end());
+}
+
+TEST_CASE("substitute_tags_correct", "[fasm]") {
+    const std::string feature ("{prefix}CLB_{loc}_{site}");
+    const std::map<const std::string, std::string> tags = {
+        {"prefix", "L"},
+        {"loc", "X7Y8"},
+        {"site", "SLICE"}
+    };
+
+    auto result = fasm::substitute_tags(feature, tags);
+
+    REQUIRE(result.compare("LCLB_X7Y8_SLICE") == 0);
+}
+
+TEST_CASE("substitute_tags_undef", "[fasm]") {
+    const std::string feature ("{prefix}CLB_{loc}_{site}");
+    const std::map<const std::string, std::string> tags = {
+        {"loc", "X7Y8"},
+        {"site", "SLICE"}
+    };
+
+    REQUIRE_THROWS(fasm::substitute_tags(feature, tags));
+}
+
+// ============================================================================
 
 TEST_CASE("fasm_integration_test", "[fasm]") {
     {
