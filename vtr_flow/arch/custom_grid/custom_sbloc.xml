@@ -160,7 +160,11 @@
   <tiles>
     <tile name="io" capacity="8" area="0">
       <equivalent_sites>
-        <site pb_type="io"/>
+        <site pb_type="io">
+          <direct from="io.outpad" to="io.outpad"/>
+          <direct from="io.inpad" to="io.inpad"/>
+          <direct from="io.clock" to="io.clock"/>
+        </site>
       </equivalent_sites>
       <input name="outpad" num_pins="1"/>
       <output name="inpad" num_pins="1"/>
@@ -175,7 +179,13 @@
     </tile>
     <tile name="clb" area="53894">
       <equivalent_sites>
-        <site pb_type="clb"/>
+        <site pb_type="clb">
+          <direct from="clb.I" to="clb.I"/>
+          <direct from="clb.cin" to="clb.cin"/>
+          <direct from="clb.O" to="clb.O"/>
+          <direct from="clb.cout" to="clb.cout"/>
+          <direct from="clb.clk" to="clb.clk"/>
+        </site>
       </equivalent_sites>
       <input name="I" num_pins="40" equivalent="full"/>
       <input name="cin" num_pins="1"/>
@@ -190,7 +200,11 @@
     </tile>
     <tile name="mult_36" width="3" height="3" area="396000">
       <equivalent_sites>
-        <site pb_type="mult_36"/>
+        <site pb_type="mult_36">
+          <direct from="mult_36.a" to="mult_36.a"/>
+          <direct from="mult_36.b" to="mult_36.b"/>
+          <direct from="mult_36.out" to="mult_36.out"/>
+        </site>
       </equivalent_sites>
       <input name="a" num_pins="36"/>
       <input name="b" num_pins="36"/>
@@ -213,7 +227,15 @@
     </tile>
     <tile name="memory" width="2" height="3" area="548000">
       <equivalent_sites>
-        <site pb_type="memory"/>
+        <site pb_type="memory">
+          <direct from="memory.addr1" to="memory.addr1"/>
+          <direct from="memory.addr2" to="memory.addr2"/>
+          <direct from="memory.data" to="memory.data"/>
+          <direct from="memory.we1" to="memory.we1"/>
+          <direct from="memory.we2" to="memory.we2"/>
+          <direct from="memory.out" to="memory.out"/>
+          <direct from="memory.clk" to="memory.clk"/>
+        </site>
       </equivalent_sites>
       <input name="addr1" num_pins="15"/>
       <input name="addr2" num_pins="15"/>
