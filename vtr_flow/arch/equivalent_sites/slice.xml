@@ -1,12 +1,11 @@
-<?xml version="1.0"?>
 <!-- This architecture definition represents a simplified version of a SLICEM site -->
 <architecture xmlns:xi="http://www.w3.org/2001/XInclude">
   <models>
     <model name="CARRY">
       <input_ports>
-        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="CI"/>
-        <port combinational_sink_ports="CO_CHAIN CO_FABRIC" name="DI"/>
-        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="S"/>
+        <port combinational_sink_ports="CO_FABRIC CO_CHAIN O" name="CI"/>
+        <port combinational_sink_ports="CO_FABRIC CO_CHAIN" name="DI"/>
+        <port combinational_sink_ports="CO_FABRIC CO_CHAIN O" name="S"/>
       </input_ports>
       <output_ports>
         <port name="CO_CHAIN"/>
@@ -16,10 +15,10 @@
     </model>
     <model name="CARRY0">
       <input_ports>
-        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="CI"/>
-        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="CI_INIT"/>
-        <port combinational_sink_ports="CO_CHAIN CO_FABRIC" name="DI"/>
-        <port combinational_sink_ports="CO_CHAIN CO_FABRIC O" name="S"/>
+        <port combinational_sink_ports="CO_FABRIC CO_CHAIN O" name="CI"/>
+        <port combinational_sink_ports="CO_FABRIC CO_CHAIN O" name="CI_INIT"/>
+        <port combinational_sink_ports="CO_FABRIC CO_CHAIN" name="DI"/>
+        <port combinational_sink_ports="CO_FABRIC CO_CHAIN O" name="S"/>
       </input_ports>
       <output_ports>
         <port name="CO_CHAIN"/>
@@ -533,7 +532,6 @@
           <!-- Carry -->
           <!-- Carry initialization -->
           <direct input="BLK_IG-COMMON_SLICE.AX" name="PRECYINIT_MUX" output="BEL_BB-CARRY0.CI_INIT"/>
-
           <direct input="BLK_IG-COMMON_SLICE.CIN" name="CIN_TO_CARRY0" output="BEL_BB-CARRY0.CI"/>
           <!-- Tile internal carry -->
           <direct input="BEL_BB-CARRY0.CO_CHAIN" name="CARRY0_TO_CARRY1" output="BEL_BB-CARRY[0].CI"/>
@@ -1017,7 +1015,6 @@
               </interconnect>
             </mode>
           </pb_type>
-
           <!-- D_DRAM does not have a LUT mode because, if DRAMs mode is selected for SLICEM-MODES pb type DLUT can only operate in DRAM mode.
                For the purpose of this test all the DRAM modes from {N}_DRAM pb types have been disabled to increase readability -->
           <pb_type name="BLK_IG-D_DRAM" num_pb="1">
