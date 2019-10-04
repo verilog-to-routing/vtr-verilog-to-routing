@@ -34,6 +34,21 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
      * (FPGA 95 p. 111).  Returns true if it can route this FPGA, false if   *
      * it can't.                                                             */
 
+    VTR_LOG(
+        "**********************************************************************\n"
+        "*                         !!! WARNING !!!                            *\n"
+        "*                                                                    *\n"
+        "*      Routing with the DEPRECATED 'Breadth-First' router, which     *\n"
+        "*        is inferrior and may be removed in a future release.        *\n"
+        "*                                                                    *\n"
+        "*     Use the 'Timing-Driven' router instead, which requires much    *\n"
+        "*         less run-time and produces higher quality results          *\n"
+        "*         (even with it no timing information is available).         *\n"
+        "*                                                                    *\n"
+        "*                         !!! WARNING !!!                            *\n"
+        "**********************************************************************\n"
+        "\n");
+
     float pres_fac;
     bool success, is_routable, rip_up_local_opins;
     int itry;
