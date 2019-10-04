@@ -69,7 +69,11 @@
   <tiles>
     <tile name="io" capacity="8">
       <equivalent_sites>
-        <site pb_type="io"/>
+        <site pb_type="io">
+          <direct from="io.outpad" to="io.outpad"/>
+          <direct from="io.inpad" to="io.inpad"/>
+          <direct from="io.clock" to="io.clock"/>
+        </site>
       </equivalent_sites>
       <input name="outpad" num_pins="1"/>
       <output name="inpad" num_pins="1"/>
@@ -88,7 +92,18 @@
     </tile>
     <tile name="clb" area="3900">
       <equivalent_sites>
-        <site pb_type="clb"/>
+        <site pb_type="clb">
+          <direct from="clb.I0" to="clb.I0"/>
+          <direct from="clb.I1" to="clb.I1"/>
+          <direct from="clb.I2" to="clb.I2"/>
+          <direct from="clb.I3" to="clb.I3"/>
+          <direct from="clb.I4" to="clb.I4"/>
+          <direct from="clb.I5" to="clb.I5"/>
+          <direct from="clb.I6" to="clb.I6"/>
+          <direct from="clb.I7" to="clb.I7"/>
+          <direct from="clb.O" to="clb.O"/>
+          <direct from="clb.clk" to="clb.clk"/>
+        </site>
       </equivalent_sites>
       <input name="I0" num_pins="4" equivalent="full"/>
       <input name="I1" num_pins="4" equivalent="full"/>
@@ -116,7 +131,11 @@
     </tile>
     <tile name="mult_36" height="4" area="118800">
       <equivalent_sites>
-        <site pb_type="mult_36"/>
+        <site pb_type="mult_36">
+          <direct from="mult_36.a" to="mult_36.a"/>
+          <direct from="mult_36.b" to="mult_36.b"/>
+          <direct from="mult_36.out" to="mult_36.out"/>
+        </site>
       </equivalent_sites>
       <input name="a" num_pins="36"/>
       <input name="b" num_pins="36"/>
@@ -130,7 +149,15 @@
     </tile>
     <tile name="memory" height="4" area="82748">
       <equivalent_sites>
-        <site pb_type="memory"/>
+        <site pb_type="memory">
+          <direct from="memory.addr1" to="memory.addr1"/>
+          <direct from="memory.addr2" to="memory.addr2"/>
+          <direct from="memory.data" to="memory.data"/>
+          <direct from="memory.we1" to="memory.we1"/>
+          <direct from="memory.we2" to="memory.we2"/>
+          <direct from="memory.out" to="memory.out"/>
+          <direct from="memory.clk" to="memory.clk"/>
+        </site>
       </equivalent_sites>
       <input name="addr1" num_pins="14"/>
       <input name="addr2" num_pins="14"/>

@@ -254,7 +254,27 @@
   <tiles>
     <tile name="CLB">
       <equivalent_sites>
-        <site pb_type="CLB"/>
+        <site pb_type="CLB">
+          <direct from="CLB.LUTA" to="CLB.LUTA"/>
+          <direct from="CLB.LUTB" to="CLB.LUTB"/>
+          <direct from="CLB.LUTC" to="CLB.LUTC"/>
+          <direct from="CLB.LUTD" to="CLB.LUTD"/>
+          <direct from="CLB.LUTE" to="CLB.LUTE"/>
+          <direct from="CLB.LUTF" to="CLB.LUTF"/>
+          <direct from="CLB.LUTG" to="CLB.LUTG"/>
+          <direct from="CLB.LUTH" to="CLB.LUTH"/>
+          <direct from="CLB.I" to="CLB.I"/>
+          <direct from="CLB.X" to="CLB.X"/>
+          <direct from="CLB.CIN" to="CLB.CIN"/>
+          <direct from="CLB.CLK" to="CLB.CLK"/>
+          <direct from="CLB.CE" to="CLB.CE"/>
+          <direct from="CLB.SR" to="CLB.SR"/>
+          <direct from="CLB.O" to="CLB.O"/>
+          <direct from="CLB.MUX" to="CLB.MUX"/>
+          <direct from="CLB.Q1" to="CLB.Q1"/>
+          <direct from="CLB.Q2" to="CLB.Q2"/>
+          <direct from="CLB.COUT" to="CLB.COUT"/>
+        </site>
       </equivalent_sites>
       <input name="LUTA" num_pins="6"/>
       <input name="LUTB" num_pins="6"/>
@@ -280,7 +300,11 @@
     </tile>
     <tile name="DSP" height="2">
       <equivalent_sites>
-        <site pb_type="DSP"/>
+        <site pb_type="DSP">
+          <direct from="DSP.inputs" to="DSP.inputs"/>
+          <direct from="DSP.clock" to="DSP.clock"/>
+          <direct from="DSP.outputs" to="DSP.outputs"/>
+        </site>
       </equivalent_sites>
       <input name="inputs" num_pins="266"/>
       <clock name="clock" num_pins="1"/>
@@ -290,7 +314,11 @@
     </tile>
     <tile name="BRAM" height="5">
       <equivalent_sites>
-        <site pb_type="BRAM"/>
+        <site pb_type="BRAM">
+          <direct from="BRAM.inputs" to="BRAM.inputs"/>
+          <direct from="BRAM.clocks" to="BRAM.clocks"/>
+          <direct from="BRAM.outputs" to="BRAM.outputs"/>
+        </site>
       </equivalent_sites>
       <input name="inputs" num_pins="211"/>
       <clock name="clocks" num_pins="2"/>
@@ -300,7 +328,10 @@
     </tile>
     <tile name="IO" capacity="64">
       <equivalent_sites>
-        <site pb_type="IO"/>
+        <site pb_type="IO">
+          <direct from="IO.in" to="IO.in"/>
+          <direct from="IO.out" to="IO.out"/>
+        </site>
       </equivalent_sites>
       <input name="in" num_pins="2"/>
       <output name="out" num_pins="1"/>
