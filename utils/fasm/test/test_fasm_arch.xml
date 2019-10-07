@@ -39,84 +39,100 @@
       <single type="clb" priority="10" x="1" y="1">
       <metadata> <meta name="fasm_placeholders">
         LOC=X1Y1
+        LR=L
       </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="1" y="2">
       <metadata> <meta name="fasm_placeholders">
         LOC=X1Y2
+        LR=R
       </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="1" y="3">
       <metadata> <meta name="fasm_placeholders">
         LOC=X1Y3
+        LR=L
       </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="1" y="4">
       <metadata> <meta name="fasm_placeholders">
         LOC=X1Y4
+        LR=R
       </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
       </single>
 
       <single type="clb" priority="10" x="2" y="1">
       <metadata> <meta name="fasm_placeholders">
         LOC=X2Y1
+        LR=L
       </meta> <meta name="fasm_prefix">PLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="2" y="2">
       <metadata> <meta name="fasm_placeholders">
         LOC=X2Y2
+        LR=R
       </meta> <meta name="fasm_prefix">PLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="2" y="3">
       <metadata> <meta name="fasm_placeholders">
         LOC=X2Y3
+        LR=L
       </meta> <meta name="fasm_prefix">PLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="2" y="4">
       <metadata> <meta name="fasm_placeholders">
         LOC=X2Y4
+        LR=R
       </meta> <meta name="fasm_prefix">PLB</meta> </metadata>
       </single>
 
       <single type="clb" priority="10" x="3" y="1">
       <metadata> <meta name="fasm_placeholders">
         LOC=X3Y1
+        LR=L
       </meta> </metadata>
       </single>
       <single type="clb" priority="10" x="3" y="2">
       <metadata> <meta name="fasm_placeholders">
         LOC=X3Y2
+        LR=R
       </meta> </metadata>
       </single>
       <single type="clb" priority="10" x="3" y="3">
       <metadata> <meta name="fasm_placeholders">
         LOC=X3Y3
+        LR=L
       </meta> </metadata>
       </single>
       <single type="clb" priority="10" x="3" y="4">
       <metadata> <meta name="fasm_placeholders">
         LOC=X3Y4
+        LR=R
       </meta>  </metadata>
       </single>
 
       <single type="clb" priority="10" x="4" y="1">
       <metadata> <meta name="fasm_placeholders">
         LOC=X4Y1
+        LR=L
       </meta> <meta name="fasm_prefix">SLICE</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="4" y="2">
       <metadata> <meta name="fasm_placeholders">
         LOC=X4Y2
+        LR=R
       </meta> <meta name="fasm_prefix">SLICE</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="4" y="3">
       <metadata> <meta name="fasm_placeholders">
         LOC=X4Y3
+        LR=L
       </meta> <meta name="fasm_prefix">SLICE</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="4" y="4">
       <metadata> <meta name="fasm_placeholders">
         LOC=X4Y4
+        LR=R
       </meta> <meta name="fasm_prefix">SLICE</meta> </metadata>
       </single>
 
@@ -280,7 +296,7 @@
               <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
               <metadata>
                 <meta name="fasm_prefix">
-                  ALUT
+                  ALUT_{LR}
                 </meta>
               </metadata>
             </pb_type>
@@ -301,7 +317,7 @@
                   LUT6[63:0]
                 </meta>
                 <meta name="fasm_prefix">
-                  ALUT
+                  ALUT_{LR}
                 </meta>
               </metadata>
             </pb_type>
