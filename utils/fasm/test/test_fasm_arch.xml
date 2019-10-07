@@ -40,24 +40,28 @@
       <metadata> <meta name="fasm_placeholders">
         LOC=X1Y1
         LR=L
+        SING=_SING
       </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="1" y="2">
       <metadata> <meta name="fasm_placeholders">
         LOC=X1Y2
         LR=R
+        SING=NULL
       </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="1" y="3">
       <metadata> <meta name="fasm_placeholders">
         LOC=X1Y3
         LR=L
+        SING=NULL
       </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="1" y="4">
       <metadata> <meta name="fasm_placeholders">
         LOC=X1Y4
         LR=R
+        SING=NULL
       </meta> <meta name="fasm_prefix">CLB</meta> </metadata>
       </single>
 
@@ -65,24 +69,28 @@
       <metadata> <meta name="fasm_placeholders">
         LOC=X2Y1
         LR=L
+        SING=_SING
       </meta> <meta name="fasm_prefix">PLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="2" y="2">
       <metadata> <meta name="fasm_placeholders">
         LOC=X2Y2
         LR=R
+        SING=NULL
       </meta> <meta name="fasm_prefix">PLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="2" y="3">
       <metadata> <meta name="fasm_placeholders">
         LOC=X2Y3
         LR=L
+        SING=NULL
       </meta> <meta name="fasm_prefix">PLB</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="2" y="4">
       <metadata> <meta name="fasm_placeholders">
         LOC=X2Y4
         LR=R
+        SING=NULL
       </meta> <meta name="fasm_prefix">PLB</meta> </metadata>
       </single>
 
@@ -90,24 +98,28 @@
       <metadata> <meta name="fasm_placeholders">
         LOC=X3Y1
         LR=L
+        SING=_SING
       </meta> </metadata>
       </single>
       <single type="clb" priority="10" x="3" y="2">
       <metadata> <meta name="fasm_placeholders">
         LOC=X3Y2
         LR=R
+        SING=NULL
       </meta> </metadata>
       </single>
       <single type="clb" priority="10" x="3" y="3">
       <metadata> <meta name="fasm_placeholders">
         LOC=X3Y3
         LR=L
+        SING=NULL
       </meta> </metadata>
       </single>
       <single type="clb" priority="10" x="3" y="4">
       <metadata> <meta name="fasm_placeholders">
         LOC=X3Y4
         LR=R
+        SING=NULL
       </meta>  </metadata>
       </single>
 
@@ -115,24 +127,28 @@
       <metadata> <meta name="fasm_placeholders">
         LOC=X4Y1
         LR=L
+        SING=_SING
       </meta> <meta name="fasm_prefix">SLICE</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="4" y="2">
       <metadata> <meta name="fasm_placeholders">
         LOC=X4Y2
         LR=R
+        SING=NULL
       </meta> <meta name="fasm_prefix">SLICE</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="4" y="3">
       <metadata> <meta name="fasm_placeholders">
         LOC=X4Y3
         LR=L
+        SING=NULL
       </meta> <meta name="fasm_prefix">SLICE</meta> </metadata>
       </single>
       <single type="clb" priority="10" x="4" y="4">
       <metadata> <meta name="fasm_placeholders">
         LOC=X4Y4
         LR=R
+        SING=NULL
       </meta> <meta name="fasm_prefix">SLICE</meta> </metadata>
       </single>
 
@@ -363,7 +379,7 @@
         </mode>
         <metadata>
           <meta name="fasm_prefix">
-            FLE0_{LOC} FLE1_{LOC}
+            FLE0{SING}_{LOC} FLE1{SING}_{LOC}
           </meta>
         </metadata>
       </pb_type>
