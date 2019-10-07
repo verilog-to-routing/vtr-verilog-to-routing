@@ -43,7 +43,7 @@ static float comp_width(t_chan* chan, float x, float separation);
 
 /************************* Subroutine Definitions ****************************/
 
-int binary_search_place_and_route(t_placer_opts placer_opts,
+int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                   const t_annealing_sched& annealing_sched,
                                   const t_router_opts& router_opts,
                                   const t_analysis_opts& analysis_opts,
@@ -75,6 +75,12 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
     int warnings;
 
     t_graph_type graph_type;
+
+    /* We have chosen to pass placer_opts_ref by reference because of its large size. *      
+     * However, since the value is mutated later in the function, we declare a        *
+     * mutable variable called placer_opts equal to placer_opts_ref.                  */
+
+    t_placer_opts placer_opts = placer_opts_ref;
 
     /* Allocate the major routing structures. */
 
