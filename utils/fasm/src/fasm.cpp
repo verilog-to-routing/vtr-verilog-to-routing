@@ -643,13 +643,10 @@ void FasmWriterVisitor::finish_impl() {
 
 void FasmWriterVisitor::find_clb_prefix(const t_pb_graph_node *node,
         bool *have_prefix, std::string *clb_prefix) const {
-<<<<<<< HEAD
-=======
 
     *have_prefix = false;
     *clb_prefix  = "";
 
->>>>>>> Fixed fasm output for top-level blocks without prefixes.
     while(node != nullptr) {
         auto clb_prefix_itr = clb_prefix_map_.find(node);
         *have_prefix = clb_prefix_itr != clb_prefix_map_.end();
@@ -714,11 +711,7 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
         // pb_type_prefixes_, not on the mux input.
         if(mux_pb_name == pb_name && mux_port_name == port_name && mux_pin_index == pin_index) {
           if(mux_parts[1] != "NULL") {
-<<<<<<< HEAD
-            output_fasm_features(have_prefix, clb_prefix, fasm_features);
-=======
             output_fasm_features(fasm_features, clb_prefix, blk_prefix_);
->>>>>>> Fixed fasm output for top-level blocks without prefixes.
           }
           return;
         }
