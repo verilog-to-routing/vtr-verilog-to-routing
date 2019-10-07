@@ -344,6 +344,14 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                 CHECK_THAT(line, MatchesRegex(".*ALUT_[LR]{1}.*"));
             }
 
+            // Check correct substitution of "" and "_SING"
+            if (loc_y == 1) {
+                CHECK_THAT(line,  Contains("_SING"));
+            }
+            else {
+                CHECK_THAT(line, !Contains("_SING"));
+            }
+
             // Check that all tags were substituted
             CHECK_THAT(line, !Contains("{") && !Contains("}"));
 

@@ -77,7 +77,14 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
         VTR_ASSERT(parts.size() == 2);
 
         VTR_ASSERT(tags_.count(parts.at(0)) == 0);
-        tags_[parts.at(0)] = parts.at(1);
+
+        // When the value is "NULL" then substitute empty string
+        if (!parts.at(1).compare("NULL")) {
+            tags_[parts.at(0)] = "";
+        }
+        else {
+            tags_[parts.at(0)] = parts.at(1);
+        }
       }
     }
 
