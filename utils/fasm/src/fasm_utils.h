@@ -23,6 +23,9 @@ std::vector<std::string> split_fasm_entry(std::string entry,
                                                  std::string delims,
                                                  std::string ignore);
 
+// Searches for tags in given string, returns their names in a vector.
+std::vector<std::string> find_tags_in_feature (const std::string& a_String);
+
 // Substitutes tags found in a string with their values provided by the map.
 // Thorws an error if a tag is found in the string and its value is not present
 // in the map.

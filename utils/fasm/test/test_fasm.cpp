@@ -16,10 +16,6 @@
 static constexpr const char kArchFile[] = "test_fasm_arch.xml";
 static constexpr const char kRrGraphFile[] = "test_fasm_rrgraph.xml";
 
-// Prototype here to be able to test it
-namespace fasm {
-std::vector<std::string> find_tags_in_feature (const std::string& a_String);
-}
 
 namespace {
 
