@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.9 FATAL_ERROR)
 # create the project
 project(
   ezgl
-  VERSION 0.0.1
+  VERSION 1.0.1
   LANGUAGES CXX
 )
 
