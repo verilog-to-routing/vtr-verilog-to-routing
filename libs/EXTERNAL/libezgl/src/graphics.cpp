@@ -56,6 +56,36 @@ renderer::~renderer()
 #endif
 }
 
+void renderer::update_renderer(cairo_t *cairo, cairo_surface_t *m_surface)
+{
+  // Update Cairo Context
+  m_cairo = cairo;
+
+  // Update X11 Context
+#ifdef EZGL_USE_X11
+  // Check if the created cairo surface is an XLIB surface
+  if (cairo_surface_get_type(m_surface) == CAIRO_SURFACE_TYPE_XLIB) {
+    // get the underlying x11 drawable used by cairo surface
+    x11_drawable = cairo_xlib_surface_get_drawable(m_surface);
+
+    // get the x11 display
+    x11_display = cairo_xlib_surface_get_display(m_surface);
+
+    // create the x11 context from the drawable of the cairo surface
+    if (x11_display != nullptr) {
+      XFreeGC(x11_display, x11_context);
+      x11_context = XCreateGC(x11_display, x11_drawable, 0, 0);
+    }
+  }
+#endif
+
+  // Restore graphics attributes
+  set_color(current_color);
+  set_line_width(current_line_width);
+  set_line_cap(current_line_cap);
+  set_line_dash(current_line_dash);
+}
+
 void renderer::set_coordinate_system(t_coordinate_system new_coordinate_system)
 {
   current_coordinate_system = new_coordinate_system;
@@ -161,6 +191,9 @@ void renderer::set_color(uint_fast8_t red,
   // set color for cairo
   cairo_set_source_rgba(m_cairo, red / 255.0, green / 255.0, blue / 255.0, alpha / 255.0);
 
+  // set current_color
+  current_color = {red, green, blue, alpha};
+
 #ifdef EZGL_USE_X11
   // check transparency
   if(alpha != 255)
@@ -185,9 +218,10 @@ void renderer::set_line_cap(line_cap cap)
   auto cairo_cap = static_cast<cairo_line_cap_t>(cap);
   cairo_set_line_cap(m_cairo, cairo_cap);
 
+  current_line_cap = cap;
+
 #ifdef EZGL_USE_X11
   if (x11_display != nullptr) {
-    current_line_cap = cap;
     XSetLineAttributes(x11_display, x11_context, current_line_width,
         current_line_dash == line_dash::none ? LineSolid : LineOnOffDash,
         current_line_cap == line_cap::butt ? CapButt : CapRound, JoinMiter);
@@ -208,9 +242,10 @@ void renderer::set_line_dash(line_dash dash)
     cairo_set_dash(m_cairo, dashes, num_dashes, 0);
   }
 
+  current_line_dash = dash;
+
 #ifdef EZGL_USE_X11
   if (x11_display != nullptr) {
-    current_line_dash = dash;
     XSetLineAttributes(x11_display, x11_context, current_line_width,
         current_line_dash == line_dash::none ? LineSolid : LineOnOffDash,
         current_line_cap == line_cap::butt ? CapButt : CapRound, JoinMiter);
@@ -222,9 +257,10 @@ void renderer::set_line_width(int width)
 {
   cairo_set_line_width(m_cairo, width == 0 ? 1 : width);
 
+  current_line_width = width;
+
 #ifdef EZGL_USE_X11
   if (x11_display != nullptr) {
-    current_line_width = width;
     XSetLineAttributes(x11_display, x11_context, current_line_width,
         current_line_dash == line_dash::none ? LineSolid : LineOnOffDash,
         current_line_cap == line_cap::butt ? CapButt : CapRound, JoinMiter);

@@ -48,7 +48,7 @@ using connect_g_objects_fn = void (*)(application *app);
 /**
  * The signature of a setup callback function
  */
-using setup_callback_fn = void (*)(application *app);
+using setup_callback_fn = void (*)(application *app, bool new_window);
 
 /**
  * The signature of a button callback function
@@ -225,16 +225,14 @@ public:
   void refresh_drawing();
 
   /**
-   * Get a temporary renderer that can be used to draw on top of the main canvas
-   *
-   * The returned renderer should be used only in the same callback in which this function is called
+   * Get a renderer that can be used to draw on top of the main canvas
    */
-  renderer get_renderer();
+  renderer *get_renderer();
 
   /**
    * Flush the drawings done by the renderer, returned from get_renderer(), to the on-screen buffer
    *
-   * The flushing is done after returning to the GTK event loop
+   * The flushing is done immediately
    */
   void flush_drawing();
 
@@ -356,6 +354,9 @@ private:
 
   // A flag that indicates if the run() was called before or not to allow multiple reruns
   bool first_run;
+
+  // A flag that indicates if we are resuming an older run to allow proper quitting
+  bool resume_run;
 
 private:
   // Called when our GtkApplication is initialized for the first time.
