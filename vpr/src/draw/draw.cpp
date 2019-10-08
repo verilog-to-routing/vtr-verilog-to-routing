@@ -492,6 +492,13 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
             }
         }
     }
+
+    if (draw_state->show_graphics) {
+        application.update_message(msg);
+        application.refresh_drawing();
+        application.flush_drawing();
+    }
+
 #else
     (void)setup_timing_info;
     (void)priority;
