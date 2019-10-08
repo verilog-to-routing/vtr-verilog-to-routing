@@ -2033,6 +2033,11 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
 
     //Update total cost
     float expected_cost = router_lookahead.get_expected_cost(to_node, target_node, cost_params, to->R_upstream);
+    VTR_LOGV_DEBUG(f_router_debug && !std::isfinite(expected_cost),
+                   "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
+                   rr_node_arch_name(to_node).c_str(), describe_rr_node(to_node).c_str(),
+                   rr_node_arch_name(target_node).c_str(), describe_rr_node(target_node).c_str(),
+                   expected_cost, to->R_upstream);
     total_cost = to->backward_path_cost + cost_params.astar_fac * expected_cost;
 
     to->cost = total_cost;
