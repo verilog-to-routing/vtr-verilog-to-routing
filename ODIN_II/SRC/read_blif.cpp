@@ -1785,6 +1785,7 @@ void free_hard_block_model(hard_block_model *model)
 	free_hard_block_ports(model->input_ports);
 	free_hard_block_ports(model->output_ports);
 
+	vtr::free(model->name); 
 	vtr::free(model);
 }
 
