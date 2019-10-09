@@ -143,6 +143,7 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_win
 void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, bool is_new_window);
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 void setup_default_ezgl_callbacks(ezgl::application* app);
+void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 
 /************************** File Scope Variables ****************************/
 
@@ -278,7 +279,9 @@ void draw_main_canvas(ezgl::renderer* g) {
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_PLACEMENT */
-void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool /*is_new_window*/) {
+void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_window) {
+    if (!is_new_window) return;
+
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
     gtk_button_set_label(window, "Window");
@@ -352,7 +355,9 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_wind
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_ROUTING */
-void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool /*is_new_window*/) {
+void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_window) {
+    if (!is_new_window) return;
+
     GtkButton* window = (GtkButton*)app->get_object("Window");
     gtk_button_set_label(window, "Window");
     g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
@@ -407,11 +412,10 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
         ezgl::set_disable_event_loop(false);
 
     //Has the user asked us to pause at the next screen updated?
-    bool forced_pause = g_vpr_ctx.forced_pause();
-    if (int(priority) >= draw_state->gr_automode || forced_pause) {
-        if (forced_pause) {
-            VTR_LOG("Starting interactive graphics (due to user interrupt)\n");
-            g_vpr_ctx.set_forced_pause(false); //Reset pause flag
+    if (int(priority) >= draw_state->gr_automode || draw_state->forced_pause) {
+        if (draw_state->forced_pause) {
+            VTR_LOG("Pausing in interactive graphics (user pressed 'Pause')\n");
+            draw_state->forced_pause = false; //Reset pause flag
         }
         vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
 
@@ -490,6 +494,9 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
                     application.run(initial_setup_NO_PICTURE_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
                 }
             }
+        } else {
+            //No change (e.g. paused)
+            application.run(nullptr, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
         }
     }
 
@@ -3716,6 +3723,16 @@ void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_zoom_fit function to the Zoom-fit button
     GObject* zoom_fit_button = app->get_object("ZoomFitButton");
     g_signal_connect(zoom_fit_button, "clicked", G_CALLBACK(ezgl::press_zoom_fit), app);
+
+    // Connect Pause button
+    GObject* pause_button = app->get_object("PauseButton");
+    g_signal_connect(pause_button, "clicked", G_CALLBACK(set_force_pause), app);
+}
+
+void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    draw_state->forced_pause = true;
 }
 
 #endif /* NO_GRAPHICS */
