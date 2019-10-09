@@ -779,6 +779,7 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 
 		output_nets_hash->add(new_node->name, new_net);
 
+		vtr::free(names[input_count-1]); 
 	}
 	/* Free the char** names */
 	vtr::free(names);
