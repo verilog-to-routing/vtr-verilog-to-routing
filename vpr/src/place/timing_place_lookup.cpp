@@ -87,7 +87,8 @@ static void generic_compute_matrix(
     int end_x,
     int end_y,
     const t_router_opts& router_opts,
-    bool measure_directconnect);
+    bool measure_directconnect,
+    const std::set<std::string>& allowed_types);
 
 static vtr::Matrix<float> compute_delta_delays(
     const RouterDelayProfiler& route_profiler,
@@ -351,7 +352,8 @@ static void generic_compute_matrix(
     int end_x,
     int end_y,
     const t_router_opts& router_opts,
-    bool measure_directconnect) {
+    bool measure_directconnect,
+    const std::set<std::string>& allowed_types) {
     int delta_x, delta_y;
     int sink_x, sink_y;
 
@@ -368,7 +370,9 @@ static void generic_compute_matrix(
             bool src_or_target_empty = (src_type == device_ctx.EMPTY_TYPE
                                         || sink_type == device_ctx.EMPTY_TYPE);
 
-            if (src_or_target_empty) {
+            bool is_allowed_type = allowed_types.empty() || allowed_types.find(src_type->name) != allowed_types.end();
+
+            if (src_or_target_empty || !is_allowed_type) {
                 if (matrix[delta_x][delta_y].empty()) {
                     //Only set empty target if we don't already have a valid delta delay
                     matrix[delta_x][delta_y].push_back(EMPTY_DELTA);
@@ -427,6 +431,14 @@ static vtr::Matrix<float> compute_delta_delays(
     size_t high_x = std::max(grid.width() - longest_length, mid_x);
     size_t high_y = std::max(grid.height() - longest_length, mid_y);
 
+    std::set<std::string> allowed_types;
+    if (!placer_opts.allowed_tiles_for_delay_model.empty()) {
+        auto allowed_types_vector = vtr::split(placer_opts.allowed_tiles_for_delay_model, ",");
+        for (const auto& type : allowed_types_vector) {
+            allowed_types.insert(type);
+        }
+    }
+
     //   +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //   +                 |                       |               +
     //   +        A        |           B           |       C       +
@@ -462,6 +474,9 @@ static vtr::Matrix<float> compute_delta_delays(
             auto type = grid[x][y].type;
 
             if (type != device_ctx.EMPTY_TYPE) {
+                if (!allowed_types.empty() && allowed_types.find(std::string(type->name)) == allowed_types.end()) {
+                    continue;
+                }
                 src_type = type;
                 break;
             }
@@ -480,7 +495,7 @@ static vtr::Matrix<float> compute_delta_delays(
                            x, y,
                            grid.width() - 1, grid.height() - 1,
                            router_opts,
-                           measure_directconnect);
+                           measure_directconnect, allowed_types);
 
     //Find the lowest x location on the bottom edge with a non-empty block
     src_type = nullptr;
@@ -489,6 +504,9 @@ static vtr::Matrix<float> compute_delta_delays(
             auto type = grid[x][y].type;
 
             if (type != device_ctx.EMPTY_TYPE) {
+                if (!allowed_types.empty() && allowed_types.find(std::string(type->name)) == allowed_types.end()) {
+                    continue;
+                }
                 src_type = type;
                 break;
             }
@@ -506,7 +524,7 @@ static vtr::Matrix<float> compute_delta_delays(
                            x, y,
                            grid.width() - 1, grid.height() - 1,
                            router_opts,
-                           measure_directconnect);
+                           measure_directconnect, allowed_types);
 
     //Since the other delta delay values may have suffered from edge effects,
     //we recalculate deltas within regions B, C, E, F
@@ -518,7 +536,7 @@ static vtr::Matrix<float> compute_delta_delays(
                            low_x, low_y,
                            grid.width() - 1, grid.height() - 1,
                            router_opts,
-                           measure_directconnect);
+                           measure_directconnect, allowed_types);
 
     //Since the other delta delay values may have suffered from edge effects,
     //we recalculate deltas within regions D, E, G, H
@@ -530,7 +548,7 @@ static vtr::Matrix<float> compute_delta_delays(
                            0, 0,
                            high_x, high_y,
                            router_opts,
-                           measure_directconnect);
+                           measure_directconnect, allowed_types);
 
     //Since the other delta delay values may have suffered from edge effects,
     //we recalculate deltas within regions A, B, D, E
@@ -542,7 +560,7 @@ static vtr::Matrix<float> compute_delta_delays(
                            0, low_y,
                            high_x, grid.height() - 1,
                            router_opts,
-                           measure_directconnect);
+                           measure_directconnect, allowed_types);
 
     //Since the other delta delay values may have suffered from edge effects,
     //we recalculate deltas within regions E, F, H, I
@@ -554,7 +572,7 @@ static vtr::Matrix<float> compute_delta_delays(
                            low_x, 0,
                            grid.width() - 1, high_y,
                            router_opts,
-                           measure_directconnect);
+                           measure_directconnect, allowed_types);
 
     vtr::Matrix<float> delta_delays({grid.width(), grid.height()});
     for (size_t dx = 0; dx < sampled_delta_delays.dim_size(0); ++dx) {

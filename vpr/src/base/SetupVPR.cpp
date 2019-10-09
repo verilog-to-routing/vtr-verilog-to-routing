@@ -486,6 +486,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->write_placement_delay_lookup = Options.write_placement_delay_lookup;
     PlacerOpts->read_placement_delay_lookup = Options.read_placement_delay_lookup;
+
+    PlacerOpts->allowed_tiles_for_delay_model = Options.allowed_tiles_for_delay_model;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
