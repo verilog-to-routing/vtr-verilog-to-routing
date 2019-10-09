@@ -3,7 +3,6 @@
 #include <unordered_map>
 #include <memory>
 #include <vector>
-#include <csignal> //for sig_atomic_t
 
 #include "vpr_types.h"
 #include "vtr_ndmatrix.h"
@@ -352,10 +351,6 @@ class VprContext : public Context {
     const RoutingContext& routing() const { return routing_; }
     RoutingContext& mutable_routing() { return routing_; }
 
-    //Should the program pause at the next convenient time?
-    bool forced_pause() const { return force_pause_; }
-    void set_forced_pause(bool val) { force_pause_ = val; }
-
   private:
     DeviceContext device_;
 
@@ -367,10 +362,6 @@ class VprContext : public Context {
     ClusteringContext clustering_;
     PlacementContext placement_;
     RoutingContext routing_;
-
-    //We use a volatile sig_atomic_t to ensures signals
-    //set the value atomicly
-    volatile sig_atomic_t force_pause_ = false;
 };
 
 #endif
