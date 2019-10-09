@@ -1384,6 +1384,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_timing_grp.add_argument(args.allowed_tiles_for_delay_model, "--allowed_tiles_for_delay_model")
+        .help(
+            "Names of allowed tile types that can be sampled during delay "
+            "modelling.  Default is to allow all tiles. Can be used to "
+            "exclude specialized tiles from placer delay sampling.")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& route_grp = parser.add_argument_group("routing options");
 
     route_grp.add_argument(args.max_router_iterations, "--max_router_iterations")

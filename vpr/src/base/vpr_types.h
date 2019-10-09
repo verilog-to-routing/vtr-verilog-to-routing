@@ -808,6 +808,12 @@ struct t_placer_opts {
 
     std::string write_placement_delay_lookup;
     std::string read_placement_delay_lookup;
+
+    // Tile types that should be used during delay sampling.
+    //
+    // Useful for excluding tiles that have abnormal delay behavior, e.g.
+    // clock tree elements like PLL's, global/local clock buffers, etc.
+    std::string allowed_tiles_for_delay_model;
 };
 
 /* All the parameters controlling the router's operation are in this        *
