@@ -358,7 +358,7 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool /*is_new_w
     g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
 
     GtkButton* search = (GtkButton*)app->get_object("Search");
-    gtk_button_set_label(search, "Search RR Node");
+    gtk_button_set_label(search, "Search");
     g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
 
     GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
