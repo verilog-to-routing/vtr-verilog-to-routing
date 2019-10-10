@@ -640,6 +640,9 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
   	free_hard_block_ports(ports);
   	mapping_index->destroy_free_items();
 	delete mapping_index;
+	for (i = 0; i < count; i++)
+		vtr::free(mappings[i]);
+		
   	vtr::free(mappings);
   	vtr::free(names);
 
