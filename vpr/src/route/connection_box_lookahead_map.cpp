@@ -283,11 +283,20 @@ static constexpr int kMinProfile = 1;
 static constexpr int kMaxProfile = 7;
 
 static int search_at(int iseg, int start_x, int start_y, t_routing_cost_map* cost_map) {
+    const auto& device_ctx = g_vpr_ctx.device();
+
     int count = 0;
     int dx = 0;
     int dy = 0;
 
     while ((count == 0 && dx < kMaxProfile) || dy <= kMinProfile) {
+        if (start_x + dx >= device_ctx.grid.width()) {
+            break;
+        }
+        if (start_y + dy >= device_ctx.grid.height()) {
+            break;
+        }
+
         for (e_rr_type chan_type : {CHANX, CHANY}) {
             StartNode start_node(start_x + dx, start_y + dy, chan_type, iseg);
             VTR_LOG("Searching for %d at (%d, %d)\n", iseg, start_x + dx, start_y + dy);
