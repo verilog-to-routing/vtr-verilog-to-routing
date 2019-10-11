@@ -19,7 +19,10 @@
 #include <limits>
 #include <vector>
 #include <queue>
+#include <unordered_map>
 #include "vpr_types.h"
+
+namespace util {
 
 /* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
  * representative entry, this enum is passed-in to specify how that representative entry should be
@@ -115,7 +118,6 @@ class Expansion_Cost_Entry {
     }
 };
 
-namespace util {
 /* a class that represents an entry in the Dijkstra expansion priority queue */
 class PQ_Entry {
   public:
@@ -134,11 +136,33 @@ class PQ_Entry {
         return (this->cost > obj.cost);
     }
 };
+
+// A version of PQ_Entry that only calculates and stores the delay (cost.)
+class PQ_Entry_Lite {
+  public:
+    int rr_node_ind;  //index in device_ctx.rr_nodes that this entry represents
+    float delay_cost; //the cost of the path to get to this node
+
+    PQ_Entry_Lite(int set_rr_node_ind, int /*switch_ind*/, float parent_delay, bool starting_node);
+
+    bool operator>(const PQ_Entry_Lite& obj) const {
+        return (this->delay_cost > obj.delay_cost);
+    }
+};
+
+struct Search_Path {
+    float cost;
+    int parent;
+    int edge;
+};
+
 } // namespace util
 
-void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
-                                std::vector<float>& node_visited_costs,
+void expand_dijkstra_neighbours(util::PQ_Entry_Lite parent_entry,
+                                std::unordered_map<int, util::Search_Path>& paths,
                                 std::vector<bool>& node_expanded,
-                                std::priority_queue<util::PQ_Entry>& pq);
+                                std::priority_queue<util::PQ_Entry_Lite,
+                                                    std::vector<util::PQ_Entry_Lite>,
+                                                    std::greater<util::PQ_Entry_Lite>>& pq);
 
 #endif
