@@ -33,7 +33,7 @@ std::vector<std::string> split_fasm_entry(std::string entry,
 }
 
 std::vector<std::string> find_tags_in_feature (const std::string& a_String) {
-    const std::regex regex ("(\\{[a-zA-Z0-9]+\\})");
+    const std::regex regex ("(\\{[a-zA-Z0-9_]+\\})");
 
     std::vector<std::string> tags;
     std::string str(a_String);
