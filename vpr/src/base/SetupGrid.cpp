@@ -665,6 +665,9 @@ float calculate_device_utilization(const DeviceGrid& grid, std::map<t_logical_bl
     float instance_area = 0.;
     for (auto& kv : instance_counts) {
         t_physical_tile_type_ptr type = physical_tile_type(kv.first);
+        if (type == nullptr) {
+            continue;
+        }
         size_t count = kv.second;
 
         float type_area = type->width * type->height;
