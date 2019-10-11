@@ -290,7 +290,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
         router_opts.lookahead_type,
         router_opts.write_router_lookahead,
         router_opts.read_router_lookahead,
-        segment_inf);
+        segment_inf,
+        router_opts.lookahead_search_locations);
 
     /*
      * Routing parameters

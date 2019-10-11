@@ -95,7 +95,8 @@ static void do_one_route(int source_node, int sink_node,
             router_opts.lookahead_type,
             router_opts.write_router_lookahead,
             router_opts.read_router_lookahead,
-            segment_inf
+            segment_inf,
+            router_opts.lookahead_search_locations
             );
 
     ConnectionRouter router(
@@ -145,7 +146,8 @@ static void profile_source(int source_rr_node,
             router_opts.lookahead_type,
             router_opts.write_router_lookahead,
             router_opts.read_router_lookahead,
-            segment_inf
+            segment_inf,
+            router_opts.lookahead_search_locations
             );
     RouterDelayProfiler profiler(router_lookahead.get());
 
