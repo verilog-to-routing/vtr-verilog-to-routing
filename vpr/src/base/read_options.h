@@ -155,6 +155,7 @@ struct t_options {
     argparse::ArgValue<bool> router_update_lower_bound_delays;
     argparse::ArgValue<std::string> router_first_iteration_timing_report_file;
     argparse::ArgValue<e_router_initial_timing> router_initial_timing;
+    argparse::ArgValue<std::string> lookahead_search_locations;
 
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;

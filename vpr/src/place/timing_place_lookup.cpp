@@ -147,7 +147,8 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
         router_opts.lookahead_type,
         router_opts.write_router_lookahead,
         router_opts.read_router_lookahead,
-        segment_inf);
+        segment_inf,
+        router_opts.lookahead_search_locations);
     RouterDelayProfiler route_profiler(router_lookahead);
 
     int longest_length = get_longest_segment_length(segment_inf);
