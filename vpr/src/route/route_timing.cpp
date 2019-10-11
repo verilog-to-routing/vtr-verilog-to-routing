@@ -361,7 +361,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
         router_opts.lookahead_type,
         router_opts.write_router_lookahead,
         router_opts.read_router_lookahead,
-        segment_inf);
+        segment_inf,
+        router_opts.lookahead_search_locations);
 
     /*
      * Routing parameters
@@ -1382,7 +1383,8 @@ std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(t_rt_n
     int target_node = OPEN;
     auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP,
                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
-                                                  /*segment_inf=*/{});
+                                                  /*segment_inf=*/{},
+                                                  /*lookahead_search_locations=*/"");
     add_route_tree_to_heap(rt_root, target_node, cost_params, *router_lookahead, router_stats);
     heap_::build_heap(); // via sifting down everything
 
@@ -1404,7 +1406,8 @@ static std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(const
                                                                            RouterStats& router_stats) {
     auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP,
                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
-                                                  /*segment_inf=*/{});
+                                                  /*segment_inf=*/{},
+                                                  /*lookahead_search_locations=*/"");
 
     auto& device_ctx = g_vpr_ctx.device();
     std::vector<t_heap> cheapest_paths(device_ctx.rr_nodes.size());

@@ -724,7 +724,8 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
             vpr_setup.RouterOpts.lookahead_type,
             vpr_setup.RouterOpts.write_router_lookahead,
             vpr_setup.RouterOpts.read_router_lookahead,
-            vpr_setup.Segments);
+            vpr_setup.Segments,
+            vpr_setup.RouterOpts.lookahead_search_locations);
     }
 
     vtr::ScopedStartFinishTimer timer("Routing");
