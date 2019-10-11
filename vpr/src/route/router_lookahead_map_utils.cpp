@@ -59,9 +59,36 @@ util::PQ_Entry::PQ_Entry(
     this->cost = this->delay;
 }
 
+util::PQ_Entry_Lite::PQ_Entry_Lite(
+    int set_rr_node_ind,
+    int switch_ind,
+    float parent_delay,
+    bool starting_node) {
+    this->rr_node_ind = set_rr_node_ind;
+
+    auto& device_ctx = g_vpr_ctx.device();
+    this->delay_cost = parent_delay;
+    if (!starting_node) {
+        float Tsw = device_ctx.rr_switch_inf[switch_ind].Tdel;
+        float Rsw = device_ctx.rr_switch_inf[switch_ind].R;
+        float Cnode = device_ctx.rr_nodes[set_rr_node_ind].C();
+        float Rnode = device_ctx.rr_nodes[set_rr_node_ind].R();
+
+        float T_linear = 0.f;
+        if (device_ctx.rr_switch_inf[switch_ind].buffered()) {
+            T_linear = Tsw + Rsw * Cnode + 0.5 * Rnode * Cnode;
+        } else { /* Pass transistor */
+            T_linear = Tsw + 0.5 * Rsw * Cnode;
+        }
+
+        VTR_ASSERT(T_linear >= 0.);
+        this->delay_cost += T_linear;
+    }
+}
+
 /* returns cost entry with the smallest delay */
-Cost_Entry Expansion_Cost_Entry::get_smallest_entry() const {
-    Cost_Entry smallest_entry;
+util::Cost_Entry util::Expansion_Cost_Entry::get_smallest_entry() const {
+    util::Cost_Entry smallest_entry;
 
     for (auto entry : this->cost_vector) {
         if (!smallest_entry.valid() || entry.delay < smallest_entry.delay) {
@@ -73,7 +100,7 @@ Cost_Entry Expansion_Cost_Entry::get_smallest_entry() const {
 }
 
 /* returns a cost entry that represents the average of all the recorded entries */
-Cost_Entry Expansion_Cost_Entry::get_average_entry() const {
+util::Cost_Entry util::Expansion_Cost_Entry::get_average_entry() const {
     float avg_delay = 0;
     float avg_congestion = 0;
 
@@ -85,11 +112,11 @@ Cost_Entry Expansion_Cost_Entry::get_average_entry() const {
     avg_delay /= (float)this->cost_vector.size();
     avg_congestion /= (float)this->cost_vector.size();
 
-    return Cost_Entry(avg_delay, avg_congestion);
+    return util::Cost_Entry(avg_delay, avg_congestion);
 }
 
 /* returns a cost entry that represents the geomean of all the recorded entries */
-Cost_Entry Expansion_Cost_Entry::get_geomean_entry() const {
+util::Cost_Entry util::Expansion_Cost_Entry::get_geomean_entry() const {
     float geomean_delay = 0;
     float geomean_cong = 0;
     for (auto cost_entry : this->cost_vector) {
@@ -100,19 +127,19 @@ Cost_Entry Expansion_Cost_Entry::get_geomean_entry() const {
     geomean_delay = exp(geomean_delay / (float)this->cost_vector.size());
     geomean_cong = exp(geomean_cong / (float)this->cost_vector.size());
 
-    return Cost_Entry(geomean_delay, geomean_cong);
+    return util::Cost_Entry(geomean_delay, geomean_cong);
 }
 
 /* returns a cost entry that represents the medial of all recorded entries */
-Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
+util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
     /* find median by binning the delays of all entries and then chosing the bin
      * with the largest number of entries */
 
     int num_bins = 10;
 
     /* find entries with smallest and largest delays */
-    Cost_Entry min_del_entry;
-    Cost_Entry max_del_entry;
+    util::Cost_Entry min_del_entry;
+    util::Cost_Entry max_del_entry;
     for (auto entry : this->cost_vector) {
         if (!min_del_entry.valid() || entry.delay < min_del_entry.delay) {
             min_del_entry = entry;
@@ -127,7 +154,7 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
     float bin_size = delay_diff / (float)num_bins;
 
     /* sort the cost entries into bins */
-    std::vector<std::vector<Cost_Entry> > entry_bins(num_bins, std::vector<Cost_Entry>());
+    std::vector<std::vector<util::Cost_Entry>> entry_bins(num_bins, std::vector<util::Cost_Entry>());
     for (auto entry : this->cost_vector) {
         float bin_num = floor((entry.delay - min_del_entry.delay) / bin_size);
 
@@ -150,16 +177,18 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
     }
 
     /* get the representative delay of the largest bin */
-    Cost_Entry representative_entry = entry_bins[largest_bin][0];
+    util::Cost_Entry representative_entry = entry_bins[largest_bin][0];
 
     return representative_entry;
 }
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
-                                std::vector<float>& node_visited_costs,
+void expand_dijkstra_neighbours(util::PQ_Entry_Lite parent_entry,
+                                std::unordered_map<int, util::Search_Path>& paths,
                                 std::vector<bool>& node_expanded,
-                                std::priority_queue<util::PQ_Entry>& pq) {
+                                std::priority_queue<util::PQ_Entry_Lite,
+                                                    std::vector<util::PQ_Entry_Lite>,
+                                                    std::greater<util::PQ_Entry_Lite>>& pq) {
     auto& device_ctx = g_vpr_ctx.device();
 
     int parent_ind = parent_entry.rr_node_ind;
@@ -175,18 +204,18 @@ void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
             continue;
         }
 
-        util::PQ_Entry child_entry(child_node_ind, switch_ind, parent_entry.delay,
-                                   parent_entry.R_upstream, parent_entry.congestion_upstream, false);
+        util::PQ_Entry_Lite child_entry(child_node_ind, switch_ind, parent_entry.delay_cost, false);
 
-        VTR_ASSERT(child_entry.cost >= 0);
+        VTR_ASSERT(child_entry.delay_cost >= 0);
 
-        /* skip this child if it has been visited with smaller cost */
-        if (node_visited_costs[child_node_ind] >= 0 && node_visited_costs[child_node_ind] < child_entry.cost) {
+        /* skip this child if it has been visited with smaller or the same cost */
+        auto stored_cost = paths.find(child_node_ind);
+        if (stored_cost != paths.end() && stored_cost->second.cost <= child_entry.delay_cost) {
             continue;
         }
 
         /* finally, record the cost with which the child was visited and put the child entry on the queue */
-        node_visited_costs[child_node_ind] = child_entry.cost;
+        paths[child_node_ind] = {child_entry.delay_cost, parent_ind, iedge};
         pq.push(child_entry);
     }
 }
