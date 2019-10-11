@@ -288,7 +288,7 @@ struct RoutingContext : public Context {
     // Cache of router lookahead object.
     //
     // Cache key: (lookahead type, read lookahead (if any), segment definitions).
-    vtr::Cache<std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>>,
+    vtr::Cache<std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>, std::string>,
                RouterLookahead>
         cached_router_lookahead_;
 };
