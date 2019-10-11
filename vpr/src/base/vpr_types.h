@@ -949,6 +949,7 @@ struct t_router_opts {
     float reconvergence_cpd_threshold;
     std::string first_iteration_timing_report_file;
     bool strict_checks;
+    std::string lookahead_search_locations;
 
     std::string write_router_lookahead;
     std::string read_router_lookahead;
