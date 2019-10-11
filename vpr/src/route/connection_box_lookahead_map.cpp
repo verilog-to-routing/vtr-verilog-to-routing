@@ -312,7 +312,8 @@ static int search_at(int iseg, int start_x, int start_y, t_routing_cost_map* cos
 }
 
 static void compute_connection_box_lookahead(
-    const std::vector<t_segment_inf>& segment_inf) {
+    const std::vector<t_segment_inf>& segment_inf,
+    const std::string& search_locations_str) {
     size_t num_segments = segment_inf.size();
     vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
 
@@ -320,6 +321,24 @@ static void compute_connection_box_lookahead(
     auto& device_ctx = g_vpr_ctx.device();
     g_cost_map.set_counts(segment_inf.size(),
                           device_ctx.connection_boxes.num_connection_box_types());
+
+    std::vector<std::pair<int, int>> search_locations;
+    for (const auto& loc_str : vtr::split(search_locations_str, ";")) {
+        auto loc_parts = vtr::split(loc_str, ",");
+        if (loc_parts.size() != 2) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Expected two parts from loc_str %s, got %d",
+                            loc_str.c_str(), loc_parts.size());
+        }
+
+        std::pair<int, int> loc;
+        loc.first = vtr::atoi(loc_parts[0]);
+        loc.second = vtr::atoi(loc_parts[1]);
+        search_locations.push_back(loc);
+    }
+
+    if (search_locations.size() == 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No search locations provided.");
+    }
 
     /* run Dijkstra's algorithm for each segment type & channel type combination */
     for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
@@ -329,13 +348,9 @@ static void compute_connection_box_lookahead(
         t_routing_cost_map cost_map;
 
         int count = 0;
-        count += search_at(iseg, REF_X, REF_Y, &cost_map);
-        count += search_at(iseg, REF_Y, REF_X, &cost_map);
-        count += search_at(iseg, 1, 1, &cost_map);
-        count += search_at(iseg, 76, 1, &cost_map);
-        count += search_at(iseg, 25, 25, &cost_map);
-        count += search_at(iseg, 25, 27, &cost_map);
-        count += search_at(iseg, 75, 26, &cost_map);
+        for (const auto loc : search_locations) {
+            count += search_at(iseg, loc.first, loc.second, &cost_map);
+        }
 
         if (count == 0) {
             VTR_LOG_WARN("Segment %s(%d) found no start_node_ind\n",
@@ -490,8 +505,8 @@ static void run_dijkstra(int start_node_ind,
     }
 }
 
-void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-    compute_connection_box_lookahead(segment_inf);
+void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf, const std::string& lookahead_search_locations) {
+    compute_connection_box_lookahead(segment_inf, lookahead_search_locations);
 }
 
 float ConnectionBoxMapLookahead::get_expected_cost(
