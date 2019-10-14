@@ -158,7 +158,7 @@ struct DeviceContext : public Context {
     int num_arch_switches;
     t_arch_switch_inf* arch_switch_inf; /* [0..(num_arch_switches-1)] */
 
-    // Clock Newtworks
+    // Clock Networks
     std::vector<std::unique_ptr<ClockNetwork>> clock_networks;
     std::vector<std::unique_ptr<ClockConnection>> clock_connections;
 
