@@ -3270,7 +3270,12 @@ static void ProcessEquivalentSiteDirects(pugi::xml_node Parent,
         auto to_pins = ProcessPinString<t_logical_block_type_ptr>(CurDirect, LogicalBlockType, to.c_str(), loc_data);
 
         // Checking that the number of pins is exactly the same
-        VTR_ASSERT(from_pins.second - from_pins.first == to_pins.second - to_pins.first);
+        if (from_pins.second - from_pins.first != to_pins.second - to_pins.first) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                           "The number of pins specified in the direct pin mapping is "
+                           "not equivalent for Physical Tile %s and Logical Block %s.\n",
+                           PhysicalTileType->name, LogicalBlockType->name);
+        }
 
         int num_pins = from_pins.second - from_pins.first;
         for (int i = 0; i < num_pins; i++) {
@@ -4800,6 +4805,9 @@ static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t
     for (auto pin_map : pin_direct_mapping) {
         auto block_port = get_port_by_pin(logical_block, pin_map.first);
         auto tile_port = get_port_by_pin(physical_tile, pin_map.second);
+
+        VTR_ASSERT(block_port != nullptr);
+        VTR_ASSERT(tile_port != nullptr);
 
         if (tile_port->type != block_port->type
             || tile_port->num_pins != block_port->num_pins
