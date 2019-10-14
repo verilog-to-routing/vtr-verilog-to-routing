@@ -277,7 +277,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     auto grid = vtr::Matrix<t_grid_tile>({grid_width, grid_height});
 
     //Initialize the device to all empty blocks
-    auto empty_type = find_block_type_by_name(EMPTY_BLOCK_NAME, device_ctx.physical_tile_types);
+    auto empty_type = device_ctx.EMPTY_PHYSICAL_TILE_TYPE;
     VTR_ASSERT(empty_type != nullptr);
     for (size_t x = 0; x < grid_width; ++x) {
         for (size_t y = 0; y < grid_height; ++y) {
@@ -290,7 +290,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     for (const auto& grid_loc_def : grid_def.loc_defs) {
         //Fill in the block types according to the specification
 
-        auto type = find_block_type_by_name(grid_loc_def.block_type, device_ctx.physical_tile_types);
+        auto type = find_tile_type_by_name(grid_loc_def.block_type, device_ctx.physical_tile_types);
 
         if (!type) {
             VPR_FATAL_ERROR(VPR_ERROR_ARCH,
