@@ -4783,6 +4783,15 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
                            "Could not create link between the %s and all its equivalent sites.\n", physical_tile.name);
         }
     }
+
+    for (auto& logical_block : LogicalBlockTypes) {
+        if (logical_block.index == EMPTY_TYPE_INDEX) continue;
+
+        if ((int)logical_block.equivalent_tiles.size() <= 0) {
+            archfpga_throw(__FILE__, __LINE__,
+                           "Logical Block %s does not have any equivalent tiles.\n", logical_block.name);
+        }
+    }
 }
 
 static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block) {
