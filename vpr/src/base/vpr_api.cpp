@@ -434,6 +434,10 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
     for (const auto& type : device_ctx.physical_tile_types) {
+        if (is_empty_type(&type)) {
+            continue;
+        }
+
         float util = 0.;
         if (device_ctx.grid.num_instances(&type) != 0) {
             util = float(num_type_instances[logical_block_type(&type)]) / device_ctx.grid.num_instances(&type);
