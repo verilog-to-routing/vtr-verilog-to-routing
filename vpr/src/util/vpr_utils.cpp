@@ -651,7 +651,7 @@ t_physical_tile_type_ptr physical_tile_type(t_logical_block_type_ptr logical_blo
         }
     }
 
-    return nullptr;
+    VPR_THROW(VPR_ERROR_OTHER, "No corresponding physical tile type found for logical block type %s\n", logical_block_type->name);
 }
 
 t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
@@ -675,7 +675,7 @@ t_logical_block_type_ptr logical_block_type(t_physical_tile_type_ptr physical_ti
         }
     }
 
-    return nullptr;
+    VPR_THROW(VPR_ERROR_OTHER, "No corresponding logical block type found for physical tile type %s\n", physical_tile_type->name);
 }
 
 /* Each node in the pb_graph for a top-level pb_type can be uniquely identified
