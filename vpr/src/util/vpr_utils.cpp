@@ -731,7 +731,16 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
     *pin_high = (place_ctx.block_locs[blk_id].loc.z + 1) * (type->num_pins / type->capacity) - 1;
 }
 
-t_physical_tile_type_ptr find_block_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types) {
+t_physical_tile_type_ptr find_block_type_by_name(std::string name, const std::vector<t_logical_block_type>& types) {
+    for (auto const& type : types) {
+        if (type.name == name) {
+            return physical_tile_type(&type);
+        }
+    }
+    return nullptr; //Not found
+}
+
+t_physical_tile_type_ptr find_tile_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types) {
     for (auto const& type : types) {
         if (type.name == name) {
             return &type;
@@ -834,7 +843,7 @@ InstPort parse_inst_port(std::string str) {
     InstPort inst_port(str);
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto blk_type = find_block_type_by_name(inst_port.instance_name(), device_ctx.physical_tile_types);
+    auto blk_type = find_block_type_by_name(inst_port.instance_name(), device_ctx.logical_block_types);
     if (blk_type == nullptr) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find block type named %s", inst_port.instance_name().c_str());
     }
