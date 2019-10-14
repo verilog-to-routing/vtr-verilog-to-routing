@@ -219,7 +219,7 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
     pin_name += ".";
 
     int curr_index = 0;
-    for (auto const port : type->ports) {
+    for (auto const& port : type->ports) {
         if (curr_index + port.num_pins > pin_index) {
             //This port contains the desired pin index
             int index_in_port = pin_index - curr_index;
