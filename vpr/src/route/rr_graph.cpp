@@ -2677,7 +2677,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
         parse_direct_pin_name(directs[i].from_pin, directs[i].line, &start_pin_index, &end_pin_index, tile_name, port_name);
 
         // Figure out which type, port, and pin is used
-        for (auto& type : device_ctx.physical_tile_types) {
+        for (const auto& type : device_ctx.physical_tile_types) {
             if (strcmp(type.name, tile_name) == 0) {
                 physical_tile = &type;
                 break;
@@ -2691,7 +2691,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
         clb_to_clb_directs[i].from_clb_type = physical_tile;
 
         bool port_found = false;
-        for (auto port : physical_tile->ports) {
+        for (const auto& port : physical_tile->ports) {
             if (0 == strcmp(port.name, port_name)) {
                 tile_port = port;
                 port_found = true;
@@ -2717,7 +2717,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
         parse_direct_pin_name(directs[i].to_pin, directs[i].line, &start_pin_index, &end_pin_index, tile_name, port_name);
 
         // Figure out which type, port, and pin is used
-        for (auto& type : device_ctx.physical_tile_types) {
+        for (const auto& type : device_ctx.physical_tile_types) {
             if (strcmp(type.name, tile_name) == 0) {
                 physical_tile = &type;
                 break;
@@ -2728,10 +2728,10 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
             VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name);
         }
 
-        clb_to_clb_directs[i].from_clb_type = physical_tile;
+        clb_to_clb_directs[i].to_clb_type = physical_tile;
 
         port_found = false;
-        for (auto port : physical_tile->ports) {
+        for (const auto& port : physical_tile->ports) {
             if (0 == strcmp(port.name, port_name)) {
                 tile_port = port;
                 port_found = true;
