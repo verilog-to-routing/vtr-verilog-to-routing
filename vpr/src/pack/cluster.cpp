@@ -40,7 +40,6 @@
 #include <map>
 #include <algorithm>
 #include <fstream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -152,7 +151,7 @@ static void check_for_duplicate_inputs ();
 static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb);
 
 static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
-                                                map<AtomBlockId, float>& gain,
+                                                std::map<AtomBlockId, float>& gain,
                                                 t_pb* pb,
                                                 int max_queue_size);
 
@@ -254,7 +253,7 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                               const int max_cluster_size,
                               const t_arch* arch,
                               std::string device_layout_name,
-                              vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                               t_lb_router_data** router_data,
                               const int detailed_routing_stage,
                               ClusteredNetlist* clb_nlist,
@@ -323,7 +322,7 @@ static std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_
 
 static t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules, const std::vector<AtomBlockId> seed_atoms);
 
-static float get_molecule_gain(t_pack_molecule* molecule, map<AtomBlockId, float>& blk_gain);
+static float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain);
 static int compare_molecule_gain(const void* a, const void* b);
 int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id);
 
@@ -811,7 +810,7 @@ static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb) {
 
 /* Add blk to list of feasible blocks sorted according to gain */
 static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
-                                                map<AtomBlockId, float>& gain,
+                                                std::map<AtomBlockId, float>& gain,
                                                 t_pb* pb,
                                                 int max_queue_size) {
     int i, j;
@@ -1932,7 +1931,7 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                               const int max_cluster_size,
                               const t_arch* arch,
                               std::string device_layout_name,
-                              vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                               t_lb_router_data** router_data,
                               const int detailed_routing_stage,
                               ClusteredNetlist* clb_nlist,
@@ -2213,7 +2212,7 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
                     }
                     if (success) {
                         add_molecule_to_pb_stats_candidates(molecule,
-                                                            cur_pb->pb_stats->gain, cur_pb, min(feasible_block_array_size, AAPACK_MAX_HIGH_FANOUT_EXPLORE));
+                                                            cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_HIGH_FANOUT_EXPLORE));
                         count++;
                     }
                 }
@@ -2261,7 +2260,7 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
             }
             if (success) {
                 add_molecule_to_pb_stats_candidates(molecule,
-                                                    cur_pb->pb_stats->gain, cur_pb, min(feasible_block_array_size, AAPACK_MAX_TRANSITIVE_EXPLORE));
+                                                    cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_TRANSITIVE_EXPLORE));
             }
         }
     }
@@ -2723,7 +2722,7 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std
  * + molecule_base_gain*some_factor
  * - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
  */
-static float get_molecule_gain(t_pack_molecule* molecule, map<AtomBlockId, float>& blk_gain) {
+static float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain) {
     float gain;
     int i;
     int num_introduced_inputs_of_indirectly_related_block;

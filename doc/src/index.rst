@@ -36,7 +36,7 @@ For more specific documentation about VPR see :ref:`vpr`.
 
    contact
    glossary
-   references
+   zreferences
 
 Indices and tables
 ==================

@@ -3,7 +3,6 @@
 #include <unordered_map>
 #include <memory>
 #include <vector>
-#include <csignal> //for sig_atomic_t
 
 #include "vpr_types.h"
 #include "vtr_ndmatrix.h"
@@ -19,7 +18,9 @@
 #include "clock_network_builders.h"
 #include "clock_connection_builders.h"
 #include "route_traceback.h"
+#include "router_lookahead.h"
 #include "place_macro.h"
+#include "compressed_grid.h"
 
 //A Context is collection of state relating to a particular part of VPR
 //
@@ -246,6 +247,11 @@ struct PlacementContext : public Context {
     // The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
 
+    //Compressed grid space for each block type
+    //Used to efficiently find logically 'adjacent' blocks of the same block type even though
+    //the may be physically far apart
+    t_compressed_block_grids compressed_block_grids;
+
     //SHA256 digest of the .place file (used for unique identification and consistency checking)
     std::string placement_id;
 };
@@ -275,6 +281,13 @@ struct RoutingContext : public Context {
 
     //SHA256 digest of the .route file (used for unique identification and consistency checking)
     std::string routing_id;
+
+    // Cache of router lookahead object.
+    //
+    // Cache key: (lookahead type, read lookahead (if any), segment definitions).
+    vtr::Cache<std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>>,
+               RouterLookahead>
+        cached_router_lookahead_;
 };
 
 //This object encapsulates VPR's state. There is typically a single instance which is
@@ -338,10 +351,6 @@ class VprContext : public Context {
     const RoutingContext& routing() const { return routing_; }
     RoutingContext& mutable_routing() { return routing_; }
 
-    //Should the program pause at the next convenient time?
-    bool forced_pause() const { return force_pause_; }
-    void set_forced_pause(bool val) { force_pause_ = val; }
-
   private:
     DeviceContext device_;
 
@@ -353,10 +362,6 @@ class VprContext : public Context {
     ClusteringContext clustering_;
     PlacementContext placement_;
     RoutingContext routing_;
-
-    //We use a volatile sig_atomic_t to ensures signals
-    //set the value atomicly
-    volatile sig_atomic_t force_pause_ = false;
 };
 
 #endif

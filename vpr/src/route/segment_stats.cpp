@@ -1,5 +1,4 @@
 #include <cstdio>
-using namespace std;
 
 #include "vtr_log.h"
 #include "vtr_memory.h"
@@ -32,8 +31,8 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     max_segment_length = 0;
     for (size_t seg_type = 0; seg_type < segment_inf.size(); seg_type++) {
         if (segment_inf[seg_type].longline == false)
-            max_segment_length = max(max_segment_length,
-                                     segment_inf[seg_type].length);
+            max_segment_length = std::max(max_segment_length,
+                                          segment_inf[seg_type].length);
     }
 
     seg_occ_by_length = (int*)vtr::calloc((max_segment_length + 1),

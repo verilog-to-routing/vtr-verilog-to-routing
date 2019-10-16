@@ -5,7 +5,6 @@
 #include <fstream>
 #include <stdlib.h>
 #include <sstream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -42,7 +41,7 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_model* user_models,
               const t_model* library_models,
               float interc_delay,
-              vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
+              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
     std::unordered_set<AtomNetId> is_clock;
     std::multimap<AtomBlockId, t_pack_molecule*> atom_molecules;                     //The molecules associated with each atom block
     std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block

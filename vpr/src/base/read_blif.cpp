@@ -21,7 +21,6 @@
 #include <sstream>
 #include <unordered_set>
 #include <cctype> //std::isdigit
-using namespace std;
 
 #include "blifparse.hpp"
 #include "atom_netlist.h"

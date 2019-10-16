@@ -1,6 +1,5 @@
 #include <cstdlib>
 #include <cstring>
-using namespace std;
 
 #include "vtr_memory.h"
 #include "vtr_log.h"

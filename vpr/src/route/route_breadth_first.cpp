@@ -1,5 +1,4 @@
 #include <cstdio>
-using namespace std;
 
 #include "vtr_log.h"
 
@@ -34,6 +33,21 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
     /* Iterated maze router ala Pathfinder Negotiated Congestion algorithm,  *
      * (FPGA 95 p. 111).  Returns true if it can route this FPGA, false if   *
      * it can't.                                                             */
+
+    VTR_LOG(
+        "**********************************************************************\n"
+        "*                         !!! WARNING !!!                            *\n"
+        "*                                                                    *\n"
+        "*      Routing with the DEPRECATED 'Breadth-First' router, which     *\n"
+        "*        is inferrior and may be removed in a future release.        *\n"
+        "*                                                                    *\n"
+        "*     Use the 'Timing-Driven' router instead, which requires much    *\n"
+        "*         less run-time and produces higher quality results          *\n"
+        "*         (even with it no timing information is available).         *\n"
+        "*                                                                    *\n"
+        "*                         !!! WARNING !!!                            *\n"
+        "**********************************************************************\n"
+        "\n");
 
     float pres_fac;
     bool success, is_routable, rip_up_local_opins;
@@ -85,7 +99,7 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
         else
             pres_fac *= router_opts.pres_fac_mult;
 
-        pres_fac = min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
+        pres_fac = std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
 
         pathfinder_update_cost(pres_fac, router_opts.acc_fac);
     }

@@ -1,7 +1,6 @@
 #include <cstdio>
 #include <cmath>
 #include <vector>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -688,7 +687,7 @@ void update_net_delays_from_route_tree(float* net_delay,
 
 void update_remaining_net_delays_from_route_tree(float* net_delay,
                                                  const t_rt_node* const* rt_node_of_sink,
-                                                 const vector<int>& remaining_sinks) {
+                                                 const std::vector<int>& remaining_sinks) {
     /* Like update_net_delays_from_route_tree, but only updates the sinks that were not already routed
      * this function doesn't actually need to know about the net, just what sink pins need their net delays updated */
 

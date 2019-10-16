@@ -1010,6 +1010,24 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .metavar("RR_GRAPH_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
+        .help(
+            "Reads the lookahead data from the specified file instead of computing it.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_router_lookahead, "--write_router_lookahead")
+        .help("Writes the lookahead data to the specified file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.read_placement_delay_lookup, "--read_placement_delay_lookup")
+        .help(
+            "Reads the placement delay lookup from the specified file instead of computing it.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_placement_delay_lookup, "--write_placement_delay_lookup")
+        .help("Writes the placement delay lookup to the specified file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.out_file_prefix, "--outfile_prefix")
         .help("Prefix for output files")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -1363,6 +1381,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_timing_grp.add_argument(args.post_place_timing_report_file, "--post_place_timing_report")
         .help("Name of the post-placement timing report file (not generated if unspecfied)")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.allowed_tiles_for_delay_model, "--allowed_tiles_for_delay_model")
+        .help(
+            "Names of allowed tile types that can be sampled during delay "
+            "modelling.  Default is to allow all tiles. Can be used to "
+            "exclude specialized tiles from placer delay sampling.")
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

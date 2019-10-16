@@ -50,9 +50,7 @@ void vpr_signal_handler(int signal) {
         }
 
         if (uncleared_sigint_count == 1) {
-            //Request a pause at the next reasonable point (e.g. to resume the GUI)
-            VTR_LOG("Recieved SIGINT: Attempting to pause...\n");
-            g_vpr_ctx.set_forced_pause(true);
+            VTR_LOG("Recieved SIGINT: try again to really exit...\n");
         } else if (uncleared_sigint_count == 2) {
             VTR_LOG("Recieved two uncleared SIGINTs: Attempting to checkpoint and exit...\n");
             checkpoint();

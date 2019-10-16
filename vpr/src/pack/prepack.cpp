@@ -15,7 +15,6 @@
 #include <map>
 #include <queue>
 #include <utility>
-using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_assert.h"

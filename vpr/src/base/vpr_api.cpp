@@ -13,7 +13,6 @@
 #include <chrono>
 #include <cmath>
 #include <sstream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_math.h"
@@ -718,6 +717,16 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
                               vtr::vector<ClusterNetId, float*>& net_delay) {
+    if (router_needs_lookahead(vpr_setup.RouterOpts.router_algorithm)) {
+        // Prime lookahead cache to avoid adding lookahead computation cost to
+        // the routing timer.
+        get_cached_router_lookahead(
+            vpr_setup.RouterOpts.lookahead_type,
+            vpr_setup.RouterOpts.write_router_lookahead,
+            vpr_setup.RouterOpts.read_router_lookahead,
+            vpr_setup.Segments);
+    }
+
     vtr::ScopedStartFinishTimer timer("Routing");
 
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width || fixed_channel_width <= 0) {
@@ -744,6 +753,9 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
                             vtr::vector<ClusterNetId, float*>& net_delay) {
+    // Note that lookahead cache is not primed here because
+    // binary_search_place_and_route will change the channel width, and result
+    // in the lookahead cache being recomputed.
     vtr::ScopedStartFinishTimer timer("Routing");
 
     auto& router_opts = vpr_setup.RouterOpts;
@@ -822,7 +834,6 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     router_opts.trim_empty_channels,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
-                    router_opts.lookahead_type,
                     arch.Directs, arch.num_directs,
                     &warnings);
     //Initialize drawing, now that we have an RR graph
@@ -1043,7 +1054,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
                    t_det_routing_arch* RoutingArch,
-                   vector<t_lb_type_rr_node>** PackerRRGraph,
+                   std::vector<t_lb_type_rr_node>** PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
@@ -1178,9 +1189,9 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 }
 
 /* This function performs power estimation. It relies on the
- * placement/routing results, as well as the critical path. 
+ * placement/routing results, as well as the critical path.
  * Power estimation can be performed as part of a full or
- * partial flow. More information on the power estimation functions of 
+ * partial flow. More information on the power estimation functions of
  * VPR can be found here:
  *   http://docs.verilogtorouting.org/en/latest/vtr/power_estimation/
  */

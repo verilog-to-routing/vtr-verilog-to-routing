@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -236,7 +235,6 @@ void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_ar
                     router_opts.trim_empty_channels,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
-                    router_opts.lookahead_type,
                     directs, num_directs,
                     &warning_count);
 }
@@ -287,7 +285,6 @@ bool try_route(int width_fac,
                     router_opts.trim_empty_channels,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
-                    router_opts.lookahead_type,
                     directs, num_directs,
                     &warning_count);
 
@@ -316,6 +313,7 @@ bool try_route(int width_fac,
 
         success = try_timing_driven_route(router_opts,
                                           analysis_opts,
+                                          segment_inf,
                                           net_delay,
                                           netlist_pin_lookup,
                                           timing_info,
@@ -736,7 +734,7 @@ float get_rr_cong_cost(int inode) {
     return (cost);
 }
 
-/* Returns the congestion cost of using this rr_node, *ignoring* 
+/* Returns the congestion cost of using this rr_node, *ignoring*
  * non-configurable edges */
 static float get_single_rr_cong_cost(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -767,7 +765,7 @@ void mark_ends(ClusterNetId net_id) {
     }
 }
 
-void mark_remaining_ends(const vector<int>& remaining_sinks) {
+void mark_remaining_ends(const std::vector<int>& remaining_sinks) {
     // like mark_ends, but only performs it for the remaining sinks of a net
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     for (int sink_node : remaining_sinks)
@@ -1112,7 +1110,7 @@ t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
      * the FPGA if necessary.  The bounding box returned by this routine
      * are different from the ones used by the placer in that they are
      * clipped to lie within (0,0) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1)
-     * rather than (1,1) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1).                                                            
+     * rather than (1,1) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1).
      */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -1161,10 +1159,10 @@ t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
 
     t_bb bb;
 
-    bb.xmin = max<int>(xmin - bb_factor, 0);
-    bb.xmax = min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
-    bb.ymin = max<int>(ymin - bb_factor, 0);
-    bb.ymax = min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
+    bb.xmin = std::max<int>(xmin - bb_factor, 0);
+    bb.xmax = std::min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
+    bb.ymin = std::max<int>(ymin - bb_factor, 0);
+    bb.ymax = std::min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
 
     return bb;
 }
@@ -1898,4 +1896,21 @@ static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& t
     }
 
     return true;
+}
+
+// True if router will use a lookahead.
+//
+// This controls whether the router lookahead cache will be primed outside of
+// the router ScopedStartFinishTimer.
+bool router_needs_lookahead(enum e_router_algorithm router_algorithm) {
+    switch (router_algorithm) {
+        case BREADTH_FIRST:
+        case NO_TIMING:
+            return false;
+        case TIMING_DRIVEN:
+            return true;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown routing algorithm %d",
+                            router_algorithm);
+    }
 }

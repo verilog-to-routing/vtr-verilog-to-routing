@@ -3,8 +3,6 @@
 #include <regex>
 #include <algorithm>
 
-using namespace std;
-
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
@@ -2106,13 +2104,13 @@ void print_switch_usage() {
         VTR_LOG_WARN("Cannot print switch usage stats: device_ctx.switch_fanin_remap is empty\n");
         return;
     }
-    map<int, int>* switch_fanin_count;
-    map<int, float>* switch_fanin_delay;
-    switch_fanin_count = new map<int, int>[device_ctx.num_arch_switches];
-    switch_fanin_delay = new map<int, float>[device_ctx.num_arch_switches];
+    std::map<int, int>* switch_fanin_count;
+    std::map<int, float>* switch_fanin_delay;
+    switch_fanin_count = new std::map<int, int>[device_ctx.num_arch_switches];
+    switch_fanin_delay = new std::map<int, float>[device_ctx.num_arch_switches];
     // a node can have multiple inward switches, so
     // map key: switch index; map value: count (fanin)
-    map<int, int>* inward_switch_inf = new map<int, int>[device_ctx.rr_nodes.size()];
+    std::map<int, int>* inward_switch_inf = new std::map<int, int>[device_ctx.rr_nodes.size()];
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         const t_rr_node& from_node = device_ctx.rr_nodes[inode];
         int num_edges = from_node.num_edges();
@@ -2129,7 +2127,7 @@ void print_switch_usage() {
         }
     }
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        map<int, int>::iterator itr;
+        std::map<int, int>::iterator itr;
         for (itr = inward_switch_inf[inode].begin(); itr != inward_switch_inf[inode].end(); itr++) {
             int switch_index = itr->first;
             int fanin = itr->second;
@@ -2154,7 +2152,7 @@ void print_switch_usage() {
         float s_area = device_ctx.arch_switch_inf[iswitch].mux_trans_size;
         VTR_LOG(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name, s_area);
 
-        map<int, int>::iterator itr;
+        std::map<int, int>::iterator itr;
         for (itr = switch_fanin_count[iswitch].begin(); itr != switch_fanin_count[iswitch].end(); itr++) {
             VTR_LOG("\t\tnumber of fanin: %d", itr->first);
             VTR_LOG("\t\tnumber of wires driven by this switch: %d", itr->second);
@@ -2238,7 +2236,7 @@ int max_pins_per_grid_tile() {
     for (auto& type : device_ctx.physical_tile_types) {
         int pins_per_grid_tile = type.num_pins / (type.width * type.height);
         //Use the maximum number of pins normalized by block area
-        max_pins = max(max_pins, pins_per_grid_tile);
+        max_pins = std::max(max_pins, pins_per_grid_tile);
     }
     return max_pins;
 }

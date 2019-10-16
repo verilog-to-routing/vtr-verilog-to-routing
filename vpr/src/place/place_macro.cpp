@@ -3,7 +3,6 @@
 #include <cmath>
 #include <sstream>
 #include <map>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"

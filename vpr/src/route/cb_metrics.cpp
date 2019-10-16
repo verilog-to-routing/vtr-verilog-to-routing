@@ -44,8 +44,6 @@
 
 #include "cb_metrics.h"
 
-using namespace std;
-
 /* TODO: move to libarchfpga/include/util.h after ODIN II has been converted to use g++ */
 /* a generic function for determining if a given map key exists */
 template<typename F, typename T>
@@ -85,17 +83,17 @@ static void init_cb_structs(const t_physical_tile_type_ptr block_type, int***** 
 
 /* given a set of tracks connected to a pin, we'd like to find which of these tracks are connected to a number of switches
  * greater than 'criteria'. The resulting set of tracks is passed back in the 'result' vector */
-static void find_tracks_with_more_switches_than(const set<int>* pin_tracks, const t_vec_vec_set* track_to_pins, const int side, const bool both_sides, const int criteria, vector<int>* result);
+static void find_tracks_with_more_switches_than(const std::set<int>* pin_tracks, const t_vec_vec_set* track_to_pins, const int side, const bool both_sides, const int criteria, std::vector<int>* result);
 /* given a pin on some side of a block, we'd like to find the set of tracks that is NOT connected to that pin on that side. This set of tracks
  * is passed back in the 'result' vector */
-static void find_tracks_unconnected_to_pin(const set<int>* pin_tracks, const vector<set<int> >* track_to_pins, vector<int>* result);
+static void find_tracks_unconnected_to_pin(const std::set<int>* pin_tracks, const std::vector<std::set<int> >* track_to_pins, std::vector<int>* result);
 
 /* iterates through the elements of set 1 and returns the number of elements in set1 that are
  * also in set2 (in terms of bit vectors, this looks for the number of positions where both bit vectors
  * have a value of 1; values of 0 not counted... so, not quite true hamming proximity). Analogously, if we
  * wanted the hamming distance of these two sets, (in terms of bit vectors, the number of bit positions that are
  * different... i.e. the actual definition of hamming disatnce) that would be 2(set_size - returned_value) */
-static int hamming_proximity_of_two_sets(const set<int>* set1, const set<int>* set2);
+static int hamming_proximity_of_two_sets(const std::set<int>* set1, const std::set<int>* set2);
 /* returns the pin diversity metric of a block */
 static float get_pin_diversity(const int Fc, const int num_pin_type_pins, const Conn_Block_Metrics* cb_metrics);
 /* Returns the wire homogeneity of a block's connection to tracks */
@@ -239,15 +237,15 @@ static void init_cb_structs(const t_physical_tile_type_ptr block_type, int***** 
 
     /* allocate the multi-dimensional vectors used for conveniently calculating CB metrics */
     for (int iside = 0; iside < 4; iside++) {
-        cb_metrics->track_to_pins.push_back(vector<set<int> >());
-        cb_metrics->pin_to_tracks.push_back(vector<set<int> >());
-        cb_metrics->wire_types_used_count.push_back(vector<vector<int> >());
+        cb_metrics->track_to_pins.push_back(std::vector<std::set<int> >());
+        cb_metrics->pin_to_tracks.push_back(std::vector<std::set<int> >());
+        cb_metrics->wire_types_used_count.push_back(std::vector<std::vector<int> >());
         for (int i = 0; i < nodes_per_chan; i++) {
-            cb_metrics->track_to_pins.at(iside).push_back(set<int>());
+            cb_metrics->track_to_pins.at(iside).push_back(std::set<int>());
         }
         for (int ipin = 0; ipin < (int)cb_metrics->pin_locations.at(iside).size(); ipin++) {
-            cb_metrics->pin_to_tracks.at(iside).push_back(set<int>());
-            cb_metrics->wire_types_used_count.at(iside).push_back(vector<int>());
+            cb_metrics->pin_to_tracks.at(iside).push_back(std::set<int>());
+            cb_metrics->wire_types_used_count.at(iside).push_back(std::vector<int>());
             for (int itype = 0; itype < num_wire_types; itype++) {
                 cb_metrics->wire_types_used_count.at(iside).at(ipin).push_back(0);
             }
@@ -255,7 +253,7 @@ static void init_cb_structs(const t_physical_tile_type_ptr block_type, int***** 
     }
 
     /*  set the values of the multi-dimensional vectors */
-    set<int> counted_pins;
+    std::set<int> counted_pins;
     int track = 0;
     /* over each side of the block */
     for (int iside = 0; iside < 4; iside++) {
@@ -285,14 +283,14 @@ static void init_cb_structs(const t_physical_tile_type_ptr block_type, int***** 
                             break;
                         }
 
-                        pair<set<int>::iterator, bool> result1 = cb_metrics->pin_to_tracks.at(iside).at(ipin).insert(track);
+                        std::pair<std::set<int>::iterator, bool> result1 = cb_metrics->pin_to_tracks.at(iside).at(ipin).insert(track);
                         if (!result1.second) {
                             /* this track should not already be a part of the set */
                             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to insert element into pin_to_tracks set which already exists there\n");
                         }
 
                         /* insert the current pin into the corresponding tracks_to_pin entry */
-                        pair<set<int>::iterator, bool> result2 = cb_metrics->track_to_pins.at(iside).at(track).insert(pin);
+                        std::pair<std::set<int>::iterator, bool> result2 = cb_metrics->track_to_pins.at(iside).at(track).insert(pin);
                         if (!result2.second) {
                             /* this pin should not already be a part of the set */
                             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to insert element into track_to_pins set which already exists there\n");
@@ -505,10 +503,10 @@ static float get_hamming_proximity(const int Fc, const int num_pin_type_pins, co
  * have a value of 1; values of 0 not counted... so, not quite true hamming proximity). Analogously, if we
  * wanted the hamming distance of these two sets, (in terms of bit vectors, the number of bit positions that are
  * different... i.e. the actual definition of hamming disatnce) that would be 2(set_size - returned_value) */
-static int hamming_proximity_of_two_sets(const set<int>* set1, const set<int>* set2) {
+static int hamming_proximity_of_two_sets(const std::set<int>* set1, const std::set<int>* set2) {
     int result = 0;
 
-    set<int>::const_iterator it;
+    std::set<int>::const_iterator it;
     for (it = set1->begin(); it != set1->end(); it++) {
         int element = *it;
         if (set_has_element(element, set2)) {
@@ -553,7 +551,7 @@ static float get_wire_homogeneity(const int Fc, const int nodes_per_chan, const 
         }
 
         total_conns = total_pins_on_side * Fc;
-        unconnected_wires = (total_conns) ? max(0, nodes_per_chan - total_conns) : 0;
+        unconnected_wires = (total_conns) ? std::max(0, nodes_per_chan - total_conns) : 0;
         mean = (float)total_conns / (float)(nodes_per_chan - unconnected_wires);
         wire_homogeneity[side] = 0;
         for (int track = 0; track < nodes_per_chan; track++) {
@@ -579,7 +577,7 @@ static float get_wire_homogeneity(const int Fc, const int nodes_per_chan, const 
 /* goes through each pin of pin_type and determines which side of the block it comes out on. results are stored in
  * the 'pin_locations' 2d-vector */
 static void get_pin_locations(const t_physical_tile_type_ptr block_type, const e_pin_type pin_type, const int num_pin_type_pins, int***** tracks_connected_to_pin, t_2d_int_vec* pin_locations) {
-    set<int> counted_pins;
+    std::set<int> counted_pins;
 
     pin_locations->clear();
     /* over each side */
@@ -595,7 +593,7 @@ static void get_pin_locations(const t_physical_tile_type_ptr block_type, const e
             //TODO: block_type->pin_loc indicates that there are pins on all sides of an I/O block, but this is not actually the case...
             // In the future we should change pin_loc to indicate the correct pin locations
             /* push back an empty vector for this side */
-            pin_locations->push_back(vector<int>());
+            pin_locations->push_back(std::vector<int>());
             for (int iwidth = 0; iwidth < block_type->width; iwidth++) {
                 for (int iheight = 0; iheight < block_type->height; iheight++) {
                     /* check if ipin is present at this side/width/height */
@@ -621,7 +619,7 @@ static void get_pin_locations(const t_physical_tile_type_ptr block_type, const e
 
 /* given a set of tracks connected to a pin, we'd like to find which of these tracks are connected to a number of switches
  * greater than 'criteria'. The resulting set of tracks is passed back in the 'result' vector */
-static void find_tracks_with_more_switches_than(const set<int>* pin_tracks, const t_vec_vec_set* track_to_pins, const int side, const bool both_sides, const int criteria, vector<int>* result) {
+static void find_tracks_with_more_switches_than(const std::set<int>* pin_tracks, const t_vec_vec_set* track_to_pins, const int side, const bool both_sides, const int criteria, std::vector<int>* result) {
     result->clear();
 
     if (both_sides && side >= 2) {
@@ -629,7 +627,7 @@ static void find_tracks_with_more_switches_than(const set<int>* pin_tracks, cons
     }
 
     /* for each track connected to the pin */
-    set<int>::const_iterator it;
+    std::set<int>::const_iterator it;
     for (it = pin_tracks->begin(); it != pin_tracks->end(); it++) {
         int track = *it;
 
@@ -647,7 +645,7 @@ static void find_tracks_with_more_switches_than(const set<int>* pin_tracks, cons
 
 /* given a pin on some side of a block, we'd like to find the set of tracks that is NOT connected to that pin on that side. This set of tracks
  * is passed back in the 'result' vector */
-static void find_tracks_unconnected_to_pin(const set<int>* pin_tracks, const vector<set<int> >* track_to_pins, vector<int>* result) {
+static void find_tracks_unconnected_to_pin(const std::set<int>* pin_tracks, const std::vector<std::set<int> >* track_to_pins, std::vector<int>* result) {
     result->clear();
     /* for each track in the channel segment */
     for (int itrack = 0; itrack < (int)track_to_pins->size(); itrack++) {
@@ -689,7 +687,7 @@ static double try_move(const e_metric metric, const int nodes_per_chan, const fl
         both_sides = false;
     }
 
-    static vector<int> set_of_tracks;
+    static std::vector<int> set_of_tracks;
     /* the set_of_tracks vector is used to find sets of tracks satisfying some criteria that we want. we reserve memory for it, which
      * should be preserved between calls of this function so that we don't have to allocate memory every time */
     set_of_tracks.reserve(nodes_per_chan);
@@ -699,7 +697,7 @@ static double try_move(const e_metric metric, const int nodes_per_chan, const fl
     int rand_side = vtr::irand(3);
     int rand_pin_index = vtr::irand(cb_metrics->pin_locations.at(rand_side).size() - 1);
     int rand_pin = cb_metrics->pin_locations.at(rand_side).at(rand_pin_index);
-    set<int>* tracks_connected_to_pin = &pin_to_tracks->at(rand_side).at(rand_pin_index);
+    std::set<int>* tracks_connected_to_pin = &pin_to_tracks->at(rand_side).at(rand_pin_index);
 
     /* If the pin is unconnected, return. */
     if (0 == tracks_connected_to_pin->size()) {
@@ -961,7 +959,7 @@ static bool accept_move(const double del_cost, const double temp) {
 
 static void print_switch_histogram(const int nodes_per_chan, const Conn_Block_Metrics* cb_metrics) {
     /* key: number of switches; element: number of tracks with that switch count */
-    map<int, int> switch_histogram;
+    std::map<int, int> switch_histogram;
 
     const t_vec_vec_set* track_to_pins = &cb_metrics->track_to_pins;
 
@@ -977,7 +975,7 @@ static void print_switch_histogram(const int nodes_per_chan, const Conn_Block_Me
     }
 
     VTR_LOG("\t===CB Metrics Switch Histogram===\n\t#switches ==> #num tracks carrying that number of switches\n");
-    map<int, int>::const_iterator it;
+    std::map<int, int>::const_iterator it;
     for (it = switch_histogram.begin(); it != switch_histogram.end(); it++) {
         VTR_LOG("\t%d ==> %d\n", it->first, it->second);
     }
@@ -1023,7 +1021,7 @@ static void get_xbar_matrix(const int***** conn_block, const t_physical_tile_typ
         }
 
         /* each pin corresponds to a row of the xbar matrix */
-        xbar_matrix->push_back(vector<float>());
+        xbar_matrix->push_back(std::vector<float>());
 
         /* each wire in the channel corresponds to a column of the xbar matrix */
         for (int icol = 0; icol < nodes_per_chan; icol++) {
@@ -1048,7 +1046,7 @@ static t_xbar_matrix transpose_xbar(const t_xbar_matrix* xbar) {
     int new_rows = (int)xbar->at(0).size();
 
     for (int i = 0; i < new_rows; i++) {
-        result.push_back(vector<float>());
+        result.push_back(std::vector<float>());
         for (int j = 0; j < new_cols; j++) {
             result.at(i).push_back(xbar->at(j).at(i));
         }
@@ -1081,7 +1079,7 @@ static long double binomial_coefficient(const int n, const int k) {
     return result;
 }
 
-static long double count_switch_configurations(const int level, const int signals_left, const int capacity_left, vector<int>* config, map<int, Wire_Counting>* count_map) {
+static long double count_switch_configurations(const int level, const int signals_left, const int capacity_left, std::vector<int>* config, std::map<int, Wire_Counting>* count_map) {
     long double result = 0;
 
     if (capacity_left < signals_left) {
@@ -1090,7 +1088,7 @@ static long double count_switch_configurations(const int level, const int signal
     }
 
     /* get the capacity of the current wire group (here, group is defined by the number of switches a wire carries) */
-    map<int, Wire_Counting>::const_iterator it = count_map->begin();
+    std::map<int, Wire_Counting>::const_iterator it = count_map->begin();
     advance(it, level);
     int my_capacity = it->second.num_wires;
 
@@ -1098,7 +1096,7 @@ static long double count_switch_configurations(const int level, const int signal
     int downstream_capacity = capacity_left - my_capacity;
 
     /* get the maximum number of signals this wire group can carry */
-    int can_take = min(my_capacity, signals_left);
+    int can_take = std::min(my_capacity, signals_left);
 
     /* we cannot push more signals onto the other wire groups than they can take. to avoid this the minimum number of signals allowed
      * to be carried by the current wire group may be above 0 */
@@ -1127,7 +1125,7 @@ static long double count_switch_configurations(const int level, const int signal
             /* add this info for the final wire group */
             it = count_map->begin();
             advance(it, level);
-            map<int, long double>* configs_used = &count_map->at(it->first).configs_used;
+            std::map<int, long double>* configs_used = &count_map->at(it->first).configs_used;
             if (map_has_key(config->at(level), configs_used)) {
                 configs_used->at(config->at(level)) += num_configs;
             } else {
@@ -1141,7 +1139,7 @@ static long double count_switch_configurations(const int level, const int signal
             /* add this info for the current wire group */
             it = count_map->begin();
             advance(it, level);
-            map<int, long double>* configs_used = &count_map->at(it->first).configs_used;
+            std::map<int, long double>* configs_used = &count_map->at(it->first).configs_used;
             if (map_has_key(config->at(level), configs_used)) {
                 configs_used->at(config->at(level)) += num_configs;
             } else {
@@ -1161,7 +1159,7 @@ static void normalize_xbar(const float fraction_wires_used, t_xbar_matrix* xbar)
     int rows = (int)xbar->size();       /* rows correspond to pins */
     int cols = (int)xbar->at(0).size(); /* columns correspond to wires */
 
-    map<int, Wire_Counting> count_map;
+    std::map<int, Wire_Counting> count_map;
 
     /* the number of signals that this channel can carry (each wire with switches contributes 1 to capacity) */
     int capacity = 0;
@@ -1203,7 +1201,7 @@ static void normalize_xbar(const float fraction_wires_used, t_xbar_matrix* xbar)
 
     /* the config vector represents some distribution of signals over available wires. i.e. x wires of type 0 get used, y wires of type 1, etc
      * this vector is created here, but is updated inside the count_switch_configurations function */
-    vector<int> config;
+    std::vector<int> config;
     for (int i = 0; i < (int)count_map.size(); i++) {
         config.push_back(0);
     }
@@ -1214,13 +1212,13 @@ static void normalize_xbar(const float fraction_wires_used, t_xbar_matrix* xbar)
     long double total_configurations = count_switch_configurations(0, wires_used, capacity, &config, &count_map);
 
     /* next we need to calculate the expectation of the number of wires available for each wire group */
-    map<int, Wire_Counting>::const_iterator it;
+    std::map<int, Wire_Counting>::const_iterator it;
     for (it = count_map.begin(); it != count_map.end(); it++) {
-        map<int, long double>* configs_used = &count_map.at(it->first).configs_used;
+        std::map<int, long double>* configs_used = &count_map.at(it->first).configs_used;
 
         float* expectation_available = &count_map.at(it->first).expectation_available;
         (*expectation_available) = 0;
-        map<int, long double>::const_iterator it2;
+        std::map<int, long double>::const_iterator it2;
         for (it2 = configs_used->begin(); it2 != configs_used->end(); it2++) {
             int used = it2->first;
             long double num_configurations = it2->second;
@@ -1279,7 +1277,7 @@ static float probabilistic_or(const float a, const float b) {
 static void allocate_xbar(const int rows, const int cols, const float num, t_xbar_matrix* xbar) {
     xbar->clear();
     for (int irow = 0; irow < rows; irow++) {
-        xbar->push_back(vector<float>());
+        xbar->push_back(std::vector<float>());
         for (int icol = 0; icol < cols; icol++) {
             xbar->at(irow).push_back(num);
         }

@@ -5,7 +5,6 @@
 #include <climits>
 #include <cstdlib>
 #include <cmath>
-using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -351,7 +350,6 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
                     router_opts.trim_empty_channels,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
-                    router_opts.lookahead_type,
                     arch->Directs, arch->num_directs,
                     &warnings);
 
@@ -394,7 +392,7 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
         for (size_t i = 0; i < grid.height(); ++i) {
             float y = float(i) / num_channels;
             chan_width.x_list[i] = (int)floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
-            chan_width.x_list[i] = max(chan_width.x_list[i], 1); //Minimum channel width 1
+            chan_width.x_list[i] = std::max(chan_width.x_list[i], 1); //Minimum channel width 1
         }
     }
 
@@ -407,7 +405,7 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
             float x = float(i) / num_channels;
 
             chan_width.y_list[i] = (int)floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
-            chan_width.y_list[i] = max(chan_width.y_list[i], 1); //Minimum channel width 1
+            chan_width.y_list[i] = std::max(chan_width.y_list[i], 1); //Minimum channel width 1
         }
     }
 
@@ -415,14 +413,14 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
     chan_width.x_max = chan_width.y_max = INT_MIN;
     chan_width.x_min = chan_width.y_min = INT_MAX;
     for (size_t i = 0; i < grid.height(); ++i) {
-        chan_width.max = max(chan_width.max, chan_width.x_list[i]);
-        chan_width.x_max = max(chan_width.x_max, chan_width.x_list[i]);
-        chan_width.x_min = min(chan_width.x_min, chan_width.x_list[i]);
+        chan_width.max = std::max(chan_width.max, chan_width.x_list[i]);
+        chan_width.x_max = std::max(chan_width.x_max, chan_width.x_list[i]);
+        chan_width.x_min = std::min(chan_width.x_min, chan_width.x_list[i]);
     }
     for (size_t i = 0; i < grid.width(); ++i) {
-        chan_width.max = max(chan_width.max, chan_width.y_list[i]);
-        chan_width.y_max = max(chan_width.y_max, chan_width.y_list[i]);
-        chan_width.y_min = min(chan_width.y_min, chan_width.y_list[i]);
+        chan_width.max = std::max(chan_width.max, chan_width.y_list[i]);
+        chan_width.y_max = std::max(chan_width.y_max, chan_width.y_list[i]);
+        chan_width.y_min = std::min(chan_width.y_min, chan_width.y_list[i]);
     }
 
 #ifdef VERBOSE

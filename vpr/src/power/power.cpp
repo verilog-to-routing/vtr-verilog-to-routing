@@ -27,7 +27,6 @@
 #include <ctime>
 #include <cmath>
 #include <ctype.h>
-using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_path.h"
@@ -926,13 +925,13 @@ static void power_usage_routing(t_power_usage* power_usage,
                          * // / (float) power_ctx.arch->seg_buffer_split;
                          * buffer_size = power_buffer_size_from_logical_effort(
                          * C_per_seg_split);
-                         * buffer_size = max(buffer_size, 1.0F);
+                         * buffer_size = std::max(buffer_size, 1.0F);
                          */
                         buffer_size = power_calc_buffer_size_from_Cout(device_ctx.rr_switch_inf[node_power->driver_switch_type].Cout);
                         break;
                     case POWER_BUFFER_TYPE_ABSOLUTE_SIZE:
                         buffer_size = device_ctx.rr_switch_inf[node_power->driver_switch_type].power_buffer_size;
-                        buffer_size = max(buffer_size, 1.0F);
+                        buffer_size = std::max(buffer_size, 1.0F);
                         break;
                     case POWER_BUFFER_TYPE_NONE:
                         buffer_size = 0.;
@@ -1206,9 +1205,9 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
 
         switch (node->type()) {
             case IPIN:
-                max_IPIN_fanin = max(max_IPIN_fanin,
-                                     static_cast<int>(node->fan_in()));
-                max_fanin = max(max_fanin, static_cast<int>(node->fan_in()));
+                max_IPIN_fanin = std::max(max_IPIN_fanin,
+                                          static_cast<int>(node->fan_in()));
+                max_fanin = std::max(max_fanin, static_cast<int>(node->fan_in()));
 
                 node_power->in_dens = (float*)vtr::calloc(node->fan_in(),
                                                           sizeof(float));
@@ -1224,10 +1223,10 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                         fanout_to_seg++;
                     }
                 }
-                max_seg_to_IPIN_fanout = max(max_seg_to_IPIN_fanout,
-                                             fanout_to_IPIN);
-                max_seg_to_seg_fanout = max(max_seg_to_seg_fanout, fanout_to_seg);
-                max_fanin = max(max_fanin, static_cast<int>(node->fan_in()));
+                max_seg_to_IPIN_fanout = std::max(max_seg_to_IPIN_fanout,
+                                                  fanout_to_IPIN);
+                max_seg_to_seg_fanout = std::max(max_seg_to_seg_fanout, fanout_to_seg);
+                max_fanin = std::max(max_fanin, static_cast<int>(node->fan_in()));
 
                 node_power->in_dens = (float*)vtr::calloc(node->fan_in(),
                                                           sizeof(float));
@@ -1245,7 +1244,7 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     power_ctx.commonly_used->max_seg_to_IPIN_fanout = max_seg_to_IPIN_fanout;
 
 #ifdef PRINT_SPICE_COMPARISON
-    power_ctx.commonly_used->max_routing_mux_size = max(power_ctx.commonly_used->max_routing_mux_size, 26);
+    power_ctx.commonly_used->max_routing_mux_size = std::max(power_ctx.commonly_used->max_routing_mux_size, 26);
 #endif
 
     /* Populate driver switch type */

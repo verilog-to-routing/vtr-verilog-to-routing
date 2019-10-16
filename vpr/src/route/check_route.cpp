@@ -1,5 +1,4 @@
 #include <cstdio>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -72,7 +71,7 @@ void check_route(enum e_route_type route_type) {
 
     max_pins = 0;
     for (auto net_id : cluster_ctx.clb_nlist.nets())
-        max_pins = max(max_pins, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
+        max_pins = std::max(max_pins, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
 
     pin_done = (bool*)vtr::malloc(max_pins * sizeof(bool));
 

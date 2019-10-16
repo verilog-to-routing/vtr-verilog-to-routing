@@ -33,6 +33,7 @@ In the following text, values in angle brackets e.g. ``<int>`` ``<float>`` ``<st
 Values in curly braces separated by vertical bars, e.g. ``{on | off}``, indicate all the permissible choices for an option.
 
 .. _stage_options:
+
 Stage Options
 ^^^^^^^^^^^^^
 VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--pack`, :option:`--place`, :option:`--route` or :option:`--analysis` are specified.
@@ -63,6 +64,7 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
     **Default:** ``off``
 
 .. _graphics_options:
+
 Graphics Options
 ^^^^^^^^^^^^^^^^
 
@@ -82,6 +84,7 @@ Graphics Options
     **Default:** ``1``
 
 .. _general_options:
+
 General Options
 ^^^^^^^^^^^^^^^
 .. option:: -h, --help
@@ -186,6 +189,7 @@ General Options
     **Default:** ``on``
 
 .. _filename_options:
+
 Filename Options
 ^^^^^^^^^^^^^^^^
 VPR by default appends .blif, .net, .place, and .route to the circuit name provided by the user, and looks for an SDC file in the working directory with the same name as the circuit.
@@ -244,8 +248,6 @@ Use the options below to override this default naming behaviour.
 .. option:: --outfile_prefix <string>
 
     Prefix for output files
-
-.. _general_options:
 
 .. _netlist_options:
 
@@ -463,7 +465,7 @@ For people not working on CAD, you can probably leave all the options to their d
     **Default:** ``auto``
 
 
-.. option:: --pack_prioritize_transitive_connectivity {on, off}
+.. option:: --pack_prioritize_transitive_connectivity {on | off}
 
     Controls whether transitive connectivity is prioritized over high-fanout connectivity during packing.
 
@@ -829,7 +831,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     Selects which router algorithm to use.
 
-    The ``breadth_first`` router focuses solely on routing a design successfully, while the ``timing_driven`` router focuses both on achieving a successful route and achieving good circuit speed.
+    .. warning::
+
+        The ``breadth_first`` router **should NOT be used to compare the run-time/quality** of alternate routing algorithms.
+
+        It is inferrior to the ``timing_driven`` router from a circuit speed (2x - 10x slower) and run-time perspective (takes 10-100x longer on the large benchmarks).
+        The ``breadth_first`` router is deprecated and may be removed in a future release.
+
+    The ``breadth_first`` router :cite:`betz_arch_cad` focuses solely on routing a design successfully, while the ``timing_driven`` router :cite:`betz_arch_cad,murray_air` focuses both on achieving a successful route and achieving good circuit speed.
 
     The breadth-first router is capable of routing a design using slightly fewer tracks than the timing-driving router (typically 5% if the timing-driven router uses its default parameters.
     This can be reduced to about 2% if the router parameters are set so the timing-driven router pays more attention to routability and less to area).
@@ -884,7 +893,8 @@ The following options are only valid when the router is in timing-driven mode (t
     If the first routing iteration uses more than this fraction of available wirelength routing is aborted.
     
     **Default:** ``0.85``
-.. option:: --incremental_reroute_delay_ripup {on, off, auto}
+
+.. option:: --incremental_reroute_delay_ripup {on | off | auto}
 
     Controls whether incremental net routing will rip-up (and re-route) a critical connection for delay, even if the routing is legal.
     ``auto`` enables delay-based rip-up unless routability becomes a concern.
@@ -920,7 +930,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``disable``
 
-.. option:: --save_routing_per_iteration {on, off}
+.. option:: --save_routing_per_iteration {on | off}
 
     Controls whether VPR saves the current routing to a file after each routing iteration.
     May be helpful for debugging.

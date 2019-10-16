@@ -27,6 +27,12 @@ struct t_options {
     argparse::ArgValue<std::string> write_rr_graph_file;
     argparse::ArgValue<std::string> read_rr_graph_file;
 
+    argparse::ArgValue<std::string> write_placement_delay_lookup;
+    argparse::ArgValue<std::string> read_placement_delay_lookup;
+
+    argparse::ArgValue<std::string> write_router_lookahead;
+    argparse::ArgValue<std::string> read_router_lookahead;
+
     /* Stage Options */
     argparse::ArgValue<bool> do_packing;
     argparse::ArgValue<bool> do_placement;
@@ -109,6 +115,7 @@ struct t_options {
     argparse::ArgValue<std::string> post_place_timing_report_file;
     argparse::ArgValue<PlaceDelayModelType> place_delay_model;
     argparse::ArgValue<e_reducer> place_delay_model_reducer;
+    argparse::ArgValue<std::string> allowed_tiles_for_delay_model;
 
     /* Router Options */
     argparse::ArgValue<int> max_router_iterations;

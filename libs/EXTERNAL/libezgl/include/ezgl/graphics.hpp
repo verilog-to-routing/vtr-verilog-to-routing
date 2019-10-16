@@ -467,6 +467,14 @@ protected:
    */
   renderer(cairo_t *cairo, transform_fn transform, camera *m_camera, cairo_surface_t *m_surface);
 
+  /**
+   * Update the renderer when the cairo surface/context changes
+   *
+   * @param cairo The new cairo graphics state
+   * @param m_surface The new cairo surface
+   */
+  void update_renderer(cairo_t *cairo, cairo_surface_t *m_surface);
+
 private:
   void draw_rectangle_path(point2d start, point2d end, bool fill_flag);
 
@@ -496,16 +504,7 @@ private:
   // The x11 context
   GC x11_context;
 
-  // Current line width
-  int current_line_width = 1;
-
-  // Current line cap
-  line_cap current_line_cap = line_cap::butt;
-
-  // Current line dash
-  line_dash current_line_dash = line_dash::none;
-
-  // Transparency flag, if set cairo will be used
+  // Transparency flag, if set, cairo will be used
   bool transparency_flag = false;
 #endif
 
@@ -522,6 +521,18 @@ private:
 
   // Current vertical text justification
   text_just vert_text_just = text_just::center;
+
+  // Current line width
+  int current_line_width = 1;
+
+  // Current line cap
+  line_cap current_line_cap = line_cap::butt;
+
+  // Current line dash
+  line_dash current_line_dash = line_dash::none;
+
+  // Current color
+  color current_color = {0, 0, 0, 255};
 };
 }
 

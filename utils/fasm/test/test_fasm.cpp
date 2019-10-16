@@ -83,6 +83,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     bool found_lut6 = false;
     bool found_mux1 = false;
     bool found_mux2 = false;
+    bool found_mux3 = false;
     while(fasm_string) {
         // Should see something like:
         // CLB.FLE0.N2_LUT5
@@ -103,6 +104,9 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
         }
         if(!found_mux2 && line == "CLB.FLE9.DISABLE_FF") {
             found_mux2 = true;
+        }
+        if(!found_mux3 && line == "CLB.FLE9.IN0") {
+            found_mux3 = true;
         }
 
         if(line.find("CLB") != std::string::npos) {
@@ -150,6 +154,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     CHECK(found_lut6);
     CHECK(found_mux1);
     CHECK(found_mux2);
+    CHECK(found_mux3);
 
     vpr_free_all(arch, vpr_setup);
 }

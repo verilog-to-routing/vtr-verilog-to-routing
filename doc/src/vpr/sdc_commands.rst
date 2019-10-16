@@ -2,7 +2,7 @@
 
 SDC Commands
 ============
-The following subset of SDC syntax is supported by VPR:
+The following subset of SDC syntax is supported by VPR.
 
 create_clock
 ------------
@@ -244,6 +244,8 @@ The default hold multicycle is one less than the setup multicycle path (e.g. the
 
         Specifies the sink/capture netlist pins to which the multicycle is applied.
 
+        .. seealso:: VPR's :ref:`pin naming convention <vpr_blif_naming_convention_pins>`.
+
         **Required:** No
 
     .. sdc:option:: <path_multiplier>
@@ -446,11 +448,15 @@ This is typically used to manually break combinational loops.
 
         Specifies the source netlist pins.
 
+        .. seealso:: VPR's :ref:`pin naming convention <vpr_blif_naming_convention_pins>`.
+
         **Required:** Yes
 
     .. sdc:option:: -to [get_pins <pin list or regexes>]
 
         Specifies the sink netlist pins.
+
+        .. seealso:: VPR's :ref:`pin naming convention <vpr_blif_naming_convention_pins>`.
 
         **Required:** Yes
     

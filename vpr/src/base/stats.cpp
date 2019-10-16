@@ -2,7 +2,6 @@
 #include <cstring>
 #include <cmath>
 #include <set>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -122,13 +121,13 @@ void length_and_bends_stats() {
             get_num_bends_and_length(net_id, &bends, &length, &segments);
 
             total_bends += bends;
-            max_bends = max(bends, max_bends);
+            max_bends = std::max(bends, max_bends);
 
             total_length += length;
-            max_length = max(length, max_length);
+            max_length = std::max(length, max_length);
 
             total_segments += segments;
-            max_segments = max(segments, max_segments);
+            max_segments = std::max(segments, max_segments);
         } else if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             num_global_nets++;
         } else {
@@ -184,7 +183,7 @@ static void get_channel_occupancy_stats() {
         int max_occ = -1;
 
         for (size_t i = 1; i < device_ctx.grid.width(); ++i) {
-            max_occ = max(chanx_occ[i][j], max_occ);
+            max_occ = std::max(chanx_occ[i][j], max_occ);
             ave_occ += chanx_occ[i][j];
         }
         ave_occ /= device_ctx.grid.width();
@@ -201,7 +200,7 @@ static void get_channel_occupancy_stats() {
         int max_occ = -1;
 
         for (size_t j = 1; j < device_ctx.grid.height(); ++j) {
-            max_occ = max(chany_occ[i][j], max_occ);
+            max_occ = std::max(chany_occ[i][j], max_occ);
             ave_occ += chany_occ[i][j];
         }
         ave_occ /= device_ctx.grid.height();

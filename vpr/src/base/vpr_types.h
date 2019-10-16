@@ -38,6 +38,7 @@
 #include "vtr_vector.h"
 #include "vtr_util.h"
 #include "vtr_flat_map.h"
+#include "vtr_cache.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -620,33 +621,6 @@ struct t_place_region {
     float cost;
 };
 
-/* Stores the information of the move for a block that is       *
- * moved during placement                                       *
- * block_num: the index of the moved block                      *
- * xold: the x_coord that the block is moved from               *
- * xnew: the x_coord that the block is moved to                 *
- * yold: the y_coord that the block is moved from               *
- * xnew: the x_coord that the block is moved to                 */
-struct t_pl_moved_block {
-    ClusterBlockId block_num;
-    t_pl_loc old_loc;
-    t_pl_loc new_loc;
-};
-
-/* Stores the list of blocks to be moved in a swap during       *
- * placement.                                                   *
- * num_moved_blocks: total number of blocks moved when          *
- *                   swapping two blocks.                       *
- * moved blocks: a list of moved blocks data structure with     *
- *               information on the move.                       *
- *               [0...num_moved_blocks-1]                       */
-struct t_pl_blocks_to_be_moved {
-    int num_moved_blocks;
-    std::vector<t_pl_moved_block> moved_blocks;
-    std::unordered_set<t_pl_loc> moved_from;
-    std::unordered_set<t_pl_loc> moved_to;
-};
-
 /* Represents the placement location of a clustered block
  * x: x-coordinate
  * y: y-coordinate
@@ -831,6 +805,15 @@ struct t_placer_opts {
     std::string post_place_timing_report_file;
 
     bool strict_checks;
+
+    std::string write_placement_delay_lookup;
+    std::string read_placement_delay_lookup;
+
+    // Tile types that should be used during delay sampling.
+    //
+    // Useful for excluding tiles that have abnormal delay behavior, e.g.
+    // clock tree elements like PLL's, global/local clock buffers, etc.
+    std::string allowed_tiles_for_delay_model;
 };
 
 /* All the parameters controlling the router's operation are in this        *
@@ -962,6 +945,9 @@ struct t_router_opts {
     float reconvergence_cpd_threshold;
     std::string first_iteration_timing_report_file;
     bool strict_checks;
+
+    std::string write_router_lookahead;
+    std::string read_router_lookahead;
 };
 
 struct t_analysis_opts {

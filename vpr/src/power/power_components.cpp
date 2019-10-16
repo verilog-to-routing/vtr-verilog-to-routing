@@ -23,7 +23,6 @@
 /************************* INCLUDES *********************************/
 #include <cstring>
 #include <cmath>
-using namespace std;
 
 #include "vtr_math.h"
 #include "vtr_assert.h"

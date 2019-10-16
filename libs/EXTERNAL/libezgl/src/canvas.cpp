@@ -86,7 +86,7 @@ bool canvas::print_pdf(const char *file_name, int output_width, int output_heigh
   camera pdf_cam = m_camera;
   pdf_cam.update_widget(surface_width, surface_height);
   renderer g(context, std::bind(&camera::world_to_screen, pdf_cam, _1), &pdf_cam, pdf_surface);
-  m_draw_callback(g);
+  m_draw_callback(&g);
 
   // free surface & context
   cairo_surface_destroy(pdf_surface);
@@ -125,7 +125,7 @@ bool canvas::print_svg(const char *file_name, int output_width, int output_heigh
   camera svg_cam = m_camera;
   svg_cam.update_widget(surface_width, surface_height);
   renderer g(context, std::bind(&camera::world_to_screen, svg_cam, _1), &svg_cam, svg_surface);
-  m_draw_callback(g);
+  m_draw_callback(&g);
 
   // free surface & context
   cairo_surface_destroy(svg_surface);
@@ -164,7 +164,7 @@ bool canvas::print_png(const char *file_name, int output_width, int output_heigh
   camera png_cam = m_camera;
   png_cam.update_widget(surface_width, surface_height);
   renderer g(context, std::bind(&camera::world_to_screen, png_cam, _1), &png_cam, png_surface);
-  m_draw_callback(g);
+  m_draw_callback(&g);
 
   // create png output file
   cairo_surface_write_to_png(png_surface, file_name);
@@ -205,6 +205,10 @@ gboolean canvas::configure_event(GtkWidget *widget, GdkEventConfigure *, gpointe
   // Draw to the newly created surface.
   ezgl_canvas->redraw();
 
+  // Update the animation renderer
+  if(ezgl_canvas->m_animation_renderer != nullptr)
+    ezgl_canvas->m_animation_renderer->update_renderer(p_context, p_surface);
+
   g_info("canvas::configure_event has been handled.");
   return TRUE; // the configure event was handled
 }
@@ -240,6 +244,10 @@ canvas::~canvas()
 
   if(m_context != nullptr) {
     cairo_destroy(m_context);
+  }
+
+  if(m_animation_renderer != nullptr) {
+    delete m_animation_renderer;
   }
 }
 
@@ -287,19 +295,21 @@ void canvas::redraw()
   cairo_paint(m_context);
 
   using namespace std::placeholders;
-  renderer g(m_context, std::bind(&camera::world_to_screen, m_camera, _1), &m_camera, m_surface);
-  m_draw_callback(g);
+  renderer g(m_context, std::bind(&camera::world_to_screen, &m_camera, _1), &m_camera, m_surface);
+  m_draw_callback(&g);
 
   gtk_widget_queue_draw(m_drawing_area);
 
   g_info("The canvas will be redrawn.");
 }
 
-renderer canvas::create_temporary_renderer()
+renderer *canvas::create_animation_renderer()
 {
-  using namespace std::placeholders;
-  renderer g(m_context, std::bind(&camera::world_to_screen, m_camera, _1), &m_camera, m_surface);
+  if(m_animation_renderer == nullptr) {
+    using namespace std::placeholders;
+    m_animation_renderer = new renderer(m_context, std::bind(&camera::world_to_screen, &m_camera, _1), &m_camera, m_surface);
+  }
 
-  return g;
+  return m_animation_renderer;
 }
 } // namespace ezgl

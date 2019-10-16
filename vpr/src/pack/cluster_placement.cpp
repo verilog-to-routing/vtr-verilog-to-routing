@@ -14,7 +14,6 @@
 
 #include <cstdio>
 #include <cstring>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"

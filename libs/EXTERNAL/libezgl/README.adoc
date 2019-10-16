@@ -1,5 +1,7 @@
 = EZGL - An Easy Graphics Library
 
+image:https://codedocs.xyz/mariobadr/ezgl.svg[link="https://codedocs.xyz/mariobadr/ezgl"]
+
 EZGL is a library for use in ece297 as a simple way to create a GUI application.
 The library provides a thin wrapper around GTK and drawing functionality.
 
