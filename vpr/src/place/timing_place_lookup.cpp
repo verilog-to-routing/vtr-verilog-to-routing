@@ -290,6 +290,20 @@ static t_chan_width setup_chan_width(const t_router_opts& router_opts,
     return init_chan(width_fac, chan_width_dist);
 }
 
+static void add_delay_to_matrix(
+    vtr::Matrix<std::vector<float>>* matrix,
+    int delta_x,
+    int delta_y,
+    float delay) {
+    if ((*matrix)[delta_x][delta_y].size() == 1 && (*matrix)[delta_x][delta_y][0] == EMPTY_DELTA) {
+        //Overwrite empty delta
+        (*matrix)[delta_x][delta_y][0] = delay;
+    } else {
+        //Collect delta
+        (*matrix)[delta_x][delta_y].push_back(delay);
+    }
+}
+
 static void generic_compute_matrix(
     RouterDelayProfiler& /*route_profiler*/,
     vtr::Matrix<std::vector<float>>& matrix,
@@ -306,9 +320,30 @@ static void generic_compute_matrix(
 
     t_physical_tile_type_ptr src_type = device_ctx.grid[source_x][source_y].type;
     bool is_allowed_type = allowed_types.empty() || allowed_types.find(src_type->name) != allowed_types.end();
-    if (!is_allowed_type) {
+    if (src_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE || !is_allowed_type) {
+        for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
+            for (int sink_y = start_y; sink_y <= end_y; sink_y++) {
+                int delta_x = abs(sink_x - source_x);
+                int delta_y = abs(sink_y - source_y);
+
+                if (matrix[delta_x][delta_y].empty()) {
+                    //Only set empty target if we don't already have a valid delta delay
+                    matrix[delta_x][delta_y].push_back(EMPTY_DELTA);
+#ifdef VERBOSE
+                    VTR_LOG("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
+                            "EMPTY",
+                            delta_x, delta_y,
+                            source_x, source_y,
+                            sink_x, sink_y);
+#endif
+                }
+            }
+        }
+
         return;
     }
+
+    vtr::Matrix<bool> found_matrix({matrix.dim_size(0), matrix.dim_size(1)}, false);
 
     auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid[source_x][source_y].type);
     for (int driver_ptc : best_driver_ptcs) {
@@ -316,37 +351,85 @@ static void generic_compute_matrix(
         int source_rr_node = get_rr_node_index(device_ctx.rr_node_indices, source_x, source_y, SOURCE, driver_ptc);
         auto delays = calculate_all_path_delays_from_rr_node(source_rr_node, router_opts);
 
-        for (size_t sink_rr_node = 0; sink_rr_node < delays.size(); ++sink_rr_node) {
-            if (std::isnan(delays[sink_rr_node])) {
-                // This sink was not found
-                continue;
+        bool path_to_all_sinks = true;
+        for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
+            for (int sink_y = start_y; sink_y <= end_y; sink_y++) {
+                int delta_x = abs(sink_x - source_x);
+                int delta_y = abs(sink_y - source_y);
+
+                if (found_matrix[delta_x][delta_y]) {
+                    continue;
+                }
+
+                t_physical_tile_type_ptr sink_type = device_ctx.grid[sink_x][sink_y].type;
+                if (sink_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
+                    if (matrix[delta_x][delta_y].empty()) {
+                        //Only set empty target if we don't already have a valid delta delay
+                        matrix[delta_x][delta_y].push_back(EMPTY_DELTA);
+#ifdef VERBOSE
+                        VTR_LOG("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
+                                "EMPTY",
+                                delta_x, delta_y,
+                                source_x, source_y,
+                                sink_x, sink_y);
+#endif
+                        found_matrix[delta_x][delta_y] = true;
+                    }
+                } else {
+                    bool found_a_sink = false;
+                    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
+                    for (int sink_ptc : best_sink_ptcs) {
+                        VTR_ASSERT(sink_ptc != OPEN);
+
+                        int sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
+
+                        VTR_ASSERT(sink_rr_node != OPEN);
+
+                        if (!measure_directconnect && directconnect_exists(source_rr_node, sink_rr_node)) {
+                            //Skip if we shouldn't measure direct connects and a direct connect exists
+                            continue;
+                        }
+
+                        if (std::isnan(delays[sink_rr_node])) {
+                            // This sink was not found
+                            continue;
+                        }
+
+#ifdef VERBOSE
+                        VTR_LOG("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n",
+                                delay,
+                                delta_x, delta_y,
+                                source_x, source_y,
+                                sink_x, sink_y);
+#endif
+                        found_matrix[delta_x][delta_y] = true;
+
+                        add_delay_to_matrix(&matrix, delta_x, delta_y, delays[sink_rr_node]);
+
+                        found_a_sink = true;
+                        break;
+                    }
+
+                    if (!found_a_sink) {
+                        path_to_all_sinks = false;
+                    }
+                }
             }
+        }
 
-            if (device_ctx.rr_nodes[sink_rr_node].type() != SINK) {
-                continue;
-            }
+        if (path_to_all_sinks) {
+            break;
+        }
+    }
 
-            if (!measure_directconnect && directconnect_exists(source_rr_node, sink_rr_node)) {
-                //Skip if we shouldn't measure direct connects and a direct connect exists
-                continue;
-            }
-
-            int sink_x = device_ctx.rr_nodes[sink_rr_node].xlow();
-            int sink_y = device_ctx.rr_nodes[sink_rr_node].ylow();
-
-            if (sink_x < start_x || sink_x > end_x || sink_y < start_y || sink_y > end_y) {
-                continue;
-            }
-
+    for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
+        for (int sink_y = start_y; sink_y <= end_y; sink_y++) {
             int delta_x = abs(sink_x - source_x);
             int delta_y = abs(sink_y - source_y);
-
-            if (matrix[delta_x][delta_y].size() == 1 && matrix[delta_x][delta_y][0] == EMPTY_DELTA) {
-                //Overwrite empty delta
-                matrix[delta_x][delta_y][0] = delays[sink_rr_node];
-            } else {
-                //Collect delta
-                matrix[delta_x][delta_y].push_back(delays[sink_rr_node]);
+            if (!found_matrix[delta_x][delta_y]) {
+                add_delay_to_matrix(&matrix, delta_x, delta_y, IMPOSSIBLE_DELTA);
+                VTR_LOG_WARN("Unable to route between blocks at (%d,%d) and (%d,%d) to characterize delay (setting to %g)\n",
+                             source_x, source_y, sink_x, sink_y, IMPOSSIBLE_DELTA);
             }
         }
     }
