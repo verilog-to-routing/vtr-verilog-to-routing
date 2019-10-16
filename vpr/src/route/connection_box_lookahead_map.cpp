@@ -588,7 +588,11 @@ static void FromMatrixCostEntry(
 
 void CostMap::read(const std::string& file) {
     MmapFile f(file);
-    ::capnp::FlatArrayMessageReader reader(f.getData());
+
+    /* Increase reader limit to 1G words. */
+    ::capnp::ReaderOptions opts = ::capnp::ReaderOptions();
+    opts.traversalLimitInWords = 1024 * 1024 * 1024;
+    ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
     auto cost_map = reader.getRoot<VprCostMap>();
 
