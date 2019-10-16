@@ -52,6 +52,7 @@
 #include "vtr_memory.h"
 #include "vtr_digest.h"
 #include "vtr_token.h"
+#include "vtr_bimap.h"
 
 #include "arch_types.h"
 #include "arch_util.h"
@@ -3251,7 +3252,7 @@ static void ProcessEquivalentSiteDirects(pugi::xml_node Parent,
                        "There are no direct pin mappings between site %s and tile %s.\n", site_name.c_str(), PhysicalTileType->name);
     }
 
-    std::unordered_map<int, int> directs_map;
+    vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
 
     CurDirect = Parent.first_child();
     while (CurDirect) {
@@ -3279,7 +3280,16 @@ static void ProcessEquivalentSiteDirects(pugi::xml_node Parent,
 
         int num_pins = from_pins.second - from_pins.first;
         for (int i = 0; i < num_pins; i++) {
-            directs_map[to_pins.first + i] = from_pins.first + i;
+            t_physical_pin phy_pin(from_pins.first + i);
+            t_logical_pin log_pin(to_pins.first + i);
+
+            auto result = directs_map.insert(log_pin, phy_pin);
+            if (!result.second) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                               "Duplicate logical pin (%d) to physical pin (%d) mappings found for "
+                               "Physical Tile %s and Logical Block %s.\n",
+                               log_pin.pin, phy_pin.pin, PhysicalTileType->name, LogicalBlockType->name);
+            }
         }
 
         CurDirect = CurDirect.next_sibling(CurDirect.name());
@@ -4791,6 +4801,42 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
             archfpga_throw(__FILE__, __LINE__,
                            "Logical Block %s does not have any equivalent tiles.\n", logical_block.name);
         }
+
+        std::unordered_map<int, bool> ignored_pins_check_map;
+        std::unordered_map<int, bool> global_pins_check_map;
+
+        for (int pin = 0; pin < logical_block.pb_type->num_pins; pin++) {
+            for (auto& tile : logical_block.equivalent_tiles) {
+                auto direct_map = tile->tile_block_pin_directs_map.at(logical_block.index);
+                auto result = direct_map.find(t_logical_pin(pin));
+                if (result == direct_map.end()) {
+                    archfpga_throw(__FILE__, __LINE__,
+                                   "Logical pin %d not present in pin mapping between Tile %s and Block %s.\n",
+                                   pin, tile->name, logical_block.name);
+                }
+
+                int phy_index = result->second.pin;
+
+                bool is_ignored = tile->is_ignored_pin[phy_index];
+                bool is_global = tile->is_pin_global[phy_index];
+
+                auto ignored_result = ignored_pins_check_map.insert(std::pair<int, bool>(pin, is_ignored));
+                if (!ignored_result.second && ignored_result.first->second != is_ignored) {
+                    archfpga_throw(__FILE__, __LINE__,
+                                   "Physical Tile %s has a different value for the ignored pin (physical pin: %d, logical pin: %d) "
+                                   "different from the corresponding pins of the other equivalent sites\n.",
+                                   tile->name, phy_index, pin);
+                }
+
+                auto global_result = global_pins_check_map.insert(std::pair<int, bool>(pin, is_global));
+                if (!global_result.second && global_result.first->second != is_global) {
+                    archfpga_throw(__FILE__, __LINE__,
+                                   "Physical Tile %s has a different value for the global pin (physical pin: %d, logical pin: %d) "
+                                   "different from the corresponding pins of the other equivalent sites\n.",
+                                   tile->name, phy_index, pin);
+                }
+            }
+        }
     }
 }
 
@@ -4812,8 +4858,8 @@ static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t
     }
 
     for (auto pin_map : pin_direct_mapping) {
-        auto block_port = get_port_by_pin(logical_block, pin_map.first);
-        auto tile_port = get_port_by_pin(physical_tile, pin_map.second);
+        auto block_port = get_port_by_pin(logical_block, pin_map.first.pin);
+        auto tile_port = get_port_by_pin(physical_tile, pin_map.second.pin);
 
         VTR_ASSERT(block_port != nullptr);
         VTR_ASSERT(tile_port != nullptr);
