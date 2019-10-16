@@ -42,12 +42,12 @@ static int** f_port_from_blk_pin = nullptr;
 
 /* f_port_pin_from_blk_pin array allow us to quickly find what port pin a*
  * block pin corresponds to.                                             *
- * [0...device_ctx.logical_block_types.size()-1][0...blk_pin_count-1]    */
+ * [0...device_ctx.physical_tile_types.size()-1][0...blk_pin_count-1]    */
 static int** f_port_pin_from_blk_pin = nullptr;
 
 /* f_port_pin_to_block_pin array allows us to quickly find what block                   *
  * pin a port pin corresponds to.                                                       *
- * [0...device_ctx.logical_block_types.size()-1][0...num_ports-1][0...num_port_pins-1]  */
+ * [0...device_ctx.physical_tile_types.size()-1][0...num_ports-1][0...num_port_pins-1]  */
 static int*** f_blk_pin_from_port_pin = nullptr;
 
 //Regular expressions used to determine register and logic primitives
@@ -731,15 +731,6 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
     *pin_high = (place_ctx.block_locs[blk_id].loc.z + 1) * (type->num_pins / type->capacity) - 1;
 }
 
-t_physical_tile_type_ptr find_block_type_by_name(std::string name, const std::vector<t_logical_block_type>& types) {
-    for (auto const& type : types) {
-        if (type.name == name) {
-            return physical_tile_type(&type);
-        }
-    }
-    return nullptr; //Not found
-}
-
 t_physical_tile_type_ptr find_tile_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types) {
     for (auto const& type : types) {
         if (type.name == name) {
@@ -843,7 +834,7 @@ InstPort parse_inst_port(std::string str) {
     InstPort inst_port(str);
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto blk_type = find_block_type_by_name(inst_port.instance_name(), device_ctx.logical_block_types);
+    auto blk_type = find_tile_type_by_name(inst_port.instance_name(), device_ctx.physical_tile_types);
     if (blk_type == nullptr) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find block type named %s", inst_port.instance_name().c_str());
     }
@@ -1993,14 +1984,15 @@ static void mark_direct_of_ports(int idirect, int direct_type, char* pb_type_nam
     auto& device_ctx = g_vpr_ctx.device();
 
     // Go through all the block types
-    for (itype = 1; itype < device_ctx.logical_block_types.size(); itype++) {
+    for (itype = 1; itype < device_ctx.physical_tile_types.size(); itype++) {
+        auto& physical_tile = device_ctx.physical_tile_types[itype];
         // Find blocks with the same pb_type_name
-        if (strcmp(device_ctx.logical_block_types[itype].pb_type->name, pb_type_name) == 0) {
-            num_ports = device_ctx.logical_block_types[itype].pb_type->num_ports;
+        if (strcmp(physical_tile.name, pb_type_name) == 0) {
+            num_ports = physical_tile.ports.size();
             for (iport = 0; iport < num_ports; iport++) {
                 // Find ports with the same port_name
-                if (strcmp(device_ctx.logical_block_types[itype].pb_type->ports[iport].name, port_name) == 0) {
-                    num_port_pins = device_ctx.logical_block_types[itype].pb_type->ports[iport].num_pins;
+                if (strcmp(physical_tile.ports[iport].name, port_name) == 0) {
+                    num_port_pins = physical_tile.ports[iport].num_pins;
 
                     // Check whether the end_pin_index is valid
                     if (end_pin_index > num_port_pins) {
@@ -2057,13 +2049,13 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
     auto& device_ctx = g_vpr_ctx.device();
 
     /* Allocate and initialize the values to OPEN (-1). */
-    temp_idirect_from_blk_pin = (int**)vtr::malloc(device_ctx.logical_block_types.size() * sizeof(int*));
-    temp_direct_type_from_blk_pin = (int**)vtr::malloc(device_ctx.logical_block_types.size() * sizeof(int*));
-    for (const auto& type : device_ctx.logical_block_types) {
+    temp_idirect_from_blk_pin = (int**)vtr::malloc(device_ctx.physical_tile_types.size() * sizeof(int*));
+    temp_direct_type_from_blk_pin = (int**)vtr::malloc(device_ctx.physical_tile_types.size() * sizeof(int*));
+    for (const auto& type : device_ctx.physical_tile_types) {
         if (is_empty_type(&type)) continue;
 
         int itype = type.index;
-        num_type_pins = type.pb_type->num_pins;
+        num_type_pins = type.num_pins;
 
         temp_idirect_from_blk_pin[itype] = (int*)vtr::malloc(num_type_pins * sizeof(int));
         temp_direct_type_from_blk_pin[itype] = (int*)vtr::malloc(num_type_pins * sizeof(int));
