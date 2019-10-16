@@ -38,6 +38,7 @@
 
 #include "vtr_ndmatrix.h"
 #include "vtr_hash.h"
+#include "vtr_bimap.h"
 
 #include "logic_types.h"
 #include "clock_types.h"
@@ -58,6 +59,8 @@ struct t_physical_tile_type;
 typedef const t_physical_tile_type* t_physical_tile_type_ptr;
 struct t_logical_block_type;
 typedef const t_logical_block_type* t_logical_block_type_ptr;
+struct t_logical_pin;
+struct t_physical_pin;
 struct t_pb_type;
 struct t_pb_graph_pin_power;
 struct t_mode;
@@ -616,10 +619,42 @@ struct t_physical_tile_type {
 
     /* Unordered map indexed by the logical block index.
      * tile_block_pin_directs_map[logical block index][logical block pin] -> physical tile pin */
-    std::unordered_map<int, std::unordered_map<int, int>> tile_block_pin_directs_map;
+    std::unordered_map<int, vtr::bimap<t_logical_pin, t_physical_pin>> tile_block_pin_directs_map;
 
     /* Returns the indices of pins that contain a clock for this physical logic block */
     std::vector<int> get_clock_pins_indices() const;
+};
+
+struct t_logical_pin {
+    int pin = -1;
+
+    t_logical_pin(int value) {
+        pin = value;
+    }
+
+    bool operator==(const t_logical_pin o) const {
+        return pin == o.pin;
+    }
+
+    bool operator<(const t_logical_pin o) const {
+        return pin < o.pin;
+    }
+};
+
+struct t_physical_pin {
+    int pin = -1;
+
+    t_physical_pin(int value) {
+        pin = value;
+    }
+
+    bool operator==(const t_physical_pin o) const {
+        return pin == o.pin;
+    }
+
+    bool operator<(const t_physical_pin o) const {
+        return pin < o.pin;
+    }
 };
 
 /** Describes I/O and clock ports of a physical tile type
