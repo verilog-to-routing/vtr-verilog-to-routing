@@ -372,8 +372,14 @@ static vtr::Matrix<float> compute_delta_delays(
 
     size_t low_x = std::min(longest_length, mid_x);
     size_t low_y = std::min(longest_length, mid_y);
-    size_t high_x = std::max(grid.width() - longest_length, mid_x);
-    size_t high_y = std::max(grid.height() - longest_length, mid_y);
+    size_t high_x = mid_x;
+    size_t high_y = mid_y;
+    if (longest_length <= grid.width()) {
+        high_x = std::max(grid.width() - longest_length, mid_x);
+    }
+    if (longest_length <= grid.height()) {
+        high_y = std::max(grid.height() - longest_length, mid_y);
+    }
 
     std::set<std::string> allowed_types;
     if (!placer_opts.allowed_tiles_for_delay_model.empty()) {
