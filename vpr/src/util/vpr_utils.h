@@ -111,9 +111,6 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::st
 
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
-//Returns the physical tile type matching a given logical block type name, or nullptr (if not found)
-t_physical_tile_type_ptr find_block_type_by_name(std::string name, const std::vector<t_logical_block_type>& types);
-
 //Returns the physical tile type matching a given physical tile type name, or nullptr (if not found)
 t_physical_tile_type_ptr find_tile_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types);
 

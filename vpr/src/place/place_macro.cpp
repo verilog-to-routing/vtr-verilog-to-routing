@@ -454,13 +454,13 @@ static void write_place_macros(std::string filename, const std::vector<t_pl_macr
     fprintf(f, "type      type_pin  is_direct direct_type\n");
     fprintf(f, "------------------------------------------\n");
     auto& device_ctx = g_vpr_ctx.device();
-    for (const auto& type : device_ctx.logical_block_types) {
+    for (const auto& type : device_ctx.physical_tile_types) {
         if (is_empty_type(&type)) {
             continue;
         }
 
         int itype = type.index;
-        for (int ipin = 0; ipin < type.pb_type->num_pins; ++ipin) {
+        for (int ipin = 0; ipin < type.num_pins; ++ipin) {
             if (f_idirect_from_blk_pin[itype][ipin] != OPEN) {
                 if (f_direct_type_from_blk_pin[itype][ipin] == SOURCE) {
                     fprintf(f, "%-9s %-9d true      SOURCE    \n", type.name, ipin);
