@@ -287,6 +287,7 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
     downstream_rt_node = sink_rt_node;
 
     std::unordered_set<int> main_branch_visited;
+    std::unordered_set<int> all_visited;
     inode = hptr->u.prev.node;
     t_edge_size iedge = hptr->u.prev.edge;
     short iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
@@ -297,9 +298,15 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
 
     while (rr_node_to_rt_node[inode] == nullptr) { //Not connected to existing routing
         main_branch_visited.insert(inode);
+        all_visited.insert(inode);
 
         linked_rt_edge = alloc_linked_rt_edge();
         linked_rt_edge->child = downstream_rt_node;
+
+        // Also mark downstream_rt_node->inode as visited to prevent
+        // add_non_configurable_to_route_tree from potentially adding
+        // downstream_rt_node to the rt tree twice.
+        all_visited.insert(downstream_rt_node->inode);
         linked_rt_edge->iswitch = iswitch;
         linked_rt_edge->next = nullptr;
 
@@ -340,7 +347,6 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
 
     //Expand (recursively) each of the main-branch nodes adding any
     //non-configurably connected nodes
-    std::unordered_set<int> all_visited = main_branch_visited;
     for (int rr_node : main_branch_visited) {
         add_non_configurable_to_route_tree(rr_node, false, all_visited);
     }
@@ -499,11 +505,11 @@ update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_new_path_rt_node) {
 
     /* Having set the value of C_downstream_addition, we must check whethere the parent switch
      * is a buffered or unbuffered switch with the if statement below. If the parent switch is
-     * a buffered switch, then the parent node's downsteam capacitance is increased by the 
+     * a buffered switch, then the parent node's downsteam capacitance is increased by the
      * value of the parent switch's internal capacitance in the if statement below.
-     * Correspondingly, the ancestors' downstream capacitance will be updated by the same  
+     * Correspondingly, the ancestors' downstream capacitance will be updated by the same
      * value through the while loop. Otherwise, if the parent switch is unbuffered, then
-     * the if statement will be ignored, and the parent and ancestral nodes' downstream 
+     * the if statement will be ignored, and the parent and ancestral nodes' downstream
      * capacitance will be increased by the sum of the child's downstream capacitance with
      * the internal capacitance of the parent switch in the while loop/.*/
 
