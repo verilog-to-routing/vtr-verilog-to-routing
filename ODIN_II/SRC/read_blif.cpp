@@ -368,12 +368,12 @@ void create_latch_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 
 	/* add names and type information to the created input pins */
 	npin_t *new_pin = allocate_npin();
-	new_pin->name = names[0];
+	new_pin->name = vtr::strdup(names[0]);
 	new_pin->type = INPUT;
 	add_input_pin_to_node(new_node, new_pin,0);
 
 	new_pin = allocate_npin();
-	new_pin->name = names[3];
+	new_pin->name = vtr::strdup(names[3]);
 	new_pin->type = INPUT;
 	add_input_pin_to_node(new_node, new_pin,1);
 
@@ -401,8 +401,7 @@ void create_latch_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 	/* Free the char** names */
 	for (i = 0; i < input_token_count; i++)
 		// Except these two since they were assigned to new_node
-		if (i!=0 && i!=3)
-			vtr::free(names[i]);
+		vtr::free(names[i]);
 			
 	vtr::free(names);
 	vtr::free(ptr);
