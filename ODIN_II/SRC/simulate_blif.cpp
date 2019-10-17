@@ -3399,6 +3399,8 @@ static void free_stages(stages_t *s)
 {
 	if(s)
 	{
+		vtr::free(s->num_children); 
+	
 		if(s->stages)
 		{
 			while (s->count--)
