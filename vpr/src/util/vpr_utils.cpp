@@ -318,7 +318,7 @@ std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int 
 
     auto logical_block = clb_nlist.block_type(clb);
 
-    if (is_opin(log_pin, physical_tile_type(logical_block))) {
+    if (is_opin(log_pin, pick_random_physical_type(logical_block))) {
         //output
         AtomPinId driver = find_clb_pin_driver_atom_pin(clb, log_pin, pb_gpin_lookup);
         if (driver) {
@@ -622,20 +622,6 @@ bool is_empty_type(t_logical_block_type_ptr type) {
     auto& device_ctx = g_vpr_ctx.device();
 
     return type == device_ctx.EMPTY_LOGICAL_BLOCK_TYPE;
-}
-
-t_physical_tile_type_ptr physical_tile_type(t_logical_block_type_ptr logical_block_type) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& physical_tiles = device_ctx.physical_tile_types;
-
-    // Loop through the ordered map to get tiles in a decreasing priority order
-    for (auto& physical_tiles_ids : logical_block_type->physical_tiles_priority) {
-        for (auto tile_id : physical_tiles_ids.second) {
-            return &physical_tiles[tile_id];
-        }
-    }
-
-    VPR_THROW(VPR_ERROR_OTHER, "No corresponding physical tile type found for logical block type %s\n", logical_block_type->name);
 }
 
 t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
@@ -2176,7 +2162,7 @@ bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_
     return std::find(equivalent_tiles.begin(), equivalent_tiles.end(), physical_tile) != equivalent_tiles.end();
 }
 
-t_physical_tile_type_ptr pick_random_placement_type(t_logical_block_type_ptr logical_block) {
+t_physical_tile_type_ptr pick_random_physical_type(t_logical_block_type_ptr logical_block) {
     auto equivalent_tiles = logical_block->equivalent_tiles;
 
     size_t num_equivalent_tiles = equivalent_tiles.size();
@@ -2187,6 +2173,44 @@ t_physical_tile_type_ptr pick_random_placement_type(t_logical_block_type_ptr log
     }
 
     return equivalent_tiles[index];
+}
+
+int get_logical_pin(t_physical_tile_type_ptr physical_tile,
+                    t_logical_block_type_ptr logical_block,
+                    int pin) {
+    t_physical_pin physical_pin(pin);
+
+    auto direct_map = physical_tile->tile_block_pin_directs_map.at(logical_block->index);
+    auto result = direct_map.find(physical_pin);
+
+    if (result == direct_map.inverse_end()) {
+        VTR_LOG_WARN(
+            "Couldn't find the corresponding logical pin of the physical pin %d."
+            "Physical Tile: %s, Logical Block: %s.\n",
+            pin, physical_tile->name, logical_block->name);
+        return OPEN;
+    }
+
+    return result->second.pin;
+}
+
+int get_physical_pin(t_physical_tile_type_ptr physical_tile,
+                     t_logical_block_type_ptr logical_block,
+                     int pin) {
+    t_logical_pin logical_pin(pin);
+
+    auto direct_map = physical_tile->tile_block_pin_directs_map.at(logical_block->index);
+    auto result = direct_map.find(logical_pin);
+
+    if (result == direct_map.end()) {
+        VTR_LOG_WARN(
+            "Couldn't find the corresponding physical pin of the logical pin %d."
+            "Physical Tile: %s, Logical Block: %s.\n",
+            pin, physical_tile->name, logical_block->name);
+        return OPEN;
+    }
+
+    return result->second.pin;
 }
 
 void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision) {
