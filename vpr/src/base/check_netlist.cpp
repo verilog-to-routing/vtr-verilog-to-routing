@@ -91,12 +91,14 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
     int global_to_non_global_connection_count = 0;
     for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
         ClusterBlockId blk_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-        int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
-
         auto logical_type = cluster_ctx.clb_nlist.block_type(blk_id);
-        auto physical_type = physical_tile_type(logical_type);
+        auto physical_type = pick_random_physical_type(logical_type);
+
+        int log_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+        int pin_index = get_physical_pin(physical_type, logical_type, log_index);
+
         if (physical_type->is_ignored_pin[pin_index] != net_is_ignored
-            && !is_io_type(physical_tile_type(logical_type))) {
+            && !is_io_type(physical_type)) {
             VTR_LOGV_WARN(verbosity > 2,
                           "Global net '%s' connects to non-global architecture pin '%s' (netlist pin '%s')\n",
                           cluster_ctx.clb_nlist.net_name(net_id).c_str(),
