@@ -973,6 +973,47 @@ def add_tile_tags(arch):
     return True
 
 def add_site_directs(arch):
+    """
+    This function adds the direct pin mappings between a physical
+    tile and a corresponding logical block.
+
+    Note: the example below is only for explanatory reasons, the signal names are invented
+
+    BEFORE:
+    <tiles>
+        <tile name="BRAM_TILE" area="2" height="4" width="1" capacity="1">
+            <inputs ... />
+            <outputs ... />
+            <fc ... />
+            <pinlocations ... />
+            <switchblock_locations ... />
+            <equivalent_sites>
+                <site pb_type="BRAM_SITE"/>
+            </equivalent_sites>
+        </tile>
+    </tiles>
+
+    AFTER:
+    <tiles>
+        <tile name="BRAM_TILE" area="2" height="4" width="1" capacity="1">
+            <inputs ... />
+            <outputs ... />
+            <fc ... />
+            <pinlocations ... />
+            <switchblock_locations ... />
+            <equivalent_sites>
+                <site pb_type="BRAM">
+                    <direct from="BRAM_TILE.ADDRA[0:15]" to="BRAM_SITE.ADDRA[0:15]"/>
+                    <direct from="BRAM_TILE.ADDRB[0:15]" to="BRAM_SITE.ADDRB[0:15]"/>
+                    <direct from="BRAM_TILE.DATA[0:15]" to="BRAM_SITE.DATA_A[0:15]"/>
+                    <direct from="BRAM_TILE.DATA[16:31]" to="BRAM_SITE.DATA_B[0:15]"/>
+                    ...
+                </site>
+            </equivalent_sites>
+        </tile>
+    </tiles>
+    """
+
     TAGS_TO_COPY = ['input', 'output', 'clock']
 
     def add_directs(equivalent_site, pb_type):
