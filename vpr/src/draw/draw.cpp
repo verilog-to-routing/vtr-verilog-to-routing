@@ -2730,11 +2730,9 @@ void deselect_all() {
 static void draw_reset_blk_color(ClusterBlockId blk_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-
     t_draw_state* draw_state = get_draw_state_vars();
 
-    draw_state->block_color[blk_id] = get_block_type_color(physical_tile_type(logical_block));
+    draw_state->block_color[blk_id] = get_block_type_color(physical_tile_type(blk_id));
 }
 
 /**
