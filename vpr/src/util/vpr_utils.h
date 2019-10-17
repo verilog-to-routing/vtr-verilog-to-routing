@@ -29,7 +29,6 @@ bool is_empty_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_logical_block_type_ptr type);
 
 //Returns the corresponding physical/logical type given the logical/physical type as parameter
-t_physical_tile_type_ptr physical_tile_type(t_logical_block_type_ptr logical_block_type);
 t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
 t_logical_block_type_ptr logical_block_type(t_physical_tile_type_ptr physical_tile_type);
 
@@ -172,7 +171,14 @@ void place_sync_external_block_connections(ClusterBlockId iblk);
 int get_max_num_pins(t_logical_block_type_ptr logical_block);
 
 bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block);
-t_physical_tile_type_ptr pick_random_placement_type(t_logical_block_type_ptr logical_block);
+t_physical_tile_type_ptr pick_random_physical_type(t_logical_block_type_ptr logical_block);
+
+int get_logical_pin(t_physical_tile_type_ptr physical_tile,
+                    t_logical_block_type_ptr logical_block,
+                    int pin);
+int get_physical_pin(t_physical_tile_type_ptr physical_tile,
+                     t_logical_block_type_ptr logical_block,
+                     int pin);
 
 int max_pins_per_grid_tile();
 
