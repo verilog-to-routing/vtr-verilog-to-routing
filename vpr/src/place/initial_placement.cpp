@@ -273,7 +273,7 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
             auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
             /* Don't do IOs if the user specifies IOs; we'll read those locations later. */
-            if (!(is_io_type(physical_tile_type(logical_block)) && pad_loc_type == USER)) {
+            if (!(is_io_type(pick_random_physical_type(logical_block)) && pad_loc_type == USER)) {
                 /* Randomly select a free location of the appropriate type for blk_id.
                  * We have a linearized list of all the free locations that can
                  * accommodate a block of that type in free_locations[itype].
@@ -304,7 +304,7 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
                 place_ctx.block_locs[blk_id].loc = to;
 
                 //Mark IOs as fixed if specifying a (fixed) random placement
-                if (is_io_type(physical_tile_type(logical_block)) && pad_loc_type == RANDOM) {
+                if (is_io_type(pick_random_physical_type(logical_block)) && pad_loc_type == RANDOM) {
                     place_ctx.block_locs[blk_id].is_fixed = true;
                 }
 
