@@ -861,7 +861,10 @@ void free_draw_structs() {
     if (draw_state != nullptr) {
         free(draw_state->draw_rr_node);
         draw_state->draw_rr_node = nullptr;
+
+        draw_state->setup_timing_info.reset();
     }
+
 #else
     ;
 #endif /* NO_GRAPHICS */
