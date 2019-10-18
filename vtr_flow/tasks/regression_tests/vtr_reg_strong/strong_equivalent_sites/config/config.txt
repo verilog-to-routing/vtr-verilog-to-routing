@@ -9,10 +9,10 @@ circuits_dir=benchmarks/microbenchmarks
 archs_dir=arch/equivalent_sites
 
 # Add circuits to list to sweep
-circuit_list_add=carry_chain.blif
+circuit_list_add=equivalent.blif
 
 # Add architectures to list to sweep
-arch_list_add=slice.xml
+arch_list_add=equivalent.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
