@@ -1722,7 +1722,6 @@ static void free_placement_structs(const t_placer_opts& placer_opts) {
     free_placement_macros_structs();
 
     /* Frees up all the data structure used in vpr_utils. */
-    free_port_pin_from_blk_pin();
     free_blk_pin_from_port_pin();
 }
 
