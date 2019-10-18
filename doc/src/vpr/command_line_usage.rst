@@ -82,6 +82,12 @@ Graphics Options
     The higher the number, the more infrequently the program will pause.
 
     **Default:** ``1``
+    
+ .. option:: --save_graphics {on | off}
+
+    If set to on, this option will save an image of the final placement phase and the final routing phase of vpr to pdf files on disk, with no need for any user interaction. The files are named vpr_placement.pdf and vpr_routing.pdf.
+
+    **Default:** ``off``
 
 .. _general_options:
 
