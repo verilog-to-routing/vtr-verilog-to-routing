@@ -317,8 +317,11 @@ std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int 
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     auto logical_block = clb_nlist.block_type(clb);
+    auto physical_tile = pick_random_physical_type(logical_block);
 
-    if (is_opin(log_pin, pick_random_physical_type(logical_block))) {
+    int phy_pin = get_physical_pin(physical_tile, logical_block, log_pin);
+
+    if (is_opin(phy_pin, physical_tile)) {
         //output
         AtomPinId driver = find_clb_pin_driver_atom_pin(clb, log_pin, pb_gpin_lookup);
         if (driver) {
