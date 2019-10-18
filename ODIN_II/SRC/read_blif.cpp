@@ -535,7 +535,15 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
 	hard_block_ports *ports = get_hard_block_ports(mappings, count);
 
 	for (i = 0; i < count; i++)
+	{
+		if (mappings[i] != NULL)
+			mappings[i] = NULL;
+
 		vtr::free(mappings[i]);
+	}
+	
+	mappings = NULL;
+	vtr::free(mappings);
 
 	// Look up the model in the models cache.
  	hard_block_model *model = NULL;
@@ -646,7 +654,6 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
 	for (i = 0; i < count; i++)
 		vtr::free(mappings[i]);
 		
-  	vtr::free(mappings);
   	vtr::free(names);
 
 
