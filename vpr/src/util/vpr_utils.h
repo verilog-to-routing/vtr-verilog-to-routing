@@ -152,9 +152,6 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb
 float compute_primitive_base_cost(const t_pb_graph_node* primitive);
 int num_ext_inputs_atom_block(AtomBlockId blk_id);
 
-void get_port_pin_from_blk_pin(int blk_type_index, int blk_pin, int* port, int* port_pin);
-void free_port_pin_from_blk_pin();
-
 void get_blk_pin_from_port_pin(int blk_type_index, int port, int port_pin, int* blk_pin);
 void free_blk_pin_from_port_pin();
 
