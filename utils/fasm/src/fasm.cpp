@@ -605,6 +605,7 @@ void FasmWriterVisitor::walk_routing() {
 
     for(const auto &trace : route_ctx.trace) {
       t_trace *head = trace.head;
+      if (!head) continue;
       t_rt_node* root = traceback_to_route_tree(head);
       walk_route_tree(root);
       free_route_tree(root);
