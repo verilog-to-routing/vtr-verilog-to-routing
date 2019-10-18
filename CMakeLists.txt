@@ -321,8 +321,10 @@ if (VPR_USE_EZGL STREQUAL "auto")
 
     if(GTK3_FOUND AND X11_FOUND)
         set(VPR_USE_EZGL "on")
+        message(STATUS "VPR Graphics: Enabled")
     else()
         set(VPR_USE_EZGL "off")
+        message(STATUS "VPR Graphics: Disabled (required libraries missing, on debia/ubuntu try: sudo apt install libgtk-3 libx11-dev")
     endif()
 endif()
 
