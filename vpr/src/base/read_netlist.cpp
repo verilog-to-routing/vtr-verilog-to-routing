@@ -949,45 +949,45 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
      * and blocks point back to net pins */
     for (auto blk_id : clb_nlist.blocks()) {
         block_type = clb_nlist.block_type(blk_id);
-        // XXX Use pin mapping here! To check that all the possible pins can be used in the correct tile!
-        for (const auto& tile_type : block_type->equivalent_tiles) {
-            for (j = 0; j < tile_type->num_pins; j++) {
-                //Iterate through each pin of the block, and see if there is a net allocated/used for it
-                clb_net_id = clb_nlist.block_net(blk_id, j);
+        auto tile_type = pick_random_physical_type(block_type);
+        for (j = 0; j < block_type->pb_type->num_pins; j++) {
+            int phy_pin = get_physical_pin(tile_type, block_type, j);
 
-                if (clb_net_id != ClusterNetId::INVALID()) {
-                    //Verify old and new CLB netlists have the same # of pins per net
-                    if (RECEIVER == tile_type->class_inf[tile_type->pin_class[j]].type) {
-                        count[clb_net_id]++;
+            //Iterate through each pin of the block, and see if there is a net allocated/used for it
+            clb_net_id = clb_nlist.block_net(blk_id, j);
 
-                        if (count[clb_net_id] > (int)clb_nlist.net_sinks(clb_net_id).size()) {
-                            VPR_FATAL_ERROR(VPR_ERROR_NET_F,
-                                            "net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n",
-                                            clb_nlist.net_name(clb_net_id).c_str(), size_t(clb_net_id), count[clb_net_id],
-                                            clb_nlist.net_sinks(clb_net_id).size());
-                        }
+            if (clb_net_id != ClusterNetId::INVALID()) {
+                //Verify old and new CLB netlists have the same # of pins per net
+                if (RECEIVER == tile_type->class_inf[tile_type->pin_class[phy_pin]].type) {
+                    count[clb_net_id]++;
 
-                        //Asserts the ClusterBlockId is the same when ClusterNetId & pin BitIndex is provided
-                        VTR_ASSERT(blk_id == clb_nlist.pin_block(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
-                        //Asserts the block's pin index is the same
-                        VTR_ASSERT(j == clb_nlist.pin_physical_index(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
-                        VTR_ASSERT(j == clb_nlist.net_pin_physical_index(clb_net_id, count[clb_net_id]));
-
-                        // nets connecting to global pins are marked as global nets
-                        if (tile_type->is_pin_global[j]) {
-                            clb_nlist.set_net_is_global(clb_net_id, true);
-                        }
-
-                        if (tile_type->is_ignored_pin[j]) {
-                            clb_nlist.set_net_is_ignored(clb_net_id, true);
-                        }
-                        /* Error check performed later to ensure no mixing of ignored and non ignored signals */
-
-                    } else {
-                        VTR_ASSERT(DRIVER == tile_type->class_inf[tile_type->pin_class[j]].type);
-                        VTR_ASSERT(j == clb_nlist.pin_physical_index(*(clb_nlist.net_pins(clb_net_id).begin())));
-                        VTR_ASSERT(j == clb_nlist.net_pin_physical_index(clb_net_id, 0));
+                    if (count[clb_net_id] > (int)clb_nlist.net_sinks(clb_net_id).size()) {
+                        VPR_FATAL_ERROR(VPR_ERROR_NET_F,
+                                        "net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n",
+                                        clb_nlist.net_name(clb_net_id).c_str(), size_t(clb_net_id), count[clb_net_id],
+                                        clb_nlist.net_sinks(clb_net_id).size());
                     }
+
+                    //Asserts the ClusterBlockId is the same when ClusterNetId & pin BitIndex is provided
+                    VTR_ASSERT(blk_id == clb_nlist.pin_block(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
+                    //Asserts the block's pin index is the same
+                    VTR_ASSERT(j == clb_nlist.pin_physical_index(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
+                    VTR_ASSERT(j == clb_nlist.net_pin_physical_index(clb_net_id, count[clb_net_id]));
+
+                    // nets connecting to global pins are marked as global nets
+                    if (tile_type->is_pin_global[phy_pin]) {
+                        clb_nlist.set_net_is_global(clb_net_id, true);
+                    }
+
+                    if (tile_type->is_ignored_pin[phy_pin]) {
+                        clb_nlist.set_net_is_ignored(clb_net_id, true);
+                    }
+                    /* Error check performed later to ensure no mixing of ignored and non ignored signals */
+
+                } else {
+                    VTR_ASSERT(DRIVER == tile_type->class_inf[tile_type->pin_class[phy_pin]].type);
+                    VTR_ASSERT(j == clb_nlist.pin_physical_index(*(clb_nlist.net_pins(clb_net_id).begin())));
+                    VTR_ASSERT(j == clb_nlist.net_pin_physical_index(clb_net_id, 0));
                 }
             }
         }
