@@ -63,19 +63,24 @@ static void print_stats() {
     /* Counters used only for statistics purposes. */
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        // XXX Use mapping here
-        auto type = cluster_ctx.clb_nlist.block_type(blk_id)->equivalent_tiles[0];
-        for (ipin = 0; ipin < type->num_pins; ipin++) {
+        auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+        auto physical_tile = pick_random_physical_type(logical_block);
+        for (ipin = 0; ipin < logical_block->pb_type->num_pins; ipin++) {
+            int phy_pin = get_physical_pin(physical_tile, logical_block, ipin);
+            auto pin_class = physical_tile->pin_class[phy_pin];
+            auto pin_class_inf = physical_tile->class_inf[pin_class];
+
             if (cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route.empty()) {
                 ClusterNetId clb_net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
                 if (clb_net_id != ClusterNetId::INVALID()) {
                     auto net_id = atom_ctx.lookup.atom_net(clb_net_id);
                     VTR_ASSERT(net_id);
                     nets_absorbed[net_id] = false;
-                    if (type->class_inf[type->pin_class[ipin]].type == RECEIVER) {
-                        num_clb_inputs_used[type->index]++;
-                    } else if (type->class_inf[type->pin_class[ipin]].type == DRIVER) {
-                        num_clb_outputs_used[type->index]++;
+
+                    if (pin_class_inf.type == RECEIVER) {
+                        num_clb_inputs_used[logical_block->index]++;
+                    } else if (pin_class_inf.type == DRIVER) {
+                        num_clb_outputs_used[logical_block->index]++;
                     }
                 }
             } else {
@@ -87,16 +92,16 @@ static void print_stats() {
                     auto atom_net_id = pb->pb_route[pb_graph_pin_id].atom_net_id;
                     if (atom_net_id) {
                         nets_absorbed[atom_net_id] = false;
-                        if (type->class_inf[type->pin_class[ipin]].type == RECEIVER) {
-                            num_clb_inputs_used[type->index]++;
-                        } else if (type->class_inf[type->pin_class[ipin]].type == DRIVER) {
-                            num_clb_outputs_used[type->index]++;
+                        if (pin_class_inf.type == RECEIVER) {
+                            num_clb_inputs_used[logical_block->index]++;
+                        } else if (pin_class_inf.type == DRIVER) {
+                            num_clb_outputs_used[logical_block->index]++;
                         }
                     }
                 }
             }
         }
-        num_clb_types[type->index]++;
+        num_clb_types[logical_block->index]++;
     }
 
     for (itype = 0; itype < device_ctx.logical_block_types.size(); itype++) {
