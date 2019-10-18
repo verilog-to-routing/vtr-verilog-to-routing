@@ -677,10 +677,6 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 	{
 		skip_reading_bit_map = true;
 		free_nnode(new_node);
-		for(int i = 0; i < input_count; i++)
-		{
-			vtr::free(names[i]);
-		}
 	}
 	else
 	{
@@ -723,7 +719,7 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 		for(i = 0; i <= input_count-2; i++)
 		{
 			npin_t *new_pin = allocate_npin();
-			new_pin->name = names[i];
+			new_pin->name = vtr::strdup(names[i]);
 			new_pin->type = INPUT;
 			add_input_pin_to_node(new_node, new_pin, i);
 		}
@@ -779,9 +775,11 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 
 		output_nets_hash->add(new_node->name, new_net);
 
-		vtr::free(names[input_count-1]); 
 	}
 	/* Free the char** names */
+	for(int i = 0; i < input_count; i++)
+		vtr::free(names[i]);
+
 	vtr::free(names);
 }
 
