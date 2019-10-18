@@ -77,11 +77,16 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
 
     num_macro = 0;
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+        auto physical_tile = pick_random_physical_type(logical_block);
+
         num_blk_pins = cluster_ctx.clb_nlist.block_type(blk_id)->pb_type->num_pins;
         for (to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {
+            int to_phy_pin = get_physical_pin(physical_tile, logical_block, to_iblk_pin);
+
             to_net_id = cluster_ctx.clb_nlist.block_net(blk_id, to_iblk_pin);
-            to_idirect = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type(blk_id)->index][to_iblk_pin];
-            to_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type(blk_id)->index][to_iblk_pin];
+            to_idirect = f_idirect_from_blk_pin[physical_tile->index][to_phy_pin];
+            to_src_or_sink = f_direct_type_from_blk_pin[physical_tile->index][to_phy_pin];
 
             // Identify potential macro head blocks (i.e. start of a macro)
             //
@@ -97,9 +102,11 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
                     || (is_constant_clb_net(to_net_id)
                         && !net_is_driven_by_direct(to_net_id)))) {
                 for (from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
+                    int from_phy_pin = get_physical_pin(physical_tile, logical_block, from_iblk_pin);
+
                     from_net_id = cluster_ctx.clb_nlist.block_net(blk_id, from_iblk_pin);
-                    from_idirect = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type(blk_id)->index][from_iblk_pin];
-                    from_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type(blk_id)->index][from_iblk_pin];
+                    from_idirect = f_idirect_from_blk_pin[physical_tile->index][from_phy_pin];
+                    from_src_or_sink = f_direct_type_from_blk_pin[physical_tile->index][from_phy_pin];
 
                     // Confirm whether this is a head macro
                     //
@@ -129,8 +136,8 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
                             next_blk_id = cluster_ctx.clb_nlist.net_pin_block(curr_net_id, 1);
 
                             // Assume that the from_iblk_pin index is the same for the next block
-                            VTR_ASSERT(f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type(next_blk_id)->index][from_iblk_pin] == from_idirect
-                                       && f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type(next_blk_id)->index][from_iblk_pin] == SOURCE);
+                            VTR_ASSERT(f_idirect_from_blk_pin[physical_tile->index][from_phy_pin] == from_idirect
+                                       && f_direct_type_from_blk_pin[physical_tile->index][from_phy_pin] == SOURCE);
                             next_net_id = cluster_ctx.clb_nlist.block_net(next_blk_id, from_iblk_pin);
 
                             // Mark down this block as a member of the macro
