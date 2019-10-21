@@ -637,20 +637,6 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
     return device_ctx.grid[loc.x][loc.y].type;
 }
 
-t_logical_block_type_ptr logical_block_type(t_physical_tile_type_ptr physical_tile_type) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& logical_blocks = device_ctx.logical_block_types;
-
-    // Loop through the ordered map to get tiles in a decreasing priority order
-    for (auto& logical_blocks_ids : physical_tile_type->logical_blocks_priority) {
-        for (auto block_id : logical_blocks_ids.second) {
-            return &logical_blocks[block_id];
-        }
-    }
-
-    VPR_THROW(VPR_ERROR_OTHER, "No corresponding logical block type found for physical tile type %s\n", physical_tile_type->name);
-}
-
 /* Each node in the pb_graph for a top-level pb_type can be uniquely identified
  * by its pins. Since the pins in a cluster of a certain type are densely indexed,
  * this function will find the pin index (int pin_count_in_cluster) of the first
@@ -2176,6 +2162,19 @@ t_physical_tile_type_ptr pick_random_physical_type(t_logical_block_type_ptr logi
     }
 
     return equivalent_tiles[index];
+}
+
+t_logical_block_type_ptr pick_random_logical_type(t_physical_tile_type_ptr physical_tile) {
+    auto equivalent_sites = physical_tile->equivalent_sites;
+
+    size_t num_equivalent_sites = equivalent_sites.size();
+    int index = 0;
+
+    if (num_equivalent_sites > 1) {
+        index = vtr::irand((int)equivalent_sites.size() - 1);
+    }
+
+    return equivalent_sites[index];
 }
 
 int get_logical_pin(t_physical_tile_type_ptr physical_tile,
