@@ -537,6 +537,16 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
 	// Index the mappings in a hard_block_ports struct.
 	hard_block_ports *ports = get_hard_block_ports(mappings, count);
 
+	for (i = 0; i < count; i++)
+	{
+		vtr::free(mappings[i]);
+		mappings[i] = NULL;
+	}
+	
+	vtr::free(mappings);
+	mappings = NULL;
+
+
 	// Look up the model in the models cache.
  	hard_block_model *model = NULL;
  	if ((subcircuit_name != NULL) && (!(model = get_hard_block_model(subcircuit_name, ports, models))))
@@ -642,8 +652,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
 
   	free_hard_block_ports(ports);
   	mapping_index->destroy_free_items();
-	delete mapping_index;
-  	vtr::free(mappings);
+	delete mapping_index;		
   	vtr::free(names);
 
 
