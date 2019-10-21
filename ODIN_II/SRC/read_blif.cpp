@@ -536,14 +536,13 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
 
 	for (i = 0; i < count; i++)
 	{
-		if (mappings[i] != NULL)
-			mappings[i] = NULL;
-
 		vtr::free(mappings[i]);
+		mappings[i] = NULL;
 	}
 	
-	mappings = NULL;
 	vtr::free(mappings);
+	mappings = NULL;
+
 
 	// Look up the model in the models cache.
  	hard_block_model *model = NULL;
