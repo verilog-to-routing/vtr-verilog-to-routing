@@ -150,7 +150,7 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    if (base_cost_type == DEMAND_ONLY) {
+    if (base_cost_type == DEMAND_ONLY || base_cost_type == DEMAND_ONLY_NORMALIZED_LENGTH) {
         delay_normalization_fac = 1.;
     } else {
         delay_normalization_fac = get_delay_normalization_fac(nodes_per_chan, L_rr_node_indices);
@@ -174,7 +174,7 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
         if (base_cost_type == DELAY_NORMALIZED || base_cost_type == DEMAND_ONLY) {
             device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac;
 
-        } else if (base_cost_type == DELAY_NORMALIZED_LENGTH) {
+        } else if (base_cost_type == DELAY_NORMALIZED_LENGTH || base_cost_type == DEMAND_ONLY_NORMALIZED_LENGTH) {
             device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac / device_ctx.rr_indexed_data[index].inv_length;
 
         } else if (base_cost_type == DELAY_NORMALIZED_FREQUENCY) {

@@ -190,9 +190,6 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             case TIMING_DRIVEN:
                 VTR_LOG("TIMING_DRIVEN\n");
                 break;
-            case NO_TIMING:
-                VTR_LOG("NO_TIMING\n");
-                break;
             default:
                 vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "<Unknown>\n");
         }
@@ -213,6 +210,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 break;
             case DEMAND_ONLY:
                 VTR_LOG("DEMAND_ONLY\n");
+                break;
+            case DEMAND_ONLY_NORMALIZED_LENGTH:
+                VTR_LOG("DEMAND_ONLY_NORMALIZED_LENGTH\n");
                 break;
             default:
                 vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown base_cost_type\n");
@@ -266,9 +266,6 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 break;
             case TIMING_DRIVEN:
                 VTR_LOG("TIMING_DRIVEN\n");
-                break;
-            case NO_TIMING:
-                VTR_LOG("NO_TIMING\n");
                 break;
             default:
                 VTR_LOG_ERROR("Unknown router algorithm\n");
