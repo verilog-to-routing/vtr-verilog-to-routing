@@ -28,9 +28,8 @@ bool is_io_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_logical_block_type_ptr type);
 
-//Returns the corresponding physical/logical type given the logical/physical type as parameter
+//Returns the corresponding physical type given the logical type as parameter
 t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
-t_logical_block_type_ptr logical_block_type(t_physical_tile_type_ptr physical_tile_type);
 
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node);
 
@@ -172,6 +171,7 @@ int get_max_num_pins(t_logical_block_type_ptr logical_block);
 
 bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block);
 t_physical_tile_type_ptr pick_random_physical_type(t_logical_block_type_ptr logical_block);
+t_logical_block_type_ptr pick_random_logical_type(t_physical_tile_type_ptr physical_tile);
 
 int get_logical_pin(t_physical_tile_type_ptr physical_tile,
                     t_logical_block_type_ptr logical_block,

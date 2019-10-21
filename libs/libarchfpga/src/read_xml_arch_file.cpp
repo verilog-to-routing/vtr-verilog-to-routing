@@ -642,7 +642,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
             if (port.equivalent != PortEquivalence::NONE) {
                 PhysicalTileType->class_inf[num_class].num_pins = port.num_pins;
                 PhysicalTileType->class_inf[num_class].pinlist = (int*)vtr::malloc(sizeof(int) * port.num_pins);
-                PhysicalTileType->class_inf[num_class].equivalence = PhysicalTileType->ports[i].equivalent;
+                PhysicalTileType->class_inf[num_class].equivalence = port.equivalent;
             }
 
             for (k = 0; k < port.num_pins; ++k) {
