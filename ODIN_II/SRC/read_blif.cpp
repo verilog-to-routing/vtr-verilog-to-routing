@@ -1556,10 +1556,13 @@ hard_block_ports *get_hard_block_ports(char **pins, int count)
 			ports->sizes[ports->count] = 0;
 			ports->names[ports->count] = portname;
 			ports->count++;
+			prev_portname = portname;
+
+		} else {
+			vtr::free(portname);
 		}
 
 		ports->sizes[ports->count-1]++;
-		prev_portname = portname;
 	}
 
 	ports->signature = generate_hard_block_ports_signature(ports);
