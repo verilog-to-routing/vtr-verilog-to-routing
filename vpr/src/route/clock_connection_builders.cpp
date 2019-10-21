@@ -234,8 +234,16 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
             auto width_offset = grid[x][y].width_offset;
             auto height_offset = grid[x][y].height_offset;
 
-            // Ignore gird locations that do not have blocks
-            if (!logical_block_type(type)->pb_type) {
+            // Ignore grid locations that do not have blocks
+            bool has_pb_type = false;
+            for (auto logical_block : type->equivalent_sites) {
+                if (logical_block->pb_type) {
+                    has_pb_type = true;
+                    break;
+                }
+            }
+
+            if (!has_pb_type) {
                 continue;
             }
 
