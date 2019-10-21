@@ -3,89 +3,85 @@
   <models>
     <model name="IO_0">
       <input_ports>
-        <port name="I" combinational_sink_ports="O"/>
+        <port name="in" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
-        <port name="O"/>
+        <port name="out"/>
       </output_ports>
     </model>
     <model name="IO_1">
       <input_ports>
-        <port name="I" combinational_sink_ports="O"/>
+        <port name="in" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
-        <port name="O"/>
+        <port name="out"/>
       </output_ports>
     </model>
     <model name="IO_2">
       <input_ports>
-        <port name="I" combinational_sink_ports="O"/>
+        <port name="in" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
-        <port name="O"/>
+        <port name="out"/>
       </output_ports>
     </model>
     <model name="IO_3">
       <input_ports>
-        <port name="I" combinational_sink_ports="O"/>
+        <port name="in" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
-        <port name="O"/>
+        <port name="out"/>
       </output_ports>
     </model>
   </models>
   <tiles>
     <tile name="io_tile">
-      <input name="I" num_pins="1"/>
-      <output name="O" num_pins="1"/>
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
       <equivalent_sites>
-        <site pb_type="io_site_0">
-          <direct from="io_tile.I" to="io_site_0.I"/>
-          <direct from="io_tile.O" to="io_site_0.O"/>
-        </site>
-        <site pb_type="io_site_1">
-          <direct from="io_tile.I" to="io_site_1.I"/>
-          <direct from="io_tile.O" to="io_site_1.O"/>
-        </site>
-        <site pb_type="io_site_2">
-          <direct from="io_tile.I" to="io_site_2.I"/>
-          <direct from="io_tile.O" to="io_site_2.O"/>
-        </site>
-        <site pb_type="io_site_3">
-          <direct from="io_tile.I" to="io_site_3.I"/>
-          <direct from="io_tile.O" to="io_site_3.O"/>
+        <site pb_type="io_block">
+          <direct from="io_tile.in" to="io_block.in"/>
+          <direct from="io_tile.out" to="io_block.out"/>
         </site>
       </equivalent_sites>
-      <pinlocations pattern="custom">
-        <loc side="top" xoffset="0" yoffset="0">io_tile.I io_tile.O</loc>
-        <loc side="left" xoffset="0" yoffset="0">io_tile.I io_tile.O</loc>
-        <loc side="bottom" xoffset="0" yoffset="0">io_tile.I io_tile.O</loc>
-        <loc side="right" xoffset="0" yoffset="0">io_tile.I io_tile.O</loc>
-      </pinlocations>
+      <pinlocations pattern="spread"/>
+      <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+    </tile>
+    <tile name="pass_through_tile">
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
+      <equivalent_sites>
+        <site pb_type="io_site_0">
+          <direct from="pass_through_tile.in" to="io_site_0.in"/>
+          <direct from="pass_through_tile.out" to="io_site_0.out"/>
+        </site>
+        <site pb_type="io_site_1">
+          <direct from="pass_through_tile.in" to="io_site_1.in"/>
+          <direct from="pass_through_tile.out" to="io_site_1.out"/>
+        </site>
+        <site pb_type="io_site_2">
+          <direct from="pass_through_tile.in" to="io_site_2.in"/>
+          <direct from="pass_through_tile.out" to="io_site_2.out"/>
+        </site>
+        <site pb_type="io_site_3">
+          <direct from="pass_through_tile.in" to="io_site_3.in"/>
+          <direct from="pass_through_tile.out" to="io_site_3.out"/>
+        </site>
+      </equivalent_sites>
+      <pinlocations pattern="spread"/>
       <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
     </tile>
   </tiles>
   <complexblocklist>
-    <pb_type name="io_site_0">
-      <input name="I" num_pins="1"/>
-      <output name="O" num_pins="1"/>
-      <mode name="INOUT">
-        <pb_type blif_model=".subckt IO_0" name="io_0" num_pb="1">
-          <input name="I" num_pins="1"/>
-          <output name="O" num_pins="1"/>
-          <delay_constant max="1.667e-9" in_port="io_0.I" out_port="io_0.O"/>
-        </pb_type>
-        <interconnect>
-          <direct input="io_site_0.I" name="i_0" output="io_0.I"/>
-          <direct input="io_0.O" name="o_0" output="io_site_0.O"/>
-        </interconnect>
-      </mode>
+    <pb_type name="io_block">
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
       <mode name="IN">
         <pb_type blif_model=".input" name="input_0" num_pb="1">
           <output name="inpad" num_pins="1"/>
         </pb_type>
         <interconnect>
-          <direct input="input_0.inpad" name="i_0" output="io_site_0.O"/>
+          <direct input="input_0.inpad" name="i_0" output="io_block.out"/>
         </interconnect>
       </mode>
       <mode name="OUT">
@@ -93,118 +89,85 @@
           <input name="outpad" num_pins="1"/>
         </pb_type>
         <interconnect>
-          <direct input="io_site_0.I" name="o_0" output="output_0.outpad"/>
+          <direct input="io_block.in" name="o_0" output="output_0.outpad"/>
+        </interconnect>
+      </mode>
+    </pb_type>
+    <pb_type name="io_site_0">
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
+      <mode name="INOUT">
+        <pb_type blif_model=".subckt IO_0" name="io_0" num_pb="1">
+          <input name="in" num_pins="1"/>
+          <output name="out" num_pins="1"/>
+          <delay_constant max="1.667e-9" in_port="io_0.in" out_port="io_0.out"/>
+        </pb_type>
+        <interconnect>
+          <direct input="io_site_0.in" name="i_0" output="io_0.in"/>
+          <direct input="io_0.out" name="o_0" output="io_site_0.out"/>
         </interconnect>
       </mode>
     </pb_type>
     <pb_type name="io_site_1">
-      <input name="I" num_pins="1"/>
-      <output name="O" num_pins="1"/>
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
       <mode name="INOUT">
         <pb_type blif_model=".subckt IO_1" name="io_1" num_pb="1">
-          <input name="I" num_pins="1"/>
-          <output name="O" num_pins="1"/>
-          <delay_constant max="1.667e-9" in_port="io_1.I" out_port="io_1.O"/>
+          <input name="in" num_pins="1"/>
+          <output name="out" num_pins="1"/>
+          <delay_constant max="1.667e-9" in_port="io_1.in" out_port="io_1.out"/>
         </pb_type>
         <interconnect>
-          <direct input="io_site_1.I" name="i_1" output="io_1.I"/>
-          <direct input="io_1.O" name="o_1" output="io_site_1.O"/>
-        </interconnect>
-      </mode>
-      <mode name="IN">
-        <pb_type blif_model=".input" name="input_1" num_pb="1">
-          <output name="inpad" num_pins="1"/>
-        </pb_type>
-        <interconnect>
-          <direct input="input_1.inpad" name="i_1" output="io_site_1.O"/>
-        </interconnect>
-      </mode>
-      <mode name="OUT">
-        <pb_type blif_model=".output" name="output_1" num_pb="1">
-          <input name="outpad" num_pins="1"/>
-        </pb_type>
-        <interconnect>
-          <direct input="io_site_1.I" name="o_1" output="output_1.outpad"/>
+          <direct input="io_site_1.in" name="i_1" output="io_1.in"/>
+          <direct input="io_1.out" name="o_1" output="io_site_1.out"/>
         </interconnect>
       </mode>
     </pb_type>
     <pb_type name="io_site_2">
-      <input name="I" num_pins="1"/>
-      <output name="O" num_pins="1"/>
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
       <mode name="INOUT">
         <pb_type blif_model=".subckt IO_2" name="io_2" num_pb="1">
-          <input name="I" num_pins="1"/>
-          <output name="O" num_pins="1"/>
-          <delay_constant max="1.667e-9" in_port="io_2.I" out_port="io_2.O"/>
+          <input name="in" num_pins="1"/>
+          <output name="out" num_pins="1"/>
+          <delay_constant max="1.667e-9" in_port="io_2.in" out_port="io_2.out"/>
         </pb_type>
         <interconnect>
-          <direct input="io_site_2.I" name="i_2" output="io_2.I"/>
-          <direct input="io_2.O" name="o_2" output="io_site_2.O"/>
-        </interconnect>
-      </mode>
-      <mode name="IN">
-        <pb_type blif_model=".input" name="input_2" num_pb="1">
-          <output name="inpad" num_pins="1"/>
-        </pb_type>
-        <interconnect>
-          <direct input="input_2.inpad" name="i_2" output="io_site_2.O"/>
-        </interconnect>
-      </mode>
-      <mode name="OUT">
-        <pb_type blif_model=".output" name="output_2" num_pb="1">
-          <input name="outpad" num_pins="1"/>
-        </pb_type>
-        <interconnect>
-          <direct input="io_site_2.I" name="o_2" output="output_2.outpad"/>
+          <direct input="io_site_2.in" name="i_2" output="io_2.in"/>
+          <direct input="io_2.out" name="o_2" output="io_site_2.out"/>
         </interconnect>
       </mode>
     </pb_type>
     <pb_type name="io_site_3">
-      <input name="I" num_pins="1"/>
-      <output name="O" num_pins="1"/>
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
       <mode name="INOUT">
         <pb_type blif_model=".subckt IO_3" name="io_3" num_pb="1">
-          <input name="I" num_pins="1"/>
-          <output name="O" num_pins="1"/>
-          <delay_constant max="1.667e-9" in_port="io_3.I" out_port="io_3.O"/>
+          <input name="in" num_pins="1"/>
+          <output name="out" num_pins="1"/>
+          <delay_constant max="1.667e-9" in_port="io_3.in" out_port="io_3.out"/>
         </pb_type>
         <interconnect>
-          <direct input="io_site_3.I" name="i_3" output="io_3.I"/>
-          <direct input="io_3.O" name="o_3" output="io_site_3.O"/>
-        </interconnect>
-      </mode>
-      <mode name="IN">
-        <pb_type blif_model=".input" name="input_3" num_pb="1">
-          <output name="inpad" num_pins="1"/>
-        </pb_type>
-        <interconnect>
-          <direct input="input_3.inpad" name="i_3" output="io_site_3.O"/>
-        </interconnect>
-      </mode>
-      <mode name="OUT">
-        <pb_type blif_model=".output" name="output_3" num_pb="1">
-          <input name="outpad" num_pins="1"/>
-        </pb_type>
-        <interconnect>
-          <direct input="io_site_3.I" name="o_3" output="output_3.outpad"/>
+          <direct input="io_site_3.in" name="i_3" output="io_3.in"/>
+          <direct input="io_3.out" name="o_3" output="io_site_3.out"/>
         </interconnect>
       </mode>
     </pb_type>
   </complexblocklist>
   <layout>
-    <fixed_layout name="TEST" width="4" height="4">
+    <fixed_layout name="TEST" width="5" height="5">
       <single priority="1" type="io_tile" x="0" y="0"/>
       <single priority="1" type="io_tile" x="0" y="1"/>
       <single priority="1" type="io_tile" x="0" y="2"/>
       <single priority="1" type="io_tile" x="0" y="3"/>
-      <single priority="1" type="io_tile" x="1" y="0"/>
-      <single priority="1" type="io_tile" x="1" y="1"/>
-      <single priority="1" type="io_tile" x="1" y="2"/>
-      <single priority="1" type="io_tile" x="1" y="3"/>
-      <single priority="1" type="io_tile" x="2" y="0"/>
-      <single priority="1" type="io_tile" x="2" y="1"/>
-      <single priority="1" type="io_tile" x="2" y="2"/>
-      <single priority="1" type="io_tile" x="2" y="3"/>
+      <single priority="1" type="pass_through_tile" x="1" y="0"/>
+      <single priority="1" type="pass_through_tile" x="1" y="1"/>
+      <single priority="1" type="pass_through_tile" x="1" y="2"/>
+      <single priority="1" type="pass_through_tile" x="1" y="3"/>
+      <single priority="1" type="pass_through_tile" x="2" y="0"/>
+      <single priority="1" type="pass_through_tile" x="2" y="1"/>
+      <single priority="1" type="pass_through_tile" x="2" y="2"/>
+      <single priority="1" type="pass_through_tile" x="2" y="3"/>
       <single priority="1" type="io_tile" x="3" y="0"/>
       <single priority="1" type="io_tile" x="3" y="1"/>
       <single priority="1" type="io_tile" x="3" y="2"/>
@@ -233,4 +196,8 @@
       <cb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1</cb>
     </segment>
   </segmentlist>
+  <directlist>
+    <direct from_pin="pass_through_tile.out" name="gno" to_pin="io_tile.in" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct from_pin="io_tile.out" name="gna" to_pin="pass_through_tile.in" x_offset="-1" y_offset="0" z_offset="0"/>
+  </directlist>
 </architecture>
