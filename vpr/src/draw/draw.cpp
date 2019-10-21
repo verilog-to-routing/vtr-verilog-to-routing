@@ -2660,10 +2660,12 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
         if (net_id == ClusterNetId::INVALID())
             continue;
 
-        // XXX Logical Physical Mapping to be used here
-        iclass = physical_tile_type(blk_id)->pin_class[k];
+        auto physical_tile = physical_tile_type(blk_id);
+        int phy_pin = get_physical_pin(physical_tile, type, k);
 
-        if (physical_tile_type(blk_id)->class_inf[iclass].type == DRIVER) { /* Fanout */
+        iclass = physical_tile->pin_class[phy_pin];
+
+        if (physical_tile->class_inf[iclass].type == DRIVER) { /* Fanout */
             if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanout. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
