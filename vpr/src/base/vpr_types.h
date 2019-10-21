@@ -867,17 +867,19 @@ enum e_route_type {
     GLOBAL,
     DETAILED
 };
+
 enum e_router_algorithm {
     BREADTH_FIRST,
     TIMING_DRIVEN,
-    NO_TIMING
 };
+
 enum e_base_cost_type {
     DELAY_NORMALIZED,
     DELAY_NORMALIZED_LENGTH,
     DELAY_NORMALIZED_FREQUENCY,
     DELAY_NORMALIZED_LENGTH_FREQUENCY,
-    DEMAND_ONLY
+    DEMAND_ONLY,
+    DEMAND_ONLY_NORMALIZED_LENGTH
 };
 enum e_routing_failure_predictor {
     OFF,

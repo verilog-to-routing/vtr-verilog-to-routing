@@ -1905,7 +1905,6 @@ static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& t
 bool router_needs_lookahead(enum e_router_algorithm router_algorithm) {
     switch (router_algorithm) {
         case BREADTH_FIRST:
-        case NO_TIMING:
             return false;
         case TIMING_DRIVEN:
             return true;
