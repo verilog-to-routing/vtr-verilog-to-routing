@@ -4,7 +4,6 @@
 .names $false
 .names $true
 1
-.subckt IO_0 I=in O=out_1
-.subckt IO_1 I=out_1 O=out_2
-.subckt IO_2 I=out_2 O=out
+.subckt IO_0 in=in out=out_1
+.subckt IO_1 in=out_1 out=out
 .end
