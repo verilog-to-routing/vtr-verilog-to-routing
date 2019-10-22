@@ -401,7 +401,7 @@ static void generic_compute_matrix_expand(
 
     t_physical_tile_type_ptr src_type = device_ctx.grid[source_x][source_y].type;
     bool is_allowed_type = allowed_types.empty() || allowed_types.find(src_type->name) != allowed_types.end();
-    if (src_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE || !is_allowed_type) {
+    if (is_empty_type(src_type) || !is_allowed_type) {
         for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
             for (int sink_y = start_y; sink_y <= end_y; sink_y++) {
                 int delta_x = abs(sink_x - source_x);
@@ -443,7 +443,8 @@ static void generic_compute_matrix_expand(
                 }
 
                 t_physical_tile_type_ptr sink_type = device_ctx.grid[sink_x][sink_y].type;
-                if (sink_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
+                if (is_empty_type(sink_type)) {
+                    found_matrix[delta_x][delta_y] = true;
                     if (matrix[delta_x][delta_y].empty()) {
                         //Only set empty target if we don't already have a valid delta delay
                         matrix[delta_x][delta_y].push_back(EMPTY_DELTA);
@@ -454,7 +455,6 @@ static void generic_compute_matrix_expand(
                                 source_x, source_y,
                                 sink_x, sink_y);
 #endif
-                        found_matrix[delta_x][delta_y] = true;
                     }
                 } else {
                     bool found_a_sink = false;
