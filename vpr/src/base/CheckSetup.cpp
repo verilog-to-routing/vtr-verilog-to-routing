@@ -23,12 +23,6 @@ void CheckSetup(const t_packer_opts& PackerOpts,
     }
 
     if ((GLOBAL == RouterOpts.route_type)
-        && (TIMING_DRIVEN == RouterOpts.router_algorithm)) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                  "The global router does not support timing-drvien routing.\n");
-    }
-
-    if ((GLOBAL == RouterOpts.route_type)
         && (BOUNDING_BOX_PLACE != PlacerOpts.place_algorithm)) {
         /* Works, but very weird.  Can't optimize timing well, since you're
          * not doing proper architecture delay modelling. */
