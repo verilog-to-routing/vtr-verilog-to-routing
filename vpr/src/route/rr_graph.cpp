@@ -2538,9 +2538,10 @@ std::string describe_rr_node(int inode) {
                                    device_ctx.arch->Segments[seg_index].name.c_str(),
                                    rr_node.direction_string());
         } else {
-            msg += vtr::string_fmt(" track: %d len: %d seg_type: ILLEGAL_SEG_INDEX dir: %s",
+            msg += vtr::string_fmt(" track: %d len: %d seg_type: ILLEGAL_SEG_INDEX %d dir: %s",
                                    rr_node.track_num(),
                                    rr_node.length(),
+                                   seg_index,
                                    rr_node.direction_string());
         }
     } else if (rr_node.type() == IPIN || rr_node.type() == OPIN) {
@@ -2555,6 +2556,8 @@ std::string describe_rr_node(int inode) {
 
         msg += vtr::string_fmt(" class: %d", rr_node.class_num());
     }
+
+    msg += vtr::string_fmt(" capacity: %d", rr_node.capacity());
 
     return msg;
 }
