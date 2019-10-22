@@ -1824,9 +1824,16 @@ void set_conditional_defaults(t_options& args) {
             args.base_cost_type.set(DEMAND_ONLY, Provenance::INFERRED);
         } else {
             VTR_ASSERT(args.RouterAlgorithm == TIMING_DRIVEN);
-            if (args.timing_analysis) {
-                args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);
+
+            if (args.RouteType == DETAILED) {
+                if (args.timing_analysis) {
+                    args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);
+                } else {
+                    args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
+                }
             } else {
+                VTR_ASSERT(args.RouteType == GLOBAL);
+                //Global RR graphs don't have valid timing, so use demand base cost
                 args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
             }
         }
