@@ -139,8 +139,8 @@ class PQ_Entry {
 // A version of PQ_Entry that only calculates and stores the delay (cost.)
 class PQ_Entry_Lite {
   public:
-    int rr_node_ind; //index in device_ctx.rr_nodes that this entry represents
-    float delay_cost;      //the cost of the path to get to this node
+    int rr_node_ind;  //index in device_ctx.rr_nodes that this entry represents
+    float delay_cost; //the cost of the path to get to this node
 
     PQ_Entry_Lite(int set_rr_node_ind, int /*switch_ind*/, float parent_delay, bool starting_node);
 
