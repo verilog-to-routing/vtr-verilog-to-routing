@@ -44,7 +44,12 @@
           <direct from="io_tile.out" to="io_block.out"/>
         </site>
       </equivalent_sites>
-      <pinlocations pattern="spread"/>
+      <pinlocations pattern="custom">
+        <loc side="top" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="left" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="bottom" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        <loc side="right" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+      </pinlocations>
       <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
     </tile>
     <tile name="pass_through_tile">
@@ -68,7 +73,12 @@
           <direct from="pass_through_tile.out" to="io_site_3.out"/>
         </site>
       </equivalent_sites>
-      <pinlocations pattern="spread"/>
+      <pinlocations pattern="custom">
+        <loc side="top" xoffset="0" yoffset="0">pass_through_tile.in pass_through_tile.out</loc>
+        <loc side="left" xoffset="0" yoffset="0">pass_through_tile.in pass_through_tile.out</loc>
+        <loc side="bottom" xoffset="0" yoffset="0">pass_through_tile.in pass_through_tile.out</loc>
+        <loc side="right" xoffset="0" yoffset="0">pass_through_tile.in pass_through_tile.out</loc>
+      </pinlocations>
       <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
     </tile>
   </tiles>
@@ -155,49 +165,31 @@
     </pb_type>
   </complexblocklist>
   <layout>
-    <fixed_layout name="TEST" width="5" height="5">
-      <single priority="1" type="io_tile" x="0" y="0"/>
-      <single priority="1" type="io_tile" x="0" y="1"/>
-      <single priority="1" type="io_tile" x="0" y="2"/>
-      <single priority="1" type="io_tile" x="0" y="3"/>
-      <single priority="1" type="pass_through_tile" x="1" y="0"/>
-      <single priority="1" type="pass_through_tile" x="1" y="1"/>
-      <single priority="1" type="pass_through_tile" x="1" y="2"/>
-      <single priority="1" type="pass_through_tile" x="1" y="3"/>
-      <single priority="1" type="pass_through_tile" x="2" y="0"/>
-      <single priority="1" type="pass_through_tile" x="2" y="1"/>
-      <single priority="1" type="pass_through_tile" x="2" y="2"/>
-      <single priority="1" type="pass_through_tile" x="2" y="3"/>
-      <single priority="1" type="io_tile" x="3" y="0"/>
-      <single priority="1" type="io_tile" x="3" y="1"/>
-      <single priority="1" type="io_tile" x="3" y="2"/>
-      <single priority="1" type="io_tile" x="3" y="3"/>
-    </fixed_layout>
+    <auto_layout>
+      <fill type="pass_through_tile" priority="1"/>
+      <perimeter type="io_tile" priority="2"/>
+      <corners type="EMPTY" priority="3"/>
+    </auto_layout>
   </layout>
   <device>
     <sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>
     <area grid_logic_tile_area="14813.392"/>
-    <connection_block input_switch_name="buffer"/>
-    <switch_block fs="3" type="wilton"/>
+    <connection_block input_switch_name="sw"/>
+    <switch_block fs="3" type="universal"/>
     <chan_width_distr>
       <x distr="uniform" peak="1.0"/>
       <y distr="uniform" peak="1.0"/>
     </chan_width_distr>
   </device>
   <switchlist>
-    <switch Cin=".77e-15" Cout="4e-15" R="551" Tdel="6.8e-12" buf_size="27.645901" mux_trans_size="2.630740" name="routing" type="mux"/>
-    <switch Cin=".77e-15" Cout="4e-15" R="551" Tdel="6.8e-12" buf_size="27.645901" mux_trans_size="2.630740" name="buffer" type="mux"/>
+    <switch Cin=".77e-15" Cout="4e-15" R="1" Tdel="58e-12" buf_size="27.645901" mux_trans_size="2.630740" name="sw" type="mux"/>
   </switchlist>
   <segmentlist>
-    <segment Cmetal="22.5e-15" Rmetal="101" freq="1.0" length="12" name="dummy" type="bidir">
-      <wire_switch name="routing"/>
-      <opin_switch name="routing"/>
-      <sb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1</sb>
-      <cb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1</cb>
+    <segment Cmetal="22.5e-15" Rmetal="101" freq="1.0" name="wire" type="bidir" length="1">
+      <wire_switch name="sw"/>
+      <opin_switch name="sw"/>
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
     </segment>
   </segmentlist>
-  <directlist>
-    <direct from_pin="pass_through_tile.out" name="gno" to_pin="io_tile.in" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct from_pin="io_tile.out" name="gna" to_pin="pass_through_tile.in" x_offset="-1" y_offset="0" z_offset="0"/>
-  </directlist>
 </architecture>
