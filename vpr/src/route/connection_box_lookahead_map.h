@@ -12,6 +12,8 @@ class ConnectionBoxMapLookahead : public RouterLookahead {
 
     void read(const std::string& file) override;
     void write(const std::string& file) const override;
+
+    CostMap cost_map_;
 };
 
 #endif
