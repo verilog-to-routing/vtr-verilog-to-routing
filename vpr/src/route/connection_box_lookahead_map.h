@@ -9,19 +9,29 @@
 #include "connection_box.h"
 #include "vtr_geometry.h"
 
+// Keys in the RoutingCosts map
 struct RoutingCostKey {
+    // offset of the destination connection box from the starting segment
     vtr::Point<int> delta;
+
+    // type of the destination connection box
     ConnectionBoxId box_id;
+
     bool operator==(const RoutingCostKey& other) const {
         return delta == other.delta && box_id == other.box_id;
     }
 };
+
+// Data in the RoutingCosts map
 struct RoutingCost {
+    // source and destination node indices
     int from_node, to_node;
+
+    // cost entry for the route
     util::Cost_Entry cost_entry;
 };
 
-// specialization of std::hash for RoutingCostKey
+// Specialization of std::hash for RoutingCostKey
 namespace std {
 template<>
 struct hash<RoutingCostKey> {
@@ -36,8 +46,10 @@ struct hash<RoutingCostKey> {
 };
 } // namespace std
 
+// Map used to store intermediate routing costs
 typedef std::unordered_map<RoutingCostKey, RoutingCost> RoutingCosts;
 
+// Dense cost maps per source segment and destination connection box types
 class CostMap {
   public:
     void set_counts(size_t seg_count, size_t box_count);
@@ -59,6 +71,7 @@ class CostMap {
     std::vector<int> segment_map_;
 };
 
+// Implementation of RouterLookahead based on source segment and destination connection box types
 class ConnectionBoxMapLookahead : public RouterLookahead {
   public:
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
