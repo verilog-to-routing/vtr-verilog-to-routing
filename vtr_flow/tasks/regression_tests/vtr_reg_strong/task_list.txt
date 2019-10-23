@@ -53,3 +53,4 @@ regression_tests/vtr_reg_strong/strong_sdc
 regression_tests/vtr_reg_strong/strong_timing_report_detail
 regression_tests/vtr_reg_strong/strong_route_reconverge
 regression_tests/vtr_reg_strong/strong_clock_buf
+regression_tests/vtr_reg_strong/strong_equivalent_sites
