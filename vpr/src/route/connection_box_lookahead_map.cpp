@@ -385,10 +385,10 @@ static void run_dijkstra(int start_node_ind,
      * expansion queue */
     std::vector<float> node_visited_costs(device_ctx.rr_nodes.size(), -1.0);
     /* a priority queue for expansion */
-    std::priority_queue<util::PQ_Entry> pq;
+    std::priority_queue<util::PQ_Entry_Lite, std::vector<util::PQ_Entry_Lite>, std::greater<util::PQ_Entry_Lite>> pq;
 
     /* first entry has no upstream delay or congestion */
-    util::PQ_Entry first_entry(start_node_ind, UNDEFINED, 0, 0, 0, true);
+    util::PQ_Entry_Lite first_entry(start_node_ind, UNDEFINED, 0, true);
 
     pq.push(first_entry);
 
@@ -400,7 +400,7 @@ static void run_dijkstra(int start_node_ind,
 
     /* now do routing */
     while (!pq.empty()) {
-        util::PQ_Entry current = pq.top();
+        auto current = pq.top();
         pq.pop();
 
         int node_ind = current.rr_node_ind;
@@ -420,20 +420,59 @@ static void run_dijkstra(int start_node_ind,
                 VPR_THROW(VPR_ERROR_ROUTE, "No connection box for IPIN %d", node_ind);
             }
 
-            int delta_x = ssize_t(from_canonical_loc->first) - ssize_t(box_location.first);
-            int delta_y = ssize_t(from_canonical_loc->second) - ssize_t(box_location.second);
+            // reconstruct the path
+            std::vector<int> path;
+            for (int i = node_ind; i != start_node_ind; path.push_back(i = paths[i].parent));
+            util::PQ_Entry parent_entry(start_node_ind, UNDEFINED, 0, 0, 0, true);
 
-            routing_costs.push_back(std::make_tuple(
-                std::make_pair(start_node_ind, node_ind),
-                vtr::Point<int>(delta_x, delta_y),
-                Cost_Entry(
-                    current.delay,
-                    current.congestion_upstream),
-                box_id));
+            // recalculate the path with congestion
+            util::PQ_Entry current_full = parent_entry;
+            int parent = start_node_ind;
+            for (auto it = path.rbegin(); it != path.rend(); it++) {
+              auto& parent_node = device_ctx.rr_nodes[parent];
+              current_full = util::PQ_Entry(*it, parent_node.edge_switch(paths[*it].edge), current_full.delay,
+                                            current_full.R_upstream, current_full.congestion_upstream, false);
+              parent = *it;
+            }
+
+            // add each node along the path subtracting the incremental costs from the current costs
+            parent = start_node_ind;
+            for (auto it = path.rbegin(); it != path.rend(); it++) {
+                auto& parent_node = device_ctx.rr_nodes[parent];
+                int seg_index = device_ctx.rr_indexed_data[parent_node.cost_index()].seg_index;
+                if (!node_recorded[parent]) {
+
+                    const std::pair<size_t, size_t>* from_canonical_loc = device_ctx.connection_boxes.find_canonical_loc(parent);
+                    if (from_canonical_loc == nullptr) {
+                        VPR_THROW(VPR_ERROR_ROUTE, "No canonical location of node %d",
+                                  parent);
+                    }
+
+                    vtr::Point<int> delta(ssize_t(from_canonical_loc->first) - ssize_t(box_location.first),
+                                         ssize_t(from_canonical_loc->second) - ssize_t(box_location.second));
+                    RoutingCostKey key = {
+                        delta,
+                        box_id
+                    };
+                    RoutingCost cost = {
+                        parent,
+                        node_ind,
+                        Cost_Entry(
+                            current_full.delay - parent_entry.delay,
+                            current_full.congestion_upstream - parent_entry.congestion_upstream)
+                    };
+                    routing_costs.push_back(std::make_tuple(seg_index, key, cost));
+                }
+                node_recorded[parent] = true;
+                parent_entry = util::PQ_Entry(*it, parent_node.edge_switch(paths[*it].edge), parent_entry.delay,
+                                              parent_entry.R_upstream, parent_entry.congestion_upstream, false);
+                parent = *it;
+            }
+            node_expanded[node_ind] = true;
+        } else {
+            expand_dijkstra_neighbours(current, paths, node_expanded, pq);
+            node_expanded[node_ind] = true;
         }
-
-        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq);
-        node_expanded[node_ind] = true;
     }
 }
 
