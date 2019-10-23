@@ -36,224 +36,271 @@ static constexpr int SAMPLE_GRID_SIZE = 4;
 typedef std::array<std::array<std::vector<ssize_t>, SAMPLE_GRID_SIZE>, SAMPLE_GRID_SIZE> SampleGrid;
 
 static void run_dijkstra(int start_node_ind,
-                         t_routing_cost_map* routing_cost_map);
+                         std::vector<CostMap::routing_cost>& routing_costs);
 
-class CostMap {
-  public:
-    void set_counts(size_t seg_count, size_t box_count) {
-        cost_map_.clear();
-        offset_.clear();
-        cost_map_.resize({seg_count, box_count});
-        offset_.resize({seg_count, box_count});
+void CostMap::set_counts(size_t seg_count, size_t box_count) {
+    cost_map_.clear();
+    offset_.clear();
+    cost_map_.resize({seg_count, box_count});
+    offset_.resize({seg_count, box_count});
 
-        const auto& device_ctx = g_vpr_ctx.device();
-        segment_map_.resize(device_ctx.rr_nodes.size());
-        for (size_t i = 0; i < segment_map_.size(); ++i) {
-            auto& from_node = device_ctx.rr_nodes[i];
+    const auto& device_ctx = g_vpr_ctx.device();
+    segment_map_.resize(device_ctx.rr_nodes.size());
+    for (size_t i = 0; i < segment_map_.size(); ++i) {
+        auto& from_node = device_ctx.rr_nodes[i];
 
-            int from_cost_index = from_node.cost_index();
-            int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
+        int from_cost_index = from_node.cost_index();
+        int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
 
-            segment_map_[i] = from_seg_index;
-        }
+        segment_map_[i] = from_seg_index;
+    }
+}
+
+int CostMap::node_to_segment(int from_node_ind) const {
+    return segment_map_[from_node_ind];
+}
+
+Cost_Entry CostMap::find_cost(int from_seg_index, ConnectionBoxId box_id, int delta_x, int delta_y) const {
+    VTR_ASSERT(from_seg_index >= 0 && from_seg_index < (ssize_t)offset_.size());
+    const auto& cost_map = cost_map_[from_seg_index][size_t(box_id)];
+    if (cost_map.dim_size(0) == 0 || cost_map.dim_size(1) == 0) {
+        return Cost_Entry();
     }
 
-    int node_to_segment(int from_node_ind) {
-        return segment_map_[from_node_ind];
+    int dx = delta_x - offset_[from_seg_index][size_t(box_id)].first;
+    int dy = delta_y - offset_[from_seg_index][size_t(box_id)].second;
+
+    if (dx < 0) {
+        dx = 0;
+    }
+    if (dy < 0) {
+        dy = 0;
     }
 
-    Cost_Entry find_cost(int from_seg_index, ConnectionBoxId box_id, int delta_x, int delta_y) const {
-        VTR_ASSERT(from_seg_index >= 0 && from_seg_index < (ssize_t)offset_.size());
-        int dx = delta_x - offset_[from_seg_index][size_t(box_id)].first;
-        int dy = delta_y - offset_[from_seg_index][size_t(box_id)].second;
-        const auto& cost_map = cost_map_[from_seg_index][size_t(box_id)];
-
-        if (dx < 0) {
-            dx = 0;
-        }
-        if (dy < 0) {
-            dy = 0;
-        }
-
-        if (dx >= (ssize_t)cost_map.dim_size(0)) {
-            dx = cost_map.dim_size(0) - 1;
-        }
-        if (dy >= (ssize_t)cost_map.dim_size(1)) {
-            dy = cost_map.dim_size(1) - 1;
-        }
-
-        return cost_map_[from_seg_index][size_t(box_id)][dx][dy];
+    if (dx >= (ssize_t)cost_map.dim_size(0)) {
+        dx = cost_map.dim_size(0) - 1;
+    }
+    if (dy >= (ssize_t)cost_map.dim_size(1)) {
+        dy = cost_map.dim_size(1) - 1;
     }
 
-    void set_cost_map(int from_seg_index,
-                      const t_routing_cost_map& cost_map,
-                      e_representative_entry_method method) {
-        const auto& device_ctx = g_vpr_ctx.device();
-        for (size_t box_id = 0;
-             box_id < device_ctx.connection_boxes.num_connection_box_types();
-             ++box_id) {
-            set_cost_map(from_seg_index, ConnectionBoxId(box_id), cost_map, method);
-        }
+    return cost_map_[from_seg_index][size_t(box_id)][dx][dy];
+}
+
+void CostMap::set_cost_map(int from_seg_index,
+                           const std::vector<routing_cost>& costs,
+                           e_representative_entry_method method) {
+    // sort the entries
+    const auto& device_ctx = g_vpr_ctx.device();
+    std::vector<std::vector<routing_cost>> costs_per_box(device_ctx.connection_boxes.num_connection_box_types());
+    for (const auto& entry : costs) {
+        costs_per_box[size_t(std::get<3>(entry))].push_back(entry);
     }
 
-    void set_cost_map(int from_seg_index, ConnectionBoxId box_id, const t_routing_cost_map& cost_map, e_representative_entry_method method) {
-        VTR_ASSERT(from_seg_index >= 0 && from_seg_index < (ssize_t)offset_.size());
+    for (size_t box_id = 0;
+         box_id < device_ctx.connection_boxes.num_connection_box_types();
+         ++box_id) {
+        set_cost_map(from_seg_index, ConnectionBoxId(box_id), costs_per_box[box_id], method);
+    }
+}
 
-        // Find coordinate offset for this segment.
-        int min_dx = 0;
-        int min_dy = 0;
-        int max_dx = 0;
-        int max_dy = 0;
-        for (const auto& entry : cost_map) {
-            if (std::get<3>(entry) != box_id) {
-                continue;
-            }
-            min_dx = std::min(std::get<1>(entry).first, min_dx);
-            min_dy = std::min(std::get<1>(entry).second, min_dy);
+void CostMap::set_cost_map(int from_seg_index, ConnectionBoxId box_id, const std::vector<routing_cost>& costs, e_representative_entry_method method) {
+    VTR_ASSERT(from_seg_index >= 0 && from_seg_index < (ssize_t)offset_.size());
 
-            max_dx = std::max(std::get<1>(entry).first, max_dx);
-            max_dy = std::max(std::get<1>(entry).second, max_dy);
-        }
-
-        offset_[from_seg_index][size_t(box_id)].first = min_dx;
-        offset_[from_seg_index][size_t(box_id)].second = min_dy;
-        size_t dim_x = max_dx - min_dx + 1;
-        size_t dim_y = max_dy - min_dy + 1;
-
-        vtr::NdMatrix<Expansion_Cost_Entry, 2> expansion_cost_map(
-            {dim_x, dim_y});
-
-        for (const auto& entry : cost_map) {
-            if (std::get<3>(entry) != box_id) {
-                continue;
-            }
-            int x = std::get<1>(entry).first - min_dx;
-            int y = std::get<1>(entry).second - min_dy;
-            expansion_cost_map[x][y].add_cost_entry(
-                method, std::get<2>(entry).delay,
-                std::get<2>(entry).congestion);
-        }
-
+    if (costs.empty()) {
+        offset_[from_seg_index][size_t(box_id)] = std::make_pair(0, 0);
         cost_map_[from_seg_index][size_t(box_id)] = vtr::NdMatrix<Cost_Entry, 2>(
-            {dim_x, dim_y});
+            {size_t(0), size_t(0)});
+        return;
+    }
 
-        /* set the lookahead cost map entries with a representative cost
-         * entry from routing_cost_map */
-        for (unsigned ix = 0; ix < expansion_cost_map.dim_size(0); ix++) {
-            for (unsigned iy = 0; iy < expansion_cost_map.dim_size(1); iy++) {
-                cost_map_[from_seg_index][size_t(box_id)][ix][iy] = expansion_cost_map[ix][iy].get_representative_cost_entry(method);
-            }
+    // calculate the bounding box
+    vtr::Rect<int> bounds;
+    for (const auto& entry : costs) {
+        bounds |= vtr::Rect<int>(std::get<1>(entry), 1);
+    }
+
+    offset_[from_seg_index][size_t(box_id)] = std::make_pair(bounds.xmin(), bounds.ymin());
+
+    vtr::NdMatrix<Expansion_Cost_Entry, 2> expansion_cost_map(
+        {size_t(bounds.width()), size_t(bounds.height())});
+
+    for (const auto& entry : costs) {
+        int x = std::get<1>(entry).x() - bounds.xmin();
+        int y = std::get<1>(entry).y() - bounds.ymin();
+        expansion_cost_map[x][y].add_cost_entry(
+            method, std::get<2>(entry).delay,
+            std::get<2>(entry).congestion);
+    }
+
+    cost_map_[from_seg_index][size_t(box_id)] = vtr::NdMatrix<Cost_Entry, 2>(
+        {size_t(bounds.width()), size_t(bounds.height())});
+    auto& matrix = cost_map_[from_seg_index][size_t(box_id)];
+
+    /* set the lookahead cost map entries with a representative cost
+     * entry from routing_cost_map */
+    for (unsigned ix = 0; ix < expansion_cost_map.dim_size(0); ix++) {
+        for (unsigned iy = 0; iy < expansion_cost_map.dim_size(1); iy++) {
+            matrix[ix][iy] = expansion_cost_map[ix][iy].get_representative_cost_entry(method);
         }
+    }
 
-        /* find missing cost entries and fill them in by copying a nearby cost entry */
-        for (unsigned ix = 0; ix < expansion_cost_map.dim_size(0); ix++) {
-            for (unsigned iy = 0; iy < expansion_cost_map.dim_size(1); iy++) {
-                Cost_Entry cost_entry = cost_map_[from_seg_index][size_t(box_id)][ix][iy];
-
-                if (!cost_entry.valid()) {
-                    Cost_Entry copied_entry = get_nearby_cost_entry(
-                        from_seg_index,
-                        box_id,
-                        offset_[from_seg_index][size_t(box_id)].first + ix,
-                        offset_[from_seg_index][size_t(box_id)].second + iy);
-                    cost_map_[from_seg_index][size_t(box_id)][ix][iy] = copied_entry;
+    std::list<std::tuple<unsigned, unsigned, Cost_Entry> > missing;
+    bool couldnt_fill = false;
+    auto shifted_bounds = vtr::Rect<int>(0, 0, bounds.width(), bounds.height());
+    /* find missing cost entries and fill them in by copying a nearby cost entry */
+    for (unsigned ix = 0; ix < matrix.dim_size(0) && !couldnt_fill; ix++) {
+        for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
+            Cost_Entry& cost_entry = matrix[ix][iy];
+            if (!cost_entry.valid()) {
+                // maximum search radius
+                Cost_Entry filler = get_nearby_cost_entry(matrix, ix, iy, shifted_bounds);
+                if (filler.valid()) {
+                    missing.push_back(std::make_tuple(ix, iy, filler));
+                } else {
+                    couldnt_fill = true;
                 }
             }
         }
     }
 
-    Cost_Entry get_nearby_cost_entry(int segment_index, ConnectionBoxId box_id, int x, int y) {
-        /* compute the slope from x,y to 0,0 and then move towards 0,0 by one
-         * unit to get the coordinates of the cost entry to be copied */
+    // write back the missing entries
+    for (auto& xy_entry : missing) {
+        matrix[std::get<0>(xy_entry)][std::get<1>(xy_entry)] = std::get<2>(xy_entry);
+    }
 
-        float slope;
-        int copy_x, copy_y;
-        if (x == 0 || y == 0) {
-            slope = std::numeric_limits<float>::infinity();
-            copy_x = x - signum(x);
-            copy_y = y - signum(y);
-        } else {
-            slope = (float)y / (float)x;
-            if (slope >= 1.0) {
-                copy_y = y - signum(y);
-                copy_x = vtr::nint((float)y / slope);
-            } else {
-                copy_x = x - signum(x);
-                copy_y = vtr::nint((float)x * slope);
+    if (couldnt_fill) {
+        VTR_LOG_WARN("Couldn't fill holes in the cost matrix for %d -> %ld\n",
+                     from_seg_index, size_t(box_id));
+        for (unsigned y = 0; y < matrix.dim_size(1); y++) {
+            for (unsigned x = 0; x < matrix.dim_size(0); x++) {
+                VTR_ASSERT(!matrix[x][y].valid());
             }
         }
-
-        Cost_Entry copy_entry = find_cost(segment_index, box_id, copy_x, copy_y);
-
-        /* if the entry to be copied is also empty, recurse */
-        if (copy_entry.valid()) {
-            return copy_entry;
-        } else if (copy_x == 0 && copy_y == 0) {
-            return Cost_Entry();
-        }
-
-        return get_nearby_cost_entry(segment_index, box_id, copy_x, copy_y);
-    }
-
-    void read(const std::string& file);
-    void write(const std::string& file) const;
-
-  private:
-    vtr::NdMatrix<vtr::NdMatrix<Cost_Entry, 2>, 2> cost_map_;
-    vtr::NdMatrix<std::pair<int, int>, 2> offset_;
-    std::vector<int> segment_map_;
-};
-
-static CostMap g_cost_map;
-
-    }
-
-            }
-            }
-        }
-    }
-
-    const auto& device_ctx = g_vpr_ctx.device();
-        }
-            }
-        }
-
-        if (dy < dx) {
-            dy += 1;
-        } else {
-            dx += 1;
-        }
-    }
-
-    return count;
-}
-
-        }
-    }
-
-
-        }
-        }
-
 #if 0
-        for(const auto & e : cost_map) {
-            VTR_LOG("%d -> %d (%d, %d): %g, %g\n",
-                    std::get<0>(e).first, std::get<0>(e).second,
-                    std::get<1>(e).first, std::get<1>(e).second,
-                    std::get<2>(e).delay, std::get<2>(e).congestion);
+        for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
+            for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
+                if(matrix[ix][iy].valid()) {
+                    printf("O");
+                } else {
+                    printf(".");
+                }
+            }
+            printf("\n");
         }
 #endif
-
-        /* boil down the cost list in routing_cost_map at each coordinate to a
-         * representative cost entry and store it in the lookahead cost map */
-        g_cost_map.set_cost_map(iseg, cost_map,
-                                REPRESENTATIVE_ENTRY_METHOD);
     }
 }
 
-static float get_connection_box_lookahead_map_cost(int from_node_ind,
-                                                   int to_node_ind,
-                                                   float criticality_fac) {
+void CostMap::print(int iseg) const {
+    const auto& device_ctx = g_vpr_ctx.device();
+    for (size_t box_id = 0;
+         box_id < device_ctx.connection_boxes.num_connection_box_types();
+         box_id++) {
+        auto& matrix = cost_map_[iseg][box_id];
+        if (matrix.dim_size(0) == 0 || matrix.dim_size(1) == 0) {
+            printf("cost EMPTY for box_id = %lu\n", box_id);
+            continue;
+        }
+        printf("cost for box_id = %lu\n", box_id);
+        double sum = 0.0;
+        for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
+            for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
+                const auto& entry = matrix[ix][iy];
+                if (entry.valid()) {
+                    sum += entry.delay;
+                }
+            }
+        }
+        double avg = sum / ((double)matrix.dim_size(0) * (double)matrix.dim_size(1));
+        for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
+            for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
+                const auto& entry = matrix[ix][iy];
+                if (entry.valid() && entry.delay > avg) {
+                    printf("o");
+                } else {
+                    printf(".");
+                }
+            }
+            printf("\n");
+        }
+    }
+}
+
+std::list<std::pair<int, int> > CostMap::list_empty() const {
+    std::list<std::pair<int, int> > results;
+    for (int iseg = 0; iseg < (int)cost_map_.dim_size(0); iseg++) {
+        for (int box_id = 0; box_id < (int)cost_map_.dim_size(1); box_id++) {
+            auto& matrix = cost_map_[iseg][box_id];
+            if (matrix.dim_size(0) == 0 || matrix.dim_size(1) == 0) results.push_back(std::make_pair(iseg, box_id));
+        }
+    }
+    return results;
+}
+
+static void assign_min_entry(Cost_Entry& dst, const Cost_Entry& src) {
+    if (src.delay < dst.delay) dst.delay = src.delay;
+    if (src.congestion < dst.congestion) dst.congestion = src.congestion;
+}
+
+Cost_Entry CostMap::get_nearby_cost_entry(const vtr::NdMatrix<Cost_Entry, 2>& matrix,
+                                          int cx,
+                                          int cy,
+                                          const vtr::Rect<int>& bounds) {
+    // spiral around (cx, cy) looking for a nearby entry
+    int n = 1, x, y;
+    bool in_bounds;
+    Cost_Entry entry;
+
+    do {
+        in_bounds = false;
+        y = cy - n; // top
+        // left -> right
+        for (x = cx - n; x < cx + n; x++) {
+            if (bounds.contains(vtr::Point<int>(x, y))) {
+                assign_min_entry(entry, matrix[x][y]);
+                in_bounds = true;
+            }
+        }
+        x = cx + n; // right
+        // top -> bottom
+        for (; y < cy + n; y++) {
+            if (bounds.contains(vtr::Point<int>(x, y))) {
+                assign_min_entry(entry, matrix[x][y]);
+                in_bounds = true;
+            }
+        }
+        y = cy + n; // bottom
+        // right -> left
+        for (; x > cx - n; x--) {
+            if (bounds.contains(vtr::Point<int>(x, y))) {
+                assign_min_entry(entry, matrix[x][y]);
+                in_bounds = true;
+            }
+        }
+        x = cx - n; // left
+        // bottom -> top
+        for (; y > cy - n; y--) {
+            if (bounds.contains(vtr::Point<int>(x, y))) {
+                assign_min_entry(entry, matrix[x][y]);
+                in_bounds = true;
+            }
+        }
+        if (entry.valid()) return entry;
+        n++;
+    } while (in_bounds);
+    return Cost_Entry();
+}
+
+template<typename T>
+vtr::Point<T> sample(const vtr::Rect<T>& r, T x, T y, T d) {
+  return vtr::Point<T>((r.xmin() * (d - x) + r.xmax() * x + d / 2) / d,
+                       (r.ymin() * (d - y) + r.ymax() * y + d / 2) / d);
+}
+
+float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
+                                              int to_node_ind,
+                                              float criticality_fac) const {
     if (from_node_ind == to_node_ind) {
         return 0.f;
     }
@@ -271,7 +318,7 @@ static float get_connection_box_lookahead_map_cost(int from_node_ind,
             // Find cheapest cost from from_node_ind to IPINs for this SINK.
             for (int i = 0; i < sink_to_ipin.ipin_count; ++i) {
                 cost = std::min(cost,
-                                get_connection_box_lookahead_map_cost(
+                                get_map_cost(
                                     from_node_ind,
                                     sink_to_ipin.ipin_nodes[i], criticality_fac));
             }
@@ -307,12 +354,19 @@ static float get_connection_box_lookahead_map_cost(int from_node_ind,
     ssize_t dx = ssize_t(from_canonical_loc->first) - ssize_t(box_location.first);
     ssize_t dy = ssize_t(from_canonical_loc->second) - ssize_t(box_location.second);
 
-    int from_seg_index = g_cost_map.node_to_segment(from_node_ind);
-    Cost_Entry cost_entry = g_cost_map.find_cost(from_seg_index, box_id, dx, dy);
+    int from_seg_index = cost_map_.node_to_segment(from_node_ind);
+    Cost_Entry cost_entry = cost_map_.find_cost(from_seg_index, box_id, dx, dy);
+
+    if (!cost_entry.valid()) {
+        // there is no route
+        return std::numeric_limits<float>::infinity();
+    }
+
     float expected_delay = cost_entry.delay;
     float expected_congestion = cost_entry.congestion;
 
     float expected_cost = criticality_fac * expected_delay + (1.0 - criticality_fac) * expected_congestion;
+    VTR_ASSERT(std::isfinite(expected_cost) && expected_cost >= 0.f);
     return expected_cost;
 }
 
@@ -320,7 +374,7 @@ static float get_connection_box_lookahead_map_cost(int from_node_ind,
  * visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored to an entry in the routing_cost_map */
 static void run_dijkstra(int start_node_ind,
-                         t_routing_cost_map* routing_cost_map) {
+                         std::vector<CostMap::routing_cost>& routing_costs) {
     auto& device_ctx = g_vpr_ctx.device();
 
     /* a list of boolean flags (one for each rr node) to figure out if a
@@ -369,9 +423,9 @@ static void run_dijkstra(int start_node_ind,
             int delta_x = ssize_t(from_canonical_loc->first) - ssize_t(box_location.first);
             int delta_y = ssize_t(from_canonical_loc->second) - ssize_t(box_location.second);
 
-            routing_cost_map->push_back(std::make_tuple(
+            routing_costs.push_back(std::make_tuple(
                 std::make_pair(start_node_ind, node_ind),
-                std::make_pair(delta_x, delta_y),
+                vtr::Point<int>(delta_x, delta_y),
                 Cost_Entry(
                     current.delay,
                     current.congestion_upstream),
@@ -454,7 +508,7 @@ float ConnectionBoxMapLookahead::get_expected_cost(
     t_rr_type rr_type = device_ctx.rr_nodes[current_node].type();
 
     if (rr_type == CHANX || rr_type == CHANY) {
-        return get_connection_box_lookahead_map_cost(
+        return get_map_cost(
             current_node, target_node, params.criticality);
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
         return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
@@ -555,10 +609,10 @@ void ConnectionBoxMapLookahead::write(const std::string& file) const {
 #else
 
 void ConnectionBoxMapLookahead::read(const std::string& file) {
-    g_cost_map.read(file);
+    cost_map_.read(file);
 }
 void ConnectionBoxMapLookahead::write(const std::string& file) const {
-    g_cost_map.write(file);
+    cost_map_.write(file);
 }
 
 static void ToCostEntry(Cost_Entry* out, const VprCostEntry::Reader& in) {
@@ -613,13 +667,13 @@ void CostMap::read(const std::string& file) {
 
     {
         const auto& offset = cost_map.getOffset();
-        ToNdMatrix<2, VprVector2D, std::pair<int, int>>(
+        ToNdMatrix<2, VprVector2D, std::pair<int, int> >(
             &offset_, offset, ToVprVector2D);
     }
 
     {
         const auto& cost_maps = cost_map.getCostMap();
-        ToNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<Cost_Entry, 2>>(
+        ToNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<Cost_Entry, 2> >(
             &cost_map_, cost_maps, ToMatrixCostEntry);
     }
 }
@@ -638,13 +692,13 @@ void CostMap::write(const std::string& file) const {
 
     {
         auto offset = cost_map.initOffset();
-        FromNdMatrix<2, VprVector2D, std::pair<int, int>>(
+        FromNdMatrix<2, VprVector2D, std::pair<int, int> >(
             &offset, offset_, FromVprVector2D);
     }
 
     {
         auto cost_maps = cost_map.initCostMap();
-        FromNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<Cost_Entry, 2>>(
+        FromNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<Cost_Entry, 2> >(
             &cost_maps, cost_map_, FromMatrixCostEntry);
     }
 
