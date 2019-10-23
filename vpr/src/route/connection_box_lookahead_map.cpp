@@ -493,15 +493,15 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
         }
 
         // combine the cost map from this run with the final cost maps for each segment
-        for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
-            for (const auto& cost : costs[iseg]) {
+        for (int i = 0; i < (ssize_t)num_segments; i++) {
+            for (const auto& cost : costs[i]) {
                 const auto& key = cost.first;
                 const auto& val = cost.second;
-                const auto& x = all_costs[iseg].find(key);
+                const auto& x = all_costs[i].find(key);
 
                 // implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
-                if (x == all_costs[iseg].end() || x->second.cost_entry.delay > val.cost_entry.delay) {
-                    all_costs[iseg][key] = val;
+                if (x == all_costs[i].end() || x->second.cost_entry.delay > val.cost_entry.delay) {
+                    all_costs[i][key] = val;
                 }
             }
         }
