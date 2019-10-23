@@ -23,6 +23,11 @@
 #    include "serdes_utils.h"
 #endif
 
+#if defined(VPR_USE_TBB)
+#    include <tbb/parallel_for.h>
+#    include <tbb/mutex.h>
+#endif
+
 /* we're profiling routing cost over many tracks for each wire type, so we'll
  * have many cost entries at each |dx|,|dy| offset. There are many ways to
  * "boil down" the many costs at each offset to a single entry for a given
@@ -478,7 +483,12 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
     std::vector<RoutingCosts> all_costs(num_segments);
 
     /* run Dijkstra's algorithm for each segment type & channel type combination */
+#if defined(VPR_USE_TBB)
+    tbb::mutex all_costs_mutex;
+    tbb::parallel_for(size_t(0), size_t(num_segments), [&](int iseg) {
+#else
     for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
+#endif
         VTR_LOG("Creating cost map for %s(%d)\n",
                 segment_inf[iseg].name.c_str(), iseg);
 
@@ -490,6 +500,10 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
                 }
             }
         }
+
+#if defined(VPR_USE_TBB)
+        all_costs_mutex.lock();
+#endif
 
         // combine the cost map from this run with the final cost maps for each segment
         for (int i = 0; i < (ssize_t)num_segments; i++) {
@@ -504,7 +518,15 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
                 }
             }
         }
+
+#if defined(VPR_USE_TBB)
+        all_costs_mutex.unlock();
+#endif
+#if !defined(VPR_USE_TBB)
     }
+#else
+    });
+#endif
 
     VTR_LOG("Combining results\n");
     for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
