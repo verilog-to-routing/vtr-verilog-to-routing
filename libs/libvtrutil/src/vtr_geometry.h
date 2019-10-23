@@ -75,9 +75,10 @@ class Point {
 template<class T>
 class Rect {
   public: //Constructors
+    Rect();
     Rect(T left_val, T bottom_val, T right_val, T top_val);
     Rect(Point<T> bottom_left_val, Point<T> top_right_val);
-    Rect();
+    Rect(Point<T> bottom_left_val, T size);
 
   public: //Accessors
     //Co-ordinates
@@ -101,8 +102,16 @@ class Rect {
     //Returns true if the point is coincident with the rectangle (including the top-right edges)
     bool coincident(Point<T> point) const;
 
+    //Returns true if no points are contained in the rectangle
+    bool empty() const;
+
     friend bool operator== <>(const Rect<T>& lhs, const Rect<T>& rhs);
     friend bool operator!= <>(const Rect<T>& lhs, const Rect<T>& rhs);
+
+    template<class U>
+    friend Rect<U> operator|(const Rect<U>& lhs, const Rect<U>& rhs);
+    template<class U>
+    friend Rect<U>& operator|=(Rect<U>& lhs, const Rect<U>& rhs);
 
   public: //Mutators
     //Co-ordinates
