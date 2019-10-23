@@ -36,7 +36,8 @@ static constexpr int SAMPLE_GRID_SIZE = 4;
 typedef std::array<std::array<std::vector<ssize_t>, SAMPLE_GRID_SIZE>, SAMPLE_GRID_SIZE> SampleGrid;
 
 static void run_dijkstra(int start_node_ind,
-                         std::vector<CostMap::routing_cost>& routing_costs);
+                         std::vector<RoutingCosts>* routing_costs);
+static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_segment);
 
 void CostMap::set_counts(size_t seg_count, size_t box_count) {
     cost_map_.clear();
@@ -88,60 +89,46 @@ Cost_Entry CostMap::find_cost(int from_seg_index, ConnectionBoxId box_id, int de
 }
 
 void CostMap::set_cost_map(int from_seg_index,
-                           const std::vector<routing_cost>& costs,
+                           const RoutingCosts& costs,
                            e_representative_entry_method method) {
     // sort the entries
     const auto& device_ctx = g_vpr_ctx.device();
-    std::vector<std::vector<routing_cost>> costs_per_box(device_ctx.connection_boxes.num_connection_box_types());
-    for (const auto& entry : costs) {
-        costs_per_box[size_t(std::get<3>(entry))].push_back(entry);
-    }
-
     for (size_t box_id = 0;
          box_id < device_ctx.connection_boxes.num_connection_box_types();
          ++box_id) {
-        set_cost_map(from_seg_index, ConnectionBoxId(box_id), costs_per_box[box_id], method);
+        set_cost_map(from_seg_index, ConnectionBoxId(box_id), costs, method);
     }
 }
 
-void CostMap::set_cost_map(int from_seg_index, ConnectionBoxId box_id, const std::vector<routing_cost>& costs, e_representative_entry_method method) {
+void CostMap::set_cost_map(int from_seg_index, ConnectionBoxId box_id, const RoutingCosts& costs, e_representative_entry_method method) {
     VTR_ASSERT(from_seg_index >= 0 && from_seg_index < (ssize_t)offset_.size());
 
-    if (costs.empty()) {
+    // calculate the bounding box
+    vtr::Rect<int> bounds;
+    for (const auto& entry : costs) {
+        if (entry.first.box_id == box_id) {
+            bounds |= vtr::Rect<int>(entry.first.delta, 1);
+        }
+    }
+
+    if (bounds.empty()) {
         offset_[from_seg_index][size_t(box_id)] = std::make_pair(0, 0);
         cost_map_[from_seg_index][size_t(box_id)] = vtr::NdMatrix<Cost_Entry, 2>(
             {size_t(0), size_t(0)});
         return;
     }
 
-    // calculate the bounding box
-    vtr::Rect<int> bounds;
-    for (const auto& entry : costs) {
-        bounds |= vtr::Rect<int>(std::get<1>(entry), 1);
-    }
-
     offset_[from_seg_index][size_t(box_id)] = std::make_pair(bounds.xmin(), bounds.ymin());
-
-    vtr::NdMatrix<Expansion_Cost_Entry, 2> expansion_cost_map(
-        {size_t(bounds.width()), size_t(bounds.height())});
-
-    for (const auto& entry : costs) {
-        int x = std::get<1>(entry).x() - bounds.xmin();
-        int y = std::get<1>(entry).y() - bounds.ymin();
-        expansion_cost_map[x][y].add_cost_entry(
-            method, std::get<2>(entry).delay,
-            std::get<2>(entry).congestion);
-    }
 
     cost_map_[from_seg_index][size_t(box_id)] = vtr::NdMatrix<Cost_Entry, 2>(
         {size_t(bounds.width()), size_t(bounds.height())});
     auto& matrix = cost_map_[from_seg_index][size_t(box_id)];
 
-    /* set the lookahead cost map entries with a representative cost
-     * entry from routing_cost_map */
-    for (unsigned ix = 0; ix < expansion_cost_map.dim_size(0); ix++) {
-        for (unsigned iy = 0; iy < expansion_cost_map.dim_size(1); iy++) {
-            matrix[ix][iy] = expansion_cost_map[ix][iy].get_representative_cost_entry(method);
+    for (const auto& entry : costs) {
+        if (entry.first.box_id == box_id) {
+            int x = entry.first.delta.x() - bounds.xmin();
+            int y = entry.first.delta.y() - bounds.ymin();
+            matrix[x][y] = entry.second.cost_entry;
         }
     }
 
@@ -216,7 +203,9 @@ void CostMap::print(int iseg) const {
         for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
             for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
                 const auto& entry = matrix[ix][iy];
-                if (entry.valid() && entry.delay > avg) {
+                if (!entry.valid()) {
+                    printf("*");
+                } else if (entry.delay > avg) {
                     printf("o");
                 } else {
                     printf(".");
@@ -313,25 +302,18 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
 
     if (to_node_type == SINK) {
         const auto& sink_to_ipin = device_ctx.connection_boxes.find_sink_connection_boxes(to_node_ind);
-        if (sink_to_ipin.ipin_count > 1) {
-            float cost = std::numeric_limits<float>::infinity();
-            // Find cheapest cost from from_node_ind to IPINs for this SINK.
-            for (int i = 0; i < sink_to_ipin.ipin_count; ++i) {
-                cost = std::min(cost,
-                                get_map_cost(
-                                    from_node_ind,
-                                    sink_to_ipin.ipin_nodes[i], criticality_fac));
-            }
+        float cost = std::numeric_limits<float>::infinity();
 
-            return cost;
-        } else if (sink_to_ipin.ipin_count == 1) {
-            to_node_ind = sink_to_ipin.ipin_nodes[0];
-            if (from_node_ind == to_node_ind) {
-                return 0.f;
-            }
-        } else {
-            return std::numeric_limits<float>::infinity();
+        // Find cheapest cost from from_node_ind to IPINs for this SINK.
+        for (int i = 0; i < sink_to_ipin.ipin_count; ++i) {
+            cost = std::min(cost,
+                            get_map_cost(
+                                from_node_ind,
+                                sink_to_ipin.ipin_nodes[i], criticality_fac));
+            if (cost <= 0.f) break;
         }
+
+        return cost;
     }
 
     if (device_ctx.rr_nodes[to_node_ind].type() != IPIN) {
@@ -359,6 +341,10 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
 
     if (!cost_entry.valid()) {
         // there is no route
+        // VTR_LOG_WARN("Not connected %d (%s, %d) -> %d (%s, %d, (%d, %d))\n",
+        //              from_node_ind, device_ctx.rr_nodes[from_node_ind].type_string(), from_seg_index,
+        //              to_node_ind, device_ctx.rr_nodes[to_node_ind].type_string(),
+        //              (int)size_t(box_id), (int)box_location.first, (int)box_location.second);
         return std::numeric_limits<float>::infinity();
     }
 
@@ -374,7 +360,7 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
  * visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored to an entry in the routing_cost_map */
 static void run_dijkstra(int start_node_ind,
-                         std::vector<CostMap::routing_cost>& routing_costs) {
+                         std::vector<RoutingCosts>* routing_costs) {
     auto& device_ctx = g_vpr_ctx.device();
 
     /* a list of boolean flags (one for each rr node) to figure out if a
@@ -383,7 +369,7 @@ static void run_dijkstra(int start_node_ind,
     /* for each node keep a list of the cost with which that node has been
      * visited (used to determine whether to push a candidate node onto the
      * expansion queue */
-    std::vector<float> node_visited_costs(device_ctx.rr_nodes.size(), -1.0);
+    std::unordered_map<int, util::Search_Path> paths;
     /* a priority queue for expansion */
     std::priority_queue<util::PQ_Entry_Lite, std::vector<util::PQ_Entry_Lite>, std::greater<util::PQ_Entry_Lite>> pq;
 
@@ -391,12 +377,6 @@ static void run_dijkstra(int start_node_ind,
     util::PQ_Entry_Lite first_entry(start_node_ind, UNDEFINED, 0, true);
 
     pq.push(first_entry);
-
-    const std::pair<size_t, size_t>* from_canonical_loc = device_ctx.connection_boxes.find_canonical_loc(start_node_ind);
-    if (from_canonical_loc == nullptr) {
-        VPR_THROW(VPR_ERROR_ROUTE, "No canonical location of node %d",
-                  start_node_ind);
-    }
 
     /* now do routing */
     while (!pq.empty()) {
@@ -440,35 +420,36 @@ static void run_dijkstra(int start_node_ind,
             for (auto it = path.rbegin(); it != path.rend(); it++) {
                 auto& parent_node = device_ctx.rr_nodes[parent];
                 int seg_index = device_ctx.rr_indexed_data[parent_node.cost_index()].seg_index;
-                if (!node_recorded[parent]) {
-
-                    const std::pair<size_t, size_t>* from_canonical_loc = device_ctx.connection_boxes.find_canonical_loc(parent);
-                    if (from_canonical_loc == nullptr) {
-                        VPR_THROW(VPR_ERROR_ROUTE, "No canonical location of node %d",
-                                  parent);
-                    }
-
-                    vtr::Point<int> delta(ssize_t(from_canonical_loc->first) - ssize_t(box_location.first),
-                                         ssize_t(from_canonical_loc->second) - ssize_t(box_location.second));
-                    RoutingCostKey key = {
-                        delta,
-                        box_id
-                    };
-                    RoutingCost cost = {
-                        parent,
-                        node_ind,
-                        Cost_Entry(
-                            current_full.delay - parent_entry.delay,
-                            current_full.congestion_upstream - parent_entry.congestion_upstream)
-                    };
-                    routing_costs.push_back(std::make_tuple(seg_index, key, cost));
+                const std::pair<size_t, size_t>* from_canonical_loc = device_ctx.connection_boxes.find_canonical_loc(parent);
+                if (from_canonical_loc == nullptr) {
+                  VPR_THROW(VPR_ERROR_ROUTE, "No canonical location of node %d",
+                            parent);
                 }
-                node_recorded[parent] = true;
+
+                vtr::Point<int> delta(ssize_t(from_canonical_loc->first) - ssize_t(box_location.first),
+                                      ssize_t(from_canonical_loc->second) - ssize_t(box_location.second));
+                RoutingCostKey key = {
+                  delta,
+                  box_id
+                };
+                RoutingCost val = {
+                    parent,
+                    node_ind,
+                    Cost_Entry(
+                        current_full.delay - parent_entry.delay,
+                        current_full.congestion_upstream - parent_entry.congestion_upstream)};
+
+                const auto& x = (*routing_costs)[seg_index].find(key);
+
+                // implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
+                if (x == (*routing_costs)[seg_index].end() || x->second.cost_entry.delay > val.cost_entry.delay) {
+                    (*routing_costs)[seg_index][key] = val;
+                }
+
                 parent_entry = util::PQ_Entry(*it, parent_node.edge_switch(paths[*it].edge), parent_entry.delay,
                                               parent_entry.R_upstream, parent_entry.congestion_upstream, false);
                 parent = *it;
             }
-            node_expanded[node_ind] = true;
         } else {
             expand_dijkstra_neighbours(current, paths, node_expanded, pq);
             node_expanded[node_ind] = true;
@@ -489,32 +470,39 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
     cost_map_.set_counts(segment_inf.size(),
                          device_ctx.connection_boxes.num_connection_box_types());
 
+    VTR_ASSERT(REPRESENTATIVE_ENTRY_METHOD == SMALLEST);
+    std::vector<RoutingCosts> all_costs(num_segments);
+
     /* run Dijkstra's algorithm for each segment type & channel type combination */
     for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
         VTR_LOG("Creating cost map for %s(%d)\n",
                 segment_inf[iseg].name.c_str(), iseg);
         /* allocate the cost map for this iseg/chan_type */
-        std::vector<CostMap::routing_cost> costs;
-        bool found = false;
+        std::vector<RoutingCosts> costs(num_segments);
         for (const auto& row : inodes_for_segment[iseg]) {
             for (auto cell : row) {
                 for (auto node_ind : cell) {
-                    found = true;
-                    run_dijkstra(node_ind, costs);
+                    run_dijkstra(node_ind, &costs);
                 }
             }
         }
-        if (!found) {
-            VTR_LOG_WARN("Segment %s(%d) found no start_node_ind\n",
-                         segment_inf[iseg].name.c_str(), iseg);
-        } else {
-            /* boil down the cost list in routing_cost_map at each coordinate to a
-             * representative cost entry and store it in the lookahead cost map */
-            cost_map_.set_cost_map(iseg, costs,
-                                   REPRESENTATIVE_ENTRY_METHOD);
+
+        for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
+            for (const auto& cost : costs[iseg]) {
+                const auto& key = cost.first;
+                const auto& val = cost.second;
+                const auto &x = all_costs[iseg].find(key);
+
+                // implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
+                if(x == all_costs[iseg].end() ||
+                   x->second.cost_entry.delay > val.cost_entry.delay) {
+                    all_costs[iseg][key] = val;
+                }
+            }
         }
     }
 
+    VTR_LOG("Combining results\n");
     for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
 #if 0
         for (auto &e : cost_map_per_segment[iseg]) {
@@ -524,9 +512,37 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
                     std::get<2>(e).delay, std::get<2>(e).congestion);
         }
 #endif
-        //VTR_LOG("cost map for %s(%d)\n",
-        //        segment_inf[iseg].name.c_str(), iseg);
-        //cost_map_.print(iseg);
+        const auto &costs = all_costs[iseg];
+        if(costs.empty()) {
+            // check that there were no start nodes
+            bool empty = true;
+            for (const auto& row : inodes_for_segment[iseg]) {
+                for (auto cell : row) {
+                    if (!cell.empty()) {
+                        empty = false;
+                        break;
+                    }
+                }
+                if (!empty) break;
+            }
+            if (empty) {
+                VTR_LOG_WARN("Segment %s(%d) found no routes\n",
+                             segment_inf[iseg].name.c_str(), iseg);
+            } else {
+                VTR_LOG_WARN("Segment %s(%d) found no routes, even though there are some matching nodes\n",
+                             segment_inf[iseg].name.c_str(), iseg);
+            }
+        } else {
+            /* boil down the cost list in routing_cost_map at each coordinate to a
+             * representative cost entry and store it in the lookahead cost map */
+            cost_map_.set_cost_map(iseg, costs,
+                                   REPRESENTATIVE_ENTRY_METHOD);
+        }
+        /*
+        VTR_LOG("cost map for %s(%d)\n",
+                segment_inf[iseg].name.c_str(), iseg);
+        cost_map_.print(iseg);
+        */
     }
 
     for(std::pair<int, int> p : cost_map_.list_empty()) {

@@ -9,21 +9,46 @@
 #include "connection_box.h"
 #include "vtr_geometry.h"
 
+struct RoutingCostKey {
+    vtr::Point<int> delta;
+    ConnectionBoxId box_id;
+    bool operator==(const RoutingCostKey& other) const {
+        return delta == other.delta && box_id == other.box_id;
+    }
+};
+struct RoutingCost {
+    int from_node, to_node;
+    Cost_Entry cost_entry;
+};
+
+// specialization of std::hash for RoutingCostKey
+namespace std
+{
+    template<> struct hash<RoutingCostKey>
+    {
+        typedef RoutingCostKey argument_type;
+        typedef std::size_t result_type;
+        result_type operator()(argument_type const& s) const noexcept
+        {
+            result_type const h1 ( std::hash<int>{}(s.delta.x()) );
+            result_type const h2 ( std::hash<int>{}(s.delta.y()) );
+            result_type const h3 ( std::hash<size_t>{}(size_t(s.box_id)) );
+            return h1 ^ ((h2 ^ (h3 << 1)) << 1);
+        }
+    };
+}
+
+typedef std::unordered_map<RoutingCostKey, RoutingCost> RoutingCosts;
+
 class CostMap {
   public:
-    typedef std::tuple<std::pair<int, int>,
-                       vtr::Point<int>,
-                       Cost_Entry,
-                       ConnectionBoxId>
-        routing_cost;
-
     void set_counts(size_t seg_count, size_t box_count);
     int node_to_segment(int from_node_ind) const;
     Cost_Entry find_cost(int from_seg_index, ConnectionBoxId box_id, int delta_x, int delta_y) const;
     void set_cost_map(int from_seg_index,
-                      const std::vector<routing_cost>& costs,
+                      const RoutingCosts& costs,
                       e_representative_entry_method method);
-    void set_cost_map(int from_seg_index, ConnectionBoxId box_id, const std::vector<routing_cost>& costs, e_representative_entry_method method);
+    void set_cost_map(int from_seg_index, ConnectionBoxId box_id, const RoutingCosts& costs, e_representative_entry_method method);
     Cost_Entry get_nearby_cost_entry(const vtr::NdMatrix<Cost_Entry, 2>& matrix, int cx, int cy, const vtr::Rect<int>& bounds);
     void read(const std::string& file);
     void write(const std::string& file) const;
