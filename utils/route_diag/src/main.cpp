@@ -97,8 +97,7 @@ static void do_one_route(int source_node, int sink_node,
             router_opts.lookahead_type,
             router_opts.write_router_lookahead,
             router_opts.read_router_lookahead,
-            segment_inf,
-            router_opts.lookahead_search_locations
+            segment_inf
             );
     t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, *router_lookahead, modified_rr_node_inf, router_stats);
 
@@ -140,8 +139,7 @@ static void profile_source(int source_rr_node,
             router_opts.lookahead_type,
             router_opts.write_router_lookahead,
             router_opts.read_router_lookahead,
-            segment_inf,
-            router_opts.lookahead_search_locations
+            segment_inf
             );
     RouterDelayProfiler profiler(router_lookahead.get());
 
