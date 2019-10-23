@@ -28,12 +28,11 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(
     e_router_lookahead router_lookahead_type,
     std::string write_lookahead,
     std::string read_lookahead,
-    const std::vector<t_segment_inf>& segment_inf,
-    const std::string& lookahead_search_locations) {
+    const std::vector<t_segment_inf>& segment_inf) {
     std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(router_lookahead_type);
 
     if (read_lookahead.empty()) {
-        router_lookahead->compute(segment_inf, lookahead_search_locations);
+        router_lookahead->compute(segment_inf);
     } else {
         router_lookahead->read(read_lookahead);
     }
@@ -189,11 +188,10 @@ const RouterLookahead* get_cached_router_lookahead(
     e_router_lookahead router_lookahead_type,
     std::string write_lookahead,
     std::string read_lookahead,
-    const std::vector<t_segment_inf>& segment_inf,
-    const std::string& lookahead_search_locations) {
+    const std::vector<t_segment_inf>& segment_inf) {
     auto& router_ctx = g_vpr_ctx.routing();
 
-    auto cache_key = std::make_tuple(router_lookahead_type, read_lookahead, segment_inf, lookahead_search_locations);
+    auto cache_key = std::make_tuple(router_lookahead_type, read_lookahead, segment_inf);
 
     // Check if cache is valid.
     const RouterLookahead* router_lookahead = router_ctx.cached_router_lookahead_.get(cache_key);
@@ -209,7 +207,6 @@ const RouterLookahead* get_cached_router_lookahead(
                 router_lookahead_type,
                 write_lookahead,
                 read_lookahead,
-                segment_inf,
-                lookahead_search_locations));
+                segment_inf));
     }
 }
