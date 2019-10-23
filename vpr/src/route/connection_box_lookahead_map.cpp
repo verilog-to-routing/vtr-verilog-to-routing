@@ -469,8 +469,7 @@ static void run_dijkstra(int start_node_ind,
 }
 
 // compute the cost maps for lookahead
-void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf,
-                                        const std::string& lookahead_search_locations) {
+void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
 
     size_t num_segments = segment_inf.size();
