@@ -9,6 +9,7 @@
 #include "globals.h"
 #include "vtr_math.h"
 #include "vtr_time.h"
+#include "vtr_geometry.h"
 #include "echo_files.h"
 
 #include "route_timing.h"
@@ -30,18 +31,10 @@
  * See e_representative_entry_method */
 #define REPRESENTATIVE_ENTRY_METHOD SMALLEST
 
-#define REF_X 25
-#define REF_Y 23
+static constexpr int SAMPLE_GRID_SIZE = 4;
 
-static int signum(int x) {
-    if (x > 0) return 1;
-    if (x < 0)
-        return -1;
-    else
-        return 0;
-}
+typedef std::array<std::array<std::vector<ssize_t>, SAMPLE_GRID_SIZE>, SAMPLE_GRID_SIZE> SampleGrid;
 
-typedef std::vector<std::tuple<std::pair<int, int>, std::pair<int, int>, Cost_Entry, ConnectionBoxId>> t_routing_cost_map;
 static void run_dijkstra(int start_node_ind,
                          t_routing_cost_map* routing_cost_map);
 
@@ -213,100 +206,15 @@ class CostMap {
 
 static CostMap g_cost_map;
 
-static const std::vector<int>& get_rr_node_indcies(t_rr_type rr_type, int start_x, int start_y) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    if (rr_type == CHANX) {
-        return device_ctx.rr_node_indices[rr_type][start_y][start_x][0];
-    } else if (rr_type == CHANY) {
-        return device_ctx.rr_node_indices[rr_type][start_x][start_y][0];
-    } else {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown channel type %d", rr_type);
-    }
-}
-
-class StartNode {
-  public:
-    StartNode(int start_x, int start_y, t_rr_type rr_type, int seg_index)
-        : start_x_(start_x)
-        , start_y_(start_y)
-        , rr_type_(rr_type)
-        , seg_index_(seg_index)
-        , index_(0) {}
-    int get_next_node() {
-        const auto& device_ctx = g_vpr_ctx.device();
-        const std::vector<int>& channel_node_list = get_rr_node_indcies(
-            rr_type_, start_x_, start_y_);
-
-        for (; index_ < channel_node_list.size(); index_++) {
-            int node_ind = channel_node_list[index_];
-
-            if (node_ind == OPEN || device_ctx.rr_nodes[node_ind].capacity() == 0) {
-                continue;
-            }
-
-            const std::pair<size_t, size_t>* loc = device_ctx.connection_boxes.find_canonical_loc(node_ind);
-            if (loc == nullptr) {
-                continue;
-            }
-
-            int node_cost_ind = device_ctx.rr_nodes[node_ind].cost_index();
-            int node_seg_ind = device_ctx.rr_indexed_data[node_cost_ind].seg_index;
-            if (node_seg_ind == seg_index_) {
-                index_ += 1;
-                return node_ind;
-            }
-        }
-
-        return UNDEFINED;
     }
 
-  private:
-    int start_x_;
-    int start_y_;
-    t_rr_type rr_type_;
-    int seg_index_;
-    size_t index_;
-};
+            }
+            }
+        }
+    }
 
-// Minimum size of search for channels to profile.  kMinProfile results
-// in searching x = [0, kMinProfile], and y = [0, kMinProfile[.
-//
-// Making this value larger will increase the sample size, but also the runtime
-// to produce the lookahead.
-static constexpr int kMinProfile = 1;
-
-// Maximum size of search for channels to profile.  Once search is outside of
-// kMinProfile distance, lookahead will stop searching once:
-//  - At least one channel has been profiled
-//  - kMaxProfile is exceeded.
-static constexpr int kMaxProfile = 7;
-
-static int search_at(int iseg, int start_x, int start_y, t_routing_cost_map* cost_map) {
     const auto& device_ctx = g_vpr_ctx.device();
-
-    int count = 0;
-    int dx = 0;
-    int dy = 0;
-
-    while ((count == 0 && dx < kMaxProfile) || dy <= kMinProfile) {
-        if (start_x + dx >= device_ctx.grid.width()) {
-            break;
         }
-        if (start_y + dy >= device_ctx.grid.height()) {
-            break;
-        }
-
-        for (e_rr_type chan_type : {CHANX, CHANY}) {
-            StartNode start_node(start_x + dx, start_y + dy, chan_type, iseg);
-            VTR_LOG("Searching for %d at (%d, %d)\n", iseg, start_x + dx, start_y + dy);
-
-            for (int start_node_ind = start_node.get_next_node();
-                 start_node_ind != UNDEFINED;
-                 start_node_ind = start_node.get_next_node()) {
-                count += 1;
-
-                /* run Dijkstra's algorithm */
-                run_dijkstra(start_node_ind, cost_map);
             }
         }
 
@@ -320,50 +228,11 @@ static int search_at(int iseg, int start_x, int start_y, t_routing_cost_map* cos
     return count;
 }
 
-static void compute_connection_box_lookahead(
-    const std::vector<t_segment_inf>& segment_inf,
-    const std::string& search_locations_str) {
-    size_t num_segments = segment_inf.size();
-    vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
-
-    /* free previous delay map and allocate new one */
-    auto& device_ctx = g_vpr_ctx.device();
-    g_cost_map.set_counts(segment_inf.size(),
-                          device_ctx.connection_boxes.num_connection_box_types());
-
-    std::vector<std::pair<int, int>> search_locations;
-    for (const auto& loc_str : vtr::split(search_locations_str, ";")) {
-        auto loc_parts = vtr::split(loc_str, ",");
-        if (loc_parts.size() != 2) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Expected two parts from loc_str %s, got %d",
-                            loc_str.c_str(), loc_parts.size());
         }
-
-        std::pair<int, int> loc;
-        loc.first = vtr::atoi(loc_parts[0]);
-        loc.second = vtr::atoi(loc_parts[1]);
-        search_locations.push_back(loc);
     }
 
-    if (search_locations.size() == 0) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No search locations provided.");
-    }
 
-    /* run Dijkstra's algorithm for each segment type & channel type combination */
-    for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
-        VTR_LOG("Creating cost map for %s(%d)\n",
-                segment_inf[iseg].name.c_str(), iseg);
-        /* allocate the cost map for this iseg/chan_type */
-        t_routing_cost_map cost_map;
-
-        int count = 0;
-        for (const auto loc : search_locations) {
-            count += search_at(iseg, loc.first, loc.second, &cost_map);
         }
-
-        if (count == 0) {
-            VTR_LOG_WARN("Segment %s(%d) found no start_node_ind\n",
-                         segment_inf[iseg].name.c_str(), iseg);
         }
 
 #if 0
@@ -514,8 +383,65 @@ static void run_dijkstra(int start_node_ind,
     }
 }
 
-void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf, const std::string& lookahead_search_locations) {
-    compute_connection_box_lookahead(segment_inf, lookahead_search_locations);
+void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf,
+                                        const std::string& lookahead_search_locations) {
+    vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
+
+    size_t num_segments = segment_inf.size();
+    std::vector<SampleGrid> inodes_for_segment(num_segments);
+    find_inodes_for_segment_types(&inodes_for_segment);
+
+    /* free previous delay map and allocate new one */
+    auto& device_ctx = g_vpr_ctx.device();
+    cost_map_.set_counts(segment_inf.size(),
+                         device_ctx.connection_boxes.num_connection_box_types());
+
+    /* run Dijkstra's algorithm for each segment type & channel type combination */
+    for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
+        VTR_LOG("Creating cost map for %s(%d)\n",
+                segment_inf[iseg].name.c_str(), iseg);
+        /* allocate the cost map for this iseg/chan_type */
+        std::vector<CostMap::routing_cost> costs;
+        bool found = false;
+        for (const auto& row : inodes_for_segment[iseg]) {
+            for (auto cell : row) {
+                for (auto node_ind : cell) {
+                    found = true;
+                    run_dijkstra(node_ind, costs);
+                }
+            }
+        }
+        if (!found) {
+            VTR_LOG_WARN("Segment %s(%d) found no start_node_ind\n",
+                         segment_inf[iseg].name.c_str(), iseg);
+        } else {
+            /* boil down the cost list in routing_cost_map at each coordinate to a
+             * representative cost entry and store it in the lookahead cost map */
+            cost_map_.set_cost_map(iseg, costs,
+                                   REPRESENTATIVE_ENTRY_METHOD);
+        }
+    }
+
+    for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
+#if 0
+        for (auto &e : cost_map_per_segment[iseg]) {
+            VTR_LOG("%d -> %d (%d, %d): %g, %g\n",
+                    std::get<0>(e).first, std::get<0>(e).second,
+                    std::get<1>(e).first, std::get<1>(e).second,
+                    std::get<2>(e).delay, std::get<2>(e).congestion);
+        }
+#endif
+        //VTR_LOG("cost map for %s(%d)\n",
+        //        segment_inf[iseg].name.c_str(), iseg);
+        //cost_map_.print(iseg);
+    }
+
+    for(std::pair<int, int> p : cost_map_.list_empty()) {
+        int iseg, box_id;
+        std::tie(iseg, box_id) = p;
+        VTR_LOG("cost map for %s(%d), connection box %d EMPTY\n",
+                segment_inf[iseg].name.c_str(), iseg, box_id);
+    }
 }
 
 float ConnectionBoxMapLookahead::get_expected_cost(
@@ -534,6 +460,86 @@ float ConnectionBoxMapLookahead::get_expected_cost(
         return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
         return (0.);
+    }
+}
+
+static int manhattan_distance(const t_rr_node& node, int x, int y) {
+    int node_center_x = (node.xhigh() + node.xlow()) / 2;
+    int node_center_y = (node.yhigh() + node.ylow()) / 2;
+    return abs(node_center_x - x) + abs(node_center_y - y);
+}
+
+static vtr::Rect<int> bounding_box_for_node(const t_rr_node& node) {
+    return vtr::Rect<int>(node.xlow(), node.ylow(),
+                          node.xhigh() + 1, node.yhigh() + 1);
+}
+
+static void find_inodes_for_segment_types(std::vector<SampleGrid> *inodes_for_segment) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& rr_nodes = device_ctx.rr_nodes;
+    const int num_segments = inodes_for_segment->size();
+
+    // compute bounding boxes for each segment type
+    std::vector<vtr::Rect<int>> bounding_box_for_segment(num_segments, vtr::Rect<int>());
+    for (size_t i = 0; i < rr_nodes.size(); i++) {
+        auto& node = rr_nodes[i];
+        if (node.type() != CHANX && node.type() != CHANY) continue;
+        int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
+
+        VTR_ASSERT(seg_index != OPEN);
+        VTR_ASSERT(seg_index < num_segments);
+
+        bounding_box_for_segment[seg_index] |= bounding_box_for_node(node);
+    }
+
+    // select an inode near the center of the bounding box for each segment type
+    inodes_for_segment->clear();
+    inodes_for_segment->resize(num_segments);
+    for (auto& grid : *inodes_for_segment) {
+        for (auto& row : grid) {
+            for (auto& cell : row) {
+                cell = std::vector<ssize_t>();
+            }
+        }
+    }
+
+    for (size_t i = 0; i < rr_nodes.size(); i++) {
+        auto& node = rr_nodes[i];
+        if (node.type() != CHANX && node.type() != CHANY) continue;
+        if (node.capacity() == 0 || device_ctx.connection_boxes.find_canonical_loc(i) == nullptr) continue;
+
+        int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
+
+        VTR_ASSERT(seg_index != OPEN);
+        VTR_ASSERT(seg_index < num_segments);
+
+        auto& grid = (*inodes_for_segment)[seg_index];
+        for (int sy = 0; sy < SAMPLE_GRID_SIZE; sy++) {
+            for (int sx = 0; sx < SAMPLE_GRID_SIZE; sx++) {
+                auto& stored_inodes = grid[sy][sx];
+                if (stored_inodes.empty()) {
+                    stored_inodes.push_back(i);
+                    goto next_rr_node;
+                }
+
+                auto& first_stored_node = rr_nodes[stored_inodes.front()];
+                if (first_stored_node.xhigh() >= node.xhigh() && first_stored_node.xlow() <= node.xlow() && first_stored_node.yhigh() >= node.yhigh() && first_stored_node.ylow() <= node.ylow()) {
+                    stored_inodes.push_back(i);
+                    goto next_rr_node;
+                }
+
+                vtr::Point<int> target = sample(bounding_box_for_segment[seg_index], sx + 1, sy + 1, SAMPLE_GRID_SIZE + 1);
+                int distance_new = manhattan_distance(node, target.x(), target.y());
+                int distance_stored = manhattan_distance(first_stored_node, target.x(), target.y());
+                if (distance_new < distance_stored) {
+                    stored_inodes.clear();
+                    stored_inodes.push_back(i);
+                    goto next_rr_node;
+                }
+            }
+        }
+    next_rr_node:
+        continue;
     }
 }
 
