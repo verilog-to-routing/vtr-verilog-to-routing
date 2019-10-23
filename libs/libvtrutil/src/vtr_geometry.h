@@ -88,6 +88,8 @@ class Rect {
     template<typename U = T, typename std::enable_if<std::is_integral<U>::value>::type...>
     Rect(Point<U> point);
 
+    Rect(Point<T> bottom_left_val, T size);
+
   public: //Accessors
     //Co-ordinates
     T xmin() const;
@@ -117,6 +119,9 @@ class Rect {
 
     friend bool operator== <>(const Rect<T>& lhs, const Rect<T>& rhs);
     friend bool operator!= <>(const Rect<T>& lhs, const Rect<T>& rhs);
+
+    template<class U> friend Rect<U> operator|(const Rect<U>& lhs, const Rect<U>& rhs);
+    template<class U> friend Rect<U>& operator|=(Rect<U>& lhs, const Rect<U>& rhs);
 
   public: //Mutators
     //Co-ordinates

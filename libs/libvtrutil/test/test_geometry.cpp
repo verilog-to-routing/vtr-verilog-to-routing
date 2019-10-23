@@ -93,7 +93,10 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
             auto inside = sample(r, 3, 11, 17);
             REQUIRE(r.contains(inside));
         }
-    }
+
+        SECTION("bounds_int") {
+            REQUIRE(r1 == (r3 | r4));
+        }
 
     // float tests
     {
@@ -106,6 +109,10 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
         vtr::Rect<float> r5(pf_1, pf_3);
         vtr::Rect<float> r6(pf_3, pf_2);
         // vtr::Rect<float> r7(pf_1); // <-- will fail to compile
+
+        SECTION("equality_float") {
+            REQUIRE(r3 == r4);
+        }
 
         SECTION("equality_float") {
             REQUIRE(r3 == r4);
@@ -156,7 +163,6 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
         SECTION("bounds_float") {
             REQUIRE(r3 == bounding_box(r5, r6));
         }
-
         SECTION("empty_float") {
             REQUIRE(vtr::Rect<float>().empty());
         }
