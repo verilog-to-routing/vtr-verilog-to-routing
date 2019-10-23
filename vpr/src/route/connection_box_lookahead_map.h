@@ -22,21 +22,19 @@ struct RoutingCost {
 };
 
 // specialization of std::hash for RoutingCostKey
-namespace std
-{
-    template<> struct hash<RoutingCostKey>
-    {
-        typedef RoutingCostKey argument_type;
-        typedef std::size_t result_type;
-        result_type operator()(argument_type const& s) const noexcept
-        {
-            result_type const h1 ( std::hash<int>{}(s.delta.x()) );
-            result_type const h2 ( std::hash<int>{}(s.delta.y()) );
-            result_type const h3 ( std::hash<size_t>{}(size_t(s.box_id)) );
-            return h1 ^ ((h2 ^ (h3 << 1)) << 1);
-        }
-    };
-}
+namespace std {
+template<>
+struct hash<RoutingCostKey> {
+    typedef RoutingCostKey argument_type;
+    typedef std::size_t result_type;
+    result_type operator()(argument_type const& s) const noexcept {
+        result_type const h1(std::hash<int>{}(s.delta.x()));
+        result_type const h2(std::hash<int>{}(s.delta.y()));
+        result_type const h3(std::hash<size_t>{}(size_t(s.box_id)));
+        return h1 ^ ((h2 ^ (h3 << 1)) << 1);
+    }
+};
+} // namespace std
 
 typedef std::unordered_map<RoutingCostKey, RoutingCost> RoutingCosts;
 

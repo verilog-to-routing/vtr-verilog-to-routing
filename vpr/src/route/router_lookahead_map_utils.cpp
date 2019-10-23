@@ -154,7 +154,7 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
     float bin_size = delay_diff / (float)num_bins;
 
     /* sort the cost entries into bins */
-    std::vector<std::vector<Cost_Entry> > entry_bins(num_bins, std::vector<Cost_Entry>());
+    std::vector<std::vector<Cost_Entry>> entry_bins(num_bins, std::vector<Cost_Entry>());
     for (auto entry : this->cost_vector) {
         float bin_num = floor((entry.delay - min_del_entry.delay) / bin_size);
 
@@ -215,7 +215,7 @@ void expand_dijkstra_neighbours(util::PQ_Entry_Lite parent_entry,
         }
 
         /* finally, record the cost with which the child was visited and put the child entry on the queue */
-        paths[child_node_ind] = { child_entry.delay_cost, parent_ind, iedge };
+        paths[child_node_ind] = {child_entry.delay_cost, parent_ind, iedge};
         pq.push(child_entry);
     }
 }
