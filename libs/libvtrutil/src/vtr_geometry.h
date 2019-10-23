@@ -108,8 +108,10 @@ class Rect {
     friend bool operator== <>(const Rect<T>& lhs, const Rect<T>& rhs);
     friend bool operator!= <>(const Rect<T>& lhs, const Rect<T>& rhs);
 
-    template<class U> friend Rect<U> operator|(const Rect<U>& lhs, const Rect<U>& rhs);
-    template<class U> friend Rect<U>& operator|=(Rect<U>& lhs, const Rect<U>& rhs);
+    template<class U>
+    friend Rect<U> operator|(const Rect<U>& lhs, const Rect<U>& rhs);
+    template<class U>
+    friend Rect<U>& operator|=(Rect<U>& lhs, const Rect<U>& rhs);
 
   public: //Mutators
     //Co-ordinates
