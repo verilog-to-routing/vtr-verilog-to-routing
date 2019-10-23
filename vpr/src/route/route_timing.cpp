@@ -168,13 +168,13 @@ static std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(const
                                                                            std::vector<int>& modified_rr_node_inf,
                                                                            RouterStats& router_stats);
 
-static void timing_driven_expand_cheapest(t_heap* cheapest,
-                                          int target_node,
-                                          const t_conn_cost_params cost_params,
-                                          t_bb bounding_box,
-                                          const RouterLookahead& router_lookahead,
-                                          std::vector<int>& modified_rr_node_inf,
-                                          RouterStats& router_stats);
+static inline void timing_driven_expand_cheapest(t_heap* cheapest,
+                                                 int target_node,
+                                                 const t_conn_cost_params cost_params,
+                                                 t_bb bounding_box,
+                                                 const RouterLookahead& router_lookahead,
+                                                 std::vector<int>& modified_rr_node_inf,
+                                                 RouterStats& router_stats);
 
 static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout, CBRR& incremental_rerouting_res, t_rt_node** rt_node_of_sink);
 
@@ -194,54 +194,54 @@ static t_bb add_high_fanout_route_tree_to_heap(t_rt_node* rt_root,
 
 static t_bb adjust_highfanout_bounding_box(t_bb highfanout_bb);
 
-static void add_route_tree_node_to_heap(t_rt_node* rt_node,
-                                        int target_node,
-                                        const t_conn_cost_params cost_params,
-                                        const RouterLookahead& router_lookahead,
-                                        RouterStats& router_stats);
+static inline void add_route_tree_node_to_heap(t_rt_node* rt_node,
+                                               int target_node,
+                                               const t_conn_cost_params cost_params,
+                                               const RouterLookahead& router_lookahead,
+                                               RouterStats& router_stats);
 
-static void timing_driven_expand_neighbours(t_heap* current,
-                                            const t_conn_cost_params cost_params,
-                                            t_bb bounding_box,
-                                            const RouterLookahead& router_lookahead,
-                                            int target_node,
-                                            RouterStats& router_stats);
+static inline void timing_driven_expand_neighbours(t_heap* current,
+                                                   const t_conn_cost_params cost_params,
+                                                   const t_bb& bounding_box,
+                                                   const RouterLookahead& router_lookahead,
+                                                   int target_node,
+                                                   RouterStats& router_stats);
 
-static void timing_driven_expand_neighbour(t_heap* current,
-                                           const int from_node,
-                                           const t_edge_size from_edge,
-                                           const int to_node,
-                                           const t_conn_cost_params cost_params,
-                                           const t_bb bounding_box,
-                                           const RouterLookahead& router_lookahead,
-                                           int target_node,
-                                           const t_bb target_bb,
-                                           RouterStats& router_stats);
+static inline void timing_driven_expand_neighbour(t_heap* current,
+                                                  const int from_node,
+                                                  const t_edge_size from_edge,
+                                                  const int to_node,
+                                                  const t_conn_cost_params& cost_params,
+                                                  const t_bb& bounding_box,
+                                                  const RouterLookahead& router_lookahead,
+                                                  int target_node,
+                                                  const t_bb& target_bb,
+                                                  RouterStats& router_stats);
 
-static void timing_driven_add_to_heap(const t_conn_cost_params cost_params,
-                                      const RouterLookahead& router_lookahead,
-                                      const t_heap* current,
-                                      const int from_node,
-                                      const int to_node,
-                                      const int iconn,
-                                      const int target_node,
-                                      RouterStats& router_stats);
+static inline void timing_driven_add_to_heap(const t_conn_cost_params& cost_params,
+                                             const RouterLookahead& router_lookahead,
+                                             const t_heap* current,
+                                             const int from_node,
+                                             const int to_node,
+                                             const int iconn,
+                                             const int target_node,
+                                             RouterStats& router_stats);
 
-static void timing_driven_expand_node(const t_conn_cost_params cost_params,
-                                      const RouterLookahead& router_lookahead,
-                                      t_heap* current,
-                                      const int from_node,
-                                      const int to_node,
-                                      const int iconn,
-                                      const int target_node);
+static inline void timing_driven_expand_node(const t_conn_cost_params& cost_params,
+                                             const RouterLookahead& router_lookahead,
+                                             t_heap* current,
+                                             const int from_node,
+                                             const int to_node,
+                                             const int iconn,
+                                             const int target_node);
 
-static void evaluate_timing_driven_node_costs(t_heap* from,
-                                              const t_conn_cost_params cost_params,
-                                              const RouterLookahead& router_lookahead,
-                                              const int from_node,
-                                              const int to_node,
-                                              const int iconn,
-                                              const int target_node);
+static inline void evaluate_timing_driven_node_costs(t_heap* from,
+                                                     const t_conn_cost_params& cost_params,
+                                                     const RouterLookahead& router_lookahead,
+                                                     const int from_node,
+                                                     const int to_node,
+                                                     const int iconn,
+                                                     const int target_node);
 
 static bool timing_driven_check_net_delays(vtr::vector<ClusterNetId, float*>& net_delay);
 
@@ -1798,12 +1798,12 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
     ++router_stats.heap_pushes;
 }
 
-static void timing_driven_expand_neighbours(t_heap* current,
-                                            const t_conn_cost_params cost_params,
-                                            t_bb bounding_box,
-                                            const RouterLookahead& router_lookahead,
-                                            int target_node,
-                                            RouterStats& router_stats) {
+static inline void timing_driven_expand_neighbours(t_heap* current,
+                                                   const t_conn_cost_params cost_params,
+                                                   const t_bb& bounding_box,
+                                                   const RouterLookahead& router_lookahead,
+                                                   int target_node,
+                                                   RouterStats& router_stats) {
     /* Puts all the rr_nodes adjacent to current on the heap.
      */
 
@@ -1835,16 +1835,16 @@ static void timing_driven_expand_neighbours(t_heap* current,
 //Conditionally adds to_node to the router heap (via path from from_node via from_edge).
 //RR nodes outside the expanded bounding box specified in bounding_box are not added
 //to the heap.
-static void timing_driven_expand_neighbour(t_heap* current,
-                                           const int from_node,
-                                           const t_edge_size from_edge,
-                                           const int to_node,
-                                           const t_conn_cost_params cost_params,
-                                           const t_bb bounding_box,
-                                           const RouterLookahead& router_lookahead,
-                                           int target_node,
-                                           const t_bb target_bb,
-                                           RouterStats& router_stats) {
+static inline void timing_driven_expand_neighbour(t_heap* current,
+                                                  const int from_node,
+                                                  const t_edge_size from_edge,
+                                                  const int to_node,
+                                                  const t_conn_cost_params& cost_params,
+                                                  const t_bb& bounding_box,
+                                                  const RouterLookahead& router_lookahead,
+                                                  int target_node,
+                                                  const t_bb& target_bb,
+                                                  RouterStats& router_stats) {
     auto& device_ctx = g_vpr_ctx.device();
 
     int to_xlow = device_ctx.rr_nodes[to_node].xlow();
@@ -1900,14 +1900,14 @@ static void timing_driven_expand_neighbour(t_heap* current,
 }
 
 //Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
-static void timing_driven_add_to_heap(const t_conn_cost_params cost_params,
-                                      const RouterLookahead& router_lookahead,
-                                      const t_heap* current,
-                                      const int from_node,
-                                      const int to_node,
-                                      const int iconn,
-                                      const int target_node,
-                                      RouterStats& router_stats) {
+static inline void timing_driven_add_to_heap(const t_conn_cost_params& cost_params,
+                                             const RouterLookahead& router_lookahead,
+                                             const t_heap* current,
+                                             const int from_node,
+                                             const int to_node,
+                                             const int iconn,
+                                             const int target_node,
+                                             RouterStats& router_stats) {
     t_heap* next = alloc_heap_data();
     next->index = to_node;
 
@@ -1941,7 +1941,7 @@ static void timing_driven_add_to_heap(const t_conn_cost_params cost_params,
 }
 
 //Updates current (path step and costs) to account for the step taken to reach to_node
-static void timing_driven_expand_node(const t_conn_cost_params cost_params,
+static void timing_driven_expand_node(const t_conn_cost_params& cost_params,
                                       const RouterLookahead& router_lookahead,
                                       t_heap* current,
                                       const int from_node,
@@ -1963,7 +1963,7 @@ static void timing_driven_expand_node(const t_conn_cost_params cost_params,
 
 //Calculates the cost of reaching to_node
 static void evaluate_timing_driven_node_costs(t_heap* to,
-                                              const t_conn_cost_params cost_params,
+                                              const t_conn_cost_params& cost_params,
                                               const RouterLookahead& router_lookahead,
                                               const int from_node,
                                               const int to_node,
@@ -2017,8 +2017,10 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     Tdel += Rdel_adjust * switch_Cinternal;
 
     //Update the backward cost (upstream already included)
-    to->backward_path_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
-    to->backward_path_cost += cost_params.criticality * Tdel;                             //Delay cost
+    if (cost_params.criticality != 1.) {
+        to->backward_path_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
+    }
+    to->backward_path_cost += cost_params.criticality * Tdel; //Delay cost
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
