@@ -142,7 +142,7 @@ void CostMap::set_cost_map(int from_seg_index, ConnectionBoxId box_id, const Rou
     }
 
     // find missing cost entries and fill them in by copying a nearby cost entry
-    std::list<std::tuple<unsigned, unsigned, util::Cost_Entry>> missing;
+    std::vector<std::tuple<unsigned, unsigned, util::Cost_Entry>> missing;
     bool couldnt_fill = false;
     auto shifted_bounds = vtr::Rect<int>(0, 0, bounds.width(), bounds.height());
     for (unsigned ix = 0; ix < matrix.dim_size(0) && !couldnt_fill; ix++) {
@@ -218,8 +218,8 @@ void CostMap::print(int iseg) const {
 }
 
 // list segment type and connection box type pairs that have empty cost maps (debug)
-std::list<std::pair<int, int>> CostMap::list_empty() const {
-    std::list<std::pair<int, int>> results;
+std::vector<std::pair<int, int>> CostMap::list_empty() const {
+    std::vector<std::pair<int, int>> results;
     for (int iseg = 0; iseg < (int)cost_map_.dim_size(0); iseg++) {
         for (int box_id = 0; box_id < (int)cost_map_.dim_size(1); box_id++) {
             auto& matrix = cost_map_[iseg][box_id];
