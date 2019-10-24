@@ -97,19 +97,18 @@ util::Cost_Entry CostMap::find_cost(int from_seg_index, ConnectionBoxId box_id, 
 
 // set all cost maps for the segment type
 void CostMap::set_cost_map(int from_seg_index,
-                           const RoutingCosts& costs,
-                           util::e_representative_entry_method method) {
+                           const RoutingCosts& costs) {
     // sort the entries
     const auto& device_ctx = g_vpr_ctx.device();
     for (size_t box_id = 0;
          box_id < device_ctx.connection_boxes.num_connection_box_types();
          ++box_id) {
-        set_cost_map(from_seg_index, ConnectionBoxId(box_id), costs, method);
+        set_cost_map(from_seg_index, ConnectionBoxId(box_id), costs);
     }
 }
 
 // set the cost map for a segment type and connection box type, filling holes
-void CostMap::set_cost_map(int from_seg_index, ConnectionBoxId box_id, const RoutingCosts& costs, util::e_representative_entry_method method) {
+void CostMap::set_cost_map(int from_seg_index, ConnectionBoxId box_id, const RoutingCosts& costs) {
     VTR_ASSERT(from_seg_index >= 0 && from_seg_index < (ssize_t)offset_.size());
 
     // calculate the bounding box
@@ -542,8 +541,7 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
         } else {
             /* boil down the cost list in routing_cost_map at each coordinate to a
              * representative cost entry and store it in the lookahead cost map */
-            cost_map_.set_cost_map(iseg, costs,
-                                   REPRESENTATIVE_ENTRY_METHOD);
+            cost_map_.set_cost_map(iseg, costs);
         }
 
 #if 0
