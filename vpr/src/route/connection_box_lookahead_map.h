@@ -56,9 +56,8 @@ class CostMap {
     int node_to_segment(int from_node_ind) const;
     util::Cost_Entry find_cost(int from_seg_index, ConnectionBoxId box_id, int delta_x, int delta_y) const;
     void set_cost_map(int from_seg_index,
-                      const RoutingCosts& costs,
-                      util::e_representative_entry_method method);
-    void set_cost_map(int from_seg_index, ConnectionBoxId box_id, const RoutingCosts& costs, util::e_representative_entry_method method);
+                      const RoutingCosts& costs);
+    void set_cost_map(int from_seg_index, ConnectionBoxId box_id, const RoutingCosts& costs);
     util::Cost_Entry get_nearby_cost_entry(const vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int cx, int cy, const vtr::Rect<int>& bounds);
     void read(const std::string& file);
     void write(const std::string& file) const;
