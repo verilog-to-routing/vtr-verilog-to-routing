@@ -1554,17 +1554,21 @@ hard_block_ports *get_hard_block_ports(char **pins, int count)
 			ports->names = (char **)vtr::realloc(ports->names, sizeof(char *) * (ports->count + 1));
 
 			ports->sizes[ports->count] = 0;
-			ports->names[ports->count] = portname;
+			ports->names[ports->count] = vtr::strdup(portname);
 			ports->count++;
-			prev_portname = portname;
 
-		} else {
-			vtr::free(portname);
 		}
 
+		if ( prev_portname != NULL )
+			vtr::free(prev_portname);
+
+		prev_portname = portname;
 		ports->sizes[ports->count-1]++;
 	}
 
+	if ( prev_portname != NULL )
+		vtr::free(prev_portname);
+		
 	ports->signature = generate_hard_block_ports_signature(ports);
 	ports->index     = index_names(ports->names, ports->count);
 
