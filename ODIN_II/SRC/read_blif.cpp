@@ -1542,7 +1542,7 @@ hard_block_ports *get_hard_block_ports(char **pins, int count)
 	ports->count = 0;
 	ports->sizes = NULL;
 	ports->names = NULL;
-	char *prev_portname = 0;
+	char *prev_portname = NULL;
 	int i;
 	for (i = 0; i < count; i++)
 	{
@@ -1568,7 +1568,7 @@ hard_block_ports *get_hard_block_ports(char **pins, int count)
 
 	if ( prev_portname != NULL )
 		vtr::free(prev_portname);
-		
+
 	ports->signature = generate_hard_block_ports_signature(ports);
 	ports->index     = index_names(ports->names, ports->count);
 
