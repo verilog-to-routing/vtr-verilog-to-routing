@@ -2,7 +2,6 @@
 #define CONNECTION_BOX_LOOKAHEAD_H_
 
 #include <vector>
-#include <list>
 #include "physical_types.h"
 #include "router_lookahead.h"
 #include "router_lookahead_map_utils.h"
@@ -62,7 +61,7 @@ class CostMap {
     void read(const std::string& file);
     void write(const std::string& file) const;
     void print(int iseg) const;
-    std::list<std::pair<int, int>> list_empty() const;
+    std::vector<std::pair<int, int>> list_empty() const;
 
   private:
     vtr::NdMatrix<vtr::NdMatrix<util::Cost_Entry, 2>, 2> cost_map_;
