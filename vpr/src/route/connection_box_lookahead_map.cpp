@@ -24,7 +24,7 @@
 #endif
 
 #if defined(VPR_USE_TBB)
-#    include <tbb/parallel_for.h>
+#    include <tbb/parallel_for_each.h>
 #    include <tbb/mutex.h>
 #endif
 
@@ -38,15 +38,84 @@
  *
  * See e_representative_entry_method */
 #define REPRESENTATIVE_ENTRY_METHOD util::SMALLEST
+// #define FILL_LIMIT 30
 
 /* Sample based an NxN grid of starting segments, where N = SAMPLE_GRID_SIZE */
-static constexpr int SAMPLE_GRID_SIZE = 4;
+static constexpr int SAMPLE_GRID_SIZE = 3;
+static constexpr float COST_LIMIT = std::numeric_limits<float>::infinity();
+static constexpr int DIJKSTRA_CACHE_SIZE = 64;
+static constexpr int DIJKSTRA_CACHE_WINDOW = 3;
+static constexpr bool BREAK_ON_MISS = false;
+static constexpr float PENALTY_FACTOR = 1.f;
 
-typedef std::array<std::array<std::vector<ssize_t>, SAMPLE_GRID_SIZE>, SAMPLE_GRID_SIZE> SampleGrid;
+struct SamplePoint {
+    uint64_t order;
+    vtr::Point<int> location;
+    std::vector<ssize_t> samples;
+    SamplePoint()
+        : location(0, 0) {}
+};
 
-static void run_dijkstra(int start_node_ind,
-                         std::vector<RoutingCosts>* routing_costs);
+struct SampleGrid {
+    SamplePoint point[SAMPLE_GRID_SIZE][SAMPLE_GRID_SIZE];
+};
+
+template<class K, class V, int N>
+class SimpleCache {
+  public:
+    SimpleCache()
+        : pos(0)
+        , hits(0)
+        , misses(0) {}
+    bool get(K key, V* value) {
+        for (int i = 0; i < N; i++) {
+            auto& k = keys[i];
+            if (k == key) {
+                auto& v = values[i];
+#if 0
+                // preserve the found key by pushing it back
+                int last = (pos + N - 1) % N;
+                std::swap(k, keys[last]);
+                std::swap(v, values[last]);
+#endif
+                *value = v;
+                hits++;
+                return true;
+            }
+        }
+        misses++;
+        return false;
+    }
+    void insert(K key, V val) {
+        keys[pos] = key;
+        values[pos] = val;
+        pos = (pos + 1) % N;
+    }
+    float hit_ratio() {
+        return hits ? static_cast<float>(hits) / static_cast<float>(hits + misses) : 0.f;
+    }
+    float miss_ratio() {
+        return misses ? static_cast<float>(misses) / static_cast<float>(hits + misses) : 0.f;
+    }
+
+  private:
+    std::array<K, N> keys; // keep keys together for faster scanning
+    std::array<V, N> values;
+    size_t pos;
+    uint64_t hits;
+    uint64_t misses;
+};
+
+static float run_dijkstra(int start_node_ind,
+                          RoutingCosts* routing_costs,
+                          SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE>* cache,
+                          float max_cost);
 static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_segment);
+
+// also known as the L1 norm
+static int manhattan_distance(const vtr::Point<int>& a, const vtr::Point<int>& b) {
+    return abs(b.x() - a.x()) + abs(b.y() - a.y());
+}
 
 // resize internal data structures
 void CostMap::set_counts(size_t seg_count, size_t box_count) {
@@ -54,6 +123,8 @@ void CostMap::set_counts(size_t seg_count, size_t box_count) {
     offset_.clear();
     cost_map_.resize({seg_count, box_count});
     offset_.resize({seg_count, box_count});
+    seg_count_ = seg_count;
+    box_count_ = box_count;
 
     const auto& device_ctx = g_vpr_ctx.device();
     segment_map_.resize(device_ctx.rr_nodes.size());
@@ -100,82 +171,118 @@ util::Cost_Entry CostMap::find_cost(int from_seg_index, ConnectionBoxId box_id, 
     return cost_map_[from_seg_index][size_t(box_id)][dx][dy];
 }
 
-// set all cost maps for the segment type
-void CostMap::set_cost_map(int from_seg_index,
-                           const RoutingCosts& costs) {
-    // sort the entries
-    const auto& device_ctx = g_vpr_ctx.device();
-    for (size_t box_id = 0;
-         box_id < device_ctx.connection_boxes.num_connection_box_types();
-         ++box_id) {
-        set_cost_map(from_seg_index, ConnectionBoxId(box_id), costs);
-    }
+static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, float penalty) {
+    return util::Cost_Entry(entry.delay + distance * penalty * PENALTY_FACTOR,
+                            entry.congestion);
 }
 
 // set the cost map for a segment type and connection box type, filling holes
-void CostMap::set_cost_map(int from_seg_index, ConnectionBoxId box_id, const RoutingCosts& costs) {
-    VTR_ASSERT(from_seg_index >= 0 && from_seg_index < (ssize_t)offset_.size());
-
-    // calculate the bounding box
-    vtr::Rect<int> bounds;
+void CostMap::set_cost_map(const RoutingCosts& costs) {
+    // calculate the bounding boxes
+    vtr::Matrix<vtr::Rect<int>> bounds({seg_count_, box_count_});
     for (const auto& entry : costs) {
-        if (entry.first.box_id == box_id) {
-            bounds.expand_bounding_box(vtr::Rect<int>(entry.first.delta));
-        }
+        bounds[entry.first.seg_index][size_t(entry.first.box_id)].expand_bounding_box(vtr::Rect<int>(entry.first.delta));
     }
 
-    if (bounds.empty()) {
-        // Didn't find any sample routes, so routing isn't possible between these segment/connection box types.
-        offset_[from_seg_index][size_t(box_id)] = std::make_pair(0, 0);
-        cost_map_[from_seg_index][size_t(box_id)] = vtr::NdMatrix<util::Cost_Entry, 2>(
-            {size_t(0), size_t(0)});
-        return;
-    }
-
-    offset_[from_seg_index][size_t(box_id)] = std::make_pair(bounds.xmin(), bounds.ymin());
-
-    cost_map_[from_seg_index][size_t(box_id)] = vtr::NdMatrix<util::Cost_Entry, 2>(
-        {size_t(bounds.width()), size_t(bounds.height())});
-    auto& matrix = cost_map_[from_seg_index][size_t(box_id)];
-
-    for (const auto& entry : costs) {
-        if (entry.first.box_id == box_id) {
-            int x = entry.first.delta.x() - bounds.xmin();
-            int y = entry.first.delta.y() - bounds.ymin();
-            matrix[x][y] = entry.second.cost_entry;
-        }
-    }
-
-    // find missing cost entries and fill them in by copying a nearby cost entry
-    std::vector<std::tuple<unsigned, unsigned, util::Cost_Entry>> missing;
-    bool couldnt_fill = false;
-    auto shifted_bounds = vtr::Rect<int>(0, 0, bounds.width(), bounds.height());
-    for (unsigned ix = 0; ix < matrix.dim_size(0) && !couldnt_fill; ix++) {
-        for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
-            util::Cost_Entry& cost_entry = matrix[ix][iy];
-            if (!cost_entry.valid()) {
-                // maximum search radius
-                util::Cost_Entry filler = get_nearby_cost_entry(matrix, ix, iy, shifted_bounds);
-                if (filler.valid()) {
-                    missing.push_back(std::make_tuple(ix, iy, filler));
-                } else {
-                    couldnt_fill = true;
-                }
+    // store bounds
+    for (size_t seg = 0; seg < seg_count_; seg++) {
+        for (size_t box = 0; box < box_count_; box++) {
+            const auto& seg_box_bounds = bounds[seg][box];
+            if (seg_box_bounds.empty()) {
+                // Didn't find any sample routes, so routing isn't possible between these segment/connection box types.
+                offset_[seg][box] = std::make_pair(0, 0);
+                cost_map_[seg][box] = vtr::NdMatrix<util::Cost_Entry, 2>(
+                    {size_t(0), size_t(0)});
+                continue;
+            } else {
+                offset_[seg][box] = std::make_pair(seg_box_bounds.xmin(), seg_box_bounds.ymin());
+                cost_map_[seg][box] = vtr::NdMatrix<util::Cost_Entry, 2>(
+                    {size_t(seg_box_bounds.width()), size_t(seg_box_bounds.height())});
             }
         }
     }
 
-    // write back the missing entries
-    for (auto& xy_entry : missing) {
-        matrix[std::get<0>(xy_entry)][std::get<1>(xy_entry)] = std::get<2>(xy_entry);
+    // store entries into the matrices
+    for (const auto& entry : costs) {
+        int seg = entry.first.seg_index;
+        int box = size_t(entry.first.box_id);
+        const auto& seg_box_bounds = bounds[seg][box];
+        int x = entry.first.delta.x() - seg_box_bounds.xmin();
+        int y = entry.first.delta.y() - seg_box_bounds.ymin();
+        cost_map_[seg][box][x][y] = entry.second.cost_entry;
     }
 
-    if (couldnt_fill) {
-        VTR_LOG_WARN("Couldn't fill holes in the cost matrix for %d -> %ld\n",
-                     from_seg_index, size_t(box_id));
-        for (unsigned y = 0; y < matrix.dim_size(1); y++) {
-            for (unsigned x = 0; x < matrix.dim_size(0); x++) {
-                VTR_ASSERT(!matrix[x][y].valid());
+    // fill the holes
+    for (size_t seg = 0; seg < seg_count_; seg++) {
+        for (size_t box = 0; box < box_count_; box++) {
+            const auto& seg_box_bounds = bounds[seg][box];
+            if (seg_box_bounds.empty()) {
+                continue;
+            }
+            auto& matrix = cost_map_[seg][box];
+
+            // calculate delay penalty
+            float min_delay = 0.f, max_delay = 0.f;
+            vtr::Point<int> min_location(0, 0), max_location(0, 0);
+            for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
+                for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
+                    util::Cost_Entry& cost_entry = matrix[ix][iy];
+                    if (cost_entry.valid()) {
+                        if (cost_entry.delay < min_delay) {
+                            min_delay = cost_entry.delay;
+                            min_location = vtr::Point<int>(ix, iy);
+                        }
+                        if (cost_entry.delay > max_delay) {
+                            max_delay = cost_entry.delay;
+                            max_location = vtr::Point<int>(ix, iy);
+                        }
+                    }
+                }
+            }
+            float delay_penalty = (max_delay - min_delay) / static_cast<float>(std::max(1, manhattan_distance(max_location, min_location)));
+
+            // find missing cost entries and fill them in by copying a nearby cost entry
+            std::vector<std::tuple<unsigned, unsigned, util::Cost_Entry>> missing;
+            bool couldnt_fill = false;
+            auto shifted_bounds = vtr::Rect<int>(0, 0, seg_box_bounds.width(), seg_box_bounds.height());
+            int max_fill = 0;
+            for (unsigned ix = 0; ix < matrix.dim_size(0) && !couldnt_fill; ix++) {
+                for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
+                    util::Cost_Entry& cost_entry = matrix[ix][iy];
+                    if (!cost_entry.valid()) {
+                        // maximum search radius
+                        util::Cost_Entry filler;
+                        int distance;
+                        std::tie(filler, distance) = get_nearby_cost_entry(matrix, ix, iy, shifted_bounds);
+                        if (filler.valid()) {
+                            missing.push_back(std::make_tuple(ix, iy, penalize(filler, distance, delay_penalty)));
+                            max_fill = std::max(max_fill, distance);
+                        } else {
+                            couldnt_fill = true;
+                        }
+                    }
+                }
+            }
+
+            if (!couldnt_fill) {
+                VTR_LOG("At %d -> %d: max_fill = %d, delay_penalty = %e\n", seg, box, max_fill, delay_penalty);
+            }
+
+            // write back the missing entries
+            for (auto& xy_entry : missing) {
+                matrix[std::get<0>(xy_entry)][std::get<1>(xy_entry)] = std::get<2>(xy_entry);
+            }
+
+            if (couldnt_fill) {
+                VTR_LOG_WARN("Couldn't fill holes in the cost matrix for %d -> %ld, %d x %d bounding box\n",
+                             seg, box, seg_box_bounds.width(), seg_box_bounds.height());
+#if !defined(FILL_LIMIT)
+                for (unsigned y = 0; y < matrix.dim_size(1); y++) {
+                    for (unsigned x = 0; x < matrix.dim_size(0); x++) {
+                        VTR_ASSERT(!matrix[x][y].valid());
+                    }
+                }
+#endif
             }
         }
     }
@@ -211,10 +318,14 @@ void CostMap::print(int iseg) const {
                 const auto& entry = matrix[ix][iy];
                 if (!entry.valid()) {
                     printf("*");
+                } else if (entry.delay * 4 > avg * 5) {
+                    printf("O");
                 } else if (entry.delay > avg) {
                     printf("o");
-                } else {
+                } else if (entry.delay * 4 > avg * 3) {
                     printf(".");
+                } else {
+                    printf(" ");
                 }
             }
             printf("\n");
@@ -240,53 +351,40 @@ static void assign_min_entry(util::Cost_Entry& dst, const util::Cost_Entry& src)
 }
 
 // find the minimum cost entry from the nearest manhattan distance neighbor
-util::Cost_Entry CostMap::get_nearby_cost_entry(const vtr::NdMatrix<util::Cost_Entry, 2>& matrix,
-                                                int cx,
-                                                int cy,
-                                                const vtr::Rect<int>& bounds) {
+std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMatrix<util::Cost_Entry, 2>& matrix,
+                                                                int cx,
+                                                                int cy,
+                                                                const vtr::Rect<int>& bounds) {
     // spiral around (cx, cy) looking for a nearby entry
-    int n = 1, x, y;
+    int n = 1;
     bool in_bounds;
     util::Cost_Entry entry;
 
     do {
         in_bounds = false;
-        y = cy - n; // top
-        // left -> right
-        for (x = cx - n; x < cx + n; x++) {
-            if (bounds.contains(vtr::Point<int>(x, y))) {
-                assign_min_entry(entry, matrix[x][y]);
+        for (int ox = -n; ox <= n; ox++) {
+            int x = cx + ox;
+            int oy = n - abs(ox);
+            int yp = cy + oy;
+            int yn = cy - oy;
+            if (bounds.contains(vtr::Point<int>(x, yp))) {
+                assign_min_entry(entry, matrix[x][yp]);
+                in_bounds = true;
+            }
+            if (bounds.contains(vtr::Point<int>(x, yn))) {
+                assign_min_entry(entry, matrix[x][yn]);
                 in_bounds = true;
             }
         }
-        x = cx + n; // right
-        // top -> bottom
-        for (; y < cy + n; y++) {
-            if (bounds.contains(vtr::Point<int>(x, y))) {
-                assign_min_entry(entry, matrix[x][y]);
-                in_bounds = true;
-            }
-        }
-        y = cy + n; // bottom
-        // right -> left
-        for (; x > cx - n; x--) {
-            if (bounds.contains(vtr::Point<int>(x, y))) {
-                assign_min_entry(entry, matrix[x][y]);
-                in_bounds = true;
-            }
-        }
-        x = cx - n; // left
-        // bottom -> top
-        for (; y > cy - n; y--) {
-            if (bounds.contains(vtr::Point<int>(x, y))) {
-                assign_min_entry(entry, matrix[x][y]);
-                in_bounds = true;
-            }
-        }
-        if (entry.valid()) return entry;
+        if (entry.valid()) return std::make_pair(entry, n);
         n++;
+#if defined(FILL_LIMIT)
+        if (n > FILL_LIMIT) {
+            break;
+        }
+#endif
     } while (in_bounds);
-    return util::Cost_Entry();
+    return std::make_pair(util::Cost_Entry(), n);
 }
 
 // derive a cost from the map between two nodes
@@ -366,8 +464,10 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
 /* runs Dijkstra's algorithm from specified node until all nodes have been
  * visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored to an entry in the routing_cost_map */
-static void run_dijkstra(int start_node_ind,
-                         std::vector<RoutingCosts>* routing_costs) {
+static float run_dijkstra(int start_node_ind,
+                          RoutingCosts* routing_costs,
+                          SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE>* cache,
+                          float cost_limit) {
     auto& device_ctx = g_vpr_ctx.device();
 
     /* a list of boolean flags (one for each rr node) to figure out if a
@@ -383,6 +483,8 @@ static void run_dijkstra(int start_node_ind,
 
     /* first entry has no upstream delay or congestion */
     util::PQ_Entry_Lite first_entry(start_node_ind, UNDEFINED, 0, true);
+
+    float max_cost = 0.f;
 
     pq.push(first_entry);
 
@@ -439,8 +541,10 @@ static void run_dijkstra(int start_node_ind,
                 vtr::Point<int> delta(ssize_t(from_canonical_loc->first) - ssize_t(box_location.first),
                                       ssize_t(from_canonical_loc->second) - ssize_t(box_location.second));
                 RoutingCostKey key = {
-                    delta,
-                    box_id};
+                    seg_index,
+                    box_id,
+                    delta};
+                CompressedRoutingCostKey compressed_key(key);
                 RoutingCost val = {
                     parent,
                     node_ind,
@@ -448,11 +552,41 @@ static void run_dijkstra(int start_node_ind,
                         current_full.delay - parent_entry.delay,
                         current_full.congestion_upstream - parent_entry.congestion_upstream)};
 
-                const auto& x = (*routing_costs)[seg_index].find(key);
-
                 // implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
-                if (x == (*routing_costs)[seg_index].end() || x->second.cost_entry.delay > val.cost_entry.delay) {
-                    (*routing_costs)[seg_index][key] = val;
+                float cost = 0.f;
+                bool in_window = abs(delta.x()) <= DIJKSTRA_CACHE_WINDOW && abs(delta.y()) <= DIJKSTRA_CACHE_WINDOW;
+                if (in_window && cache->get(compressed_key, &cost) && cost <= val.cost_entry.delay) {
+                    // the sample was not cheaper than the cached sample
+                    if (BREAK_ON_MISS) {
+                        // don't store the rest of the path
+                        break;
+                    }
+                } else {
+                    const auto& x = routing_costs->find(key);
+                    if (x != routing_costs->end()) {
+                        if (x->second.cost_entry.delay > val.cost_entry.delay) {
+                            // this sample is cheaper
+                            (*routing_costs)[key] = val;
+                            if (in_window) {
+                                cache->insert(compressed_key, val.cost_entry.delay);
+                            }
+                        } else {
+                            // this sample is not cheaper
+                            if (BREAK_ON_MISS) {
+                                // don't store the rest of the path
+                                break;
+                            }
+                            if (in_window) {
+                                cache->insert(compressed_key, x->second.cost_entry.delay);
+                            }
+                        }
+                    } else {
+                        // this sample is new
+                        (*routing_costs)[key] = val;
+                        if (in_window) {
+                            cache->insert(compressed_key, val.cost_entry.delay);
+                        }
+                    }
                 }
 
                 parent_entry = util::PQ_Entry(*it, parent_node.edge_switch(paths[*it].edge), parent_entry.delay,
@@ -463,7 +597,13 @@ static void run_dijkstra(int start_node_ind,
             expand_dijkstra_neighbours(current, paths, node_expanded, pq);
             node_expanded[node_ind] = true;
         }
+
+        max_cost = std::max(max_cost, current.delay_cost);
+        if (max_cost > cost_limit) {
+            break;
+        }
     }
+    return max_cost;
 }
 
 // compute the cost maps for lookahead
@@ -471,8 +611,30 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
     vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
 
     size_t num_segments = segment_inf.size();
-    std::vector<SampleGrid> inodes_for_segment(num_segments);
-    find_inodes_for_segment_types(&inodes_for_segment);
+    std::vector<SamplePoint> sample_points;
+    {
+        std::vector<SampleGrid> inodes_for_segment(num_segments);
+        find_inodes_for_segment_types(&inodes_for_segment);
+
+        // collapse into a vector
+        for (auto& grid : inodes_for_segment) {
+            for (int y = 0; y < SAMPLE_GRID_SIZE; y++) {
+                for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
+                    auto& point = grid.point[y][x];
+                    if (!point.samples.empty()) {
+                        point.order = point.samples[0];
+                        sample_points.push_back(point);
+                    }
+                }
+            }
+        }
+    }
+
+    // sort by VPR coordinate
+    std::sort(sample_points.begin(), sample_points.end(),
+              [](const SamplePoint& a, const SamplePoint& b) {
+                  return a.order < b.order;
+              });
 
     /* free previous delay map and allocate new one */
     auto& device_ctx = g_vpr_ctx.device();
@@ -480,98 +642,72 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
                          device_ctx.connection_boxes.num_connection_box_types());
 
     VTR_ASSERT(REPRESENTATIVE_ENTRY_METHOD == util::SMALLEST);
-    std::vector<RoutingCosts> all_costs(num_segments);
+    RoutingCosts all_costs;
 
     /* run Dijkstra's algorithm for each segment type & channel type combination */
 #if defined(VPR_USE_TBB)
     tbb::mutex all_costs_mutex;
-    tbb::parallel_for(size_t(0), size_t(num_segments), [&](int iseg) {
+    tbb::parallel_for_each(sample_points, [&](const SamplePoint& point) {
 #else
-    for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
+    for (const auto& point : sample_points) {
 #endif
-        VTR_LOG("Creating cost map for %s(%d)\n",
-                segment_inf[iseg].name.c_str(), iseg);
-
-        std::vector<RoutingCosts> costs(num_segments);
-        for (const auto& row : inodes_for_segment[iseg]) {
-            for (auto cell : row) {
-                for (auto node_ind : cell) {
-                    run_dijkstra(node_ind, &costs);
-                }
-            }
+        float max_cost = 0.f;
+        RoutingCosts costs;
+        SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE> cache;
+        for (auto node_ind : point.samples) {
+            max_cost = std::max(max_cost, run_dijkstra(node_ind, &costs, &cache, COST_LIMIT));
         }
 
 #if defined(VPR_USE_TBB)
         all_costs_mutex.lock();
 #endif
 
-        // combine the cost map from this run with the final cost maps for each segment
-        for (int i = 0; i < (ssize_t)num_segments; i++) {
-            for (const auto& cost : costs[i]) {
-                const auto& key = cost.first;
-                const auto& val = cost.second;
-                const auto& x = all_costs[i].find(key);
+        VTR_LOG("Expanded sample point (%d, %d) %e miss %g\n",
+                point.location.x(), point.location.y(), max_cost, cache.miss_ratio());
 
-                // implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
-                if (x == all_costs[i].end() || x->second.cost_entry.delay > val.cost_entry.delay) {
-                    all_costs[i][key] = val;
-                }
+        // combine the cost map from this run with the final cost maps for each segment
+        for (const auto& cost : costs) {
+            const auto& key = cost.first;
+            const auto& val = cost.second;
+            const auto& x = all_costs.find(key);
+
+            // implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
+            if (x == all_costs.end() || x->second.cost_entry.delay > val.cost_entry.delay) {
+                all_costs[key] = val;
             }
         }
 
 #if defined(VPR_USE_TBB)
         all_costs_mutex.unlock();
-#endif
-#if !defined(VPR_USE_TBB)
-    }
-#else
     });
+#else
+    }
 #endif
 
     VTR_LOG("Combining results\n");
-    for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
-#if 0
-        for (auto &cost : all_costs[iseg]) {
-            const auto& key = cost.first;
-            const auto& val = cost.second;
-            VTR_LOG("%d -> %d (%d, %d): %g, %g\n",
-                    val.from_node, val.to_node,
-                    key.delta.x(), key.delta.y(),
-                    val.cost_entry.delay, val.cost_entry.congestion);
-        }
-#endif
-        const auto& costs = all_costs[iseg];
-        if (costs.empty()) {
-            // check that there were no start nodes
-            bool empty = true;
-            for (const auto& row : inodes_for_segment[iseg]) {
-                for (auto cell : row) {
-                    if (!cell.empty()) {
-                        empty = false;
-                        break;
-                    }
-                }
-                if (!empty) break;
-            }
-            if (empty) {
-                VTR_LOG_WARN("Segment %s(%d) found no routes\n",
-                             segment_inf[iseg].name.c_str(), iseg);
-            } else {
-                VTR_LOG_WARN("Segment %s(%d) found no routes, even though there are some matching nodes\n",
-                             segment_inf[iseg].name.c_str(), iseg);
-            }
-        } else {
-            /* boil down the cost list in routing_cost_map at each coordinate to a
-             * representative cost entry and store it in the lookahead cost map */
-            cost_map_.set_cost_map(iseg, costs);
-        }
+    /* boil down the cost list in routing_cost_map at each coordinate to a
+     * representative cost entry and store it in the lookahead cost map */
+    cost_map_.set_cost_map(all_costs);
 
+// diagnostics
 #if 0
-        VTR_LOG("cost map for %s(%d)\n",
-        segment_inf[iseg].name.c_str(), iseg);
-        cost_map_.print(iseg);
-#endif
+    for (auto &cost : all_costs) {
+        const auto& key = cost.first;
+        const auto& val = cost.second;
+        VTR_LOG("%d -> %d (%d, %d): %g, %g\n",
+                val.from_node, val.to_node,
+                key.delta.x(), key.delta.y(),
+                val.cost_entry.delay, val.cost_entry.congestion);
     }
+#endif
+
+#if 1
+    for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
+        VTR_LOG("cost map for %s(%d)\n",
+                segment_inf[iseg].name.c_str(), iseg);
+        cost_map_.print(iseg);
+    }
+#endif
 
 #if 0
     for (std::pair<int, int> p : cost_map_.list_empty()) {
@@ -603,16 +739,15 @@ float ConnectionBoxMapLookahead::get_expected_cost(
     }
 }
 
-// also known as the L1 norm
-static int manhattan_distance(const t_rr_node& node, int x, int y) {
-    int node_center_x = (node.xhigh() + node.xlow()) / 2;
-    int node_center_y = (node.yhigh() + node.ylow()) / 2;
-    return abs(node_center_x - x) + abs(node_center_y - y);
-}
-
 static vtr::Rect<int> bounding_box_for_node(const t_rr_node& node) {
     return vtr::Rect<int>(node.xlow(), node.ylow(),
                           node.xhigh() + 1, node.yhigh() + 1);
+}
+
+static vtr::Point<int> point_for_node(const t_rr_node& node) {
+    int x = (node.xhigh() + node.xlow()) / 2;
+    int y = (node.yhigh() + node.ylow()) / 2;
+    return vtr::Point<int>(x, y);
 }
 
 // for each segment type, find the nearest nodes to an equally spaced grid of points
@@ -639,15 +774,16 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
     inodes_for_segment->clear();
     inodes_for_segment->resize(num_segments);
     for (auto& grid : *inodes_for_segment) {
-        for (auto& row : grid) {
-            for (auto& cell : row) {
-                cell = std::vector<ssize_t>();
+        for (int y = 0; y < SAMPLE_GRID_SIZE; y++) {
+            for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
+                grid.point[y][x].samples = std::vector<ssize_t>();
             }
         }
     }
 
     for (size_t i = 0; i < rr_nodes.size(); i++) {
         auto& node = rr_nodes[i];
+        vtr::Rect<int> node_bounds = bounding_box_for_node(node);
         if (node.type() != CHANX && node.type() != CHANY) continue;
         if (node.capacity() == 0 || device_ctx.connection_boxes.find_canonical_loc(i) == nullptr) continue;
 
@@ -659,24 +795,24 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
         auto& grid = (*inodes_for_segment)[seg_index];
         for (int sy = 0; sy < SAMPLE_GRID_SIZE; sy++) {
             for (int sx = 0; sx < SAMPLE_GRID_SIZE; sx++) {
-                auto& stored_inodes = grid[sy][sx];
-                if (stored_inodes.empty()) {
-                    stored_inodes.push_back(i);
+                auto& point = grid.point[sy][sx];
+                if (point.samples.empty()) {
+                    point.samples.push_back(i);
+                    point.location = vtr::Point<int>(node.xlow(), node.ylow());
                     goto next_rr_node;
                 }
 
-                auto& first_stored_node = rr_nodes[stored_inodes.front()];
-                if (first_stored_node.xhigh() >= node.xhigh() && first_stored_node.xlow() <= node.xlow() && first_stored_node.yhigh() >= node.yhigh() && first_stored_node.ylow() <= node.ylow()) {
-                    stored_inodes.push_back(i);
+                if (node_bounds.contains(point.location)) {
+                    point.samples.push_back(i);
                     goto next_rr_node;
                 }
 
                 vtr::Point<int> target = sample(bounding_box_for_segment[seg_index], sx + 1, sy + 1, SAMPLE_GRID_SIZE + 1);
-                int distance_new = manhattan_distance(node, target.x(), target.y());
-                int distance_stored = manhattan_distance(first_stored_node, target.x(), target.y());
+                int distance_new = manhattan_distance(point_for_node(node), target);
+                int distance_stored = manhattan_distance(point.location, target);
                 if (distance_new < distance_stored) {
-                    stored_inodes.clear();
-                    stored_inodes.push_back(i);
+                    point.samples.clear();
+                    point.samples.push_back(i);
                     goto next_rr_node;
                 }
             }
