@@ -2007,6 +2007,16 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     Tdel += Rdel_adjust * switch_Cinternal;
 
     //Update the backward cost (upstream already included)
+    //
+    // This check is in-place for times when criticality is set exactly to 1.
+    // This is not the general case when doing timing-driven routing, but
+    // when using the router for expansions, criticality will be set to 1
+    // to avoid accounting for congestion.  In these cases it is a win to avoid
+    // getting the congestion cost.
+    //
+    // Because the behavior is always one way during expansion and almost always
+    // the other way during routing, it is expected that the branch predictors
+    // will not mispredict this branch.
     if (cost_params.criticality != 1.) {
         to->backward_path_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
     }
