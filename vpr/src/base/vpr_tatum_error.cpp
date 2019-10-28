@@ -45,7 +45,6 @@ std::string format_tatum_error(const tatum::Error& error) {
     }
 
     if (error.edge) {
-
         if (timing_ctx.graph) {
             tatum::NodeId src_node = timing_ctx.graph->edge_src_node(error.edge);
             tatum::NodeId sink_node = timing_ctx.graph->edge_sink_node(error.edge);
