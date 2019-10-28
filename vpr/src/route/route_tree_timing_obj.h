@@ -39,16 +39,16 @@ class RouteTreeTiming {
     RouteTreeTiming(
         const RrNodeInf& node_inf,
         const RrNodeSetInf& node_set_inf,
-        const SwitchInf& switch_inf,
-        const vtr::vector<ClusterNetId, std::vector<int>>& net_rr_terminals)
+        const SwitchInf& switch_inf)
         : node_inf_(node_inf)
         , node_set_inf_(node_set_inf)
-        , switch_inf_(switch_inf)
-        , net_rr_terminals_(net_rr_terminals) {
+        , switch_inf_(switch_inf) {
         rr_node_to_rt_node_.resize(node_inf_.size(), nullptr);
     }
 
-    t_rt_node* init_route_tree_to_source(ClusterNetId inet);
+    t_rt_node* init_route_tree_to_source(
+        const vtr::vector<ClusterNetId, std::vector<int>>& net_rr_terminals,
+        ClusterNetId inet);
 
     void free_route_tree(t_rt_node* rt_node);
 
@@ -139,7 +139,6 @@ class RouteTreeTiming {
     const SwitchInf& switch_inf_;
     RtNodeAllocator rt_nodes_;
     LinkedRtEdgeAllocator rt_edges_;
-    const vtr::vector<ClusterNetId, std::vector<int>>& net_rr_terminals_;
 };
 
 #include "route_tree_timing_obj.hpp"

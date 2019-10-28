@@ -1,7 +1,9 @@
 #include "clustered_netlist_fwd.h"
 
 template<typename RrNodeInf, typename RrNodeSetInf, typename SwitchInf>
-t_rt_node* RouteTreeTiming<RrNodeInf, RrNodeSetInf, SwitchInf>::init_route_tree_to_source(ClusterNetId inet) {
+t_rt_node* RouteTreeTiming<RrNodeInf, RrNodeSetInf, SwitchInf>::init_route_tree_to_source(
+    const vtr::vector<ClusterNetId, std::vector<int>>& net_rr_terminals,
+    ClusterNetId inet) {
     /* Initializes the routing tree to just the net source, and returns the root
      * node of the rt_tree (which is just the net source).                       */
 
@@ -13,7 +15,7 @@ t_rt_node* RouteTreeTiming<RrNodeInf, RrNodeSetInf, SwitchInf>::init_route_tree_
     rt_root->parent_switch = OPEN;
     rt_root->re_expand = true;
 
-    int inode = net_rr_terminals_[inet][0]; /* Net source */
+    int inode = net_rr_terminals[inet][0]; /* Net source */
 
     rt_root->inode = inode;
     rt_root->C_downstream = node_inf_[inode].C();

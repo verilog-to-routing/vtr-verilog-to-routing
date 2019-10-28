@@ -50,7 +50,6 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
     /* Allocates any structures needed to build the routing trees. */
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
 
     bool route_tree_structs_are_allocated = bool(tree_timing);
     if (route_tree_structs_are_allocated) {
@@ -68,8 +67,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
         decltype(device_ctx.rr_switch_inf)>>(
         device_ctx.rr_nodes,
         device_ctx.rr_node_to_non_config_node_set,
-        device_ctx.rr_switch_inf,
-        route_ctx.net_rr_terminals);
+        device_ctx.rr_switch_inf);
 
     return true;
 }
@@ -83,7 +81,8 @@ void free_route_tree_timing_structs() {
 /* Initializes the routing tree to just the net source, and returns the root
  * node of the rt_tree (which is just the net source).                       */
 t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
-    return tree_timing->init_route_tree_to_source(inet);
+    auto& route_ctx = g_vpr_ctx.routing();
+    return tree_timing->init_route_tree_to_source(route_ctx.net_rr_terminals, inet);
 }
 
 /* Adds the most recently finished wire segment to the routing tree, and
