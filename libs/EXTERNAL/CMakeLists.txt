@@ -28,5 +28,11 @@ if(${VTR_ENABLE_CAPNPROTO})
     # Disable capnproto tests
     set(BUILD_TESTING OFF)
 
+    #Since capnproto is an externally developed library/tool, we suppress all compiler warnings
+    CHECK_CXX_COMPILER_FLAG("-w" CXX_COMPILER_SUPPORTS_-w)
+    if(CXX_COMPILER_SUPPORTS_-w)
+        add_compile_options("-w")
+    endif()
+
     add_subdirectory(capnproto EXCLUDE_FROM_ALL)
 endif()
