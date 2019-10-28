@@ -336,12 +336,12 @@ endif()
 
 
 #Add the various sub-projects
-add_subdirectory(libs)
-
-# Only add warn flags for VPR internal libraries.
-add_compile_options(${WARN_FLAGS})
-add_subdirectory(vpr)
 add_subdirectory(abc)
+add_subdirectory(libs) #libs/CMakeLists.txt handles adding warnings flags to non-external libraries
+
+#Add the various tools
+add_compile_options(${WARN_FLAGS}) #Add warn flags for VTR tools
+add_subdirectory(vpr)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
 add_subdirectory(utils)
