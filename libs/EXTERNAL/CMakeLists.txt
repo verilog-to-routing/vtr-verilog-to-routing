@@ -35,4 +35,11 @@ if(${VTR_ENABLE_CAPNPROTO})
     endif()
 
     add_subdirectory(capnproto EXCLUDE_FROM_ALL)
+
+    #Some capnproto kj headers (e.g. filesystem.h) generate warnings, treat them as system headers to suppress warnings
+    #We suppress them here since we include the capnproto sub-tree as is and do not modify its CMakeLists.txts
+    target_include_directories(kj SYSTEM INTERFACE
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/capnproto/c++/src>
+      $<INSTALL_INTERFACE:include>
+    )
 endif()
