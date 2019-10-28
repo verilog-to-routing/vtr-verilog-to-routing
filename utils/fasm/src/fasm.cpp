@@ -630,12 +630,19 @@ void FasmWriterVisitor::walk_route_tree(const t_rt_node *root) {
 void FasmWriterVisitor::walk_routing() {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
+    bool allocated = alloc_route_tree_timing_structs(/*exists_ok=*/true);
+
+
     for(const auto &trace : route_ctx.trace) {
       t_trace *head = trace.head;
       if (!head) continue;
       t_rt_node* root = traceback_to_route_tree(head);
       walk_route_tree(root);
       free_route_tree(root);
+    }
+
+    if(allocated) {
+        free_route_tree_timing_structs();
     }
 }
 

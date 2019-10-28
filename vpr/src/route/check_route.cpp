@@ -811,9 +811,16 @@ class StubFinder {
 //
 //We treat any configurable stubs as an error.
 void check_net_for_stubs(ClusterNetId net) {
+    bool allocated = alloc_route_tree_timing_structs(/*exists_ok=*/true);
+
     StubFinder stub_finder;
 
     bool any_stubs = stub_finder.CheckNet(net);
+
+    if (allocated) {
+        free_route_tree_timing_structs();
+    }
+
     if (any_stubs) {
         auto& cluster_ctx = g_vpr_ctx.clustering();
         std::string msg = vtr::string_fmt("Route tree for net '%s' (#%zu) contains stub branches rooted at:\n",
