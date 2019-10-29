@@ -41,8 +41,15 @@ Each of these contains ``<port>`` tags:
 .. arch:tag:: <port name="string" is_clock="{0 | 1} clock="string" combinational_sink_ports="string1 string2 ..."/>
 
     :req_param name: The port name.
-    :opt_param is_clock: Indicates if the port is a clock. Default: ``0``
+
+    :opt_param is_clock: Identifies if the port as a clock port.
+
+        .. seealso:: The :ref:`Primitive Timing Modelling Tutorial <arch_model_timing_tutorial>` for usage of ``is_clock`` to model clock control blocks  such as clock generators, clock buffers/gates and clock muxes.
+
+        Default: ``0``
+
     :opt_param clock: Indicates the port is sequential and controlled by the specified clock (which must be another port on the model marked with ``is_clock=1``). Default: port is treated as combinational (if unspecified)
+
     :opt_param combinational_sink_ports: A space-separated list of output ports which are combinationally connected to the current input port. Default: No combinational connections (if unspecified)
 
     Defines the port for a model.
