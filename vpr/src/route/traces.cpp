@@ -346,7 +346,7 @@ void Traces::free_traceback(t_trace* tptr) {
     }
 }
 
-void Traces::free_all() {
+void Traces::free_all_tracebacks() {
     if (trace_.empty()) {
         return;
     }

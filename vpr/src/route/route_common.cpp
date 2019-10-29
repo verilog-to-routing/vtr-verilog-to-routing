@@ -601,7 +601,7 @@ void free_trace_structs() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    route_ctx.route_traces.free_all();
+    route_ctx.route_traces.free_all_tracebacks();
 }
 
 void free_route_structs() {

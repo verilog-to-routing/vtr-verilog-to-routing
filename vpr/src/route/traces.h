@@ -73,7 +73,7 @@ class Traces {
 
     void assert_trace_empty(ClusterNetId net_id) const;
     void free_traceback(ClusterNetId net_id);
-    void free_all();
+    void free_all_tracebacks();
     void free_chunk_memory_trace();
     bool empty() const {
         return trace_.empty();
