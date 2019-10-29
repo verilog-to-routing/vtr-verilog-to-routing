@@ -1251,7 +1251,7 @@ class t_net_routing_status {
     }
 
   private:
-    static size_t index(ClusterNetId net) {
+    size_t index(ClusterNetId net) const {
         VTR_ASSERT_SAFE(net != ClusterNetId::INVALID());
         size_t index = size_t(net);
         VTR_ASSERT_SAFE(index < is_routed_.size());
