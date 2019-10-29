@@ -62,6 +62,7 @@
 #include "check_route.h"
 #include "constant_nets.h"
 #include "atom_netlist_utils.h"
+#include "route_tree_timing.h"
 
 #include "pack_report.h"
 
@@ -1166,6 +1167,8 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
                               *timing_ctx.graph, *timing_ctx.constraints, *analysis_delay_calc, timing_info->analyzer());
         }
 
+        bool allocated = alloc_route_tree_timing_structs(/*exists_ok=*/true);
+
         //Timing stats
         VTR_LOG("\n");
         generate_hold_timing_stats(/*prefix=*/"", *timing_info,
@@ -1185,6 +1188,9 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 
         //Clean-up the net delays
         free_net_delay(net_delay, &net_delay_ch);
+        if (allocated) {
+            free_route_tree_timing_structs();
+        }
     }
 }
 
