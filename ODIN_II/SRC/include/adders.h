@@ -47,6 +47,11 @@ struct adder_signals{
 
 extern t_model *hard_adders;
 extern vtr::t_linked_vptr *add_list;
+//MEHRSHAD//
+#define NUM_CHILDREN 5
+#define NUM_PARENTS 1
+extern vtr::t_linked_vptr **population;
+//MEHRSHAD//
 extern vtr::t_linked_vptr *chain_list;
 extern vtr::t_linked_vptr *processed_adder_list;
 extern int total;
@@ -62,6 +67,10 @@ void find_hard_adders();
 void add_the_blackbox_for_adds(FILE *out);
 void define_add_function(nnode_t *node, FILE *out);
 void split_adder(nnode_t *node, int a, int b, int sizea, int sizeb, int cin, int cout, int count, netlist_t *netlist);
+//MEHRSHAD//
+vtr::t_linked_vptr* mutation (vtr::t_linked_vptr *parent);
+void initialize_population ();
+//MEHRSHAD//
 void iterate_adders(netlist_t *netlist);
 void clean_adders();
 void reduce_operations(netlist_t *netlist, operation_list op);
