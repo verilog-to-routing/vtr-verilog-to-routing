@@ -385,8 +385,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
 
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            route_ctx.net_status[net_id].is_routed = false;
-            route_ctx.net_status[net_id].is_fixed = false;
+            route_ctx.net_status.set_is_routed(net_id, false);
+            route_ctx.net_status.set_is_fixed(net_id, false);
         }
 
         if (itry_since_last_convergence >= 0) {
@@ -744,7 +744,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
 
     connections_inf.prepare_routing_for_net(net_id);
 
-    if (route_ctx.net_status[net_id].is_fixed) { /* Skip pre-routed nets. */
+    if (route_ctx.net_status.is_fixed(net_id)) { /* Skip pre-routed nets. */
         is_routed = true;
     } else if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Skip ignored nets. */
         is_routed = true;
@@ -772,7 +772,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
 
         /* Impossible to route? (disconnected rr_graph) */
         if (is_routed) {
-            route_ctx.net_status[net_id].is_routed = true;
+            route_ctx.net_status.set_is_routed(net_id, true);
         } else {
             VTR_LOG("Routing failed.\n");
         }

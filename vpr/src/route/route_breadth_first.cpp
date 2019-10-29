@@ -70,8 +70,8 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
 
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            route_ctx.net_status[net_id].is_routed = false;
-            route_ctx.net_status[net_id].is_fixed = false;
+            route_ctx.net_status.set_is_routed(net_id, false);
+            route_ctx.net_status.set_is_fixed(net_id, false);
         }
 
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -122,7 +122,7 @@ bool try_breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float pr
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    if (route_ctx.net_status[net_id].is_fixed) { /* Skip pre-routed nets. */
+    if (route_ctx.net_status.is_fixed(net_id)) { /* Skip pre-routed nets. */
         is_routed = true;
 
     } else if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Skip ignored nets. */
@@ -134,7 +134,7 @@ bool try_breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float pr
 
         /* Impossible to route? (disconnected rr_graph) */
         if (is_routed) {
-            route_ctx.net_status[net_id].is_routed = false;
+            route_ctx.net_status.set_is_routed(net_id, false);
         } else {
             VTR_LOG("Routing failed.\n");
         }
