@@ -40,6 +40,7 @@
 #include "vtr_flat_map.h"
 #include "vtr_cache.h"
 #include "vtr_string_view.h"
+#include "vtr_dynamic_bitset.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -1223,9 +1224,41 @@ struct t_rr_node_route_inf {
 };
 
 //Information about the current status of a particular net as pertains to routing
-struct t_net_routing_status {
-    bool is_routed = false; //Whether the net has been legally routed
-    bool is_fixed = false;  //Whether the net is fixed (i.e. not to be re-routed)
+class t_net_routing_status {
+  public:
+    void clear() {
+        is_routed_.clear();
+        is_fixed_.clear();
+    }
+
+    void resize(size_t number_nets) {
+        is_routed_.resize(number_nets);
+        is_routed_.fill(false);
+        is_fixed_.resize(number_nets);
+        is_fixed_.fill(false);
+    }
+    void set_is_routed(ClusterNetId net, bool is_routed) {
+        is_routed_.set(index(net), is_routed);
+    }
+    bool is_routed(ClusterNetId net) const {
+        return is_routed_.get(index(net));
+    }
+    void set_is_fixed(ClusterNetId net, bool is_fixed) {
+        is_fixed_.set(index(net), is_fixed);
+    }
+    bool is_fixed(ClusterNetId net) const {
+        return is_fixed_.get(index(net));
+    }
+
+  private:
+    static size_t index(ClusterNetId net) {
+        VTR_ASSERT_SAFE(net != ClusterNetId::INVALID());
+        size_t index = size_t(net);
+        VTR_ASSERT_SAFE(index < is_routed_.size());
+        return index;
+    }
+    vtr::dynamic_bitset<> is_routed_; //Whether the net has been legally routed
+    vtr::dynamic_bitset<> is_fixed_;  //Whether the net is fixed (i.e. not to be re-routed)
 };
 
 struct t_node_edge {
