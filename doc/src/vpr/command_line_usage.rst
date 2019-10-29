@@ -11,8 +11,13 @@ At a minimum VPR requires two command-line arguments::
 
 where:
 
-  * ``architecture`` is an :ref:`FPGA architecture description file <fpga_architecture_description>`
-  * ``circuit`` is the technology mapped netlist in :ref:`BLIF format <vpr_blif_file>` to be implemented
+.. option:: architecture
+
+    is an :ref:`FPGA architecture description file <fpga_architecture_description>`
+
+.. option:: circuit
+
+    is the technology mapped netlist in :ref:`BLIF format <vpr_blif_file>` to be implemented
 
 VPR will then pack, place, and route the circuit onto the specified architecture.
 
@@ -203,9 +208,9 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --circuit_file <file>
 
-    Path to technology mapped user circuit in BLIF format.
+    Path to technology mapped user circuit in :ref:`BLIF format <vpr_blif_file>`.
 
-    .. note:: If specified the ``circuit`` positional argument is treated as the circuit name.
+    .. note:: If specified the :option:`circuit` positional argument is treated as the circuit name.
 
     .. seealso:: :option:`--circuit_format`
 
@@ -221,31 +226,39 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --net_file <file>
 
-    Path to packed user circuit in net format
+    Path to packed user circuit in :ref:`net format <vpr_net_file>`.
+
+    **Default:** :option:`circuit <circuit>`.net
 
 .. option:: --place_file <file>
 
-    Path to final placement file
+    Path to final :ref:`placement file <vpr_place_file>`.
+
+    **Default:** :option:`circuit <circuit>`.place
 
 .. option:: --route_file <file>
 
-    Path to final routing file
+    Path to final :ref:`routing file <vpr_route_file>`.
+
+    **Default:** :option:`circuit <circuit>`.route
 
 .. option:: --sdc_file <file>
 
     Path to SDC timing constraints file.
 
-    If no SDC file is specified :ref:`default timing constraints <default_timing_constraints>` will be used.
+    If no SDC file is found :ref:`default timing constraints <default_timing_constraints>` will be used.
+
+    **Default:** :option:`circuit <circuit>`.sdc
 
 .. option:: --write_rr_graph <file>
 
-    Writes out the routing resource graph generated at the last stage of VPR into XML format
+    Writes out the routing resource graph generated at the last stage of VPR into :ref:`RR Graph XML format <vpr_route_resource_file>`
 
     <file> describes the filename for the generated routing resource graph. The output can be read into VPR using :option:`--read_rr_graph`
 
 .. option:: --read_rr_graph <file>
 
-    Reads in the routing resource graph named <file> in the VTR root directory and loads it into the placement and routing stage of VPR.
+    Reads in the routing resource graph named <file> loads it for use during the placement and routing stages.
 
     The routing resource graph overthrows all the architecture definitions regarding switches, nodes, and edges. Other information such as grid information, block types, and segment information are matched with the architecture file to ensure accuracy.
 
@@ -405,6 +418,7 @@ For people not working on CAD, you can probably leave all the options to their d
 .. option:: --balance_block_type_utilization {on, off, auto}
 
     Controls how the packer selects the block type to which a primitive will be mapped if it can potentially map to multiple block types.
+
      * ``on``  : Try to balance block type utilization by picking the block type with the (currenty) lowest utilization.
      * ``off`` : Do not try to balance block type utilization
      * ``auto``: Dynamically enabled/disabled (based on density)
