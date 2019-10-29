@@ -203,7 +203,7 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --circuit_file <file>
 
-    Path to technology mapped user circuit in blif format.
+    Path to technology mapped user circuit in BLIF format.
 
     .. note:: If specified the ``circuit`` positional argument is treated as the circuit name.
 
@@ -233,7 +233,9 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --sdc_file <file>
 
-    Path to SDC timing constraints file
+    Path to SDC timing constraints file.
+
+    If no SDC file is specified :ref:`default timing constraints <default_timing_constraints>` will be used.
 
 .. option:: --write_rr_graph <file>
 
