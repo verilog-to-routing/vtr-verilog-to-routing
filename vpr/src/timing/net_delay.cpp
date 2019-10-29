@@ -101,7 +101,7 @@ static void load_one_net_delay(vtr::vector<ClusterNetId, float*>& net_delay, Clu
 
     auto& route_ctx = g_vpr_ctx.routing();
 
-    if (route_ctx.trace[net_id].head == nullptr) {
+    if (route_ctx.route_traces.get_trace_head(net_id) == nullptr) {
         VPR_FATAL_ERROR(VPR_ERROR_TIMING,
                         "in load_one_net_delay: Traceback for net %lu does not exist.\n", size_t(net_id));
     }

@@ -55,9 +55,7 @@ bool verify_route_tree_recurr(t_rt_node* node, std::set<int>& seen_nodes);
 
 static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool congested, std::vector<int>* non_config_node_set_usage);
 
-static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt, std::vector<int>* non_config_node_set_usage);
-
-static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_trace* tail, const t_rt_node* node);
+static const t_trace* traceback_to_route_tree_branch(const t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt, std::vector<int>* non_config_node_set_usage);
 
 void collect_route_tree_connections(const t_rt_node* node, std::set<std::tuple<int, int, int>>& connections);
 
@@ -704,18 +702,18 @@ void update_remaining_net_delays_from_route_tree(float* net_delay,
 /***************  Conversion between traceback and route tree *******************/
 t_rt_node* traceback_to_route_tree(ClusterNetId inet, std::vector<int>* non_config_node_set_usage) {
     auto& route_ctx = g_vpr_ctx.routing();
-    return traceback_to_route_tree(route_ctx.trace[inet].head, non_config_node_set_usage);
+    return traceback_to_route_tree(route_ctx.route_traces.get_trace_head(inet), non_config_node_set_usage);
 }
 
 t_rt_node* traceback_to_route_tree(ClusterNetId inet) {
     return traceback_to_route_tree(inet, nullptr);
 }
 
-t_rt_node* traceback_to_route_tree(t_trace* head) {
+t_rt_node* traceback_to_route_tree(const t_trace* head) {
     return traceback_to_route_tree(head, nullptr);
 }
 
-t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_node_set_usage) {
+t_rt_node* traceback_to_route_tree(const t_trace* head, std::vector<int>* non_config_node_set_usage) {
     /* Builds a skeleton route tree from a traceback
      * does not calculate R_upstream, C_downstream, or Tdel at all (left uninitialized)
      * returns the root of the converted route tree
@@ -729,7 +727,7 @@ t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_n
 
     std::map<int, t_rt_node*> rr_node_to_rt;
 
-    t_trace* trace = head;
+    const t_trace* trace = head;
     while (trace) { //Each branch
         trace = traceback_to_route_tree_branch(trace, rr_node_to_rt, non_config_node_set_usage);
     }
@@ -748,10 +746,10 @@ t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_n
 //Note that R_upstream and C_downstream are initialized to NaN
 //
 //Returns the t_trace defining the start of the next branch
-static t_trace* traceback_to_route_tree_branch(t_trace* trace,
-                                               std::map<int, t_rt_node*>& rr_node_to_rt,
-                                               std::vector<int>* non_config_node_set_usage) {
-    t_trace* next = nullptr;
+static const t_trace* traceback_to_route_tree_branch(const t_trace* trace,
+                                                     std::map<int, t_rt_node*>& rr_node_to_rt,
+                                                     std::vector<int>* non_config_node_set_usage) {
+    const t_trace* next = nullptr;
 
     if (trace) {
         t_rt_node* node = nullptr;
@@ -841,88 +839,6 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
         }
     }
     return next;
-}
-
-static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_trace* tail, const t_rt_node* node) {
-    if (node) {
-        if (node->u.child_list) {
-            //Recursively add children
-            for (t_linked_rt_edge* edge = node->u.child_list; edge != nullptr; edge = edge->next) {
-                t_trace* curr = alloc_trace_data();
-                curr->index = node->inode;
-                curr->iswitch = edge->iswitch;
-                curr->next = nullptr;
-
-                if (tail) {
-                    VTR_ASSERT(tail->next == nullptr);
-                    tail->next = curr;
-                }
-
-                tail = curr;
-
-                if (!head) {
-                    head = tail;
-                }
-
-                std::tie(head, tail) = traceback_from_route_tree_recurr(head, tail, edge->child);
-            }
-        } else {
-            //Leaf
-            t_trace* curr = alloc_trace_data();
-            curr->index = node->inode;
-            curr->iswitch = OPEN;
-            curr->next = nullptr;
-
-            if (tail) {
-                VTR_ASSERT(tail->next == nullptr);
-                tail->next = curr;
-            }
-
-            tail = curr;
-
-            if (!head) {
-                head = tail;
-            }
-        }
-    }
-
-    return {head, tail};
-}
-
-t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int num_routed_sinks) {
-    /* Creates the traceback for net inet from the route tree rooted at root
-     * properly sets route_ctx.trace_head and route_ctx.trace_tail for this net
-     * returns the trace head for inet 					 					 */
-
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& device_ctx = g_vpr_ctx.device();
-
-    t_trace* head;
-    t_trace* tail;
-    std::unordered_set<int> nodes;
-
-    std::tie(head, tail) = traceback_from_route_tree_recurr(nullptr, nullptr, root);
-
-    VTR_ASSERT(head);
-    VTR_ASSERT(tail);
-    VTR_ASSERT(tail->next == nullptr);
-
-    int num_trace_sinks = 0;
-    for (t_trace* trace = head; trace != nullptr; trace = trace->next) {
-        nodes.insert(trace->index);
-
-        //Sanity check that number of sinks match expected
-        if (device_ctx.rr_nodes[trace->index].type() == SINK) {
-            num_trace_sinks += 1;
-        }
-    }
-    VTR_ASSERT(num_routed_sinks == num_trace_sinks);
-
-    route_ctx.trace[inet].tail = tail;
-    route_ctx.trace[inet].head = head;
-    route_ctx.trace_nodes[inet] = nodes;
-
-    return head;
 }
 
 //Prunes a route tree (recursively) based on congestion and the 'force_prune' argument
@@ -1531,4 +1447,11 @@ t_rt_node* find_sink_rt_node_recurr(t_rt_node* node, int sink_rr_inode) {
         }
     }
     return nullptr; //We have not reached the sink node
+}
+
+const t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int num_remaining_sinks) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    return route_ctx.route_traces.traceback_from_route_tree(
+        device_ctx.rr_nodes, inet, root, num_remaining_sinks);
 }

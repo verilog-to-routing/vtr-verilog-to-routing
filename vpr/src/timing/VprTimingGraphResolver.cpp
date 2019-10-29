@@ -186,10 +186,10 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         interblock_component.type_name = "inter-block routing";
         interblock_component.delay = net_delay;
 
-        if (detail_level() == e_timing_report_detail::DETAILED_ROUTING && !route_ctx.trace.empty()) {
+        if (detail_level() == e_timing_report_detail::DETAILED_ROUTING && !route_ctx.route_traces.empty()) {
             //check if detailed timing report has been selected and that the vector of tracebacks
             //is not empty.
-            if (route_ctx.trace[src_net].head != nullptr) {
+            if (route_ctx.route_traces.get_trace_head(src_net) != nullptr) {
                 //the traceback is not a nullptr, so we find the path of the net from source to sink.
                 //Note that the previously declared interblock_component will not be added to the
                 //vector of net components.

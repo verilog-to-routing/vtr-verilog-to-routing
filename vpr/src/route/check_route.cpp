@@ -20,7 +20,7 @@
 static void check_node_and_range(int inode, enum e_route_type route_type);
 static void check_source(int inode, ClusterNetId net_id);
 static void check_sink(int inode, ClusterNetId net_id, bool* pin_done);
-static void check_switch(t_trace* tptr, int num_switch);
+static void check_switch(const t_trace* tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(ClusterNetId inet, bool* connected_to_route);
@@ -43,7 +43,7 @@ void check_route(enum e_route_type route_type) {
     unsigned int ipin;
     bool valid, connects;
     bool* connected_to_route; /* [0 .. device_ctx.rr_nodes.size()-1] */
-    t_trace* tptr;
+    const t_trace* tptr;
     bool* pin_done;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -87,7 +87,7 @@ void check_route(enum e_route_type route_type) {
             pin_done[ipin] = false;
 
         /* Check the SOURCE of the net. */
-        tptr = route_ctx.trace[net_id].head;
+        tptr = route_ctx.route_traces.get_trace_head(net_id);
         if (tptr == nullptr) {
             VPR_ERROR(VPR_ERROR_ROUTE,
                       "in check_route: net %d has no routing.\n", size_t(net_id));
@@ -262,7 +262,7 @@ static void check_source(int inode, ClusterNetId net_id) {
     }
 }
 
-static void check_switch(t_trace* tptr, int num_switch) {
+static void check_switch(const t_trace* tptr, int num_switch) {
     /* Checks that the switch leading from this traceback element to the next *
      * one is a legal switch type.                                            */
 
@@ -301,12 +301,12 @@ static void reset_flags(ClusterNetId inet, bool* connected_to_route) {
      * next net for connectivity (and the default state of the flags       *
      * should always be zero after they have been used).                   */
 
-    t_trace* tptr;
+    const t_trace* tptr;
     int inode;
 
     auto& route_ctx = g_vpr_ctx.routing();
 
-    tptr = route_ctx.trace[inet].head;
+    tptr = route_ctx.route_traces.get_trace_head(inet);
 
     while (tptr != nullptr) {
         inode = tptr->index;
@@ -525,7 +525,7 @@ void recompute_occupancy_from_scratch() {
      */
 
     int inode, iclass, ipin, num_local_opins;
-    t_trace* tptr;
+    const t_trace* tptr;
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
@@ -542,7 +542,7 @@ void recompute_occupancy_from_scratch() {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Skip ignored nets. */
             continue;
 
-        tptr = route_ctx.trace[net_id].head;
+        tptr = route_ctx.route_traces.get_trace_head(net_id);
         if (tptr == nullptr)
             continue;
 
@@ -638,12 +638,12 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    t_trace* head = route_ctx.trace[net].head;
+    const t_trace* head = route_ctx.route_traces.get_trace_head(net);
 
     //Collect all the edges used by this net's routing
     std::set<t_node_edge> routing_edges;
     std::set<int> routing_nodes;
-    for (t_trace* trace = head; trace != nullptr; trace = trace->next) {
+    for (const t_trace* trace = head; trace != nullptr; trace = trace->next) {
         int inode = trace->index;
 
         routing_nodes.insert(inode);

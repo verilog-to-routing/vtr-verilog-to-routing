@@ -52,4 +52,4 @@ void restore_routing(vtr::vector<ClusterNetId, t_trace*>& best_routing,
 void get_serial_num();
 
 void print_route(const char* place_file, const char* route_file);
-void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& tracebacks);
+void print_route(FILE* fp, const Traces& tracebacks);

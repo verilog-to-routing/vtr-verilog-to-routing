@@ -51,9 +51,9 @@ void print_route_tree_congestion(const t_rt_node* rt_root);
 
 t_rt_node* traceback_to_route_tree(ClusterNetId inet);
 t_rt_node* traceback_to_route_tree(ClusterNetId inet, std::vector<int>* non_config_node_set_usage);
-t_rt_node* traceback_to_route_tree(t_trace* head);
-t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_node_set_usage);
-t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int num_remaining_sinks);
+t_rt_node* traceback_to_route_tree(const t_trace* head);
+t_rt_node* traceback_to_route_tree(const t_trace* head, std::vector<int>* non_config_node_set_usage);
+const t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int num_remaining_sinks);
 
 // Prune route tree
 //

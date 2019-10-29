@@ -248,14 +248,14 @@ void highlight_blocks(ClusterBlockId clb_index) {
 }
 
 void highlight_nets(ClusterNetId net_id) {
-    t_trace* tptr;
+    const t_trace* tptr;
     auto& route_ctx = g_vpr_ctx.routing();
 
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (int(route_ctx.trace.size()) == 0) return;
+    if (route_ctx.route_traces.empty()) return;
 
-    for (tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
+    for (tptr = route_ctx.route_traces.get_trace_head(net_id); tptr != nullptr; tptr = tptr->next) {
         draw_state->net_color[net_id] = ezgl::MAGENTA;
     }
 }

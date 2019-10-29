@@ -15,7 +15,7 @@
 
 static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost);
 
-static void breadth_first_expand_trace_segment(t_trace* start_ptr,
+static void breadth_first_expand_trace_segment(const t_trace* start_ptr,
                                                int remaining_connections_to_sink,
                                                std::vector<int>& modified_rr_node_inf);
 
@@ -127,7 +127,7 @@ bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac, const t_ro
         is_routed = true;
 
     } else {
-        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
+        pathfinder_update_path_cost(route_ctx.route_traces.get_trace_head(net_id), -1, pres_fac);
         is_routed = breadth_first_route_net(net_id, router_opts.bend_cost);
 
         /* Impossible to route? (disconnected rr_graph) */
@@ -137,7 +137,7 @@ bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac, const t_ro
             VTR_LOG("Routing failed.\n");
         }
 
-        pathfinder_update_path_cost(route_ctx.trace[net_id].head, 1, pres_fac);
+        pathfinder_update_path_cost(route_ctx.route_traces.get_trace_head(net_id), 1, pres_fac);
     }
     return (is_routed);
 }
@@ -159,7 +159,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
     int inode, remaining_connections_to_sink;
     float pcost, new_pcost;
     t_heap* current;
-    t_trace* tptr;
+    const t_trace* tptr;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -267,7 +267,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
     return (true);
 }
 
-static void breadth_first_expand_trace_segment(t_trace* start_ptr,
+static void breadth_first_expand_trace_segment(const t_trace* start_ptr,
                                                int remaining_connections_to_sink,
                                                std::vector<int>& modified_rr_node_inf) {
     /* Adds all the rr_nodes in the traceback segment starting at tptr (and     *
@@ -286,7 +286,7 @@ static void breadth_first_expand_trace_segment(t_trace* start_ptr,
      * the same logic block, and since the and-inputs are logically-equivalent, *
      * this means two connections to the same SINK.                             */
 
-    t_trace *tptr, *next_ptr;
+    const t_trace *tptr, *next_ptr;
     int inode, sink_node, last_ipin_node;
 
     auto& device_ctx = g_vpr_ctx.device();

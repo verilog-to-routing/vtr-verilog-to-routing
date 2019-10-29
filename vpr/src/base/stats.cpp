@@ -216,7 +216,7 @@ static void get_channel_occupancy_stats() {
  * channel segments in the FPGA.                                           */
 static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<int>& chany_occ) {
     int i, j, inode;
-    t_trace* tptr;
+    const t_trace* tptr;
     t_rr_type rr_type;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -233,7 +233,7 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0)
             continue;
 
-        tptr = route_ctx.trace[net_id].head;
+        tptr = route_ctx.route_traces.get_trace_head(net_id);
         while (tptr != nullptr) {
             inode = tptr->index;
             rr_type = device_ctx.rr_nodes[inode].type();
@@ -267,7 +267,7 @@ void get_num_bends_and_length(ClusterNetId inet, int* bends_ptr, int* len_ptr, i
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_trace *tptr, *prevptr;
+    const t_trace *tptr, *prevptr;
     int inode;
     t_rr_type curr_type, prev_type;
     int bends, length, segments;
@@ -276,7 +276,7 @@ void get_num_bends_and_length(ClusterNetId inet, int* bends_ptr, int* len_ptr, i
     length = 0;
     segments = 0;
 
-    prevptr = route_ctx.trace[inet].head; /* Should always be SOURCE. */
+    prevptr = route_ctx.route_traces.get_trace_head(inet); /* Should always be SOURCE. */
     if (prevptr == nullptr) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "in get_num_bends_and_length: net #%lu has no traceback.\n", size_t(inet));

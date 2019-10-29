@@ -437,9 +437,11 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     }
 
     // Verify routes
-    const auto & route_ctx = g_vpr_ctx.routing();
-    for(const auto &trace : route_ctx.trace) {
-        const t_trace *head = trace.head;
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& route_ctx = g_vpr_ctx.routing();
+
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        const t_trace *head = route_ctx.route_traces.get_trace_head(net_id);
         while(head != nullptr) {
             const t_trace *next = head->next;
 

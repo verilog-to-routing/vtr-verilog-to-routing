@@ -36,12 +36,6 @@
 #include "timing_info.h"
 #include "tatum/echo_writer.hpp"
 
-/**************** Types local to route_common.c ******************/
-struct t_trace_branch {
-    t_trace* head;
-    t_trace* tail;
-};
-
 /**************** Static variables local to route_common.c ******************/
 
 static t_heap** heap; /* Indexed from [1..heap_size] */
@@ -53,12 +47,6 @@ static t_heap* heap_free_head = nullptr;
 /* For keeping track of the sudo malloc memory for the heap*/
 static vtr::t_chunk heap_ch;
 
-/* For managing my own list of currently free trace data structures.    */
-static t_trace* trace_free_head = nullptr;
-/* For keeping track of the sudo malloc memory for the trace*/
-static vtr::t_chunk trace_ch;
-
-static int num_trace_allocated = 0; /* To watch for memory leaks. */
 static int num_heap_allocated = 0;
 static int num_linked_f_pointer_allocated = 0;
 
@@ -92,95 +80,24 @@ static int num_linked_f_pointer_allocated = 0;
  *                                                                          */
 
 /******************** Subroutines local to route_common.c *******************/
-static t_trace_branch traceback_branch(int node, std::unordered_set<int>& main_branch_visited);
-static std::pair<t_trace*, t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
-static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth = 0);
-
 static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
 static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
 static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub, float pres_fac, float acc_fac);
 
-bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
-static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes);
+bool validate_traceback_recurr(const t_trace* trace, std::set<int>& seen_rr_nodes);
+static bool validate_trace_nodes(const t_trace* head, const std::unordered_set<int>& trace_nodes);
 static float get_single_rr_cong_cost(int inode);
 
 /************************** Subroutine definitions ***************************/
-
-void save_routing(vtr::vector<ClusterNetId, t_trace*>& best_routing,
-                  const t_clb_opins_used& clb_opins_used_locally,
-                  t_clb_opins_used& saved_clb_opins_used_locally) {
-    /* This routing frees any routing currently held in best routing,       *
-     * then copies over the current routing (held in route_ctx.trace), and       *
-     * finally sets route_ctx.trace_head and route_ctx.trace_tail to all NULLs so that the      *
-     * connection to the saved routing is broken.  This is necessary so     *
-     * that the next iteration of the router does not free the saved        *
-     * routing elements.  Also saves any data about locally used clb_opins, *
-     * since this is also part of the routing.                              */
-
-    t_trace *tptr, *tempptr;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        /* Free any previously saved routing.  It is no longer best. */
-        tptr = best_routing[net_id];
-        while (tptr != nullptr) {
-            tempptr = tptr->next;
-            free_trace_data(tptr);
-            tptr = tempptr;
-        }
-
-        /* Save a pointer to the current routing in best_routing. */
-        best_routing[net_id] = route_ctx.trace[net_id].head;
-
-        /* Set the current (working) routing to NULL so the current trace       *
-         * elements won't be reused by the memory allocator.                    */
-
-        route_ctx.trace[net_id].head = nullptr;
-        route_ctx.trace[net_id].tail = nullptr;
-        route_ctx.trace_nodes[net_id].clear();
-    }
-
-    /* Save which OPINs are locally used.                           */
-    saved_clb_opins_used_locally = clb_opins_used_locally;
-}
-
-/* Deallocates any current routing in route_ctx.trace_head, and replaces it with    *
- * the routing in best_routing.  Best_routing is set to NULL to show that *
- * it no longer points to a valid routing.  NOTE:  route_ctx.trace_tail is not      *
- * restored -- it is set to all NULLs since it is only used in            *
- * update_traceback.  If you need route_ctx.trace_tail restored, modify this        *
- * routine.  Also restores the locally used opin data.                    */
-void restore_routing(vtr::vector<ClusterNetId, t_trace*>& best_routing,
-                     t_clb_opins_used& clb_opins_used_locally,
-                     const t_clb_opins_used& saved_clb_opins_used_locally) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        /* Free any current routing. */
-        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, 0.f);
-        free_traceback(net_id);
-
-        /* Set the current routing to the saved one. */
-        route_ctx.trace[net_id].head = best_routing[net_id];
-        pathfinder_update_path_cost(route_ctx.trace[net_id].head, 1, 0.f);
-        best_routing[net_id] = nullptr; /* No stored routing. */
-    }
-
-    /* Restore which OPINs are locally used.                           */
-    clb_opins_used_locally = saved_clb_opins_used_locally;
-}
 
 /* This routine finds a "magic cookie" for the routing and prints it.    *
  * Use this number as a routing serial number to ensure that programming *
  * changes do not break the router.                                      */
 void get_serial_num() {
     int serial_num, inode;
-    t_trace* tptr;
+    const t_trace* tptr;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -192,7 +109,7 @@ void get_serial_num() {
         /* Global nets will have null trace_heads (never routed) so they *
          * are not included in the serial number calculation.            */
 
-        tptr = route_ctx.trace[net_id].head;
+        tptr = route_ctx.route_traces.get_trace_head(net_id);
         while (tptr != nullptr) {
             inode = tptr->index;
             serial_num += (size_t(net_id) + 1)
@@ -371,7 +288,7 @@ std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
 
     std::vector<std::set<ClusterNetId>> rr_node_nets(device_ctx.rr_nodes.size());
     for (ClusterNetId inet : cluster_ctx.clb_nlist.nets()) {
-        t_trace* trace_elem = route_ctx.trace[inet].head;
+        const t_trace* trace_elem = route_ctx.route_traces.get_trace_head(inet);
         while (trace_elem) {
             int rr_node = trace_elem->index;
 
@@ -383,7 +300,7 @@ std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
     return rr_node_nets;
 }
 
-void pathfinder_update_path_cost(t_trace* route_segment_start,
+void pathfinder_update_path_cost(const t_trace* route_segment_start,
                                  int add_or_sub,
                                  float pres_fac) {
     /* This routine updates the occupancy and pres_cost of the rr_nodes that are *
@@ -394,7 +311,7 @@ void pathfinder_update_path_cost(t_trace* route_segment_start,
      * net is added to the routing.  The size of pres_fac determines how severly *
      * oversubscribed rr_nodes are penalized.                                    */
 
-    t_trace* tptr;
+    const t_trace* tptr;
 
     tptr = route_segment_start;
     if (tptr == nullptr) /* No routing yet. */
@@ -490,8 +407,7 @@ void init_route_structs(int bb_factor) {
         free_traceback(net_id);
 
     //Allocate new tracebacks
-    route_ctx.trace.resize(cluster_ctx.clb_nlist.nets().size());
-    route_ctx.trace_nodes.resize(cluster_ctx.clb_nlist.nets().size());
+    route_ctx.route_traces.resize(cluster_ctx.clb_nlist.nets().size());
 
     init_heap(device_ctx.grid);
 
@@ -509,199 +425,6 @@ void init_route_structs(int bb_factor) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in init_route_structs. Heap is not empty.\n");
     }
-}
-
-t_trace*
-update_traceback(t_heap* hptr, ClusterNetId net_id) {
-    /* This routine adds the most recently finished wire segment to the         *
-     * traceback linked list.  The first connection starts with the net SOURCE  *
-     * and begins at the structure pointed to by route_ctx.trace[net_id].head. Each         *
-     * connection ends with a SINK.  After each SINK, the next connection       *
-     * begins (if the net has more than 2 pins).  The first element after the   *
-     * SINK gives the routing node on a previous piece of the routing, which is *
-     * the link from the existing net to this new piece of the net.             *
-     * In each traceback I start at the end of a path and trace back through    *
-     * its predecessors to the beginning.  I have stored information on the     *
-     * predecesser of each node to make traceback easy -- this sacrificies some *
-     * memory for easier code maintenance.  This routine returns a pointer to   *
-     * the first "new" node in the traceback (node not previously in trace).    */
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    auto& trace_nodes = route_ctx.trace_nodes[net_id];
-
-    VTR_ASSERT_SAFE(validate_trace_nodes(route_ctx.trace[net_id].head, trace_nodes));
-
-    t_trace_branch branch = traceback_branch(hptr->index, trace_nodes);
-
-    VTR_ASSERT_SAFE(validate_trace_nodes(branch.head, trace_nodes));
-
-    t_trace* ret_ptr = nullptr;
-    if (route_ctx.trace[net_id].tail != nullptr) {
-        route_ctx.trace[net_id].tail->next = branch.head; /* Traceback ends with tptr */
-        ret_ptr = branch.head->next;                      /* First new segment.       */
-    } else {                                              /* This was the first "chunk" of the net's routing */
-        route_ctx.trace[net_id].head = branch.head;
-        ret_ptr = branch.head; /* Whole traceback is new. */
-    }
-
-    route_ctx.trace[net_id].tail = branch.tail;
-    return (ret_ptr);
-}
-
-//Traces back a new routing branch starting from the specified 'node' and working backwards to any existing routing.
-//Returns the new branch, and also updates trace_nodes for any new nodes which are included in the branches traceback.
-static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_nodes) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    auto rr_type = device_ctx.rr_nodes[node].type();
-    if (rr_type != SINK) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "in traceback_branch: Expected type = SINK (%d).\n");
-    }
-
-    //We construct the main traceback by walking from the given node back to the source,
-    //according to the previous edges/nodes recorded in rr_node_route_inf by the router.
-    t_trace* branch_head = alloc_trace_data();
-    t_trace* branch_tail = branch_head;
-    branch_head->index = node;
-    branch_head->iswitch = OPEN;
-    branch_head->next = nullptr;
-
-    trace_nodes.insert(node);
-
-    std::vector<int> new_nodes_added_to_traceback = {node};
-
-    auto iedge = route_ctx.rr_node_route_inf[node].prev_edge;
-    int inode = route_ctx.rr_node_route_inf[node].prev_node;
-
-    while (inode != NO_PREVIOUS) {
-        //Add the current node to the head of traceback
-        t_trace* prev_ptr = alloc_trace_data();
-        prev_ptr->index = inode;
-        prev_ptr->iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
-        prev_ptr->next = branch_head;
-        branch_head = prev_ptr;
-
-        if (trace_nodes.count(inode)) {
-            break; //Connected to existing routing
-        }
-
-        trace_nodes.insert(inode); //Record this node as visited
-        new_nodes_added_to_traceback.push_back(inode);
-
-        iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
-        inode = route_ctx.rr_node_route_inf[inode].prev_node;
-    }
-
-    //We next re-expand all the main-branch nodes to add any non-configurably connected side branches
-    // We are careful to do this *after* the main branch is constructed to ensure nodes which are both
-    // non-configurably connected *and* part of the main branch are only added to the traceback once.
-    for (int new_node : new_nodes_added_to_traceback) {
-        //Expand each main branch node
-        std::tie(branch_head, branch_tail) = add_trace_non_configurable(branch_head, branch_tail, new_node, trace_nodes);
-    }
-
-    return {branch_head, branch_tail};
-}
-
-//Traces any non-configurable subtrees from branch_head, returning the new branch_head and updating trace_nodes
-//
-//This effectively does a depth-first traversal
-static std::pair<t_trace*, t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& trace_nodes) {
-    //Trace any non-configurable subtrees
-    t_trace* subtree_head = nullptr;
-    t_trace* subtree_tail = nullptr;
-    std::tie(subtree_head, subtree_tail) = add_trace_non_configurable_recurr(node, trace_nodes);
-
-    //Add any non-empty subtree to tail of traceback
-    if (subtree_head && subtree_tail) {
-        if (!head) { //First subtree becomes head
-            head = subtree_head;
-        } else { //Later subtrees added to tail
-            VTR_ASSERT(tail);
-            tail->next = subtree_head;
-        }
-
-        tail = subtree_tail;
-    } else {
-        VTR_ASSERT(subtree_head == nullptr && subtree_tail == nullptr);
-    }
-
-    return {head, tail};
-}
-
-//Recursive helper function for add_trace_non_configurable()
-static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& trace_nodes, int depth) {
-    t_trace* head = nullptr;
-    t_trace* tail = nullptr;
-
-    //Record the non-configurable out-going edges
-    std::vector<t_edge_size> unvisited_non_configurable_edges;
-    auto& device_ctx = g_vpr_ctx.device();
-    for (auto iedge : device_ctx.rr_nodes[node].non_configurable_edges()) {
-        VTR_ASSERT_SAFE(!device_ctx.rr_nodes[node].edge_is_configurable(iedge));
-
-        int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
-
-        if (!trace_nodes.count(to_node)) {
-            unvisited_non_configurable_edges.push_back(iedge);
-        }
-    }
-
-    if (unvisited_non_configurable_edges.size() == 0) {
-        //Base case: leaf node with no non-configurable edges
-        if (depth > 0) { //Arrived via non-configurable edge
-            VTR_ASSERT(!trace_nodes.count(node));
-            head = alloc_trace_data();
-            head->index = node;
-            head->iswitch = -1;
-            head->next = nullptr;
-            tail = head;
-
-            trace_nodes.insert(node);
-        }
-
-    } else {
-        //Recursive case: intermediate node with non-configurable edges
-        for (auto iedge : unvisited_non_configurable_edges) {
-            int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
-            int iswitch = device_ctx.rr_nodes[node].edge_switch(iedge);
-
-            VTR_ASSERT(!trace_nodes.count(to_node));
-            trace_nodes.insert(node);
-
-            //Recurse
-            t_trace* subtree_head = nullptr;
-            t_trace* subtree_tail = nullptr;
-            std::tie(subtree_head, subtree_tail) = add_trace_non_configurable_recurr(to_node, trace_nodes, depth + 1);
-
-            if (subtree_head && subtree_tail) {
-                //Add the non-empty sub-tree
-
-                //Duplicate the original head as the new tail (for the new branch)
-                t_trace* intermediate_head = alloc_trace_data();
-                intermediate_head->index = node;
-                intermediate_head->iswitch = iswitch;
-                intermediate_head->next = nullptr;
-
-                intermediate_head->next = subtree_head;
-
-                if (!head) { //First subtree becomes head
-                    head = intermediate_head;
-                } else { //Later subtrees added to tail
-                    VTR_ASSERT(tail);
-                    tail->next = intermediate_head;
-                }
-
-                tail = subtree_tail;
-            } else {
-                VTR_ASSERT(subtree_head == nullptr && subtree_tail == nullptr);
-            }
-        }
-    }
-
-    return {head, tail};
 }
 
 /* The routine sets the path_cost to HUGE_POSITIVE_FLOAT for  *
@@ -799,35 +522,6 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge, flo
     add_to_heap(hptr);
 }
 
-void free_traceback(ClusterNetId net_id) {
-    /* Puts the entire traceback (old routing) for this net on the free list *
-     * and sets the route_ctx.trace_head pointers etc. for the net to NULL.            */
-
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    if (route_ctx.trace.empty()) {
-        return;
-    }
-
-    if (route_ctx.trace[net_id].head == nullptr) {
-        return;
-    }
-
-    free_traceback(route_ctx.trace[net_id].head);
-
-    route_ctx.trace[net_id].head = nullptr;
-    route_ctx.trace[net_id].tail = nullptr;
-    route_ctx.trace_nodes[net_id].clear();
-}
-
-void free_traceback(t_trace* tptr) {
-    while (tptr != nullptr) {
-        t_trace* tempptr = tptr->next;
-        free_trace_data(tptr);
-        tptr = tempptr;
-    }
-}
-
 /* Allocates data structures into which the key routing data can be saved,   *
  * allowing the routing to be recovered later (e.g. after a another routing  *
  * is attempted).                                                            */
@@ -907,20 +601,7 @@ void free_trace_structs() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    if (route_ctx.trace.empty()) {
-        return;
-    }
-
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        free_traceback(net_id);
-
-        if (route_ctx.trace[net_id].head) {
-            free(route_ctx.trace[net_id].head);
-            free(route_ctx.trace[net_id].tail);
-        }
-        route_ctx.trace[net_id].head = nullptr;
-        route_ctx.trace[net_id].tail = nullptr;
-    }
+    route_ctx.route_traces.free_all();
 }
 
 void free_route_structs() {
@@ -1404,35 +1085,12 @@ void invalidate_heap_entries(int sink_node, int ipin_node) {
     }
 }
 
-t_trace*
-alloc_trace_data() {
-    t_trace* temp_ptr;
-
-    if (trace_free_head == nullptr) { /* No elements on the free list */
-        trace_free_head = (t_trace*)vtr::chunk_malloc(sizeof(t_trace), &trace_ch);
-        trace_free_head->next = nullptr;
-    }
-    temp_ptr = trace_free_head;
-    trace_free_head = trace_free_head->next;
-    num_trace_allocated++;
-    return (temp_ptr);
-}
-
-void free_trace_data(t_trace* tptr) {
-    /* Puts the traceback structure pointed to by tptr on the free list. */
-
-    tptr->next = trace_free_head;
-    trace_free_head = tptr;
-    num_trace_allocated--;
-}
-
-void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& tracebacks) {
+void print_route(FILE* fp, const Traces& tracebacks) {
     if (tracebacks.empty()) return; //Only if routing exists
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
@@ -1440,7 +1098,7 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == false) {
                 fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
             } else {
-                t_trace* tptr = route_ctx.trace[net_id].head;
+                const t_trace* tptr = tracebacks.get_trace_head(net_id);
 
                 while (tptr != nullptr) {
                     int inode = tptr->index;
@@ -1543,14 +1201,14 @@ void print_route(const char* placement_file, const char* route_file) {
     fprintf(fp, "Array size: %zu x %zu logic blocks.\n", device_ctx.grid.width(), device_ctx.grid.height());
     fprintf(fp, "\nRouting:");
 
-    print_route(fp, route_ctx.trace);
+    print_route(fp, route_ctx.route_traces);
 
     fclose(fp);
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_MEM)) {
         fp = vtr::fopen(getEchoFileName(E_ECHO_MEM), "w");
         fprintf(fp, "\nNum_heap_allocated: %d   Num_trace_allocated: %d\n",
-                num_heap_allocated, num_trace_allocated);
+                num_heap_allocated, route_ctx.route_traces.num_trace_allocated());
         fprintf(fp, "Num_linked_f_pointer_allocated: %d\n",
                 num_linked_f_pointer_allocated);
         fclose(fp);
@@ -1669,14 +1327,6 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub, float pres_f
     }
 }
 
-void free_chunk_memory_trace() {
-    if (trace_ch.chunk_ptr_head != nullptr) {
-        free_chunk_memory(&trace_ch);
-        trace_ch.chunk_ptr_head = nullptr;
-        trace_free_head = nullptr;
-    }
-}
-
 // connection based overhaul (more specificity than nets)
 // utility and debugging functions -----------------------
 void print_traceback(ClusterNetId net_id) {
@@ -1685,7 +1335,7 @@ void print_traceback(ClusterNetId net_id) {
     auto& device_ctx = g_vpr_ctx.device();
 
     VTR_LOG("traceback %zu: ", size_t(net_id));
-    t_trace* head = route_ctx.trace[net_id].head;
+    const t_trace* head = route_ctx.route_traces.get_trace_head(net_id);
     while (head) {
         int inode{head->index};
         if (device_ctx.rr_nodes[inode].type() == SINK)
@@ -1723,13 +1373,13 @@ void print_traceback(const t_trace* trace) {
     VTR_LOG("\n");
 }
 
-bool validate_traceback(t_trace* trace) {
+bool validate_traceback(const t_trace* trace) {
     std::set<int> seen_rr_nodes;
 
     return validate_traceback_recurr(trace, seen_rr_nodes);
 }
 
-bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
+bool validate_traceback_recurr(const t_trace* trace, std::set<int>& seen_rr_nodes) {
     if (!trace) {
         return true;
     }
@@ -1795,7 +1445,7 @@ void print_invalid_routing_info() {
     std::multimap<int, ClusterNetId> rr_node_nets;
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        t_trace* tptr = route_ctx.trace[net_id].head;
+        const t_trace* tptr = route_ctx.route_traces.get_trace_head(net_id);
 
         while (tptr != nullptr) {
             rr_node_nets.emplace(tptr->index, net_id);
@@ -1872,34 +1522,6 @@ void print_rr_node_route_inf_dot() {
     VTR_LOG("}\n");
 }
 
-static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes) {
-    //Verifies that all nodes in the traceback 'head' are conatined in 'trace_nodes'
-
-    if (!head) {
-        return true;
-    }
-
-    std::vector<int> missing_from_trace_nodes;
-    for (t_trace* tptr = head; tptr != nullptr; tptr = tptr->next) {
-        if (!trace_nodes.count(tptr->index)) {
-            missing_from_trace_nodes.push_back(tptr->index);
-        }
-    }
-
-    if (!missing_from_trace_nodes.empty()) {
-        std::string msg = vtr::string_fmt(
-            "The following %zu nodes were found in traceback"
-            " but were missing from trace_nodes: %s\n",
-            missing_from_trace_nodes.size(),
-            vtr::join(missing_from_trace_nodes, ", ").c_str());
-
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
-        return false;
-    }
-
-    return true;
-}
-
 // True if router will use a lookahead.
 //
 // This controls whether the router lookahead cache will be primed outside of
@@ -1914,4 +1536,37 @@ bool router_needs_lookahead(enum e_router_algorithm router_algorithm) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown routing algorithm %d",
                             router_algorithm);
     }
+}
+
+const t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    return route_ctx.route_traces.update_traceback(
+        device_ctx.rr_nodes,
+        route_ctx.rr_node_route_inf,
+        hptr, net_id);
+}
+
+void free_chunk_memory_trace() {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    route_ctx.route_traces.free_chunk_memory_trace();
+}
+
+void free_traceback(ClusterNetId net_id) {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    route_ctx.route_traces.free_traceback(net_id);
+}
+
+void save_routing(vtr::vector<ClusterNetId, t_trace*>& best_routing,
+                  const t_clb_opins_used& clb_opins_used_locally,
+                  t_clb_opins_used& saved_clb_opins_used_locally) {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    route_ctx.route_traces.save_routing(best_routing, clb_opins_used_locally, saved_clb_opins_used_locally);
+}
+
+void restore_routing(vtr::vector<ClusterNetId, t_trace*>& best_routing,
+                     t_clb_opins_used& clb_opins_used_locally,
+                     const t_clb_opins_used& saved_clb_opins_used_locally) {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    route_ctx.route_traces.restore_routing(best_routing, clb_opins_used_locally, saved_clb_opins_used_locally);
 }

@@ -997,8 +997,7 @@ static void free_placement() {
 
 static void free_routing() {
     auto& routing_ctx = g_vpr_ctx.mutable_routing();
-    routing_ctx.trace.clear();
-    routing_ctx.trace_nodes.clear();
+    routing_ctx.route_traces.clear();
     routing_ctx.net_rr_terminals.clear();
     routing_ctx.rr_blk_source.clear();
     routing_ctx.rr_blk_source.clear();
@@ -1134,7 +1133,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 
     //Check the first index to see if a pointer exists
     //TODO: Implement a better error check
-    if (route_ctx.trace.empty()) {
+    if (route_ctx.route_traces.empty()) {
         VPR_FATAL_ERROR(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
     }
 

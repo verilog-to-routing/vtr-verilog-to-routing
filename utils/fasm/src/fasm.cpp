@@ -628,14 +628,15 @@ void FasmWriterVisitor::walk_route_tree(const t_rt_node *root) {
 }
 
 void FasmWriterVisitor::walk_routing() {
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
-    for(const auto &trace : route_ctx.trace) {
-      t_trace *head = trace.head;
-      if (!head) continue;
-      t_rt_node* root = traceback_to_route_tree(head);
-      walk_route_tree(root);
-      free_route_tree(root);
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        const t_trace *head = route_ctx.route_traces.get_trace_head(net_id);
+        if (!head) continue;
+        t_rt_node* root = traceback_to_route_tree(head);
+        walk_route_tree(root);
+        free_route_tree(root);
     }
 }
 

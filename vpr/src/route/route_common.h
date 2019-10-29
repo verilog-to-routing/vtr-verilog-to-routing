@@ -56,14 +56,14 @@ vtr::vector<ClusterNetId, t_bb> load_route_bb(int bb_factor);
 
 t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor);
 
-void pathfinder_update_path_cost(t_trace* route_segment_start,
+void pathfinder_update_path_cost(const t_trace* route_segment_start,
                                  int add_or_sub,
                                  float pres_fac);
 void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac);
 
 void pathfinder_update_cost(float pres_fac, float acc_fac);
 
-t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id);
+const t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id);
 
 void reset_path_costs(const std::vector<int>& visited_rr_nodes);
 
@@ -79,7 +79,6 @@ void node_to_heap(int inode, float cost, int prev_node, int prev_edge, float bac
 bool is_empty_heap();
 
 void free_traceback(ClusterNetId net_id);
-void free_traceback(t_trace* tptr);
 
 void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);
 
@@ -116,7 +115,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
 void free_chunk_memory_trace();
 
-bool validate_traceback(t_trace* trace);
+bool validate_traceback(const t_trace* trace);
 void print_traceback(ClusterNetId net_id);
 void print_traceback(const t_trace* trace);
 

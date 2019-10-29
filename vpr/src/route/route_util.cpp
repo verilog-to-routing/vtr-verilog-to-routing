@@ -13,7 +13,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
     //Collect all the in-use RR nodes
     std::set<int> rr_nodes;
     for (auto net : cluster_ctx.clb_nlist.nets()) {
-        t_trace* tptr = route_ctx.trace[net].head;
+        const t_trace* tptr = route_ctx.route_traces.get_trace_head(net);
         while (tptr != nullptr) {
             int inode = tptr->index;
 

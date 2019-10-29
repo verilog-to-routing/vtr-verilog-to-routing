@@ -21,6 +21,7 @@
 #include "router_lookahead.h"
 #include "place_macro.h"
 #include "compressed_grid.h"
+#include "traces.h"
 
 //A Context is collection of state relating to a particular part of VPR
 //
@@ -261,9 +262,7 @@ struct PlacementContext : public Context {
 //This should contain only data structures that describe the current routing implementation,
 //or related router algorithmic state.
 struct RoutingContext : public Context {
-    /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
-    vtr::vector<ClusterNetId, t_traceback> trace;
-    vtr::vector<ClusterNetId, std::unordered_set<int>> trace_nodes;
+    Traces route_traces;
 
     vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 

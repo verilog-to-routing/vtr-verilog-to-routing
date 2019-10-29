@@ -197,14 +197,14 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    t_trace* tptr = route_ctx.trace[inet].head;
-
     /*remember the position of the last line in order to go back*/
     std::streampos oldpos = fp.tellg();
     int inode, x, y, x2, y2, ptc, switch_id, offset;
     int node_count = 0;
     std::string input;
     std::vector<std::string> tokens;
+
+    std::vector<Traces::traceback_element> traceback;
 
     /*Walk through every line that begins with Node:*/
     while (std::getline(fp, input)) {
@@ -221,7 +221,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
             /*End of the nodes list,
              *  return by moving the position of next char of input stream to be before net*/
             fp.seekg(oldpos);
-            return;
+            break;
         } else if (input == "\n\nUsed in local cluster only, reserved one CLB pin\n\n") {
             if (cluster_ctx.clb_nlist.net_sinks(inet).size() != 0) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
@@ -309,26 +309,17 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                 switch_id = atoi(tokens[7 + offset].c_str());
             }
 
-            /* Allocate and load correct values to trace.head*/
-            if (node_count == 0) {
-                route_ctx.trace[inet].head = alloc_trace_data();
-                route_ctx.trace[inet].head->index = inode;
-                route_ctx.trace[inet].head->iswitch = switch_id;
-                route_ctx.trace[inet].head->next = nullptr;
-                tptr = route_ctx.trace[inet].head;
-                node_count++;
-            } else {
-                tptr->next = alloc_trace_data();
-                tptr = tptr->next;
-                tptr->index = inode;
-                tptr->iswitch = switch_id;
-                tptr->next = nullptr;
-                node_count++;
-            }
+            Traces::traceback_element elem;
+            elem.inode = inode;
+            elem.switch_id = switch_id;
+            traceback.push_back(elem);
+            node_count++;
         }
         /*stores last line so can easily go back to read*/
         oldpos = fp.tellg();
     }
+
+    route_ctx.route_traces.set_traceback(inet, traceback);
 }
 
 /*This function goes through all the blocks in a global net and verify it with the

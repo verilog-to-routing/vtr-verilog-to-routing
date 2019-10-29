@@ -2143,10 +2143,10 @@ static void draw_routed_net(ClusterNetId net_id, ezgl::renderer* g) {
     if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Don't draw. */
         return;
 
-    if (route_ctx.trace[net_id].head == nullptr) /* No routing->  Skip.  (Allows me to draw */
-        return;                                  /* partially complete routes).            */
+    if (route_ctx.route_traces.get_trace_head(net_id) == nullptr) /* No routing->  Skip.  (Allows me to draw */
+        return;                                                   /* partially complete routes).            */
 
-    t_trace* tptr = route_ctx.trace[net_id].head; /* SOURCE to start */
+    const t_trace* tptr = route_ctx.route_traces.get_trace_head(net_id); /* SOURCE to start */
     int inode = tptr->index;
 
     std::vector<int> rr_nodes_to_draw;
@@ -2359,14 +2359,14 @@ static bool draw_if_net_highlighted(ClusterNetId inet) {
  * If so, and toggle nets is selected, highlight the whole net in that colour.
  */
 void highlight_nets(char* message, int hit_node) {
-    t_trace* tptr;
+    const t_trace* tptr;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
     t_draw_state* draw_state = get_draw_state_vars();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        for (tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
+        for (tptr = route_ctx.route_traces.get_trace_head(net_id); tptr != nullptr; tptr = tptr->next) {
             if (draw_state->draw_rr_node[tptr->index].color == ezgl::MAGENTA) {
                 draw_state->net_color[net_id] = draw_state->draw_rr_node[tptr->index].color;
                 if (tptr->index == hit_node) {
