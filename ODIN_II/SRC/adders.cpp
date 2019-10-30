@@ -47,9 +47,6 @@ using vtr::t_linked_vptr;
 
 t_model *hard_adders = NULL;
 t_linked_vptr *add_list = NULL;
-//MEHRSHAD//
-t_linked_vptr **population = NULL;
-//MEHRSHAD//
 t_linked_vptr *processed_adder_list = NULL;
 t_linked_vptr *chain_list = NULL;
 int total = 0;
@@ -922,55 +919,6 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	vtr::free(node);
 	return;
 }
-
-//MEHRSHAD//
-/*-------------------------------------------------------------------------
- * (function: mutation)
- *
- * T
- *	t 
- *	m
- *-----------------------------------------------------------------------*/
-vtr::t_linked_vptr * mutation (vtr::t_linked_vptr * parent)
-{
-	return parent;
-}
-
-/*-------------------------------------------------------------------------
- * (function: initialize_population)
- *
- * T
- *	t 
- *	m
- *-----------------------------------------------------------------------*/
-void initialize_population() 
-{
-	// create array for parents and children of each generation
-	vtr::t_linked_vptr **parents = (vtr::t_linked_vptr**) vtr::malloc(sizeof(vtr::t_linked_vptr*)*NUM_PARENTS);
-	vtr::t_linked_vptr **children = (vtr::t_linked_vptr**) vtr::malloc(sizeof(vtr::t_linked_vptr*)*NUM_CHILDREN);
-
-	int rounds = NUM_CHILDREN/NUM_PARENTS;
-	// here we generate the other parents and children by mutation. this is only for initialization.
-	for (int i=0; i<NUM_PARENTS; i++)
-	{
-		if (i==0)
-			// one of parents absolutely is add_list
-			population[0] = parents[0] = add_list;
-		else
-			population[i] = parents[i] = mutation(parents[0]);
-
-		// here we should generate children of specific parent by mutation
-		for (int j=0; j<rounds; j++)
-			if ((rounds*i)+j < NUM_CHILDREN)
-				children[(rounds*i)+j] = mutation(parents[i]);
-	}
-
-	// set pointers of children in population
-	for (int i=NUM_PARENTS; i<NUM_CHILDREN+NUM_PARENTS; i++)
-		population[i] = children[i];
-	
-}
-//MEHRSHAD//
 
 /*-------------------------------------------------------------------------
  * (function: iterate_adders)
