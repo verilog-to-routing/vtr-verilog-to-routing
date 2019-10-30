@@ -124,14 +124,28 @@ static inline bool is_clock_node(nnode_t *node)
 	);
 }
 
+//maria
+static thread_node_distribution *calculate_thread_distribution(stages_t *s);
+static void compute_and_store_part_multithreaded(int /*t_id*/,netlist_subset *thread_nodes,int cycle); //to remove
+static void compute_and_store_part_wave_multithreaded(int /*t_id*/,netlist_subset *thread_nodes,int from_wave,int to_wave);
+static void compute_and_store_part_in_waves_multithreaded(int /*t_id*/,netlist_subset *thread_nodes,int from_wave, int to_wave,int offset,bool /*notify_back*/);
+
+static void simulate_cycle_multithreaded(int cycle, thread_node_distribution *thread_distribution);
+
 static void simulate_cycle(int cycle, stages_t *s);
 static stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, lines_t *output_lines);
 
 static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes);
 static void free_stages(stages_t *s);
 
-static int get_num_covered_nodes(stages_t *s);
+//maria
+static void free_thread_distribution(thread_node_distribution *thread_distribution);
 
+static int get_num_covered_nodes(stages_t *s);
+static int *get_children_pinnumber_of(nnode_t *node, int *num_children);
+
+//maria
+static nnode_t **get_parents_of(nnode_t *node, int *num_parents);
 static int is_node_ready(nnode_t* node, int cycle);
 static int is_node_complete(nnode_t* node, int cycle);
 static void write_back_memory_nodes(nnode_t **nodes, int num_nodes);
@@ -217,10 +231,25 @@ static void flag_undriven_input_pins(nnode_t *node);
 static void print_ancestry(nnode_t *node, int generations);
 static nnode_t *print_update_trace(nnode_t *bottom_node, int cycle);
 
+double used_time;
+int number_of_workers;
+bool batch_mode;
+bool found_best_time;
 
-int number_of_workers = 0;
-int num_of_clock = 0;
+int num_of_clock;
 
+<<<<<<< HEAD
+=======
+//maria TODO maybe not the best place?
+pthread_cond_t start_threads,start_output;
+pthread_mutex_t threads_mp,output_mp,main_mp;
+int threads_done_wave = 0;
+int threads_created = 0;
+int threads_waves = 0;
+int threads_start = 0;
+int threads_end = 0;
+
+>>>>>>> parent of c0bdf4a62... remove deprecated or unmaintained experimental path, (fix Coverity issue)
 /*
  * Performs simulation.
  */
@@ -243,8 +272,17 @@ void simulate_netlist(netlist_t *netlist)
 	{
 		min_coverage = 0.0001;
 	}
+	if (number_of_workers>1 && global_args.parralelized_simulation_in_batch)
+	{
+		int start_cycle = 0;
+		int end_cycle = sim_data->num_vectors;
+		simulate_steps_in_parallel(sim_data,start_cycle,end_cycle,min_coverage);
+	}
+	else
+	{
+		simulate_steps_sequential(sim_data,min_coverage);
+	}
 
-	simulate_steps(sim_data,min_coverage);
 
 	fflush(sim_data->out);
 	fprintf(sim_data->modelsim_out, "run %ld\n", sim_data->num_vectors*100);
@@ -267,15 +305,121 @@ void simulate_netlist(netlist_t *netlist)
 }
 
 
+
+/* 
+ * Performs simulation batches of cycles pass through the threads.
+ */
+// before
+/* void simulate_netlist(netlist_t *netlist)
+{
+	sim_data_t *sim_data = init_simulation(netlist);	
+	printf("\n");
+
+	int       progress_bar_position = -1;
+	const int progress_bar_length   = 50;
+	
+	int increment_vector_by = global_args.sim_num_test_vectors;
+	double min_coverage =0.0;
+	if(global_args.sim_min_coverage)
+	{
+		min_coverage = global_args.sim_min_coverage/100;
+	}
+	else if(global_args.sim_achieve_best)
+	{
+		min_coverage = 0.0001;
+	}	
+
+	double current_coverage =0.0;
+	int cycle =0;
+	while(cycle < sim_data->num_vectors)
+	{
+		double wave_start_time = wall_time();
+
+		// if we target a minimum coverage keep generating
+		if(min_coverage > 0.0)
+		{
+			if(cycle+1 == sim_data->num_vectors)
+			{
+				current_coverage = (((double) get_num_covered_nodes(sim_data->stages) / (double) sim_data->stages->num_nodes));
+				if(global_args.sim_achieve_best)
+				{
+					if(current_coverage > min_coverage)
+					{
+						increment_vector_by = global_args.sim_num_test_vectors;
+						min_coverage = current_coverage;
+						sim_data->num_vectors += increment_vector_by;
+					}
+					else if(increment_vector_by)
+					{
+						//slowly reduce the search until there is no more possible increment, this prevent building too large of a comparative vector pair
+						sim_data->num_vectors += increment_vector_by;
+						increment_vector_by /= 2;
+					}
+
+				}
+				else
+				{
+					if(current_coverage < min_coverage)
+						sim_data->num_vectors += increment_vector_by;
+				}
+			}
+		}
+		else
+		{
+			current_coverage = cycle/(double)sim_data->num_vectors;
+		}
+
+		single_step(sim_data, cycle);
+
+		// Print netlist-specific statistics.
+		if (!cycle)
+			print_netlist_stats(sim_data->stages, sim_data->num_vectors);
+		
+		sim_data->total_time += wall_time() - wave_start_time;
+
+
+		// Delay drawing of the progress bar until the second wave to improve the accuracy of the ETA.
+		if ((sim_data->num_vectors == 1) || cycle)
+			progress_bar_position = print_progress_bar(
+					cycle/(double)(sim_data->num_vectors), progress_bar_position, progress_bar_length, sim_data->total_time);
+		cycle++;
+	}
+
+	fflush(sim_data->out);
+	fprintf(sim_data->modelsim_out, "run %ld\n", sim_data->num_vectors*100);
+
+	printf("\n");
+	// If a second output vector file was given via the -T option, verify that it matches.
+	char *output_vector_file = global_args.sim_vector_output_file;
+	if (output_vector_file)
+	{
+		if (verify_output_vectors(output_vector_file, sim_data->num_vectors))
+			printf("Vector file \"%s\" matches output\n", output_vector_file);
+		else
+			error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Vector files differ.");
+		printf("\n");
+	}
+
+	// Print statistics.
+	print_simulation_stats(sim_data->stages, sim_data->num_vectors, sim_data->total_time, sim_data->simulation_time);
+}  */
+
+
+
+
 /**
  * Initialize simulation
  */
 sim_data_t *init_simulation(netlist_t *netlist)
 {
+	//for multithreading
+	used_time = std::numeric_limits<double>::max();
 	number_of_workers = global_args.parralelized_simulation.value();
 	if(number_of_workers >1 )
 		warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with maximum of %d threads", number_of_workers);
 	
+	found_best_time = false;
+
 	num_of_clock = 0;
 
 	sim_data_t *sim_data = (sim_data_t *)vtr::malloc(sizeof(sim_data_t));
@@ -368,6 +512,9 @@ sim_data_t *init_simulation(netlist_t *netlist)
 
 	sim_data->stages = 0;	
 
+	//maria	
+	sim_data->thread_distribution = 0;
+
 	if (!sim_data->num_vectors)
 	{
 		terminate_simulation(sim_data);
@@ -380,6 +527,8 @@ sim_data_t *init_simulation(netlist_t *netlist)
 sim_data_t *terminate_simulation(sim_data_t *sim_data)
 {
 	free_stages(sim_data->stages);
+	//maria
+	free_thread_distribution(sim_data->thread_distribution);
 
 	fclose(sim_data->act_out);
 
@@ -398,7 +547,7 @@ sim_data_t *terminate_simulation(sim_data_t *sim_data)
 }
 
 
-void simulate_steps(sim_data_t *sim_data,double min_coverage)
+void simulate_steps_sequential(sim_data_t *sim_data,double min_coverage)
 {
 	
 	printf("\n");
@@ -407,7 +556,7 @@ void simulate_steps(sim_data_t *sim_data,double min_coverage)
 	const int progress_bar_length   = 50;
 	
 	int increment_vector_by = global_args.sim_num_test_vectors;
-
+	
 
 	double current_coverage =0.0;
 	int cycle=0;
@@ -463,16 +612,217 @@ void simulate_steps(sim_data_t *sim_data,double min_coverage)
 
 		// Delay drawing of the progress bar until the second wave to improve the accuracy of the ETA.
 		if ((sim_data->num_vectors == 1) || cycle)
-		{
 			progress_bar_position = print_progress_bar(
 					(cycle+1)/(double)(sim_data->num_vectors), progress_bar_position, progress_bar_length, sim_data->total_time);
-		}
-		
 		cycle++;
 	}
 
+}
 
 
+
+void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,double min_coverage)
+{
+	// produce a wave of values at each iteration
+
+	double start_time = wall_time();
+	int progress_bar_position = -1;
+	const int progress_bar_length   = 50;
+	int increment_vector_by = global_args.sim_num_test_vectors;
+	double current_coverage =0.0;
+
+	int offset = CONCURENCY_LIMIT; // BUFFER_SIZE- simulation
+	threads_waves = (to_wave-from_wave)/offset;
+	threads_start = from_wave;
+	threads_end = to_wave;
+
+	pthread_cond_init(&start_threads, NULL);
+	pthread_cond_init(&start_output, NULL);
+
+	std::vector<std::thread> worker_threads;
+	
+	bool done = false;
+	bool restart = false;
+
+	while (!done)	
+	{
+		
+		for (int wave = 0; wave<=threads_waves; wave++)
+		{
+			double simulation_start_time = wall_time();
+			int from_cycle = from_wave + wave*offset;
+			int to_cycle = from_cycle+offset;
+			if (to_cycle > to_wave)
+				to_cycle = to_wave;
+
+			
+			test_vector *v=NULL;
+			// Assign vectors to lines, either by reading or generating them.
+			// Every second cycle gets a new vector.
+
+			
+			
+			char buffer[BUFFER_MAX_SIZE];
+			
+			for (int i=from_cycle;i<to_cycle;i++)
+			{
+				v = NULL;
+				if (sim_data->in)
+				{
+					//buffer = NULL;
+					if (!get_next_vector(sim_data->in, buffer))
+						error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not read next vector.");
+					
+					v = parse_test_vector(buffer);
+					//printf("Here\n");
+				}
+				else
+				{
+					v = generate_random_test_vector(i, sim_data);
+				}
+				//printf("v=%ld \n",v->values[0][0]);
+				add_test_vector_to_lines(v, sim_data->input_lines, i);
+				write_cycle_to_file(sim_data->input_lines, sim_data->in_out, i);
+				write_cycle_to_modelsim_file(sim_data->netlist, sim_data->input_lines, sim_data->modelsim_out, i);
+				
+			}
+			if (v)
+				free_test_vector(v);
+
+			if (wave == 0)
+			{
+				// lines as specified by the -p option.
+				sim_data->stages = simulate_first_cycle(sim_data->netlist, from_cycle, sim_data->output_lines);
+				// Make sure the output lines are still OK after adding custom lines.
+				if (!verify_lines(sim_data->output_lines))
+					error_message(SIMULATION_ERROR, 0, -1,"%s\n", 
+							"Problem detected with the output lines after the first cycle.");
+				
+				//maria
+				sim_data->thread_distribution = calculate_thread_distribution(sim_data->stages);
+				
+				//create_threads_and_let them wait for the signal
+				for (int t=0; t<sim_data->thread_distribution->number_of_threads; t++)
+				{	
+					worker_threads.push_back(std::thread(compute_and_store_part_in_waves_multithreaded,t,sim_data->thread_distribution->thread_nodes[t],from_wave,to_wave,offset,true));
+				}
+
+			}
+
+			if (wave !=0 || restart)
+			{
+				
+				pthread_mutex_lock(&output_mp);
+				threads_done_wave =0;
+				pthread_mutex_unlock(&output_mp);
+				if( (errno =pthread_cond_broadcast(&start_threads)) !=0)
+					printf("Broadcast Error!");					
+
+			}
+
+			pthread_mutex_lock(&threads_mp);
+			while (threads_done_wave != sim_data->thread_distribution->number_of_threads)
+			{
+				pthread_cond_wait(&start_output,&threads_mp);
+			}
+			pthread_mutex_unlock(&threads_mp);
+	
+			
+			for (int i=from_cycle;i<to_cycle;i++)
+			{
+				//if (i!=0)
+				write_cycle_to_file(sim_data->output_lines, sim_data->out, i);
+
+			}
+			//update memory directories of all memory nodes
+			write_back_memory_nodes(sim_data->thread_distribution->memory_nodes->nodes,sim_data->thread_distribution->memory_nodes->number_of_nodes);
+			sim_data->simulation_time += wall_time() - simulation_start_time;
+			if (wave==threads_waves) //check for coverage in the last cycle
+			{
+				if(min_coverage > 0.0)
+				{
+					current_coverage = (((double) get_num_covered_nodes(sim_data->stages) / (double) sim_data->stages->num_nodes));
+					if(global_args.sim_achieve_best)
+					{
+						if(current_coverage > min_coverage)
+						{
+							increment_vector_by = global_args.sim_num_test_vectors;
+							min_coverage = current_coverage;
+							sim_data->num_vectors += increment_vector_by;
+						}
+						else if(increment_vector_by)
+						{
+							//slowly reduce the search until there is no more possible increment, this prevent building too large of a comparative vector pair
+							sim_data->num_vectors += increment_vector_by;
+							increment_vector_by /= 2;
+						}
+
+					}
+					else
+					{
+						if(current_coverage < min_coverage)
+							sim_data->num_vectors += increment_vector_by;
+					}
+					//update the cycle boundaries to continue calculations
+					if (sim_data->num_vectors != to_cycle)
+					{
+						from_wave = to_cycle+1;
+						to_wave = sim_data->num_vectors;
+						threads_waves = (to_wave-from_wave)/offset;
+
+						pthread_mutex_lock(&output_mp);
+						threads_start = from_cycle;
+						threads_end = to_cycle;
+						pthread_mutex_unlock(&output_mp);
+						restart = true;
+						//printf("threads start %ld threads end %ld",threads_start,threads_end);	
+					}
+					else
+						done = true;			
+				}
+				else
+				{
+					current_coverage = to_cycle/(double)sim_data->num_vectors;
+					done = true;
+				}
+				
+
+			}
+			
+
+			// Print netlist-specific statistics.
+			if (wave == 0)
+				print_netlist_stats(sim_data->stages, sim_data->num_vectors);
+			
+			sim_data->total_time = wall_time() - start_time;
+			progress_bar_position = print_progress_bar(
+						to_cycle/(double)(sim_data->num_vectors), progress_bar_position, progress_bar_length, sim_data->total_time);
+
+		}
+		if (done)
+		{
+			//signal to unblock threads and let them finish
+			if( (errno =pthread_cond_broadcast(&start_threads)) !=0)
+				printf("Broadcast Error!");
+
+		}
+
+	}
+
+	
+	int threadnum = 0;
+	for (auto &worker: worker_threads)	
+	{
+		worker.join();
+		threadnum++;
+	}
+	//wait for them to be done
+	pthread_cond_destroy(&start_output);
+	pthread_cond_destroy(&start_threads);
+
+	sim_data->total_time = wall_time() - start_time;
+			progress_bar_position = print_progress_bar(
+						(double)sim_data->num_vectors/(double)(sim_data->num_vectors), progress_bar_position, progress_bar_length, sim_data->total_time);
 
 }
 
@@ -514,6 +864,10 @@ int single_step(sim_data_t *sim_data, int cycle)
 		// lines as specified by the -p option.
 		sim_data->stages = simulate_first_cycle(sim_data->netlist, cycle, sim_data->output_lines);
 
+		//split the nodes into threads using the stages agbove for parallel calculations
+		//maria
+		//sim_data->thread_distribution = calculate_thread_distribution(sim_data->stages);
+
 		// Make sure the output lines are still OK after adding custom lines.
 		if (!verify_lines(sim_data->output_lines))
 			error_message(SIMULATION_ERROR, 0, -1,"%s\n", 
@@ -522,6 +876,8 @@ int single_step(sim_data_t *sim_data, int cycle)
 	else
 	{
 		simulate_cycle(cycle, sim_data->stages);
+		//maria
+		//simulate_cycle_multithreaded(cycle, sim_data->thread_distribution); 
 	}
 	write_cycle_to_file(sim_data->output_lines, sim_data->out, cycle);
 
@@ -588,6 +944,214 @@ static void simulate_cycle(int cycle, stages_t *s)
 		total_run_time += wall_time()-time;
 	}
 }
+
+
+//maria
+static void compute_and_store_part_multithreaded(int /*t_id*/,netlist_subset *thread_nodes,int cycle)
+{
+
+	int *nodes_done = (int*)vtr::calloc(thread_nodes->number_of_nodes,sizeof(int));
+	int nodes_counter = thread_nodes->number_of_nodes;
+	nnode_t **nodes_in_progress = (nnode_t **)vtr::malloc(sizeof(nnode_t*) *thread_nodes->number_of_nodes );
+	
+	for (int i=0;i<nodes_counter;i++)
+		nodes_in_progress[i] = thread_nodes->nodes[i];
+	
+	
+	while (nodes_counter!=0 )
+	{
+		for (int j = 0;j < nodes_counter; j++)
+		{
+			nnode_t *node = nodes_in_progress[j];
+
+			if(node && is_node_ready(node,cycle) && !is_node_complete(node,cycle) )
+			{
+				compute_and_store_value(node, cycle);
+				nodes_done[j]=1;
+			}
+			else if(!node || is_node_complete(node,cycle) )
+				nodes_done[j]=1;
+		}
+
+		nnode_t **temp = &(*nodes_in_progress);
+		int not_done = 0;
+		//number of nodes 
+		for (int i=0;i<nodes_counter;i++)
+		{
+			if (!nodes_done[i])
+			{
+				nodes_in_progress[not_done] = temp[i];
+				not_done++;
+			}
+			nodes_done[i] = 0;
+		}
+		nodes_counter = not_done;
+	}
+	vtr::free(nodes_done);
+	vtr::free(nodes_in_progress);
+}
+
+
+
+//maria
+static void compute_and_store_part_in_waves_multithreaded(int /*t_id*/,netlist_subset *thread_nodes,int from_wave, int to_wave,int offset,bool /*notify_back*/)
+{
+
+	int *nodes_done = (int*)vtr::calloc(thread_nodes->number_of_nodes,sizeof(int));
+	int nodes_counter = thread_nodes->number_of_nodes;
+
+	int waves = (to_wave-from_wave)/offset;
+	//do while
+	for (int wave = 0;wave<=waves; wave++)
+	{
+		int from_cycle = from_wave + wave*offset;
+		int to_cycle = from_cycle+offset;
+		if (to_cycle > to_wave)
+			to_cycle = to_wave;
+		
+		for (int cycle = from_cycle; cycle<to_cycle; cycle++)
+		{
+			nodes_counter = thread_nodes->number_of_nodes;
+			for (int i=0;i<nodes_counter;i++) 
+				nodes_done[i] = 0;
+			
+			int done = 0;
+			while (nodes_counter!=done )
+			{
+				for (int j = 0;j < nodes_counter; j++)
+				{
+					if (!nodes_done[j])
+					{
+						nnode_t *node = thread_nodes->nodes[j];
+
+						if(node && is_node_ready(node,cycle) && !is_node_complete(node,cycle) )
+						{
+							compute_and_store_value(node, cycle);
+							nodes_done[j]=1;
+
+						}
+						else if(!node || is_node_complete(node,cycle) )
+						{
+							nodes_done[j]=1;
+						}
+					}
+				}
+
+				done = 0;
+				//number of nodes 
+				for (int i=0;i<nodes_counter;i++)
+				{
+					if (nodes_done[i])
+					{
+						done++;
+					}
+				}
+				
+			}
+
+		}
+		//signal the current wave is done
+		pthread_mutex_lock(&threads_mp);
+		threads_done_wave++;
+		pthread_cond_broadcast(&start_output);
+		pthread_cond_wait(&start_threads,&threads_mp);
+		pthread_mutex_unlock(&threads_mp);
+
+		if (wave == waves) //check if we need to start again for coverage
+		{
+			int shared_from_wave,shared_to_wave;
+			pthread_mutex_lock(&threads_mp);
+			shared_from_wave = threads_start;
+			shared_to_wave = threads_end;
+			pthread_mutex_unlock(&threads_mp);
+
+			//if the shared variable is changed then copy the other values and restart the loop
+			if (shared_from_wave != from_wave)
+			{
+				from_wave = shared_from_wave;
+				to_wave = shared_to_wave;
+				waves = (to_wave-from_wave)/offset;
+			}
+
+		}
+
+	}
+	vtr::free(nodes_done);
+}
+
+//maria
+static void compute_and_store_part_wave_multithreaded(int /*t_id*/,netlist_subset *thread_nodes,int from_wave, int to_wave)
+{
+
+	int *nodes_done = (int*)vtr::calloc(thread_nodes->number_of_nodes,sizeof(int));
+	int nodes_counter = thread_nodes->number_of_nodes;
+
+
+	for (int cycle = from_wave; cycle<to_wave; cycle++)
+	{
+		nodes_counter = thread_nodes->number_of_nodes;
+		for (int i=0;i<nodes_counter;i++) 
+			nodes_done[i] = 0;
+		
+		int done = 0;
+		while (nodes_counter!=done )
+		{
+			for (int j = 0;j < nodes_counter; j++)
+			{
+				if (!nodes_done[j])
+				{
+					nnode_t *node = thread_nodes->nodes[j];
+
+					if(node && is_node_ready(node,cycle) && !is_node_complete(node,cycle) )
+					{
+						compute_and_store_value(node, cycle);
+						nodes_done[j]=1;
+					}
+					else if(!node || is_node_complete(node,cycle) )
+						nodes_done[j]=1;
+				}
+			}
+
+			
+			done = 0;
+			//number of nodes 
+			for (int i=0;i<nodes_counter;i++)
+			{
+				if (nodes_done[i])
+				{
+					done++;
+				}
+			}
+			
+		}
+	}
+	
+	vtr::free(nodes_done);
+
+}
+
+
+//maria
+static void simulate_cycle_multithreaded(int cycle, thread_node_distribution *thread_distribution)
+{	
+	std::vector<std::thread> workers;
+
+
+
+	for (int t=0; t<thread_distribution->number_of_threads; t++)
+	{
+		workers.push_back(std::thread(compute_and_store_part_wave_multithreaded,t,thread_distribution->thread_nodes[t],cycle,cycle+1));
+	}
+
+	int threadnum = 0;
+	for (auto &worker: workers)	
+	{
+		worker.join();
+		threadnum++;
+	}
+}
+
+
 
 /*
  * Updates all pins which have been flagged as undriven
@@ -862,6 +1426,282 @@ static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_no
 	stage_nodes.clear();
 	return s;
 }
+
+//maria
+//simulate one cycle to determine the parallelization degree of the circuit
+//returns the number of threads
+static thread_node_distribution *calculate_thread_distribution(stages_t *s)
+{
+	//double nodecost = 1;
+	//double extranodeoverhead = 1.0*nodecost;
+	//double lessnodeoverhead = -0.5*nodecost;
+	double nodeoverhead_100 = 100;
+	double nodeoverhead_200 = 200;
+	double nodeoverhead_300 = 300;
+	double nodeoverhead_400 = 400;
+
+	double stagecost = nodeoverhead_300;
+	//double threadoverheadcost = 5*nodecost;
+
+	/** not portable
+	 * int max_available_threads = get_nprocs();
+	 */
+
+	int max_available_threads = number_of_workers;
+
+	//store nodes for each thread
+	thread_node_distribution* thread_distribution= (thread_node_distribution *)vtr::malloc(sizeof(thread_node_distribution));
+
+	//for each stage 
+	double *stagescost = (double *)vtr::malloc(sizeof(double)* s->count);
+	double graphcost = 0.0;
+	int all_nodes = get_num_covered_nodes(s);
+	std::map<int, int> nodes_inserted;  //nodeId,flag
+
+	thread_distribution->memory_nodes = (netlist_subset *)vtr::malloc(sizeof(netlist_subset));
+	int number_of_mem_nodes = 0;
+	nnode_t** nodes_mem_sub = 0; 
+
+	//traverse and calculate the graph cost
+	for(int i = 0; i < s->count; i++)
+	{
+		stagescost[i] = 0.0;
+		nnode_t** nodes = s->stages[i];		
+
+		//for each node
+		for (int j =0; j < s->counts[i]; j++)
+		{			
+			//stagescost[i]+=nodecost;
+			if (nodes[j]->type == GND_NODE || nodes[j]->type == VCC_NODE || nodes[j]->type == OUTPUT_NODE || nodes[j]->type == CLOCK_NODE || nodes[j]->type == PAD_NODE || nodes[j]->type == MUX_2 || nodes[j]->type == LOGICAL_AND)
+				stagescost[i]+=nodeoverhead_100;
+			else if (nodes[j]->type == HARD_IP || nodes[j]->type == GENERIC || nodes[j]->type == MEMORY)
+				stagescost[i]+=nodeoverhead_300;
+			else if (nodes[j]->type ==  MULTIPLY)
+				stagescost[i]+=nodeoverhead_400;
+			else if (nodes[j]->type == INPUT_NODE)
+				stagescost[i]+=1;
+			else
+				stagescost[i]+=nodeoverhead_200;
+
+			nodes_inserted[nodes[j]->unique_id] = 0;
+		}
+		graphcost += stagecost+stagescost[i];
+	}
+	
+	thread_distribution->memory_nodes->number_of_nodes = number_of_mem_nodes;
+	thread_distribution->memory_nodes->nodes = nodes_mem_sub;
+
+	//printf("graphcost: %lf .\n",graphcost);
+
+	double threadworkcost = ceil(graphcost/max_available_threads);
+	int num_threads = 0;
+	int current_stage = 0;
+	int node_in_stage = 0;
+	int nodes_assigned = 0;
+
+	//printf("threadworkcost: %lf .\n",threadworkcost);
+	//for each stage 
+	netlist_subset **circuit_borders = (netlist_subset **)vtr::malloc(sizeof(netlist_subset*) * max_available_threads);
+
+	int threads = ceil(graphcost/threadworkcost);
+
+	for(int i = 0; i < threads; i++)
+	{
+		circuit_borders[i] = (netlist_subset *)vtr::malloc(sizeof(netlist_subset));
+		circuit_borders[i]->nodes = 0;
+	}
+
+	for (int t =0;t<threads && nodes_assigned!=all_nodes;t++)
+	{
+		double threadcost = 0.0;
+		//nodes per thread
+		int number_of_nodes = 0;
+		nnode_t** nodes_sub = 0; //(nnode_t **)vtr::calloc(1,sizeof(nnode_t*));
+
+		while (threadcost< threadworkcost)
+		{
+			nnode_t* node = s->stages[current_stage][node_in_stage];
+			//printf("NodeID %ld assigned to Thread %ld\n",node->unique_id,t);
+			if (nodes_inserted[node->unique_id]==0)
+			{
+				nodes_sub = (nnode_t **)vtr::realloc(nodes_sub,sizeof(nnode_t*) * (number_of_nodes+1) );
+				nodes_sub[number_of_nodes++] = node;
+				nodes_assigned++;
+				nodes_inserted[node->unique_id] = 1;		
+
+				if (node->type == GND_NODE || node->type == VCC_NODE || node->type == OUTPUT_NODE || node->type == CLOCK_NODE || node->type == PAD_NODE || node->type == MUX_2 || node->type == LOGICAL_AND)
+					threadcost+=nodeoverhead_100;
+				else if (node->type == HARD_IP || node->type == GENERIC || node->type == MEMORY)
+					threadcost+=nodeoverhead_300;
+				else if (node->type ==  MULTIPLY)
+					threadcost+=nodeoverhead_400;
+				else if (node->type == INPUT_NODE)
+					threadcost+=1;
+				else
+					threadcost+=nodeoverhead_200;
+				//memory family put together if uncomment. not necessary
+				/*
+				int num_children;
+				nnode_t **children = get_children_of(node, &num_children);	
+				nnode_t**memory_nodes = 0;
+				int num_memory_nodes = 0;
+				//find all decendeces and ancestors of evey memory node related
+				nnode_t**memory_family = 0;
+				int num_memory_family = 0;
+				for(int child=0;child<num_children;child++)
+				{
+					if (children[child]->type == MEMORY || children[child]->type == HARD_IP)
+					{
+						memory_nodes = (nnode_t **)vtr::realloc(memory_nodes,sizeof(nnode_t*) * (num_memory_nodes+1) );
+						memory_nodes[num_memory_nodes++] = children[child];
+						nodes_inserted[children[child]->unique_id] = -1; //to be processed
+
+						memory_family = (nnode_t **)vtr::realloc(memory_family,sizeof(nnode_t*) * (num_memory_family+1) );
+						memory_family[num_memory_family++] = children[child];
+					}
+				}
+				if (num_memory_nodes !=0 )
+				{
+					int mem_index = 0;			
+					while(mem_index !=num_memory_nodes)
+					{
+						nnode_t* memnode = memory_nodes[mem_index];
+						nodes_inserted[memnode->unique_id] = -1; 
+						//printf("memnode tyope of %s\n ",memnode->name);
+						int num_parents;
+						nnode_t **parents = get_parents_of(memnode, &num_parents);
+
+						for(int parent=0;parent<num_parents;parent++)
+						{
+							if ( nodes_inserted[parents[parent]->unique_id] != -1 ) //if it is not processed here
+							{
+								memory_family = (nnode_t **)vtr::realloc(memory_family,sizeof(nnode_t*) * (num_memory_family+1) );
+								memory_family[num_memory_family++] = parents[parent];
+								
+								//printf("NodeP %ld -1\n",parents[parent]->unique_id);								
+								if (parents[parent]->type == HARD_IP || parents[parent]->type == MEMORY) //its a memory node add it to the queue
+								{
+									memory_nodes = (nnode_t **)vtr::realloc(memory_nodes,sizeof(nnode_t*) * (num_memory_nodes+1) );
+									memory_nodes[num_memory_nodes++] = parents[parent];
+
+								}
+								else
+								{
+									nodes_inserted[parents[parent]->unique_id] = -1;
+								}
+							}
+						}
+						int num_children;
+						nnode_t **children = get_children_of(memnode, &num_children);
+
+						for(int child=0;child<num_children;child++)
+						{
+							if ( nodes_inserted[children[child]->unique_id] != -1 ) //if it is not processed here
+							{
+								memory_family = (nnode_t **)vtr::realloc(memory_family,sizeof(nnode_t*) * (num_memory_family+1) );
+								memory_family[num_memory_family++] = children[child];
+								
+								
+								if (children[child]->type == HARD_IP || children[child]->type == MEMORY) //its a memory node add it to the queue
+								{
+									memory_nodes = (nnode_t **)vtr::realloc(memory_nodes,sizeof(nnode_t*) * (num_memory_nodes+1) );
+									memory_nodes[num_memory_nodes++] = children[child];
+									//nodes_inserted[children[child]->unique_id] = -1; 
+								}
+								else
+								{
+									nodes_inserted[children[child]->unique_id] = -1;
+								}								
+							}
+						}
+						mem_index++;
+						//printf("mem_index %ld num_memory_family %ld  num_memory_nodes%ld \n",mem_index,num_memory_family,num_memory_nodes);
+					}
+					printf("Memory node found \n");
+					mem_index = 0;
+					for (mem_index=0;mem_index<num_memory_family;mem_index++)
+					{
+						nnode_t* memnode = memory_family[mem_index];
+						//if (!nodes_inserted[memnode->unique_id])
+						//{
+						nodes_sub = (nnode_t **)vtr::realloc(nodes_sub,sizeof(nnode_t*) * (number_of_nodes+1) );
+						nodes_sub[number_of_nodes++] = memnode;
+						nodes_assigned++;
+						nodes_inserted[memnode->unique_id] = 1;		
+						threadcost+=nodecost;
+						if (memnode->type == HARD_IP || memnode->type == GENERIC || memnode->type == MEMORY )
+							threadcost+=extranodeoverhead;
+						if (memnode->type == GND_NODE || memnode->type == VCC_NODE || memnode->type == INPUT_NODE )
+							threadcost+=lessnodeoverhead;
+						//}
+						//printf("NodeP %ld 1\n",memnode->unique_id);
+						//printf("Asgnd %ld out of %ld \n",nodes_assigned,all_nodes);
+					}
+					//vtr::free(memory_nodes);
+					//printf(" Node added \n");
+				}
+				*/
+			}
+			//printf("Next node %ld  %ld/%ld \n",node->unique_id,nodes_assigned,all_nodes);
+			
+			if (node_in_stage == s->counts[current_stage]-1) //change stage
+			{
+				node_in_stage = 0;
+
+				if (current_stage == s->count-1) //last stage
+				{
+					
+					break;
+				}
+				else
+					current_stage++; //next stage
+			}
+			else //same stage next node
+				node_in_stage++;
+
+		}
+		// add them to the structure
+		circuit_borders[num_threads]->nodes = nodes_sub;
+		circuit_borders[num_threads]->number_of_nodes = number_of_nodes;
+		++num_threads;
+	}
+
+	// Create a map iterator and point to beginning of map
+	std::map<int, int>::iterator it = nodes_inserted.begin();
+ 
+	// Iterate over the map using Iterator till end.
+	while (it != nodes_inserted.end())
+	{
+		// Accessing KEY from element pointed by it.
+		int node_id = it->first;
+ 
+		// Accessing VALUE from element pointed by it.
+		int inserted = it->second;
+ 
+		if (inserted !=1)
+		{
+			error_message(SIMULATION_ERROR,1475,-1,"Node %d is not assigned for simulation!",node_id);
+
+		}
+ 
+		// Increment the Iterator to point to next entry
+		it++;
+	}
+
+
+	//if (nodes_assigned == false)
+	//{
+	//	error_message(SIMULATION_ERROR,1475,-1, "%s", "Some nodes are not assigned for simulation!");
+	//}
+	thread_distribution->thread_nodes = circuit_borders;
+	thread_distribution->number_of_threads = num_threads;
+
+	number_of_workers = num_threads;
+	
+	vtr::free(stagescost);
+	return thread_distribution;
+}
+
 
 /*
  * Given a node, this function will simulate that node's new outputs,
@@ -1286,6 +2126,40 @@ int get_clock_ratio(nnode_t *node)
 }
 
 
+/*Gets the parents of the given node. Return the number of
+* parents via the num_parents parameter.*/
+//maria
+nnode_t **get_parents_of(nnode_t *node, int *num_parents)
+{
+	nnode_t **parents = 0;
+	int count = 0;
+	int i;
+
+	oassert(node);
+	
+	for (i = 0; i < node->num_input_pins; i++)
+	{
+		npin_t *pin = node->input_pins[i];
+		if(pin)
+		{
+			nnet_t *net = pin->net;
+			if(net && net->driver_pin)
+			{
+				if (net->driver_pin->node)
+				{
+					nnode_t *parent_node = net->driver_pin->node;
+					//char *parent_node_name = get_pin_name(parent_node->name);
+
+					parents = (nnode_t **)vtr::realloc(parents, sizeof(nnode_t*) * (count + 1));
+					parents[count++] = parent_node;
+				}
+			}
+		}
+	}
+	*num_parents = count;
+	return parents;
+}
+
 /*
  * Gets the children of the given node. Returns the number of
  * children via the num_children parameter. Throws warnings
@@ -1367,6 +2241,89 @@ nnode_t **get_children_of(nnode_t *node, int *num_children)
 	}
 	*num_children = count;
 	return children;
+}
+
+/*
+ * Gets the children of the given node. Returns the number of
+ * children via the num_children parameter. Throws warnings
+ * or errors if invalid connection patterns are detected.
+ */
+static int *get_children_pinnumber_of(nnode_t *node, int *num_children)
+{
+	int *pin_numbers = 0;
+	int count = 0;
+	int i;
+	for (i = 0; i < node->num_output_pins; i++)
+	{
+		npin_t *pin = node->output_pins[i];
+		nnet_t *net = pin->net;
+		if (net)
+		{
+			/*
+			 *  Detects a net that may be being driven by two
+			 *  or more pins or has an incorrect driver pin assignment.
+			 */
+			if (net->driver_pin != pin && global_args.all_warnings)
+			{
+				char *pin_name  = get_pin_name(pin->name);
+				char *node_name = get_pin_name(node->name);
+				char *net_name  = get_pin_name(net->name);
+
+				warning_message(SIMULATION_ERROR, -1, -1,
+						"Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
+						"             which is mapped to a net \"%s\" (%ld) whose driver pin is \"%s\" (%ld) \n",
+						pin_name,
+						pin->unique_id,
+						node_name,
+						node->unique_id,
+						net_name,
+						net->unique_id,
+						net->driver_pin->name,
+						net->driver_pin->unique_id
+				);
+
+				vtr::free(net_name);
+				vtr::free(pin_name);
+				vtr::free(node_name);
+			}
+
+			int j;
+			for (j = 0; j < net->num_fanout_pins; j++)
+			{
+				npin_t *fanout_pin = net->fanout_pins[j];
+				if (fanout_pin && fanout_pin->type == INPUT && fanout_pin->node)
+				{
+					nnode_t *child_node = fanout_pin->node;
+
+					// Check linkage for inconsistencies.
+					if (fanout_pin->net != net)
+					{
+						print_ancestry(child_node, 0);
+						error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+					}
+					else if (fanout_pin->net->driver_pin->net != net)
+					{
+						print_ancestry(child_node, 0);
+						error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+					}
+
+					else if (fanout_pin->net->driver_pin->node != node)
+					{
+						print_ancestry(child_node, 0);
+						error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+					}
+					else
+					{
+						// Add child.
+						pin_numbers = (int *)vtr::realloc(pin_numbers, sizeof(int) * (count + 1));
+						pin_numbers[count++] = i;
+					}
+				}
+			}
+		}
+	}
+	*num_children = count;
+	return pin_numbers;
 }
 
 /*
@@ -2094,7 +3051,44 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 				new_values[i]= get_pin_value(data_in->pins[i],cycle-1);
 			}
 		}
-		node->memory_data[address] = new_values;
+
+
+		if (false == global_args.parralelized_simulation_in_batch)
+		{
+			node->memory_data[address] = new_values;
+		}
+		/**
+		 * use dictionnary when there are multiple workers
+		 */
+		else
+		{
+			/********* Critical section */
+			/* LOCK */node->memory_mtx.lock();
+			if(write)
+			{
+				if ( node->memory_directory.find(cycle) == node->memory_directory.end() ) 
+				{
+					node->memory_directory[cycle] = {};
+				}
+				node->memory_directory[cycle][address]= new_values;
+			}
+			/**
+			 * read from the dictionary if exist otherwise use current mem_data value
+			 */
+			else /* READ */
+			{
+				for ( auto it = node->memory_directory.begin(); it != node->memory_directory.end(); it++ )
+				{
+					int recorded_cycle = it->first;
+					if (recorded_cycle <= cycle
+					&& ( node->memory_directory[recorded_cycle].find(address) != node->memory_directory[recorded_cycle].end() ))
+					{
+						new_values = node->memory_directory[recorded_cycle][address];
+					}
+				}
+			}
+			/* UNLOCK */node->memory_mtx.unlock();
+		}
 	}
 
 	/**
@@ -2103,6 +3097,34 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 	for (long i = 0; i < data_out->count; i++)
 	{
 		update_pin_value(data_out->pins[i], new_values[i], cycle);
+	}
+}
+
+
+static void write_back_memory_nodes(nnode_t **nodes, int num_nodes)
+{
+ 	int num;
+	//printf("here\n");
+ 	for(num=0;num<num_nodes;num++)
+ 	{
+ 		nnode_t* node = nodes[num];
+ 		if (!node->memory_directory.empty())
+ 		{
+			std::map<int,std::map<long,std::vector<signed char>>>::iterator it;
+			for ( it = node->memory_directory.begin(); it != node->memory_directory.end(); it++ )
+			{
+				int recorded_cycle = it->first;
+				std::map<long,std::vector<signed char>>::iterator cit;
+				for ( cit = node->memory_directory[recorded_cycle].begin(); cit != node->memory_directory[recorded_cycle].end(); cit++ )
+				{
+					long address = cit->first;
+					std::vector<signed char> new_values = cit->second;
+					node->memory_data[address] = new_values;
+				}
+				node->memory_directory[recorded_cycle] = {};
+			}
+			node->memory_directory={};
+		}
 	}
 }
 
@@ -3418,6 +4440,38 @@ static void free_stages(stages_t *s)
 		vtr::free(s);
 	}
 }
+
+//maria
+//Free thread distribution
+
+static void free_thread_distribution(thread_node_distribution *thread_distribution)
+{
+	if(thread_distribution)
+	{
+		if(thread_distribution->thread_nodes)
+		{
+			for(int i = 0; i < thread_distribution->number_of_threads; i++)
+			{
+				if(thread_distribution->thread_nodes[i])
+				{
+					for (int j=0;j<thread_distribution->thread_nodes[i]->number_of_nodes;j++)
+					{
+						if(thread_distribution->thread_nodes[i]->nodes[j])
+							vtr::free(thread_distribution->thread_nodes[i]->nodes[j]);
+					}
+
+					if(thread_distribution->thread_nodes[i]->nodes)
+						vtr::free(thread_distribution->thread_nodes[i]->nodes);
+
+					vtr::free(thread_distribution->thread_nodes[i]);
+				}
+			}
+			vtr::free(thread_distribution->thread_nodes);
+		}
+		vtr::free(thread_distribution);
+	}
+}
+
 
 /*
  * Free the given test_vector.

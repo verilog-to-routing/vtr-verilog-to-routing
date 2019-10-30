@@ -1,0 +1,37 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+script_params=-power -adder_type optimized
+
+cmos_tech_behavior=PTM_45nm/45nm.xml
+
+# Path to directory of circuits to use
+circuits_dir=../ODIN_II/regression_test/benchmark/micro
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=bm_arithmetic_unused_bits.v
+circuit_list_add=bm_base_multiply.v
+circuit_list_add=bm_dag1_mod.v
+circuit_list_add=bm_dag3_lpm_log_mod.v
+circuit_list_add=bm_dag3_lpm_mod.v
+circuit_list_add=bm_expr_all_mod.v
+circuit_list_add=bm_functional_test.v
+circuit_list_add=bm_match1_str_arch.v
+circuit_list_add=bm_match2_str_arch.v
+circuit_list_add=bm_match3_str_arch.v
+circuit_list_add=bm_match4_str_arch.v
+circuit_list_add=bm_match5_str_arch.v
+circuit_list_add=bm_match6_str_arch.v
+circuit_list_add=bm_sfifo_rtl.v
+
+
+# Add architectures to list to sweep
+arch_list_add=k6_N10_mem32K_40nm.xml
+arch_list_add=k6_frac_N10_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_power_detailed.txt

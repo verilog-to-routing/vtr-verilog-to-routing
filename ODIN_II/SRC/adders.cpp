@@ -30,6 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_types.h"
 #include "odin_util.h"
 #include "node_creation_library.h"
+#include "soft_logic_def_parser.h"
 #include "adders.h"
 #include "netlist_utils.h"
 #include "partial_map.h"
@@ -1354,10 +1355,20 @@ int match_pins(nnode_t *node, nnode_t *next_node)
 	return flag;
 }
 
+
+/*---------------------------------------------------------------------------------------------
+ * ###########################################################
+ * These are function for the soft_logic adders only
+ *-------------------------------------------------------------------------------------------*/
+void connect_output_pin_to_node(int *width, int current_pin, int output_pin_id, nnode_t *node, nnode_t *current_adder, short subtraction);
+nnode_t *make_mux_2to1(nnode_t *select, nnode_t *port_a, nnode_t *port_b, nnode_t *node, short mark);
+nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t *previous_carry, int *width, int current_pin, netlist_t *netlist, nnode_t *node, short subtraction, short mark);
+nnode_t *make_bec(operation_list funct, nnode_t *current_adder, nnode_t *previous_carry, int *width, int current_pin, netlist_t *netlist, nnode_t *node, short subtraction, short mark);
+
 /*---------------------------------------------------------------------------------------------
  * connect adder type output pin to a node
  *-------------------------------------------------------------------------------------------*/
-static void connect_output_pin_to_node(int *width, int current_pin, int output_pin_id, nnode_t *node, nnode_t *current_adder, short subtraction)
+void connect_output_pin_to_node(int *width, int current_pin, int output_pin_id, nnode_t *node, nnode_t *current_adder, short subtraction)
 {
 	// output
 	if(subtraction)
@@ -1380,9 +1391,74 @@ static void connect_output_pin_to_node(int *width, int current_pin, int output_p
 }
 
 /*---------------------------------------------------------------------------------------------
+ * makes a 2 to 1 mux (select == 1)? port_a : port_b
+ *-------------------------------------------------------------------------------------------*/
+nnode_t *make_mux_2to1(nnode_t *select, nnode_t *port_a, nnode_t *port_b, nnode_t *node, short mark)
+{
+	nnode_t *mux_2 = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
+
+	//driver
+	nnode_t *notted_gate = make_not_gate(node,mark);
+	connect_nodes(select,0,notted_gate,0);
+
+
+	connect_nodes(select,0,mux_2,0);
+	connect_nodes(notted_gate,0,mux_2,1);
+
+	//connect carry skip to mux
+	connect_nodes(port_a,0,mux_2,2);
+	connect_nodes(port_b,0,mux_2,3);
+	return mux_2;
+}
+
+nnode_t *make_bec(operation_list funct, nnode_t *current_adder, nnode_t *previous_carry, int* /* width */, int /* current_pin */, netlist_t *netlist, nnode_t *node, short /* subtraction */, short mark)
+{
+	nnode_t *new_funct = NULL;
+	if(previous_carry == netlist->vcc_node)
+	{
+		if(funct == ADDER_FUNC)
+		{
+			new_funct = make_not_gate(node, mark);
+			connect_nodes(current_adder, 0, new_funct, 0);
+		}
+		else if(funct == CARRY_FUNC)
+		{
+			new_funct = current_adder;
+		}
+	}
+	else if(previous_carry == netlist->gnd_node)
+	{
+		if(funct == ADDER_FUNC)
+		{
+			new_funct = current_adder;
+		}
+		else if(funct == CARRY_FUNC)
+		{
+			new_funct = netlist->gnd_node;
+		}
+	}
+	else
+	{
+		if(funct == ADDER_FUNC)
+		{
+			new_funct = make_2port_gate(LOGICAL_XOR, 1, 1, 1, node, mark);
+			connect_nodes(previous_carry,0, new_funct, 0);
+			connect_nodes(current_adder,0, new_funct, 1);
+		}
+		else if(funct == CARRY_FUNC)
+		{
+			new_funct = make_2port_gate(LOGICAL_AND, 1, 1, 1, node, mark);
+			connect_nodes(previous_carry,0, new_funct, 0);
+			connect_nodes(current_adder,0, new_funct, 1);
+		}
+	}
+	return new_funct;
+}
+
+/*---------------------------------------------------------------------------------------------
  * make a single half-adder (can do unary subtraction, binary subtraction and addition)
  *-------------------------------------------------------------------------------------------*/
-static nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t *previous_carry, int *width, int current_pin, netlist_t *netlist, nnode_t *node, short subtraction, short mark)
+nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t *previous_carry, int *width, int current_pin, netlist_t *netlist, nnode_t *node, short subtraction, short mark)
 {
 	//make a 2 bit 0r 3 bit sum or carry based on previous carry
 	nnode_t *new_funct = NULL;
@@ -1405,7 +1481,10 @@ static nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t
 	}
 	else
 	{
-		new_funct = make_3port_gate(funct, 1, 1, 1, 1, node, mark);
+		if(funct == ADDER_FUNC)
+			new_funct = make_3port_gate(ADDER_FUNC, 1, 1, 1, 1, node, mark);
+		else if(funct == CARRY_FUNC)
+			new_funct = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
 		connect_nodes(previous_carry, 0, new_funct, 0);
 		is_three_port_gate = 1;
 	}
@@ -1483,21 +1562,127 @@ static nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t
 	return new_funct;
 }
 
+/***---------------------------------------------------------------------------------------------
+ *
+ * bit # :  	| 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+ * blk_type:	  R->[heterogenous      		]
+ *                   [blk size and blk type		]
+ *
+ * the first bit is built from an/xor gate, everything between could be anything
+ * create a single adder block using adder_type_definition file input to select blk size and type
+ *-------------------------------------------------------------------------------------------*/
 void instantiate_add_w_carry_block(int *width, nnode_t *node, short mark, netlist_t *netlist, short subtraction)
 {
-	nnode_t *previous_carry = (subtraction)? netlist->vcc_node: netlist->gnd_node;
-
-	for(int i = 0; i < width[0]; i++)
+	//set the default
+	int blk_size 							= width[0];
+	nnode_t *initial_carry 		= (subtraction)? netlist->vcc_node: netlist->gnd_node;
+	for(int start_pin=0, current_counter=1 ; start_pin<width[0]; start_pin+=blk_size, current_counter++)
 	{
-		/* set of flags for building purposes */
-		short construct_last_carry_flag = (i != width[0]-1 || !subtraction)? 1:0;
+		std::string my_type 			= "soft";
+		std::string sub_structure = "default";
+		blk_size 									= width[0]-start_pin;
 
-		//build Ripple Carry Adder
-		nnode_t *current_adder = make_adder(ADDER_FUNC, NULL, previous_carry, width, i, netlist, node, subtraction, mark);
-		if(construct_last_carry_flag)
-			previous_carry = make_adder(CARRY_FUNC, current_adder, previous_carry, width, i, netlist, node, subtraction, mark);
+		soft_sub_structure *def = fetch_blk("+",width[0]-start_pin);
+		if(def)
+		{
+			blk_size = (def->bitsize > blk_size)? blk_size: def->bitsize;
 
-		connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
+			//don't optimize small circuit
+			if(blk_size != 1)
+			{
+				my_type 			= def->type;
+				sub_structure = def->name;
+			}
+
+			/* pretty print info */
+			if(current_counter == 1)
+				printf("\n::%s\n[target-bit_size:<%d>START]~", node->name, width[0]-start_pin);
+
+			printf("~[<%s><%s>::%d]~",my_type.c_str(), sub_structure.c_str(), blk_size);
+
+			if(blk_size+start_pin == width[0]){
+				printf("~[END::sub_module_count:<%d>] \n", current_counter);
+				fflush(stdout);
+			}
+		}
+
+		nnode_t *previous_carry = initial_carry;
+		nnode_t *previous_carry_gnd = netlist->gnd_node;
+		nnode_t *previous_carry_vcc = netlist->vcc_node;
+
+		for(int i = start_pin; i < start_pin+blk_size; i++)
+		{
+			/* set of flags for building purposes */
+			short construct_last_carry_flag = (i != width[0]-1 || !subtraction)? 1:0;
+			short last_pin_on_blk_flag 			= (i == start_pin+blk_size-1)? 1:0;
+
+			if(my_type == "soft")
+			{
+				// Ripple Carry Adder
+				if(sub_structure == "default"){
+					//build adder
+					nnode_t *current_adder = make_adder(ADDER_FUNC, NULL, previous_carry, width, i, netlist, node, subtraction, mark);
+					if(construct_last_carry_flag)
+						 previous_carry = make_adder(CARRY_FUNC, current_adder, previous_carry, width, i, netlist, node, subtraction, mark);
+
+					connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
+				}
+				//Carry Select Adder
+				else if(sub_structure == "csla")
+				{
+					nnode_t *current_adder_gnd = make_adder(ADDER_FUNC, NULL, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
+					if(construct_last_carry_flag)
+						previous_carry_gnd = make_adder(CARRY_FUNC, current_adder_gnd, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
+
+					nnode_t *current_adder_vcc = make_adder(ADDER_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
+					if(construct_last_carry_flag)
+						previous_carry_vcc = make_adder(CARRY_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
+
+					nnode_t *current_adder = make_mux_2to1(previous_carry, current_adder_vcc, current_adder_gnd, node, mark);
+
+					if(last_pin_on_blk_flag && construct_last_carry_flag)
+						previous_carry = make_mux_2to1(previous_carry, previous_carry_vcc, previous_carry_gnd, node, mark);
+
+					connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
+				}
+				//binary to excess Carry Select Adder
+				else if(sub_structure == "bec_csla")
+				{
+					nnode_t *current_adder_gnd = make_adder(ADDER_FUNC, NULL, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
+					if(construct_last_carry_flag)
+						 previous_carry_gnd = make_adder(CARRY_FUNC, current_adder_gnd, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
+
+					nnode_t *current_adder_vcc = make_bec(ADDER_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
+					if(construct_last_carry_flag)
+						previous_carry_vcc = make_bec(CARRY_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
+
+					nnode_t *current_adder = make_mux_2to1(previous_carry, current_adder_vcc, current_adder_gnd, node, mark);
+
+					if(last_pin_on_blk_flag && construct_last_carry_flag)
+						previous_carry = make_mux_2to1(previous_carry, previous_carry_vcc, previous_carry_gnd, node, mark);
+
+					connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
+				}
+				else
+				{
+					error_message(NETLIST_ERROR, -1, -1, "( %s )is not a valid substructure name", sub_structure.c_str());
+					return;
+				}
+			}
+			else // if(my_type == "hard")
+			{
+				// carry lookahead
+				// if(sub_structure == "cla")
+				// {
+				// 	error_message(NETLIST_ERROR, -1, -1, "( %s )is not a valid substructure name", sub_structure.c_str());
+				// }
+				// else
+				// {
+					error_message(NETLIST_ERROR, -1, -1, "( %s )is not a valid substructure name", sub_structure.c_str());
+				// }
+			}
+		}
+		initial_carry = previous_carry;
 	}
 }
 

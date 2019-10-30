@@ -576,6 +576,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
 	else
 	{
 		new_node->type = MEMORY;
+		new_node->memory_directory = {};
 	}
 	vtr::free(subcircuit_name_prefix);
 
