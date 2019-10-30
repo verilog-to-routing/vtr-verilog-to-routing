@@ -1,0 +1,32 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+script_params=-power -adder_type optimized
+
+cmos_tech_behavior=PTM_45nm/45nm.xml
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=arm_core.v
+circuit_list_add=blob_merge.v
+circuit_list_add=diffeq1.v
+circuit_list_add=diffeq2.v
+circuit_list_add=LU8PEEng.v
+circuit_list_add=mkSMAdapter4B.v
+circuit_list_add=sha.v
+circuit_list_add=stereovision0.v
+circuit_list_add=stereovision1.v
+
+
+# Add architectures to list to sweep
+arch_list_add=k6_N10_mem32K_40nm.xml
+arch_list_add=k6_frac_N10_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_power_detailed.txt
