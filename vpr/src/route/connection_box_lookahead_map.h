@@ -19,12 +19,16 @@ struct RoutingCostKey {
     // offset of the destination connection box from the starting segment
     vtr::Point<int> delta;
 
-    RoutingCostKey() : seg_index(-1), delta(0, 0) {}
-    RoutingCostKey(int seg_index_arg, ConnectionBoxId box_id_arg, vtr::Point<int> delta_arg) :
-      seg_index(seg_index_arg), box_id(box_id_arg), delta(delta_arg) {}
+    RoutingCostKey()
+        : seg_index(-1)
+        , delta(0, 0) {}
+    RoutingCostKey(int seg_index_arg, ConnectionBoxId box_id_arg, vtr::Point<int> delta_arg)
+        : seg_index(seg_index_arg)
+        , box_id(box_id_arg)
+        , delta(delta_arg) {}
 
     bool operator==(const RoutingCostKey& other) const {
-      return seg_index == other.seg_index && box_id == other.box_id && delta == other.delta;
+        return seg_index == other.seg_index && box_id == other.box_id && delta == other.delta;
     }
 };
 
@@ -37,9 +41,12 @@ struct CompressedRoutingCostKey {
         data = -1;
     }
     CompressedRoutingCostKey(const RoutingCostKey& key) {
-        data = key.seg_index & 0xff; data <<= 8;
-        data |= size_t(key.box_id) & 0xff; data <<= 8;
-        data |= key.delta.x() & 0xff; data <<= 8;
+        data = key.seg_index & 0xff;
+        data <<= 8;
+        data |= size_t(key.box_id) & 0xff;
+        data <<= 8;
+        data |= key.delta.x() & 0xff;
+        data <<= 8;
         data |= key.delta.y() & 0xff;
     }
 
@@ -61,9 +68,12 @@ struct RoutingCost {
 struct HashRoutingCostKey {
     std::size_t operator()(RoutingCostKey const& key) const noexcept {
         uint64_t data;
-        data = key.seg_index & 0xffff; data <<= 16;
-        data |= size_t(key.box_id) & 0xffff; data <<= 16;
-        data |= key.delta.x() & 0xffff; data <<= 16;
+        data = key.seg_index & 0xffff;
+        data <<= 16;
+        data |= size_t(key.box_id) & 0xffff;
+        data <<= 16;
+        data |= key.delta.x() & 0xffff;
+        data <<= 16;
         data |= key.delta.y() & 0xffff;
         return std::hash<uint64_t>{}(data);
     }
