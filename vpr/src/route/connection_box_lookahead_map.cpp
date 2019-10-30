@@ -51,7 +51,8 @@ struct SamplePoint {
     uint64_t order;
     vtr::Point<int> location;
     std::vector<ssize_t> samples;
-    SamplePoint() : location(0, 0) {}
+    SamplePoint()
+        : location(0, 0) {}
 };
 
 struct SampleGrid {
@@ -60,13 +61,16 @@ struct SampleGrid {
 
 template<class K, class V, int N>
 class SimpleCache {
-public:
-    SimpleCache() : pos(0), hits(0), misses(0) {}
+  public:
+    SimpleCache()
+        : pos(0)
+        , hits(0)
+        , misses(0) {}
     bool get(K key, V* value) {
         for (int i = 0; i < N; i++) {
-            auto &k = keys[i];
+            auto& k = keys[i];
             if (k == key) {
-                auto &v = values[i];
+                auto& v = values[i];
 #if 0
                 // preserve the found key by pushing it back
                 int last = (pos + N - 1) % N;
@@ -92,7 +96,8 @@ public:
     float miss_ratio() {
         return misses ? static_cast<float>(misses) / static_cast<float>(hits + misses) : 0.f;
     }
-private:
+
+  private:
     std::array<K, N> keys; // keep keys together for faster scanning
     std::array<V, N> values;
     size_t pos;
@@ -101,9 +106,9 @@ private:
 };
 
 static float run_dijkstra(int start_node_ind,
-                         RoutingCosts* routing_costs,
-                         SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE>* cache,
-                         float max_cost);
+                          RoutingCosts* routing_costs,
+                          SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE>* cache,
+                          float max_cost);
 static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_segment);
 
 // also known as the L1 norm
@@ -165,14 +170,13 @@ Cost_Entry CostMap::find_cost(int from_seg_index, ConnectionBoxId box_id, int de
     return cost_map_[from_seg_index][size_t(box_id)][dx][dy];
 }
 
-static Cost_Entry penalize(const Cost_Entry &entry, int distance, float penalty) {
+static Cost_Entry penalize(const Cost_Entry& entry, int distance, float penalty) {
     return Cost_Entry(entry.delay + distance * penalty * PENALTY_FACTOR,
                       entry.congestion);
 }
 
 // set the cost map for a segment type and connection box type, filling holes
 void CostMap::set_cost_map(const RoutingCosts& costs) {
-
     // calculate the bounding boxes
     vtr::Matrix<vtr::Rect<int>> bounds({seg_count_, box_count_});
     for (const auto& entry : costs) {
@@ -375,7 +379,7 @@ std::pair<Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMatrix<Co
         n++;
 #if defined(FILL_LIMIT)
         if (n > FILL_LIMIT) {
-          break;
+            break;
         }
 #endif
     } while (in_bounds);
@@ -470,7 +474,7 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
  * to that pin is stored to an entry in the routing_cost_map */
 static float run_dijkstra(int start_node_ind,
                           RoutingCosts* routing_costs,
-                          SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE> *cache,
+                          SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE>* cache,
                           float cost_limit) {
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -555,14 +559,10 @@ static float run_dijkstra(int start_node_ind,
                         current_full.delay - parent_entry.delay,
                         current_full.congestion_upstream - parent_entry.congestion_upstream)};
 
-
                 // implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
                 float cost = 0.f;
-                bool in_window = abs(delta.x()) <= DIJKSTRA_CACHE_WINDOW &&
-                                 abs(delta.y()) <= DIJKSTRA_CACHE_WINDOW;
-                if(in_window &&
-                   cache->get(compressed_key, &cost) &&
-                   cost <= val.cost_entry.delay) {
+                bool in_window = abs(delta.x()) <= DIJKSTRA_CACHE_WINDOW && abs(delta.y()) <= DIJKSTRA_CACHE_WINDOW;
+                if (in_window && cache->get(compressed_key, &cost) && cost <= val.cost_entry.delay) {
                     // the sample was not cheaper than the cached sample
                     if (BREAK_ON_MISS) {
                         // don't store the rest of the path
@@ -571,7 +571,7 @@ static float run_dijkstra(int start_node_ind,
                 } else {
                     const auto& x = routing_costs->find(key);
                     if (x != routing_costs->end()) {
-                        if(x->second.cost_entry.delay > val.cost_entry.delay) {
+                        if (x->second.cost_entry.delay > val.cost_entry.delay) {
                             // this sample is cheaper
                             (*routing_costs)[key] = val;
                             if (in_window) {
@@ -639,7 +639,7 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
 
     // sort by VPR coordinate
     std::sort(sample_points.begin(), sample_points.end(),
-              [](const SamplePoint &a, const SamplePoint &b) {
+              [](const SamplePoint& a, const SamplePoint& b) {
                   return a.order < b.order;
               });
 
@@ -656,9 +656,8 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
     tbb::mutex all_costs_mutex;
     tbb::parallel_for_each(sample_points, [&](const SamplePoint& point) {
 #else
-    for (const auto &point : sample_points) {
+    for (const auto& point : sample_points) {
 #endif
-
         float max_cost = 0.f;
         RoutingCosts costs;
         SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE> cache;
@@ -672,7 +671,6 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
 
         VTR_LOG("Expanded sample point (%d, %d) %e miss %g\n",
                 point.location.x(), point.location.y(), max_cost, cache.miss_ratio());
-
 
         // combine the cost map from this run with the final cost maps for each segment
         for (const auto& cost : costs) {
@@ -713,7 +711,7 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
 #if 1
     for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
         VTR_LOG("cost map for %s(%d)\n",
-        segment_inf[iseg].name.c_str(), iseg);
+                segment_inf[iseg].name.c_str(), iseg);
         cost_map_.print(iseg);
     }
 #endif
