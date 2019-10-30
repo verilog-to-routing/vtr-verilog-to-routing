@@ -345,9 +345,11 @@ std::vector<std::pair<int, int>> CostMap::list_empty() const {
     return results;
 }
 
-static void assign_min_entry(util::Cost_Entry& dst, const util::Cost_Entry& src) {
-    if (src.delay < dst.delay) dst.delay = src.delay;
-    if (src.congestion < dst.congestion) dst.congestion = src.congestion;
+static void assign_min_entry(util::Cost_Entry* dst, const util::Cost_Entry& src) {
+    if (src.delay < dst->delay) {
+        dst->delay = src.delay;
+        dst->congestion = src.congestion;
+    }
 }
 
 // find the minimum cost entry from the nearest manhattan distance neighbor
@@ -368,11 +370,11 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
             int yp = cy + oy;
             int yn = cy - oy;
             if (bounds.contains(vtr::Point<int>(x, yp))) {
-                assign_min_entry(entry, matrix[x][yp]);
+                assign_min_entry(&entry, matrix[x][yp]);
                 in_bounds = true;
             }
             if (bounds.contains(vtr::Point<int>(x, yn))) {
-                assign_min_entry(entry, matrix[x][yn]);
+                assign_min_entry(&entry, matrix[x][yn]);
                 in_bounds = true;
             }
         }
@@ -457,7 +459,10 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
     float expected_congestion = cost_entry.congestion;
 
     float expected_cost = criticality_fac * expected_delay + (1.0 - criticality_fac) * expected_congestion;
-    VTR_ASSERT(std::isfinite(expected_cost) && expected_cost >= 0.f);
+    if (!std::isfinite(expected_cost) || expected_cost < 0.f) {
+        VTR_LOG_ERROR("invalid cost for segment %d to connection box %d at (%d, %d)\n", from_seg_index, (int)size_t(box_id), (int)dx, (int)dy);
+        VTR_ASSERT(0);
+    }
     return expected_cost;
 }
 
