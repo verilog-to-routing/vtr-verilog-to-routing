@@ -110,6 +110,16 @@ else()
 endif()
 
 #
+# Build type flags
+#
+
+if(NOT MSVC)
+    # for GCC and Clang
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g3")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3")
+endif()
+
+#
 # Warning flags
 #
 set(WARN_FLAGS "") #The actual warning flags to be applied
