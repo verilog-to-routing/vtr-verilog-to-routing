@@ -95,7 +95,6 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
         }
 
         SECTION("bounds_int") {
-            REQUIRE(r1 == (r3 | r4));
         }
 
     // float tests
