@@ -190,7 +190,27 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 				// Check if the size of this adder is greater than the hard vs soft logic threshold
 					instantiate_hard_adder(node, traverse_number, netlist);
 			}else{
-				instantiate_add_w_carry(node, traverse_number, netlist);
+				//MEHRSHAD//
+				// instantiate_add_w_carry(node, traverse_number, netlist);
+				adders_list = (adder_t **)vtr::realloc (adders_list, sizeof(adder_t*)*(num_of_adders+1));
+				chromosome = (short *)vtr::realloc (chromosome, sizeof(short)*(num_of_adders+1));
+				adders_list[num_of_adders] = (adder_t *)vtr::malloc(sizeof(adder_t));
+
+				//set the variable of the the adder_list array
+				adders_list[num_of_adders]->node = node;
+
+				adders_list[num_of_adders]->input->pins = node->input_pins;
+				adders_list[num_of_adders]->input->count = node->num_input_pins;
+				adders_list[num_of_adders]->input->is_adder = 'y';
+				
+				adders_list[num_of_adders]->output->pins = node->output_pins;
+				adders_list[num_of_adders]->output->count = node->num_output_pins;
+				adders_list[num_of_adders]->output->is_adder = 'y';
+
+				chromosome[num_of_adders] = adders_list[num_of_adders]->type;
+				num_of_adders++;
+				//MEHRSHAD//
+
 			}
 			break;
 		case MINUS:
@@ -202,7 +222,7 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 					if (max_num >= min_add)
 						instantiate_hard_adder_subtraction(node, traverse_number, netlist);
 					else
-						instantiate_add_w_carry(node, traverse_number, netlist);
+						instantiate_add_w_carry(DEFAULT, node, traverse_number, netlist);
 				}
 				else if (node->num_input_port_sizes == 2)
 				{
@@ -621,7 +641,7 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
  *	multi-output logic functions (BLIF).  We use one function for the
  *	add, and one for the carry.
  *------------------------------------------------------------------------*/
-void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
+void instantiate_add_w_carry(short type, nnode_t *node, short mark, netlist_t *netlist)
 {
 		// define locations in array when fetching pins
 	const int out = 0, input_a = 1, input_b = 2, pinout_count = 3;
@@ -638,7 +658,7 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	width[input_a] = node->input_port_sizes[0];
 	width[input_b] = node->input_port_sizes[1];
 
-	instantiate_add_w_carry_block(width, node, mark, netlist, 0);
+	instantiate_add_w_carry_block(type, width, node, mark, netlist, 0);
 
 	vtr::free(width);
 }
@@ -669,7 +689,7 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 		width[input_b] = node->input_port_sizes[1];
 	}
 
-	instantiate_add_w_carry_block(width, node, mark, netlist, 1);
+	instantiate_add_w_carry_block(DEFAULT, width, node, mark, netlist, 1);
 
 	vtr::free(width);
 }
@@ -1170,3 +1190,88 @@ void instantiate_arithmetic_shift_right(nnode_t *node, short mark, netlist_t *ne
 	free_nnode(buf_node);
 	free_nnode(node);
 }
+
+
+//MEHRSHAD//
+/*----------------------------------------------------------------------
+ * (function: partial_map_adders)instantiate_add_w_carry
+ *--------------------------------------------------------------------*/
+void partial_map_adders(short traverse_number, netlist_t *netlist)
+{
+	for (int i=0; i<num_of_adders; i++)
+	{
+		adders_list[i]->type = chromosome[i];
+		instantiate_add_w_carry(adders_list[i]->type, adders_list[i]->node, traverse_number, netlist);
+	}
+}
+
+void destroy_adders()
+{	
+	for (int i=0; i<num_of_adders; i++)
+	{
+		/*---------------------------------------------- 
+		 * create new empty adder with the same pins 
+		 * as the previous main adder (not pins related
+		 *  to nodes in the adder could)
+		 *--------------------------------------------*/
+		adder_t *new_adder = create_empty_adder(adders_list[i]);
+
+		// Free all created small-detailed logic nodes
+		destroy_adder_cloud(adders_list[i]);
+
+		/*---------------------------------------------- 
+		 * Replace the new empty adder instead of 
+		 * previous one in adder list
+		 *--------------------------------------------*/
+		adders_list[i] = new_adder;
+	}
+}
+
+adder_t *create_empty_adder (adder_t *previous_adder)
+{
+	adder_t *new_adder = (adder_t *) vtr::malloc (sizeof(adder_t));
+
+	new_adder->node = (nnode_t *) vtr::malloc(sizeof(nnode_t));
+	// Make copy of input pins
+	new_adder->input->pins = make_copy_of_pins (previous_adder->input->pins, previous_adder->input->count);
+	new_adder->input->count = previous_adder->input->count;
+	new_adder->input->is_adder = previous_adder->input->is_adder;
+	// Make copy of output pins
+	new_adder->output->pins = make_copy_of_pins (previous_adder->output->pins, previous_adder->output->count);
+	new_adder->output->count = previous_adder->output->count;
+	new_adder->output->is_adder = previous_adder->output->is_adder;
+
+	return new_adder;
+}
+
+npin_t** make_copy_of_pins (npin_t **copy, long copy_size)
+{
+	npin_t **paste = (npin_t **) vtr::malloc(sizeof(npin_t *)*copy_size);
+
+	for (int i=0; i<copy_size; i++)
+
+		paste[i] = copy_npin(copy[i]);
+
+	return paste;
+}
+
+void destroy_adder_cloud (adder_t *adder)
+{
+	npin_t *current_pin = (npin_t *) vtr::malloc (sizeof(npin_t));
+
+	for (int i=0; i<adder->input->count; i++)
+	{
+		current_pin = adder->input->pins[i];
+		while (1)
+		{
+			for (int j=0; j<adder->output->count; j++)
+				if (current_pin == adder->output->pins[j])
+					break;
+
+			free_nnode(adder->node);
+		}
+	}
+
+	vtr::free(adder);
+}
+//MEHRSHAD//

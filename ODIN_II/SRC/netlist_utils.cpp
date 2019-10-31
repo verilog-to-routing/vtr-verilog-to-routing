@@ -1429,10 +1429,3 @@ void remove_fanout_pins_from_net(nnet_t *net, npin_t * /*pin*/, int id)
 //  	}
 // }
 // }
-
-
-
-
-
-
-

@@ -1571,7 +1571,7 @@ nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t *previ
  * the first bit is built from an/xor gate, everything between could be anything
  * create a single adder block using adder_type_definition file input to select blk size and type
  *-------------------------------------------------------------------------------------------*/
-void instantiate_add_w_carry_block(int *width, nnode_t *node, short mark, netlist_t *netlist, short subtraction)
+void instantiate_add_w_carry_block(short type, int *width, nnode_t *node, short mark, netlist_t *netlist, short subtraction)
 {
 	//set the default
 	int blk_size 							= width[0];
@@ -1618,55 +1618,60 @@ void instantiate_add_w_carry_block(int *width, nnode_t *node, short mark, netlis
 
 			if(my_type == "soft")
 			{
-				// Ripple Carry Adder
-				if(sub_structure == "default"){
-					//build adder
-					nnode_t *current_adder = make_adder(ADDER_FUNC, NULL, previous_carry, width, i, netlist, node, subtraction, mark);
-					if(construct_last_carry_flag)
-						 previous_carry = make_adder(CARRY_FUNC, current_adder, previous_carry, width, i, netlist, node, subtraction, mark);
-
-					connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
-				}
-				//Carry Select Adder
-				else if(sub_structure == "csla")
+				switch (type)
 				{
-					nnode_t *current_adder_gnd = make_adder(ADDER_FUNC, NULL, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
-					if(construct_last_carry_flag)
-						previous_carry_gnd = make_adder(CARRY_FUNC, current_adder_gnd, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
+					// Ripple Carry Adder
+					case DEFAULT:
+					{
+						//build adder
+						nnode_t *current_adder = make_adder(ADDER_FUNC, NULL, previous_carry, width, i, netlist, node, subtraction, mark);
+						if(construct_last_carry_flag)
+							previous_carry = make_adder(CARRY_FUNC, current_adder, previous_carry, width, i, netlist, node, subtraction, mark);
 
-					nnode_t *current_adder_vcc = make_adder(ADDER_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
-					if(construct_last_carry_flag)
-						previous_carry_vcc = make_adder(CARRY_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
+						connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
+					}
+					//Carry Select Adder
+					case CSLA:
+					{
+						nnode_t *current_adder_gnd = make_adder(ADDER_FUNC, NULL, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
+						if(construct_last_carry_flag)
+							previous_carry_gnd = make_adder(CARRY_FUNC, current_adder_gnd, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
 
-					nnode_t *current_adder = make_mux_2to1(previous_carry, current_adder_vcc, current_adder_gnd, node, mark);
+						nnode_t *current_adder_vcc = make_adder(ADDER_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
+						if(construct_last_carry_flag)
+							previous_carry_vcc = make_adder(CARRY_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
 
-					if(last_pin_on_blk_flag && construct_last_carry_flag)
-						previous_carry = make_mux_2to1(previous_carry, previous_carry_vcc, previous_carry_gnd, node, mark);
+						nnode_t *current_adder = make_mux_2to1(previous_carry, current_adder_vcc, current_adder_gnd, node, mark);
 
-					connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
-				}
-				//binary to excess Carry Select Adder
-				else if(sub_structure == "bec_csla")
-				{
-					nnode_t *current_adder_gnd = make_adder(ADDER_FUNC, NULL, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
-					if(construct_last_carry_flag)
-						 previous_carry_gnd = make_adder(CARRY_FUNC, current_adder_gnd, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
+						if(last_pin_on_blk_flag && construct_last_carry_flag)
+							previous_carry = make_mux_2to1(previous_carry, previous_carry_vcc, previous_carry_gnd, node, mark);
 
-					nnode_t *current_adder_vcc = make_bec(ADDER_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
-					if(construct_last_carry_flag)
-						previous_carry_vcc = make_bec(CARRY_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
+						connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
+					}
+					//binary to excess Carry Select Adder
+					case BEC_CSLA:
+					{
+						nnode_t *current_adder_gnd = make_adder(ADDER_FUNC, NULL, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
+						if(construct_last_carry_flag)
+							previous_carry_gnd = make_adder(CARRY_FUNC, current_adder_gnd, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
 
-					nnode_t *current_adder = make_mux_2to1(previous_carry, current_adder_vcc, current_adder_gnd, node, mark);
+						nnode_t *current_adder_vcc = make_bec(ADDER_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
+						if(construct_last_carry_flag)
+							previous_carry_vcc = make_bec(CARRY_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
 
-					if(last_pin_on_blk_flag && construct_last_carry_flag)
-						previous_carry = make_mux_2to1(previous_carry, previous_carry_vcc, previous_carry_gnd, node, mark);
+						nnode_t *current_adder = make_mux_2to1(previous_carry, current_adder_vcc, current_adder_gnd, node, mark);
 
-					connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
-				}
-				else
-				{
-					error_message(NETLIST_ERROR, -1, -1, "( %s )is not a valid substructure name", sub_structure.c_str());
-					return;
+						if(last_pin_on_blk_flag && construct_last_carry_flag)
+							previous_carry = make_mux_2to1(previous_carry, previous_carry_vcc, previous_carry_gnd, node, mark);
+
+						connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
+					}
+					default:
+					{
+						error_message(NETLIST_ERROR, -1, -1, "( %s )is not a valid substructure name", sub_structure.c_str());
+						return;
+					}
+					
 				}
 			}
 			else // if(my_type == "hard")

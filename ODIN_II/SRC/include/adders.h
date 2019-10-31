@@ -76,7 +76,7 @@ void reallocate_pins(nnode_t *node, nnode_t *next_node);
 void free_op_nodes(nnode_t *node);
 int match_pins(nnode_t *node, nnode_t *next_node);
 
-void instantiate_add_w_carry_block(int *width, nnode_t *node, short mark, netlist_t *netlist, short subtraction);
+void instantiate_add_w_carry_block(short type, int *width, nnode_t *node, short mark, netlist_t *netlist, short subtraction);
 bool is_ast_adder(ast_node_t *node);
 
 #endif // ADDERS_H

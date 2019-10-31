@@ -13,6 +13,9 @@ npin_t* allocate_npin();
 npin_t *get_zero_pin(netlist_t *netlist);
 npin_t *get_pad_pin(netlist_t *netlist);
 npin_t *get_one_pin(netlist_t *netlist);
+//MEHRSHAD//
+static npin_t *copy_npin(npin_t *copy_pin);
+//MEHRSHAD//
 npin_t* copy_input_npin(npin_t* copy_pin);
 npin_t* copy_output_npin(npin_t* copy_pin);
 nnet_t* allocate_nnet();
