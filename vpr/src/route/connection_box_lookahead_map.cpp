@@ -37,7 +37,7 @@
  * NOTE: Currently, only SMALLEST is supported.
  *
  * See e_representative_entry_method */
-#define REPRESENTATIVE_ENTRY_METHOD SMALLEST
+#define REPRESENTATIVE_ENTRY_METHOD util::SMALLEST
 
 #define CONNECTION_BOX_LOOKAHEAD_MAP_PRINT_COST_MAPS
 
@@ -140,7 +140,7 @@ int CostMap::node_to_segment(int from_node_ind) const {
 static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, float penalty) {
     penalty = std::max(penalty, PENALTY_MIN);
     return util::Cost_Entry(entry.delay + distance * penalty * PENALTY_FACTOR,
-                            entry.congestion);
+                            entry.congestion, entry.fill);
 }
 
 // get a cost entry for a segment type, connection box type, and offset
@@ -638,7 +638,7 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
     cost_map_.set_counts(segment_inf.size(),
                          device_ctx.connection_boxes.num_connection_box_types());
 
-    VTR_ASSERT(REPRESENTATIVE_ENTRY_METHOD == SMALLEST);
+    VTR_ASSERT(REPRESENTATIVE_ENTRY_METHOD == util::SMALLEST);
     RoutingCosts all_delay_costs;
     RoutingCosts all_base_costs;
 
