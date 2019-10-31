@@ -49,12 +49,14 @@ class Cost_Entry {
         congestion = std::numeric_limits<float>::infinity();
         fill = false;
     }
-    Cost_Entry(float set_delay, float set_congestion) {
-        delay = set_delay;
-        congestion = set_congestion;
-        fill = false;
-    }
-
+    Cost_Entry(float set_delay, float set_congestion)
+        : delay(set_delay)
+        , congestion(set_congestion)
+        , fill(false) {}
+    Cost_Entry(float set_delay, float set_congestion, bool set_fill)
+        : delay(set_delay)
+        , congestion(set_congestion)
+        , fill(set_fill) {}
     bool valid() const {
         return std::isfinite(delay) && std::isfinite(congestion);
     }
