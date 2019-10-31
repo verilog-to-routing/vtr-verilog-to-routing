@@ -91,10 +91,6 @@ Rect<T>::Rect(Point<U> point)
 }
 
 template<class T>
-Rect<T>::Rect(Point<T> bottom_left_val, T size)
-    : bottom_left_(bottom_left_val)
-    , top_right_(bottom_left_val.x() + size,
-                 bottom_left_val.y() + size) {
     //pass
 }
 
@@ -215,16 +211,6 @@ template<class T>
 Rect<T>& Rect<T>::expand_bounding_box(const Rect<T>& other) {
     *this = bounding_box(*this, other);
     return *this;
-Rect<T> operator|(const Rect<T>& lhs, const Rect<T>& rhs) {
-    return Rect<T>(std::min(lhs.xmin(), rhs.xmin()),
-                   std::min(lhs.ymin(), rhs.ymin()),
-                   std::max(lhs.xmax(), rhs.xmax()),
-                   std::max(lhs.ymax(), rhs.ymax()));
-}
-
-template<class T>
-Rect<T>& operator|=(Rect<T>& lhs, const Rect<T>& rhs) {
-    return lhs = lhs | rhs;
 }
 
 /*
