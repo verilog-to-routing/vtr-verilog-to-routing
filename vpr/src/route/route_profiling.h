@@ -30,6 +30,10 @@ void congestion_analysis();
 void time_on_criticality_analysis();
 void time_on_fanout_analysis();
 
+void conn_start();
+void conn_finish(int src_rr, int sink_rr, float criticality);
+void net_finish();
+
 void profiling_initialization(unsigned max_net_fanout);
 
 } // end namespace profiling
