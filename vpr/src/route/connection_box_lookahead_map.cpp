@@ -11,6 +11,7 @@
 #include "vtr_time.h"
 #include "vtr_geometry.h"
 #include "echo_files.h"
+#include "rr_graph.h"
 
 #include "route_timing.h"
 
@@ -36,7 +37,7 @@
  * NOTE: Currently, only SMALLEST is supported.
  *
  * See e_representative_entry_method */
-#define REPRESENTATIVE_ENTRY_METHOD SMALLEST
+#define REPRESENTATIVE_ENTRY_METHOD util::SMALLEST
 // #define FILL_LIMIT 30
 
 #define CONNECTION_BOX_LOOKAHEAD_MAP_PRINT_COST_MAPS
@@ -166,36 +167,48 @@ int CostMap::node_to_segment(int from_node_ind) const {
 }
 
 // get a cost entry for a segment type, connection box type, and offset
-Cost_Entry CostMap::find_cost(int from_seg_index, ConnectionBoxId box_id, int delta_x, int delta_y) const {
+util::Cost_Entry CostMap::find_cost(int from_seg_index, ConnectionBoxId box_id, int delta_x, int delta_y, int* out_of_bounds_val) const {
     VTR_ASSERT(from_seg_index >= 0 && from_seg_index < (ssize_t)offset_.size());
     const auto& cost_map = cost_map_[from_seg_index][size_t(box_id)];
     if (cost_map.dim_size(0) == 0 || cost_map.dim_size(1) == 0) {
-        return Cost_Entry();
+        return util::Cost_Entry();
     }
 
     int dx = delta_x - offset_[from_seg_index][size_t(box_id)].first;
     int dy = delta_y - offset_[from_seg_index][size_t(box_id)].second;
 
+    int out_of_bounds_distance = 0;
     if (dx < 0) {
+        out_of_bounds_distance += abs(dx);
         dx = 0;
     }
     if (dy < 0) {
+        out_of_bounds_distance += abs(dy);
         dy = 0;
     }
 
     if (dx >= (ssize_t)cost_map.dim_size(0)) {
+        out_of_bounds_distance += abs(int(dx) - int(cost_map.dim_size(0) - 1));
         dx = cost_map.dim_size(0) - 1;
     }
     if (dy >= (ssize_t)cost_map.dim_size(1)) {
+        out_of_bounds_distance += abs(int(dy) - int(cost_map.dim_size(1) - 1));
         dy = cost_map.dim_size(1) - 1;
+    }
+
+    if (out_of_bounds_val != nullptr) {
+        *out_of_bounds_val = out_of_bounds_distance;
     }
 
     return cost_map_[from_seg_index][size_t(box_id)][dx][dy];
 }
 
-static Cost_Entry penalize(const Cost_Entry& entry, int distance, float penalty) {
-    return Cost_Entry(entry.delay + distance * penalty * PENALTY_FACTOR,
-                      entry.congestion);
+static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, float penalty) {
+    auto out = util::Cost_Entry(entry.delay + distance * penalty * PENALTY_FACTOR,
+                                entry.congestion);
+
+    out.fill = entry.fill;
+    return out;
 }
 
 // set the cost map for a segment type and connection box type, filling holes
@@ -213,12 +226,12 @@ void CostMap::set_cost_map(const RoutingCosts& costs) {
             if (seg_box_bounds.empty()) {
                 // Didn't find any sample routes, so routing isn't possible between these segment/connection box types.
                 offset_[seg][box] = std::make_pair(0, 0);
-                cost_map_[seg][box] = vtr::NdMatrix<Cost_Entry, 2>(
+                cost_map_[seg][box] = vtr::NdMatrix<util::Cost_Entry, 2>(
                     {size_t(0), size_t(0)});
                 continue;
             } else {
                 offset_[seg][box] = std::make_pair(seg_box_bounds.xmin(), seg_box_bounds.ymin());
-                cost_map_[seg][box] = vtr::NdMatrix<Cost_Entry, 2>(
+                cost_map_[seg][box] = vtr::NdMatrix<util::Cost_Entry, 2>(
                     {size_t(seg_box_bounds.width()), size_t(seg_box_bounds.height())});
             }
         }
@@ -248,7 +261,7 @@ void CostMap::set_cost_map(const RoutingCosts& costs) {
             vtr::Point<int> min_location(0, 0), max_location(0, 0);
             for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
                 for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
-                    Cost_Entry& cost_entry = matrix[ix][iy];
+                    util::Cost_Entry& cost_entry = matrix[ix][iy];
                     if (cost_entry.valid()) {
                         if (cost_entry.delay < min_delay) {
                             min_delay = cost_entry.delay;
@@ -264,16 +277,16 @@ void CostMap::set_cost_map(const RoutingCosts& costs) {
             float delay_penalty = (max_delay - min_delay) / static_cast<float>(std::max(1, manhattan_distance(max_location, min_location)));
 
             // find missing cost entries and fill them in by copying a nearby cost entry
-            std::vector<std::tuple<unsigned, unsigned, Cost_Entry>> missing;
+            std::vector<std::tuple<unsigned, unsigned, util::Cost_Entry>> missing;
             bool couldnt_fill = false;
             auto shifted_bounds = vtr::Rect<int>(0, 0, seg_box_bounds.width(), seg_box_bounds.height());
             int max_fill = 0;
             for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
                 for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
-                    Cost_Entry& cost_entry = matrix[ix][iy];
+                    util::Cost_Entry& cost_entry = matrix[ix][iy];
                     if (!cost_entry.valid()) {
                         // maximum search radius
-                        Cost_Entry filler;
+                        util::Cost_Entry filler;
                         int distance;
                         std::tie(filler, distance) = get_nearby_cost_entry(matrix, ix, iy, shifted_bounds);
                         if (filler.valid()) {
@@ -372,7 +385,7 @@ std::vector<std::pair<int, int>> CostMap::list_empty() const {
     return results;
 }
 
-static void assign_min_entry(Cost_Entry* dst, const Cost_Entry& src) {
+static void assign_min_entry(util::Cost_Entry* dst, const util::Cost_Entry& src) {
     if (src.delay < dst->delay) {
         dst->delay = src.delay;
         dst->congestion = src.congestion;
@@ -380,14 +393,15 @@ static void assign_min_entry(Cost_Entry* dst, const Cost_Entry& src) {
 }
 
 // find the minimum cost entry from the nearest manhattan distance neighbor
-std::pair<Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMatrix<Cost_Entry, 2>& matrix,
-                                                          int cx,
-                                                          int cy,
-                                                          const vtr::Rect<int>& bounds) {
+std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMatrix<util::Cost_Entry, 2>& matrix,
+                                                                int cx,
+                                                                int cy,
+                                                                const vtr::Rect<int>& bounds) {
     // spiral around (cx, cy) looking for a nearby entry
     int n = 1;
     bool in_bounds;
-    Cost_Entry entry;
+    util::Cost_Entry entry;
+    entry.fill = true;
 
     do {
         in_bounds = false;
@@ -413,7 +427,7 @@ std::pair<Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMatrix<Co
         }
 #endif
     } while (in_bounds);
-    return std::make_pair(Cost_Entry(), n);
+    return std::make_pair(util::Cost_Entry(), n);
 }
 
 // sample on a uniformly spaced grid within a rectangle
@@ -477,7 +491,7 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
     ssize_t dy = ssize_t(from_canonical_loc->second) - ssize_t(box_location.second);
 
     int from_seg_index = cost_map_.node_to_segment(from_node_ind);
-    Cost_Entry cost_entry = cost_map_.find_cost(from_seg_index, box_id, dx, dy);
+    util::Cost_Entry cost_entry = cost_map_.find_cost(from_seg_index, box_id, dx, dy, nullptr);
 
     if (!cost_entry.valid()) {
         // there is no route
@@ -497,6 +511,20 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
         VTR_LOG_ERROR("invalid cost for segment %d to connection box %d at (%d, %d)\n", from_seg_index, (int)size_t(box_id), (int)dx, (int)dy);
         VTR_ASSERT(0);
     }
+
+    VTR_LOGV_DEBUG(f_router_debug, "Requested lookahead from node %d to %d\n", from_node_ind, to_node_ind);
+    const std::string& segment_name = device_ctx.segment_inf[from_seg_index].name;
+    const std::string& box_name = device_ctx.connection_boxes.get_connection_box(box_id)->name;
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead returned %s (%d) to %s (%zu) with distance (%zd, %zd)\n",
+                   segment_name.c_str(), from_seg_index,
+                   box_name.c_str(),
+                   size_t(box_id),
+                   dx, dy);
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead delay: %g\n", expected_delay);
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead congestion: %g\n", expected_congestion);
+    VTR_LOGV_DEBUG(f_router_debug, "Criticality: %g\n", criticality_fac);
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead cost: %g\n", expected_cost);
+
     return expected_cost;
 }
 
@@ -552,7 +580,7 @@ static void add_paths(int start_node_ind,
         RoutingCost val = {
             parent,
             node_ind,
-            Cost_Entry(
+            util::Cost_Entry(
                 current_full.delay - parent_entry.delay,
                 current_full.congestion_upstream - parent_entry.congestion_upstream)};
 
@@ -694,7 +722,7 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
     cost_map_.set_counts(segment_inf.size(),
                          device_ctx.connection_boxes.num_connection_box_types());
 
-    VTR_ASSERT(REPRESENTATIVE_ENTRY_METHOD == SMALLEST);
+    VTR_ASSERT(REPRESENTATIVE_ENTRY_METHOD == util::SMALLEST);
     RoutingCosts all_costs;
 
     /* run Dijkstra's algorithm for each segment type & channel type combination */
@@ -721,6 +749,10 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
 #if defined(VPR_USE_TBB)
         all_costs_mutex.lock();
 #endif
+
+        for (auto node_ind : point.samples) {
+            VTR_LOG("Expanded node %s\n", describe_rr_node(node_ind).c_str());
+        }
 
         VTR_LOG("Expanded sample point (%d, %d) %e miss %g\n",
                 point.location.x(), point.location.y(), max_cost, cache.miss_ratio());
@@ -905,14 +937,15 @@ void ConnectionBoxMapLookahead::write(const std::string& file) const {
     cost_map_.write(file);
 }
 
-static void ToCostEntry(Cost_Entry* out, const VprCostEntry::Reader& in) {
+static void ToCostEntry(util::Cost_Entry* out, const VprCostEntry::Reader& in) {
     out->delay = in.getDelay();
     out->congestion = in.getCongestion();
 }
 
-static void FromCostEntry(VprCostEntry::Builder* out, const Cost_Entry& in) {
+static void FromCostEntry(VprCostEntry::Builder* out, const util::Cost_Entry& in) {
     out->setDelay(in.delay);
     out->setCongestion(in.congestion);
+    out->setFill(in.fill);
 }
 
 static void ToVprVector2D(std::pair<int, int>* out, const VprVector2D::Reader& in) {
@@ -924,15 +957,15 @@ static void FromVprVector2D(VprVector2D::Builder* out, const std::pair<int, int>
     out->setY(in.second);
 }
 
-static void ToMatrixCostEntry(vtr::NdMatrix<Cost_Entry, 2>* out,
+static void ToMatrixCostEntry(vtr::NdMatrix<util::Cost_Entry, 2>* out,
                               const Matrix<VprCostEntry>::Reader& in) {
-    ToNdMatrix<2, VprCostEntry, Cost_Entry>(out, in, ToCostEntry);
+    ToNdMatrix<2, VprCostEntry, util::Cost_Entry>(out, in, ToCostEntry);
 }
 
 static void FromMatrixCostEntry(
     Matrix<VprCostEntry>::Builder* out,
-    const vtr::NdMatrix<Cost_Entry, 2>& in) {
-    FromNdMatrix<2, VprCostEntry, Cost_Entry>(
+    const vtr::NdMatrix<util::Cost_Entry, 2>& in) {
+    FromNdMatrix<2, VprCostEntry, util::Cost_Entry>(
         out, in, FromCostEntry);
 }
 
@@ -963,7 +996,7 @@ void CostMap::read(const std::string& file) {
 
     {
         const auto& cost_maps = cost_map.getCostMap();
-        ToNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<Cost_Entry, 2>>(
+        ToNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<util::Cost_Entry, 2>>(
             &cost_map_, cost_maps, ToMatrixCostEntry);
     }
 }
@@ -988,7 +1021,7 @@ void CostMap::write(const std::string& file) const {
 
     {
         auto cost_maps = cost_map.initCostMap();
-        FromNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<Cost_Entry, 2>>(
+        FromNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<util::Cost_Entry, 2>>(
             &cost_maps, cost_map_, FromMatrixCostEntry);
     }
 
