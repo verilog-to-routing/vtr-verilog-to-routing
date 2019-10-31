@@ -22,6 +22,8 @@
 #include <unordered_map>
 #include "vpr_types.h"
 
+namespace util {
+
 /* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
  * representative entry, this enum is passed-in to specify how that representative entry should be
  * calculated */
@@ -39,14 +41,17 @@ class Cost_Entry {
   public:
     float delay;
     float congestion;
+    bool fill;
 
     Cost_Entry() {
         delay = std::numeric_limits<float>::infinity();
         congestion = std::numeric_limits<float>::infinity();
+        fill = false;
     }
     Cost_Entry(float set_delay, float set_congestion) {
         delay = set_delay;
         congestion = set_congestion;
+        fill = false;
     }
 
     bool valid() const {
@@ -116,7 +121,6 @@ class Expansion_Cost_Entry {
     }
 };
 
-namespace util {
 /* a class that represents an entry in the Dijkstra expansion priority queue */
 class PQ_Entry {
   public:

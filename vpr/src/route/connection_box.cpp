@@ -15,7 +15,7 @@ std::pair<size_t, size_t> ConnectionBoxes::connection_box_grid_size() const {
 }
 
 const ConnectionBox* ConnectionBoxes::get_connection_box(ConnectionBoxId box) const {
-    if (bool(box)) {
+    if (!bool(box)) {
         return nullptr;
     }
 
