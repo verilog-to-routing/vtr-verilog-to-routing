@@ -81,6 +81,10 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
         SECTION("bounds_int") {
             REQUIRE(r1 == bounding_box(r3, r4));
         }
+
+        SECTION("empty_int") {
+            REQUIRE(vtr::Rect<int>().empty());
+        }
     }
 
     // float tests
@@ -143,6 +147,10 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
 
         SECTION("bounds_float") {
             REQUIRE(r3 == bounding_box(r5, r6));
+        }
+
+        SECTION("empty_float") {
+            REQUIRE(vtr::Rect<float>().empty());
         }
     }
 }
