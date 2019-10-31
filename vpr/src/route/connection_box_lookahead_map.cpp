@@ -141,7 +141,7 @@ int CostMap::node_to_segment(int from_node_ind) const {
 static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, float penalty) {
     penalty = std::max(penalty, PENALTY_MIN);
     return util::Cost_Entry(entry.delay + distance * penalty * PENALTY_FACTOR,
-                            entry.congestion);
+                            entry.congestion, entry.fill);
 }
 
 // get a cost entry for a segment type, connection box type, and offset

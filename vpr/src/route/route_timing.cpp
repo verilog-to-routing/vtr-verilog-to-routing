@@ -1076,6 +1076,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
             conn_delay_budget.short_path_criticality = budgeting_inf.get_crit_short_path(net_id, target_pin);
         }
 
+        profiling::conn_start();
+
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(router,
                                       net_id,
@@ -1089,10 +1091,15 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       router_stats))
             return false;
 
+        profiling::conn_finish(route_ctx.net_rr_terminals[net_id][0],
+                               sink_rr,
+                               pin_criticality[target_pin]);
+
         ++router_stats.connections_routed;
     } // finished all sinks
 
     ++router_stats.nets_routed;
+    profiling::net_finish();
 
     /* For later timing analysis. */
 
