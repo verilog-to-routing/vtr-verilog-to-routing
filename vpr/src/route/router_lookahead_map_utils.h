@@ -23,6 +23,8 @@
 #include "vpr_types.h"
 #include "rr_node.h"
 
+namespace util {
+
 /* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
  * representative entry, this enum is passed-in to specify how that representative entry should be
  * calculated */
@@ -34,7 +36,6 @@ enum e_representative_entry_method {
     MEDIAN
 };
 
-namespace util {
 /* f_cost_map is an array of these cost entries that specifies delay/congestion estimates
  * to travel relative x/y distances */
 class Cost_Entry {
@@ -48,12 +49,14 @@ class Cost_Entry {
         congestion = std::numeric_limits<float>::infinity();
         fill = false;
     }
-    Cost_Entry(float set_delay, float set_congestion) {
-        delay = set_delay;
-        congestion = set_congestion;
-        fill = false;
-    }
-
+    Cost_Entry(float set_delay, float set_congestion)
+        : delay(set_delay)
+        , congestion(set_congestion)
+        , fill(false) {}
+    Cost_Entry(float set_delay, float set_congestion, bool set_fill)
+        : delay(set_delay)
+        , congestion(set_congestion)
+        , fill(set_fill) {}
     bool valid() const {
         return std::isfinite(delay) && std::isfinite(congestion);
     }

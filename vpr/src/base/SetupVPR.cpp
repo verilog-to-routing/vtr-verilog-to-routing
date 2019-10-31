@@ -160,6 +160,7 @@ void SetupVPR(const t_options* Options,
     }
 
     Segments = Arch->Segments;
+    device_ctx.segment_inf = Arch->Segments;
 
     SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
     SetupRoutingArch(*Arch, RoutingArch);
