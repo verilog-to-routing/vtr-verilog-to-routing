@@ -17,6 +17,9 @@ npin_t* copy_input_npin(npin_t* copy_pin);
 npin_t* copy_output_npin(npin_t* copy_pin);
 nnet_t* allocate_nnet();
 nnode_t* free_nnode(nnode_t *to_free);
+//MEHRSHAD//
+nnode_t* free_nnode_KEEP_PINS(nnode_t *to_free);
+//MEHRSHAD//
 npin_t* free_npin(npin_t *to_free);
 nnet_t* free_nnet(nnet_t* to_free);
 

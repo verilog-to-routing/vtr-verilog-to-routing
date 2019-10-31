@@ -245,7 +245,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 	/* soft map the adders if they need to be mapped */
 	for (i = 0; i < multiplicand_width - 1; i++)
 	{
-        instantiate_add_w_carry(adders_for_partial_products[i], mark, netlist);
+        instantiate_add_w_carry(DEFAULT, adders_for_partial_products[i], mark, netlist);
 	}
 
 	/* Cleanup everything */
