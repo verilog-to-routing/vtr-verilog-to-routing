@@ -1206,25 +1206,53 @@ void partial_map_adders(short traverse_number, netlist_t *netlist)
 }
 
 void destroy_adders()
-{
-	adder_t * create_empty_element_with_specified_pins = (adder_t *) vtr::malloc (sizeof(adder_t));
-	
+{	
 	for (int i=0; i<num_of_adders; i++)
 	{
-		create_empty_element_with_specified_pins->node = (nnode_t *) vtr::malloc(sizeof(nnode_t));
+		/*---------------------------------------------- 
+		 * create new empty adder with the same pins 
+		 * as the previous main adder (not pins related
+		 *  to nodes in the adder could)
+		 *--------------------------------------------*/
+		adder_t *new_adder = create_empty_adder(adders_list[i]);
 
-		create_empty_element_with_specified_pins->input->pins = adders_list[i]->input->pins;
-		create_empty_element_with_specified_pins->input->count = adders_list[i]->input->count;
-		create_empty_element_with_specified_pins->input->is_adder = adders_list[i]->input->is_adder;
-
-		create_empty_element_with_specified_pins->output->pins = adders_list[i]->output->pins;
-		create_empty_element_with_specified_pins->output->count = adders_list[i]->output->count;
-		create_empty_element_with_specified_pins->output->is_adder = adders_list[i]->output->is_adder;
-
+		// Free all created small-detailed logic nodes
 		destroy_adder_cloud(adders_list[i]);
 
-		adders_list[i] = create_empty_element_with_specified_pins;
+		/*---------------------------------------------- 
+		 * Replace the new empty adder instead of 
+		 * previous one in adder list
+		 *--------------------------------------------*/
+		adders_list[i] = new_adder;
 	}
+}
+
+adder_t *create_empty_adder (adder_t *previous_adder)
+{
+	adder_t *new_adder = (adder_t *) vtr::malloc (sizeof(adder_t));
+
+	new_adder->node = (nnode_t *) vtr::malloc(sizeof(nnode_t));
+	// Make copy of input pins
+	new_adder->input->pins = make_copy_of_pins (previous_adder->input->pins, previous_adder->input->count);
+	new_adder->input->count = previous_adder->input->count;
+	new_adder->input->is_adder = previous_adder->input->is_adder;
+	// Make copy of output pins
+	new_adder->output->pins = make_copy_of_pins (previous_adder->output->pins, previous_adder->output->count);
+	new_adder->output->count = previous_adder->output->count;
+	new_adder->output->is_adder = previous_adder->output->is_adder;
+
+	return new_adder;
+}
+
+npin_t** make_copy_of_pins (npin_t **copy, long copy_size)
+{
+	npin_t **paste = (npin_t **) vtr::malloc(sizeof(npin_t *)*copy_size);
+
+	for (int i=0; i<copy_size; i++)
+
+		paste[i] = copy_npin(copy[i]);
+
+	return paste;
 }
 
 void destroy_adder_cloud (adder_t *adder)
@@ -1240,11 +1268,10 @@ void destroy_adder_cloud (adder_t *adder)
 				if (current_pin == adder->output->pins[j])
 					break;
 
-			free_nnode_KEEP_PINS(adder->node);
+			free_nnode(adder->node);
 		}
 	}
 
 	vtr::free(adder);
 }
-
 //MEHRSHAD//

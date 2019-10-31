@@ -50,6 +50,8 @@ long num_of_adders = 0;
 void partial_map_adders(short traverse_number, netlist_t *netlist);
 void destroy_adders();
 void destroy_adder_cloud (adder_t *adder);
+npin_t** make_copy_of_pins (npin_t **copy, long copy_size);
+adder_t *create_empty_adder (adder_t *previous_adder);
 //MEHRSHAD//
 
 // PROTOTYPES
