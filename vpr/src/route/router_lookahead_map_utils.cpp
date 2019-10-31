@@ -98,8 +98,8 @@ util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
 }
 
 /* returns cost entry with the smallest delay */
-Cost_Entry Expansion_Cost_Entry::get_smallest_entry() const {
-    Cost_Entry smallest_entry;
+util::Cost_Entry util::Expansion_Cost_Entry::get_smallest_entry() const {
+    util::Cost_Entry smallest_entry;
 
     for (auto entry : this->cost_vector) {
         if (!smallest_entry.valid() || entry.delay < smallest_entry.delay) {
@@ -111,7 +111,7 @@ Cost_Entry Expansion_Cost_Entry::get_smallest_entry() const {
 }
 
 /* returns a cost entry that represents the average of all the recorded entries */
-Cost_Entry Expansion_Cost_Entry::get_average_entry() const {
+util::Cost_Entry util::Expansion_Cost_Entry::get_average_entry() const {
     float avg_delay = 0;
     float avg_congestion = 0;
 
@@ -123,11 +123,11 @@ Cost_Entry Expansion_Cost_Entry::get_average_entry() const {
     avg_delay /= (float)this->cost_vector.size();
     avg_congestion /= (float)this->cost_vector.size();
 
-    return Cost_Entry(avg_delay, avg_congestion);
+    return util::Cost_Entry(avg_delay, avg_congestion);
 }
 
 /* returns a cost entry that represents the geomean of all the recorded entries */
-Cost_Entry Expansion_Cost_Entry::get_geomean_entry() const {
+util::Cost_Entry util::Expansion_Cost_Entry::get_geomean_entry() const {
     float geomean_delay = 0;
     float geomean_cong = 0;
     for (auto cost_entry : this->cost_vector) {
@@ -138,19 +138,19 @@ Cost_Entry Expansion_Cost_Entry::get_geomean_entry() const {
     geomean_delay = exp(geomean_delay / (float)this->cost_vector.size());
     geomean_cong = exp(geomean_cong / (float)this->cost_vector.size());
 
-    return Cost_Entry(geomean_delay, geomean_cong);
+    return util::Cost_Entry(geomean_delay, geomean_cong);
 }
 
 /* returns a cost entry that represents the medial of all recorded entries */
-Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
+util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
     /* find median by binning the delays of all entries and then chosing the bin
      * with the largest number of entries */
 
     int num_bins = 10;
 
     /* find entries with smallest and largest delays */
-    Cost_Entry min_del_entry;
-    Cost_Entry max_del_entry;
+    util::Cost_Entry min_del_entry;
+    util::Cost_Entry max_del_entry;
     for (auto entry : this->cost_vector) {
         if (!min_del_entry.valid() || entry.delay < min_del_entry.delay) {
             min_del_entry = entry;
@@ -165,7 +165,7 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
     float bin_size = delay_diff / (float)num_bins;
 
     /* sort the cost entries into bins */
-    std::vector<std::vector<Cost_Entry>> entry_bins(num_bins, std::vector<Cost_Entry>());
+    std::vector<std::vector<util::Cost_Entry>> entry_bins(num_bins, std::vector<util::Cost_Entry>());
     for (auto entry : this->cost_vector) {
         float bin_num = floor((entry.delay - min_del_entry.delay) / bin_size);
 
@@ -188,7 +188,7 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
     }
 
     /* get the representative delay of the largest bin */
-    Cost_Entry representative_entry = entry_bins[largest_bin][0];
+    util::Cost_Entry representative_entry = entry_bins[largest_bin][0];
 
     return representative_entry;
 }
