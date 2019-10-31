@@ -61,7 +61,7 @@ struct RoutingCost {
     int from_node, to_node;
 
     // cost entry for the route
-    Cost_Entry cost_entry;
+    util::Cost_Entry cost_entry;
 };
 
 // hash implementation for RoutingCostKey
@@ -87,16 +87,16 @@ class CostMap {
   public:
     void set_counts(size_t seg_count, size_t box_count);
     int node_to_segment(int from_node_ind) const;
-    Cost_Entry find_cost(int from_seg_index, ConnectionBoxId box_id, int delta_x, int delta_y) const;
+    util::Cost_Entry find_cost(int from_seg_index, ConnectionBoxId box_id, int delta_x, int delta_y, int* out_of_bounds_val) const;
     void set_cost_map(const RoutingCosts& costs);
-    std::pair<Cost_Entry, int> get_nearby_cost_entry(const vtr::NdMatrix<Cost_Entry, 2>& matrix, int cx, int cy, const vtr::Rect<int>& bounds);
+    std::pair<util::Cost_Entry, int> get_nearby_cost_entry(const vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int cx, int cy, const vtr::Rect<int>& bounds);
     void read(const std::string& file);
     void write(const std::string& file) const;
     void print(int iseg) const;
     std::vector<std::pair<int, int>> list_empty() const;
 
   private:
-    vtr::NdMatrix<vtr::NdMatrix<Cost_Entry, 2>, 2> cost_map_;
+    vtr::NdMatrix<vtr::NdMatrix<util::Cost_Entry, 2>, 2> cost_map_;
     vtr::NdMatrix<std::pair<int, int>, 2> offset_;
     std::vector<int> segment_map_;
     size_t seg_count_;
