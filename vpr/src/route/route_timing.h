@@ -13,6 +13,8 @@
 #include "connection_router_interface.h"
 #include "heap_type.h"
 
+extern bool f_router_debug;
+
 int get_max_pins_per_net();
 
 bool try_timing_driven_route(const t_router_opts& router_opts,
