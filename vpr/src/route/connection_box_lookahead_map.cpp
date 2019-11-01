@@ -140,12 +140,29 @@ static int manhattan_distance(const vtr::Point<int>& a, const vtr::Point<int>& b
     return abs(b.x() - a.x()) + abs(b.y() - a.y());
 }
 
+template<class T>
+constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
+    return std::min(std::max(v, lo), hi);
+}
+
+template<typename T>
+static vtr::Point<T> closest_point_in_rect(const vtr::Rect<T>& r, const vtr::Point<T>& p) {
+    if (r.empty()) {
+        return vtr::Point<T>(0, 0);
+    } else {
+        return vtr::Point<T>(clamp<T>(p.x(), r.xmin(), r.xmax() - 1),
+                             clamp<T>(p.y(), r.ymin(), r.ymax() - 1));
+    }
+}
+
 // resize internal data structures
 void CostMap::set_counts(size_t seg_count, size_t box_count) {
     cost_map_.clear();
     offset_.clear();
+    penalty_.clear();
     cost_map_.resize({seg_count, box_count});
     offset_.resize({seg_count, box_count});
+    penalty_.resize({seg_count, box_count});
     seg_count_ = seg_count;
     box_count_ = box_count;
 
@@ -166,6 +183,11 @@ int CostMap::node_to_segment(int from_node_ind) const {
     return segment_map_[from_node_ind];
 }
 
+static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, float penalty) {
+    return util::Cost_Entry(entry.delay + distance * penalty * PENALTY_FACTOR,
+                            entry.congestion);
+}
+
 // get a cost entry for a segment type, connection box type, and offset
 util::Cost_Entry CostMap::find_cost(int from_seg_index, ConnectionBoxId box_id, int delta_x, int delta_y) const {
     VTR_ASSERT(from_seg_index >= 0 && from_seg_index < (ssize_t)offset_.size());
@@ -174,29 +196,14 @@ util::Cost_Entry CostMap::find_cost(int from_seg_index, ConnectionBoxId box_id, 
         return util::Cost_Entry();
     }
 
-    int dx = delta_x - offset_[from_seg_index][size_t(box_id)].first;
-    int dy = delta_y - offset_[from_seg_index][size_t(box_id)].second;
-
-    if (dx < 0) {
-        dx = 0;
-    }
-    if (dy < 0) {
-        dy = 0;
-    }
-
-    if (dx >= (ssize_t)cost_map.dim_size(0)) {
-        dx = cost_map.dim_size(0) - 1;
-    }
-    if (dy >= (ssize_t)cost_map.dim_size(1)) {
-        dy = cost_map.dim_size(1) - 1;
-    }
-
-    return cost_map_[from_seg_index][size_t(box_id)][dx][dy];
-}
-
-static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, float penalty) {
-    return util::Cost_Entry(entry.delay + distance * penalty * PENALTY_FACTOR,
-                            entry.congestion);
+    vtr::Point<int> coord(delta_x - offset_[from_seg_index][size_t(box_id)].first,
+                          delta_y - offset_[from_seg_index][size_t(box_id)].second);
+    vtr::Rect<int> bounds(0, 0, cost_map.dim_size(0), cost_map.dim_size(1));
+    auto closest = closest_point_in_rect(bounds, coord);
+    auto cost = cost_map_[from_seg_index][size_t(box_id)][closest.x()][closest.y()];
+    float penalty = penalty_[from_seg_index][size_t(box_id)];
+    auto distance = manhattan_distance(closest, coord);
+    return penalize(cost, distance, penalty);
 }
 
 // set the cost map for a segment type and connection box type, filling holes
@@ -263,6 +270,7 @@ void CostMap::set_cost_map(const RoutingCosts& costs) {
                 }
             }
             float delay_penalty = (max_delay - min_delay) / static_cast<float>(std::max(1, manhattan_distance(max_location, min_location)));
+            penalty_[seg][box] = delay_penalty;
 
             // find missing cost entries and fill them in by copying a nearby cost entry
             std::vector<std::tuple<unsigned, unsigned, util::Cost_Entry>> missing;
