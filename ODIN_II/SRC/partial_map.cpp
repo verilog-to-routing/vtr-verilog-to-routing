@@ -1276,4 +1276,73 @@ void destroy_adder_cloud (adder_t *adder)
 
 	vtr::free(adder);
 }
+
+/*--------------------------------------------------------------------- 
+* This function creates a new generation. It changes the values of the 
+* genes by doing mutation. In each generation, except of the first one,
+* the parent of the next generation will be the fittest chromosome in 
+* the previous generation.
+*--------------------------------------------------------------------*/
+generation_t* create_generation (generation_t *previous_generation, int generation_counter)
+{
+	// Initialization the structure of new generation
+	generation_t *new_generation = (generation_t *) vtr::malloc (sizeof(generation_t));
+	// Initilization of chromosomes in new generation
+	new_generation->fittest = (short *) vtr::malloc(sizeof(short)*num_of_adders);
+	new_generation->chromosomes = (short **) vtr::malloc(sizeof(short*)*CHILDREN_NUM+1);
+	for (int i=0; i<CHILDREN_NUM+1; i++)
+		new_generation->chromosomes[i] = (short *) vtr::malloc (sizeof(short)*num_of_adders);
+	
+	// Here the value setting of the new generation chromosomes will occur
+	// The first chromosome of each generation is the parent
+	if (generation_counter == 0)
+	{
+		// Considering the parent of the first generation as the chromosome which is produced by the first traverse
+		new_generation->chromosomes[0] = chromosome;
+		new_generation->fitnesses[0] = chromosome_fitness;
+	}
+	else
+	{
+		new_generation->chromosomes[0] = previous_generation->fittest;
+		new_generation->fitnesses[0] = -1;
+	}
+
+	for (int i=1; i<CHILDREN_NUM+1; i++)
+	{
+		// The children of each generation will be mutated with their parent chromosome
+		new_generation->chromosomes[i] = mutate (new_generation->chromosomes[0]);
+		new_generation->fitnesses[i] = -1;
+	}
+
+	return new_generation;
+}
+
+/*--------------------------------------------------------------------- 
+* This function changes the value of the genes in the given chromosome.
+* Based on the specified mutation rate, it finds the position of genes 
+* which should be mutated randomly, and after that, it changes their 
+* values through rand function.
+*--------------------------------------------------------------------*/
+short *mutate (short *parent)
+{
+	short *new_chromosome = (short*) vtr::malloc (sizeof(short)*num_of_adders);
+	// Find a point and flip the chromosome from there
+	int cross_point = rand()%num_of_adders;
+	// Find points based on the mutation rate and change their values randomly
+	int mutation_rate = 0.05;
+	int num_of_genes_will_be_changed = mutation_rate*num_of_adders;
+
+	for (int i=0; i<num_of_adders; i++)
+		new_chromosome[i] = parent[i];
+
+	while (num_of_genes_will_be_changed != 0)
+	{
+		int point = rand()%num_of_adders;
+		new_chromosome[point] = rand()%3;
+
+		num_of_genes_will_be_changed--;
+	}
+	
+	return new_chromosome;
+}
 //MEHRSHAD//

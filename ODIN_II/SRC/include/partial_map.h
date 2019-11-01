@@ -32,6 +32,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define CSLA     1
 #define BEC_CSLA 2
 
+#define CHILDREN_NUM 5
+
+struct generation_t {
+
+    short **chromosomes;
+    short *fittest;
+    int   *fitnesses;
+};
+
 struct adder_t {
 
     short type = DEFAULT;
@@ -44,6 +53,8 @@ struct adder_t {
 
 adder_t **adders_list;
 short *chromosome;
+int chromosome_fitness;
+
 
 long num_of_adders = 0;
 
@@ -52,6 +63,9 @@ void destroy_adders();
 void destroy_adder_cloud (adder_t *adder);
 npin_t** make_copy_of_pins (npin_t **copy, long copy_size);
 adder_t *create_empty_adder (adder_t *previous_adder);
+generation_t* create_generation (generation_t *previous_generation, int generation_counter);
+short *mutate (short *parent);
+
 //MEHRSHAD//
 
 // PROTOTYPES
