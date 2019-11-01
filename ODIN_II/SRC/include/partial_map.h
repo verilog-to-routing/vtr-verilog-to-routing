@@ -52,8 +52,9 @@ struct adder_t {
 };
 
 adder_t **adders_list;
-short* chromosome;
+short *chromosome;
 int chromosome_fitness;
+
 
 long num_of_adders = 0;
 
