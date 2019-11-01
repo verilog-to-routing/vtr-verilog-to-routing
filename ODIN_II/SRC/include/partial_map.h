@@ -32,6 +32,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define CSLA     1
 #define BEC_CSLA 2
 
+#define CHILDREN_NUM 5
+
+struct generation_t {
+
+    short **chromosomes;
+    short *fittest;
+    int   *fitnesses;
+};
+
 struct adder_t {
 
     short type = DEFAULT;
@@ -44,6 +53,7 @@ struct adder_t {
 
 adder_t **adders_list;
 short* chromosome;
+int chromosome_fitness;
 
 long num_of_adders = 0;
 
