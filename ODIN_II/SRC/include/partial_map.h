@@ -43,7 +43,7 @@ struct adder_t {
 };
 
 adder_t **adders_list;
-short* chromosome;
+short *chromosome;
 
 long num_of_adders = 0;
 

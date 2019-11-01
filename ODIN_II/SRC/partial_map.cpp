@@ -1194,7 +1194,9 @@ void instantiate_arithmetic_shift_right(nnode_t *node, short mark, netlist_t *ne
 
 //MEHRSHAD//
 /*----------------------------------------------------------------------
- * (function: partial_map_adders)instantiate_add_w_carry
+ * (function: partial_map_adders) This function employ the new type of 
+ * adders into the adder list and after that, it instantiates adders and 
+ * shrinks them into logics
  *--------------------------------------------------------------------*/
 void partial_map_adders(short traverse_number, netlist_t *netlist)
 {
