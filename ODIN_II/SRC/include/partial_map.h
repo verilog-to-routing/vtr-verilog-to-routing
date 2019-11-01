@@ -62,6 +62,9 @@ void destroy_adders();
 void destroy_adder_cloud (adder_t *adder);
 npin_t** make_copy_of_pins (npin_t **copy, long copy_size);
 adder_t *create_empty_adder (adder_t *previous_adder);
+generation_t* create_generation (generation_t *previous_generation, int generation_counter);
+short *mutate (short *parent);
+
 //MEHRSHAD//
 
 // PROTOTYPES
