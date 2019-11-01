@@ -96,8 +96,9 @@ class CostMap {
     std::vector<std::pair<int, int>> list_empty() const;
 
   private:
-    vtr::NdMatrix<vtr::NdMatrix<util::Cost_Entry, 2>, 2> cost_map_;
-    vtr::NdMatrix<std::pair<int, int>, 2> offset_;
+    vtr::Matrix<vtr::Matrix<util::Cost_Entry>> cost_map_;
+    vtr::Matrix<std::pair<int, int>> offset_;
+    vtr::Matrix<float> penalty_;
     std::vector<int> segment_map_;
     size_t seg_count_;
     size_t box_count_;
