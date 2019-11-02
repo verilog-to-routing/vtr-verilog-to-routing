@@ -245,6 +245,7 @@ void CostMap::set_cost_map(const RoutingCosts& costs) {
     // fill the holes
     for (size_t seg = 0; seg < seg_count_; seg++) {
         for (size_t box = 0; box < box_count_; box++) {
+            penalty_[seg][box] = std::numeric_limits<float>::infinity();
             const auto& seg_box_bounds = bounds[seg][box];
             if (seg_box_bounds.empty()) {
                 continue;
@@ -252,7 +253,7 @@ void CostMap::set_cost_map(const RoutingCosts& costs) {
             auto& matrix = cost_map_[seg][box];
 
             // calculate delay penalty
-            float min_delay = 0.f, max_delay = 0.f;
+            float min_delay = std::numeric_limits<float>::infinity(), max_delay = 0.f;
             vtr::Point<int> min_location(0, 0), max_location(0, 0);
             for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
                 for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
@@ -937,6 +938,16 @@ static void FromMatrixCostEntry(
         out, in, FromCostEntry);
 }
 
+static void ToFloat(float* out, const VprFloatEntry::Reader& in) {
+    // Getting a scalar field is always "get<field name>()".
+    *out = in.getValue();
+}
+
+static void FromFloat(VprFloatEntry::Builder* out, const float& in) {
+    // Setting a scalar field is always "set<field name>(value)".
+    out->setValue(in);
+}
+
 void CostMap::read(const std::string& file) {
     MmapFile f(file);
 
@@ -965,6 +976,12 @@ void CostMap::read(const std::string& file) {
         ToNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<util::Cost_Entry, 2>>(
             &cost_map_, cost_maps, ToMatrixCostEntry);
     }
+
+    {
+        const auto& penalty = cost_map.getPenalty();
+        ToNdMatrix<2, VprFloatEntry, float>(
+            &penalty_, penalty, ToFloat);
+    }
 }
 
 void CostMap::write(const std::string& file) const {
@@ -989,6 +1006,12 @@ void CostMap::write(const std::string& file) const {
         auto cost_maps = cost_map.initCostMap();
         FromNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<util::Cost_Entry, 2>>(
             &cost_maps, cost_map_, FromMatrixCostEntry);
+    }
+
+    {
+        auto penalty = cost_map.initPenalty();
+        FromNdMatrix<2, VprFloatEntry, float>(
+            &penalty, penalty_, FromFloat);
     }
 
     writeMessageToFile(file, &builder);
