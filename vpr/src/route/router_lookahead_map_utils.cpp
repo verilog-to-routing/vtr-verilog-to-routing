@@ -4,10 +4,12 @@
 #include "vpr_context.h"
 #include "vtr_math.h"
 
+namespace util {
+
 /* Number of CLBs I think the average conn. goes. */
 static const int CLB_DIST = 3;
 
-util::PQ_Entry::PQ_Entry(
+PQ_Entry::PQ_Entry(
     int set_rr_node_ind,
     int switch_ind,
     float parent_delay,
@@ -59,7 +61,7 @@ util::PQ_Entry::PQ_Entry(
     this->cost = this->delay;
 }
 
-util::PQ_Entry_Lite::PQ_Entry_Lite(
+PQ_Entry_Lite::PQ_Entry_Lite(
     int set_rr_node_ind,
     int switch_ind,
     float parent_delay,
@@ -181,6 +183,8 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
 
     return representative_entry;
 }
+
+} // namespace util
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 void expand_dijkstra_neighbours(util::PQ_Entry_Lite parent_entry,
