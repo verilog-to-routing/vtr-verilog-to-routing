@@ -33,6 +33,7 @@ enum e_representative_entry_method {
     MEDIAN
 };
 
+namespace util {
 /* f_cost_map is an array of these cost entries that specifies delay/congestion estimates
  * to travel relative x/y distances */
 class Cost_Entry {
@@ -116,7 +117,6 @@ class Expansion_Cost_Entry {
     }
 };
 
-namespace util {
 /* a class that represents an entry in the Dijkstra expansion priority queue */
 class PQ_Entry {
   public:
