@@ -174,6 +174,13 @@ Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs) {
                    std::max(lhs.ymax(), rhs.ymax()));
 }
 
+template<typename T, typename std::enable_if<std::is_integral<T>::value>::type...>
+Point<T> sample(const vtr::Rect<T>& r, T x, T y, T d) {
+    VTR_ASSERT(d > 0);
+    return Point<T>((r.xmin() * (d - x) + r.xmax() * x + d / 2) / d,
+                    (r.ymin() * (d - y) + r.ymax() * y + d / 2) / d);
+}
+
 template<class T>
 void Rect<T>::set_xmin(T xmin_val) {
     bottom_left_.set_x(xmin_val);
