@@ -13,7 +13,8 @@ util::PQ_Entry::PQ_Entry(
     float parent_delay,
     float parent_R_upstream,
     float parent_congestion_upstream,
-    bool starting_node) {
+    bool starting_node,
+    float Tsw_adjust) {
     this->rr_node_ind = set_rr_node_ind;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -24,6 +25,8 @@ util::PQ_Entry::PQ_Entry(
         int cost_index = device_ctx.rr_nodes[set_rr_node_ind].cost_index();
 
         float Tsw = device_ctx.rr_switch_inf[switch_ind].Tdel;
+        Tsw += Tsw_adjust;
+        VTR_ASSERT(Tsw >= 0.f);
         float Rsw = device_ctx.rr_switch_inf[switch_ind].R;
         float Cnode = device_ctx.rr_nodes[set_rr_node_ind].C();
         float Rnode = device_ctx.rr_nodes[set_rr_node_ind].R();
