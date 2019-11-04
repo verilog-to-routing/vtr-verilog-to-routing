@@ -336,10 +336,10 @@ void CostMap::print(int iseg) const {
          box_id++) {
         auto& matrix = cost_map_[iseg][box_id];
         if (matrix.dim_size(0) == 0 || matrix.dim_size(1) == 0) {
-            printf("cost EMPTY for box_id = %lu\n", box_id);
+            VTR_LOG("cost EMPTY for box_id = %lu\n", box_id);
             continue;
         }
-        printf("cost for box_id = %lu\n", box_id);
+        VTR_LOG("cost for box_id = %lu\n", box_id);
         double sum = 0.0;
         for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
             for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
@@ -354,18 +354,18 @@ void CostMap::print(int iseg) const {
             for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
                 const auto& entry = matrix[ix][iy];
                 if (!entry.valid()) {
-                    printf("*");
+                    VTR_LOG("*");
                 } else if (entry.delay * 4 > avg * 5) {
-                    printf("O");
+                    VTR_LOG("O");
                 } else if (entry.delay > avg) {
-                    printf("o");
+                    VTR_LOG("o");
                 } else if (entry.delay * 4 > avg * 3) {
-                    printf(".");
+                    VTR_LOG(".");
                 } else {
-                    printf(" ");
+                    VTR_LOG(" ");
                 }
             }
-            printf("\n");
+            VTR_LOG("\n");
         }
     }
 }
