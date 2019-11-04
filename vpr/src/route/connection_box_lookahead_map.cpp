@@ -337,8 +337,8 @@ void CostMap::print(int iseg) const {
     for (size_t box_id = 0;
          box_id < device_ctx.connection_boxes.num_connection_box_types();
          box_id++) {
-        VTR_LOG("cost for box_id = %lu (%zu, %zu)\n", box_id, matrix.dim_size(0), matrix.dim_size(1));
         auto& matrix = cost_map_[iseg][box_id];
+        VTR_LOG("cost for box_id = %lu (%zu, %zu)\n", box_id, matrix.dim_size(0), matrix.dim_size(1));
         if (matrix.dim_size(0) == 0 || matrix.dim_size(1) == 0) {
             VTR_LOG("cost EMPTY for box_id = %lu\n", box_id);
             continue;
@@ -475,8 +475,9 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
     }
     ConnectionBoxId box_id;
     std::pair<size_t, size_t> box_location;
+    float site_pin_delay;
     bool found = device_ctx.connection_boxes.find_connection_box(
-        to_node_ind, &box_id, &box_location);
+        to_node_ind, &box_id, &box_location, &site_pin_delay);
     if (!found) {
         VPR_THROW(VPR_ERROR_ROUTE, "No connection box for IPIN %d", to_node_ind);
     }
@@ -506,11 +507,10 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
     float expected_delay = cost_entry.delay;
     float expected_congestion = cost_entry.congestion;
 
+    expected_delay += site_pin_delay;
+    expected_congestion += site_pin_delay;
+
     float expected_cost = criticality_fac * expected_delay + (1.0 - criticality_fac) * expected_congestion;
-    if (!std::isfinite(expected_cost) || expected_cost < 0.f) {
-        VTR_LOG_ERROR("invalid cost for segment %d to connection box %d at (%d, %d)\n", from_seg_index, (int)size_t(box_id), (int)dx, (int)dy);
-        VTR_ASSERT(0);
-    }
 
     VTR_LOGV_DEBUG(f_router_debug, "Requested lookahead from node %d to %d\n", from_node_ind, to_node_ind);
     const std::string& segment_name = device_ctx.segment_inf[from_seg_index].name;
@@ -524,6 +524,13 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead congestion: %g\n", expected_congestion);
     VTR_LOGV_DEBUG(f_router_debug, "Criticality: %g\n", criticality_fac);
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead cost: %g\n", expected_cost);
+    VTR_LOGV_DEBUG(f_router_debug, "Site pin delay: %g\n", site_pin_delay);
+
+    if (!std::isfinite(expected_cost) || expected_cost < 0.f) {
+        VTR_LOG_ERROR("invalid cost for segment %d to connection box %d at (%d, %d)\n", from_seg_index, (int)size_t(box_id), (int)dx, (int)dy);
+        VTR_ASSERT(0);
+    }
+
 
     return expected_cost;
 }
@@ -537,8 +544,9 @@ static void add_paths(int start_node_ind,
     auto& device_ctx = g_vpr_ctx.device();
     ConnectionBoxId box_id;
     std::pair<size_t, size_t> box_location;
+    float site_pin_delay;
     bool found = device_ctx.connection_boxes.find_connection_box(
-        node_ind, &box_id, &box_location);
+        node_ind, &box_id, &box_location, &site_pin_delay);
     if (!found) {
         VPR_THROW(VPR_ERROR_ROUTE, "No connection box for IPIN %d", node_ind);
     }
@@ -547,15 +555,21 @@ static void add_paths(int start_node_ind,
     std::vector<int> path;
     for (int i = node_ind; i != start_node_ind; path.push_back(i = (*paths)[i].parent))
         ;
-    util::PQ_Entry parent_entry(start_node_ind, UNDEFINED, 0, 0, 0, true);
+    util::PQ_Entry parent_entry(start_node_ind, UNDEFINED, 0, 0, 0, true, /*Tsw_adjust=*/0.f);
 
     // recalculate the path with congestion
     util::PQ_Entry current_full = parent_entry;
     int parent = start_node_ind;
     for (auto it = path.rbegin(); it != path.rend(); it++) {
         auto& parent_node = device_ctx.rr_nodes[parent];
+        float Tsw_adjust = 0.f;
+
+        // Remove site pin delay when taking edge from last channel to IPIN.
+        if(*it == node_ind) {
+            Tsw_adjust = -site_pin_delay;
+        }
         current_full = util::PQ_Entry(*it, parent_node.edge_switch((*paths)[*it].edge), current_full.delay,
-                                      current_full.R_upstream, current_full.congestion_upstream, false);
+                                      current_full.R_upstream, current_full.congestion_upstream, false, Tsw_adjust);
         parent = *it;
     }
 
@@ -577,12 +591,18 @@ static void add_paths(int start_node_ind,
             box_id,
             delta};
         CompressedRoutingCostKey compressed_key(key);
+
+        float new_delay = current_full.delay - parent_entry.delay;
+        float new_congestion = current_full.congestion_upstream - parent_entry.congestion_upstream;
+
+        VTR_ASSERT(new_delay >= 0.f);
+        VTR_ASSERT(new_congestion >= 0.f);
+
         RoutingCost val = {
             parent,
             node_ind,
-            util::Cost_Entry(
-                current_full.delay - parent_entry.delay,
-                current_full.congestion_upstream - parent_entry.congestion_upstream)};
+            util::Cost_Entry(new_delay, new_congestion)
+        };
 
         // NOTE: implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
 
@@ -627,7 +647,7 @@ static void add_paths(int start_node_ind,
 
         // update parent data
         parent_entry = util::PQ_Entry(*it, parent_node.edge_switch((*paths)[*it].edge), parent_entry.delay,
-                                      parent_entry.R_upstream, parent_entry.congestion_upstream, false);
+                                      parent_entry.R_upstream, parent_entry.congestion_upstream, false, /*Tsw_adjust=*/0.f);
         parent = *it;
     }
 }
