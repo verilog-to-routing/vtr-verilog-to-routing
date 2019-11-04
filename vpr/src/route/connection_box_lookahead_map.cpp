@@ -425,16 +425,6 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
     return std::make_pair(util::Cost_Entry(), n);
 }
 
-// sample on a uniformly spaced grid within a rectangle
-// sample(vtr::Rect(N), 0, 0, M) is vtr::Point(0, 0)
-// sample(vtr::Rect(N), M, M, M) is vtr::Point(N, N)
-// To avoid the edges, use `sample(r, x+1, y+1, N+1) for x, y, in 0..N-1
-template<typename T>
-vtr::Point<T> sample(const vtr::Rect<T>& r, T x, T y, T d) {
-    return vtr::Point<T>((r.xmin() * (d - x) + r.xmax() * x + d / 2) / d,
-                         (r.ymin() * (d - y) + r.ymax() * y + d / 2) / d);
-}
-
 // derive a cost from the map between two nodes
 float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
                                               int to_node_ind,

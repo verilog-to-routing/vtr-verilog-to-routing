@@ -1,6 +1,7 @@
 #ifndef VTR_GEOMETRY_H
 #define VTR_GEOMETRY_H
 #include "vtr_range.h"
+#include "vtr_assert.h"
 
 #include <vector>
 #include <tuple>
@@ -117,11 +118,6 @@ class Rect {
     friend bool operator== <>(const Rect<T>& lhs, const Rect<T>& rhs);
     friend bool operator!= <>(const Rect<T>& lhs, const Rect<T>& rhs);
 
-    //Return the smallest rectangle containing both given rectangles
-    //Note that this isn't a union and the resulting rectangle may include points not in either given rectangle
-    template<class U>
-    friend Rect<U> bounding_box(const Rect<U>& lhs, const Rect<U>& rhs);
-
   public: //Mutators
     //Co-ordinates
     void set_xmin(T xmin_val);
@@ -136,6 +132,19 @@ class Rect {
     Point<T> bottom_left_;
     Point<T> top_right_;
 };
+
+//Return the smallest rectangle containing both given rectangles
+//Note that this isn't a union and the resulting rectangle may include points not in either given rectangle
+template<class T>
+Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs);
+
+//Sample on a uniformly spaced grid within a rectangle
+//  sample(vtr::Rect(l, h), 0, 0, M) == l
+//  sample(vtr::Rect(l, h), M, M, M) == h
+//To avoid the edges, use `sample(r, x+1, y+1, N+1) for x, y, in 0..N-1
+//Only defined for integral types
+template<typename T, typename std::enable_if<std::is_integral<T>::value>::type...>
+Point<T> sample(const vtr::Rect<T>& r, T x, T y, T d);
 
 //A 2D line
 template<class T>
