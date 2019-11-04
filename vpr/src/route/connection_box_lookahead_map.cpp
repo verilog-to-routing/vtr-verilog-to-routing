@@ -140,13 +140,13 @@ static int manhattan_distance(const vtr::Point<int>& a, const vtr::Point<int>& b
 }
 
 template<class T>
-constexpr const T& clamp( const T& v, const T& lo, const T& hi ) {
+constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
     return std::min(std::max(v, lo), hi);
 }
 
 template<typename T>
 static vtr::Point<T> closest_point_in_rect(const vtr::Rect<T>& r, const vtr::Point<T>& p) {
-    if(r.empty()) {
+    if (r.empty()) {
         return vtr::Point<T>(0, 0);
     } else {
         return vtr::Point<T>(clamp<T>(p.x(), r.xmin(), r.xmax() - 1),
@@ -184,7 +184,7 @@ int CostMap::node_to_segment(int from_node_ind) const {
 
 static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, float penalty) {
     return util::Cost_Entry(entry.delay + distance * penalty * PENALTY_FACTOR,
-                      entry.congestion);
+                            entry.congestion);
 }
 
 // get a cost entry for a segment type, connection box type, and offset
@@ -390,9 +390,9 @@ static void assign_min_entry(util::Cost_Entry* dst, const util::Cost_Entry& src)
 
 // find the minimum cost entry from the nearest manhattan distance neighbor
 std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMatrix<util::Cost_Entry, 2>& matrix,
-                                                          int cx,
-                                                          int cy,
-                                                          const vtr::Rect<int>& bounds) {
+                                                                int cx,
+                                                                int cy,
+                                                                const vtr::Rect<int>& bounds) {
     // spiral around (cx, cy) looking for a nearby entry
     int n = 1;
     bool in_bounds;
