@@ -85,6 +85,14 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
         SECTION("empty_int") {
             REQUIRE(vtr::Rect<int>().empty());
         }
+
+        SECTION("sample_int") {
+            auto r = vtr::Rect<int>(pi_1, pi_2);
+            REQUIRE(sample(r, 0, 0, 17) == pi_1);
+            REQUIRE(sample(r, 17, 17, 17) == pi_2);
+            auto inside = sample(r, 3, 11, 17);
+            REQUIRE(r.contains(inside));
+        }
     }
 
     // float tests
