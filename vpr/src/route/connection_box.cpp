@@ -30,7 +30,7 @@ const ConnectionBox* ConnectionBoxes::get_connection_box(ConnectionBoxId box) co
 bool ConnectionBoxes::find_connection_box(int inode,
                                           ConnectionBoxId* box_id,
                                           std::pair<size_t, size_t>* box_location,
-                                          float *site_pin_delay) const {
+                                          float* site_pin_delay) const {
     VTR_ASSERT(box_id != nullptr);
     VTR_ASSERT(box_location != nullptr);
     VTR_ASSERT(site_pin_delay != nullptr);
