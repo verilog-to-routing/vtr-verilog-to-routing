@@ -49,7 +49,7 @@ class ConnectionBoxes {
     bool find_connection_box(int inode,
                              ConnectionBoxId* box_id,
                              std::pair<size_t, size_t>* box_location,
-                             float *site_pin_delay) const;
+                             float* site_pin_delay) const;
     const std::pair<size_t, size_t>* find_canonical_loc(int inode) const;
 
     // Clear IPIN map and set connection box grid size and box ids.
