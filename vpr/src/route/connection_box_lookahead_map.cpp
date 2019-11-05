@@ -45,18 +45,6 @@
 // Sample based an NxN grid of starting segments, where N = SAMPLE_GRID_SIZE
 static constexpr int SAMPLE_GRID_SIZE = 3;
 
-// Stop Dijkstra expansion after reaching COST_LIMIT
-static constexpr float COST_LIMIT = std::numeric_limits<float>::infinity();
-
-// Number of entries in the routing cost cache
-static constexpr int DIJKSTRA_CACHE_SIZE = 64;
-
-// Only entries with a delta inside the window (+- DIJKSTRA_CACHE_WINDOW x/y) are cached
-static constexpr int DIJKSTRA_CACHE_WINDOW = 3;
-
-// Don't continue storing a path after hitting a lower-or-same cost entry.
-static constexpr bool BREAK_ON_MISS = false;
-
 // Distance penalties filling are calculated based on available samples, but can be adjusted with this factor.
 static constexpr float PENALTY_FACTOR = 1.f;
 
@@ -129,10 +117,9 @@ class SimpleCache {
     uint64_t misses;
 };
 
-static float run_dijkstra(int start_node_ind,
-                          RoutingCosts* routing_costs,
-                          SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE>* cache,
-                          float max_cost);
+template<typename Entry>
+static void run_dijkstra(int start_node_ind,
+                         RoutingCosts* routing_costs);
 static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_segment);
 
 // also known as the L1 norm
@@ -244,7 +231,7 @@ void CostMap::set_cost_map(const RoutingCosts& costs) {
         const auto& seg_box_bounds = bounds[seg][box];
         int x = entry.first.delta.x() - seg_box_bounds.xmin();
         int y = entry.first.delta.y() - seg_box_bounds.ymin();
-        cost_map_[seg][box][x][y] = entry.second.cost_entry;
+        cost_map_[seg][box][x][y] = entry.second;
     }
 
     // fill the holes
@@ -388,6 +375,8 @@ std::vector<std::pair<int, int>> CostMap::list_empty() const {
 static void assign_min_entry(util::Cost_Entry* dst, const util::Cost_Entry& src) {
     if (src.delay < dst->delay) {
         dst->delay = src.delay;
+    }
+    if (src.congestion < dst->congestion) {
         dst->congestion = src.congestion;
     }
 }
@@ -450,8 +439,6 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    std::pair<size_t, size_t> from_location;
-    std::pair<size_t, size_t> to_location;
     auto to_node_type = device_ctx.rr_nodes[to_node_ind].type();
 
     if (to_node_type == SINK) {
@@ -531,7 +518,6 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
         VTR_ASSERT(0);
     }
 
-
     return expected_cost;
 }
 
@@ -539,8 +525,7 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
 static void add_paths(int start_node_ind,
                       int node_ind,
                       std::unordered_map<int, util::Search_Path>* paths,
-                      RoutingCosts* routing_costs,
-                      SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE>* cache) {
+                      RoutingCosts* routing_costs) {
     auto& device_ctx = g_vpr_ctx.device();
     ConnectionBoxId box_id;
     std::pair<size_t, size_t> box_location;
@@ -565,7 +550,7 @@ static void add_paths(int start_node_ind,
         float Tsw_adjust = 0.f;
 
         // Remove site pin delay when taking edge from last channel to IPIN.
-        if(*it == node_ind) {
+        if (*it == node_ind) {
             Tsw_adjust = -site_pin_delay;
         }
         current_full = util::PQ_Entry(*it, parent_node.edge_switch((*paths)[*it].edge), current_full.delay,
@@ -598,51 +583,12 @@ static void add_paths(int start_node_ind,
         VTR_ASSERT(new_delay >= 0.f);
         VTR_ASSERT(new_congestion >= 0.f);
 
-        RoutingCost val = {
-            parent,
-            node_ind,
-            util::Cost_Entry(new_delay, new_congestion)
-        };
+        auto val = util::Cost_Entry(new_delay, new_congestion);
 
         // NOTE: implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
-
-        // use a cache for a small window around a delta of (0, 0)
-        float cost = 0.f;
-        bool in_window = abs(delta.x()) <= DIJKSTRA_CACHE_WINDOW && abs(delta.y()) <= DIJKSTRA_CACHE_WINDOW;
-        if (in_window && cache->get(compressed_key, &cost) && cost <= val.cost_entry.delay) {
-            // the sample was not cheaper than the cached sample
-            const auto& x = routing_costs->find(key);
-            VTR_ASSERT(x != routing_costs->end());
-            if (BREAK_ON_MISS) {
-                // don't store the rest of the path
-                break;
-            }
-        } else {
-            const auto& x = routing_costs->find(key);
-            if (x != routing_costs->end()) {
-                if (x->second.cost_entry.delay > val.cost_entry.delay) {
-                    // this sample is cheaper
-                    (*routing_costs)[key] = val;
-                    if (in_window) {
-                        cache->insert(compressed_key, val.cost_entry.delay);
-                    }
-                } else {
-                    // this sample is not cheaper
-                    if (BREAK_ON_MISS) {
-                        // don't store the rest of the path
-                        break;
-                    }
-                    if (in_window) {
-                        cache->insert(compressed_key, x->second.cost_entry.delay);
-                    }
-                }
-            } else {
-                // this sample is new
-                (*routing_costs)[key] = val;
-                if (in_window) {
-                    cache->insert(compressed_key, val.cost_entry.delay);
-                }
-            }
+        auto result = routing_costs->insert(std::make_pair(key, val));
+        if (!result.second) {
+            assign_min_entry(&result.first->second, val);
         }
 
         // update parent data
@@ -655,10 +601,9 @@ static void add_paths(int start_node_ind,
 /* runs Dijkstra's algorithm from specified node until all nodes have been
  * visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored to an entry in the routing_cost_map */
-static float run_dijkstra(int start_node_ind,
-                          RoutingCosts* routing_costs,
-                          SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE>* cache,
-                          float cost_limit) {
+template<typename Entry>
+static void run_dijkstra(int start_node_ind,
+                         RoutingCosts* routing_costs) {
     auto& device_ctx = g_vpr_ctx.device();
 
     /* a list of boolean flags (one for each rr node) to figure out if a
@@ -670,12 +615,10 @@ static float run_dijkstra(int start_node_ind,
      * Also store the parent node so we can reconstruct a specific path. */
     std::unordered_map<int, util::Search_Path> paths;
     /* a priority queue for expansion */
-    std::priority_queue<util::PQ_Entry_Lite, std::vector<util::PQ_Entry_Lite>, std::greater<util::PQ_Entry_Lite>> pq;
+    std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> pq;
 
     /* first entry has no upstream delay or congestion */
-    util::PQ_Entry_Lite first_entry(start_node_ind, UNDEFINED, 0, true);
-
-    float max_cost = 0.f;
+    Entry first_entry(start_node_ind, UNDEFINED, 0, true);
 
     pq.push(first_entry);
 
@@ -693,18 +636,13 @@ static float run_dijkstra(int start_node_ind,
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
         if (device_ctx.rr_nodes[node_ind].type() == IPIN) {
-            add_paths(start_node_ind, node_ind, &paths, routing_costs, cache);
+            add_paths(start_node_ind, node_ind, &paths, routing_costs);
         } else {
-            expand_dijkstra_neighbours(current, paths, node_expanded, pq);
+            expand_dijkstra_neighbours(device_ctx.rr_nodes,
+                                       current, paths, node_expanded, pq);
             node_expanded[node_ind] = true;
         }
-
-        max_cost = std::max(max_cost, current.delay_cost);
-        if (max_cost > cost_limit) {
-            break;
-        }
     }
-    return max_cost;
 }
 
 // compute the cost maps for lookahead
@@ -752,18 +690,12 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
 #else
     for (const auto& point : sample_points) {
 #endif
-        float max_cost = 0.f;
-
         // holds the cost entries for a run
         RoutingCosts costs;
 
-        // a cache to avoid hammering the RoutingCosts map, since lookups will be dominated by a few keys
-        // must be consistent with `costs` i.e. any entry in the cache should also be in `costs`
-        // NOTE: this is used as a write-through cache, maybe try write-back
-        SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE> cache;
-
         for (auto node_ind : point.samples) {
-            max_cost = std::max(max_cost, run_dijkstra(node_ind, &costs, &cache, COST_LIMIT));
+            run_dijkstra<util::PQ_Entry_Delay>(node_ind, &costs);
+            run_dijkstra<util::PQ_Entry_Base_Cost>(node_ind, &costs);
         }
 
 #if defined(VPR_USE_TBB)
@@ -774,18 +706,17 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
             VTR_LOG("Expanded node %s\n", describe_rr_node(node_ind).c_str());
         }
 
-        VTR_LOG("Expanded sample point (%d, %d) %e miss %g\n",
-                point.location.x(), point.location.y(), max_cost, cache.miss_ratio());
+        VTR_LOG("Expanded sample point (%d, %d)\n",
+                point.location.x(), point.location.y());
 
         // combine the cost map from this run with the final cost maps for each segment
         for (const auto& cost : costs) {
             const auto& key = cost.first;
             const auto& val = cost.second;
-            const auto& x = all_costs.find(key);
-
-            // implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
-            if (x == all_costs.end() || x->second.cost_entry.delay > val.cost_entry.delay) {
-                all_costs[key] = val;
+            auto result = all_costs.insert(std::make_pair(key, val));
+            if (!result.second) {
+                // implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
+                assign_min_entry(&result.first->second, val);
             }
         }
 
