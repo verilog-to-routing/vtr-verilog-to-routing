@@ -23,8 +23,10 @@ class ChecksumError(Exception):
 class ExtractionError(Exception):
     pass
 
-TITAN_URL="http://www.eecg.utoronto.ca/~kmurray/titan/"
-
+TITAN_URL_MIRRORS = {
+        "eecg": "http://www.eecg.utoronto.ca/~kmurray/titan/",
+        "google": "https://storage.googleapis.com/verilog-to-routing/titan/",
+}
 
 def parse_args():
     description = textwrap.dedent("""
@@ -52,6 +54,11 @@ def parse_args():
                         action="store_true",
                         help="Run extraction step even if directores etc. already exist")
 
+    parser.add_argument("--mirror",
+                        default="eecg",
+                        choices=["eecg", "google"],
+                        help="Download mirror")
+
     return parser.parse_args()
 
 def main():
@@ -62,8 +69,8 @@ def main():
         tar_gz_filename = "titan_release_" + args.titan_version + '.tar.gz'
         md5_filename = "titan_release_" + args.titan_version + '.md5'
         
-        tar_gz_url = urlparse.urljoin(TITAN_URL, tar_gz_filename)
-        md5_url = urlparse.urljoin(TITAN_URL, md5_filename)
+        tar_gz_url = urlparse.urljoin(TITAN_URL_MIRRORS[args.mirror], tar_gz_filename)
+        md5_url = urlparse.urljoin(TITAN_URL_MIRRORS[args.mirror], md5_filename)
 
         external_md5 = load_md5_from_url(md5_url)
 
