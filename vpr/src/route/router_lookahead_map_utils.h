@@ -21,6 +21,7 @@
 #include <queue>
 #include <unordered_map>
 #include "vpr_types.h"
+#include "rr_node.h"
 
 namespace util {
 
@@ -132,10 +133,7 @@ class PQ_Entry {
     float R_upstream;
     float congestion_upstream;
 
-    PQ_Entry(int set_rr_node_ind, int /*switch_ind*/, float parent_delay,
-            float parent_R_upstream, float parent_congestion_upstream,
-            bool starting_node, float Tsw_adjust
-            );
+    PQ_Entry(int set_rr_node_ind, int /*switch_ind*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node, float Tsw_adjust);
 
     bool operator<(const PQ_Entry& obj) const {
         /* inserted into max priority queue so want queue entries with a lower cost to be greater */
@@ -144,15 +142,35 @@ class PQ_Entry {
 };
 
 // A version of PQ_Entry that only calculates and stores the delay (cost.)
-class PQ_Entry_Lite {
+class PQ_Entry_Delay {
   public:
     int rr_node_ind;  //index in device_ctx.rr_nodes that this entry represents
     float delay_cost; //the cost of the path to get to this node
 
-    PQ_Entry_Lite(int set_rr_node_ind, int /*switch_ind*/, float parent_delay, bool starting_node);
+    PQ_Entry_Delay(int set_rr_node_ind, int /*switch_ind*/, float parent_cost, bool starting_node);
 
-    bool operator>(const PQ_Entry_Lite& obj) const {
+    float cost() const {
+        return delay_cost;
+    }
+
+    bool operator>(const PQ_Entry_Delay& obj) const {
         return (this->delay_cost > obj.delay_cost);
+    }
+};
+
+class PQ_Entry_Base_Cost {
+  public:
+    int rr_node_ind; //index in device_ctx.rr_nodes that this entry represents
+    float base_cost;
+
+    PQ_Entry_Base_Cost(int set_rr_node_ind, int /*switch_ind*/, float parent_cost, bool starting_node);
+
+    float cost() const {
+        return base_cost;
+    }
+
+    bool operator>(const PQ_Entry_Base_Cost& obj) const {
+        return (this->base_cost > obj.base_cost);
     }
 };
 
@@ -164,11 +182,44 @@ struct Search_Path {
 
 } // namespace util
 
-void expand_dijkstra_neighbours(util::PQ_Entry_Lite parent_entry,
+/* iterates over the children of the specified node and selectively pushes them onto the priority queue */
+template<typename Entry>
+void expand_dijkstra_neighbours(const std::vector<t_rr_node>& rr_nodes,
+                                const Entry& parent_entry,
                                 std::unordered_map<int, util::Search_Path>& paths,
                                 std::vector<bool>& node_expanded,
-                                std::priority_queue<util::PQ_Entry_Lite,
-                                                    std::vector<util::PQ_Entry_Lite>,
-                                                    std::greater<util::PQ_Entry_Lite>>& pq);
+                                std::priority_queue<Entry,
+                                                    std::vector<Entry>,
+                                                    std::greater<Entry>>& pq) {
+    int parent_ind = parent_entry.rr_node_ind;
+
+    auto& parent_node = rr_nodes[parent_ind];
+
+    for (int iedge = 0; iedge < parent_node.num_edges(); iedge++) {
+        int child_node_ind = parent_node.edge_sink_node(iedge);
+        int switch_ind = parent_node.edge_switch(iedge);
+
+        /* skip this child if it has already been expanded from */
+        if (node_expanded[child_node_ind]) {
+            continue;
+        }
+
+        Entry child_entry(child_node_ind, switch_ind, parent_entry.cost(), false);
+        VTR_ASSERT(child_entry.cost() >= 0);
+        pq.push(child_entry);
+
+        /* Create (if it doesn't exist) or update (if the new cost is lower)
+         * to specified node */
+        util::Search_Path path_entry = {child_entry.cost(), parent_ind, iedge};
+        auto result = paths.insert(std::make_pair(
+            child_node_ind,
+            path_entry));
+        if (!result.second) {
+            if (child_entry.cost() < result.first->second.cost) {
+                result.first->second = path_entry;
+            }
+        }
+    }
+}
 
 #endif
