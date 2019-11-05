@@ -52,7 +52,7 @@ util::PQ_Entry::PQ_Entry(
     this->cost = this->delay;
 }
 
-util::PQ_Entry_Lite::PQ_Entry_Lite(
+util::PQ_Entry_Delay::PQ_Entry_Delay(
     int set_rr_node_ind,
     int switch_ind,
     float parent_delay,
@@ -76,6 +76,21 @@ util::PQ_Entry_Lite::PQ_Entry_Lite(
 
         VTR_ASSERT(T_linear >= 0.);
         this->delay_cost += T_linear;
+    }
+}
+
+util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
+    int set_rr_node_ind,
+    int switch_ind,
+    float upstream_base_costs,
+    bool starting_node) {
+    this->rr_node_ind = set_rr_node_ind;
+
+    auto& device_ctx = g_vpr_ctx.device();
+    this->base_cost = upstream_base_costs;
+    if (!starting_node) {
+        int cost_index = device_ctx.rr_nodes[set_rr_node_ind].cost_index();
+        this->base_cost += device_ctx.rr_indexed_data[cost_index].base_cost;
     }
 }
 
@@ -173,42 +188,4 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
     util::Cost_Entry representative_entry = entry_bins[largest_bin][0];
 
     return representative_entry;
-}
-
-/* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-void expand_dijkstra_neighbours(util::PQ_Entry_Lite parent_entry,
-                                std::unordered_map<int, util::Search_Path>& paths,
-                                std::vector<bool>& node_expanded,
-                                std::priority_queue<util::PQ_Entry_Lite,
-                                                    std::vector<util::PQ_Entry_Lite>,
-                                                    std::greater<util::PQ_Entry_Lite>>& pq) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    int parent_ind = parent_entry.rr_node_ind;
-
-    auto& parent_node = device_ctx.rr_nodes[parent_ind];
-
-    for (int iedge = 0; iedge < parent_node.num_edges(); iedge++) {
-        int child_node_ind = parent_node.edge_sink_node(iedge);
-        int switch_ind = parent_node.edge_switch(iedge);
-
-        /* skip this child if it has already been expanded from */
-        if (node_expanded[child_node_ind]) {
-            continue;
-        }
-
-        util::PQ_Entry_Lite child_entry(child_node_ind, switch_ind, parent_entry.delay_cost, false);
-
-        VTR_ASSERT(child_entry.delay_cost >= 0);
-
-        /* skip this child if it has been visited with smaller or the same cost */
-        auto stored_cost = paths.find(child_node_ind);
-        if (stored_cost != paths.end() && stored_cost->second.cost <= child_entry.delay_cost) {
-            continue;
-        }
-
-        /* finally, record the cost with which the child was visited and put the child entry on the queue */
-        paths[child_node_ind] = {child_entry.delay_cost, parent_ind, iedge};
-        pq.push(child_entry);
-    }
 }
