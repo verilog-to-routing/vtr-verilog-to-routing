@@ -97,12 +97,6 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
         if (warn_unconstrained_) {
             warn_unconstrained(analyzer());
         }
-
-        //Reset cached values to invalid (calculated lazily in accessors)
-        sTNS_ = std::numeric_limits<float>::quiet_NaN();
-        sWNS_ = std::numeric_limits<float>::quiet_NaN();
-        least_slack_critical_path_ = tatum::TimingPathInfo();
-        longest_critical_path_ = tatum::TimingPathInfo();
     }
 
     void update_setup() override {
@@ -130,9 +124,12 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
         timing_ctx.stats.sta_wallclock_time += sta_wallclock_time;
         timing_ctx.stats.slack_wallclock_time += slack_wallclock_time;
         timing_ctx.stats.num_full_setup_updates += 1;
+
+        clear_cache();
     }
 
     void update_setup_slacks() {
+        clear_cache();
         slack_crit_.update_slacks_and_criticalities(*timing_graph_, *setup_analyzer_);
     }
 
@@ -157,6 +154,14 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
 
     typedef std::chrono::duration<double> dsec;
     typedef std::chrono::high_resolution_clock Clock;
+
+    //Reset cached values to invalid (calculated lazily in accessors)
+    void clear_cache() {
+        sTNS_ = std::numeric_limits<float>::quiet_NaN();
+        sWNS_ = std::numeric_limits<float>::quiet_NaN();
+        least_slack_critical_path_ = tatum::TimingPathInfo();
+        longest_critical_path_ = tatum::TimingPathInfo();
+    }
 };
 
 template<class DelayCalc>
