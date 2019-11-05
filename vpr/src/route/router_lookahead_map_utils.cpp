@@ -35,21 +35,11 @@ util::PQ_Entry::PQ_Entry(
         float T_quadratic = 0.f;
         if (device_ctx.rr_switch_inf[switch_ind].buffered()) {
             T_linear = Tsw + Rsw * Cnode + 0.5 * Rnode * Cnode;
-            T_quadratic = 0.;
         } else { /* Pass transistor */
             T_linear = Tsw + 0.5 * Rsw * Cnode;
-            T_quadratic = (Rsw + Rnode) * 0.5 * Cnode;
         }
 
-        float base_cost;
-        if (device_ctx.rr_indexed_data[cost_index].inv_length < 0) {
-            base_cost = device_ctx.rr_indexed_data[cost_index].base_cost;
-        } else {
-            float frac_num_seg = CLB_DIST * device_ctx.rr_indexed_data[cost_index].inv_length;
-
-            base_cost = frac_num_seg * T_linear
-                        + frac_num_seg * frac_num_seg * T_quadratic;
-        }
+        float base_cost = device_ctx.rr_indexed_data[cost_index].base_cost;
 
         VTR_ASSERT(T_linear >= 0.);
         VTR_ASSERT(base_cost >= 0.);
