@@ -1207,6 +1207,10 @@ void partial_map_adders(short traverse_number, netlist_t *netlist)
 	}
 }
 
+/*---------------------------------------------------------------- 
+* This function destroys all adders in the netlist and create them
+* again as new one.
+*---------------------------------------------------------------*/
 void destroy_adders()
 {	
 	for (int i=0; i<num_of_adders; i++)
@@ -1220,15 +1224,17 @@ void destroy_adders()
 
 		// Free all created small-detailed logic nodes
 		destroy_adder_cloud(adders_list[i]);
-
-		/*---------------------------------------------- 
-		 * Replace the new empty adder instead of 
-		 * previous one in adder list
-		 *--------------------------------------------*/
+		 
+		// Replace the new empty adder with previous one in adder list
 		adders_list[i] = new_adder;
 	}
 }
 
+/*------------------------------------------------------------------- 
+* This function creates an empty adder with the previous inpu/output
+* pins. It is useful when we want to delete the detailed cloud of an
+* adder which was created in partial map section.
+*------------------------------------------------------------------*/
 adder_t *create_empty_adder (adder_t *previous_adder)
 {
 	adder_t *new_adder = (adder_t *) vtr::malloc (sizeof(adder_t));
@@ -1246,6 +1252,9 @@ adder_t *create_empty_adder (adder_t *previous_adder)
 	return new_adder;
 }
 
+/*------------------------------------------- 
+* This function creates a copy of a given pin
+*------------------------------------------*/
 npin_t** make_copy_of_pins (npin_t **copy, long copy_size)
 {
 	npin_t **paste = (npin_t **) vtr::malloc(sizeof(npin_t *)*copy_size);
@@ -1257,24 +1266,73 @@ npin_t** make_copy_of_pins (npin_t **copy, long copy_size)
 	return paste;
 }
 
+/*------------------------------------------------------------------- 
+* At first, this function calls the recursive function to get all the
+* pointers. After that, it frees all pointers realted to the cloud
+*------------------------------------------------------------------*/
 void destroy_adder_cloud (adder_t *adder)
 {
-	npin_t *current_pin = (npin_t *) vtr::malloc (sizeof(npin_t));
+	num_cloud_pins = 0;
+	num_cloud_nets = 0;
+	num_cloud_nodes = 0;
 
-	for (int i=0; i<adder->input->count; i++)
+	for (int i=0; i<adder->output->count; i++)
+		recursive_save_pointers (adder, adder->output->pins[i]->node);
+
+	// Free all pointers related to the cloud
+	while (num_cloud_pins != 0)
 	{
-		current_pin = adder->input->pins[i];
-		while (1)
-		{
-			for (int j=0; j<adder->output->count; j++)
-				if (current_pin == adder->output->pins[j])
-					break;
-
-			free_nnode(adder->node);
-		}
+		free_npin(cloud_pins_list[num_cloud_pins]);
+		num_cloud_pins--;
+	}
+	while (num_cloud_nets != 0)
+	{
+		free_nnet(cloud_nets_list[num_cloud_nets]);
+		num_cloud_nets--;
+	}
+	while (num_cloud_nodes != 0)
+	{
+		free_nnode(cloud_nodes_list[num_cloud_nodes]);
+		num_cloud_nodes--;
 	}
 
-	vtr::free(adder);
+	vtr::free (cloud_pins_list);
+	vtr::free (cloud_nets_list);
+	vtr::free (cloud_nodes_list);
+
+}
+
+/*----------------------------------------------------------- 
+* This function, recursively, adds any pointers of pins, nets 
+* and nodes related to the cloud which was created in partial
+* map for add function
+*----------------------------------------------------------*/
+void recursive_save_pointers (adder_t *adder, nnode_t * node)
+{
+	cloud_nodes_list = (nnode_t**) vtr::realloc (cloud_nodes_list, sizeof(nnode_t *)*(num_cloud_nodes+1));
+	cloud_nodes_list[num_cloud_nodes] = node;
+	num_cloud_nodes++;
+
+	for (int i=0; i<node->num_input_pins; i++)
+	{
+		cloud_pins_list = (npin_t **) vtr::realloc (cloud_pins_list, sizeof(npin_t *)*(num_cloud_pins+1));
+		cloud_pins_list[num_cloud_pins] = node->input_pins[i];
+		num_cloud_pins++;
+
+		cloud_nets_list = (nnet_t **) vtr::realloc(cloud_nets_list, sizeof(nnet_t *)*(num_cloud_nets+1));
+		cloud_nets_list[num_cloud_nets] = node->input_pins[i]->net;
+		num_cloud_nets++;
+
+		cloud_pins_list = (npin_t **) vtr::realloc (cloud_pins_list, sizeof(npin_t *)*(num_cloud_pins+1));
+		for ( int j=0; j<adder->input->count; j++ )
+			if ( node->input_pins[i]->net->driver_pin == adder->input->pins[j]->net->driver_pin )
+				return;
+		cloud_pins_list[num_cloud_pins] = node->input_pins[i]->net->driver_pin;
+		num_cloud_pins++;
+
+		recursive_save_pointers (adder, node->input_pins[i]->net->driver_pin->node);
+	}
+	
 }
 
 /*--------------------------------------------------------------------- 
