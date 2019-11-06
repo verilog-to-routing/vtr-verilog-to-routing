@@ -565,18 +565,17 @@ static void add_paths(int start_node_ind,
         bool in_window = abs(delta.x()) <= DIJKSTRA_CACHE_WINDOW && abs(delta.y()) <= DIJKSTRA_CACHE_WINDOW;
         if (in_window && cache->get(compressed_key, &cost) && cost <= val.cost_entry.delay) {
             // the sample was not cheaper than the cached sample
-            const auto& x = routing_costs->find(key);
-            VTR_ASSERT(x != routing_costs->end());
             if (BREAK_ON_MISS) {
                 // don't store the rest of the path
                 break;
             }
         } else {
-            const auto& x = routing_costs->find(key);
-            if (x != routing_costs->end()) {
-                if (x->second.cost_entry.delay > val.cost_entry.delay) {
+            auto result = routing_costs->insert(std::make_pair(key, val));
+            if (!result.second) {
+                auto& existing = result.first->second;
+                if (existing.cost_entry.delay > val.cost_entry.delay) {
                     // this sample is cheaper
-                    (*routing_costs)[key] = val;
+                    existing = val;
                     if (in_window) {
                         cache->insert(compressed_key, val.cost_entry.delay);
                     }
@@ -587,7 +586,7 @@ static void add_paths(int start_node_ind,
                         break;
                     }
                     if (in_window) {
-                        cache->insert(compressed_key, x->second.cost_entry.delay);
+                        cache->insert(compressed_key, existing.cost_entry.delay);
                     }
                 }
             } else {
@@ -731,11 +730,12 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
         for (const auto& cost : costs) {
             const auto& key = cost.first;
             const auto& val = cost.second;
-            const auto& x = all_costs.find(key);
+            const auto& result = all_costs.insert(std::make_pair(key, val));
+            auto& existing = result.first->second;
 
             // implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
-            if (x == all_costs.end() || x->second.cost_entry.delay > val.cost_entry.delay) {
-                all_costs[key] = val;
+            if (!result.second || existing.cost_entry.delay > val.cost_entry.delay) {
+                existing = val;
             }
         }
 
