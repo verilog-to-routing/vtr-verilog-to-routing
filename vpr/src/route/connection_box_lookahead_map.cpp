@@ -802,17 +802,48 @@ float ConnectionBoxMapLookahead::get_expected_cost(
 }
 
 // the smallest bounding box containing a node
-static vtr::Rect<int> bounding_box_for_node(const t_rr_node& node) {
-    return vtr::Rect<int>(node.xlow(), node.ylow(),
-                          node.xhigh() + 1, node.yhigh() + 1);
+static vtr::Rect<int> bounding_box_for_node(const ConnectionBoxes& connection_boxes, int node_ind) {
+    const std::pair<size_t, size_t>* loc = connection_boxes.find_canonical_loc(node_ind);
+    if (loc == nullptr) {
+        return vtr::Rect<int>();
+    } else {
+        return vtr::Rect<int>(vtr::Point<int>(loc->first, loc->second));
+    }
 }
 
-// the center point for a node
-// it is unknown where the the node starts, so use the average
-static vtr::Point<int> point_for_node(const t_rr_node& node) {
-    int x = (node.xhigh() + node.xlow()) / 2;
-    int y = (node.yhigh() + node.ylow()) / 2;
-    return vtr::Point<int>(x, y);
+static vtr::Point<int> choose_point(const vtr::Matrix<int>& counts, const vtr::Rect<int>& bounding_box, int sx, int sy, int n) {
+    vtr::Rect<int> window(sample(bounding_box, sx, sy, n),
+                          sample(bounding_box, sx + 1, sy + 1, n));
+    vtr::Point<int> center = sample(window, 1, 1, 2);
+    vtr::Point<int> sample_point = center;
+    int sample_distance = 0;
+    int sample_count = counts[sample_point.x()][sample_point.y()];
+    for (int y = window.ymin(); y < window.ymax(); y++) {
+        for (int x = window.xmin(); x < window.xmax(); x++) {
+            vtr::Point<int> here(x, y);
+            int count = counts[x][y];
+            if (count < sample_count) continue;
+            int distance = manhattan_distance(center, here);
+            if (count > sample_count || (count == sample_count && distance < sample_distance)) {
+                sample_point = here;
+                sample_count = count;
+                sample_distance = distance;
+            }
+        }
+    }
+    return sample_point;
+}
+
+// linear lookup, so consider something more sophisticated for large SAMPLE_GRID_SIZEs
+static std::pair<int, int> grid_lookup(const SampleGrid& grid, vtr::Point<int> point) {
+    for (int sy = 0; sy < SAMPLE_GRID_SIZE; sy++) {
+        for (int sx = 0; sx < SAMPLE_GRID_SIZE; sx++) {
+            if (grid.point[sy][sx].location == point) {
+                return std::make_pair(sx, sy);
+            }
+        }
+    }
+    return std::make_pair(-1, -1);
 }
 
 // for each segment type, find the nearest nodes to an equally spaced grid of points
@@ -821,6 +852,7 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_nodes = device_ctx.rr_nodes;
     const int num_segments = inodes_for_segment->size();
+    std::vector<vtr::Matrix<int>> segment_counts(num_segments);
 
     // compute bounding boxes for each segment type
     std::vector<vtr::Rect<int>> bounding_box_for_segment(num_segments, vtr::Rect<int>());
@@ -832,10 +864,16 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
         VTR_ASSERT(seg_index != OPEN);
         VTR_ASSERT(seg_index < num_segments);
 
-        bounding_box_for_segment[seg_index].expand_bounding_box(bounding_box_for_node(node));
+        bounding_box_for_segment[seg_index].expand_bounding_box(bounding_box_for_node(device_ctx.connection_boxes, i));
     }
 
-    // select an inode near the center of the bounding box for each segment type
+    // initialize counts
+    for (int seg = 0; seg < num_segments; seg++) {
+        const auto& box = bounding_box_for_segment[seg];
+        segment_counts[seg] = vtr::Matrix<int>({size_t(box.width()), size_t(box.height())}, 0);
+    }
+
+    // initialize the samples vector for each sample point
     inodes_for_segment->clear();
     inodes_for_segment->resize(num_segments);
     for (auto& grid : *inodes_for_segment) {
@@ -846,11 +884,40 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
         }
     }
 
+    // count sample points
     for (size_t i = 0; i < rr_nodes.size(); i++) {
         auto& node = rr_nodes[i];
-        vtr::Rect<int> node_bounds = bounding_box_for_node(node);
         if (node.type() != CHANX && node.type() != CHANY) continue;
-        if (node.capacity() == 0 || device_ctx.connection_boxes.find_canonical_loc(i) == nullptr) continue;
+        if (node.capacity() == 0) continue;
+        const std::pair<size_t, size_t>* loc = device_ctx.connection_boxes.find_canonical_loc(i);
+        if (loc == nullptr) continue;
+
+        int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
+        segment_counts[seg_index][loc->first][loc->second] += 1;
+
+        VTR_ASSERT(seg_index != OPEN);
+        VTR_ASSERT(seg_index < num_segments);
+    }
+
+    // select sample points
+    for (int i = 0; i < num_segments; i++) {
+        const auto& counts = segment_counts[i];
+        const auto& bounding_box = bounding_box_for_segment[i];
+        auto& grid = (*inodes_for_segment)[i];
+        for (int y = 0; y < SAMPLE_GRID_SIZE; y++) {
+            for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
+                grid.point[y][x].location = choose_point(counts, bounding_box, x, y, SAMPLE_GRID_SIZE);
+            }
+        }
+    }
+
+    // select an inode near the center of the bounding box for each segment type
+    for (size_t i = 0; i < rr_nodes.size(); i++) {
+        auto& node = rr_nodes[i];
+        if (node.type() != CHANX && node.type() != CHANY) continue;
+        if (node.capacity() == 0) continue;
+        const std::pair<size_t, size_t>* loc = device_ctx.connection_boxes.find_canonical_loc(i);
+        if (loc == nullptr) continue;
 
         int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
 
@@ -858,34 +925,10 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
         VTR_ASSERT(seg_index < num_segments);
 
         auto& grid = (*inodes_for_segment)[seg_index];
-        for (int sy = 0; sy < SAMPLE_GRID_SIZE; sy++) {
-            for (int sx = 0; sx < SAMPLE_GRID_SIZE; sx++) {
-                auto& point = grid.point[sy][sx];
-                if (point.samples.empty()) {
-                    point.samples.push_back(i);
-                    point.location = vtr::Point<int>(node.xlow(), node.ylow());
-                    goto next_rr_node;
-                }
-
-                if (node_bounds.contains(point.location)) {
-                    point.samples.push_back(i);
-                    goto next_rr_node;
-                }
-
-                vtr::Point<int> target = sample(bounding_box_for_segment[seg_index], sx + 1, sy + 1, SAMPLE_GRID_SIZE + 1);
-                int distance_new = manhattan_distance(point_for_node(node), target);
-                int distance_stored = manhattan_distance(point.location, target);
-                if (distance_new < distance_stored) {
-                    point.samples.clear();
-                    point.samples.push_back(i);
-                    goto next_rr_node;
-                }
-            }
+        auto grid_loc = grid_lookup(grid, vtr::Point<int>(loc->first, loc->second));
+        if (grid_loc.first >= 0) {
+            grid.point[grid_loc.first][grid_loc.second].samples.push_back(i);
         }
-
-    // to break out from the inner loop
-    next_rr_node:
-        continue;
     }
 }
 
