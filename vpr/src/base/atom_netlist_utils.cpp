@@ -1355,7 +1355,7 @@ std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist)
     return clock_nets;
 }
 
-//Finds all logical clock drivers in the netlist (by back-tracing through logic)
+//Finds all logical clock drivers in the netlist
 std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlist) {
     auto clock_nets = find_netlist_physical_clock_nets(netlist);
 
@@ -1364,51 +1364,26 @@ std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlis
     //However, some of them may be the same logical clock (e.g. if there are
     //buffers between them). Here we trace-back through any clock buffers
     //to find the true source
-    size_t assumed_buffer_count = 0;
     std::set<AtomNetId> prev_clock_nets;
     while (prev_clock_nets != clock_nets) { //Still tracing back
         prev_clock_nets = clock_nets;
         clock_nets.clear();
 
         for (auto clk_net : prev_clock_nets) {
-            AtomPinId driver_pin = netlist.net_driver(clk_net);
-            AtomPortId driver_port = netlist.pin_port(driver_pin);
+            auto driver_block = netlist.net_driver_block(clk_net);
 
-            std::vector<AtomPortId> upstream_ports = find_combinationally_connected_input_ports(netlist, driver_port);
+            if (is_buffer(netlist, driver_block)) {
+                //Driver is a buffer lut, use it's input net
+                auto input_pins = netlist.block_input_pins(driver_block);
+                VTR_ASSERT(input_pins.size() == 1);
+                auto input_pin = *input_pins.begin();
 
-            if (upstream_ports.empty()) {
-                //This net is a root net of a clock, keep it
-                clock_nets.insert(clk_net);
+                auto input_net = netlist.pin_net(input_pin);
+                clock_nets.insert(input_net);
             } else {
-                //Trace the clock back through any combinational logic
-                //
-                // We are assuming that the combinational connections are independent and non-inverting.
-                // If this is not the case, it is up to the end-user to specify the clocks explicitly
-                // at the intermediate pins in the netlist.
-                for (AtomPortId upstream_port : upstream_ports) {
-                    for (AtomPinId upstream_pin : netlist.port_pins(upstream_port)) {
-                        AtomNetId upstream_net = netlist.pin_net(upstream_pin);
-
-                        VTR_ASSERT(upstream_net);
-
-                        AtomBlockId driver_blk = netlist.port_block(driver_port);
-                        VTR_LOG_WARN("Assuming clocks may propagate through %s (%s) from pin %s to %s (assuming a non-inverting buffer).\n",
-                                     netlist.block_name(driver_blk).c_str(), netlist.block_model(driver_blk)->name,
-                                     netlist.pin_name(upstream_pin).c_str(), netlist.pin_name(driver_pin).c_str());
-
-                        clock_nets.insert(upstream_net);
-                        ++assumed_buffer_count;
-                    }
-                }
+                clock_nets.insert(clk_net);
             }
         }
-    }
-
-    if (assumed_buffer_count > 0) {
-        VTR_LOG_WARN(
-            "Assumed %zu netlist logic connections may be clock buffers. "
-            "To override this behaviour explicitly create clocks at the appropriate netlist pins.\n",
-            assumed_buffer_count);
     }
 
     //Extract the net drivers
