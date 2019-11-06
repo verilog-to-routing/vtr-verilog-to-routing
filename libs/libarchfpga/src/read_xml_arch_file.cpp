@@ -4711,8 +4711,7 @@ static void check_port_equivalence(t_physical_tile_type& physical_tile, t_logica
 
     if (pb_type->num_ports != (int)physical_tile.ports.size()) {
         archfpga_throw(__FILE__, __LINE__,
-                       "Logical block (%s) and Physical tile (%s) have a different number of ports.\n",
-                       logical_block.name, physical_tile.name);
+                       "Logical and Physical types have a different number of ports.\n");
     }
 
     for (auto& tile_port : physical_tile.ports) {
@@ -4723,8 +4722,7 @@ static void check_port_equivalence(t_physical_tile_type& physical_tile, t_logica
             || tile_port.num_pins != block_port.num_pins
             || tile_port.equivalent != block_port.equivalent) {
             archfpga_throw(__FILE__, __LINE__,
-                           "Logical block (%s) and Physical tile (%s) do not have equivalent port specifications.\n",
-                           logical_block.name, physical_tile.name);
+                           "Logical and Physical types do not have equivalent port specifications.\n");
         }
     }
 }
