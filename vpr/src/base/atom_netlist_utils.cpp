@@ -684,6 +684,7 @@ std::vector<AtomPortId> find_combinationally_connected_clock_ports(const AtomNet
     return upstream_ports;
 }
 
+
 void absorb_buffer_luts(AtomNetlist& netlist, int verbosity) {
     //First we look through the netlist to find LUTs with identity logic functions
     //we then remove those luts, replacing the net's they drove with the inputs to the
@@ -1400,7 +1401,7 @@ std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlis
             AtomBlockId driver_blk = netlist.port_block(driver_port);
 
             std::vector<AtomPortId> upstream_ports;
-
+            
             if (netlist.block_model(driver_blk)->name == std::string(".names")) {
                 //For .names we allow tracing back through data connections
                 //which allows us to traceback through white-box .names buffers
