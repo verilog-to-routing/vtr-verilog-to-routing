@@ -2,14 +2,7 @@
 .inputs \
     clk
 .outputs \
-    out[0] \
-    out[1] \
-    out[2] \
-    out[3] \
-    out[4] \
-    out[5] \
-    out[6] \
-    out[7]
+    out
 
 .names $false
 
@@ -126,51 +119,10 @@
 
 .subckt CARRY \
     CI=$auto$alumacc.cc:474:replace_alu$26.C[15] \
-    S=counter0[15] \
+    S=out \
     CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[16] \
     CO_FABRIC=__vpr__unconn6 \
     O=$0\counter0[21:0][15]
-
-.subckt CARRY0 \
-    CI=$auto$alumacc.cc:474:replace_alu$26.C[16] \
-    S=counter0[16] \
-    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[17] \
-    CO_FABRIC=__vpr__unconn7 \
-    O=$0\counter0[21:0][16]
-
-.subckt CARRY \
-    CI=$auto$alumacc.cc:474:replace_alu$26.C[17] \
-    S=counter0[17] \
-    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[18] \
-    CO_FABRIC=__vpr__unconn8 \
-    O=$0\counter0[21:0][17]
-
-.subckt CARRY \
-    CI=$auto$alumacc.cc:474:replace_alu$26.C[18] \
-    S=counter0[18] \
-    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[19] \
-    CO_FABRIC=__vpr__unconn9 \
-    O=$0\counter0[21:0][18]
-
-.subckt CARRY \
-    CI=$auto$alumacc.cc:474:replace_alu$26.C[19] \
-    S=counter0[19] \
-    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[20] \
-    CO_FABRIC=__vpr__unconn10 \
-    O=$0\counter0[21:0][19]
-
-.subckt CARRY0 \
-    CI=$auto$alumacc.cc:474:replace_alu$26.C[20] \
-    S=counter0[20] \
-    CO_CHAIN=$auto$alumacc.cc:474:replace_alu$26.C[21] \
-    CO_FABRIC=__vpr__unconn12 \
-    O=$0\counter0[21:0][20]
-
-.subckt CARRY \
-    CI=$auto$alumacc.cc:474:replace_alu$26.C[21] \
-    S=out[0] \
-    CO_CHAIN=__vpr__unconn13 \
-    O=$0\counter0[21:0][21]
 
 .subckt FDRE \
     CE=$true \
@@ -282,46 +234,4 @@
     D=$0\counter0[21:0][15] \
     R=$false \
     Q=counter0[15] \
-    C=clk
-
-.subckt FDRE \
-    CE=$true \
-    D=$0\counter0[21:0][16] \
-    R=$false \
-    Q=counter0[16] \
-    C=clk
-
-.subckt FDRE \
-    CE=$true \
-    D=$0\counter0[21:0][17] \
-    R=$false \
-    Q=counter0[17] \
-    C=clk
-
-.subckt FDRE \
-    CE=$true \
-    D=$0\counter0[21:0][18] \
-    R=$false \
-    Q=counter0[18] \
-    C=clk
-
-.subckt FDRE \
-    CE=$true \
-    D=$0\counter0[21:0][19] \
-    R=$false \
-    Q=counter0[19] \
-    C=clk
-
-.subckt FDRE \
-    CE=$true \
-    D=$0\counter0[21:0][20] \
-    R=$false \
-    Q=counter0[20] \
-    C=clk
-
-.subckt FDRE \
-    CE=$true \
-    D=$0\counter0[21:0][21] \
-    R=$false \
-    Q=out[0] \
     C=clk

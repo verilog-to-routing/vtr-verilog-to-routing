@@ -132,6 +132,7 @@ struct t_options {
     argparse::ArgValue<bool> verify_binary_search;
     argparse::ArgValue<e_router_algorithm> RouterAlgorithm;
     argparse::ArgValue<int> min_incremental_reroute_fanout;
+    argparse::ArgValue<bool> disable_check_route;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;
@@ -151,6 +152,7 @@ struct t_options {
     argparse::ArgValue<int> router_max_convergence_count;
     argparse::ArgValue<float> router_reconvergence_cpd_threshold;
     argparse::ArgValue<std::string> router_first_iteration_timing_report_file;
+    argparse::ArgValue<std::string> lookahead_search_locations;
 
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;

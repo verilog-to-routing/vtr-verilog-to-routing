@@ -52,7 +52,7 @@ int ClusteredNetlist::block_pin_net_index(const ClusterBlockId blk_id, const int
 
 ClusterPinId ClusteredNetlist::block_pin(const ClusterBlockId blk, const int phys_pin_index) const {
     VTR_ASSERT_SAFE(valid_block_id(blk));
-    VTR_ASSERT_SAFE_MSG(phys_pin_index >= 0 && phys_pin_index < physical_tile_type(block_type(blk))->num_pins, "Physical pin index must be in range");
+    VTR_ASSERT_SAFE_MSG(phys_pin_index >= 0 && phys_pin_index < pick_random_physical_type(block_type(blk))->num_pins, "Physical pin index must be in range");
 
     return block_logical_pins_[blk][phys_pin_index];
 }
@@ -79,6 +79,12 @@ int ClusteredNetlist::pin_physical_index(const ClusterPinId id) const {
     VTR_ASSERT_SAFE(valid_pin_id(id));
 
     return pin_physical_index_[id];
+}
+
+int ClusteredNetlist::pin_logical_index(const ClusterPinId pin_id) const {
+    VTR_ASSERT_SAFE(valid_pin_id(pin_id));
+
+    return pin_logical_index_[pin_id];
 }
 
 int ClusteredNetlist::net_pin_physical_index(const ClusterNetId net_id, int net_pin_index) const {
@@ -122,7 +128,7 @@ ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_logi
         block_types_.insert(blk_id, type);
 
         //Allocate and initialize every potential pin of the block
-        block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>(physical_tile_type(type)->num_pins, ClusterPinId::INVALID()));
+        block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>(get_max_num_pins(type), ClusterPinId::INVALID()));
     }
 
     //Check post-conditions: size
@@ -170,6 +176,7 @@ ClusterPinId ClusteredNetlist::create_pin(const ClusterPortId port_id, BitIndex 
     ClusterPinId pin_id = Netlist::create_pin(port_id, port_bit, net_id, pin_type_, is_const);
 
     pin_physical_index_.push_back(pin_index);
+    pin_logical_index_.push_back(pin_index);
 
     ClusterBlockId block_id = port_block(port_id);
     block_logical_pins_[block_id][pin_index] = pin_id;
@@ -254,7 +261,7 @@ void ClusteredNetlist::clean_nets_impl(const vtr::vector_map<ClusterNetId, Clust
 void ClusteredNetlist::rebuild_block_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& /*pin_id_map*/,
                                                const vtr::vector_map<ClusterPortId, ClusterPortId>& /*port_id_map*/) {
     for (auto blk : blocks()) {
-        block_logical_pins_[blk] = std::vector<ClusterPinId>(physical_tile_type(blk)->num_pins, ClusterPinId::INVALID()); //Reset
+        block_logical_pins_[blk] = std::vector<ClusterPinId>(get_max_num_pins(block_type(blk)), ClusterPinId::INVALID()); //Reset
         for (auto pin : block_pins(blk)) {
             int phys_pin_index = pin_physical_index(pin);
             block_logical_pins_[blk][phys_pin_index] = pin;
@@ -284,6 +291,7 @@ void ClusteredNetlist::shrink_to_fit_impl() {
 
     //Pin data
     pin_physical_index_.shrink_to_fit();
+    pin_logical_index_.shrink_to_fit();
 
     //Net data
     net_is_ignored_.shrink_to_fit();
