@@ -228,7 +228,7 @@
       <output name="clkout4"  num_pins="1" />
       <output name="clkout5"  num_pins="1" />
 
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+      <fc in_type="frac" in_val="1" out_type="frac" out_val="1"/>
       <pinlocations pattern="spread"/>
     </tile>
     <tile name="clb" area="53894">
@@ -275,8 +275,8 @@
       <corners type="EMPTY" priority="101"/>
       <!--Fill with 'clb'-->
       <fill type="clb" priority="10"/>
-      <single type="pll_block" x="1" y="1" priority="31"/>
-      <col type="clk_control" startx="1" starty="1" priority="30"/>
+      <single type="pll_block" x="1" y="2" priority="120"/>
+      <col type="clk_control" startx="1" starty="4" priority="30"/>
       <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
       <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
       <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
@@ -384,6 +384,35 @@
     </pb_type>
     <!-- Define I/O pads ends -->
 
+    <pb_type name="clk_control">
+      <input name="in" num_pins="2"/>
+      <output name="out" num_pins="1"/>
+      <mode name="clkbuf">
+        <pb_type name="clkbuf" blif_model="clkbuf" num_pb="1">
+          <clock name="in" num_pins="1"/>
+          <output name="out" num_pins="1"/>
+          <delay_constant max="10e-12" in_port="clkbuf.in" out_port="clkbuf.out"/>
+        </pb_type>
+        <interconnect>
+          <complete name="in" input="clk_control.in" output="clkbuf.in"/>
+          <complete name="out" input="clkbuf.out" output="clk_control.out"/>
+        </interconnect>
+      </mode>
+      <mode name="clkbufce">
+        <pb_type name="clkbufce" blif_model="clkbufce" num_pb="1">
+          <clock name="in" num_pins="1"/>
+          <input name="enable" num_pins="1"/>
+          <output name="out" num_pins="1"/>
+          <delay_constant max="10e-12" in_port="clkbufce.in" out_port="clkbufce.out"/>
+          <delay_constant max="5e-12" in_port="clkbufce.enable" out_port="clkbufce.out"/>
+        </pb_type>
+        <interconnect>
+          <complete name="in" input="clk_control.in" output="clkbufce.in clkbufce.enable"/>
+          <complete name="out" input="clkbufce.out" output="clk_control.out"/>
+        </interconnect>
+      </mode>
+      <power method="ignore"/>
+    </pb_type>
     <pb_type name="pll_block">
       <clock  name="dclk"     num_pins="1" />
       <clock  name="clkfbin"  num_pins="1" />
@@ -477,35 +506,6 @@
       </mode>
     </pb_type>
 
-    <pb_type name="clk_control">
-      <input name="in" num_pins="2"/>
-      <output name="out" num_pins="1"/>
-      <mode name="clkbuf">
-        <pb_type name="clkbuf" blif_model="clkbuf" num_pb="1">
-          <clock name="in" num_pins="1"/>
-          <output name="out" num_pins="1"/>
-          <delay_constant max="10e-12" in_port="clkbuf.in" out_port="clkbuf.out"/>
-        </pb_type>
-        <interconnect>
-          <complete name="in" input="clk_control.in" output="clkbuf.in"/>
-          <complete name="out" input="clkbuf.out" output="clk_control.out"/>
-        </interconnect>
-      </mode>
-      <mode name="clkbufce">
-        <pb_type name="clkbufce" blif_model="clkbufce" num_pb="1">
-          <clock name="in" num_pins="1"/>
-          <input name="enable" num_pins="1"/>
-          <output name="out" num_pins="1"/>
-          <delay_constant max="10e-12" in_port="clkbufce.in" out_port="clkbufce.out"/>
-          <delay_constant max="5e-12" in_port="clkbufce.enable" out_port="clkbufce.out"/>
-        </pb_type>
-        <interconnect>
-          <complete name="in" input="clk_control.in" output="clkbufce.in clkbufce.enable"/>
-          <complete name="out" input="clkbufce.out" output="clk_control.out"/>
-        </interconnect>
-      </mode>
-      <power method="ignore"/>
-    </pb_type>
     <!-- Define general purpose logic block (CLB) begin -->
     <!--- Area calculation: Total Stratix IV tile area is about 8100 um^2, and a minimum width transistor 
 	   area is 60 L^2 yields a tile area of 84375 MWTAs.
