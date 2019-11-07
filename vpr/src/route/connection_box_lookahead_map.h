@@ -32,29 +32,6 @@ struct RoutingCostKey {
     }
 };
 
-// compressed version of RoutingCostKey
-// TODO add bounds checks
-struct CompressedRoutingCostKey {
-    uint32_t data;
-
-    CompressedRoutingCostKey() {
-        data = -1;
-    }
-    CompressedRoutingCostKey(const RoutingCostKey& key) {
-        data = key.seg_index & 0xff;
-        data <<= 8;
-        data |= size_t(key.box_id) & 0xff;
-        data <<= 8;
-        data |= key.delta.x() & 0xff;
-        data <<= 8;
-        data |= key.delta.y() & 0xff;
-    }
-
-    bool operator==(CompressedRoutingCostKey other) const {
-        return data == other.data;
-    }
-};
-
 // Data in the RoutingCosts map
 struct RoutingCost {
     // source and destination node indices
@@ -67,15 +44,11 @@ struct RoutingCost {
 // hash implementation for RoutingCostKey
 struct HashRoutingCostKey {
     std::size_t operator()(RoutingCostKey const& key) const noexcept {
-        uint64_t data;
-        data = key.seg_index & 0xffff;
-        data <<= 16;
-        data |= size_t(key.box_id) & 0xffff;
-        data <<= 16;
-        data |= key.delta.x() & 0xffff;
-        data <<= 16;
-        data |= key.delta.y() & 0xffff;
-        return std::hash<uint64_t>{}(data);
+        std::size_t hash = std::hash<int>{}(key.seg_index);
+        vtr::hash_combine(hash, key.box_id);
+        vtr::hash_combine(hash, key.delta.x());
+        vtr::hash_combine(hash, key.delta.y());
+        return hash;
     }
 };
 
