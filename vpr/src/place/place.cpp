@@ -27,6 +27,7 @@
 #include "place_macro.h"
 #include "histogram.h"
 #include "place_util.h"
+#include "initial_placement.h"
 #include "place_delay_model.h"
 #include "move_transactions.h"
 #include "move_utils.h"
@@ -58,11 +59,6 @@ using std::min;
  * once-in-a-while placement legality check as well as floating point     *
  * variables round-offs check.                                            */
 #define MAX_MOVES_BEFORE_RECOMPUTE 500000
-
-/* The maximum number of tries when trying to place a carry chain at a    *
- * random location before trying exhaustive placement - find the fist     *
- * legal position and place it during initial placement.                  */
-#define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 4
 
 /* Flags for the states of the bounding box.                              *
  * Stored as char for memory efficiency.                                  */
@@ -112,9 +108,6 @@ constexpr double MAX_INV_TIMING_COST = 1.e9;
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
 static vtr::vector<ClusterNetId, double> net_cost, temp_net_cost;
-
-static t_pl_loc** legal_pos = nullptr; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1] */
-static int* num_legal_pos = nullptr;   /* [0..num_legal_pos-1] */
 
 /* [0...cluster_ctx.clb_nlist.nets().size()-1]                                               *
  * A flag array to indicate whether the specific bounding box has been updated   *
@@ -285,23 +278,6 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp);
 
 static void free_fast_cost_update();
 
-static void alloc_legal_placements();
-static void load_legal_placements();
-
-static void free_legal_placements();
-
-static int check_macro_can_be_placed(int imacro, int itype, t_pl_loc head_pos);
-
-static int try_place_macro(int itype, int ipos, int imacro);
-
-static void initial_placement_pl_macros(int macros_max_num_tries, int* free_locations);
-
-static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pad_loc_type);
-static void initial_placement_location(const int* free_locations, ClusterBlockId blk_id, int& pipos, t_pl_loc& to);
-
-static void initial_placement(enum e_pad_loc_type pad_loc_type,
-                              const char* pad_loc_file);
-
 static double comp_bb_cost(e_cost_methods method);
 
 static void update_move_nets(int num_nets_affected);
@@ -437,6 +413,7 @@ static void print_place_status(const float t,
                                const float rlim,
                                const float crit_exponent,
                                size_t tot_moves);
+static void print_resources_utilization();
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -509,6 +486,7 @@ void try_place(const t_placer_opts& placer_opts,
                                      directs, num_directs);
 
     initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file.c_str());
+
     init_draw_coords((float)width_fac);
     //Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, pb_gpin_lookup);
@@ -828,6 +806,8 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100 * abort_rate);
 
     report_aborted_moves();
+
+    print_resources_utilization();
 
     free_placement_structs(placer_opts);
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -1685,7 +1665,6 @@ static double comp_bb_cost(e_cost_methods method) {
 static void free_placement_structs(const t_placer_opts& placer_opts) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    free_legal_placements();
     free_fast_cost_update();
 
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -1716,7 +1695,6 @@ static void free_placement_structs(const t_placer_opts& placer_opts) {
     free_placement_macros_structs();
 
     /* Frees up all the data structure used in vpr_utils. */
-    free_port_pin_from_blk_pin();
     free_blk_pin_from_port_pin();
 }
 
@@ -1736,9 +1714,6 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
     size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
     init_placement_context();
-
-    alloc_legal_placements();
-    load_legal_placements();
 
     max_pins_per_clb = 0;
     for (const auto& type : device_ctx.physical_tile_types) {
@@ -2252,358 +2227,6 @@ static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new
     }
 }
 
-static void alloc_legal_placements() {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    legal_pos = new t_pl_loc*[device_ctx.physical_tile_types.size()];
-    num_legal_pos = (int*)vtr::calloc(device_ctx.physical_tile_types.size(), sizeof(int));
-
-    /* Initialize all occupancy to zero. */
-
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            place_ctx.grid_blocks[i][j].usage = 0;
-
-            for (int k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
-                if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK_ID) {
-                    place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK_ID;
-                    if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-                        num_legal_pos[device_ctx.grid[i][j].type->index]++;
-                    }
-                }
-            }
-        }
-    }
-
-    for (const auto& type : device_ctx.physical_tile_types) {
-        legal_pos[type.index] = new t_pl_loc[num_legal_pos[type.index]];
-    }
-}
-
-static void load_legal_placements() {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    int* index = (int*)vtr::calloc(device_ctx.physical_tile_types.size(), sizeof(int));
-
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            for (int k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
-                if (place_ctx.grid_blocks[i][j].blocks[k] == INVALID_BLOCK_ID) {
-                    continue;
-                }
-                if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-                    int itype = device_ctx.grid[i][j].type->index;
-                    legal_pos[itype][index[itype]].x = i;
-                    legal_pos[itype][index[itype]].y = j;
-                    legal_pos[itype][index[itype]].z = k;
-                    index[itype]++;
-                }
-            }
-        }
-    }
-    free(index);
-}
-
-static void free_legal_placements() {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    for (unsigned int i = 0; i < device_ctx.physical_tile_types.size(); i++) {
-        delete[] legal_pos[i];
-    }
-    delete[] legal_pos; /* Free the mapping list */
-    free(num_legal_pos);
-}
-
-static int check_macro_can_be_placed(int imacro, int itype, t_pl_loc head_pos) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    // Every macro can be placed until proven otherwise
-    int macro_can_be_placed = true;
-
-    auto& pl_macros = place_ctx.pl_macros;
-
-    // Check whether all the members can be placed
-    for (size_t imember = 0; imember < pl_macros[imacro].members.size(); imember++) {
-        t_pl_loc member_pos = head_pos + pl_macros[imacro].members[imember].offset;
-
-        // Check whether the location could accept block of this type
-        // Then check whether the location could still accommodate more blocks
-        // Also check whether the member position is valid, that is the member's location
-        // still within the chip's dimemsion and the member_z is allowed at that location on the grid
-        if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
-            && device_ctx.grid[member_pos.x][member_pos.y].type->index == itype
-            && place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.z] == EMPTY_BLOCK_ID) {
-            // Can still accommodate blocks here, check the next position
-            continue;
-        } else {
-            // Cant be placed here - skip to the next try
-            macro_can_be_placed = false;
-            break;
-        }
-    }
-
-    return (macro_can_be_placed);
-}
-
-static int try_place_macro(int itype, int ipos, int imacro) {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    int macro_placed = false;
-
-    // Choose a random position for the head
-    t_pl_loc head_pos = legal_pos[itype][ipos];
-
-    // If that location is occupied, do nothing.
-    if (place_ctx.grid_blocks[head_pos.x][head_pos.y].blocks[head_pos.z] != EMPTY_BLOCK_ID) {
-        return (macro_placed);
-    }
-
-    int macro_can_be_placed = check_macro_can_be_placed(imacro, itype, head_pos);
-
-    if (macro_can_be_placed) {
-        auto& pl_macros = place_ctx.pl_macros;
-
-        // Place down the macro
-        macro_placed = true;
-        for (size_t imember = 0; imember < pl_macros[imacro].members.size(); imember++) {
-            t_pl_loc member_pos = head_pos + pl_macros[imacro].members[imember].offset;
-
-            ClusterBlockId iblk = pl_macros[imacro].members[imember].blk_index;
-            place_ctx.block_locs[iblk].loc = member_pos;
-
-            place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.z] = pl_macros[imacro].members[imember].blk_index;
-            place_ctx.grid_blocks[member_pos.x][member_pos.y].usage++;
-
-            // Could not ensure that the randomiser would not pick this location again
-            // So, would have to do a lazy removal - whenever I come across a block that could not be placed,
-            // go ahead and remove it from the legal_pos[][] array
-
-        } // Finish placing all the members in the macro
-
-    } // End of this choice of legal_pos
-
-    return (macro_placed);
-}
-
-static void initial_placement_pl_macros(int macros_max_num_tries, int* free_locations) {
-    int macro_placed;
-    int itype, itry, ipos;
-    ClusterBlockId blk_id;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    auto& pl_macros = place_ctx.pl_macros;
-
-    /* Macros are harder to place.  Do them first */
-    for (size_t imacro = 0; imacro < place_ctx.pl_macros.size(); imacro++) {
-        // Every macro are not placed in the beginnning
-        macro_placed = false;
-
-        // Assume that all the blocks in the macro are of the same type
-        blk_id = pl_macros[imacro].members[0].blk_index;
-        auto type = physical_tile_type(blk_id);
-        itype = type->index;
-        if (free_locations[itype] < int(pl_macros[imacro].members.size())) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                            "Initial placement failed.\n"
-                            "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
-                            "VPR cannot auto-size for your circuit, please resize the FPGA manually.\n",
-                            pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), type->name, itype);
-        }
-
-        // Try to place the macro first, if can be placed - place them, otherwise try again
-        for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
-            // Choose a random position for the head
-            ipos = vtr::irand(free_locations[itype] - 1);
-
-            // Try to place the macro
-            macro_placed = try_place_macro(itype, ipos, imacro);
-
-        } // Finished all tries
-
-        if (macro_placed == false) {
-            // if a macro still could not be placed after macros_max_num_tries times,
-            // go through the chip exhaustively to find a legal placement for the macro
-            // place the macro on the first location that is legal
-            // then set macro_placed = true;
-            // if there are no legal positions, error out
-
-            // Exhaustive placement of carry macros
-            for (ipos = 0; ipos < free_locations[itype] && macro_placed == false; ipos++) {
-                // Try to place the macro
-                macro_placed = try_place_macro(itype, ipos, imacro);
-
-            } // Exhausted all the legal placement position for this macro
-
-            // If macro could not be placed after exhaustive placement, error out
-            if (macro_placed == false) {
-                // Error out
-                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                                "Initial placement failed.\n"
-                                "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
-                                "Please manually size the FPGA because VPR can't do this yet.\n",
-                                pl_macros[imacro].members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.physical_tile_types[itype].name, itype);
-            }
-
-        } else {
-            // This macro has been placed successfully, proceed to place the next macro
-            continue;
-        }
-    } // Finish placing all the pl_macros successfully
-}
-
-/* Place blocks that are NOT a part of any macro.
- * We'll randomly place each block in the clustered netlist, one by one. */
-static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pad_loc_type) {
-    int itype, ipos;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& device_ctx = g_vpr_ctx.device();
-
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        if (place_ctx.block_locs[blk_id].loc.x != -1) { // -1 is a sentinel for an empty block
-            // block placed.
-            continue;
-        }
-
-        /* Don't do IOs if the user specifies IOs; we'll read those locations later. */
-        if (!(is_io_type(physical_tile_type(blk_id)) && pad_loc_type == USER)) {
-            /* Randomly select a free location of the appropriate type for blk_id.
-             * We have a linearized list of all the free locations that can
-             * accommodate a block of that type in free_locations[itype].
-             * Choose one randomly and put blk_id there. Then we don't want to pick
-             * that location again, so remove it from the free_locations array.
-             */
-            itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
-            if (free_locations[itype] <= 0) {
-                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                                "Initial placement failed.\n"
-                                "Could not place block %s (#%zu); no free locations of type %s (#%d).\n",
-                                cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.physical_tile_types[itype].name, itype);
-            }
-
-            t_pl_loc to;
-            initial_placement_location(free_locations, blk_id, ipos, to);
-
-            // Make sure that the position is EMPTY_BLOCK before placing the block down
-            VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.z] == EMPTY_BLOCK_ID);
-
-            place_ctx.grid_blocks[to.x][to.y].blocks[to.z] = blk_id;
-            place_ctx.grid_blocks[to.x][to.y].usage++;
-
-            place_ctx.block_locs[blk_id].loc = to;
-
-            //Mark IOs as fixed if specifying a (fixed) random placement
-            if (is_io_type(physical_tile_type(blk_id)) && pad_loc_type == RANDOM) {
-                place_ctx.block_locs[blk_id].is_fixed = true;
-            }
-
-            /* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the
-             * legal positions in legal_pos to remove the entry (choice) we just used, but faster to
-             * just move the last entry in legal_pos to the spot we just used and decrement the
-             * count of free_locations. */
-            legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
-            free_locations[itype]--;
-        }
-    }
-}
-
-static void initial_placement_location(const int* free_locations, ClusterBlockId blk_id, int& ipos, t_pl_loc& to) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    int itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
-
-    ipos = vtr::irand(free_locations[itype] - 1);
-    to = legal_pos[itype][ipos];
-}
-
-static void initial_placement(enum e_pad_loc_type pad_loc_type,
-                              const char* pad_loc_file) {
-    /* Randomly places the blocks to create an initial placement. We rely on
-     * the legal_pos array already being loaded.  That legal_pos[itype] is an
-     * array that gives every legal value of (x,y,z) that can accommodate a block.
-     * The number of such locations is given by num_legal_pos[itype].
-     */
-    int itype, ipos;
-    int* free_locations; /* [0..device_ctx.num_block_types-1].
-                          * Stores how many locations there are for this type that *might* still be free.
-                          * That is, this stores the number of entries in legal_pos[itype] that are worth considering
-                          * as you look for a free location.
-                          */
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    free_locations = (int*)vtr::malloc(device_ctx.physical_tile_types.size() * sizeof(int));
-    for (const auto& type : device_ctx.physical_tile_types) {
-        itype = type.index;
-        free_locations[itype] = num_legal_pos[itype];
-    }
-
-    /* We'll use the grid to record where everything goes. Initialize to the grid has no
-     * blocks placed anywhere.
-     */
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            place_ctx.grid_blocks[i][j].usage = 0;
-            itype = device_ctx.grid[i][j].type->index;
-            for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
-                if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK_ID) {
-                    place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK_ID;
-                }
-            }
-        }
-    }
-
-    /* Similarly, mark all blocks as not being placed yet. */
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        place_ctx.block_locs[blk_id].loc = t_pl_loc();
-    }
-
-    initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
-
-    // All the macros are placed, update the legal_pos[][] array
-    for (const auto& type : device_ctx.physical_tile_types) {
-        itype = type.index;
-        VTR_ASSERT(free_locations[itype] >= 0);
-        for (ipos = 0; ipos < free_locations[itype]; ipos++) {
-            t_pl_loc pos = legal_pos[itype][ipos];
-
-            // Check if that location is occupied.  If it is, remove from legal_pos
-            if (place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.z] != EMPTY_BLOCK_ID && place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.z] != INVALID_BLOCK_ID) {
-                legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1];
-                free_locations[itype]--;
-
-                // After the move, I need to check this particular entry again
-                ipos--;
-                continue;
-            }
-        }
-    } // Finish updating the legal_pos[][] and free_locations[] array
-
-    initial_placement_blocks(free_locations, pad_loc_type);
-
-    if (pad_loc_type == USER) {
-        read_user_pad_loc(pad_loc_file);
-    }
-
-    /* Restore legal_pos */
-    load_legal_placements();
-
-#ifdef VERBOSE
-    VTR_LOG("At end of initial_placement.\n");
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_INITIAL_CLB_PLACEMENT)) {
-        print_clb_placement(getEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT));
-    }
-#endif
-    free(free_locations);
-}
-
 static void free_fast_cost_update() {
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -2937,4 +2560,34 @@ static void print_place_status(const float t,
 
     VTR_LOG(" %6.3f\n", t / oldt);
     fflush(stdout);
+}
+
+static void print_resources_utilization() {
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    //Record the resource requirement
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances;
+    std::map<t_logical_block_type_ptr, std::map<t_physical_tile_type_ptr, size_t>> num_placed_instances;
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        auto block_loc = place_ctx.block_locs[blk_id];
+        auto loc = block_loc.loc;
+
+        auto physical_tile = device_ctx.grid[loc.x][loc.y].type;
+        auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+
+        num_type_instances[logical_block]++;
+        num_placed_instances[logical_block][physical_tile]++;
+    }
+
+    for (auto logical_block : num_type_instances) {
+        VTR_LOG("Logical Block: %s\n", logical_block.first->name);
+        VTR_LOG("\tInstances -> %d\n", logical_block.second);
+
+        VTR_LOG("\tPhysical Tiles used:\n");
+        for (auto physical_tile : num_placed_instances[logical_block.first]) {
+            VTR_LOG("\t\t%s: %d\n", physical_tile.first->name, physical_tile.second);
+        }
+    }
 }

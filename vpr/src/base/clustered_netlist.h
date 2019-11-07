@@ -148,8 +148,12 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      */
 
     //Returns the physical pin index (i.e. pin index on the
-    //t_logical_block_type) of the specified logical pin
+    //t_physical_tile_type) of the specified logical pin
     int pin_physical_index(const ClusterPinId id) const;
+
+    //Returns the logical pin index (i.e. pin index on the
+    //t_logical_block_type) of the cluster pin
+    int pin_logical_index(const ClusterPinId pin_id) const;
 
     //Finds the net_index'th net pin (e.g. the 6th pin of the net) and
     //returns the physical pin index (i.e. pin index on the t_logical_block_type)
@@ -245,12 +249,16 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
   private: //Private Data
     //Blocks
     vtr::vector_map<ClusterBlockId, t_pb*> block_pbs_;                              //Physical block representing the clustering & internal hierarchy of each CLB
-    vtr::vector_map<ClusterBlockId, t_logical_block_type_ptr> block_types_;         //The type of physical block this user circuit block is mapped to
-    vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>> block_logical_pins_; //The logical pin associated with each physical block pin
+    vtr::vector_map<ClusterBlockId, t_logical_block_type_ptr> block_types_;         //The type of logical block this user circuit block is mapped to
+    vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>> block_logical_pins_; //The logical pin associated with each physical tile pin
 
     //Pins
     vtr::vector_map<ClusterPinId, int> pin_physical_index_; //The physical pin index (i.e. pin index
-                                                            //in t_logical_block_type) of logical pins
+                                                            //in t_physical_tile_type) corresponding
+                                                            //to the clustered pin
+    vtr::vector_map<ClusterPinId, int> pin_logical_index_;  //The logical pin index of this block (i.e. pin index
+                                                            //in t_logical_block_type) corresponding
+                                                            //to the clustered pin
 
     //Nets
     vtr::vector_map<ClusterNetId, bool> net_is_ignored_; //Boolean mapping indicating if the net is ignored

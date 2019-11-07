@@ -133,7 +133,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
             load_pin_classes_in_pb_graph_head(type.pb_graph_head);
         } else {
             type.pb_graph_head = nullptr;
-            VTR_ASSERT(physical_tile_type(&type) == device_ctx.EMPTY_TYPE);
+            VTR_ASSERT(&type == device_ctx.EMPTY_LOGICAL_BLOCK_TYPE);
         }
     }
 

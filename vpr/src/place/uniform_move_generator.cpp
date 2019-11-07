@@ -14,10 +14,13 @@ e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;
-    VTR_ASSERT(physical_tile_type(cluster_from_type) == grid_from_type);
+    VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     t_pl_loc to;
-    if (!find_to_loc_uniform(physical_tile_type(b_from), rlim, from, to)) {
+
+    auto type = pick_random_physical_type(cluster_from_type);
+
+    if (!find_to_loc_uniform(type, rlim, from, to)) {
         return e_create_move::ABORT;
     }
 

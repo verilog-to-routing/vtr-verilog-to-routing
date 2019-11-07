@@ -199,6 +199,12 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
             }
 
             auto type = grid[x][y].type;
+
+            // Skip EMPTY type
+            if (is_empty_type(type)) {
+                continue;
+            }
+
             auto width_offset = grid[x][y].width_offset;
             auto height_offset = grid[x][y].height_offset;
 

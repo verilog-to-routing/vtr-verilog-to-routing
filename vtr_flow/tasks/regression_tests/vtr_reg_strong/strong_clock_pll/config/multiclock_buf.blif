@@ -5,8 +5,14 @@
 .names clk clk_buf
 1 1
 
+.subckt pll \
+    clkin1=clk2 \
+    clkout0=clk2_pll_out \
+    clkfbin=clkfb \
+    clkfbout=clkfb
+
 .subckt clkbuf \
-    in=clk2 \
+    in=clk2_pll_out \
     out=clk2_buf
 
 .subckt clkbufce \

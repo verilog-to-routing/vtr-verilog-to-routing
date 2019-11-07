@@ -9,7 +9,11 @@
   <tiles>
     <tile name="io" capacity="3">
       <equivalent_sites>
-        <site pb_type="io"/>
+        <site pb_type="io">
+          <direct from="io.outpad" to="io.outpad"/>
+          <direct from="io.inpad" to="io.inpad"/>
+          <direct from="io.clock" to="io.clock"/>
+        </site>
       </equivalent_sites>
       <input name="outpad" num_pins="1"/>
       <output name="inpad" num_pins="1"/>
@@ -24,7 +28,11 @@
     </tile>
     <tile name="clb">
       <equivalent_sites>
-        <site pb_type="clb"/>
+        <site pb_type="clb">
+          <direct from="clb.I" to="clb.I"/>
+          <direct from="clb.O" to="clb.O"/>
+          <direct from="clb.clk" to="clb.clk"/>
+        </site>
       </equivalent_sites>
       <input name="I" num_pins="10" equivalent="full"/>
       <output name="O" num_pins="4" equivalent="instance"/>
