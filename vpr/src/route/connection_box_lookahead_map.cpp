@@ -48,14 +48,8 @@ static constexpr int SAMPLE_GRID_SIZE = 3;
 // Stop Dijkstra expansion after reaching COST_LIMIT
 static constexpr float COST_LIMIT = std::numeric_limits<float>::infinity();
 
-// Number of entries in the routing cost cache
-static constexpr int DIJKSTRA_CACHE_SIZE = 64;
-
-// Only entries with a delta inside the window (+- DIJKSTRA_CACHE_WINDOW x/y) are cached
-static constexpr int DIJKSTRA_CACHE_WINDOW = 3;
-
 // Don't continue storing a path after hitting a lower-or-same cost entry.
-static constexpr bool BREAK_ON_MISS = false;
+static constexpr bool BREAK_ON_MISS = true;
 
 // Distance penalties filling are calculated based on available samples, but can be adjusted with this factor.
 static constexpr float PENALTY_FACTOR = 1.f;
@@ -74,65 +68,9 @@ struct SampleGrid {
     SamplePoint point[SAMPLE_GRID_SIZE][SAMPLE_GRID_SIZE];
 };
 
-// implements a simple cache of key(K)/value(V) pairs of N entries
-template<class K, class V, int N>
-class SimpleCache {
-  public:
-    SimpleCache()
-        : pos(0)
-        , hits(0)
-        , misses(0) {}
-
-    // O(N) lookup
-    bool get(K key, V* value) {
-        for (int i = 0; i < N; i++) {
-            auto& k = keys[i];
-            if (k == key) {
-                auto& v = values[i];
-#if defined(CONNECTION_BOX_LOOKAHEAD_PUSH_BACK_HITS)
-                // preserve the found key by pushing it back
-                int last = (pos + N - 1) % N;
-                std::swap(k, keys[last]);
-                std::swap(v, values[last]);
-#endif
-                *value = v;
-                hits++;
-                return true;
-            }
-        }
-        misses++;
-        return false;
-    }
-
-    // O(1) insertion (overwriting an older entry)
-    void insert(K key, V val) {
-        keys[pos] = key;
-        values[pos] = val;
-        pos = (pos + 1) % N;
-    }
-
-    // ratio of successful lookups
-    float hit_ratio() {
-        return hits ? static_cast<float>(hits) / static_cast<float>(hits + misses) : 0.f;
-    }
-
-    // ratio of unsuccessful lookups
-    float miss_ratio() {
-        return misses ? static_cast<float>(misses) / static_cast<float>(hits + misses) : 0.f;
-    }
-
-  private:
-    std::array<K, N> keys; // keep keys together for faster scanning
-    std::array<V, N> values;
-    size_t pos;
-    uint64_t hits;
-    uint64_t misses;
-};
-
-static float run_dijkstra(int start_node_ind,
-                          RoutingCosts* routing_costs,
-                          SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE>* cache,
-                          float max_cost);
+static std::pair<float, int> run_dijkstra(int start_node_ind,
+                                          RoutingCosts* routing_costs,
+                                          float max_cost);
 static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_segment);
 
 // also known as the L1 norm
@@ -505,8 +443,7 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
 static void add_paths(int start_node_ind,
                       int node_ind,
                       std::unordered_map<int, util::Search_Path>* paths,
-                      RoutingCosts* routing_costs,
-                      SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE>* cache) {
+                      RoutingCosts* routing_costs) {
     auto& device_ctx = g_vpr_ctx.device();
     ConnectionBoxId box_id;
     std::pair<size_t, size_t> box_location;
@@ -550,7 +487,6 @@ static void add_paths(int start_node_ind,
             seg_index,
             box_id,
             delta};
-        CompressedRoutingCostKey compressed_key(key);
         RoutingCost val = {
             parent,
             node_ind,
@@ -560,42 +496,22 @@ static void add_paths(int start_node_ind,
 
         // NOTE: implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
 
-        // use a cache for a small window around a delta of (0, 0)
-        float cost = 0.f;
-        bool in_window = abs(delta.x()) <= DIJKSTRA_CACHE_WINDOW && abs(delta.y()) <= DIJKSTRA_CACHE_WINDOW;
-        if (in_window && cache->get(compressed_key, &cost) && cost <= val.cost_entry.delay) {
-            // the sample was not cheaper than the cached sample
-            if (BREAK_ON_MISS) {
-                // don't store the rest of the path
-                break;
+        auto result = routing_costs->insert(std::make_pair(key, val));
+        if (!result.second) {
+            auto& existing = result.first->second;
+            if (existing.cost_entry.delay > val.cost_entry.delay) {
+                // this sample is cheaper
+                existing = val;
+            } else {
+                // this sample is not cheaper
+                if (BREAK_ON_MISS) {
+                    // don't store the rest of the path
+                    break;
+                }
             }
         } else {
-            auto result = routing_costs->insert(std::make_pair(key, val));
-            if (!result.second) {
-                auto& existing = result.first->second;
-                if (existing.cost_entry.delay > val.cost_entry.delay) {
-                    // this sample is cheaper
-                    existing = val;
-                    if (in_window) {
-                        cache->insert(compressed_key, val.cost_entry.delay);
-                    }
-                } else {
-                    // this sample is not cheaper
-                    if (BREAK_ON_MISS) {
-                        // don't store the rest of the path
-                        break;
-                    }
-                    if (in_window) {
-                        cache->insert(compressed_key, existing.cost_entry.delay);
-                    }
-                }
-            } else {
-                // this sample is new
-                (*routing_costs)[key] = val;
-                if (in_window) {
-                    cache->insert(compressed_key, val.cost_entry.delay);
-                }
-            }
+            // this sample is new
+            (*routing_costs)[key] = val;
         }
 
         // update parent data
@@ -608,11 +524,11 @@ static void add_paths(int start_node_ind,
 /* runs Dijkstra's algorithm from specified node until all nodes have been
  * visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored to an entry in the routing_cost_map */
-static float run_dijkstra(int start_node_ind,
-                          RoutingCosts* routing_costs,
-                          SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE>* cache,
-                          float cost_limit) {
+static std::pair<float, int> run_dijkstra(int start_node_ind,
+                                          RoutingCosts* routing_costs,
+                                          float cost_limit) {
     auto& device_ctx = g_vpr_ctx.device();
+    int path_count = 0;
 
     /* a list of boolean flags (one for each rr node) to figure out if a
      * certain node has already been expanded */
@@ -646,7 +562,8 @@ static float run_dijkstra(int start_node_ind,
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
         if (device_ctx.rr_nodes[node_ind].type() == IPIN) {
-            add_paths(start_node_ind, node_ind, &paths, routing_costs, cache);
+            path_count++;
+            add_paths(start_node_ind, node_ind, &paths, routing_costs);
         } else {
             expand_dijkstra_neighbours(current, paths, node_expanded, pq);
             node_expanded[node_ind] = true;
@@ -657,7 +574,17 @@ static float run_dijkstra(int start_node_ind,
             break;
         }
     }
-    return max_cost;
+    return std::make_pair(max_cost, path_count);
+}
+
+static uint64_t interleave(uint32_t x) {
+    uint64_t i = x;
+    i = (i ^ (i << 16)) & 0x0000ffff0000ffff;
+    i = (i ^ (i << 8)) & 0x00ff00ff00ff00ff;
+    i = (i ^ (i << 4)) & 0x0f0f0f0f0f0f0f0f;
+    i = (i ^ (i << 2)) & 0x3333333333333333;
+    i = (i ^ (i << 1)) & 0x5555555555555555;
+    return i;
 }
 
 // compute the cost maps for lookahead
@@ -676,7 +603,7 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
                 for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
                     auto& point = grid.point[y][x];
                     if (!point.samples.empty()) {
-                        point.order = point.samples[0];
+                        point.order = interleave(point.location.x()) | (interleave(point.location.y()) << 1);
                         sample_points.push_back(point);
                     }
                 }
@@ -710,21 +637,23 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
         // holds the cost entries for a run
         RoutingCosts costs;
 
-        // a cache to avoid hammering the RoutingCosts map, since lookups will be dominated by a few keys
-        // must be consistent with `costs` i.e. any entry in the cache should also be in `costs`
-        // NOTE: this is used as a write-through cache, maybe try write-back
-        SimpleCache<CompressedRoutingCostKey, float, DIJKSTRA_CACHE_SIZE> cache;
-
+        vtr::Timer run_timer;
+        int path_count = 0;
         for (auto node_ind : point.samples) {
-            max_cost = std::max(max_cost, run_dijkstra(node_ind, &costs, &cache, COST_LIMIT));
+            auto result = run_dijkstra(node_ind, &costs, COST_LIMIT);
+            max_cost = std::max(max_cost, result.first);
+            path_count += result.second;
         }
 
 #if defined(VPR_USE_TBB)
         all_costs_mutex.lock();
 #endif
 
-        VTR_LOG("Expanded sample point (%d, %d) %e miss %g\n",
-                point.location.x(), point.location.y(), max_cost, cache.miss_ratio());
+        VTR_LOG("Expanded %d paths starting at (%d, %d) max_cost %e (%g paths/sec)\n",
+                path_count,
+                point.location.x(), point.location.y(),
+                max_cost,
+                path_count / run_timer.elapsed_sec());
 
         // combine the cost map from this run with the final cost maps for each segment
         for (const auto& cost : costs) {
@@ -903,6 +832,7 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
     for (int i = 0; i < num_segments; i++) {
         const auto& counts = segment_counts[i];
         const auto& bounding_box = bounding_box_for_segment[i];
+        if (bounding_box.empty()) continue;
         auto& grid = (*inodes_for_segment)[i];
         for (int y = 0; y < SAMPLE_GRID_SIZE; y++) {
             for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
