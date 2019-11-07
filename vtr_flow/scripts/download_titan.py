@@ -55,7 +55,7 @@ def parse_args():
                         help="Run extraction step even if directores etc. already exist")
 
     parser.add_argument("--mirror",
-                        default="eecg",
+                        default="google",
                         choices=["eecg", "google"],
                         help="Download mirror")
 

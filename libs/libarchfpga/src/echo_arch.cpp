@@ -102,23 +102,11 @@ void EchoArch(const char* EchoFile,
 
         int index = Type.index;
         fprintf(Echo, "\tindex: %d\n", index);
-
-        for (auto LogicalBlock : Type.equivalent_sites) {
-            fprintf(Echo, "\nEquivalent Site: %s\n", LogicalBlock->name);
+        if (LogicalBlockTypes[Type.index].pb_type) {
+            PrintPb_types_rec(Echo, LogicalBlockTypes[Type.index].pb_type, 2);
         }
         fprintf(Echo, "\n");
     }
-
-    fprintf(Echo, "*************************************************\n\n");
-    fprintf(Echo, "*************************************************\n");
-
-    for (auto& LogicalBlock : LogicalBlockTypes) {
-        if (LogicalBlock.pb_type) {
-            PrintPb_types_rec(Echo, LogicalBlock.pb_type, 2);
-        }
-        fprintf(Echo, "\n");
-    }
-
     fclose(Echo);
 }
 
