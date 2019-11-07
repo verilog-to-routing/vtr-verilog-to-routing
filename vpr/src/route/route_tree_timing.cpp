@@ -1370,6 +1370,8 @@ bool is_valid_route_tree(const t_rt_node* root) {
             return false;
         }
 
+        C_downstream_children += device_ctx.rr_switch_inf[edge->iswitch].Cinternal;
+
         if (!device_ctx.rr_switch_inf[edge->iswitch].buffered()) {
             C_downstream_children += edge->child->C_downstream;
         }
