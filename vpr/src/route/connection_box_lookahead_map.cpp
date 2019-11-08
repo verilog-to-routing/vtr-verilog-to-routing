@@ -495,7 +495,7 @@ static void add_paths(int start_node_ind,
 
         auto result = routing_costs->insert(std::make_pair(key, val));
         if (!result.second) {
-            auto &existing = result.first->second;
+            auto& existing = result.first->second;
             if (existing.cost_entry.delay > val.cost_entry.delay) {
                 // this sample is cheaper
                 existing = val;
@@ -574,13 +574,13 @@ static std::pair<float, int> run_dijkstra(int start_node_ind,
     return std::make_pair(max_cost, path_count);
 }
 
-static uint64_t interleave(uint32_t x)  {
+static uint64_t interleave(uint32_t x) {
     uint64_t i = x;
     i = (i ^ (i << 16)) & 0x0000ffff0000ffff;
-    i = (i ^ (i << 8 )) & 0x00ff00ff00ff00ff;
-    i = (i ^ (i << 4 )) & 0x0f0f0f0f0f0f0f0f;
-    i = (i ^ (i << 2 )) & 0x3333333333333333;
-    i = (i ^ (i << 1 )) & 0x5555555555555555;
+    i = (i ^ (i << 8)) & 0x00ff00ff00ff00ff;
+    i = (i ^ (i << 4)) & 0x0f0f0f0f0f0f0f0f;
+    i = (i ^ (i << 2)) & 0x3333333333333333;
+    i = (i ^ (i << 1)) & 0x5555555555555555;
     return i;
 }
 
@@ -600,9 +600,7 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
                 for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
                     auto& point = grid.point[y][x];
                     if (!point.samples.empty()) {
-                        point.order =
-                            interleave(point.location.x()) |
-                            (interleave(point.location.y()) << 1);
+                        point.order = interleave(point.location.x()) | (interleave(point.location.y()) << 1);
                         sample_points.push_back(point);
                     }
                 }
@@ -730,7 +728,7 @@ float ConnectionBoxMapLookahead::get_expected_cost(
 }
 
 // the smallest bounding box containing a node
-static vtr::Rect<int> bounding_box_for_node(const ConnectionBoxes &connection_boxes, int node_ind) {
+static vtr::Rect<int> bounding_box_for_node(const ConnectionBoxes& connection_boxes, int node_ind) {
     const std::pair<size_t, size_t>* loc = connection_boxes.find_canonical_loc(node_ind);
     if (loc == nullptr) {
         return vtr::Rect<int>();
@@ -741,7 +739,7 @@ static vtr::Rect<int> bounding_box_for_node(const ConnectionBoxes &connection_bo
 
 static vtr::Point<int> choose_point(const vtr::Matrix<int>& counts, const vtr::Rect<int>& bounding_box, int sx, int sy, int n) {
     vtr::Rect<int> window(sample(bounding_box, sx, sy, n),
-                          sample(bounding_box, sx+1, sy+1, n));
+                          sample(bounding_box, sx + 1, sy + 1, n));
     vtr::Point<int> center = sample(window, 1, 1, 2);
     vtr::Point<int> sample_point = center;
     int sample_distance = 0;
@@ -752,8 +750,7 @@ static vtr::Point<int> choose_point(const vtr::Matrix<int>& counts, const vtr::R
             int count = counts[x][y];
             if (count < sample_count) continue;
             int distance = manhattan_distance(center, here);
-            if (count > sample_count ||
-                (count == sample_count && distance < sample_distance)) {
+            if (count > sample_count || (count == sample_count && distance < sample_distance)) {
                 sample_point = here;
                 sample_count = count;
                 sample_distance = distance;
