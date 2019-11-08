@@ -33,6 +33,7 @@ bool ConnectionBoxes::find_connection_box(int inode,
                                           float* site_pin_delay) const {
     VTR_ASSERT(box_id != nullptr);
     VTR_ASSERT(box_location != nullptr);
+    VTR_ASSERT(site_pin_delay != nullptr);
 
     if (inode >= (ssize_t)ipin_map_.size()) {
         return false;

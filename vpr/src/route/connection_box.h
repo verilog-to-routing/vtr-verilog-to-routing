@@ -25,12 +25,12 @@ struct ConnBoxLoc {
         float a_site_pin_delay,
         ConnectionBoxId a_box_id)
         : box_location(a_box_location)
-        , box_id(a_box_id)
-        , site_pin_delay(a_site_pin_delay) {}
+        , site_pin_delay(a_site_pin_delay)
+        , box_id(a_box_id) {}
 
     std::pair<size_t, size_t> box_location;
-    ConnectionBoxId box_id;
     float site_pin_delay;
+    ConnectionBoxId box_id;
 };
 
 struct SinkToIpin {
