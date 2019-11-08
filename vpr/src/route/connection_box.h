@@ -22,11 +22,14 @@ struct ConnBoxLoc {
         : box_location(std::make_pair(-1, -1)) {}
     ConnBoxLoc(
         const std::pair<size_t, size_t>& a_box_location,
+        float a_site_pin_delay,
         ConnectionBoxId a_box_id)
         : box_location(a_box_location)
+        , site_pin_delay(a_site_pin_delay)
         , box_id(a_box_id) {}
 
     std::pair<size_t, size_t> box_location;
+    float site_pin_delay;
     ConnectionBoxId box_id;
 };
 
@@ -45,7 +48,8 @@ class ConnectionBoxes {
 
     bool find_connection_box(int inode,
                              ConnectionBoxId* box_id,
-                             std::pair<size_t, size_t>* box_location) const;
+                             std::pair<size_t, size_t>* box_location,
+                             float* site_pin_delay) const;
     const std::pair<size_t, size_t>* find_canonical_loc(int inode) const;
 
     // Clear IPIN map and set connection box grid size and box ids.
@@ -54,7 +58,7 @@ class ConnectionBoxes {
                      const std::vector<ConnectionBox> boxes);
     void resize_nodes(size_t rr_node_size);
 
-    void add_connection_box(int inode, ConnectionBoxId box_id, std::pair<size_t, size_t> box_location);
+    void add_connection_box(int inode, ConnectionBoxId box_id, std::pair<size_t, size_t> box_location, float site_pin_delay);
     void add_canonical_loc(int inode, std::pair<size_t, size_t> loc);
 
     // Create map from SINK's back to IPIN's
