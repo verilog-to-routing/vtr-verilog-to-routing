@@ -320,10 +320,12 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
                 int x = get_attribute(connection_boxSubnode, "x", loc_data).as_int();
                 int y = get_attribute(connection_boxSubnode, "y", loc_data).as_int();
                 int id = get_attribute(connection_boxSubnode, "id", loc_data).as_int();
+                float site_pin_delay = get_attribute(connection_boxSubnode, "site_pin_delay", loc_data).as_float();
 
                 device_ctx.connection_boxes.add_connection_box(inode,
                                                                ConnectionBoxId(id),
-                                                               std::make_pair(x, y));
+                                                               std::make_pair(x, y),
+                                                               site_pin_delay);
             }
 
         } else {
