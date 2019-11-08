@@ -13,7 +13,8 @@ util::PQ_Entry::PQ_Entry(
     float parent_delay,
     float parent_R_upstream,
     float parent_congestion_upstream,
-    bool starting_node) {
+    bool starting_node,
+    float Tsw_adjust) {
     this->rr_node_ind = set_rr_node_ind;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -24,6 +25,8 @@ util::PQ_Entry::PQ_Entry(
         int cost_index = device_ctx.rr_nodes[set_rr_node_ind].cost_index();
 
         float Tsw = device_ctx.rr_switch_inf[switch_ind].Tdel;
+        Tsw += Tsw_adjust;
+        VTR_ASSERT(Tsw >= 0.f);
         float Rsw = device_ctx.rr_switch_inf[switch_ind].R;
         float Cnode = device_ctx.rr_nodes[set_rr_node_ind].C();
         float Rnode = device_ctx.rr_nodes[set_rr_node_ind].R();
@@ -32,21 +35,11 @@ util::PQ_Entry::PQ_Entry(
         float T_quadratic = 0.f;
         if (device_ctx.rr_switch_inf[switch_ind].buffered()) {
             T_linear = Tsw + Rsw * Cnode + 0.5 * Rnode * Cnode;
-            T_quadratic = 0.;
         } else { /* Pass transistor */
             T_linear = Tsw + 0.5 * Rsw * Cnode;
-            T_quadratic = (Rsw + Rnode) * 0.5 * Cnode;
         }
 
-        float base_cost;
-        if (device_ctx.rr_indexed_data[cost_index].inv_length < 0) {
-            base_cost = device_ctx.rr_indexed_data[cost_index].base_cost;
-        } else {
-            float frac_num_seg = CLB_DIST * device_ctx.rr_indexed_data[cost_index].inv_length;
-
-            base_cost = frac_num_seg * T_linear
-                        + frac_num_seg * frac_num_seg * T_quadratic;
-        }
+        float base_cost = device_ctx.rr_indexed_data[cost_index].base_cost;
 
         VTR_ASSERT(T_linear >= 0.);
         VTR_ASSERT(base_cost >= 0.);
