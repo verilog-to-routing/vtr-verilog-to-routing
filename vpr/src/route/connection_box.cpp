@@ -29,9 +29,11 @@ const ConnectionBox* ConnectionBoxes::get_connection_box(ConnectionBoxId box) co
 
 bool ConnectionBoxes::find_connection_box(int inode,
                                           ConnectionBoxId* box_id,
-                                          std::pair<size_t, size_t>* box_location) const {
+                                          std::pair<size_t, size_t>* box_location,
+                                          float* site_pin_delay) const {
     VTR_ASSERT(box_id != nullptr);
     VTR_ASSERT(box_location != nullptr);
+    VTR_ASSERT(site_pin_delay != nullptr);
 
     const auto& conn_box_loc = ipin_map_[inode];
     if (conn_box_loc.box_id == ConnectionBoxId::INVALID()) {
@@ -40,6 +42,7 @@ bool ConnectionBoxes::find_connection_box(int inode,
 
     *box_id = conn_box_loc.box_id;
     *box_location = conn_box_loc.box_location;
+    *site_pin_delay = conn_box_loc.site_pin_delay;
     return true;
 }
 
@@ -66,7 +69,7 @@ void ConnectionBoxes::clear() {
     sink_to_ipin_.clear();
 }
 
-void ConnectionBoxes::add_connection_box(int inode, ConnectionBoxId box_id, std::pair<size_t, size_t> box_location) {
+void ConnectionBoxes::add_connection_box(int inode, ConnectionBoxId box_id, std::pair<size_t, size_t> box_location, float site_pin_delay) {
     // Ensure that box location is in bounds
     VTR_ASSERT(box_location.first < size_.first);
     VTR_ASSERT(box_location.second < size_.second);
@@ -78,7 +81,7 @@ void ConnectionBoxes::add_connection_box(int inode, ConnectionBoxId box_id, std:
     // Make sure sink map will not be invalidated upon insertion.
     VTR_ASSERT(sink_to_ipin_.size() == 0);
 
-    ipin_map_[inode] = ConnBoxLoc(box_location, box_id);
+    ipin_map_[inode] = ConnBoxLoc(box_location, site_pin_delay, box_id);
 }
 
 void ConnectionBoxes::add_canonical_loc(int inode, std::pair<size_t, size_t> loc) {
