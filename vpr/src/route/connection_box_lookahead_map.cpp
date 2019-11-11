@@ -323,6 +323,8 @@ std::vector<std::pair<int, int>> CostMap::list_empty() const {
 static void assign_min_entry(util::Cost_Entry* dst, const util::Cost_Entry& src) {
     if (src.delay < dst->delay) {
         dst->delay = src.delay;
+    }
+    if (src.congestion < dst->congestion) {
         dst->congestion = src.congestion;
     }
 }
