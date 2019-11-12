@@ -39,7 +39,7 @@
       <input name="in" num_pins="1"/>
       <output name="out" num_pins="1"/>
       <equivalent_sites>
-        <site pb_type="io_block">
+        <site pb_type="io_block" pin_mapping="custom">
           <direct from="io_tile.in" to="io_block.in"/>
           <direct from="io_tile.out" to="io_block.out"/>
         </site>
@@ -56,19 +56,19 @@
       <input name="in" num_pins="1"/>
       <output name="out" num_pins="1"/>
       <equivalent_sites>
-        <site pb_type="io_site_0">
+        <site pb_type="io_site_0" pin_mapping="custom">
           <direct from="pass_through_tile.in" to="io_site_0.in"/>
           <direct from="pass_through_tile.out" to="io_site_0.out"/>
         </site>
-        <site pb_type="io_site_1">
+        <site pb_type="io_site_1" pin_mapping="custom">
           <direct from="pass_through_tile.in" to="io_site_1.in"/>
           <direct from="pass_through_tile.out" to="io_site_1.out"/>
         </site>
-        <site pb_type="io_site_2">
+        <site pb_type="io_site_2" pin_mapping="custom">
           <direct from="pass_through_tile.in" to="io_site_2.in"/>
           <direct from="pass_through_tile.out" to="io_site_2.out"/>
         </site>
-        <site pb_type="io_site_3">
+        <site pb_type="io_site_3" pin_mapping="custom">
           <direct from="pass_through_tile.in" to="io_site_3.in"/>
           <direct from="pass_through_tile.out" to="io_site_3.out"/>
         </site>
