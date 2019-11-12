@@ -111,11 +111,15 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
                                        t_physical_tile_type* PhysicalTileType,
                                        std::vector<t_logical_block_type>& LogicalBlockTypes,
                                        const pugiutil::loc_data& loc_data);
-static void ProcessEquivalentSiteDirects(pugi::xml_node Parent,
-                                         t_physical_tile_type* PhysicalTileType,
-                                         t_logical_block_type* LogicalBlockType,
-                                         std::string site_name,
-                                         const pugiutil::loc_data& loc_data);
+static void ProcessEquivalentSiteDirectConnection(pugi::xml_node Parent,
+                                                  t_physical_tile_type* PhysicalTileType,
+                                                  t_logical_block_type* LogicalBlockType,
+                                                  const pugiutil::loc_data& loc_data);
+static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
+                                                  t_physical_tile_type* PhysicalTileType,
+                                                  t_logical_block_type* LogicalBlockType,
+                                                  std::string site_name,
+                                                  const pugiutil::loc_data& loc_data);
 static void ProcessPb_Type(pugi::xml_node Parent,
                            t_pb_type* pb_type,
                            t_mode* mode,
@@ -3221,7 +3225,7 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
     while (CurSite) {
         check_node(CurSite, "site", loc_data);
 
-        expect_only_attributes(CurSite, {"pb_type", "priority"}, loc_data);
+        expect_only_attributes(CurSite, {"pb_type", "priority", "pin_mapping"}, loc_data);
         /* Load equivalent site name */
         auto Prop = std::string(get_attribute(CurSite, "pb_type", loc_data).value());
         PhysicalTileType->equivalent_sites_names.push_back(Prop);
@@ -3232,17 +3236,47 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
         LogicalBlockType->physical_tiles_priority[priority].push_back(PhysicalTileType->index);
         PhysicalTileType->logical_blocks_priority[priority].push_back(LogicalBlockType->index);
 
-        ProcessEquivalentSiteDirects(CurSite, PhysicalTileType, LogicalBlockType, Prop, loc_data);
+        auto pin_mapping = get_attribute(CurSite, "pin_mapping", loc_data, ReqOpt::OPTIONAL).as_string("direct");
+
+        if (0 == strcmp(pin_mapping, "custom")) {
+            // Pin mapping between Tile and Pb Type is user-defined
+            ProcessEquivalentSiteCustomConnection(CurSite, PhysicalTileType, LogicalBlockType, Prop, loc_data);
+        } else if (0 == strcmp(pin_mapping, "direct")) {
+            ProcessEquivalentSiteDirectConnection(CurSite, PhysicalTileType, LogicalBlockType, loc_data);
+        }
 
         CurSite = CurSite.next_sibling(CurSite.name());
     }
 }
 
-static void ProcessEquivalentSiteDirects(pugi::xml_node Parent,
-                                         t_physical_tile_type* PhysicalTileType,
-                                         t_logical_block_type* LogicalBlockType,
-                                         std::string site_name,
-                                         const pugiutil::loc_data& loc_data) {
+static void ProcessEquivalentSiteDirectConnection(pugi::xml_node Parent,
+                                                  t_physical_tile_type* PhysicalTileType,
+                                                  t_logical_block_type* LogicalBlockType,
+                                                  const pugiutil::loc_data& loc_data) {
+    int num_pins = PhysicalTileType->num_pins / PhysicalTileType->capacity;
+
+    if (num_pins != LogicalBlockType->pb_type->num_pins) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                       "Pin definition differ between site %s and tile %s. User-defined pin mapping is required.\n", LogicalBlockType->pb_type->name, PhysicalTileType->name);
+    }
+
+    vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
+
+    for (int npin = 0; npin < num_pins; npin++) {
+        t_physical_pin phy_pin(npin);
+        t_logical_pin log_pin(npin);
+
+        directs_map.insert(log_pin, phy_pin);
+    }
+
+    PhysicalTileType->tile_block_pin_directs_map[LogicalBlockType->index] = directs_map;
+}
+
+static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
+                                                  t_physical_tile_type* PhysicalTileType,
+                                                  t_logical_block_type* LogicalBlockType,
+                                                  std::string site_name,
+                                                  const pugiutil::loc_data& loc_data) {
     pugi::xml_node CurDirect;
 
     expect_only_children(Parent, {"direct"}, loc_data);
