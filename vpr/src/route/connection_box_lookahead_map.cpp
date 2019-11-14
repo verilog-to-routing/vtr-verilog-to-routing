@@ -441,7 +441,6 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
     float expected_congestion = cost_entry.congestion;
 
     expected_delay += site_pin_delay;
-    expected_congestion += site_pin_delay;
 
     float expected_cost = criticality_fac * expected_delay + (1.0 - criticality_fac) * expected_congestion;
 
