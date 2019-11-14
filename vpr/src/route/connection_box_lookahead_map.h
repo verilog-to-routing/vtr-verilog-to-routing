@@ -53,7 +53,7 @@ struct HashRoutingCostKey {
 };
 
 // Map used to store intermediate routing costs
-typedef std::unordered_map<RoutingCostKey, RoutingCost, HashRoutingCostKey> RoutingCosts;
+typedef std::unordered_map<RoutingCostKey, float, HashRoutingCostKey> RoutingCosts;
 
 // Dense cost maps per source segment and destination connection box types
 class CostMap {
@@ -61,7 +61,7 @@ class CostMap {
     void set_counts(size_t seg_count, size_t box_count);
     int node_to_segment(int from_node_ind) const;
     util::Cost_Entry find_cost(int from_seg_index, ConnectionBoxId box_id, int delta_x, int delta_y) const;
-    void set_cost_map(const RoutingCosts& costs);
+    void set_cost_map(const RoutingCosts& delay_costs, const RoutingCosts& base_costs);
     std::pair<util::Cost_Entry, int> get_nearby_cost_entry(const vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int cx, int cy, const vtr::Rect<int>& bounds);
     void read(const std::string& file);
     void write(const std::string& file) const;

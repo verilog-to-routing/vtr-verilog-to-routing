@@ -21,6 +21,7 @@
 #include <queue>
 #include <unordered_map>
 #include "vpr_types.h"
+#include "rr_node.h"
 
 namespace util {
 
@@ -137,16 +138,45 @@ class PQ_Entry {
     }
 };
 
-// A version of PQ_Entry that only calculates and stores the delay (cost.)
-class PQ_Entry_Lite {
+// A version of PQ_Entry that only calculates and stores the delay.
+class PQ_Entry_Delay {
   public:
     int rr_node_ind;  //index in device_ctx.rr_nodes that this entry represents
     float delay_cost; //the cost of the path to get to this node
 
-    PQ_Entry_Lite(int set_rr_node_ind, int /*switch_ind*/, float parent_delay, bool starting_node);
+    PQ_Entry_Delay(int set_rr_node_ind, int /*switch_ind*/, const PQ_Entry_Delay* parent);
 
-    bool operator>(const PQ_Entry_Lite& obj) const {
+    float cost() const {
+        return delay_cost;
+    }
+
+    void adjust_Tsw(float amount) {
+        delay_cost += amount;
+    }
+
+    bool operator>(const PQ_Entry_Delay& obj) const {
         return (this->delay_cost > obj.delay_cost);
+    }
+};
+
+// A version of PQ_Entry that only calculates and stores the base cost.
+class PQ_Entry_Base_Cost {
+  public:
+    int rr_node_ind; //index in device_ctx.rr_nodes that this entry represents
+    float base_cost;
+
+    PQ_Entry_Base_Cost(int set_rr_node_ind, int /*switch_ind*/, const PQ_Entry_Base_Cost* parent);
+
+    float cost() const {
+        return base_cost;
+    }
+
+    void adjust_Tsw(float amount) {
+        // do nothing
+    }
+
+    bool operator>(const PQ_Entry_Base_Cost& obj) const {
+        return (this->base_cost > obj.base_cost);
     }
 };
 
@@ -156,13 +186,16 @@ struct Search_Path {
     int edge;
 };
 
-} // namespace util
-
-void expand_dijkstra_neighbours(util::PQ_Entry_Lite parent_entry,
-                                std::unordered_map<int, util::Search_Path>& paths,
+/* iterates over the children of the specified node and selectively pushes them onto the priority queue */
+template<typename Entry>
+void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
+                                const Entry& parent_entry,
+                                std::unordered_map<int, Search_Path>& paths,
                                 std::vector<bool>& node_expanded,
-                                std::priority_queue<util::PQ_Entry_Lite,
-                                                    std::vector<util::PQ_Entry_Lite>,
-                                                    std::greater<util::PQ_Entry_Lite>>& pq);
+                                std::priority_queue<Entry,
+                                                    std::vector<Entry>,
+                                                    std::greater<Entry>>& pq);
+
+} // namespace util
 
 #endif
