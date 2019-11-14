@@ -4,10 +4,12 @@
 #include "vpr_context.h"
 #include "vtr_math.h"
 
+namespace util {
+
 /* Number of CLBs I think the average conn. goes. */
 static const int CLB_DIST = 3;
 
-util::PQ_Entry::PQ_Entry(
+PQ_Entry::PQ_Entry(
     int set_rr_node_ind,
     int switch_ind,
     float parent_delay,
@@ -32,7 +34,6 @@ util::PQ_Entry::PQ_Entry(
         float Rnode = device_ctx.rr_nodes[set_rr_node_ind].R();
 
         float T_linear = 0.f;
-        float T_quadratic = 0.f;
         if (device_ctx.rr_switch_inf[switch_ind].buffered()) {
             T_linear = Tsw + Rsw * Cnode + 0.5 * Rnode * Cnode;
         } else { /* Pass transistor */
@@ -52,16 +53,14 @@ util::PQ_Entry::PQ_Entry(
     this->cost = this->delay;
 }
 
-util::PQ_Entry_Lite::PQ_Entry_Lite(
+util::PQ_Entry_Delay::PQ_Entry_Delay(
     int set_rr_node_ind,
     int switch_ind,
-    float parent_delay,
-    bool starting_node) {
+    const util::PQ_Entry_Delay* parent) {
     this->rr_node_ind = set_rr_node_ind;
 
-    auto& device_ctx = g_vpr_ctx.device();
-    this->delay_cost = parent_delay;
-    if (!starting_node) {
+    if (parent != nullptr) {
+        auto& device_ctx = g_vpr_ctx.device();
         float Tsw = device_ctx.rr_switch_inf[switch_ind].Tdel;
         float Rsw = device_ctx.rr_switch_inf[switch_ind].R;
         float Cnode = device_ctx.rr_nodes[set_rr_node_ind].C();
@@ -75,7 +74,24 @@ util::PQ_Entry_Lite::PQ_Entry_Lite(
         }
 
         VTR_ASSERT(T_linear >= 0.);
-        this->delay_cost += T_linear;
+        this->delay_cost = parent->delay_cost + T_linear;
+    } else {
+        this->delay_cost = 0.f;
+    }
+}
+
+util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
+    int set_rr_node_ind,
+    int switch_ind,
+    const util::PQ_Entry_Base_Cost* parent) {
+    this->rr_node_ind = set_rr_node_ind;
+
+    if (parent != nullptr) {
+        auto& device_ctx = g_vpr_ctx.device();
+        int cost_index = device_ctx.rr_nodes[set_rr_node_ind].cost_index();
+        this->base_cost = parent->base_cost + device_ctx.rr_indexed_data[cost_index].base_cost;
+    } else {
+        this->base_cost = 0.f;
     }
 }
 
@@ -175,18 +191,17 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
     return representative_entry;
 }
 
-/* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-void expand_dijkstra_neighbours(util::PQ_Entry_Lite parent_entry,
+template<typename Entry>
+void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
+                                const Entry& parent_entry,
                                 std::unordered_map<int, util::Search_Path>& paths,
                                 std::vector<bool>& node_expanded,
-                                std::priority_queue<util::PQ_Entry_Lite,
-                                                    std::vector<util::PQ_Entry_Lite>,
-                                                    std::greater<util::PQ_Entry_Lite>>& pq) {
-    auto& device_ctx = g_vpr_ctx.device();
-
+                                std::priority_queue<Entry,
+                                                    std::vector<Entry>,
+                                                    std::greater<Entry>>& pq) {
     int parent_ind = parent_entry.rr_node_ind;
 
-    auto& parent_node = device_ctx.rr_nodes[parent_ind];
+    auto& parent_node = rr_nodes[parent_ind];
 
     for (int iedge = 0; iedge < parent_node.num_edges(); iedge++) {
         int child_node_ind = parent_node.edge_sink_node(iedge);
@@ -197,18 +212,37 @@ void expand_dijkstra_neighbours(util::PQ_Entry_Lite parent_entry,
             continue;
         }
 
-        util::PQ_Entry_Lite child_entry(child_node_ind, switch_ind, parent_entry.delay_cost, false);
-
-        VTR_ASSERT(child_entry.delay_cost >= 0);
-
-        /* skip this child if it has been visited with smaller or the same cost */
-        auto stored_cost = paths.find(child_node_ind);
-        if (stored_cost != paths.end() && stored_cost->second.cost <= child_entry.delay_cost) {
-            continue;
-        }
-
-        /* finally, record the cost with which the child was visited and put the child entry on the queue */
-        paths[child_node_ind] = {child_entry.delay_cost, parent_ind, iedge};
+        Entry child_entry(child_node_ind, switch_ind, &parent_entry);
+        VTR_ASSERT(child_entry.cost() >= 0);
         pq.push(child_entry);
+
+        /* Create (if it doesn't exist) or update (if the new cost is lower)
+         * to specified node */
+        Search_Path path_entry = {child_entry.cost(), parent_ind, iedge};
+        auto result = paths.insert(std::make_pair(
+            child_node_ind,
+            path_entry));
+        if (!result.second) {
+            if (child_entry.cost() < result.first->second.cost) {
+                result.first->second = path_entry;
+            }
+        }
     }
 }
+
+template void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
+                                         const PQ_Entry_Delay& parent_entry,
+                                         std::unordered_map<int, Search_Path>& paths,
+                                         std::vector<bool>& node_expanded,
+                                         std::priority_queue<PQ_Entry_Delay,
+                                                             std::vector<PQ_Entry_Delay>,
+                                                             std::greater<PQ_Entry_Delay>>& pq);
+template void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
+                                         const PQ_Entry_Base_Cost& parent_entry,
+                                         std::unordered_map<int, Search_Path>& paths,
+                                         std::vector<bool>& node_expanded,
+                                         std::priority_queue<PQ_Entry_Base_Cost,
+                                                             std::vector<PQ_Entry_Base_Cost>,
+                                                             std::greater<PQ_Entry_Base_Cost>>& pq);
+
+} // namespace util
