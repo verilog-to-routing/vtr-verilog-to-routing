@@ -140,8 +140,8 @@ const DeltaDelayModel* OverrideDelayModel::base_delay_model() const {
     return base_delay_model_.get();
 }
 
-void OverrideDelayModel::set_base_delay_model(std::unique_ptr<DeltaDelayModel> base_delay_model) {
-    base_delay_model_ = std::move(base_delay_model);
+void OverrideDelayModel::set_base_delay_model(std::unique_ptr<DeltaDelayModel> base_delay_model_obj) {
+    base_delay_model_ = std::move(base_delay_model_obj);
 }
 
 // When writing capnp targetted serialization, always allow compilation when
@@ -230,8 +230,8 @@ void DeltaDelayModel::write(const std::string& file) const {
     // FromNdMatrix is a generic function for converting a vtr::NdMatrix to a
     // Matrix message.  It is the mirror function of ToNdMatrix described in
     // read above.
-    auto delays = model.getDelays();
-    FromNdMatrix<2, VprFloatEntry, float>(&delays, delays_, FromFloat);
+    auto delay_values = model.getDelays();
+    FromNdMatrix<2, VprFloatEntry, float>(&delay_values, delays_, FromFloat);
 
     // writeMessageToFile writes message to the specified file.
     writeMessageToFile(file, &builder);
