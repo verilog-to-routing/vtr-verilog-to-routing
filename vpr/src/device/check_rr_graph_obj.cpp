@@ -107,7 +107,7 @@ static bool check_rr_graph_source_nodes(const RRGraph& rr_graph) {
         }
     }
 
-    return invalid_sources;
+    return !invalid_sources;
 }
 
 /*********************************************************************** 
@@ -136,7 +136,7 @@ static bool check_rr_graph_sink_nodes(const RRGraph& rr_graph) {
         }
     }
 
-    return invalid_sinks;
+    return !invalid_sinks;
 }
 
 /*********************************************************************** 
@@ -153,48 +153,43 @@ static bool check_rr_graph_sink_nodes(const RRGraph& rr_graph) {
  * will work properly.
  **********************************************************************/
 bool check_rr_graph(const RRGraph& rr_graph) {
-    bool check_flag = true;
     size_t num_err = 0;
 
     if (false == check_rr_graph_duplicated_edges(rr_graph)) {
         VTR_LOG_WARN("Fail in checking duplicated edges !\n");
-        check_flag = false;
         num_err++;
     }
 
     if (false == check_rr_graph_dangling_nodes(rr_graph)) {
         VTR_LOG_WARN("Fail in checking dangling nodes !\n");
-        check_flag = false;
         num_err++;
     }
 
     if (false == check_rr_graph_source_nodes(rr_graph)) {
         VTR_LOG_WARN("Fail in checking source nodes!\n");
-        check_flag = false;
         num_err++;
     }
 
     if (false == check_rr_graph_sink_nodes(rr_graph)) {
         VTR_LOG_WARN("Fail in checking sink nodes!\n");
-        check_flag = false;
         num_err++;
     }
 
     if (false == check_rr_graph_source_nodes(rr_graph)) {
         VTR_LOG_WARN("Fail in checking source nodes!\n");
-        check_flag = false;
         num_err++;
     }
 
     if (false == check_rr_graph_sink_nodes(rr_graph)) {
         VTR_LOG_WARN("Fail in checking sink nodes!\n");
-        check_flag = false;
         num_err++;
     }
 
     /* Error out if there is any fatal errors found */
-    VTR_LOG_WARN("Checked Routing Resource graph with %d errors !\n",
-                 num_err);
+    if (0 < num_err) {
+        VTR_LOG_WARN("Checked Routing Resource graph with %d errors !\n",
+                     num_err);
+    }
 
-    return check_flag;
+    return (0 == num_err);
 }

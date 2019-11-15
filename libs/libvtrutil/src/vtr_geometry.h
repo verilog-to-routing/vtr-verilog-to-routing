@@ -48,6 +48,7 @@ template<class T>
 class Point {
   public: //Constructors
     Point(T x_val, T y_val) noexcept;
+    Point();
 
   public: //Accessors
     //Coordinates

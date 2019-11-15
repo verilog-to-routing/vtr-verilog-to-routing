@@ -714,7 +714,6 @@ bool RRGraph::validate_edge_sink_nodes() const {
  * Warnings are thrown if optional checking fails
  */
 bool RRGraph::validate() const {
-    bool check_flag = true;
     size_t num_err = 0;
 
     initialize_fast_node_lookup();
@@ -724,34 +723,32 @@ bool RRGraph::validate() const {
      */
     if (false == validate_sizes()) {
         VTR_LOG_WARN("Fail in validating node- and edge-related vector sizes!\n");
-        check_flag = false;
         num_err++;
     }
 
     /* Fundamental check */
     if (false == validate_nodes_edges()) {
         VTR_LOG_WARN("Fail in validating edges connected to each node!\n");
-        check_flag = false;
         num_err++;
     }
 
     if (false == validate_node_segments()) {
         VTR_LOG_WARN("Fail in validating segment IDs of nodes !\n");
-        check_flag = false;
         num_err++;
     }
 
     if (false == validate_edge_switches()) {
         VTR_LOG_WARN("Fail in validating switch IDs of edges !\n");
-        check_flag = false;
         num_err++;
     }
 
     /* Error out if there is any fatal errors found */
-    VTR_LOG_ERROR("Routing Resource graph is not valid due to %d fatal errors !\n",
-                  num_err);
+    if (0 < num_err) {
+        VTR_LOG_ERROR("Routing Resource graph is not valid due to %d fatal errors !\n",
+                      num_err);
+    }
 
-    return check_flag;
+    return (0 == num_err);
 }
 
 bool RRGraph::is_dirty() const {
@@ -827,6 +824,7 @@ RRNodeId RRGraph::create_node(const t_rr_type& type) {
     node_sides_.push_back(NUM_SIDES);
     node_Rs_.push_back(0.);
     node_Cs_.push_back(0.);
+    node_segments_.push_back(RRSegmentId::INVALID());
 
     node_in_edges_.emplace_back();  //Initially empty
     node_out_edges_.emplace_back(); //Initially empty
