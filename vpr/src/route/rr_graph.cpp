@@ -33,6 +33,7 @@
 #include "rr_graph_reader.h"
 #include "router_lookahead_map.h"
 #include "rr_graph_clock.h"
+#include "create_rr_graph.h"
 
 #include "rr_types.h"
 
@@ -374,6 +375,9 @@ void create_rr_graph(const t_graph_type graph_type,
     process_non_config_sets();
 
     print_rr_graph_stats();
+
+    /* Create rr_graph object: load rr_nodes to the object */
+    convert_rr_graph(segment_inf);
 
     //Write out rr graph file if needed
     if (!det_routing_arch->write_rr_graph_filename.empty()) {
