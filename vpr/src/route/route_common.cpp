@@ -726,7 +726,7 @@ float get_rr_cong_cost(int inode) {
     auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
     if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
         for (int node : device_ctx.rr_non_config_node_sets[itr->second]) {
-            if (node != inode) {
+            if (node == inode) {
                 continue; //Already included above
             }
 
