@@ -51,20 +51,6 @@ struct adder_t {
     nnode_t *node;
 };
 
-adder_t **adders_list;
-short *chromosome;
-int chromosome_fitness;
-
-npin_t **cloud_pins_list;
-nnet_t  **cloud_nets_list;
-nnode_t **cloud_nodes_list;
-
-int num_cloud_pins;
-int num_cloud_nets;
-int num_cloud_nodes;
-
-long num_of_adders = 0;
-
 void partial_map_adders(short traverse_number, netlist_t *netlist);
 void destroy_adders();
 void destroy_adder_cloud (adder_t *adder);
