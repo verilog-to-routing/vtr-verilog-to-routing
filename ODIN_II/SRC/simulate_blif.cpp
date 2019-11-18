@@ -238,8 +238,6 @@ bool found_best_time;
 
 int num_of_clock;
 
-<<<<<<< HEAD
-=======
 //maria TODO maybe not the best place?
 pthread_cond_t start_threads,start_output;
 pthread_mutex_t threads_mp,output_mp,main_mp;
@@ -249,7 +247,6 @@ int threads_waves = 0;
 int threads_start = 0;
 int threads_end = 0;
 
->>>>>>> parent of c0bdf4a62... remove deprecated or unmaintained experimental path, (fix Coverity issue)
 /*
  * Performs simulation.
  */
