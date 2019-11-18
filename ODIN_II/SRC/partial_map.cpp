@@ -42,6 +42,14 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 #include "vtr_util.h"
 
+// MEHRSHAD //
+adder_t **adders_list;
+short *chromosome;
+int chromosome_fitness;
+
+long num_of_adders = 0;
+// MEHRSHAD //
+
 void depth_first_traversal_to_partial_map(short marker_value, netlist_t *netlist);
 void depth_first_traverse_partial_map(nnode_t *node, int traverse_mark_number, netlist_t *netlist);
 

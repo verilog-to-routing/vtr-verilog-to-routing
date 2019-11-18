@@ -245,7 +245,7 @@ npin_t* free_npin(npin_t* to_free) {
  *  Should only be called by the parent functions,
  *  copy_input_npin & copy_output_npin
  *-----------------------------------------------------------------------*/
-static npin_t *copy_npin(npin_t *copy_pin)
+npin_t *copy_npin(npin_t *copy_pin)
 {
 	npin_t *new_pin = allocate_npin();
 	new_pin->name = copy_pin->name ? vtr::strdup(copy_pin->name) : NULL;

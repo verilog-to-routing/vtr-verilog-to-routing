@@ -51,13 +51,6 @@ struct adder_t {
     nnode_t *node;
 };
 
-adder_t **adders_list;
-short *chromosome;
-int chromosome_fitness;
-
-
-long num_of_adders = 0;
-
 void partial_map_adders(short traverse_number, netlist_t *netlist);
 void destroy_adders();
 void destroy_adder_cloud (adder_t *adder);
