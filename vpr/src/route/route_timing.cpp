@@ -1993,12 +1993,6 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     //From node info
     float from_node_R = device_ctx.rr_nodes[from_node].R();
 
-    //Once a connection has been made between from_node and to_node, depending on the switch, Tdel may increase due to the internal capacitance of that switch. Even though this delay physically affects from_node, we are making the adjustment on the to_node, because we know the connection used.
-
-    //To adjust for the time delay, we will need to compute the product of the Rdel that is associated with from_node and the internal capacitance of the switch. First, we will calculate Rdel_adjust. Just like in the computation for Rdel, we consider only half of from_node's resistance.
-
-    float Rdel_adjust = to->R_upstream - 0.5 * from_node_R;
-
     //Update R_upstream
     if (switch_buffered) {
         to->R_upstream = 0.; //No upstream resistance
@@ -2013,7 +2007,20 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     float Rdel = to->R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
     float Tdel = switch_Tdel + Rdel * node_C;
 
-    //Now we will adjust the Tdel to account for the delay caused by the internal capacitance.
+    //Depending on the switch used, the Tdel of the upstream node (from_node) may change due to
+    //increased loading from the switch's internal capacitance.
+    //
+    //Even though this delay physically affects from_node, we make the adjustment (now) on the to_node,
+    //since only once we've reached to to_node do we know the connection used (and the switch enabled).
+    //
+    //To adjust for the time delay, we compute the product of the Rdel associated with from_node and
+    //the internal capacitance of the switch.
+    //
+    //First, we will calculate Rdel_adjust (just like in the computation for Rdel, we consider only
+    //half of from_node's resistance).
+    float Rdel_adjust = to->R_upstream - 0.5 * from_node_R;
+
+    //Second, we adjust the Tdel to account for the delay caused by the internal capacitance.
     Tdel += Rdel_adjust * switch_Cinternal;
 
     //Update the backward cost (upstream already included)
