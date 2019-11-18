@@ -300,6 +300,8 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
 
 static void prune_unused_non_configurable_nets(CBRR& connections_inf);
 
+static bool same_non_config_node_set(int from_node, int to_node);
+
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(const t_router_opts& router_opts,
                              const t_analysis_opts& analysis_opts,
@@ -1958,9 +1960,27 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     float Rdel = to->R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
     float Tdel = switch_Tdel + Rdel * node_C;
 
+    bool reached_configurably = device_ctx.rr_nodes[from_node].edge_is_configurable(iconn);
+
+    float cong_cost = 0.;
+    if (reached_configurably) {
+        cong_cost = get_rr_cong_cost(to_node);
+    } else {
+        //Reached by a non-configurable edge.
+        //Therefore the from_node and to_node are part of the same non-configurable node set.
+        VTR_ASSERT_SAFE_MSG(same_non_config_node_set(from_node, to_node),
+                            "Non-configurably connected edges should be part of the same node set");
+
+        //The congestion cost of all nodes in the set has already been accounted for (when
+        //the current path first expanded a node in the set). Therefore do *not* re-add the congestion
+        //cost.
+        cong_cost = 0.;
+    }
+
     //Update the backward cost (upstream already included)
-    to->backward_path_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
-    to->backward_path_cost += cost_params.criticality * Tdel;                             //Delay cost
+    to->backward_path_cost += (1. - cost_params.criticality) * cong_cost; //Congestion cost
+    to->backward_path_cost += cost_params.criticality * Tdel;             //Delay cost
+
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
@@ -2763,4 +2783,19 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf) {
 
         free_route_tree(rt_root);
     }
+}
+
+//Returns true if both nodes are part of the same non-configurable edge set
+static bool same_non_config_node_set(int from_node, int to_node) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    auto from_itr = device_ctx.rr_node_to_non_config_node_set.find(from_node);
+    auto to_itr = device_ctx.rr_node_to_non_config_node_set.find(to_node);
+
+    if (from_itr == device_ctx.rr_node_to_non_config_node_set.end()
+        || to_itr == device_ctx.rr_node_to_non_config_node_set.end()) {
+        return false; //Not part of a non-config node set
+    }
+
+    return from_itr->second == to_itr->second; //Check for same non-config set IDs
 }
