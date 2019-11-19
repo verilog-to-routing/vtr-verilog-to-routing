@@ -90,7 +90,6 @@ util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
 
     if (parent != nullptr) {
         auto& device_ctx = g_vpr_ctx.device();
-        int cost_index = device_ctx.rr_nodes[set_rr_node_ind].cost_index();
         this->base_cost = parent->base_cost + device_ctx.rr_indexed_data[cost_index].base_cost;
     } else {
         this->base_cost = 0.f;
