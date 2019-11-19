@@ -49,9 +49,9 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     auto& rr_nodes = device_ctx.rr_nodes;
     auto& rr_node_indices = device_ctx.rr_node_indices;
 
-    int virtual_clock_network_sink_idx =
+    int virtual_clock_network_root_idx =
         create_virtual_clock_network_sink_node(switch_location.x, switch_location.y);
-    device_ctx.virtual_clock_network_sink_idx = virtual_clock_network_sink_idx;
+    device_ctx.virtual_clock_network_root_idx = virtual_clock_network_root_idx;
 
     // rr_node indices for x and y channel routing wires and clock wires to connect to
     auto x_wire_indices = get_rr_node_chan_wires_at_location(
@@ -80,7 +80,7 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
 
         // Connect to virtual clock sink node
         // used by the two stage router
-        rr_nodes[clock_index].add_edge(virtual_clock_network_sink_idx, rr_switch_idx);
+        rr_nodes[clock_index].add_edge(virtual_clock_network_root_idx, rr_switch_idx);
     }
 }
 

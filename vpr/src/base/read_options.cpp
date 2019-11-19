@@ -915,7 +915,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("ideal")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    gen_grp.add_argument<bool, ParseOnOff>(args.two_stage_routing, "--two_stage_routing")
+    gen_grp.add_argument<bool, ParseOnOff>(args.two_stage_clock_routing, "--two_stage_clock_routing")
         .help(
             "Routes clock nets in two stages if using a dedicated clock network.\n"
             " * First stage: From the Net source to a dedicated clock network source\n"

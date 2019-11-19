@@ -165,7 +165,7 @@ struct DeviceContext : public Context {
     // Useful for two stage clock routing
     // XXX: currently only one place to source the clock networks so only storing
     //      a single value
-    int virtual_clock_network_sink_idx;
+    int virtual_clock_network_root_idx;
 
     /** Attributes for each rr_node.
      * key:     rr_node index

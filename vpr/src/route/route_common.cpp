@@ -802,6 +802,11 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge, flo
 }
 
 void drop_traceback_tail(ClusterNetId net_id) {
+    /* Removes the tail node from the routing traceback and updates
+       it with the previous node from the traceback.
+       This funtion is primarily called to remove the virtual clock
+       sink from the routing traceback and replace it with the clock
+       network root. */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     auto* tail_ptr = route_ctx.trace[net_id].tail;
