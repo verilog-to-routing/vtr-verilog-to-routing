@@ -45,16 +45,18 @@
 static constexpr int SAMPLE_GRID_SIZE = 3;
 
 // Don't continue storing a path after hitting a lower-or-same cost entry.
-static constexpr bool BREAK_ON_MISS = true;
+static constexpr bool BREAK_ON_MISS = false;
 
 // Distance penalties filling are calculated based on available samples, but can be adjusted with this factor.
 static constexpr float PENALTY_FACTOR = 1.f;
+static constexpr float PENALTY_MIN = 1e-12f;
 
 // a sample point for a segment type, contains all segments at the VPR location
 struct SamplePoint {
     uint64_t order; // used to order sample points
     vtr::Point<int> location;
     std::vector<ssize_t> samples;
+    int segment_type;
     SamplePoint()
         : location(0, 0) {}
 };
@@ -119,6 +121,7 @@ int CostMap::node_to_segment(int from_node_ind) const {
 }
 
 static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, float penalty) {
+    penalty = std::max(penalty, PENALTY_MIN);
     return util::Cost_Entry(entry.delay + distance * penalty * PENALTY_FACTOR,
                             entry.congestion);
 }
@@ -364,12 +367,12 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
                 assign_min_entry(&min_entry, matrix[x][yn]);
                 in_bounds = true;
             }
-            if (!std::isfinite(fill.delay)) {
-                fill.delay = min_entry.delay;
-            }
-            if (!std::isfinite(fill.congestion)) {
-                fill.congestion = min_entry.congestion;
-            }
+        }
+        if (!std::isfinite(fill.delay)) {
+            fill.delay = min_entry.delay;
+        }
+        if (!std::isfinite(fill.congestion)) {
+            fill.congestion = min_entry.congestion;
         }
     }
     return std::make_pair(fill, n);
@@ -459,7 +462,7 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
 
 // add a best cost routing path from start_node_ind to node_ind to routing costs
 template<typename Entry>
-static void add_paths(int start_node_ind,
+static bool add_paths(int start_node_ind,
                       Entry current,
                       std::unordered_map<int, util::Search_Path>* paths,
                       RoutingCosts* routing_costs) {
@@ -470,6 +473,7 @@ static void add_paths(int start_node_ind,
     int node_ind = current.rr_node_ind;
     bool found = device_ctx.connection_boxes.find_connection_box(
         node_ind, &box_id, &box_location, &site_pin_delay);
+    bool new_sample_found = false;
     if (!found) {
         VPR_THROW(VPR_ERROR_ROUTE, "No connection box for IPIN %d", node_ind);
     }
@@ -491,8 +495,7 @@ static void add_paths(int start_node_ind,
         int seg_index = device_ctx.rr_indexed_data[here.cost_index()].seg_index;
         const std::pair<size_t, size_t>* from_canonical_loc = device_ctx.connection_boxes.find_canonical_loc(*it);
         if (from_canonical_loc == nullptr) {
-            VPR_THROW(VPR_ERROR_ROUTE, "No canonical location of node %d",
-                      parent);
+            VPR_THROW(VPR_ERROR_ROUTE, "No canonical location of node %d", *it);
         }
 
         vtr::Point<int> delta(ssize_t(from_canonical_loc->first) - ssize_t(box_location.first),
@@ -509,7 +512,7 @@ static void add_paths(int start_node_ind,
         }
 
         float cost = current.cost() - start_to_here.cost();
-        if (cost < 0.f && cost > -1e-15 /* 1 femtosecond */) {
+        if (cost < 0.f && cost > -10e-15 /* 10 femtosecond */) {
             cost = 0.f;
         }
 
@@ -520,11 +523,15 @@ static void add_paths(int start_node_ind,
         if (!result.second) {
             if (cost < result.first->second) {
                 result.first->second = cost;
+                new_sample_found = true;
             } else if (BREAK_ON_MISS) {
                 break;
             }
+        } else {
+            new_sample_found = true;
         }
     }
+    return new_sample_found;
 }
 
 /* runs Dijkstra's algorithm from specified node until all nodes have been
@@ -535,6 +542,11 @@ static std::pair<float, int> run_dijkstra(int start_node_ind,
                                           RoutingCosts* routing_costs) {
     auto& device_ctx = g_vpr_ctx.device();
     int path_count = 0;
+    const std::pair<size_t, size_t>* start_canonical_loc = device_ctx.connection_boxes.find_canonical_loc(start_node_ind);
+    if (start_canonical_loc == nullptr) {
+        VPR_THROW(VPR_ERROR_ROUTE, "No canonical location of node %d",
+                  start_node_ind);
+    }
 
     /* a list of boolean flags (one for each rr node) to figure out if a
      * certain node has already been expanded */
@@ -646,7 +658,6 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
         int path_count = 0;
         float max_delay_cost = 0.f;
         float max_base_cost = 0.f;
-
         for (auto node_ind : point.samples) {
             {
                 auto result = run_dijkstra<util::PQ_Entry_Delay>(node_ind, &delay_costs);
@@ -663,14 +674,10 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
 #if defined(VPR_USE_TBB)
         all_costs_mutex.lock();
 #endif
-        /*
-         * for (auto node_ind : point.samples) {
-         * VTR_LOG("Expanded node %s\n", describe_rr_node(node_ind).c_str());
-         * }
-         */
-        VTR_LOG("Expanded %d paths starting at (%d, %d) max_cost %e %e (%g paths/sec)\n",
-                path_count,
+        VTR_LOG("Expanded %d paths of segment type %s(%d) starting at (%d, %d) from %d segments, max_cost %e %e (%g paths/sec)\n",
+                path_count, segment_inf[point.segment_type].name.c_str(), point.segment_type,
                 point.location.x(), point.location.y(),
+                (int)point.samples.size(),
                 max_delay_cost, max_base_cost,
                 path_count / run_timer.elapsed_sec());
 
@@ -764,25 +771,29 @@ static vtr::Rect<int> bounding_box_for_node(const ConnectionBoxes& connection_bo
     }
 }
 
-static vtr::Point<int> choose_point(const vtr::Matrix<int>& counts, const vtr::Rect<int>& bounding_box, int sx, int sy, int n) {
-    vtr::Rect<int> window(sample(bounding_box, sx, sy, n),
+static vtr::Rect<int> sample_window(const vtr::Rect<int>& bounding_box, int sx, int sy, int n) {
+    return vtr::Rect<int>(sample(bounding_box, sx, sy, n),
                           sample(bounding_box, sx + 1, sy + 1, n));
+}
+
+static vtr::Point<int> choose_point(const vtr::Matrix<int>& counts, const vtr::Rect<int>& window, int with_count) {
     vtr::Point<int> center = sample(window, 1, 1, 2);
     vtr::Point<int> sample_point = center;
-    int sample_distance = 0;
-    int sample_count = counts[sample_point.x()][sample_point.y()];
-    for (int y = window.ymin(); y < window.ymax(); y++) {
-        for (int x = window.xmin(); x < window.xmax(); x++) {
-            vtr::Point<int> here(x, y);
-            int count = counts[x][y];
-            if (count < sample_count) continue;
-            int distance = manhattan_distance(center, here);
-            if (count > sample_count || (count == sample_count && distance < sample_distance)) {
-                sample_point = here;
-                sample_count = count;
-                sample_distance = distance;
+    if (with_count > 0) {
+        int sample_distance = std::numeric_limits<int>::max();
+        for (int y = window.ymin(); y < window.ymax(); y++) {
+            for (int x = window.xmin(); x < window.xmax(); x++) {
+                vtr::Point<int> here(x, y);
+                if (counts[x][y] == with_count) {
+                    int distance = manhattan_distance(center, here);
+                    if (distance < sample_distance) {
+                        sample_point = here;
+                        sample_distance = distance;
+                    }
+                }
             }
         }
+        VTR_ASSERT(counts[sample_point.x()][sample_point.y()] > 0);
     }
     return sample_point;
 }
@@ -799,6 +810,51 @@ static std::pair<int, int> grid_lookup(const SampleGrid& grid, vtr::Point<int> p
     return std::make_pair(-1, -1);
 }
 
+// histogram is a map from segment count to number of locations having that count
+static int max_count_within_quantiles(const std::map<int, int>& histogram, float lower, float upper) {
+    if (histogram.empty()) {
+        return 0;
+    }
+    int sum = 0;
+    for (const auto& entry : histogram) {
+        sum += entry.second;
+    }
+    int lower_limit = std::ceil(sum * lower);
+    int upper_limit = std::ceil(sum * upper);
+    std::pair<int, int> max(0, 0);
+    for (const auto& entry : histogram) {
+        upper_limit -= entry.second;
+        if (lower_limit > 0) {
+            lower_limit -= entry.second;
+            if (lower_limit <= 0) {
+                max = entry;
+            }
+        } else {
+            if (entry.second >= max.second) {
+                max = entry;
+            }
+            if (upper_limit <= 0) {
+                break;
+            }
+        }
+    }
+    return max.first;
+}
+
+// select a good number of segments to find
+static int select_size(const vtr::Rect<int>& box, const vtr::Matrix<int>& counts) {
+    std::map<int, int> histogram;
+    for (int y = box.ymin(); y < box.ymax(); y++) {
+        for (int x = box.xmin(); x < box.xmax(); x++) {
+            int count = counts[x][y];
+            if (count > 0) {
+                histogram[count]++;
+            }
+        }
+    }
+    return max_count_within_quantiles(histogram, 0.75, 0.9);
+}
+
 // for each segment type, find the nearest nodes to an equally spaced grid of points
 // within the bounding box for that segment type
 static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_segment) {
@@ -812,6 +868,7 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
     for (size_t i = 0; i < rr_nodes.size(); i++) {
         auto& node = rr_nodes[i];
         if (node.type() != CHANX && node.type() != CHANY) continue;
+        if (node.capacity() == 0 || node.num_edges() == 0) continue;
         int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
 
         VTR_ASSERT(seg_index != OPEN);
@@ -829,10 +886,12 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
     // initialize the samples vector for each sample point
     inodes_for_segment->clear();
     inodes_for_segment->resize(num_segments);
-    for (auto& grid : *inodes_for_segment) {
+    for (int i = 0; i < num_segments; i++) {
+        auto& grid = (*inodes_for_segment)[i];
         for (int y = 0; y < SAMPLE_GRID_SIZE; y++) {
             for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
                 grid.point[y][x].samples = std::vector<ssize_t>();
+                grid.point[y][x].segment_type = i;
             }
         }
     }
@@ -841,7 +900,7 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
     for (size_t i = 0; i < rr_nodes.size(); i++) {
         auto& node = rr_nodes[i];
         if (node.type() != CHANX && node.type() != CHANY) continue;
-        if (node.capacity() == 0) continue;
+        if (node.capacity() == 0 || node.num_edges() == 0) continue;
         const std::pair<size_t, size_t>* loc = device_ctx.connection_boxes.find_canonical_loc(i);
         if (loc == nullptr) continue;
 
@@ -860,16 +919,18 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
         auto& grid = (*inodes_for_segment)[i];
         for (int y = 0; y < SAMPLE_GRID_SIZE; y++) {
             for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
-                grid.point[y][x].location = choose_point(counts, bounding_box, x, y, SAMPLE_GRID_SIZE);
+                vtr::Rect<int> window = sample_window(bounding_box, x, y, SAMPLE_GRID_SIZE);
+                int selected_size = select_size(window, segment_counts[i]);
+                grid.point[y][x].location = choose_point(counts, window, selected_size);
             }
         }
     }
 
-    // select an inode near the center of the bounding box for each segment type
+    // collect the node indices for each segment type at the selected sample points
     for (size_t i = 0; i < rr_nodes.size(); i++) {
         auto& node = rr_nodes[i];
         if (node.type() != CHANX && node.type() != CHANY) continue;
-        if (node.capacity() == 0) continue;
+        if (node.capacity() == 0 || node.num_edges() == 0) continue;
         const std::pair<size_t, size_t>* loc = device_ctx.connection_boxes.find_canonical_loc(i);
         if (loc == nullptr) continue;
 

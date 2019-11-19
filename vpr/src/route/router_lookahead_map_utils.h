@@ -171,7 +171,7 @@ class PQ_Entry_Base_Cost {
         return base_cost;
     }
 
-    void adjust_Tsw(float amount) {
+    void adjust_Tsw(float /* amount */) {
         // do nothing
     }
 
