@@ -51,6 +51,7 @@ struct adder_t {
     nnode_t *node;
 };
 
+void partial_map_adders_GA_top(netlist_t *netlist);
 void partial_map_adders(short traverse_number, netlist_t *netlist);
 void destroy_adders();
 void destroy_adder_cloud (adder_t *adder);

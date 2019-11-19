@@ -45,6 +45,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 // MEHRSHAD //
 adder_t **adders_list;
 short *chromosome;
+short *fittest;
 int chromosome_fitness;
 
 npin_t **cloud_pins_list;
@@ -1210,16 +1211,49 @@ void instantiate_arithmetic_shift_right(nnode_t *node, short mark, netlist_t *ne
 
 //MEHRSHAD//
 /*----------------------------------------------------------------------
+ * (function: partial_map_adders_GA_top) 
+ *--------------------------------------------------------------------*/
+void partial_map_adders_GA_top(netlist_t *netlist)
+{
+	long generation_counter = 0;
+	generation_t *previous_generation = NULL;
+	generation_t *current_generation = NULL;
+
+	while (/*find the fittest configuration*/1)
+	{
+		current_generation = create_generation(previous_generation, generation_counter);
+		generation_counter++;
+
+		for (int i=0; i<CHILDREN_NUM+1; i++)
+		{
+			chromosome = current_generation->chromosomes[i];
+			partial_map_adders(netlist);
+			// calculate fitness and find the fittest of the generation and change the flag of while if neccesary
+			destroy_adders();			
+		}
+
+		previous_generation = current_generation;
+
+		if (generation_counter == 10) break;
+	}
+
+	// create logic based on the fittest configuration
+	chromosome = fittest;
+	partial_map_adders(netlist);
+
+}
+
+/*----------------------------------------------------------------------
  * (function: partial_map_adders) This function employ the new type of 
  * adders into the adder list and after that, it instantiates adders and 
  * shrinks them into logics
  *--------------------------------------------------------------------*/
-void partial_map_adders(short traverse_number, netlist_t *netlist)
+void partial_map_adders(/*short traverse_number, */netlist_t *netlist)
 {
 	for (int i=0; i<num_of_adders; i++)
 	{
 		adders_list[i]->type = chromosome[i];
-		instantiate_add_w_carry(adders_list[i]->type, adders_list[i]->node, traverse_number, netlist);
+		instantiate_add_w_carry(adders_list[i]->type, adders_list[i]->node, /*traverse_number*/PARTIAL_MAP_TRAVERSE_VALUE, netlist);
 	}
 }
 
