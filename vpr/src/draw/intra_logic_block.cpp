@@ -96,7 +96,7 @@ void draw_internal_init_blk() {
             continue;
         }
 
-        auto logical_block = pick_random_logical_type(&type);
+        auto logical_block = pick_best_logical_type(&type);
         pb_graph_head_node = logical_block->pb_graph_head;
         int type_descriptor_index = type.index;
 

@@ -949,7 +949,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
      * and blocks point back to net pins */
     for (auto blk_id : clb_nlist.blocks()) {
         block_type = clb_nlist.block_type(blk_id);
-        auto tile_type = pick_random_physical_type(block_type);
+        auto tile_type = pick_best_physical_type(block_type);
         for (j = 0; j < block_type->pb_type->num_pins; j++) {
             int physical_pin = get_physical_pin(tile_type, block_type, j);
 
@@ -999,7 +999,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
         for (auto pin_id : clb_nlist.net_sinks(net_id)) {
             bool is_ignored_net = clb_nlist.net_is_ignored(net_id);
             block_type = clb_nlist.block_type(clb_nlist.pin_block(pin_id));
-            auto tile_type = pick_random_physical_type(block_type);
+            auto tile_type = pick_best_physical_type(block_type);
             int logical_pin = clb_nlist.pin_logical_index(pin_id);
             int physical_pin = get_physical_pin(tile_type, block_type, logical_pin);
 

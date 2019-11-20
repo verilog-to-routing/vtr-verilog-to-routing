@@ -95,7 +95,7 @@ ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(const ClusterBlockId clb_in
 
 ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index) {
     auto& device_ctx = g_vpr_ctx.device();
-    return get_pb_bbox(grid_x, grid_y, sub_block_index, *pick_random_logical_type(device_ctx.grid[grid_x][grid_y].type)->pb_graph_head);
+    return get_pb_bbox(grid_x, grid_y, sub_block_index, *pick_best_logical_type(device_ctx.grid[grid_x][grid_y].type)->pb_graph_head);
 }
 
 #endif // NO_GRAPHICS
