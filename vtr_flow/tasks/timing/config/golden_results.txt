@@ -1,20 +1,20 @@
-arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	unabsorb_ff	num_memories	num_mult	error	
-k6_N10_memDepth16384_memData64_40nm_timing.xml	bgm.v	success	154	2.90416e-08	2306.85	2210.47	13940.4	83.36	36236	35751	21618	2797	257	32	4096	0	11		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	blob_merge.v	success	96	1.43103e-08	627.93	112.76	327.19	6.07	6787	6887	3539	542	36	100	0	0	0		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	boundtop.v	success	68	7.63749e-09	519.34	39.89	34.08	1.46	4899	5091	2483	225	275	192	16	1	0		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	ch_intrinsics.v	success	48	3.79286e-09	51.5	3.57	1.88	0.17	753	883	428	34	99	130	1	1	0		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	diffeq1.v	success	64	1.90511e-08	24.49	4.65	16.22	1.24	953	890	713	32	162	96	0	0	5		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	diffeq2.v	success	56	1.75814e-08	16.54	2.77	13.48	0.9	604	540	454	21	66	96	0	0	5		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	LU8PEEng.v	success	128	1.48263e-07	2529.44	1281.7	14616.6	104.41	30491	30217	16254	2088	114	102	3780	45	8		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	LU32PEEng.v	success	196	1.48978e-07	9360.5	13016.3	137091	863.38	103329	101927	55683	7374	114	102	12506	150	32		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	mcml.v	success	136	1.09996e-07	12671.8	7969.12	79221.6	179.12	155642	154007	51543	6251	36	33	4599	38	30		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	mkDelayWorker32B.v	success	94	7.29814e-09	1088.07	138.3	573	28.52	9918	10471	5644	446	511	553	7	41	0		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	mkPktMerge.v	success	50	3.41162e-09	10.93	8.53	93.15	6.04	1032	1188	984	16	311	156	0	15	0		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	mkSMAdapter4B.v	success	70	7.59362e-09	479.28	25.63	75.95	1.86	3308	3513	1789	158	195	205	5	5	0		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	or1200.v	success	88	2.38949e-08	374.48	56.86	545.37	4.92	4167	4498	2610	246	385	394	0	2	1		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	raygentop.v	success	74	6.40403e-09	430.91	29.91	31.36	1.88	4024	4140	2086	168	239	305	282	1	7		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	sha.v	success	62	1.56585e-08	513.82	22.26	52.15	1.29	3161	3197	1956	201	38	36	3	0	0		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	stereovision0.v	success	70	4.61196e-09	1524.71	217.61	184.48	5.02	25024	25221	8490	822	157	197	3319	0	0		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	stereovision1.v	success	110	5.82407e-09	2489.91	264.22	1077.54	15.28	24720	22585	11192	826	133	145	3281	0	38		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	stereovision2.v	success	166	1.68087e-08	3170.29	1209.52	125984	232.38	58572	49160	33600	1999	149	182	6493	0	213		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	stereovision3.v	success	30	3.50566e-09	20.32	0.51	0.46	0.04	286	316	139	12	10	30	6	0	0		
+arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	num_luts	num_add_blocks	max_add_chain_length	num_sub_blocks	max_sub_chain_length	error
+k6_frac_N10_mem32K_40nm.xml	bgm.v	success	116	26.4562	187.22	292.47	8931.4	62.36	38531	38046	21094	2930	257	32	0	11	32384	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	blob_merge.v	success	74	10.3374	17.48	16.65	232.16	5.12	6790	6890	3069	543	36	100	0	0	6019	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	boundtop.v	success	60	6.46016	6.62	7.62	23.73	1.58	5032	5224	2200	233	275	192	1	0	3054	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	ch_intrinsics.v	success	50	3.93537	0.77	0.83	1.81	0.18	765	895	430	37	99	130	1	0	425	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	diffeq1.v	success	52	22.5226	0.71	1.66	27.37	1.44	1004	941	717	36	162	96	0	5	485	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	diffeq2.v	success	52	16.5257	0.52	1.43	14.91	1.13	649	585	468	27	66	96	0	5	322	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	LU8PEEng.v	success	114	115.29	85.33	146.76	7106.82	100.62	31212	30938	16278	2104	114	102	45	8	22675	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	LU32PEEng.v	success	174	115.058	428.77	1094.17	72689.6	934.33	104080	102678	54219	7128	114	102	168	32	76281	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	mcml.v	success	104	79.6414	694.94	794.16	71705.6	458.91	157560	155925	52415	6615	36	33	159	30	101751	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	mkDelayWorker32B.v	success	76	7.29579	20	29.59	2587.83	32.06	9933	10486	5224	447	511	553	43	0	5595	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	mkPktMerge.v	success	46	4.57233	0.63	4.24	68.15	3.8	1038	1194	972	15	311	156	15	0	232	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	mkSMAdapter4B.v	success	56	5.64516	5.28	5.19	46.53	1.57	3308	3513	1597	165	195	205	5	0	1977	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	or1200.v	success	74	13.3363	8.38	10.51	353.67	8.88	4258	4589	2499	257	385	394	2	1	3054	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	raygentop.v	success	68	5.03863	7.6	5.71	32.06	2.48	4037	4153	1964	173	239	305	1	7	2147	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	sha.v	success	50	13.6379	10.5	4.42	27.15	1.01	3226	3262	1304	209	38	36	0	0	2277	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	stereovision0.v	success	60	4.3641	33.5	37.28	311.2	5.11	25022	25219	7936	905	157	197	0	0	11460	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	stereovision1.v	success	104	5.75446	38.53	44.7	1238.59	21.85	24643	22508	11079	889	133	145	0	38	10289	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	stereovision2.v	success	154	17.3851	82.92	205.65	56535.4	221.79	58665	49253	34476	2395	149	182	0	213	29942	-1	-1	-1	-1	
+k6_frac_N10_mem32K_40nm.xml	stereovision3.v	success	34	2.66712	0.17	0.33	0.63	0.04	293	323	122	13	11	30	0	0	180	-1	-1	-1	-1	

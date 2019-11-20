@@ -573,6 +573,8 @@ bool Abc_NtkCheckLatch( Abc_Ntk_t * pNtk, Abc_Obj_t * pLatch )
         fprintf( stdout, "NodeCheck: Latch \"%s\" is in a latch list but is not a latch.\n", Abc_ObjName(pLatch) );
         Value = 0;
     }
+
+#if 0 // ??? janders must FIX
     // make sure the latch has a reasonable return value
     if ( (int)pLatch->pData < ABC_INIT_ZERO || (int)pLatch->pData > ABC_INIT_DC )
     {
@@ -580,6 +582,8 @@ bool Abc_NtkCheckLatch( Abc_Ntk_t * pNtk, Abc_Obj_t * pLatch )
             Abc_ObjName(pLatch), (int)pLatch->pData );
         Value = 0;
     }
+#endif
+
     // make sure the latch has only one fanin
     if ( Abc_ObjFaninNum(pLatch) != 1 )
     {

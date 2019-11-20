@@ -33,7 +33,7 @@ circuit_list_add=tseng.pre-vpr.blif
 
 
 # Add architectures to list to sweep
-arch_list_add=k6_N10_soft_logic_only.xml
+arch_list_add=k6_N10_40nm.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
@@ -41,5 +41,5 @@ parse_file=vpr_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-no_mem -starting_stage vpr
+script_params=-no_mem -starting_stage vpr -check_equivalent
 

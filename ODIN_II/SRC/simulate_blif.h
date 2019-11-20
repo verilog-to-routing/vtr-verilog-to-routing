@@ -46,6 +46,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "multipliers.h"
 #include "hard_blocks.h"
 #include "types.h"
+#include "memories.h"
 
 /*
  * Number of values to store for each pin at one time.
@@ -105,7 +106,11 @@ stages *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes);
 void free_stages(stages *s);
 
 int get_num_covered_nodes(stages *s);
+int get_clock_ratio(nnode_t *node);
+void set_clock_ratio(int rat, nnode_t *node);
 nnode_t **get_children_of(nnode_t *node, int *count);
+int *get_children_pinnumber_of(nnode_t *node, int *num_children);
+nnode_t **get_children_of_nodepin(nnode_t *node, int *count, int output_pin);
 int is_node_ready(nnode_t* node, int cycle);
 int is_node_complete(nnode_t* node, int cycle);
 int enqueue_node_if_ready(queue_t* queue, nnode_t* node, int cycle);
@@ -115,6 +120,8 @@ void compute_memory_node(nnode_t *node, int cycle);
 void compute_hard_ip_node(nnode_t *node, int cycle);
 void compute_multiply_node(nnode_t *node, int cycle);
 void compute_generic_node(nnode_t *node, int cycle);
+void compute_add_node(nnode_t *node, int cycle, int type);
+void compute_unary_sub_node(nnode_t *node, int cycle);
 
 
 void update_pin_value(npin_t *pin, signed char value, int cycle);
@@ -126,7 +133,7 @@ inline int get_pin_cycle(npin_t *pin);
 inline void set_pin_cycle(npin_t *pin, int cycle);
 void initialize_pin(npin_t *pin);
 
-inline int is_even_cycle(int cycle);
+int is_even_cycle(int cycle);
 inline int is_clock_node(nnode_t *node);
 
 signed char get_line_pin_value(line_t *line, int pin_num, int cycle);
@@ -136,35 +143,21 @@ void compute_flipflop_node(nnode_t *node, int cycle);
 void compute_mux_2_node(nnode_t *node, int cycle);
 
 int *multiply_arrays(int *a, int a_length, int *b, int b_length);
-void compute_single_port_memory(
-	nnode_t *node,
-	npin_t **data,
-	npin_t **out,
-	int data_width,
-	npin_t **addr,
-	int addr_width,
-	int we,
-	int clock,
-	int cycle
-);
-void compute_dual_port_memory(
-	nnode_t *node,
-	npin_t **data1,
-	npin_t **data2,
-	npin_t **out1,
-	npin_t **out2,
-	int data_width,
-	npin_t **addr1,
-	npin_t **addr2,
-	int addr_width,
-	int we1,
-	int we2,
-	int posedge,
-	int cycle
-);
-long compute_memory_address(npin_t **out, int data_width, npin_t **addr, int addr_width, int cycle);
+
+int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int c_length, int flag);
+
+int *unary_sub_arrays(int *a, int a_length, int *c, int c_length);
+
+void compute_single_port_memory(nnode_t *node, int cycle);
+void compute_dual_port_memory(nnode_t *node, int cycle);
+
+long compute_memory_address(signal_list_t *addr, int cycle);
+
 void instantiate_memory(nnode_t *node, int data_width, int addr_width);
 char *get_mif_filename(nnode_t *node);
+FILE *preprocess_mif_file(FILE *source);
+void assign_memory_from_mif_file(FILE *file, char *filename, int width, long depth, signed char *memory);
+int parse_mif_radix(char *radix);
 
 int count_test_vectors(FILE *in);
 int is_vector(char *buffer);

@@ -41,7 +41,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define VCC_NAME   "vcc"
 #define HBPAD_NAME "unconn"
 
-int linenum;
+#define READ_BLIF_BUFFER 1048576 // 1MB
+
+int file_line_number;
 
 char *BLIF_ONE_STRING    = "ONE_VCC_CNS";
 char *BLIF_ZERO_STRING   = "ZERO_GND_ZERO";
@@ -87,7 +89,7 @@ typedef struct {
 
 
 //netlist_t * verilog_netlist;
-int linenum;/* keeps track of the present line, used for printing the error line : line number */
+int file_line_number;/* keeps track of the present line, used for printing the error line : line number */
 short static skip_reading_bit_map=FALSE; 
 
 void rb_create_top_driver_nets(char *instance_name_prefix, hashtable_t *output_nets_hash);
@@ -135,9 +137,12 @@ int count_blif_lines(FILE *file);
  */
 void read_blif(char * blif_file)
 {
+	char local_blif[255];
+	sprintf(local_blif, "%s", blif_file);
+
 	verilog_netlist = allocate_netlist();
 	/*Opening the blif file */
-	FILE *file = my_fopen (blif_file, "r", 0);
+	FILE *file = my_fopen (local_blif, "r", 0);
 
 	int num_lines = count_blif_lines(file);
 
@@ -150,15 +155,15 @@ void read_blif(char * blif_file)
 	/* Extracting the netlist by reading the blif file */
 	printf("Reading blif netlist..."); fflush(stdout);
 
-	linenum  = 0;
+	file_line_number  = 0;
 	int line_count = 0;
 	int position   = -1;
 	double time    = wall_time();
 	// A cache of hard block models indexed by name. As each one is read, it's stored here to be used again.
 	hard_block_models *models = create_hard_block_models();
 	printf("\n");
-	char buffer[BUFSIZE];
-	while (my_fgets(buffer, BUFSIZE, file) && read_tokens(buffer, models, file, output_nets_hash))
+	char buffer[READ_BLIF_BUFFER];
+	while (my_fgets(buffer, READ_BLIF_BUFFER, file) && read_tokens(buffer, models, file, output_nets_hash))
 	{	// Print a progress bar indicating completeness.
 		position = print_progress_bar((++line_count)/(double)num_lines, position, 50, wall_time() - time);
 	}
@@ -318,10 +323,13 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	int input_token_count = 0; /*to keep track whether controlling clock is specified or not */
 	/*input_token_count=3 it is not and =5 it is */
 	char *ptr;
-	char buffer[BUFSIZE];
+	char buffer[READ_BLIF_BUFFER];
 	while ((ptr = my_strtok (NULL, TOKENS, file, buffer)) != NULL)
 	{
-		names = (char**)realloc(names, sizeof(char*)* (input_token_count + 1));
+		if(input_token_count == 0)
+			names = (char**)malloc((sizeof(char*)));
+		else
+			names = (char**)realloc(names, (sizeof(char*))* (input_token_count + 1));
 		names[input_token_count++] = strdup(ptr);
 	}
 
@@ -343,20 +351,34 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		}
 		else
 		{	
-			error_message(NETLIST_ERROR,linenum,-1, "This .latch Format not supported \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>");
+			error_message(NETLIST_ERROR,file_line_number,-1, "This .latch Format not supported \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>");
 		}
 	}
 
 	nnode_t *new_node = allocate_nnode();
 	new_node->related_ast_node = NULL;
 	new_node->type = FF_NODE;
+	
+	/* Read in the initial value of the latch.
+	   Possible values from a blif file are:
+	   0: LOW
+	   1: HIGH
+	   2: DON'T CARE
+	   3: UNKNOWN
+	  
+	   2 and 3 are treated in the same way */
+	int initial_value = atoi(names[4]);
+	if(initial_value == 0 || initial_value == 1){
+		new_node->initial_value = initial_value;
+		new_node->has_initial_value = TRUE;
+	}
 
 	/* allocate the output pin (there is always one output pin) */
-	allocate_more_node_output_pins(new_node, 1);
+	allocate_more_output_pins(new_node, 1);
 	add_output_port_information(new_node, 1);
 
 	/* allocate the input pin */
-	allocate_more_node_input_pins(new_node,2);/* input[1] is clock */
+	allocate_more_input_pins(new_node,2);/* input[1] is clock */
   
 	/* add the port information */
 	int i;
@@ -369,12 +391,12 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	npin_t *new_pin = allocate_npin();
 	new_pin->name = names[0];
 	new_pin->type = INPUT;
-	add_a_input_pin_to_node_spot_idx(new_node, new_pin,0);
+	add_input_pin_to_node(new_node, new_pin,0);
 
 	new_pin = allocate_npin();
 	new_pin->name = names[3];
 	new_pin->type = INPUT;
-	add_a_input_pin_to_node_spot_idx(new_node, new_pin,1);
+	add_input_pin_to_node(new_node, new_pin,1);
 
 	/* add a name for the node, keeping the name of the node same as the output */
 	new_node->name = make_full_ref_name(names[1],NULL, NULL, NULL,-1);
@@ -390,13 +412,14 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	new_pin = allocate_npin();
 	new_pin->name = new_node->name;
 	new_pin->type = OUTPUT;
-	add_a_output_pin_to_node_spot_idx(new_node, new_pin, 0);
-	add_a_driver_pin_to_net(new_net, new_pin);
+	add_output_pin_to_node(new_node, new_pin, 0);
+	add_driver_pin_to_net(new_net, new_pin);
   
 	output_nets_hash->add(output_nets_hash, new_node->name, strlen(new_node->name)*sizeof(char), new_net);
 
 	/* Free the char** names */
 	free(names);
+	free(ptr);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -407,7 +430,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 char* search_clock_name(FILE* file)
 {
 	fpos_t pos;
-	int last_line = linenum;
+	int last_line = file_line_number;
 	fgetpos(file,&pos);
 	rewind(file);
 
@@ -416,8 +439,8 @@ char* search_clock_name(FILE* file)
 	int found = 0;
 	while(!found)
 	{
-		char buffer[BUFSIZE];
-		my_fgets(buffer,BUFSIZE,file);
+		char buffer[READ_BLIF_BUFFER];
+		my_fgets(buffer,READ_BLIF_BUFFER,file);
 
 		// not sure if this is needed
 		if(feof(file))
@@ -459,7 +482,7 @@ char* search_clock_name(FILE* file)
 			}
 		}
 	}
-	linenum = last_line;
+	file_line_number = last_line;
 	fsetpos(file,&pos);
 
 	if (found) return input_names[0];
@@ -474,7 +497,7 @@ char* search_clock_name(FILE* file)
 *-------------------------------------------------------------------------------------------*/
 void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t *output_nets_hash)
 {
-	char buffer[BUFSIZE];
+	char buffer[READ_BLIF_BUFFER];
 	char *subcircuit_name = my_strtok (NULL, TOKENS, file, buffer);
 
 	/* storing the names on the formal-actual parameter */
@@ -534,6 +557,10 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 	subcircuit_name_prefix[5] = '\0';
 	if (!strcmp(subcircuit_name, "multiply") || !strcmp(subcircuit_name_prefix, "mult_"))
 		new_node->type = MULTIPLY;
+	else if (!strcmp(subcircuit_name, "adder") || !strcmp(subcircuit_name_prefix, "adder"))
+		new_node->type = ADD;
+	else if (!strcmp(subcircuit_name, "sub") || !strcmp(subcircuit_name_prefix, "sub"))
+			new_node->type = MINUS;
 	else
 		new_node->type = MEMORY;
 	free(subcircuit_name_prefix);
@@ -552,9 +579,9 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 
 	// Allocate pins positions.
 	if (model->inputs->count  > 0)
-		allocate_more_node_input_pins (new_node, model->inputs->count);
+		allocate_more_input_pins (new_node, model->inputs->count);
 	if (model->outputs->count > 0)
-		allocate_more_node_output_pins(new_node, model->outputs->count);
+		allocate_more_output_pins(new_node, model->outputs->count);
 
 	// Add input pins.
   	for(i = 0; i < model->inputs->count; i++)
@@ -563,14 +590,14 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
   		char *name    = mapping_index->get(mapping_index, mapping, strlen(mapping) * sizeof(char));
 
   		if (!name)
-  			error_message(NETLIST_ERROR, linenum, -1, "Invalid hard block mapping: %s", mapping);
+  			error_message(NETLIST_ERROR, file_line_number, -1, "Invalid hard block mapping: %s", mapping);
 
 		npin_t *new_pin = allocate_npin();
 		new_pin->name = strdup(name);
 		new_pin->type = INPUT;
 		new_pin->mapping = get_hard_block_port_name(mapping);
 
-		add_a_input_pin_to_node_spot_idx(new_node, new_pin, i);
+		add_input_pin_to_node(new_node, new_pin, i);
   	}
 
 	// Add output pins, nets, and index each net.
@@ -579,19 +606,19 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
   		char *mapping = model->outputs->names[i];
   		char *name = mapping_index->get(mapping_index, mapping, strlen(mapping) * sizeof(char));
 
-  		if (!name) error_message(NETLIST_ERROR, linenum, -1,"Invalid hard block mapping: %s", model->outputs->names[i]);
+  		if (!name) error_message(NETLIST_ERROR, file_line_number, -1,"Invalid hard block mapping: %s", model->outputs->names[i]);
 
 		npin_t *new_pin = allocate_npin();
 		new_pin->name = strdup(name);
 		new_pin->type = OUTPUT;
 		new_pin->mapping = get_hard_block_port_name(mapping);
 
-		add_a_output_pin_to_node_spot_idx(new_node, new_pin, i);
+		add_output_pin_to_node(new_node, new_pin, i);
 
 		nnet_t *new_net = allocate_nnet();
 		new_net->name = strdup(name);
 
-		add_a_driver_pin_to_net(new_net,new_pin);
+		add_driver_pin_to_net(new_net,new_pin);
 
 		// Index the net by name.
 		output_nets_hash->add(output_nets_hash, name, strlen(name)*sizeof(char), new_net);
@@ -626,7 +653,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	char *ptr;
 	char **names = NULL; // stores the names of the input and the output, last name stored would be of the output
 	int input_count = 0;
-	char buffer[BUFSIZE];
+	char buffer[READ_BLIF_BUFFER];
 	while ((ptr = my_strtok (NULL, TOKENS, file, buffer)))
 	{
 		names = (char**)realloc(names, sizeof(char*) * (input_count + 1));
@@ -666,7 +693,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		/* allocate the input pin (= input_count-1)*/
 		if (input_count-1 > 0) // check if there is any input pins
 		{
-			allocate_more_node_input_pins(new_node, input_count-1);
+			allocate_more_input_pins(new_node, input_count-1);
 
 			/* add the port information */
 			if(new_node->type == MUX_2)
@@ -689,34 +716,34 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 			npin_t *new_pin = allocate_npin();
 			new_pin->name = names[i];
 			new_pin->type = INPUT;
-			add_a_input_pin_to_node_spot_idx(new_node, new_pin, i);
+			add_input_pin_to_node(new_node, new_pin, i);
 		}
 	
 		/* add information for the intermediate VCC and GND node (appears in ABC )*/
 		if(new_node->type == GND_NODE)
 		{
-			allocate_more_node_input_pins(new_node,1);
+			allocate_more_input_pins(new_node,1);
 			add_input_port_information(new_node, 1);
 
 			npin_t *new_pin = allocate_npin();
 			new_pin->name = GND_NAME;
 			new_pin->type = INPUT;
-			add_a_input_pin_to_node_spot_idx(new_node, new_pin,0);
+			add_input_pin_to_node(new_node, new_pin,0);
 		}
 
 		if(new_node->type == VCC_NODE)
 		{
-			allocate_more_node_input_pins(new_node,1);
+			allocate_more_input_pins(new_node,1);
 			add_input_port_information(new_node, 1);
 
 			npin_t *new_pin = allocate_npin();
 			new_pin->name = VCC_NAME;
 			new_pin->type = INPUT;
-			add_a_input_pin_to_node_spot_idx(new_node, new_pin,0);
+			add_input_pin_to_node(new_node, new_pin,0);
 		}
 
 		/* allocate the output pin (there is always one output pin) */
-		allocate_more_node_output_pins(new_node, 1);
+		allocate_more_output_pins(new_node, 1);
 		add_output_port_information(new_node, 1);
 
 		/* add a name for the node, keeping the name of the node same as the output */
@@ -732,12 +759,12 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		new_pin->name = new_node->name;
 		new_pin->type = OUTPUT;
 
-		add_a_output_pin_to_node_spot_idx(new_node, new_pin, 0);
+		add_output_pin_to_node(new_node, new_pin, 0);
 
 		nnet_t *new_net = allocate_nnet();
 		new_net->name = new_node->name;
 
-		add_a_driver_pin_to_net(new_net,new_pin);
+		add_driver_pin_to_net(new_net,new_pin);
 
 		output_nets_hash->add(output_nets_hash, new_node->name, strlen(new_node->name)*sizeof(char), new_net);
 
@@ -754,15 +781,17 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 {
 	fpos_t pos;
-	int last_line = linenum;
+	int last_line = file_line_number;
+	char *One = "1";
+	char *Zero = "0";
 	fgetpos(file,&pos);
 
 	if(!input_count)
 	{
-		char buffer[BUFSIZE];
-		my_fgets (buffer, BUFSIZE, file);
+		char buffer[READ_BLIF_BUFFER];
+		my_fgets (buffer, READ_BLIF_BUFFER, file);
 
-		linenum = last_line;
+		file_line_number = last_line;
 		fsetpos(file,&pos);
 
 		char *ptr = my_strtok(buffer,"\t\n", file, buffer);
@@ -773,22 +802,33 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 	}
 
 	char **bit_map = NULL;
-	char *output_bit_map = 0;// to distinguish whether for the bit_map output is 1 or 0
+	char *output_bit_map = NULL;// to distinguish whether for the bit_map output is 1 or 0
 	int line_count_bitmap = 0; //stores the number of lines in a particular bit map
-	char buffer[BUFSIZE];
+	char buffer[READ_BLIF_BUFFER];
 	while(1)
 	{
-		my_fgets (buffer, BUFSIZE, file);
+		my_fgets (buffer, READ_BLIF_BUFFER, file);
 		if(!(buffer[0] == '0' || buffer[0] == '1' || buffer[0] == '-'))
 			break;
 
 		bit_map = (char**)realloc(bit_map,sizeof(char*) * (line_count_bitmap + 1));
 		bit_map[line_count_bitmap++] = strdup(my_strtok(buffer,TOKENS, file, buffer));
-
+		if (output_bit_map != NULL) free(output_bit_map);
 		output_bit_map = strdup(my_strtok(NULL,TOKENS, file, buffer));
 	}
 
-	linenum = last_line;
+	if (!strcmp(output_bit_map, One))
+	{
+		free(output_bit_map);
+		output_bit_map = One;
+	}
+	else
+	{
+		free(output_bit_map);
+		output_bit_map = Zero;
+	}
+
+	file_line_number = last_line;
 	fsetpos(file,&pos);
 
 	/* Single line bit map : */
@@ -971,7 +1011,7 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash)
 {
 	char *ptr;
-	char buffer[BUFSIZE];
+	char buffer[READ_BLIF_BUFFER];
 	while ((ptr = my_strtok (NULL, TOKENS, file, buffer)))
 	{
 		char *temp_string = make_full_ref_name(ptr, NULL, NULL,NULL, -1);
@@ -987,7 +1027,7 @@ void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash)
 		new_node->name = temp_string;
 
 		/* allocate the pins needed */
-		allocate_more_node_output_pins(new_node, 1);
+		allocate_more_output_pins(new_node, 1);
 		add_output_port_information(new_node, 1);
 
 		/* Create the pin connection for the net */
@@ -996,12 +1036,12 @@ void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash)
 		new_pin->type = OUTPUT;
 
 		/* hookup the pin, net, and node */
-		add_a_output_pin_to_node_spot_idx(new_node, new_pin, 0);
+		add_output_pin_to_node(new_node, new_pin, 0);
 
 		nnet_t *new_net = allocate_nnet();
 		new_net->name = strdup(temp_string);
 
-		add_a_driver_pin_to_net(new_net, new_pin);
+		add_driver_pin_to_net(new_net, new_pin);
 
 		verilog_netlist->top_input_nodes = (nnode_t**)realloc(verilog_netlist->top_input_nodes, sizeof(nnode_t*)*(verilog_netlist->num_top_input_nodes+1));
 		verilog_netlist->top_input_nodes[verilog_netlist->num_top_input_nodes++] = new_node;
@@ -1023,7 +1063,7 @@ void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash)
 void rb_create_top_output_nodes(FILE *file)
 {
 	char *ptr;
-	char buffer[BUFSIZE];
+	char buffer[READ_BLIF_BUFFER];
 
 	while ((ptr = my_strtok (NULL, TOKENS, file, buffer)))
 	{
@@ -1040,14 +1080,14 @@ void rb_create_top_output_nodes(FILE *file)
 		new_node->name = temp_string;
 
 		/* allocate the input pin needed */
-		allocate_more_node_input_pins(new_node, 1);
+		allocate_more_input_pins(new_node, 1);
 		add_input_port_information(new_node, 1);
 
 		/* Create the pin connection for the net */
 		npin_t *new_pin = allocate_npin();
 		new_pin->name   = temp_string;
 		/* hookup the pin, net, and node */
-		add_a_input_pin_to_node_spot_idx(new_node, new_pin, 0);
+		add_input_pin_to_node(new_node, new_pin, 0);
 
 		/*adding the node to the verilog_netlist output nodes
 		add_node_to_netlist() function can also be used */
@@ -1093,31 +1133,31 @@ void rb_create_top_driver_nets(char *instance_name_prefix, hashtable_t *output_n
 	verilog_netlist->zero_net = allocate_nnet(); // allocate memory to net pointer
 	verilog_netlist->gnd_node = allocate_nnode(); // allocate memory to node pointer
 	verilog_netlist->gnd_node->type = GND_NODE;  // mark the type
-	allocate_more_node_output_pins(verilog_netlist->gnd_node, 1);// alloacate 1 output pin pointer to this node
+	allocate_more_output_pins(verilog_netlist->gnd_node, 1);// alloacate 1 output pin pointer to this node
 	add_output_port_information(verilog_netlist->gnd_node, 1);// add port info. this port has 1 pin ,till now number of port for this is one
 	new_pin = allocate_npin();
-	add_a_output_pin_to_node_spot_idx(verilog_netlist->gnd_node, new_pin, 0);// add this pin to output pin pointer array of this node
-	add_a_driver_pin_to_net(verilog_netlist->zero_net,new_pin);// add this pin to net as driver pin
+	add_output_pin_to_node(verilog_netlist->gnd_node, new_pin, 0);// add this pin to output pin pointer array of this node
+	add_driver_pin_to_net(verilog_netlist->zero_net,new_pin);// add this pin to net as driver pin
 
 	/*ONE net*/
 	verilog_netlist->one_net = allocate_nnet();
 	verilog_netlist->vcc_node = allocate_nnode();
 	verilog_netlist->vcc_node->type = VCC_NODE;
-	allocate_more_node_output_pins(verilog_netlist->vcc_node, 1);
+	allocate_more_output_pins(verilog_netlist->vcc_node, 1);
 	add_output_port_information(verilog_netlist->vcc_node, 1);
 	new_pin = allocate_npin();
-	add_a_output_pin_to_node_spot_idx(verilog_netlist->vcc_node, new_pin, 0);
-	add_a_driver_pin_to_net(verilog_netlist->one_net, new_pin);
+	add_output_pin_to_node(verilog_netlist->vcc_node, new_pin, 0);
+	add_driver_pin_to_net(verilog_netlist->one_net, new_pin);
 
 	/* Pad net */
 	verilog_netlist->pad_net = allocate_nnet();
 	verilog_netlist->pad_node = allocate_nnode();
 	verilog_netlist->pad_node->type = PAD_NODE;
-	allocate_more_node_output_pins(verilog_netlist->pad_node, 1);
+	allocate_more_output_pins(verilog_netlist->pad_node, 1);
 	add_output_port_information(verilog_netlist->pad_node, 1);
 	new_pin = allocate_npin();
-	add_a_output_pin_to_node_spot_idx(verilog_netlist->pad_node, new_pin, 0);
-	add_a_driver_pin_to_net(verilog_netlist->pad_net, new_pin);
+	add_output_pin_to_node(verilog_netlist->pad_node, new_pin, 0);
+	add_driver_pin_to_net(verilog_netlist->pad_net, new_pin);
 
 	/* CREATE the driver for the ZERO */
 	BLIF_ZERO_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, zero_string, -1);
@@ -1192,9 +1232,9 @@ void hook_up_node(nnode_t *node, hashtable_t *output_nets_hash)
 		nnet_t *output_net = output_nets_hash->get(output_nets_hash, input_pin->name, strlen(input_pin->name)*sizeof(char));
 
 		if(!output_net)
-			error_message(NETLIST_ERROR,linenum, -1, "Error: Could not hook up the pin %s: not available.", input_pin->name);
+			error_message(NETLIST_ERROR,file_line_number, -1, "Error: Could not hook up the pin %s: not available.", input_pin->name);
 
-		add_a_fanout_pin_to_net(output_net, input_pin);
+		add_fanout_pin_to_net(output_net, input_pin);
 	}
 }
 
@@ -1207,7 +1247,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 {
 	// Store the current position in the file.
 	fpos_t pos;
-	int last_line = linenum;
+	int last_line = file_line_number;
 	fgetpos(file,&pos);
 
 	hard_block_model *model;
@@ -1216,8 +1256,8 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 		model = NULL;
 
 		// Search the file for .model followed buy the subcircuit name.
-		char buffer[BUFSIZE];
-		while (my_fgets(buffer, BUFSIZE, file))
+		char buffer[READ_BLIF_BUFFER];
+		while (my_fgets(buffer, READ_BLIF_BUFFER, file))
 		{
 			char *token = my_strtok(buffer,TOKENS, file, buffer);
 			// match .model followed buy the subcircuit name.
@@ -1234,7 +1274,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 				model->outputs->names = NULL;
 
 				// Read the inputs and outputs.
-				while (my_fgets(buffer, BUFSIZE, file))
+				while (my_fgets(buffer, READ_BLIF_BUFFER, file))
 				{
 					char *first_word = my_strtok(buffer, TOKENS, file, buffer);
 					if(!strcmp(first_word, ".inputs"))
@@ -1291,7 +1331,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 	}
 
 	// Restore the original position in the file.
-	linenum = last_line;
+	file_line_number = last_line;
  	fsetpos(file,&pos);
 
 	return model;
@@ -1401,7 +1441,7 @@ hard_block_ports *get_hard_block_ports(char **pins, int count)
  */
 int verify_hard_block_ports_against_model(hard_block_ports *ports, hard_block_model *model)
 {
-	hard_block_ports *port_sets[] = {model->input_ports, model->input_ports};
+	hard_block_ports *port_sets[] = {model->input_ports, model->output_ports};
 	int i;
 	for (i = 0; i < 2; i++)
 	{
@@ -1415,13 +1455,19 @@ int verify_hard_block_ports_against_model(hard_block_ports *ports, hard_block_mo
 			int  *idx  = ports->index->get(ports->index, name, strlen(name) * sizeof(char));
 			// Model port not specified in ports.
 			if (!idx)
+			{
+				//printf("Model port not specified in ports. %s\n", name);
 				return FALSE;
+			}
 
 			// Make sure they match in size.
 			int instance_size = ports->sizes[*idx];
 			// Port sizes differ.
 			if (size != instance_size)
+			{
+				//printf("Port sizes differ. %s\n", name);
 				return FALSE;
+			}
 		}
 	}
 
@@ -1436,7 +1482,10 @@ int verify_hard_block_ports_against_model(hard_block_ports *ports, hard_block_mo
 		int *out_idx = out->index->get(out->index, name, strlen(name) * sizeof(char));
 		// Port does not appear in the model.
 		if (!in_idx && !out_idx)
+		{
+			//printf("Port does not appear in the model. %s\n", name);
 			return FALSE;
+		}
 	}
 
 	return TRUE;
@@ -1447,7 +1496,7 @@ int verify_hard_block_ports_against_model(hard_block_ports *ports, hard_block_mo
  */
 char *generate_hard_block_ports_signature(hard_block_ports *ports)
 {
-	char buffer[BUFSIZE];
+	char buffer[READ_BLIF_BUFFER];
 	buffer[0] = '\0';
 
 	strcat(buffer, "_");
@@ -1455,7 +1504,7 @@ char *generate_hard_block_ports_signature(hard_block_ports *ports)
 	int j;
 	for (j = 0; j < ports->count; j++)
 	{
-		char buffer1[BUFSIZE];
+		char buffer1[READ_BLIF_BUFFER];
 		sprintf(buffer1, "%s_%d_", ports->names[j], ports->sizes[j]);
 		strcat(buffer, buffer1);
 	}
@@ -1499,7 +1548,7 @@ long get_hard_block_pin_number(char *original_name)
 	long pin_number = strtol(pin_number_string, &endptr, 10);
 
 	if (pin_number_string == endptr)
-		error_message(NETLIST_ERROR,linenum, -1,"The given port name \"%s\" does not contain a valid pin number.", original_name);
+		error_message(NETLIST_ERROR,file_line_number, -1,"The given port name \"%s\" does not contain a valid pin number.", original_name);
 
 	free(name);
 
@@ -1511,7 +1560,7 @@ long get_hard_block_pin_number(char *original_name)
  */
 void add_hard_block_model(hard_block_model *m, hard_block_ports *ports, hard_block_models *models)
 {
-	char needle[BUFSIZE];
+	char needle[READ_BLIF_BUFFER];
 	needle[0] = '\0';
 	strcat(needle, m->name);
 	strcat(needle, ports->signature);
@@ -1526,7 +1575,7 @@ void add_hard_block_model(hard_block_model *m, hard_block_ports *ports, hard_blo
  */
 hard_block_model *get_hard_block_model(char *name, hard_block_ports *ports, hard_block_models *models)
 {
-	char needle[BUFSIZE];
+	char needle[READ_BLIF_BUFFER];
 	needle[0] = '\0';
 	strcat(needle, name);
 	strcat(needle, ports->signature);
@@ -1553,8 +1602,8 @@ hard_block_models *create_hard_block_models()
 int count_blif_lines(FILE *file)
 {
 	int num_lines = 0;
-	char buffer[BUFSIZE];
-	while (my_fgets(buffer, BUFSIZE, file))
+	char buffer[READ_BLIF_BUFFER];
+	while (my_fgets(buffer, READ_BLIF_BUFFER, file))
 	{
 		if (strstr(buffer, ".end"))
 			break;

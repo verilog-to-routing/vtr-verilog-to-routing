@@ -34,6 +34,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "util.h"
 #include "multipliers.h"
 #include "hard_blocks.h"
+#include "adders.h"
+#include "subtractions.h"
 
 void depth_first_traversal_to_output(short marker_value, FILE *fp, netlist_t *netlist);
 void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *fp);
@@ -212,6 +214,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 	/* Print out any hard block modules */
 #ifdef VPR6
 	add_the_blackbox_for_mults(out);
+	add_the_blackbox_for_adds(out);
 	output_hard_blocks(out);
 #endif
 
@@ -339,16 +342,34 @@ void output_node(nnode_t *node, short traverse_number, FILE *fp)
 		case MULTIPLY:
 			if (hard_multipliers == NULL)
 				oassert(FALSE); /* should be soft logic! */
-#ifdef VPR6
+			#ifdef VPR6
 			define_mult_function(node, node->type, fp);
-#endif
+			#endif
+			break;
+
+		//case FULLADDER:
+		case ADD:
+			if (hard_adders == NULL)
+				oassert(FALSE); /* should be soft logic! */
+			#ifdef VPR6
+			define_add_function(node, node->type, fp);
+			#endif
+			break;
+
+		case MINUS:
+			if (hard_adders == NULL)
+				oassert(FALSE); /* should be soft logic! */
+			#ifdef VPR6
+			if(hard_adders != NULL)
+				define_add_function(node, node->type, fp);
+			#endif
 			break;
 
 		case MEMORY:
 		case HARD_IP:
-#ifdef VPR6
+			#ifdef VPR6
 			define_hard_block(node, node->type, fp);
-#endif
+			#endif
 			break;
 		case INPUT_NODE:
 		case OUTPUT_NODE:
@@ -375,8 +396,8 @@ void output_node(nnode_t *node, short traverse_number, FILE *fp)
 		case MODULO:
 		case GTE:
 		case LTE:
-		case ADD:
-		case MINUS:
+		//case ADD:
+		//case MINUS:
 		default:
 			/* these nodes should have been converted to softer versions */
 			error_message(NETLIST_ERROR, 0,-1,"Output blif: node should have been converted to softer version.");
@@ -425,7 +446,9 @@ void define_logical_function(nnode_t *node, short type, FILE *out)
 			{
 				if ((net->driver_pin->node->type == MULTIPLY) ||
 					(net->driver_pin->node->type == HARD_IP) ||
-					(net->driver_pin->node->type == MEMORY))
+					(net->driver_pin->node->type == MEMORY) ||
+					(net->driver_pin->node->type == ADD) ||
+					(net->driver_pin->node->type == MINUS) )
 				{
 					fprintf(out, " %s", net->driver_pin->name);
 				}
@@ -597,7 +620,9 @@ void define_set_input_logical_function(nnode_t *node, char *bit_output, FILE *ou
 			/* Just print the driver_pin->name NOT driver_pin->node->name -- KEN */
 			if ((node->input_pins[i]->net->driver_pin->node->type == MULTIPLY) ||
 			    (node->input_pins[i]->net->driver_pin->node->type == HARD_IP) ||
-			    (node->input_pins[i]->net->driver_pin->node->type == MEMORY))
+			    (node->input_pins[i]->net->driver_pin->node->type == MEMORY) ||
+			    (node->input_pins[i]->net->driver_pin->node->type == ADD) ||
+			    (node->input_pins[i]->net->driver_pin->node->type == MINUS))
 			{
 				fprintf(out, " %s", node->input_pins[i]->net->driver_pin->name); 
 			}
@@ -632,9 +657,15 @@ void define_ff(nnode_t *node, FILE *out)
 	oassert(node->num_output_pins == 1);
 	oassert(node->num_input_pins == 2);
 
+	/* The default latch value is unknown, represented by 3 in a BLIF file */
+	int initial_value = 3;
+	if(node->has_initial_value){
+		initial_value = node->initial_value;
+	}
+	
 	/* input, output, clock */
 	if (global_args.high_level_block != NULL)
-		fprintf(out, ".latch %s^^%i-%i %s^^%i-%i re %s^^%i-%i 0", node->input_pins[0]->net->driver_pin->node->name, node->input_pins[0]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[0]->net->driver_pin->node->related_ast_node->high_number, node->name, node->related_ast_node->far_tag, node->related_ast_node->high_number, node->input_pins[1]->net->driver_pin->node->name, node->input_pins[1]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[1]->net->driver_pin->node->related_ast_node->high_number);
+		fprintf(out, ".latch %s^^%i-%i %s^^%i-%i re %s^^%i-%i %d", node->input_pins[0]->net->driver_pin->node->name, node->input_pins[0]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[0]->net->driver_pin->node->related_ast_node->high_number, node->name, node->related_ast_node->far_tag, node->related_ast_node->high_number, node->input_pins[1]->net->driver_pin->node->name, node->input_pins[1]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[1]->net->driver_pin->node->related_ast_node->high_number, initial_value);
 	else
 	{
 		if (node->input_pins[0]->net->driver_pin->name == NULL)
@@ -643,9 +674,9 @@ void define_ff(nnode_t *node, FILE *out)
 			fprintf(out, ".latch %s %s re ", node->input_pins[0]->net->driver_pin->name, node->name);
 
 		if (node->input_pins[1]->net->driver_pin->name == NULL)
-			fprintf(out, "%s 0\n", node->input_pins[1]->net->driver_pin->node->name);
+			fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->node->name, initial_value);
 		else
-			fprintf(out, "%s 0\n", node->input_pins[1]->net->driver_pin->name);
+			fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->name, initial_value);
 				
 	}
 	fprintf(out, "\n");
@@ -691,6 +722,7 @@ void define_decoded_mux(nnode_t *node, FILE *out)
 			/* now hookup the input wires with their respective ports.  [1+i] to skip output spot. */
 			/* Just print the driver_pin->name NOT driver_pin->node->name -- KEN */
 			nnet_t *net = node->input_pins[i]->net;
+
 			if (!net->driver_pin)
 			{
 				// Add a warning for an undriven net.
@@ -703,7 +735,9 @@ void define_decoded_mux(nnode_t *node, FILE *out)
 			{
 				if ((net->driver_pin->node->type == MULTIPLY) ||
 				    (net->driver_pin->node->type == HARD_IP) ||
-				    (net->driver_pin->node->type == MEMORY))
+				    (net->driver_pin->node->type == MEMORY) ||
+				    (net->driver_pin->node->type == ADD) ||
+				    (net->driver_pin->node->type == MINUS))
 				{
 					fprintf(out, " %s", net->driver_pin->name);
 				}

@@ -402,18 +402,89 @@ ast_node_t *markAndProcessSymbolListWith(ids id, ast_node_t *symbol_list)
 {
 	int i;
 	long sc_spot;
+	long range_temp_max = 0;
+	long range_temp_min = 0;
 	ast_node_t *range_min = 0;
 	ast_node_t *range_max = 0;
+	ast_node_t *newNode = 0;
 
 	for (i = 0; i < symbol_list->num_children; i++)
 	{
-		/* checks range is legal */
+		/* checks range is legal.  */
 		get_range(symbol_list->children[i]);
 
-		if ((i == 0) && (symbol_list->children[0]->children[1] != NULL)&& (symbol_list->children[0]->children[2] != NULL) && (symbol_list->children[0]->children[1]->type == NUMBERS) && (symbol_list->children[0]->children[2]->type == NUMBERS))
+		if ((i == 0) && (symbol_list->children[0]->children[1] != NULL) && (symbol_list->children[0]->children[2] != NULL)
+						&& ((symbol_list->children[0]->children[1]->type == NUMBERS) || (symbol_list->children[0]->children[1]->type == IDENTIFIERS) || (symbol_list->children[0]->children[1]->type == BINARY_OPERATION))
+						&& ((symbol_list->children[0]->children[2]->type == NUMBERS) || (symbol_list->children[0]->children[2]->type == IDENTIFIERS)|| (symbol_list->children[0]->children[2]->type == BINARY_OPERATION)))
 		{
-			range_max = symbol_list->children[0]->children[1];
-			range_min = symbol_list->children[0]->children[2];
+			/* Do lookup in sc_add_string */
+			/* Verify node->type.variables.is_parameter == TRUE */
+			/* If type is BINARY_OPERATION, Calculate it*/
+			/* ELSE REPORT ERROR */
+			if (symbol_list->children[0]->children[1]->type == IDENTIFIERS)
+			{
+				if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[1]->types.identifier)) != -1)
+				{
+					newNode = defines_for_module_sc[num_modules]->data[sc_spot];
+					if (newNode->types.variable.is_parameter == TRUE)
+					{
+						range_max = symbol_list->children[0]->children[1];
+						range_temp_max = newNode->types.number.value;
+					}
+					else
+						error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
+								"parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
+				}
+				else
+					error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
+								"parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
+			}
+			else if(symbol_list->children[0]->children[1]->type == NUMBERS)
+			{
+				range_max = symbol_list->children[0]->children[1];
+				range_temp_max = range_max->types.number.value;
+			}
+			else if(symbol_list->children[0]->children[1]->type == BINARY_OPERATION)
+			{
+				range_max = symbol_list->children[0]->children[1];
+				range_temp_max = calculate_operation(symbol_list->children[0]->children[1]);
+			}
+
+			if (symbol_list->children[0]->children[2]->type == IDENTIFIERS)
+			{
+				if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[2]->types.identifier)) != -1)
+				{
+					newNode = defines_for_module_sc[num_modules]->data[sc_spot];
+					if (newNode->types.variable.is_parameter == TRUE)
+					{
+						range_min = symbol_list->children[0]->children[2];
+						range_temp_min = newNode->types.number.value;
+					}
+					else
+						error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
+								"parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
+					}
+					else
+						error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
+								"parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
+				}
+				else if(symbol_list->children[0]->children[2]->type == NUMBERS)
+				{
+					range_min = symbol_list->children[0]->children[2];
+					range_temp_min = range_min->types.number.value;
+				}
+				else if(symbol_list->children[0]->children[2]->type == BINARY_OPERATION)
+				{
+					range_min = symbol_list->children[0]->children[2];
+					range_temp_min = calculate_operation(symbol_list->children[0]->children[2]);
+				}
+
+			if(range_temp_min > range_temp_max)
+				error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support arrays declared [m:n] where m is less than n.");
+			//ODIN doesn't support negative number in index now.
+			if(range_temp_min < 0 || range_temp_max < 0)
+				warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support negative number in index.");
+
 		}
 
 		if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
@@ -481,7 +552,7 @@ ast_node_t *markAndProcessSymbolListWith(ids id, ast_node_t *symbol_list)
 						symbol_list->children[i]->children[0]->types.identifier, 
 						((ast_node_t*)(defines_for_module_sc[num_modules]->data[sc_spot]))->line_number);
 				}
-
+				symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
 				defines_for_module_sc[num_modules]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
 				/* mark the node as shared so we don't delete it */
 				symbol_list->children[i]->children[5]->shared_node = TRUE;
@@ -518,6 +589,12 @@ ast_node_t *markAndProcessSymbolListWith(ids id, ast_node_t *symbol_list)
 				break;
 			case REG:
 				symbol_list->children[i]->types.variable.is_reg = TRUE;
+				break;
+			case INTEGER:
+				symbol_list->children[i]->types.variable.is_integer = TRUE;
+				/* This should be removed when elaboration of integers is added */
+				printf("integer data type is currently NOT supported: %s\n", symbol_list->children[i]->children[0]->types.identifier);
+				oassert(FALSE);
 				break;
 			default:
 				oassert(FALSE);
@@ -689,6 +766,40 @@ ast_node_t *newBlocking(ast_node_t *expression1, ast_node_t *expression2, int li
 }
 
 /*---------------------------------------------------------------------------------------------
+ * (function: newFor)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newFor(ast_node_t *initial, ast_node_t *compare_expression, ast_node_t *terminal, ast_node_t *statement, int line_number)
+{
+	/* create a node for this for reference */
+	ast_node_t* new_node = create_node_w_type(FOR, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 4, initial, compare_expression, terminal, statement);
+
+	/* This needs to be removed once elaboration support is added */
+	printf("For statement is NOT supported: line %d\n", line_number);
+	oassert(0);
+
+	return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newWhile)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int line_number)
+{
+	/* create a node for this for reference */
+	ast_node_t* new_node = create_node_w_type(WHILE, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 2, compare_expression, statement);
+
+	/* This needs to be removed once elaboration support is added */
+	printf("While statement is NOT supported: line %d\n", line_number);
+	oassert(0);
+
+	return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
  * (function: newIf)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newIf(ast_node_t *compare_expression, ast_node_t *true_expression, ast_node_t *false_expression, int line_number)
@@ -818,12 +929,12 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
 {
 	ast_node_t *symbol_node = newSymbolNode(module_ref_name, line_number);
 
-	/* create a node for this array reference */
+	// create a node for this array reference
 	ast_node_t* new_node = create_node_w_type(HARD_BLOCK, line_number, current_parse_file);
-	/* allocate child nodes to this node */
+	// allocate child nodes to this node
 	allocate_children_to_node(new_node, 2, symbol_node, module_named_instance);
 
-	/* store the hard block symbol name that this calls in a list that will at the end be asociated with the hard block node */
+	// store the hard block symbol name that this calls in a list that will at the end be asociated with the hard block node
 	block_instantiations_instance = (ast_node_t **)realloc(block_instantiations_instance, sizeof(ast_node_t*)*(size_block_instantiations+1));
 	block_instantiations_instance[size_block_instantiations] = new_node;
 	size_block_instantiations++;
@@ -836,12 +947,17 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
  *-----------------------------------------------------------------------*/
 ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number)
 {
-#ifdef VPR6
-	if (sc_lookup_string(hard_block_names, module_ref_name) != -1)
+	#ifdef VPR6
+	if
+	(
+		   sc_lookup_string(hard_block_names, module_ref_name) != -1
+		|| !strcmp(module_ref_name, "single_port_ram")
+		|| !strcmp(module_ref_name, "dual_port_ram")
+	)
 	{
 		return newHardBlockInstance(module_ref_name, module_named_instance, line_number);
 	}
-#endif
+	#endif
 
 	// make a unique module name based on its parameter list
 	ast_node_t *module_param_list = module_named_instance->children[2];
@@ -853,7 +969,7 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	{
 		// which doesn't exist in ast_modules yet
 		long sc_spot;
-		if ((sc_spot = sc_lookup_string(module_names_to_idx, module_param_name)) == -1)
+		if ((sc_spot = sc_lookup_string(module_names_to_idx, module_ref_name)) == -1)
 		{
 			// then add it, but set it to the symbol_node, because the 
 			// module in question may not have been parsed yet
@@ -945,7 +1061,8 @@ ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *exp
 	return new_node;
 }
 
-/*---------------------------------------------------------------------------------------------
+/*-----------------------------------------
+ * ----------------------------------------------------
  * (function: newModule)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number)
@@ -1009,10 +1126,68 @@ void next_module()
 /*--------------------------------------------------------------------------
  * (function: newDefparam)
  *------------------------------------------------------------------------*/
-void newDefparam(char *inst, char *param, char *val, int line_number)
+ast_node_t *newDefparam(ids id, ast_node_t *val, int line_number)
 {
-	ast_node_t *sym_node = newSymbolNode(val, line_number);
-	sym_node->shared_node = TRUE;
+	ast_node_t *new_node;
+	ast_node_t *ref_node;
+	char *module_instance_name = (char*)malloc(1024 * sizeof(char));
+	int i, j;
+	//long sc_spot;
+	if(val)
+	{
+		if(val->num_children > 1)
+		{
+			for(i = 0; i < val->num_children - 1; i++)
+			{
+				oassert(val->children[i]->num_children > 0);
+				if(i == 0 && val->num_children > 2)
+					module_instance_name = val->children[i]->children[0]->types.identifier;
+				else if(i == 0 && val->num_children == 2)
+					module_instance_name = val->children[i]->children[0]->types.identifier;
+				else
+				{
+					module_instance_name = strcat(module_instance_name, ".");
+					module_instance_name = strcat(module_instance_name, val->children[i]->children[0]->types.identifier);
+				}
+			}
+			new_node = val->children[(val->num_children - 1)];
+			new_node->type = MODULE_PARAMETER;
+			new_node->types.variable.is_parameter = TRUE;
+			new_node->shared_node = TRUE;
+			new_node->children[5]->types.variable.is_parameter = TRUE;
+			new_node->children[5]->shared_node = TRUE;
+			new_node->types.identifier = module_instance_name;
+		}
+	}
+	//flag = 0 can't find the instance
+	int flag = 0;
+	for(j = 0 ; j < size_module_instantiations ; j++)
+	{
+		if(flag == 0)
+		{
+			ref_node = module_instantiations_instance[j];
+			if(strcmp(ref_node->children[1]->children[0]->types.identifier, module_instance_name) == 0)
+			{
+				if(ref_node->children[1]->children[2])
+					add_child_to_node(ref_node->children[1]->children[2], new_node);
+				else
+				{
+					ast_node_t* symbol_node = create_node_w_type(MODULE_PARAMETER_LIST, line_number, current_parse_file);
+					ref_node->children[1]->children[2] = symbol_node;
+					add_child_to_node(ref_node->children[1]->children[2], new_node);
+				}
+				flag = 1;
+			}
+		}
+	}
+	//if the instance never showed before, dealt with this parameter in function convert_ast_to_netlist_recursing_via_modules
+	if(flag == 0)
+	{
+		new_node->shared_node = FALSE;
+		return new_node;
+	//	add_child_to_node(new_node, symbol_node);
+	}
+	return NULL;
 }
 
 /*--------------------------------------------------------------------------
@@ -1379,4 +1554,75 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 			graphVizOutputAst_traverse_node(fp, node->children[i], node, my_label);
 		}
 	}
+}
+
+long calculate_operation(ast_node_t *node)
+{
+	if (node == NULL || node->num_children < 2)
+			return 0;
+	ast_node_t *newNode;
+
+	long result, operand0, operand1;
+	/*Only calculate binary operation currently*/
+	if (node->type == BINARY_OPERATION)
+	{
+		/*calculate the first operand*/
+		if(node->children[0]->type == IDENTIFIERS){
+			long sc_spot;
+			if((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], node->children[0]->types.identifier)) != -1)
+			{
+				newNode = defines_for_module_sc[num_modules]->data[sc_spot];
+				if (newNode->types.variable.is_parameter == TRUE)
+				{
+					operand0 = newNode->types.number.value;
+				}
+				else
+					error_message(PARSE_ERROR, node->children[0]->line_number, current_parse_file,
+						"parameter %s don't match\n", node->children[0]->types.identifier);
+			}
+			else
+				error_message(PARSE_ERROR, node->children[0]->line_number, current_parse_file,
+					"parameter %s don't match\n", node->children[0]->types.identifier);
+		}
+		else if(node->children[0]->type == NUMBERS)
+			operand0 = node->children[0]->types.number.value;
+		else if(node->children[0]->type == BINARY_OPERATION)
+			operand0 = calculate_operation(node->children[0]);
+
+		/*calculate the second operand*/
+		if(node->children[1]->type == IDENTIFIERS){
+			long sc_spot;
+			if((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], node->children[1]->types.identifier)) != -1)
+			{
+				newNode = defines_for_module_sc[num_modules]->data[sc_spot];
+				if (newNode->types.variable.is_parameter == TRUE)
+				{
+					operand1 = newNode->types.number.value;
+				}
+				else
+					error_message(PARSE_ERROR, node->children[1]->line_number, current_parse_file,
+						"parameter %s don't match\n", node->children[1]->types.identifier);
+			}
+			else
+				error_message(PARSE_ERROR, node->children[1]->line_number, current_parse_file,
+					"parameter %s don't match\n", node->children[1]->types.identifier);
+		}
+		else if(node->children[1]->type == NUMBERS)
+			operand1 = node->children[1]->types.number.value;
+		else if(node->children[1]->type == BINARY_OPERATION)
+			operand1 = calculate_operation(node->children[1]);
+
+		result = calculate(operand0, operand1, node->types.operation.op);
+		if(result < 0)
+		{
+			error_message(PARSE_ERROR, node->line_number, current_parse_file,
+							"Negative numbers are used in the range in ODIN II!");
+		}
+		return result;
+	}
+	else
+		error_message(PARSE_ERROR, node->line_number, current_parse_file,
+				"ODIN II only can handle Binary Operation in Range!");
+
+	return 0;
 }

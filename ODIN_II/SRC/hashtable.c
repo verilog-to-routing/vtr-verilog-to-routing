@@ -170,7 +170,7 @@ void** ___hashtable_get_all(hashtable_t *h) {
 		hashtable_node_t *node = h->store[i]; 
 		while(node)
 		{
-			items[count++] = node->item; 
+			items[count++] = node->item;
 			node = node->next; 
 		}
 	} 

@@ -1,0 +1,9 @@
+<model name="multiply">
+	<input_ports>
+		<port name="a"/>
+		<port name="b"/>
+	</input_ports>
+	<output_ports>
+		<port name="out"/>
+	</output_ports>
+</model>

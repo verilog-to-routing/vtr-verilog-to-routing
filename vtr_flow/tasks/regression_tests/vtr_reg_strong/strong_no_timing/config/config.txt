@@ -1,0 +1,30 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog
+
+# Path to directory of architectures to use
+archs_dir=arch/no_timing/memory_sweep
+
+# Path to directory of SDC files to use
+sdc_dir = tasks/regression_tests/sdc
+
+# Add circuits to list to sweep
+circuit_list_add=ch_intrinsics.v
+
+# Add architectures to list to sweep
+arch_list_add=k4_N10_memSize524288_memData64.xml
+
+# Parse info and how to parse
+parse_file=vpr_no_timing.txt
+
+# How to parse QoR info
+qor_parse_file=qor_no_timing.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_no_timing.txt
+
+# Script parameters
+script_params=-no_timing

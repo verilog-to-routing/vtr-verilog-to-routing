@@ -1,0 +1,20 @@
+arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	num_luts	num_add_blocks	max_add_chain_length	num_sub_blocks	max_sub_chain_length	error
+k6_frac_N10_frac_chain_mem32K_40nm.xml	bgm.v	success	82	30.8059	152.3	505.71	3107.46	52.51	61520	57404	27853	3925	257	32	0	11	38537	5897	98	6822	37	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	blob_merge.v	success	84	15.012	33.41	27.44	194.18	7.44	16765	13448	6543	707	36	100	0	0	8067	1150	14	3360	12	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	boundtop.v	success	54	6.30124	15.9	8.95	18.08	1.64	5877	5744	2380	256	275	192	1	0	3053	326	20	195	15	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	ch_intrinsics.v	success	48	3.79735	1.23	0.86	1.8	0.16	765	895	418	37	99	130	1	0	425	0	0	0	0	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	diffeq1.v	success	62	16.8205	1.42	1.73	19	1.08	1309	1020	798	35	162	96	0	5	362	68	34	134	67	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	diffeq2.v	success	58	12.7164	1.33	1.58	20.01	0.94	1031	739	607	26	66	96	0	5	272	68	34	136	68	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	LU8PEEng.v	success	96	86.9239	142.54	235.55	3420.78	87.33	44853	39602	20073	2566	114	102	45	8	25251	1948	27	4135	47	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	LU32PEEng.v	success	142	80.4756	549.66	1702.36	220943	646.38	146845	130744	65366	8762	114	102	168	32	86521	5026	27	12793	47	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	mcml.v	success	130	44.3306	999.57	1736.79	22786.1	507.01	221647	192765	81282	7676	36	33	159	30	107784	9576	130	20035	129	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	mkDelayWorker32B.v	success	76	7.58142	25.47	32.98	2788.56	25.21	11887	11629	5985	511	511	553	43	0	5588	968	34	82	17	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	mkPktMerge.v	success	50	4.15099	1.1	4.57	71.11	5.12	1207	1312	1020	21	311	156	15	0	239	96	7	0	0	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	mkSMAdapter4B.v	success	60	5.75621	11.74	6.8	33.82	1.59	4339	4146	1976	201	195	205	5	0	1960	504	34	66	17	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	or1200.v	success	82	8.99732	14.18	13.55	311.85	4.13	5855	5508	3157	289	385	394	2	1	3075	634	66	262	121	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	raygentop.v	success	76	5.0622	11.82	7.73	46.74	3.55	5423	4793	2525	208	239	305	1	7	1884	765	33	66	16	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	sha.v	success	62	9.98558	5.47	5.2	54.9	1.3	3572	3315	1195	202	38	36	0	0	2001	321	37	8	8	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	stereovision0.v	success	64	4.47474	38.6	47.82	108.34	6.77	34408	31247	9312	1126	169	197	0	0	9567	4585	21	520	20	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	stereovision1.v	success	108	5.9125	40.51	56.52	1572.31	24.32	32469	27517	13523	1085	133	145	0	38	9874	3734	20	552	17	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	stereovision2.v	success	124	16.1961	57.18	236.03	21911.2	142.33	67884	45419	36479	2258	149	182	0	213	11012	14514	35	582	33	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	stereovision3.v	success	32	2.78599	0.5	0.36	0.67	0.05	340	348	123	13	11	30	0	0	174	31	12	0	0	

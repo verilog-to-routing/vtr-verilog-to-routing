@@ -152,14 +152,14 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 #endif
 			else if (0 != strcmp(def_iterator->value, value))
 			{
-				fprintf(stderr, "\tWarning: The value of %s has been redefined to %s, the prvious value was %s\n\n",
+				fprintf(stderr, "\tWarning: The value of %s has been redefined to %s, the previous value was %s\n\n",
 					symbol, value, def_iterator->value);
 				free(def_iterator->value);
 				def_iterator->value = (char *)strdup(value);
 			}
 
 			free(new_def);
-			return 0;
+			return -2;
 		}
 	}
 	
@@ -199,12 +199,13 @@ veri_include* add_veri_include(char *path, int line, veri_include *included_from
 	}
 	
 	/* Scan previous includes to make sure the file wasn't included previously. */
-	for (i = 0; i < veri_includes.current_index && i < veri_includes.current_size && inc_iterator != NULL; inc_iterator = veri_includes.included_files[++i]) 
+	for (i = 0; i < veri_includes.current_index && i < veri_includes.current_size && inc_iterator != NULL; inc_iterator = veri_includes.included_files[++i])
 	{
 		if (0 == strcmp(path, inc_iterator->path))
 		{
-			free(new_inc);
-			return NULL;
+			printf("Warning: including %s multiple times\n", path);
+//			free(new_inc);
+//			return NULL;
 		}
 	}
 	
@@ -284,8 +285,13 @@ FILE* open_source_file(char* filename)
 		fprintf(stderr, "Invalid state in open_source_file.");
 	}
 	
-	char* last_slash = strrchr(path, '/') + 1;
-	*last_slash = '\0';
+	char* last_slash = strrchr(path, '/');
+	if (last_slash == NULL) /* No other path to try to find the file */
+	{
+		free(path);
+		return NULL;
+	}
+	*(last_slash + 1) = '\0';
 	strcat(path, filename);
 	
 	src_file = fopen(path, "r");
@@ -398,7 +404,6 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 	veri_flag_stack *skip = (veri_flag_stack *)calloc(1, sizeof(veri_flag_stack));;
 	char line[MaxLine];
 	char *token;
-	FILE *included_file = NULL;
 	veri_include *new_include = NULL;
 
 	while (NULL != fgets(line, MaxLine, source))
@@ -451,7 +456,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 		
 		//fprintf(stderr, "%s:%d\t%s\n", current_include->path,line_number, line);
 
-		/* Preprocessor directives have a backtick on the first coloumn. */
+		/* Preprocessor directives have a backtick on the first column. */
 		if (line[0] == '`') 
 		{
 			token = trim((char *)strtok(line, " \t"));
@@ -461,12 +466,16 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			 */
 			if (top(skip) < 1 && strcmp(token, "`include") == 0)
 			{
+				printf("%s\n", token);
+
 				token = trim((char *)strtok(NULL, "\""));
 				
-				included_file = open_source_file(token);
+				printf("%s\n", token);
+
+				FILE *included_file = open_source_file(token);
 
 				/* If we failed to open the included file handle the error */
-				if (included_file == NULL)
+				if (!included_file)
 				{			
 					fprintf(stderr, "Warning: Unable to open file %s included on line %d of %s\n", 
 						token, line_number, current_include->path);
@@ -593,7 +602,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			{
 				pop(skip);
 			}
-			/* Leave unhandled preprcessor directives in place. */
+			/* Leave unhandled preprocessor directives in place. */
 			else if (top(skip) < 1)
 			{
 				fprintf(preproc_producer, "%s %s\n", line, line + 1 + strlen(line));

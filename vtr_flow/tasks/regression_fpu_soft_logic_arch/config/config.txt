@@ -17,7 +17,7 @@ circuit_list_add=fir.v
 circuit_list_add=mm3.v
 circuit_list_add=ode.v
 circuit_list_add=syn2.v
-circuit_list_add=syn7.v
+# circuit_list_add=syn7.v # Cannot run this at channel width 72 because does not route
 
 # Add architectures to list to sweep
 arch_list_add=soft_fpu_arch_timing.xml

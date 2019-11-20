@@ -514,10 +514,10 @@ module mkDelayWorker32B(wciS0_Clk,
   reg endOfMessage;
   wire endOfMessage__D_IN, endOfMessage__EN;
 
-  // register errCount
-  reg [255 : 0] errCount;
-  wire [255 : 0] errCount__D_IN;
-  wire errCount__EN;
+  // register errCount // jluu removed because never used
+//  reg [255 : 0] errCount;
+//  wire [255 : 0] errCount__D_IN;
+//  wire errCount__EN;
 
   // register impreciseBurst
   reg impreciseBurst;
@@ -657,9 +657,9 @@ module mkDelayWorker32B(wciS0_Clk,
   wire unrollCnt__EN;
 
   // register valExpect
-  reg [255 : 0] valExpect;
-  wire [255 : 0] valExpect__D_IN;
-  wire valExpect__EN;
+//  reg [255 : 0] valExpect;
+//  wire [255 : 0] valExpect__D_IN;
+//  wire valExpect__EN;
 
   // register wci_cEdge
   reg [2 : 0] wci_cEdge;
@@ -2544,13 +2544,13 @@ wire [255:0] dp_out_not_used2;
 	     wsiS_reqFifo__D_OUT[307:296] == 12'b01 ||
 	     WILL_FIRE_RL_wmwt_messageFinalize ;
 
-  // register errCount
-  assign errCount__D_IN = errCount + 256'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001 ;
-  assign errCount__EN =
-	     WILL_FIRE_RL_wmwt_messagePushImprecise &&
-	     wsiS_reqFifo__D_OUT[295:40] != valExpect &&
-	     (wsiS_reqFifo__D_OUT[307:296] != 12'b01 ||
-	      wsiS_reqFifo__D_OUT[39:8] != 32'b00000000000000000000000000000000) ;
+  // register errCount - jluu: removed because never used
+//  assign errCount__D_IN = errCount + 256'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001 ;
+//  assign errCount__EN =
+//	     WILL_FIRE_RL_wmwt_messagePushImprecise &&
+//	     wsiS_reqFifo__D_OUT[295:40] != valExpect &&
+//	     (wsiS_reqFifo__D_OUT[307:296] != 12'b01 ||
+//	      wsiS_reqFifo__D_OUT[39:8] != 32'b00000000000000000000000000000000) ;
 
   // register impreciseBurst
   always@(WILL_FIRE_RL_wmwt_doAbort or
@@ -2782,12 +2782,12 @@ wire [255:0] dp_out_not_used2;
 	     WILL_FIRE_RL_wmrd_mesgBegin ||
 	     WILL_FIRE_RL_wmrd_mesgBodyResponse ;
 
-  // register valExpect
-  assign valExpect__D_IN = valExpect + 256'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001 ;
-  assign valExpect__EN =
-	     WILL_FIRE_RL_wmwt_messagePushImprecise &&
-	     (wsiS_reqFifo__D_OUT[307:296] != 12'b01 ||
-	      wsiS_reqFifo__D_OUT[39:8] != 32'b00000000000000000000000000000000) ;
+  // register valExpect : jluu removed because never used
+//  assign valExpect__D_IN = valExpect + 256'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001 ;
+//  assign valExpect__EN =
+//	     WILL_FIRE_RL_wmwt_messagePushImprecise &&
+//	     (wsiS_reqFifo__D_OUT[307:296] != 12'b01 ||
+//	      wsiS_reqFifo__D_OUT[39:8] != 32'b00000000000000000000000000000000) ;
 
   // register wci_cEdge
   assign wci_cEdge__D_IN = wci_reqF__D_OUT[36:34] ;
@@ -3555,7 +3555,7 @@ wire [255:0] dp_out_not_used2;
 	dlyWordsStored_value <=  20'b00000000000000000000;
 	doAbort <=  1'b0;
 	endOfMessage <=  1'b0;
-	errCount <=  256'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
+//	errCount <=  256'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
 	impreciseBurst <=  1'b0;
 	mesgLength <=  15'b010101010101010;
 	mesgLengthSoFar <=  14'b00000000000000;
@@ -3580,7 +3580,7 @@ wire [255:0] dp_out_not_used2;
 	readyToPush <=  1'b0;
 	readyToRequest <=  1'b0;
 	unrollCnt <=  16'b0000000000000000;
-	valExpect <=  256'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
+//	valExpect <=  256'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
 	wci_cEdge <=  3'b111;
 	wci_cState <=  3'b000;
 	wci_ctlAckReg <=  1'b0;
@@ -3666,7 +3666,7 @@ wire [255:0] dp_out_not_used2;
 	if (doAbort__EN) doAbort <=  doAbort__D_IN;
 	if (endOfMessage__EN)
 	  endOfMessage <=  endOfMessage__D_IN;
-	if (errCount__EN) errCount <=  errCount__D_IN;
+//	if (errCount__EN) errCount <=  errCount__D_IN;
 	if (impreciseBurst__EN)
 	  impreciseBurst <=  impreciseBurst__D_IN;
 	if (mesgLength__EN)
@@ -3707,7 +3707,7 @@ wire [255:0] dp_out_not_used2;
 	if (readyToRequest__EN)
 	  readyToRequest <=  readyToRequest__D_IN;
 	if (unrollCnt__EN) unrollCnt <=  unrollCnt__D_IN;
-	if (valExpect__EN) valExpect <=  valExpect__D_IN;
+//	if (valExpect__EN) valExpect <=  valExpect__D_IN;
 	if (wci_cEdge__EN) wci_cEdge <=  wci_cEdge__D_IN;
 	if (wci_cState__EN)
 	  wci_cState <=  wci_cState__D_IN;

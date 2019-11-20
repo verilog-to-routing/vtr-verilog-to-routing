@@ -84,7 +84,7 @@ Tools:
 
 Libraries:
 
-	libvpr: Library used by ODIN II and VPR.  This library reads an FPGA 
+	libarchfpga: Library used by ODIN II and VPR.  This library reads an FPGA 
 	architecture description file
 
 Other:
@@ -117,7 +117,7 @@ Build Help:
 - This release has been regularly tested on a 64-bit Linux (Debian) machine.  
 Our testers have gotten this to work on various other systems including various versions of Windows and Unix.
 
-- If you are compiling in cygwin, you may need to add "#define WIN32" to libvpr/include/ezxml.h
+- If you are compiling in cygwin, you may need to add "#define WIN32" to libarchfpga/include/ezxml.h
 
 - Check for library dependencies.  ODIN II requires bison.  VPR requires X11 libraries if you want graphics.  
 
@@ -129,7 +129,7 @@ Please support us by registering as a user of VTR here: http://www.eecg.utoronto
 # License
 ##############################################################################
 
-Copyright (c) 2012 
+Copyright (c) 2013
 Jason Luu, Jeffrey Goeders, Chi Wai Yu, Opal Densmore, Andrew Somerville, 
 Kenneth Kent, Peter Jamieson, Jason Anderson, Ian Kuon, Alexander Marquardt, 
 Andy Ye, Ted Campbell, Wei Mark Fang, Vaughn Betz, Jonathan Rose
@@ -150,3 +150,18 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER 
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+##############################################################################
+# Contributors
+##############################################################################
+
+Professors: Kenneth Kent, Peter Jamieson, Jason Anderson, Vaughn Betz, Jonathan Rose
+
+Graduate Students: Jason Luu, Jeffrey Goeders, Chi Wai Yu, Andrew Somerville, 
+Ian Kuon, Alexander Marquardt, Andy Ye, Wei Mark Fang, Tim Liu
+
+Summer Students: Opal Densmore, Ted Campbell, Cong Wang, Peter Milankov, Scott Whitty, Michael Wainberg,
+Suya Liu, Miad Nasr, Nooruddin Ahmed, Thien Yu
+
+Companies: Altera Corporation, Texas Instruments
+

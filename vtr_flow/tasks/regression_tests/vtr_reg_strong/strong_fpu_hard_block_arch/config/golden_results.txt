@@ -1,0 +1,2 @@
+arch	circuit	vpr_status	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error
+hard_fpu_arch_timing.xml	mm3.v	success	2.985 	1.66	0.41	1.13	1.13	545	422	289	0	193	32	-1	-1	

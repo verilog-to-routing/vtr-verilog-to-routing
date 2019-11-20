@@ -1,0 +1,18 @@
+arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error
+k6_frac_N10_mem32K_40nm.xml	bgm.v	success	116	26.4562	183.81	327.14	10971.9	74.89	38531	38046	21094	2930	257	32	0	11	
+k6_frac_N10_mem32K_40nm.xml	blob_merge.v	success	74	10.3374	20.21	24.29	329.42	6.19	6790	6890	3069	543	36	100	0	0	
+k6_frac_N10_mem32K_40nm.xml	boundtop.v	success	60	6.46016	7.69	11.47	34.56	2.26	5032	5224	2200	233	275	192	1	0	
+k6_frac_N10_mem32K_40nm.xml	ch_intrinsics.v	success	50	3.93537	0.92	1.02	2.56	0.24	765	895	430	37	99	130	1	0	
+k6_frac_N10_mem32K_40nm.xml	diffeq1.v	success	52	22.5226	0.85	1.98	43.66	2.25	1004	941	717	36	162	96	0	5	
+k6_frac_N10_mem32K_40nm.xml	diffeq2.v	success	52	16.5257	0.61	1.63	23.74	1.69	649	585	468	27	66	96	0	5	
+k6_frac_N10_mem32K_40nm.xml	mcml.v	success	104	79.6414	798.05	950.71	72263.1	463.6	157560	155925	52415	6615	36	33	159	30	
+k6_frac_N10_mem32K_40nm.xml	mkDelayWorker32B.v	success	76	7.29579	19.99	30.33	2601.91	32	9933	10486	5224	447	511	553	43	0	
+k6_frac_N10_mem32K_40nm.xml	mkPktMerge.v	success	46	4.57233	0.64	4.24	68.43	3.88	1038	1194	972	15	311	156	15	0	
+k6_frac_N10_mem32K_40nm.xml	mkSMAdapter4B.v	success	56	5.64516	5.28	5.2	46.52	1.58	3308	3513	1597	165	195	205	5	0	
+k6_frac_N10_mem32K_40nm.xml	or1200.v	success	74	13.3363	8.35	10.53	357.12	8.93	4258	4589	2499	257	385	394	2	1	
+k6_frac_N10_mem32K_40nm.xml	raygentop.v	success	68	5.03863	7.56	5.7	32.44	2.48	4037	4153	1964	173	239	305	1	7	
+k6_frac_N10_mem32K_40nm.xml	sha.v	success	50	13.6379	10.47	4.44	27.18	1.03	3226	3262	1304	209	38	36	0	0	
+k6_frac_N10_mem32K_40nm.xml	stereovision0.v	success	60	4.3641	33.38	36.55	311.75	5.15	25022	25219	7936	905	157	197	0	0	
+k6_frac_N10_mem32K_40nm.xml	stereovision1.v	success	104	5.75446	38.52	44.52	1250.06	22.04	24643	22508	11079	889	133	145	0	38	
+k6_frac_N10_mem32K_40nm.xml	stereovision2.v	success	154	17.3851	83.69	208.91	57181.3	222.93	58665	49253	34476	2395	149	182	0	213	
+k6_frac_N10_mem32K_40nm.xml	stereovision3.v	success	34	2.66712	0.17	0.33	0.71	0.06	293	323	122	13	11	30	0	0	

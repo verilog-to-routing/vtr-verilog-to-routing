@@ -1,0 +1,52 @@
+vpr_status;output.txt;vpr_status=(.*)
+num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
+num_memories;vpr.out;Netlist memory blocks:\s*(\d+)
+num_mult;vpr.out;Netlist mult_36 blocks:\s*(\d+)
+sb_buffer_size;*.power;Average SB Buffer Size: (.*)
+clb_array_size;vpr.out;The circuit will be mapped into a (\d+) x \d+ array of clbs.
+chan_width;vpr.crit_path.out;--route_chan_width (\d+)
+total_power;*.power;^Total\s+(.*?)\s+
+total_dyn;*.power;^Total\s+\S+\s+\S+\s+(.*?)\s+
+
+routing_power;*.power;^\s+Routing\s+(.*?)\s+
+routing_dyn;*.power;^\s+Routing\s+\S+\s+\S+\s+(.*?)\s+
+
+sb_power;*.power;^\s+Switch Box\s+(.*?)\s+
+sb_dyn;*.power;\s+Switch Box\s+\S+\s+\S+\s+(.*?)\s+
+
+cb_power;*.power;^\s+Connection Box\s+(.*?)\s+
+cb_dyn;*.power;\s+Connection Box\s+\S+\s+\S+\s+(.*?)\s+
+
+glb_wire_power;*.power;^\s+Global Wires\s+(.*?)\s+
+
+pb_power;*.power;^\s+PB Types\s+(.*?)\s+
+pb_dyn;*.power;^\s+PB Types\s+\S+\s+\S+\s+(.*?)\s+
+
+pb_primitives_power;*.power;^\s+Primitives\s+(.*?)\s+
+pb_primitives_dyn;*.power;^\s+Primitives\s+\S+\s+\S+\s+(.*?)\s+
+
+pb_interc_muxes_power;*.power;^\s+Interc Structures\s+(.*?)\s+
+pb_interc_muxes_dyn;*.power;^\s+Interc Structures\s+\S+\s+\S+\s+(.*?)\s+
+
+pb_buf_wire_power;*.power;^\s+Buffers and Wires\s+(.*?)\s+
+pb_buf_wire_dyn;*.power;^\s+Buffers and Wires\s+\S+\s+\S+\s+(.*?)\s+
+
+clb_power;*.power;^clb\s+(.*?)\s+
+clb_dyn;*.power;^clb\s+\S+\s+\S+\s+(.*?)\s+
+
+lut_power;*.power;^\s+soft_logic\s+(.*?)\s+
+lut_dyn;*.power;^\s+soft_logic\s+\S+\s+\S+\s+(.*?)\s+
+
+ff_power;*.power;^\s+ff\s+(.*?)\s+
+ff_dyn;*.power;^\s+ff\s+\S+\s+\S+\s+(.*?)\s+
+
+mem_power;*.power;^memory\s+(.*?)\s+
+mem_dyn;*.power;^memory\s+\S+\s+\S+\s+(.*?)\s+
+
+mult_power;*.power;^mult_36\s+(.*?)\s+
+mult_dyn;*.power;^mult_36\s+\S+\s+\S+\s+(.*?)\s+
+
+clock_power;*.power;^\s+Clock\s+(.*?)\s+
+clock_dyn;*.power;^\s+Clock\s+\S+\s+\S+\s+(.*?)\s+
+
+critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns

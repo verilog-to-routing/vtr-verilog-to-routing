@@ -22,6 +22,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 #include "simulate_blif.h"
 
+#ifndef max
+#define max(a,b) (((a) > (b))? (a) : (b))
+#define min(a,b) ((a) > (b)? (b) : (a))
+#endif
+
 /*
  * Performs simulation. 
  */ 
@@ -322,47 +327,6 @@ void simulate_cycle(int cycle, stages *s)
 		}
 		#endif
 	}
-}
-
-void original_simulate_cycle(netlist_t *netlist, int cycle)
-{
-	queue_t *queue = create_queue();
-
-	// Enqueue top input nodes
-	int i;
-	for (i = 0; i < netlist->num_top_input_nodes; i++)
-		enqueue_node_if_ready(queue,netlist->top_input_nodes[i],cycle);
-
-	// Enqueue constant nodes.
-	nnode_t *constant_nodes[] = {netlist->gnd_node, netlist->vcc_node, netlist->pad_node};
-	int num_constant_nodes = 3;
-	for (i = 0; i < num_constant_nodes; i++)
-		enqueue_node_if_ready(queue,constant_nodes[i],cycle);
-
-	nnode_t *node;
-	while ((node = queue->remove(queue)))
-	{
-		compute_and_store_value(node, cycle);
-
-		// Enqueue child nodes which are ready, not already queued, and not already complete.
-		int num_children = 0;
-		nnode_t **children = get_children_of(node, &num_children);
-
-		for (i = 0; i < num_children; i++)
-		{
-			nnode_t* node = children[i];
-
-			if (!node->in_queue && is_node_ready(node, cycle) && !is_node_complete(node, cycle))
-			{
-				node->in_queue = TRUE;
-				queue->add(queue,node);
-			}
-		}
-		free(children);
-
-		node->in_queue = FALSE;
-	}
-	queue->destroy(queue);
 }
 
 /*
@@ -742,7 +706,8 @@ void compute_and_store_value(nnode_t *node, int cycle)
 		{
 			int i;
 			for (i = 0; i < node->num_output_pins; i++)
-				update_pin_value(node->output_pins[i], is_even_cycle(cycle)?0:1, cycle);
+				//toggle according to ratio
+				update_pin_value(node->output_pins[i], is_even_cycle(cycle/node->ratio)?0:1, cycle);
 			break;
 		}
 		case GND_NODE:
@@ -770,6 +735,16 @@ void compute_and_store_value(nnode_t *node, int cycle)
 		case GENERIC :
 			compute_generic_node(node,cycle);
 			break;
+		//case FULLADDER:
+		case ADD:
+			compute_add_node(node, cycle, 0);
+			break;
+		case MINUS:
+			if(node->num_input_port_sizes == 3)
+				compute_add_node(node, cycle, 1);
+			else
+				compute_unary_sub_node(node, cycle);
+			break;
 		/* These should have already been converted to softer versions. */
 		case BITWISE_AND:
 		case BITWISE_NAND:
@@ -787,8 +762,8 @@ void compute_and_store_value(nnode_t *node, int cycle)
 		case MODULO:
 		case GTE:
 		case LTE:
-		case ADD:
-		case MINUS:
+		//case ADD:
+		//case MINUS:
 		default:
 			error_message(SIMULATION_ERROR, 0, -1, "Node should have been converted to softer version: %s", node->name);
 			break;
@@ -819,7 +794,7 @@ void update_undriven_input_pins(nnode_t *node, int cycle)
 	for (i = 0; i < node->num_undriven_pins; i++)
 	{
 		npin_t *pin = node->undriven_pins[i];
-		update_pin_value(pin, -1, cycle);
+		update_pin_value(pin, global_args.sim_initial_value, cycle);
 	}
 
 	// By the third cycle everything in the netlist should have been updated.
@@ -978,15 +953,18 @@ int is_node_ready(nnode_t* node, int cycle)
 		for (i = 0; i < node->num_input_pins; i++)
 		{
 			npin_t *pin = node->input_pins[i];
-			// The clock relies on the current cycle. All other memory pins use the previous cycle.
-			if (!strcmp(pin->mapping, "clk"))
+			// The data and write enable inputs rely on the values from the previous cycle.
+			if (
+					   !strcmp(pin->mapping, "data") || !strcmp(pin->mapping, "data1") || !strcmp(pin->mapping, "data2")
+					|| !strcmp(pin->mapping, "we")   || !strcmp(pin->mapping, "we1")   || !strcmp(pin->mapping, "we2")
+			)
 			{
-				if (get_pin_cycle(pin) < cycle)
+				if (get_pin_cycle(pin) < cycle-1)
 					return FALSE;
 			}
 			else
 			{
-				if (get_pin_cycle(pin) < cycle-1)
+				if (get_pin_cycle(pin) < cycle)
 					return FALSE;
 			}
 		}
@@ -999,6 +977,26 @@ int is_node_ready(nnode_t* node, int cycle)
 				return FALSE;
 	}
 	return TRUE;
+}
+
+/*
+ * Returns the ration of a clock node.
+ * */
+int get_clock_ratio(nnode_t *node)
+{
+	return node->ratio;
+}
+
+/*
+ * Changes the ratio of a clock node
+ */
+void set_clock_ratio(int rat, nnode_t *node)
+{
+	//change the value only for clocks
+	if(node->type != CLOCK_NODE)
+	 return;
+
+	node->ratio = rat;
 }
 
 /*
@@ -1085,6 +1083,176 @@ nnode_t **get_children_of(nnode_t *node, int *num_children)
 }
 
 /*
+ * Gets the children of the given node. Returns the number of
+ * children via the num_children parameter. Throws warnings
+ * or errors if invalid connection patterns are detected.
+ */
+int *get_children_pinnumber_of(nnode_t *node, int *num_children)
+{
+	int *pin_numbers = 0;
+	int count = 0;
+	int i;
+	for (i = 0; i < node->num_output_pins; i++)
+	{
+		npin_t *pin = node->output_pins[i];
+		nnet_t *net = pin->net;
+		if (net)
+		{
+			/*
+			 *  Detects a net that may be being driven by two
+			 *  or more pins or has an incorrect driver pin assignment.
+			 */
+			if (net->driver_pin != pin && global_args.all_warnings)
+			{
+				char *pin_name  = get_pin_name(pin->name);
+				char *node_name = get_pin_name(node->name);
+				char *net_name  = get_pin_name(net->name);
+
+				warning_message(SIMULATION_ERROR, -1, -1,
+						"Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
+						"             which is mapped to a net \"%s\" (%ld) whose driver pin is \"%s\" (%ld) \n",
+						pin_name,
+						pin->unique_id,
+						node_name,
+						node->unique_id,
+						net_name,
+						net->unique_id,
+						net->driver_pin->name,
+						net->driver_pin->unique_id
+				);
+
+				free(net_name);
+				free(pin_name);
+				free(node_name);
+			}
+
+			int j;
+			for (j = 0; j < net->num_fanout_pins; j++)
+			{
+				npin_t *fanout_pin = net->fanout_pins[j];
+				if (fanout_pin && fanout_pin->type == INPUT && fanout_pin->node)
+				{
+					nnode_t *child_node = fanout_pin->node;
+
+					// Check linkage for inconsistencies.
+					if (fanout_pin->net != net)
+					{
+						print_ancestry(child_node, 0);
+						error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+					}
+					else if (fanout_pin->net->driver_pin->net != net)
+					{
+						print_ancestry(child_node, 0);
+						error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+					}
+
+					else if (fanout_pin->net->driver_pin->node != node)
+					{
+						print_ancestry(child_node, 0);
+						error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+					}
+					else
+					{
+						// Add child.
+						pin_numbers = realloc(pin_numbers, sizeof(int) * (count + 1));
+						pin_numbers[count++] = i;
+					}
+				}
+			}
+		}
+	}
+	*num_children = count;
+	return pin_numbers;
+}
+
+/*
+ * Gets the children of a specific output pin of the given node. Returns the number of
+ * children via the num_children parameter. Throws warnings
+ * or errors if invalid connection patterns are detected.
+ */
+nnode_t **get_children_of_nodepin(nnode_t *node, int *num_children, int output_pin)
+{
+	nnode_t **children = 0;
+	int count = 0;
+	int output_pin_number = node->num_output_pins;
+	if(output_pin < 0 || output_pin > output_pin_number)
+	{
+		error_message(SIMULATION_ERROR, -1, -1, "Requested pin not available");
+		return children;
+	}
+
+	npin_t *pin = node->output_pins[output_pin];
+	nnet_t *net = pin->net;
+	if (net)
+	{
+		/*
+		 *  Detects a net that may be being driven by two
+		 *  or more pins or has an incorrect driver pin assignment.
+		 */
+		if (net->driver_pin != pin && global_args.all_warnings)
+		{
+			char *pin_name  = get_pin_name(pin->name);
+			char *node_name = get_pin_name(node->name);
+			char *net_name  = get_pin_name(net->name);
+
+			warning_message(SIMULATION_ERROR, -1, -1,
+					"Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
+					"             which is mapped to a net \"%s\" (%ld) whose driver pin is \"%s\" (%ld) \n",
+					pin_name,
+					pin->unique_id,
+					node_name,
+					node->unique_id,
+					net_name,
+					net->unique_id,
+					net->driver_pin->name,
+					net->driver_pin->unique_id
+			);
+
+			free(net_name);
+			free(pin_name);
+			free(node_name);
+		}
+
+		int j;
+		for (j = 0; j < net->num_fanout_pins; j++)
+		{
+			npin_t *fanout_pin = net->fanout_pins[j];
+			if (fanout_pin && fanout_pin->type == INPUT && fanout_pin->node)
+			{
+				nnode_t *child_node = fanout_pin->node;
+
+				// Check linkage for inconsistencies.
+				if (fanout_pin->net != net)
+				{
+					print_ancestry(child_node, 0);
+					error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+				}
+				else if (fanout_pin->net->driver_pin->net != net)
+				{
+					print_ancestry(child_node, 0);
+					error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+				}
+
+				else if (fanout_pin->net->driver_pin->node != node)
+				{
+					print_ancestry(child_node, 0);
+					error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+				}
+				else
+				{
+					// Add child.
+					children = realloc(children, sizeof(nnode_t*) * (count + 1));
+					children[count++] = child_node;
+				}
+			}
+		}
+	}
+
+	*num_children = count;
+	return children;
+}
+
+/*
  * Updates the value of a pin and its cycle. Pins should be updated using
  * only this function.
  *
@@ -1104,8 +1272,15 @@ void update_pin_value(npin_t *pin, signed char value, int cycle)
  */
 signed char get_pin_value(npin_t *pin, int cycle)
 {
-	if (!pin->values || cycle < 0)
-		return -1;
+	if (!pin->values || cycle < 0){
+		/* If the pin's node has an initial value, then use it. 
+		   Otherwise use the global initial value 
+		   Need to make sure pin->node isn't NULL (e.g. for a dummy node) */
+		if(pin->node && pin->node->has_initial_value) {
+			return pin->node->initial_value;
+		}
+		return global_args.sim_initial_value;
+	}
 	return pin->values[get_values_offset(cycle)];
 }
 
@@ -1141,7 +1316,7 @@ inline void set_pin_cycle(npin_t *pin, int cycle)
 /*
  * Returns FALSE if the cycle is odd.
  */
-inline int is_even_cycle(int cycle)
+int is_even_cycle(int cycle)
 {
 	return !((cycle + 2) % 2);
 }
@@ -1189,8 +1364,15 @@ void initialize_pin(npin_t *pin)
 	}
 
 	int i;
-	for (i = 0; i < SIM_WAVE_LENGTH; i++)
-		pin->values[i] = -1;
+	for (i = 0; i < SIM_WAVE_LENGTH; i++){
+		/* If the pin's node has an initial value, then use it. 
+		   Otherwise use the global initial value 
+		   Need to make sure pin->node isn't NULL (e.g. for a dummy node) */
+		if(pin->node && pin->node->has_initial_value)
+			pin->values[i] = pin->node->initial_value;
+		else 
+			pin->values[i] = global_args.sim_initial_value;
+	}
 
 	set_pin_cycle(pin, -1);
 }
@@ -1484,292 +1666,383 @@ int *multiply_arrays(int *a, int a_length, int *b, int b_length)
 }
 
 /*
+ * Computes the given add node for the given cycle.
+ * add by Sen
+ */
+void compute_add_node(nnode_t *node, int cycle, int type)
+{
+	oassert(node->num_input_port_sizes == 3);
+	oassert(node->num_output_port_sizes == 2);
+
+	int i, num;
+	int flag = 0;
+
+	int *a = malloc(sizeof(int)*node->input_port_sizes[0]);
+	int *b = malloc(sizeof(int)*node->input_port_sizes[1]);
+	int *c = malloc(sizeof(int)*node->input_port_sizes[2]);
+
+	num = node->input_port_sizes[0]+ node->input_port_sizes[1];
+	//if cin connect to unconn(PAD_NODE), a[0] connect to ground(GND_NODE) and b[0] connect to ground, flag = 0 the initial adder for addition
+	//if cin connect to unconn(PAD_NODE), a[0] connect to ground(GND_NODE) and b[0] connect to vcc, flag = 1 the initial adder for subtraction
+	if(node->input_pins[num]->net->driver_pin->node->type == PAD_NODE)
+	{
+		if(node->input_pins[0]->net->driver_pin->node->type == GND_NODE && node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == GND_NODE)
+			flag = 0;
+		else if(node->input_pins[0]->net->driver_pin->node->type == GND_NODE && node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == VCC_NODE)
+			flag = 1;
+	}
+	else
+		flag = 2;
+
+	for (i = 0; i < node->input_port_sizes[0]; i++)
+		a[i] = get_pin_value(node->input_pins[i],cycle);
+	for (i = 0; i < node->input_port_sizes[1]; i++)
+		b[i] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i],cycle);
+
+	for (i = 0; i < node->input_port_sizes[2]; i++)
+		//the initial cin of carry chain subtractor should be 1
+		if(flag == 1)
+			c[i] = 1;
+		//the initial cin of carry chain adder should be 0
+		else if(flag == 0)
+			c[i] = 0;
+		else
+			c[i] = get_pin_value(node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i],cycle);
+
+	int *result = add_arrays(a, node->input_port_sizes[0], b, node->input_port_sizes[1], c, node->input_port_sizes[2],type);
+
+	//update the pin value of output
+	for (i = 1; i < node->num_output_pins; i++)
+		update_pin_value(node->output_pins[i], result[(i - 1)], cycle);
+
+	update_pin_value(node->output_pins[0], result[(node->num_output_pins - 1)], cycle);
+
+	free(result);
+	free(a);
+	free(b);
+	free(c);
+
+}
+
+/*
+ * Takes two arrays of integers (1's and 0's) and returns an array
+ * of integers (1's and 0's) that represent their sum. The
+ * length of the returned array is the maximum of the two parameters plus one.
+ * add by Sen
+ * This array will need to be freed later!
+ */
+int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int c_length, int flag)
+{
+	int result_size = max(a_length , b_length) + 1;
+	int *result = calloc(sizeof(int), result_size);
+
+	int i;
+	int temp_carry_in;
+
+	//least significant bit would use the input carryIn, the other bits would use the compute value
+	//if one of the number is unknown, then the answer should be unknown(same as ModelSim)
+	if(a[0] == -1 || b[0] == -1 || c[0] == -1)
+	{
+		result[0] = -1;
+		result[1] = -1;
+	}
+	else
+	{
+		result[0] = a[0] ^ b[0] ^ c[0];
+		result[1] = (a[0] & b[0]) | (c[0] & b[0]) | (a[0] & c[0]);
+	}
+
+	temp_carry_in = result[1];
+	if(result_size > 2){
+		for(i = 1; i < min(a_length,b_length); i++)
+		{
+			if(a[i] == -1 || b[i] == -1 || temp_carry_in == -1)
+			{
+				result[i] = -1;
+				result[i+1] = -1;
+			}
+			else
+			{
+				result[i] = a[i] ^ b[i] ^ temp_carry_in;
+				result[i+1] = (a[i] & b[i]) | (a[i] & temp_carry_in) | (temp_carry_in & b[i]);
+			}
+			temp_carry_in = result[i+1];
+		}
+		if(a_length >= b_length)
+		{
+			for(i = b_length; i < a_length; i++)
+			{
+				if(a[i] == -1 || temp_carry_in == -1)
+				{
+					result[i] = -1;
+					result[i+1] = -1;
+				}
+				else
+				{
+					result[i] = a[i] ^ temp_carry_in;
+					result[i+1] = a[i] & temp_carry_in;
+				}
+				temp_carry_in = result[i+1];
+			}
+		}
+		else
+		{
+			for(i = a_length; i < b_length; i++)
+			{
+				if(b[i] == -1 || temp_carry_in == -1)
+				{
+					result[i] = -1;
+					result[i+1] = -1;
+				}else
+				{
+					result[i] = b[i] ^ temp_carry_in;
+					result[i+1] = b[i] & temp_carry_in;
+				}
+				temp_carry_in = result[i+1];
+			}
+		}
+	}
+	return result;
+}
+
+/*
+ * Computes the given add node for the given cycle.
+ * add by Sen
+ */
+void compute_unary_sub_node(nnode_t *node, int cycle)
+{
+	oassert(node->num_input_port_sizes == 2);
+	oassert(node->num_output_port_sizes == 2);
+
+	int i;
+	char unknown = FALSE;
+	for (i = 0; i < (node->input_port_sizes[0] + node->input_port_sizes[1]); i++)
+	{
+		signed char pin = get_pin_value(node->input_pins[i],cycle);
+		if (pin < 0)
+		{
+			unknown = TRUE;
+			break;
+		}
+	}
+
+	if (unknown)
+	{
+		for (i = 0; i < (node->output_port_sizes[0] + node->output_port_sizes[1]); i++)
+			update_pin_value(node->output_pins[i], -1, cycle);
+	}
+	else
+	{
+		int *a = malloc(sizeof(int)*node->input_port_sizes[0]);
+		int *c = malloc(sizeof(int)*node->input_port_sizes[1]);
+
+		for (i = 0; i < node->input_port_sizes[0]; i++)
+			a[i] = get_pin_value(node->input_pins[i],cycle);
+
+		for (i = 0; i < node->input_port_sizes[1]; i++)
+			if((node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i]->net->driver_pin->node->type == PAD_NODE))
+				c[i] = 1;
+			else
+				c[i] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i],cycle);
+
+		int *result = unary_sub_arrays(a, node->input_port_sizes[0], c, node->input_port_sizes[1]);
+
+
+		for (i = 1; i < node->num_output_pins; i++)
+			update_pin_value(node->output_pins[i], result[(i - 1)], cycle);
+
+		update_pin_value(node->output_pins[0], result[(node->num_output_pins - 1)], cycle);
+
+		free(result);
+		free(a);
+		free(c);
+	}
+
+}
+
+/*
+ * Takes two arrays of integers (1's and 0's) and returns an array
+ * of integers (1's and 0's) that represent their sum. The
+ * length of the returned array is the maximum of the two parameters plus one.
+ * add by Sen
+ * This array will need to be freed later!
+ */
+int *unary_sub_arrays(int *a, int a_length, int *c, int c_length)
+{
+	int result_size = a_length + 1;
+	int *result = calloc(sizeof(int), result_size);
+
+	int i;
+	int temp_carry_in;
+
+	c[0] = 1;
+	result[0] = (!a[0]) ^ c[0] ^ 0;
+	result[1] = ((!a[0]) & 0) | (c[0] & 0) | ((!a[0]) & c[0]);
+
+	temp_carry_in = result[1];
+	if(result_size > 2){
+		for(i = 1; i < a_length; i++)
+		{
+			result[i] = (!a[i]) ^ 0 ^ temp_carry_in;
+			result[i+1] = ((!a[i]) & 0) | ((!a[i]) & temp_carry_in) | (temp_carry_in & 0);
+			temp_carry_in = result[i+1];
+		}
+	}
+	return result;
+}
+
+/*
  * Computes the given memory node.
  */
 void compute_memory_node(nnode_t *node, int cycle)
 {
-	ast_node_t *ast_node = node->related_ast_node;
-	char *identifier = ast_node->children[0]->types.identifier;
-
-	if (!strcmp(identifier, SINGLE_PORT_MEMORY_NAME))
-	{
-		int posedge = 0;
-		int we = 0;
-		int data_width = 0;
-		int addr_width = 0;
-		npin_t **addr = NULL;
-		npin_t **data = NULL;
-		npin_t **out = NULL;
-
-		int i;
-		for (i = 0; i < node->num_input_pins; i++)
-		{
-			npin_t *pin = node->input_pins[i];
-			npin_t **pin_p = &node->input_pins[i];
-
-			if (!strcmp(pin->mapping, "we"))
-			{
-				we = get_pin_value(pin, cycle-1);
-			}
-			else if (!strcmp(pin->mapping, "addr"))
-			{
-				if (!addr) addr = pin_p;
-				addr_width++;
-			}
-			else if (!strcmp(pin->mapping, "data"))
-			{
-				if (!data) data = pin_p;
-				data_width++;
-			}
-			else if (!strcmp(pin->mapping, "clk"))
-			{
-				posedge = is_posedge(pin, cycle);
-			}
-		}
-
-		out = node->output_pins;
-
-		if (!node->memory_data)
-			instantiate_memory(node, data_width, addr_width);
-
-		compute_single_port_memory(
-			node,
-			data,
-			out,
-			data_width,
-			addr,
-			addr_width,
-			we,
-			posedge,
-			cycle
-		);
-	}
-	else if (!strcmp(identifier, DUAL_PORT_MEMORY_NAME))
-	{
-		int posedge = 0;
-		int we1 = 0;
-		int data_width1 = 0;
-		int addr_width1 = 0;
-		int we2 = 0;
-		int data_width2 = 0;
-		int addr_width2 = 0;
-
-		npin_t **addr1 = NULL;
-		npin_t **data1 = NULL;
-		npin_t **out1  = NULL;
-		npin_t **addr2 = NULL;
-		npin_t **data2 = NULL;
-		npin_t **out2  = NULL;
-
-		int i;
-		for (i = 0; i < node->num_input_pins; i++)
-		{
-			npin_t *pin = node->input_pins[i];
-			npin_t **pin_p = &node->input_pins[i];
-
-			if (!strcmp(pin->mapping, "we1"))
-			{
-				we1 = get_pin_value(pin, cycle-1);
-			}
-			else if (!strcmp(pin->mapping, "we2"))
-			{
-				we2 = get_pin_value(pin, cycle-1);
-			}
-			else if (!strcmp(pin->mapping, "addr1") )
-			{
-				if (!addr1) addr1 = pin_p;
-				addr_width1++;
-			}
-			else if (!strcmp(pin->mapping, "addr2"))
-			{
-				if (!addr2) addr2 = pin_p;
-				addr_width2++;
-			}
-			else if (!strcmp(pin->mapping, "data1"))
-			{
-				if (!data1) data1 = pin_p;
-				data_width1++;
-			}
-			else if (!strcmp(pin->mapping, "data2"))
-			{
-				if (!data2) data2 = pin_p;
-				data_width2++;
-			}
-			else if (!strcmp(pin->mapping, "clk"))
-			{
-				posedge = is_posedge(pin, cycle);
-			}
-		}
-
-		for (i = 0; i < node->num_output_pins; i++)
-		{
-			npin_t *pin = node->output_pins[i];
-			npin_t **pin_p = &node->output_pins[i];
-
-			if      (!strcmp(pin->mapping, "out1") && !out1) out1 = pin_p;
-			else if (!strcmp(pin->mapping, "out2") && !out2) out2 = pin_p;
-		}
-
-		if (addr_width1 != addr_width2)
-			error_message(SIMULATION_ERROR, 0, -1, "Dual port memory addresses are not the same width.");
-
-		if (data_width1 != data_width2)
-			error_message(SIMULATION_ERROR, 0, -1, "Dual port memory data ports are not the same width.");
-
-		if (!node->memory_data)
-			instantiate_memory(node, data_width2, addr_width2);
-
-		compute_dual_port_memory(
-			node,
-			data1,
-			data2,
-			out1,
-			out2,
-			data_width1,
-			addr1,
-			addr2,
-			addr_width1,
-			we1,
-			we2,
-			posedge,
-			cycle
-		);
-	}
+	if (is_sp_ram(node))
+		compute_single_port_memory(node, cycle);
+	else if (is_dp_ram(node))
+		compute_dual_port_memory(node, cycle);
 	else
-	{
 		error_message(SIMULATION_ERROR, 0, -1,
 				"Could not resolve memory hard block %s to a valid type.", node->name);
-	}
 }
 
 /*
  * Computes single port memory.
  */
-void compute_single_port_memory(
-	nnode_t *node,
-	npin_t **data,
-	npin_t **out,
-	int data_width,
-	npin_t **addr,
-	int addr_width,
-	int we,
-	int posedge,
-	int cycle
-)
+void compute_single_port_memory(nnode_t *node, int cycle)
 {
-	// On the rising edge, compute the memory.
+	sp_ram_signals *signals = get_sp_ram_signals(node);
+
+	int posedge = is_posedge(signals->clk, cycle);
+
+	if (!node->memory_data)
+		instantiate_memory(node, signals->data->count, signals->addr->count);
+
+	// On the rising edge, write the memory.
 	if (posedge)
 	{
-		long address = compute_memory_address(out, data_width, addr, addr_width, cycle-1);
+		int we = get_pin_value(signals->we, cycle - 1);
+		long address = compute_memory_address(signals->addr, cycle - 1);
 		char address_ok = (address != -1)?1:0;
 
 		int i;
-		for (i = 0; i < data_width; i++)
+		for (i = 0; i < signals->data->count; i++)
 		{
 			// Compute which bit we are addressing.
-			long bit_address = address_ok?(i + (address * data_width)):-1;
-
-			// Update the output.
-			if (address_ok)
-				update_pin_value(out[i], node->memory_data[bit_address], cycle);
-			else
-				update_pin_value(out[i], -1, cycle);
+			long bit_address = address_ok?(i + (address * signals->data->count)):-1;
 
 			// If write is enabled, copy the input to memory.
 			if (address_ok && we)
-				node->memory_data[bit_address] = get_pin_value(data[i],cycle-1);
+				node->memory_data[bit_address] = get_pin_value(signals->data->pins[i],cycle-1);
 		}
 	}
-	else
+
+	// Read data from the memory.
 	{
-		// On falling edge, we hold the previous value.
+
+		long address = compute_memory_address(signals->addr, cycle);
+		char address_ok = (address != -1)?1:0;
+
 		int i;
-		for (i = 0; i < data_width; i++)
-			update_pin_value(out[i], get_pin_value(out[i],cycle-1), cycle);
+		for (i = 0; i < signals->data->count; i++)
+		{
+			// Compute which bit we are addressing.
+			long bit_address = address_ok?(i + (address * signals->data->count)):-1;
+
+			// Update the output.
+			if (address_ok)
+				update_pin_value(signals->out->pins[i], node->memory_data[bit_address], cycle);
+			else
+				update_pin_value(signals->out->pins[i], -1, cycle);
+		}
 	}
+
+	free_sp_ram_signals(signals);
 }
 
 /*
  * Computes dual port memory.
  */
-void compute_dual_port_memory(
-	nnode_t *node,
-	npin_t **data1,
-	npin_t **data2,
-	npin_t **out1,
-	npin_t **out2,
-	int data_width,
-	npin_t **addr1,
-	npin_t **addr2,
-	int addr_width,
-	int we1,
-	int we2,
-	int posedge,
-	int cycle
-)
+void compute_dual_port_memory(nnode_t *node, int cycle)
 {
-	// On the rising edge, we compute the memory.
+	dp_ram_signals *signals = get_dp_ram_signals(node);
+	int posedge = is_posedge(signals->clk, cycle);
+
+	if (!node->memory_data)
+		instantiate_memory(node, signals->data2->count, signals->addr2->count);
+
+	// On the rising edge, we write the memory.
 	if (posedge)
 	{
-		long address1 = compute_memory_address(out1, data_width, addr1, addr_width, cycle-1);
-		long address2 = compute_memory_address(out2, data_width, addr2, addr_width, cycle-1);
+		int we1     = get_pin_value(signals->we1, cycle - 1);
+		int we2     = get_pin_value(signals->we2, cycle - 1);
 
-		char port1 = (address1 != -1)?1:0;
-		char port2 = (address2 != -1)?1:0;
+		long address1 = compute_memory_address(signals->addr1, cycle - 1);
+		long address2 = compute_memory_address(signals->addr2, cycle - 1);
 
-		// Read (and write if we) data to memory.
+		char address1_ok = (address1 != -1)?1:0;
+		char address2_ok = (address2 != -1)?1:0;
+
 		int i;
-		for (i = 0; i < data_width; i++)
+		for (i = 0; i < signals->data1->count; i++)
 		{
 			// Compute which bit we are addressing.
-			long bit_address1 = port1?(i + (address1 * data_width)):-1;
-			long bit_address2 = port2?(i + (address2 * data_width)):-1;
-
-			// Read the memory bit
-			if (port1)
-				update_pin_value(out1[i], node->memory_data[bit_address1], cycle);
-			else
-				update_pin_value(out1[i], -1, cycle);
-
-			if (port2)
-				update_pin_value(out2[i], node->memory_data[bit_address2], cycle);
-			else
-				update_pin_value(out2[i], -1, cycle);
+			long bit_address1 = address1_ok?(i + (address1 * signals->data1->count)):-1;
+			long bit_address2 = address2_ok?(i + (address2 * signals->data2->count)):-1;
 
 			// Write to the memory
-			if (port1 && we1)
-				node->memory_data[bit_address1] = get_pin_value(data1[i],cycle-1);
-			if (port2 && we2)
-				node->memory_data[bit_address2] = get_pin_value(data2[i],cycle-1);
+			if (address1_ok && we1)
+				node->memory_data[bit_address1] = get_pin_value(signals->data1->pins[i], cycle-1);
+
+			if (address2_ok && we2)
+				node->memory_data[bit_address2] = get_pin_value(signals->data2->pins[i], cycle-1);
 		}
 	}
-	else
+
+	// Read data from memory.
 	{
-		// On falling edge, we hold the previous value.
+		long address1 = compute_memory_address(signals->addr1, cycle);
+		long address2 = compute_memory_address(signals->addr2, cycle);
+
+		char address1_ok = (address1 != -1)?1:0;
+		char address2_ok = (address2 != -1)?1:0;
+
 		int i;
-		for (i = 0; i < data_width; i++)
+		for (i = 0; i < signals->data1->count; i++)
 		{
-			update_pin_value(out1[i], get_pin_value(out1[i],cycle-1), cycle);
-			update_pin_value(out2[i], get_pin_value(out2[i],cycle-1), cycle);
+			// Compute which bit we are addressing.
+			long bit_address1 = address1_ok?(i + (address1 * signals->data1->count)):-1;
+			long bit_address2 = address2_ok?(i + (address2 * signals->data2->count)):-1;
+
+			// Read the memory bit
+			if (address1_ok)
+				update_pin_value(signals->out1->pins[i], node->memory_data[bit_address1], cycle);
+			else
+				update_pin_value(signals->out1->pins[i], -1, cycle);
+
+			if (address2_ok)
+				update_pin_value(signals->out2->pins[i], node->memory_data[bit_address2], cycle);
+			else
+				update_pin_value(signals->out2->pins[i], -1, cycle);
 		}
 	}
+
+	free_dp_ram_signals(signals);
 }
 
 /*
- * Calculates the memory address. Updates the output to -1's and returns
- * -1 if the address is unknown.
+ * Calculates the memory address. Returns -1 if the address is unknown.
  */
-long compute_memory_address(npin_t **out, int data_width, npin_t **addr, int addr_width, int cycle)
+long compute_memory_address(signal_list_t *addr, int cycle)
 {
 	long address = 0;
 	int i;
-	for (i = 0; i < addr_width; i++)
+	for (i = 0; i < addr->count; i++)
 	{
 		// If any address pins are x's, write x's we return -1.
-		if (get_pin_value(addr[i],cycle) < 0)
+		if (get_pin_value(addr->pins[i],cycle) < 0)
 			return -1;
 
-		address += get_pin_value(addr[i],cycle) << (i);
+		address += get_pin_value(addr->pins[i],cycle) << (i);
 	}
 
 	return address;
@@ -1779,7 +2052,6 @@ long compute_memory_address(npin_t **out, int data_width, npin_t **addr, int add
  * Initialises memory using a memory information file (mif). If not
  * file is found, it is initialised to x's.
  */
-// TODO: This obviously won't work with mif files, as it doesn't even write the values to the memory.
 void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 {
 	long max_address = 1 << addr_width;
@@ -1791,48 +2063,230 @@ void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 		node->memory_data[i] = -1;
 
 	char *filename = get_mif_filename(node);
+
 	FILE *mif = fopen(filename, "r");
-	if (mif)
+	if (!mif)
 	{
-		error_message(SIMULATION_ERROR, 0, -1, "MIF file support is current broken and needs developer attention.");
-
-		char input[BUFFER_MAX_SIZE];
-		while (fgets(input, BUFFER_MAX_SIZE, mif))
-			if (strcmp(input, "Content\n") == 0)
-				break;
-
-		while (fgets(input, BUFFER_MAX_SIZE, mif))
-		{
-			char *addr = malloc(sizeof(char)*BUFFER_MAX_SIZE);
-			char *data = malloc(sizeof(char)*BUFFER_MAX_SIZE);
-
-			if (!(strcmp(input, "Begin\n") == 0 || strcmp(input, "End;") == 0 || strcmp(input, "End;\n") == 0))
-			{
-				char *colon = strchr(input, ':');
-
-				strncpy(addr, input, (colon-input));
-				colon += 2;
-
-				char *semicolon = strchr(input, ';');
-				strncpy(data, colon, (semicolon-colon));
-
-				long addr_val = strtol(addr, 0, 10);
-				long data_val = strtol(data, 0, 16);
-
-				int i;
-				for (i = 0; i < data_width; i++)
-				{
-					int mask = (1 << ((data_width - 1) - i));
-					signed char val = (mask & data_val) > 0 ? 1 : 0;
-					int write_address = i + (addr_val * data_width);
-					// TODO: This is obviously incorrect, as it's writing the value to a small char buffer which isn't connected to the memory.
-					data[write_address] = val;
-				}
-			}
-		}
+		printf("MIF %s (%dx%d) not found. \n", filename, data_width, addr_width);
+	}
+	else
+	{
+		assign_memory_from_mif_file(mif, filename, data_width, addr_width, node->memory_data);
 		fclose(mif);
 	}
 	free(filename);
+}
+
+/*
+ * Removes white space (except new lines) and comments from
+ * the given mif file and returns the resulting temporary file.
+ */
+FILE *preprocess_mif_file(FILE *source)
+{
+	FILE *destination = tmpfile();
+	destination = freopen(NULL, "r+", destination);
+	rewind(source);
+
+	char line[BUFFER_MAX_SIZE];
+	int in_multiline_comment = FALSE;
+	while (fgets(line, BUFFER_MAX_SIZE, source))
+	{
+		int i;
+		for (i = 0; i < strlen(line); i++)
+		{
+			if (!in_multiline_comment)
+			{
+				// For a single line comment, skip the rest of the line.
+				if (line[i] == '-' && line[i+1] == '-')
+					break;
+				// Start of a multiline comment
+				else if (line[i] == '%')
+					in_multiline_comment = TRUE;
+				// Don't copy any white space over.
+				else if (line[i] != '\n' && line[i] != ' ' && line[i] != '\r' && line[i] != '\t' )
+					fputc(line[i], destination);
+			}
+			else
+			{
+				// If we're in a multi-line comment, search for the %
+				if (line[i] == '%')
+					in_multiline_comment = FALSE;
+			}
+		}
+		fputc('\n', destination);
+	}
+	rewind(destination);
+	return destination;
+}
+
+int parse_mif_radix(char *radix)
+{
+	if (radix)
+	{
+		if (!strcmp(radix, "HEX"))
+			return 16;
+		else if (!strcmp(radix, "DEC"))
+			return 10;
+		else if (!strcmp(radix, "OCT"))
+			return 8;
+		else if (!strcmp(radix, "BIN"))
+			return 2;
+		else
+			return 0;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long depth, signed char *memory)
+{
+	FILE *file = preprocess_mif_file(mif);
+	rewind(file);
+
+	hashtable_t *symbols = create_hashtable(100000);
+
+	char buffer[BUFFER_MAX_SIZE];
+	int in_content = FALSE;
+	char *last_line  = NULL;
+	int line_number = 0;
+
+	int addr_radix = 0;
+	int data_radix = 0;
+	while (fgets(buffer, BUFFER_MAX_SIZE, file))
+	{
+		line_number++;
+		// Remove the newline.
+		trim_string(buffer, "\n");
+		// Only process lines which are not empty.
+		if (strlen(buffer))
+		{
+			char *line = strdup(buffer);
+			// MIF files are case insensitive
+			string_to_upper(line);
+
+			// The content section of the file contains address:value; assignments.
+			if (in_content)
+			{
+				// Parse at the :
+				char *token = strtok(line, ":");
+				if (strlen(token))
+				{
+					// END; signifies the end of the file.
+					if(!strcmp(buffer, "END;"))
+						break;
+
+					// The part before the : is the address.
+					char *address_string = token;
+					token = strtok(NULL, ";");
+					// The reset (before the ;) is the data_value.
+					char *data_string = token;
+
+					if (token)
+					{
+						// Make sure the address and value are valid strings of the specified radix.
+						if (!is_string_of_radix(address_string, addr_radix))
+							error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is not a base %d string.", filename, address_string, addr_radix);
+
+						if (!is_string_of_radix(data_string, data_radix))
+							error_message(SIMULATION_ERROR, line_number, -1, "%s: data string %s is not a base %d string.", filename, data_string, data_radix);
+
+						char *binary_data = convert_string_of_radix_to_bit_string(data_string, data_radix, width);
+						long long address = convert_string_of_radix_to_long_long(address_string, addr_radix);
+
+						if (address >= depth)
+							error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is out of range.", filename, address_string);
+
+						// Calculate the offset of this memory location in bits.
+						long long offset = address * width;
+
+						// Write the parsed value string to the memory location.
+						long long i;
+						for (i = offset; i < offset + width; i++)
+							memory[i] = binary_data[i - offset] - '0';
+					}
+					else
+					{
+						error_message(SIMULATION_ERROR, line_number, -1,
+								"%s: MIF syntax error.", filename);
+					}
+				}
+
+			}
+			// The header section of the file contains parameters given as PARAMETER=value;
+			else
+			{
+				// Grab the bit before the = sign.
+				char *token = strtok(line, "=");
+				if (strlen(token))
+				{
+					char *symbol = token;
+					token = strtok(NULL, ";");
+
+					// If is something after the equals sign and before the semicolon, add the symbol=value association to the symbol table.
+					if (token)
+						symbols->add(symbols, symbol, sizeof(char) * strlen(symbol), strdup(token));
+					else if(!strcmp(buffer, "CONTENT")) {}
+					// We found "CONTENT" followed on the next line by "BEGIN". That means we're at the end of the parameters.
+					else if(!strcmp(buffer, "BEGIN") && !strcmp(last_line, "CONTENT"))
+					{
+						// Sanity check parameters to make sure we have what we need.
+
+						// Verify the width parameter.
+						char *width_string = symbols->get(symbols, "WIDTH", sizeof(char) * 5);
+						int mif_width = atoi(width_string);
+						if (!width_string) error_message(SIMULATION_ERROR, -1, -1, "%s: MIF WIDTH parameter unspecified.", filename);
+						if (mif_width != width)
+								error_message(SIMULATION_ERROR, -1, -1,
+									"%s: MIF width mismatch: must be %d but %d was given", filename, width, mif_width);
+
+						// Verify the depth parameter.
+						char *depth_string = symbols->get(symbols, "DEPTH", sizeof(char) * 5);
+						int mif_depth = atoi(depth_string);
+						if (!depth_string) error_message(SIMULATION_ERROR, -1, -1, "%s: MIF DEPTH parameter unspecified.", filename);
+						if (mif_depth != depth)
+							error_message(SIMULATION_ERROR, -1, -1,
+									"%s: MIF depth mismatch: must be %d but %d was given", filename, depth, mif_depth);
+
+						// Parse the radix specifications and make sure they're OK.
+						addr_radix = parse_mif_radix(symbols->get(symbols, "ADDRESS_RADIX", sizeof(char) * 13));
+						data_radix = parse_mif_radix(symbols->get(symbols, "DATA_RADIX", sizeof(char) * 10));
+
+						if (!addr_radix)
+							error_message(SIMULATION_ERROR, -1, -1,
+									"%s: invalid or missing ADDRESS_RADIX: must specify DEC, HEX, OCT, or BIN", filename);
+
+						if (!data_radix)
+							error_message(SIMULATION_ERROR, -1, -1,
+									"%s: invalid or missing DATA_RADIX: must specify DEC, HEX, OCT, or BIN", filename);
+
+						// If everything checks out, start reading the values.
+						in_content = TRUE;
+					}
+					else
+					{
+						error_message(SIMULATION_ERROR, line_number, -1, "%s: MIF syntax error: %s", filename, line);
+					}
+				}
+				else
+				{
+					error_message(SIMULATION_ERROR, line_number, -1, "%s: MIF syntax error: %s", filename, line);
+				}
+				free(line);
+			}
+
+			if (last_line)
+				free(last_line);
+			last_line = strdup(buffer);
+		}
+	}
+	if (last_line)
+		free(last_line);
+
+	symbols->destroy_free_items(symbols);
+
+	fclose(file);
 }
 
 /*
@@ -1845,8 +2299,8 @@ void assign_node_to_line(nnode_t *node, lines_t *l, int type, int single_pin)
 	if (!node->num_output_pins)
 	{
 		npin_t *pin = allocate_npin();
-		allocate_more_node_output_pins(node, 1);
-		add_a_output_pin_to_node_spot_idx(node, pin, 0);
+		allocate_more_output_pins(node, 1);
+		add_output_pin_to_node(node, pin, 0);
 	}
 
 	// Parse the node name into a pin number and a port name.
@@ -2343,8 +2797,9 @@ void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 			{
 				signed char value = get_line_pin_value(line, j, cycle);
 
-				if (value > 1)
+				if (value > 1){
 					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %d read from line %s.", value, line->name);
+					}
 
 				if (value < 0)
 				{
@@ -2726,22 +3181,25 @@ char *get_mif_filename(nnode_t *node)
  */
 void trim_string(char* string, char *chars)
 {
-	int length;
-	while((length = strlen(string)))
-	{	int trimmed = FALSE;
-		int i;
-		for (i = 0; i < strlen(chars); i++)
-		{
-			if (string[length-1] == chars[i])
+	if (string)
+	{
+		int length;
+		while((length = strlen(string)))
+		{	int trimmed = FALSE;
+			int i;
+			for (i = 0; i < strlen(chars); i++)
 			{
-				trimmed = TRUE;
-				string[length-1] = '\0';
-				break;
+				if (string[length-1] == chars[i])
+				{
+					trimmed = TRUE;
+					string[length-1] = '\0';
+					break;
+				}
 			}
-		}
 
-		if (!trimmed)
-			break;
+			if (!trimmed)
+				break;
+		}
 	}
 }
 

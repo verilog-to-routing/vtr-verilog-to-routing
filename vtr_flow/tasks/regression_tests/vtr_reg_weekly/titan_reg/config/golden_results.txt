@@ -1,0 +1,3 @@
+arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error
+stratixiv_arch.simple.xml	sudoku_check_stratixiv_arch_simple.blif	success	-1	-1	159.3	11.09	42.28	-1	16792	16781	11499	-1	2	52	-1	-1	
+stratixiv_arch.simple.xml	wb_conmax_stratixiv_arch_simple.blif	success	-1	-1	146.37	18.68	64.46	-1	15377	16083	8055	-1	403	704	-1	-1	

@@ -1,19 +1,16 @@
-Odin II - Version 0.2 - Quick Start
-
-In the DOCUMENTATION directory there is more thorough details about
-Odin II.  This is a quick start guide.
+Odin II - Version 1.0 - User's Manual
 
 INSTALL
 ------------
 
-1. LIBVPR
+1. libarchfpga
 
 This library needs to be built for your platform.  The Makefile for
-Odin will link the LIBVPR library located in:
-../libvpr_5 or ../libvpr_6
+Odin will link the libarchfpga library located in:
+../libarchfpga_5 or ../libarchfpga_6
 
-By default Odin II uses libvpr_6. To compile it, change directory to 
-../libvpr_6 and type "make". 
+By default Odin II uses libarchfpga_6. To compile it, change directory to 
+../libarchfpga_6 and type "make". 
 
 Note: 
 - for WIN32 compilation you'll have to edit the ezxml.c files
@@ -52,7 +49,7 @@ option, as it ./odin_II.exe -c config.xml. A config file looks
 like the following:
 <config>
 	<verilog_files>
-		<!-- Way of specifying multiple files in a project -->
+		<!-- Way of specifying multiple files in a project! -->
 		<verilog_file>verilog_file.v</verilog_file>
 	</verilog_files>
 	<output>
@@ -110,7 +107,7 @@ write a C method with signature defined in SRC/sim_block.h and compile it with
 an output filename of "block+instance.so" in the directory you plan to invoke 
 Odin-II from. When compiling the file, you'll need to specify the following 
 arguments to the compiler (assuming that you're in the SANBOX directory):
-"`cc -I../../libvpr_6/include/ -L../../libvpr_6 -lvpr_6 -lm --shared -o 
+"`cc -I../../libarchfpga_6/include/ -L../../libarchfpga_6 -lvpr_6 -lm --shared -o 
 block+instance.so block.c". When compiling against VPR5, adjust the arguments
 accordingly. 
 
@@ -126,6 +123,58 @@ parameters, leaving the code provided to simulate the hard blokc agnostic of the
 internal Odin II data structures. However, a cycle parameter is included to 
 provide researchers with the ability to delay results of operations performed by
 the simulation code.
+
+DOCUMENTING ODIN II
+-------------------
+
+Any new command line options added to Odin II should be fully documented by
+the print_usage() function within odin_ii.c before checking in the changes.  
+
+TESTING ODIN II
+----------------
+
+The verify_microbenchmarks.sh and verify_regression_tests.sh scripts 
+compile and simulate the microbenchmarks and a larger set of benchmark 
+circuits. These scripts use simulation results which have been verified 
+against ModelSim. 
+
+After you build Odin II, run verify_microbenchmarks.sh to ensure that 
+everything is working correctly on your system. Unlike the 
+verify_regression_tests.sh script, verify_microbenchmarks.sh also 
+simulates the blif output, as well as simulating the verilog with and 
+without the architecture file.
+
+Before checking in any changes to Odin II, please run both of these 
+scripts to ensure that both of these scripts execute correctly. If there 
+is a failure, use ModelSim to verify that the failure is within Odin II 
+and not a faulty regression test. The Odin II simulator will produce 
+a test.do file containing clock and input vector information for ModelSim. 
+
+When additional circuits are found to agree with ModelSim, they should 
+be added to these test sets. When new features are added to Odin II, new 
+microbenchmarks should be developed which test those features for 
+regression.  Use existing circuits as a template for the addition of 
+new circuits. 
+
+USING MODELSIM TO TEST ODIN II
+-------------------------------
+
+ModelSim may be installed as part of the Quartus II Web Edition IDE. Load
+the Verilog circuit into a new project in ModelSim. Compile the circuit, 
+and load the resulting library for simulation. 
+
+Simulate the circuit in Odin II using the -E option to ensure that Odin II
+outputs both edges of the clock. You may use random vectors via the -g option, 
+or specify your own input vectors using the -t option. When simulation is 
+complete, load the resulting test.do file into your ModelSim project and 
+execute it. You may now directly compare the vectors in the output_vectors
+file with those produced by ModelSim. 
+
+To add the verified vectors and circuit to an existing test set, move the 
+verilog file (eg: test_circuit.v) to the test set folder. Next, move the 
+input_vectors file to the test set folder, and rename it test_circuit_input. 
+Finally, move the output_vectors file to the test set folder and rename 
+it test_circuit_output. 
 
 CONTACT
 -------------

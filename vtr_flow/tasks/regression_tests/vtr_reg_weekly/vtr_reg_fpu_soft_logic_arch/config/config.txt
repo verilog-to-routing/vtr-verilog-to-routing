@@ -1,0 +1,38 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/fpu/softlogic
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Path to directory of SDC files to use
+sdc_dir = tasks/regression_tests/sdc
+
+# Add circuits to list to sweep
+circuit_list_add=bfly.v
+circuit_list_add=bgm.v
+circuit_list_add=dscg.v
+circuit_list_add=fir.v
+circuit_list_add=mm3.v
+circuit_list_add=ode.v
+circuit_list_add=syn2.v
+#circuit_list_add=syn7.v
+
+# Add architectures to list to sweep
+arch_list_add=soft_fpu_arch_timing.xml
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_fixed_chan_width.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+# Parameters for vtr flow
+script_params=-no_mem -vpr_route_chan_width 72

@@ -8,6 +8,9 @@ char *make_signal_name(char *signal_name, int bit);
 char *make_full_ref_name(char *previous, char *module_name, char *module_instance_name, char *signal_name, long bit);
 
 char *twos_complement(char *str);
+int is_string_of_radix(char *string, int radix);
+char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_size);
+long long convert_string_of_radix_to_long_long(char *orig_string, int radix);
 char *convert_long_long_to_bit_string(long long orig_long, int num_bits);
 long long convert_dec_string_of_size_to_long_long(char *orig_string, int size);
 char *convert_hex_string_of_size_to_bit_string(char *orig_string, int size);
@@ -24,6 +27,8 @@ void *my_malloc_struct(size_t bytes_to_alloc);
 
 void reverse_string(char *token, int length);
 char *append_string(char *string, char *appendage, ...);
+void string_to_upper(char *string);
+void string_to_lower(char *string);
 
 int is_binary_string(char *string);
 int is_octal_string(char *string);

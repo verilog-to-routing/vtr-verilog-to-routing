@@ -1,0 +1,1 @@
+total_power;Range;0.9;1.1

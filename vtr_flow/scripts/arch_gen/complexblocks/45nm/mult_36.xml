@@ -1,0 +1,165 @@
+<pb_type name="mult_36" height="4">
+  <input name="a" num_pins="36"/>
+  <input name="b" num_pins="36"/>
+  <output name="out" num_pins="72"/>
+
+  <mode name="two_divisible_mult_18x18">
+    <pb_type name="divisible_mult_18x18" num_pb="2">
+      <input name="a" num_pins="18"/>
+      <input name="b" num_pins="18"/>
+      <output name="out" num_pins="36"/>
+
+      <!-- Model 9x9 delay and 18x18 delay as the same.  9x9 could be faster, but in Stratix IV
+	          isn't, presumably because the multiplier layout is really optimized for 18x18.
+		-->
+      <mode name="two_mult_9x9">
+        <pb_type name="mult_9x9_slice" num_pb="2">
+          <input name="A_cfg" num_pins="9"/>
+          <input name="B_cfg" num_pins="9"/>
+          <output name="OUT_cfg" num_pins="18"/>
+
+          <pb_type name="mult_9x9" blif_model=".subckt multiply" num_pb="1">
+            <input name="a" num_pins="9"/>
+            <input name="b" num_pins="9"/>
+            <output name="out" num_pins="18"/>
+            <delay_constant max="1.523e-9" in_port="mult_9x9.a" out_port="mult_9x9.out"/>
+            <delay_constant max="1.523e-9" in_port="mult_9x9.b" out_port="mult_9x9.out"/>
+          </pb_type>
+
+          <interconnect>
+            <direct name="a2a" input="mult_9x9_slice.A_cfg" output="mult_9x9.a">
+            </direct>
+            <direct name="b2b" input="mult_9x9_slice.B_cfg" output="mult_9x9.b">
+            </direct>
+            <direct name="out2out" input="mult_9x9.out" output="mult_9x9_slice.OUT_cfg">
+            </direct>
+          </interconnect>
+          <power method="pin-toggle">
+            <port name="A_cfg" energy_per_toggle="1.45e-12"/>
+            <port name="B_cfg" energy_per_toggle="1.45e-12"/>
+            <static_power power_per_instance="0.0"/>
+          </power>
+        </pb_type>
+        <interconnect>
+          <direct name="a2a" input="divisible_mult_18x18.a" output="mult_9x9_slice[1:0].A_cfg">
+          </direct>
+          <direct name="b2b" input="divisible_mult_18x18.b" output="mult_9x9_slice[1:0].B_cfg">
+          </direct>
+          <direct name="out2out" input="mult_9x9_slice[1:0].OUT_cfg" output="divisible_mult_18x18.out">
+          </direct>
+        </interconnect>
+
+      </mode>
+
+      <mode name="mult_18x18">
+        <pb_type name="mult_18x18_slice" num_pb="1">
+          <input name="A_cfg" num_pins="18"/>
+          <input name="B_cfg" num_pins="18"/>
+          <output name="OUT_cfg" num_pins="36"/>
+
+          <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1" >
+            <input name="a" num_pins="18"/>
+            <input name="b" num_pins="18"/>
+            <output name="out" num_pins="36"/>
+            <delay_constant max="1.523e-9" in_port="mult_18x18.a" out_port="mult_18x18.out"/>
+            <delay_constant max="1.523e-9" in_port="mult_18x18.b" out_port="mult_18x18.out"/>
+          </pb_type>
+
+          <interconnect>
+            <direct name="a2a" input="mult_18x18_slice.A_cfg" output="mult_18x18.a">
+            </direct>
+            <direct name="b2b" input="mult_18x18_slice.B_cfg" output="mult_18x18.b">
+            </direct>
+            <direct name="out2out" input="mult_18x18.out" output="mult_18x18_slice.OUT_cfg">
+            </direct>
+          </interconnect>
+          <power method="pin-toggle">
+            <port name="A_cfg" energy_per_toggle="1.09e-12"/>
+            <port name="B_cfg" energy_per_toggle="1.09e-12"/>
+            <static_power power_per_instance="0.0"/>					
+          </power>
+        </pb_type>
+        <interconnect>
+          <direct name="a2a" input="divisible_mult_18x18.a" output="mult_18x18_slice.A_cfg">
+          </direct>
+          <direct name="b2b" input="divisible_mult_18x18.b" output="mult_18x18_slice.B_cfg">
+          </direct>
+          <direct name="out2out" input="mult_18x18_slice.OUT_cfg" output="divisible_mult_18x18.out">
+          </direct>
+        </interconnect>
+      </mode>
+
+      <power method="sum-of-children"/>
+    </pb_type>
+    <interconnect>
+      <!-- Stratix IV input delay of 207ps is conservative for this architecture because this architecture does not have an input crossbar in the multiplier. 
+		   Subtract 72.5 ps delay, which is already in the connection block input mux, leading
+              -->
+      <direct name="a2a" input="mult_36.a" output="divisible_mult_18x18[1:0].a">
+        <delay_constant max="134e-12" in_port="mult_36.a" out_port="divisible_mult_18x18[1:0].a"/>
+      </direct>
+      <direct name="b2b" input="mult_36.b" output="divisible_mult_18x18[1:0].b">
+        <delay_constant max="134e-12" in_port="mult_36.b" out_port="divisible_mult_18x18[1:0].b"/>
+      </direct>
+      <direct name="out2out" input="divisible_mult_18x18[1:0].out" output="mult_36.out">
+        <delay_constant max="1.09e-9" in_port="divisible_mult_18x18[1:0].out" out_port="mult_36.out"/>
+      </direct>
+    </interconnect>
+  </mode>
+
+  <mode name="mult_36x36">
+    <pb_type name="mult_36x36_slice" num_pb="1">
+      <input name="A_cfg" num_pins="36"/>
+      <input name="B_cfg" num_pins="36"/>
+      <output name="OUT_cfg" num_pins="72"/>
+
+      <pb_type name="mult_36x36" blif_model=".subckt multiply" num_pb="1">
+        <input name="a" num_pins="36"/>
+        <input name="b" num_pins="36"/>
+        <output name="out" num_pins="72"/>
+        <delay_constant max="1.523e-9" in_port="mult_36x36.a" out_port="mult_36x36.out"/>
+        <delay_constant max="1.523e-9" in_port="mult_36x36.b" out_port="mult_36x36.out"/>
+      </pb_type>
+
+      <interconnect>
+        <direct name="a2a" input="mult_36x36_slice.A_cfg" output="mult_36x36.a">
+        </direct>
+        <direct name="b2b" input="mult_36x36_slice.B_cfg" output="mult_36x36.b">
+        </direct>
+        <direct name="out2out" input="mult_36x36.out" output="mult_36x36_slice.OUT_cfg">
+        </direct>
+      </interconnect>
+
+      <power method="pin-toggle">
+        <port name="A_cfg" energy_per_toggle="2.13e-12"/>
+        <port name="B_cfg" energy_per_toggle="2.13e-12"/>
+        <static_power power_per_instance="0.0"/>
+      </power>
+    </pb_type>
+    <interconnect>
+      <!-- Stratix IV input delay of 207ps is conservative for this architecture because this architecture does not have an input crossbar in the multiplier. 
+		   Subtract 72.5 ps delay, which is already in the connection block input mux, leading
+		   to a 134 ps delay.
+              -->
+      <direct name="a2a" input="mult_36.a" output="mult_36x36_slice.A_cfg">
+        <delay_constant max="134e-12" in_port="mult_36.a" out_port="mult_36x36_slice.A_cfg"/>
+      </direct>
+      <direct name="b2b" input="mult_36.b" output="mult_36x36_slice.B_cfg">
+        <delay_constant max="134e-12" in_port="mult_36.b" out_port="mult_36x36_slice.B_cfg"/>
+      </direct>
+      <direct name="out2out" input="mult_36x36_slice.OUT_cfg" output="mult_36.out">
+        <delay_constant max="1.93e-9" in_port="mult_36x36_slice.OUT_cfg" out_port="mult_36.out"/>
+      </direct>
+    </interconnect>
+
+  </mode>
+
+  <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+  <pinlocations pattern="spread"/>
+
+  <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->
+  <gridlocations>
+    <loc type="col" start="6" repeat="8" priority="2"/>
+  </gridlocations>		  
+  <power method="sum-of-children"/>
+</pb_type>

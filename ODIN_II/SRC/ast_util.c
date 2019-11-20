@@ -251,7 +251,6 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int file_numb
 				new_node->types.number.base = BIN;
 				break;
 			default:
-				printf("Not a number\n");
 				oassert(FALSE);
 		}
 
@@ -344,6 +343,10 @@ void allocate_children_to_node(ast_node_t* node, int num_children, ...)
  *-------------------------------------------------------------------------------------------*/
 void add_child_to_node(ast_node_t* node, ast_node_t *child) 
 {
+	/* Handle case where we have an empty statement. */
+	if (child == NULL)
+		return;
+
 	/* allocate space for the children */
 	node->children = (ast_node_t**)realloc(node->children, sizeof(ast_node_t*)*(node->num_children+1));
 	node->num_children ++;
@@ -352,16 +355,18 @@ void add_child_to_node(ast_node_t* node, ast_node_t *child)
 
 /*---------------------------------------------------------------------------------------------
  * (function: get_range)
+ *  Check the node range is legal. Will return the range if it's legal.
+ *  Node should have three children. Second and Third children's type should be NUMBERS.
  *-------------------------------------------------------------------------------------------*/
 int get_range(ast_node_t* first_node) 
 {
 	long temp_value;
 	/* look at the first item to see if it has a range */
-	if (first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS)
+	if (first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS && first_node->children[2] != NULL && first_node->children[2]->type == NUMBERS)
 	{
 		/* IF the first element in the list has a second element...that is the range */
-		oassert(first_node->children[2] != NULL); // the third element should be a value
-		oassert((first_node->children[1]->type == NUMBERS) && (first_node->children[2]->type == NUMBERS)); // should be numbers
+		//oassert(first_node->children[2] != NULL); // the third element should be a value
+		//oassert((first_node->children[1]->type == NUMBERS) && (first_node->children[2]->type == NUMBERS)); // should be numbers
 		if(first_node->children[1]->types.number.value < first_node->children[2]->types.number.value)
 		{
 			// Reversing the indicies doesn't produce correct code. We need to actually handle these correctly.
@@ -662,12 +667,12 @@ char **get_name_of_pins_number(ast_node_t *var_node, int start, int width)
  *-------------------------------------------------------------------------------------------*/
 char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 {
-	char **return_string; 
+	char **return_string = NULL;
 	char_list_t *return_list = (char_list_t*)malloc(sizeof(char_list_t));
 	ast_node_t *rnode[3];
 
 	int i;
-	int width;
+	int width = 0;
 
 	if (var_node->type == ARRAY_REF)
 	{
@@ -689,9 +694,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		{
 			return_string = (char**)malloc(sizeof(char*)*width);
 			for (i = 0; i < width; i++)
-			{
 				return_string[i] = make_full_ref_name(NULL, NULL, NULL, rnode[0]->types.identifier, rnode[2]->types.number.value+i);
-			}
 		}
 		else
 		{
@@ -743,9 +746,12 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 			}
 			else if (sym_node->children[3] != NULL)
 			{
-				width = 0;
-				return_string = NULL;
 				oassert(FALSE);	
+			}
+			else
+			{
+
+
 			}
 		}
 		else
@@ -764,8 +770,6 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 	{
 		if (var_node->types.concat.num_bit_strings == 0)
 		{
-			width = 0;
-			return_string = NULL;
 			oassert(FALSE);
 		}
 		else
@@ -787,8 +791,6 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 	}
 	else
 	{
-		width = 0;
-		return_string = NULL;
 		oassert(FALSE);
 	}
 	
@@ -908,5 +910,56 @@ char *make_module_param_name(ast_node_t *module_param_list, char *module_name)
 	}
 	
 	return module_param_name;
+}
+
+
+/*---------------------------------------------------------------------------------------------
+ * (function: calculate)
+ * Calculate binary operations
+ *-------------------------------------------------------------------------------------------*/
+long calculate(long operand0, long operand1, short type)
+{
+	long result = 0;
+	switch(type){
+		case ADD:
+			result = operand0 + operand1;
+			break;
+		case MINUS:
+			result = operand0 - operand1;
+			break;
+		case MULTIPLY:
+			result = operand0 * operand1;
+			break;
+		case DIVIDE:
+			result = operand0 / operand1;
+			break;
+		default:
+			break;
+	}
+	return result;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: move_ast_node)
+ * move node from src to dest
+ *-------------------------------------------------------------------------------------------*/
+void move_ast_node(ast_node_t *src, ast_node_t *dest, ast_node_t *node)
+{
+	int i, j;
+	int number;
+	number = src->num_children;
+	for(i = 0; i < number; i++)
+	{
+		if(src->children[i]->unique_count == node->unique_count)
+		{
+			number = number - 1;
+			src->num_children = number;
+			for(j = i; j < number; j++)
+			{
+				src->children[j] = src->children[j + 1];
+			}
+		}
+	}
+	add_child_to_node(dest, node);
 }
 

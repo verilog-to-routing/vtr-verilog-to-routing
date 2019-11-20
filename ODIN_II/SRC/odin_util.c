@@ -27,6 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <ctype.h>
 #include <limits.h>
+#include <errno.h>
 #include "types.h"
 #include "globals.h"
 #include "errors.h"
@@ -123,6 +124,42 @@ char *twos_complement(char *str)
 	return str;
 }
 
+/*
+ * A wrapper for the other string to bit string conversion functions.
+ * Converts an arbitrary length string of base 16, 10, 8, or 2 to a
+ * string of 1s and 0s of the given length, padding or truncating
+ * the higher accordingly. The returned string will be little
+ * endian. Null will be returned if the radix is invalid.
+ *
+ * Base 10 strings will be limited in length to a long long, but
+ * an error will be issued if the number will be truncated.
+ *
+ */
+char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_size)
+{
+	if (radix == 16)
+	{
+		return convert_hex_string_of_size_to_bit_string(string, binary_size);
+	}
+	else if (radix == 10)
+	{
+		long long number = convert_dec_string_of_size_to_long_long(string, binary_size);
+		return convert_long_long_to_bit_string(number, binary_size);
+	}
+	else if (radix == 8)
+	{
+		return convert_oct_string_of_size_to_bit_string(string, binary_size);
+	}
+	else if (radix == 2)
+	{
+		return convert_binary_string_of_size_to_bit_string(string, binary_size);
+	}
+	else
+	{
+		return NULL;
+	}
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: convert_int_to_bit_string)
  * Outputs a string msb to lsb.  For example, 3 becomes "011"
@@ -153,17 +190,44 @@ long long convert_dec_string_of_size_to_long_long(char *orig_string, int size)
 	if (!is_decimal_string(orig_string))
 		error_message(PARSE_ERROR, -1, -1, "Invalid decimal number: %s.\n", orig_string);
 
-	#ifdef LLONG_MAX
+	errno = 0;
 	long long number = strtoll(orig_string, NULL, 10);
+	if (errno == ERANGE)
+		error_message(PARSE_ERROR, -1, -1, "This suspected decimal number (%s) is too long for Odin\n", orig_string);
+
+	return number;
+}
+
+long long convert_string_of_radix_to_long_long(char *orig_string, int radix)
+{
+	if (!is_string_of_radix(orig_string, radix))
+		error_message(PARSE_ERROR, -1, -1, "Invalid base %d number: %s.\n", radix, orig_string);
+
+	#ifdef LLONG_MAX
+	long long number = strtoll(orig_string, NULL, radix);
 	if (number == LLONG_MAX || number == LLONG_MIN)
-		error_message(PARSE_ERROR, -1, -1, "This suspected decimal number (%s) is too long for Odin\n", orig_string);
+		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
 	#else
-	long long number = strtol(orig_string, NULL, 10);
+	long long number = strtol(orig_string, NULL, radix);
 	if (number == LONG_MAX || number == LONG_MIN)
-		error_message(PARSE_ERROR, -1, -1, "This suspected decimal number (%s) is too long for Odin\n", orig_string);
+		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
 	#endif
 
 	return number;
+}
+
+int is_string_of_radix(char *string, int radix)
+{
+	if (radix == 16)
+		return is_hex_string(string);
+	else if (radix == 10)
+		return is_decimal_string(string);
+	else if (radix == 8)
+		return is_octal_string(string);
+	else if (radix == 2)
+		return is_binary_string(string);
+	else
+		return FALSE;
 }
 
 /*
@@ -478,7 +542,7 @@ void *my_malloc_struct(size_t bytes_to_alloc)
 	static long int m_id = 0;
 
 	// ways to stop the execution at the point when a specific structure is built...note it needs to be m_id - 1 ... it's unique_id in most data structures
-	//oassert(m_id != 256034);
+	//oassert(m_id != 193);
 
 	allocated = malloc(bytes_to_alloc);
 	if(allocated == NULL)
@@ -509,6 +573,36 @@ long long int pow2(int to_the_power)
 	}
 
 	return return_val;
+}
+
+/*
+ * Changes the given string to upper case.
+ */
+void string_to_upper(char *string)
+{
+	if (string)
+	{
+		int i;
+		for (i = 0; i < strlen(string); i++)
+		{
+			string[i] = toupper(string[i]);
+		}
+	}
+}
+
+/*
+ * Changes the given string to lower case.
+ */
+void string_to_lower(char *string)
+{
+	if (string)
+	{
+		int i;
+		for (i = 0; i < strlen(string); i++)
+		{
+			string[i] = tolower(string[i]);
+		}
+	}
 }
 
 /*

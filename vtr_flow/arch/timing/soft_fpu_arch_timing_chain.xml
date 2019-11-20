@@ -1,0 +1,263 @@
+<!-- Use Virtex II-like architecture  N04K04L04.FC15FO25.AREA1DELAY1.CMOS130NM.BPTM     Width = 72 
+  Assume adder delay == LUT delay
+  Assume Carry delay = Stratix IV carry delay * 3 (130nm/40nm is approximately 3, so linear scaling -> delay is 3x more)
+-->
+  
+  <architecture>
+
+
+  
+  <!-- ODIN II specific config -->
+  <models>
+    <model name="adder">
+      <input_ports>
+        <port name="a"/>
+        <port name="b"/>
+        <port name="cin"/>
+      </input_ports>
+      <output_ports>
+        <port name="cout"/>
+        <port name="sumout"/>
+      </output_ports>
+    </model>
+
+ 
+  </models>
+  <!-- ODIN II specific config ends -->
+ 
+  <!-- Physical descriptions begin (area optimized for N8-K6-L4 -->
+  <layout auto="1.0"/>
+		<device>
+			<sizing R_minW_nmos="2800.310059" R_minW_pmos="7077.009766" ipin_mux_trans_size="1.221260"/>
+			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.607000e-11"/>
+			<area grid_logic_tile_area="2292.209961"/>
+			<chan_width_distr>
+				<io width="1.000000"/>
+				<x distr="uniform" peak="1.000000"/>
+				<y distr="uniform" peak="1.000000"/>
+			</chan_width_distr>
+			<switch_block type="wilton" fs="3"/>
+		</device>
+		<switchlist>
+			<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="1.102000e-10" mux_trans_size="1.214940" buf_size="11.910600"/>
+		</switchlist>
+		<segmentlist>
+			<segment freq="1.000000" length="4" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
+			<mux name="0"/>
+			<sb type="pattern">1 1 1 1 1</sb>
+			<cb type="pattern">1 1 1 1</cb>
+			</segment>
+		</segmentlist>
+
+		<directlist>
+		   <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+	    </directlist>
+
+
+		<complexblocklist>
+      <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
+      <pb_type name="io" capacity="3">
+        <input name="outpad" num_pins="1"/>
+        <output name="inpad" num_pins="1"/>
+        <clock name="clock" num_pins="1"/>
+
+        <!-- IOs can operate as either inputs or outputs -->
+        <mode name="inpad">
+          <pb_type name="inpad" blif_model=".input" num_pb="1">
+            <output name="inpad" num_pins="1"/>
+          </pb_type>
+          <interconnect>
+            <direct name="inpad" input="inpad.inpad" output="io.inpad">
+            <delay_constant max="9.762000e-11" in_port="inpad.inpad" out_port="io.inpad"/>
+            </direct>
+          </interconnect>
+      
+        </mode>
+        <mode name="outpad">
+          <pb_type name="outpad" blif_model=".output" num_pb="1">
+            <input name="outpad" num_pins="1"/>
+          </pb_type>
+          <interconnect>
+            <direct name="outpad" input="io.outpad" output="outpad.outpad">
+            <delay_constant max="2.700000e-11" in_port="io.outpad" out_port="outpad.outpad"/>
+            </direct>
+          </interconnect>
+        </mode>
+
+				<fc default_in_type="frac" default_in_val="1.00" default_out_type="frac" default_out_val="0.25"/>
+
+        <!-- IOs go on the periphery of the FPGA, for consistency, 
+          make it physically equivalent on all sides so that only one definition of I/Os is needed.
+          If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA
+        -->
+        <pinlocations pattern="custom">
+          <loc side="left">io.outpad io.inpad io.clock</loc>
+          <loc side="top">io.outpad io.inpad io.clock</loc>
+          <loc side="right">io.outpad io.inpad io.clock</loc>
+          <loc side="bottom">io.outpad io.inpad io.clock</loc>
+        </pinlocations>
+
+        <gridlocations>
+          <loc type="perimeter" priority="10"/>
+        </gridlocations>
+
+      </pb_type>
+      <!-- Describe general-purpose complex block -->
+      <pb_type name="clb">        
+          <input name="I" num_pins="10" equivalent="true"/>
+          <input name="cin" num_pins="1" equivalent="false"/>
+          <output name="O" num_pins="4" equivalent="false"/>
+          <output name="cout" num_pins="1" equivalent="false"/>
+          <clock name="clk" num_pins="1"/>
+          <mode name="logic">
+            <pb_type name="ble" num_pb="4">
+               <input name="in" num_pins="4"/>
+               <input name="cin" num_pins="1"/>
+               <output name="out" num_pins="1"/>
+               <output name="cout" num_pins="1"/>
+               <clock name="clk" num_pins="1"/>
+               <pb_type name="soft_logic" num_pb="1">
+                 <input name="in" num_pins="4"/>
+                 <input name="cin" num_pins="1"/>
+                 <output name="cout" num_pins="1"/>
+                 <output name="out" num_pins="1"/>
+              <mode name="n1_lut4">
+                <pb_type name="lut4" blif_model=".names" num_pb="1" class="lut">
+                  <input name="in" num_pins="4" port_class="lut_in"/>
+                  <output name="out" num_pins="1" port_class="lut_out"/>
+                  <!-- LUT timing using delay matrix -->
+                  <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
+                    2.581000e-10
+                    2.581000e-10
+                    2.581000e-10
+                    2.581000e-10
+                  </delay_matrix>
+                </pb_type>
+                <interconnect>
+                  <direct name="direct1" input="soft_logic.in[3:0]" output="lut4[0:0].in[3:0]"/>
+                  <direct name="direct2" input="lut4[0:0].out" output="soft_logic.out[0:0]">
+                    <pack_pattern name="ble" in_port="lut4[0:0].out" out_port="soft_logic.out[0:0]"/>
+                  </direct>
+                </interconnect>
+              </mode>
+
+
+              <mode name="arithmetic">
+                  <pb_type name="arithmetic" num_pb="1">
+                    <input name="in" num_pins="3"/>
+                    <input name="cin" num_pins="1"/>
+                    <output name="out" num_pins="1"/>
+                    <output name="cout" num_pins="1"/>
+                    <!-- Special dual-LUT mode that drives adder only -->
+                    <!-- Linear scaling of 40 nm adder to 130 nm technology -->
+                    <pb_type name="lut3" blif_model=".names" num_pb="2" class="lut">
+                      <input name="in" num_pins="3" port_class="lut_in"/>
+                      <output name="out" num_pins="1" port_class="lut_out"/>
+                      <delay_matrix type="max" in_port="lut3.in" out_port="lut3.out">
+                        2.581000e-10
+                        2.581000e-10
+                        2.581000e-10
+                      </delay_matrix>
+                    </pb_type>    
+                    <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
+                      <input name="a" num_pins="1"/>
+                      <input name="b" num_pins="1"/>
+                      <input name="cin" num_pins="1"/>                      
+                      <output name="cout" num_pins="1"/>
+                      <output name="sumout" num_pins="1"/>
+                      <delay_constant max="1.35e-9" in_port="adder.a" out_port="adder.sumout"/>
+                      <delay_constant max="1.35e-9" in_port="adder.b" out_port="adder.sumout"/>
+                      <delay_constant max="1.35e-9" in_port="adder.cin" out_port="adder.sumout"/>
+                      <delay_constant max="1.35e-9" in_port="adder.a" out_port="adder.cout"/>
+                      <delay_constant max="1.35e-9" in_port="adder.b" out_port="adder.cout"/>
+                      <delay_constant max="0.045e-9" in_port="adder.cin" out_port="adder.cout"/>
+                    </pb_type>
+                    <interconnect>
+                      <direct name="lut_in1" input="arithmetic.in[2:0]" output="lut3[0:0].in[2:0]"/>
+                      <direct name="lut_in2" input="arithmetic.in[2:0]" output="lut3[1:1].in[2:0]"/>
+                      <direct name="lut_to_add1" input="lut3[0:0].out" output="adder.a">
+                      </direct>
+                      <direct name="lut_to_add2" input="lut3[1:1].out" output="adder.b">
+                      </direct>
+                      <direct name="add_to_ble_out" input="adder.sumout" output="arithmetic.out">
+                        <pack_pattern name="chain" in_port="adder.sumout" out_port="arithmetic.out"/>
+                      </direct>
+                      <direct name="carry_in" input="arithmetic.cin" output="adder.cin">
+                        <pack_pattern name="chain" in_port="arithmetic.cin" out_port="adder.cin"/>
+                      </direct>
+                      <direct name="carry_out" input="adder.cout" output="arithmetic.cout">
+                        <pack_pattern name="chain" in_port="adder.cout" out_port="arithmetic.cout"/>
+                      </direct>
+                    </interconnect>
+                  </pb_type>
+
+                  <interconnect>
+                    <direct name="direct1" input="soft_logic.in[2:0]" output="arithmetic.in"/>
+                    <direct name="carry_in" input="soft_logic.cin" output="arithmetic.cin">
+                      <pack_pattern name="chain" in_port="soft_logic.cin" out_port="arithmetic.cin"/>
+                    </direct>
+                    <direct name="carry_out" input="arithmetic.cout" output="soft_logic.cout">
+                      <pack_pattern name="chain" in_port="arithmetic.cout" out_port="soft_logic.cout"/>
+                    </direct>
+                    <direct name="direct3" input="arithmetic.out" output="soft_logic.out"> 
+                      <pack_pattern name="chain" in_port="arithmetic.out" out_port="soft_logic.out"/>
+                    </direct>
+                  </interconnect>
+                </mode>
+            </pb_type>
+            <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+              <input name="D" num_pins="1" port_class="D"/>
+              <output name="Q" num_pins="1" port_class="Q"/>
+              <clock name="clk" num_pins="1" port_class="clock"/>
+              <T_setup value="2.359000e-10" port="ff.D" clock="clk"/>
+              <T_clock_to_Q max="1.508000e-10" port="ff.Q" clock="clk"/>
+            </pb_type>
+              <interconnect>
+                <direct name="direct1" input="soft_logic.out[0:0]" output="ff.D">
+                  <pack_pattern name="ble" in_port="soft_logic.out[0:0]" out_port="ff.D"/>
+                  <pack_pattern name="chain" in_port="soft_logic.out[0:0]" out_port="ff.D"/>
+                </direct>
+                <direct name="direct2" input="ble.in" output="soft_logic.in"/>
+                <direct name="direct3" input="ble.clk" output="ff.clk"/>
+                <direct name="direct4" input="ble.cin" output="soft_logic.cin">
+                  <pack_pattern name="chain" in_port="ble.cin" out_port="soft_logic.cin"/>
+                </direct>
+                <direct name="direct5" input="soft_logic.cout" output="ble.cout">
+                  <pack_pattern name="chain" in_port="soft_logic.cout" out_port="ble.cout"/>
+                </direct>
+                <mux name="mux1" input="ff.Q soft_logic.out[0:0]" output="ble.out[0:0]"/>
+               </interconnect>
+            </pb_type>
+
+            <interconnect>
+              <complete name="complete1" input="clb.I ble[3:0].out" output="ble[3:0].in">
+                <delay_constant max="7.586000e-11" in_port="clb.I" out_port="ble[3:0].in" />
+                <delay_constant max="7.260000e-11" in_port="ble[3:0].out" out_port="ble[3:0].in" />
+              </complete>
+              <complete name="complete2" input="clb.clk" output="ble[3:0].clk"/>
+              <direct name="direct1" input="ble[3:0].out" output="clb.O"/>
+              <direct name="direct2" input="ble[2:0].cout" output="ble[3:1].cin">
+                <pack_pattern name="chain" in_port="ble[2:0].cout" out_port="ble[3:1].cin"/>
+              </direct>
+              <direct name="direct3" input="clb.cin" output="ble[0:0].cin">
+                <delay_constant max="0.72e-9" in_port="clb.cin" out_port="ble[0:0].cin"/>
+                <pack_pattern name="chain" in_port="clb.cin" out_port="ble[0:0].cin"/>
+              </direct>
+              <direct name="direct4" input="ble[3:3].cout" output="clb.cout">
+                <pack_pattern name="chain" in_port="ble[3:3].cout" out_port="clb.cout"/>
+              </direct>
+            </interconnect>
+          </mode>
+
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.25">
+          <!-- carry chain links across logic blocks should have no access to general routing -->
+          <pin name="cin" fc_type="frac" fc_val="0"/>
+          <pin name="cout" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="spread"/>
+        <gridlocations>
+          <loc type="fill" priority="1"/>
+        </gridlocations>
+      </pb_type>
+    </complexblocklist>
+  </architecture>

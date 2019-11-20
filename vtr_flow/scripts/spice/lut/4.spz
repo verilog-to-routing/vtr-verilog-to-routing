@@ -1,0 +1,74 @@
+.param rise = 'simt/500'
+
+
+Vdd1 Vdd1 0 Vol
+Vdd2 Vdd2 0 Vol
+Vsram Vsram 0 Vol
+
+Vin1 in1 0 PULSE(0 Vol 0.3n 0n 0n 4n 20n)
+Vin2 in2 0 PULSE(0 Vol 0.9n 0n 0n 4n 20n)
+Vin3 in3 0 PULSE(0 Vol 1.5n 0n 0n 4n 20n)
+Vin4 in4 0 PULSE(0 Vol 2.1n 0n 0n 4n 20n)
+
+X1 in1 sel1mid Vdd1 0 inv nsize=1 psize='1*pnratio'
+X2 sel1mid sel1 Vdd1 0 inv nsize=2 psize='2*pnratio'
+X3 in1 sel1n Vdd1 0 inv nsize=2 psize='2*pnratio'
+
+X4 in2 sel2mid Vdd1 0 inv nsize=1 psize='1*pnratio'
+X5 sel2mid sel2 Vdd1 0 inv nsize=2 psize='2*pnratio'
+X6 in2 sel2n Vdd1 0 inv nsize=2 psize='2*pnratio'
+
+X12 in3 sel3mid Vdd1 0 inv nsize=1 psize='1*pnratio'
+X13 sel3mid sel3 Vdd1 0 inv nsize=2 psize='2*pnratio'
+X14 in3 sel3n Vdd1 0 inv nsize=2 psize='2*pnratio'
+
+X19 in4 sel4mid Vdd1 0 inv nsize=1 psize='1*pnratio'
+X20 sel4mid sel4 Vdd1 0 inv nsize=2 psize='2*pnratio'
+X21 in4 sel4n Vdd1 0 inv nsize=2 psize='2*pnratio'
+
+X22 sram1 sram0 mid4a sel4 sel4n mux2 size='nmos_size'
+X23 sram0 sram1 mid4b sel4 sel4n mux2 size='nmos_size'
+X24 sram0 sram1 mid4c sel4 sel4n mux2 size='nmos_size'
+X25 sram1 sram0 mid4d sel4 sel4n mux2 size='nmos_size'
+X26 sram0 sram1 mid4e sel4 sel4n mux2 size='nmos_size'
+X27 sram1 sram0 mid4f sel4 sel4n mux2 size='nmos_size'
+X28 sram1 sram0 mid4g sel4 sel4n mux2 size='nmos_size'
+X29 sram0 sram1 mid4h sel4 sel4n mux2 size='nmos_size'
+
+
+X15 mid4a mid4b mid3a sel3 sel3n mux2 size='nmos_size'
+X16 mid4c mid4d mid3b sel3 sel3n mux2 size='nmos_size'
+X17 mid4e mid4f mid3c sel3 sel3n mux2 size='nmos_size'
+X18 mid4g mid4h mid3d sel3 sel3n mux2 size='nmos_size'
+
+X30 mid3a mid3alv Vdd2 0 levr
+X31 mid3b mid3blv Vdd2 0 levr
+X32 mid3c mid3clv Vdd2 0 levr
+X33 mid3d mid3dlv Vdd2 0 levr
+
+X7 mid3alv mid3blv mid2a sel2 sel2n mux2 size='nmos_size'
+X8 mid3clv mid3dlv mid2b sel2 sel2n mux2 size='nmos_size'
+
+X9 mid2a mid2b mid1a sel1 sel1n mux2 size='nmos_size'
+
+X10 mid1a out Vdd2 0 levr
+
+Xs1 0 sram1 Vsram 0 inv nsize=8 psize='8*pnratio'
+Xs0 Vsram sram0 Vsram 0 inv nsize=8 psize='8*pnratio'
+
+
+
+.TEMP tempr
+
+.OP
+.OPTIONS POST
+
+.tran 'simt/10000' '2*simt'
+.measure tran Edrivers INTEG I(Vdd1) 
+.measure tran Elevl INTEG I(Vdd2)
+.measure tran Esram INTEG I(Vsram) 
+.measure tran E Param=('(-Edrivers-Elevl-Esram)*Vol')
+.measure tran power Param=('E/simt/2')
+
+
+.end

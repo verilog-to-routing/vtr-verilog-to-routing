@@ -1,0 +1,189 @@
+<!-- 
+ Architecture file translated from ifar repository N04K04L01.FC15FO25.AREA1DELAY1.CMOS90NM.BPTM
+
+ Simple architecture file consisting of clusters of 4 BLEs, each BLE contains a 4-LUT+FF pair.  Delay models from 90nm PTM.
+-->
+
+<architecture>
+
+  <!-- 
+       ODIN II specific config begins 
+       Describes the types of user-specified netlist blocks (in blif, this corresponds to 
+       ".model [type_of_block]") that this architecture supports.
+
+       Note: Basic LUTs, I/Os, and flip-flops are not included here as there are 
+       already special structures in blif (.names, .input, .output, and .latch) 
+       that describe them.
+  -->
+  <models>
+  </models>
+  <!-- ODIN II specific config ends -->
+
+  <!-- Physical descriptions begin -->
+  <layout auto="1.000000"/>
+  <device>
+    <sizing R_minW_nmos="4220.930176" R_minW_pmos="11207.599609" ipin_mux_trans_size="0.983352"/>
+    <timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.045000e-11"/>
+    <area grid_logic_tile_area="2229.320068"/>
+    <chan_width_distr>
+      <io width="1.000000"/>
+      <x distr="uniform" peak="1.000000"/>
+      <y distr="uniform" peak="1.000000"/>
+    </chan_width_distr>
+    <switch_block type="wilton" fs="3"/>
+  </device>
+  <switchlist>
+    <switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="6.244000e-11" mux_trans_size="1.835460" buf_size="10.498600"/>
+  </switchlist>
+  <segmentlist>
+    <segment freq="1.000000" length="1" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
+    <mux name="0"/>
+    <sb type="pattern">1 1</sb>
+    <cb type="pattern">1</cb>
+    </segment>
+  </segmentlist>
+
+  <complexblocklist>
+
+    <!-- Define I/O pads begin -->
+    <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
+    <pb_type name="io" capacity="3">
+      <input name="outpad" num_pins="1"/>
+      <output name="inpad" num_pins="1"/>
+      <clock name="clock" num_pins="1"/>
+
+      <!-- IOs can operate as either inputs or outputs.
+	     Delays below come from Ian Kuon. They are small, so they should be interpreted as
+	     the delays to and from registers in the I/O (and generally I/Os are registered 
+	     today and that is when you timing analyze them.
+	     -->
+      <mode name="inpad">
+        <pb_type name="inpad" blif_model=".input" num_pb="1">
+          <output name="inpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct name="inpad" input="inpad.inpad" output="io.inpad">
+            <delay_constant max="9.492000e-11" in_port="inpad.inpad" out_port="io.inpad"/>
+          </direct>
+        </interconnect>
+
+      </mode>
+      <mode name="outpad">
+        <pb_type name="outpad" blif_model=".output" num_pb="1">
+          <input name="outpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct name="outpad" input="io.outpad" output="outpad.outpad">
+            <delay_constant max="2.675000e-11" in_port="io.outpad" out_port="outpad.outpad"/>
+          </direct>
+        </interconnect>
+      </mode>
+
+      <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
+      <fc default_in_type="frac" default_in_val="1.0" default_out_type="frac" default_out_val="0.25"/>
+
+      <!-- IOs go on the periphery of the FPGA, for consistency, 
+          make it physically equivalent on all sides so that only one definition of I/Os is needed.
+          If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA
+        -->
+      <pinlocations pattern="custom">
+        <loc side="left">io.outpad io.inpad io.clock</loc>
+        <loc side="top">io.outpad io.inpad io.clock</loc>
+        <loc side="right">io.outpad io.inpad io.clock</loc>
+        <loc side="bottom">io.outpad io.inpad io.clock</loc>
+      </pinlocations>
+
+      <!-- Place I/Os on the sides of the FPGA -->
+      <gridlocations>
+        <loc type="perimeter" priority="10"/>
+      </gridlocations>
+
+      <power method="ignore"/>			
+    </pb_type>
+    <!-- Define I/O pads ends -->
+
+    <!-- Define general purpose logic block (CLB) begin -->
+    <pb_type name="clb">
+      <input name="I" num_pins="10" equivalent="true"/>
+      <output name="O" num_pins="4" equivalent="true"/>
+      <clock name="clk" num_pins="1"/>
+
+      <!-- Describe basic logic element. -->
+      <pb_type name="fle" num_pb="4">
+        <input name="in" num_pins="4"/>
+        <output name="out" num_pins="1"/>
+        <clock name="clk" num_pins="1"/>
+        <!-- 6-LUT mode definition begin -->
+        <mode name="n1_lut4">
+          <!-- Define 6-LUT mode -->
+          <pb_type name="ble4" num_pb="1">
+            <input name="in" num_pins="4"/>
+            <output name="out" num_pins="1"/>
+            <clock name="clk" num_pins="1"/> 
+
+            <!-- Define LUT -->
+            <pb_type name="lut4" blif_model=".names" num_pb="1" class="lut">
+              <input name="in" num_pins="4" port_class="lut_in"/>
+              <output name="out" num_pins="1" port_class="lut_out"/>
+              <!-- LUT timing using delay matrix -->
+              <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
+                2.253000e-10
+                2.253000e-10
+                2.253000e-10
+                2.253000e-10
+              </delay_matrix>
+            </pb_type>
+
+            <!-- Define flip-flop -->
+            <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+              <input name="D" num_pins="1" port_class="D"/>
+              <output name="Q" num_pins="1" port_class="Q"/>
+              <clock name="clk" num_pins="1" port_class="clock"/>
+              <T_setup value="2.160000e-10" port="ff.D" clock="clk"/>
+              <T_clock_to_Q max="1.426000e-10" port="ff.Q" clock="clk"/>
+            </pb_type>
+
+            <interconnect>
+              <direct name="direct1" input="ble4.in" output="lut4[0:0].in"/>
+              <direct name="direct2" input="lut4.out" output="ff.D">
+                <!-- Advanced user option that tells CAD tool to find LUT+FF pairs in netlist -->
+                <pack_pattern name="ble6" in_port="lut4.out" out_port="ff.D"/>
+              </direct>
+              <direct name="direct3" input="ble4.clk" output="ff.clk"/>                    
+              <mux name="mux1" input="ff.Q lut4.out" output="ble4.out">
+              </mux>
+            </interconnect>
+          </pb_type>
+          <interconnect>
+            <direct name="direct1" input="fle.in" output="ble4.in"/>
+            <direct name="direct2" input="ble4.out" output="fle.out[0:0]"/>
+            <direct name="direct3" input="fle.clk" output="ble4.clk"/>
+          </interconnect>
+        </mode>
+        <!-- 4-LUT mode definition end -->
+      </pb_type>
+      <interconnect>
+        <!-- We use a full crossbar to get logical equivalence at inputs of CLB  -->
+        <complete name="crossbar" input="clb.I fle[3:0].out" output="fle[3:0].in">
+          <delay_constant max="5.735000e-11" in_port="clb.I" out_port="fle[3:0].in" />
+          <delay_constant max="5.428000e-11" in_port="fle[3:0].out" out_port="fle[3:0].in" />
+        </complete>
+        <complete name="clks" input="clb.clk" output="fle[3:0].clk">
+        </complete>
+        <direct name="clbouts1" input="fle[3:0].out" output="clb.O"/>
+      </interconnect>
+
+      <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 25% of the tracks in a channel -->
+      <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.25"/>
+
+      <pinlocations pattern="spread"/>
+
+      <!-- Place this general purpose logic block in any unspecified column -->
+      <gridlocations>
+        <loc type="fill" priority="1"/>
+      </gridlocations>
+    </pb_type>
+    <!-- Define general purpose logic block (CLB) ends -->
+
+  </complexblocklist>
+</architecture>

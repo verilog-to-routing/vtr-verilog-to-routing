@@ -1,0 +1,468 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\base">
+      <UniqueIdentifier>{542b879d-52d7-4dea-a50c-c81349836b4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{20e9bc80-b164-4aea-82d9-d8dac29bfe97}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\pack">
+      <UniqueIdentifier>{28ed7ba0-c2f0-4422-a269-48b0a6ac9340}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\timing">
+      <UniqueIdentifier>{f103766f-c586-4477-be69-b294aeb00228}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\route">
+      <UniqueIdentifier>{2228f46f-2042-4511-93df-cd032221de12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\place">
+      <UniqueIdentifier>{72910c5e-45ba-48da-ab11-aa50fb710df9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\base">
+      <UniqueIdentifier>{d63bb550-30e9-40f7-b9c8-c7fa1e5a739f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\timing">
+      <UniqueIdentifier>{6b7cc4aa-438c-4c1c-9498-bdfe4a7db018}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\route">
+      <UniqueIdentifier>{6b64e393-90ee-4beb-a58b-8c1a47ea4473}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\pack">
+      <UniqueIdentifier>{b079dc73-9881-4a7c-8c5f-d7cc9b60be6b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\place">
+      <UniqueIdentifier>{cc57675e-23df-4baf-8e9e-48f499953880}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\util">
+      <UniqueIdentifier>{de24ab86-f26b-4b30-8521-a54f20c32f3c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Header Files\power">
+      <UniqueIdentifier>{1edf2d2a-f65f-4a30-aaa3-3950f5e77d92}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\power">
+      <UniqueIdentifier>{1d2574d7-c4aa-4e8e-9778-d94875ddc535}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SRC\main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\check_netlist.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\CheckArch.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\CheckOptions.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\CheckSetup.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\draw.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\graphics.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\OptionTokens.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\place_and_route.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\read_blif.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\read_netlist.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\read_place.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\ReadOptions.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\SetupGrid.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\SetupVPR.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\ShowSetup.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\stats.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\util\hash.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\util\heapsort.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\util\token.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\util\vpr_utils.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\cluster.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\cluster_legality.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\output_blif.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\output_clustering.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\pack.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\pb_type_graph.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\pb_type_graph_annotations.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\print_netlist.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\timing\net_delay.c">
+      <Filter>Source Files\timing</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\timing\path_delay.c">
+      <Filter>Source Files\timing</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\timing\path_delay2.c">
+      <Filter>Source Files\timing</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\check_route.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\check_rr_graph.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\route_breadth_first.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\route_common.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\route_timing.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\route_tree_timing.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\rr_graph.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\rr_graph2.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\rr_graph_area.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\rr_graph_indexed_data.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\rr_graph_sbox.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\rr_graph_timing_params.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\rr_graph_util.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\route\segment_stats.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\place\place.c">
+      <Filter>Source Files\place</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\place\place_stats.c">
+      <Filter>Source Files\place</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\place\timing_place.c">
+      <Filter>Source Files\place</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\place\timing_place_lookup.c">
+      <Filter>Source Files\place</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\prepack.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\cluster_placement.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\cluster_feasibility_filter.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\timing\read_sdc.c">
+      <Filter>Source Files\timing</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\read_settings.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\globals.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\vpr_api.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\timing\slre.c">
+      <Filter>Source Files\timing</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\place\place_macro.c">
+      <Filter>Source Files\place</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\verilog_writer.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power_cmos_tech.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power_components.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power_lowlevel.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power_util.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power_sizing.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power_callibrate.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\PowerSpicedComponent.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SRC\base\check_netlist.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\draw.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\globals.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\globals_declare.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\graphics.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\OptionTokens.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\place_and_route.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\read_blif.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\read_netlist.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\read_place.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\ReadOptions.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\SetupGrid.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\SetupVPR.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\stats.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\vpr_types.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\timing\net_delay.h">
+      <Filter>Header Files\timing</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\timing\path_delay.h">
+      <Filter>Header Files\timing</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\timing\path_delay2.h">
+      <Filter>Header Files\timing</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\check_route.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\check_rr_graph.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\route_breadth_first.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\route_common.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\route_export.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\route_timing.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\route_tree_timing.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\rr_graph.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\rr_graph2.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\rr_graph_area.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\rr_graph_indexed_data.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\rr_graph_sbox.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\rr_graph_timing_params.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\rr_graph_util.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\segment_stats.h">
+      <Filter>Header Files\route</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\cluster.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\cluster_legality.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\output_blif.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\output_clustering.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\pack.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\pb_type_graph.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\pb_type_graph_annotations.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\print_netlist.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\place\place.h">
+      <Filter>Header Files\place</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\place\place_stats.h">
+      <Filter>Header Files\place</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\place\timing_place.h">
+      <Filter>Header Files\place</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\place\timing_place_lookup.h">
+      <Filter>Header Files\place</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\util\hash.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\util\heapsort.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\util\token.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\util\vpr_utils.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\cluster_feasibility_filter.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\cluster_placement.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\prepack.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\timing\read_sdc.h">
+      <Filter>Header Files\timing</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\read_settings.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\vpr_api.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\timing\slre.h">
+      <Filter>Header Files\timing</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\place\place_macro.h">
+      <Filter>Header Files\place</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\verilog_writer.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power_cmos_tech.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power_components.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power_lowlevel.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power_util.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power_sizing.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power_callibrate.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\PowerSpicedComponent.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\easygl_constants.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

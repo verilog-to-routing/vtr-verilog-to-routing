@@ -1,9 +1,0 @@
-The following is a list of what Odin will not handle.  This list is not complete by any means.  Also, you might want to look at the file: verilog_bnf_for_odinII_reduced.html as it shows the syntax that Odin II version 0.1 has its' parser built around.  Many constructs are not handled.
-
-Items unhandled for FPGA hardware synthesis:
-- Anything in the format (out <= {(3)1'b0};) is not handled.  The repeating concat structure "3" is not dealt with.
-- Odin will not handle comparisons of different bit widths.  "2'b01 == 3'b111".  This is bad form anyway.  Also, this gest tricky with Decimal numbers since it is hard to define how many bits it is.
-- Decimal numbers in general are frowned upon.  They're fine for port widths and constants, but they can cause trouble when they're parts of bit values since the width is undefined.
-
-Item unhandled for FPGA netlist simulation:
-- Sequential circuits are not completely supported yet. They will be simulated, but are currently not generating exactly ``correct'' output vectors.

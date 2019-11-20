@@ -1,0 +1,45 @@
+.param rise = 'simt/500'
+
+
+
+Vdd1 Vdd1 0 Vol
+Vdd2 Vdd2 0 Vol
+Vsram Vsram 0 Vol
+
+Vin1 in1 0 PULSE(0 Vol 0.3n 0n 0n 4n 10000n)
+Vin2 in2 0 PULSE(0 Vol 0.9n 0n 0n 4n 10000n)
+
+X1 in1 sel1mid Vdd1 0 inv nsize=1 psize='1*pnratio'
+X2 sel1mid sel1 Vdd1 0 inv nsize=2 psize='2*pnratio'
+X3 in1 sel1n Vdd1 0 inv nsize=2 psize='2*pnratio'
+
+X4 in2 sel2mid Vdd1 0 inv nsize=1 psize='1*pnratio'
+X5 sel2mid sel2 Vdd1 0 inv nsize=2 psize='2*pnratio'
+X6 in2 sel2n Vdd1 0 inv nsize=2 psize='2*pnratio'
+
+X7 sram1 sram0 mid2a sel2 sel2n mux2 size='nmos_size'
+X8 sram0 sram1 mid2b sel2 sel2n mux2 size='nmos_size'
+
+X9 mid2a mid2b mid1a sel1 sel1n mux2 size='nmos_size'
+
+X10 mid1a out Vdd2 0 levr
+
+Xs1 0 sram1 Vsram 0 inv nsize=2 psize='2*pnratio'
+Xs0 Vsram sram0 Vsram 0 inv nsize=2 psize='2*pnratio'
+
+
+
+.TEMP tempr
+
+.OP
+.OPTIONS POST
+
+.tran 'simt/10000' '2*simt'
+.measure tran Edrivers INTEG I(Vdd1) 
+.measure tran Elevl INTEG I(Vdd2)
+.measure tran Esram INTEG I(Vsram) 
+.measure tran E Param=('(-Edrivers-Elevl-Esram)*Vol')
+.measure tran power Param=('E/simt/2')
+
+
+.end

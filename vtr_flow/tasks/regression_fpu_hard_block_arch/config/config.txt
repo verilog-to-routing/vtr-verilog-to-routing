@@ -23,7 +23,7 @@ circuit_list_add=syn7.v
 arch_list_add=hard_fpu_arch_timing.xml
 
 # Parse info and how to parse
-parse_file=vpr_fixed_chan_width.txt
+parse_file=vpr_hard_fpu.txt
 
 # Pass requirements
 pass_requirements_file=pass_requirements_fixed_chan_width.txt

@@ -1,0 +1,4 @@
+regression_tests/vtr_reg_weekly/vtr_reg_qor
+regression_tests/vtr_reg_weekly/vtr_reg_fpu_hard_block_arch
+regression_tests/vtr_reg_weekly/vtr_reg_fpu_soft_logic_arch
+regression_tests/vtr_reg_weekly/titan_reg

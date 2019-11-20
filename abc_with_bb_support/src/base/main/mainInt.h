@@ -32,7 +32,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 // the current version
-#define ABC_VERSION "UC Berkeley, ABC 1.01"
+#define ABC_VERSION "UC Berkeley, ABC for VTR 7.0"
 
 // the maximum length of an input line 
 #define MAX_STR     32768

@@ -1,0 +1,29 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Power
+script_params=-power
+cmos_tech_behavior=PTM_45nm/45nm.xml
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Path to directory of SDC files to use
+sdc_dir=tasks/regression_tests/sdc
+
+# Add circuits to list to sweep
+circuit_list_add=ch_intrinsics.v
+circuit_list_add=diffeq1.v
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_power.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt

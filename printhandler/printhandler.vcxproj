@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SRC\TC_Common\RegExp.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_Bit.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_MinGrid.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_Name.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_NameLength.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_NameType.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_SideIndex.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_SideName.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_StringUtils.cxx" />
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_CustomOutput.cxx" />
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_FileHandler.cxx" />
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_FileOutput.cxx" />
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_PrintHandler.cxx" />
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_PrintHandlerExtern.cxx" />
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_SkinHandler.cxx" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SRC\TC_Common\RegExp.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_BSearch.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_Dims.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_DynamicVector.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_Generic.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_NameList.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_OrderedQueue.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_OrderedVector.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_OrderedVector2D.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_QSort.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_RegExpIter.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_SortedNameDynamicVector.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_SortedVector.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_Stack.h" />
+    <ClInclude Include="SRC\TC_Common\TC_Bit.h" />
+    <ClInclude Include="SRC\TC_Common\TC_MinGrid.h" />
+    <ClInclude Include="SRC\TC_Common\TC_Name.h" />
+    <ClInclude Include="SRC\TC_Common\TC_NameLength.h" />
+    <ClInclude Include="SRC\TC_Common\TC_NameType.h" />
+    <ClInclude Include="SRC\TC_Common\TC_SideIndex.h" />
+    <ClInclude Include="SRC\TC_Common\TC_SideName.h" />
+    <ClInclude Include="SRC\TC_Common\TC_StringUtils.h" />
+    <ClInclude Include="SRC\TC_Common\TC_Typedefs.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_CustomOutput.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_FileHandler.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_FileOutput.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_PrintHandler.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_PrintHandlerExtern.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_SkinHandler.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_StdioOutput.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_StringText.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_Typedefs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\pcre\pcre.vcxproj">
+      <Project>{f15a8901-660a-4ffe-890e-74ccc94e862a}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}</ProjectGuid>
+    <RootNamespace>printhandler</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>../pcre/SRC;SRC/TC_Common;SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;_MBCS;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>../pcre/SRC;SRC/TC_Common;SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

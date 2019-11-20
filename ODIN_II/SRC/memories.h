@@ -24,6 +24,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef MEMORIES_H
 #define MEMORIES_H
 
+extern struct s_linked_vptr *sp_memory_list;
+extern struct s_linked_vptr *dp_memory_list;
+extern struct s_linked_vptr *memory_instances;
+extern struct s_linked_vptr *memory_port_size_list;
+
+#define MEMORY_DEPTH_LIMIT 25
+
 typedef struct s_memory
 {
 	int size_d1;
@@ -41,22 +48,65 @@ typedef struct s_memory_port_sizes
 	char *name;
 } t_memory_port_sizes;
 
-extern struct s_linked_vptr *sp_memory_list;
-extern struct s_linked_vptr *dp_memory_list;
-extern struct s_linked_vptr *memory_instances;
-extern struct s_linked_vptr *memory_port_size_list;
-extern int split_size;
+typedef struct {
+	signal_list_t *addr;
+	signal_list_t *data;
+	signal_list_t *out;
+	npin_t *we;
+	npin_t *clk;
+} sp_ram_signals;
 
-extern void init_memory_distribution();
-extern void report_memory_distribution();
+typedef struct {
+	signal_list_t *addr1;
+	signal_list_t *addr2;
+	signal_list_t *data1;
+	signal_list_t *data2;
+	signal_list_t *out1;
+	signal_list_t *out2;
+	npin_t *we1;
+	npin_t *we2;
+	npin_t *clk;
+} dp_ram_signals;
 
-extern int get_memory_port_size(char *name);
-extern void split_sp_memory_depth(nnode_t *node);
-extern void split_dp_memory_depth(nnode_t *node);
-extern void split_sp_memory_width(nnode_t *node);
-extern void split_dp_memory_width(nnode_t *node);
-extern void iterate_memories(netlist_t *netlist);
-extern void clean_memories();
+int get_sp_ram_split_depth();
+int get_dp_ram_split_depth();
+
+sp_ram_signals *get_sp_ram_signals(nnode_t *node);
+void free_sp_ram_signals(sp_ram_signals *signalsvar);
+
+dp_ram_signals *get_dp_ram_signals(nnode_t *node);
+void free_dp_ram_signals(dp_ram_signals *signalsvar);
+
+char is_sp_ram(nnode_t *node);
+char is_dp_ram(nnode_t *node);
+
+char is_ast_sp_ram(ast_node_t *node);
+char is_ast_dp_ram(ast_node_t *node);
+
+void init_memory_distribution();
+void check_memories_and_report_distribution();
+
+int get_memory_port_size(char *name);
+
+int get_sp_ram_depth(nnode_t *node);
+int get_dp_ram_depth(nnode_t *node);
+int get_sp_ram_width(nnode_t *node);
+int get_dp_ram_width(nnode_t *node);
+
+void split_sp_memory_depth(nnode_t *node, int split_size);
+void split_dp_memory_depth(nnode_t *node, int split_size);
+void split_sp_memory_width(nnode_t *node, int target_size);
+void split_dp_memory_width(nnode_t *node, int target_size);
+void iterate_memories(netlist_t *netlist);
+void free_memory_lists();
+
+void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netlist);
+void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlist);
+
+signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_list);
+
+void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char *port_name);
+void add_output_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char *port_name);
 
 #endif // MEMORIES_H
 

@@ -1,0 +1,5 @@
+regression_tests/vtr_reg_nightly/vpr_reg_mcnc
+regression_tests/vtr_reg_nightly/vtr_reg_qor_small
+regression_tests/vtr_reg_nightly/vpr_chain
+regression_tests/vtr_reg_nightly/vpr_reg_multiclock
+regression_tests/vtr_reg_nightly/vpr_reg_verilog_writer

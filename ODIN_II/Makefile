@@ -1,32 +1,24 @@
 CC = gcc
 
-BUILD = VPR6
-
 PARSER1 = flex 
 PARSER2 = bison
 
-WARN_FLAGS = -Wall 
+WARN_FLAGS = -Wall -Wno-unused-function
 
 SRC_DIR = SRC
 OBJ_DIR = OBJ
 
 EXEO = odin_II.exe
 
-DEBUG_FLAGS = -g
+DEBUG_FLAGS = -g -DYYERROR_VERBOSE
 
-OPT_FLAGS = -O2 
+#OPT_FLAGS = -O2 
 # Use this value of OPT_FLAGS to simulate in parallel (requires GCC >= 4.2)
 #OPT_FLAGS = -O2 -fopenmp 
 
-ifeq "$(BUILD)" "VPR5"
-	INC_FLAGS =  -I../libvpr_5/include
-	LIB = -L../libvpr_5 -lvpr_5 -lm -ldl
-	C_DIRECTIVE = -DVPR5 -DUSING_BISON
-else
-	INC_FLAGS =  -I../libvpr_6/include -I../libvpr/include
-	LIB = -L../libvpr_6 -L../libvpr -lvpr_6 -lm -ldl
-	C_DIRECTIVE = -DVPR6 -DUSING_BISON
-endif
+INC_FLAGS =  -I../libarchfpga/include -I../printhandler/SRC/TIO_InputOutputHandlers
+LIB = -L../libarchfpga -larchfpga -lm -ldl
+C_DIRECTIVE = -DVPR6 -DUSING_BISON
 
 FLAGS = $(DEBUG_FLAGS) $(WARN_FLAGS) $(OPT_FLAGS) $(INC_FLAGS)
 C_FLAGS = $(C_DIRECTIVE)
@@ -52,6 +44,9 @@ SRC = $(addprefix $(SRC_DIR)/,$(strip \
       hashtable.c \
       simulate_blif.c \
       print_netlist.c \
+      implicit_memory.c \
+      adders.c \
+      subtractions.c \
 ))
 
 SRCO = $(addprefix $(SRC_DIR)/,$(strip \
@@ -70,6 +65,7 @@ SRCO = $(addprefix $(SRC_DIR)/,$(strip \
 	read_blif.c \
 	output_graphcrunch_format.c \
 	verilog_preprocessor.c \
+	odin_ii_func.c \
 	odin_ii.c \
 ))
 
@@ -85,25 +81,29 @@ DEP = $(OBJ:.o=.d)
 all: CTAGS $(EXEO)
 
 $(EXEO): $(OBJ)
-	$(CC) $(C_FLAGS) $(FLAGS) $(OBJ) -o $(EXEO) $(LIB)
+	g++ $(C_FLAGS) $(FLAGS) $(OBJ) -o $(EXEO) $(LIB)
 
 CTAGS :
 	@ cd SRC && ctags *.[ch]
 
 # Make sure the parsers are generated before compiling
 # any c files
-$(OBJ_DIR)/%.o:$(SRC_DIR)/%.c | $(SRC_PARSERS)
+$(OBJ_DIR)/%.o:$(SRC_DIR)/%.c | $(OBJ_DIR) $(SRC_PARSERS)
 	$(CC) $(C_FLAGS) $(FLAGS) -MD -MP -c $< -o $@ 
 
 SRC/verilog_flex.c: %.c: %.l
-	$(PARSER1) -o $@ $<
+	$(PARSER1) -o$@ $<
 
 SRC/verilog_bison.c: %.c: %.y
 	$(PARSER2) --verbose -d -t -o $@ $<
 
+# Silently create the object directory as needed
+$(OBJ_DIR):
+	@ mkdir -p $@
+	
 clean :
-	rm -f $(SRC_PARSERS)
-	rm -f $(OBJ)
+	rm -f $(SRC_PARSERS)	
+	rm -rf $(OBJ_DIR)
 	rm -f SRC/verilog_bison.h
 	rm -f SRC/verilog_bison.output
 	rm -f SRC/tags

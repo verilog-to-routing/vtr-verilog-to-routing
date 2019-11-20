@@ -91,8 +91,7 @@
           </interconnect>
         </mode>
 
-        <fc_in type="frac">0.15</fc_in>
-        <fc_out type="frac">0.125</fc_out>
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.125"/>
 
         <!-- IOs go on the periphery of the FPGA, for consistency, 
           make it physically equivalent on all sides so that only one definition of I/Os is needed.
@@ -154,8 +153,7 @@
             <complete name="complete2" input="clb.clk" output="ble[9:0].clk"/>
             <direct name="direct1" input="ble[9:0].out" output="clb.O"/>
           </interconnect>
-        <fc_in type="frac">0.150000</fc_in>
-        <fc_out type="frac">0.125000</fc_out>
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.125"/>
         <pinlocations pattern="spread"/>
         <gridlocations>
           <loc type="fill" priority="1"/>
@@ -250,8 +248,7 @@
 
 
 
-        <fc_in type="frac">0.15</fc_in>
-        <fc_out type="frac">0.125</fc_out>
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.125"/>
         <pinlocations pattern="spread"/>
         <gridlocations>
           <loc type="col" start="2" repeat="5" priority="2"/>
@@ -375,8 +372,7 @@
 
 
 
-        <fc_in type="frac">0.15</fc_in>
-        <fc_out type="frac">0.125</fc_out>
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.125"/>
         <pinlocations pattern="spread"/>
 
         <gridlocations>

@@ -62,7 +62,6 @@ void cache_hard_block_names()
 }
 
 
-
 void register_hard_blocks()
 {
 	cache_hard_block_names();
@@ -82,27 +81,9 @@ void register_hard_blocks()
 			hb_ports->size = 1;
 		}
 
-		if (configuration.split_memory_depth)
-		{
-			hb_ports = get_model_port(single_port_rams->inputs, "addr");
-
-			// Need to determine the split size based on min, max, or fixed
-			if (configuration.split_memory_depth == -1) /* MIN */
-				split_size = hb_ports->min_size;
-			if (configuration.split_memory_depth == -2) /* MAX */
-				split_size = hb_ports->size;
-			else
-			{
-				split_size     = configuration.split_memory_depth;
-				hb_ports->size = configuration.split_memory_depth;
-			}
-		}
-		else
-		{
-			hb_ports = get_model_port(single_port_rams->inputs, "addr");
-			split_size = hb_ports->size;
-		}
-		configuration.split_memory_depth = split_size;
+		int split_depth = get_sp_ram_split_depth();
+		hb_ports = get_model_port(single_port_rams->inputs, "addr");
+		hb_ports->size = split_depth;
 	}
 
 	if (dual_port_rams)
@@ -122,36 +103,11 @@ void register_hard_blocks()
 			hb_ports->size = 1;
 		}
 
-		if (configuration.split_memory_depth)
-		{
-			hb_ports = get_model_port(dual_port_rams->inputs, "addr1");
-			if (configuration.split_memory_depth == -1) /* MIN */
-				split_size = hb_ports->min_size;
-			if (configuration.split_memory_depth == -2) /* MAX */
-				split_size = hb_ports->size;
-			else
-			{
-				split_size     = configuration.split_memory_depth;
-				hb_ports->size = configuration.split_memory_depth;
-			}
-
-			hb_ports = get_model_port(dual_port_rams->inputs, "addr2");
-			if (configuration.split_memory_depth == -1) /* MIN */
-				split_size = hb_ports->min_size;
-			if (configuration.split_memory_depth == -2) /* MAX */
-				split_size = hb_ports->size;
-			else
-			{
-				split_size     = configuration.split_memory_depth;
-				hb_ports->size = configuration.split_memory_depth;
-			}
-		}
-		else if (!single_port_rams)
-		{
-			hb_ports = get_model_port(dual_port_rams->inputs, "addr1");
-			split_size = hb_ports->size;
-		}
-		configuration.split_memory_depth = split_size;
+		int split_depth = get_dp_ram_split_depth();
+		hb_ports = get_model_port(dual_port_rams->inputs, "addr1");
+		hb_ports->size = split_depth;
+		hb_ports = get_model_port(dual_port_rams->inputs, "addr2");
+		hb_ports->size = split_depth;
 	}
 }
 
@@ -185,6 +141,10 @@ void define_hard_block(nnode_t *node, short type, FILE *out)
 	/* Assert that every hard block has at least an input and output */
 	oassert(node->input_port_sizes[0] > 0);
 	oassert(node->output_port_sizes[0] > 0);
+
+	//IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in define_add_function and define_mult_function)
+	if(strcmp(node->related_ast_node->children[0]->types.identifier, "multiply") == 0 || strcmp(node->related_ast_node->children[0]->types.identifier, "adder") == 0)
+		return;
 
 	count = fprintf(out, "\n.subckt ");
 	count--;
@@ -261,6 +221,13 @@ void output_hard_blocks(FILE *out)
 	{
 		if (hard_blocks->used == 1) /* Hard Block is utilized */
 		{
+			//IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in add_the_blackbox_for_adds and add_the_blackbox_for_mults)
+			if(strcmp(hard_blocks->name, "adder") == 0 ||strcmp(hard_blocks->name, "multiply") == 0)
+			{
+				hard_blocks = hard_blocks->next;
+				break;
+			}
+
 			fprintf(out, "\n.model %s\n", hard_blocks->name);
 			count = fprintf(out, ".inputs");
 			hb_ports = hard_blocks->inputs;

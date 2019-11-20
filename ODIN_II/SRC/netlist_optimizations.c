@@ -32,20 +32,30 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_optimizations.h"
 #include "multipliers.h"
 #include "memories.h"
+#include "adders.h"
+#include "subtractions.h"
 
 /*------------------------------------------------------------------------
  * (function: netlist_optimizations_top)
  *----------------------------------------------------------------------*/
 void netlist_optimizations_top(netlist_t *netlist)
 {
-#ifdef VPR6
+	#ifdef VPR6
 	/* Perform a splitting of the multipliers for hard block mults */
 	iterate_multipliers(netlist);
 	clean_multipliers();
 
 	/* Perform a splitting of any hard block memories */
 	iterate_memories(netlist);
-	clean_memories();
-#endif
+	free_memory_lists();
+
+	/* Perform a splitting of the adders for hard block add */
+	iterate_adders(netlist);
+	clean_adders();
+
+	/* Perform a splitting of the adders for hard block sub */
+	iterate_adders_for_sub(netlist);
+	clean_adders_for_sub();
+	#endif
 }
 

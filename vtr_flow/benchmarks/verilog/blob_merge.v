@@ -214,30 +214,27 @@ reg blob6empty;		//flag information if container is empty
 //divider varaible
 
 //reg [49:0]divider_res_x;
-wire [49:0]divider_res_x;
+wire [10:0]divider_res_x;
 //reg [49:0]divider_rem_x;
-wire [49:0]divider_rem_x;
+wire [10:0]divider_rem_x;
 
-wire [49:0]divider_res_y;
+wire [10:0]divider_res_y;
 //reg [49:0]divider_res_y;
-wire [49:0]divider_rem_y;
+wire [10:0]divider_rem_y;
 //reg [49:0]divider_rem_y;
 
-wire [49:0] ex_avgSizeXaxis;
+wire [10:0] ex_avgSizeXaxis;
 //reg [49:0] ex_avgSizeXaxis;
-assign ex_avgSizeXaxis[10:0] = avgSizeXaxis;
-assign ex_avgSizeXaxis[49:11] = 39'b000000000000000000000000000000000000000;
+assign ex_avgSizeXaxis = avgSizeXaxis;
 
-wire [49:0]ex_avgSizeYaxis;
+wire [10:0]ex_avgSizeYaxis;
 //reg [49:0]ex_avgSizeYaxis;
-assign ex_avgSizeYaxis[10:0] = avgSizeYaxis;
-assign ex_avgSizeYaxis[49:11] = 39'b000000000000000000000000000000000000000;
+assign ex_avgSizeYaxis = avgSizeYaxis;
 
 
-wire [49:0]ex_countDetectedBlobs;
+wire [3:0]ex_countDetectedBlobs;
 //reg [49:0]ex_countDetectedBlobs;
-assign ex_countDetectedBlobs[3:0] = countDetectedBlobs;
-assign ex_countDetectedBlobs[49:4] = 46'b0000000000000000000000000000000000000000000000;
+assign ex_countDetectedBlobs = countDetectedBlobs;
 //implement the divider
 divider inst_x (
 		   .opa(ex_avgSizeXaxis), 
@@ -819,8 +816,8 @@ always@(posedge clk) begin
 				end
 							
 				default: begin
-					oAvgSizeXaxis<=divider_res_x[10:0];
-					oAvgSizeYaxis<=divider_res_y[10:0];						
+					oAvgSizeXaxis<=divider_res_x;
+					oAvgSizeYaxis<=divider_res_y;						
 					//oWriteBlobData<=32'h00000000;
 					oWriteBlobData<=0;
 					state<=`INIT;//continue processing pixel from new frame				
@@ -1374,9 +1371,9 @@ module divider(//clk,
 	opa, opb, quo, rem 
 	//testy , testy2, testy_diff, dividend_test
 	);   
-   input  [49:0]  opa;
-   input  [23:0]  opb;
-   output [49:0]  quo, rem;
+   input  [10:0]  opa;
+   input  [3:0]  opb;
+   output [10:0]  quo, rem;
    //input         clk;
 //output [49:0] testy;
 //output [49:0] testy2;
@@ -1391,7 +1388,7 @@ module divider(//clk,
 
 
 
-   reg [49:0] quo, rem, quo1, rem1;
+   reg [10:0] quo, rem;
 
 //  """"""""|
 //     1011 |  <----  dividend_copy
@@ -1405,172 +1402,62 @@ module divider(//clk,
 //  """"""""|  001  Difference is positive: use difference and put 1 in quotient.
 //            quotient (numbers above)   
 
+   reg [10:0]    quotient0;
+   reg [10:0]    dividend_copy0, diff0;
+   reg [10:0]    divider_copy0;
+   wire [10:0]   remainder0;
 
-   reg [49:0]    quotient0;
-   reg [49:0]    dividend_copy0, diff0;
-   reg [49:0]    divider_copy0;
-   wire [49:0]   remainder0;
-
-   reg [49:0]    quotient1;
-   reg [49:0]    dividend_copy1, diff1;
-   reg [49:0]    divider_copy1;
-   wire [49:0]   remainder1;
+   reg [10:0]    quotient1;
+   reg [10:0]    dividend_copy1, diff1;
+   reg [10:0]    divider_copy1;
+   wire [10:0]   remainder1;
  
-   reg [49:0]    quotient2;
-   reg [49:0]    dividend_copy2, diff2;
-   reg [49:0]    divider_copy2;
-   wire [49:0]   remainder2;
+   reg [10:0]    quotient2;
+   reg [10:0]    dividend_copy2, diff2;
+   reg [10:0]    divider_copy2;
+   wire [10:0]   remainder2;
    
+   reg [10:0]    quotient3;
+   reg [10:0]    dividend_copy3, diff3;
+   reg [10:0]    divider_copy3;
+   wire [10:0]   remainder3;
    
-   reg [49:0]    quotient3;
-   reg [49:0]    dividend_copy3, diff3;
-   reg [49:0]    divider_copy3;
-   wire [49:0]   remainder3;
+   reg [10:0]    quotient4;
+   reg [10:0]    dividend_copy4, diff4;
+   reg [10:0]    divider_copy4;
+   wire [10:0]   remainder4;
    
+   reg [10:0]    quotient5;
+   reg [10:0]    dividend_copy5, diff5;
+   reg [10:0]    divider_copy5;
+   wire [10:0]   remainder5;
    
+   reg [10:0]    quotient6;
+   reg [10:0]    dividend_copy6, diff6;
+   reg [10:0]    divider_copy6;
+   wire [10:0]   remainder6;
    
-   reg [49:0]    quotient4;
-   reg [49:0]    dividend_copy4, diff4;
-   reg [49:0]    divider_copy4;
-   wire [49:0]   remainder4;
+   reg [10:0]    quotient7;
+   reg [10:0]    dividend_copy7, diff7;
+   reg [10:0]    divider_copy7;
+   wire [10:0]   remainder7;
    
+   reg [10:0]    quotient8;
+   reg [10:0]    dividend_copy8, diff8;
+   reg [10:0]    divider_copy8;
+   wire [10:0]   remainder8;
    
-   reg [49:0]    quotient5;
-   reg [49:0]    dividend_copy5, diff5;
-   reg [49:0]    divider_copy5;
-   wire [49:0]   remainder5;
-   
-   reg [49:0]    quotient6;
-   reg [49:0]    dividend_copy6, diff6;
-   reg [49:0]    divider_copy6;
-   wire [49:0]   remainder6;
-   
-   reg [49:0]    quotient7;
-   reg [49:0]    dividend_copy7, diff7;
-   reg [49:0]    divider_copy7;
-   wire [49:0]   remainder7;
-   
-   reg [49:0]    quotient8;
-   reg [49:0]    dividend_copy8, diff8;
-   reg [49:0]    divider_copy8;
-   wire [49:0]   remainder8;
-   
-   reg [49:0]    quotient9;
-   reg [49:0]    dividend_copy9, diff9;
-   reg [49:0]    divider_copy9;
-   wire [49:0]   remainder9;
-   
-   
-   reg [49:0]    quotient10;
-   reg [49:0]    dividend_copy10, diff10;
-   reg [49:0]    divider_copy10;
-   wire [49:0]   remainder10;
-   
-   
-   reg [49:0]    quotient11;
-   reg [49:0]    dividend_copy11, diff11;
-   reg [49:0]    divider_copy11;
-   wire [49:0]   remainder11;
-   
-   
-   reg [49:0]    quotient12;
-   reg [49:0]    dividend_copy12, diff12;
-   reg [49:0]    divider_copy12;
-   wire [49:0]   remainder12;
-   
-   reg [49:0]    quotient13;
-   reg [49:0]    dividend_copy13, diff13;
-   reg [49:0]    divider_copy13;
-   wire [49:0]   remainder13;
-   
-   reg [49:0]    quotient14;
-   reg [49:0]    dividend_copy14, diff14;
-   reg [49:0]    divider_copy14;
-   wire [49:0]   remainder14;
-   
-   reg [49:0]    quotient15;
-   reg [49:0]    dividend_copy15, diff15;
-   reg [49:0]    divider_copy15;
-   wire [49:0]   remainder15;
-   
-   reg [49:0]    quotient16;
-   reg [49:0]    dividend_copy16, diff16;
-   reg [49:0]    divider_copy16;
-   wire [49:0]   remainder16;
-   
-   reg [49:0]    quotient17;
-   reg [49:0]    dividend_copy17, diff17;
-   reg [49:0]    divider_copy17;
-   wire [49:0]   remainder17;
-   
-   reg [49:0]    quotient18;
-   reg [49:0]    dividend_copy18, diff18;
-   reg [49:0]    divider_copy18;
-   wire [49:0]   remainder18;
-   
-   reg [49:0]    quotient19;
-   reg [49:0]    dividend_copy19, diff19;
-   reg [49:0]    divider_copy19;
-   wire [49:0]   remainder19;
-   
-   reg [49:0]    quotient20;
-   reg [49:0]    dividend_copy20, diff20;
-   reg [49:0]    divider_copy20;
-   wire [49:0]   remainder20;
-      
-   reg [49:0]    quotient21;
-   reg [49:0]    dividend_copy21, diff21;
-   reg [49:0]    divider_copy21;
-   wire [49:0]   remainder21;
-   
-      
-   reg [49:0]    quotient22;
-   reg [49:0]    dividend_copy22, diff22;
-   reg [49:0]    divider_copy22;
-   wire [49:0]   remainder22;
-   
-      
-   reg [49:0]    quotient23;
-   reg [49:0]    dividend_copy23, diff23;
-   reg [49:0]    divider_copy23;
-   wire [49:0]   remainder23;
-   
-      
-   reg [49:0]    quotient24;
-   reg [49:0]    dividend_copy24, diff24;
-   reg [49:0]    divider_copy24;
-   wire [49:0]   remainder24;
-   
-      
-   reg [49:0]    quotient25;
-   reg [49:0]    dividend_copy25, diff25;
-   reg [49:0]    divider_copy25;
-   wire [49:0]   remainder25;
-   
-      
-   reg [49:0]    quotient26;
-   reg [49:0]    dividend_copy26, diff26;
-   reg [49:0]    divider_copy26;
-   wire [49:0]   remainder26;
-
-         
-   reg [49:0]    quotient27;
-   reg [49:0]    dividend_copy27, diff27;
-   reg [49:0]    divider_copy27;
-   wire [49:0]   remainder27;
-
-
 always @ (opa or opb)
 begin
 //stage initial
- quotient0 = 49'b0000000000000000000000000000000000000000000000000;
+ quotient0 = 11'b00000000000;
  dividend_copy0 = opa;
- divider_copy0 = {opb,26'b00000000000000000000000000};
+ divider_copy0 = {opb,7'b0000000};
  
  //stage1
  diff1 = dividend_copy0 - divider_copy0;
- quotient1 [49:1] = quotient0[48:0] ;
- if (!diff1[49]) // if diff1[49] == 0 (diff is positive, use difference )
+ quotient1 [10:1] = quotient0[9:0] ;
+ if (!diff1[10]) // if diff1[10] == 0 (diff is positive, use difference )
  begin
  dividend_copy1 = diff1;
  quotient1[0] = 1'b1;
@@ -1584,8 +1471,8 @@ end
  divider_copy1 = (divider_copy0 >> 1);
 //stage2
  diff2 = dividend_copy1 - divider_copy1;
- quotient2[49:1]  = quotient1 [48:0] ;
- if (!diff2[49])
+ quotient2[10:1]  = quotient1 [9:0] ;
+ if (!diff2[10])
  begin
  dividend_copy2 = diff2;
  quotient2[0] = 1'b1;
@@ -1600,8 +1487,8 @@ end
  
  //stage3
  diff3 = dividend_copy2 - divider_copy2;
- quotient3[49:1]  = quotient2 [48:0] ;
- if (!diff3[49])
+ quotient3[10:1]  = quotient2 [9:0] ;
+ if (!diff3[10])
  begin
  dividend_copy3 = diff3;
  quotient3[0] = 1'b1;
@@ -1616,8 +1503,8 @@ end
  
  //stage4
  diff4 = dividend_copy3 - divider_copy3;
- quotient4[49:1]  = quotient3 [48:0] ;
- if (!diff4[49])
+ quotient4[10:1]  = quotient3 [9:0] ;
+ if (!diff4[10])
  begin
  dividend_copy4 = diff4;
  quotient4[0] = 1'b1;
@@ -1631,8 +1518,8 @@ end
  divider_copy4 = divider_copy3 >> 1;
   //stage5
  diff5 = dividend_copy4 - divider_copy4;
- quotient5[49:1]  = quotient4 [48:0] ;
- if (!diff5[49])
+ quotient5[10:1]  = quotient4 [9:0] ;
+ if (!diff5[10])
  begin
  dividend_copy5 = diff5;
  quotient5[0] = 1'b1;
@@ -1646,8 +1533,8 @@ end
  divider_copy5 = divider_copy4 >> 1;
   //stage6
  diff6 = dividend_copy5 - divider_copy5;
- quotient6[49:1]  = quotient5 [48:0] ;
- if (!diff6[49])
+ quotient6[10:1]  = quotient5 [9:0] ;
+ if (!diff6[10])
  begin
  dividend_copy6 = diff6;
  quotient6[0] = 1'b1;
@@ -1662,8 +1549,8 @@ end
  
   //stage7
  diff7 = dividend_copy6 - divider_copy6;
- quotient7[49:1]  = quotient6 [48:0] ;
- if (!diff7[49])
+ quotient7[10:1]  = quotient6 [9:0] ;
+ if (!diff7[10])
  begin
  dividend_copy7 = diff7;
  quotient7[0] = 1'b1;
@@ -1677,8 +1564,8 @@ end
  divider_copy7 = divider_copy6>> 1;
   //stage8
  diff8 = dividend_copy7 - divider_copy7;
- quotient8[49:1]  = quotient7 [48:0] ;
- if (!diff8[49])
+ quotient8[10:1]  = quotient7 [9:0] ;
+ if (!diff8[10])
  begin
  dividend_copy8 = diff8;
  quotient8[0] = 1'b1;
@@ -1691,333 +1578,31 @@ dividend_copy8 = dividend_copy7;
 end
  divider_copy8 = divider_copy7>> 1;
  
-  //stage9
- diff9 = dividend_copy8 - divider_copy8;
- quotient9[49:1]  = quotient8  [48:0] ;
- if (!diff9[49])
- begin
- dividend_copy9 = diff9;
- quotient9[0] = 1'b1;
- end
- else
-begin
-dividend_copy9 = dividend_copy8;
- quotient9[0] = 1'b0;
-
-end
- divider_copy9 = divider_copy8>> 1;
- 
-  //stage10
- diff10 = dividend_copy9 - divider_copy9;
- quotient10[49:1]  = quotient9 [48:0] ;
- if (!diff10[49])
- begin
- dividend_copy10 = diff10;
- quotient10[0] = 1'b1;
- end
- else
-begin
-dividend_copy10 = dividend_copy9;
- quotient10[0] = 1'b0;
-
-end
- divider_copy10 = divider_copy9>> 1;
- 
-   //stage11
- diff11 = dividend_copy10 - divider_copy10;
- quotient11[49:1]  = quotient10 [48:0] ;
- if (!diff11[49])
- begin
- dividend_copy11 = diff11;
- quotient11[0] = 1'b1;
- end
- else
-begin
-dividend_copy11 = dividend_copy10;
- quotient11[0] = 1'b0;
-
-end
- divider_copy11 = divider_copy10>> 1;
- 
-  //stage12
- diff12 = dividend_copy11 - divider_copy11;
- quotient12 [49:1]= quotient11 [48:0] ;
- if (!diff12[49])
- begin
- dividend_copy12 = diff12;
- quotient12[0] = 1'b1;
- end
- else
-begin
-dividend_copy12 = dividend_copy11;
- quotient12[0] = 1'b0;
-
-end
- divider_copy12 = divider_copy11>> 1;
- 
-  //stage13
- diff13 = dividend_copy12 - divider_copy12;
- quotient13 [49:1]= quotient12 [48:0] ;
- if (!diff13[49])
- begin
- dividend_copy13 = diff13;
- quotient13[0] = 1'b1;
- end
- else
-begin
-dividend_copy13 = dividend_copy12;
- quotient13[0] = 1'b0;
-
-end
- divider_copy13 = divider_copy12 >> 1;
- 
-  //stage14
- diff14 = dividend_copy13 - divider_copy13;
- quotient14 [49:1]= quotient13[48:0] ;
- if (!diff14[49])
- begin
- dividend_copy14 = diff14;
- quotient14[0] = 1'b1;
- end
- else
-begin
-dividend_copy14 = dividend_copy13;
- quotient14[0] = 1'b0;
-
-end
- divider_copy14 = divider_copy13>> 1;
- 
-  //stage15
- diff15 = dividend_copy14 - divider_copy14;
- quotient15[49:1] = quotient14 [48:0] ;
- if (!diff15[49])
- begin
- dividend_copy15 = diff15;
- quotient15[0] = 1'b1;
- end
- else
-begin
-dividend_copy15 = dividend_copy14;
- quotient15[0] = 1'b0;
-
-end
- divider_copy15 = divider_copy14>> 1;
- 
-  //stage16
- diff16 = dividend_copy15 - divider_copy15;
- quotient16[49:1] = quotient15 [48:0] ;
- if (!diff16[49])
- begin
- dividend_copy16 = diff16;
- quotient16[0] = 1'b1;
- end
- else
-begin
-dividend_copy16 = dividend_copy15;
- quotient16[0] = 1'b0;
-
-end
- divider_copy16 = divider_copy15>> 1;
- 
-  //stage17
- diff17 = dividend_copy16 - divider_copy16;
- quotient17 [49:1]= quotient16 [48:0] ;
- if (!diff17[49])
- begin
- dividend_copy17 = diff17;
- quotient17[0] = 1'b1;
- end
- else
-begin
-dividend_copy17 = dividend_copy16;
- quotient17[0] = 1'b0;
-
-end
- divider_copy17 = divider_copy16>> 1;
- 
-  //stage18
- diff18 = dividend_copy17 - divider_copy17;
- quotient18[49:1] = quotient17 [48:0] ;
- if (!diff18[49])
- begin
- dividend_copy18 = diff18;
- quotient18[0] = 1'b1;
- end
- else
-begin
-dividend_copy18 = dividend_copy17;
- quotient18[0] = 1'b0;
-
-end
- divider_copy18 = divider_copy17>> 1;
- 
-  //stage19
- diff19 = dividend_copy18 - divider_copy18;
- quotient19[49:1] = quotient18 [48:0] ;
- if (!diff19[49])
- begin
- dividend_copy19 = diff19;
- quotient19[0] = 1'b1;
- end
- else
-begin
-dividend_copy19 = dividend_copy18;
- quotient19[0] = 1'b0;
-
-end
- divider_copy19 = divider_copy18>> 1;
- 
-  //stage20
- diff20 = dividend_copy19 - divider_copy19;
- quotient20[49:1] = quotient19 [48:0] ;
- if (!diff20[49])
- begin
- dividend_copy20 = diff20;
- quotient20[0] = 1'b1;
- end
- else
-begin
-dividend_copy20 = dividend_copy19;
- quotient20[0] = 1'b0;
-
-end
- divider_copy20 = divider_copy19>> 1;
- 
-  //stage21
- diff21 = dividend_copy20 - divider_copy20;
- quotient21[49:1] = quotient20 [48:0] ;
- if (!diff21[49])
- begin
- dividend_copy21 = diff21;
- quotient21[0] = 1'b1;
- end
- else
-begin
-dividend_copy21 = dividend_copy20;
- quotient21[0] = 1'b0;
-
-end
- divider_copy21 = divider_copy20>> 1;
- 
- //stage22
- diff22 = dividend_copy21 - divider_copy21;
- quotient22[49:1] = quotient21 [48:0] ;
- if (!diff22[49])
- begin
- dividend_copy22 = diff22;
- quotient22[0] = 1'b1;
- end
- else
-begin
-dividend_copy22 = dividend_copy21;
- quotient22[0] = 1'b0;
-
-end
- divider_copy22 = divider_copy21>> 1;
- 
- //stage23
- diff23 = dividend_copy22 - divider_copy22;
- quotient23 [49:1]= quotient22 [48:0] ;
- if (!diff23[49])
- begin
- dividend_copy23 = diff23;
- quotient23[0] = 1'b1;
- end
- else
-begin
-dividend_copy23 = dividend_copy22;
- quotient23[0] = 1'b0;
-
-end
- divider_copy23 = divider_copy22>> 1;
- 
- //stage24
- diff24 = dividend_copy23 - divider_copy23;
- quotient24[49:1] = quotient23 [48:0] ;
- if (!diff24[49])
- begin
- dividend_copy24 = diff24;
- quotient24[0] = 1'b1;
- end
- else
-begin
-dividend_copy24 = dividend_copy23;
- quotient24[0] = 1'b0;
-
-end
- divider_copy24 = divider_copy23>> 1;
- 
- //stage25
- diff25 = dividend_copy24 - divider_copy24;
- quotient25[49:1] = quotient24 [48:0] ;
- if (!diff25[49])
- begin
- dividend_copy25 = diff25;
- quotient25[0] = 1'b1;
- end
- else
-begin
-dividend_copy25 = dividend_copy24;
- quotient25[0] = 1'b0;
-
-end
- divider_copy25 = divider_copy24>> 1;
- 
- //stage26
- diff26 = dividend_copy25 - divider_copy25;
- quotient26 [49:1]= quotient25 [48:0] ;
- if (!diff26[49])
- begin
- dividend_copy26 = diff26;
- quotient26[0] = 1'b1;
- end
- else
-begin
-dividend_copy26 = dividend_copy25;
- quotient26[0] = 1'b0;
-end
- divider_copy26 = divider_copy25>> 1;
-
- diff27 = dividend_copy26 - divider_copy26;
- quotient27 [49:1]= quotient26 [48:0];
- if (!diff27[49])
- begin
- dividend_copy27 = diff27;
- quotient27[0] = 1'b1;
- end
- else
-begin
-dividend_copy27 = dividend_copy26;
- quotient27[0] = 1'b0;
-end
- quo = quotient27;
-rem =  dividend_copy27;
+quo = quotient8;
+rem =  dividend_copy8;
 
 end
 
-
- 
- 
    //integer i;
 
    /*
 always @(opa,opb) 
 begin
-    for (i=-1; i<27; i=i+1) 
+    for (i=-1; i<8; i=i+1) 
 begin
 if (i==-1) 
 begin
             // initialization
-quotient = 49'd0;
+quotient = 10'd0;
 dividend_copy = opa;
-divider_copy = {opb,26'd0};
+divider_copy = {opb,7'd0};
 end 
 else 
 begin
 diff = dividend_copy - divider_copy;
 quotient = quotient ;
 
-if( !diff[49] ) 
+if( !diff[10] ) 
 begin
 dividend_copy = diff;
 quotient[0] = 1'd1;

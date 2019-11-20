@@ -1,0 +1,24 @@
+<model name="dual_port_ram">
+	<input_ports>
+		<port name="we1"/>
+		<!-- write enable -->
+		<port name="we2"/>
+		<!-- write enable -->
+		<port name="addr1"/>
+		<!-- address lines -->
+		<port name="addr2"/>
+		<!-- address lines -->
+		<port name="data1"/>
+		<!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+		<port name="data2"/>
+		<!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+		<port name="clk" is_clock="1"/>
+		<!-- memories are often clocked -->
+	</input_ports>
+	<output_ports>
+		<port name="out1"/>
+		<!-- output can be broken down into smaller bit widths minimum size 1 -->
+		<port name="out2"/>
+		<!-- output can be broken down into smaller bit widths minimum size 1 -->
+	</output_ports>
+</model>

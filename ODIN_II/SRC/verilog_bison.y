@@ -68,10 +68,11 @@ int yywrap()
 %token <num_value> vNUMBER_ID
 %token <num_value> vDELAY_ID
 %token vALWAYS vAND vASSIGN vBEGIN vCASE vDEFAULT vDEFINE vELSE vEND vENDCASE 
-%token vENDMODULE vIF vINOUT vINPUT vMODULE vNAND vNEGEDGE vNOR vNOT vOR 
+%token vENDMODULE vIF vINOUT vINPUT vMODULE vNAND vNEGEDGE vNOR vNOT vOR vFOR 
 %token vOUTPUT vPARAMETER vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND 
 %token voOROR voLTE voGTE voSLEFT voSRIGHT voEQUAL voNOTEQUAL voCASEEQUAL 
-%token voCASENOTEQUAL voXNOR voNAND voNOR vNOT_SUPPORT
+%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER 
+%token vNOT_SUPPORT
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
 
 %right '?' ':'  
@@ -102,7 +103,7 @@ int yywrap()
 %nonassoc vELSE
 
 %type <node> source_text items define module list_of_module_items module_item 
-%type <node> parameter_declaration input_declaration output_declaration 
+%type <node> parameter_declaration input_declaration output_declaration defparam_declaration
 %type <node> inout_declaration variable_list variable net_declaration 
 %type <node> continuous_assign gate_declaration gate_instance 
 %type <node> module_instantiation module_instance list_of_module_connections 
@@ -154,12 +155,17 @@ module_item: parameter_declaration						{$$ = $1;}
 	| gate_declaration							{$$ = $1;}
 	| module_instantiation							{$$ = $1;}
 	| always								{$$ = $1;}
+	| defparam_declaration					{$$ = $1;}
 	;
 
 // 2 Declarations	{$$ = NULL;}
 parameter_declaration: vPARAMETER variable_list ';'				{$$ = markAndProcessSymbolListWith(PARAMETER, $2);}
 	;
+	
+defparam_declaration: vDEFPARAM variable_list ';'               {$$ = newDefparam(MODULE_PARAMETER_LIST, $2, yylineno);}
+	;
 
+					
 input_declaration: vINPUT variable_list ';'					{$$ = markAndProcessSymbolListWith(INPUT, $2);}
 	;
 
@@ -171,9 +177,11 @@ inout_declaration: vINOUT variable_list ';'					{$$ = markAndProcessSymbolListWi
 
 net_declaration: vWIRE variable_list ';'					{$$ = markAndProcessSymbolListWith(WIRE, $2);}
 	| vREG variable_list ';'						{$$ = markAndProcessSymbolListWith(REG, $2);}
+	| vINTEGER variable_list ';'						{$$ = markAndProcessSymbolListWith(INTEGER, $2);}
 	;
 
 variable_list: variable_list ',' variable					{$$ = newList_entry($1, $3);}
+	| variable_list '.' variable					{$$ = newList_entry($1, $3);}    //Only for parameter
 	| variable								{$$ = newList(VAR_DECLARE_LIST, $1);}
 	;
 
@@ -239,6 +247,8 @@ statement: seq_block								{$$ = $1;}
 	| vIF '(' expression ')' statement %prec LOWER_THAN_ELSE 		{$$ = newIf($3, $5, NULL, yylineno);}
 	| vIF '(' expression ')' statement vELSE statement 			{$$ = newIf($3, $5, $7, yylineno);}
 	| vCASE '(' expression ')' case_item_list vENDCASE			{$$ = newCase($3, $5, yylineno);}
+	| vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' statement  	{$$ = newFor($3, $5, $7, $9, yylineno);}
+	| vWHILE '(' expression ')' statement  					{$$ = newWhile($3, $5, yylineno);}
 	| ';'									{$$ = NULL;}
 	;
 	 

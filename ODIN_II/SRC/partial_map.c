@@ -35,6 +35,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "multipliers.h"
 #include "util.h"
 #include "hard_blocks.h"
+#include "math.h"
+#include "memories.h"
+#include "adders.h"
+#include "subtractions.h"
 
 void depth_first_traversal_to_partial_map(short marker_value, netlist_t *netlist);
 void depth_first_traverse_parital_map(nnode_t *node, int traverse_mark_number, netlist_t *netlist);
@@ -50,10 +54,12 @@ void instantiate_EQUAL(nnode_t *node, short type, short mark, netlist_t *netlist
 void instantiate_GE(nnode_t *node, short type, short mark, netlist_t *netlist);
 void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist);
 void instantiate_shift_left_or_right(nnode_t *node, short type, short mark, netlist_t *netlist);
-void instantiate_multi_port_mux(nnode_t *node, short mark, netlist_t *netlist);
 void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist);
 void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist);
 void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist);
+
+void instantiate_soft_logic_ram(nnode_t *node, short mark, netlist_t *netlist);
+
 
 /*-------------------------------------------------------------------------
  * (function: partial_map_top)
@@ -83,7 +89,7 @@ void depth_first_traversal_to_partial_map(short marker_value, netlist_t *netlist
 			depth_first_traverse_parital_map(netlist->top_input_nodes[i], marker_value, netlist);
 		}
 	}
-	/* now traverse the ground and vcc pins */
+	/* now traverse the ground and vcc pins  */
 	depth_first_traverse_parital_map(netlist->gnd_node, marker_value, netlist);
 	depth_first_traverse_parital_map(netlist->vcc_node, marker_value, netlist);
 	depth_first_traverse_parital_map(netlist->pad_node, marker_value, netlist);
@@ -183,19 +189,57 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			break;
 
 		case ADD:
-			instantiate_add_w_carry(node, traverse_number, netlist);
-			break;
-		case MINUS:
-			if (node->num_input_port_sizes == 2)
+			#ifdef VPR6
+			if (hard_adders != NULL)
 			{
-				instantiate_sub_w_carry(node, traverse_number, netlist);
-			}
-			else if (node->num_input_port_sizes == 1)
-			{
-				instantiate_unary_sub(node, traverse_number, netlist);
+				int max_num = (node->input_port_sizes[0] >= node->input_port_sizes[1])? node->input_port_sizes[0] : node->input_port_sizes[1];
+				if (max_num >= min_add && max_num >= min_threshold_adder)
+					instantiate_hard_adder(node, traverse_number, netlist);
+				else
+					instantiate_add_w_carry(node, traverse_number, netlist);
 			}
 			else
-				oassert(FALSE);
+			#endif
+				instantiate_add_w_carry(node, traverse_number, netlist);
+			break;
+		case MINUS:
+			#ifdef VPR6
+			if (hard_adders != NULL)
+			{
+				if(node->num_input_port_sizes == 3)
+				{
+					int max_num = (node->input_port_sizes[0] >= node->input_port_sizes[1])? node->input_port_sizes[0] : node->input_port_sizes[1];
+					if (max_num >= min_add)
+						instantiate_hard_adder_subtraction(node, traverse_number, netlist);
+					else
+						instantiate_add_w_carry(node, traverse_number, netlist);
+				}
+				else if (node->num_input_port_sizes == 2)
+				{
+					instantiate_sub_w_carry(node, traverse_number, netlist);
+				}
+				else if (node->num_input_port_sizes == 1)
+				{
+					instantiate_unary_sub(node, traverse_number, netlist);
+				}
+				else
+					oassert(FALSE);
+			}
+			else
+			#endif
+			{
+				if (node->num_input_port_sizes == 2)
+				{
+					instantiate_sub_w_carry(node, traverse_number, netlist);
+				}
+				else if (node->num_input_port_sizes == 1)
+				{
+					instantiate_unary_sub(node, traverse_number, netlist);
+				}
+				else
+					oassert(FALSE);
+			}
+
 			break;
 		case LOGICAL_EQUAL:
 		case NOT_EQUAL:
@@ -220,10 +264,8 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			#ifdef VPR6
 			if (hard_multipliers != NULL)
 			{
-
 				if ((node->input_port_sizes[0] + node->input_port_sizes[1]) > min_mult)
 					instantiate_hard_multiplier(node, traverse_number, netlist);
-
 			}
 			else
 			#endif
@@ -231,12 +273,38 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			break;
 		
 		case MEMORY:
-		case HARD_IP:
-#ifdef VPR6
-			instantiate_hard_block(node, traverse_number, netlist);
-#endif
-			break;
+		{
+			#ifdef VPR6
+			ast_node_t *ast_node = node->related_ast_node;
+			char *identifier = ast_node->children[0]->types.identifier;
+			if (find_hard_block(identifier))
+			{
+				int depth = is_sp_ram(node)? get_sp_ram_depth(node) : get_dp_ram_depth(node);
+				int width = is_sp_ram(node)? get_sp_ram_width(node) : get_dp_ram_width(node);
 
+				// If the memory satisfies the threshold for the use of a hard logic block, use one.
+				if (depth > configuration.soft_logic_memory_depth_threshold || width > configuration.soft_logic_memory_width_threshold)
+				{
+					instantiate_hard_block(node, traverse_number, netlist);
+				}
+				else
+				{
+					printf("\tInferring soft logic ram: %dx%d\n", width, depth);
+					instantiate_soft_logic_ram(node, traverse_number, netlist);
+				}
+			}
+			else
+			{
+				instantiate_soft_logic_ram(node, traverse_number, netlist);
+			}
+			#endif
+			break;
+		}
+		case HARD_IP:
+			#ifdef VPR6
+			instantiate_hard_block(node, traverse_number, netlist);
+			#endif
+			break;
 		case ADDER_FUNC:
 		case CARRY_FUNC:
 		case MUX_2:
@@ -249,16 +317,26 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 		case PAD_NODE:
 			/* some nodes already in the form that is mapable */
 			break;
-
 		case CASE_EQUAL:
 		case CASE_NOT_EQUAL:
 		case DIVIDE:
 		case MODULO:
 		default:
-			oassert(FALSE);
+			error_message(NETLIST_ERROR, 0, -1, "Partial map: node should have been converted to softer version.");
 			break;
 	}
 }
+
+void instantiate_soft_logic_ram(nnode_t *node, short mark, netlist_t *netlist)
+{
+	if (is_sp_ram(node))
+		instantiate_soft_single_port_ram(node, mark, netlist);
+	else if (is_dp_ram(node))
+		instantiate_soft_dual_port_ram(node, mark, netlist);
+	else
+		oassert(FALSE);
+}
+
 
 /*---------------------------------------------------------------------------------------------
  * (function: instantiate_multi_port_mux )
@@ -302,7 +380,7 @@ void instantiate_multi_port_mux(nnode_t *node, short mark, netlist_t *netlist)
 				/* map the inputs to the muxt */
 				remap_pin_to_new_node(node->input_pins[i+(j+1)*port_offset], muxes[j], width_of_one_hot_logic+i);
 				/* map the one hot logic control */
-				add_a_input_pin_to_node_spot_idx(muxes[j], copy_input_npin(muxes[0]->input_pins[i]), i);
+				add_input_pin_to_node(muxes[j], copy_input_npin(muxes[0]->input_pins[i]), i);
 			}
 		}
 		/* now hookup outputs */
@@ -396,7 +474,7 @@ void instantiate_logical_logic(nnode_t *node, operation_list op, short mark, net
 		else
 		{
 			/* ELSE - the B input does not exist, so this answer goes right through */
-			add_a_input_pin_to_node_spot_idx(reduction1, get_a_zero_pin(netlist), i);
+			add_input_pin_to_node(reduction1, get_zero_pin(netlist), i);
 		}
 	}
 	for(i = 0; i < width_b; i++)
@@ -409,7 +487,7 @@ void instantiate_logical_logic(nnode_t *node, operation_list op, short mark, net
 		else
 		{
 			/* ELSE - the B input does not exist, so this answer goes right through */
-			add_a_input_pin_to_node_spot_idx(reduction2, get_a_zero_pin(netlist), i);
+			add_input_pin_to_node(reduction2, get_zero_pin(netlist), i);
 		}
 	}
 
@@ -467,6 +545,7 @@ void instantiate_bitwise_reduction(nnode_t *node, operation_list op, short mark,
 		default:
 			cell_op = 0;
 			oassert(FALSE);
+			break;
 	}
 	/* instantiate the cells */
 	new_logic_cell = make_1port_logic_gate(cell_op, width_a, node, mark);
@@ -482,7 +561,7 @@ void instantiate_bitwise_reduction(nnode_t *node, operation_list op, short mark,
 		else
 		{
 			/* ELSE - the B input does not exist, so this answer goes right through */
-			add_a_input_pin_to_node_spot_idx(new_logic_cell, get_a_zero_pin(netlist), i);
+			add_input_pin_to_node(new_logic_cell, get_zero_pin(netlist), i);
 		}
 	}
 
@@ -557,7 +636,7 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 			else
 			{
 				/* ELSE - the B input does not exist, so this answer goes right through */
-				add_a_input_pin_to_node_spot_idx(new_logic_cells[i], get_a_zero_pin(netlist), 0);
+				add_input_pin_to_node(new_logic_cells[i], get_zero_pin(netlist), 0);
 			}
 		}
 
@@ -572,7 +651,7 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 			else
 			{
 				/* ELSE - the A input does not exist, so this answer goes right through */
-				add_a_input_pin_to_node_spot_idx(new_logic_cells[i], get_a_zero_pin(netlist), 1);
+				add_input_pin_to_node(new_logic_cells[i], get_zero_pin(netlist), 1);
 			}
 		}
 
@@ -598,8 +677,11 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	nnode_t **new_carry_cells;
 
 	oassert(node->num_input_pins > 0);
-	oassert(node->num_input_port_sizes == 2);
-	width = node->output_port_sizes[0];
+	//oassert(node->num_input_port_sizes == 2);
+	if(node->num_input_port_sizes == 2)
+		width = node->output_port_sizes[0];
+	else
+		width = node->num_output_pins;
 	width_a = node->input_port_sizes[0];
 	width_b = node->input_port_sizes[1];
 
@@ -615,30 +697,40 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 
 	}
 
-    	/* ground first carry in */
-	add_a_input_pin_to_node_spot_idx(new_add_cells[0], get_a_zero_pin(netlist), 0);
-	if (i > 1)
+    /* ground first carry in */
+	if(node->num_input_port_sizes == 2)
 	{
-		add_a_input_pin_to_node_spot_idx(new_carry_cells[0], get_a_zero_pin(netlist), 0);
+		add_input_pin_to_node(new_add_cells[0], get_zero_pin(netlist), 0);
+		if (i > 1)
+		{
+			add_input_pin_to_node(new_carry_cells[0], get_zero_pin(netlist), 0);
+		}
+	}
+	else
+	{
+		remap_pin_to_new_node(node->input_pins[width_a + width_b], new_add_cells[0], 0);
+		if (i > 1)
+		{
+			add_input_pin_to_node(new_carry_cells[0], copy_input_npin(new_add_cells[0]->input_pins[0]), 0);
+			//remap_pin_to_new_node(node->input_pins[width_a + width_b], new_carry_cells[0], 0);
+		}
 	}
 
 	/* connect inputs */
 	for(i = 0; i < width; i++)
 	{
-		//printf("%s\n", node->input_pins[i]->name);
-
 		if (i < width_a)
 		{
 			/* join the A port up to adder */
 			remap_pin_to_new_node(node->input_pins[i], new_add_cells[i], 1);
 			if (i < width - 1)
-				add_a_input_pin_to_node_spot_idx(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
+				add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
 		}
 		else 
 		{
-			add_a_input_pin_to_node_spot_idx(new_add_cells[i], get_a_zero_pin(netlist), 1);
+			add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 1);
 			if (i < width - 1)
-				add_a_input_pin_to_node_spot_idx(new_carry_cells[i], get_a_zero_pin(netlist), 1);
+				add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 1);
 		}
 
 		if (i < width_b)
@@ -646,17 +738,39 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 			/* join the B port up to adder */
 			remap_pin_to_new_node(node->input_pins[i+width_a], new_add_cells[i], 2);
 			if (i < width - 1)
-				add_a_input_pin_to_node_spot_idx(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
+				add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
 		}
 		else
 		{
-			add_a_input_pin_to_node_spot_idx(new_add_cells[i], get_a_zero_pin(netlist), 2);
+			add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 2);
 			if (i < width - 1)
-				add_a_input_pin_to_node_spot_idx(new_carry_cells[i], get_a_zero_pin(netlist), 2);
+				add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 2);
 		}
 
 		/* join that gate to the output */
-		remap_pin_to_new_node(node->output_pins[i], new_add_cells[i], 0);
+		if(node->num_input_port_sizes == 2)
+			remap_pin_to_new_node(node->output_pins[i], new_add_cells[i], 0);
+		else
+		{
+			if(i != width - 1)
+			{
+				if(node->output_pins[i + 1]->type != NO_ID)
+					remap_pin_to_new_node(node->output_pins[i + 1], new_add_cells[i], 0);
+				else
+				{
+					new_add_cells[i]->output_pins[0] = allocate_npin();
+					new_add_cells[i]->output_pins[0]->name = append_string("", "%s~dummy_output~%d", new_add_cells[i]->name, 0);
+				}
+			}
+			else
+				if(node->output_pins[0]->type != NO_ID)
+					remap_pin_to_new_node(node->output_pins[0], new_add_cells[i], 0);
+				else
+				{
+					new_add_cells[i]->output_pins[0] = allocate_npin();
+					new_add_cells[i]->output_pins[0]->name = append_string("", "%s~dummy_output~%d", new_add_cells[i]->name, 0);
+				}
+		}
 	}
 	
 	/* connect carry outs with carry ins */
@@ -708,10 +822,10 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	}
 
     	/* ground first carry in .  Note the one constant is inputted to start 2's complement */
-	add_a_input_pin_to_node_spot_idx(new_add_cells[0], get_a_one_pin(netlist), 0);
+	add_input_pin_to_node(new_add_cells[0], get_one_pin(netlist), 0);
 	if (i > 1)
 	{
-		add_a_input_pin_to_node_spot_idx(new_carry_cells[0], get_a_one_pin(netlist), 0);
+		add_input_pin_to_node(new_carry_cells[0], get_one_pin(netlist), 0);
 	}
 
 	/* connect inputs */
@@ -722,13 +836,13 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 			/* join the A port up to adder */
 			remap_pin_to_new_node(node->input_pins[i], new_add_cells[i], 1);
 			if (i < width - 1)
-				add_a_input_pin_to_node_spot_idx(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
+				add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
 		}
 		else
 		{
-			add_a_input_pin_to_node_spot_idx(new_add_cells[i], get_a_zero_pin(netlist), 1);
+			add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 1);
 			if (i < width - 1)
-				add_a_input_pin_to_node_spot_idx(new_carry_cells[i], get_a_zero_pin(netlist), 1);
+				add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 1);
 		}
 
 		if (i < width_b)
@@ -738,7 +852,7 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 		}
 		else 
 		{
-			add_a_input_pin_to_node_spot_idx(new_not_cells[i], get_a_zero_pin(netlist), 0);
+			add_input_pin_to_node(new_not_cells[i], get_zero_pin(netlist), 0);
 		}
 
 		/* now hookup not to adder parts */
@@ -760,6 +874,7 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 
 	free(new_add_cells);
 	free(new_carry_cells);
+	free(new_not_cells);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -794,10 +909,10 @@ void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist)
 	}
 
     	/* ground first carry in .  Note the one constant is inputted to start 2's complement */
-	add_a_input_pin_to_node_spot_idx(new_add_cells[0], get_a_one_pin(netlist), 0);
+	add_input_pin_to_node(new_add_cells[0], get_one_pin(netlist), 0);
 	if (i > 1)
 	{
-		add_a_input_pin_to_node_spot_idx(new_carry_cells[0], get_a_one_pin(netlist), 0);
+		add_input_pin_to_node(new_carry_cells[0], get_one_pin(netlist), 0);
 	}
 
 	/* connect inputs */
@@ -809,9 +924,9 @@ void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist)
 		if (i < width - 1)
 			connect_nodes(new_not_cells[i], 0, new_carry_cells[i], 1);
 
-		add_a_input_pin_to_node_spot_idx(new_add_cells[i], get_a_zero_pin(netlist), 2);
+		add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 2);
 		if (i < width - 1)
-			add_a_input_pin_to_node_spot_idx(new_carry_cells[i], get_a_zero_pin(netlist), 2);
+			add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 2);
 
 		/* join that gate to the output */
 		remap_pin_to_new_node(node->output_pins[i], new_add_cells[i], 0);
@@ -827,6 +942,7 @@ void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist)
 
 	free(new_add_cells);
 	free(new_carry_cells);
+	free(new_not_cells);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -880,7 +996,7 @@ void instantiate_EQUAL(nnode_t *node, short type, short mark, netlist_t *netlist
 			else
 			{
 				/* ELSE - the B input does not exist, so this answer goes right through */
-				add_a_input_pin_to_node_spot_idx(compare, get_a_zero_pin(netlist), i);
+				add_input_pin_to_node(compare, get_zero_pin(netlist), i);
 			}
 		}
 
@@ -895,7 +1011,7 @@ void instantiate_EQUAL(nnode_t *node, short type, short mark, netlist_t *netlist
 			else
 			{
 				/* ELSE - the A input does not exist, so this answer goes right through */
-				add_a_input_pin_to_node_spot_idx(compare, get_a_zero_pin(netlist), i+port_B_offset);
+				add_input_pin_to_node(compare, get_zero_pin(netlist), i+port_B_offset);
 			}
 		}
 
@@ -995,14 +1111,14 @@ void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist)
 			/* IF - this current input will also have a corresponding b_port input then join it to the gate */
 			remap_pin_to_new_node(node->input_pins[i+port_A_offset], gt_cells[i], 0);
 			if (i > 0)
-				add_a_input_pin_to_node_spot_idx(xor_gate, copy_input_npin(gt_cells[i]->input_pins[0]), index+port_A_index);
+				add_input_pin_to_node(xor_gate, copy_input_npin(gt_cells[i]->input_pins[0]), index+port_A_index);
 		}
 		else
 		{
 			/* ELSE - the B input does not exist, so this answer goes right through */
-			add_a_input_pin_to_node_spot_idx(gt_cells[i], get_a_zero_pin(netlist), 0);
+			add_input_pin_to_node(gt_cells[i], get_zero_pin(netlist), 0);
 			if (i > 0)
-				add_a_input_pin_to_node_spot_idx(xor_gate, get_a_zero_pin(netlist), index+port_A_index);
+				add_input_pin_to_node(xor_gate, get_zero_pin(netlist), index+port_A_index);
 		}
 
 		if (i < width_b)
@@ -1011,14 +1127,14 @@ void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist)
 			/* Joining the inputs to the input 2 of that gate */
 			remap_pin_to_new_node(node->input_pins[i+port_B_offset], gt_cells[i], 1);
 			if (i > 0)
-				add_a_input_pin_to_node_spot_idx(xor_gate, copy_input_npin(gt_cells[i]->input_pins[1]), index+port_B_index);
+				add_input_pin_to_node(xor_gate, copy_input_npin(gt_cells[i]->input_pins[1]), index+port_B_index);
 		}
 		else
 		{
 			/* ELSE - the A input does not exist, so this answer goes right through */
-			add_a_input_pin_to_node_spot_idx(gt_cells[i], get_a_zero_pin(netlist), 1);
+			add_input_pin_to_node(gt_cells[i], get_zero_pin(netlist), 1);
 			if (i > 0)
-				add_a_input_pin_to_node_spot_idx(xor_gate, get_a_zero_pin(netlist), index+port_B_index);
+				add_input_pin_to_node(xor_gate, get_zero_pin(netlist), index+port_B_index);
 		}
 
 		if (i < width_max-1)
@@ -1032,7 +1148,7 @@ void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist)
 			else
 			{
 				/* deal with the first greater than test which autom gets a zero */
-				add_a_input_pin_to_node_spot_idx(or_cells[i], get_a_zero_pin(netlist), 1);
+				add_input_pin_to_node(or_cells[i], get_zero_pin(netlist), 1);
 			}
 
 			/* get all the equals with the or gates */
@@ -1043,7 +1159,7 @@ void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist)
 		else
 		{
 			/* deal with the first greater than test which autom gets a zero */
-			add_a_input_pin_to_node_spot_idx(gt_cells[i], get_a_zero_pin(netlist), 2);
+			add_input_pin_to_node(gt_cells[i], get_zero_pin(netlist), 2);
 		}
 
 		/* hook it up to the logcial AND */
@@ -1060,6 +1176,9 @@ void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist)
 	oassert(logical_or_gate->num_output_pins == 1);
 
 	instantiate_bitwise_logic(xor_gate, BITWISE_XOR, mark, netlist);
+	free(xor_gate);
+	free(gt_cells);
+	free(or_cells);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1107,13 +1226,13 @@ void instantiate_GE(nnode_t *node, short type, short mark, netlist_t *netlist)
 		{
 			/* IF - this current input will also have a corresponding b_port input then join it to the gate */
 			remap_pin_to_new_node(node->input_pins[i+port_A_offset], equal, i+port_A_offset);
-			add_a_input_pin_to_node_spot_idx(compare, copy_input_npin(equal->input_pins[i+port_A_offset]), i+port_A_offset);
+			add_input_pin_to_node(compare, copy_input_npin(equal->input_pins[i+port_A_offset]), i+port_A_offset);
 		}
 		else
 		{
 			/* ELSE - the B input does not exist, so this answer goes right through */
-			add_a_input_pin_to_node_spot_idx(equal, get_a_zero_pin(netlist), i+port_A_offset);
-			add_a_input_pin_to_node_spot_idx(compare, get_a_zero_pin(netlist), i+port_A_offset);
+			add_input_pin_to_node(equal, get_zero_pin(netlist), i+port_A_offset);
+			add_input_pin_to_node(compare, get_zero_pin(netlist), i+port_A_offset);
 		}
 
 		if (i < width_b)
@@ -1121,13 +1240,13 @@ void instantiate_GE(nnode_t *node, short type, short mark, netlist_t *netlist)
 			/* IF - this current input will also have a corresponding a_port input then join it to the gate */
 			/* Joining the inputs to the input 2 of that gate */
 			remap_pin_to_new_node(node->input_pins[i+port_B_offset], equal, i+port_B_offset);
-			add_a_input_pin_to_node_spot_idx(compare, copy_input_npin(equal->input_pins[i+port_B_offset]), i+port_B_offset);
+			add_input_pin_to_node(compare, copy_input_npin(equal->input_pins[i+port_B_offset]), i+port_B_offset);
 		}
 		else
 		{
 			/* ELSE - the A input does not exist, so this answer goes right through */
-			add_a_input_pin_to_node_spot_idx(equal, get_a_zero_pin(netlist), i+port_B_offset);
-			add_a_input_pin_to_node_spot_idx(compare, get_a_zero_pin(netlist), i+port_B_offset);
+			add_input_pin_to_node(equal, get_zero_pin(netlist), i+port_B_offset);
+			add_input_pin_to_node(compare, get_zero_pin(netlist), i+port_B_offset);
 		}
 	}
 	connect_nodes(equal, 0, logical_or_final_gate, 0);
@@ -1186,7 +1305,7 @@ void instantiate_shift_left_or_right(nnode_t *node, short type, short mark, netl
 	 	for(i = 0; i < shift_size; i++)
 		{
 			// connect 0 to lower outputs
-			add_a_input_pin_to_node_spot_idx(buf_node, get_a_zero_pin(netlist), i);
+			add_input_pin_to_node(buf_node, get_zero_pin(netlist), i);
 		}
 	
 	 	for(i = width-1; i >= width-shift_size; i--)
@@ -1211,7 +1330,7 @@ void instantiate_shift_left_or_right(nnode_t *node, short type, short mark, netl
 	 	for(i = width - 1; i >= width - shift_size; i--)
 		{
 			// connect 0 to lower outputs
-			add_a_input_pin_to_node_spot_idx(buf_node, get_a_zero_pin(netlist), i);
+			add_input_pin_to_node(buf_node, get_zero_pin(netlist), i);
 		}
 	 	for(i = 0; i < shift_size; i++)
 		{

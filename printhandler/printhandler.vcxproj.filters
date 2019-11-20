@@ -1,0 +1,174 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\TC_Common">
+      <UniqueIdentifier>{31e24288-2bcb-4f14-9dfd-f58ec458449e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\TC_Common">
+      <UniqueIdentifier>{83c87a37-d54c-4488-b3ef-5e30d74f0767}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\TIO_InputOutputHandlers">
+      <UniqueIdentifier>{2b778392-bd59-4332-8362-b6bb3a23a5fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\TIO_InputOutputHandlers">
+      <UniqueIdentifier>{8fa9f6ae-db3b-43fb-8ec6-b91783bfadd2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SRC\TC_Common\TC_Bit.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_StringUtils.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_MinGrid.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_Name.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_NameLength.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_NameType.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_SideIndex.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_SideName.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_CustomOutput.cxx">
+      <Filter>Source Files\TIO_InputOutputHandlers</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_SkinHandler.cxx">
+      <Filter>Source Files\TIO_InputOutputHandlers</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_FileHandler.cxx">
+      <Filter>Source Files\TIO_InputOutputHandlers</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_FileOutput.cxx">
+      <Filter>Source Files\TIO_InputOutputHandlers</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_PrintHandler.cxx">
+      <Filter>Source Files\TIO_InputOutputHandlers</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_PrintHandlerExtern.cxx">
+      <Filter>Source Files\TIO_InputOutputHandlers</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\RegExp.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SRC\TC_Common\TC_Bit.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_Stack.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_MinGrid.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_Name.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_NameLength.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_NameType.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_SideIndex.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_SideName.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_StringUtils.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_Typedefs.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_BSearch.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_Dims.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_DynamicVector.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_Generic.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_NameList.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_OrderedQueue.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_OrderedVector.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_OrderedVector2D.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_QSort.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_RegExpIter.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_SortedNameDynamicVector.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_SortedVector.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_CustomOutput.h">
+      <Filter>Header Files\TIO_InputOutputHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_Typedefs.h">
+      <Filter>Header Files\TIO_InputOutputHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_FileHandler.h">
+      <Filter>Header Files\TIO_InputOutputHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_FileOutput.h">
+      <Filter>Header Files\TIO_InputOutputHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_PrintHandler.h">
+      <Filter>Header Files\TIO_InputOutputHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_PrintHandlerExtern.h">
+      <Filter>Header Files\TIO_InputOutputHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_SkinHandler.h">
+      <Filter>Header Files\TIO_InputOutputHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_StdioOutput.h">
+      <Filter>Header Files\TIO_InputOutputHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_StringText.h">
+      <Filter>Header Files\TIO_InputOutputHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\RegExp.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

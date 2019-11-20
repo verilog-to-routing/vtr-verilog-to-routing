@@ -52,6 +52,7 @@ typedef struct signal_list_t_t signal_list_t;
 typedef struct char_list_t_t char_list_t;
 typedef struct netlist_t_t netlist_t;
 typedef struct netlist_stats_t_t netlist_stats_t;
+typedef struct chain_information_t_t chain_information_t;
 
 /* for parsing and AST creation errors */
 #define PARSE_ERROR -3
@@ -104,10 +105,26 @@ struct config_t_t
 	int fixed_hard_multiplier;
 	// Flag for splitting hard multipliers If fixed_hard_multiplier is set, this must be 1.
 	int split_hard_multiplier;
-	// 1 to split memory width down to a size of 1. 0 to leave memory width alone.
-	short split_memory_width;
-	// Set to a positive integer to split memory depth to that address width.
-	short split_memory_depth;
+	// 1 to split memory width down to a size of 1. 0 to split to arch width.
+	char split_memory_width;
+	// Set to a positive integer to split memory depth to that address width. 0 to split to arch width.
+	int split_memory_depth;
+
+	//add by Sen
+	// Threshold from hard to soft logic(extra bits)
+	int min_hard_adder;
+	int add_padding; // setting how multipliers are padded to fit fixed size
+	// Flag for fixed or variable hard mult (1 or 0)
+	int fixed_hard_adder;
+	// Flag for splitting hard multipliers If fixed_hard_multiplier is set, this must be 1.
+	int split_hard_adder;
+	//  Threshold from hard to soft logic
+	int min_threshold_adder;
+
+	// If the memory is smaller than both of these, it will be converted to soft logic.
+	int soft_logic_memory_depth_threshold;
+	int soft_logic_memory_width_threshold;
+
 	char *arch_file; // Name of the FPGA architecture file
 };
 
@@ -152,6 +169,8 @@ struct global_args_t_t
 	char *sim_hold_high;
 	// Comma-separated list of primary input pins to hold low for all cycles but the first.
 	char *sim_hold_low;
+	//
+	int sim_initial_value;
 };
 
 #endif // TYPES_H
@@ -218,7 +237,8 @@ typedef enum
 	MEMORY,
 	PAD_NODE,
 	HARD_IP, 
-	GENERIC /*added for the unknown node type */
+	GENERIC, /*added for the unknown node type */
+	FULLADDER
 } operation_list;
 	
 typedef enum 
@@ -233,6 +253,7 @@ typedef enum
 	INOUT,
 	WIRE,
 	REG,
+	INTEGER,
 	PARAMETER,
 	PORT,
 	/* OTHER MODULE ITEMS */
@@ -261,6 +282,8 @@ typedef enum
 	ALWAYS,
 	IF,
 	IF_Q,
+	FOR,
+	WHILE,
 	/* Delay Control */
 	DELAY_CONTROL,
 	POSEDGE,
@@ -315,6 +338,9 @@ struct ast_node_t_t
 			short is_inout;
 			short is_wire;
 			short is_reg;
+			short is_integer;
+			short is_initialized; // should the variable be initialized with some value?
+			long long initial_value;
 		} variable;
 		struct
 		{
@@ -359,7 +385,13 @@ struct info_ast_visit_t_t
 //-----------------------------------------------------------------------------------------------------
 #ifndef NETLIST_UTILS_H
 #define NETLIST_UTILS_H
-
+/* DEFINTIONS for carry chain*/
+struct chain_information_t_t
+{
+	char *name;//unique name of the chain
+	int count;//the number of hard blocks in this chain
+	int num_bits;
+};
 
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version 
  * of these names, so if you add new tpyes in here, be sure to add those same types in utils.c */
@@ -404,7 +436,10 @@ struct nnode_t_t
 	// For simulation
 	int in_queue; // Flag used by the simulator to avoid double queueing.
 	npin_t **undriven_pins; // These pins have been found by the simulator to have no driver.
-	int  num_undriven_pins;
+	int num_undriven_pins;
+	int ratio; //clock ratio for clock nodes
+	signed char has_initial_value; // initial value assigned?
+	signed char initial_value; // initial net value
 };
 
 struct npin_t_t
@@ -446,13 +481,15 @@ struct nnet_t_t
 	// For simulation
 	signed char values[SIM_WAVE_LENGTH];  // Stores the values of all connected pins.
 	int cycle;                            // Stores the cycle of all connected pins.
+	signed char has_initial_value; // initial value assigned?
+	signed char initial_value; // initial net value
 	//////////////////////
 };
 
 struct signal_list_t_t 
 {
-	npin_t **signal_list;	
-	int signal_list_size;
+	npin_t **pins;	
+	int count;
 
 	char is_memory;
 	char is_adder;

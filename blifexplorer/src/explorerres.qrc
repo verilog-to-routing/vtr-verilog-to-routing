@@ -1,0 +1,36 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/pointer.png</file>
+        <file>images/linepointer.png</file>
+        <file>images/textpointer.png</file>
+        <file>images/bold.png</file>
+        <file>images/italic.png</file>
+        <file>images/underline.png</file>
+        <file>images/floodfill.png</file>
+        <file>images/bringtofront.png</file>
+        <file>images/delete.png</file>
+        <file>images/sendtoback.png</file>
+        <file>images/linecolor.png</file>
+        <file>images/background4.png</file>
+        <file>images/start.png</file>
+        <file>images/next.png</file>
+        <file>images/previous.png</file>
+        <file>images/nodeTypes/XNOR.png</file>
+        <file>images/nodeTypes/XOR.png</file>
+        <file>images/nodeTypes/NOT.png</file>
+        <file>images/nodeTypes/AND.png</file>
+        <file>images/nodeTypes/NAND.png</file>
+        <file>images/nodeTypes/NOR.png</file>
+        <file>images/nodeTypes/OR.png</file>
+        <file>images/nodeTypes/ADDER_FUNC.png</file>
+        <file>images/nodeTypes/MUX.png</file>
+        <file>images/nodeTypes/CARRY_FUNC.png</file>
+        <file>images/icon.png</file>
+        <file>images/legend.png</file>
+        <file>images/nodeTypes/Hadd.png</file>
+        <file>images/nodeTypes/Hmemory.png</file>
+        <file>images/nodeTypes/Hmult.png</file>
+        <file>images/nodeTypes/Hminus.png</file>
+        <file>images/nodeTypes/module.png</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,6 @@
+regression_tests/vtr_reg_strong/strong_fpu_hard_block_arch
+regression_tests/vtr_reg_strong/strong_fracturable_luts
+regression_tests/vtr_reg_strong/strong_mcnc
+regression_tests/vtr_reg_strong/strong_no_timing
+regression_tests/vtr_reg_strong/strong_timing
+regression_tests/vtr_reg_strong/strong_power

@@ -1,0 +1,881 @@
+# Benchmark "sv_chip3_hierarchy_no_mem" written by ABC on Tue Apr  9 16:48:04 2013
+.model sv_chip3_hierarchy_no_mem
+.inputs top^tm3_clk_v0 top^tm3_clk_v2 top^tm3_vidin_llc top^tm3_vidin_vs \
+ top^tm3_vidin_href top^tm3_vidin_cref top^tm3_vidin_rts0 \
+ top^tm3_vidin_vpo~0 top^tm3_vidin_vpo~1 top^tm3_vidin_vpo~2 \
+ top^tm3_vidin_vpo~3 top^tm3_vidin_vpo~4 top^tm3_vidin_vpo~5 \
+ top^tm3_vidin_vpo~6 top^tm3_vidin_vpo~7 top^tm3_vidin_vpo~8 \
+ top^tm3_vidin_vpo~9 top^tm3_vidin_vpo~10 top^tm3_vidin_vpo~11 \
+ top^tm3_vidin_vpo~12 top^tm3_vidin_vpo~13 top^tm3_vidin_vpo~14 \
+ top^tm3_vidin_vpo~15
+.outputs top^tm3_vidin_sda top^tm3_vidin_scl top^vidin_new_data \
+ top^vidin_rgb_reg~0 top^vidin_rgb_reg~1 top^vidin_rgb_reg~2 \
+ top^vidin_rgb_reg~3 top^vidin_rgb_reg~4 top^vidin_rgb_reg~5 \
+ top^vidin_rgb_reg~6 top^vidin_rgb_reg~7 top^vidin_addr_reg~0 \
+ top^vidin_addr_reg~1 top^vidin_addr_reg~2 top^vidin_addr_reg~3 \
+ top^vidin_addr_reg~4 top^vidin_addr_reg~5 top^vidin_addr_reg~6 \
+ top^vidin_addr_reg~7 top^vidin_addr_reg~8 top^vidin_addr_reg~9 \
+ top^vidin_addr_reg~10 top^vidin_addr_reg~11 top^vidin_addr_reg~12 \
+ top^vidin_addr_reg~13 top^vidin_addr_reg~14 top^vidin_addr_reg~15 \
+ top^vidin_addr_reg~16 top^vidin_addr_reg~17 top^vidin_addr_reg~18
+
+.latch       n107 top^FF_NODE~20 re top^tm3_clk_v0  0
+.latch       n112 top^FF_NODE~30 re top^tm3_clk_v0  0
+.latch       n117 top^FF_NODE~41 re top^tm3_clk_v0  0
+.latch       n122 top^FF_NODE~135 re top^tm3_clk_v0  0
+.latch       n127 top^FF_NODE~31 re top^tm3_clk_v0  0
+.latch       n132 top^FF_NODE~42 re top^tm3_clk_v0  0
+.latch       n137 top^FF_NODE~119 re top^tm3_clk_v0  0
+.latch       n142 top^FF_NODE~32 re top^tm3_clk_v0  0
+.latch       n147 top^FF_NODE~43 re top^tm3_clk_v0  0
+.latch       n152 top^FF_NODE~120 re top^tm3_clk_v0  0
+.latch       n157 top^FF_NODE~33 re top^tm3_clk_v0  0
+.latch       n162 top^FF_NODE~44 re top^tm3_clk_v0  0
+.latch       n167 top^FF_NODE~121 re top^tm3_clk_v0  0
+.latch       n172 top^FF_NODE~34 re top^tm3_clk_v0  0
+.latch       n177 top^FF_NODE~45 re top^tm3_clk_v0  0
+.latch       n182 top^FF_NODE~122 re top^tm3_clk_v0  0
+.latch       n187 top^FF_NODE~35 re top^tm3_clk_v0  0
+.latch       n192 top^FF_NODE~46 re top^tm3_clk_v0  0
+.latch       n197 top^FF_NODE~123 re top^tm3_clk_v0  0
+.latch       n202 top^FF_NODE~36 re top^tm3_clk_v0  0
+.latch       n207 top^FF_NODE~47 re top^tm3_clk_v0  0
+.latch       n212 top^FF_NODE~124 re top^tm3_clk_v0  0
+.latch       n217 top^FF_NODE~37 re top^tm3_clk_v0  0
+.latch       n222 top^FF_NODE~48 re top^tm3_clk_v0  0
+.latch       n227 top^FF_NODE~125 re top^tm3_clk_v0  0
+.latch       n232 top^FF_NODE~38 re top^tm3_clk_v0  0
+.latch       n237 top^FF_NODE~117 re top^tm3_clk_v0  0
+.latch       n242 top^FF_NODE~118 re top^tm3_clk_v0  0
+.latch       n247 top^FF_NODE~126 re top^tm3_clk_v0  0
+.latch       n252 top^FF_NODE~127 re top^tm3_clk_v0  0
+.latch       n257 top^FF_NODE~128 re top^tm3_clk_v0  0
+.latch       n262 top^FF_NODE~129 re top^tm3_clk_v0  0
+.latch       n267 top^FF_NODE~130 re top^tm3_clk_v0  0
+.latch       n272 top^FF_NODE~131 re top^tm3_clk_v0  0
+.latch       n277 top^FF_NODE~132 re top^tm3_clk_v0  0
+.latch       n282 top^FF_NODE~133 re top^tm3_clk_v0  0
+.latch       n287 top^FF_NODE~134 re top^tm3_clk_v0  0
+.latch       n292 top^FF_NODE~136 re top^tm3_clk_v0  0
+.latch       n297 top^FF_NODE~137 re top^tm3_clk_v0  0
+.latch       n302 top^FF_NODE~138 re top^tm3_clk_v0  0
+.latch       n307 top^FF_NODE~139 re top^tm3_clk_v0  0
+.latch       n312 top^FF_NODE~140 re top^tm3_clk_v0  0
+.latch       n317 top^FF_NODE~141 re top^tm3_clk_v0  0
+.latch       n322 top^FF_NODE~142 re top^tm3_clk_v0  0
+.latch       n327 top^FF_NODE~143 re top^tm3_clk_v0  0
+.latch       n332 top^FF_NODE~144 re top^tm3_clk_v0  0
+.latch       n337 top^FF_NODE~21 re top^tm3_clk_v0  0
+.latch       n342 top^FF_NODE~39 re top^tm3_clk_v0  0
+.latch       n347 top^FF_NODE~22 re top^tm3_clk_v0  0
+.latch       n352 top^FF_NODE~49 re top^tm3_clk_v0  0
+.latch       n357 top^FF_NODE~23 re top^tm3_clk_v0  0
+.latch       n362 top^FF_NODE~50 re top^tm3_clk_v0  0
+.latch       n367 top^FF_NODE~24 re top^tm3_clk_v0  0
+.latch       n372 top^FF_NODE~51 re top^tm3_clk_v0  0
+.latch       n377 top^FF_NODE~25 re top^tm3_clk_v0  0
+.latch       n382 top^FF_NODE~52 re top^tm3_clk_v0  0
+.latch       n387 top^FF_NODE~26 re top^tm3_clk_v0  0
+.latch       n392 top^FF_NODE~53 re top^tm3_clk_v0  0
+.latch       n397 top^FF_NODE~27 re top^tm3_clk_v0  0
+.latch       n402 top^FF_NODE~54 re top^tm3_clk_v0  0
+.latch       n407 top^FF_NODE~28 re top^tm3_clk_v0  0
+.latch       n412 top^FF_NODE~55 re top^tm3_clk_v0  0
+.latch       n417 top^FF_NODE~29 re top^tm3_clk_v0  0
+.latch       n422 top^FF_NODE~56 re top^tm3_clk_v0  0
+.latch       n427 top^FF_NODE~228 re top^tm3_clk_v2  0
+.latch       n432 top^FF_NODE~381 re top^tm3_clk_v2  0
+.latch       n437 top^FF_NODE~386 re top^tm3_clk_v2  0
+.latch       n442 top^FF_NODE~229 re top^tm3_clk_v2  0
+.latch       n447 top^FF_NODE~230 re top^tm3_clk_v2  0
+.latch       n452 top^FF_NODE~387 re top^tm3_clk_v2  0
+.latch       n457 top^FF_NODE~388 re top^tm3_clk_v2  0
+.latch       n462 top^FF_NODE~389 re top^tm3_clk_v2  0
+.latch       n467 top^FF_NODE~390 re top^tm3_clk_v2  0
+.latch       n472 top^FF_NODE~391 re top^tm3_clk_v2  0
+.latch       n477 top^FF_NODE~392 re top^tm3_clk_v2  0
+.latch       n482 top^FF_NODE~382 re top^tm3_clk_v2  0
+.latch       n487 top^FF_NODE~383 re top^tm3_clk_v2  0
+.latch       n492 top^FF_NODE~384 re top^tm3_clk_v2  0
+.latch       n497 top^FF_NODE~385 re top^tm3_clk_v2  0
+.latch       n502 top^FF_NODE~378 re top^tm3_clk_v2  0
+.latch       n507 top^FF_NODE~40 re top^tm3_clk_v0  0
+.latch       n512 top^FF_NODE~57 re top^tm3_clk_v0  0
+.latch       n517 top^FF_NODE~81 re top^tm3_clk_v0  0
+.latch       n522 top^FF_NODE~58 re top^tm3_clk_v0  0
+.latch       n527 top^FF_NODE~82 re top^tm3_clk_v0  0
+.latch       n632 top^FF_NODE~69 re top^tm3_clk_v0  0
+.latch       n637 top^FF_NODE~93 re top^tm3_clk_v0  0
+.latch       n682 top^FF_NODE~74 re top^tm3_clk_v0  0
+.latch       n687 top^FF_NODE~98 re top^tm3_clk_v0  0
+.latch       n692 top^FF_NODE~75 re top^tm3_clk_v0  0
+.latch       n697 top^FF_NODE~99 re top^tm3_clk_v0  0
+.latch       n702 top^FF_NODE~76 re top^tm3_clk_v0  0
+.latch       n707 top^FF_NODE~100 re top^tm3_clk_v0  0
+.latch       n712 top^FF_NODE~77 re top^tm3_clk_v0  0
+.latch       n717 top^FF_NODE~101 re top^tm3_clk_v0  0
+.latch       n722 top^FF_NODE~78 re top^tm3_clk_v0  0
+.latch       n727 top^FF_NODE~102 re top^tm3_clk_v0  0
+.latch       n751 top^FF_NODE~114 re top^tm3_clk_v0  0
+.latch       n755 top^FF_NODE~115 re top^tm3_clk_v0  0
+.latch       n759 top^FF_NODE~116 re top^tm3_clk_v0  0
+.latch       n763 top^FF_NODE~379 re top^tm3_clk_v2  0
+.latch       n767 top^FF_NODE~380 re top^tm3_clk_v2  0
+
+.names top^tm3_vidin_href top^tm3_vidin_cref top^FF_NODE~20 n107
+100 1
+111 1
+.names top^tm3_vidin_vs top^FF_NODE~30 n458 n112
+001 1
+010 1
+.names top^tm3_vidin_href top^FF_NODE~20 top^FF_NODE~22 top^FF_NODE~28 \
+ top^FF_NODE~29 n459 n458
+1----- 0
+-00001 0
+.names top^FF_NODE~21 top^FF_NODE~23 top^FF_NODE~24 top^FF_NODE~25 \
+ top^FF_NODE~26 top^FF_NODE~27 n459
+000000 1
+.names top^tm3_vidin_cref top^FF_NODE~30 top^FF_NODE~41 n117
+01- 1
+1-1 1
+.names top^FF_NODE~38 top^FF_NODE~40 top^FF_NODE~115 top^FF_NODE~116 n292
+0001 1
+.names top^tm3_vidin_vs top^FF_NODE~31 top^FF_NODE~30 n458 n127
+0011 1
+010- 1
+01-0 1
+.names top^tm3_vidin_cref top^FF_NODE~31 top^FF_NODE~42 n132
+01- 1
+1-1 1
+.names top^tm3_vidin_vs top^FF_NODE~31 top^FF_NODE~32 top^FF_NODE~30 n458 \
+ n142
+001-- 1
+01011 1
+0-10- 1
+0-1-0 1
+.names top^tm3_vidin_cref top^FF_NODE~32 top^FF_NODE~43 n147
+01- 1
+1-1 1
+.names top^tm3_vidin_vs top^FF_NODE~33 top^FF_NODE~30 n458 top^FF_NODE~31 \
+ top^FF_NODE~32 n157
+001111 1
+010--- 1
+01-0-- 1
+01--0- 1
+01---0 1
+.names top^tm3_vidin_cref top^FF_NODE~33 top^FF_NODE~44 n162
+01- 1
+1-1 1
+.names top^tm3_vidin_vs top^FF_NODE~33 top^FF_NODE~34 n473 top^FF_NODE~30 \
+ n458 n172
+001--- 1
+010111 1
+0-10-- 1
+0-1-0- 1
+0-1--0 1
+.names top^FF_NODE~31 top^FF_NODE~32 n473
+11 1
+.names top^tm3_vidin_cref top^FF_NODE~34 top^FF_NODE~45 n177
+01- 1
+1-1 1
+.names top^tm3_vidin_vs top^FF_NODE~33 top^FF_NODE~34 top^FF_NODE~35 n477_1 \
+ n473 n187
+00-1-- 1
+011011 1
+0-01-- 1
+0--10- 1
+0--1-0 1
+.names top^FF_NODE~30 n458 n477_1
+11 1
+.names top^tm3_vidin_cref top^FF_NODE~35 top^FF_NODE~46 n192
+01- 1
+1-1 1
+.names top^tm3_vidin_vs top^FF_NODE~36 n481 n202
+001 1
+010 1
+.names top^FF_NODE~33 top^FF_NODE~34 top^FF_NODE~35 n473 top^FF_NODE~30 \
+ n458 n481
+111111 1
+.names top^tm3_vidin_cref top^FF_NODE~36 top^FF_NODE~47 n207
+01- 1
+1-1 1
+.names top^tm3_vidin_vs top^FF_NODE~36 top^FF_NODE~37 n481 n217
+001- 1
+0101 1
+0-10 1
+.names top^tm3_vidin_cref top^FF_NODE~37 top^FF_NODE~48 n222
+01- 1
+1-1 1
+.names top^FF_NODE~126 n292 n247
+10 1
+.names top^FF_NODE~127 n292 n252
+10 1
+.names top^tm3_vidin_href top^FF_NODE~21 top^tm3_vidin_cref top^FF_NODE~20 \
+ n337
+1001 1
+111- 1
+11-0 1
+.names top^tm3_vidin_cref top^FF_NODE~21 top^FF_NODE~39 n342
+01- 1
+1-1 1
+.names top^tm3_vidin_href top^FF_NODE~21 top^FF_NODE~22 top^tm3_vidin_cref \
+ top^FF_NODE~20 n347
+101-- 1
+11001 1
+1-11- 1
+1-1-0 1
+.names top^tm3_vidin_href top^FF_NODE~21 top^FF_NODE~22 top^FF_NODE~23 \
+ top^tm3_vidin_cref top^FF_NODE~20 n357
+10-1-- 1
+111001 1
+1-01-- 1
+1--11- 1
+1--1-0 1
+.names top^tm3_vidin_href top^FF_NODE~21 top^FF_NODE~22 top^FF_NODE~23 \
+ top^FF_NODE~24 n514 n367
+10--1- 1
+111101 1
+1-0-1- 1
+1--01- 1
+1---10 1
+.names top^tm3_vidin_cref top^FF_NODE~20 n514
+01 1
+.names top^tm3_vidin_cref top^FF_NODE~24 top^FF_NODE~51 n372
+01- 1
+1-1 1
+.names top^tm3_vidin_href top^FF_NODE~25 n517_1 n377
+101 1
+110 1
+.names top^tm3_vidin_cref top^FF_NODE~20 top^FF_NODE~21 top^FF_NODE~22 \
+ top^FF_NODE~23 top^FF_NODE~24 n517_1
+011111 1
+.names top^tm3_vidin_cref top^FF_NODE~25 top^FF_NODE~52 n382
+01- 1
+1-1 1
+.names top^tm3_vidin_href top^FF_NODE~25 top^FF_NODE~26 n517_1 n387
+101- 1
+1101 1
+1-10 1
+.names top^tm3_vidin_cref top^FF_NODE~26 top^FF_NODE~53 n392
+01- 1
+1-1 1
+.names top^tm3_vidin_href top^FF_NODE~27 n522_1 n397
+101 1
+110 1
+.names top^FF_NODE~25 top^FF_NODE~26 n517_1 n522_1
+111 1
+.names top^tm3_vidin_cref top^FF_NODE~27 top^FF_NODE~54 n402
+01- 1
+1-1 1
+.names top^tm3_vidin_href top^FF_NODE~27 top^FF_NODE~28 n522_1 n407
+101- 1
+1101 1
+1-10 1
+.names top^tm3_vidin_cref top^FF_NODE~28 top^FF_NODE~55 n412
+01- 1
+1-1 1
+.names top^tm3_vidin_href top^FF_NODE~27 top^FF_NODE~28 top^FF_NODE~29 \
+ n522_1 n417
+10-1- 1
+11101 1
+1-01- 1
+1--10 1
+.names top^tm3_vidin_cref top^FF_NODE~29 top^FF_NODE~56 n422
+01- 1
+1-1 1
+.names n529 n531 n533 n539 n543 n546 n528
+1----- 0
+-01111 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n530 n529
+100011 1
+.names top^FF_NODE~391 top^FF_NODE~392 n530
+01 1
+.names top^FF_NODE~392 n532 n531
+00 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 top^FF_NODE~391 n532
+00010- 0
+10-010 0
+11100- 0
+1111-0 0
+11-100 0
+1-0010 0
+-00010 0
+--1100 0
+.names top^FF_NODE~391 top^FF_NODE~392 n534 n535 n536 n538 n533
+1---1- 1
+-1--10 1
+--1110 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n534
+-0-11 0
+-1101 0
+--011 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n535
+01001 0
+01111 0
+10010 0
+10100 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n537 n536
+001011 0
+11-111 0
+1-1111 0
+-11111 0
+.names top^FF_NODE~391 top^FF_NODE~392 n537
+10 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n538
+0-000 1
+-0000 1
+.names top^FF_NODE~390 top^FF_NODE~391 top^FF_NODE~392 n540 n541 n542 n539
+0101-- 0
+-00--0 0
+-10-0- 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 n540
+0110 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n541
+1-010 0
+-1010 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n542
+01010 0
+0-100 0
+11000 0
+.names top^FF_NODE~391 top^FF_NODE~392 n538 n544 n545 n543
+01--0 0
+101-- 0
+10-0- 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n544
+11000 0
+-0100 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n545
+011-0 0
+101-0 0
+11-10 0
+--110 0
+.names top^FF_NODE~391 top^FF_NODE~392 n547 n548 n549 n550 n546
+00---- 1
+11---- 1
+-011-- 1
+-1--11 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n547
+0-110 0
+-0110 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n548
+00-11 0
+0-0-1 0
+11110 0
+1--01 0
+-00-1 0
+-1-01 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n549
+11100 0
+-0010 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n550
+00100 0
+01010 0
+11000 0
+-0001 0
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n552
+00000 1
+11-11 1
+--111 1
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n553
+11011 1
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n555
+0---- 1
+-1-11 1
+--111 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n537 n557
+000011 1
+001001 1
+010101 1
+100001 1
+101101 1
+110011 1
+111001 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n537 n558
+001111 1
+011011 1
+100111 1
+.names top^FF_NODE~389 top^FF_NODE~390 top^FF_NODE~391 top^FF_NODE~392 n560 \
+ n561 n559
+10001- 0
+1110-1 0
+-000-1 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 n560
+001 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 n561
+111 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n530 n562
+000011 1
+000101 1
+010001 1
+011101 1
+101001 1
+110101 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n564 n563
+000111 1
+00-001 1
+010-01 1
+011-11 1
+01-011 1
+110111 1
+-00001 1
+.names top^FF_NODE~391 top^FF_NODE~392 n564
+00 1
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n547 n566
+000100 1
+00-010 1
+010110 1
+011-00 1
+01-000 1
+0-1000 1
+.names n568 n544 n569 n570 n571 n573 n567
+01-00- 1
+0-100- 1
+-1-001 1
+--1001 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n568
+0-011 1
+-0011 1
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n569
+01101 0
+0-011 0
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n541 n570
+000100 1
+001010 1
+010010 1
+011000 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n572 n571
+000100 1
+-11000 1
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n572
+00-01 0
+01-10 0
+0-001 0
+0-110 0
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n573
+00010 0
+01-00 0
+0-001 0
+.names n575 n582 n586 n589 n591 n595 n574
+000011 1
+.names n576 top^FF_NODE~391 top^FF_NODE~392 n575
+001 1
+.names n549 n577 n578 n579 n580 n581 n576
+0--0-- 0
+-10--- 0
+----00 0
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~385 n577
+0001 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n578
+0-100 0
+-0100 0
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n579
+00001 0
+0-100 0
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n580
+01100 0
+0-011 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n581
+-1000 0
+.names n583 n580 n584 n585 top^FF_NODE~391 top^FF_NODE~392 n582
+10--01 1
+--0001 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n583
+10000 1
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n584
+001-0 0
+00-01 0
+01011 0
+0-100 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n585
+00110 0
+-1010 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 n587 n537 n588 n586
+101110 1
+.names top^FF_NODE~389 top^FF_NODE~390 n587
+11 1
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n588
+00010 0
+0-100 0
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n590 n589
+01--01 1
+0-0101 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n537 n590
+1-1011 1
+-11011 1
+.names n588 n592 n593 n594 top^FF_NODE~391 top^FF_NODE~392 n591
+00--10 0
+--0010 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n592
+00111 0
+11011 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n593
+11110 0
+-0001 0
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 n594
+000-1 0
+001-0 0
+00-10 0
+.names n596 n597 n598 n599 n600 n601 n595
+0--001 1
+-0-001 1
+--000- 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 n596
+0111 1
+.names top^FF_NODE~390 top^FF_NODE~391 top^FF_NODE~392 n597
+110 1
+.names top^FF_NODE~384 n577 n598
+11 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n564 n599
+000101 1
+100001 1
+-11001 1
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 top^FF_NODE~389 \
+ top^FF_NODE~390 n564 n600
+000011 1
+-11101 1
+.names top^FF_NODE~389 top^FF_NODE~390 top^FF_NODE~391 top^FF_NODE~392 n561 \
+ n602 n601
+0001-1 0
+11101- 0
+.names top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 n602
+000 1
+.names top^FF_NODE~378 top^FF_NODE~379 top^FF_NODE~380 n610 n482
+11-0 1
+1-00 1
+.names top^FF_NODE~228 top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 \
+ top^FF_NODE~384 top^FF_NODE~385 n610
+011-0- 1
+011--0 1
+1-0--- 1
+-00--- 1
+---111 1
+.names top^FF_NODE~378 top^FF_NODE~379 top^FF_NODE~380 n612 n487
+11-0 1
+1-00 1
+.names top^FF_NODE~228 top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 \
+ top^FF_NODE~384 top^FF_NODE~385 n612
+0111-- 1
+1--0-- 1
+-0-0-- 1
+--00-- 1
+----11 1
+.names top^FF_NODE~378 top^FF_NODE~379 top^FF_NODE~380 n614 n492
+11-0 1
+1-00 1
+.names top^FF_NODE~228 top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 \
+ top^FF_NODE~384 top^FF_NODE~385 n614
+01110- 0
+1---10 0
+-0--10 0
+--0-10 0
+---01- 0
+.names top^FF_NODE~378 top^FF_NODE~379 top^FF_NODE~380 n616 n497
+11-0 1
+1-00 1
+.names top^FF_NODE~228 top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 \
+ top^FF_NODE~384 top^FF_NODE~385 n616
+011110 0
+---0-1 0
+----01 0
+.names top^tm3_vidin_cref top^tm3_vidin_rts0 top^FF_NODE~40 n507
+01- 1
+1-1 1
+.names top^tm3_vidin_cref top^tm3_vidin_vpo~0 top^FF_NODE~57 n512
+0-1 1
+11- 1
+.names top^tm3_vidin_cref top^FF_NODE~57 top^FF_NODE~81 n517
+0-1 1
+11- 1
+.names top^tm3_vidin_cref top^tm3_vidin_vpo~1 top^FF_NODE~58 n522
+0-1 1
+11- 1
+.names top^tm3_vidin_cref top^FF_NODE~58 top^FF_NODE~82 n527
+0-1 1
+11- 1
+.names top^tm3_vidin_cref top^tm3_vidin_vpo~2 top^FF_NODE~69 n632
+0-1 1
+11- 1
+.names top^tm3_vidin_cref top^FF_NODE~69 top^FF_NODE~93 n637
+0-1 1
+11- 1
+.names top^FF_NODE~230 top^tm3_vidin_sda
+1 1
+.names top^FF_NODE~229 top^tm3_vidin_scl
+1 1
+.names top^FF_NODE~136 top^vidin_new_data
+1 1
+.names top^FF_NODE~137 top^vidin_rgb_reg~0
+1 1
+.names top^FF_NODE~138 top^vidin_rgb_reg~1
+1 1
+.names top^FF_NODE~139 top^vidin_rgb_reg~2
+1 1
+.names top^FF_NODE~140 top^vidin_rgb_reg~3
+1 1
+.names top^FF_NODE~141 top^vidin_rgb_reg~4
+1 1
+.names top^FF_NODE~142 top^vidin_rgb_reg~5
+1 1
+.names top^FF_NODE~143 top^vidin_rgb_reg~6
+1 1
+.names top^FF_NODE~144 top^vidin_rgb_reg~7
+1 1
+.names top^FF_NODE~117 top^vidin_addr_reg~0
+1 1
+.names top^FF_NODE~118 top^vidin_addr_reg~1
+1 1
+.names top^FF_NODE~128 top^vidin_addr_reg~2
+1 1
+.names top^FF_NODE~129 top^vidin_addr_reg~3
+1 1
+.names top^FF_NODE~130 top^vidin_addr_reg~4
+1 1
+.names top^FF_NODE~131 top^vidin_addr_reg~5
+1 1
+.names top^FF_NODE~132 top^vidin_addr_reg~6
+1 1
+.names top^FF_NODE~133 top^vidin_addr_reg~7
+1 1
+.names top^FF_NODE~134 top^vidin_addr_reg~8
+1 1
+.names top^FF_NODE~135 top^vidin_addr_reg~9
+1 1
+.names top^FF_NODE~119 top^vidin_addr_reg~10
+1 1
+.names top^FF_NODE~120 top^vidin_addr_reg~11
+1 1
+.names top^FF_NODE~121 top^vidin_addr_reg~12
+1 1
+.names top^FF_NODE~122 top^vidin_addr_reg~13
+1 1
+.names top^FF_NODE~123 top^vidin_addr_reg~14
+1 1
+.names top^FF_NODE~124 top^vidin_addr_reg~15
+1 1
+.names top^FF_NODE~125 top^vidin_addr_reg~16
+1 1
+.names top^FF_NODE~126 top^vidin_addr_reg~17
+1 1
+.names top^FF_NODE~127 top^vidin_addr_reg~18
+1 1
+.names top^FF_NODE~41 top^FF_NODE~135 n292 n122
+1-1 1
+-10 1
+.names top^FF_NODE~42 top^FF_NODE~119 n292 n137
+1-1 1
+-10 1
+.names top^FF_NODE~43 top^FF_NODE~120 n292 n152
+1-1 1
+-10 1
+.names top^FF_NODE~44 top^FF_NODE~121 n292 n167
+1-1 1
+-10 1
+.names top^FF_NODE~45 top^FF_NODE~122 n292 n182
+1-1 1
+-10 1
+.names top^FF_NODE~46 top^FF_NODE~123 n292 n197
+1-1 1
+-10 1
+.names top^FF_NODE~47 top^FF_NODE~124 n292 n212
+1-1 1
+-10 1
+.names top^FF_NODE~48 top^FF_NODE~125 n292 n227
+1-1 1
+-10 1
+.names top^tm3_vidin_cref top^FF_NODE~20 top^FF_NODE~38 n232
+01- 1
+1-1 1
+.names top^FF_NODE~117 top^FF_NODE~39 n292 n237
+1-0 1
+-11 1
+.names top^FF_NODE~118 top^FF_NODE~49 n292 n242
+1-0 1
+-11 1
+.names top^FF_NODE~128 top^FF_NODE~50 n292 n257
+1-0 1
+-11 1
+.names top^FF_NODE~129 top^FF_NODE~51 n292 n262
+1-0 1
+-11 1
+.names top^FF_NODE~130 top^FF_NODE~52 n292 n267
+1-0 1
+-11 1
+.names top^FF_NODE~131 top^FF_NODE~53 n292 n272
+1-0 1
+-11 1
+.names top^FF_NODE~132 top^FF_NODE~54 n292 n277
+1-0 1
+-11 1
+.names top^FF_NODE~133 top^FF_NODE~55 n292 n282
+1-0 1
+-11 1
+.names top^FF_NODE~134 top^FF_NODE~56 n292 n287
+1-0 1
+-11 1
+.names top^FF_NODE~137 top^FF_NODE~81 n292 n297
+1-0 1
+-11 1
+.names top^FF_NODE~138 top^FF_NODE~82 n292 n302
+1-0 1
+-11 1
+.names top^FF_NODE~139 top^FF_NODE~93 n292 n307
+1-0 1
+-11 1
+.names top^FF_NODE~140 top^FF_NODE~98 n292 n312
+1-0 1
+-11 1
+.names top^FF_NODE~141 top^FF_NODE~99 n292 n317
+1-0 1
+-11 1
+.names top^FF_NODE~142 top^FF_NODE~100 n292 n322
+1-0 1
+-11 1
+.names top^FF_NODE~143 top^FF_NODE~101 n292 n327
+1-0 1
+-11 1
+.names top^FF_NODE~144 top^FF_NODE~102 n292 n332
+1-0 1
+-11 1
+.names top^tm3_vidin_cref top^FF_NODE~22 top^FF_NODE~49 n352
+01- 1
+1-1 1
+.names top^tm3_vidin_cref top^FF_NODE~23 top^FF_NODE~50 n362
+01- 1
+1-1 1
+.names n529 n531 n533 n539 n543 n546 n427
+1----- 1
+-01111 1
+.names top^FF_NODE~228 top^FF_NODE~378 top^FF_NODE~379 top^FF_NODE~380 n552 \
+ n553 n432
+1---0- 1
+-0---- 1
+--01-- 1
+-----1 1
+.names top^FF_NODE~228 top^FF_NODE~386 n555 n437
+01- 0
+101 0
+.names n528 n557 n558 n559 n562 n563 n442
+100100 0
+.names n528 n566 n567 n574 top^FF_NODE~391 top^FF_NODE~392 n447
+1011-- 0
+1--10- 0
+1--1-1 0
+.names top^FF_NODE~228 top^FF_NODE~386 top^FF_NODE~387 n555 n452
+001- 1
+010- 1
+1-11 1
+.names top^FF_NODE~228 top^FF_NODE~386 top^FF_NODE~387 top^FF_NODE~388 n555 \
+ n457
+00-1- 1
+0110- 1
+0-01- 1
+1--11 1
+.names top^FF_NODE~228 top^FF_NODE~389 n561 n555 n462
+001- 1
+010- 1
+11-1 1
+.names top^FF_NODE~228 top^FF_NODE~389 top^FF_NODE~390 n561 n555 n467
+001-- 1
+0101- 1
+0-10- 1
+1-1-1 1
+.names top^FF_NODE~228 top^FF_NODE~391 n561 n555 top^FF_NODE~389 \
+ top^FF_NODE~390 n472
+001-11 1
+010--- 1
+01--0- 1
+01---0 1
+11-1-- 1
+.names top^FF_NODE~228 top^FF_NODE~391 top^FF_NODE~392 n561 n587 n555 n477
+001--- 1
+01011- 1
+0-10-- 1
+0-1-0- 1
+1-1--1 1
+.names top^FF_NODE~381 top^FF_NODE~382 top^FF_NODE~383 top^FF_NODE~384 \
+ top^FF_NODE~385 top^FF_NODE~378 n502
+10000- 1
+-----1 1
+.names top^tm3_vidin_cref top^tm3_vidin_vpo~0 top^FF_NODE~74 n682
+01- 1
+1-1 1
+.names top^tm3_vidin_cref top^FF_NODE~74 top^FF_NODE~98 n687
+0-1 1
+11- 1
+.names top^tm3_vidin_cref top^tm3_vidin_vpo~1 top^FF_NODE~75 n692
+01- 1
+1-1 1
+.names top^tm3_vidin_cref top^FF_NODE~75 top^FF_NODE~99 n697
+0-1 1
+11- 1
+.names top^tm3_vidin_cref top^tm3_vidin_vpo~2 top^FF_NODE~76 n702
+01- 1
+1-1 1
+.names top^tm3_vidin_cref top^FF_NODE~76 top^FF_NODE~100 n707
+0-1 1
+11- 1
+.names top^tm3_vidin_cref top^tm3_vidin_vpo~3 top^FF_NODE~77 n712
+01- 1
+1-1 1
+.names top^tm3_vidin_cref top^FF_NODE~77 top^FF_NODE~101 n717
+0-1 1
+11- 1
+.names top^tm3_vidin_cref top^tm3_vidin_vpo~4 top^FF_NODE~78 n722
+01- 1
+1-1 1
+.names top^tm3_vidin_cref top^FF_NODE~78 top^FF_NODE~102 n727
+0-1 1
+11- 1
+.names top^tm3_vidin_cref n751
+1 1
+.names top^FF_NODE~114 n755
+1 1
+.names top^FF_NODE~115 n759
+1 1
+.names top^tm3_vidin_rts0 n763
+1 1
+.names top^FF_NODE~379 n767
+1 1
+.end

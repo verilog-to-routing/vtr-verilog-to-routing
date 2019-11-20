@@ -222,6 +222,10 @@ void set_default_optimization_settings(config_t *config)
 	config->split_hard_multiplier = 1;
 	config->split_memory_width = FALSE;
 	config->split_memory_depth = FALSE;
+	config->min_hard_adder = 0;
+	config->fixed_hard_adder = 0;
+	config->split_hard_adder = 1;
+	config->min_threshold_adder = 0;
 	return;
 }
 
@@ -302,6 +306,56 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 		
 		FreeNode(child);
 	}
+
+	child = ezxml_child(a_node, "adder");
+		if (child != NULL)
+		{
+			prop = FindProperty(child, "size", (boolean)FALSE);
+			if (prop != NULL)
+			{
+				config->min_hard_adder = atoi(prop);
+				ezxml_set_attr(child, "size", NULL);
+			}
+			else /* Default: No minimum hard adder size */
+				config->min_hard_adder = 0;
+
+			prop = FindProperty(child, "threshold_size", (boolean)FALSE);
+			if (prop != NULL)
+			{
+				config->min_threshold_adder = atoi(prop);
+				ezxml_set_attr(child, "threshold_size", NULL);
+			}
+			else /* Default: No minimum hard adder size */
+				config->min_threshold_adder = 0;
+
+			prop = FindProperty(child, "padding", (boolean)FALSE);
+			if (prop != NULL)
+			{
+				config->add_padding = atoi(prop);
+				ezxml_set_attr(child, "padding", NULL);
+			}
+			else /* Default: Pad to hbpad pins */
+				config->add_padding = -1;
+
+			prop = FindProperty(child, "fixed", (boolean)FALSE);
+			if (prop != NULL)
+			{
+				config->fixed_hard_adder = atoi(prop);
+				ezxml_set_attr(child, "fixed", NULL);
+			}
+			else /* Default: Fixed hard adder size */
+				config->fixed_hard_adder = 1;
+
+			prop = FindProperty(child, "fracture", (boolean)FALSE);
+			if (prop != NULL)
+			{
+				config->split_hard_adder = atoi(prop);
+				ezxml_set_attr(child, "fracture", NULL);
+			}
+			else /* Default: use fractured hard adder size */
+				config->split_hard_adder = 1;
+			FreeNode(child);
+		}
 
 	return;
 }

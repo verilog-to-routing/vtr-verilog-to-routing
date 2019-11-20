@@ -37,11 +37,11 @@ long unique_node_name_id = 0;
  * (function: get_a_pad_pin)
  * 	this allows us to attach to the constant netlist driving hb_pad
  *---------------------------------------------------------------------*/
-npin_t *get_a_pad_pin(netlist_t *netlist)
+npin_t *get_pad_pin(netlist_t *netlist)
 {
 	npin_t *pad_fanout_pin = allocate_npin();	
 	pad_fanout_pin->name = pad_string;
-	add_a_fanout_pin_to_net(netlist->pad_net, pad_fanout_pin);
+	add_fanout_pin_to_net(netlist->pad_net, pad_fanout_pin);
 	return pad_fanout_pin;
 }
 
@@ -49,11 +49,11 @@ npin_t *get_a_pad_pin(netlist_t *netlist)
  * (function: get_a_zero_pin)
  * 	this allows us to attach to the constant netlist driving zero
  *---------------------------------------------------------------------*/
-npin_t *get_a_zero_pin(netlist_t *netlist)
+npin_t *get_zero_pin(netlist_t *netlist)
 {
 	npin_t *zero_fanout_pin = allocate_npin();	
 	zero_fanout_pin->name = zero_string;
-	add_a_fanout_pin_to_net(netlist->zero_net, zero_fanout_pin);
+	add_fanout_pin_to_net(netlist->zero_net, zero_fanout_pin);
 	return zero_fanout_pin;
 }
 
@@ -61,11 +61,11 @@ npin_t *get_a_zero_pin(netlist_t *netlist)
  * (function: get_a_one_pin)
  * 	this allows us to attach to the constant netlist driving one
  *-------------------------------------------------------------------------------------------*/
-npin_t *get_a_one_pin(netlist_t *netlist)
+npin_t *get_one_pin(netlist_t *netlist)
 {
 	npin_t *one_fanout_pin = allocate_npin();	
 	one_fanout_pin->name = one_string;
-	add_a_fanout_pin_to_net(netlist->one_net, one_fanout_pin);
+	add_fanout_pin_to_net(netlist->one_net, one_fanout_pin);
 	return one_fanout_pin;
 }
 
@@ -81,7 +81,7 @@ nnode_t *make_not_gate_with_input(npin_t *input_pin, nnode_t *node, short mark)
 	logic_node = make_not_gate(node, mark);
 
 	/* add the input ports as needed */
-	add_a_input_pin_to_node_spot_idx(logic_node, input_pin, 0);
+	add_input_pin_to_node(logic_node, input_pin, 0);
 
 	return logic_node;
 
@@ -101,8 +101,8 @@ nnode_t *make_not_gate(nnode_t *node, short mark)
 	logic_node->name = node_name(logic_node, node->name);
 	logic_node->related_ast_node = node->related_ast_node;
 
-	allocate_more_node_input_pins(logic_node, 1);
-	allocate_more_node_output_pins(logic_node, 1);
+	allocate_more_input_pins(logic_node, 1);
+	allocate_more_output_pins(logic_node, 1);
 
 	return logic_node;
 
@@ -123,10 +123,10 @@ nnode_t *make_1port_gate(operation_list type, int width_input, int width_output,
 	logic_node->related_ast_node = node->related_ast_node;
 
 	/* add the input ports as needed */
-	allocate_more_node_input_pins(logic_node, width_input);
+	allocate_more_input_pins(logic_node, width_input);
 	add_input_port_information(logic_node, width_input);
 	/* add output */
-	allocate_more_node_output_pins(logic_node, width_output);
+	allocate_more_output_pins(logic_node, width_output);
 	add_output_port_information(logic_node, width_output);
 
 	return logic_node;
@@ -137,9 +137,7 @@ nnode_t *make_1port_gate(operation_list type, int width_input, int width_output,
  *-------------------------------------------------------------------------------------------*/
 nnode_t *make_1port_logic_gate(operation_list type, int width, nnode_t *node, short mark)
 {
-	nnode_t *logic_node;	
-
-	logic_node = make_1port_gate(type, width, 1, node, mark);
+	nnode_t *logic_node = make_1port_gate(type, width, 1, node, mark);
 
 	return logic_node;
 }
@@ -158,7 +156,7 @@ nnode_t *make_1port_logic_gate_with_inputs(operation_list type, int width, signa
 	/* hookup all the pins */
 	for (i = 0; i < width; i++)
 	{
-		add_a_input_pin_to_node_spot_idx(logic_node, pin_list->signal_list[i], i);
+		add_input_pin_to_node(logic_node, pin_list->pins[i], i);
 	}
 
 	return logic_node;
@@ -177,14 +175,14 @@ nnode_t *make_3port_gate(operation_list type, int width_port1, int width_port2, 
 	logic_node->related_ast_node = node->related_ast_node;
 
 	/* add the input ports as needed */
-	allocate_more_node_input_pins(logic_node, width_port1);
+	allocate_more_input_pins(logic_node, width_port1);
 	add_input_port_information(logic_node, width_port1);
-	allocate_more_node_input_pins(logic_node, width_port2);
+	allocate_more_input_pins(logic_node, width_port2);
 	add_input_port_information(logic_node, width_port2);
-	allocate_more_node_input_pins(logic_node, width_port3);
+	allocate_more_input_pins(logic_node, width_port3);
 	add_input_port_information(logic_node, width_port3);
 	/* add output */
-	allocate_more_node_output_pins(logic_node, width_output);
+	allocate_more_output_pins(logic_node, width_output);
 	add_output_port_information(logic_node, width_output);
 
 	return logic_node;
@@ -204,12 +202,12 @@ nnode_t *make_2port_gate(operation_list type, int width_port1, int width_port2, 
 	logic_node->related_ast_node = node->related_ast_node;
 
 	/* add the input ports as needed */
-	allocate_more_node_input_pins(logic_node, width_port1);
+	allocate_more_input_pins(logic_node, width_port1);
 	add_input_port_information(logic_node, width_port1);
-	allocate_more_node_input_pins(logic_node, width_port2);
+	allocate_more_input_pins(logic_node, width_port2);
 	add_input_port_information(logic_node, width_port2);
 	/* add output */
-	allocate_more_node_output_pins(logic_node, width_output);
+	allocate_more_output_pins(logic_node, width_output);
 	add_output_port_information(logic_node, width_output);
 
 	return logic_node;
@@ -455,8 +453,8 @@ nnode_t *make_mult_block(nnode_t *node, short mark)
 	logic_node->output_port_sizes = node->output_port_sizes;
 	logic_node->num_output_port_sizes = node->num_output_port_sizes;
 
-	allocate_more_node_input_pins(logic_node, node->num_input_pins);
-	allocate_more_node_output_pins(logic_node, node->num_output_pins);
+	allocate_more_input_pins(logic_node, node->num_input_pins);
+	allocate_more_output_pins(logic_node, node->num_output_pins);
 
 	return logic_node;
 }

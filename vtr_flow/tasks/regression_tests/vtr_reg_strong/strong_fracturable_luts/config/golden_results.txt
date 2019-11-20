@@ -1,0 +1,2 @@
+arch	circuit	vpr_status	min_chan_width	pack_time	place_time	min_chan_width_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error
+k6_N8_I80_fleI10_fleO2_ff2_nmodes_2.xml	ch_intrinsics.v	success	40	218.07	0.26	1.88	765	895	422	47	99	130	1	0	

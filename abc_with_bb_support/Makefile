@@ -29,7 +29,7 @@ default: $(PROG)
 #OPTFLAGS  := -DNDEBUG -O3
 OPTFLAGS  := -g -O
 
-CFLAGS   += -Wall -Wno-unused-function $(OPTFLAGS) $(patsubst %, -I%, $(MODULES)) 
+CFLAGS   += -w $(OPTFLAGS) $(patsubst %, -I%, $(MODULES)) 
 CFLAGS   += -MD -MP
 CXXFLAGS += $(CFLAGS) 
 
@@ -70,7 +70,7 @@ clean:
 tags:
 	ctags -R .
 
-$(PROG): $(OBJ)
+$(PROG): $(OBJ) lib$(PROG).a
 	$(LD) -o $@ $^ $(LIBS)
 
 lib$(PROG).a: $(OBJ)
