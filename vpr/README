@@ -1,0 +1,12 @@
+This directory contains the source and makefile for VPR as well
+as three sample circuit netlists (tav.net xor5.net and e64.net) 
+and a sample architecture file (sample.arch).  Xor5.net and tav.net
+are very small circuits intended to allow one to become familiar with
+VPR's netlist format, while e64.net is large enough to be a realistic
+circuit.  Tav.net is a sequential circuit while the other two are 
+combinational.
+
+The FPGA described by sample.arch has logic blocks that contain 1
+four-input look-up table and a flip-flop.  Each logic block pin is
+accessable from one side of the logic block.  Two pads fit into the
+area one logic block would occupy.

@@ -1,0 +1,21 @@
+# Uniform channels.  Each pin appears on only one side.
+# This is a traditional FPGA with all channels the same width,
+# which is probably what you want.
+
+io_rat 2        # 2 pads fit in the height of a row or width of a column
+chan_width_io 1
+chan_width_x uniform 1 
+chan_width_y uniform 1
+
+# Logic block contains a 4-input LUT and a flip-flop.
+# LUT inputs first, then output, then clock.
+inpin class: 0 bottom 
+inpin class: 0 left
+inpin class: 0 top
+inpin class: 0 right
+outpin class: 1 bottom
+inpin class: 2 bottom top      # Clock: doesn't matter when clock is global.
+
+# Class 0 is LUT inputs, class 1 is the output, class 2 is the clock in 
+# this architecture.  There is nothing special about this ordering, however.
+

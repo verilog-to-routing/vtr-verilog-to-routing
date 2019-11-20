@@ -1,0 +1,30 @@
+Input netlist file: sample.arch
+
+io_rat: 2.
+chan_width_io: 1.000000  clb_size: 6
+
+
+Channel Types:  UNIFORM = 0; GAUSSIAN = 1; PULSE = 2; DELTA = 3
+
+
+chan_width_x:
+type: 0  peak: 1.000000  width: 0.000000  xpeak: 0.000000  dc: 0.000000
+
+chan_width_y:
+type: 0  peak: 1.000000  width: 0.000000  xpeak: 0.000000  dc: 0.000000
+
+Pin #	class	top	bottom	left	right
+0	0	0	1	0	0	
+1	0	0	0	1	0	
+2	0	1	0	0	0	
+3	0	0	0	0	1	
+4	1	0	1	0	0	
+5	2	1	1	0	0	
+
+Class types:  DRIVER = 0; RECEIVER = 1
+
+Class	Type	Numpins	Pins
+0	1	4	0	1	2	3	
+1	0	1	4	
+2	1	1	5	
+

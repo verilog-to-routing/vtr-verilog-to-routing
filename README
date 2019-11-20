@@ -1,0 +1,5 @@
+This tarfile contains:
+
+manual.ps:  Postscript version of the VPR user's manual.
+vpr:        Directory containing source and sample input files for VPR.
+blifmap:    Directory containing source and a sample input file for blifmap.

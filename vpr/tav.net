@@ -1,0 +1,54 @@
+.input tav_in_1_
+  pinlist:  tav_in_1_
+
+.input tav_in_0_
+  pinlist:  tav_in_0_
+
+.input tav_in_3_
+  pinlist:  tav_in_3_
+
+.input tav_in_2_
+  pinlist:  tav_in_2_
+
+.input clock
+  pinlist:  clock
+
+.output out:tav_out_2_
+  pinlist:  tav_out_2_
+
+.output out:tav_out_1_
+  pinlist:  tav_out_1_
+
+.output out:tav_out_0_
+  pinlist:  tav_out_0_
+
+.output out:tav_out_3_
+  pinlist:  tav_out_3_
+
+.clb tav_out_2_  # Only LUT used.
+   pinlist: tav_in_1_ tav_in_2_ [10] open tav_out_2_ open 
+
+.clb tav_out_1_  # Only LUT used.
+   pinlist: tav_in_1_ tav_in_2_ [10] open tav_out_1_ open 
+
+.clb tav_out_0_  # Only LUT used.
+   pinlist: tav_in_0_ n_n34 n_n35 [14] tav_out_0_ open 
+
+.clb tav_out_3_  # Only LUT used.
+   pinlist: tav_in_3_ n_n34 n_n35 [12] tav_out_3_ open 
+
+.clb n_n34  # Both LUT and LATCH used.
+   pinlist: n_n34 open open open n_n34 clock 
+
+.clb n_n35  # Both LUT and LATCH used.
+   pinlist: n_n34 n_n35 open open n_n35 clock 
+
+.clb [10]  # Only LUT used.
+   pinlist: tav_in_0_ tav_in_3_ n_n34 n_n35 [10] open 
+
+.clb [12]  # Only LUT used.
+   pinlist: tav_in_1_ tav_in_0_ tav_in_3_ tav_in_2_ [12] open 
+
+.clb [14]  # Only LUT used.
+   pinlist: tav_in_1_ tav_in_0_ tav_in_3_ tav_in_2_ [14] open 
+
