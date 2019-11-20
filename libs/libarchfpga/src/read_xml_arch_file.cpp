@@ -3225,16 +3225,12 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
     while (CurSite) {
         check_node(CurSite, "site", loc_data);
 
-        expect_only_attributes(CurSite, {"pb_type", "priority", "pin_mapping"}, loc_data);
+        expect_only_attributes(CurSite, {"pb_type", "pin_mapping"}, loc_data);
         /* Load equivalent site name */
         auto Prop = std::string(get_attribute(CurSite, "pb_type", loc_data).value());
         PhysicalTileType->equivalent_sites_names.push_back(Prop);
 
         auto LogicalBlockType = get_type_by_name<t_logical_block_type>(Prop.c_str(), LogicalBlockTypes);
-
-        auto priority = get_attribute(CurSite, "priority", loc_data, ReqOpt::OPTIONAL).as_int(0);
-        LogicalBlockType->physical_tiles_priority[priority].push_back(PhysicalTileType->index);
-        PhysicalTileType->logical_blocks_priority[priority].push_back(LogicalBlockType->index);
 
         auto pin_mapping = get_attribute(CurSite, "pin_mapping", loc_data, ReqOpt::OPTIONAL).as_string("direct");
 
