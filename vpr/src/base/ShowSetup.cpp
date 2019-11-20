@@ -79,8 +79,8 @@ void printClusteredNetlistStats() {
         num_blocks_type[logical_block->index]++;
         if (is_io_type(physical_tile)) {
             for (j = 0; j < logical_block->pb_type->num_pins; j++) {
-                int phy_pin = get_physical_pin(physical_tile, logical_block, j);
-                auto pin_class = physical_tile->pin_class[phy_pin];
+                int physical_pin = get_physical_pin(physical_tile, logical_block, j);
+                auto pin_class = physical_tile->pin_class[physical_pin];
                 auto class_inf = physical_tile->class_inf[pin_class];
 
                 if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {

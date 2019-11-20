@@ -3259,10 +3259,10 @@ static void ProcessEquivalentSiteDirectConnection(pugi::xml_node Parent,
     vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
 
     for (int npin = 0; npin < num_pins; npin++) {
-        t_physical_pin phy_pin(npin);
-        t_logical_pin log_pin(npin);
+        t_physical_pin physical_pin(npin);
+        t_logical_pin logical_pin(npin);
 
-        directs_map.insert(log_pin, phy_pin);
+        directs_map.insert(logical_pin, physical_pin);
     }
 
     PhysicalTileType->tile_block_pin_directs_map[LogicalBlockType->index] = directs_map;
@@ -3310,15 +3310,15 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
 
         int num_pins = from_pins.second - from_pins.first;
         for (int i = 0; i < num_pins; i++) {
-            t_physical_pin phy_pin(from_pins.first + i);
-            t_logical_pin log_pin(to_pins.first + i);
+            t_physical_pin physical_pin(from_pins.first + i);
+            t_logical_pin logical_pin(to_pins.first + i);
 
-            auto result = directs_map.insert(log_pin, phy_pin);
+            auto result = directs_map.insert(logical_pin, physical_pin);
             if (!result.second) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
                                "Duplicate logical pin (%d) to physical pin (%d) mappings found for "
                                "Physical Tile %s and Logical Block %s.\n",
-                               log_pin.pin, phy_pin.pin, PhysicalTileType->name, LogicalBlockType->name);
+                               logical_pin.pin, physical_pin.pin, PhysicalTileType->name, LogicalBlockType->name);
             }
         }
 
